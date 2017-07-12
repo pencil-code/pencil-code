@@ -8,14 +8,14 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lparticles_lyapunov=.true.
+! CPARAM logical, parameter :: lparticles_caustics=.true.
 !
 ! MAUX CONTRIBUTION 9
 ! COMMUNICATED AUXILIARIES 9
 ! MPVAR CONTRIBUTION 12
 !
 !***************************************************************
-module Particles_lyapunov
+module Particles_caustics
 !
   use Cdata
   use Messages
@@ -25,21 +25,21 @@ module Particles_lyapunov
 !
   implicit none
 !
-  include 'particles_lyapunov.h'
+  include 'particles_caustics.h'
 !
   logical :: lnoise2pvector=.false.
-  real :: fake_eta=0.,bamp=0.
+  real :: fake_eta=0.,epsilondX=0.01
   integer :: idiag_bx2pm=0,idiag_by2pm=0,idiag_bz2pm=0
 !
-  namelist /particles_lyapunov_init_pars/ &
-    bamp
+  namelist /particles_caustics_init_pars/ &
+    epsilondX
 !
-  namelist /particles_lyapunov_run_pars/ &
+  namelist /particles_caustics_run_pars/ &
   lnoise2pvector,fake_eta
 !
   contains
 !***********************************************************************
-    subroutine register_particles_lyapunov()
+    subroutine register_particles_caustics()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -50,39 +50,24 @@ module Particles_lyapunov
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Indices for velocity gradient matrix (Wij) at particle positions
+!  Indices for \deltaX and \deltaV at particle positions
 !
-      iup11=npvar+1
-      pvarname(npvar+1)='iup11'
-      iup12=npvar+2
-      pvarname(npvar+2)='iup12'
-      iup13=npvar+3
-      pvarname(npvar+3)='iup13'
-      iup21=npvar+4
-      pvarname(npvar+4)='iup21'
-      iup22=npvar+5
-      pvarname(npvar+5)='iup22'
-      iup23=npvar+6
-      pvarname(npvar+6)='iup23'
-      iup31=npvar+7
-      pvarname(npvar+7)='iup31'
-      iup32=npvar+8
-      pvarname(npvar+8)='iup32'
-      iup33=npvar+9
-      pvarname(npvar+9)='iup33'
-!
-!  Indices for a passive vector at particle positions
-!
-      ibpx=npvar+10
-      pvarname(npvar+10)='ibpx'
-      ibpy=npvar+11
-      pvarname(npvar+11)='ibpy'
-      ibpz=npvar+12
-      pvarname(npvar+12)='ibpz'
+      idXp1=npvar+1
+      pvarname(npvar+1)='idXp1'
+      idXp2=npvar+2
+      pvarname(npvar+2)='idXp2'
+      idXp3=npvar+3
+      pvarname(npvar+3)='idXp3'
+      idVp1=npvar+4
+      pvarname(npvar+4)='idVp1'
+      idVp2=npvar+5
+      pvarname(npvar+5)='idVp2'
+      idVp1=npvar+6
+      pvarname(npvar+6)='idVp3'
 !
 !  Increase npvar accordingly.
 !
-      npvar=npvar+12
+      npvar=npvar+6
 !
 !  Set indices for velocity gradient matrix at grid points
 !
@@ -98,14 +83,13 @@ module Particles_lyapunov
         call fatal_error('register_particles','npvar > mpvar')
       endif
 !
-    endsubroutine register_particles_lyapunov
+    endsubroutine register_particles_caustics
 !***********************************************************************
-    subroutine initialize_particles_lyapunov(f)
+    subroutine initialize_particles_caustics(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  13-nov-07/anders: coded
 !
       use General, only: keep_compiler_quiet
       use FArrayManager
@@ -119,41 +103,45 @@ module Particles_lyapunov
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_particles_lyapunov
+    endsubroutine initialize_particles_caustics
 !***********************************************************************
-    subroutine init_particles_lyapunov(fp)
+    subroutine init_particles_caustics(f,fp,ineargrid)
 !
       use Sub, only: kronecker_delta
       use General, only: keep_compiler_quiet,random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      real, dimension(3) :: uup1, uup2, Xp,dXp, XpdX
       real, dimension(nx,3:3) :: uij 
       integer, dimension (ncpus) :: my_particles=0,all_particles=0
-      real :: random_number
+      real :: rno01 
       integer :: ipzero,ik,ii,jj,ij
 !
       do ip=1,npar_loc
 !
-! Initialize the gradU matrix at particle position
-! The initial condition is kroner delta.
+! Initialize the deltaX by a small random vector. 
+! It is a factor epsilondX of grid spacing (we ignore non-uniform grids)
+! Remember; dx_1 is 1/dx available from cdata.f90
 !
-        ij=0
-        do ii=1,3; do jj=1,3 
-          fp(ip,iup11+ij)=kronecker_delta(ii,jj)
-          ij=ij+1
-        enddo;enddo
-!
-! Assign random initial value for the passive vector 
-!
-        do ik=1,3
-          call random_number_wrapper(random_number)
-          fp(ip,ibpx+ik-1)= random_number
+        do ii=1,3 
+          call random_number_wrapper(rno01)
+          fp(ip,idXp1+ii-1)=epsilondX*rno01*dx
         enddo
-      enddo
+        Xp = fp(ip,ixp:izp)
+        dXp = fp(ip,idXp1:idXp3)
+        XpdX=Xp+dX
+        call interpolate_linear(f,iux,iuz,Xp,uup1,ineargrid(ip,:),0,0)
+        call interpolate_linear(f,iux,iuz,XpdX,uup2,ineargrid(ip,:),0,0)
+        fp(ip,ivpx:ivpz) = uup1
+        fp(ip,idVp1:idVp3) = uup2-uup1
+! loop over ip ends below
+     enddo
 !
-    endsubroutine init_particles_lyapunov
+    endsubroutine init_particles_caustics
 !***********************************************************************
-    subroutine dlyapunov_dt(f,df,fp,dfp,ineargrid)
+    subroutine dcaustics_dt(f,df,fp,dfp,ineargrid)
 !
 !
       use Diagnostics
@@ -170,26 +158,20 @@ module Particles_lyapunov
 !
       lheader=lfirstcall .and. lroot
       if (lheader) then
-        print*,'dlyapunov_dt: Calculate dlyapunov_dt'
+        print*,'dcaustics_dt: Calculate dcaustics_dt'
       endif
 !
       if (ldiagnos) then
-        if (idiag_bx2pm/=0) then 
-          call sum_par_name(fp(1:npar_loc,ibpx)*fp(1:npar_loc,ibpx),idiag_bx2pm)
-        endif
-        if (idiag_by2pm/=0) then 
-          call sum_par_name(fp(1:npar_loc,ibpy)*fp(1:npar_loc,ibpy),idiag_by2pm)
-        endif
-        if (idiag_bz2pm/=0) then 
-          call sum_par_name(fp(1:npar_loc,ibpz)*fp(1:npar_loc,ibpz),idiag_bz2pm)
-        endif
+!
+! No diagnostic is coded yet, but would be.
+!
       endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
-    endsubroutine dlyapunov_dt
+    endsubroutine dcaustics_dt
 !***********************************************************************
-    subroutine dlyapunov_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,taup1)
 !
       use Sub, only: linarray2matrix,matrix2linarray
 !
@@ -199,104 +181,84 @@ module Particles_lyapunov
       real, dimension (mpar_loc,mparray), intent(in) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: k
+      real :: taup1
       intent (inout) :: df, dfp,ineargrid
-      real, dimension(3) :: Bp,dBp
-      real, dimension(9) :: Sij_lin,Wij_lin,dWij_lin
-      real, dimension(3,3) :: Sijp,Wijp,dWijp
-      integer :: ix0,iy0,iz0,i,j,ij,k
+      intent (in) :: k,taup1
+      real, dimension(3) :: dXp,dVp 
+      real, dimension(9) :: Sij_lin
+      real, dimension(3,3) :: Sijp
+      integer :: ii 
 !
 !  Identify module.
 !
       if (headtt) then
-        if (lroot) print*,'dlyapunov_dt_pencil: calculate dlyapunov_dt'
+        if (lroot) print*,'dcaustics_dt_pencil: calculate dcaustics_dt'
+        if (lroot) print*,'called from dvvp_dt_pencil in the particles_dust module'
       endif
 !
-      if (npar_imn(imn)/=0) then
 !
 !  Loop over all particles in current pencil.
 !
-        do k=k1_imn(imn),k2_imn(imn)
 !
-          ix0=ineargrid(k,1)
-          iy0=ineargrid(k,2)
-          iz0=ineargrid(k,3)
+      dXp = fp(k,idXp1:idXp3)
+      dVp = fp(k,idVp1:idVp3)
+!
+! solve (d/dt) \deltaX_k = \deltaV_k 
+!
+      dfp(k,idXp1:idXp3)= dVp 
 !
 !  interpolate the gradu matrix to particle positions
 !
-          call interpolate_linear(f,igu11,igu33,fp(k,ixp:izp),Sij_lin,ineargrid(k,:), &
+      call interpolate_linear(f,igu11,igu33,fp(k,ixp:izp),Sij_lin,ineargrid(k,:), &
             0,ipar(k))
-          call linarray2matrix(Sij_lin,Sijp)
+      call linarray2matrix(Sij_lin,Sijp)
 !
-! solve (d/dt)W_ij = S_ik W_kj
+! solve (d/dt) \deltaV_k = (1/\taup)S_kj \deltaV_j 
 !
-          Wij_lin = fp(k,iup11:iup33)
-          call linarray2matrix(Wij_lin,Wijp)
-          dWijp=matmul(Sijp,Wijp)
-          call matrix2linarray(dWijp,dWij_lin)
-          dfp(k,iup11:iup33)= dfp(k,iup11:iup33)+dWij_lin
-!
-! solve (d/dt) B_i = S_ik B_k 
-!
-          Bp=fp(k,ibpx:ibpz)
-          dBp=matmul(Sijp,Bp)
-          dfp(k,ibpx:ibpz)=dfp(k,ibpx:ibpz)+dBp
-        enddo
-      endif
-!
-    endsubroutine dlyapunov_dt_pencil
-!***********************************************************************
-    subroutine read_plyapunov_init_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read(parallel_unit, NML=particles_lyapunov_init_pars, IOSTAT=iostat)
-!
-    endsubroutine read_plyapunov_init_pars
-!***********************************************************************
-    subroutine write_plyapunov_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit, NML=particles_lyapunov_init_pars)
-!
-    endsubroutine write_plyapunov_init_pars
-!***********************************************************************
-    subroutine read_plyapunov_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read(parallel_unit, NML=particles_lyapunov_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_plyapunov_run_pars
-!***********************************************************************
-    subroutine write_plyapunov_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit, NML=particles_lyapunov_run_pars)
-!
-    endsubroutine write_plyapunov_run_pars
-!***********************************************************************
-    subroutine particles_stochastic_lyapunov(fp)
-      use General,only : gaunoise_number
-      real, dimension (mpar_loc,mparray), intent(inout) :: fp
-      integer :: ip,ik
-      real,dimension(2) :: grandom
-!
-      do ik=1,3
-        do ip=1,npar_loc
-          call gaunoise_number(grandom)
-          fp(ip,ibpx+ik-1) = fp(ip,ibpx+ik-1)+sqrt(fake_eta)*grandom(2)*sqrt(dt)
-        enddo
+      do ii=1,3
+        dfp(k,idVp1+ii-1)= taup1*(dot_product(Sijp(ii,:),dXp) - dVp(ii)) 
       enddo
-!    
-    endsubroutine particles_stochastic_lyapunov
+!
+    endsubroutine dcaustics_dt_pencil
 !***********************************************************************
-    subroutine rprint_particles_lyapunov(lreset,lwrite)
+    subroutine read_pcaustics_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=particles_caustics_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_pcaustics_init_pars
+!***********************************************************************
+    subroutine write_pcaustics_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=particles_caustics_init_pars)
+!
+    endsubroutine write_pcaustics_init_pars
+!***********************************************************************
+    subroutine read_pcaustics_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=particles_caustics_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_pcaustics_run_pars
+!***********************************************************************
+    subroutine write_pcaustics_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=particles_caustics_run_pars)
+!
+    endsubroutine write_pcaustics_run_pars
+!***********************************************************************
+    subroutine rprint_particles_caustics(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particles.
 !
@@ -319,35 +281,25 @@ module Particles_lyapunov
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'iup11=',iup11
-        write(3,*) 'iup12=',iup12
-        write(3,*) 'iup13=',iup13
-        write(3,*) 'iup21=',iup21
-        write(3,*) 'iup22=',iup22
-        write(3,*) 'iup23=',iup23
-        write(3,*) 'iup31=',iup31
-        write(3,*) 'iup32=',iup32
-        write(3,*) 'iup33=',iup33
-        write(3,*) 'ibpx=', ibpx
-        write(3,*) 'ibpy=', ibpy
-        write(3,*) 'ibpz=', ibpz
+        write(3,*) 'idXp1=',idXp1
+        write(3,*) 'idXp2=',idXp2
+        write(3,*) 'idXp3=',idXp3
+        write(3,*) 'idVp1=',idVp1
+        write(3,*) 'idVp2=',idVp2
+        write(3,*) 'idVp3=',idVp3
       endif
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_bx2pm=0;idiag_by2pm=0;idiag_bz2pm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'bx2pm',idiag_bx2pm)
-        call parse_name(iname,cname(iname),cform(iname),'by2pm',idiag_by2pm)
-        call parse_name(iname,cname(iname),cform(iname),'bz2pm',idiag_bz2pm)
       enddo
 !
-    endsubroutine rprint_particles_lyapunov
+    endsubroutine rprint_particles_caustics
 !***********************************************************************
-endmodule Particles_lyapunov
+endmodule Particles_caustics

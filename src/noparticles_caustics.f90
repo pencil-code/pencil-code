@@ -87,7 +87,7 @@ module Particles_caustics
 !
     endsubroutine dcaustics_dt
 !***********************************************************************
-    subroutine dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,taup1)
 !
       use Sub, only: linarray2matrix,matrix2linarray
 !
@@ -97,7 +97,10 @@ module Particles_caustics
       real, dimension (mpar_loc,mparray), intent(in) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: k
+      real :: taup1
       intent (inout) :: df, dfp,ineargrid
+      intent (in) :: k,taup1
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)

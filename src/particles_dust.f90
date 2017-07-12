@@ -862,6 +862,7 @@ module Particles
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
+      use Particles_caustics, only: init_particles_caustics
 !
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
@@ -1932,6 +1933,10 @@ module Particles
 !  sorting).
 !
       call sort_particles_imn(fp,ineargrid,ipar)
+!
+!  If we are solving for caustics, then we call their initial condition here:
+!
+      call init_particles_caustics(f,fp,ineargrid)
 !
 !  Set the initial auxiliary array for the passive scalar to zero
 !
@@ -3578,6 +3583,7 @@ module Particles
       use Particles_diagnos_state, only: persistence_check
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
+      use Particles_caustics, only: dcaustics_dt_pencil
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -3849,6 +3855,12 @@ module Particles
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+!
+! If we are using the module particles_caustics, then we call for them here:
+!
+              if (lparticles_caustics) & 
+                 call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)  
+
 !
 !  Account for added mass term beta
 !  JONAS: The advective derivative of velocity is interpolated for each
