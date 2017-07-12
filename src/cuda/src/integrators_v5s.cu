@@ -7,7 +7,8 @@ Comments:
 Omer Anjum: Changed the 19-point RK integration Kernel to 55-Point integration Kernel without changing the requirements of shared memory and simultaneously reducing the global memory traffic. The technique applied to achieve this is "scattering".
 */
 
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "../cparam_c.h"
 #include "smem.cuh"
 #include "hydro.cuh"
@@ -16,10 +17,10 @@ Omer Anjum: Changed the 19-point RK integration Kernel to 55-Point integration K
 #include "forcing.cuh"
 #include "shear.cuh"
 #include "diff.cuh"
+#include "timestep.cuh"
 
 //DEBUG
 #include "diagnostics.cuh"
-
 
 /*
 * Notes:
@@ -240,6 +241,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
                   		float* __restrict__ d_w_lnrho, float* __restrict__ d_w_uu_x, float* __restrict__ d_w_uu_y, float* __restrict__ d_w_uu_z,
 				float* __restrict__ d_lnrho_dest, float* __restrict__ d_uu_x_dest, float* __restrict__ d_uu_y_dest, float* __restrict__ d_uu_z_dest, int isubstep)
 {	
+//printf("d_DT= %f \n", d_DT);
 	float ALPHA, BETA;
 	switch (isubstep) {
 		case 1:
@@ -255,7 +257,6 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 			BETA = d_BETA3;
 			break;
 	}
-
 	__shared__ float s_lnrho[SHARED_SIZE_ROW][SHARED_SIZE_COL]; //SHARED_SIZE_ROW (RK_THREADS_Y + 2*BOUND_SIZE) = (4 + 2*3) = 10
 	__shared__ float s_uu_x [SHARED_SIZE_ROW][SHARED_SIZE_COL]; //SHARED_SIZE_COL (RK_THREADS_X + 2*BOUND_SIZE) = (32 + 2*3) = 38
 	__shared__ float s_uu_y [SHARED_SIZE_ROW][SHARED_SIZE_COL];
@@ -547,9 +548,9 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 
 				//Continuity	
 				const float cont_res = - (s_uu_x[sid_row][sid_col] * ddx_lnrho +
-		                                  s_uu_y[sid_row][sid_col] * ddy_lnrho +
-		                                  s_uu_z[sid_row][sid_col] * ddz_lnrho) 
-		                               - (ddx_uu_x + ddy_uu_y + ddz_uu_z);  // Omer: -(u.nebla)rho - nebla.u  Eq(.2)
+		                                          s_uu_y[sid_row][sid_col] * ddy_lnrho +
+		                                          s_uu_z[sid_row][sid_col] * ddz_lnrho) 
+		                                       - (ddx_uu_x + ddy_uu_y + ddz_uu_z);       // Omer: -(u.nabla)lnrho - nabla.u  Eq(.2)
 
 				//ILP: compute nu_const_uu and S_grad_lnrho before using cont_res  //Omer: Eq(.6)
 				const float nu_const_uu_x = der2_scalx(sid_row, sid_col, s_uu_x) +
@@ -577,7 +578,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				const float Szz = (2.0f/3.0f)*ddz_uu_z - (1.0f/3.0f)*(ddx_uu_x + ddy_uu_y);
 
 				//Use cont_res to compute w_lnrho
-				w_lnrho = ALPHA*w_lnrho + d_DT*cont_res; //Omer: Second line Algo. 3 updating rho
+				w_lnrho = ALPHA*w_lnrho + cont_res; //Omer: Second line Algo. 3 updating rho
 
 				//Navier-Stokes
 				mom_x[(threadIdx.y*RK_THREADS_X)+threadIdx.x][0] = - (s_uu_x[sid_row][sid_col] * ddx_uu_x +               //vec_dot_nabla_scal
@@ -602,7 +603,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 		                            + 2.0f*d_NU_VISC*(Sxz*ddx_lnrho + Syz*ddy_lnrho + Szz*ddz_lnrho)+d_NU_VISC*(1.0f/3.0f)*d2z_uu_z; //S_grad_lnrho
 				
 
-				d_lnrho_dest[grid_idx] = s_lnrho[sid_row][sid_col] + BETA*w_lnrho;
+				d_lnrho_dest[grid_idx] = s_lnrho[sid_row][sid_col] + BETA*d_DT*w_lnrho;
 			}
 				//use the output which is mature now 
 
@@ -611,13 +612,13 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 					const float div_uuy = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_uy[0]);
 					const float div_uuz = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_uz[0]);
 
-					w_uu_x = ALPHA*w_uu_x + d_DT*(mom_x[(threadIdx.y*RK_THREADS_X)+threadIdx.x][3] + div_uux);
-					w_uu_y = ALPHA*w_uu_y + d_DT*(mom_y[(threadIdx.y*RK_THREADS_X)+threadIdx.x][3] + div_uuy);
-					w_uu_z = ALPHA*w_uu_z + d_DT*(mom_z[(threadIdx.y*RK_THREADS_X)+threadIdx.x][3] + div_uuz);
+					w_uu_x = ALPHA*w_uu_x + (mom_x[(threadIdx.y*RK_THREADS_X)+threadIdx.x][3] + div_uux);
+					w_uu_y = ALPHA*w_uu_y + (mom_y[(threadIdx.y*RK_THREADS_X)+threadIdx.x][3] + div_uuy);
+					w_uu_z = ALPHA*w_uu_z + (mom_z[(threadIdx.y*RK_THREADS_X)+threadIdx.x][3] + div_uuz);
 				
-					d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_x + BETA*w_uu_x;
-					d_uu_y_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_y + BETA*w_uu_y;
-					d_uu_z_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_z + BETA*w_uu_z;	
+					d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_x + BETA*d_DT*w_uu_x;
+					d_uu_y_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_y + BETA*d_DT*w_uu_y;
+					d_uu_z_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_z + BETA*d_DT*w_uu_z;	
 
 					d_w_lnrho[w_grid_idx] = w_lnrho;
 					d_w_uu_x [w_grid_idx] = w_uu_x;
@@ -724,9 +725,6 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 
 }
 
-
-
-
 //----------------------------------------------------------
 // Manages the calculation on 2N-Runge-Kutta for a single timestep
 //----------------------------------------------------------
@@ -735,25 +733,26 @@ void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_u
 			float* d_lnrho_dest, float* d_uu_x_dest, float* d_uu_y_dest, float* d_uu_z_dest, int isubstep)
 {
 	//Determine threadblock dims (TODO better solution, define?)
-	static dim3 threadsPerBlock, blocksPerGridFirst, blocksPerGridSecond;
-	threadsPerBlock.x = RK_THREADS_X; //RK_THREADS_X = 32
-	threadsPerBlock.y = RK_THREADS_Y; //RK_THREADS_Y = 4
-	threadsPerBlock.z = RK_THREADS_Z; //RK_THREADS_Z = 1
+	static dim3 threadsPerBlock(RK_THREADS_X,  //RK_THREADS_X = 32
+	                            RK_THREADS_Y,  //RK_THREADS_Y = 4
+	                            RK_THREADS_Z); //RK_THREADS_Z = 1
 	assert(RK_THREADS_Z == 1);
+//printf("threadsPerBlock= %d %d %d \n",threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z);
+	static dim3 blocksPerGridFirst( ceil((float) COMP_DOMAIN_SIZE_X / (float)threadsPerBlock.x), //128 / 32 = 4
+	                                ceil((float) COMP_DOMAIN_SIZE_Y / (float)threadsPerBlock.y), //128 / 4 = 32
+	                                ceil((float) COMP_DOMAIN_SIZE_Z / (float)(threadsPerBlock.z*RK_ELEMS_PER_THREAD_FIRST))); //128 / (1*8) = 16 
+//printf("blocksPerGridFirst= %d %d %d \n",blocksPerGridFirst.x, blocksPerGridFirst.y, blocksPerGridFirst.z);
 
-	blocksPerGridFirst.x = ceil((float) COMP_DOMAIN_SIZE_X / (float)threadsPerBlock.x); //128 / 32 = 4
-	blocksPerGridFirst.y = ceil((float) COMP_DOMAIN_SIZE_Y / (float)threadsPerBlock.y); //128 / 4 = 32
-	blocksPerGridFirst.z = ceil((float) COMP_DOMAIN_SIZE_Z / (float)(threadsPerBlock.z*RK_ELEMS_PER_THREAD_FIRST)); //128 / (1*8) = 16 
-
+	/*static dim3 blocksPerGridFirst, blocksPerGridSecond;
 	blocksPerGridSecond.x = ceil((float) COMP_DOMAIN_SIZE_X / (float)threadsPerBlock.x);
 	blocksPerGridSecond.y = ceil((float) COMP_DOMAIN_SIZE_Y / (float)threadsPerBlock.y);
-	blocksPerGridSecond.z = ceil((float) COMP_DOMAIN_SIZE_Z / (float)(threadsPerBlock.z*RK_ELEMS_PER_THREAD_SECOND));
+	blocksPerGridSecond.z = ceil((float) COMP_DOMAIN_SIZE_Z / (float)(threadsPerBlock.z*RK_ELEMS_PER_THREAD_SECOND));*/
 
 	//Calculate steps in kernels 
 	// Step 1:
 	//-------------------------------------------------------------------------------------------------------------------------------
 	//FIRST HALF
-	
+
         rungekutta_step_first_half<0><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
                                                                                d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, 
                                                                                d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
