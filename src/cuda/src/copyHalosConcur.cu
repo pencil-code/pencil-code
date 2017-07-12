@@ -13,7 +13,8 @@
 
 #include "../cparam_c.h"
 #include "defines_dims_PC.h"
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 
 static cudaStream_t strFront=NULL, strBack=NULL, strBot=NULL, strTop=NULL, strLeftRight=NULL;
 static int mxy;
