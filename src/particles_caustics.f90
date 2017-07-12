@@ -27,15 +27,13 @@ module Particles_caustics
 !
   include 'particles_caustics.h'
 !
-  logical :: lnoise2pvector=.false.
-  real :: fake_eta=0.,epsilondX=0.01
-  integer :: idiag_bx2pm=0,idiag_by2pm=0,idiag_bz2pm=0
+  real :: fake_eta=0., epsilondX=0.01
 !
   namelist /particles_caustics_init_pars/ &
     epsilondX
 !
   namelist /particles_caustics_run_pars/ &
-  lnoise2pvector,fake_eta
+  fake_eta
 !
   contains
 !***********************************************************************
@@ -99,7 +97,7 @@ module Particles_caustics
 !  Stop if there is no velocity to calculate derivatives
 !
       if (.not. (lhydro.or.lhydro_kinematic)) &
-        call fatal_error('initialize_particles_lyapunov','you must select either hydro or hydro_kinematic')
+        call fatal_error('initialize_particles_caustics','you must select either hydro or hydro_kinematic')
 !
       call keep_compiler_quiet(f)
 !

@@ -55,16 +55,17 @@ module Particles_caustics
 !
     endsubroutine initialize_particles_caustics
 !***********************************************************************
-    subroutine init_particles_caustics(fp)
+    subroutine init_particles_caustics(f,fp,ineargrid)
 !
 !      use Sub, only: kronecker_delta
 !      use General, only: keep_compiler_quiet,random_number_wrapper
 !      use Mpicomm, only: mpiallreduce_sum
-!      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
       real, dimension(nx,3:3) :: uij 
 !
-!      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_caustics
@@ -154,6 +155,6 @@ module Particles_caustics
 !
       call keep_compiler_quiet(lreset,lwrite)
 !    
-    endsubroutine rprint_particles_causticcs
+    endsubroutine rprint_particles_caustics
 !***********************************************************************
 endmodule Particles_caustics

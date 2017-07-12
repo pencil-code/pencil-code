@@ -312,6 +312,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use Particles_caustics, only: register_particles_caustics
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -395,6 +396,10 @@ module Particles
         call fatal_error('register_particles','npvar > mpvar')
       endif
 !
+!  If we are using caustics, here we should call the correspoding register equation:
+!
+      if (lparticles_caustics) call register_particles_caustics()
+!
     endsubroutine register_particles
 !***********************************************************************
     subroutine initialize_particles(f)
@@ -408,6 +413,7 @@ module Particles
       use EquationOfState, only: rho0, cs0
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Density, only: mean_density
+      use Particles_caustics, only: initialize_particles_caustics
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -846,7 +852,9 @@ module Particles
         close (1)
       endif
 !
-      call keep_compiler_quiet(f)
+!  if we are using caustics:
+!
+      if (lparticles_caustics) call initialize_particles_caustics(f)
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -1936,7 +1944,7 @@ module Particles
 !
 !  If we are solving for caustics, then we call their initial condition here:
 !
-      call init_particles_caustics(f,fp,ineargrid)
+      if (lparticles_caustics) call init_particles_caustics(f,fp,ineargrid)
 !
 !  Set the initial auxiliary array for the passive scalar to zero
 !
@@ -2956,6 +2964,7 @@ module Particles
 !
       use Diagnostics
       use EquationOfState, only: cs20
+      use Particles_caustics, only: dcaustics_dt
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -3243,12 +3252,11 @@ module Particles
           call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
         endif
       endif
-!
       if (lfirstcall) lfirstcall=.false.
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(ineargrid)
+!  If we are using caustics :
+!
+      if (lparticles_caustics) call dcaustics_dt(f,df,fp,dfp,ineargrid)
 !
     endsubroutine dvvp_dt
 !***********************************************************************
@@ -3860,7 +3868,6 @@ module Particles
 !
               if (lparticles_caustics) & 
                  call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)  
-
 !
 !  Account for added mass term beta
 !  JONAS: The advective derivative of velocity is interpolated for each
@@ -6147,6 +6154,7 @@ module Particles
 !
       use Diagnostics
       use General,   only: itoa
+      use Particles_caustics, only: rprint_particles_caustics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -6361,9 +6369,13 @@ module Particles
 !  Check for those quantities for which we want phi-averages.
 !
       do inamerz=1,nnamerz
-        call parse_name(inamerz,cnamerz(inamerz),cformrz(inamerz),'rhopmphi',idiag_rhopmphi)
+       call parse_name(inamerz,cnamerz(inamerz),cformrz(inamerz),'rhopmphi',idiag_rhopmphi)
       enddo
 !
+!    If we are using caustics 
+!
+       if (lparticles_caustics) call rprint_particles_caustics(lreset,lwrite)
+! 
     endsubroutine rprint_particles
 !***********************************************************************
     subroutine particles_final_clean_up
