@@ -4236,10 +4236,16 @@ module Special
             +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
       else if (lcartesian_coords) then
         div_flux=0.0
-        div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                 /(x12(l1:l2)-x12(l1-1:l2-1)) &
-        +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
+        if (nygrid == 1) then
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+              +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        else
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+          +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
             +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        endif
        else
          call fatal_error('twist_inject:div_diff_flux','Not coded for cylindrical')
        endif

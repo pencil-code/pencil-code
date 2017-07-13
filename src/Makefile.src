@@ -1425,7 +1425,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #F77=$(FC) #(saveri*)
 #CC=mpicc.openmpi #(saveri*)
 #CFLAGS=-O2 -DFUNDERSC=1 #(saveri*)
-#FFLAGS=-O2 #(saveri*)
+#FFLAGS=-O2 -mcmodel=large #(saveri*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(saveri*)
 ##LD_MPI= #(saveri*)
 ##
