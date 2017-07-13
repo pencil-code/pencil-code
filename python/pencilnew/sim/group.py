@@ -51,7 +51,7 @@ def group(simulations, groupby, sort=True, only_started=False):
         sim_dict_grouped[q].append(sim)
 
   else:
-    print '!! ERROR: Coudnt group simulations, no fitting groupby-keyword has been found to match "'+groupby+'"!'
+    print('!! ERROR: Coudnt group simulations, no fitting groupby-keyword has been found to match "'+groupby+'"!')
     return False
 
   if sort:
