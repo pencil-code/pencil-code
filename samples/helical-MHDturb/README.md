@@ -23,8 +23,11 @@
     Candelaresi, S., & Brandenburg, A.: 2013, ``How much helicity is
        needed to drive large-scale dynamos?'' Phys. Rev. E 87, 043104
 
-
 Brandenburg, A. *2001*, ``The inverse cascade and nonlinear alpha-effect in simulations
 of isotropic helical hydromagnetic turbulence,'' *Astrophys. J.* **550**, 824-840
 [(astro-ph/0006186)](http://arXiv.org/abs/astro-ph/0006186)
 [ADS]("http://esoads.eso.org/cgi-bin/nph-bib_query?bibcode=2001ApJ...550..824B")
+
+##Entry to a production sample page:
+"https://www.nordita.org/~brandenb/projects/LShelicityspec/>LShelicityspec"
+
