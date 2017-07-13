@@ -44,6 +44,3 @@ magnetic field (if initaa=0 is set).
    large-scale dynamos'' Phys. Rev. E 87, 043104 |
    [arXiv](https://arxiv.org/abs/1208.4529) |
    [ADS](http://adsabs.harvard.edu/abs/2013PhRvE..87d3104C)
-
-##Entry to a production sample page:
-
