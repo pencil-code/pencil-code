@@ -200,8 +200,7 @@ module Diagnostics
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
-!      character (len=1000) :: fform,legend,line
-      character (len=640) :: fform,legend,line
+      character (len=1000) :: fform,legend,line
       integer :: iname, nnamel
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
@@ -350,8 +349,8 @@ module Diagnostics
       use General, only: safe_character_append, itoa
       use Sub, only: noform
 !
-      character (len=640)          ,intent(OUT) :: fform
-      character (len=640), optional,intent(OUT) :: legend
+      character (len=*)          ,intent(OUT) :: fform
+      character (len=*), optional,intent(OUT) :: legend
 !
       character, parameter :: comma=','
       character(len=40)    :: tform
