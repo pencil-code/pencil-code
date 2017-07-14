@@ -192,7 +192,7 @@ module Particles_main
       endif
 !
       if (lparticles_radius .and. rhopmat>0.0 .and. &
-        (np_swarm>0.0 .or. lparticles_number)) lignore_rhop_swarm=.true.
+        (np_swarm>0.0 .or. lparticles_number .or. particles_module .eq. "lagrangian")) lignore_rhop_swarm=.true.
 
 !
 !  Initialize individual modules.
