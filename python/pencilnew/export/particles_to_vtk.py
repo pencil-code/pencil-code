@@ -115,7 +115,6 @@ class ParticlesVtk(object):
             vtk_points = vtk.vtkPoints()
             
             # Add the data to the vtk points.
-            print(points.shape)
             for point_idx in range(points.shape[1]):
                 vtk_points.InsertNextPoint(points[:, point_idx])
             # Add the vtk points to the vtk grid.
