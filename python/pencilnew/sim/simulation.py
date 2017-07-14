@@ -443,6 +443,9 @@ class __Simulation__(object):
     def get_T_last(self):
         """ Returnes ts.t[-1] WITHOUTH reading the whole time series!
         """
+
+        if self.started() != True: return 0
+
         from os.path import join
         with open(join(self.datadir, 'time_series.dat'), 'rb') as fh:
             first = next(fh).decode()
