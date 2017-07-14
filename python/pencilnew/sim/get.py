@@ -22,7 +22,7 @@ def get(path='.', quiet=False):
         print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
         return False
 
-def get_sims(path_root='.', depth=1, unhide_all=True, quiet=False):
+def get_sims(path_root='.', depth=0, unhide_all=True, quiet=False):
     """
     Returns all found simulations as object list from all subdirs, not
     following symbolic links.
@@ -57,10 +57,9 @@ def get_sims(path_root='.', depth=1, unhide_all=True, quiet=False):
     # get overview of simulations in all lower dirs
     sim_paths = []
     for path, dirs in walklevel(path_root, depth):
-        #if 'start.in' in files and 'run.in' in files:
-        # print('path: '+str(path))
+
         for sdir in dirs:
-            # print('dirs: '+str(dir))
+            if sdir.startswith('.'): continue
             sd = join(path, sdir)
             if is_sim_dir(sd) and not basename(sd).startswith('.'):
                 if not quiet: print('# Found Simulation in '+sd)
