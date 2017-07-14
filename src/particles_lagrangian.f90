@@ -170,7 +170,7 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
-      beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
+      beta_dPdr_dust, mpmat, &
       nu_epicycle, rp_int, rp_ext, gravx_profile, gravz_profile, &
       gravr_profile, gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, &
       eps1, lmigration_redo, ldragforce_equi_global_eps, coeff, kx_vvp, &
@@ -203,7 +203,7 @@ module Particles
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
+      np_const, rhop_const, particle_radius,  &
       ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
@@ -216,8 +216,8 @@ module Particles
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, np_swarm, mp_swarm, &
-      rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
+      ldragforce_gas_par, ldragforce_dust_par, &
+      cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
       tstart_grav_par, tstart_grav_x_par, cdtp_drag, &
@@ -251,7 +251,7 @@ module Particles
       log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, &
       lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
-      lcommunicate_np, lcylindrical_gravity_par, lignore_rhop_swarm, &
+      lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, &
@@ -364,7 +364,7 @@ module Particles
       if (ldiffuse_passive .and. lpscalar_sink) then
         call farray_register_auxiliary('dlncc',idlncc,communicated=.true.)
       elseif (ldiffuse_passive .and. .not. lpscalar_sink) then
-          call fatal_error('particles_dust','ldiffuse_passive needs lpscalar_sink')
+          call fatal_error('particles_lagrangian','ldiffuse_passive needs lpscalar_sink')
       endif
 !
 !  Special variable for diffusion of particle-gas dragforce
@@ -373,7 +373,7 @@ module Particles
         call farray_register_auxiliary('dfg',idfg,communicated=.true.,vector=3)
         idfx=idfg; idfy=idfg+1; idfz=idfg+2
       elseif (ldiffuse_dragf .and. .not. ldragforce_gas_par) then
-        call fatal_error('particles_dust','ldiffuse_dragf needs ldragforce_gas_par')
+        call fatal_error('particles_lagrangian','ldiffuse_dragf needs ldragforce_gas_par')
       endif
 !
 !  Kill particles that spend enough time in birth ring
@@ -514,55 +514,6 @@ module Particles
             'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
 !
-!  Calculate mass density per particle (for back-reaction drag force on gas)
-!  based on the dust-to-gas ratio eps:
-!
-!    rhop_swarm*N_cell = eps*rhom
-!
-!  where rhop_swarm is the mass density per superparticle, N_cell is the number
-!  of particles per grid cell and rhom is the mean gas density in the box.
-!
-      if (eps_dtog>0.0) then
-! For stratification, take into account gas present outside the simulation box.
-        if (lreassign_strat_rhom.and.((lgravz .and. lgravz_gas) .or. gravz_profile=='linear')) then
-          ! rhom = (total mass) / (box volume) = Sigma / Lz
-          ! Sigma = sqrt(2pi) * rho0 * H
-          !   rho0 = mid-plane density, H = (sound speed) / (epicycle frequency)
-          rhom = sqrt(2.0 * pi) / Lz
-          if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
-        else
-          ! for backward compatibility
-          if (lcartesian_coords) then
-            rhom = rho0
-          else
-            rhom = mean_density(f)
-            if (lreference_state) then
-              call get_shared_variable('reference_state_mass',reference_state_mass, &
-                                       caller='initialize_particles')
-              rhom=rhom+reference_state_mass/box_volume
-            endif
-          endif
-        endif
-        if (rhop_swarm==0.0) &
-            rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm==0.0) then
-            mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
-        endif
-        if (lroot) print*, 'initialize_particles: '// &
-            'dust-to-gas ratio eps_dtog=', eps_dtog
-      endif
-!
-      if (lroot) then
-        print*, 'initialize_particles: '// &
-            'mass per constituent particle mpmat=', mpmat
-        print*, 'initialize_particles: '// &
-            'mass per superparticle mp_swarm =', mp_swarm
-        print*, 'initialize_particles: '// &
-            'number density per superparticle np_swarm=', np_swarm
-        print*, 'initialize_particles: '// &
-            'mass density per superparticle rhop_swarm=', rhop_swarm
-      endif
-!
 !  Calculate nu_epicycle**2 for gravity.
 !
       if (gravz_profile=='' .and. nu_epicycle/=0.0) gravz_profile='linear'
@@ -655,18 +606,6 @@ module Particles
 !  Initialize storage of energy gain released by shearing boundaries.
 !
       if (idiag_deshearbcsm/=0) energy_gain_shear_bcs=0.0
-!
-!  Drag force on gas right now assumed rhop_swarm is the same for all particles.
-!
-! NILS: Commented out the check below (after discussion with Anders)
-! NILS: as it does not seem to be required any longer.
-!
-!      if (ldragforce_gas_par.and.(lparticles_radius.or.lparticles_number) &
-!          .and..not.lparticles_density) then
-!        if (lroot) print*, 'initialize_particles: drag force on gas is '// &
-!            'not yet implemented for variable particle radius or number'
-!        call fatal_error('initialize_particles','')
-!      endif
 !
 !  Fatal error if sink particle radius is zero or negative.
 !
@@ -842,17 +781,6 @@ print*,'interp_default=',interp_default,particle_mesh
         call put_shared_variable('vel_call',vel_call,ierr)
         call put_shared_variable('turnover_call',turnover_call,ierr)
         call put_shared_variable('turnover_shared',turnover_shared,ierr)
-      endif
-!
-!  Write constants to disk.
-!
-      if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
-          write (1,*) 'np_swarm=', np_swarm
-          write (1,*) 'mpmat=', 0.0
-          write (1,*) 'mp_swarm=', mp_swarm
-          write (1,*) 'rhop_swarm=', rhop_swarm
-        close (1)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1803,8 +1731,6 @@ print*,'interp_default=',interp_default,particle_mesh
           endif
           cs=sqrt(cs20)
 !
-          if (ldragforce_equi_global_eps) eps = eps_dtog
-!
           if (ldragforce_equi_noback) eps=0.0
 !
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
@@ -2401,31 +2327,6 @@ print*,'interp_default=',interp_default,particle_mesh
         endif
       endif
 !
-      if (lpencil(i_rhop)) then
-        if (irhop/=0) then
-          p%rhop=f(l1:l2,m,n,irhop)
-        else
-          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
-        endif
-      endif
-!
-      if (lpencil(i_grhop)) then
-        if (irhop/=0) then
-          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) &
-               call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_rhop=T in particles_run_pars")
-          call grad(f,irhop,p%grhop)
-        else
-          if ((nprocx/=1).and.(.not.lcommunicate_np)) &
-               call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_np=T in particles_run_pars")
-          call grad(f,inp,p%grhop)
-          p%grhop=rhop_swarm*p%grhop
-        endif
-      endif
-!
-      if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
-!
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
     endsubroutine calc_pencils_particles
@@ -2654,29 +2555,6 @@ print*,'interp_default=',interp_default,particle_mesh
         if (idiag_vpyfull2m/=0) &
             call sum_par_name((fp(1:npar_loc,ivpy)- &
             qshear*Omega*fp(1:npar_loc,ixp))**2,idiag_vpyfull2m)
-        if (idiag_ekinp/=0) then
-          if (lparticles_density) then
-            call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
-                sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-          else
-            if (mp_swarm == 0.) then
-              if (lparticles_radius) then
-                 call sum_par_name(0.5*(4./3.)*pi*(fp(1:npar_loc,iap)**3)*rhopmat*&
-                             ( fp(1:npar_loc,ivpx)**2 &
-                              +fp(1:npar_loc,ivpy)**2 &
-                              +fp(1:npar_loc,ivpz)**2),idiag_ekinp)
-              endif
-            else
-              if (lcartesian_coords.and.(all(lequidist))) then
-                call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
-                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-              else
-                call sum_par_name(0.5*mp_swarm* &
-                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-              endif
-            endif
-          endif
-        endif
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
         if (idiag_vpmax/=0) call max_par_name( &
@@ -2718,84 +2596,6 @@ print*,'interp_default=',interp_default,particle_mesh
             sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
             fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
-        if (idiag_rhopvpxm/=0) then
-          if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx), &
-                idiag_rhopvpxm)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpx),idiag_rhopvpxm)
-          endif
-        endif
-        if (idiag_rhopvpym/=0) then
-          if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy), &
-                idiag_rhopvpym)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpy),idiag_rhopvpym)
-          endif
-        endif
-        if (idiag_rhopvpzm/=0) then
-          if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz), &
-                idiag_rhopvpzm)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpz),idiag_rhopvpzm)
-          endif
-        endif
-        if (idiag_rhopvpxt/=0) then
-          if (lparticles_density) then
-            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
-                fp(1:npar_loc,ivpx),idiag_rhopvpxt)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call integrate_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpx),idiag_rhopvpxt)
-          endif
-        endif
-        if (idiag_rhopvpyt/=0) then
-          if (lparticles_density) then
-            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
-                fp(1:npar_loc,ivpy),idiag_rhopvpyt)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call integrate_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpy),idiag_rhopvpyt)
-          endif
-        endif
-        if (idiag_rhopvpzt/=0) then
-          if (lparticles_density) then
-            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
-                fp(1:npar_loc,ivpz),idiag_rhopvpzt)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call integrate_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpz),idiag_rhopvpzt)
-          endif
-        endif
-        if (idiag_rhopvpysm/=0) then
-          if (lparticles_density) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)* &
-                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
-          endif
-        endif
-        if (idiag_mpt/=0) then
-          if (lparticles_density) then
-            call integrate_par_name((/fp(1:npar_loc,irhopswarm)/),idiag_mpt)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call integrate_par_name((/four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)/),idiag_mpt)
-          endif
-        endif
         if (idiag_npargone/=0) then
           call count_particles(ipar,npar_found)
           call save_name(float(npar-npar_found),idiag_npargone)
@@ -3179,18 +2979,8 @@ print*,'interp_default=',interp_default,particle_mesh
       if (headtt) then
         if (lroot) then
           print*,'dvvp_dt_pencil: calculate dvvp_dt'
-          print*, 'dvvp_dt_pencil: ldraglaw_purestokes=', ldraglaw_purestokes
           if (lhydro .and. ldragforce_gas_par) then
             print*,'dvvp_dt_pencil: adding feedback from dust to gas'
-            if (eps_dtog == 0.) then
-              print*,'dvvp_dt_pencil: eps_dtog=',eps_dtog
-              print*, 'dvvp_dt_pencil: mp_swarm=', mp_swarm
-              if (.not.lparticles_number) then
-                print*,'dvvp_dt_pencil: lparticles_number=',lparticles_number
-                print*, 'dvvp_dt_pencil: mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)'
-                print*, 'dvvp_dt_pencil: df(ixx,iyy,izz,iux:iuz)= mp_vcell*rho1_point*dragforce*weight'
-              endif
-            endif
           endif
         endif
       endif
@@ -3199,10 +2989,12 @@ print*,'interp_default=',interp_default,particle_mesh
 !  the current pencil of the lncc auxiliary to zero
 !
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
-      if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
+      if (ldiffuse_passive .and. ilncc == 0) &
+          call fatal_error('particles_lagrangian', &
           'ldiffuse_passive needs pscalar_nolog=F')
 !
 !  Initialize the pencils that are calculated within this subroutine
+!  NILS: Are these initialized somewhere else (with the other pencils)?
 !
       if (lpenc_requested(i_npvz))     p%npvz=0.
       if (lpenc_requested(i_npvz2))    p%npvz2=0.
@@ -3329,6 +3121,8 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  The interpolated gas velocity is either precalculated, and stored in
 !  interp_uu, or it must be calculated here.
+! NILS: In this module uu should always be precalculated - hence, this could be
+! NILS: removed.
 !
               if (.not. interp%luu) then
                 if (lhydro) then
@@ -3378,6 +3172,7 @@ print*,'interp_default=',interp_default,particle_mesh
               dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
 !
 !  Consider only (spherical) radial component of drag force (for testing).
+!  NILS: SInce this is for testing only; could it be removed?
 !
               if (ldragforce_radialonly) then
                 dragforce=fp(k,ixp:izp)*(dragforce(1)*fp(k,ixp)+ &
@@ -3395,6 +3190,7 @@ print*,'interp_default=',interp_default,particle_mesh
                 if (lhydro) then
                   inear = ineargrid(k,:)
                   xxp = fp(k,ixp:izp)
+! NILS: SHould do this interpolation as a part of interp!
                   if (lparticlemesh_cic) then
                     call interpolate_linear(f,i_adv_derx,i_adv_derz,xxp,adv_der_uup,inear,0,ipar(k))
                   elseif (lparticlemesh_tsc) then
@@ -3421,6 +3217,11 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
+!
+!
+! NILS: Must clean up the backreations A LOT. SHould use 
+! NILS: "find_interpolation_indeces". See e.g. particles_mass for example.
+!
 !
 !    0. NGP (Nearest Grid Point)
 !       The entire effect of the particle goes to the nearest grid point.
@@ -3508,17 +3309,8 @@ print*,'interp_default=',interp_default,particle_mesh
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
 !
                     if (lhydro .and. ldragforce_gas_par) then
-                      if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
-                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                        if (lparticles_number) then
-                          mp_vcell = mp_vcell*fp(k,inpswarm)
-                        elseif (np_swarm .gt. 0) then
-                          mp_vcell = mp_vcell*np_swarm
-                        endif
-                      else
-                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
-                      endif
+                      call find_grid_volume(ixx,iyy,izz,volume_cell)
+                      mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                       if (.not. ldiffuse_dragf) then
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                             mp_vcell*rho1_point*dragforce*weight
@@ -3606,17 +3398,8 @@ print*,'interp_default=',interp_default,particle_mesh
 !  Add friction force to grid point.
                       if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
-                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                          call find_grid_volume(ixx,iyy,izz,volume_cell)
-                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                          if (lparticles_number) then
-                            mp_vcell = mp_vcell*fp(k,inpswarm)
-                          elseif (np_swarm .gt. 0) then
-                            mp_vcell = mp_vcell*np_swarm
-                          endif
-                        else
-                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
-                        endif
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                         if (.not.lcompensate_sedimentation) then
                           if (.not. ldiffuse_dragf) then
                             df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
@@ -3705,17 +3488,8 @@ print*,'interp_default=',interp_default,particle_mesh
                       endif
                       if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
-                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                          call find_grid_volume(ixx,iyy,izz,volume_cell)
-                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                          if (lparticles_number) then
-                            mp_vcell = mp_vcell*fp(k,inpswarm)
-                          elseif (np_swarm .gt. 0) then
-                            mp_vcell = mp_vcell*np_swarm
-                          endif
-                        else
-                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, mp_vcell)
-                        endif
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                         if (.not.lcompensate_sedimentation) then
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                               mp_vcell*rho1_point*dragforce*weight
@@ -3757,11 +3531,11 @@ print*,'interp_default=',interp_default,particle_mesh
                         rho1_point = p%rho1(ix0-nghost)
                       endif
                       if (lhydro .and. ldragforce_gas_par) then
-                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                        if (ldraglaw_steadystate) then
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                         endif
                       else
-                        call fatal_error('particles_dust','diffusion of dragforce needs &
+                        call fatal_error('particles_lagrangian','diffusion of dragforce needs &
                             & ldragforce_gas_par and ldraglaw_steadystate')
                       endif
                   else
@@ -3789,16 +3563,7 @@ print*,'interp_default=',interp_default,particle_mesh
 ! conditions are different from call below. Perhaps lparticles_radius or
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
                       if (lhydro .and. ldragforce_gas_par) then
-                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                          if (lparticles_number) then
-                            mp_vcell = mp_vcell*fp(k,inpswarm)
-                          elseif (np_swarm .gt. 0) then
-                            mp_vcell = mp_vcell*np_swarm
-                          endif
-                        else
-                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
-                        endif
+                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                         if (.not. ldiffuse_dragf) then
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                               mp_vcell*rho1_point*dragforce*weight
@@ -3829,17 +3594,8 @@ print*,'interp_default=',interp_default,particle_mesh
                       call find_grid_volume(ix0,iy0,iz0,volume_cell)
                   if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
-                    if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                      call find_grid_volume(ix0,iy0,iz0,volume_cell)
-                      mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                      if (lparticles_number) then
-                        mp_vcell = mp_vcell*fp(k,inpswarm)
-                      elseif (np_swarm .gt. 0) then
-                        mp_vcell = mp_vcell*np_swarm
-                      endif
-                    else
-                      call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
-                    endif
+                    call find_grid_volume(ix0,iy0,iz0,volume_cell)
+                    mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                     if (.not.lcompensate_sedimentation) then
                       df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                            mp_vcell*p%rho1(l-nghost)*dragforce
@@ -3882,17 +3638,8 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 !  Calculate particle mass density in grid cell
 !
-              if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                call find_grid_volume(ix0,iy0,iz0,volume_cell)
-                mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                if (lparticles_number) then
-                  mp_vcell = mp_vcell*fp(k,inpswarm)
-                elseif (np_swarm .gt. 0) then
-                  mp_vcell = mp_vcell*np_swarm
-                endif
-              else
-                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,mp_vcell)
-              endif
+              call find_grid_volume(ix0,iy0,iz0,volume_cell)
+              mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
 !
 !  Heating of gas due to drag force.
 !
