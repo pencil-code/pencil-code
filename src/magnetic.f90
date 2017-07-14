@@ -152,7 +152,7 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
-  logical :: llorentzforce=.true., linduction=.true.
+  logical :: llorentzforce=.true., llorentz_norho=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false.
@@ -305,8 +305,8 @@ module Magnetic
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
-      va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
-      reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
+      va2power_jxb, llorentzforce, llorentz_norho, linduction, ldiamagnetism, &
+      B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
@@ -3320,6 +3320,8 @@ module Magnetic
                                   (p%bb(:,3)**2*(p%ugu(:,3)+p%rho1gpp(:,3))+&
                                   p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1))+&
                                   p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2)))
+            elseif (llorentz_norho) then
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
             else
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
             endif
