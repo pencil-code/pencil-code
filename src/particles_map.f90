@@ -46,6 +46,8 @@ module Particles_map
       integer :: i
       real :: total_gab_weights
 !
+      if (particles_module .ne. "lagrangian") then
+!
 !  Check the particle-mesh interpolation method.
 !
       pm: select case (particle_mesh)
@@ -73,6 +75,9 @@ module Particles_map
         lparticlemesh_tsc = .false.
         lparticlemesh_gab = .true.
         if (lroot) print *, 'initialize_particles_map: selected gaussian-box for particle-mesh method. '
+
+!NILS: Must figure out what to do with GAB!!!!!!!
+
         do i = 1,4
           gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
         enddo
@@ -95,6 +100,8 @@ module Particles_map
       case default pm
         call fatal_error('initialize_particles_map', 'unknown particle-mesh type ' // trim(particle_mesh))
       endselect pm
+
+    endif
 
       if (lparticlemesh_gab) then
         lfold_df_3points=.true.
