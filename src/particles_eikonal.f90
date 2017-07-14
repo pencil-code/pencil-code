@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="eikonal"
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED epsp; grhop(3)

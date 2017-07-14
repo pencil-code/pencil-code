@@ -7,6 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="tracer"
 !
 ! MAUX CONTRIBUTION 2
 ! MPVAR CONTRIBUTION 3

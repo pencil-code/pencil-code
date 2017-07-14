@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="dust"
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
