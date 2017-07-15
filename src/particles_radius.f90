@@ -235,6 +235,16 @@ module Particles_radius
             if (ipar(k) == 1) fp(k,iap) = ap1
           enddo
 !
+        case ('2-size')
+          if (initial .and. lroot) print*, 'set_particles_radius: give particles two radii'
+          do k = npar_low,npar_high
+            if (ipar(k) < npar/2) then
+              fp(k,iap) = ap0(1)
+            else
+              fp(k,iap) = ap1
+            endif
+          enddo
+!
         case ('random')
           if (initial .and. lroot) print*, 'set_particles_radius: random radius'
           do k = npar_low,npar_high
