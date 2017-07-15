@@ -56,7 +56,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
     if (lroot) call svn_id( &
-        "$Id: braids.f90,v 1.9 2011-08-02 16:43:18 iomsn Exp $")
+        "$Id: vortex_braid.f90,v 1.0 2017-05-31 16:43:18 iomsn Exp $")
 !
   endsubroutine register_initial_condition
 !***********************************************************************

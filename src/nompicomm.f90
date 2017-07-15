@@ -277,6 +277,7 @@ module Mpicomm
 !
   interface mpirecv_nonblock_real
     module procedure mpirecv_nonblock_real_arr
+    module procedure mpirecv_nonblock_real_arr3
     module procedure mpirecv_nonblock_real_arr4
     module procedure mpirecv_nonblock_real_arr5
   endinterface
@@ -758,6 +759,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id, ireq
 !
     endsubroutine mpirecv_nonblock_real_arr
+!***********************************************************************
+    subroutine mpirecv_nonblock_real_arr3(bcast_array,nb,proc_src,ireq,tag_id)
+!
+      integer, dimension(3) :: nb
+      real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
+      integer :: proc_src, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id, ireq
+!
+    endsubroutine mpirecv_nonblock_real_arr3
 !***********************************************************************
     subroutine mpirecv_nonblock_real_arr4(bcast_array,nb,proc_src,ireq,tag_id)
 !

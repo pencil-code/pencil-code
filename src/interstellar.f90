@@ -1870,7 +1870,7 @@ module Interstellar
 !
 !  Pre-determine time for next SNI.
 !
-      if (lroot.and.ip<14) print*, &
+      if (lroot) print*, &
           "check_SNI: Old t_next_SNI=", t_next_SNI
       call random_number_wrapper(franSN)
 !
@@ -1880,7 +1880,7 @@ module Interstellar
 !  \pm0.875 times the average interval required.
 !
       t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
-      if (lroot.and.ip<14) print*, &
+      if (lroot) print*, &
           'check_SNI: Next SNI at time = ' ,t_next_SNI
 !
     endsubroutine set_next_SNI
@@ -1903,7 +1903,7 @@ module Interstellar
 !  cloud mass and cloud temperature, but this is very hard to regulate to test
 !  different regimes, so this acts as a contraint on the rate.
 !
-      if (lroot.and.ip<14) print*, &
+      if (lroot) print*, &
           "check_SNII: Old t_next_SNII=", t_next_SNII
       call random_number_wrapper(franSN)
 !
@@ -1949,7 +1949,7 @@ module Interstellar
 !  \pm0.875 times the average interval required.
 !
       t_next_SNII=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
-      if (lroot.and.ip<14) print*, &
+      if (lroot) print*, &
           'check_SNII: Next SNII at time = ' ,t_next_SNII
 !
     endsubroutine set_next_SNII

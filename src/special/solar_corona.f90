@@ -42,7 +42,8 @@ module Special
   logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
-  logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.
+  logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
+             lemerg_profx=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -99,7 +100,8 @@ module Special
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
-      lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special
+      lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special, &
+      lemerg_profx
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -173,8 +175,6 @@ module Special
       use FArrayManager
 !
       if (lroot) call svn_id("$Id$")
-      if (lslope_limited_special .and. ldensity.and..not.ldensity_nolog) &
-      call farray_register_auxiliary('specaux',ispecaux)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -983,10 +983,9 @@ module Special
 !
           call div_diff_flux(f,ilnrho,p,fdiff)
           if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
-            f(l1,m,n,ispecaux) = 0.0
-            f(l1+1:l2,m,n,ispecaux) = fdiff(2:nx)
+            df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
           else
-            f(l1:l2,m,n,ispecaux) = fdiff
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
           endif
         endif
       endif
@@ -1227,7 +1226,18 @@ module Special
               do m=m1, m2
                 uu(:,1)=uu_emerg(1)
                 uu(:,2)=uu_emerg(2)
-                uu(:,3)=uu_emerg(3)
+                if (lemerg_profx) then
+!
+! Hard coding the emerging velocity x-profile for testing
+!
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
+                          tanh((x(l1:l2)+4+0.5)/0.4))* &
+                          (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
+                          (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
+                          (1+tanh((x(l1:l2)-4+0.5)/0.4))))
+                else
+                  uu(:,3)=uu_emerg(3)
+                endif
                 f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
                 bb(:,1)=bb_emerg(1)
@@ -1244,7 +1254,18 @@ module Special
               do m=m1, m2
                 uu(:,1)=uu_emerg(1)
                 uu(:,2)=uu_emerg(2)
-                uu(:,3)=uu_emerg(3)
+                if (lemerg_profx) then
+!
+! Hard coding the emerging velocity x-profile for testing
+!
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
+                          tanh((x(l1:l2)+4+0.5)/0.4))* &
+                          (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
+                          (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
+                          (1+tanh((x(l1:l2)-4+0.5)/0.4))))
+                else
+                  uu(:,3)=uu_emerg(3)
+                endif
                 f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
                 call random_number(gn)
@@ -1263,10 +1284,10 @@ module Special
           endselect
         endif
       endif
-      if (.not.ldensity_nolog .and. lslope_limited_special) then
-        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
-      endif
+!      if (.not.ldensity_nolog .and. lslope_limited_special) then
+!        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
+!        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
+!      endif
 !
 !
     endsubroutine special_after_timestep
@@ -4212,10 +4233,16 @@ module Special
             +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
       else if (lcartesian_coords) then
         div_flux=0.0
-        div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                 /(x12(l1:l2)-x12(l1-1:l2-1)) &
-        +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
+        if (nygrid == 1) then
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+              +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        else
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+          +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
             +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        endif
        else
          call fatal_error('twist_inject:div_diff_flux','Not coded for cylindrical')
        endif

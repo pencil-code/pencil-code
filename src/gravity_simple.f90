@@ -209,8 +209,14 @@ module Gravity
             call fatal_error('initialize_gravity','zref=impossible')
           else
             call get_shared_variable('cs20',cs20,caller='initialize_gravity')
-            call get_shared_variable('mpoly',mpoly)
             call get_shared_variable('gamma',gamma)
+            if (ldensity.and..not.lstratz) then
+              call get_shared_variable('mpoly',mpoly)
+            else
+              if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
+                                      'set impossible')
+              allocate(mpoly); mpoly=impossible
+            endif
 !
             zinfty=zref+cs20*(mpoly+1)/(-gamma*gravz)
             if (lroot) print*,'initialize_gravity: computed zinfty=',zinfty

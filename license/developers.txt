@@ -24,7 +24,7 @@ Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8
 Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811,   ,                         bdintrans,   CNRS/IRAP
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
-Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
+Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
 Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432,          ,            Universidade Federal de Minas Gerais
 Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98,         ,            Lund Observatory
 Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           ,            Norges teknisk-naturvitenskapelige universitet
@@ -57,6 +57,7 @@ Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           ,    
 Chao-Chin Yang,       ccyang/astro.lu.se,            ccyang/astro.lu.se,   +46 46 22 21606,   ,                         ,            Lund Observatory
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,            ,                     ,                  +46 73 627 2556,          ,            NORDITA
+Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory

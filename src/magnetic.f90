@@ -152,7 +152,7 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
-  logical :: llorentzforce=.true., linduction=.true.
+  logical :: llorentzforce=.true., llorentz_norho=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false.
@@ -228,7 +228,8 @@ module Magnetic
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
   real :: eta_tdep=0.0, eta_tdep_exponent=0.0, eta_tdep_t0=0.0
-  real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0
+  real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,& 
+          eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.
   real :: tau_aa_exterior=0.0
@@ -253,8 +254,8 @@ module Magnetic
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
-  real, dimension(nx) :: va2max_beta
-  real, dimension(mz) :: clight2_zdep=1.0
+  real, dimension(nx) :: va2max_beta=1.
+  real, dimension(nz) :: clight2_zdep=1.
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -291,7 +292,8 @@ module Magnetic
   character (len=labellen) :: ambipolar_diffusion='constant'
 !
   namelist /magnetic_run_pars/ &
-      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, B0_ext, t_bext, t0_bext, J_ext, &
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
+      B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
@@ -303,8 +305,8 @@ module Magnetic
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
-      va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
-      reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
+      va2power_jxb, llorentzforce, llorentz_norho, linduction, ldiamagnetism, &
+      B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
@@ -898,6 +900,7 @@ module Magnetic
 !  26-feb-13/axel: reinitialize_aa added
 !  21-jan-15/MR: avoided double put_shared_variable for B_ext
 !   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet inoperational
+!  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
 !
       use Sub, only: register_report_aux, write_zprof, step
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -1486,6 +1489,11 @@ module Magnetic
         endif
         allocate(aamxy(mx,myl))
       endif
+!
+      if (lboris_correction) &
+        clight2_zdep = ((xyz1(3)/(z(n1:n2)+xyz1(3)))**6 &
+                      *(c_light-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
+
 
       if (idiag_axp2/=0.or.idiag_ayp2/=0.or.idiag_azp2/=0) then
         print*,'magnetic: pointwise diagnostics at'
@@ -2676,7 +2684,7 @@ module Magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
-!   DOCUMENT ME!!! WHAT IS STD OR PENCPAR? 
+!  Standard version (_std): global variable lpencil contains information about needed pencils.
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
@@ -2689,8 +2697,9 @@ module Magnetic
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
-!
-!  DOCUMENT ME!!!! WHAT IS PENCPAR?       
+! 
+!  Version with formal parameter lpencil_loc instead of global lpencil for cases
+!  in which not necessarily all generally needed pencil are to be calculated.
 !
 !  19-nov-04/anders: coded
 !  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
@@ -3132,9 +3141,7 @@ module Magnetic
 ! reduced speed of light pencil
 !
      if (lpenc_loc(i_clight2)) then
-       clight2_zdep(n)=((xyz1(3)/(z(n)+xyz1(3)))**6 &
-           * (c_light-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
-       p%clight2=clight2_zdep(n)
+       p%clight2=clight2_zdep(n-n1+1)
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
 !
@@ -3245,7 +3252,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
-      real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
+      real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting,ajiuj
       real, dimension (nx,3) :: magfric,vmagfric2, baroclinic
       real, dimension (nx,3) :: dAdt, gradeta_shock
       real, dimension (nx) :: exabot,exatop, peta_shock
@@ -3313,6 +3320,8 @@ module Magnetic
                                   (p%bb(:,3)**2*(p%ugu(:,3)+p%rho1gpp(:,3))+&
                                   p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1))+&
                                   p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2)))
+            elseif (llorentz_norho) then
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
             else
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
             endif
@@ -3656,8 +3665,16 @@ module Magnetic
         vdrift=sqrt(sum(p%jj**2,2))*p%rho1
         if (lweyl_gauge) then
           do i=1,3
-            where (vdrift>vcrit_anom) &
+            if (eta_anom_thresh/=0) then
+              where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom) 
+                fres(:,i)=fres(:,i)-eta_anom_thresh*mu0*p%jj(:,i)
+              elsewhere
                 fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+              endwhere
+            else
+              where (vdrift>vcrit_anom) &
+                fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+            endif
           enddo
         else
           if (lroot) print*, 'daa_dt: must have Weyl gauge for '// &
@@ -3665,10 +3682,26 @@ module Magnetic
           call fatal_error('daa_dt','')
         endif
         if (lfirst.and.ldt) then
-          where (vdrift>vcrit_anom) &
+          if (eta_anom_thresh/=0) then
+            where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom) 
+              diffus_eta=diffus_eta+eta_anom_thresh
+            elsewhere
               diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
+            endwhere
+          else
+            where (vdrift>vcrit_anom) &
+              diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
+            endif
         endif
-        where (vdrift>vcrit_anom) etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+        if (eta_anom_thresh/=0) then
+            where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom) 
+              etatotal=etatotal+eta_anom_thresh
+            elsewhere
+              etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+            endwhere
+        else
+          where (vdrift>vcrit_anom) etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+        endif
       endif
 !
 ! Temperature dependent resistivity for the solar corona (Spitzer 1969)
@@ -3840,24 +3873,40 @@ module Magnetic
 !  Take care of possibility of imposed field.
 !
             if (any(B_ext/=0.)) then
+              if (lfargo_advection) call fatal_error("daadt","fargo advection with external field not tested")
               call cross(p%uu,B_ext,ujiaj)
             else
-              ujiaj=0.
+              if (lfargo_advection) then 
+                ajiuj=0.
+              else
+                ujiaj=0.
+              endif
             endif
 !
-!  Calculate ujiaj (=aj uj;i)
+!  Calculate ujiaj (=aj uj;i) or ajiuj for fargo advection
 !
             do j=1,3
               do k=1,3
-                ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+                if (lfargo_advection) then 
+                  ajiuj(:,j)=ajiuj(:,j)+p%uu(:,k)*p%aij(:,k,j)
+                else
+                  ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+                endif
               enddo
             enddo
 !
 !  Curvature terms on ujiaj
 !
             if (lcylindrical_coords) then
-              ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
+              if (lfargo_advection) then
+                ajiuj(:,2) = ajiuj(:,2) + (p%aa(:,1)*p%uu(:,2) - p%aa(:,2)*p%uu(:,1))*rcyl_mn1
+              else
+                ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
+              endif
+!
             else if (lspherical_coords) then 
+              if (lfargo_advection) call fatal_error("daadt",&
+                   "curvature terms on ajiuj not added for spherical coordinates yet.")
               ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
               ujiaj(:,3) = ujiaj(:,3) + (p%uu(:,1)*p%aa(:,3)          - &
                                          p%uu(:,3)*p%aa(:,1)          + &
@@ -3868,7 +3917,10 @@ module Magnetic
             if (.not.lfargo_advection) then 
               dAdt = dAdt-p%uga-ujiaj+fres
             else
-              dAdt = dAdt-p%uuadvec_gaa-ujiaj+fres
+              ! the gauge above, with -ujiaj is unstable due to the buildup of the irrotational term 
+              ! Candelaresi et al. 2011. The gauge below does not have the irrotational term. On the 
+              ! other hand it cancels out the full advection term if fargo isn't used.
+              dAdt = dAdt-p%uuadvec_gaa+ajiuj+fres
             endif
 !            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
 !
@@ -3886,6 +3938,7 @@ module Magnetic
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
           else
+            !print*,'this, right?'
             dAdt = dAdt+ p%uxb+fres
           endif
         endif

@@ -74,6 +74,7 @@ module Sub
   public :: noform
 !
   public :: update_snaptime, read_snaptime
+  public :: shift_dt, set_dt
   public :: parse_shell
   public :: get_radial_distance, power_law
 !
@@ -3666,6 +3667,58 @@ module Sub
       endif
 !
     endsubroutine update_snaptime
+!***********************************************************************
+    subroutine shift_dt(dt_)
+!
+!  Hack to make the code output the VARN files at EXACTLY the times
+!  defined by dsnap, instead of slightly after it.
+!
+!  03-aug-11/wlad: coded
+!
+      use General, only: safe_character_assign
+!
+      real, intent(inout) :: dt_
+      real, save :: tsnap
+      integer, save :: nsnap
+      character (len=fnlen) :: file
+      logical, save :: lfirst_call=.true.
+!
+!  Read the output time defined by dsnap.
+!
+      if (lfirst_call) then
+        call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
+        call read_snaptime(file,tsnap,nsnap,dsnap,t)
+        lfirst_call=.false.
+      endif
+!
+!  Adjust the time-step accordingly, so that the next timestepping
+!  lands the simulation at the precise time defined by dsnap.
+!
+      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
+        dt_=tsnap-t
+        lfirst_call=.true.
+      endif
+!
+    endsubroutine shift_dt
+!***********************************************************************
+    subroutine set_dt(dt1_)
+
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+
+      real :: dt1_
+      real :: dt1, dt1_local
+      real, save :: dt1_last=0.0
+
+      dt1_local=dt1_
+      ! Timestep growth limiter
+      if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
+      call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+      dt=1.0/dt1
+      if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
+      ! Timestep growth limiter
+      if (ddt/=0.) dt1_last=dt1_local/ddt
+
+    endsubroutine set_dt
 !***********************************************************************
     subroutine vecout(lun,file,vv,thresh,nvec)
 !

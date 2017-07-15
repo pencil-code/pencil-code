@@ -23,3 +23,8 @@ public ::  solid_cells_timestep_first
 public ::  solid_cells_timestep_second
 public ::  time_step_ogrid
 public ::  wsnap_ogrid
+
+public ::  r_ogrid
+public ::  xorigo_ogrid
+public ::  map_nearest_grid_ogrid
+public ::  interpolate_linear_ogrid

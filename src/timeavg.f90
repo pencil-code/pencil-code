@@ -46,7 +46,7 @@ module Timeavg
 !
       do i=1,mtavg
         if (idx_tavg(i) == 0) then
-          if (lroot) print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
+          if (lroot.and.ip<14) print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
           idx_tavg(i)=i
         endif
       enddo

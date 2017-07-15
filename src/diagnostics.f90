@@ -200,7 +200,7 @@ module Diagnostics
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
-      character (len=640) :: fform,legend,line
+      character (len=1000) :: fform,legend,line
       integer :: iname, nnamel
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
@@ -349,8 +349,8 @@ module Diagnostics
       use General, only: safe_character_append, itoa
       use Sub, only: noform
 !
-      character (len=640)          ,intent(OUT) :: fform
-      character (len=640), optional,intent(OUT) :: legend
+      character (len=*)          ,intent(OUT) :: fform
+      character (len=*), optional,intent(OUT) :: legend
 !
       character, parameter :: comma=','
       character(len=40)    :: tform
@@ -644,7 +644,7 @@ module Diagnostics
                 itype==ilabel_sum_weighted_sqrt .or. &
                 itype==ilabel_sum_par .or. &
                 itype==ilabel_sum_sqrt_par .or. &
-								itype==ilabel_sum_log10_par) then
+                itype==ilabel_sum_log10_par) then
               fweight_tmp(isum_count)=fweight(iname)
               lweight_comm=.true.
             endif
@@ -714,7 +714,7 @@ module Diagnostics
                   vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
 !
               if (itype==ilabel_sum_log10_par)        &
-                  vname(iname)=log10(fsum(isum_count))/fweight(isum_count)
+                  vname(iname)=log10(fsum(isum_count)/fweight(isum_count))
 !
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)
@@ -1630,6 +1630,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  This routine is to be called only once per step
 !
       if (iname/=0) then
+!  18-June-17/xiangyu: when I adapted the log output for high moments of swarm model, the print command is
+!  always invoked, so I commented the "print" out for now.
 !print*, 'save_name: a,iname=', a,iname
         fname(iname)=a
         itype_name(iname)=ilabel_save

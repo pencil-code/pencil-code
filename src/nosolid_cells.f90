@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lsolid_cells = .false.
+! CPARAM logical, parameter :: lsolid_ogrid = .false.
 !
 !***************************************************************
 module Solid_Cells
@@ -20,6 +21,9 @@ module Solid_Cells
   implicit none
 !
   include 'solid_cells.h'
+!
+  real :: r_ogrid
+  real, dimension(3) :: xorigo_ogrid
 !
   contains
 !***********************************************************************
@@ -242,18 +246,6 @@ module Solid_Cells
 !
     end subroutine time_step_ogrid
 !***********************************************************************
-    subroutine f_ogrid
-!
-!  Dummy routine
-!
-    end subroutine f_ogrid
-!***********************************************************************
-    subroutine p_ogrid
-!
-!  Dummy routine
-!
-    end subroutine p_ogrid
-!***********************************************************************
     subroutine wsnap_ogrid(chsnap,enum,flist)
 !
 !  Dummy routine
@@ -268,5 +260,40 @@ module Solid_Cells
         if (present(enum)) print*, flist
       endif
     endsubroutine wsnap_ogrid
+!***********************************************************************
+    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid)
+!
+!  Dummy routine
+!
+      real, dimension (3) :: xxp
+      integer, dimension (4) :: ineargrid_ogrid
+!
+      intent(in)  :: xxp
+      intent(out) :: ineargrid_ogrid
+!      
+      if(ALWAYS_FALSE) print*, xxp
+      ineargrid_ogrid=0
+!      
+    endsubroutine map_nearest_grid_ogrid
+!***********************************************************************
+    subroutine interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+!
+!  Dummy routine
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (4) :: inear_glob
+!
+      intent(in)  :: ivar1, ivar2, xxp, inear_glob
+      intent(out) :: gp
+!
+      if (ALWAYS_FALSE) then
+        print*, ivar1,ivar2,xxp
+        print*, inear_glob
+      endif
+      gp=0.
+!
+    endsubroutine interpolate_linear_ogrid
 !***********************************************************************
 endmodule Solid_Cells

@@ -109,7 +109,9 @@ subroutine init_special(f)
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-    use EquationOfState, only: cs20, beta_glnrho_global, beta_glnrho_scaled
+    use EquationOfState, only: cs20
+    use Density, only:  beta_glnrho_global, beta_glnrho_scaled
+
     real, dimension (mx,my,mz,mfarray) :: f
 !
     intent(inout) :: f
@@ -178,7 +180,7 @@ subroutine initialize_special(f)
 !
 !  06-oct-03/tony: coded
 !
-    use EquationOfState, only: cs20, beta_glnrho_global, beta_glnrho_scaled
+    use EquationOfState, only: cs20
 !
     integer :: j
 !
@@ -206,7 +208,7 @@ subroutine dspecial_dt(f,df,p)
 !
 !  06-oct-03/tony: coded
 !
-    use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+    use Density, only: beta_glnrho_global, beta_glnrho_scaled
 !
     integer :: j
 !
@@ -260,8 +262,6 @@ subroutine special_calc_hydro(f,df,p)
 !  others may be calculated directly from the f array.
 !
 !  06-oct-03/tony: coded
-!
-    use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
 !
     integer :: j
 !

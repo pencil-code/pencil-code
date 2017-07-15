@@ -1,5 +1,9 @@
 rm -f eos_c.h
 echo '#pragma once' > eos_c.h
 echo '#include "headers_c.h"' >> eos_c.h
-echo 'extern "C" void *__equationofstate_MOD_push2c(float *(&p_pars)[1]);' >> eos_c.h
+echo 'const int n_pars_eos=1;' >> eos_c.h
+echo 'EXTERN float *p_pars_eos[n_pars_eos];' >> eos_c.h
+echo '#define cs2 *p_pars_eos[0]' >> eos_c.h
+
+echo 'extern "C" void *'$MODULE_PREFIX'equationofstate'$MODULE_INFIX'push2c'$MODULE_SUFFIX'(float *(&p_pars)[n_pars_eos]);' >> eos_c.h
 

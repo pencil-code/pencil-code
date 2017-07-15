@@ -18,6 +18,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="dust_blocks"
 !
 ! PENCILS PROVIDED np; rhop; epsp; grhop(3);peh
 !
@@ -440,7 +441,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: gamma, beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use Sub

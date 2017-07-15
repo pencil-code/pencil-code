@@ -1,0 +1,38 @@
+!                               -*-f90-*-   (for emacs)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006/10/03 17:06:11 brandenb Exp $'
+  nt=10000, it1=1000, isave=2000, itorder=3
+  dsnap=0.5, dvid=0.005
+  dt=5e-7, dtmin=1e-9
+  dt=2e-6
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  tdamp=10., dampu=5e1
+  tdamp=0., dampu=0e1
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  chi=0.0005
+  !tau_damp_cor=0.1, zcor=0.5, TT_cor=4e3
+  lupw_lnTT=T
+/
+&radiation_run_pars
+  lradpressure=T, lradflux=T
+  lcooling=T
+/
+&viscosity_run_pars
+  nu=0.01, nu_shock=3.
+  nu=0.1, nu_shock=3.
+/
+&shock_run_pars
+/

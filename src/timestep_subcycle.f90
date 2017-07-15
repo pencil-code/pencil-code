@@ -28,7 +28,7 @@ module Timestep
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
       use Shear, only: advance_shear
-      use Snapshot, only: shift_dt
+      use Sub, only: shift_dt
       use Energy
       use Special
       use Boundcond

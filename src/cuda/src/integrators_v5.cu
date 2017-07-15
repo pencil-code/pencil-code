@@ -6,9 +6,9 @@
 Comments: 
 Omer Anjum: Changed the 19-point RK integration Kernel to 55-Point integration Kernel without changing the requirements of shared memory and simultaneously reducing the global memory traffic. The technique applied to achieve this is "scattering".
 */
-
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "../cparam_c.h"
-#include "dconstsextern.cuh"
 #include "smem.cuh"
 #include "hydro.cuh"
 #include "continuity.cuh"
@@ -552,7 +552,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				const float Szz = (2.0f/3.0f)*ddz_uu_z - (1.0f/3.0f)*(ddx_uu_x + ddy_uu_y);
 
 				//Use cont_res to compute w_lnrho
-				w_lnrho = ALPHA*w_lnrho + d_DT*cont_res; //Omer: Second line Algo. 3 updating rho
+				w_lnrho = ALPHA*w_lnrho + cont_res; //Omer: Second line Algo. 3 updating rho
 
 				//Navier-Stokes
 				mom_x[0] = - (s_uu_x[sid_row][sid_col] * ddx_uu_x +               //vec_dot_nabla_scal
@@ -577,7 +577,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 		                            + 2.0f*d_NU_VISC*(Sxz*ddx_lnrho + Syz*ddy_lnrho + Szz*ddz_lnrho)+d_NU_VISC*(1.0f/3.0f)*d2z_uu_z; //S_grad_lnrho
 				
 
-				d_lnrho_dest[grid_idx] = s_lnrho[sid_row][sid_col] + BETA*w_lnrho;
+				d_lnrho_dest[grid_idx] = s_lnrho[sid_row][sid_col] + BETA*d_DT*w_lnrho;
 			}
 				//use the output which is mature now 
 
@@ -586,13 +586,13 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 					const float div_uuy = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_uy[0]);
 					const float div_uuz = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_uz[0]);
 
-					w_uu_x = ALPHA*w_uu_x + d_DT*(mom_x[3] + div_uux);
-					w_uu_y = ALPHA*w_uu_y + d_DT*(mom_y[3] + div_uuy);
-					w_uu_z = ALPHA*w_uu_z + d_DT*(mom_z[3] + div_uuz);
+					w_uu_x = ALPHA*w_uu_x + (mom_x[3] + div_uux);
+					w_uu_y = ALPHA*w_uu_y + (mom_y[3] + div_uuy);
+					w_uu_z = ALPHA*w_uu_z + (mom_z[3] + div_uuz);
 				
-					d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_x + BETA*w_uu_x;
-					d_uu_y_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_y + BETA*w_uu_y;
-					d_uu_z_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_z + BETA*w_uu_z;	
+					d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_x + BETA*d_DT*w_uu_x;
+					d_uu_y_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_y + BETA*d_DT*w_uu_y;
+					d_uu_z_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_z + BETA*d_DT*w_uu_z;	
 
 					d_w_lnrho[w_grid_idx] = w_lnrho;
 					d_w_uu_x [w_grid_idx] = w_uu_x;
@@ -706,10 +706,10 @@ void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_u
 	// Step 1:
 	//-------------------------------------------------------------------------------------------------------------------------------
 	//FIRST HALF
+
         rungekutta_step_first_half<0><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
                                                                                d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, 
                                                                                d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
-         
 /*
 	//cudaDeviceSynchronize();
 	//checkKernelErr();

@@ -58,7 +58,7 @@ module Hydro
 !
 !  phi-averaged arrays for orbital advection
 !
-  real, dimension (nx,nz) :: uu_average
+  real, dimension (nx,nz) :: uu_average=0.
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -272,7 +272,9 @@ module Hydro
                                 ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
+  integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
+  integer :: idiag_uyrms=0      ! DIAG_DOC: $\left<u_y^2\right>^{1/2}$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
   integer :: idiag_uxmin=0      ! DIAG_DOC: $\min(|u_x|)$
@@ -1198,9 +1200,9 @@ module Hydro
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only:update_ghosts
-      use Density, only: calc_pencils_density
+      use Density, only: calc_pencils_density, beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
-      use EquationOfState, only: cs20, beta_glnrho_scaled
+      use EquationOfState, only: cs20
       use General
       use Gravity, only: gravz_const,z1
       use Initcond
@@ -2307,13 +2309,13 @@ module Hydro
 ! uij5
       if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo (=curlu)
-      oo: if (lpenc_loc(i_oo)) then
+      if (lpenc_loc(i_oo)) then
         if (ioo /= 0) then
           p%oo = f(l1:l2,m,n,iox:ioz)
         else
           call curl_mn(p%uij,p%oo,p%uu)
         endif
-      endif oo
+      endif
 ! o2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
@@ -2419,14 +2421,11 @@ module Hydro
 !
 !del2uj, d^u/dx^2 etc
 !
-      if (lpenc_loc(i_d2uidxj)) &
-        call d2fi_dxj(f,iuu,p%d2uidxj)
+      if (lpenc_loc(i_d2uidxj)) call d2fi_dxj(f,iuu,p%d2uidxj)
 !
 ! deluidxjk
 !
-      if (lpenc_loc(i_uijk)) then
-        call del2fi_dxjk(f,iuu,p%uijk)
-      endif
+      if (lpenc_loc(i_uijk)) call del2fi_dxjk(f,iuu,p%uijk)
 !
 ! grad5divu
 !
@@ -2457,7 +2456,7 @@ module Hydro
         endif
       endif
 !
-      if (lfargo_advection) then
+      if (lpenc_loc(i_uu_advec)) then
 !
 ! Advect by the original radial and vertical, but residual azimuthal (= relative) velocity
 !
@@ -6512,19 +6511,21 @@ module Hydro
 !***********************************************************************
     subroutine push2c(p_idiag)
 
-    integer, parameter :: ndiags=10
+    integer, parameter :: ndiags=12
     integer(KIND=ikind8), dimension(ndiags) :: p_idiag
 
     call copy_addr_c(idiag_urms,p_idiag(1))
     call copy_addr_c(idiag_uxrms,p_idiag(2))
-    call copy_addr_c(idiag_uzrms,p_idiag(3))
-    call copy_addr_c(idiag_umax,p_idiag(4))
-    call copy_addr_c(idiag_uxmin,p_idiag(5))
-    call copy_addr_c(idiag_uymin,p_idiag(6))
-    call copy_addr_c(idiag_uzmin,p_idiag(7))
-    call copy_addr_c(idiag_uxmax,p_idiag(8))
-    call copy_addr_c(idiag_uymax,p_idiag(9))
-    call copy_addr_c(idiag_uzmax,p_idiag(10))
+    call copy_addr_c(idiag_uyrms,p_idiag(3))
+    call copy_addr_c(idiag_uzrms,p_idiag(4))
+    call copy_addr_c(idiag_umax,p_idiag(5))
+    call copy_addr_c(idiag_umin,p_idiag(6))
+    call copy_addr_c(idiag_uxmin,p_idiag(7))
+    call copy_addr_c(idiag_uymin,p_idiag(8))
+    call copy_addr_c(idiag_uzmin,p_idiag(9))
+    call copy_addr_c(idiag_uxmax,p_idiag(10))
+    call copy_addr_c(idiag_uymax,p_idiag(11))
+    call copy_addr_c(idiag_uzmax,p_idiag(12))
 
     endsubroutine push2c
 !***********************************************************************

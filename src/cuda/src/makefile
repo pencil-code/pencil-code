@@ -42,8 +42,7 @@ ENVIRON = -D MODPRE=${MODULE_PREFIX} -D MODIN=${MODULE_INFIX} -D MODSUF=${MODULE
 VPATH = verification
 
 #Include macro flags and their user defined values
-include makefile.local
-include makefile.depend
+#include makefile.local
 
 #-rdc=true?
 #all: hostobjs deviceobjs main
@@ -67,6 +66,7 @@ astaroth_sgl.so: $(hostobjs) $(deviceobjs) defines_PC.h defines_dims_PC.h
 	nvcc -g $(CFLAGS) ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
 	cp -f astaroth_sgl.so ..
 
+include makefile.depend
 hostobjs: $(hostobjs)
 deviceobjs: $(deviceobjs)
 

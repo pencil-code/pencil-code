@@ -1,1054 +1,2227 @@
 ! $Id$
 !
-!  This module takes care of everything related to particle radius.
+!  This module contains subroutines for mapping particles on the mesh.
+!  Different domain decompositions have different versions of this module.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 2
-! CPARAM logical, parameter :: lparticles_radius=.true.
+! CPARAM logical, parameter :: lparticles_blocks = .false.
 !
 !***************************************************************
-module Particles_radius
+module Particles_map
 !
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Particles_sub
-  use Particles_chemistry
+  use Particles_mpicomm
 !
   implicit none
 !
-  include 'particles_radius.h'
+  include 'particles_map.h'
 !
-  real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
-  real, dimension(ndustrad) :: ap0=0.0
-  real, dimension(ndustrad) :: radii_distribution=0.0
-  real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
-  real :: tstart_condensation_par=0.0
-  real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
-  real :: diffusion_coefficient=1.0, diffusion_coefficient1=1.0
-  real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
-  real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
-  real :: ztop_ocean=0.0, TTocean=300.0
-  real :: aplow=1.0, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
-  real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  integer :: nbin_initdist=20
-  logical :: lsweepup_par=.false., lcondensation_par=.false.
-  logical :: lsupersat_par=.false.
-  logical :: llatent_heat=.true., lborder_driving_ocean=.false.
-  logical :: lcondensation_simplified=.false.
-  logical :: lconstant_radius_w_chem=.false.
-  logical :: lfixed_particles_radius=.false.
-  logical :: reinitialize_ap=.false.
-  character(len=labellen), dimension(ninit) :: initap='nothing'
-  character(len=labellen) :: condensation_coefficient_type='constant'
+  interface interp_field_pencil_wrap
+    module procedure interp_field_pencil_0
+    module procedure interp_field_pencil_1
+  endinterface
 !
-  namelist /particles_radius_init_pars/ &
-      initap, ap0, rhopmat, vthresh_sweepup, deltavp12_floor, &
-      lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
-      condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
-      lfixed_particles_radius
-!
-  namelist /particles_radius_run_pars/ &
-      rhopmat, vthresh_sweepup, deltavp12_floor, &
-      lsweepup_par, lcondensation_par, tstart_sweepup_par, cdtps, apmin, &
-      condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
-      tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
-      lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation, rpbeta0, &
-      lfixed_particles_radius, &
-      lsupersat_par,lconstant_radius_w_chem, &
-      reinitialize_ap, initap
-!
-  integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
-  integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
-  integer :: idiag_ieffp=0
+  interface interpolate_linear
+    module procedure interpolate_linear_range
+    module procedure interpolate_linear_scalar
+  endinterface
 !
   contains
 !***********************************************************************
-    subroutine register_particles_radius()
+    subroutine initialize_particles_map()
 !
-!  Set up indices for access to the fp and dfp arrays.
+!  Perform any post-parameter-read initialization.
 !
-!  22-aug-05/anders: coded
+!  29-mar-16/ccyang: coded.
 !
-      if (lroot) call svn_id( "$Id$")
+!  Note: Currently, this subroutine is called after modules
+!    Particles_mpicomm and Particles.
 !
-!  Index for particle radius.
+      integer :: i
+      real :: total_gab_weights
 !
-      iap = npvar+1
-      pvarname(npvar+1) = 'iap'
+!  Check the particle-mesh interpolation method.
 !
-!  Increase npvar accordingly.
-!
-      npvar = npvar+1
-!
-      if (lparticles_radius_rpbeta) then
-        irpbeta = npvar+1
-        pvarname(npvar+1) = 'irpbeta'
-        npvar = npvar+1
+      pm: select case (particle_mesh)
+      case ('ngp', 'NGP') pm
+!       Nearest-Grid-Point
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .false.
+        if (lroot) print *, 'initialize_particles_map: selected nearest-grid-point for particle-mesh method. '
+      case ('cic', 'CIC') pm
+!       Cloud-In-Cell
+        lparticlemesh_cic = .true.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .false.
+        if (lroot) print *, 'initialize_particles_map: selected cloud-in-cell for particle-mesh method. '
+      case ('tsc', 'TSC') pm
+!       Triangular-Shaped-Cloud
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .true.
+        lparticlemesh_gab = .false.
+        if (lroot) print *, 'initialize_particles_map: selected triangular-shaped-cloud for particle-mesh method. '
+      case ('gab', 'GAB') pm
+!       Gaussian box
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .true.
+        if (lroot) print *, 'initialize_particles_map: selected gaussian-box for particle-mesh method. '
+        do i = 1,4
+          gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
+        enddo
+        total_gab_weights = sum(gab_weights)+sum(gab_weights(2:4))
+        gab_weights = gab_weights/total_gab_weights
+        if (lroot) print *,'The number of cells representing one standard deviation is: ', gab_width
+        if (lroot) print *,'The weights for the gaussian box are: ', gab_weights
+      case ('') pm
+!       Let the logical switches decide.
+!       TSC assignment/interpolation overwrites CIC in case they are both set.
+        switch: if (lparticlemesh_tsc) then
+          lparticlemesh_cic = .false.
+          particle_mesh = 'tsc'
+        elseif (lparticlemesh_cic) then switch
+          particle_mesh = 'cic'
+        else switch
+          particle_mesh = 'ngp'
+        endif switch
+        if (lroot) print *, 'initialize_particles_map: particle_mesh = ' // trim(particle_mesh)
+      case default pm
+        call fatal_error('initialize_particles_map', 'unknown particle-mesh type ' // trim(particle_mesh))
+      endselect pm
+
+      if (lparticlemesh_gab) then
+        lfold_df_3points=.true.
       endif
 !
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles: npvar > mpvar','')
-      endif
-!
-! Index for the effectiveness factor of surface reactions
-!
-      if (lparticles_chemistry) then
-        ieffp = mpvar+npaux+1
-        pvarname(ieffp) = 'ieffp'
-        npaux = npaux+1
-      endif
-!
-! Check that the fp and dfp arrays are big enough.
-!
-      if (npaux > mpaux) then
-        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
-        call fatal_error('register_particles_radius: npaux > mpaux','')
-      endif
-!
-    endsubroutine register_particles_radius
+    endsubroutine initialize_particles_map
 !***********************************************************************
-    subroutine initialize_particles_radius(f)
+    subroutine interpolate_linear_range(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using the linear interpolation formula
 !
-!  22-aug-05/anders: coded
+!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
 !
-      use SharedVariables, only: put_shared_variable
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+!  30-dec-04/anders: coded
 !
-!  Calculate the number density of bodies within a superparticle.
+      use Solid_Cells
 !
-      if (npart_radii > 1 .and. &
-          (.not. lcartesian_coords .or. lparticles_number .or. lparticles_spin)) then
-        call fatal_error('initialize_particles_radius: npart_radii > 1','')
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      real, dimension (mvar) :: f_tmp
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
+!
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
+      real :: xp0, yp0, zp0
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      integer :: ivar, i, ix0, iy0, iz0, icyl=1
+      logical :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar1, inear
+      intent(out) :: gp
+!
+!  Determine index value of lowest lying corner point of grid box surrunding
+!  the interpolation point.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
+      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
+      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
+!
+!  Check if the grid point interval is really correct.
+!
+      if (((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1)) .or. nxgrid==1) .and. &
+          ((y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2)) .or. nygrid==1) .and. &
+          ((z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3)) .or. nzgrid==1)) then
+        ! Everything okay
       else
-        mpmat = 4/3.0*pi*rhopmat*ap0(1)**3
-        if (lroot) print*, 'initialize_particles_radius: '// &
-            'mass per dust grain mpmat=', mpmat
+        print*, 'interpolate_linear: Interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
+        print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
+        print*, 'my, y(1), y(my) = ', my, y(1), y(my)
+        print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
+        call fatal_error('interpolate_linear','point outside of interval')
       endif
 !
-      if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
-          .and. .not. lsupersat_par &
-              .and. .not. lsupersat &
-          .and. .not. lcondensation_simplified) then
-        call fatal_error('initialize_particles_radius', &
-            'must have passive scalar module for sweep-up and condensation')
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
+!
+      xp0=0; yp0=0; zp0=0
+      if (nxgrid/=1) xp0=xxp(1)-x(ix0)
+      if (nygrid/=1) yp0=xxp(2)-y(iy0)
+      if (nzgrid/=1) zp0=xxp(3)-z(iz0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!  For an equidistant grid we only need to do this at the first call.
+!
+      if (lequidist(1)) then
+        if (lfirstcall) dx1=dx_1(ix0) !1/dx
+      else
+        dx1=dx_1(ix0)
       endif
 !
-!  Short hand for spherical particle prefactor.
-!
-      four_pi_rhopmat_over_three = four_pi_over_three*rhopmat
-!
-!  Inverse coefficients.
-!
-      alpha_cond1 = 1/alpha_cond
-      diffusion_coefficient1 = 1/diffusion_coefficient
-      if (tau_damp_evap /= 0.0) tau_damp_evap1 = 1/tau_damp_evap
-      if (tau_ocean_driving /= 0.0) tau_ocean_driving1 = 1/tau_ocean_driving
-!
-      call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
-!
-! If we have decided to hold the radius of the particles to be fixed then
-! we should not have any process that changes the radius.
-!
-      if (lfixed_particles_radius) then
-        if (lsweepup_par) &
-            call fatal_error('initialize_particles_radius', &
-            'incosistency: lfixed_particles_radius and lsweepup_par cannot both be true')
-        if (lcondensation_par) &
-            call fatal_error('initialize_particles_radius', &
-            'incosistency: lfixed_particles_radius and lcondensation_par cannot both be true')
-        if (lparticles_chemistry) &
-            call fatal_error('initialize_particles_radius', &
-            'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
+      if (lequidist(2)) then
+        if (lfirstcall) dy1=dy_1(iy0)
+      else
+        dy1=dy_1(iy0)
       endif
 !
-      call keep_compiler_quiet(f)
+      if (lequidist(3)) then
+        if (lfirstcall) dz1=dz_1(iz0)
+      else
+        dz1=dz_1(iz0)
+      endif
 !
-    endsubroutine initialize_particles_radius
+      if ( (.not. all(lequidist)) .or. lfirstcall) then
+        dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+        dxdydz1=dx1*dy1*dz1
+      endif
+!
+!  Function values at all corners.
+!
+      g1=f(ix0  ,iy0  ,iz0  ,ivar1:ivar2)
+      g2=f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)
+      g3=f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)
+      g4=f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)
+      g5=f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)
+      g6=f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)
+      g7=f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)
+      g8=f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  If we have solid geometry we might want some special treatment very close
+!  to the surface of the solid geometry
+!
+      if (lsolid_cells) then
+        do ivar=ivar1,ivar2
+          f_tmp(ivar)=gp(ivar-ivar1+1)
+        enddo
+        call close_interpolation(f,ix0,iy0,iz0,icyl,xxp,&
+            f_tmp,.false.)
+        do ivar=ivar1,ivar2
+          gp(ivar-ivar1+1)=f_tmp(ivar)
+        enddo
+      endif
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (linterp_reality_check) then
+        do i=1,ivar2-ivar1+1
+          if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'interpolate_linear: interpolated value is LARGER than'
+            print*, 'interpolate_linear: a values at the corner points!'
+            print*, 'interpolate_linear: ipar, xxp=', ipar, xxp
+            print*, 'interpolate_linear: x0, y0, z0=', &
+                x(ix0), y(iy0), z(iz0)
+            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+          if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'interpolate_linear: interpolated value is smaller than'
+            print*, 'interpolate_linear: a values at the corner points!'
+            print*, 'interpolate_linear: xxp=', xxp
+            print*, 'interpolate_linear: x0, y0, z0=', &
+                x(ix0), y(iy0), z(iz0)
+            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+        enddo
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(iblock)
+!
+    endsubroutine interpolate_linear_range
 !***********************************************************************
-    subroutine set_particle_radius(f,fp,npar_low,npar_high,init)
+    subroutine interpolate_linear_scalar(f,ivar,xxp,gp,inear,iblock,ipar)
 !
-!  Set radius of new particles.
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using the linear interpolation formula
 !
-!  18-sep-09/nils: adapted from init_particles_radius
+!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!
+!  30-dec-04/anders: coded
+!
+      use Solid_Cells
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (3) :: xxp
+      real, dimension (mvar) :: f_tmp
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
+!
+      real :: gp, g1, g2, g3, g4, g5, g6, g7, g8
+      real :: xp0, yp0, zp0
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      integer :: ivar, ix0, iy0, iz0, icyl=1
+      logical :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar, inear
+      intent(out) :: gp
+!
+!  Determine index value of lowest lying corner point of grid box surrounding
+!  the interpolation point.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
+      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
+      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
+!
+!  Check if the grid point interval is really correct.
+!
+      if (((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1)) .or. nxgrid==1) .and. &
+          ((y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2)) .or. nygrid==1) .and. &
+          ((z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3)) .or. nzgrid==1)) then
+        ! Everything okay
+      else
+        print*, 'interpolate_linear_scalar: Interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
+        print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
+        print*, 'my, y(1), y(my) = ', my, y(1), y(my)
+        print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
+        call fatal_error('interpolate_linear_scalar','point outside of interval')
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
+!
+      xp0=0; yp0=0; zp0=0
+      if (nxgrid/=1) xp0=xxp(1)-x(ix0)
+      if (nygrid/=1) yp0=xxp(2)-y(iy0)
+      if (nzgrid/=1) zp0=xxp(3)-z(iz0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!  For an equidistant grid we only need to do this at the first call.
+!
+      if (lequidist(1)) then
+        if (lfirstcall) dx1=dx_1(ix0) !1/dx
+      else
+        dx1=dx_1(ix0)
+      endif
+!
+      if (lequidist(2)) then
+        if (lfirstcall) dy1=dy_1(iy0)
+      else
+        dy1=dy_1(iy0)
+      endif
+!
+      if (lequidist(3)) then
+        if (lfirstcall) dz1=dz_1(iz0)
+      else
+        dz1=dz_1(iz0)
+      endif
+!
+      if ( (.not. all(lequidist)) .or. lfirstcall) then
+        dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+        dxdydz1=dx1*dy1*dz1
+      endif
+!
+!  Function values at all corners.
+!
+      g1=f(ix0  ,iy0  ,iz0  ,ivar)
+      g2=f(ix0+1,iy0  ,iz0  ,ivar)
+      g3=f(ix0  ,iy0+1,iz0  ,ivar)
+      g4=f(ix0+1,iy0+1,iz0  ,ivar)
+      g5=f(ix0  ,iy0  ,iz0+1,ivar)
+      g6=f(ix0+1,iy0  ,iz0+1,ivar)
+      g7=f(ix0  ,iy0+1,iz0+1,ivar)
+      g8=f(ix0+1,iy0+1,iz0+1,ivar)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  If we have solid geometry we might want some special treatment very close
+!  to the surface of the solid geometry
+!
+      if (lsolid_cells) then
+        f_tmp(ivar)=gp
+        call close_interpolation(f,ix0,iy0,iz0,icyl,xxp,&
+            f_tmp,.false.)
+        gp=f_tmp(ivar)
+      endif
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (linterp_reality_check) then
+        if (gp>max(g1,g2,g3,g4,g5,g6,g7,g8)) then
+          print*, 'interpolate_linear_scalar: interpolated value is LARGER than'
+          print*, 'interpolate_linear_scalar: a values at the corner points!'
+          print*, 'interpolate_linear_scalar: ipar, xxp=', ipar, xxp
+          print*, 'interpolate_linear_scalar: x0, y0, z0=', &
+              x(ix0), y(iy0), z(iz0)
+          print*, 'interpolate_linear_scalar: gp=', gp
+          print*, 'interpolate_linear_scalar: g1...g8=', &
+              g1, g2, g3, g4, g5, g6, g7, g8
+          print*, '------------------'
+        endif
+        if (gp<min(g1,g2,g3,g4,g5,g6,g7,g8)) then
+          print*, 'interpolate_linear_scalar: interpolated value is smaller than'
+          print*, 'interpolate_linear_scalar: a values at the corner points!'
+          print*, 'interpolate_linear_scalar: xxp=', xxp
+          print*, 'interpolate_linear_scalar: x0, y0, z0=', &
+              x(ix0), y(iy0), z(iz0)
+          print*, 'interpolate_linear_scalar: gp=', gp
+          print*, 'interpolate_linear_scalar: g1...g8=', &
+              g1, g2, g3, g4, g5, g6, g7, g8
+          print*, '------------------'
+        endif
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(iblock)
+!
+    endsubroutine interpolate_linear_scalar
+!***********************************************************************
+    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+!
+!  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
+!  using the biquadratic interpolation function
+!
+!    g(x,y,z) = (1+x+x^2)*(1+y+y^2)*(1+z+z^2)
+!
+!  The coefficients (9, one for each unique term) are determined by the 9
+!  grid points surrounding the interpolation point.
+!
+!  The interpolation matrix M is defined through the relation
+!    M#c = g
+!  Here c are the coefficients and g is the value of the function at the grid
+!  points. An equidistant grid has the following value of M:
+!
+!    invmat(:,1)=(/ 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00/)
+!    invmat(:,2)=(/ 0.00, 0.00, 0.00,-0.50, 0.00, 0.50, 0.00, 0.00, 0.00/)
+!    invmat(:,3)=(/ 0.00, 0.00, 0.00, 0.50,-1.00, 0.50, 0.00, 0.00, 0.00/)
+!    invmat(:,4)=(/ 0.00,-0.50, 0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.00/)
+!    invmat(:,5)=(/ 0.00, 0.50, 0.00, 0.00,-1.00, 0.00, 0.00, 0.50, 0.00/)
+!    invmat(:,6)=(/ 0.25, 0.00,-0.25, 0.00, 0.00, 0.00,-0.25, 0.00, 0.25/)
+!    invmat(:,7)=(/-0.25, 0.50,-0.25, 0.00, 0.00, 0.00, 0.25,-0.50, 0.25/)
+!    invmat(:,8)=(/-0.25, 0.00, 0.25, 0.50, 0.00,-0.50,-0.25, 0.00, 0.25/)
+!    invmat(:,9)=(/ 0.25,-0.50, 0.25,-0.50, 1.00,-0.50, 0.25,-0.50, 0.25/)
+!
+!    invmat(:,1)=invmat(:,1)
+!    invmat(:,2)=invmat(:,2)/dx
+!    invmat(:,3)=invmat(:,3)/dx**2
+!    invmat(:,4)=invmat(:,4)/dz
+!    invmat(:,5)=invmat(:,5)/dz**2
+!    invmat(:,6)=invmat(:,6)/(dx*dz)
+!    invmat(:,7)=invmat(:,7)/(dx**2*dz)
+!    invmat(:,8)=invmat(:,8)/(dx*dz**2)
+!    invmat(:,9)=invmat(:,9)/(dx**2*dz**2)
+!
+!  Space coordinates are defined such that the nearest grid point is at (0,0).
+!  The grid points are counted from lower left:
+!
+!    7  8  9
+!    4  5  6
+!    1  2  3
+!
+!  The nearest grid point has index number 5.
+!
+!  09-jun-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
+!
+      real, dimension (9,ivar2-ivar1+1) :: cc
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
+      real :: dxp, dzp
+      real, save :: dx1, dx2, dz1, dz2
+      real, save :: dx1dz1, dx2dz1, dx1dz2, dx2dz2
+      integer :: ix0, iy0, iz0
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar1, inear
+      intent(out) :: gp
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+!
+!  Not implemented in y-direction yet (but is easy to generalise).
+!
+      if (nygrid/=1) then
+        if (lroot) print*, 'interpolate_quadratic: not implemented in y'
+        call fatal_error('interpolate_quadratic','')
+      endif
+!
+!  A few values that only need to be calculated once for equidistant grids.
+!
+      if (lequidist(1)) then
+        if (lfirstcall) then
+          dx1=1/dx; dx2=1/dx**2
+        endif
+      else
+        dx1=dx_1(ix0); dx2=dx1**2
+      endif
+!
+      if (lequidist(3)) then
+        if (lfirstcall) then
+          dz1=1/dz; dz2=1/dz**2
+        endif
+      else
+        dz1=dz_1(iz0); dz2=dz1**2
+      endif
+!
+      if (lequidist(1).and.lequidist(3)) then
+        if (lfirstcall) then
+          dx1dz1=1/(dx*dz)
+          dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
+        endif
+      else
+        dx1dz1=dx1*dz1
+        dx2dz1=dx2*dz1; dx1dz2=dx1*dz1; dx2dz2=dx2*dz2
+      endif
+!
+!  Define function values at the grid points.
+!
+      g1=f(ix0-1,iy0,iz0-1,ivar1:ivar2)
+      g2=f(ix0  ,iy0,iz0-1,ivar1:ivar2)
+      g3=f(ix0+1,iy0,iz0-1,ivar1:ivar2)
+      g4=f(ix0-1,iy0,iz0  ,ivar1:ivar2)
+      g5=f(ix0  ,iy0,iz0  ,ivar1:ivar2)
+      g6=f(ix0+1,iy0,iz0  ,ivar1:ivar2)
+      g7=f(ix0-1,iy0,iz0+1,ivar1:ivar2)
+      g8=f(ix0  ,iy0,iz0+1,ivar1:ivar2)
+      g9=f(ix0+1,iy0,iz0+1,ivar1:ivar2)
+!
+!  Calculate the coefficients of the interpolation formula (see introduction).
+!
+      cc(1,:)=                                g5
+      cc(2,:)=dx1   *0.5 *(             -g4     +  g6           )
+      cc(3,:)=dx2   *0.5 *(              g4-2*g5+  g6           )
+      cc(4,:)=dz1   *0.5 *(     -g2                     +  g8   )
+      cc(5,:)=dz2   *0.5 *(      g2        -2*g5        +  g8   )
+      cc(6,:)=dx1dz1*0.25*( g1     -g3               -g7     +g9)
+      cc(7,:)=dx2dz1*0.25*(-g1+2*g2-g3               +g7-2*g8+g9)
+      cc(8,:)=dx1dz2*0.25*(-g1     +g3+2*g4     -2*g6-g7     +g9)
+      cc(9,:)=dx2dz2*0.25*( g1-2*g2+g3-2*g4+4*g5-2*g6+g7-2*g8+g9)
+!
+!  Calculate the value of the interpolation function at the point (dxp,dzp).
+!
+      dxp=xxp(1)-x(ix0)
+      dzp=xxp(3)-z(iz0)
+!
+      gp = cc(1,:)            + cc(2,:)*dxp        + cc(3,:)*dxp**2        + &
+           cc(4,:)*dzp        + cc(5,:)*dzp**2     + cc(6,:)*dxp*dzp       + &
+           cc(7,:)*dxp**2*dzp + cc(8,:)*dxp*dzp**2 + cc(9,:)*dxp**2*dzp**2
+!
+      call keep_compiler_quiet(ipar,iblock)
+!
+    endsubroutine interpolate_quadratic
+!***********************************************************************
+    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+!
+!  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
+!
+!  10-jun-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
+!
+      real :: fac_x_m1, fac_x_00, fac_x_p1
+      real :: fac_y_m1, fac_y_00, fac_y_p1
+      real :: fac_z_m1, fac_z_00, fac_z_p1
+      real :: dxp0, dyp0, dzp0
+      integer :: ix0, iy0, iz0
+!
+      intent(in)  :: f, xxp, ivar1, inear
+      intent(out) :: gp
+!
+!  Redefine the interpolation point in coordinates relative to nearest grid
+!  point and normalize with the cell size.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
+      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
+      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+!
+!  Interpolation formulae.
+!
+      if (dimensionality==0) then
+        gp=f(ix0,iy0,iz0,ivar1:ivar2)
+      elseif (dimensionality==1) then
+        if (nxgrid/=1) then
+          gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
+                  (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
+        endif
+        if (nygrid/=1) then
+          gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
+                  (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
+        endif
+        if (nzgrid/=1) then
+          gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
+                  (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
+               0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
+        endif
+      elseif (dimensionality==2) then
+        if (nxgrid==1) then
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_y_00*( f(ix0,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_p1*( f(ix0,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nygrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_x_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0  ,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nzgrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+!
+          gp= fac_x_00*fac_y_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0  ,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_00*( f(ix0+1,iy0  ,iz0,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0  ,iz0,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0+1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0-1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 )
+        endif
+      elseif (dimensionality==3) then
+        fac_x_m1 = 0.5*(0.5-dxp0)**2
+        fac_x_00 = 0.75-dxp0**2
+        fac_x_p1 = 0.5*(0.5+dxp0)**2
+        fac_y_m1 = 0.5*(0.5-dyp0)**2
+        fac_y_00 = 0.75-dyp0**2
+        fac_y_p1 = 0.5*(0.5+dyp0)**2
+        fac_z_m1 = 0.5*(0.5-dzp0)**2
+        fac_z_00 = 0.75-dzp0**2
+        fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+            fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0  ,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_y_00*fac_z_00*( f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_x_p1*fac_y_p1*( f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_p1*fac_y_m1*( f(ix0+1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_p1*( f(ix0-1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_m1*( f(ix0-1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_p1*( f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_m1*( f(ix0  ,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_y_00*fac_z_p1*( f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_y_00*fac_z_m1*( f(ix0+1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
+      endif
+!
+      call keep_compiler_quiet(ipar,iblock)
+!
+    endsubroutine interpolate_quadratic_spline
+!***********************************************************************
+    subroutine interpolate_fourth(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
+!
+!  Interpolate using 4th order polynomials in x and z. The weight function
+!  is so complicated that a direct analytical solution gives little insight.
+!  Instead we derive the weight function through the following steps:
+!
+!    f_i = M_ij*C_j
+!
+!  Here f_i is the value of the quantity at the grid cells, M_ij is the
+!  interpolation matrix and C_j the interpolation parameters to be found.
+!  We order the grid cells from (-2,-2) to (+2,+2) in x and z, incrementing
+!  along x as the main direction. The coefficients are sorted as
+!
+!    C_{ 1- 5} = 1  , x    , x^2    , x^3     , x^4
+!    C_{ 6-10} = z  , x*z  , x^2*z  , x^3*z  , x^4*z
+!    C_{11-15} = z^2, x*z^2, x^2*z^2, x^3*z^2, x^4*z^2
+!    C_{16-20} = z^3, x*z^3, x^2*z^3, x^3*z^3, x^4*z^3
+!    C_{21-25} = z^4, x*z^4, x^2*z^4, x^3*z^4, x^4*z^4
+!
+!  The interpolated value is found through:
+!
+!    f = C_j*s_j = M^{-1}_ij*f_j*s_i = M^{-1}_ij*s_i*f_j = W_j*f_j
+!
+!  Here s is the separation vector s=(1,dx,dx^2,dx^3,dx^4,dz,dx*dz,...).
+!
+!  The weight function W = transpose(M^{-1}#s) can then be used directly for
+!  the back-reaction as well.
+!
+!  18-oct-14/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3) :: inear
+      integer :: iblock, ipar
+!
+      real, dimension (25,25) :: invmat, invmatt
+      real, dimension (25,ivar2-ivar1+1) :: gg
+      real, dimension (25) :: sepvec, weight
+      real :: dxp, dzp, dxp2, dzp2, dxp3, dzp3, dxp4, dzp4
+      real, save :: dx1, dx2, dx3, dx4
+      real, save :: dz1, dz2, dz3, dz4
+      real, save :: dx1dz1, dx2dz1, dx3dz1, dx4dz1
+      real, save :: dx1dz2, dx2dz2, dx3dz2, dx4dz2
+      real, save :: dx1dz3, dx2dz3, dx3dz3, dx4dz3
+      real, save :: dx1dz4, dx2dz4, dx3dz4, dx4dz4
+      integer :: ix0, iy0, iz0, ipoint, ivar
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar1, inear
+      intent(out) :: gp
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+!
+!  Not implemented in y-direction yet (but is easy to generalise).
+!
+      if (nygrid/=1) then
+        if (lroot) print*, 'interpolate_fourth: not implemented in y'
+        call fatal_error('interpolate_quadratic','')
+      endif
+!
+!  Precalculate values that only need to be calculated once.
+!
+      if (lfirstcall) then
+        dx1=1/dx; dx2=1/dx**2; dx3=1/dx**3; dx4=1/dx**4
+        dz1=1/dz; dz2=1/dz**2; dz3=1/dz**3; dz4=1/dz**4
+        dx1dz1=dx1*dz1; dx2dz1=dx2*dz1; dx3dz1=dx3*dz1; dx4dz1=dx4*dz1
+        dx1dz2=dx1*dz2; dx2dz2=dx2*dz2; dx3dz2=dx3*dz2; dx4dz2=dx4*dz2
+        dx1dz3=dx1*dz3; dx2dz3=dx2*dz3; dx3dz3=dx3*dz3; dx4dz3=dx4*dz3
+        dx1dz4=dx1*dz4; dx2dz4=dx2*dz4; dx3dz4=dx3*dz4; dx4dz4=dx4*dz4
+!
+!  The inverse of the interpolation matrix is input analytically. Note that
+!  zeros here denote zeros in the actual matrix, to avoid infinities.
+!
+        invmat(1,:)=(/0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0/)
+        invmat(2,:)=(/0,0,0,0,0,0,0,0,0,0,12,-1,0,1,-11,0,0,0,0,0,0,0,0,0,0/)
+        invmat(3,:)=(/0,0,0,0,0,0,0,0,0,0,-24,1,0,1,-24,0,0,0,0,0,0,0,0,0,0/)
+        invmat(4,:)=(/0,0,0,0,0,0,0,0,0,0,-12,6,0,-6,11,0,0,0,0,0,0,0,0,0,0/)
+        invmat(5,:)=(/0,0,0,0,0,0,0,0,0,0,24,-6,4,-6,24,0,0,0,0,0,0,0,0,0,0/)
+        invmat(6,:)=(/0,0,12,0,0,0,0,-1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,-11,0,0/)
+        invmat(7,:)=(/144,-18,0,18,-143,-18,2,0,-2,18,0,0,0,0,0,17,-2,0,2,-17,-144, 18,0,-17,143/)
+        invmat(8,:)=(/-287,18,-9,18,-287,36,-2,1,-2,36,0,0,0,0,0,-35,2,-1,2,-35,287, -18,9,-18,287/)
+        invmat(9,:)=(/-144,72,0,-72,144,18,-9,0,9,-18,0,0,0,0,0,-18,9,0,-9,18,144, -72,0,71,-143/)
+        invmat(10,:)=(/288,-72,48,-72,288,-36,9,-6,9,-36,0,0,0,0,0,36,-9,6,-9,36, -288,72,-47,72,-288/)
+        invmat(11,:)=(/0,0,-24,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,-24,0,0/)
+        invmat(12,:)=(/-287,36,0,-35,287,18,-2,0,2,-18,-9,1,0,-1,9,18,-2,0,2,-18, -287,36,0,-35,287/)
+        invmat(13,:)=(/575,-36,19,-36,575,-36,2,-1,2, -36,19,-1,0,-1,19,-36,2,-1,2,-36,575,-36,19,-36,575/)
+        invmat(14,:)=(/288,-144,0,143,-288,-18,9,0,-9,18,9,-4,0,4,-9,-18,9,0,-9,18,288, -144,0,143,-288/)
+        invmat(15,:)=(/-576,144,-96,144,-576,36,-9,6,-9, 36,-19,4,-3,4,-19,36,-9,6,-9,36,-576,144,-96,144,-576/)
+        invmat(16,:)=(/0,0,-12,0,0,0,0,6,0,0,0,0,0,0,0,0,0,-6,0,0,0,0,11,0,0/)
+        invmat(17,:)=(/-144,18,0,-18,144,72,-9,0,9,-72,0,0,0,0,0,-71,9,0,-9,71,144, -18,0,18,-143/)
+        invmat(18,:)=(/288,-18,9,-18,288,-144,9,-4,9,-144,0,0,0,0,0,143,-9,4,-9,143, -288,18,-9,18,-288/)
+        invmat(19,:)=(/144,-72,0,72,-144,-72,36,0,-36,72,0,0,0,0,0,72,-36,0,36,-72,-144, 72,0,-72,143/)
+        invmat(20,:)=(/-288,72,-48,72,-288,144,-36,24,-36,144,0,0,0,0,0,-144,36,-24,36,-144,288,-72,47,-72,288/)
+        invmat(21,:)=(/0,0,24,0,0,0,0,-6,0,0,0,0,4,0,0,0,0,-6,0,0,0,0,24,0,0/)
+        invmat(22,:)=(/288,-36,0,36,-288,-72,9,0,-9,72,48,-6,0,6,-47,-72,9,0,-9,72,288, -36,0,36,-288/)
+        invmat(23,:)=(/-576,36,-19,36,-576,144,-9,4,-9,144,-96,6,-3,6,-96,144,-9,4,-9,144,-576,36,-19,36,-576/)
+        invmat(24,:)=(/-288,144,0,-144,288,72,-36,0,36,-72,-48,24,0,-24,47,72,-36,0,36,-72,-288,144,0,-144,288/)
+        invmat(25,:)=(/576,-144,96,-144,576,-144,36,-24,36,-144,96,-24,16,-24,96,-144,36,-24,36,-144,576,-144,96,-144,576/)
+        where (invmat/=0.0) invmat=1/invmat
+        invmatt=transpose(invmat)
+      endif
+!
+!  Define function values at the grid points.
+!
+      ipoint=1
+      do iz=-2,+2; do ix=-2,+2
+        gg(ipoint,:)=f(ix0+ix,iy0,iz0+iz,ivar1:ivar2)
+        ipoint=ipoint+1
+      enddo; enddo
+!
+!  Calculate the separation of the interpolation point from the central grid
+!  cell (and various powers of it).
+!
+      dxp=xxp(1)-x(ix0)
+      dzp=xxp(3)-z(iz0)
+      dxp2=dxp**2
+      dzp2=dzp**2
+      dxp3=dxp**3
+      dzp3=dzp**3
+      dxp4=dxp**4
+      dzp4=dzp**4
+!
+!  Calculate the elements of the separation vector (see discussion above).
+!
+      sepvec( 1)=1.0
+      sepvec( 2)=dxp*dx1
+      sepvec( 3)=dxp2*dx2
+      sepvec( 4)=dxp3*dx3
+      sepvec( 5)=dxp4*dx4
+      sepvec( 6)=dzp*dz1
+      sepvec( 7)=dxp*dzp*dx1dz1
+      sepvec( 8)=dxp2*dzp*dx2dz1
+      sepvec( 9)=dxp3*dzp*dx3dz1
+      sepvec(10)=dxp4*dzp*dx4dz1
+      sepvec(11)=dzp2*dz2
+      sepvec(12)=dxp*dzp2*dx1dz2
+      sepvec(13)=dxp2*dzp2*dx2dz2
+      sepvec(14)=dxp3*dzp2*dx3dz2
+      sepvec(15)=dxp4*dzp2*dx4dz2
+      sepvec(16)=dzp3*dz3
+      sepvec(17)=dxp*dzp3*dx1dz3
+      sepvec(18)=dxp2*dzp3*dx2dz3
+      sepvec(19)=dxp3*dzp3*dx3dz3
+      sepvec(20)=dxp4*dzp3*dx4dz3
+      sepvec(21)=dzp4*dz4
+      sepvec(22)=dxp*dzp4*dx1dz4
+      sepvec(23)=dxp2*dzp4*dx2dz4
+      sepvec(24)=dxp3*dzp4*dx3dz4
+      sepvec(25)=dxp4*dzp4*dx4dz4
+!
+!  Calculate the weight vector.
+!
+      weight=matmul(invmatt,sepvec)
+!
+!  Finally use the weight vector to calculate the interpolated value as a
+!  simple sum over the involved grid cells.
+!
+      do ivar=1,ivar2-ivar1+1
+        gp(ivar) = sum(weight*gg(:,ivar))
+      enddo
+!
+      call keep_compiler_quiet(ipar,iblock)
+!
+    endsubroutine interpolate_fourth
+!***********************************************************************
+    subroutine map_nearest_grid(fp,ineargrid,k1_opt,k2_opt)
+!
+!  Find index (ix0, iy0, iz0) of nearest grid point of all or some of the
+!  particles.
+!
+!  23-jan-05/anders: coded
+!  08-jul-08/kapelrud: support for non-equidistant grids
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, optional :: k1_opt, k2_opt
+!
+      double precision, save :: dx1, dy1, dz1
+      integer :: k, k1, k2, ix0, iy0, iz0
+      logical, save :: lfirstcall=.true.
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      intent(in)  :: fp
+      intent(out) :: ineargrid
+!
+      t_sp = t
+!
+      if (present(k1_opt)) then
+        k1=k1_opt
+      else
+        k1=1
+      endif
+!
+      if (present(k2_opt)) then
+        k2=k2_opt
+      else
+        k2=npar_loc
+      endif
+!
+!  Default values in case of missing directions.
+!
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
+!
+      if (lfirstcall) then
+        dx1=dx_1(l1); dy1=dy_1(m1); dz1=dz_1(n1)
+        lfirstcall=.false.
+      endif
+!
+      do k=k1,k2
+!
+!  Find nearest grid point in x-direction.
+!  Find nearest grid point by bisection if the grid is not equidistant.
+!
+        if (nxgrid/=1) then
+          if (lequidist(1)) then
+            ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
+          else
+            call find_index_by_bisection(fp(k,ixp),x,ix0)
+          endif
+        endif
+!
+!  Find nearest grid point in y-direction.
+!
+        if (nygrid/=1) then
+          if (lequidist(2)) then
+            iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
+          else
+            call find_index_by_bisection(fp(k,iyp),y,iy0)
+          endif
+        endif
+!
+!  Find nearest grid point in z-direction.
+!
+        if (nzgrid/=1) then
+          if (lequidist(3)) then
+            iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
+          else
+            call find_index_by_bisection(fp(k,izp),z,iz0)
+          endif
+        endif
+!
+        ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
+!
+!  Round off errors may put a particle closer to a ghost point than to a
+!  physical point. Either stop the code with a fatal error or fix problem
+!  by forcing the nearest grid point to be a physical point.
+!
+          if (ineargrid(k,1)<=l1-1.or.ineargrid(k,1)>=l2+1.or. &
+              ineargrid(k,2)<=m1-1.or.ineargrid(k,2)>=m2+1.or. &
+              ineargrid(k,3)<=n1-1.or.ineargrid(k,3)>=n2+1) then
+            if (lcheck_exact_frontier) then
+              if (ineargrid(k,1)<=l1-1) then
+                ineargrid(k,1)=l1
+              elseif (ineargrid(k,1)>=l2+1) then
+                ineargrid(k,1)=l2
+              endif
+              if (ineargrid(k,2)<=m1-1) then
+                ineargrid(k,2)=m1
+              elseif (ineargrid(k,2)>=m2+1) then
+                ineargrid(k,2)=m2
+              endif
+              if (ineargrid(k,3)<=n1-1) then
+                ineargrid(k,3)=n1
+              elseif (ineargrid(k,3)>=n2+1) then
+                ineargrid(k,3)=n2
+              endif
+            else
+              print*, 'map_nearest_grid: particle must never be closer to a '//&
+                      'ghost point than'
+              print*, '                  to a physical point.'
+              print*, '                  Consider using double precision to '//&
+                      'avoid this problem'
+              print*, '                  or set lcheck_exact_frontier in '// &
+                      '&particles_run_pars.'
+              print*, 'Information about what went wrong:'
+              print*, '----------------------------------'
+              print*, 'it, itsub, t=', it, itsub, t_sp
+              print*, 'iproc  =', iproc
+              print*, 'ipar, k     =', ipar(k), k
+              print*, 'xxp         =', fp(k,ixp:izp)
+              if (ivpx/=0) print*, 'vvp         =', fp(k,ivpx:ivpz)
+              print*, 'ineargrid   =', ineargrid(k,:)
+              print*, 'l1, m1, n1  =', l1, m1, n1
+              print*, 'l2, m2, n2  =', l2, m2, n2
+              print*, 'x1, y1, z1  =', x(l1), y(m1), z(n1)
+              print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
+              call fatal_error_local('map_nearest_grid','')
+            endif
+        endif
+      enddo
+!
+    endsubroutine map_nearest_grid
+!***********************************************************************
+    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp,f)
+!
+!  Sort the particles so that they appear in the same order as the (m,n) loop.
+!
+!  20-apr-06/anders: coded
+!
+      use General, only: safe_character_assign
+!
+      real, dimension (mx,my,mz,mfarray),optional :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      real :: t_sp   ! t in single precision for backwards compatibility
+      real, dimension (mparray) :: fp_tmp
+      real, dimension (mpvar) :: dfp_tmp
+      integer, dimension (3) :: ineargrid_tmp
+      integer, dimension (ny*nz) :: kk
+      integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
+      integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
+      integer :: j, k, ix0, iy0, iz0, ih, lun
+      integer, save :: ncount=-1, isorttype=3
+      integer, parameter :: nshellsort=21
+      integer, dimension (nshellsort), parameter :: &
+          hshellsort=(/ 14057, 9371, 6247, 4177, 2777, 1861, 1237, 823, 557, &
+                        367, 251, 163, 109, 73, 37, 19, 11, 7, 5, 3, 1 /)
+      logical, save :: lrunningsort=.false.
+      character (len=fnlen) :: filename
+!
+      intent(inout)  :: fp, ineargrid, ipar, dfp
+!
+      t_sp = t
+!
+!  Determine beginning and ending index of particles in pencil (m,n).
+!
+      call particle_pencil_index(ineargrid)
+!
+!  Choose sort algorithm.
+!  WARNING - choosing the wrong one might make the code unnecessarily slow.
+!
+      if ( lstart .or. &
+           (lshear .and. Omega/=0.0) .and. (nxgrid>1 .and. nygrid>1) ) then
+        isorttype=3
+        lrunningsort=.false.
+      else
+        isorttype=1
+        lrunningsort=.true.
+!        isorttype=3
+!        lrunningsort=.false.
+      endif
+      ncount=0
+!
+!  Calculate integer value to sort after.
+!
+      do k=1,npar_loc
+        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+        ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
+        ipark_sorted(k)=k
+      enddo
+!
+!  Sort using either straight insertion (1), shell sorting (2) or counting
+!  sort (3).
+!
+      select case (isorttype)
+!  Straight insertion.
+      case (1)
+        do k=2,npar_loc
+!
+          j=k
+!
+          do while ( ilmn_par(k)<ilmn_par(j-1) )
+            j=j-1
+            if (j==1) exit
+          enddo
+!
+          if (j/=k) then
+            ncount=ncount+k-j
+!
+            ilmn_par_tmp=ilmn_par(k)
+            ilmn_par(j+1:k)=ilmn_par(j:k-1)
+            ilmn_par(j)=ilmn_par_tmp
+            ipark_sorted_tmp=ipark_sorted(k)
+            ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
+            ipark_sorted(j)=ipark_sorted_tmp
+!  Sort particle data on the fly (practical for almost ordered arrays).
+            if (lrunningsort) then
+              fp_tmp=fp(k,:)
+              fp(j+1:k,:)=fp(j:k-1,:)
+              fp(j,:)=fp_tmp
+!
+              if (present(dfp)) then
+                dfp_tmp=dfp(k,:)
+                dfp(j+1:k,:)=dfp(j:k-1,:)
+                dfp(j,:)=dfp_tmp
+              endif
+!
+              ineargrid_tmp=ineargrid(k,:)
+              ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
+              ineargrid(j,:)=ineargrid_tmp
+!
+              ipar_tmp=ipar(k)
+              ipar(j+1:k)=ipar(j:k-1)
+              ipar(j)=ipar_tmp
+!
+            endif
+          endif
+        enddo
+!  Shell sort.
+      case (2)
+!
+        do ih=1,21
+          do k=1+hshellsort(ih),npar_loc
+            ilmn_par_tmp=ilmn_par(k)
+            ipark_sorted_tmp=ipark_sorted(k)
+            j=k
+            do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
+              ncount=ncount+1
+              ilmn_par(j)=ilmn_par(j-hshellsort(ih))
+              ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
+              ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
+              ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
+              j=j-hshellsort(ih)
+              if (j-hshellsort(ih)<1) exit
+            enddo
+          enddo
+        enddo
+!  Counting sort.
+      case (3)
+        kk=k1_imn
+        do k=1,npar_loc
+          ipark_sorted(kk(ilmn_par(k)))=k
+          kk(ilmn_par(k))=kk(ilmn_par(k))+1
+        enddo
+        ncount=npar_loc
+      endselect
+!
+!  Sort particle data according to sorting index.
+!
+      if (lrunningsort .and. isorttype/=1) then
+        if (lroot) print*, 'sort_particles_imn: lrunningsort is only '// &
+             'allowed for straight insertion sort.'
+        call fatal_error('sort_particles_imn','')
+      endif
+!
+      if ( (.not. lrunningsort) .and. (ncount/=0) ) then
+        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
+        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+      endif
+!
+      if (lroot.and.ldiagnos) then
+        call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
+        lun=1
+        open(lun,file=trim(filename),action='write',position='append')
+        write(lun,'(A15,f7.3)') '------------ t=', t_sp
+        write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
+             iproc, ncount, isorttype, lrunningsort
+        close (lun)
+      endif
+!
+! If we are using particles_potential, this is the time to update the neighbour list
+!
+      if (lparticles_potential) then
+        call invert_ineargrid_list(fp,ineargrid,ipar,dfp,f)
+      endif
+!
+      if (ip<=8) print '(A,i4,i8,i4,l4)', &
+           'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
+           iproc, ncount, isorttype, lrunningsort
+!
+!  Possible to randomize particles inside each pencil. This screws with the
+!  pencil consistency check, so we turn it off when the test is running.
+!
+      if (lrandom_particle_pencils .and. (.not.lpencil_check_at_work)) then
+        if (present(dfp)) then
+          call random_particle_pencils(fp,ineargrid,ipar,dfp)
+        else
+          call random_particle_pencils(fp,ineargrid,ipar)
+        endif
+      endif
+!
+    endsubroutine sort_particles_imn
+!***********************************************************************
+    subroutine boundcond_neighbour_list
+!
+! Copy the number of neighbours to the boundary points of the 
+! neighbour list
+!
+!      nlist(1-neighbourx:0) = nlist()
+!      allocate(nlist(1-neighbourx:nx+neighbourx,1-neighboury:nx+neighboury, &
+!        1-neighbourz:nx+neighbourz,Nneighbour+1))
+
+!
+    endsubroutine boundcond_neighbour_list
+!***********************************************************************
+    subroutine invert_ineargrid_list(fp,ineargrid,ipar,dfp,f)
+!
+!  Update the neighbour list for all the particles
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      integer :: k,ix0,ix,im,in,imn
+      integer, dimension(nx) :: pinl, pin_cell
+      integer, dimension(0:nx-1) :: cuml_pinl
+      integer, dimension(npar_loc) :: lpark_sorted
+!
+! Go through the whole array fp to distribute them in cells
+!
+      f(:,:,:,iinvgrid:iinvgrid+1) = 0
+      do imn=1,ny*nz
+        im=nn(imn)
+        in=mm(imn)
+        if (npar_imn(imn)>=2) then
+ !         write(*,*) 'DHRUBA, in here ? ',imn
+          pinl = 0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            write(*,*) 'ix0 and k!',ix0,k
+            pinl(ix0)=pinl(ix0)+1
+          enddo
+          cuml_pinl(0)=0
+          do ix=1,nx-1
+            cuml_pinl(ix)=cuml_pinl(ix-1)+pinl(ix)
+          enddo
+ !         write(*,*)'DHRUBA, cuml',cuml_pinl
+          pin_cell = 0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            lpark_sorted(k-k1_imn(imn)+1) = k1_imn(imn)+cuml_pinl(ix0-1)+pin_cell(ix0)
+            pin_cell(ix0) = pin_cell(ix0)+1
+          enddo
+          fp(k1_imn(imn):k2_imn(imn),:)=fp(lpark_sorted(1:npar_imn(imn)),:)
+          if (present(dfp)) &
+            dfp(k1_imn(imn):k2_imn(imn),:)=dfp(lpark_sorted(1:npar_imn(imn)),:)
+          ineargrid(k1_imn(imn):k2_imn(imn),:)=ineargrid(lpark_sorted(1:npar_imn(imn)),:)
+          ipar(k1_imn(imn):k2_imn(imn))=ipar(lpark_sorted(1:npar_imn(imn)))
+          do ix=1,nx
+            if (pin_cell(ix) .gt. 0) then
+              f(ix+nghost,im,in,iinvgrid)= k1_imn(imn)+cuml_pinl(ix-1)
+              f(ix+nghost,im,in,iinvgrid+1)=k1_imn(imn)+cuml_pinl(ix-1)+pin_cell(ix)-1
+!              write(*,*) cuml_pinl(ix-1),k1_imn(imn),k2_imn(imn),f(ix+nghost,im,in,iinvgrid),f(ix+nghost,im,in,iinvgrid+1)
+            else
+              f(ix+nghost,im,in,iinvgrid)= 0
+              f(ix+nghost,im,in,iinvgrid+1)= 0
+            endif
+          enddo
+        elseif (npar_imn(imn).eq.1) then
+          k=k1_imn(imn)
+          ix0=ineargrid(k,1)
+          f(ix0+nghost,iy,iz,iinvgrid)=k
+          f(ix0+nghost,iy,iz,iinvgrid+1)=k
+        endif
+      enddo   !loop over imn ends
+!      do ix=l1,l2;do iy=m1,m2;do iz=n1,n2;
+!        write(*,*) 'ix,iy,iz,iinvgrid,f',ix,iy,iz,iinvgrid,f(ix,iy,iz,iinvgrid)
+        !if(f(ix,iy,iz,iinvgrid+1).ne.0.) write(*,*) 'ix,iy,iz,iinvgrid,f',ix,iy,iz,iinvgrid+1,f(ix,iy,iz,iinvgrid+1)
+!      enddo;enddo;enddo
+!
+    endsubroutine invert_ineargrid_list
+!***********************************************************************
+    subroutine random_particle_pencils(fp,ineargrid,ipar,dfp)
+!
+!  Randomize particles within each pencil to avoid low index particles
+!  always being considered first.
+!
+!  Slows down simulation by around 10%.
+!
+!  12-nov-09/anders: coded
 !
       use General, only: random_number_wrapper
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mpar_loc,mparray) :: fp
-      integer :: npar_low, npar_high
-      logical, optional :: init
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
 !
-      real, dimension(mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
-      real, dimension(ndustrad) :: radii_cumulative
-      real, dimension(nbin_initdist) :: n_initdist, a_initdist
-      integer, dimension(nbin_initdist) :: nn_initdist
-      real :: radius_fraction, mcen, mmin, mmax, fcen, p
-      real :: lna0, lna1, lna, lna0_initdist
-      integer :: i, j, k, kend, ind, ibin
-      logical :: initial
+      real, dimension (mparray) :: fp_swap
+      real, dimension (mpvar) :: dfp_swap
+      real :: r
+      integer, dimension (3) :: ineargrid_swap
+      integer :: ipar_swap, imn, k, kswap
 !
-      initial = .false.
-      if (present(init)) then
-        if (init) initial = .true.
-      endif
+      intent (inout) :: fp, ineargrid, ipar, dfp
 !
-      do j = 1,ninit
-!
-        select case (initap(j))
-!
-        case ('nothing')
-          if (initial .and. lroot .and. j == 1)  print*, 'set_particles_radius: nothing'
-!
-        case ('constant')
-          if (initial .and. lroot) print*, 'set_particles_radius: constant radius'
-          ind = 1
-          do k = npar_low,npar_high
-            if (npart_radii > 1) then
-              call random_number_wrapper(radius_fraction)
-              ind = ceiling(npart_radii*radius_fraction)
-            endif
-            fp(k,iap) = ap0(ind)
-          enddo
-!
-        case ('constant-1')
-          if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
-          do k = npar_low,npar_high
-            if (ipar(k) == 1) fp(k,iap) = ap1
-          enddo
-!
-        case ('2-size')
-          if (initial .and. lroot) print*, 'set_particles_radius: give particles two radii'
-          do k = npar_low,npar_high
-            if (ipar(k) < npar/2) then
-              fp(k,iap) = ap0(1)
-            else
-              fp(k,iap) = ap1
+      do imn=1,ny*nz
+        if (npar_imn(imn)>=2) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call random_number_wrapper(r)
+            kswap=k1_imn(imn)+floor(r*npar_imn(imn))
+            if (kswap/=k) then
+              fp_swap=fp(kswap,:)
+              ineargrid_swap=ineargrid(kswap,:)
+              ipar_swap=ipar(kswap)
+              if (present(dfp)) dfp_swap=dfp(kswap,:)
+              fp(kswap,:)=fp(k,:)
+              ineargrid(kswap,:)=ineargrid(k,:)
+              ipar(kswap)=ipar(k)
+              if (present(dfp)) dfp(kswap,:)=dfp(k,:)
+              fp(k,:)=fp_swap
+              ineargrid(k,:)=ineargrid_swap
+              ipar(k)=ipar_swap
+              if (present(dfp)) dfp(k,:)=dfp_swap
             endif
           enddo
-!
-        case ('random')
-          if (initial .and. lroot) print*, 'set_particles_radius: random radius'
-          do k = npar_low,npar_high
-            call random_number_wrapper(fp(k,iap))
-            fp(k,iap) = fp(k,iap)*(aphigh-aplow)+aplow
-          enddo
-!
-        case ('logarithmically-spaced')
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'logarithmically spaced with ap0, ap1=', ap0(j), ap1
-          do k = npar_low,npar_high
-            fp(k,iap) = 10**(alog10(ap0(j))+(ipar(k)-0.5)* &
-                (alog10(ap1)-alog10(ap0(j)))/npar)
-          enddo
-          if (lparticles_density) then
-            do k=npar_low,npar_high
-              aplow =10**(alog10(fp(k,iap))-(alog10(ap1)-alog10(ap0(j)))/npar/2)
-              aphigh=10**(alog10(fp(k,iap))+(alog10(ap1)-alog10(ap0(j)))/npar/2)
-              if (qplaw /= 4) &
-                  fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) / &
-                                     (ap1**(4-qplaw) - ap0(j)**(4-qplaw)) * rhop_swarm * real(npar)
-            enddo
-            if (qplaw == 4) fp(npar_low:npar_high,irhopswarm) = rhop_swarm
-          endif
-!
-!  Lognormal distribution. Here, ap1 is the largest value in the distribution.
-!  Initialize particle radii by a direct probabilistic calculation using
-!  gaussian noise for ln(a/a0)/sigma.
-!
-        case ('lognormal')
-!
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'lognormal=', a0_initdist
-          call random_number_wrapper(r_mpar_loc)
-          call random_number_wrapper(p_mpar_loc)
-          tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-          fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
-!
-!  Lognormal distribution. Here, ap1 is the largest value in the distribution
-!  and ap0 is the smallest radius initially.
-!
-        case ('old_lognormal')
-!
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'lognormal=', ap0(1), ap1
-          lna0 = log(ap0(1))
-          lna1 = log(ap1)
-          lna0_initdist = log(a0_initdist)
-          do ibin = 1,nbin_initdist
-            lna = lna0+(lna1-lna0)*(ibin-1)/(nbin_initdist-1)
-            a_initdist(ibin) = exp(lna)
-            n_initdist(ibin) = exp(-0.5*(lna-lna0_initdist)**2/sigma_initdist**2) &
-                /(sqrt(twopi)*sigma_initdist*a_initdist(ibin))
-          enddo
-          nn_initdist = nint(n_initdist)
-          nn_initdist = (npar_high-npar_low+1)*nn_initdist/(sum(nn_initdist)-1)
-!
-!  is now normalized to the number of particles,
-!  so set the corresponding distribution.
-!  Normally, the number of bins is less than the number of available ones,
-!  so then we patch the rest with fp(kend+1:,iap)=a0_initdist.
-!
-          k = npar_low
-          do ibin = 1,nbin_initdist
-            kend = k+nn_initdist(ibin)
-            if (kend > k) then
-              fp(k:kend,iap) = a_initdist(ibin)
-              k = kend
-            endif
-          enddo
-!
-!  put all the remaining particles (from kend+1 to the end of the array)
-!  in the bin corresponding to the middle of the distribution.
-!
-          fp(kend+1:,iap) = a0_initdist
-!
-        case ('specify')
-!
-!  User specified particle size distribution with constant radii.
-!
-          if (initial .and. lroot) &
-              print*, 'set_particles_radius: constant radius, user specified distribution'
-          radii_cumulative = 0.0
-          radii_cumulative(1) = radii_distribution(1)
-          do i = 2,npart_radii
-            radii_cumulative(i) = radii_cumulative(i-1) + radii_distribution(i)
-          enddo
-          if (radii_cumulative(npart_radii) /= 1.0) then
-!
-!  Renormalize.
-!
-            do i = 1,npart_radii
-              radii_cumulative(i) = radii_cumulative(i)/radii_cumulative(npart_radii)
-            enddo
-          endif
-!
-          do k = npar_low,npar_high
-            call random_number_wrapper(radius_fraction)
-            do i = 1,npart_radii
-              if (radius_fraction <= radii_cumulative(i)) then
-                fp(k,iap) = ap0(i)
-                exit
-              endif
-            enddo
-          enddo
-!
-!  Coagulation test with linear kernel. We initially put particles according
-!  to the distribution function
-!
-!    fk = dn/dm = n_0/mbar_0*exp(-m/mbar_0)
-!        => rhok = m_k*n_0/mbar_0*exp(-m/mbar_0)
-!
-!  Integrating rhok over all mass and normalising by n_0*mbar_0 gives
-!
-!    I = int_0^m[rhok]/int_0^oo[rhok] = 1 - exp(-x) - x*exp(-x)
-!
-!  where x=mk/mbar_0. We place particles equidistantly along the integral
-!  to obtain the right distribution function.
-!
-        case ('kernel-lin')
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'initial condition for linear kernel test'
-          do k = npar_low,npar_high
-            p = (ipar(k)-0.5)/float(npar)
-            mmin = 0.0
-            mmax = 1.0
-            do while (.true.)
-              if ((1.0-exp(-mmax)*(1+mmax)) < p) then
-                mmax = mmax+1.0
-              else
-                exit
-              endif
-            enddo
-!
-            mcen = 0.5*(mmin+mmax)
-            fcen = 1.0-exp(-mcen)*(1+mcen)
-!
-            do while (abs(p-fcen) > 1.0e-6)
-              if (fcen < p) then
-                mmin = mcen
-              else
-                mmax = mcen
-              endif
-              mcen = 0.5*(mmin+mmax)
-              fcen = 1.0-exp(-mcen)*(1+mcen)
-            enddo
-!
-            fp(k,iap) = (mcen*mbar/four_pi_rhopmat_over_three)**(1.0/3.0)
-!
-          enddo
-!
-        case ('power-law')
-          call random_number_wrapper(fp(npar_low:npar_high,iap))
-          fp(npar_low:npar_high,iap) = ((aphigh**(qplaw+1.0)-aplow**(qplaw+1.0)) &
-              *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
-!
-        case default
-          if (lroot) print*, 'init_particles_radius: '// &
-              'No such such value for initap: ', trim(initap(j))
-          call fatal_error('init_particles_radius','')
-        endselect
+        endif
       enddo
 !
-!  Set initial particle radius if lparticles_mass=T
+    endsubroutine random_particle_pencils
+!***********************************************************************
+    subroutine map_xxp_grid(f,fp,ineargrid,lmapsink_opt)
 !
-      if (lparticles_mass) fp(:,iapinit) = fp(:,iap)
+!  Map the particles as a continuous density field on the grid.
 !
-      if (lparticles_radius_rpbeta) &
-          fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
+!  27-nov-05/anders: coded
 !
-! Reinitialize particle radius if reinitialize_ap=T
-! 09-Feb-17/Xiangyu: adapted from set_particles_radius
-      if (reinitialize_ap) then
-        do j = 1,ninit
-          select case (initap(j))
+      use GhostFold,     only: fold_f
+      use Particles_sub, only: get_rhopswarm
 !
-          case ('constant')
-            if (initial .and. lroot) print*, 'set_particles_radius: constant radius'
-            ind = 1
-            do k = npar_low,npar_high
-              if (npart_radii > 1) then
-                call random_number_wrapper(radius_fraction)
-                ind = ceiling(npart_radii*radius_fraction)
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+      logical, intent(in), optional :: lmapsink_opt
+!
+      real, dimension(nx) :: rhop_swarm_mn
+      real :: weight0, weight, weight_x, weight_y, weight_z
+      integer :: k, ix0, iy0, iz0, ixx, iyy, izz
+      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
+      logical :: lsink, lmapsink
+!
+!  Possible to map sink particles by temporarily switching irhop to irhops.
+!
+      if (present(lmapsink_opt)) then
+        lmapsink=lmapsink_opt
+        if (lmapsink) then
+          irhopm=irhop
+          irhop=ipotself
+        endif
+      else
+        lmapsink=.false.
+      endif
+!
+!  Calculate the number of particles in each grid cell.
+!
+      if (inp/=0 .and. (.not. lnocalc_np) .and. (.not. lmapsink)) then
+        f(:,:,:,inp)=0.0
+        do k=1,npar_loc
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
+        enddo
+      endif
+!
+!  Calculate the smooth number of particles in each grid cell. Three methods are
+!  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
+!
+!    0. NGP (Nearest Grid Point)
+!       The entire effect of the particle goes to the nearest grid point.
+!    1. C (Cloud In Cell)
+!       The particle has a region of influence with the size of a grid cell.
+!       This is equivalent to a first order (spline) interpolation scheme.
+!    2. TSC (Triangular Shaped Cloud)
+!       The particle is spread over a length of two grid cells, but with
+!       a density that falls linearly outwards.
+!       This is equivalent to a second order spline interpolation scheme.
+!
+      if ( (irhop/=0 .and. (.not. lnocalc_rhop)) .or. lmapsink .or. ipeh/=0) then
+        f(:,:,:,irhop)=0.0
+        if (ipeh/=0) f(:,:,:,ipeh)=0.0
+        if (lparticlemesh_cic) then
+!
+!  Cloud In Cell (CIC) scheme.
+!
+          do k=1,npar_loc
+            lsink=.false.
+            if (lparticles_sink) then
+              if (fp(k,iaps)>0.0) lsink=.true.
+            endif
+            if (lmapsink) lsink=.not.lsink
+            if (.not.lsink) then
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              ixx0=ix0; iyy0=iy0; izz0=iz0
+              ixx1=ix0; iyy1=iy0; izz1=iz0
+              if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+              if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+              if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+              if (nxgrid/=1) ixx1=ixx0+1
+              if (nygrid/=1) iyy1=iyy0+1
+              if (nzgrid/=1) izz1=izz0+1
+!
+              if (lparticles_density) then
+                weight0=fp(k,irhopswarm)
+              elseif (lparticles_radius.and.lparticles_number) then
+                weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+              elseif (lparticles_radius) then
+                weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
+              elseif (lparticles_number) then
+                weight0=mpmat*fp(k,inpswarm)
+              else
+                weight0=1.0
               endif
-              fp(k,iap) = ap0(ind)
+!
+              do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+!
+                weight=weight0
+                if (nxgrid/=1) then
+                  weight_x = 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx)
+                  weight=weight*weight_x
+                endif
+                if (nygrid/=1) then
+                  weight_y = 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy)
+                  weight=weight*weight_y
+                endif
+                if (nzgrid/=1) then
+                  weight_z = 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz)
+                  weight=weight*weight_z
+                endif
+!
+                f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight
+                endif
+!
+              enddo; enddo; enddo
+            endif
+          enddo
+!
+!  Triangular Shaped Cloud (TSC) scheme.
+!
+        elseif (lparticlemesh_tsc) then
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+          do k=1,npar_loc
+            lsink=.false.
+            if (lparticles_sink) then
+              if (fp(k,iaps)>0.0) lsink=.true.
+            endif
+            if (lmapsink) lsink=.not.lsink
+            if (.not.lsink) then
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              if (nxgrid/=1) then
+                ixx0=ix0-1; ixx1=ix0+1
+              else
+                ixx0=ix0  ; ixx1=ix0
+              endif
+              if (nygrid/=1) then
+                iyy0=iy0-1; iyy1=iy0+1
+              else
+                iyy0=iy0  ; iyy1=iy0
+              endif
+              if (nzgrid/=1) then
+                izz0=iz0-1; izz1=iz0+1
+              else
+                izz0=iz0  ; izz1=iz0
+              endif
+!
+              if (lparticles_density) then
+                weight0=fp(k,irhopswarm)
+              elseif (lparticles_radius.and.lparticles_number) then
+                weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+              elseif (lparticles_radius) then
+                weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
+              elseif (lparticles_number) then
+                weight0=mpmat*fp(k,inpswarm)
+              else
+                weight0=1.0
+              endif
+!
+!  The nearest grid point is influenced differently than the left and right
+!  neighbours are. A particle that is situated exactly on a grid point gives
+!  3/4 contribution to that grid point and 1/8 to each of the neighbours.
+!
+              do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                  weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                     0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                else
+                  if (nxgrid/=1) &
+                      weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                endif
+                if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                  weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                     0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                else
+                  if (nygrid/=1) &
+                      weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                endif
+                if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                  weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                     0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                else
+                  if (nzgrid/=1) &
+                      weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                endif
+!
+                weight=weight0
+!
+                if (nxgrid/=1) weight=weight*weight_x
+                if (nygrid/=1) weight=weight*weight_y
+                if (nzgrid/=1) weight=weight*weight_z
+!
+                f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight
+                endif
+!
+              enddo; enddo; enddo
+            endif
+          enddo
+!
+!  Nearest Grid Point (NGP) method.
+!
+        else
+          if (lparticles_radius.or.lparticles_number.or.lparticles_density) then
+            do k=1,npar_loc
+              lsink=.false.
+              if (lparticles_sink) then
+                if (fp(k,iaps)>0.0) lsink=.true.
+              endif
+              if (lmapsink) lsink=.not.lsink
+              if (.not.lsink) then
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+!
+                if (lparticles_density) then
+                  weight0=fp(k,irhopswarm)
+                elseif (lparticles_radius.and.lparticles_number) then
+                  weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+                elseif (lparticles_radius) then
+                  weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
+                elseif (lparticles_number) then
+                  weight0=mpmat*fp(k,inpswarm)
+                endif
+!
+                f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight0 = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight0 = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight0
+                endif
+!
+              endif
+            enddo
+          else
+            f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
+          endif
+        endif
+!
+!  Fold first ghost zone of f.
+!
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
+        if (.not.(lparticles_radius.or.lparticles_number.or. &
+            lparticles_density)) then
+          do m=m1,m2; do n=n1,n2
+            call get_rhopswarm(mp_swarm,fp,1,m,n,rhop_swarm_mn)
+            f(l1:l2,m,n,irhop)=rhop_swarm_mn*f(l1:l2,m,n,irhop)
+          enddo; enddo
+        endif
+!        call sharpen_tsc_density(f)
+      endif
+!
+!  Restore normal particle index if mapping sink particles.
+!
+      if (lmapsink) irhop=irhopm
+!
+    endsubroutine map_xxp_grid
+!***********************************************************************
+    subroutine map_vvp_grid(f,fp,ineargrid)
+!
+!  Map the particle velocities as vector field on the grid.
+!
+!  07-oct-08/anders: coded
+!
+      use GhostFold,     only: fold_f
+      use Particles_sub, only: get_rhopswarm
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+      real, dimension(nx) :: rhop_swarm_mn
+      real :: weight, weight_x, weight_y, weight_z
+      integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
+      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
+!
+!  Calculate the smooth velocity field of particles in each grid cell. Three
+!  methods are implemented for assigning a particle to the mesh (see Hockney &
+!  Eastwood):
+!
+!    0. NGP (Nearest Grid Point)
+!       The entire effect of the particle goes to the nearest grid point.
+!    1. CIC (Cloud In Cell)
+!       The particle has a region of influence with the size of a grid cell.
+!       This is equivalent to a first order (spline) interpolation scheme.
+!    2. TSC (Triangular Shaped Cloud)
+!       The particle is spread over a length of two grid cells, but with
+!       a density that falls linearly outwards.
+!       This is equivalent to a second order spline interpolation scheme.
+!
+      if (iupx/=0) then
+        do ivp=0,2
+          f(:,:,:,iupx+ivp)=0.0
+          if (lparticlemesh_cic) then
+!
+!  Cloud In Cell (CIC) scheme.
+!
+            do k=1,npar_loc
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+                ixx0=ix0; iyy0=iy0; izz0=iz0
+                ixx1=ix0; iyy1=iy0; izz1=iz0
+                if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+                if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+                if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+                if (nxgrid/=1) ixx1=ixx0+1
+                if (nygrid/=1) iyy1=iyy0+1
+                if (nzgrid/=1) izz1=izz0+1
+                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                  weight=1.0
+                  if (nxgrid/=1) &
+                       weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                  if (nygrid/=1) &
+                       weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                  if (nzgrid/=1) &
+                       weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  f(ixx,iyy,izz,iupx+ivp)=f(ixx,iyy,izz,iupx+ivp) + &
+                      weight*fp(k,ivpx+ivp)
+                enddo; enddo; enddo
             enddo
 !
-          case ('constant-1')
-            if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
-            do k = npar_low,npar_high
-              if (ipar(k) == 1) fp(k,iap) = ap1
+!  Triangular Shaped Cloud (TSC) scheme.
+!
+          elseif (lparticlemesh_tsc) then
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+            do k=1,npar_loc
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+                if (nxgrid/=1) then
+                  ixx0=ix0-1; ixx1=ix0+1
+                else
+                  ixx0=ix0  ; ixx1=ix0
+                endif
+                if (nygrid/=1) then
+                  iyy0=iy0-1; iyy1=iy0+1
+                else
+                  iyy0=iy0  ; iyy1=iy0
+                endif
+                if (nzgrid/=1) then
+                  izz0=iz0-1; izz1=iz0+1
+                else
+                  izz0=iz0  ; izz1=iz0
+                endif
+!
+!  The nearest grid point is influenced differently than the left and right
+!  neighbours are. A particle that is situated exactly on a grid point gives
+!  3/4 contribution to that grid point and 1/8 to each of the neighbours.
+!
+                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                  if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                    weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                       0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                  else
+                    if (nxgrid/=1) &
+                         weight_x = 0.75  -   ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+                  endif
+                  if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                    weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                       0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                  else
+                    if (nygrid/=1) &
+                         weight_y = 0.75  -   ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+                  endif
+                  if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                    weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                       0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+                  else
+                    if (nzgrid/=1) &
+                         weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
+                  endif
+!
+                  weight=1.0
+!
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,iupx+ivp)=f(ixx,iyy,izz,iupx+ivp) + &
+                      weight*fp(k,ivpx+ivp)
+                enddo; enddo; enddo
             enddo
+          else
 !
-          case ('lognormal')
+!  Nearest Grid Point (NGP) method.
 !
-            if (initial .and. lroot) print*, 'set_particles_radius: '// &
-                'lognormal=', a0_initdist
-            call random_number_wrapper(r_mpar_loc)
-            call random_number_wrapper(p_mpar_loc)
-            tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-            fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+            do k=1,npar_loc
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
+            enddo
+          endif
+!
+!  Fold first ghost zone of f.
+!
+          if (lparticlemesh_cic.or.lparticlemesh_tsc) &
+              call fold_f(f,iupx+ivp,iupx+ivp)
+!
+!  Normalize the assigned momentum by the particle density in the grid cell.
+!
+          do m=m1,m2 ; do n=n1,n2
+            call get_rhopswarm(mp_swarm,fp,1,m,n,rhop_swarm_mn)
+            where (f(l1:l2,m,n,irhop)/=0.0)
+              f(l1:l2,m,n,iupx+ivp)=rhop_swarm_mn*&
+              f(l1:l2,m,n,iupx+ivp)/f(l1:l2,m,n,irhop)
+            endwhere
+          enddo;enddo
+        enddo
+!
+      endif
+!
+    endsubroutine map_vvp_grid
+!***********************************************************************
+    subroutine particle_pencil_index(ineargrid)
+!
+!  Calculate the beginning and ending index of particles in a pencil.
+!
+!  24-apr-06/anders: coded
+!
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      integer :: k, iy0, iz0
+!
+      intent(in)  :: ineargrid
+!
+      npar_imn=0
+!
+!  Calculate the number of particles in each pencil.
+!
+      do k=1,npar_loc
+        iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+        npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
+      enddo
+!
+!  Calculate beginning and ending particle index for each pencil.
+!
+      k=0
+      do imn=1,ny*nz
+        if (npar_imn(imn)/=0) then
+          k1_imn(imn)=k + 1
+          k2_imn(imn)=k1_imn(imn) + npar_imn(imn) - 1
+          k=k+npar_imn(imn)
+        else
+          k1_imn(imn)=0
+          k2_imn(imn)=0
+        endif
+      enddo
+!
+    endsubroutine particle_pencil_index
+!***********************************************************************
+    subroutine shepherd_neighbour_pencil(fp,ineargrid,kshepherd,kneighbour)
+!
+!  Create a shepherd/neighbour list of particles in the pencil.
+!
+!  24-oct-05/anders: coded
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (nx) :: kshepherd
+      integer, dimension (:) :: kneighbour
+!
+      integer :: k, ix0
+!
+      kshepherd=0
+      if (imn==1) kneighbour=0
+!
+      if (npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          ix0=ineargrid(k,1)
+          kneighbour(k)=kshepherd(ix0-nghost)
+          kshepherd(ix0-nghost)=k
+        enddo
+      endif
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine shepherd_neighbour_pencil
+!***********************************************************************
+    subroutine shepherd_neighbour_block(fp,ineargrid,kshepherdb,kneighbour, &
+        iblock)
+!
+!  Create a shepherd/neighbour list of particles in the block.
+!
+!  17-nov-09/anders: dummy
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (nxb,nyb,nzb) :: kshepherdb
+      integer, dimension (:) :: kneighbour
+      integer :: iblock
+!
+      intent (in) :: fp, ineargrid, iblock
+      intent (out) :: kshepherdb, kneighbour
+!
+      call fatal_error('shepherd_neighbour_block', &
+          'only implemented for block domain decomposition')
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(kshepherdb(1,1,1))
+      call keep_compiler_quiet(kneighbour)
+      call keep_compiler_quiet(iblock)
+!
+    endsubroutine shepherd_neighbour_block
+!***********************************************************************
+    subroutine interpolation_consistency_check()
+!
+!  Check that all interpolation requirements are satisfied:
+!
+      use Particles_cdata
+!
+      if (interp%luu .and. (.not. &
+          (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)))) then
+        call warning('initialize_particles','interpolated uu '// &
+          'is set to zero because there is no Hydro module!')
+      endif
+!
+      if (interp%loo .and. (.not.lparticles_spin)) then
+        call fatal_error('initialize_particles','interpolation of oo '// &
+          'impossible without the Particles_lift module!')
+      endif
+!
+      if (interp%lTT .and. ((.not.lentropy).and.(.not.ltemperature))) then
+        call fatal_error('initialize_particles','interpolation of TT '//&
+          'impossible without the Entropy (or temperature_idealgas) module!')
+      endif
+!
+!  allow for kinematic flows as well
+!
+      if (.not.lhydro_kinematic) then
+        if (interp%lrho .and. (.not.ldensity) .and. (.not.lanelastic)) then
+          call fatal_error('initialize_particles','interpolation of rho '// &
+            'impossible without the Density module!')
+        endif
+      endif
+!
+    endsubroutine interpolation_consistency_check
+!***********************************************************************
+    subroutine interpolate_quantities(f,fp,p,ineargrid)
+!
+!  Interpolate the needed sub-grid quantities according to preselected
+!  interpolation policies.
+!
+!  28-jul-08/kapelrud: coded
+!
+      use Particles_cdata
+!
+      real,dimension(mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer,dimension(mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
+!
+      intent(in) :: f,fp,ineargrid
+!
+      integer :: k1,k2,k
+!
+      k1=k1_imn(imn); k2=k2_imn(imn)
+!
+!  Flow velocity:
+!
+      if (interp%luu) then
+        allocate(interp_uu(k1:k2,3))
+        if (.not.allocated(interp_uu)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_uu'
+          call fatal_error('interpolate_quantities','')
+        endif
+!
+!  For kinematic flow, we must have the flow in the f-array
+!
+        if (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)) then
+          call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
+            interp%pol_uu)
+        else
+          interp_uu=0.0
+        endif
+      endif
+!
+!  Flow vorticity:
+!
+      if (interp%loo) then
+        allocate(interp_oo(k1:k2,3))
+        if (.not.allocated(interp_oo)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_oo'
+          call fatal_error('interpolate_quantities','')
+        endif
+        call interp_field_pencil_wrap(f,iox,ioz,fp,ineargrid,interp_oo, &
+          interp%pol_oo)
+      endif
+!
+!  Temperature:
+!
+      if (interp%lTT) then
+        allocate(interp_TT(k1:k2))
+        if (.not.allocated(interp_TT)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_TT'
+          call fatal_error('interpolate_quantities','')
+        endif
+!
+!  Determine what quantity to interpolate (temperature or entropy)
+!
+        if (lentropy) then
+          call interp_field_pencil_wrap(f,iss,iss,fp,ineargrid,interp_TT, &
+            interp%pol_TT)
+        elseif (ltemperature) then
+          call interp_field_pencil_wrap(f,ilnTT,ilnTT,fp,ineargrid,interp_TT, &
+            interp%pol_TT)
+        endif
+!
+        if ( (lentropy.and.pretend_lnTT)   .or. &
+           (ltemperature.and.(.not.ltemperature_nolog)) ) then
+          interp_TT=exp(interp_TT)
+        elseif (lentropy.and.(.not.pretend_lnTT)) then
+          call fatal_error('interpolate_quantities','enable flag '//&
+            'pretend_lnTT in init_pars to be able to interpolate'// &
+            ' the temperature if using the regular temperature module!')
+        endif
+      endif
+!
+!  Temperature gradient:
+!
+      if (interp%lgradTT) then
+        allocate(interp_gradTT(k1:k2,3))
+        if (.not.allocated(interp_gradTT)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_gradTT'
+          call fatal_error('interpolate_quantities','')
+        endif
+!
+        do k=k1,k2
+          interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
+        enddo
+      endif
+!
+!  Density:
+!
+      if (interp%lrho) then
+        allocate(interp_rho(k1:k2))
+        if (.not.allocated(interp_rho)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_rho'
+          call fatal_error('interpolate_quantities','')
+        endif
+        if (ldensity) then
+          call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,&
+            interp_rho,interp%pol_rho)
+        else
+          interp_rho=1. !(should be made general)
+        endif
+        if (.not.ldensity_nolog) then
+          interp_rho=exp(interp_rho)
+        endif
+      endif
+!
+!  Pressure:
+!
+      if (interp%lpp) then
+!!$        call fatal_error('interpolate_quantities',&
+!!$            'Check that interpolation of pressure is properly implemented!')
+        allocate(interp_pp(k1:k2))
+        if (.not.allocated(interp_pp)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_pp'
+          call fatal_error('interpolate_quantities','')
+        endif
+        if (npar_imn(imn) /= 0) then
+          do k=k1,k2
+            interp_pp(k)=p%pp(ineargrid(k,1)-nghost)
+          enddo
+        endif
+      endif
+!
+!  Viscosity:
+!
+      if (interp%lnu) then
+        allocate(interp_nu(k1:k2))
+        if (.not.allocated(interp_nu)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_nu'
+          call fatal_error('interpolate_quantities','')
+        endif
+        if (npar_imn(imn) /= 0) then
+          do k=k1,k2
+            interp_nu(k)=p%nu(ineargrid(k,1)-nghost)
+          enddo
+        endif
+      endif
+!
+!  Species:
+!
+      if (interp%lspecies) then
+        allocate(interp_species(k1:k2,nchemspec))
+        if (.not.allocated(interp_species)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_species'
+          call fatal_error('interpolate_quantities','')
+        endif
+        call interp_field_pencil_wrap(f,ichemspec(1),ichemspec(nchemspec),&
+            fp,ineargrid,interp_species,interp%pol_species)
+      endif
+!
+    endsubroutine interpolate_quantities
+!***********************************************************************
+    subroutine cleanup_interpolated_quantities
+!
+!  Deallocate memory from particle pencil interpolation variables
+!
+!  28-jul-08/kapelrud: coded
+!
+      use Particles_cdata
+!
+      if (allocated(interp_uu)) deallocate(interp_uu)
+      if (allocated(interp_oo)) deallocate(interp_oo)
+      if (allocated(interp_TT)) deallocate(interp_TT)
+      if (allocated(interp_rho)) deallocate(interp_rho)
+      if (allocated(interp_gradTT)) deallocate(interp_gradTT)
+      if (allocated(interp_nu)) deallocate(interp_nu)
+      if (allocated(interp_pp)) deallocate(interp_pp)
+      if (allocated(interp_species)) deallocate(interp_species)
+!
+    endsubroutine cleanup_interpolated_quantities
+!***********************************************************************
+    subroutine interp_field_pencil_0(f,i1,i2,fp,ineargrid,vec,policy)
+!
+!  Overloaded interpolation wrapper for scalar fields.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      real, dimension(:) :: vec
+      integer :: policy
+!
+      intent(in) :: f,i1,i2,fp,ineargrid, policy
+      intent(inout) :: vec
+!
+      call interp_field_pencil(f,i1,i2,fp,ineargrid,1,vec,policy)
+!
+    endsubroutine interp_field_pencil_0
+!***********************************************************************
+    subroutine interp_field_pencil_1(f,i1,i2,fp,ineargrid,vec,policy)
+!
+!  Overloaded interpolation wrapper for vector fields.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      real, dimension(:,:) :: vec
+      integer :: policy
+!
+      intent(in) :: f,i1,i2,fp,ineargrid, policy
+      intent(inout) :: vec
+!
+      call interp_field_pencil(f,i1,i2,fp,ineargrid,ubound(vec,2),vec,policy)
+!
+    endsubroutine interp_field_pencil_1
+!***********************************************************************
+    subroutine interp_field_pencil(f,i1,i2,fp,ineargrid,uvec2,vec,policy)
+!
+!  Interpolate stream field to all sub grid particle positions in the
+!  current pencil.
+!  i1 & i2 sets the component to interpolate; ex.: iux:iuz, or iss:iss
+!
+!  16-jul-08/kapelrud: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      integer :: uvec2,policy
+      real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec
+!
+      intent(in) :: f,i1,i2,fp,ineargrid, policy
+      intent(inout) :: vec
+!
+      integer :: k
+!
+      if (npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          select case (policy)
+          case (cic)
+            call interpolate_linear( &
+                f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
+          case (tsc)
+            if (linterpolate_spline) then
+              call interpolate_quadratic_spline( &
+                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
+            else
+              call interpolate_quadratic( &
+                   f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
+            endif
+          case (ngp)
+            vec(k,:)=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),i1:i2)
           endselect
         enddo
       endif
 !
-      call keep_compiler_quiet(f)
-!
-    endsubroutine set_particle_radius
+    endsubroutine interp_field_pencil
 !***********************************************************************
-    subroutine pencil_criteria_par_radius()
+    subroutine sort_particles_iblock(fp,ineargrid,ipar,dfp)
 !
-!  All pencils that the Particles_radius module depends on are specified here.
+!  Sort the particles so that they appear in order of the global brick index.
+!  That is, sorted first by processor number and then by local brick index.
 !
-!  21-nov-06/anders: coded
+!  16-nov-09/anders: dummy
 !
-      if (lsweepup_par) then
-        lpenc_requested(i_uu) = .true.
-        lpenc_requested(i_rho) = .true.
-        lpenc_requested(i_cc) = .true.
-      endif
-      if (lcondensation_par) then
-        lpenc_requested(i_csvap2) = .true.
-        lpenc_requested(i_TT1) = .true.
-        lpenc_requested(i_ppvap) = .true.
-        lpenc_requested(i_rho) = .true.
-        lpenc_requested(i_rho1) = .true.
-        lpenc_requested(i_cc) = .true.
-        lpenc_requested(i_cc1) = .true.
-        lpenc_requested(i_np) = .true.
-        lpenc_requested(i_rhop) = .true.
-        if (ltemperature) then
-          lpenc_requested(i_cv1) = .true.
-          lpenc_requested(i_TT1) = .true.
-        endif
-      endif
-      if (lsupersat .and. lsupersat_par) then
-        lpenc_requested(i_ssat) = .true.
-        lpenc_requested(i_ugssat) = .true.
-      endif
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
 !
-    endsubroutine pencil_criteria_par_radius
-!***********************************************************************
-    subroutine dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
+      call fatal_error('sort_particles_iblock', &
+          'only implemented for block domain decomposition')
 !
-!  Evolution of particle radius.
-!
-!  22-aug-05/anders: coded
-!
-      use Particles_number
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension(mpar_loc,3) :: ineargrid
-      logical :: lfirstcall=.true., lheader
-      integer :: k, k1, k2
-      real :: mass_per_radius, rho
-      real, dimension(:), allocatable :: effectiveness_factor, mass_loss
-!
-      intent(in) :: f
-      intent(out) :: dfp
-      intent(inout) :: fp
-!
-!  Print out header information in first time step.
-!
-      lheader = lfirstcall .and. lroot .and.(.not. lpencil_check_at_work)
-!
-!  Identify module.
-!
-      if (lheader) print*,'dap_dt_pencil: Calculate dap/dt'
-!
-      if (lsweepup_par) call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lcondensation_par) &
-          call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lsupersat_par) &
-          call dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid) !XY
-!
-!
-      lfirstcall = .false.
-!
-!  Decrease particle radius with dmass if the density in the outer shell
-!  is wholly consumed (equation 51 in Equations to be solved for DNS
-!  reactive particles in a turbulent flow)
-!
-      if (lparticles_chemistry .and. npar_imn(imn) /= 0) then
-        k1 = k1_imn(imn)
-        k2 = k2_imn(imn)
-!
-!  Particles can lose radius under consumption
-!
-        if (.not. lconstant_radius_w_chem) then
-!
-!  mass loss has a positive value -> particle is losing mass
-!  (the mass vector is pointing out of the particle)
-!
-          allocate(mass_loss(k1:k2))
-          allocate(effectiveness_factor(k1:k2))
-!
-          call get_radius_chemistry(mass_loss,effectiveness_factor)
-!
-          if (.not. lsurface_nopores) then
-            do k = k1,k2
-              if (fp(k,irhosurf) < 0) then
-                rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
-                mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-                dfp(k,iap) = dfp(k,iap) - mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
-              endif
-              fp(k,ieffp) = effectiveness_factor(k)
-            enddo
-          else
-            do k = k1,k2
-              rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
-              mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-              dfp(k,iap) = dfp(k,iap) - mass_loss(k)/mass_per_radius
-            enddo
-          endif
-          deallocate(mass_loss)
-          deallocate(effectiveness_factor)
-        else
-!
-!  Constant particle radius with activated chemistry
-!
-          dfp(k1:k2,iap) = 0.0
-!
-        endif
-      endif
-!
-    endsubroutine dap_dt_pencil
-!***********************************************************************
-    subroutine dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Increase in particle radius due to sweep-up of small grains in the gas.
-!
-!  22-aug-05/anders: coded
-!
-      use Diagnostics, only: max_mn_name
-      use Particles_number
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real, dimension(nx) :: dt1_sweepup
-      real :: deltavp
-      integer :: k, ix0, ix
-!
-      intent(in) :: f, fp
-      intent(inout) :: dfp
-!
-!  Increase in particle radius due to sweep-up of small grains in the gas.
-!
-      if (t >= tstart_sweepup_par) then
-!
-!
-        if (npar_imn(imn) /= 0) then
-          do k = k1_imn(imn),k2_imn(imn)
-            ix0 = ineargrid(k,1)
-            ix = ix0-nghost
-!  No interpolation needed here.
-!  Relative speed.
-            deltavp = sqrt( &
-                (fp(k,ivpx)-p%uu(ix,1))**2 + &
-                (fp(k,ivpy)-p%uu(ix,2))**2 + &
-                (fp(k,ivpz)-p%uu(ix,3))**2 )
-            if (deltavp12_floor /= 0.0) &
-                deltavp = sqrt(deltavp**2+deltavp12_floor**2)
-!  Allow boulders to sweep up small grains if relative velocity not too high.
-            if (deltavp <= vthresh_sweepup .or. vthresh_sweepup < 0.0) then
-!  Radius increase due to sweep-up.
-              dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
-!
-!  Deplete gas of small grains.
-!
-              if (lparticles_number) np_swarm = fp(k,inpswarm)
-              if (lpscalar_nolog) then
-                df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
-              else
-                df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
-                    np_swarm*pi*fp(k,iap)**2*deltavp
-              endif
-!
-!  Time-step contribution of sweep-up.
-!
-              if (lfirst .and. ldt) then
-                dt1_sweepup(ix) = dt1_sweepup(ix) + &
-                    np_swarm*pi*fp(k,iap)**2*deltavp
-              endif
-!
-            endif
-!
-            if (ldiagnos) then
-              if (idiag_dvp12m /= 0) call sum_par_name((/deltavp/),idiag_dvp12m)
-            endif
-          enddo
-        endif
-!
-!  Time-step contribution of sweep-up.
-!
-        if (lfirst .and. ldt) then
-          dt1_sweepup = dt1_sweepup/cdtps
-          dt1_max = max(dt1_max,dt1_sweepup)
-          if (ldiagnos .and. idiag_dtsweepp /= 0) &
-              call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
-        endif
-!
-      endif
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine dap_dt_sweepup_pencil
-!***********************************************************************
-    subroutine dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Change in particle radius due to condensation of monomers from the gas and
-!  evaporation of solid/liquid droplets.
-!
-!  15-jan-10/anders: coded
-!
-      use EquationOfState, only: gamma
-      use Particles_number
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real, dimension(nx) :: ap_equi, vth, dt1_condensation, rhovap
-      real, dimension(nx) :: total_surface_area, ppsat
-      real, dimension(nx) :: rhocond_tot, rhosat, np_total
-      real :: dapdt, drhocdt, alpha_cond_par
-      integer :: k, ix, ix0
-!
-      intent(in) :: f, fp
-      intent(inout) :: dfp
-!
-!  Change in particle radius due to condensation and evaporation.
-!
-      if (t >= tstart_condensation_par) then
-!
-        if (npar_imn(imn) /= 0) then
-!          rhovap=p%cc(:,1)*p%rho
-!DMDM
-          rhovap = p%cc*p%rho
-          ppsat = 6.035e11*exp(-5938*p%TT1)  ! Valid for water
-          vth = sqrt(p%csvap2)
-          rhosat = gamma*ppsat/p%csvap2
-          rhocond_tot = p%rhop+rhovap
-          if (lfirst .and. ldt) then
-            np_total = 0.0
-            total_surface_area = 0.0
-            dt1_condensation = 0.0
-          endif
-          do k = k1_imn(imn),k2_imn(imn)
-            ix0 = ineargrid(k,1)
-            ix = ix0-nghost
-!
-!  The condensation/evaporation mass flux is
-!
-!    F = vth*rhovap*alpha
-!
-!  where vth is the thermal speed, rhopvap is the mass density of vapor,
-!  and alpha \in [0,1] is the condensation coefficient. Various authors argue
-!  for different choices of alpha. Following Barkstrom 1978 we take
-!
-!    alpha = 1/(vth*ap/D + 1/alpha0)
-!
-!  where D is the diffusion coefficient of vapor and ap the particle radius.
-!  Small particles, with ap<D/(alpha0*vth), have alpha=alpha0, while the
-!  condenation coefficient decreases linearly with particle size for larger
-!  particles. Barkstrom 1978 use alpha0=0.04.
-!
-            select case (condensation_coefficient_type)
-            case ('constant')
-              alpha_cond_par = alpha_cond
-            case ('size-dependent')
-              alpha_cond_par = 1/(vth(ix)*fp(k,iap)*diffusion_coefficient1+ &
-                  alpha_cond1)
-            case default
-              if (lroot) print*, 'dap_dt_condensation_pencil: '// &
-                  'invalid condensation coefficient type'
-              call fatal_error('dap_dt_condensation_pencil','')
-              alpha_cond_par = 0.
-            endselect
-!
-!  Radius increase by condensation or decrease by evaporation.
-!
-            if (fp(k,iap) < apmin) then
-!
-!  Do not allow particles to become smaller than a minimum radius.
-!
-              dapdt = -tau_damp_evap1*(fp(k,iap)-apmin)
-              if (lfirst .and. ldt) then
-                dt1_condensation(ix) = max(dt1_condensation(ix),tau_damp_evap1)
-              endif
-            else
-              if (lcondensation_simplified) then
-                dapdt = GS_condensation/fp(k,iap)
-                !print*,"radius=",fp(k,iap)
-              else
-                dapdt = 0.25*vth(ix)*rhopmat1* &
-                    (rhovap(ix)-rhosat(ix))*alpha_cond_par
-              endif
-!
-!  Damp approach to minimum size. The radius decreases linearly with time in
-!  the limit of small particles; therefore we need to damp the evaporation to
-!  avoid small time-steps.
-!
-              if (dapdt < 0.0) then
-                dapdt = dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
-                if (lfirst .and. ldt) then
-                  dt1_condensation(ix) = max(dt1_condensation(ix), &
-                      abs(dapdt/(fp(k,iap)-apmin)))
-                endif
-              endif
-            endif
-!
-            dfp(k,iap) = dfp(k,iap)+dapdt
-!
-!  Vapor monomers are added to the gas or removed from the gas.
-!
-            if (lparticles_number) np_swarm = fp(k,inpswarm)
-            if (lcondensation_simplified) then
-              drhocdt = 0.
-            else
-              drhocdt = -dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
-            endif
-!
-!  Drive the vapor pressure towards the saturated pressure due to contact
-!  with "ocean" at the box bottom.
-!
-            if (lborder_driving_ocean) then
-              if (fp(k,izp) < ztop_ocean) then
-                drhocdt = drhocdt + tau_ocean_driving1*(rhosat(ix)-rhovap(ix))
-              endif
-            endif
-!
-!  feedback, but should not be used if we don't have density
-!
-            if (ldensity) then
-              if (ldensity_nolog) then
-                df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
-              else
-                df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
-              endif
-            endif
-!
-            if (lpscalar_nolog) then
-              df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
-                  (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
-            elseif (lpscalar) then
-              df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
-                  (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
-            endif
-!
-!  Release latent heat to gas / remove heat from gas.
-!
-            if (ltemperature .and. llatent_heat) then
-              df(ix0,m,n,ilnTT) = df(ix0,m,n,ilnTT) - &
-                  latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
-            endif
-!
-            if (lfirst .and. ldt) then
-              total_surface_area(ix) = total_surface_area(ix)+ &
-                  4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
-              np_total(ix) = np_total(ix)+np_swarm
-            endif
-          enddo
-!
-!  Time-step contribution of condensation.
-!
-          if (lfirst .and. ldt) then
-            ap_equi = ((p%rhop+(rhovap-rhosat))/ &
-                (4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
-            do ix = 1,nx
-              if (rhocond_tot(ix) > rhosat(ix)) then
-                dt1_condensation(ix) = max(total_surface_area(ix)*vth(ix), &
-                    pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
-              endif
-            enddo
-          endif
-        endif
-!
-        if (lborder_driving_ocean) then
-          if (z(n) < ztop_ocean) then
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - &
-                (1.0-TTocean*p%TT1)*tau_ocean_driving1
-          endif
-        endif
-!
-!  Time-step contribution of condensation.
-!
-        if (lfirst .and. ldt) then
-          dt1_condensation = dt1_condensation/cdtpc
-          dt1_max = max(dt1_max,dt1_condensation)
-        endif
-!
-      endif
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine dap_dt_condensation_pencil
-!***********************************************************************
-    subroutine dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Growth by condesation in a passive scalar field
-!
-!  28-may-16/Xiang-Yu: coded
-!
-      use Particles_number
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real :: dapdt
-      integer :: k, ix, ix0
-!
-      intent(in) :: f, fp
-      intent(inout) :: dfp
-!
-!AB:  At the moment, dapdt grows only if lsupersat=T.
-!AB:  But we want the previous option should still to work.
-!
-      do k = k1_imn(imn),k2_imn(imn)
-        ix0 = ineargrid(k,1)
-        ix = ix0-nghost
-        if (lsupersat) then
-          dapdt = f(ix,m,n,issat)/fp(k,iap)
-          !print*,'ssat=',f(ix,m,n,issat)
-          !print*,'r=',fp(k,iap)
-          dfp(k,iap) = dfp(k,iap)+dapdt
-        endif
-      enddo
-!
-    endsubroutine dap_dt_supersat_pencil
-!***********************************************************************
-    subroutine dap_dt(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of particle radius.
-!
-!  21-nov-06/anders: coded
-!
-      use Sub
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-!  Diagnostic output.
-!
-      if (ldiagnos) then
-        if (idiag_apm /= 0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
-        if (idiag_ap2m /= 0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
-        if (idiag_apmin /= 0) &
-            call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
-        if (idiag_apmax /= 0) call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
-        if (idiag_npswarmm /= 0) &
-            call sum_par_name(rhop_swarm/ &
-            (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
-        if (idiag_ieffp /= 0) &
-            call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp)
-      endif
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(ipar)
+      if (present(dfp)) call keep_compiler_quiet(dfp)
 !
-    endsubroutine dap_dt
+    endsubroutine sort_particles_iblock
 !***********************************************************************
-    subroutine read_particles_rad_init_pars(iostat)
+    subroutine fill_blocks_with_bricks(a,ab,marray,ivar)
 !
-      use File_io, only: parallel_unit
+!  Fill adopted blocks with bricks from the f-array.
 !
-      integer, intent(out) :: iostat
-      integer :: pos
+!  04-nov-09/anders: dummy
 !
-      read (parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat)
+      integer :: marray
+      real, dimension (mx,my,mz,marray) :: a
+      real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
+      integer :: ivar
 !
-!  Find how many different particle radii we are using. This must be done
-!  because not all parts of the code are adapted to work with more than one
-!  particle radius.
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(ab(1,1,1,1,0))
+      call keep_compiler_quiet(marray)
+      call keep_compiler_quiet(ivar)
 !
-      do pos = 1,ndustrad
-        if (ap0(pos) /= 0) then
-          npart_radii = npart_radii+1
-        endif
+    endsubroutine fill_blocks_with_bricks
+!***********************************************************************
+    subroutine fill_bricks_with_blocks(a,ab,marray,ivar)
+!
+!  Fill adopted blocks with bricks from the f-array.
+!
+!  04-nov-09/anders: dummy
+!
+      integer :: marray
+      real, dimension (mx,my,mz,marray) :: a
+      real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
+      integer :: ivar
+!
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(ab(1,1,1,1,0))
+      call keep_compiler_quiet(marray)
+      call keep_compiler_quiet(ivar)
+!
+    endsubroutine fill_bricks_with_blocks
+!***********************************************************************
+    subroutine shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c)
+!
+!  20-July-2010: coded AlexHubbard
+!
+!  Create a shepherd/neighbour list of particles in the pencil.
+!  On collisional grid
+!  Adapted from particles_map
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid_c
+      integer, dimension (:,:,:) :: kshepherd_c
+      integer, dimension (mpar_loc) :: kneighbour_c
+!
+      integer :: k, ix0, iy0, iz0
+!
+      kshepherd_c=0
+      kneighbour_c=0
+!
+! kshepherd contains highest k particle for each collisional grid point
+! kneighbour contains next highest k particle on the same collisional grid
+! point as that of particle k.
+!
+      do k=1,npar_loc
+        ix0=ineargrid_c(k,1); iy0=ineargrid_c(k,2);iz0=ineargrid_c(k,3)
+        kneighbour_c(k)=kshepherd_c(ix0, iy0, iz0)
+        kshepherd_c(ix0, iy0, iz0)=k
       enddo
 !
-    endsubroutine read_particles_rad_init_pars
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine shepherd_neighbour_pencil3d
 !***********************************************************************
-    subroutine write_particles_rad_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=particles_radius_init_pars)
-!
-    endsubroutine write_particles_rad_init_pars
-!***********************************************************************
-    subroutine read_particles_rad_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_particles_rad_run_pars
-!***********************************************************************
-    subroutine write_particles_rad_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=particles_radius_run_pars)
-!
-    endsubroutine write_particles_rad_run_pars
-!***********************************************************************
-    subroutine rprint_particles_radius(lreset,lwrite)
-!
-!  Read and register print parameters relevant for particles radius.
-!
-!  22-aug-05/anders: coded
-!
-      use Diagnostics, only: parse_name
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      integer :: iname
-      logical :: lwr
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr = lwrite
-      if (lwr) write (3,*) 'iap=', iap
-!
-!  Reset everything in case of reset.
-!
-      if (lreset) then
-        idiag_apm = 0
-        idiag_ap2m = 0
-        idiag_apmin = 0
-        idiag_apmax = 0
-        idiag_dvp12m = 0
-        idiag_dtsweepp = 0
-        idiag_npswarmm = 0
-        idiag_ieffp = 0
-      endif
-!
-!  Run through all possible names that may be listed in print.in.
-!
-      if (lroot .and. ip < 14) &
-          print*, 'rprint_particles_radius: run through parse list'
-      do iname = 1,nname
-        call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
-        call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
-        call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
-        call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
-        call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
-        call parse_name(iname,cname(iname),cform(iname),'dtsweepp', &
-            idiag_dtsweepp)
-        call parse_name(iname,cname(iname),cform(iname),'ieffp',idiag_ieffp)
-        if (.not. lparticles_number) call parse_name(iname,cname(iname), &
-            cform(iname),'npswarmm',idiag_npswarmm)
-      enddo
-!
-    endsubroutine rprint_particles_radius
-!***********************************************************************
-    subroutine get_stbin(iStbin,fp,ip)
-      real, dimension(mpar_loc,mparray) :: fp
-      integer, intent(out) :: iStbin
-      integer, intent(in) :: ip
-      integer :: k=0
-      real :: api
-      k = 1
-      api = fp(ip,iap)
-      if (lfixed_particles_radius) then
-        do while((api  >=  ap0(k)).and.(k  <=  ndustrad))
-          iStbin = k
-          k = k+1
-        enddo
-      endif
-    endsubroutine get_stbin
-!***********************************************************************
-    subroutine get_mass_from_radius(mpi,fp,ip)
-      real, dimension(mpar_loc,mparray) :: fp
-      integer, intent(in) :: ip
-      real, intent(out) :: mpi
-      real :: api
-      api = fp(ip,iap)
-      mpi = (4./3.)*pi*rhopmat*(api**3)
-    endsubroutine get_mass_from_radius
-!***********************************************************************
-endmodule Particles_radius
+endmodule Particles_map

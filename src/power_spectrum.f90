@@ -963,17 +963,21 @@ module power_spectrum
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+      if (lmagnetic) then
+        do n=n1,n2
+          do m=m1,m2
+            call curli(f,iaa,bbi,ivec)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          enddo
         enddo
-      enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
-      a_im=0.
-      b_im=0.
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      else
+        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+      endif
 !
 !  spectrum of u.b
 !

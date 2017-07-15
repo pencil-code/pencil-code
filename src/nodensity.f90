@@ -26,8 +26,9 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
-  real, dimension (nz) :: glnrhomz
+  logical :: lcalc_lnrhomean=.false., lcalc_glnrhomean=.false.,lupw_lnrho=.false.
+  real, dimension (nz) :: glnrhomz, lnrhomz
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   include 'density.h'
 !
@@ -342,5 +343,14 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Density

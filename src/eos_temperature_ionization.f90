@@ -82,23 +82,11 @@ module EquationOfState
   logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
   logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
   real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=impossible
-  real :: mpoly=impossible, mpoly0=impossible
-  real :: mpoly1=impossible, mpoly2=impossible
-  integer :: isothtop=0
-  real, dimension (3) :: beta_glnrho_global=impossible
-  real, dimension (3) :: beta_glnrho_scaled=impossible
 ! Allocatable 3D-array for cp
   real, dimension (:,:,:), allocatable :: cp_full
 !
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
-!
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
 !
   contains
 !***********************************************************************
@@ -517,20 +505,6 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
-!***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
@@ -2310,10 +2284,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -2357,12 +2327,6 @@ module EquationOfState
       call keep_compiler_quiet(MolMass)
 !
      endsubroutine find_mass
-!***********************************************************************
-    subroutine read_Lewis
-!
-!  Dummy routine
-!
-    endsubroutine read_Lewis
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

@@ -196,6 +196,9 @@ def zder2_6th(f,dz,x=[],y=[],z=[],param=[],dim=[]):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
+    if (len(z) < 1):
+        gd=read_grid(quiet=True)
+        z=gd.z
     if not param:
         param=read_param(quiet=True)
     if not dim:

@@ -21,11 +21,11 @@ def get_systemid():
     submit_scriptfile = False
     submit_line = False
 
-    if raw_name.startswith('theo'): 		# theo in garchingen uses sun grid
-        system_name = 'theo'
-        job_name_key = '-N'
+    if raw_name.startswith('isaac'):      # slurm on draco
+        system_name = 'isaac'
+        job_name_key = '#SBATCH -J'
         submit_scriptfile = 'submit.csh'
-        submit_line = 'qsub submit.csh'
+        submit_line = 'llsubmit submit.csh'
 
     elif raw_name.startswith('hy'): 		# loadleveler on hydra
         system_name = 'hydra'
@@ -38,7 +38,7 @@ def get_systemid():
         job_name_key = 'job_name'
         submit_scriptfile = 'submit.sh'
         submit_line = 'llsubmit submit.sh'
-        
+
     elif raw_name.startswith('draco'):    # loadleveler on juqueen
         system_name = 'draco'
         job_name_key = '#SBATCH -J'

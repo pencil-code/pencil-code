@@ -34,6 +34,7 @@ def simulation(*args, **kwargs):
         self.param:         list of param file
         self.grid:          grid object
         self.dim:           dim object
+        self.tmp_dict:      temporal dictionary of stuff, will not be saved
     """
 
     return __Simulation__(*args, **kwargs)
@@ -72,10 +73,11 @@ class __Simulation__(object):
         self.grid = False
         self.dim = False
         self.ghost_grid = False
+        self.tmp_dict = {}
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_scripts=False, OVERWRITE=False):
+    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -83,22 +85,21 @@ class __Simulation__(object):
             Name in submit scripts will be renamed if possible! Submit scripts will be identified by submit* plus appearenace of old simulation name inside, latter will be renamed!
 
         Args:
-            path_root:      Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing!
-            name:           Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
-            optionals:      Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
-            quiet:          Set True to suppress output.
-            rename_submit_scripts:   Set False if no renames shall be performed in subnmit* files
-            OVERWRITE:      Set True to overwrite no matter what happens!
+            path_root:               Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing!
+            name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
+            optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
+            quiet:                   Set True to suppress output.
+            rename_submit_script:   Set False if no renames shall be performed in subnmit* files
+            OVERWRITE:               Set True to overwrite no matter what happens!
         """
         from os import listdir
         from os.path import exists, join, abspath, basename
         from shutil import copyfile
         from glob import glob
         from numpy import size
-        from pencilnew.io import mkdir
         from pencilnew.sim import is_sim_dir
         from pencilnew import get_sim
-        from pencilnew.io import mkdir, get_systemid, debug_breakpoint
+        from pencilnew.io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
         from pencilnew.sim import is_sim_dir
 
         # set up paths
@@ -111,13 +112,20 @@ class __Simulation__(object):
         # but keep name of old if sim with old name is NOT existing in NEW directory
         if name == False:
             name = self.name
-        if exists(join(path_root, self.name)):
+        if exists(join(path_root, name)) and OVERWRITE == False:
             name = name+'_copy'
             if exists(join(path_root, name)):
                 name = name + str(size([f for f in listdir(path_root) if f.startswith(name)]))
             print('? Warning: No name specified and simulation with that name already found! New simulation name now '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
+
+        path_initial_condition = join(self.path, 'initial_condition')
+        if exists(path_initial_condition):
+            has_initial_condition_dir = True
+            path_newsim_initcond = join(path_newsim, 'initial_condition')
+        else:
+            has_initial_condition_dir = False
 
         if type(optionals) == type(['list']): optionals = self.optionals + optionals          # optional files to be copied
         if optionals == True: optionals = self.optionals
@@ -132,7 +140,7 @@ class __Simulation__(object):
         optionals = tmp
 
         ## check if the copy was already created
-        if is_sim_dir(path_newsim):
+        if is_sim_dir(path_newsim) and OVERWRITE == False:
             if not quiet: print('? WARNING: Simulation already exists. Returning with existing simulation.')
             return get_sim(path_newsim, quiet=quiet)
 
@@ -174,13 +182,28 @@ class __Simulation__(object):
                 debug_breakpoint()
             copyfile(f_path, copy_to)
 
+        # Organizes any personalized initial conditions
+        if has_initial_condition_dir:
+            if mkdir(path_newsim_initcond) == False and OVERWRITE==False:
+                print('! ERROR: Couldnt create new simulation initial_condition directory '+path_newsim_initcond+' !!')
+                return False
+
+            for f in listdir(path_initial_condition):
+                f_path = abspath(join(path_initial_condition, f))
+                copy_to = abspath(join(path_newsim_initcond, f))
+
+                if f_path == copy_to:
+                    print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                    debug_breakpoint()
+                copyfile(f_path, copy_to)
+
+
         # modify name in submit script files
-        if rename_submit_scripts:
-            print('!! ERROR: Not implemented yet...  old version was not stable.')
-            #for f in self.components+optionals:
-                #if f.startswith('submit'):
-                    #debug_breakpoint()
-                    #system_name, raw_name, job_name_key, submit_scriptfile, submit_line = get_systemid()
+        if rename_submit_script != False:
+            if type(rename_submit_script) == type('STRING'):
+                rename_in_submit_script(new_name = rename_submit_script, sim=get_sim(path_newsim))
+            else:
+                print('!! ERROR: Could not understand rename_submit_script='+str(rename_submit_script))
 
         # done
         return get_sim(path_newsim)
@@ -248,7 +271,14 @@ class __Simulation__(object):
         """Export simulation object to its root/.pc-dir"""
         from pencilnew.io import save
         if self == False: print('! ERROR: Simulation object is bool object and False!')
+
+        # clean self.tmp_dict
+        tmp_dict = self.tmp_dict; self.tmp_dict = {}
+
         save(self, name='sim', folder=self.pc_dir)
+
+        # restore self.tmp_dict
+        self.tmp_dict = tmp_dict
 
 
     def started(self):
@@ -274,13 +304,11 @@ class __Simulation__(object):
         timestamp = pcn.io.timestamp()
 
         command = []
-        if cleanall: command.append('pc_build --cleanall')
-        if fast == True:
-            command.append('pc_build --fast')
-        else:
-            command.append('pc_build')
+        command.append('pc_build')
+        if cleanall: command.append(' --cleanall')
+        if fast == True: command.append(' --fast')
 
-        if verbose: print('! Compiling '+self.path)
+        if verbose != False: print('! Compiling '+self.path)
         return self.bash(command=command,
                          verbose=verbose,
                          logfile=join(self.pc_dir, 'compilelog_'+timestamp))
@@ -381,7 +409,7 @@ class __Simulation__(object):
         folder = join(self.path,'data')
         keeps = []
 
-        if not exists(folder): return True
+        if not exists(folder): print('? Warning: No data directory found!'); return True
 
         filelist = listdir(folder)          # remove everything INSIDE
         for f in filelist:
@@ -390,27 +418,44 @@ class __Simulation__(object):
         return True
 
 
-    def remove(self, do_it=False, do_it_really=False, remove_data=True):
+    def remove(self, do_it=False, do_it_really=False, remove_data=False):
         """ This method removes the WHOLE simulation,
-        including DATA directory!
+        but NOT the DATA directory per default.
+        Do remove_data=True to delete data dir as well.
 
         Args:
             to activate pass        True, True
             remove_data:            also clear data directory
         """
-        from os import listdir, system
+        from os import listdir
         from os.path import join
         from pencilnew.io import remove_files as remove
 
         self.clear_src(do_it=do_it, do_it_really=do_it_really)
-        if remove_data: self.clear_data(do_it=do_it, do_it_really=do_it_really)
+        if remove_data:
+            self.clear_data(do_it=do_it, do_it_really=do_it_really)
 
         filelist = listdir(self.path)
         for f in filelist:
             remove(join(self.path, f), do_it=do_it, do_it_really=do_it_really)
-
-        system('rm -rf '+self.path)
         return True
+
+    def get_T_last(self):
+        """ Returnes ts.t[-1] WITHOUTH reading the whole time series!
+        """
+        from os.path import join
+        with open(join(self.datadir, 'time_series.dat'), 'rb') as fh:
+            first = next(fh).decode()
+            fh.seek(-1024, 2)
+            last = fh.readlines()[-1].decode()
+
+        header = [i for i in first.split('-') if not i=='' and not i=='#' and not i=='\n']
+        values = [i for i in last.split(' ') if not i=='']
+
+        if len(header) != len(values):
+            return self.get_ts().t[-1]
+
+        return float(dict(zip(header, values))['t'])
 
 
     def get_varlist(self, pos=False, particle=False):
@@ -468,8 +513,7 @@ class __Simulation__(object):
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 return self.param[quantity]
 
-        if DEBUG:
-            print('~ DEBUG: Searching through simulation.quantity_searchables ...')
+        if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
         for filename in self.quantity_searchables:
             q = get_value_from_file(filename, quantity, change_quantity_to=False,
@@ -477,44 +521,23 @@ class __Simulation__(object):
             if q is not None:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
                 return q
+            else:
+                if DEBUG: print('~ DEBUG: Couldnt find quantity here.. continue searching')
 
         print('! ERROR: Couldnt find '+quantity+'!')
-
-    def show(self, name=False):
-        """Shows the content of a specified simulation file.
-        E.g.: self.show('cparam.local') show the content that file.
-        Works with: cparam.local, Makefile.local and *.in files"""
-
-        from os.path import join
-        from pencilnew.io import exists_file
-
-        def __s__(filepath):
-            print(filepath)
-            if exists_file(filepath):
-                with open(filepath, 'r') as fin:
-                    print(fin.read())
-                    return True
-            return False
-
-        if name != False:
-            if name.startswith('cparam'):
-                return __s__(join(self.path,'src','cparam.local'))
-            elif name.startswith('Makefile'):
-                return __s__(join(self.path,'src','Makefile.local'))
-            elif name.endswith('.in'):
-                return __s__(join(self.path,name))
-            else:
-                print('?? Specify which file to show..')
-                return False
-
-        print('?? Specify which file to show, Couldnt find '+str(name))
-        return False
+        return None
 
     def get_ts(self):
         """Returns time series object."""
         from pencilnew.read import ts
+
+        # check if already loaded
+        if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] == self.get_T_last(): return self.tmp_dict['ts']
+
         if self.started():
-            return ts(sim=self, quiet=True)
+            ts = ts(sim=self, quiet=True)
+            self.tmp_dict['ts'] = ts
+            return ts
         else:
             print('? WARNING: Simulation '+self.name+' has not yet been started. No timeseries available!')
             return False

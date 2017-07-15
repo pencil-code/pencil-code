@@ -91,7 +91,8 @@ module Special
   real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.
   real :: kx_hhL=0., ky_hhL=0., kz_hhL=0.
   real :: kx_ggL=0., ky_ggL=0., kz_ggL=0.
-  logical :: lno_transverse_part=.false.
+  real :: diffhh=0., diffgg=0.
+  logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -102,10 +103,13 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    lno_transverse_part
+    lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
+  integer :: idiag_hhL2m=0       ! DIAG_DOC: $\left<h_{\rm L}^2\right>$
+  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\left<h_{\rm T}^2\right>$
+  integer :: idiag_hhLhhTm=0     ! DIAG_DOC: $\left<h_{\rm L}h_{\rm T}\right>$
   integer :: idiag_ggLpt=0       ! DIAG_DOC: $g_{\rm L}(x_1,y_1,z_1,t)$
 !
   contains
@@ -144,16 +148,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
+!  Check whether diffgg=diffhh (which  is the default)
 !
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special()')
-      endif
+      if (lsame_diffgg_as_hh) diffgg=diffhh
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -237,12 +236,23 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
+!  The following construct when lno_transverse_part=T applies only
+!  to the case of a Beltrami field with z variation.
+!
       if (lno_transverse_part) then
-        if (ibb==0) then
-          call fatal_error('calc_pencils_special','put lbb_as_comaux=T')
-        else
-          p%stressL=f(l1:l2,m,n,ibx)**2
-          p%stressT=f(l1:l2,m,n,ibx)*f(l1:l2,m,n,iby)
+        p%stressL=0.0
+        p%stressT=0.0
+        if (lhydro) then
+          p%stressL=p%stressL+.5*(f(l1:l2,m,n,iuy)**2 &
+                                 -f(l1:l2,m,n,iux)**2)
+          p%stressT=p%stressT+.5*(f(l1:l2,m,n,iux) &
+                                 *f(l1:l2,m,n,iuy))
+        endif
+        if (lmagnetic) then
+          p%stressL=p%stressL-.5*(f(l1:l2,m,n,iby)**2 &
+                                 -f(l1:l2,m,n,ibx)**2)
+          p%stressT=p%stressT-.5*(f(l1:l2,m,n,ibx) &
+                                 *f(l1:l2,m,n,iby))
         endif
       else
         p%stressL=f(l1:l2,m,n,istressL)
@@ -270,7 +280,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: del2hhL,del2hhT
+      real, dimension (nx) :: del2hhL,del2hhT,del2ggL,del2ggT
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -281,15 +291,21 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
-!
-      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)
-      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)
-!
       call del2(f,ihhL,del2hhL)
       call del2(f,ihhT,del2hhT)
-      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL
-      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT
+!
+      if (diffgg/=0.) then
+        call del2(f,iggL,del2ggL)
+        call del2(f,iggT,del2ggT)
+      endif
+!
+!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
+!
+      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)+diffhh*del2hhL
+      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)+diffhh*del2hhT
+!
+      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL+diffgg*del2ggL
+      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT+diffgg*del2ggT
 !
 !         df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
 !           p%bb(:,2)**2-onethird*p%b2
@@ -302,6 +318,9 @@ module Special
 !  diagnostics
 !
        if (ldiagnos) then
+         if (idiag_hhL2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhL)**2,idiag_hhL2m)
+         if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
+         if (idiag_hhLhhTm/=0) call sum_mn_name(f(l1:l2,m,n,ihhL)*f(l1:l2,m,n,ihhT),idiag_hhLhhTm)
          if (lroot.and.m==mpoint.and.n==npoint) then
            if (idiag_ggLpt/=0) call save_name(f(lpoint,m,n,iggL),idiag_ggLpt)
          endif
@@ -484,14 +503,12 @@ module Special
 !
 !  Assemble stress
 !
-      if (ibb==0) then
-        call fatal_error('special_after_boundary','put lbb_as_comaux=T')
-      endif
-!
 !  Do T11
 !
+      T_re=0.0
       T_im=0.0
-      T_re=f(l1:l2,m1:m2,n1:n2,ibx)**2
+      if (lhydro) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iux)**2
+      if (lmagnetic) T_re=T_re+f(l1:l2,m1:m2,n1:n2,ibx)**2
       call fourier_transform(T_re,T_im)
 !
       do iky=1,nz
@@ -514,8 +531,10 @@ module Special
 !
 !  Do T22
 !
+      T_re=0.0
       T_im=0.0
-      T_re=f(l1:l2,m1:m2,n1:n2,iby)**2
+      if (lhydro) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iuy)**2
+      if (lmagnetic) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iby)**2
       call fourier_transform(T_re,T_im)
 !
       do iky=1,nz
@@ -539,8 +558,10 @@ module Special
 !
 !  Do T33
 !
+      T_re=0.0
       T_im=0.0
-      T_re=f(l1:l2,m1:m2,n1:n2,ibz)**2
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iuz)**2
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,ibz)**2
       call fourier_transform(T_re,T_im)
 !
       do iky=1,nz
@@ -567,8 +588,10 @@ module Special
 !
 !  Do T12 = T21
 !
+      T_re=0.0
       T_im=0.0
-      T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,iby)
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iux)*f(l1:l2,m1:m2,n1:n2,iuy)
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,iby)
       call fourier_transform(T_re,T_im)
 !
       do iky=1,nz
@@ -592,8 +615,10 @@ module Special
 !
 !  Do T13 = T31
 !
+      T_re=0.0
       T_im=0.0
-      T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,ibz)
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iux)*f(l1:l2,m1:m2,n1:n2,iuz)
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,ibz)
       call fourier_transform(T_re,T_im)
 !
       do iky=1,nz
@@ -617,8 +642,10 @@ module Special
 !
 !  Do T23 = T32
 !
+      T_re=0.0
       T_im=0.0
-      T_re=f(l1:l2,m1:m2,n1:n2,iby)*f(l1:l2,m1:m2,n1:n2,ibz)
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iuy)*f(l1:l2,m1:m2,n1:n2,iuz)
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,iby)*f(l1:l2,m1:m2,n1:n2,ibz)
       call fourier_transform(T_re,T_im)
 !
       do iky=1,nz
@@ -686,10 +713,14 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
+        idiag_hhL2m=0; idiag_hhT2m=0; idiag_hhLhhTm=0
         idiag_ggLpt=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'hhL2m',idiag_hhL2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhLhhTm',idiag_hhLhhTm)
         call parse_name(iname,cname(iname),cform(iname),'ggLpt',idiag_ggLpt)
       enddo
 !!

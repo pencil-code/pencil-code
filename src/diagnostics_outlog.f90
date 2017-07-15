@@ -652,7 +652,7 @@ module Diagnostics
                   vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
 !
               if (itype==ilabel_sum_log10_par)        &
-                  vname(iname)=log10(fsum(isum_count))/fweight(isum_count)
+                  vname(iname)=log10(fsum(isum_count)/fweight(isum_count))
 !
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)

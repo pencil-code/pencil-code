@@ -38,8 +38,6 @@ module EquationOfState
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
   integer :: iglobal_cs2, iglobal_glnTT, ics
-  real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0
@@ -50,14 +48,10 @@ module EquationOfState
   real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=0.0
   real :: fac_cs=1.0
-  real :: mpoly=impossible, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real :: width_eos_prof=0.2
+  real, pointer :: mpoly
   real :: sigmaSBt=1.0
-  integer :: isothtop=0
   integer :: imass=1
   integer :: isothmid=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
@@ -65,15 +59,12 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
-  character (len=labellen) :: ieos_profile='nothing'
 !
   character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
   real, dimension(:), pointer :: B_ext
 !
   real, dimension(nchemspec,18):: species_constants
-  real, dimension(nchemspec,7) :: tran_data
-  real, dimension(nchemspec)   :: Lewis_coef, Lewis_coef1
 !
 !  Background stratification data
 !
@@ -83,15 +74,15 @@ module EquationOfState
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, &
+      sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
       fac_cs,isothmid, lstratz, gztype, gz_coeff
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini,           &
-      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt, &
+      xHe, mu, cp, cs0, rho0, gamma, error_cp,           &
+      pres_corr, sigmaSBt, &
       lanelastic_lin, lcs_as_aux, lcs_as_comaux
 !
 !  Module variables
@@ -234,7 +225,6 @@ module EquationOfState
 ! Shared variables
 !
       call put_shared_variable('cs20',cs20,caller='units_eos')
-      call put_shared_variable('mpoly',mpoly)
       call put_shared_variable('gamma',gamma)
 !
 !  Check that everything is OK.
@@ -242,17 +232,6 @@ module EquationOfState
       if (lroot) then
         print*, 'units_eos: unit_temperature=', unit_temperature
         print*, 'units_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
-      endif
-!
-!  Calculate profile functions (used as prefactors to turn off pressure
-!  gradient term).
-!
-      if (ieos_profile=='nothing') then
-        profz_eos=1.0
-        dprofz_eos=0.0
-      elseif (ieos_profile=='surface_z') then
-        profz_eos=0.5*(1.0-erfunc(z/width_eos_prof))
-        dprofz_eos=-exp(-(z/width_eos_prof)**2)/(sqrtpi*width_eos_prof)
       endif
 !
     endsubroutine units_eos
@@ -469,20 +448,6 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
-!***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
@@ -3831,6 +3796,14 @@ module EquationOfState
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp3_z')
 !
+      if (ldensity.and..not.lstratz) then
+        call get_shared_variable('mpoly',mpoly)
+      else
+        if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
+                                'set impossible')
+        allocate(mpoly); mpoly=impossible
+      endif
+!
       if (ldebug) print*,'bc_ss_temp3_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
@@ -4767,10 +4740,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -4814,12 +4783,6 @@ module EquationOfState
        call keep_compiler_quiet(MolMass)
 !
      endsubroutine find_mass
-!***********************************************************************
-    subroutine read_Lewis
-!
-!  Dummy routine
-!
-    endsubroutine read_Lewis
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

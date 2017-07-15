@@ -15,16 +15,19 @@
 #include <cmath>
 
 //Headers
+#define EXTERN
 #include "dconsts.cuh"
 #include "integrators.cuh"
 #include "timestep.cuh"
 #include "../cparam_c.h"
 #include "smem.cuh"
 #include "../cdata_c.h"
+#include "../density_c.h"
 #include "../eos_c.h"
 #include "../hydro_c.h"
 #include "../viscosity_c.h"
 #include "../forcing_c.h"
+#include "../sub_c.h"
 #include "defines_PC.h"
 //#include "copyhalos.cuh"
 #include "copyHalosConcur.cuh"
@@ -47,46 +50,14 @@ int halo_size;
 float *halo; 
 float *d_halo;
 
-float *d_lnrho, *d_uu_x, *d_uu_y, *d_uu_z;
-float *d_w_lnrho, *d_w_uu_x, *d_w_uu_y, *d_w_uu_z;
-float *d_lnrho_dest, *d_uu_x_dest, *d_uu_y_dest, *d_uu_z_dest;
+#include "dfdf.cuh"
 
 // Device pointer for diagnostic quantities
 
 float *d_umax, *d_umin; 
-float *d_urms; 
+float *d_urms, *d_rhorms; 
 float *d_uxrms, *d_uyrms, *d_uzrms; 
-float *d_rhorms, *d_rhomax, *d_rhomin; 
-float *d_uxmax, *d_uymax, *d_uzmax; 
-float *d_uxmin, *d_uymin, *d_uzmin; 
-float *d_partial_result;                    //Device pointer for partial result for the reductions
-
-// Parameter of ohysics modules.
-
-float nu, cs2, force, tforce_stop;
-
-const int idiag_urms=0,
-          idiag_uxrms=1,
-          idiag_uzrms=2,
-          idiag_umax=3,
-          idiag_uxmin=4,
-          idiag_uymin=5,
-          idiag_uzmin=6,
-          idiag_uxmax=7,
-          idiag_uymax=8,
-          idiag_uzmax=9;
-
-const int ndiags_hydro=10;
-int *p_diags_hydro[ndiags_hydro];
-
-const int npars_visc=1;
-float *p_pars_visc[npars_visc];
-
-const int npars_eos=1;
-float *p_pars_eos[npars_eos];
-
-const int npars_force=2;
-float *p_pars_force[npars_force];
+float *d_partial_result, *d_scaldiag;                    //Device pointer for partial result for the reductions
 
 /***********************************************************************************************/
 inline void swap_ptrs(float** a, float** b)
@@ -258,7 +229,7 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
 	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
 	halo = (float*) malloc(sizeof(float)*halo_size);
-	checkErr(cudaMalloc((void **) &d_halo, sizeof(float)*halo_size));
+	checkErr(cudaMalloc(&d_halo, sizeof(float)*halo_size));
 
 	// Allocate device memory
 
@@ -281,22 +252,15 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
         // Diagnostics quantities. TODO this somewhere else?
 
-	checkErr( cudaMalloc((float**) &d_umax, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_umin, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_urms, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_uxrms, sizeof(float)) );  
-	checkErr( cudaMalloc((float**) &d_uyrms, sizeof(float)) );  
-	checkErr( cudaMalloc((float**) &d_uzrms, sizeof(float)) );  
-	checkErr( cudaMalloc((float**) &d_rhorms, sizeof(float)) ); 
-	checkErr( cudaMalloc((float**) &d_rhomax, sizeof(float)) ); 
-	checkErr( cudaMalloc((float**) &d_rhomin, sizeof(float)) ); 
-	checkErr( cudaMalloc((float**) &d_uxmax, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_uxmin, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_uymax, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_uymin, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_uzmax, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_uzmin, sizeof(float)) );   
-	checkErr( cudaMalloc((float**) &d_partial_result, sizeof(float)) );   
+	checkErr( cudaMalloc( &d_umax, sizeof(float)) );   
+	checkErr( cudaMalloc( &d_umin, sizeof(float)) );   
+	checkErr( cudaMalloc( &d_urms, sizeof(float)) );   
+	checkErr( cudaMalloc( &d_uxrms, sizeof(float)) );  
+	checkErr( cudaMalloc( &d_uyrms, sizeof(float)) );  
+	checkErr( cudaMalloc( &d_uzrms, sizeof(float)) );  
+	checkErr( cudaMalloc( &d_rhorms, sizeof(float)) ); 
+	checkErr( cudaMalloc( &d_partial_result, sizeof(float)) );   
+	checkErr( cudaMalloc( &d_scaldiag, sizeof(float)) );   
 
         if (iproc==0)
 	{
@@ -306,21 +270,19 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
         }
         // Get private data from physics modules.
         
+ 	if (ldensity){
+        	density_push2c(p_diags_density); 
+	}
  	if (lhydro){
         	hydro_push2c(p_diags_hydro); 
 	}
         if (lviscosity){
         	viscosity_push2c(p_pars_visc);
-        	nu=*p_pars_visc[0];
 	}
 	if (lforcing){
         	forcing_push2c(p_pars_force);
-        	force=*p_pars_force[0];
-		tforce_stop=*p_pars_force[1];
 	}
-
         eos_push2c(p_pars_eos);
-        cs2=*p_pars_eos[0];
 
         /*if (iproc==0){	
 	print_init_config();
@@ -330,22 +292,53 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
         if (iproc==0) {
         printf("nu %f \n", nu);
-        printf("idiag_urms= %d \n", *p_diags_hydro[idiag_urms]);
-        printf("idiag_uxrms= %d \n", *p_diags_hydro[idiag_uxrms]);
-        printf("idiag_uzrms= %d \n", *p_diags_hydro[idiag_uzrms]);
-        printf("idiag_umax= %d \n", *p_diags_hydro[idiag_umax]);
-        printf("idiag_uxmin= %d \n", *p_diags_hydro[idiag_uxmin]);
-        printf("idiag_uymin= %d \n", *p_diags_hydro[idiag_uymin]);
-        printf("idiag_uzmin= %d \n", *p_diags_hydro[idiag_uzmin]);
-        printf("idiag_uxmax= %d \n", *p_diags_hydro[idiag_uxmax]);
-        printf("idiag_uymax= %d \n", *p_diags_hydro[idiag_uymax]);
-        printf("idiag_uzmax= %d \n", *p_diags_hydro[idiag_uzmax]);
+        printf("idiag_urms= %d \n", idiag_urms);
+        printf("idiag_uxrms= %d \n", idiag_uxrms);
+        printf("idiag_uzrms= %d \n", idiag_uzrms);
+        printf("idiag_umax= %d \n", idiag_umax);
+        printf("idiag_uxmin= %d \n", idiag_uxmin);
+        printf("idiag_uymin= %d \n", idiag_uymin);
+        printf("idiag_uzmin= %d \n", idiag_uzmin);
+        printf("idiag_uxmax= %d \n", idiag_uxmax);
+        printf("idiag_uymax= %d \n", idiag_uymax);
+        printf("idiag_uzmax= %d \n", idiag_uzmax);
 	}*/
 
 	// Load constants into device memory.
 	load_dconsts();
-
         initializeCopying();
+}
+/***********************************************************************************************/
+float max_advec()
+{
+        float uxmax, uymax, uzmax=0, maxadvec_;
+        get_maxscal_from_device(uxmax,d_uu_x);
+        get_maxscal_from_device(uymax,d_uu_y);
+        //get_maxscal_from_device(uzmax,d_uu_z);
+//printf("UYMAX= %f \n", uymax);
+//return;
+        if (lmaximal_cdt) {
+                maxadvec_=max(abs(uxmax)/dx,max(abs(uymax)/dy,abs(uzmax)/dz));
+                /*advec_uu[ix]=max(abs(p%uu(:,1))*dline_1[0][ix],
+                                         abs(p%uu(:,2))*dline_1[1][ix],
+                                         abs(p%uu(:,3))*dline_1[2][ix]);*/
+        }
+        else
+        {
+                maxadvec_=(abs(uxmax)/dx+abs(uymax)/dy+abs(uzmax)/dz);
+                /*advec_uu[ix]=abs(p%uu(:,1))*dline_1[0][ix]+
+                         abs(p%uu(:,2))*dline_1[1][ix]+
+                         abs(p%uu(:,3))*dline_1[2][ix]; */
+        }
+//printf("maxadvec_= %f \n", maxadvec_);
+        return maxadvec_;
+}
+/***********************************************************************************************/
+float max_diffus()
+{
+        float maxdiffus_;
+        for (int i=0;i<nx;i++) maxdiffus_=max(maxdiffus_,nu*dxyz_2[i]);
+        return maxdiffus_;
 }
 /***********************************************************************************************/
 extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full_inner=false, bool full=false){
@@ -354,8 +347,14 @@ extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, 
 	copyouterhalostodevice(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
-
-printf(full ? "full\n" : "not full\n");
+//printf(full ? "full\n" : "not full\n");
+int offset=54273 + 134^2+134+60;
+/*if (iproc==0) {
+printf("uu_x= %f %f %f \n", *(uu_x+offset),*(uu_x+offset+1), *(uu_x+offset+2));
+printf("uu_y= %f %f %f \n", *(uu_y+offset),*(uu_y+offset+1), *(uu_y+offset+2));
+printf("uu_z= %f %f %f \n", *(uu_z+offset),*(uu_z+offset+1), *(uu_z+offset+2));
+printf("lnrho= %f %f %f \n", *(lnrho+offset),*(lnrho+offset+1), *(lnrho+offset+2));
+}*/
         if (full) 
 	{
           copyAll(lnrho, d_lnrho);
@@ -370,6 +369,27 @@ printf(full ? "full\n" : "not full\n");
           copyOuterHalos(uu_y, d_uu_y);
           copyOuterHalos(uu_z, d_uu_z);
 	}
+float val1, val2, val3;
+if (iproc==0) {
+printf("isubstep= %d \n",isubstep);
+cudaMemcpy(&val1, d_uu_x+offset, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val2, d_uu_x+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val3, d_uu_x+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
+printf("d_uu_x= %f %f %f \n", val1, val2, val3);
+//printf("uu_y= %f %f %f \n", *uu_y,*(uu_y+1), *(uu_y+2));
+//printf("uu_z= %f %f %f \n", *uu_z,*(uu_z+1), *(uu_z+2));
+cudaMemcpy(&val1, d_lnrho+offset, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val2, d_lnrho+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
+printf("d_lnrho= %f %f %f \n", val1, val2, val3);
+}
+        if (lfirst && ldt) {
+                float dt1_advec  = max_advec()/cdt;
+                float dt1_diffus = max_diffus()/cdtv;
+                float dt1_=sqrt(pow(dt1_advec,2) + pow(dt1_diffus,2));
+                set_dt(dt1_);
+        }
+        checkErr( cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)));
 
 	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
                           d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
@@ -380,11 +400,23 @@ printf(full ? "full\n" : "not full\n");
 	swap_ptrs(&d_uu_y, &d_uu_y_dest);
 	swap_ptrs(&d_uu_z, &d_uu_z_dest);
 
+if (iproc==0) {
+cudaMemcpy(&val1, d_uu_x+offset, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val2, d_uu_x+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val3, d_uu_x+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
+printf("d_uu_x-nach= %f %f %f \n", val1, val2, val3);
+//printf("uu_y-nach= %f %f %f \n", *uu_y,*(uu_y+1), *(uu_y+2));
+//printf("uu_z-nach= %f %f %f \n", *uu_z,*(uu_z+1), *(uu_z+2));
+cudaMemcpy(&val1, d_lnrho+offset, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val2, d_lnrho+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
+printf("d_lnrho-nach= %f %f %f \n", val1, val2, val3);
+}
 	/*copyinternalhalostohost(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
-printf(full_inner ? "full_inner\n" : "not full_inner\n");
+//printf(full_inner ? "full_inner\n" : "not full_inner\n");
         if (full_inner) 
 	{
         	copyInnerAll(lnrho, d_lnrho);
@@ -399,28 +431,22 @@ printf(full_inner ? "full_inner\n" : "not full_inner\n");
         	copyInnerHalos(uu_y, d_uu_y);
         	copyInnerHalos(uu_z, d_uu_z);
 	}
-printf(ldiagnos ? "out\n" : "not out\n");
-        if (ldiagnos) {
-                timeseries_diagnostics_cuda(it, dt, t);
-/*d_umax, d_umin, d_urms, d_uxrms, d_uyrms, d_uzrms, d_rhorms,
-                                            d_rhomax, d_uxmax, d_uymax, d_uzmax,
-                                            d_rhomin, d_uxmin, d_uymin, d_uzmin,*/
-        }
-        if (lfirst && ldt) {
-		max_diffus(); max_advec();
-	}
+
+        if (ldiagnos) timeseries_diagnostics_cuda(it, dt, t);
+
 }
 /***********************************************************************************************/
 extern "C" void finalizeGPU()
 {
 // Frees memory allocated on GPU.
-
+//return;
         //Destroy timers
         //cudaEventDestroy( start );
         //cudaEventDestroy( stop );
 
         //Free device memory of grids
         checkErr( cudaFree(d_lnrho) );
+//printf("vor helper, iproc= %d\n",iproc);
         checkErr( cudaFree(d_uu_x) );
         checkErr( cudaFree(d_uu_y) );
         checkErr( cudaFree(d_uu_z) );
@@ -430,9 +456,6 @@ extern "C" void finalizeGPU()
         checkErr( cudaFree(d_urms) );
         checkErr( cudaFree(d_uxrms) ); checkErr( cudaFree(d_uyrms) ); checkErr( cudaFree(d_uzrms) );
         checkErr( cudaFree(d_rhorms) );
-        checkErr( cudaFree(d_rhomax) ); checkErr( cudaFree(d_rhomin) );
-        checkErr( cudaFree(d_uxmax) ); checkErr( cudaFree(d_uymax) ); checkErr( cudaFree(d_uzmax) );
-        checkErr( cudaFree(d_uxmin) ); checkErr( cudaFree(d_uymin) ); checkErr( cudaFree(d_uzmin) );
         checkErr( cudaFree(d_partial_result) );
         checkErr( cudaFree(d_halo) );
 

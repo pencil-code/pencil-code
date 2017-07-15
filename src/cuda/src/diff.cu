@@ -8,7 +8,8 @@
 
 /*
 #include "diff.cuh"
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 
 #include <cstdio>
 

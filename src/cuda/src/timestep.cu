@@ -3,32 +3,20 @@
 #include <math.h>
 #include <algorithm>
 
+#define EXTERN extern
 #include "timestep.cuh"
 #include "collectiveops.cuh"
 #include "../diagnostics_c.h"
 #include "ddiagsextern.cuh"
-#include "dfdfextern.cuh"
+#include "dfdf.cuh"
+#include "../density_c.h"
 #include "../hydro_c.h"
 #include "../cparam_c.h"
 #include "defines_dims_PC.h"
 #include "../cdata_c.h"
 #include "defines_PC.h"
-
-extern float nu, cs2;
-
-const int idiag_urms=0,
-          idiag_uxrms=1,
-          idiag_uzrms=2,
-          idiag_umax=3,
-          idiag_uxmin=4,
-          idiag_uymin=5,
-          idiag_uzmin=6,
-          idiag_uxmax=7,
-          idiag_uymax=8,
-          idiag_uzmax=9;
-
-extern int *p_diags_hydro[];
-extern const int n_diags_hydro;
+#include "../viscosity_c.h"
+#include "../eos_c.h"
 
 //using namespace PC;
 
@@ -76,133 +64,110 @@ float timestep_cuda(float* d_umax, float* d_partial_result, float* d_uu_x, float
 	}
 	return dt;
 }
-void get_maxscal_from_device(float &maxscal,float *d_src,float *d_max)
+void get_maxscal_from_device(float & maxscal,float *d_src)
 {
-        max_scal_cuda(&maxscal, d_partial_result, d_src);
-        cudaDeviceSynchronize();
-        cudaMemcpy(&maxscal, (float*)d_max, sizeof(float), cudaMemcpyDeviceToHost);
-        cudaDeviceSynchronize();
+	max_scal_cuda(d_scaldiag, d_partial_result, d_src);
+       	cudaDeviceSynchronize();
+       	cudaMemcpy(&maxscal, d_scaldiag, sizeof(float), cudaMemcpyDeviceToHost);
 }
-void get_minscal_from_device(float &minscal,float *d_src,float *d_min)
+void get_minscal_from_device(float &minscal,float *d_src)
 {
-        min_scal_cuda(&minscal, d_partial_result, d_src);
+        min_scal_cuda(d_scaldiag, d_partial_result, d_src);
         cudaDeviceSynchronize();
-        cudaMemcpy(&minscal, (float*)d_min, sizeof(float), cudaMemcpyDeviceToHost);
-        cudaDeviceSynchronize();
-}
-void max_advec()
-{
-	float uxmax, uymax, uzmax, maxadvec_;
-	get_maxscal_from_device(uxmax,d_uu_x,d_uxmax);
-	get_maxscal_from_device(uymax,d_uu_y,d_uymax);
-	get_maxscal_from_device(uzmax,d_uu_z,d_uzmax);
-      
-	if (lmaximal_cdt) {
-               	maxadvec_=max(abs(uxmax)/dx,max(abs(uymax)/dy,abs(uzmax)/dz));
-      		/*advec_uu[ix]=max(abs(p%uu(:,1))*dline_1[0][ix],
-                     	  	         abs(p%uu(:,2))*dline_1[1][ix],
-                                         abs(p%uu(:,3))*dline_1[2][ix]);*/
-       	}
-	else
-	{
-               	maxadvec_=(abs(uxmax)/dx+abs(uymax)/dy+abs(uzmax)/dz);
-        	/*advec_uu[ix]=abs(p%uu(:,1))*dline_1[0][ix]+
-                       	 abs(p%uu(:,2))*dline_1[1][ix]+
-                       	 abs(p%uu(:,3))*dline_1[2][ix]; */
-	}
-	for (int i=0;i<nx;i++) maxadvec[i]=max(maxadvec[i],maxadvec_);
-printf("maxadvec_= %f", maxadvec_);
-}
-void max_diffus()
-{       
-	for (int i=0;i<nx;i++) maxdiffus[i]=max(maxdiffus[i],nu*dxyz_2[i]);
+        cudaMemcpy(&minscal, d_scaldiag, sizeof(float), cudaMemcpyDeviceToHost);
+        //cudaDeviceSynchronize();
 }
 
 /*void timeseries_diagnostics_cuda(float* d_umax, float* d_umin, float* d_urms, float* d_uxrms, 
-                                 float* d_uyrms, float* d_uzrms, float* d_rhorms, 
-                                 float* d_rhomax, float* d_uxmax, float* d_uymax, float* d_uzmax, 
-                                 float* d_rhomin, float* d_uxmin, float* d_uymin, float* d_uzmin,*/ 
+                                 float* d_uyrms, float* d_uzrms, float* d_rhorms, */
 void timeseries_diagnostics_cuda(int step, float dt, double t)
 {
 	//Calculate, print and save all of the diagnostic variables calculated within the CUDA devices. 
 
-	static float urms, umax, umin; 
-	static float uxmax, uymax, uzmax, uxmin, uymin, uzmin; 
-	static float rhomax, rhomin, rhorms;
+	static float urms, umax, umin, diag; 
+	static float rhorms;
 	static float uxrms, uyrms, uzrms;
 	
-	//Get uu max from d_umax
-	max_vec_cuda(d_umax, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&umax, (float*)d_umax, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize();
+        if (idiag_uxmax>0) {
+        	get_maxscal_from_device(diag,d_uu_x);
+		save_name(diag,idiag_uxmax);
+        }
+        if (idiag_uymax>0) {
+        	get_maxscal_from_device(diag,d_uu_y);
+		save_name(diag,idiag_uymax);
+        }
+        if (idiag_uzmax>0) {
+        	get_maxscal_from_device(diag,d_uu_z);
+		save_name(diag,idiag_uzmax);
+        }
+        if (idiag_uxmin>0) {
+        	get_minscal_from_device(diag,d_uu_x);
+		save_name(diag,idiag_uxmin);
+        }
+        if (idiag_uymin>0) {
+        	get_minscal_from_device(diag,d_uu_y);
+		save_name(diag,idiag_uymin);
+        }
+        if (idiag_uzmin>0) {
+        	get_minscal_from_device(diag,d_uu_z);
+		save_name(diag,idiag_uzmin);
+        }
+        if (idiag_umax>0) {
+		max_vec_cuda(d_umax, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&umax, (float*)d_umax, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize();
 printf("umax= %f\n", umax);
-        save_name(&umax,p_diags_hydro[idiag_umax]);
-
-	//Get uu_x max from d_uxmax 
-        get_maxscal_from_device(uxmax,d_uu_x,d_uxmax);
-        save_name(&uxmax,p_diags_hydro[idiag_uxmax]);
-
-	//Get uu_y max from d_uymax
-        get_maxscal_from_device(uymax,d_uu_y,d_uymax);
-
-	//Get uu_z max from d_uzmax 
-        get_maxscal_from_device(uzmax,d_uu_z,d_uzmax);
-
-	//Get rho max from d_lnrho
-        get_maxscal_from_device(rhomax,d_lnrho,d_rhomax);
-	if (!ldensity_nolog) rhomax = exp(rhomax);       //Change away from the logarithmic form
-
-	//Get uu min from d_umin 
-	min_vec_cuda(d_umin, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&umin, (float*)d_umin, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize();
-
-	//Get uu_x min from d_uxmin 
-        get_minscal_from_device(uxmin,d_uu_x,d_uxmin);
-
-	//Get uu_y min from d_uymin 
-        get_minscal_from_device(uymin,d_uu_y,d_uymin);
-
-	//Get uu_z min from d_uzmin 
-        get_minscal_from_device(uzmin,d_uu_z,d_uzmin);
-
-	//Get lnrho min from d_lnrho 
-        get_minscal_from_device(rhomin,d_lnrho,d_rhomin);
-	if (!ldensity_nolog) rhomin = exp(rhomin);       //Change away from the logarithmic form
-
-	//Get uu rms from d_umax
-	vec_rms_cuda(d_urms, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&urms, (float*)d_urms, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize();
-
-	//Get uu_x rms from d_uxrms
-	scal_rms_cuda(d_uxrms, d_partial_result, d_uu_x);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&uxrms, (float*)d_uxrms, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize();
-
-	//Get uu_y rms from d_uyrms
-	scal_rms_cuda(d_uyrms, d_partial_result, d_uu_y);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&uyrms, (float*)d_uyrms, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize();
-
-	//Get uu_z rms from d_uzrms
-	scal_rms_cuda(d_uzrms, d_partial_result, d_uu_z);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&uzrms, (float*)d_uzrms, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize();
-
-	//Get rho rms from d_lnrhorms
-	scal_exp_rms_cuda(d_rhorms, d_partial_result, d_lnrho);
-	cudaDeviceSynchronize();
-	cudaMemcpy(&rhorms, (float*)d_rhorms, sizeof(float), cudaMemcpyDeviceToHost); 
-	cudaDeviceSynchronize(); 
-        if (iproc==0) 
-        printf(" step = %i; t = %e; dt = %e; umax = %e; umin = %e; urms = %e",step, t, dt, umax, umin, urms);
+        	save_name(umax,idiag_umax);
+        }
+        if (idiag_rhomax>0) {
+        	get_maxscal_from_device(diag,d_lnrho);
+		if (!ldensity_nolog) diag = exp(diag);       //Change away from the logarithmic form
+		save_name(diag,idiag_rhomax);
+        }
+        if (idiag_rhomin>0) {
+        	get_minscal_from_device(diag,d_lnrho);
+		if (!ldensity_nolog) diag = exp(diag);       //Change away from the logarithmic form
+		save_name(diag,idiag_rhomin);
+        }
+        if (idiag_umin>0) {
+		min_vec_cuda(d_umin, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&umin, (float*)d_umin, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize();
+	}
+ 	if (idiag_urms){
+		vec_rms_cuda(d_urms, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&urms, (float*)d_urms, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize();
+	}
+ 	if (idiag_uxrms){
+		scal_rms_cuda(d_uxrms, d_partial_result, d_uu_x);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&uxrms, (float*)d_uxrms, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize();
+	}
+ 	if (idiag_uyrms){
+		scal_rms_cuda(d_uyrms, d_partial_result, d_uu_y);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&uyrms, (float*)d_uyrms, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize();
+	}
+ 	if (idiag_uzrms){
+		scal_rms_cuda(d_uzrms, d_partial_result, d_uu_z);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&uzrms, (float*)d_uzrms, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize();
+	}
+ 	if (idiag_rhorms){
+		scal_exp_rms_cuda(d_rhorms, d_partial_result, d_lnrho);
+		cudaDeviceSynchronize();
+		cudaMemcpy(&rhorms, (float*)d_rhorms, sizeof(float), cudaMemcpyDeviceToHost); 
+		cudaDeviceSynchronize(); 
+	}
+        //if (iproc==0) 
+        //printf(" step = %i; t = %e; dt = %e; umax = %e; umin = %e; urms = %e",step, t, dt, umax, umin, urms);
 	//printf(" step = %i; t = %e; dt = %e; umax = %e; umin = %e; urms = %e; \n uxrms = %e; uyrms = %e; uzrms = %e; \n uxmax = %e; uymax = %e; uzmax = %e; \n uxmin = %e; uymin = %e; uzmin = %e; \n rhomax = %e; rhomin = %e; rhorms = %e \n", 
         //        step, t, dt, umax, umin, urms, uxrms, uyrms, uzrms, uxmax, uymax, uzmax, uxmin, uymin, uzmin, rhomax, rhomin, rhorms);
 	

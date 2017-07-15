@@ -30,7 +30,6 @@ module Density
 !
   use Cparam
   use Cdata
-  use EquationOfState, only: beta_glnrho_global
   use General, only: keep_compiler_quiet
   use Messages
 !
@@ -47,6 +46,7 @@ module Density
   real :: density_floor = 0.0
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
 !
@@ -930,5 +930,19 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine push2c(p_idiag)
+
+    integer, parameter :: ndiags=4
+    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+
+    integer :: idiag_rhom=0
+
+    call copy_addr_c(idiag_rhom,p_idiag(1))
+    call copy_addr_c(idiag_rhomin,p_idiag(2))
+    call copy_addr_c(idiag_rhomax,p_idiag(3))
+    call copy_addr_c(idiag_mass,p_idiag(4))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Density
