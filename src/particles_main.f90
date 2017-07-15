@@ -490,6 +490,17 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: k
+!
+!  Use zero particle radius to identify tracer particles.
+!
+      if (lparticles_radius) then
+        do k=1,npar_loc
+          if (fp(k,iap)==0.0) dfp(k,ivpx:ivpz)=0.0
+        enddo
+      endif
+!
+!  Evolve particle state.
 !
       if (.not.lpointmasses) &
            fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
