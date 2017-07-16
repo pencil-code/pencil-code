@@ -37,7 +37,7 @@ module Particles_radius
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  integer :: nbin_initdist=20
+  integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: lsupersat_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -54,7 +54,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
+      aplow, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
       lfixed_particles_radius
 !
@@ -238,10 +238,10 @@ module Particles_radius
         case ('2-size')
           if (initial .and. lroot) print*, 'set_particles_radius: give particles two radii'
           do k = npar_low,npar_high
-            if (ipar(k) < npar/2) then
-              fp(k,iap) = ap0(1)
+            if (ipar(k)<=ip1) then
+              fp(k,iap)=ap0(1)
             else
-              fp(k,iap) = ap1
+              fp(k,iap)=ap1
             endif
           enddo
 !
