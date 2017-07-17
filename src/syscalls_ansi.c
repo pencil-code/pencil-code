@@ -85,10 +85,11 @@ printf("pointer = %d\n", pointer);
    p1 = dlsym(pointer,name);
 printf("handlel = %d\n", p1);
 */
-   return dlopen(filename, RTLD_NOW); 
+   //return dlopen(filename, RTLD_NOW); 
  }
  else
-   return dlopen(filename, RTLD_LAZY); 
+   //return dlopen(filename, RTLD_LAZY); 
+ return NULL;
 }
 /* ---------------------------------------------------------------------- */
 void *FTNIZE(dlsym_c)(void *handle, const char *symbol)
