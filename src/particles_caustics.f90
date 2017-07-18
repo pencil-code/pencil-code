@@ -12,7 +12,7 @@
 !
 ! MAUX CONTRIBUTION 9
 ! COMMUNICATED AUXILIARIES 9
-! MPVAR CONTRIBUTION 12
+! MPVAR CONTRIBUTION 6 
 !
 !***************************************************************
 module Particles_caustics
@@ -27,7 +27,7 @@ module Particles_caustics
 !
   include 'particles_caustics.h'
 !
-  real :: fake_eta=0., epsilondX=0.01
+  real :: fake_eta=0., epsilondX=1e-4
 !
   namelist /particles_caustics_init_pars/ &
     epsilondX
@@ -45,8 +45,7 @@ module Particles_caustics
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
-          "$Id$")
+      if (lroot) call svn_id("particles_caustics")
 !
 !  Indices for \deltaX and \deltaV at particle positions
 !
@@ -60,7 +59,7 @@ module Particles_caustics
       pvarname(npvar+4)='idVp1'
       idVp2=npvar+5
       pvarname(npvar+5)='idVp2'
-      idVp1=npvar+6
+      idVp3=npvar+6
       pvarname(npvar+6)='idVp3'
 !
 !  Increase npvar accordingly.
@@ -105,35 +104,50 @@ module Particles_caustics
 !***********************************************************************
     subroutine init_particles_caustics(f,fp,ineargrid)
 !
-      use Sub, only: kronecker_delta
+      use Sub, only: kronecker_delta,linarray2matrix,matrix2linarray
       use General, only: keep_compiler_quiet,random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
+      use Hydro, only: calc_gradu
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      integer, dimension(3) :: iXpdX
       real, dimension(3) :: uup1, uup2, Xp,dXp, XpdX
       real, dimension(nx,3:3) :: uij 
-      integer, dimension (ncpus) :: my_particles=0,all_particles=0
+      real, dimension(9) :: Sij_lin
+      real, dimension(3,3) :: Sijp
       real :: rno01 
       integer :: ipzero,ik,ii,jj,ij
 !
+!
+     if (lroot) print*, 'init_particles_caustics: setting init. cond.'
+!
+! We set the gradient of the particle velocity field as that of the fluid velocity
+! field. To do that we need to calculate the calculate the gradient of velocity 
+! on a grid. This is stored as an auxiliary array within f (:,:,:,igu11:igu33) 
+!
+      call calc_gradu(f) 
       do ip=1,npar_loc
 !
 ! Initialize the deltaX by a small random vector. 
 ! It is a factor epsilondX of grid spacing (we ignore non-uniform grids)
 ! Remember; dx_1 is 1/dx available from cdata.f90
 !
+        Xp = fp(ip,ixp:izp)
         do ii=1,3 
           call random_number_wrapper(rno01)
-          fp(ip,idXp1+ii-1)=epsilondX*rno01*dx
+          fp(ip,idXp1+ii-1)=epsilondX*(2*rno01-1)*dx
         enddo
-        Xp = fp(ip,ixp:izp)
         dXp = fp(ip,idXp1:idXp3)
-        XpdX=Xp+dX
-        call interpolate_linear(f,iux,iuz,Xp,uup1,ineargrid(ip,:),0,0)
-        call interpolate_linear(f,iux,iuz,XpdX,uup2,ineargrid(ip,:),0,0)
-        fp(ip,ivpx:ivpz) = uup1
-        fp(ip,idVp1:idVp3) = uup2-uup1
+!
+!  interpolate the gradu matrix to particle positions
+!
+        call interpolate_linear(f,igu11,igu33,fp(ip,ixp:izp),Sij_lin,ineargrid(ip,:), &
+              0,ipar(ip))
+        call linarray2matrix(Sij_lin,Sijp)
+        do ii=1,3
+          fp(ip,idVp1+ii-1) =  dot_product(Sijp(ii,:),dXp) 
+        enddo
 ! loop over ip ends below
      enddo
 !
@@ -191,7 +205,7 @@ module Particles_caustics
 !  Identify module.
 !
       if (headtt) then
-        if (lroot) print*,'dcaustics_dt_pencil: calculate dcaustics_dt'
+        if (lroot) print*,'dcaustics_dt_pencil: calculate dcaustics_dt_pencil'
         if (lroot) print*,'called from dvvp_dt_pencil in the particles_dust module'
       endif
 !

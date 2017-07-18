@@ -21,6 +21,7 @@
   public :: update_char_vel_hydro
   public :: hydro_after_timestep
   public :: push2c
+  public :: calc_gradu
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !

@@ -1947,7 +1947,8 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      if (lparticles_lyapunov) lpenc_requested(i_uij) = .true.
+      if (lparticles_lyapunov .or. lparticles_caustics) & 
+        lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
         if (lweno_transport) then
           lpenc_requested(i_uu)=.true.
@@ -2275,7 +2276,7 @@ module Hydro
 ! uij
       if (lpenc_loc(i_uij)) then
         call gij(f,iuu,p%uij,1)
-        if (lparticles_lyapunov) then
+        if (lparticles_lyapunov .or. lparticles_caustics) then
           jk=0
           do jj=1,3; do kk=1,3
             jk=jk+1
@@ -6506,6 +6507,32 @@ module Hydro
       enddo
 
     endsubroutine amp_lm
+!***********************************************************************
+    subroutine calc_gradu(f)
+!
+    use Sub, only : gij
+    real, dimension (mx,my,mz,mfarray) :: f
+    integer :: imn,jk,jj,kk,nyz
+    real, dimension(nx,3,3) :: gradu
+!
+! Calculated gradu and stores it as an auxiliary. This is expected to be called
+! only once either during initialization or post-processing. 
+!
+    nyz=ny*nz
+    do imn=1,nyz
+       n=nn(imn)
+       m=mm(imn)
+       lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
+       llastpoint=(imn==nyz) 
+       call gij(f,iuu,gradu,1)
+       jk=0
+       do jj=1,3; do kk=1,3
+         f(l1:l2,m,n,iguij+jk) = gradu(:,jj,kk)
+         jk=jk+1
+       enddo;enddo
+    enddo
+!
+    endsubroutine calc_gradu
 !***********************************************************************
     subroutine push2c(p_idiag)
 

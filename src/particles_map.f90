@@ -143,24 +143,39 @@ module Particles_map
 !
 !  Check if the grid point interval is really correct.
 !
-      if (((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1)) .or. nxgrid==1) .and. &
-          ((y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2)) .or. nygrid==1) .and. &
-          ((z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3)) .or. nzgrid==1)) then
-        ! Everything okay
+      if ((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1)) .or. nxgrid==1) then
+      ! x-dirn ok
       else
         print*, 'interpolate_linear: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
         print*, 'ipar = ', ipar
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
+        print*, 'xp0, xp, xp1 = ', x(ix0), xxp(1), x(ix0+1)
+        call fatal_error('interpolate_linear','point outside of x-interval')
+      endif 
+      if ((y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2)) .or. nygrid==1) then
+      ! y-dirn ok
+      else
+        print*, 'interpolate_linear: Interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
+        print*, 'yp0, yp, yp1 = ', y(iy0), xxp(2), y(iy0+1)
+        call fatal_error('interpolate_linear','point outside of y-interval')
+      endif 
+      if ((z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3)) .or. nzgrid==1) then
+      ! z-dirn ok
+      else
+        print*, 'interpolate_linear: Interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
-        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
-        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
-        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
-        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call fatal_error('interpolate_linear','point outside of interval')
-      endif
+        print*, 'zp0, zp, zp1 = ', z(iz0), xxp(3), z(iz0+1)
+        call fatal_error('interpolate_linear','point outside of z-interval')
+      endif 
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
 !  Set it equal to 0 for dimensions having 1 grid points; this will make sure

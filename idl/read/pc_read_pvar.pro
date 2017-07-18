@@ -149,6 +149,18 @@ varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
 ;
+default, idXp1, 0
+varcontent[idXp1].variable = 'Particle Separation (dXp)'
+varcontent[idXp1].idlvar   = 'dXp'
+varcontent[idXp1].idlinit  = INIT_3VECTOR
+varcontent[idXp1].skip     = 2
+;
+default, idVp1, 0
+varcontent[idVp1].variable = 'Particle Velocity Difference(dVp)'
+varcontent[idVp1].idlvar   = 'dVp'
+varcontent[idVp1].idlinit  = INIT_3VECTOR
+varcontent[idVp1].skip     = 2
+;
 default, ibpx, 0
 varcontent[ibpx].variable = 'Particle magnetic field (bp)'
 varcontent[ibpx].idlvar   = 'bp'
