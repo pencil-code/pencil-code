@@ -324,7 +324,7 @@ class __Simulation__(object):
 
         Args:
             - command:     command to be executed, can be a list of commands
-            - verbose:     semi = show last lines of output afterwards
+            - verbose:     lastN = show last N lines of output afterwards
                            False = no output
                            True = all output
         """
