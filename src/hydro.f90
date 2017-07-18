@@ -272,7 +272,9 @@ module Hydro
                                 ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
+  integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
+  integer :: idiag_uyrms=0      ! DIAG_DOC: $\left<u_y^2\right>^{1/2}$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
   integer :: idiag_uxmin=0      ! DIAG_DOC: $\min(|u_x|)$
@@ -6536,19 +6538,21 @@ module Hydro
 !***********************************************************************
     subroutine push2c(p_idiag)
 
-    integer, parameter :: ndiags=10
+    integer, parameter :: ndiags=12
     integer(KIND=ikind8), dimension(ndiags) :: p_idiag
 
     call copy_addr_c(idiag_urms,p_idiag(1))
     call copy_addr_c(idiag_uxrms,p_idiag(2))
-    call copy_addr_c(idiag_uzrms,p_idiag(3))
-    call copy_addr_c(idiag_umax,p_idiag(4))
-    call copy_addr_c(idiag_uxmin,p_idiag(5))
-    call copy_addr_c(idiag_uymin,p_idiag(6))
-    call copy_addr_c(idiag_uzmin,p_idiag(7))
-    call copy_addr_c(idiag_uxmax,p_idiag(8))
-    call copy_addr_c(idiag_uymax,p_idiag(9))
-    call copy_addr_c(idiag_uzmax,p_idiag(10))
+    call copy_addr_c(idiag_uyrms,p_idiag(3))
+    call copy_addr_c(idiag_uzrms,p_idiag(4))
+    call copy_addr_c(idiag_umax,p_idiag(5))
+    call copy_addr_c(idiag_umin,p_idiag(6))
+    call copy_addr_c(idiag_uxmin,p_idiag(7))
+    call copy_addr_c(idiag_uymin,p_idiag(8))
+    call copy_addr_c(idiag_uzmin,p_idiag(9))
+    call copy_addr_c(idiag_uxmax,p_idiag(10))
+    call copy_addr_c(idiag_uymax,p_idiag(11))
+    call copy_addr_c(idiag_uzmax,p_idiag(12))
 
     endsubroutine push2c
 !***********************************************************************

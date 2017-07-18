@@ -175,8 +175,6 @@ module Special
       use FArrayManager
 !
       if (lroot) call svn_id("$Id$")
-      if (lslope_limited_special .and. ldensity.and..not.ldensity_nolog) &
-      call farray_register_auxiliary('specaux',ispecaux)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -985,10 +983,9 @@ module Special
 !
           call div_diff_flux(f,ilnrho,p,fdiff)
           if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
-            f(l1,m,n,ispecaux) = 0.0
-            f(l1+1:l2,m,n,ispecaux) = fdiff(2:nx)
+            df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
           else
-            f(l1:l2,m,n,ispecaux) = fdiff
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
           endif
         endif
       endif
@@ -1287,10 +1284,10 @@ module Special
           endselect
         endif
       endif
-      if (.not.ldensity_nolog .and. lslope_limited_special) then
-        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
-      endif
+!      if (.not.ldensity_nolog .and. lslope_limited_special) then
+!        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
+!        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
+!      endif
 !
 !
     endsubroutine special_after_timestep
@@ -4236,10 +4233,16 @@ module Special
             +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
       else if (lcartesian_coords) then
         div_flux=0.0
-        div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
-                 /(x12(l1:l2)-x12(l1-1:l2-1)) &
-        +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
+        if (nygrid == 1) then
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+              +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        else
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+          +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
             +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        endif
        else
          call fatal_error('twist_inject:div_diff_flux','Not coded for cylindrical')
        endif

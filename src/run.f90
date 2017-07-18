@@ -694,7 +694,7 @@ program run
 !  If overlapping grids are used to get body-confined grid around the solids
 !  in the flow, call time step on these grids. 
 ! 
-    if(lsolid_cells) call time_step_ogrid(f)
+    if (lsolid_cells) call time_step_ogrid(f)
 !
 !  Print diagnostic averages to screen and file.
 !

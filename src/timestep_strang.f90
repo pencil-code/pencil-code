@@ -78,7 +78,7 @@ module Timestep
           particles_timestep_second
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
-      use Snapshot, only: shift_dt
+      use Sub, only: shift_dt
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df

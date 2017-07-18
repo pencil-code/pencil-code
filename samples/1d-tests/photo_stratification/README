@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/photo_stratification
+SVN Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+    2017-jul-13
+Status:
+    time step restricted
+Recommended resolution:
+    nz=256
+Comments:
+    for constructucting initial coonditions, see
+    http://adsabs.harvard.edu/abs/2006EAS....21..127S

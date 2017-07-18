@@ -354,8 +354,6 @@ endif else begin
   else $
     array=fltarr(npar_max,totalvars)*one
 ;
-  iipar = []
-;
 ;  Loop over processors.
 ;
   for i=0,ncpus-1 do begin
@@ -391,7 +389,7 @@ endif else begin
 ;
       ipar_loc=lonarr(npar_loc)
       readu, file, ipar_loc
-      iipar = [iipar, ipar_loc]
+      if (n_elements(iipar) eq 0) then iipar=ipar_loc else iipar = [iipar, ipar_loc]
 ;
 ;  Register particle indices for later check if all particles have been read.
 ;

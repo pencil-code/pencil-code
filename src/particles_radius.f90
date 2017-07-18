@@ -37,7 +37,7 @@ module Particles_radius
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  integer :: nbin_initdist=20
+  integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: lsupersat_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -47,7 +47,6 @@ module Particles_radius
   logical :: reinitialize_ap=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
-  integer :: k_lucky
 !
   namelist /particles_radius_init_pars/ &
       initap, ap0, rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -55,9 +54,9 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
+      aplow, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
-      lfixed_particles_radius, k_lucky
+      lfixed_particles_radius
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -206,7 +205,6 @@ module Particles_radius
       real :: lna0, lna1, lna, lna0_initdist
       integer :: i, j, k, kend, ind, ibin
       logical :: initial
-      integer :: k_several
 !
       initial = .false.
       if (present(init)) then
@@ -231,36 +229,32 @@ module Particles_radius
             fp(k,iap) = ap0(ind)
           enddo
 !
-        case ('constant-luck')
-          if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
-          ind=1
-          do k=npar_low,npar_high
-            if (npart_radii>1) then
-              call random_number_wrapper(radius_fraction)
-              ind=ceiling(npart_radii*radius_fraction)
-            endif
-            if (ipar(k)==1) then 
-              fp(k,iap)=ap1
-            else
-               fp(k,iap)=ap0(ind)
-            endif
-          enddo
-!
         case ('constant-1')
           if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
           do k = npar_low,npar_high
             if (ipar(k) == 1) fp(k,iap) = ap1
           enddo
 !
-!17-06-29: Xiang-Yu coded
-        case ('constant-several')
-          if (initial .and. lroot) print*, 'set_particles_radius: set radius of several particles'
+        case ('2-size')
+          if (initial .and. lroot) print*, 'set_particles_radius: give particles two radii'
           do k = npar_low,npar_high
-            do k_several = 1,k_lucky
-              if (ipar(k) == k_several) fp(k,iap) = ap1
-            enddo
+            if (ipar(k)<=ip1) then
+              fp(k,iap)=aplow
+            else
+              fp(k,iap)=aphigh
+            endif
           enddo
-!Xiang-Yu
+!
+        case ('2-size-alternate')
+          if (initial .and. lroot) print*, 'set_particles_radius: give particles alternating two radii'
+          do k = npar_low,npar_high
+            if (mod(k,2)==0) then
+              fp(k,iap)=aplow
+            else
+              fp(k,iap)=aphigh
+            endif
+          enddo
+!
         case ('random')
           if (initial .and. lroot) print*, 'set_particles_radius: random radius'
           do k = npar_low,npar_high
@@ -298,23 +292,6 @@ module Particles_radius
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
           fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
-!
-!17-06-29: Xiang-Yu coded
-
-        case ('lognormal-lucky')
-!
-          if (initial .and. lroot) print*, 'set_particles_radius: '// &
-              'lognormal=', a0_initdist
-          call random_number_wrapper(r_mpar_loc)
-          call random_number_wrapper(p_mpar_loc)
-          tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-          fp(npar_low:k_lucky,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
-          do k = npar_low,npar_high
-            if (k>k_lucky) then
-              fp(k,iap) = ap1
-            endif
-          enddo
-!Xiang-Yu
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
@@ -917,8 +894,8 @@ module Particles_radius
         ix = ix0-nghost
         if (lsupersat) then
           dapdt = f(ix,m,n,issat)/fp(k,iap)
-!          print*,'ssat=',f(ix,m,n,issat)
-!          print*,'r=',fp(k,iap)
+          !print*,'ssat=',f(ix,m,n,issat)
+          !print*,'r=',fp(k,iap)
           dfp(k,iap) = dfp(k,iap)+dapdt
         endif
       enddo
@@ -967,9 +944,7 @@ module Particles_radius
       integer, intent(out) :: iostat
       integer :: pos
 !
-      ! temporary replacement code for fixing the broken most-module autotest on Norlx51b
-      iostat = 0 ! want to see the clear-text error message
-      read (parallel_unit, NML=particles_radius_init_pars) ! , IOSTAT=iostat)
+      read (parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat)
 !
 !  Find how many different particle radii we are using. This must be done
 !  because not all parts of the code are adapted to work with more than one
@@ -997,9 +972,7 @@ module Particles_radius
 !
       integer, intent(out) :: iostat
 !
-      ! temporary replacement code for fixing the broken most-module autotest on Norlx51b
-      iostat = 0 ! want to see the clear-text error message
-      read (parallel_unit, NML=particles_radius_run_pars) ! , IOSTAT=iostat)
+      read (parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************

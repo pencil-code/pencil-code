@@ -324,7 +324,7 @@ class __Simulation__(object):
 
         Args:
             - command:     command to be executed, can be a list of commands
-            - verbose:     semi = show last lines of output afterwards
+            - verbose:     lastN = show last N lines of output afterwards
                            False = no output
                            True = all output
         """
@@ -443,6 +443,9 @@ class __Simulation__(object):
     def get_T_last(self):
         """ Returnes ts.t[-1] WITHOUTH reading the whole time series!
         """
+
+        if self.started() != True: return 0
+
         from os.path import join
         with open(join(self.datadir, 'time_series.dat'), 'rb') as fh:
             first = next(fh).decode()

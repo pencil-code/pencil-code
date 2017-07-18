@@ -669,6 +669,7 @@ module Param_IO
 !
         call write_stub ('particles', lparticles)
         call write_stub ('particles_radius', lparticles_radius)
+        call write_stub ('particles_cond', lparticles_condensation)
         ! call write_stub ('particles_potential', lparticles_potential)
         call write_stub ('particles_spin', lparticles_spin)
         call write_stub ('particles_sink', lparticles_sink)
@@ -685,6 +686,7 @@ module Param_IO
         if (.not. lstart) then
           call write_stub ('particles_adapt', lparticles_adaptation)
           call write_stub ('particles_coag', lparticles_coagulation)
+          call write_stub ('particles_cond', lparticles_condensation)
           call write_stub ('particles_coll', lparticles_collisions)
           call write_stub ('particles_stirring', lparticles_stirring)
           call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
