@@ -85,7 +85,6 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: istressL,istressT
   character (len=labellen) :: inithhL='nothing'
   character (len=labellen) :: initggL='nothing'
   real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.

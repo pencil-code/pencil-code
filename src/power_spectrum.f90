@@ -1413,6 +1413,11 @@ module power_spectrum
     b_re=f(l1:l2,m1:m2,n1:n2,iggL)
     a_im=0.
     b_im=0.
+  elseif (sp=='Str') then
+    a_re=f(l1:l2,m1:m2,n1:n2,istressT)
+    b_re=f(l1:l2,m1:m2,n1:n2,istressL)
+    a_im=0.
+    b_im=0.
   else
     call fatal_error('powerGWs','must be called with GWs')
   endif
