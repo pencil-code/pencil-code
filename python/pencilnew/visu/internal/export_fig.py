@@ -24,7 +24,7 @@ def export_fig(fig, filepath, filename=False,
     mkdir(filepath)
 
     ######## generate timestamp if demanded
-    if (not timestamp):
+    if timestamp == True:
         timestamp = str(dt.datetime.now())[:-7]
         timestamp = timestamp.replace(" ", "_").replace(":","-")
         complete_filepath = complete_filepath+'_'+timestamp
@@ -34,23 +34,23 @@ def export_fig(fig, filepath, filename=False,
         fig.savefig(complete_filepath+'.png',
         	bbox_inches = EXPORT_BBOX_INCES,
         	dpi = DPI)
-    print('~ .png saved')
+            print('~ .png saved')
 
     if PDF:
         fig.savefig(complete_filepath+'.pdf',
         	bbox_inches = EXPORT_BBOX_INCES,
         	dpi = DPI)
-    print('~ .pdf saved')
+            print('~ .pdf saved')
 
     if EPS:
         fig.savefig(complete_filepath+'.png',
         	bbox_inches = EXPORT_BBOX_INCES,
         	dpi = DPI)
-    print('~ .eps saved')
+            print('~ .eps saved')
 
     if not PNG and not EPS and not EPS:
         print('? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!')
     else:
         print('~ Plots saved to '+complete_filepath)
 
-    return fig
+    return True
