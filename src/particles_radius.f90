@@ -239,9 +239,19 @@ module Particles_radius
           if (initial .and. lroot) print*, 'set_particles_radius: give particles two radii'
           do k = npar_low,npar_high
             if (ipar(k)<=ip1) then
-              fp(k,iap)=ap0(1)
+              fp(k,iap)=aplow
             else
-              fp(k,iap)=ap1
+              fp(k,iap)=aphigh
+            endif
+          enddo
+!
+        case ('2-size-alternate')
+          if (initial .and. lroot) print*, 'set_particles_radius: give particles alternating two radii'
+          do k = npar_low,npar_high
+            if (mod(k,2)==0) then
+              fp(k,iap)=aplow
+            else
+              fp(k,iap)=aphigh
             endif
           enddo
 !
