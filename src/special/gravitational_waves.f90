@@ -92,6 +92,7 @@ module Special
   real :: kx_hhL=0., ky_hhL=0., kz_hhL=0.
   real :: kx_ggL=0., ky_ggL=0., kz_ggL=0.
   real :: diffhh=0., diffgg=0.
+  real :: diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
 !
 ! input parameters
@@ -103,7 +104,8 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh
+    lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh, &
+    diffhh_hyper3, diffgg_hyper3
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -276,11 +278,12 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
-      use Sub, only: del2
+      use Sub, only: del2, del6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: del2hhL,del2hhT,del2ggL,del2ggT
+      real, dimension (nx) :: del6hhL,del6hhT,del6ggL,del6ggT
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -289,31 +292,44 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-!!      if (headtt) call identify_bcs('special',ispecial)
+!
+!  del2h is needed for the wave equation (possibly also for 2nd order diffusion)
 !
       call del2(f,ihhL,del2hhL)
       call del2(f,ihhT,del2hhT)
 !
+!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
+!
+      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)
+      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)
+      if (diffhh/=0.) then
+        df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+diffhh*del2hhL
+        df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+diffhh*del2hhT
+      endif
+      if (diffhh_hyper3/=0.) then
+        call del6(f,ihhL,del6hhL)
+        call del6(f,ihhT,del6hhT)
+        df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+diffhh_hyper3*del6hhL
+        df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+diffhh_hyper3*del6hhT
+      endif
+!
+!  advance g equation, dg/dt = del2h + S
+!  possibly add diffusion term (2nd order or hyper)
+!
+      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL
+      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT
       if (diffgg/=0.) then
         call del2(f,iggL,del2ggL)
         call del2(f,iggT,del2ggT)
+        df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+diffgg*del2ggL
+        df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+diffgg*del2ggT
       endif
-!
-!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
-!
-      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)+diffhh*del2hhL
-      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)+diffhh*del2hhT
-!
-      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL+diffgg*del2ggL
-      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT+diffgg*del2ggT
-!
-!         df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
-!           p%bb(:,2)**2-onethird*p%b2
-!         df(l1:l2,m,n,igij+2)=df(l1:l2,m,n,igij+2)+del2hii(:,3)+ &
-!           p%bb(:,3)**2-onethird*p%b2
-!         df(l1:l2,m,n,igij+3)=df(l1:l2,m,n,igij+3)+del2hij(:,1)+p%bb(:,1)*p%bb(:,2)
-!         df(l1:l2,m,n,igij+4)=df(l1:l2,m,n,igij+4)+del2hij(:,2)+p%bb(:,1)*p%bb(:,3)
-!         df(l1:l2,m,n,igij+5)=df(l1:l2,m,n,igij+5)+del2hij(:,3)+p%bb(:,2)*p%bb(:,3)
+      if (diffgg_hyper3/=0.) then
+        call del6(f,iggL,del6ggL)
+        call del6(f,iggT,del6ggT)
+        df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+diffgg_hyper3*del6ggL
+        df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+diffgg_hyper3*del6ggT
+      endif
 !
 !  diagnostics
 !

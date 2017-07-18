@@ -1409,8 +1409,8 @@ module power_spectrum
 !  Gravitational wave tensor (spectra of L*L^*)
 !
   if (sp=='GWs') then
-    a_re=f(l1:l2,m1:m2,n1:n2,ihhT)
-    b_re=f(l1:l2,m1:m2,n1:n2,ihhL)
+    a_re=f(l1:l2,m1:m2,n1:n2,iggT)
+    b_re=f(l1:l2,m1:m2,n1:n2,iggL)
     a_im=0.
     b_im=0.
   else
@@ -1435,11 +1435,13 @@ module power_spectrum
 !  sum energy and helicity spectra
 !
           spectrum(k+1)=spectrum(k+1) &
+             +a_re(ikx,iky,ikz)**2 &
+             +a_im(ikx,iky,ikz)**2 &
              +b_re(ikx,iky,ikz)**2 &
              +b_im(ikx,iky,ikz)**2
-          spectrumhel(k+1)=spectrumhel(k+1) &
-             +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-             +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          spectrumhel(k+1)=spectrumhel(k+1)+2.*( &
+             +a_im(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz))
 !
 !  compute krms only once
 !
