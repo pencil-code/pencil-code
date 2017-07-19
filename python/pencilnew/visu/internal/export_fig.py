@@ -32,21 +32,21 @@ def export_fig(fig, filepath, filename=False,
     ######## do the export
     if PNG:
         fig.savefig(complete_filepath+'.png',
-                    bbox_inches = EXPORT_BBOX_INCES,
-        	        dpi = DPI)
-        print('~ .png saved')
+        	bbox_inches = EXPORT_BBOX_INCES,
+        	dpi = DPI)
+    print('~ .png saved')
 
     if PDF:
         fig.savefig(complete_filepath+'.pdf',
-        	        bbox_inches = EXPORT_BBOX_INCES,
-        	        dpi = DPI)
-        print('~ .pdf saved')
+        	bbox_inches = EXPORT_BBOX_INCES,
+        	dpi = DPI)
+    print('~ .pdf saved')
 
     if EPS:
         fig.savefig(complete_filepath+'.png',
-        	        bbox_inches = EXPORT_BBOX_INCES,
-        	        dpi = DPI)
-        print('~ .eps saved')
+        	bbox_inches = EXPORT_BBOX_INCES,
+        	dpi = DPI)
+    print('~ .eps saved')
 
     if not PNG and not EPS and not EPS:
         print('? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!')
