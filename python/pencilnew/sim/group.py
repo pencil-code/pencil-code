@@ -1,9 +1,9 @@
 
-def group(simulations, groupby, sort=True, only_started=False):
+def group(simulations, groupby, sort=True):
   """Group simulation by a quantity. Each Simulation object can only be part of one group.
 
   Args:
-    simulations:    put here a list of Simulation objects or list of simulation [sim1, sim2, ...]
+    simulations:    put here a Simulations object or a list of simulations [sim1, sim2, ...]
     groupby:        put here the heyword after which the grouping shall happen
     sort:           set True to sort returned dictionary naturally
     only_started:   only group simulations that already has started
@@ -14,7 +14,6 @@ def group(simulations, groupby, sort=True, only_started=False):
 
   from collections import OrderedDict
   from pencilnew.math import natural_sort
-  #from . import Simulations
 
   sim_dict_grouped = {}
 
@@ -32,9 +31,6 @@ def group(simulations, groupby, sort=True, only_started=False):
   # case the groupby-keyword can be found via __simulation__.get_value
   if sim_list[0].get_value(groupby) != None:
     for sim in sim_list:
-    #   sim.update()
-    #   if sim.param == False:
-    #       print('?? WARNING: Simulation '+sim.name+' has no params'); continue
       q = str(sim.get_value(groupby))
       if (not q in sim_dict_grouped.keys()):
         sim_dict_grouped[q] = [sim]
