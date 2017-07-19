@@ -1,4 +1,4 @@
-! $Id$
+
 !
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -861,7 +861,7 @@ module Special
                 e1=(/0.,-k3,+k2/)
                 e2=(/k2**2+k3**2,-k2*k1,-k3*k1/)
               else !(k3 is pref dir)
-                e1=(/k2,-k1,0/)
+                e1=(/k2,-k1,0./)
                 e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
               endif
             else !(k2 smaller than k1)
@@ -869,7 +869,7 @@ module Special
                 e1=(/-k3,0.,+k1/)
                 e2=(/+k1*k2,-(k1**2+k3**2),+k3*k2/)
               else !(k3 is pref dir)
-                e1=(/k2,-k1,0/)
+                e1=(/k2,-k1,0./)
                 e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
               endif
             endif
@@ -900,7 +900,7 @@ module Special
             Sij_re=0.
             Sij_im=0.
             do j=1,3
-            do i=1,3
+            do i=1,j
             do q=1,3
             do p=1,3
               ij=ij_table(i,j)
@@ -936,8 +936,13 @@ if (k1==0..and.k2==0..and.k3==2.) then
   print*,'AXEL e_X=',e_X
   print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
   print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
-!  print*,'AXEL T_X_re=',T_X_re
-!  print*,'AXEL T_X_im=',T_X_im
+  print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
+  print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
+  print*,'AXEL Sij_re=',Sij_re(ikz,ikx,iky,:)
+  print*,'AXEL Sij_im=',Sij_im(ikz,ikx,iky,:)
+  print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
+  print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
+  print*,'AXEL Pij=',Pij
 endif
           enddo
         enddo
