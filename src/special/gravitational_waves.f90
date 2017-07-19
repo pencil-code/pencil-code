@@ -726,11 +726,11 @@ module Special
 !
       use Fourier, only: fourier_transform
 !
-      real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im, Sij_re, Sij_im
+      real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
       real, dimension (:,:,:), allocatable :: one_over_k2, S_T_re, S_T_im, S_X_re, S_X_im
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (6) :: Pij, e_T, e_X
+      real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
       integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
       logical :: lscale_tobox1=.true.
@@ -756,12 +756,6 @@ module Special
 !
       allocate(S_X_im(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for S_X_im')
-!
-      allocate(Sij_re(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Sij_re')
-!
-      allocate(Sij_im(nx,ny,nz,6),stat=stat)
-      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Sij_im')
 !
       allocate(Tpq_re(nx,ny,nz,6),stat=stat)
       if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Tpq_re')
@@ -813,18 +807,12 @@ module Special
       one_over_k2=1./one_over_k2
       if (lroot) one_over_k2(1,1,1) = 0.  ! set origin to zero
 !
-!     if (one_over_k2(ikz,ikx,iky)==0.) then
-!       one_over_k2(ikz,ikx,iky)=1.
-!       one_over_k2=1./one_over_k2
-!       one_over_k2(ikz,ikx,iky)=0.
-!     endif
-!
 !  Assemble stress, Tpq
 !
       Tpq_re=0.0
       Tpq_im=0.0
       do j=1,3
-      do i=1,3
+      do i=1,j
         ij=ij_table(i,j)
         if (lhydro)    Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
           +f(l1:l2,m1:m2,n1:n2,iux+i-1) &
@@ -840,9 +828,17 @@ module Special
       do ij=1,6
         call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
       enddo
+print*,'AXEL2 Tpq_re=',Tpq_re(1,1,1,:)
+print*,'AXEL2 Tpq_im=',Tpq_im(1,1,1,:)
+print*,'AXEL3 Tpq_re=',Tpq_re(3,1,1,:)
+print*,'AXEL3 Tpq_im=',Tpq_im(3,1,1,:)
 !
 !  P11, P22, P33, P12, P23, P31
 !
+      S_T_re=0.
+      S_T_im=0.
+      S_X_re=0.
+      S_X_im=0.
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -907,8 +903,8 @@ module Special
               pq=ij_table(p,q)
               ip=ij_table(i,p)
               jq=ij_table(j,q)
-              Sij_re(ikz,ikx,iky,ij)=Sij_re(ikz,ikx,iky,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikz,ikx,iky,pq)
-              Sij_im(ikz,ikx,iky,ij)=Sij_im(ikz,ikx,iky,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikz,ikx,iky,pq)
+              Sij_re(ij)=Sij_re(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikz,ikx,iky,pq)
+              Sij_im(ij)=Sij_im(ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikz,ikx,iky,pq)
             enddo
             enddo
             enddo
@@ -916,30 +912,26 @@ module Special
 !
 !  compute S_T and S_X
 !
-            S_T_re=0.
-            S_T_im=0.
-            S_X_re=0.
-            S_X_im=0.
             do j=1,3
             do i=1,3
               ij=ij_table(i,j)
-              S_T_re(ikz,ikx,iky)=S_T_re(ikz,ikx,iky)+.5*e_T(ij)*Sij_re(ikz,ikx,iky,ij)
-              S_T_im(ikz,ikx,iky)=S_T_im(ikz,ikx,iky)+.5*e_T(ij)*Sij_im(ikz,ikx,iky,ij)
-              S_X_re(ikz,ikx,iky)=S_X_re(ikz,ikx,iky)+.5*e_X(ij)*Sij_re(ikz,ikx,iky,ij)
-              S_X_im(ikz,ikx,iky)=S_X_im(ikz,ikx,iky)+.5*e_X(ij)*Sij_im(ikz,ikx,iky,ij)
+              S_T_re(ikz,ikx,iky)=S_T_re(ikz,ikx,iky)+.5*e_T(ij)*Sij_re(ij)
+              S_T_im(ikz,ikx,iky)=S_T_im(ikz,ikx,iky)+.5*e_T(ij)*Sij_im(ij)
+              S_X_re(ikz,ikx,iky)=S_X_re(ikz,ikx,iky)+.5*e_X(ij)*Sij_re(ij)
+              S_X_im(ikz,ikx,iky)=S_X_im(ikz,ikx,iky)+.5*e_X(ij)*Sij_im(ij)
             enddo
             enddo
 !if (ikx==0.and.iky==0.and.ikz==2) then
-if (k1==0..and.k2==0..and.k3==2.) then
+if (k1==0..and.k2==0..and.k3==0.) then
   print*,'AXEL k1,k2,k3=',k1,k2,k3
   print*,'AXEL e_T=',e_T
   print*,'AXEL e_X=',e_X
-  print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
-  print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
-  print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
-  print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
-  print*,'AXEL Sij_re=',Sij_re(ikz,ikx,iky,:)
-  print*,'AXEL Sij_im=',Sij_im(ikz,ikx,iky,:)
+  print*,'AXEL S_X_re=',S_X_re
+  print*,'AXEL S_X_im=',S_X_im
+  print*,'AXEL S_T_re=',S_T_re
+  print*,'AXEL S_T_im=',S_T_im
+  print*,'AXEL Sij_re=',Sij_re
+  print*,'AXEL Sij_im=',Sij_im
   print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
   print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
   print*,'AXEL Pij=',Pij
