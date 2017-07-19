@@ -1207,6 +1207,25 @@ module Particles_main
             slices%ready = .true.
           endif
 !
+!  Particle velocity field
+!
+!  One needs to set lcalc_uup = .true. in  &particles_init_pars/ and add in src/cparam.local:
+!
+! MAUX CONTRIBUTION 3
+! COMMUNICATED AUXILIARIES 3
+!
+        case ('vvp')
+          if (slices%index>=3) then
+              slices%ready=.false.
+          else
+            slices%index=slices%index+1
+            slices%yz = f(ix_loc, m1:m2,  n1:n2,   iupx-1+slices%index)
+            slices%xz = f(l1:l2 , iy_loc, n1:n2,   iupx-1+slices%index)
+            slices%xy = f(l1:l2 , m1:m2,  iz_loc,  iupx-1+slices%index)
+            slices%xy2= f(l1:l2 , m1:m2,  iz2_loc, iupx-1+slices%index)
+            if (slices%index<=3) slices%ready=.true.
+          endif
+!
       endselect
 !
     endsubroutine get_slices_particles
