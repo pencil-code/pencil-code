@@ -94,10 +94,12 @@ indices = [ $
   { name:'iemf', label:'Current density', dims:3 }, $
   { name:'ikappar', label:'kappar', dims:1 }, $
   { name:'itau', label:'tau', dims:1 }, $
-  { name:'iggL', label:'ggL', dims:1 }, $
   { name:'iggT', label:'ggT', dims:1 }, $
-  { name:'ihhL', label:'hhL', dims:1 }, $
+  { name:'iggX', label:'ggX', dims:1 }, $
   { name:'ihhT', label:'hhT', dims:1 }, $
+  { name:'ihhX', label:'hhX', dims:1 }, $
+  { name:'istressT', label:'stressT', dims:1 }, $
+  { name:'istressX', label:'stressX', dims:1 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
   { name:'ip12', label:'Polymer Tensor 12', dims:1 }, $
   { name:'ip13', label:'Polymer Tensor 13', dims:1 }, $
