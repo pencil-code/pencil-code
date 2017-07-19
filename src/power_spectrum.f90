@@ -1409,13 +1409,13 @@ module power_spectrum
 !  Gravitational wave tensor (spectra of L*L^*)
 !
   if (sp=='GWs') then
-    a_re=f(l1:l2,m1:m2,n1:n2,iggT)
-    b_re=f(l1:l2,m1:m2,n1:n2,iggL)
+    a_re=f(l1:l2,m1:m2,n1:n2,iggX)
+    b_re=f(l1:l2,m1:m2,n1:n2,iggT)
     a_im=0.
     b_im=0.
   elseif (sp=='Str') then
-    a_re=f(l1:l2,m1:m2,n1:n2,istressT)
-    b_re=f(l1:l2,m1:m2,n1:n2,istressL)
+    a_re=f(l1:l2,m1:m2,n1:n2,istressX)
+    b_re=f(l1:l2,m1:m2,n1:n2,istressT)
     a_im=0.
     b_im=0.
   else

@@ -39,7 +39,7 @@
 !
 ! MVAR CONTRIBUTION 6
 !
-! PENCILS PROVIDED stressL; stressT
+! PENCILS PROVIDED stressT; stressX
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -85,33 +85,35 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  character (len=labellen) :: inithhL='nothing'
-  character (len=labellen) :: initggL='nothing'
-  real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.
-  real :: kx_hhL=0., ky_hhL=0., kz_hhL=0.
-  real :: kx_ggL=0., ky_ggL=0., kz_ggL=0.
+  character (len=labellen) :: inithhT='nothing'
+  character (len=labellen) :: initggT='nothing'
+  real :: amplhhT=0., amplhhX=0., amplggT=0., amplggX=0.
+  real :: kx_hhT=0., ky_hhT=0., kz_hhT=0.
+  real :: kx_ggT=0., ky_ggT=0., kz_ggT=0.
   real :: diffhh=0., diffgg=0.
   real :: diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
+  logical :: lstress_from_TandX=.true.
+  real, dimension(3,3) :: ij_table
 !
 ! input parameters
   namelist /special_init_pars/ &
-    lno_transverse_part, inithhL, initggL, &
-    amplhhL, amplhhT, amplggL, amplggT, &
-    kx_hhL, ky_hhL, kz_hhL, &
-    kx_ggL, ky_ggL, kz_ggL
+    lno_transverse_part, inithhT, initggT, &
+    amplhhT, amplhhX, amplggT, amplggX, &
+    kx_hhT, ky_hhT, kz_hhT, &
+    kx_ggT, ky_ggT, kz_ggT
 !
 ! run parameters
   namelist /special_run_pars/ &
     lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh, &
-    diffhh_hyper3, diffgg_hyper3
+    diffhh_hyper3, diffgg_hyper3, lstress_from_TandX
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_hhL2m=0       ! DIAG_DOC: $\left<h_{\rm L}^2\right>$
-  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\left<h_{\rm T}^2\right>$
-  integer :: idiag_hhLhhTm=0     ! DIAG_DOC: $\left<h_{\rm L}h_{\rm T}\right>$
-  integer :: idiag_ggLpt=0       ! DIAG_DOC: $g_{\rm L}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\left<h_{\rm L}^2\right>$
+  integer :: idiag_hhX2m=0       ! DIAG_DOC: $\left<h_{\rm T}^2\right>$
+  integer :: idiag_hhThhXm=0     ! DIAG_DOC: $\left<h_{\rm L}h_{\rm T}\right>$
+  integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{\rm L}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -129,12 +131,12 @@ module Special
 !
 !  Set indices for auxiliary variables.
 !
-      call farray_register_pde('hhL',ihhL)
       call farray_register_pde('hhT',ihhT)
-      call farray_register_pde('ggL',iggL)
+      call farray_register_pde('hhX',ihhX)
       call farray_register_pde('ggT',iggT)
-      call farray_register_pde('stressL',istressL)
+      call farray_register_pde('ggX',iggX)
       call farray_register_pde('stressT',istressT)
+      call farray_register_pde('stressX',istressX)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -152,6 +154,18 @@ module Special
 !  Check whether diffgg=diffhh (which  is the default)
 !
       if (lsame_diffgg_as_hh) diffgg=diffhh
+!
+!  set index table
+!
+      ij_table(1,1)=1
+      ij_table(2,2)=2
+      ij_table(3,3)=3
+      ij_table(1,2)=4
+      ij_table(2,3)=5
+      ij_table(3,1)=6
+      ij_table(2,1)=4
+      ij_table(3,2)=5
+      ij_table(1,3)=6
 !
       call keep_compiler_quiet(f)
 !
@@ -178,25 +192,25 @@ module Special
 !
       intent(inout) :: f
 !
-!  initial condition for hhL
+!  initial condition for hhT
 !
-      select case (inithhL)
+      select case (inithhT)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('coswave-kx'); call coswave(amplhhL,f,ihhL,kx=kx_hhL)
+        case ('coswave-kx'); call coswave(amplhhT,f,ihhT,kx=kx_hhT)
         case default
-          call fatal_error("init_special: No such value for inithhL:" &
-              ,trim(inithhL))
+          call fatal_error("init_special: No such value for inithhT:" &
+              ,trim(inithhT))
       endselect
 !
-!  initial condition for ggL
+!  initial condition for ggT
 !
-      select case (initggL)
+      select case (initggT)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('coswave-kx'); call coswave(amplggL,f,iggL,kx=kx_ggL)
-        case ('sinwave-kx'); call sinwave(amplggL,f,iggL,kx=kx_ggL)
+        case ('coswave-kx'); call coswave(amplggT,f,iggT,kx=kx_ggT)
+        case ('sinwave-kx'); call sinwave(amplggT,f,iggT,kx=kx_ggT)
         case default
-          call fatal_error("init_special: No such value for initggL:" &
-              ,trim(initggL))
+          call fatal_error("init_special: No such value for initggT:" &
+              ,trim(initggT))
       endselect
 !
     endsubroutine init_special
@@ -241,23 +255,23 @@ module Special
 !  to the case of a Beltrami field with z variation.
 !
       if (lno_transverse_part) then
-        p%stressL=0.0
         p%stressT=0.0
+        p%stressX=0.0
         if (lhydro) then
-          p%stressL=p%stressL+.5*(f(l1:l2,m,n,iuy)**2 &
+          p%stressT=p%stressT+.5*(f(l1:l2,m,n,iuy)**2 &
                                  -f(l1:l2,m,n,iux)**2)
-          p%stressT=p%stressT+.5*(f(l1:l2,m,n,iux) &
+          p%stressX=p%stressX+.5*(f(l1:l2,m,n,iux) &
                                  *f(l1:l2,m,n,iuy))
         endif
         if (lmagnetic) then
-          p%stressL=p%stressL-.5*(f(l1:l2,m,n,iby)**2 &
+          p%stressT=p%stressT-.5*(f(l1:l2,m,n,iby)**2 &
                                  -f(l1:l2,m,n,ibx)**2)
-          p%stressT=p%stressT-.5*(f(l1:l2,m,n,ibx) &
+          p%stressX=p%stressX-.5*(f(l1:l2,m,n,ibx) &
                                  *f(l1:l2,m,n,iby))
         endif
       else
-        p%stressL=f(l1:l2,m,n,istressL)
         p%stressT=f(l1:l2,m,n,istressT)
+        p%stressX=f(l1:l2,m,n,istressX)
       endif
 !
     endsubroutine calc_pencils_special
@@ -281,8 +295,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: del2hhL,del2hhT,del2ggL,del2ggT
-      real, dimension (nx) :: del6hhL,del6hhT,del6ggL,del6ggT
+      real, dimension (nx) :: del2hhT,del2hhX,del2ggT,del2ggX
+      real, dimension (nx) :: del6hhT,del6hhX,del6ggT,del6ggX
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -294,50 +308,50 @@ module Special
 !
 !  del2h is needed for the wave equation (possibly also for 2nd order diffusion)
 !
-      call del2(f,ihhL,del2hhL)
       call del2(f,ihhT,del2hhT)
+      call del2(f,ihhX,del2hhX)
 !
 !  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
 !
-      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)
       df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)
+      df(l1:l2,m,n,ihhX)=df(l1:l2,m,n,ihhX)+f(l1:l2,m,n,iggX)
       if (diffhh/=0.) then
-        df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+diffhh*del2hhL
         df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+diffhh*del2hhT
+        df(l1:l2,m,n,ihhX)=df(l1:l2,m,n,ihhX)+diffhh*del2hhX
       endif
       if (diffhh_hyper3/=0.) then
-        call del6(f,ihhL,del6hhL)
         call del6(f,ihhT,del6hhT)
-        df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+diffhh_hyper3*del6hhL
+        call del6(f,ihhX,del6hhX)
         df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+diffhh_hyper3*del6hhT
+        df(l1:l2,m,n,ihhX)=df(l1:l2,m,n,ihhX)+diffhh_hyper3*del6hhX
       endif
 !
 !  advance g equation, dg/dt = del2h + S
 !  possibly add diffusion term (2nd order or hyper)
 !
-      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL
       df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT
+      df(l1:l2,m,n,iggX)=df(l1:l2,m,n,iggX)+del2hhX+p%stressX
       if (diffgg/=0.) then
-        call del2(f,iggL,del2ggL)
         call del2(f,iggT,del2ggT)
-        df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+diffgg*del2ggL
+        call del2(f,iggX,del2ggX)
         df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+diffgg*del2ggT
+        df(l1:l2,m,n,iggX)=df(l1:l2,m,n,iggX)+diffgg*del2ggX
       endif
       if (diffgg_hyper3/=0.) then
-        call del6(f,iggL,del6ggL)
         call del6(f,iggT,del6ggT)
-        df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+diffgg_hyper3*del6ggL
+        call del6(f,iggX,del6ggX)
         df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+diffgg_hyper3*del6ggT
+        df(l1:l2,m,n,iggX)=df(l1:l2,m,n,iggX)+diffgg_hyper3*del6ggX
       endif
 !
 !  diagnostics
 !
        if (ldiagnos) then
-         if (idiag_hhL2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhL)**2,idiag_hhL2m)
          if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
-         if (idiag_hhLhhTm/=0) call sum_mn_name(f(l1:l2,m,n,ihhL)*f(l1:l2,m,n,ihhT),idiag_hhLhhTm)
+         if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
+         if (idiag_hhThhXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhThhXm)
          if (lroot.and.m==mpoint.and.n==npoint) then
-           if (idiag_ggLpt/=0) call save_name(f(lpoint,m,n,iggL),idiag_ggLpt)
+           if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
          endif
        endif
 !
@@ -393,42 +407,8 @@ module Special
 !  30-mar-17/axel: moved stuff from special_after_boundary to here
 !
       !use Boundcond, only: zero_ghosts, update_ghosts
-      use Sub, only: gij, curl_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx,3,3) :: aij
-      real, dimension(nx,3) :: bb
-!
-      integer :: i
-!
-!  Compute magnetic stress Mij(x,t)=Bi(x,t)*Bj(x,t) in real space
-!
-!  Find bb if as communicated auxiliary.
-!
-      !call zero_ghosts(f, iax, iaz)
-      !call update_ghosts(f, iax, iaz)
-  !   mn_loop: do imn = 1, ny * nz
-  !     m = mm(imn)
-  !     n = nn(imn)
-  !     call gij(f, iaa, aij, 1)
-  !     call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
-!
-!  Add imposed field, if any
-!
-  !     bext: if (lB_ext_in_comaux) then
-  !       call get_bext(b_ext)
-  !       forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
-  !       if (headtt .and. imn == 1) &
-  !           print *, 'magnetic_before_boundary: B_ext = ', b_ext
-  !     endif bext
-!
-  !     f(l1:l2,m,n,ibx:ibz) = bb
-  !   enddo mn_loop
-!     endif getbb
-!
-!     do i=1,n_special_modules
-!       call caller(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY),1,f)
-!     enddo
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -450,37 +430,65 @@ module Special
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
 !  compute the Fourier transform, so we would skip the rest.
+!  choices of calculating T and X polarization
 !
-      if (lno_transverse_part) return
+      if (lno_transverse_part) then
+        return
+      elseif (lstress_from_TandX) then
+        call stress_from_TandX(f)
+      else
+        call stress_from_11and12(f)
+      endif
+!
+    endsubroutine special_after_boundary
+!***********************************************************************
+    subroutine stress_from_11and12(f)
+!
+!  Compute the transverse part of the stress tensor by going into Fourier space.
+!
+!  15-jan-08/axel: coded
+!
+      use Fourier, only: fourier_transform
+!
+      real, dimension (:,:,:), allocatable :: S11_re, S11_im, S12_re, S12_im, T_re, T_im, one_over_k2
+      real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,ikx,iky,ikz,stat
+      logical :: lscale_tobox1=.true.
+      real :: scale_factor, fact, P11, P22, P33, P12, P13, P23
+      intent(inout) :: f
+!
+!  For testing purposes, if lno_transverse_part=T, we would not need to
+!  compute the Fourier transform, so we would skip the rest.
 !
 !  Allocate memory for arrays.
 !
       allocate(one_over_k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for one_over_k2')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for one_over_k2')
 !
       allocate(S11_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S11_re')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for S11_re')
       allocate(S11_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S11_im')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for S11_im')
 !
       allocate(S12_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S12_re')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for S12_re')
       allocate(S12_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S12_im')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for S12_im')
 !
       allocate(T_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_re')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for T_re')
       allocate(T_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_im')
+      if (stat>0) call fatal_error('stress_from_11and12','Could not allocate memory for T_im')
 !
       allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary', &
+      if (stat>0) call fatal_error('stress_from_11and12', &
           'Could not allocate memory for kx')
       allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary', &
+      if (stat>0) call fatal_error('stress_from_11and12', &
           'Could not allocate memory for ky')
       allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary', &
+      if (stat>0) call fatal_error('stress_from_11and12', &
           'Could not allocate memory for kz')
 !
 !  calculate k^2
@@ -502,7 +510,7 @@ module Special
 !  But call it one_over_k2.
 !
       if (lroot .AND. ip<10) &
-          print*,'special_after_boundary:fft ...'
+          print*,'stress_from_11and12:fft ...'
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -691,8 +699,8 @@ module Special
 !
 !  add (or set) corresponding stress
 !
-      f(l1:l2,m1:m2,n1:n2,istressL)=S11_re
-      f(l1:l2,m1:m2,n1:n2,istressT)=S12_re
+      f(l1:l2,m1:m2,n1:n2,istressT)=S11_re
+      f(l1:l2,m1:m2,n1:n2,istressX)=S12_re
 !
 !  Deallocate arrays.
 !
@@ -707,7 +715,197 @@ module Special
       if (allocated(ky)) deallocate(ky)
       if (allocated(kz)) deallocate(kz)
 !
-    endsubroutine special_after_boundary
+    endsubroutine stress_from_11and12
+!***********************************************************************
+    subroutine stress_from_TandX(f)
+!
+!  Compute the transverse part of the stress tensor by going into Fourier space.
+!
+!  15-jan-08/axel: coded
+!
+      use Fourier, only: fourier_transform
+!
+      real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im, Sij_re, Sij_im
+      real, dimension (:,:,:), allocatable :: one_over_k2, S_T_re, S_T_im, S_X_re, S_X_im
+      real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (6) :: Pij, e_T_re, e_T_im, e_X_re, e_X_im
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
+      logical :: lscale_tobox1=.true.
+      real :: scale_factor, fact
+      intent(inout) :: f
+!
+!  For testing purposes, if lno_transverse_part=T, we would not need to
+!  compute the Fourier transform, so we would skip the rest.
+!
+!  Allocate memory for arrays.
+!
+      allocate(one_over_k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for one_over_k2')
+!
+      allocate(S_T_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for S_T_re')
+!
+      allocate(S_T_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for S_T_im')
+!
+      allocate(S_X_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for S_X_re')
+!
+      allocate(S_X_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for S_X_im')
+!
+      allocate(Sij_re(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Sij_re')
+!
+      allocate(Sij_im(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Sij_im')
+!
+      allocate(Tpq_re(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Tpq_re')
+!
+      allocate(Tpq_im(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX','Could not allocate memory for Tpq_im')
+!
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX', &
+          'Could not allocate memory for kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX', &
+          'Could not allocate memory for ky')
+      allocate(kz(nzgrid),stat=stat)
+      if (stat>0) call fatal_error('stress_from_TandX', &
+          'Could not allocate memory for kz')
+!
+!  calculate k^2
+!
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lx
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+!
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Ly
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+!
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lz
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+!
+!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
+!  the full nx extent (which, currently, must be equal to nxgrid).
+!  But call it one_over_k2.
+!
+      if (lroot .AND. ip<10) &
+          print*,'stress_from_TandX:fft ...'
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+          enddo
+        enddo
+      enddo
+!
+!  compute 1/k2 for components of unit vector
+!
+      if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
+      one_over_k2=1./one_over_k2
+!
+!  Assemble stress
+!  Sij = (Pil*Pjm-.5*Pij*Plm)*Tlm
+!  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
+!
+!  Do Tpq
+!
+      Tpq_re=0.0
+      Tpq_im=0.0
+      do j=1,3
+      do i=1,3
+        ij=ij_table(i,j)
+        if (lhydro)    Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
+          +f(l1:l2,m1:m2,n1:n2,iux+i-1) &
+          *f(l1:l2,m1:m2,n1:n2,iux+j-1)
+        if (lmagnetic) Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
+          +f(l1:l2,m1:m2,n1:n2,ibx+i-1) &
+          *f(l1:l2,m1:m2,n1:n2,ibx+j-1)
+      enddo
+      enddo
+!
+      do ij=1,6
+        call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
+      enddo
+!
+!  P11, P22, P33, P12, P23, P31
+!
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            Pij(1)=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            Pij(2)=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            Pij(3)=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
+            Pij(4)=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+            Pij(5)=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            Pij(6)=-kz(ikz+ipx*nx)*kx(ikx+ipy*ny)*one_over_k2(ikz,ikx,iky)
+!
+!  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
+!
+            Sij_re=0.
+            Sij_im=0.
+            do j=1,3
+            do i=1,3
+            do q=1,3
+            do p=1,3
+              ij=ij_table(i,j)
+              pq=ij_table(p,q)
+              ip=ij_table(i,p)
+              jq=ij_table(j,q)
+              Sij_re(:,:,:,ij)=Sij_re(:,:,:,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(:,:,:,pq)
+              Sij_im(:,:,:,ij)=Sij_im(:,:,:,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(:,:,:,pq)
+            enddo
+            enddo
+            enddo
+            enddo
+!
+!  compute S_T and S_X
+!
+            S_T_re=0.
+            S_T_im=0.
+            S_X_re=0.
+            S_X_im=0.
+            do j=1,3
+            do i=1,3
+              ij=ij_table(i,j)
+              S_T_re=S_T_re+.5*e_T_re(ij)*Sij_re(:,:,:,ij)-.5*e_T_im(ij)*Sij_im(:,:,:,ij)
+              S_T_im=S_T_im+.5*e_T_re(ij)*Sij_im(:,:,:,ij)+.5*e_T_im(ij)*Sij_re(:,:,:,ij)
+              S_X_re=S_X_re+.5*e_X_re(ij)*Sij_re(:,:,:,ij)-.5*e_X_im(ij)*Sij_im(:,:,:,ij)
+              S_X_im=S_X_im+.5*e_X_re(ij)*Sij_im(:,:,:,ij)+.5*e_X_im(ij)*Sij_re(:,:,:,ij)
+            enddo
+            enddo
+          enddo
+        enddo
+      enddo
+!
+!  back to real space
+
+      call fourier_transform(S_T_re,S_T_im,linv=.true.)
+      call fourier_transform(S_X_re,S_X_im,linv=.true.)
+!
+!  add (or set) corresponding stress
+!
+      f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
+      f(l1:l2,m1:m2,n1:n2,istressX)=S_X_re
+!
+!  Deallocate arrays.
+!
+      if (allocated(one_over_k2)) deallocate(one_over_k2)
+      if (allocated(S_T_re)) deallocate(S_T_re)
+      if (allocated(S_X_im)) deallocate(S_X_im)
+      if (allocated(Tpq_re)) deallocate(Tpq_re)
+      if (allocated(Tpq_im)) deallocate(Tpq_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
+!
+    endsubroutine stress_from_TandX
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
@@ -728,15 +926,15 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_hhL2m=0; idiag_hhT2m=0; idiag_hhLhhTm=0
-        idiag_ggLpt=0
+        idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhThhXm=0
+        idiag_ggTpt=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'hhL2m',idiag_hhL2m)
         call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
-        call parse_name(iname,cname(iname),cform(iname),'hhLhhTm',idiag_hhLhhTm)
-        call parse_name(iname,cname(iname),cform(iname),'ggLpt',idiag_ggLpt)
+        call parse_name(iname,cname(iname),cform(iname),'hhX2m',idiag_hhX2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhThhXm',idiag_hhThhXm)
+        call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
