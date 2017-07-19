@@ -907,8 +907,8 @@ module Special
               pq=ij_table(p,q)
               ip=ij_table(i,p)
               jq=ij_table(j,q)
-              Sij_re(:,:,:,ij)=Sij_re(:,:,:,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(:,:,:,pq)
-              Sij_im(:,:,:,ij)=Sij_im(:,:,:,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(:,:,:,pq)
+              Sij_re(ikz,ikx,iky,ij)=Sij_re(ikz,ikx,iky,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_re(ikz,ikx,iky,pq)
+              Sij_im(ikz,ikx,iky,ij)=Sij_im(ikz,ikx,iky,ij)+(Pij(ip)*Pij(jq)-.5*Pij(ij)*Pij(pq))*Tpq_im(ikz,ikx,iky,pq)
             enddo
             enddo
             enddo
@@ -923,12 +923,22 @@ module Special
             do j=1,3
             do i=1,3
               ij=ij_table(i,j)
-              S_T_re=S_T_re+.5*e_T(ij)*Sij_re(:,:,:,ij)
-              S_T_im=S_T_im+.5*e_T(ij)*Sij_im(:,:,:,ij)
-              S_X_re=S_X_re+.5*e_X(ij)*Sij_re(:,:,:,ij)
-              S_X_im=S_X_im+.5*e_X(ij)*Sij_im(:,:,:,ij)
+              S_T_re(ikz,ikx,iky)=S_T_re(ikz,ikx,iky)+.5*e_T(ij)*Sij_re(ikz,ikx,iky,ij)
+              S_T_im(ikz,ikx,iky)=S_T_im(ikz,ikx,iky)+.5*e_T(ij)*Sij_im(ikz,ikx,iky,ij)
+              S_X_re(ikz,ikx,iky)=S_X_re(ikz,ikx,iky)+.5*e_X(ij)*Sij_re(ikz,ikx,iky,ij)
+              S_X_im(ikz,ikx,iky)=S_X_im(ikz,ikx,iky)+.5*e_X(ij)*Sij_im(ikz,ikx,iky,ij)
             enddo
             enddo
+!if (ikx==0.and.iky==0.and.ikz==2) then
+if (k1==0..and.k2==0..and.k3==2.) then
+  print*,'AXEL k1,k2,k3=',k1,k2,k3
+  print*,'AXEL e_T=',e_T
+  print*,'AXEL e_X=',e_X
+  print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
+  print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
+!  print*,'AXEL T_X_re=',T_X_re
+!  print*,'AXEL T_X_im=',T_X_im
+endif
           enddo
         enddo
       enddo
