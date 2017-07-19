@@ -523,6 +523,7 @@ module Special
 !
       if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
       one_over_k2=1./one_over_k2
+      if (lroot) one_over_k2(1,1,1) = 0.  ! set origin to zero
 !
 !  Assemble stress
 !
@@ -729,10 +730,11 @@ module Special
       real, dimension (:,:,:), allocatable :: one_over_k2, S_T_re, S_T_im, S_X_re, S_X_im
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (6) :: Pij, e_T_re, e_T_im, e_X_re, e_X_im
+      real, dimension (6) :: Pij, e_T, e_X
+      real, dimension (3) :: e1, e2
       integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
       logical :: lscale_tobox1=.true.
-      real :: scale_factor, fact
+      real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -795,8 +797,7 @@ module Special
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
 !
-      if (lroot .AND. ip<10) &
-          print*,'stress_from_TandX:fft ...'
+      if (lroot .AND. ip<10) print*,'stress_from_TandX:fft ...'
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -806,15 +807,19 @@ module Special
       enddo
 !
 !  compute 1/k2 for components of unit vector
+!  Avoid division by zero
 !
       if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
       one_over_k2=1./one_over_k2
+      if (lroot) one_over_k2(1,1,1) = 0.  ! set origin to zero
 !
-!  Assemble stress
-!  Sij = (Pil*Pjm-.5*Pij*Plm)*Tlm
-!  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
+!     if (one_over_k2(ikz,ikx,iky)==0.) then
+!       one_over_k2(ikz,ikx,iky)=1.
+!       one_over_k2=1./one_over_k2
+!       one_over_k2(ikz,ikx,iky)=0.
+!     endif
 !
-!  Do Tpq
+!  Assemble stress, Tpq
 !
       Tpq_re=0.0
       Tpq_im=0.0
@@ -830,6 +835,8 @@ module Special
       enddo
       enddo
 !
+!  Fourier transform all 6 components
+!
       do ij=1,6
         call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
       enddo
@@ -839,6 +846,48 @@ module Special
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
+!
+!  compute e_T and e_X; determine first preferred direction,
+!  which is a component with the smallest component by modulus.
+!
+            k1=kx(ikx+ipy*ny)
+            k2=ky(iky+ipz*nz)
+            k3=kz(ikz+ipx*nx)
+!
+!  find two vectors e1 and e2 to compute e_T and e_X
+!
+            if(abs(k1)<abs(k2)) then
+              if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                e1=(/0.,-k3,+k2/)
+                e2=(/k2**2+k3**2,-k2*k1,-k3*k1/)
+              else !(k3 is pref dir)
+                e1=(/k2,-k1,0/)
+                e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+              endif
+            else !(k2 smaller than k1)
+              if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                e1=(/-k3,0.,+k1/)
+                e2=(/+k1*k2,-(k1**2+k3**2),+k3*k2/)
+              else !(k3 is pref dir)
+                e1=(/k2,-k1,0/)
+                e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+              endif
+            endif
+            e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+            e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+!
+!  compute e_T and e_X
+!
+            do j=1,3
+            do i=1,3
+              ij=ij_table(i,j)
+              e_T(ij)=e1(i)*e1(j)-e2(i)*e2(j)
+              e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
+            enddo
+            enddo
+!
+!  Pij
+!
             Pij(1)=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
             Pij(2)=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
             Pij(3)=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
@@ -874,10 +923,10 @@ module Special
             do j=1,3
             do i=1,3
               ij=ij_table(i,j)
-              S_T_re=S_T_re+.5*e_T_re(ij)*Sij_re(:,:,:,ij)-.5*e_T_im(ij)*Sij_im(:,:,:,ij)
-              S_T_im=S_T_im+.5*e_T_re(ij)*Sij_im(:,:,:,ij)+.5*e_T_im(ij)*Sij_re(:,:,:,ij)
-              S_X_re=S_X_re+.5*e_X_re(ij)*Sij_re(:,:,:,ij)-.5*e_X_im(ij)*Sij_im(:,:,:,ij)
-              S_X_im=S_X_im+.5*e_X_re(ij)*Sij_im(:,:,:,ij)+.5*e_X_im(ij)*Sij_re(:,:,:,ij)
+              S_T_re=S_T_re+.5*e_T(ij)*Sij_re(:,:,:,ij)
+              S_T_im=S_T_im+.5*e_T(ij)*Sij_im(:,:,:,ij)
+              S_X_re=S_X_re+.5*e_X(ij)*Sij_re(:,:,:,ij)
+              S_X_im=S_X_im+.5*e_X(ij)*Sij_im(:,:,:,ij)
             enddo
             enddo
           enddo
