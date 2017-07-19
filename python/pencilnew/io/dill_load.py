@@ -1,4 +1,4 @@
-def dill_load(name, folder=False, sim=False):
+def dill_load(name, folder=False, sim=False, quiet=True):
     """This scripts loads an dill-file. It automatically checks known folders if no folder is specified.
     Args:
         name:        Name of dill-file  (<name>.dill)
@@ -13,6 +13,7 @@ def dill_load(name, folder=False, sim=False):
     import dill
     from os.path import join, exists
 
+    if folder=='pc' and name.startswith('pc/'): name=name[3:]
     if (not name.endswith('.dill')): name = name+'.dill' # add .dill to name if not already ending with
 
     # if folder is not defined try to find the dill-file at typical places
@@ -20,17 +21,20 @@ def dill_load(name, folder=False, sim=False):
     if sim: sim_path = sim.path
     if not folder:
         if exists(join(sim_path, 'pc', name)):
-            folder = join(sim_path, 'pc');       print('~ Found '+name+' in '+folder)
+            folder = join(sim_path, 'pc')
+            if not quiet: print('~ Found '+name+' in '+folder)
         elif exists(join(sim_path, 'data/pc', name)):
-            folder = join(sim_path, 'data/pc');  print('~ Found '+name+' in '+folder)
+            folder = join(sim_path, 'data/pc')
+            if not quiet: print('~ Found '+name+' in '+folder)
         elif exists(join(sim_path, '.', name)):
-            folder = join(sim_path, '.');         print('~ Found '+name+' in '+folder)
+            folder = join(sim_path, '.')
+            if not quiet: print('~ Found '+name+' in '+folder)
         else:
-            print('~ Couldnt find file '+name);        return False
+            print('!! ERROR: Couldnt find file '+name);        return False
 
     # open file
     filepath = join(folder, name)
-    print(filepath)
+    if not quiet: print(filepath)
     # from pencilnew.io import debug_breakpoint; debug_breakpoint()
     try:                                                   # check on existance
         if not exists(filepath) or not exists(join(sim_path, filepath)):
@@ -45,4 +49,4 @@ def dill_load(name, folder=False, sim=False):
             # return obj
 
     except: # if anything goes wrong
-       print('!! ERROR: Something went wrong while importing dill-file!'); return False
+       print('!! ERROR: Something went wrong while importing dill-file: '+filepath); return False

@@ -13,10 +13,18 @@ def dill_save(obj, name, folder='pc'):
     __mkdir__(folder)        ## prepare folder
 
     if (not name.endswith('.dill')): name = name+'.dill'
+    if folder=='pc' and name.startswith('pc/'): name=name[3:]
 
+    with open(__join__(folder, name), 'wb') as f:
+        dill.dump(obj, f)
+
+    return True
+
+"""
     try:
         with open(__join__(folder, name), 'wb') as f:
             dill.dump(obj, f)
         return True
     except:
         return False
+"""
