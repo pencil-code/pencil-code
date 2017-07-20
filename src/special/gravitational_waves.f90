@@ -852,25 +852,30 @@ print*,'AXEL3 Tpq_im=',Tpq_im(3,1,1,:)
 !
 !  find two vectors e1 and e2 to compute e_T and e_X
 !
-            if(abs(k1)<abs(k2)) then
-              if(abs(k1)<abs(k3)) then !(k1 is pref dir)
-                e1=(/0.,-k3,+k2/)
-                e2=(/k2**2+k3**2,-k2*k1,-k3*k1/)
-              else !(k3 is pref dir)
-                e1=(/k2,-k1,0./)
-                e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+            if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
+              e1=0.
+              e2=0.
+            else
+              if(abs(k1)<abs(k2)) then
+                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                  e1=(/0.,-k3,+k2/)
+                  e2=(/k2**2+k3**2,-k2*k1,-k3*k1/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+                endif
+              else !(k2 smaller than k1)
+                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  e1=(/-k3,0.,+k1/)
+                  e2=(/+k1*k2,-(k1**2+k3**2),+k3*k2/)
+                else !(k3 is pref dir)
+                  e1=(/k2,-k1,0./)
+                  e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+                endif
               endif
-            else !(k2 smaller than k1)
-              if(abs(k2)<abs(k3)) then !(k2 is pref dir)
-                e1=(/-k3,0.,+k1/)
-                e2=(/+k1*k2,-(k1**2+k3**2),+k3*k2/)
-              else !(k3 is pref dir)
-                e1=(/k2,-k1,0./)
-                e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
-              endif
+              e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+              e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
             endif
-            e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
-            e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
 !
 !  compute e_T and e_X
 !
@@ -921,15 +926,15 @@ print*,'AXEL3 Tpq_im=',Tpq_im(3,1,1,:)
               S_X_im(ikz,ikx,iky)=S_X_im(ikz,ikx,iky)+.5*e_X(ij)*Sij_im(ij)
             enddo
             enddo
-!if (ikx==0.and.iky==0.and.ikz==2) then
-if (k1==0..and.k2==0..and.k3==0.) then
+!if (k1==0..and.k2==0..and.k3==0.) then
+if (k1==0..and.k2==0..and.k3==2.) then
   print*,'AXEL k1,k2,k3=',k1,k2,k3
   print*,'AXEL e_T=',e_T
   print*,'AXEL e_X=',e_X
-  print*,'AXEL S_X_re=',S_X_re
-  print*,'AXEL S_X_im=',S_X_im
-  print*,'AXEL S_T_re=',S_T_re
-  print*,'AXEL S_T_im=',S_T_im
+  print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
+  print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
+  print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
+  print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
   print*,'AXEL Sij_re=',Sij_re
   print*,'AXEL Sij_im=',Sij_im
   print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
@@ -948,7 +953,11 @@ endif
 !  add (or set) corresponding stress
 !
       f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
-      f(l1:l2,m1:m2,n1:n2,istressX)=S_X_re
+      f(l1:l2,m1:m2,n1:n2,istressX)=S_X_im
+print*,'AXEL S_T_re=',S_T_re(:,1,1)
+print*,'AXEL S_X_re=',S_X_re(:,1,1)
+print*,'AXEL S_T_im=',S_T_im(:,1,1)
+print*,'AXEL S_X_im=',S_X_im(:,1,1)
 !
 !  Deallocate arrays.
 !
