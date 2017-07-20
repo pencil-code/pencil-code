@@ -1005,6 +1005,18 @@ module Hydro
 
     endsubroutine update_char_vel_hydro
 !***********************************************************************
+    subroutine calc_gradu(f)
+!
+    use Sub, only : gij
+    real, dimension (mx,my,mz,mfarray) :: f
+    integer :: imn,jk,jj,kk,nyz
+    real, dimension(nx,3,3) :: gradu
+!
+! dummy 
+!
+      call keep_compiler_quiet(f)
+    subroutine calc_gradu(f)
+!***********************************************************************
     subroutine push2c(p_par)
 
       integer, parameter :: npars=1
