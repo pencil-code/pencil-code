@@ -19,7 +19,7 @@ class ParticleStalkData(object):
     ParticleStalkData -- holds Pencil Code PSTALK file data.
     """
 
-    def __init__(self, datadir=False, sim=False, noutmax=-1,
+    def __init__(self, datadir=False, sim=False, noutmax='-1',
                  swap_endian=False, quiet=False):
         """
         Read PSTALK files from Pencil Code using IDL.
@@ -61,7 +61,7 @@ class ParticleStalkData(object):
 
             print('~ reading pstalk in IDL..')
 
-            idl_call = ', '.join(['pc_read_pstalk', 'obj=pstalk', 'datadir="'+datadir+'"', 'quiet='+quiet, 'swap_endian='+swap_endian, 'noutmax='+noutmax])
+            idl_call = ', '.join(['pc_read_pstalk', 'obj=pstalk', 'datadir="'+datadir+'"', 'quiet='+quiet, 'swap_endian='+swap_endian, 'noutmax='+str(noutmax)])
 
             IDL.run(idl_call)
 
