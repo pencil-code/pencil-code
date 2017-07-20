@@ -1007,15 +1007,13 @@ module Hydro
 !***********************************************************************
     subroutine calc_gradu(f)
 !
-    use Sub, only : gij
-    real, dimension (mx,my,mz,mfarray) :: f
-    integer :: imn,jk,jj,kk,nyz
-    real, dimension(nx,3,3) :: gradu
+! Dummy 
 !
-! dummy 
+    real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
-    subroutine calc_gradu(f)
+
+    endsubroutine calc_gradu
 !***********************************************************************
     subroutine push2c(p_par)
 
