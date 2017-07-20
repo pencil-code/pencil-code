@@ -828,10 +828,6 @@ module Special
       do ij=1,6
         call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
       enddo
-print*,'AXEL2 Tpq_re=',Tpq_re(1,1,1,:)
-print*,'AXEL2 Tpq_im=',Tpq_im(1,1,1,:)
-print*,'AXEL3 Tpq_re=',Tpq_re(3,1,1,:)
-print*,'AXEL3 Tpq_im=',Tpq_im(3,1,1,:)
 !
 !  P11, P22, P33, P12, P23, P31
 !
@@ -926,26 +922,46 @@ print*,'AXEL3 Tpq_im=',Tpq_im(3,1,1,:)
               S_X_im(ikz,ikx,iky)=S_X_im(ikz,ikx,iky)+.5*e_X(ij)*Sij_im(ij)
             enddo
             enddo
-!if (k1==0..and.k2==0..and.k3==0.) then
-if (k1==0..and.k2==0..and.k3==2.) then
-  print*,'AXEL k1,k2,k3=',k1,k2,k3
-  print*,'AXEL e_T=',e_T
-  print*,'AXEL e_X=',e_X
-  print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
-  print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
-  print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
-  print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
-  print*,'AXEL Sij_re=',Sij_re
-  print*,'AXEL Sij_im=',Sij_im
-  print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
-  print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
-  print*,'AXEL Pij=',Pij
-endif
+         
+ ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
+ 
+          if (k1==0..and.k2==0..and.k3==2.) then
+            print*,'PRINTING RESULTS FOR K = (0, 0, 2)'
+            print*,'AXEL k1,k2,k3=',k1,k2,k3
+            print*,'AXEL e_T=',e_T
+            print*,'AXEL e_X=',e_X
+            print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
+            print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
+            print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
+            print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
+            print*,'AXEL Sij_re=',Sij_re
+            print*,'AXEL Sij_im=',Sij_im
+            print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
+            print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
+            print*,'AXEL Pij=',Pij
+            
+          elseif (k1==0..and.k2==0..and.k3==0.) then
+            print*,'PRINTING RESULTS FOR K = (0, 0, 0)'
+            print*,'AXEL k1,k2,k3=',k1,k2,k3
+            print*,'AXEL e_T=',e_T
+            print*,'AXEL e_X=',e_X
+            print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
+            print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
+            print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
+            print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
+            print*,'AXEL Sij_re=',Sij_re
+            print*,'AXEL Sij_im=',Sij_im
+            print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
+            print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
+            print*,'AXEL Pij=',Pij
+          endif
+            
           enddo
         enddo
       enddo
 !
 !  back to real space
+!
 
       call fourier_transform(S_T_re,S_T_im,linv=.true.)
       call fourier_transform(S_X_re,S_X_im,linv=.true.)
@@ -954,10 +970,12 @@ endif
 !
       f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
       f(l1:l2,m1:m2,n1:n2,istressX)=S_X_im
-print*,'AXEL S_T_re=',S_T_re(:,1,1)
-print*,'AXEL S_X_re=',S_X_re(:,1,1)
-print*,'AXEL S_T_im=',S_T_im(:,1,1)
-print*,'AXEL S_X_im=',S_X_im(:,1,1)
+      
+      print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
+      print*,'AXEL S_T_re=',S_T_re(:,1,1)
+      print*,'AXEL S_X_re=',S_X_re(:,1,1)
+      print*,'AXEL S_T_im=',S_T_im(:,1,1)
+      print*,'AXEL S_X_im=',S_X_im(:,1,1)
 !
 !  Deallocate arrays.
 !
