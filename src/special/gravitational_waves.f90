@@ -93,7 +93,7 @@ module Special
   real :: diffhh=0., diffgg=0.
   real :: diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
-  logical :: lstress_from_TandX=.true.
+  logical :: lstress_from_TandX=.true., luse_fourier_transform=.true.
   real, dimension(3,3) :: ij_table
 !
 ! input parameters
@@ -106,7 +106,7 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
     lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh, &
-    diffhh_hyper3, diffgg_hyper3, lstress_from_TandX
+    diffhh_hyper3, diffgg_hyper3, lstress_from_TandX, luse_fourier_transform
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -436,6 +436,7 @@ module Special
         return
       elseif (lstress_from_TandX) then
         call stress_from_TandX(f)
+        !call stress_test(f)
       else
         call stress_from_11and12(f)
       endif
@@ -718,6 +719,164 @@ module Special
 !
     endsubroutine stress_from_11and12
 !***********************************************************************
+    subroutine stress_test(f)
+!
+!  Compute the transverse part of the stress tensor by going into Fourier space.
+!
+!  15-jan-08/axel: coded
+!
+      use Fourier, only: fourier_transform, fft_xyz_parallel
+!
+      real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
+      real, dimension (:,:,:), allocatable :: one_over_k2, S_T_re, S_T_im, S_X_re, S_X_im
+      real, dimension (:), allocatable :: kx, ky, kz
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
+      real, dimension (3) :: e1, e2
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
+      logical :: lscale_tobox1=.true.
+      real :: scale_factor, fact, k1, k2, k3
+      intent(inout) :: f
+!
+!  For testing purposes, if lno_transverse_part=T, we would not need to
+!  compute the Fourier transform, so we would skip the rest.
+!
+!  Allocate memory for arrays.
+!
+      allocate(one_over_k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for one_over_k2')
+!
+      allocate(S_T_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for S_T_re')
+!
+      allocate(S_T_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for S_T_im')
+!
+      allocate(S_X_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for S_X_re')
+!
+      allocate(S_X_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for S_X_im')
+!
+      allocate(Tpq_re(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for Tpq_re')
+!
+      allocate(Tpq_im(nx,ny,nz,6),stat=stat)
+      if (stat>0) call fatal_error('stress_test','Could not allocate memory for Tpq_im')
+!
+      allocate(kx(nxgrid),stat=stat)
+      if (stat>0) call fatal_error('stress_test', &
+          'Could not allocate memory for kx')
+      allocate(ky(nygrid),stat=stat)
+      if (stat>0) call fatal_error('stress_test', &
+          'Could not allocate memory for ky')
+      allocate(kz(nzgrid),stat=stat)
+      if (stat>0) call fatal_error('stress_test', &
+          'Could not allocate memory for kz')
+!
+!  calculate k^2
+!
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lx
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+!
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Ly
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+!
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lz
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+print*,'AXEL kz=',kz
+!
+!  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
+!  the full nx extent (which, currently, must be equal to nxgrid).
+!  But call it one_over_k2.
+!
+      if (lroot .AND. ip<10) print*,'stress_test:fft ...'
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+          enddo
+        enddo
+      enddo
+!
+!  compute 1/k2 for components of unit vector
+!  Avoid division by zero
+!
+      if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
+      one_over_k2=1./one_over_k2
+      if (lroot) one_over_k2(1,1,1) = 0.  ! set origin to zero
+!
+!  Assemble stress, Tpq
+!
+      Tpq_re=0.0
+      Tpq_im=0.0
+      do j=1,3
+      do i=1,j
+        ij=ij_table(i,j)
+        if (lhydro)    Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
+          +f(l1:l2,m1:m2,n1:n2,iux+i-1) &
+          *f(l1:l2,m1:m2,n1:n2,iux+j-1)
+        if (lmagnetic) Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
+          +f(l1:l2,m1:m2,n1:n2,ibx+i-1) &
+          *f(l1:l2,m1:m2,n1:n2,ibx+j-1)
+      enddo
+      enddo
+!
+!  Fourier transform all 6 components
+!
+      do ij=1,6
+        if (luse_fourier_transform) then
+print*,'AXEL: ij,X=',ij,Tpq_re(:,1,1,ij)
+          call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
+print*,'AXEL: ij,Re=',ij,Tpq_re(1,:,1,ij)
+print*,'AXEL: ij,Im=',ij,Tpq_im(1,:,1,ij)
+        else
+          call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
+        endif
+      enddo
+!
+!  back to real space
+!
+      S_T_re=Tpq_re(:,:,:,3)
+      S_T_im=Tpq_im(:,:,:,3)
+!
+      S_X_re=Tpq_re(:,:,:,2)
+      S_X_im=Tpq_im(:,:,:,2)
+!
+        if (luse_fourier_transform) then
+print*,'AXEL: k3Re=',S_T_re(1,:,1)
+print*,'AXEL: k3Im=',S_T_im(1,:,1)
+print*,'AXEL: k2Re=',S_X_re(1,:,1)
+print*,'AXEL: k2Im=',S_X_im(1,:,1)
+          call fourier_transform(S_T_re,S_T_im,linv=.true.)
+          call fourier_transform(S_X_re,S_X_im,linv=.true.)
+print*,'AXEL: x3Re=',S_T_re(:,1,1)
+print*,'AXEL: x3Im=',S_T_im(:,1,1)
+print*,'AXEL: x2Re=',S_X_re(:,1,1)
+print*,'AXEL: x2Im=',S_X_im(:,1,1)
+        endif
+!
+!  add (or set) corresponding stress
+!
+      f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
+      f(l1:l2,m1:m2,n1:n2,istressX)=S_X_re
+      
+!  Deallocate arrays.
+!
+      if (allocated(one_over_k2)) deallocate(one_over_k2)
+      if (allocated(S_T_re)) deallocate(S_T_re)
+      if (allocated(S_X_im)) deallocate(S_X_im)
+      if (allocated(Tpq_re)) deallocate(Tpq_re)
+      if (allocated(Tpq_im)) deallocate(Tpq_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
+!
+    endsubroutine stress_test
+!***********************************************************************
     subroutine stress_from_TandX(f)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
@@ -786,6 +945,7 @@ module Special
       scale_factor=1
       if (lscale_tobox1) scale_factor=2*pi/Lz
       kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+print*,'AXEL kz=',kz
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
@@ -851,6 +1011,12 @@ module Special
             if (lroot.and.ikx==1.and.iky==1.and.ikz==1) then
               e1=0.
               e2=0.
+              Pij(1)=0.
+              Pij(2)=0.
+              Pij(3)=0.
+              Pij(4)=0.
+              Pij(5)=0.
+              Pij(6)=0.
             else
               if(abs(k1)<abs(k2)) then
                 if(abs(k1)<abs(k3)) then !(k1 is pref dir)
@@ -871,6 +1037,12 @@ module Special
               endif
               e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
               e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
+              Pij(1)=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              Pij(2)=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+              Pij(3)=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
+              Pij(4)=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+              Pij(5)=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+              Pij(6)=-kz(ikz+ipx*nx)*kx(ikx+ipy*ny)*one_over_k2(ikz,ikx,iky)
             endif
 !
 !  compute e_T and e_X
@@ -882,15 +1054,6 @@ module Special
               e_X(ij)=e1(i)*e2(j)+e2(i)*e1(j)
             enddo
             enddo
-!
-!  Pij
-!
-            Pij(1)=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-            Pij(2)=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
-            Pij(3)=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
-            Pij(4)=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
-            Pij(5)=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
-            Pij(6)=-kz(ikz+ipx*nx)*kx(ikx+ipy*ny)*one_over_k2(ikz,ikx,iky)
 !
 !  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
 !
@@ -925,9 +1088,12 @@ module Special
          
  ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
  
-          if (k1==0..and.k2==0..and.k3==2.) then
-            print*,'PRINTING RESULTS FOR K = (0, 0, 2)'
+          !if (k1==0..and.k2==0..and.abs(k3)==2.) then
+          if (abs(k1)==2..and.k2==0..and.abs(k3)==0.) then
+            print*,'PRINTING RESULTS FOR K = (+/-2, 0, 0)'
             print*,'AXEL k1,k2,k3=',k1,k2,k3
+            print*,'AXEL e_1=',e1
+            print*,'AXEL e_2=',e2
             print*,'AXEL e_T=',e_T
             print*,'AXEL e_X=',e_X
             print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
@@ -962,9 +1128,16 @@ module Special
 !
 !  back to real space
 !
-
+print*,'AXEL: k3Re=',S_T_re(1,:,1)
+print*,'AXEL: k3Im=',S_T_im(1,:,1)
+print*,'AXEL: k2Re=',S_X_re(1,:,1)
+print*,'AXEL: k2Im=',S_X_im(1,:,1)
       call fourier_transform(S_T_re,S_T_im,linv=.true.)
       call fourier_transform(S_X_re,S_X_im,linv=.true.)
+print*,'AXEL: x3Re=',S_T_re(:,1,1)
+print*,'AXEL: x3Im=',S_T_im(:,1,1)
+print*,'AXEL: x2Re=',S_X_re(:,1,1)
+print*,'AXEL: x2Im=',S_X_im(:,1,1)
 !
 !  add (or set) corresponding stress
 !
