@@ -17,3 +17,6 @@ from .is_iterable import *
 
 # sorting
 from .natural_sort import natural_sort
+
+# helper
+from .logrange import logrange
