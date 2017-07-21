@@ -787,7 +787,6 @@ module Special
       scale_factor=1
       if (lscale_tobox1) scale_factor=2*pi/Lz
       kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
-print*,'AXEL kz=',kz
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
@@ -829,10 +828,7 @@ print*,'AXEL kz=',kz
 !
       do ij=1,6
         if (luse_fourier_transform) then
-print*,'AXEL: ij,X=',ij,Tpq_re(:,1,1,ij)
           call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
-print*,'AXEL: ij,Re=',ij,Tpq_re(1,:,1,ij)
-print*,'AXEL: ij,Im=',ij,Tpq_im(1,:,1,ij)
         else
           call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
         endif
@@ -847,16 +843,8 @@ print*,'AXEL: ij,Im=',ij,Tpq_im(1,:,1,ij)
       S_X_im=Tpq_im(:,:,:,2)
 !
         if (luse_fourier_transform) then
-print*,'AXEL: k3Re=',S_T_re(1,:,1)
-print*,'AXEL: k3Im=',S_T_im(1,:,1)
-print*,'AXEL: k2Re=',S_X_re(1,:,1)
-print*,'AXEL: k2Im=',S_X_im(1,:,1)
           call fourier_transform(S_T_re,S_T_im,linv=.true.)
           call fourier_transform(S_X_re,S_X_im,linv=.true.)
-print*,'AXEL: x3Re=',S_T_re(:,1,1)
-print*,'AXEL: x3Im=',S_T_im(:,1,1)
-print*,'AXEL: x2Re=',S_X_re(:,1,1)
-print*,'AXEL: x2Im=',S_X_im(:,1,1)
         endif
 !
 !  add (or set) corresponding stress
@@ -892,7 +880,7 @@ print*,'AXEL: x2Im=',S_X_im(:,1,1)
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
       integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
-      logical :: lscale_tobox1=.true.
+      logical :: lscale_tobox1=.true., ldebug=.false.
       real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
 !
@@ -945,13 +933,12 @@ print*,'AXEL: x2Im=',S_X_im(:,1,1)
       scale_factor=1
       if (lscale_tobox1) scale_factor=2*pi/Lz
       kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
-print*,'AXEL kz=',kz
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
 !
-      if (lroot .AND. ip<10) print*,'stress_from_TandX:fft ...'
+!AXEL if (lroot .AND. ip<10) print*,'stress_from_TandX:fft ...'
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -1055,6 +1042,20 @@ print*,'AXEL kz=',kz
             enddo
             enddo
 !
+!  possibility of swapping the sign
+!
+            if (k3<0.) then
+              e_X=-e_X
+            elseif (k3==0.) then
+              if (k2<0.) then
+                e_X=-e_X
+              elseif (k2==0.) then
+                if (k1<0.) then
+                  e_X=-e_X
+                endif
+              endif
+            endif
+!
 !  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
 !
             Sij_re=0.
@@ -1090,6 +1091,7 @@ print*,'AXEL kz=',kz
  
           !if (k1==0..and.k2==0..and.abs(k3)==2.) then
           if (abs(k1)==2..and.k2==0..and.abs(k3)==0.) then
+if (ldebug) then
             print*,'PRINTING RESULTS FOR K = (+/-2, 0, 0)'
             print*,'AXEL k1,k2,k3=',k1,k2,k3
             print*,'AXEL e_1=',e1
@@ -1121,6 +1123,7 @@ print*,'AXEL kz=',kz
             print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
             print*,'AXEL Pij=',Pij
           endif
+endif
             
           enddo
         enddo
@@ -1128,6 +1131,7 @@ print*,'AXEL kz=',kz
 !
 !  back to real space
 !
+if (ldebug) then
 print*,'AXEL: k3Re=',S_T_re(1,:,1)
 print*,'AXEL: k3Im=',S_T_im(1,:,1)
 print*,'AXEL: k2Re=',S_X_re(1,:,1)
@@ -1138,17 +1142,20 @@ print*,'AXEL: x3Re=',S_T_re(:,1,1)
 print*,'AXEL: x3Im=',S_T_im(:,1,1)
 print*,'AXEL: x2Re=',S_X_re(:,1,1)
 print*,'AXEL: x2Im=',S_X_im(:,1,1)
+endif
 !
 !  add (or set) corresponding stress
 !
       f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
-      f(l1:l2,m1:m2,n1:n2,istressX)=S_X_im
+      f(l1:l2,m1:m2,n1:n2,istressX)=S_X_re
       
+if (ldebug) then
       print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
       print*,'AXEL S_T_re=',S_T_re(:,1,1)
       print*,'AXEL S_X_re=',S_X_re(:,1,1)
       print*,'AXEL S_T_im=',S_T_im(:,1,1)
       print*,'AXEL S_X_im=',S_X_im(:,1,1)
+endif
 !
 !  Deallocate arrays.
 !
