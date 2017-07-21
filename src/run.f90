@@ -642,8 +642,15 @@ program run
 !  If we want to write out video data, wvid_prepare sets lvideo=.true.
 !  This allows pde to prepare some of the data.
 !
-    if (lwrite_slices) call wvid_prepare
-    if (lwrite_2daverages) call write_2daverages_prepare
+    if (lwrite_slices) then
+      call wvid_prepare
+      if (t == 0.0 .and. lwrite_ic) lvideo = .true.
+    endif
+!
+    if (lwrite_2daverages) then
+      call write_2daverages_prepare
+      if (t == 0.0 .and. lwrite_ic) l2davg = .true.
+    endif
 !
 !  Exit do loop if maximum simulation time is reached; allow one extra
 !  step if any diagnostic output needs to be produced.
