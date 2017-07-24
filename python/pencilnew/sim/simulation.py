@@ -460,6 +460,21 @@ class __Simulation__(object):
 
         return float(dict(zip(header, values))['t'])
 
+    def get_extent(self, dimensions='xy'):
+        """ Returnes extent as [xmin, xmax, ymin, ymax], as needed by e.g. imshow.
+
+        Arguments:
+            dimensions: specify here if you want x, y or z dimensions.
+        """
+
+        a = getattr(self.grid, dimensions[0])
+        b = getattr(self.grid, dimensions[1])
+
+        da = getattr(self.grid, 'd'+dimensions[0])
+        db = getattr(self.grid, 'd'+dimensions[1])
+
+        return [a[0]-da/2, a[-1]+da/2, b[0]-db/2, b[-1]+db/2]
+
 
     def get_varlist(self, pos=False, particle=False):
         """Get a list of all existing VAR# file names.
