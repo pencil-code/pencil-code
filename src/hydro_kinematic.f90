@@ -2810,6 +2810,14 @@ module Hydro
       real :: dtsub
 !
     endsubroutine density_after_timestep
+!***********************************************************************
+    subroutine calc_gradu(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+  
+      call fatal_error('calc_gradu','not implemented in hydro_kinematic') 
+ 
+    endsubroutine calc_gradu
 !***********************************************************************    
     subroutine update_char_vel_hydro(f)
 !
