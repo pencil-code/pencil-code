@@ -89,7 +89,7 @@ class ParticleData(object):
             print('! export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64:$IDL_HOME/bin/bin.linux.x86_64')
             print('! in your .bashrc')
             print('! ')
-            return False
+            return None
 
         ####### interprate parameters
         if datadir == False:
