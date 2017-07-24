@@ -105,6 +105,7 @@ class DataCube(object):
 
         param = None
         index = None
+        dim = None
 
         if sim is not None:
             datadir = os.path.expanduser(sim.datadir)
