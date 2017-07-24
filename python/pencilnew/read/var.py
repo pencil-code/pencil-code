@@ -103,6 +103,9 @@ class DataCube(object):
         from pencilnew.math.derivatives import curl, curl2
         from pencilnew import read
 
+        param = None
+        index = None
+
         if sim is not None:
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
