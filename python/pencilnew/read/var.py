@@ -44,6 +44,28 @@ def var(*args, **kwargs):
         ivar:       Index of the VAR file, if var_file is not specified.
     """
 
+    from ..sim import __Simulation__
+
+    started = None
+
+    for a in args:
+        if type(a) == __Simulation__:
+            started = a.started()
+            break
+
+    else:
+        if 'sim' in kwargs.keys():
+            started = kwargs['sim'].started()
+        elif 'datadir' in kwargs.keys():
+            from os.path import join, exists
+            if exists(join(kwargs['datadir'], 'time_series.dat')): started = True
+        #else:
+        #    print('!! ERROR: No simulation of path specified..')
+
+    if started == False:
+        print('!! ERROR: Simulation has not jet started. There are not var files.')
+        return False
+
     var_tmp = DataCube()
     var_tmp.read(*args, **kwargs)
     return var_tmp
@@ -66,7 +88,8 @@ class DataCube(object):
 
 
     def read(self, var_file='', sim=None, datadir='data', proc=-1, ivar=-1,
-             quiet=True, trim_all=False, trimall=False, magic=None):
+             quiet=True, trim_all=True, trimall=True,
+             magic=None,):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -102,10 +125,13 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencilnew.math.derivatives import curl, curl2
         from pencilnew import read
+        from ..sim import __Simulation__
 
-        param = None
-        index = None
-        dim = None
+        dim = None; param = None; index = None
+
+        if type(var_file) == __Simulation__:
+            sim = var_file
+            var_file = 'var.dat'
 
         if sim is not None:
             datadir = os.path.expanduser(sim.datadir)
@@ -114,9 +140,12 @@ class DataCube(object):
             index = read.index(datadir=sim.datadir)
         else:
             datadir = os.path.expanduser(datadir)
-            dim = read.dim(datadir, proc)
-            param = read.param(datadir=datadir, quiet=quiet)
-            index = read.index(datadir=datadir)
+            if dim is None:
+                dim = read.dim(datadir, proc)
+            if param is None:
+                param = read.param(datadir=datadir, quiet=quiet)
+            if index is None:
+                index = read.index(datadir=datadir)
 
         run2D = param.lwrite_2d
 
