@@ -66,8 +66,7 @@ class DataCube(object):
 
 
     def read(self, var_file='', sim=None, datadir='data', proc=-1, ivar=-1,
-             quiet=True, trim_all=False, trimall=False, dim=None, param=None,
-             index=None, magic=None):
+             quiet=True, trim_all=False, trimall=False, magic=None):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -111,12 +110,9 @@ class DataCube(object):
             index = read.index(datadir=sim.datadir)
         else:
             datadir = os.path.expanduser(datadir)
-            if dim is None:
-                dim = read.dim(datadir, proc)
-            if param is None:
-                param = read.param(datadir=datadir, quiet=quiet)
-            if index is None:
-                index = read.index(datadir=datadir)
+            dim = read.dim(datadir, proc)
+            param = read.param(datadir=datadir, quiet=quiet)
+            index = read.index(datadir=datadir)
 
         run2D = param.lwrite_2d
 
