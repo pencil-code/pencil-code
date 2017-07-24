@@ -10,8 +10,7 @@ def logrange(a, b, include_ab=False, finer_factor=1):
     exp_range = range(low_exp,high_exp+1)
 
     ## check consistency
-    if a == b:
-        return a
+    if a == b: return a
 
     if include_ab:
         logrange = [a]
@@ -20,10 +19,8 @@ def logrange(a, b, include_ab=False, finer_factor=1):
     for i in exp_range:
         logrange = logrange + [10.0**i * j for j in ten_range]
 
-    if include_ab:
-        logrange = logrange + [b]
+    if include_ab: logrange = logrange + [b]
 
-    seen = set()
-  
     ## cleanup to requested range
-    return [c for c in logrange if c >= a and c <= b and c not in seen and not seen.add(c)]
+    seen = set()
+    return np.array([c for c in logrange if c >= a and c <= b and c not in seen and not seen.add(c)])
