@@ -94,6 +94,7 @@ module Special
   real :: diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lstress_from_TandX=.true., luse_fourier_transform=.true.
+  logical :: lswitch_sign_e_X=.false., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
 !
 ! input parameters
@@ -106,7 +107,8 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
     lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh, &
-    diffhh_hyper3, diffgg_hyper3, lstress_from_TandX, luse_fourier_transform
+    diffhh_hyper3, diffgg_hyper3, lstress_from_TandX, &
+    luse_fourier_transform, lswitch_sign_e_X, ldebug_print
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -880,7 +882,7 @@ module Special
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
       integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
-      logical :: lscale_tobox1=.true., ldebug=.false.
+      logical :: lscale_tobox1=.true.
       real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
 !
@@ -1044,14 +1046,16 @@ module Special
 !
 !  possibility of swapping the sign
 !
-            if (k3<0.) then
-              e_X=-e_X
-            elseif (k3==0.) then
-              if (k2<0.) then
+            if (lswitch_sign_e_X) then
+              if (k3<0.) then
                 e_X=-e_X
-              elseif (k2==0.) then
-                if (k1<0.) then
+              elseif (k3==0.) then
+                if (k2<0.) then
                   e_X=-e_X
+                elseif (k2==0.) then
+                  if (k1<0.) then
+                    e_X=-e_X
+                  endif
                 endif
               endif
             endif
@@ -1091,7 +1095,7 @@ module Special
  
           !if (k1==0..and.k2==0..and.abs(k3)==2.) then
           if (abs(k1)==2..and.k2==0..and.abs(k3)==0.) then
-if (ldebug) then
+if (ldebug_print) then
             print*,'PRINTING RESULTS FOR K = (+/-2, 0, 0)'
             print*,'AXEL k1,k2,k3=',k1,k2,k3
             print*,'AXEL e_1=',e1
@@ -1131,7 +1135,7 @@ endif
 !
 !  back to real space
 !
-if (ldebug) then
+if (ldebug_print) then
 print*,'AXEL: k3Re=',S_T_re(1,:,1)
 print*,'AXEL: k3Im=',S_T_im(1,:,1)
 print*,'AXEL: k2Re=',S_X_re(1,:,1)
@@ -1148,8 +1152,12 @@ endif
 !
       f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
       f(l1:l2,m1:m2,n1:n2,istressX)=S_X_re
-      
-if (ldebug) then
+!
+      if (.not.lswitch_sign_e_X) then
+        f(l1:l2,m1:m2,n1:n2,istressX)=S_X_im
+      endif
+!
+if (ldebug_print) then
       print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
       print*,'AXEL S_T_re=',S_T_re(:,1,1)
       print*,'AXEL S_X_re=',S_X_re(:,1,1)
