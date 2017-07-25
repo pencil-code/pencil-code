@@ -941,7 +941,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f14.6,2i8,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -998,7 +998,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions_swapped.dat')
-                  write(99,"(f14.6,2i8,2f12.8,1p,2e11.3,i3)") &
+                  write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") &
                     t,ipar(j),ipar(k),fp(j,iap),fp(k,iap), &
                     fp(j,inpswarm),fp(k,inpswarm),iswap
                 close(99)
