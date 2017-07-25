@@ -222,6 +222,7 @@ class __Simulation__(object):
         if self.param == False or self.param != param(quiet=quiet, datadir=self.datadir):
             try:
                 if exists(join(self.datadir,'param.nml')):
+                    print('~ Reading param.nml.. ')
                     param = param(quiet=quiet, datadir=self.datadir)
                     self.param = {}                     # read params into Simulation object
                     for key in dir(param):
@@ -236,8 +237,11 @@ class __Simulation__(object):
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             try:                                # read grid only if param is not False
                 #import pencilnew as pcn; pcn.io.debug_breakpoint()
+                print('~ Reading grid.. ')
                 self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
+                print('~ Reading ghost_grid.. ')
                 self.ghost_grid = grid(datadir=self.datadir, trim=False, quiet=True)
+                print('~ Reading dim.. ')
                 self.dim = dim(datadir=self.datadir)
                 if not quiet: print('# Updating grid and ghost_grid succesfull')
             except:
