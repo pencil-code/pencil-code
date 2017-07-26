@@ -151,7 +151,18 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, pointer :: lbb_as_comaux
+!
+!  Check whether diffgg=diffhh (which  is the default)
+!
+      if (lmagnetic) then
+        call get_shared_variable('lbb_as_comaux',lbb_as_comaux)
+        if (.not.lbb_as_comaux) call fatal_error('initialize_special', &
+            'lbb_as_comaux needs to be T')
+      endif
 !
 !  Check whether diffgg=diffhh (which  is the default)
 !
