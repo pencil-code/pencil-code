@@ -35,6 +35,8 @@ void RKintegration( real *uu_x, real *uu_y, real *uu_z, real *lnrho,
                     int mx, int my, int mz, 
                     int nghost, int isubstep)
 {
+    const real dt = -1.0;//TODO: read from PC
+
 	integrate_step_cuda_generic(isubstep, dt);
 
     //Transfer inner halos back to host (TODO: not yet implemented)
@@ -105,7 +107,7 @@ void intitializeGPU(real *uu_x, real *uu_y, real *uu_z, real *lnrho,
 
     //Initialize GPUs in the node
     GPUSelectImplementation(CUDA_GENERIC);
-    GPUInit(cparams, run_params); //Allocs memory on the GPU and loads device constants
+    GPUInit(&cparams, &run_params); //Allocs memory on the GPU and loads device constants
     GPULoad(lnrho, uu_x, uu_y, uu_z); //Loads the whole grid from host to device
 
     //TODO: Any optional steps, for example store the first GPU slice to slice arrays on host:
