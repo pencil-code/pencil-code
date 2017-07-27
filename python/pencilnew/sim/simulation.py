@@ -209,17 +209,28 @@ class __Simulation__(object):
         return get_sim(path_newsim)
 
 
-    def update(self, quiet=True):
+    def update(self, hard=False, quiet=True):
         """Update simulation object:
+            if not read in:
                 - read param.nml
                 - read grid and ghost grid
-            Someday this might also change the real simulation parameter.
+
+            Set hard=True to force update.
         """
         from os.path import exists
         from os.path import join
         from pencilnew.read import param, grid, dim
 
-        if self.param == False or self.param != param(quiet=quiet, datadir=self.datadir):
+        REEXPORT = False
+
+        if hard == True:
+            self.param = False
+            self.grid = False
+            self.ghost_grid = False
+            self.dim = False
+            REEXPORT = True
+
+        if self.param == False:
             try:
                 if exists(join(self.datadir,'param.nml')):
                     print('~ Reading param.nml.. ')
@@ -228,11 +239,14 @@ class __Simulation__(object):
                     for key in dir(param):
                         if key.startswith('_') or key == 'read': continue
                         self.param[key] = getattr(param, key)
+                    REEXPORT = True
                 else:
                     if not quiet: print('? WARNING: for '+self.path+'\n? Simulation has not run yet! Meaning: No param.nml found!')
+                    REEXPORT = True
             except:
                 print('! ERROR: while reading param.nml for '+self.path)
                 self.param = False
+                REEXPORT = True
 
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             try:                                # read grid only if param is not False
@@ -244,19 +258,22 @@ class __Simulation__(object):
                 print('~ Reading dim.. ')
                 self.dim = dim(datadir=self.datadir)
                 if not quiet: print('# Updating grid and ghost_grid succesfull')
+                REEXPORT = True
             except:
                 if not quiet: print('? WARNING: Updating grid and ghost_grid was not succesfull, since reading grid had an error')
                 if self.started() or (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
                 self.grid = False
                 self.ghost_grid = False
                 self.dim = False
+                REEXPORT = True
         elif self.param == False:
             if not quiet: print('? WARNING: Updating grid and ghost_grid was not succesfull, since run did is not started yet.')
             self.grid = False
             self.ghost_grid = False
             self.dim = False
+            REEXPORT = True
 
-        self.export()
+        if REEXPORT == True: self.export()
         #import pencilnew as pcn; pcn.io.debug_breakpoint()
         return self
 
@@ -526,6 +543,8 @@ class __Simulation__(object):
     def get_value(self, quantity, DEBUG=False):
         """Optimized version of get_value_from_file. Just state quantity for simulation and param-list together with searchable components will be searched."""
 
+        if quantity in self.tmp_dict.keys(): return self.tmp_dict[quantity]
+
         if DEBUG: print('~ DEBUG: Updating simulation.')
         self.update()
 
@@ -533,7 +552,9 @@ class __Simulation__(object):
         if type(self.param) == type({'dictionary': 'with_values'}):
             if quantity in self.param.keys():
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
-                return self.param[quantity]
+                q = self.param[quantity]
+                self.tmp_dict[quantity] = q
+                return q
 
         if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
@@ -542,6 +563,7 @@ class __Simulation__(object):
                                     sim=self, DEBUG=DEBUG, silent=True)
             if q is not None:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
+                self.tmp_dict[quantity] = q
                 return q
             else:
                 if DEBUG: print('~ DEBUG: Couldnt find quantity here.. continue searching')

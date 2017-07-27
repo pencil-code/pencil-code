@@ -54,6 +54,6 @@ def group(simulations, groupby, sort=True, only_started=False):
     sim_dict_grouped_n_sorted = OrderedDict()
     for key in natural_sort(sim_dict_grouped.keys()):
       sim_dict_grouped_n_sorted[key] = sim_dict_grouped[key]
-    sim_dict_grouped = sim_dict_grouped_n_sorted
+    return sim_dict_grouped_n_sorted
 
   return sim_dict_grouped
