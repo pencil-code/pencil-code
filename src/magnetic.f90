@@ -916,6 +916,10 @@ module Magnetic
       integer :: i,j,myl,nycap
       real :: J_ext2
 !
+!  Share lbb_as_comaux with gravitational wave module.
+!
+      call put_shared_variable('lbb_as_comaux', lbb_as_comaux, caller='initialize_magnetic')
+!
 !  Share the external magnetic field with module Shear.
 !
       if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
