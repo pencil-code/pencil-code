@@ -37,8 +37,6 @@ void RKintegration( real *uu_x, real *uu_y, real *uu_z, real *lnrho,
 {
     const real dt = -1.0;//TODO: read from PC
 
-	integrate_step_cuda_generic(isubstep, dt);
-
     //Transfer inner halos back to host (TODO: not yet implemented)
     //GPULoadOuterHalos(lnrho, uu_x, uu_y, uu_z) //copyouterhalostodevice
     
