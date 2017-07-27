@@ -18,6 +18,9 @@ basic functions for accessing the GPU interface
 #include "common/errorhandler.h"
 #include "common/config.h"
 
+//#include "common/defines_dims_PC.h"//Could be used to load some global vars from PC to Astaroth
+//#include "common/defines_PC.h"     //during runtime (in setup_condif())
+
 //GPU interface
 #include "gpu/gpu.h"
 
@@ -28,7 +31,7 @@ extern "C"
 
 //Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries
 //TODO: note, isubstep starts from 0 on the GPU side (i.e. rk3 does substeps 0, 1, 2)
-void RKintegration( float *uu_x, float *uu_y, float *uu_z, float *lnrho, 
+void RKintegration( real *uu_x, real *uu_y, real *uu_z, real *lnrho, 
                     int mx, int my, int mz, 
                     int nghost, int isubstep)
 {
@@ -67,6 +70,10 @@ static void setup_configs(CParamConfig* cparams,
 
     //cparams.nghost = nghost //Astaroth currently requires that nghost is known
     //at compile time (optimization reasons). See BOUND_SIZE in common/config.h.
+    //TODO see also common/defines_dims_PC.h and common/defines_PC.h, these headers 
+    //could potentially be included in this file and loaded into the configs
+    //in this setup function, f.ex.
+    //cparams->nx = PC_NX; and so on
 
 
     run_params->max_steps  = 101; //TODO read these from PC
@@ -84,11 +91,11 @@ static void setup_configs(CParamConfig* cparams,
 
 
 //Setup the GPUs in the node to be ready for computation
-void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, 
+void intitializeGPU(real *uu_x, real *uu_y, real *uu_z, real *lnrho, 
                     int nx, int ny, int nz, 
                     int nghost, 
-                    float *x, float *y, float *z, 
-                    float nu, float cs2)
+                    real *x, real *y, real *z, 
+                    real nu, real cs2)
 {
     //Setup configs
     CParamConfig cparams;
@@ -107,7 +114,7 @@ void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho,
 
 
 //Destroy the GPUs in the node (not literally hehe)
-bool finalizeGpu(float *uu_x, float *uu_y, float *uu_z, float *lnrho)
+bool finalizeGpu(real *uu_x, real *uu_y, real *uu_z, real *lnrho)
 {
     //Deallocate everything on the GPUs and reset
     GPUDestroy();
