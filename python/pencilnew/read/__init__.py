@@ -5,6 +5,7 @@
 ################
 
 from .dim import dim
+from .pdim import pdim, __Pdim__
 from .param import param
 from .grid import grid
 from .index import index
