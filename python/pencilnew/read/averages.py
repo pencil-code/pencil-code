@@ -20,6 +20,7 @@ def aver(*args, **kwargs):
 
     *plane_list*:
       A list of the planes over which the averages were taken.
+      Takes 'xy', 'xz', 'yz', 'y', 'z'
 
     *datadir*:
       Directory where the data is stored.
