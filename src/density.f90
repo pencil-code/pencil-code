@@ -1561,6 +1561,8 @@ module Density
       real, dimension (nx) :: tmp
 !
       integer :: nl,j
+
+      fact=1./nxygrid
 !
 !  Calculate mean (= xy-average) of lnrho.
 !
@@ -1578,7 +1580,8 @@ module Density
             endif
           enddo
         enddo
-        lnrhomz=lnrhomz/nxygrid
+        lnrhomz=fact*lnrhomz
+        call finalize_aver(nprocxy,12,lnrhomz)
 
       endif
 !
@@ -1586,23 +1589,23 @@ module Density
 !
       if (lcalc_glnrhomean) then
 !
-        fact=1./nxygrid
         do n=n1,n2
           nl = n-n1+1
           glnrhomz(nl)=0.
 !
           do m=m1,m2
-            call grad(f,ilnrho,gradlnrho)
+            call grad(f,ilnrho,gradlnrho)   ! tb restricted to z comp
             if (ldensity_nolog) then
               tmp=1./f(l1:l2,m,n,irho)
               do j=1,3 
                 gradlnrho(:,j) = gradlnrho(:,j)*tmp
               enddo
             endif
-            glnrhomz(nl)=glnrhomz(nl)+fact*sum(gradlnrho(:,3))
+            glnrhomz(nl)=glnrhomz(nl)+sum(gradlnrho(:,3))
           enddo
 !
         enddo
+        glnrhomz=fact*glnrhomz
         call finalize_aver(nprocxy,12,glnrhomz)
       endif
 !
