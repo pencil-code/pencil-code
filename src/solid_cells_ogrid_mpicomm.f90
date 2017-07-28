@@ -121,7 +121,7 @@ module Solid_Cells_Mpicomm
 !
 !  apr-17/Jorgen: adapted from mpicomm.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: f
 !
       integer, dimension(4) :: nbuf_y, nbuf_z, nbuf_yz
       integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
@@ -218,7 +218,7 @@ module Solid_Cells_Mpicomm
 !
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray), intent(inout) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
       integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
       integer :: j
 !
@@ -300,7 +300,7 @@ module Solid_Cells_Mpicomm
 !
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray), intent(inout) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
       integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
       integer :: j
       integer, dimension(4), parameter ::  nbuf_x=(/ny_ogrid,nz_ogrid,nghost,ivar2-ivar1+1/)
