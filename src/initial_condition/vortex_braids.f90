@@ -40,9 +40,10 @@ module InitialCondition
   real :: ampl = 1.0
   integer :: n_blobs = 0
   real, dimension (9) :: xc, yc, zc, kappa, l_blob, a_blob
+  integer :: configuration = 0
 !
   namelist /initial_condition_pars/ &
-    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob
+    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration
 !
   contains
 !***********************************************************************
@@ -87,9 +88,11 @@ module InitialCondition
         do l=1,mx
           do m=1,my
             do n=1,mz
-              f(l,m,n,iuz) = f(l,m,n,iuz) + ampl*kappa(j) * exp(-1/a_blob(j)**2 * (x(l)**2 - &
-                    2*rc(j)*x(l)*(cos(theta_c(j))*cos(y(m))+sin(theta_c(j))*sin(y(m))) + &
-                    rc(j)**2) - ((z(n)-zc(j))/l_blob(j))**2)
+              if (configuration == 0) then
+                f(l,m,n,iuz) = f(l,m,n,iuz) + ampl*kappa(j) * exp(-1/a_blob(j)**2 * (x(l)**2 - &
+                      2*rc(j)*x(l)*(cos(theta_c(j))*cos(y(m))+sin(theta_c(j))*sin(y(m))) + &
+                      rc(j)**2) - ((z(n)-zc(j))/l_blob(j))**2)
+              endif
             enddo
           enddo
         enddo
