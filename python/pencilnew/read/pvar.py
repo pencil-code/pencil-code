@@ -139,4 +139,10 @@ class ParticleData(object):
         pvar = IDL.pvar
 
         for key in pvar.keys():
-            setattr(self, key, pvar[key])
+            setattr(self, key.lower(), pvar[key])
+        setattr(self, 'xp', pvar['XX'][0])
+        setattr(self, 'yp', pvar['XX'][1])
+        setattr(self, 'zp', pvar['XX'][2])
+        setattr(self, 'vpx', pvar['VV'][0])
+        setattr(self, 'vpy', pvar['VV'][1])
+        setattr(self, 'vpz', pvar['VV'][2])
