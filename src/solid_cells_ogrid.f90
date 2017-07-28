@@ -42,6 +42,9 @@ module Solid_Cells
   real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
 !  Boundary condition
   logical :: SBP=.true.
+  logical :: lexpl_rho=.true.         ! Set in start.in
+!  Interpolation method
+  integer :: interpolation_method=1  ! Set in start.in
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! Set in start.in
@@ -270,11 +273,12 @@ module Solid_Cells
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation, &
-      lcheck_interpolation, lcheck_init_interpolation, SBP, inter_stencil_len
+      lcheck_interpolation, lcheck_init_interpolation, SBP, inter_stencil_len, &
+      lexpl_rho, interpolation_method
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
-      flow_dir_set, lset_flow_dir
+      flow_dir_set, lset_flow_dir, interpolation_method
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -516,12 +520,22 @@ module Solid_Cells
 !  If particles are used in the simulation, set up 'local' arrays of f_ogrid variables to use
 !  when computing particle velocities (etc.) for particles inside r_ogrid
 !
+!HEREHERE
       !TODO: iux,iuz should be replaced by parameters set in start.in
-      if(lparticles) call initialize_particles_ogrid(iux,iuz)
+      if(lparticles) call initialize_particles_ogrid(iux,irho)
 
       if(lroot) then
         print*, 'Interpolation zone: r_ogrid, r_int_outer, r_int_inner',r_ogrid,r_int_outer,r_int_inner
         print*, 'Timestep factor',  max(1,ceiling(dxmin/dxmin_ogrid))
+      endif
+! Check interpolation method
+      if(lroot) then
+        if(interpolation_method==1) then
+          print*, 'interpolation_method==1: Linear interpolation used'
+        elseif(interpolation_method==2) then
+          print*, 'interpolation_method==2: Quadratic spline interpolation used'
+          print*, 'WARNING: Interpolation method is not working for parallel runs at the moment'
+        endif
       endif
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -2165,36 +2179,26 @@ module Solid_Cells
     integer :: i,j,k
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
-    real, dimension(ivar2-ivar1+1) :: f_ip
+    real, dimension(ivar2-ivar1+1) :: f_ip, g_ip
     !TODO
-    integer, parameter :: order=4
-    integer :: k_start,k_stop
-    real, dimension(order,order,2,ivar2-ivar1+1) :: farr_large
-    logical :: highorder
+    real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
     integer, dimension(3) :: inear_loc
 !
     xyz_ip=cartesian_to_curvilinear(id)%xyz
-    inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
 ! 
 !  Perform interpolation on cartesian grid
 !
-!!!TODO TODO
-!    k_start=-floor(order/2.)+1
-!    k_stop=floor(order/2.)
-!    highorder=.true.
-!    inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
-!    farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)+k_start:inear_loc(1)+k_stop, &
-!        inear_loc(2)+k_start:inear_loc(2)+k_stop,inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
-!!
-!    if(highorder) then
-!      if(.not. linear_interpolate_cart_HO(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation,order)) then
-!        call fatal_error('linear_interpolate_curvilinear highorder','interpolation from curvilinear to cartesian')
-!      endif
-!    else
-     if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
-       call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
-     endif
-!    endif
+    if(interpolation_method==1) then
+      inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
+      if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+        call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
+      endif
+    elseif(interpolation_method==2) then
+      inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
+      farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-1:inear_loc(1)+1, &
+          inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
+      call interpolate_quadratic_spline(farr_large,ivar1,ivar2,xyz_ip,f_ip,inear_loc)
+    endif
 !
 !  Update curvilinear grid with the new data values
 !
@@ -2220,47 +2224,22 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO
-    integer, parameter :: order=4
-    integer :: k_start,k_stop
-    real, dimension(order,order,2,ivar2-ivar1+1) :: farr_large
-    logical :: highorder, hermite
     integer, dimension(3) :: inear_loc
-!
+    real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
 !
     xyz_ip=curvilinear_to_cartesian(id)%xyz
     inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
-! 
-!  Perform interpolation on cartesian grid
 !
-!!TODO TODO
-!    k_start=-floor(order/2.)+1
-!    k_stop=floor(order/2.)
-!    if(xyz_ip(1)>2*xyz0_ogrid(1)) then
-!      hermite=.false.
-!      !highorder=.false.
-!      highorder=.true.
-!      inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-!      farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)+k_start:inear_loc(1)+k_stop, &
-!          inear_loc(2)+k_start:inear_loc(2)+k_stop,inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
-!    else
-!      highorder=.false.
-!    endif
-!
-    !if(hermite) then
-    !  if(.not. hermite_interpolate_curv(farr,ivar1,ivar2,xyz_ip,inear_glob,inear_loc,f_ip,lcheck_interpolation)) then
-    !    call fatal_error('hermite_interpolation','interpolation from curvilinear to cartesian')
-    !  endif
-    !else
-!      if(highorder) then
-!        if(.not. linear_interpolate_curv_HO(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation,order)) then
-!          call fatal_error('linear_interpolate_curvilinear highorder','interpolation from curvilinear to cartesian')
-!        endif
-!      else
-        if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
-          call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
-        endif
-!      endif
-    !endif
+    if(interpolation_method==1) then
+      if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+        call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
+      endif
+    elseif(interpolation_method==2) then
+      inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+      farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-1:inear_loc(1)+1, &
+           inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
+      call interpolate_quadratic_sp_og(farr_large,ivar1,ivar2,xyz_ip,f_ip,inear_loc)
+    endif
 !
 !  Update curvilinear grid with the new data values
 !
@@ -4526,7 +4505,9 @@ module Solid_Cells
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
+!TODO TODO
     call communicate_ip_cart_to_curv(f_cartesian,iux,irho)
+    !call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
 !
 !  Time step for ogrid
 !
@@ -4798,8 +4779,9 @@ module Solid_Cells
       do imn_ogrid=1,nyz_ogrid
         n_ogrid=nn_ogrid(imn_ogrid)
         m_ogrid=mm_ogrid(imn_ogrid)
-        df(l1_ogrid,m_ogrid,n_ogrid,iux:irho) = 0.
+        df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
       enddo
+      if(lexpl_rho) df(l1_ogrid,:,:,irho) = 0.
 !
     endsubroutine pde_ogrid
 !***********************************************************************
@@ -5069,12 +5051,12 @@ module Solid_Cells
 !
       if(lfirst_proc_x) then
         if(SBP) then
-          call bval_from_neumann_arr_ogrid_alt
+          if(lexpl_rho) call bval_from_neumann_arr_ogrid_alt
         else
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
           call set_ghosts_onesided_ogrid(iuz)
-          call bval_from_neumann_arr_ogrid
+          if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
         endif
       endif
@@ -7573,7 +7555,8 @@ module Solid_Cells
 !*********************************************************************** 
     subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid)
 !
-!  Find index (ix0, iy0, iz0) of nearest grid point of particle.
+!  Find index (ix0, iy0, iz0) of nearest grid point of particle in global
+!  coordinates.
 !
 !  06-jul-17/Jorgen: Adapted from map_nearest_grid in particles_sub
 !                    to work for overlapping grid
@@ -7581,10 +7564,12 @@ module Solid_Cells
       real, dimension (3) :: xxp
       integer, dimension (4) :: ineargrid_ogrid
 !
-      double precision, save :: dx1_ogrid, dy1_ogrid, dz1_ogrid
+      real, save :: dx1_ogrid, dy1_ogrid, dz1_ogrid
       integer :: ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
+      integer :: from_proc
 !
+      real :: xr,yr
       intent(in)  :: xxp
       intent(out) :: ineargrid_ogrid
 !
@@ -7592,6 +7577,10 @@ module Solid_Cells
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
+      !xr=xxp(1)-xorigo_ogrid(1)
+      !yr=xxp(2)-xorigo_ogrid(2)
+      !xxp(1) = sqrt(xr*xr+yr*yr)
+      !xxp(2) = atan2(yr,xr)
       if (lfirstcall) then
         dx1_ogrid=dx_1_ogrid(l1_ogrid) 
         dy1_ogrid=dy_1_ogrid(m1_ogrid) 
@@ -7602,11 +7591,17 @@ module Solid_Cells
 !  Find nearest grid point in x-direction.
 !  Find nearest grid point by bisection if the grid is not equidistant.
 !
+!HEREHERE
+print*, ''
+print*, 'iproc'
+print*, 'xxp',xxp
+print*, 'xyz0_ogrid',xyz0_ogrid
+print*, 'dxyz1',dx1_ogrid,dy1_ogrid,dz1_ogrid
       if (nxgrid_ogrid/=1) then
         if (lequidist_ogrid(1)) then
-          ix0 = nint((xxp(1)-x_ogrid(1))*dx1_ogrid) + 1
+          ix0 = nint((xxp(1)-xyz0_ogrid(1))*dx1_ogrid) + nghost
         else
-          call find_gp_index_by_bisection(xxp(1),x_ogrid,ix0)
+          call find_gp_index_by_bisection(xxp(1),xglobal_ogrid,ix0)
         endif
       endif
 !
@@ -7614,9 +7609,9 @@ module Solid_Cells
 !
       if (nygrid_ogrid/=1) then
         if (lequidist_ogrid(2)) then
-          iy0 = nint((xxp(2)-y_ogrid(1))*dy1_ogrid) + 1
+          iy0 = nint((xxp(2)-xyz0_ogrid(2))*dy1_ogrid) + nghost
         else
-          call find_gp_index_by_bisection(xxp(2),y_ogrid,iy0)
+          call find_gp_index_by_bisection(xxp(2),yglobal_ogrid,iy0)
         endif
       endif
 !
@@ -7624,38 +7619,32 @@ module Solid_Cells
 !
       if (nzgrid_ogrid/=1) then
         if (lequidist_ogrid(3)) then
-          iz0 = nint((xxp(3)-z_ogrid(1))*dz1_ogrid) + 1
+          iz0 = nint((xxp(3)-xyz0_ogrid(3))*dz1_ogrid) + nghost
         else
-          call find_gp_index_by_bisection(xxp(3),z_ogrid,iz0)
+          call find_gp_index_by_bisection(xxp(3),zglobal_ogrid,iz0)
         endif
       endif
 !
       ineargrid_ogrid(1)=ix0; ineargrid_ogrid(2)=iy0; ineargrid_ogrid(3)=iz0
+      call find_proc_cartesian(xxp,from_proc)
+      ineargrid_ogrid(4)=from_proc+1
 !
 !  Round off errors may put a particle closer to a ghost point than to a
 !  physical point. Either stop the code with a fatal error or fix problem
 !  by forcing the nearest grid point to be a physical point.
 !
-      if (ineargrid_ogrid(1)<=l1_ogrid-1.or.ineargrid_ogrid(1)>=l2_ogrid+1.or. &
-          ineargrid_ogrid(2)<=m1_ogrid-1.or.ineargrid_ogrid(2)>=m2_ogrid+1.or. &
-          ineargrid_ogrid(3)<=n1_ogrid-1.or.ineargrid_ogrid(3)>=n2_ogrid+1) then
-!        if (lcheck_exact_frontier) then
-!          if (ineargrid(1)<=l1_ogrid-1) then
-!            ineargrid(1)=l1_ogrid
-!          elseif (ineargrid(1)>=l2_ogrid+1) then
-!            ineargrid(1)=l2_ogrid
-!          endif
-!          if (ineargrid(2)<=m1_ogrid-1) then
-!            ineargrid(2)=m1_ogrid
-!          elseif (ineargrid(2)>=m2_ogrid+1) then
-!            ineargrid(2)=m2_ogrid
-!          endif
-!          if (ineargrid(3)<=n1_ogrid-1) then
-!            ineargrid(3)=n1_ogrid
-!          elseif (ineargrid(3)>=n2_ogrid+1) then
-!            ineargrid(3)=n2_ogrid
-!          endif
-!      else
+      if (xxp(1)<=xglobal_ogrid(ineargrid_ogrid(1)).or. &
+          xxp(1)>=xglobal_ogrid(ineargrid_ogrid(1)+1).or. &
+          xxp(2)<=yglobal_ogrid(ineargrid_ogrid(2)).or. & 
+          xxp(2)>=yglobal_ogrid(ineargrid_ogrid(2)+1).or. & 
+          xxp(3)<=zglobal_ogrid(ineargrid_ogrid(3)).or. & 
+          xxp(3)>=zglobal_ogrid(ineargrid_ogrid(3)+1)) then
+      !if (ineargrid_ogrid(1)<=xyz0_loc_all_ogrid(from_proc+1,1).or. &
+      !    ineargrid_ogrid(1)>=xyz1_loc_all_ogrid(from_proc+1,1).or. &
+      !    ineargrid_ogrid(2)<=xyz0_loc_all_ogrid(from_proc+1,2).or. & 
+      !    ineargrid_ogrid(2)>=xyz1_loc_all_ogrid(from_proc+1,2).or. & 
+      !    ineargrid_ogrid(3)<=xyz0_loc_all_ogrid(from_proc+1,3).or. & 
+      !    ineargrid_ogrid(3)>=xyz0_loc_all_ogrid(from_proc+1,3)) then
         print*, 'map_nearest_grid: particle must never be closer to a '//&
                 'ghost point than'
         print*, '                  to a physical point.'
@@ -7669,10 +7658,9 @@ module Solid_Cells
         print*, 'iproc  =', iproc
         print*, 'xxp    =', xxp
         print*, 'ineargrid   =', ineargrid_ogrid(:)
-        print*, 'l1_ogrid, m1_ogrid, n1_ogrid  =', l1_ogrid, m1_ogrid, n1_ogrid
-        print*, 'l2_ogrid, m2_ogrid, n2_ogrid  =', l2_ogrid, m2_ogrid, n2_ogrid
-        print*, 'x1_ogrid, y1_ogrid, z1_ogrid  =', x_ogrid(l1_ogrid), y_ogrid(m1_ogrid), z_ogrid(n1_ogrid)
-        print*, 'x2_ogrid, y2_ogrid, z2_ogrid  =', x_ogrid(l2_ogrid), y_ogrid(m2_ogrid), z_ogrid(n2_ogrid)
+        print*, 'xglobal_ogrid(ix0),xglobal_ogrid(ix0+1)',xglobal_ogrid(ineargrid_ogrid(1)),xglobal_ogrid(ineargrid_ogrid(1)+1)
+        print*, 'yglobal_ogrid(iy0),yglobal_ogrid(iy0+1)',yglobal_ogrid(ineargrid_ogrid(2)),yglobal_ogrid(ineargrid_ogrid(2)+1)
+        print*, 'zglobal_ogrid(iz0),zglobal_ogrid(iz0+1)',zglobal_ogrid(ineargrid_ogrid(3)),zglobal_ogrid(ineargrid_ogrid(3)+1)
         call fatal_error_local('map_nearest_grid_ogrid','')
       endif
 !
@@ -7723,8 +7711,8 @@ module Solid_Cells
       use Mpicomm, only: mpirecv_logical, mpisend_logical, mpibcast_logical
 !
       integer, intent(in) :: ivar1,ivar2
-      real :: r2_ogrid, r2
       integer :: i,j,k,iip
+      real :: rr,xr,yr
       logical, dimension(ncpus) :: linside_proc = .false.
       real, dimension(3) :: rthz
       integer :: from_proc
@@ -7733,13 +7721,14 @@ module Solid_Cells
 ! 
 !  Check if any points on the cartesian grid on this processor is inside the ogrid     
 !
-      r2_ogrid = r_ogrid**2
-      do i=nghost,nx
-        do j=nghost,ny
-          r2 = (x(i)-xorigo_ogrid(1))**2 + (y(j)-xorigo_ogrid(2))**2
-          if(r2<r2_ogrid .and. r2>cylinder_radius) then
-            do k=nghost,nz
-              rthz=(/ sqrt(r2),atan2(y(j)-xorigo_ogrid(2),x(j)-xorigo_ogrid(1)),z(k) /)
+      do i=l1,l2
+        do j=m1,m2
+          xr=x(i)-xorigo_ogrid(1)
+          yr=y(j)-xorigo_ogrid(2)
+          rr= sqrt(xr**2+yr**2)!x(i)-xorigo_ogrid(1))**2 + (y(j)-xorigo_ogrid(2))**2
+          if(rr<r_ogrid .and. rr>cylinder_radius) then
+            do k=n1,n2
+              rthz=(/ rr,atan2(yr,xr),z(k) /)
               call find_proc_curvilinear(rthz,from_proc)
               linside_proc(from_proc+1) = .true.
             enddo
@@ -7837,8 +7826,9 @@ module Solid_Cells
       do iter=1,n_procs_recv_part_data
         recv_from = recv_part_data_from(iter)
         if(recv_from /= iproc) then
+          print*, 'iproc,recv_from,iter_recv',iproc,recv_from,iter_recv
           do ivar=ivar1,ivar2
-            call mpirecv_nonblock_real(f_ogrid_loc(iter,:,:,:,ivar),flow_buf_size,recv_from,800+ivar,ireq2D(iter,ivar))
+            call mpirecv_nonblock_real(f_ogrid_loc(iter,:,:,:,ivar),flow_buf_size,recv_from,800+ivar,ireq2D(iter_recv,ivar))
           enddo
           iter_recv=iter_recv+1
         else
@@ -7850,23 +7840,27 @@ module Solid_Cells
 !  Note that send_to is never iproc, since this item is taken out of send_par_data_to
 !  during initialization
 !
+print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part_data,send_part_data_to
       do iter=1,n_procs_send_part_data
-        send_to = send_part_data_to(iter+1)
+        send_to = send_part_data_to(iter)
         do ivar=ivar1,ivar2
           call mpisend_real(f_ogrid(:,:,:,ivar),flow_buf_size,send_to,800+ivar)
         enddo
       enddo
 !
-      do iter_recv=1,n_procs_recv_part_data-1
-        do ivar=ivar1,ivar2
-          call mpiwait(ireq2D(iter_recv,ivar))
-        enddo
+      iter_recv=1
+      do iter=1,n_procs_recv_part_data
+        if(recv_part_data_from(iter)/=iproc) then
+          do ivar=ivar1,ivar2
+            call mpiwait(ireq2D(iter_recv,ivar))
+          enddo
+          iter_recv=iter_recv+1
+        endif
       enddo
       call mpibarrier
 !
     endsubroutine update_ogrid_flow_info
 !***********************************************************************
-! TODO TODO
     subroutine interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
 !
 !  Use information from the overlappint curvilinear grid to interpolate the velocity
@@ -8004,4 +7998,303 @@ module Solid_Cells
 !
     endsubroutine interpolate_linear_ogrid
 !***********************************************************************
+    subroutine interpolate_quadratic_spline(farr,ivar1,ivar2,xxp,gp,inear)
+!
+!  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
+!
+!  10-jun-06/anders: coded
+!
+      real, dimension (:,:,:,:) :: farr
+      integer, intent(in) :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3), intent(in) :: inear
+!
+      
+!TODO
+      real, dimension(inear(1)-1:inear(1)+1,inear(2)-1:inear(2)+1,inear(3)-1:inear(3)+1,ivar2-ivar1+1) :: f
+      real :: fac_x_m1, fac_x_00, fac_x_p1
+      real :: fac_y_m1, fac_y_00, fac_y_p1
+      real :: fac_z_m1, fac_z_00, fac_z_p1
+      real :: dxp0, dyp0, dzp0
+      integer :: ix0, iy0, iz0
+!
+      intent(in)  :: farr, xxp
+      intent(out) :: gp
+!TODO
+      f(:,:,:,:)=farr(:,:,:,:)
+!
+!  Redefine the interpolation point in coordinates relative to nearest grid
+!  point and normalize with the cell size.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
+      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
+      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+!
+!  Interpolation formulae.
+!
+      if (dimensionality==0) then
+        gp=f(ix0,iy0,iz0,ivar1:ivar2)
+      elseif (dimensionality==1) then
+        if (nxgrid/=1) then
+          gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
+                  (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
+        endif
+        if (nygrid/=1) then
+          gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
+                  (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
+        endif
+        if (nzgrid/=1) then
+          gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
+                  (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
+               0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
+        endif
+      elseif (dimensionality==2) then
+        if (nxgrid==1) then
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_y_00*( f(ix0,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_p1*( f(ix0,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nygrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_x_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0  ,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nzgrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+!
+          gp= fac_x_00*fac_y_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0  ,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_00*( f(ix0+1,iy0  ,iz0,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0  ,iz0,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0+1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0-1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 )
+        endif
+      elseif (dimensionality==3) then
+        fac_x_m1 = 0.5*(0.5-dxp0)**2
+        fac_x_00 = 0.75-dxp0**2
+        fac_x_p1 = 0.5*(0.5+dxp0)**2
+        fac_y_m1 = 0.5*(0.5-dyp0)**2
+        fac_y_00 = 0.75-dyp0**2
+        fac_y_p1 = 0.5*(0.5+dyp0)**2
+        fac_z_m1 = 0.5*(0.5-dzp0)**2
+        fac_z_00 = 0.75-dzp0**2
+        fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+            fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0  ,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_y_00*fac_z_00*( f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_x_p1*fac_y_p1*( f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_p1*fac_y_m1*( f(ix0+1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_p1*( f(ix0-1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_m1*( f(ix0-1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_p1*( f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_m1*( f(ix0  ,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_y_00*fac_z_p1*( f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_y_00*fac_z_m1*( f(ix0+1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
+      endif
+!
+    endsubroutine interpolate_quadratic_spline
+!***********************************************************************
+    subroutine interpolate_quadratic_sp_og(farr,ivar1,ivar2,xxp,gp,inear)
+!
+!  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
+!
+!  10-jun-06/anders: coded
+!
+      real, dimension (:,:,:,:) :: farr
+      integer, intent(in) :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (3), intent(in) :: inear
+!
+      
+!TODO
+      real, dimension(inear(1)-1:inear(1)+1,inear(2)-1:inear(2)+1,inear(3)-1:inear(3)+1,ivar2-ivar1+1) :: f
+      real :: fac_x_m1, fac_x_00, fac_x_p1
+      real :: fac_y_m1, fac_y_00, fac_y_p1
+      real :: fac_z_m1, fac_z_00, fac_z_p1
+      real :: dxp0, dyp0, dzp0
+      integer :: ix0, iy0, iz0
+!
+      intent(in)  :: farr, xxp
+      intent(out) :: gp
+!TODO
+      f(:,:,:,:)=farr(:,:,:,:)
+!
+!  Redefine the interpolation point in coordinates relative to nearest grid
+!  point and normalize with the cell size.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      dxp0=(xxp(1)-x_ogrid(ix0))*dx_1_ogrid(ix0)
+      dyp0=(xxp(2)-y_ogrid(iy0))*dy_1_ogrid(iy0)
+      dzp0=(xxp(3)-z_ogrid(iz0))*dz_1_ogrid(iz0)
+!
+!  Interpolation formulae.
+!
+      if (dimensionality==0) then
+        gp=f(ix0,iy0,iz0,ivar1:ivar2)
+      elseif (dimensionality==1) then
+        if (nxgrid/=1) then
+          gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
+                  (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
+        endif
+        if (nygrid/=1) then
+          gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
+                  (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
+        endif
+        if (nzgrid/=1) then
+          gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
+                  (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
+               0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
+        endif
+      elseif (dimensionality==2) then
+        if (nxgrid==1) then
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_y_00*( f(ix0,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_p1*( f(ix0,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nygrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_x_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0  ,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nzgrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+!
+          gp= fac_x_00*fac_y_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0  ,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_00*( f(ix0+1,iy0  ,iz0,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0  ,iz0,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0+1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0-1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 )
+        endif
+      elseif (dimensionality==3) then
+        fac_x_m1 = 0.5*(0.5-dxp0)**2
+        fac_x_00 = 0.75-dxp0**2
+        fac_x_p1 = 0.5*(0.5+dxp0)**2
+        fac_y_m1 = 0.5*(0.5-dyp0)**2
+        fac_y_00 = 0.75-dyp0**2
+        fac_y_p1 = 0.5*(0.5+dyp0)**2
+        fac_z_m1 = 0.5*(0.5-dzp0)**2
+        fac_z_00 = 0.75-dzp0**2
+        fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+            fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0  ,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_y_00*fac_z_00*( f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_x_p1*fac_y_p1*( f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_p1*fac_y_m1*( f(ix0+1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_p1*( f(ix0-1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_m1*( f(ix0-1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_p1*( f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_m1*( f(ix0  ,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_y_00*fac_z_p1*( f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_y_00*fac_z_m1*( f(ix0+1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
+      endif
+!
+    endsubroutine interpolate_quadratic_sp_og
+!***********************************************************************
+
 end module Solid_Cells
