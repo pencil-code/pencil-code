@@ -160,6 +160,10 @@ class Averages(object):
             proc_dirs = ['proc' + str(proc)]
 
         dim = read.dim(datadir, proc)
+        if dim.precision=='S':
+            dtype = np.float32
+        if dim.precision=='D':
+            dtype = np.float64
 
         # Prepare the raw data.
         # This will be reformatted at the end.
@@ -175,8 +179,8 @@ class Averages(object):
             file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
             while True:
                 try:
-                    t.append(file_id.read_record(dtype=np.float32)[0])
-                    proc_data.append(file_id.read_record(dtype=np.float32))
+                    t.append(file_id.read_record(dtype=dtype)[0])
+                    proc_data.append(file_id.read_record(dtype=dtype))
                 except:
                     # Finished reading.
                     break
@@ -190,6 +194,7 @@ class Averages(object):
                 pnu = proc_dim.nx
                 pnv = proc_dim.ny
             proc_data = np.array(proc_data)
+            print(proc_data.shape, len(t), n_vars, pnv, pnu)
             proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
             # Add the proc_data (one proc) to the raw_data (all procs)
