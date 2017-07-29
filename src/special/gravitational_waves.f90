@@ -94,7 +94,7 @@ module Special
   real :: diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lstress_from_TandX=.true., luse_fourier_transform=.true.
-  logical :: lswitch_sign_e_X=.false., ldebug_print=.false.
+  logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
 !
 ! input parameters
@@ -1106,7 +1106,10 @@ module Special
  
           !if (k1==0..and.k2==0..and.abs(k3)==2.) then
           if (abs(k1)==2..and.k2==0..and.abs(k3)==0.) then
-if (ldebug_print) then
+!
+!  debug output (perhaps to be removed)
+!
+          if (ldebug_print) then
             print*,'PRINTING RESULTS FOR K = (+/-2, 0, 0)'
             print*,'AXEL k1,k2,k3=',k1,k2,k3
             print*,'AXEL e_1=',e1
@@ -1122,59 +1125,73 @@ if (ldebug_print) then
             print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
             print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
             print*,'AXEL Pij=',Pij
-            
-          elseif (k1==0..and.k2==0..and.k3==0.) then
-            print*,'PRINTING RESULTS FOR K = (0, 0, 0)'
-            print*,'AXEL k1,k2,k3=',k1,k2,k3
-            print*,'AXEL e_T=',e_T
-            print*,'AXEL e_X=',e_X
-            print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
-            print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
-            print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
-            print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
-            print*,'AXEL Sij_re=',Sij_re
-            print*,'AXEL Sij_im=',Sij_im
-            print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
-            print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
-            print*,'AXEL Pij=',Pij
+            if (k1==0..and.k2==0..and.k3==0.) then
+              print*,'PRINTING RESULTS FOR K = (0, 0, 0)'
+              print*,'AXEL k1,k2,k3=',k1,k2,k3
+              print*,'AXEL e_T=',e_T
+              print*,'AXEL e_X=',e_X
+              print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
+              print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
+              print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
+              print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
+              print*,'AXEL Sij_re=',Sij_re
+              print*,'AXEL Sij_im=',Sij_im
+              print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
+              print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
+              print*,'AXEL Pij=',Pij
+            endif
           endif
-endif
+          endif
             
           enddo
         enddo
       enddo
 !
+!  debug output (perhaps to be removed)
+!
+      if (ldebug_print) then
+        print*,'AXEL: k3Re=',S_T_re(1,:,1)
+        print*,'AXEL: k3Im=',S_T_im(1,:,1)
+        print*,'AXEL: k2Re=',S_X_re(1,:,1)
+        print*,'AXEL: k2Im=',S_X_im(1,:,1)
+      endif
+!
 !  back to real space
 !
-if (ldebug_print) then
-print*,'AXEL: k3Re=',S_T_re(1,:,1)
-print*,'AXEL: k3Im=',S_T_im(1,:,1)
-print*,'AXEL: k2Re=',S_X_re(1,:,1)
-print*,'AXEL: k2Im=',S_X_im(1,:,1)
       call fourier_transform(S_T_re,S_T_im,linv=.true.)
       call fourier_transform(S_X_re,S_X_im,linv=.true.)
-print*,'AXEL: x3Re=',S_T_re(:,1,1)
-print*,'AXEL: x3Im=',S_T_im(:,1,1)
-print*,'AXEL: x2Re=',S_X_re(:,1,1)
-print*,'AXEL: x2Im=',S_X_im(:,1,1)
-endif
+!
+!  debug output (perhaps to be removed)
+!
+      if (ldebug_print) then
+        print*,'AXEL: x3Re=',S_T_re(:,1,1)
+        print*,'AXEL: x3Im=',S_T_im(:,1,1)
+        print*,'AXEL: x2Re=',S_X_re(:,1,1)
+        print*,'AXEL: x2Im=',S_X_im(:,1,1)
+      endif
 !
 !  add (or set) corresponding stress
 !
       f(l1:l2,m1:m2,n1:n2,istressT)=S_T_re
       f(l1:l2,m1:m2,n1:n2,istressX)=S_X_re
 !
+!  For the time being, we keep the lswitch_sign_e_X
+!  still as an option. Meaningful results are however
+!  only found foro complex values of S_X.
+!
       if (.not.lswitch_sign_e_X) then
         f(l1:l2,m1:m2,n1:n2,istressX)=S_X_im
       endif
 !
-if (ldebug_print) then
-      print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
-      print*,'AXEL S_T_re=',S_T_re(:,1,1)
-      print*,'AXEL S_X_re=',S_X_re(:,1,1)
-      print*,'AXEL S_T_im=',S_T_im(:,1,1)
-      print*,'AXEL S_X_im=',S_X_im(:,1,1)
-endif
+!  debug output (perhaps to be removed)
+!
+      if (ldebug_print) then
+        print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
+        print*,'AXEL S_T_re=',S_T_re(:,1,1)
+        print*,'AXEL S_X_re=',S_X_re(:,1,1)
+        print*,'AXEL S_T_im=',S_T_im(:,1,1)
+        print*,'AXEL S_X_im=',S_X_im(:,1,1)
+      endif
 !
 !  Deallocate arrays.
 !
