@@ -20,12 +20,11 @@ module Particles_adaptation
 !
   use Cdata
   use Cparam
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, notanumber
   use Messages
   use Particles_cdata
   use Particles_map
   use Particles_sub
-  use General, only: notanumber
 !
   implicit none
 !
@@ -349,8 +348,6 @@ module Particles_adaptation
 !  Read and register diagnostic parameters.
 !
 !  03-apr-13/anders: adapted
-!
-      use Diagnostics
 !
       logical :: lreset
       logical, optional :: lwrite
