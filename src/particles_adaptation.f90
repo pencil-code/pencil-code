@@ -101,6 +101,8 @@ module Particles_adaptation
       integer :: npar_new
       integer :: k, ix, iy, iz
 !
+      call keep_compiler_quiet(ipar)
+!
 !  Do particle adaptation pencil by pencil.
 !
       npar_new = 0
@@ -234,7 +236,7 @@ module Particles_adaptation
       real, dimension(3) :: vp_new
       real ::mtot
       integer, dimension(3) :: ipx
-      integer :: i, k, ipar=0
+      integer :: i, k
 !
       ipx = (/ ixp, iyp, izp /)
 !
@@ -272,7 +274,7 @@ module Particles_adaptation
       real, dimension(npar_new,mparray), intent(out) :: fp_new
 !
       integer, dimension(3) :: ipx, ipv
-      real :: mx, dmx, mv, dmv, mtot
+      real :: mv, dmv, mtot
       real :: c1
       integer :: i
 !
@@ -302,7 +304,7 @@ module Particles_adaptation
       integer, intent(in) :: ix, iy, iz, idir
       real, dimension(:), intent(out) :: a
 !
-      real, dimension(size(a)) :: r, p
+      real, dimension(size(a)) :: r
 !
       call random_number_wrapper(r)
       if (idir==1) then
