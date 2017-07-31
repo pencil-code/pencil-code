@@ -98,14 +98,16 @@ module Particles_adaptation
       real, dimension(npar_target,mparray) :: fp2
       real, dimension(mparray,npar_target) :: fp3
       integer, dimension(nx) :: np, k1_l, k2_l
-      integer :: npar_new
+      integer :: npar_new, npar_adapted
       integer :: k, ix, iy, iz
 !
       call keep_compiler_quiet(ipar)
 !
+      npar_new = 0
+      npar_adapted = npar_target
+!
 !  Do particle adaptation pencil by pencil.
 !
-      npar_new = 0
       pencil: do imn = 1, ny * nz
         if (npar_imn(imn) <= 0) cycle pencil
         iy = mm(imn)
@@ -143,36 +145,73 @@ module Particles_adaptation
         scan: do ix = 1, nx
           if (np(ix) <= 0) cycle scan
 !
-          adapt: if (np(ix) < npar_min .or. np(ix) > npar_max) then
+          adapt: if (np(ix) > npar_max) then
 !
-!           Too many or too little particles - apply adaptation.
+!           Too many particles: merge
 !
-            method: select case (adaptation_method)
-            case ('random') method
-              call new_population_random(ix, iy, iz, np(ix), npar_target, &
+            merge: select case (adaptation_method)
+!
+            case ('random') merge
+              call new_population_random(ix, iy, iz, np(ix), npar_adapted, &
                   fp1(k1_l(ix):k2_l(ix),:), fp2)
-            case ('interpolated') method
+!
+            case ('interpolated') merge
               call new_population_interpolated(ix, iy, iz, np(ix), &
-                  npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
-            case ('k-means') method
+                  npar_adapted, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
+!
+            case ('k-means') merge
               call ppcvq(1, 6, 1, 6, np(ix), &
                   transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
-                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_target, &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
                   fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
               fp2=transpose(fp3)
-            case default method
-              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
-            endselect method
 !
-            dfp(npar_new+1:npar_new+npar_target,:) = fp2
-            npar_new = npar_new + npar_target
+            case default merge
+              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
+!
+            endselect merge
+!
+            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2
+            npar_new = npar_new + npar_adapted
+!
+          elseif (np(ix) < npar_min) then adapt
+!
+!           Too less particles: split
+!
+            split: select case (adaptation_method)
+!
+            case ('random') split
+              call new_population_random(ix, iy, iz, np(ix), npar_adapted, &
+                  fp1(k1_l(ix):k2_l(ix),:), fp2)
+!
+            case ('interpolated') split
+              call new_population_interpolated(ix, iy, iz, np(ix), &
+                  npar_adapted, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
+!
+            case ('k-means') split
+              call ppcvq(1, 6, 1, 6, np(ix), &
+                  transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
+                  fp3(ixp:ivpz,:), fp3(iparmass,:), &
+                  np(ix) < npar_min, .false., .false.)
+              fp2=transpose(fp3)
+!
+            case default split
+              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
+!
+            endselect split
+!
+            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2
+            npar_new = npar_new + npar_adapted
+!
           else adapt
 !
 !           No adaptation is needed.
 !
             dfp(npar_new+1:npar_new+np(ix),:) = fp1(k1_l(ix):k2_l(ix),:)
             npar_new = npar_new + np(ix)
+!
           endif adapt
         enddo scan
       enddo pencil
