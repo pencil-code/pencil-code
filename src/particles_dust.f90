@@ -866,7 +866,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Density, only: beta_glnrho_global
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs20, rho0
       use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
@@ -883,9 +883,9 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
+      real :: rpar_int, rpar_ext, tausp_par
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
-      real :: rpar_int,rpar_ext
 !
 !  Optionally withhold some number of particles, to be inserted in
 !  insert_particles. The particle indices to be removed are not randomized,
@@ -1863,10 +1863,15 @@ module Particles
         case ('dragforce_equi_nohydro')
 !
           do k=1,npar_loc
+            if (lparticles_radius) then
+              tausp_par=rhopmat*fp(k,iap)/(sqrt(cs20)*rho0)
+            else
+              tausp_par=tausp
+            endif
             fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
-                1/(1.0/(Omega*tausp)+Omega*tausp)
+                1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
             fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
-                1/(1.0+(Omega*tausp)**2)
+                1/(1.0+(Omega*tausp_par)**2)
           enddo
 !
         case ('dragforce_equi_dust')
