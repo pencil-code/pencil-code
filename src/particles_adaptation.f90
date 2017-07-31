@@ -30,12 +30,18 @@ module Particles_adaptation
 !
   include 'particles_adaptation.h'
 !
+! Runtime parameters
+!
   integer :: npar_target = 8
   integer :: npar_min = 4, npar_max = 16
   character (len=labellen) :: adaptation_method='random'
 !
   namelist /particles_adapt_run_pars/ &
       npar_target, npar_min, npar_max, adaptation_method
+!
+! Module variables
+!
+  integer :: iparmass = 0
 !
   contains
 !***********************************************************************
@@ -46,13 +52,17 @@ module Particles_adaptation
 !
 !  03-apr-13/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-!  Report fatal error if Particle_mass module not used.
+!  Report fatal error if Particle_mass or Particle_density module not used.
 !
-      if (.not.lparticles_density) &
-          call fatal_error('initialize_particles_adaptation', &
-          'must use Particles_density module for particle adaptation')
+      if (lparticles_mass) then
+        iparmass = imp
+      elseif (lparticles_density) then
+        iparmass = irhopswarm
+      else
+        call fatal_error('initialize_particles_adaptation', 'requires Particles_mass or Particles_density')
+      endif
 !
 !  We must be flexible about the particle number.
 !
@@ -141,8 +151,8 @@ module Particles_adaptation
             case ('k-means') method
               call ppcvq(1, 6, 1, 6, np(ix), &
                   transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
-                  fp1(k1_l(ix):k2_l(ix),irhopswarm), npar_target, &
-                  fp3(ixp:ivpz,:), fp3(irhopswarm,:), &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_target, &
+                  fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
               fp2=transpose(fp3)
             case default method
@@ -188,13 +198,13 @@ module Particles_adaptation
       ipx = (/ ixp, iyp, izp /)
       ipv = (/ ivpx, ivpy, ivpz /)
 !
-      mtot = sum(fp_old(:,irhopswarm))
-      fp_new(:,irhopswarm) = mtot / real(npar_new)
+      mtot = sum(fp_old(:,iparmass))
+      fp_new(:,iparmass) = mtot / real(npar_new)
       c1 = real(npar_old) / mtot
 !
       dir: do i = 1, 3
         call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
-        call statistics(fp_old(:,irhopswarm) * fp_old(:,ipv(i)), mv, dmv)
+        call statistics(fp_old(:,iparmass) * fp_old(:,ipv(i)), mv, dmv)
         call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
       enddo dir
 !
@@ -220,8 +230,8 @@ module Particles_adaptation
 !
       ipx = (/ ixp, iyp, izp /)
 !
-      mtot = sum(fp_old(:,irhopswarm))
-      fp_new(:,irhopswarm) = mtot / real(npar_new)
+      mtot = sum(fp_old(:,iparmass))
+      fp_new(:,iparmass) = mtot / real(npar_new)
 !
       dir: do i = 1, 3
         call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
@@ -235,8 +245,8 @@ module Particles_adaptation
 !
       do i=0,2
         fp_new(:,ivpx+i)=fp_new(:,ivpx+i)-(1/mtot)* &
-            (sum(fp_new(:,irhopswarm)*fp_new(:,ivpx+i),dim=1)- &
-            sum(fp_old(:,irhopswarm)*fp_old(:,ivpx+i),dim=1))
+            (sum(fp_new(:,iparmass)*fp_new(:,ivpx+i),dim=1)- &
+            sum(fp_old(:,iparmass)*fp_old(:,ivpx+i),dim=1))
       enddo
 !
     endsubroutine new_population_interpolated
