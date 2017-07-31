@@ -5612,8 +5612,13 @@ module Energy
 !  Note: only the 3-D version is coded (Lx *and* Ly /= 0)
 !
       if (luminosity/=0.0) then
-        prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
+        if (nygrid==1) then
+          prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
+               /(sqrt(pi/2.)*wheat*Lx)
+        else
+          prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
                /(sqrt(pi/2.)*wheat*Lx*Ly)
+        endif
         heat = luminosity*prof
 !
 !  Smoothly switch on heating if required.

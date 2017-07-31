@@ -4244,7 +4244,7 @@ module Special
             +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
         endif
        else
-         call fatal_error('twist_inject:div_diff_flux','Not coded for cylindrical')
+         call fatal_error('solar_corona:div_diff_flux','Not coded for cylindrical')
        endif
 !
     endsubroutine div_diff_flux
