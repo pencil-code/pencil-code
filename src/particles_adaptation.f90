@@ -45,6 +45,10 @@ module Particles_adaptation
 !
   contains
 !***********************************************************************
+!
+! PUBLIC ROUTINES GO BELOW HERE.
+!
+!***********************************************************************
     subroutine initialize_particles_adaptation(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
@@ -178,37 +182,41 @@ module Particles_adaptation
 !
     endsubroutine particles_adaptation_pencils
 !***********************************************************************
-    subroutine new_population_random(ix, iy, iz, npar_old, npar_new, fp_old, fp_new)
+    subroutine read_particles_adapt_run_pars(iostat)
 !
-!  Randomly populates npar_new particles with random positions and approximately
-!  the same total linear momentum.
+      use File_io, only: parallel_unit
 !
-!  14-may-13/ccyang: coded
+      integer, intent(out) :: iostat
 !
-      integer, intent(in) :: ix, iy, iz
-      integer, intent(in) :: npar_old, npar_new
-      real, dimension(npar_old,mparray), intent(in) :: fp_old
-      real, dimension(npar_new,mparray), intent(out) :: fp_new
+      read(parallel_unit, NML=particles_adapt_run_pars, IOSTAT=iostat)
 !
-      integer, dimension(3) :: ipx, ipv
-      real :: mx, dmx, mv, dmv, mtot
-      real :: c1
-      integer :: i
+    endsubroutine read_particles_adapt_run_pars
+!***********************************************************************
+    subroutine write_particles_adapt_run_pars(unit)
 !
-      ipx = (/ ixp, iyp, izp /)
-      ipv = (/ ivpx, ivpy, ivpz /)
+      integer, intent(in) :: unit
 !
-      mtot = sum(fp_old(:,iparmass))
-      fp_new(:,iparmass) = mtot / real(npar_new)
-      c1 = real(npar_old) / mtot
+      write(unit, NML=particles_adapt_run_pars)
 !
-      dir: do i = 1, 3
-        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
-        call statistics(fp_old(:,iparmass) * fp_old(:,ipv(i)), mv, dmv)
-        call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
-      enddo dir
+    endsubroutine write_particles_adapt_run_pars
+!***********************************************************************
+    subroutine rprint_particles_adaptation(lreset,lwrite)
 !
-    endsubroutine new_population_random
+!  Read and register diagnostic parameters.
+!
+!  03-apr-13/anders: adapted
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+!
+    endsubroutine rprint_particles_adaptation
+!***********************************************************************
+!
+! LOCAL ROUTINES GO BELOW HERE.
+!
 !***********************************************************************
     subroutine new_population_interpolated(ix, iy, iz, npar_old, npar_new, fp_old, fp_new, f)
 !
@@ -251,53 +259,37 @@ module Particles_adaptation
 !
     endsubroutine new_population_interpolated
 !***********************************************************************
-    subroutine statistics(a, mean, stddev)
+    subroutine new_population_random(ix, iy, iz, npar_old, npar_new, fp_old, fp_new)
 !
-!  Find the mean and standard deviation of an array.
-!
-!  14-may-13/ccyang: coded
-!
-      real, dimension(:), intent(in) :: a
-      real, intent(out) :: mean, stddev
-!
-      real :: c
-!
-      c = 1.0 / real(size(a))
-!
-      mean = c * sum(a)
-      stddev = sqrt(c * sum(a**2) - mean**2)
-      if (.not. (stddev > 0.0)) stddev=0.0
-!
-    endsubroutine statistics
-!***********************************************************************
-    subroutine random_normal(mean, width, a)
-!
-!  Randomly assigns the elements of a array with a normal distribution
-!  of mean and width.
+!  Randomly populates npar_new particles with random positions and approximately
+!  the same total linear momentum.
 !
 !  14-may-13/ccyang: coded
 !
-      use General, only: random_number_wrapper
+      integer, intent(in) :: ix, iy, iz
+      integer, intent(in) :: npar_old, npar_new
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      real, dimension(npar_new,mparray), intent(out) :: fp_new
 !
-      real, intent(in) :: mean, width
-      real, dimension(:), intent(out) :: a
+      integer, dimension(3) :: ipx, ipv
+      real :: mx, dmx, mv, dmv, mtot
+      real :: c1
+      integer :: i
 !
-      real, dimension(size(a)) :: r, p
+      ipx = (/ ixp, iyp, izp /)
+      ipv = (/ ivpx, ivpy, ivpz /)
 !
-      call random_number_wrapper(r)
-      call random_number_wrapper(p)
-      a = mean + width * sqrt(-2.0 * log(r)) * sin(2.0 * pi * p)
+      mtot = sum(fp_old(:,iparmass))
+      fp_new(:,iparmass) = mtot / real(npar_new)
+      c1 = real(npar_old) / mtot
 !
-      if (notanumber(a)) then
-        print*, 'random_normal: NaN in distribution, mean, width=', &
-            mean, width
-        print*, 'random_normal: a=', a
-        print*, 'random_normal: r=', r
-        print*, 'random_normal: p=', p
-        call fatal_error('random_normal','')
-      endif
+      dir: do i = 1, 3
+        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
+        call statistics(fp_old(:,iparmass) * fp_old(:,ipv(i)), mv, dmv)
+        call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
+      enddo dir
 !
-    endsubroutine random_normal
+    endsubroutine new_population_random
 !***********************************************************************
     subroutine random_cell(ix, iy, iz, idir, a)
 !
@@ -335,36 +327,52 @@ module Particles_adaptation
 !
     endsubroutine random_cell
 !***********************************************************************
-    subroutine read_particles_adapt_run_pars(iostat)
+    subroutine random_normal(mean, width, a)
 !
-      use File_io, only: parallel_unit
+!  Randomly assigns the elements of a array with a normal distribution
+!  of mean and width.
 !
-      integer, intent(out) :: iostat
+!  14-may-13/ccyang: coded
 !
-      read(parallel_unit, NML=particles_adapt_run_pars, IOSTAT=iostat)
+      use General, only: random_number_wrapper
 !
-    endsubroutine read_particles_adapt_run_pars
+      real, intent(in) :: mean, width
+      real, dimension(:), intent(out) :: a
+!
+      real, dimension(size(a)) :: r, p
+!
+      call random_number_wrapper(r)
+      call random_number_wrapper(p)
+      a = mean + width * sqrt(-2.0 * log(r)) * sin(2.0 * pi * p)
+!
+      if (notanumber(a)) then
+        print*, 'random_normal: NaN in distribution, mean, width=', &
+            mean, width
+        print*, 'random_normal: a=', a
+        print*, 'random_normal: r=', r
+        print*, 'random_normal: p=', p
+        call fatal_error('random_normal','')
+      endif
+!
+    endsubroutine random_normal
 !***********************************************************************
-    subroutine write_particles_adapt_run_pars(unit)
+    subroutine statistics(a, mean, stddev)
 !
-      integer, intent(in) :: unit
+!  Find the mean and standard deviation of an array.
 !
-      write(unit, NML=particles_adapt_run_pars)
+!  14-may-13/ccyang: coded
 !
-    endsubroutine write_particles_adapt_run_pars
-!***********************************************************************
-    subroutine rprint_particles_adaptation(lreset,lwrite)
+      real, dimension(:), intent(in) :: a
+      real, intent(out) :: mean, stddev
 !
-!  Read and register diagnostic parameters.
+      real :: c
 !
-!  03-apr-13/anders: adapted
+      c = 1.0 / real(size(a))
 !
-      logical :: lreset
-      logical, optional :: lwrite
+      mean = c * sum(a)
+      stddev = sqrt(c * sum(a**2) - mean**2)
+      if (.not. (stddev > 0.0)) stddev=0.0
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
-!
-    endsubroutine rprint_particles_adaptation
+    endsubroutine statistics
 !***********************************************************************
 endmodule Particles_adaptation
