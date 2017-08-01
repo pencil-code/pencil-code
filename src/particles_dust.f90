@@ -1868,10 +1868,18 @@ module Particles
             else
               tausp_par=tausp
             endif
-            fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
-                1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
-            fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
-                1/(1.0+(Omega*tausp_par)**2)
+            cs=sqrt(cs20)
+            if (Deltauy_gas_friction/=0.0) then
+              fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
+                  1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
+              fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
+                  1/(1.0+(Omega*tausp_par)**2)
+            else
+              fp(k,ivpx) = fp(k,ivpx) + beta_glnrho_global(1)*cs* &
+                  1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
+              fp(k,ivpy) = fp(k,ivpy) + beta_glnrho_global(1)/2*cs* &
+                  1/(1.0+(Omega*tausp_par)**2)
+            endif
           enddo
 !
         case ('dragforce_equi_dust')
