@@ -1,4 +1,4 @@
-
+! $Id$
 !
 !  This module provide a way for users to specify custom
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
@@ -112,10 +112,12 @@ module Special
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\left<h_{\rm L}^2\right>$
-  integer :: idiag_hhX2m=0       ! DIAG_DOC: $\left<h_{\rm T}^2\right>$
-  integer :: idiag_hhThhXm=0     ! DIAG_DOC: $\left<h_{\rm L}h_{\rm T}\right>$
-  integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{\rm L}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\left<h_{\rm T}^2\right>$
+  integer :: idiag_hhX2m=0       ! DIAG_DOC: $\left<h_{\rm X}^2\right>$
+  integer :: idiag_hhThhXm=0     ! DIAG_DOC: $\left<h_{\rm T}h_{\rm X}\right>$
+  integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{\rm T}(x_1,y_1,z_1,t)$
+  integer :: idiag_strTpt=0      ! DIAG_DOC: $S_{\rm T}(x_1,y_1,z_1,t)$
+  integer :: idiag_strXpt=0      ! DIAG_DOC: $S_{\rm X}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -365,6 +367,8 @@ module Special
          if (idiag_hhThhXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhThhXm)
          if (lroot.and.m==mpoint.and.n==npoint) then
            if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
+           if (idiag_strTpt/=0) call save_name(f(lpoint,m,n,istressT),idiag_strTpt)
+           if (idiag_strXpt/=0) call save_name(f(lpoint,m,n,istressX),idiag_strXpt)
          endif
        endif
 !
@@ -955,7 +959,9 @@ module Special
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
-            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2 &
+                                    +ky(iky+ipz*nz)**2 &
+                                    +kz(ikz+ipx*nx)**2
           enddo
         enddo
       enddo
@@ -977,9 +983,9 @@ module Special
         if (lhydro)    Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
           +f(l1:l2,m1:m2,n1:n2,iux+i-1) &
           *f(l1:l2,m1:m2,n1:n2,iux+j-1)
-        if (lmagnetic) Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
-          +f(l1:l2,m1:m2,n1:n2,ibx+i-1) &
-          *f(l1:l2,m1:m2,n1:n2,ibx+j-1)
+        !if (lmagnetic) Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
+        !  +f(l1:l2,m1:m2,n1:n2,ibx+i-1) &
+        !  *f(l1:l2,m1:m2,n1:n2,ibx+j-1)
       enddo
       enddo
 !
@@ -1226,7 +1232,7 @@ module Special
 !!!
       if (lreset) then
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhThhXm=0
-        idiag_ggTpt=0
+        idiag_ggTpt=0; idiag_strTpt=0; idiag_strXpt=0
       endif
 !
       do iname=1,nname
@@ -1234,6 +1240,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'hhX2m',idiag_hhX2m)
         call parse_name(iname,cname(iname),cform(iname),'hhThhXm',idiag_hhThhXm)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
+        call parse_name(iname,cname(iname),cform(iname),'strTpt',idiag_strTpt)
+        call parse_name(iname,cname(iname),cform(iname),'strXpt',idiag_strXpt)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
