@@ -155,6 +155,9 @@ module Particles_adaptation
 !
             merge: select case (adaptation_method)
 !
+            case ('ngp', 'NGP') merge
+              call merge_particles_in_cell_ngp(np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
+!
             case ('random') merge
               call new_population_random(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
 !
@@ -198,7 +201,7 @@ module Particles_adaptation
               fp2(1:npar_adapted,:) = transpose(fp3)
 !
             case default split
-              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
+              call split_particles_in_cell(np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
 !
             endselect split
 !
@@ -258,6 +261,24 @@ module Particles_adaptation
 !
 ! LOCAL ROUTINES GO BELOW HERE.
 !
+!***********************************************************************
+    subroutine merge_particles_in_cell_ngp(npar_old, fp_old, npar_new, fp_new)
+!
+!  Merges all particles in a cell into npar_new = 2 particles by
+!  conserving the NGP assignment of mass, momentum, and kinetic energy
+!  densities on the grid.
+!
+!  01-aug-17/ccyang: stub
+!
+      integer, intent(in) :: npar_old
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
+!
+      npar_new = npar_old
+      fp_new(1:npar_new,:) = fp_old
+!
+    endsubroutine merge_particles_in_cell_ngp
 !***********************************************************************
     subroutine new_population_interpolated(ix, iy, iz, npar_old, fp_old, npar_new, fp_new, f)
 !
@@ -404,6 +425,24 @@ module Particles_adaptation
       endif
 !
     endsubroutine random_normal
+!***********************************************************************
+    subroutine split_particles_in_cell(npar_old, fp_old, npar_new, fp_new)
+!
+!  Split particles in a cell into npar_new > npar_min particles by
+!  conserving the assignment of mass and momentum densities on the grid.
+!  Small increase in the velocity dispersion is induced.
+!
+!  01-aug-17/ccyang: stub
+!
+      integer, intent(in) :: npar_old
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
+!
+      npar_new = npar_old
+      fp_new(1:npar_new,:) = fp_old
+!
+    endsubroutine split_particles_in_cell
 !***********************************************************************
     subroutine statistics(a, mean, stddev)
 !
