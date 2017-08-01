@@ -38,7 +38,7 @@ module Particles_number
   integer :: idiag_dtfragp=0, idiag_npsm=0
   integer, parameter :: mmom=24
   integer, dimension(0:mmom) :: idiag_admom=0
-	logical :: llog10_for_admom_above10=.true.
+  logical :: llog10_for_admom_above10=.true.
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
