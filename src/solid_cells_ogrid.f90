@@ -824,7 +824,8 @@ module Solid_Cells
                       z_ogrid(k) /)
               cartesian_to_curvilinear(ii)%i_xyz = (/ i,j,k /)
               cartesian_to_curvilinear(ii)%xyz = xyz
-              call find_near_cart_ind_global(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
+              call find_near_ind_global_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
+                  xyz,lcheck_init_interpolation)
               if(.not. this_proc_cartesian(xyz)) then
                 call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc)
                 if(cartesian_to_curvilinear(ii)%from_proc==iproc) then
@@ -876,7 +877,8 @@ module Solid_Cells
               ii=ii+1
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
               curvilinear_to_cartesian(ii)%xyz = rthz
-              call find_near_curv_ind_global(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
+              call find_near_ind_global_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
+                  rthz,lcheck_init_interpolation)
               if(.not. this_proc_curvilinear(rthz,lcheck_init_interpolation)) then
                 call find_proc_curvilinear(rthz,curvilinear_to_cartesian(ii)%from_proc)
               else
@@ -1601,12 +1603,10 @@ module Solid_Cells
 !  Translate global indices to local indices on the cartesian grid
 !
 !  18-apr-17/Jorgen: Coded
-!
+!            
       integer, dimension(3), intent(in) :: i_xyz_global
       integer, dimension(3), intent(out) :: i_xyz_local
       logical, intent(in) :: lcheck
-      !real, dimension(3) :: xyz_global
-      !integer :: ii,jj,kk
 !
       i_xyz_local(1) = i_xyz_global(1) - nx*ipx
       i_xyz_local(2) = i_xyz_global(2) - ny*ipy
@@ -2332,13 +2332,13 @@ module Solid_Cells
 !  Only works for iux:iuz and scalar values (rho,T,etc.) at present.
 !
 !  NOTE: Does not work for parallell runs
+!        should only be used for testing purposes
 !
 !  16-feb-17/Jorgen: Coded
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_og
     real, dimension (3) :: xyz
-    integer :: lower_i,upper_i,lower_j,upper_j,lower_k,upper_k
     integer :: ivar1,ivar2
     integer, dimension (3) :: inear
     real, dimension (ilnrho-iux+1) :: gp
@@ -2352,9 +2352,7 @@ module Solid_Cells
           xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
                   x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
                   z_ogrid(k) /)
-          call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
-                lower_k,upper_k,xyz)
-          inear=(/ lower_i, lower_j, lower_k /)
+          call find_near_ind_local_cart(inear,xyz,lcheck_interpolation)
 
           if ( .not. linear_interpolate(f_cartesian,ivar1,ivar2,xyz,gp,inear,lcheck_interpolation) ) then
             call fatal_error('linear_interpolate','interpolation from cartesian to curvilinear')
@@ -2373,20 +2371,16 @@ module Solid_Cells
 !
 !  Interpolate all flow variables from curvilinear to cartesian grid
 !
-!  NOTE: Does not work for parallell runs
+!  NOTE: Does not work for parallell runs,
+!        should only be used for testing purposes
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (3) :: rthz
     integer :: i,j,k
     real :: xr,yr
-    integer :: lower_i,upper_i,lower_j,upper_j,lower_k,upper_k
     integer, dimension (3) :: inear
     real, dimension (irho-iux+1) :: gp
-    ! TODO
     integer, parameter :: ivar1=1,ivar2=4
-    integer, dimension(3) :: inear_glob
-    integer, parameter :: order=2
-    real, dimension(order,order,ivar2-ivar1+1) :: farr
   
     do k=n1,n2
       do j=m1,m2
@@ -2395,20 +2389,10 @@ module Solid_Cells
           yr=y(j)-xorigo_ogrid(2)
           rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
           if((rthz(1)<=r_int_outer) .and.(rthz(1)>=r_int_inner)) then  
-            call find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
-                  lower_k,upper_k,rthz)
-            inear=(/ lower_i, lower_j, lower_k /)
+            call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)  
             if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
               call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
             endif
-            !! ! TODO: Interface for high order interpolation
-            !! call find_near_curv_ind_global(inear_glob,rthz)
-            !! farr = f_ogrid(inear(1)-floor(order*0.5)+1:inear(1)+floor(order*0.5),&
-            !!                inear(2)-floor(order*0.5)+1:inear(2)+floor(order*0.5),1,ivar1:ivar2)
-            !! if( .not. HO_interp_curv_loc(farr,ivar1,ivar2,rthz,inear_glob,inear,gp,lcheck_interpolation,order)) then
-            !!   call fatal_error('HO_interp_curv_loc','interpolation from curvilinear to cartesian')
-            !! endif
-            !! ! TODO
             f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))
             f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
             f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
@@ -4453,7 +4437,8 @@ module Solid_Cells
 !  recieved from appropriate processor
 !
     call update_ghosts_ogrid
-    call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
+    !call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
+  call flow_curvilinear_to_cartesian(f_cartesian)
     !TODO: Should use the partifle flow info in the interpolation point
     !      computation above
     !TODO: iux,iuz, should be replaced by parameters set in start.in
@@ -6482,20 +6467,6 @@ module Solid_Cells
           endif
         enddo
       endif
-      !if(lroot) then
-      !  print*, 'Processor boundaries cgrid:'
-      !  do j=0,ncpus-1
-      !    print*, 'Proc:',j
-      !    print*, 'xyz0:,',xyz0_loc_all(j+1,:)
-      !    print*, 'xyz1:,',xyz1_loc_all(j+1,:)
-      !  enddo
-      !  print*, 'Processor boundaries ogrid:'
-      !  do j=0,ncpus-1
-      !    print*, 'Proc:',j
-      !    print*, 'xyz0:,',xyz0_loc_all_ogrid(j+1,:)
-      !    print*, 'xyz1:,',xyz1_loc_all_ogrid(j+1,:)
-      !  enddo
-      !endif
 !
 !  Serial array constructed. Broadcast the result. 
 !
@@ -6503,226 +6474,210 @@ module Solid_Cells
       call mpibcast_real(xyz1_loc_all_ogrid,nbcast)
     endsubroutine construct_serial_bdry_curv
 !***********************************************************************
-    subroutine find_near_cartesian(xyz,xyz_neighbours)
+    subroutine find_near_ind_local_cart(inear_loc,xxp,lcheck)
 !
-!  Find the grid point values of all neighbouring points on cartesian mesh
-!  Return array containing a cube with element 1 in the bottom left corner
-!  (low z-plane) and element 8 in the top right corner (top z-plane)
+!  Find nearest local indices of point xxp
+!  Return only indices correponding to low corner of cube containing the point xxp,
+!  i.e, inear_glob = (/ ix0, iy0, iz0 /), where x(ix0) <= xxp(1) <= x(ix0+1), etc. 
 !
-!  12-apr-17/Jorgen: Coded
+!  01-aug-17/Jorgen: Coded
 !
-      real, dimension(3), intent(in)    :: xyz
-      real, dimension(8,3), intent(out)  :: xyz_neighbours
-      integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
-      integer :: i,j,k,ii=0
+      integer, dimension(3), intent(out) :: inear_loc
+      real, dimension(3), intent(in) :: xxp
+      logical, intent(in) :: lcheck
+!   
+      integer, dimension(3) :: inear_glob
 !
-      call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
-        lower_k,upper_k,xyz)
+      call find_near_ind_global_cart(inear_glob,xxp,lcheck)
+      call ind_global_to_local_cart(inear_glob,inear_loc,lcheck)
 !
-      do i=lower_i,upper_i
-        do j=lower_j,upper_j
-          do k=lower_k,upper_k
-            ii=ii+1
-            xyz_neighbours(ii,:)= (/ x(i),y(j),z(k) /)
-          enddo
-        enddo
-      enddo
-    endsubroutine find_near_cartesian
+    endsubroutine find_near_ind_local_cart
 !***********************************************************************
-    subroutine find_near_curvilinear(rthz,rthz_neighbours)
+    subroutine find_near_ind_global_cart(ineargrid,xxp,lcheck)
 !
-!  Find the grid point values of all neighbouring points on curvilinear mesh.
-!  Return array containing a (curvilinear) cube with element 1 in the bottom left corner
-!  (low z-plane) and element 8 in the top right corner (top z-plane)
+!  Find nearest global indices of point xxp
+!  Return only indices correponding to low corner of cube containing the point xxp,
+!  i.e, inear_glob = (/ ix0, iy0, iz0 /), where xglobal(ix0) <= xxp(1) <= xglobal(ix0+1), etc. 
 !
-!  12-apr-17/Jorgen: Coded
+!  Find nearest grid point by bisection if the grid is not equidistant.
 !
-      real, dimension(3), intent(in)    :: rthz
-      real, dimension(8,3), intent(out)  :: rthz_neighbours
-      integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
-      integer :: i,j,k,ii=0
+!  01-aug-17/Jorgen: Coded
 !
-      call find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
-        lower_k,upper_k,rthz)
+      integer, dimension(3), intent(out) :: ineargrid
+      real, dimension(3), intent(in) :: xxp
+      logical, intent(in) :: lcheck
+
+      integer :: ix0, iy0, iz0
+      real :: dx1, dy1, dz1
+
 !
-      do i=lower_i,upper_i
-        do j=lower_j,upper_j
-          do k=lower_k,upper_k
-            ii=ii+1
-            rthz_neighbours(ii,:)= (/ x_ogrid(i),y_ogrid(j),z_ogrid(k) /)
-          enddo
-        enddo
-      enddo
-    endsubroutine find_near_curvilinear
-!***********************************************************************
-    subroutine find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
-        lower_k,upper_k,xyz)
+!  Default values in case of missing directions.
 !
-!  Find i, j and k indices for all neighbouring grid points
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
+      dx1=dx_1(l1) 
+      dy1=dy_1(m1) 
+      dz1=dz_1(n1)
 !
-      integer :: ii, jj, kk
-      integer, intent(out) :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
-      real, intent(in), dimension(3)  :: xyz
+!  Find nearest grid point in x-direction.
 !
-      lower_i = 0
-      upper_i = 0
-      do ii = 2,mx
-        if (x(ii) > xyz(1)) then
-          lower_i = ii-1
-          upper_i = ii
-          exit
+      if (nxgrid/=1) then
+        if (lequidist(1)) then
+          ix0 = floor((xxp(1)-xglobal(1))*dx1) + 1
+        else
+          call find_low_gp_index_bisection(xxp(1),xglobal,ix0)
         endif
-      enddo
-!
-      lower_j = 0
-      upper_j = 0
-      do jj = 2,my
-        if (y(jj) > xyz(2)) then
-          lower_j = jj-1
-          upper_j = jj
-          exit
-        endif
-      enddo
-!
-      if (nzgrid == 1) then
-        lower_k = n1
-        upper_k = n1
-      else
-        lower_k = 0
-        upper_k = 0
-        do kk = 2,mz
-          if (z(kk) > xyz(3)) then
-            lower_k = kk-1
-            upper_k = kk
-            exit
-          endif
-        enddo
       endif
 !
-    endsubroutine find_near_cartesian_indices
-!***********************************************************************
-    subroutine find_near_cart_ind_global(lower_indices,xyz)
+!  Find nearest grid point in y-direction.
 !
-!  Find i, j and k indices for lower neighbouring grid point on global grid
-!
-!  13-apr-17/Jorgen: Adapted from find_near_cartesian_indices
-!
-      integer :: ii, jj, kk
-      integer, dimension(3), intent(out) :: lower_indices 
-      real, dimension(3), intent(in)  :: xyz
-!
-!
-      lower_indices = 0
-      do ii = 1+nghost,mxgrid-nghost
-        if (xglobal(ii) > xyz(1)) then
-          lower_indices(1) = ii-1
-          exit
+      if (nygrid/=1) then
+        if (lequidist(2)) then
+          iy0 = floor((xxp(2)-yglobal(1))*dy1) + 1
+        else
+          call find_low_gp_index_bisection(xxp(2),yglobal,iy0)
         endif
-      enddo
-!
-      do jj = 1+nghost,mygrid-nghost
-        if (yglobal(jj) > xyz(2)) then
-          lower_indices(2) = jj-1
-          exit
-        endif
-      enddo
-!
-      if (nzgrid == 1) then
-        lower_indices(3) = n1
-      else
-        do kk = 1+nghost,mzgrid-nghost
-          if (zglobal(kk) > xyz(3)) then
-            lower_indices(3) = kk-1
-            exit
-          endif
-        enddo
       endif
 !
-    endsubroutine find_near_cart_ind_global
-!***********************************************************************
-    subroutine find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
-        lower_k,upper_k,rthz)
+!  Find nearest grid point in z-direction.
 !
-!  Find i, j and k indices for all neighbouring grid points
-!
-      integer :: ii, jj, kk
-      integer, intent(out) :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
-      real, intent(in), dimension(3)  :: rthz
-!
-      lower_i = 0
-      upper_i = 0
-      do ii = 2,mx_ogrid
-        if (x_ogrid(ii) > rthz(1)) then
-          lower_i = ii-1
-          upper_i = ii
-          exit
+      if (nzgrid/=1) then
+        if (lequidist(3)) then
+          iz0 = floor((xxp(3)-zglobal(1))*dz1) + 1
+        else
+          call find_low_gp_index_bisection(xxp(3),zglobal,iz0)
         endif
-      enddo
-!
-      lower_j = 0
-      upper_j = 0
-      do jj = 2,my_ogrid
-        if (y_ogrid(jj) > rthz(2)) then
-          lower_j = jj-1
-          upper_j = jj
-          exit
-        endif
-      enddo
-!
-      if (nzgrid_ogrid == 1) then
-        lower_k = n1
-        upper_k = n1
-      else
-        lower_k = 0
-        upper_k = 0
-        do kk = 2,mz_ogrid
-          if (z_ogrid(kk) > rthz(3)) then
-            lower_k = kk-1
-            upper_k = kk
-            exit
-          endif
-        enddo
       endif
 !
-    endsubroutine find_near_curvilinear_indices
+      ineargrid=(/ ix0,iy0,iz0 /)
+!
+!  If requested, check if the correct grid points are found
+!
+      if(lcheck) then
+        if (xxp(1)<=xglobal(ineargrid(1)).or. &
+            xxp(1)>=xglobal(ineargrid(1)+1).or. &
+            xxp(2)<=yglobal(ineargrid(2)).or. & 
+            xxp(2)>=yglobal(ineargrid(2)+1)) then!.or. & 
+            !xxp(3)<=zglobal(ineargrid(3)).or. & 
+            !xxp(3)>=zglobal(ineargrid(3)+1)) then
+          print*, 'Information about what went wrong:'
+          print*, '----------------------------------'
+          print*, 'ERROR: find nearest grid point, cartesian'
+          print*, 'Information about what went wrong:'
+          print*, '----------------------------------'
+          print*, 'it, itsub, t=', it, itsub, t
+          print*, 'iproc  =', iproc
+          print*, 'xxp    =', xxp
+          print*, 'ineargrid   =', ineargrid(:)
+          print*, 'xglobal(ix0),xglobal(ix0+1)',xglobal(ineargrid(1)),xglobal(ineargrid(1)+1)
+          print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal(ineargrid(2)),yglobal(ineargrid(2)+1)
+          print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal(ineargrid(3)),zglobal(ineargrid(3)+1)
+          call fatal_error_local('find_near_grid_point_cartesian','')
+        endif
+      endif
+    endsubroutine find_near_ind_global_cart
 !***********************************************************************
-    subroutine find_near_curv_ind_global(lower_indices,rthz)
+    subroutine find_near_ind_local_curv(inear_loc,xxp,lcheck)
 !
-!  Find i, j and k indices for lower neighbouring grid point on global grid
+!  Find nearest local indices of point xxp on curvilinear grid
+!  Return only indices correponding to low corner of cube containing the point xxp,
+!  i.e, inear_glob = (/ ix0, iy0, iz0 /), where x_ogrid(ix0) <= xxp(1) <= x_ogrid(ix0+1), etc. 
 !
-!  13-apr-17/Jorgen: Adapted from find_near_curvilinear_indices
+!  01-aug-17/Jorgen: Coded
 !
-      integer :: ii, jj, kk
-      integer, dimension(3), intent(out) :: lower_indices
-      real, dimension(3), intent(in) :: rthz
+      integer, dimension(3), intent(out) :: inear_loc
+      real, dimension(3), intent(in) :: xxp
+      logical, intent(in) :: lcheck
+!   
+      integer, dimension(3) :: inear_glob
 !
-      lower_indices = 0
-      do ii = 1,mxgrid_ogrid
-        if (xglobal_ogrid(ii) > rthz(1)) then
-          lower_indices(1) = ii-1
-          exit
+      call find_near_ind_global_curv(inear_glob,xxp,lcheck)
+      call ind_global_to_local_curv(inear_glob,inear_loc,lcheck)
+!
+    endsubroutine find_near_ind_local_curv
+!***********************************************************************
+    subroutine find_near_ind_global_curv(ineargrid,xxp,lcheck)
+!
+!  Find nearest global indices of point xxp on the curvilinear grid
+!  Return only indices correponding to low corner of cube containing the point xxp,
+!  i.e, inear_glob = (/ ix0, iy0, iz0 /), where xglobal_ogrid(ix0) <= xxp(1) <= xglobal_ogrid(ix0+1), etc. 
+!
+!  Find nearest grid point by bisection if the grid is not equidistant.
+!
+!  01-aug-17/Jorgen: Coded
+!
+      integer, dimension(3), intent(out) :: ineargrid
+      real, dimension(3), intent(in) :: xxp
+      logical, intent(in) :: lcheck
+
+      integer :: ix0, iy0, iz0
+      real :: dx1_ogrid, dy1_ogrid, dz1_ogrid
+!
+!  Default values in case of missing directions.
+!
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
+!
+      dx1_ogrid=dx_1_ogrid(l1_ogrid) 
+      dy1_ogrid=dy_1_ogrid(m1_ogrid) 
+      dz1_ogrid=dz_1_ogrid(n1_ogrid)
+!
+!  Find nearest grid point in x-direction.
+!
+      if (nxgrid_ogrid/=1) then
+        if (lequidist_ogrid(1)) then
+          ix0 = floor((xxp(1)-xglobal_ogrid(1))*dx1_ogrid) + 1
+        else
+          call find_low_gp_index_bisection(xxp(1),xglobal_ogrid,ix0)
         endif
-      enddo
-!
-      do jj = 1,mygrid_ogrid
-        if (yglobal_ogrid(jj) > rthz(2)) then
-          lower_indices(2) = jj-1
-          exit
-        endif
-      enddo
-!
-      if (nzgrid == 1) then
-        lower_indices(3) = n1
-      else
-        do kk = 1,mzgrid_ogrid
-          if (zglobal_ogrid(kk) > rthz(3)) then
-            lower_indices(3) = kk-1
-            exit
-          endif
-        enddo
       endif
 !
-    endsubroutine find_near_curv_ind_global
+!  Find nearest grid point in y-direction.
+!
+      if (nygrid_ogrid/=1) then
+        if (lequidist_ogrid(2)) then
+          iy0 = floor((xxp(2)-yglobal_ogrid(1))*dy1_ogrid) + 1
+        else
+          call find_low_gp_index_bisection(xxp(2),yglobal_ogrid,iy0)
+        endif
+      endif
+!
+!  Find nearest grid point in z-direction.
+!
+      if (nzgrid_ogrid/=1) then
+        if (lequidist_ogrid(3)) then
+          iz0 = floor((xxp(3)-zglobal_ogrid(1))*dz1_ogrid) + 1
+        else
+          call find_low_gp_index_bisection(xxp(3),zglobal_ogrid,iz0)
+        endif
+      endif
+!
+      ineargrid=(/ ix0,iy0,iz0 /)
+!
+!  If requested, check if the correct grid points are found
+!
+      if(lcheck) then
+        if (xxp(1)<=xglobal_ogrid(ineargrid(1)).or. &
+            xxp(1)>=xglobal_ogrid(ineargrid(1)+1).or. &
+            xxp(2)<=yglobal_ogrid(ineargrid(2)).or. & 
+            xxp(2)>=yglobal_ogrid(ineargrid(2)+1)) then!.or. & 
+            !xxp(3)<=zglobal(ineargrid(3)).or. & 
+            !xxp(3)>=zglobal(ineargrid(3)+1)) then
+          print*, 'Information about what went wrong:'
+          print*, '----------------------------------'
+          print*, 'ERROR: find nearest grid point, cartesian'
+          print*, 'Information about what went wrong:'
+          print*, '----------------------------------'
+          print*, 'it, itsub, t=', it, itsub, t
+          print*, 'iproc  =', iproc
+          print*, 'xxp    =', xxp
+          print*, 'ineargrid   =', ineargrid(:)
+          print*, 'xglobal(ix0),xglobal(ix0+1)',xglobal_ogrid(ineargrid(1)),xglobal_ogrid(ineargrid(1)+1)
+          print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal_ogrid(ineargrid(2)),yglobal_ogrid(ineargrid(2)+1)
+          print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal_ogrid(ineargrid(3)),zglobal_ogrid(ineargrid(3)+1)
+          call fatal_error_local('find_near_ind_global_curvilinear','')
+        endif
+      endif
+!
+    endsubroutine find_near_ind_global_curv
 !***********************************************************************
     subroutine wsnap_ogrid(chsnap,enum,flist)
 !
@@ -7436,7 +7391,7 @@ module Solid_Cells
 
     endsubroutine der2_ogrid_SBP_experimental
 !*********************************************************************** 
-    subroutine map_nearest_grid_ogrid(xxp_cart,ineargrid_ogrid)
+    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid)
 !
 !  Find index (ix0, iy0, iz0) of nearest grid point of particle in global
 !  coordinates.
@@ -7444,7 +7399,7 @@ module Solid_Cells
 !  06-jul-17/Jorgen: Adapted from map_nearest_grid in particles_sub
 !                    to work for overlapping grid
 !
-      real, dimension (3) :: xxp_cart
+      real, dimension (3) :: xxp
       integer, dimension (4) :: ineargrid_ogrid
 !
       real, save :: dx1_ogrid, dy1_ogrid, dz1_ogrid
@@ -7474,17 +7429,11 @@ module Solid_Cells
 !  Find nearest grid point in x-direction.
 !  Find nearest grid point by bisection if the grid is not equidistant.
 !
-!HEREHERE
-print*, ''
-print*, 'iproc'
-print*, 'xxp',xxp
-print*, 'xyz0_ogrid',xyz0_ogrid
-print*, 'dxyz1',dx1_ogrid,dy1_ogrid,dz1_ogrid
       if (nxgrid_ogrid/=1) then
         if (lequidist_ogrid(1)) then
           ix0 = nint((xxp(1)-xyz0_ogrid(1))*dx1_ogrid) + nghost
         else
-          call find_gp_index_by_bisection(xxp(1),xglobal_ogrid,ix0)
+          call find_low_gp_index_bisection(xxp(1),xglobal_ogrid,ix0)
         endif
       endif
 !
@@ -7494,7 +7443,7 @@ print*, 'dxyz1',dx1_ogrid,dy1_ogrid,dz1_ogrid
         if (lequidist_ogrid(2)) then
           iy0 = nint((xxp(2)-xyz0_ogrid(2))*dy1_ogrid) + nghost
         else
-          call find_gp_index_by_bisection(xxp(2),yglobal_ogrid,iy0)
+          call find_low_gp_index_bisection(xxp(2),yglobal_ogrid,iy0)
         endif
       endif
 !
@@ -7504,7 +7453,7 @@ print*, 'dxyz1',dx1_ogrid,dy1_ogrid,dz1_ogrid
         if (lequidist_ogrid(3)) then
           iz0 = nint((xxp(3)-xyz0_ogrid(3))*dz1_ogrid) + nghost
         else
-          call find_gp_index_by_bisection(xxp(3),zglobal_ogrid,iz0)
+          call find_low_gp_index_bisection(xxp(3),zglobal_ogrid,iz0)
         endif
       endif
 !
@@ -7549,13 +7498,14 @@ print*, 'dxyz1',dx1_ogrid,dy1_ogrid,dz1_ogrid
 !
     endsubroutine map_nearest_grid_ogrid
 !***********************************************************************
-    subroutine find_gp_index_by_bisection(qp,q,iq0)
+    subroutine find_low_gp_index_bisection(qp,q,iq0)
 !
-!  Given a gridpoint location (qp), find the index of
-!  the nearest grid cell by bisecting the interval. Its main
-!  use is for non-equidistant grids. 
+!  Find nearest local indices of point qp on grid q by bisecting the interval.
+!  Its main use is for non-equidistant grids. 
+!  Return only indices correponding lower point on line  containing qp
+!  i.e, q(iq0) <= qp <= q(iq0+1), etc. 
 !
-!  06-jul-17/Jorgen: Adapted/copied from particles_mpicomm
+!  01-aug-17/Jorgen: Adapted from particles_mpicomm
 !
       real, dimension (:) :: q
       real :: qp
@@ -7575,13 +7525,9 @@ print*, 'dxyz1',dx1_ogrid,dy1_ogrid,dz1_ogrid
           ju=jm
         endif
       enddo
-      if (qp-q(jl) <= q(ju)-qp) then
-        iq0=jl
-      else
-        iq0=ju
-      endif
+      iq0=jl
 !
-    endsubroutine find_gp_index_by_bisection
+    endsubroutine find_low_gp_index_bisection
 !***********************************************************************
     subroutine initialize_particles_ogrid(ivar1,ivar2)
 !
@@ -8181,3 +8127,231 @@ print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part
 !***********************************************************************
 
 end module Solid_Cells
+!***********************************************************************
+!!  ! TODO: REDUNDANT
+!!      subroutine find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
+!!          lower_k,upper_k,xyz)
+!!  !
+!!  !  Find i, j and k indices for all neighbouring grid points
+!!  !
+!!        integer :: ii, jj, kk
+!!        integer, intent(out) :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+!!        real, intent(in), dimension(3)  :: xyz
+!!  !
+!!        lower_i = 0
+!!        upper_i = 0
+!!        do ii = 2,mx
+!!          if (x(ii) > xyz(1)) then
+!!            lower_i = ii-1
+!!            upper_i = ii
+!!            exit
+!!          endif
+!!        enddo
+!!  !
+!!        lower_j = 0
+!!        upper_j = 0
+!!        do jj = 2,my
+!!          if (y(jj) > xyz(2)) then
+!!            lower_j = jj-1
+!!            upper_j = jj
+!!            exit
+!!          endif
+!!        enddo
+!!  !
+!!        if (nzgrid == 1) then
+!!          lower_k = n1
+!!          upper_k = n1
+!!        else
+!!          lower_k = 0
+!!          upper_k = 0
+!!          do kk = 2,mz
+!!            if (z(kk) > xyz(3)) then
+!!              lower_k = kk-1
+!!              upper_k = kk
+!!              exit
+!!            endif
+!!          enddo
+!!        endif
+!!  !
+!!      endsubroutine find_near_cartesian_indices
+!***********************************************************************
+!! !TODO: REDUNDANT
+!!     subroutine find_near_cartesian(xyz,xyz_neighbours)
+!! !
+!! !  Find the grid point values of all neighbouring points on cartesian mesh
+!! !  Return array containing a cube with element 1 in the bottom left corner
+!! !  (low z-plane) and element 8 in the top right corner (top z-plane)
+!! !
+!! !  12-apr-17/Jorgen: Coded
+!! !
+!!       real, dimension(3), intent(in)    :: xyz
+!!       real, dimension(8,3), intent(out)  :: xyz_neighbours
+!!       integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+!!       integer :: i,j,k,ii=0
+!! !
+!!       call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
+!!         lower_k,upper_k,xyz)
+!! !
+!!       do i=lower_i,upper_i
+!!         do j=lower_j,upper_j
+!!           do k=lower_k,upper_k
+!!             ii=ii+1
+!!             xyz_neighbours(ii,:)= (/ x(i),y(j),z(k) /)
+!!           enddo
+!!         enddo
+!!       enddo
+!!     endsubroutine find_near_cartesian
+!***********************************************************************
+!! ! TODO: REDUNDANT
+!!     subroutine find_near_cart_ind_global(lower_indices,xyz)
+!! !
+!! !  Find i, j and k indices for lower neighbouring grid point on global grid
+!! !
+!! !  13-apr-17/Jorgen: Adapted from find_near_cartesian_indices
+!! !
+!!       integer :: ii, jj, kk
+!!       integer, dimension(3), intent(out) :: lower_indices 
+!!       real, dimension(3), intent(in)  :: xyz
+!! !
+!! !
+!!       lower_indices = 0
+!!       do ii = 1+nghost,mxgrid-nghost
+!!         if (xglobal(ii) > xyz(1)) then
+!!           lower_indices(1) = ii-1
+!!           exit
+!!         endif
+!!       enddo
+!! !
+!!       do jj = 1+nghost,mygrid-nghost
+!!         if (yglobal(jj) > xyz(2)) then
+!!           lower_indices(2) = jj-1
+!!           exit
+!!         endif
+!!       enddo
+!! !
+!!       if (nzgrid == 1) then
+!!         lower_indices(3) = n1
+!!       else
+!!         do kk = 1+nghost,mzgrid-nghost
+!!           if (zglobal(kk) > xyz(3)) then
+!!             lower_indices(3) = kk-1
+!!             exit
+!!           endif
+!!         enddo
+!!       endif
+!! !
+!!     endsubroutine find_near_cart_ind_global
+!***********************************************************************
+!! ! TODO: REDUNDANT
+!!     subroutine find_near_curv_ind_global(lower_indices,rthz)
+!! !
+!! !  Find i, j and k indices for lower neighbouring grid point on global grid
+!! !
+!! !  13-apr-17/Jorgen: Adapted from find_near_curvilinear_indices
+!! !
+!!       integer :: ii, jj, kk
+!!       integer, dimension(3), intent(out) :: lower_indices
+!!       real, dimension(3), intent(in) :: rthz
+!! !
+!!       lower_indices = 0
+!!       do ii = 1,mxgrid_ogrid
+!!         if (xglobal_ogrid(ii) > rthz(1)) then
+!!           lower_indices(1) = ii-1
+!!           exit
+!!         endif
+!!       enddo
+!! !
+!!       do jj = 1,mygrid_ogrid
+!!         if (yglobal_ogrid(jj) > rthz(2)) then
+!!           lower_indices(2) = jj-1
+!!           exit
+!!         endif
+!!       enddo
+!! !
+!!       if (nzgrid == 1) then
+!!         lower_indices(3) = n1
+!!       else
+!!         do kk = 1,mzgrid_ogrid
+!!           if (zglobal_ogrid(kk) > rthz(3)) then
+!!             lower_indices(3) = kk-1
+!!             exit
+!!           endif
+!!         enddo
+!!       endif
+!! !
+!!     endsubroutine find_near_curv_ind_global
+!***********************************************************************
+!! ! TODO: REDUNDANT
+!!     subroutine find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
+!!         lower_k,upper_k,rthz)
+!! !
+!! !  Find i, j and k indices for all neighbouring grid points
+!! !
+!!       integer :: ii, jj, kk
+!!       integer, intent(out) :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+!!       real, intent(in), dimension(3)  :: rthz
+!! !
+!!       lower_i = 0
+!!       upper_i = 0
+!!       do ii = 2,mx_ogrid
+!!         if (x_ogrid(ii) > rthz(1)) then
+!!           lower_i = ii-1
+!!           upper_i = ii
+!!           exit
+!!         endif
+!!       enddo
+!! !
+!!       lower_j = 0
+!!       upper_j = 0
+!!       do jj = 2,my_ogrid
+!!         if (y_ogrid(jj) > rthz(2)) then
+!!           lower_j = jj-1
+!!           upper_j = jj
+!!           exit
+!!         endif
+!!       enddo
+!! !
+!!       if (nzgrid_ogrid == 1) then
+!!         lower_k = n1
+!!         upper_k = n1
+!!       else
+!!         lower_k = 0
+!!         upper_k = 0
+!!         do kk = 2,mz_ogrid
+!!           if (z_ogrid(kk) > rthz(3)) then
+!!             lower_k = kk-1
+!!             upper_k = kk
+!!             exit
+!!           endif
+!!         enddo
+!!       endif
+!! !
+!!     endsubroutine find_near_curvilinear_indices
+!***********************************************************************
+!! ! TODO: REDUNDANT
+!!     subroutine find_near_curvilinear(rthz,rthz_neighbours)
+!! !
+!! !  Find the grid point values of all neighbouring points on curvilinear mesh.
+!! !  Return array containing a (curvilinear) cube with element 1 in the bottom left corner
+!! !  (low z-plane) and element 8 in the top right corner (top z-plane)
+!! !
+!! !  12-apr-17/Jorgen: Coded
+!! !
+!!       real, dimension(3), intent(in)    :: rthz
+!!       real, dimension(8,3), intent(out)  :: rthz_neighbours
+!!       integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+!!       integer :: i,j,k,ii=0
+!! !
+!!       call find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
+!!         lower_k,upper_k,rthz)
+!! !
+!!       do i=lower_i,upper_i
+!!         do j=lower_j,upper_j
+!!           do k=lower_k,upper_k
+!!             ii=ii+1
+!!             rthz_neighbours(ii,:)= (/ x_ogrid(i),y_ogrid(j),z_ogrid(k) /)
+!!           enddo
+!!         enddo
+!!       enddo
+!!     endsubroutine find_near_curvilinear
+!***********************************************************************
