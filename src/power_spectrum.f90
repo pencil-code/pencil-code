@@ -1446,7 +1446,10 @@ module power_spectrum
              +b_im(ikx,iky,ikz)**2
           spectrumhel(k+1)=spectrumhel(k+1)+2.*( &
              +a_im(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz))
+             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz)) &
+             *sign(1.,kx(ikx+ipx*nx)) &
+             *sign(1.,ky(iky+ipy*ny)) &
+             *sign(1.,kz(ikz+ipz*nz))
 !
 !  compute krms only once
 !
