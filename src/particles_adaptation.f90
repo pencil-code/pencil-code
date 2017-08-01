@@ -58,6 +58,8 @@ module Particles_adaptation
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
+      call keep_compiler_quiet(f)
+!
 !  Report fatal error if Particle_mass or Particle_density module not used.
 !
       if (lparticles_mass) then
@@ -75,7 +77,11 @@ module Particles_adaptation
           'must have mpar_loc > 2*npar_loc for particle adaptation')
       call fatal_error_local_collect
 !
-      call keep_compiler_quiet(f)
+      chknpar: if (npar_max < npar_target) then
+        if (lroot) print *, "initialize_particles_adaptation: npar_max = ", npar_max, ", npar_target = ", npar_target
+        call fatal_error("initialize_particles_adaptation", &
+                         "npar_max >= npar_target is required in particles_adaptation_pencils(). ")
+      endif chknpar
 !
     endsubroutine initialize_particles_adaptation
 !***********************************************************************
@@ -95,7 +101,7 @@ module Particles_adaptation
       integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
 !
       real, dimension(max(maxval(npar_imn),1),mparray) :: fp1
-      real, dimension(npar_target,mparray) :: fp2
+      real, dimension(npar_max,mparray) :: fp2
       real, dimension(mparray,npar_target) :: fp3
       integer, dimension(nx) :: np, k1_l, k2_l
       integer :: npar_new, npar_adapted
@@ -103,11 +109,9 @@ module Particles_adaptation
 !
       call keep_compiler_quiet(ipar)
 !
-      npar_new = 0
-      npar_adapted = npar_target
-!
 !  Do particle adaptation pencil by pencil.
 !
+      npar_new = 0
       pencil: do imn = 1, ny * nz
         if (npar_imn(imn) <= 0) cycle pencil
         iy = mm(imn)
@@ -152,12 +156,10 @@ module Particles_adaptation
             merge: select case (adaptation_method)
 !
             case ('random') merge
-              call new_population_random(ix, iy, iz, np(ix), npar_adapted, &
-                  fp1(k1_l(ix):k2_l(ix),:), fp2)
+              call new_population_random(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
 !
             case ('interpolated') merge
-              call new_population_interpolated(ix, iy, iz, np(ix), &
-                  npar_adapted, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
+              call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
 !
             case ('k-means') merge
               call ppcvq(1, 6, 1, 6, np(ix), &
@@ -165,14 +167,14 @@ module Particles_adaptation
                   fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
                   fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
-              fp2=transpose(fp3)
+              fp2(1:npar_adapted,:) = transpose(fp3)
 !
             case default merge
               call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
 !
             endselect merge
 !
-            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2
+            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2(1:npar_adapted,:)
             npar_new = npar_new + npar_adapted
 !
           elseif (np(ix) < npar_min) then adapt
@@ -182,12 +184,10 @@ module Particles_adaptation
             split: select case (adaptation_method)
 !
             case ('random') split
-              call new_population_random(ix, iy, iz, np(ix), npar_adapted, &
-                  fp1(k1_l(ix):k2_l(ix),:), fp2)
+              call new_population_random(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
 !
             case ('interpolated') split
-              call new_population_interpolated(ix, iy, iz, np(ix), &
-                  npar_adapted, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
+              call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
 !
             case ('k-means') split
               call ppcvq(1, 6, 1, 6, np(ix), &
@@ -195,14 +195,14 @@ module Particles_adaptation
                   fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
                   fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
-              fp2=transpose(fp3)
+              fp2(1:npar_adapted,:) = transpose(fp3)
 !
             case default split
               call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
 !
             endselect split
 !
-            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2
+            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2(1:npar_adapted,:)
             npar_new = npar_new + npar_adapted
 !
           else adapt
@@ -259,17 +259,19 @@ module Particles_adaptation
 ! LOCAL ROUTINES GO BELOW HERE.
 !
 !***********************************************************************
-    subroutine new_population_interpolated(ix, iy, iz, npar_old, npar_new, fp_old, fp_new, f)
+    subroutine new_population_interpolated(ix, iy, iz, npar_old, fp_old, npar_new, fp_new, f)
 !
 !  Randomly populates npar_new particles with positions and velocities
 !  interpolated from the assigned particle density and velocity fields.
 !
 !  07-aug-13/anders: coded
+!  01-aug-17/ccyang: changed the API
 !
       integer, intent(in) :: ix, iy, iz
-      integer, intent(in) :: npar_old, npar_new
+      integer, intent(in) :: npar_old
       real, dimension(npar_old,mparray), intent(in) :: fp_old
-      real, dimension(npar_new,mparray), intent(out) :: fp_new
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension(3) :: vp_new
@@ -277,13 +279,15 @@ module Particles_adaptation
       integer, dimension(3) :: ipx
       integer :: i, k
 !
+      npar_new = npar_target
+!
       ipx = (/ ixp, iyp, izp /)
 !
       mtot = sum(fp_old(:,iparmass))
-      fp_new(:,iparmass) = mtot / real(npar_new)
+      fp_new(1:npar_new,iparmass) = mtot / real(npar_new)
 !
       dir: do i = 1, 3
-        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
+        call random_cell(ix+nghost, iy, iz, i, fp_new(1:npar_new,ipx(i)))
       enddo dir
 !
       do k=1,npar_new
@@ -293,41 +297,45 @@ module Particles_adaptation
       enddo
 !
       do i=0,2
-        fp_new(:,ivpx+i)=fp_new(:,ivpx+i)-(1/mtot)* &
-            (sum(fp_new(:,iparmass)*fp_new(:,ivpx+i),dim=1)- &
+        fp_new(1:npar_new,ivpx+i)=fp_new(1:npar_new,ivpx+i)-(1/mtot)* &
+            (sum(fp_new(1:npar_new,iparmass)*fp_new(1:npar_new,ivpx+i),dim=1)- &
             sum(fp_old(:,iparmass)*fp_old(:,ivpx+i),dim=1))
       enddo
 !
     endsubroutine new_population_interpolated
 !***********************************************************************
-    subroutine new_population_random(ix, iy, iz, npar_old, npar_new, fp_old, fp_new)
+    subroutine new_population_random(ix, iy, iz, npar_old, fp_old, npar_new, fp_new)
 !
 !  Randomly populates npar_new particles with random positions and approximately
 !  the same total linear momentum.
 !
 !  14-may-13/ccyang: coded
+!  01-aug-17/ccyang: changed the API
 !
       integer, intent(in) :: ix, iy, iz
-      integer, intent(in) :: npar_old, npar_new
+      integer, intent(in) :: npar_old
       real, dimension(npar_old,mparray), intent(in) :: fp_old
-      real, dimension(npar_new,mparray), intent(out) :: fp_new
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
 !
       integer, dimension(3) :: ipx, ipv
       real :: mv, dmv, mtot
       real :: c1
       integer :: i
 !
+      npar_new = npar_target
+!
       ipx = (/ ixp, iyp, izp /)
       ipv = (/ ivpx, ivpy, ivpz /)
 !
       mtot = sum(fp_old(:,iparmass))
-      fp_new(:,iparmass) = mtot / real(npar_new)
+      fp_new(1:npar_new,iparmass) = mtot / real(npar_new)
       c1 = real(npar_old) / mtot
 !
       dir: do i = 1, 3
-        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
+        call random_cell(ix+nghost, iy, iz, i, fp_new(1:npar_new,ipx(i)))
         call statistics(fp_old(:,iparmass) * fp_old(:,ipv(i)), mv, dmv)
-        call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
+        call random_normal(c1 * mv, c1 * dmv, fp_new(1:npar_new,ipv(i)))
       enddo dir
 !
     endsubroutine new_population_random
