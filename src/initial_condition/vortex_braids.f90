@@ -37,13 +37,16 @@ module InitialCondition
 ! l_blob = length in z-direction of the blob
 ! blob_scale = scaling factor for the Gaussian
 !
+! inFile = Initial condition file from externally created field.
+!
   real :: ampl = 1.0
   integer :: n_blobs = 0
   real, dimension (9) :: xc, yc, zc, kappa, l_blob, a_blob
   integer :: configuration = 0
+  character (len=50) :: inFilePrefix='out'
 !
   namelist /initial_condition_pars/ &
-    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration
+    ampl,n_blobs,xc,yc,zc,kappa,l_blob,a_blob,configuration,inFilePrefix
 !
   contains
 !***********************************************************************
@@ -72,32 +75,50 @@ module InitialCondition
     use Sub
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, dimension (mx,my,mz,3) :: uu
     real, dimension (9) :: rc, theta_c
     integer :: j, l
+    character (len=10) :: intString
+    character (len=50) :: inFile
 !
 !   clear the velocity field to zero
     f(:,:,:,iux:iuz) = 0.
 !
-    if (n_blobs > 0) then
-      do j=1,n_blobs
-        ! Shift the origin for xc, yc and zc.
-        xc(j) = xc(j) + xyz0(1) + (xyz1(1)-xyz0(1))/2
-        ! Transform the center of the rotation.
-        rc(j) = sqrt(xc(j)**2 + yc(j)**2)
-        theta_c(j) = atan2(yc(j),xc(j))
-        do l=1,mx
-          do m=1,my
-            do n=1,mz
-              if (configuration == 0) then
-                f(l,m,n,iuz) = f(l,m,n,iuz) + ampl*kappa(j) * exp(-1/a_blob(j)**2 * (x(l)**2 - &
-                      2*rc(j)*x(l)*(cos(theta_c(j))*cos(y(m))+sin(theta_c(j))*sin(y(m))) + &
-                      rc(j)**2) - ((z(n)-zc(j))/l_blob(j))**2)
-              endif
-            enddo
-          enddo
+!   Read the initial condition from an externally craeted file (Python routine), similar to import.f90.
+    write(intString, "(I10.1)"), iproc
+    write(inFile, "(A, A)") adjustr(trim(inFilePrefix)), adjustl(trim(intString))
+    open(0, file = inFile, form = 'unformatted', action = 'read', access = 'stream')
+    read(0) f(:,:,:,iux:iuz)
+    write(*,*) 'file read'
+!   Compute the velocity from the C field.
+    do m=m1,m2
+        do n=n1,n2
+            call curl(f,iux,uu(l1:l2,m,n,:))
         enddo
-      enddo
-    endif
+    enddo
+    
+    f(:,:,:,iux:iuz) = uu
+!
+!     if (n_blobs > 0) then
+!       do j=1,n_blobs
+!         ! Shift the origin for xc, yc and zc.
+!         xc(j) = xc(j) + xyz0(1) + (xyz1(1)-xyz0(1))/2
+!         ! Transform the center of the rotation.
+!         rc(j) = sqrt(xc(j)**2 + yc(j)**2)
+!         theta_c(j) = atan2(yc(j),xc(j))
+!         do l=1,mx
+!           do m=1,my
+!             do n=1,mz
+!               if (configuration == 0) then
+!                 f(l,m,n,iuz) = f(l,m,n,iuz) + ampl*kappa(j) * exp(-1/a_blob(j)**2 * (x(l)**2 - &
+!                       2*rc(j)*x(l)*(cos(theta_c(j))*cos(y(m))+sin(theta_c(j))*sin(y(m))) + &
+!                       rc(j)**2) - ((z(n)-zc(j))/l_blob(j))**2)
+!               endif
+!             enddo
+!           enddo
+!         enddo
+!       enddo
+!     endif
 !
   endsubroutine initial_condition_uu
 !***********************************************************************
