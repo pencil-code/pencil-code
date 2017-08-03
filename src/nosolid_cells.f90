@@ -261,17 +261,17 @@ module Solid_Cells
       endif
     endsubroutine wsnap_ogrid
 !***********************************************************************
-    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid)
+    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid,rthz)
 !
 !  Dummy routine
 !
-      real, dimension (3) :: xxp
+      real, dimension (3) :: xxp,rthz
       integer, dimension (4) :: ineargrid_ogrid
 !
-      intent(in)  :: xxp
+      intent(in)  :: xxp,rthz
       intent(out) :: ineargrid_ogrid
 !      
-      if(ALWAYS_FALSE) print*, xxp
+      if(ALWAYS_FALSE) print*, xxp,rthz
       ineargrid_ogrid=0
 !      
     endsubroutine map_nearest_grid_ogrid
