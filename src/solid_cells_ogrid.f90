@@ -27,7 +27,13 @@ module Solid_Cells
   implicit none
 !
   include 'solid_cells.h'
-
+!
+  interface get_polar_coords 
+    module procedure get_polar_coords_2D
+    module procedure get_polar_coords_3D
+    module procedure get_polar_coords_3D_alt
+  endinterface
+!
 !  Cylinder parameters
   logical :: lset_flow_dir=.false.
   real :: cylinder_radius=0.                        ! Set in start.in
@@ -91,12 +97,12 @@ module Solid_Cells
   integer :: i_og_rcyl_mn =4
   integer :: i_og_phi_mn  =5
   integer :: i_og_rcyl_mn1=6
-  integer :: i_og_fpres   =7
-  integer :: i_og_fvisc   =8
-  integer :: i_og_rho     =9
+  !integer :: i_og_fpres   =7  ! Unused variables
+  !integer :: i_og_fvisc   =8
+  !integer :: i_og_rho     =9
   integer :: i_og_rho1    =10
   integer :: i_og_lnrho   =11
-  integer :: i_og_grho    =12
+  !integer :: i_og_grho    =12
   integer :: i_og_glnrho  =13
   integer :: i_og_ugrho   =14
   integer :: i_og_sglnrho =15
@@ -115,18 +121,19 @@ module Solid_Cells
   integer :: i_og_pp      =28
   integer :: i_og_ss      =29
 !
-  character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names_ogrid = &
-    (/ 'x_mn          ', 'y_mn          ', 'z_mn          ', 'rcyl_mn       '  &
-     , 'phi_mn        ', 'rcyl_mn1      ', 'fpres         ', 'fvisc         '  &
-     , 'rho           '  &
-     , 'rho1          ', 'lnrho         ', 'grho          ', 'glnrho        '  &
-     , 'ugrho         ', 'sglnrho       '  &
-     , 'uu            ', 'u2            ', 'uij           ', 'divu          '  &
-     , 'sij           ', 'sij2          ', 'ugu           ', 'ugu2          '  &
-     , 'del2u         ', 'graddivu      '  &
-     , 'lnTT          '  &
-     , 'cs2           '  &
-     , 'pp            ', 'ss            ' /)
+  ! Unused variables
+  !character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names_ogrid = &
+  !  (/ 'x_mn          ', 'y_mn          ', 'z_mn          ', 'rcyl_mn       '  &
+  !   , 'phi_mn        ', 'rcyl_mn1      ', 'fpres         ', 'fvisc         '  &
+  !   , 'rho           '  &
+  !   , 'rho1          ', 'lnrho         ', 'grho          ', 'glnrho        '  &
+  !   , 'ugrho         ', 'sglnrho       '  &
+  !   , 'uu            ', 'u2            ', 'uij           ', 'divu          '  &
+  !   , 'sij           ', 'sij2          ', 'ugu           ', 'ugu2          '  &
+  !   , 'del2u         ', 'graddivu      '  &
+  !   , 'lnTT          '  &
+  !   , 'cs2           '  &
+  !   , 'pp            ', 'ss            ' /)
   logical,dimension(npencils_ogrid):: lpencil_ogrid
 !***************************************************
 ! DATA TYPE FOR INTERPOLATION AND INTERPOLATION STENCILS
@@ -196,6 +203,7 @@ module Solid_Cells
 !  Necessary for particle runs
   real, dimension(:,:,:,:,:), allocatable ::  f_ogrid_procs
   integer, dimension(:,:), allocatable :: ip_proc
+  integer, dimension(:), allocatable :: ip_proc_pointer
   integer, dimension(:), allocatable :: recv_part_data_from
   integer, dimension(:), allocatable :: send_part_data_to
   integer :: n_procs_recv_part_data 
@@ -258,9 +266,6 @@ module Solid_Cells
 !  EOS parameters
   real :: rho0, lnrho0, lnTT0
 
-!  Parameters related to interpolation and communication of interpolation points
-  real, dimension(:,:), allocatable :: xyz_comm
-  real, dimension(:,:), allocatable :: rthz_comm
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
   integer :: idiag_c_dragy=0
@@ -314,6 +319,7 @@ module Solid_Cells
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer :: i
 !
+      call keep_compiler_quiet(f)
       if (cylinder_radius <= 0) then
         call fatal_error('initialize_solid_cells_ogrid', &
             'All cylinders must have non-zero radii!')
@@ -336,6 +342,10 @@ module Solid_Cells
       xorigo_ogrid(1) = cylinder_xpos
       xorigo_ogrid(2) = cylinder_ypos
       xorigo_ogrid(3) = cylinder_zpos
+!
+!  Currently only implemented for single cylinder 
+!
+      if(ALWAYS_FALSE) print*, ncylinders
 !
 ! Try to find flow direction
 !
@@ -556,7 +566,7 @@ module Solid_Cells
       use Sub,      only: wdim,control_file_exists
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real :: a2, rr2, rr2_low, rr2_high, theta_low, theta_high
+      real :: a2, rr2, rr2_low, rr2_high 
       real :: wall_smoothing,wall_smoothing_temp
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
       integer i,j,cyl,iflow,iorth
@@ -794,7 +804,6 @@ module Solid_Cells
 ! apr-17/Jorgen: Coded
 !
       real, dimension(3) :: xyz,rthz
-      real :: xr,yr
       integer :: i,j,k,ii
 !
 !  Only implemented for trilinear interpolation between grids
@@ -855,9 +864,7 @@ module Solid_Cells
       do k=n1,n2
         do j=m1,m2
           do i=l1,l2
-            xr=x(i)-xorigo_ogrid(1)
-            yr=y(j)-xorigo_ogrid(2)
-            rthz(1)=sqrt(xr**2+yr**2)
+            rthz(1)=radius_ogrid(x(i),y(j))
             if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then 
               n_ip_curv_to_cart=n_ip_curv_to_cart+1
             endif
@@ -870,9 +877,7 @@ module Solid_Cells
       do k=n1,n2
         do j=m1,m2
           do i=l1,l2
-            xr=x(i)-xorigo_ogrid(1)
-            yr=y(j)-xorigo_ogrid(2)
-            rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
+            call get_polar_coords(x(i),y(j),z(k),rthz)
             if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then 
               ii=ii+1
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
@@ -1257,18 +1262,7 @@ module Solid_Cells
       integer, dimension(:,:,:), allocatable :: ind_from_proc_cart
       integer, dimension(:,:), allocatable :: ip_id_curv_to_cart
       integer, dimension(:,:), allocatable :: ip_id_cart_to_curv
-      integer, dimension(:), allocatable   :: send_to_curv_to_cart
-      integer, dimension(:), allocatable   :: send_to_cart_to_curv
-      integer, dimension(:,:), allocatable :: send_data_curv_to_cart
-      integer, dimension(:,:), allocatable :: send_data_cart_to_curv
-      integer, dimension(:), allocatable   :: send_id_curv_to_cart
-      integer, dimension(:), allocatable   :: send_id_cart_to_curv
       integer :: max_from_proc, from_proc
-      integer, dimension(2) :: nelements
-      integer :: size_arr, npoints_requested
-      integer, dimension(:), allocatable   :: tmp_arr1D
-      integer, dimension(:,:), allocatable :: tmp_arr2D
-      integer :: nreq1D,nreq2D
       integer, dimension(ncpus-1) :: ireq1D
       integer, dimension(ncpus-1,3) :: ireq2D
       !
@@ -1278,8 +1272,8 @@ module Solid_Cells
       integer, dimension(2) :: buf_size
       integer, dimension(:), allocatable :: id_bufi, id_bufo
       integer, dimension(:,:), allocatable :: ijk_bufi, ijk_bufo
+      integer, dimension(3) :: indices_global
       ! TODO TODO TODO : Ensure that every ID in cartesian_to_curvilinear array (etc.) are unique!!!
-! TODO: COULD THIS BE MOVED INTO SOLID_CELLS_OGRID_MPICOMM?
       if(n_ip_curv_to_cart>0) then
         do i=1,n_ip_curv_to_cart
           from_proc=curvilinear_to_cartesian(i)%from_proc
@@ -1485,7 +1479,8 @@ module Solid_Cells
           call mpiwait(ireq2D(iter,i))
         enddo
         do i=ind_start,ind_stop
-          call ind_global_to_local_curv(ijk_bufi(i,:),&
+          indices_global = ijk_bufi(i,:)
+          call ind_global_to_local_curv(indices_global, &
               send_curvilinear_to_cartesian(i)%i_low_corner,lcheck_init_interpolation)
         enddo
         call mpiwait(ireq1D(iter))
@@ -1558,7 +1553,8 @@ module Solid_Cells
           call mpiwait(ireq2D(iter,i))
         enddo
         do i=ind_start,ind_stop
-          call ind_global_to_local_cart(ijk_bufi(i,:),&
+          indices_global=ijk_bufi(i,:)
+          call ind_global_to_local_cart(indices_global, &
               send_cartesian_to_curvilinear(i)%i_low_corner,lcheck_init_interpolation)
         enddo
         call mpiwait(ireq1D(iter))
@@ -1588,11 +1584,11 @@ module Solid_Cells
       i_rthz_local(3) = i_rthz_global(3) - nz_ogrid*ipz
 !
       if(lcheck) then
-        if(x_ogrid(i_rthz_local(1))-xglobal_ogrid(i_rthz_global(1))>1.e-12) &
+        if(abs(x_ogrid(i_rthz_local(1))-xglobal_ogrid(i_rthz_global(1)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in r-direction'
-        if(y_ogrid(i_rthz_local(2))-yglobal_ogrid(i_rthz_global(2))>1.e-12) &
+        if(abs(y_ogrid(i_rthz_local(2))-yglobal_ogrid(i_rthz_global(2)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in th-direction'
-        if(z_ogrid(i_rthz_local(3))-zglobal_ogrid(i_rthz_global(3))>1.e-12) &
+        if(abs(z_ogrid(i_rthz_local(3))-zglobal_ogrid(i_rthz_global(3)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in z-direction'
       endif
 !
@@ -1613,11 +1609,11 @@ module Solid_Cells
       i_xyz_local(3) = i_xyz_global(3) - nz*ipz
 
       if(lcheck) then
-        if(x(i_xyz_local(1))-xglobal(i_xyz_global(1))>1.e-12) &
+        if(abs(x(i_xyz_local(1))-xglobal(i_xyz_global(1)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in r-direction'
-        if(y(i_xyz_local(2))-yglobal(i_xyz_global(2))>1.e-12) &
+        if(abs(y(i_xyz_local(2))-yglobal(i_xyz_global(2)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in th-direction'
-        if(z(i_xyz_local(3))-zglobal(i_xyz_global(3))>1.e-12) &
+        if(abs(z(i_xyz_local(3))-zglobal(i_xyz_global(3)))>1.e-12) &
           print*, 'ERROR: incorrect transformation of global to local coordinates in z-direction'
       endif
 !
@@ -1782,9 +1778,10 @@ module Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray), intent(in):: f
       real, dimension(mx,my,mz,mvar), intent(in)   :: df
-      type (pencil_case), intent(in)                :: p
+      type (pencil_case), intent(in)               :: p
 !
       call keep_compiler_quiet(df,f)
+      call keep_compiler_quiet(p)
 !
     end subroutine dsolid_dt
 !***********************************************************************
@@ -1802,10 +1799,15 @@ module Solid_Cells
 !   nov-2010/kragset: generalized to include drag in z-direction
 !
       use Diagnostics, only: parse_name
+      use General, only: loptest
 !
       integer :: iname
       logical :: lreset
       logical, optional :: lwrite
+!
+!  Dummy variable
+!
+      if(loptest(lwrite)) print*, lwrite
 !
 !  Reset everything in case of reset
 !
@@ -1839,6 +1841,8 @@ module Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      call keep_compiler_quiet(f)
+!
     end subroutine update_solid_cells_pencil
 !***********************************************************************
     subroutine freeze_solid_cells(df)
@@ -1851,13 +1855,11 @@ module Solid_Cells
 !  22-feb-17/Jorgen: Coded
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real :: r_int_outer2
       integer :: i
 !
-      r_int_outer2=r_int_outer**2
 !
       do i=l1,l2
-        if((x(i)-xorigo_ogrid(1))**2+(y(m)-xorigo_ogrid(2))**2 < r_int_outer2) then
+        if(radius_ogrid(x(i),y(m)) < r_int_outer) then
           df(i,m,n,:)=0.
         endif
       enddo
@@ -1870,15 +1872,14 @@ module Solid_Cells
 !
 !  14-feb-17/Jorgen: coded
 !
-!TODO: The call to this function, in particles_dust, should be made more efficient!
     logical :: in_solid_cell
-    real, dimension(3), intent(in) :: part_pos
+    real, dimension(:), intent(in) :: part_pos
     real, intent(in) :: part_rad
     real :: r_solid_par
 !
     in_solid_cell = .false.
 !
-    r_solid_par = sqrt(sum((xorigo_ogrid(1:2)-part_pos(1:2))**2))
+    r_solid_par = radius_ogrid(part_pos(1),part_pos(2)) 
     if(r_solid_par<=(xyz0_ogrid(1)+part_rad)) then
       in_solid_cell=.true.
     endif
@@ -1946,7 +1947,8 @@ module Solid_Cells
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
       call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
       do ipp=1,nbuf_farr(1)
-        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,f_bufi(ipp,:,:,:,:),f_cartesian)
+        farr = f_bufi(ipp,:,:,:,:)
+        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,farr,f_cartesian)
       enddo
     enddo
 !
@@ -2020,7 +2022,8 @@ module Solid_Cells
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
       call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
       do ipp=1,nbuf_farr(1)
-        call interpolate_point_curv_to_cart(f_cartesian,id_bufi(ipp),ivar1,ivar2,f_bufi(ipp,:,:,:,:))
+        farr = f_bufi(ipp,:,:,:,:)
+        call interpolate_point_curv_to_cart(f_cartesian,id_bufi(ipp),ivar1,ivar2,farr)
       enddo
     enddo
 !
@@ -2057,7 +2060,7 @@ module Solid_Cells
     integer :: i,j,k
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
-    real, dimension(ivar2-ivar1+1) :: f_ip, g_ip
+    real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO
     real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
     integer, dimension(3) :: inear_loc
@@ -2157,7 +2160,7 @@ module Solid_Cells
       real :: x0,y0,xN,yN,dx,dy,dxN,dyN,xp,yp
 
       real, dimension(order,ivar2-ivar1+1) :: gp
-      integer :: j,k,l
+      integer :: j
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
 !  the interpolation point.
@@ -2245,9 +2248,9 @@ module Solid_Cells
     dy = 1./(order-1)
 
     do i=1,order
-      call lagrange1D(farr(:,i,:),ivar1,ivar2,yp,y0,yN,dy,order,gp(i,:))
+      call lagrange1D(farr(:,i,:),ivar1,ivar2,yp,y0,dy,order,gp(i,:))
     enddo
-    call lagrange1D(gp,ivar1,ivar2,xp,x0,xN,dx,order,fp) 
+    call lagrange1D(gp,ivar1,ivar2,xp,x0,dx,order,fp) 
 
 !
 !  Do a reality check on the interpolation scheme.
@@ -2290,12 +2293,12 @@ module Solid_Cells
   endfunction HO_interp_curv_loc
 !
 !***********************************************************************
-  subroutine lagrange1D(farr,ivar1,ivar2,xp,x0,xN,dx,order,fp)
+  subroutine lagrange1D(farr,ivar1,ivar2,xp,x0,dx,order,fp)
 !
       integer, intent(in) :: ivar1, ivar2
       integer, intent(in) :: order
       real, dimension(order,ivar2-ivar1+1), intent(in)  :: farr
-      real, intent(in) :: xp, x0, xN, dx
+      real, intent(in) :: xp, x0, dx
 !
       real, dimension (ivar2-ivar1+1), intent(out) :: fp
 !
@@ -2377,7 +2380,6 @@ module Solid_Cells
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (3) :: rthz
     integer :: i,j,k
-    real :: xr,yr
     integer, dimension (3) :: inear
     real, dimension (irho-iux+1) :: gp
     integer, parameter :: ivar1=1,ivar2=4
@@ -2385,9 +2387,7 @@ module Solid_Cells
     do k=n1,n2
       do j=m1,m2
         do i=l1,l2
-          xr=x(i)-xorigo_ogrid(1)
-          yr=y(j)-xorigo_ogrid(2)
-          rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
+          call get_polar_coords(x(i),y(j),z(k),rthz)
           if((rthz(1)<=r_int_outer) .and.(rthz(1)>=r_int_inner)) then  
             call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)  
             if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
@@ -2715,15 +2715,11 @@ module Solid_Cells
       integer, dimension (3) :: inear_glob
       logical :: lcheck
 !
-      real :: xp0, yp0, zp0
-!
       intent(in)  :: farr, ivar1, ivar2, xxp, inear_glob, lcheck
       intent(out) :: fp
       integer :: i,ix0,iy0,iz0
-      real, dimension(ivar2-ivar1+1) :: g0   ,g1   ,g2   ,g3   
-      real :: dx01 ,dx02 ,dx03 ,dx10 ,dx12 ,dx13 ,dx20 ,dx21 ,dx23 ,dx30 ,dx31 ,dx32 ,xp , &
-              l0,l1,l2,l3,l4,l5,l6,l7 ,dy01 ,dy02 ,dy03 ,dy10 , &
-              dy12 ,dy13 ,dy20 ,dy21 ,dy23 ,dy30 ,dy31 ,dy32,yp
+      real, dimension(ivar2-ivar1+1) :: g1,g2
+      real :: xp,yp,l1,l2,l3,l4
       real, dimension(order,ivar2-ivar1+1) :: g_interp
       real, dimension(order) :: lagrange
       real, dimension(order,order) :: dx1,dy1
@@ -2969,15 +2965,11 @@ module Solid_Cells
       integer, dimension (3) :: inear_glob
       logical :: lcheck
 !
-      real :: xp0, yp0, zp0
-!
       intent(in)  :: farr, ivar1, ivar2, xxp, inear_glob, lcheck
       intent(out) :: fp
       integer :: i,ix0,iy0,iz0
-      real, dimension(ivar2-ivar1+1) :: g0   ,g1   ,g2   ,g3   
-      real :: dx01 ,dx02 ,dx03 ,dx10 ,dx12 ,dx13 ,dx20 ,dx21 ,dx23 ,dx30 ,dx31 ,dx32 ,xp , &
-              l0,l1,l2,l3,l4,l5,l6,l7 ,dy01 ,dy02 ,dy03 ,dy10 , &
-              dy12 ,dy13 ,dy20 ,dy21 ,dy23 ,dy30 ,dy31 ,dy32,yp
+      real, dimension(ivar2-ivar1+1) :: g1,g2
+      real :: xp,yp,l1,l2,l3,l4
       real, dimension(order,ivar2-ivar1+1) :: g_interp
       real, dimension(order) :: lagrange
       real, dimension(order,order) :: dx1,dy1
@@ -3550,13 +3542,20 @@ module Solid_Cells
 !
   endsubroutine write_solid_cells_run_pars
 !***********************************************************************
-  subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,xxp,f_tmp, fluid_point)
+  subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,xxp,f_tmp,fluid_point)
 !
-    real, dimension(mx,my,mz,mfarray) :: f
+    real, dimension(:,:,:,:) :: f
     integer, intent(in) :: ix0_, iy0_, iz0_, iobj
-    real, dimension(mvar), intent(inout) :: f_tmp
+    real, dimension(:), intent(inout) :: f_tmp
     real, dimension(3), intent(in) :: xxp
     logical, intent(in) :: fluid_point
+!
+    call keep_compiler_quiet(f)
+    call keep_compiler_quiet(f_tmp)
+    call keep_compiler_quiet(ix0_,iy0_,iz0_)
+    call keep_compiler_quiet(fluid_point)
+    call keep_compiler_quiet(xxp)
+    call keep_compiler_quiet(iobj)
 !
   end subroutine close_interpolation
 !***********************************************************************
@@ -3592,9 +3591,7 @@ module Solid_Cells
     real :: xi1lo,xi1up,g1lo,g1up
     real :: xi2lo,xi2up,g2lo,g2up
     real :: xi3lo,xi3up,g3lo,g3up
-    real, dimension(3,2) :: xi_step
-    real, dimension(3,3) :: dxyz_step
-    real :: xi1star,xi2star,xi3star,bound_prim1,bound_prim2
+    real :: xi1star,xi2star,xi3star
 !
     real, dimension(mx_ogrid) :: g1,g1der1,g1der2,xi1,xprim2_ogrid
     real, dimension(my_ogrid) :: g2,g2der1,g2der2,xi2,yprim2_ogrid
@@ -3604,7 +3601,7 @@ module Solid_Cells
     real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
     real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
 !
-    real :: a,b,c
+    real :: a
     integer :: i
 !
     lequidist_ogrid=(grid_func_ogrid=='linear')
@@ -3841,7 +3838,6 @@ module Solid_Cells
     use Mpicomm, only: mpiallreduce_min,mpiallreduce_max,mpibcast_real,mpirecv_real,mpisend_real
 !
     real :: dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
-    integer :: xj,yj,zj,itheta
     real :: Area_xy_ogrid, Area_yz_ogrid, Area_xz_ogrid
 !
 ! CALL TO COORDS_AUX REMOVED, ONLY CYLINDRICAL NEEDED
@@ -4345,10 +4341,9 @@ module Solid_Cells
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
-    real :: ds, dtsub_ogrid, dt_ogrid, dt_cartesian
+    real :: ds, dtsub_ogrid, dt_ogrid
     integer :: timestep_factor, tstep_ogrid
     integer :: j
-    integer, save :: iterator=0
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 !
 !  Coefficients for up to order 3.
@@ -4681,7 +4676,6 @@ module Solid_Cells
       intent(inout) :: df
 !
       real, dimension (nx_ogrid) :: density_rhs 
-      integer :: j
 !
 !  Continuity equation.
 !      
@@ -4790,10 +4784,8 @@ module Solid_Cells
 !
 !  10-feb-17/Jorgen+Nils: Adapted from calc_pencils_eos_pencpar in eos_idealgas.f90
 !
-      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1,gamma1
+      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1
 !
-      real, dimension(nx_ogrid) :: tmp
-      integer :: i,j
       real :: cp1, cv1, cp, cv
       logical :: leos_isentropic=.true.
       logical :: leos_isothermal=.false.
@@ -5149,8 +5141,6 @@ module Solid_Cells
 !
 !  07-feb-17/Jorgen: Adapted from sub.f90
 !
-    use General, only: loptest
-
     real, dimension (nx_ogrid,3,3)   :: uij, sij
     real, dimension (nx_ogrid)       :: divu
     real, dimension (nx_ogrid,3)     :: uu
@@ -5232,7 +5222,6 @@ module Solid_Cells
       intent(inout) :: c
 !
       integer :: i
-      logical :: l0
 !
       c=0.
       do i=1,size(a,2)
@@ -5372,7 +5361,7 @@ module Solid_Cells
       real, dimension (nx_ogrid),                           intent(INOUT) :: ugradf
 !
       real, dimension (nx_ogrid,3) :: del6f
-      integer                      :: ii,msk
+      integer                      :: ii
       integer, dimension(nx_ogrid) :: indxs
 !
       do ii=1,3
@@ -5425,64 +5414,6 @@ module Solid_Cells
       enddo
 !
     endsubroutine multmv_mn_ogrid
-!***********************************************************************
-!!     subroutine graddiv_ogrid(f,k,graddiv)
-!! !
-!! !  Calculates a number of second derivative expressions of a vector
-!! !  outputs a number of different vector fields.
-!! !  gradcurl is not the vector gradient.
-!! !  Surprisingly, calling derij only if graddiv or curlcurl are present
-!! !  does not speed up the code on Mephisto @ 32x32x64.
-!! !
-!! !  05-apr-17/Jorgen - Adapted from del2v_etc in sub.f90
-!! !
-!!       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
-!!       real, dimension (nx_ogrid,3,3) :: fjji,fijj
-!!       real, dimension (nx_ogrid,3) :: graddiv
-!!       real, dimension (nx_ogrid) :: tmp
-!!       integer :: i,j,k,k1
-!! !
-!!       intent(in) :: f,k
-!!       intent(out) :: del2,graddiv,curlcurl,gradcurl
-!! !
-!! !  calculate f_{i,jj} and f_{j,ji}
-!! !  AJ: graddiv needs diagonal elements from the first tmp (derij only sets
-!! !      off-diagonal elements)
-!! !
-!!       k1=k-1
-!!       do i=1,3
-!!       do j=1,3
-!!         call der2_ogrid(f,k1+i,tmp,  j) 
-!!         fijj(:,i,j)=tmp  ! f_{i,jj}
-!!         call derij_ogrid(f,k1+j,tmp,j,i) 
-!!         fjji(:,i,j)=tmp  ! f_{j,ji}
-!!         endif
-!!       enddo
-!!       enddo
-!! !
-!! !  the diagonal terms have not been set in derij; do this now
-!! !  ** They are automatically set above, because derij   **
-!! !  ** doesn't overwrite the value of tmp for i=j!       **
-!! !
-!! !     do j=1,3
-!! !       fjji(:,j,j)=fijj(:,j,j)
-!! !     enddo
-!! !
-!! !  calculate f_{i,jk} for i /= j /= k
-!! !
-!! !
-!!       do i=1,3
-!!         graddiv(:,i)=fjji(:,i,1)+fjji(:,i,2)+fjji(:,i,3)
-!!       enddo
-!!       ! Since we have cylindrical coordinates
-!!       call der(f,k1+1,tmp,1)
-!!       graddiv(:,1)=graddiv(:,1)+tmp*rcyl_mn1_ogrid-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+1)*rcyl_mn2_ogrid
-!!       call der(f,k1+1,tmp,2)
-!!       graddiv(:,2)=graddiv(:,2)+tmp*rcyl_mn1_ogrid
-!!       call der(f,k1+1,tmp,3)
-!!       graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1_ogrid
-!! !
-!!     endsubroutine graddiv_ogrid
 !***********************************************************************
     subroutine gij_etc_ogrid(f,iref,aa,aij,bij,del2,graddiv,lcovariant_derivative)
 !
@@ -6183,7 +6114,6 @@ module Solid_Cells
 !
 !  16-feb-17/Jorgen: Adapted from deriv.f90
 !
-      real :: val=0.
       integer :: k
 
       k=l1_ogrid
@@ -6246,7 +6176,6 @@ module Solid_Cells
 !
       real, dimension(3), intent(in) :: xyz
       integer, intent(out) :: from_proc
-      integer :: low_i_global,low_j_global,low_k_global
       integer :: i
       logical :: found_proc=.false.
 !
@@ -6285,7 +6214,6 @@ module Solid_Cells
 !
       real, dimension(3), intent(in) :: rthz
       integer, intent(out) :: from_proc
-      integer :: low_i_global,low_j_global,low_k_global
       integer :: i
       logical :: found_proc=.false.
 !
@@ -6508,15 +6436,19 @@ module Solid_Cells
       logical, intent(in) :: lcheck
 
       integer :: ix0, iy0, iz0
-      real :: dx1, dy1, dz1
+      real, save :: dx1, dy1, dz1
+      logical, save :: lfirstcall=.true.
 
 !
 !  Default values in case of missing directions.
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
-      dx1=dx_1(l1) 
-      dy1=dy_1(m1) 
-      dz1=dz_1(n1)
+      if(lfirstcall) then
+        dx1=dx_1(l1) 
+        dy1=dy_1(m1) 
+        dz1=dz_1(n1)
+        lfirstcall=.false.
+      endif
 !
 !  Find nearest grid point in x-direction.
 !
@@ -6610,15 +6542,19 @@ module Solid_Cells
       logical, intent(in) :: lcheck
 
       integer :: ix0, iy0, iz0
-      real :: dx1_ogrid, dy1_ogrid, dz1_ogrid
+      real, save :: dx1_ogrid, dy1_ogrid, dz1_ogrid
+      logical, save :: lfirstcall=.true.
 !
 !  Default values in case of missing directions.
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
-      dx1_ogrid=dx_1_ogrid(l1_ogrid) 
-      dy1_ogrid=dy_1_ogrid(m1_ogrid) 
-      dz1_ogrid=dz_1_ogrid(n1_ogrid)
+      if(lfirstcall) then
+        dx1_ogrid=dx_1_ogrid(l1_ogrid) 
+        dy1_ogrid=dy_1_ogrid(m1_ogrid) 
+        dz1_ogrid=dz_1_ogrid(n1_ogrid)
+        lfirstcall=.false.
+      endif
 !
 !  Find nearest grid point in x-direction.
 !
@@ -6924,7 +6860,8 @@ module Solid_Cells
 
     endsubroutine input_snap_ogrid
 !***********************************************************************
-    subroutine read_snap_single_ogrid(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+    subroutine read_snap_single_ogrid(file,a,x_ogrid,y_ogrid,z_ogrid, &
+          dx_ogrid,dy_ogrid,dz_ogrid,deltay_ogrid,nv,mode)
 !
 !  Read snapshot file in single precision, possibly with mesh and time (if mode=1).
 !
@@ -6935,16 +6872,15 @@ module Solid_Cells
       use IO, only: lun_input
 !
       character (len=*), intent(in) :: file
-      real :: deltay_ogrid=0.0
       integer, intent(in) :: nv, mode
       real(KIND=rkind4), dimension (mx_ogrid,my_ogrid,mz_ogrid,nv), intent(out) :: a
 !
       real(KIND=rkind4) :: t_sp, t_sgl
 
-      real(KIND=rkind4),                       intent(out) :: dx, dy, dz, deltay
-      real(KIND=rkind4), dimension (mx_ogrid), intent(out) :: x
-      real(KIND=rkind4), dimension (my_ogrid), intent(out) :: y
-      real(KIND=rkind4), dimension (mz_ogrid), intent(out) :: z
+      real(KIND=rkind4),                       intent(out) :: dx_ogrid, dy_ogrid, dz_ogrid, deltay_ogrid
+      real(KIND=rkind4), dimension (mx_ogrid), intent(out) :: x_ogrid
+      real(KIND=rkind4), dimension (my_ogrid), intent(out) :: y_ogrid
+      real(KIND=rkind4), dimension (mz_ogrid), intent(out) :: z_ogrid
 
       real :: t_test   ! t in single precision for backwards compatibility
 
@@ -7051,7 +6987,8 @@ module Solid_Cells
       endif
     endsubroutine read_snap_single_ogrid
 !***********************************************************************
-    subroutine read_snap_double_ogrid(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+    subroutine read_snap_double_ogrid(file,a,x_ogrid,y_ogrid,z_ogrid, &
+          dx_ogrid,dy_ogrid,dz_ogrid,deltay_ogrid,nv,mode)
 !
 !  Read snapshot file in double precision, possibly with mesh and time (if mode=1).
 !
@@ -7063,15 +7000,14 @@ module Solid_Cells
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
-      real :: deltay_ogrid=0.0
       real(KIND=rkind8), dimension (mx_ogrid,my_ogrid,mz_ogrid,nv), intent(out) :: a
 !
       real(KIND=rkind8) :: t_sp, t_dbl
 
-      real(KIND=rkind8), intent(out) :: dx, dy, dz, deltay
-      real(KIND=rkind8), dimension (mx_ogrid), intent(out) :: x
-      real(KIND=rkind8), dimension (my_ogrid), intent(out) :: y
-      real(KIND=rkind8), dimension (mz_ogrid), intent(out) :: z
+      real(KIND=rkind8), intent(out) :: dx_ogrid, dy_ogrid, dz_ogrid, deltay_ogrid
+      real(KIND=rkind8), dimension (mx_ogrid), intent(out) :: x_ogrid
+      real(KIND=rkind8), dimension (my_ogrid), intent(out) :: y_ogrid
+      real(KIND=rkind8), dimension (mz_ogrid), intent(out) :: z_ogrid
 
       real :: t_test   ! t in single precision for backwards compatibility
       logical :: ltest
@@ -7123,10 +7059,10 @@ module Solid_Cells
 !  Check whether we want to read deltay from snapshot.
 !
         if (lshear) then
-          read (lun_input) t_sp, x, y, z, dx, dy, dz, deltay
+          read (lun_input) t_sp, x_ogrid, y_ogrid, z_ogrid, dx_ogrid, dy_ogrid, dz_ogrid, deltay_ogrid
         else
           if (nghost_read_fewer==0) then
-            read (lun_input) t_sp, x, y, z, dx, dy, dz
+            read (lun_input) t_sp, x_ogrid, y_ogrid, z_ogrid, dx_ogrid, dy_ogrid, dz_ogrid
           elseif (nghost_read_fewer>0) then
             read (lun_input) t_sp
           endif
@@ -7290,7 +7226,7 @@ module Solid_Cells
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(l1_ogrid+8,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(:,:,:,:), intent(in) :: f
       real, dimension(6), intent(out) :: df
       integer, intent(in) :: k
       integer :: i
@@ -7315,7 +7251,7 @@ module Solid_Cells
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(l1_ogrid+8,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(:,:,:,:), intent(in) :: f
       real, dimension(6), intent(out) :: df2
       integer, intent(in) :: k
       integer :: i
@@ -7391,110 +7327,23 @@ module Solid_Cells
 
     endsubroutine der2_ogrid_SBP_experimental
 !*********************************************************************** 
-    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid)
+    subroutine map_nearest_grid_ogrid(xxp,ineargridproc_ogrid,rthz)
 !
 !  Find index (ix0, iy0, iz0) of nearest grid point of particle in global
 !  coordinates.
 !
-!  06-jul-17/Jorgen: Adapted from map_nearest_grid in particles_sub
-!                    to work for overlapping grid
+!  jul/aug-17/Jorgen: Adapted from map_nearest_grid in particles_sub
+!                     to work for overlapping grid
 !
-      real, dimension (3) :: xxp
-      integer, dimension (4) :: ineargrid_ogrid
+      real, dimension (3) :: xxp, rthz
+      integer, dimension (4) :: ineargridproc_ogrid
 !
-      real, save :: dx1_ogrid, dy1_ogrid, dz1_ogrid
-      integer :: ix0, iy0, iz0
-      logical, save :: lfirstcall=.true.
-      integer :: from_proc
-!
-      real :: xr,yr
       intent(in)  :: xxp
-      intent(out) :: ineargrid_ogrid
+      intent(out) :: ineargridproc_ogrid,rthz
 !
-!  Default values in case of missing directions.
-!
-      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
-!
-      !xr=xxp(1)-xorigo_ogrid(1)
-      !yr=xxp(2)-xorigo_ogrid(2)
-      !xxp(1) = sqrt(xr*xr+yr*yr)
-      !xxp(2) = atan2(yr,xr)
-      if (lfirstcall) then
-        dx1_ogrid=dx_1_ogrid(l1_ogrid) 
-        dy1_ogrid=dy_1_ogrid(m1_ogrid) 
-        dz1_ogrid=dz_1_ogrid(n1_ogrid)
-        lfirstcall=.false.
-      endif
-!
-!  Find nearest grid point in x-direction.
-!  Find nearest grid point by bisection if the grid is not equidistant.
-!
-      if (nxgrid_ogrid/=1) then
-        if (lequidist_ogrid(1)) then
-          ix0 = nint((xxp(1)-xyz0_ogrid(1))*dx1_ogrid) + nghost
-        else
-          call find_low_gp_index_bisection(xxp(1),xglobal_ogrid,ix0)
-        endif
-      endif
-!
-!  Find nearest grid point in y-direction.
-!
-      if (nygrid_ogrid/=1) then
-        if (lequidist_ogrid(2)) then
-          iy0 = nint((xxp(2)-xyz0_ogrid(2))*dy1_ogrid) + nghost
-        else
-          call find_low_gp_index_bisection(xxp(2),yglobal_ogrid,iy0)
-        endif
-      endif
-!
-!  Find nearest grid point in z-direction.
-!
-      if (nzgrid_ogrid/=1) then
-        if (lequidist_ogrid(3)) then
-          iz0 = nint((xxp(3)-xyz0_ogrid(3))*dz1_ogrid) + nghost
-        else
-          call find_low_gp_index_bisection(xxp(3),zglobal_ogrid,iz0)
-        endif
-      endif
-!
-      ineargrid_ogrid(1)=ix0; ineargrid_ogrid(2)=iy0; ineargrid_ogrid(3)=iz0
-      call find_proc_cartesian(xxp,from_proc)
-      ineargrid_ogrid(4)=from_proc+1
-!
-!  Round off errors may put a particle closer to a ghost point than to a
-!  physical point. Either stop the code with a fatal error or fix problem
-!  by forcing the nearest grid point to be a physical point.
-!
-      if (xxp(1)<=xglobal_ogrid(ineargrid_ogrid(1)).or. &
-          xxp(1)>=xglobal_ogrid(ineargrid_ogrid(1)+1).or. &
-          xxp(2)<=yglobal_ogrid(ineargrid_ogrid(2)).or. & 
-          xxp(2)>=yglobal_ogrid(ineargrid_ogrid(2)+1).or. & 
-          xxp(3)<=zglobal_ogrid(ineargrid_ogrid(3)).or. & 
-          xxp(3)>=zglobal_ogrid(ineargrid_ogrid(3)+1)) then
-      !if (ineargrid_ogrid(1)<=xyz0_loc_all_ogrid(from_proc+1,1).or. &
-      !    ineargrid_ogrid(1)>=xyz1_loc_all_ogrid(from_proc+1,1).or. &
-      !    ineargrid_ogrid(2)<=xyz0_loc_all_ogrid(from_proc+1,2).or. & 
-      !    ineargrid_ogrid(2)>=xyz1_loc_all_ogrid(from_proc+1,2).or. & 
-      !    ineargrid_ogrid(3)<=xyz0_loc_all_ogrid(from_proc+1,3).or. & 
-      !    ineargrid_ogrid(3)>=xyz0_loc_all_ogrid(from_proc+1,3)) then
-        print*, 'map_nearest_grid: particle must never be closer to a '//&
-                'ghost point than'
-        print*, '                  to a physical point.'
-        print*, '                  Consider using double precision to '//&
-                'avoid this problem'
-        print*, '                  or set lcheck_exact_frontier in '// &
-                '&particles_run_pars.'
-        print*, 'Information about what went wrong:'
-        print*, '----------------------------------'
-        print*, 'it, itsub, t=', it, itsub, t
-        print*, 'iproc  =', iproc
-        print*, 'xxp    =', xxp
-        print*, 'ineargrid   =', ineargrid_ogrid(:)
-        print*, 'xglobal_ogrid(ix0),xglobal_ogrid(ix0+1)',xglobal_ogrid(ineargrid_ogrid(1)),xglobal_ogrid(ineargrid_ogrid(1)+1)
-        print*, 'yglobal_ogrid(iy0),yglobal_ogrid(iy0+1)',yglobal_ogrid(ineargrid_ogrid(2)),yglobal_ogrid(ineargrid_ogrid(2)+1)
-        print*, 'zglobal_ogrid(iz0),zglobal_ogrid(iz0+1)',zglobal_ogrid(ineargrid_ogrid(3)),zglobal_ogrid(ineargrid_ogrid(3)+1)
-        call fatal_error_local('map_nearest_grid_ogrid','')
-      endif
+      call get_polar_coords(xxp,rthz)
+      call find_near_ind_global_curv(ineargridproc_ogrid(1:3),rthz,lcheck_interpolation)
+      call find_proc_curvilinear(rthz,ineargridproc_ogrid(4))
 !
     endsubroutine map_nearest_grid_ogrid
 !***********************************************************************
@@ -7541,23 +7390,22 @@ module Solid_Cells
 !
       integer, intent(in) :: ivar1,ivar2
       integer :: i,j,k,iip
-      real :: rr,xr,yr
+      real :: rr
       logical, dimension(ncpus) :: linside_proc = .false.
       real, dimension(3) :: rthz
       integer :: from_proc
       integer :: procs_needed 
       logical, dimension(ncpus,ncpus) :: part_data_comm_glob
 ! 
-!  Check if any points on the cartesian grid on this processor is inside the ogrid     
+!  Check if any points on the cartesian grid on this processor is inside the part of 
+!  the ogrid that is used in computing the flow 
 !
       do i=l1,l2
         do j=m1,m2
-          xr=x(i)-xorigo_ogrid(1)
-          yr=y(j)-xorigo_ogrid(2)
-          rr= sqrt(xr**2+yr**2)!x(i)-xorigo_ogrid(1))**2 + (y(j)-xorigo_ogrid(2))**2
-          if(rr<r_ogrid .and. rr>cylinder_radius) then
+          rr = radius_ogrid(x(i),y(j))
+          if(rr<r_int_outer .and. rr>cylinder_radius) then
             do k=n1,n2
-              rthz=(/ rr,atan2(yr,xr),z(k) /)
+              call get_polar_coords(x(i),y(j),z(k),rthz)
               call find_proc_curvilinear(rthz,from_proc)
               linside_proc(from_proc+1) = .true.
             enddo
@@ -7568,12 +7416,16 @@ module Solid_Cells
 !  Initialize arrays of points needed for particle properties 
 !  The ip_proc is needed to transform global coordinates to coordinates local to 
 !  the processor considered in the f_ogrid_procs_arrary
+!  Procs_pointer is used to point to correct place in ip_proc and f_ogrid_procs array
+!  when using point from specific processor
 !
       procs_needed = count(linside_proc)
       if(procs_needed>0) then
         allocate(f_ogrid_procs(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1))
         allocate(ip_proc(procs_needed,3))
         allocate(recv_part_data_from(procs_needed))
+        allocate(ip_proc_pointer(ncpus))
+        ip_proc_pointer = -1
         k=1
         do iip=0,ncpus-1
           if(linside_proc(iip+1)) then
@@ -7587,6 +7439,7 @@ module Solid_Cells
               ip_proc(k,2) = iip/nprocxz
               ip_proc(k,3) = modulo(iip/nprocx, nprocz)
             endif
+            ip_proc_pointer(iip+1) = k
             k=k+1
           endif
         enddo
@@ -7641,50 +7494,45 @@ module Solid_Cells
 !  
 !  07-jul-17/Jorgen: Coded
 !
-      use Mpicomm, only: mpirecv_nonblock_real, mpisend_real, mpibarrier, mpiwait
+      use Mpicomm, only: mpirecv_real, mpisend_nonblock_real, mpibarrier, mpiwait
 !
       integer, intent(in) :: ivar1, ivar2
-      integer :: iter, iter_recv, ivar
+      integer :: iter, ivar
       integer :: recv_from, send_to
       integer, dimension(3) :: flow_buf_size = (/mx_ogrid,my_ogrid,mz_ogrid/)
-      integer, dimension(n_procs_recv_part_data-1,ivar2-ivar1+1) :: ireq2D
+      integer, dimension(n_procs_send_part_data,ivar2-ivar1+1) :: ireq2D
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1) :: fbufi
 !
-!  Post non-blocking recieves
+!  Post non-blocking sends to send flow data to prosessors that need it
+!  Note that send_to is never iproc, since this item is taken out of send_par_data_to
+!  during initialization
 !
-      iter_recv=1
+      do iter=1,n_procs_send_part_data
+        send_to = send_part_data_to(iter)
+        do ivar=ivar1,ivar2
+          call mpisend_nonblock_real(f_ogrid(:,:,:,ivar),flow_buf_size,send_to,800+ivar,ireq2D(iter,ivar))
+        enddo
+      enddo
+!
+!  Post blocking recieves, if this processor recieves any data from other than self
+!  Use buffer array to avoid creating temporary array at runtime
+!
       do iter=1,n_procs_recv_part_data
         recv_from = recv_part_data_from(iter)
         if(recv_from /= iproc) then
-          print*, 'iproc,recv_from,iter_recv',iproc,recv_from,iter_recv
           do ivar=ivar1,ivar2
-            call mpirecv_nonblock_real(f_ogrid_procs(iter,:,:,:,ivar),flow_buf_size,recv_from,800+ivar,ireq2D(iter_recv,ivar))
+            call mpirecv_real(fbufi(:,:,:,ivar),flow_buf_size,recv_from,800+ivar)
           enddo
-          iter_recv=iter_recv+1
+          f_ogrid_procs(iter,:,:,:,ivar1:ivar2) = fbufi
         else
           f_ogrid_procs(iter,:,:,:,ivar1:ivar2) = f_ogrid(:,:,:,ivar1:ivar2)
         endif
       enddo
 !
-!  Send flow data to prosessors that need it
-!  Note that send_to is never iproc, since this item is taken out of send_par_data_to
-!  during initialization
-!
-print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part_data,send_part_data_to
       do iter=1,n_procs_send_part_data
-        send_to = send_part_data_to(iter)
         do ivar=ivar1,ivar2
-          call mpisend_real(f_ogrid(:,:,:,ivar),flow_buf_size,send_to,800+ivar)
+          call mpiwait(ireq2D(iter,ivar))
         enddo
-      enddo
-!
-      iter_recv=1
-      do iter=1,n_procs_recv_part_data
-        if(recv_part_data_from(iter)/=iproc) then
-          do ivar=ivar1,ivar2
-            call mpiwait(ireq2D(iter_recv,ivar))
-          enddo
-          iter_recv=iter_recv+1
-        endif
       enddo
       call mpibarrier
 !
@@ -7717,7 +7565,7 @@ print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: ix0, iy0, iz0, i 
-      integer :: ix0_proc, iy0_proc, iz0_proc, proc
+      integer :: ix0_proc, iy0_proc, iz0_proc, proc, ind_proc
 !
       intent(in)  :: ivar1, ivar2, xxp, inear_glob
       intent(out) :: gp
@@ -7726,6 +7574,8 @@ print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part
 !  the interpolation point.
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
+      ind_proc = ip_proc_pointer(proc+1)
+      if(ind_proc<0) print*, 'ERROR: Pointing to f_array that does not exist'
 !
 !  Check if the grid point interval is really correct.
 !
@@ -7756,12 +7606,12 @@ print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part
 !
 !  Calculate derived grid spacing parameters needed for interpolation.
 !
-      dx1=1/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
-      dy1=1/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
+      dx1=1./(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
+      dy1=1./(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
       if(nzgrid_ogrid/=1) then
-        dz1=1/(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
+        dz1=1./(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
       else 
-        dz1=1
+        dz1=1.
       endif
 !
       dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
@@ -7769,24 +7619,24 @@ print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part
 !
 !  Transform global coordinates to coordinates local to the f_ogrid_procs array
 !
-      ix0_proc=ix0-nx_ogrid*ip_proc(proc,1)
-      iy0_proc=iy0-ny_ogrid*ip_proc(proc,2)
-      iz0_proc=iz0-nz_ogrid*ip_proc(proc,3)
+      ix0_proc=ix0-nx_ogrid*ip_proc(ind_proc,1)
+      iy0_proc=iy0-ny_ogrid*ip_proc(ind_proc,2)
+      iz0_proc=iz0-nz_ogrid*ip_proc(ind_proc,3)
+!      print*, ''
+!      print*, 'iproc',iproc
+!      print*, 'Local coods:',ix0_proc,iy0_proc,iz0_proc
+!      print*, 'Global coord:',ix0,iy0,iz0
 !
 !  Function values at all corners.
 !
-! TODO: This needs to be fixed
-! TODO: At the moment, there is no correct relation between
-!       the coordinates ix0,iy0,iz0 and f_ogrid_procs, and proc is 
-!       not even set!
-      g1=f_ogrid_procs(proc,ix0_proc  ,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
-      g2=f_ogrid_procs(proc,ix0_proc+1,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
-      g3=f_ogrid_procs(proc,ix0_proc  ,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
-      g4=f_ogrid_procs(proc,ix0_proc+1,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
-      g5=f_ogrid_procs(proc,ix0_proc  ,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
-      g6=f_ogrid_procs(proc,ix0_proc+1,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
-      g7=f_ogrid_procs(proc,ix0_proc  ,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
-      g8=f_ogrid_procs(proc,ix0_proc+1,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
+      g1=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
+      g2=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
+      g3=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      g4=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      g5=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
+      g6=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
+      g7=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
+      g8=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
 !
 !  Interpolation formula.
 !
@@ -8125,5 +7975,70 @@ print*, 'iproc,n_procs_send_part_data,send_part_data_to',iproc,n_procs_send_part
 !
     endsubroutine interpolate_quadratic_sp_og
 !***********************************************************************
-
+    real function radius_ogrid(xp,yp) 
+!
+!  Transform cartesian coordinates xxp to polar coordinates on the cylindrical ogrid
+!  Only return r-direction. 
+!  Input coordinates xxp can be two- or three-dimensional
+!
+!  02-aug-17/Jorgen: Coded
+!
+    real, intent(in) :: xp, yp
+!
+      radius_ogrid = sqrt((xp-xorigo_ogrid(1))**2 + (yp-xorigo_ogrid(2))**2)
+!
+    endfunction radius_ogrid
+!***********************************************************************
+    subroutine get_polar_coords_2D(xxp,rad,theta)
+!
+!  Transform cartesian coordinates xxp to polar coordinates on the cylindrical ogrid
+!  Only return two-dimensional array
+!  Input coordinates xxp can be two- or three-dimensional
+!
+!  02-aug-17/Jorgen: Coded
+!
+    real, dimension(:), intent(in) :: xxp
+    real, intent(out) :: rad, theta
+!
+    real :: xr, yr
+!
+      xr=xxp(1)-xorigo_ogrid(1)
+      yr=xxp(2)-xorigo_ogrid(2)
+      rad=sqrt(xr**2+yr**2)
+      theta=atan2(yr,xr)
+!
+    endsubroutine get_polar_coords_2D
+!***********************************************************************
+    subroutine get_polar_coords_3D(xxp,rthz)
+!
+!  Transform cartesian coordinates xxp to polar coordinates on the cylindrical ogrid
+!  Input coordinates must be three-dimensional
+!
+!  02-aug-17/Jorgen: Coded
+!
+    real, dimension(3), intent(in) :: xxp
+    real, dimension(3), intent(out) :: rthz
+!
+      call get_polar_coords_2D(xxp,rthz(1),rthz(2))
+      rthz(3) = xxp(3)
+!
+    endsubroutine get_polar_coords_3D
+!***********************************************************************
+    subroutine get_polar_coords_3D_alt(xp,yp,zp,rthz)
+!
+!  Transform cartesian coordinates xxp to polar coordinates on the cylindrical ogrid
+!  Input coordinates must be three-dimensional
+!
+!  02-aug-17/Jorgen: Coded
+!
+    real, intent(in) :: xp, yp, zp
+    real, dimension(3), intent(out) :: rthz
+    real :: xr,yr
+!
+      xr=xp-xorigo_ogrid(1)
+      yr=yp-xorigo_ogrid(2)
+      rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),zp /)
+!
+    endsubroutine get_polar_coords_3D_alt
+!***********************************************************************
 end module Solid_Cells
