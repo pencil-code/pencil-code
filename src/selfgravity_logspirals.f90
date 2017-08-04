@@ -501,7 +501,7 @@ module Selfgravity
               (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * acceleration
         else
           f(l1:l2,m1:m2,n1:n2,ipotself)              = rhs_poisson
-          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = acceleration
+          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = -acceleration
         endif
 !
       endif ! if (t>=tstart_selfgrav) then
