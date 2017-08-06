@@ -30,7 +30,7 @@ module Energy
 !
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
-  logical, pointer :: lffree
+  logical, pointer :: lffree, lrelativistic_eos
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -59,8 +59,15 @@ module Energy
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
-                               caller='register_energy')
+      call get_shared_variable('lpressuregradient_gas', &
+          lpressuregradient_gas, caller='register_energy')
+!
+! check if we are solving the relativistic eos equations
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos', &
+            lrelativistic_eos, caller='register_energy')
+      endif
 !
 !  Identify version number.
 !
@@ -114,6 +121,8 @@ module Energy
            "there was a problem when putting lviscosity_heat")
 !
 ! check if we are solving the force-free equations in parts of domain
+! AB: I suspect the following lines won't work here and need
+! AB: do be moved directly to register.
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
@@ -245,7 +254,14 @@ module Energy
             if (llocal_iso) then
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
             else
-              p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+!
+!  One is supposed to put cs2=0.333333 if lrelativistic_eos
+!
+              if (lrelativistic_eos) then
+                p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+              else
+                p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+              endif
             endif
 !
 !  multiply previous p%fpres pencil with profiles
