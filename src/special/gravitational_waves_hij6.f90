@@ -37,7 +37,8 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 14
+! MVAR CONTRIBUTION 12
+! MAUX CONTRIBUTION 2
 !
 ! PENCILS PROVIDED stress_ij(6)
 !***************************************************************
@@ -125,8 +126,13 @@ module Special
 !
       call farray_register_pde('hij',ihij,vector=6)
       call farray_register_pde('gij',igij,vector=6)
-      call farray_register_pde('ggT',iggT)
-      call farray_register_pde('ggX',iggX)
+!
+!  register ggT and ggX as auxiliary arrays
+!  (AB: but what is the difference between
+!  farray_register_auxiliary and register_report_aux?)
+!
+      call register_report_aux('ggT',iggT)
+      call register_report_aux('ggX',iggX)
 !
       if (lroot) call svn_id( &
            "$Id$")
