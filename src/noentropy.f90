@@ -125,7 +125,8 @@ module Energy
 !
       if (ldensity.and.lrelativistic_eos) then
         if (abs(cs0**2-onethird)>0.01) then
-          call fatal_error ('initialize_energy', 'put cs0=1/sqrt(3) for rel EoS')
+          if (lroot) write(*,*) &
+              'WARNING: consider putting cs0=1/sqrt(3) for relativistic EoS'
         endif
       endif
 !
@@ -264,7 +265,8 @@ module Energy
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
             else
 !
-!  One is supposed to put cs2=0.333333 if lrelativistic_eos
+!  The relativistic EoS works ok even if cs2 is not 1/3, but
+!  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
 !
               if (ldensity.and.lrelativistic_eos) then
                 p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
