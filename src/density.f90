@@ -2315,6 +2315,7 @@ module Density
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !  21-oct-15/MR: changes for slope-limited diffusion
+!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
 !
       use Deriv, only: der6
       use Diagnostics
@@ -2351,10 +2352,10 @@ module Density
           density_rhs= - p%ugrho - p%rho*p%divu
         else
           if (lrelativistic_eos) then
-            density_rhs= - fourthird*(p%uglnrho+p%divu)
+            density_rhs=-fourthird*(p%uglnrho+p%divu)
             if (lhydro) then
               call multvs(p%uu,p%uglnrho+p%divu,tmpv)
-              f(l1:l2,m,n,iux:iuz) = f(l1:l2,m,n,iux:iuz) + onethird*tmpv
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+onethird*tmpv
             endif
           else
             density_rhs= - p%uglnrho - p%divu

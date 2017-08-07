@@ -55,14 +55,15 @@ module Energy
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
       call get_shared_variable('lpressuregradient_gas', &
           lpressuregradient_gas, caller='register_energy')
 !
-! check if we are solving the relativistic eos equations
+!  Check if we are solving the relativistic eos equations.
+!  In that case we'd need to get lrelativistic_eos from density.
 !
       if (ldensity) then
         call get_shared_variable('lrelativistic_eos', &
@@ -119,6 +120,14 @@ module Energy
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
+!
+!  Check that cs0 is set correctly when lrelativistic_eos=.true.
+!
+      if (ldensity.and.lrelativistic_eos) then
+        if (abs(cs0**2-onethird)>0.01) then
+          call fatal_error ('initialize_energy', 'put cs0=1/sqrt(3) for rel EoS')
+        endif
+      endif
 !
 ! check if we are solving the force-free equations in parts of domain
 ! AB: I suspect the following lines won't work here and need
@@ -257,7 +266,7 @@ module Energy
 !
 !  One is supposed to put cs2=0.333333 if lrelativistic_eos
 !
-              if (lrelativistic_eos) then
+              if (ldensity.and.lrelativistic_eos) then
                 p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
               else
                 p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
