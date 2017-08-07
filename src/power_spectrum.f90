@@ -1413,6 +1413,7 @@ module power_spectrum
       a_re=f(l1:l2,m1:m2,n1:n2,iggX)
       b_re=f(l1:l2,m1:m2,n1:n2,iggT)
     elseif (igij>0) then
+      call fatal_error('powerGWs','should not come here')
       a_re=f(l1:l2,m1:m2,n1:n2,igij+3)
       b_re=f(l1:l2,m1:m2,n1:n2,igij)
     else

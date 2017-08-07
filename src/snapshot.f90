@@ -20,7 +20,7 @@ module Snapshot
     module procedure output_form_int_0D
   endinterface
 !
-  public :: rsnap, wsnap, wsnap_down, powersnap, output_form
+  public :: rsnap, wsnap, wsnap_down, powersnap, output_form, powersnap_prepare
 !
   contains
 !***********************************************************************
@@ -436,7 +436,37 @@ module Snapshot
 !
     endsubroutine rsnap
 !***********************************************************************
-   subroutine powersnap(f,lwrite_only)
+    subroutine powersnap_prepare
+!
+!  Routine called from run.f90 to determime when spectra are needed
+!
+!   7-aug-02/axel: added
+!
+      use Sub, only: read_snaptime, update_snaptime
+!
+      logical, save :: lfirst_call=.true.
+      character (len=fnlen) :: file
+      integer, save :: nspec
+      real, save :: tspec
+!
+!  Output snapshot in 'tpower' time intervals.
+!  File keeps the information about time of last snapshot.
+!
+      file=trim(datadir)//'/tspec.dat'
+!
+!  At first call, need to initialize tspec.
+!  tspec calculated in read_snaptime, but only available to root processor.
+!
+      if (lfirst_call) then
+        call read_snaptime(file,tspec,nspec,dspec,t)
+        lfirst_call=.false.
+      endif
+!
+      call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+!
+    endsubroutine powersnap_prepare
+!***********************************************************************
+    subroutine powersnap(f,lwrite_only)
 !
 !  Write a snapshot of power spectrum.
 !
@@ -451,17 +481,18 @@ module Snapshot
       use Power_spectrum
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
-      use Sub, only: update_snaptime, read_snaptime, curli
+!AXEL use Sub, only: update_snaptime, read_snaptime, curli
+      use Sub, only: update_snaptime, curli
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
 !
       real, dimension (:,:,:), allocatable :: b_vec
-      character (len=fnlen) :: file
+!AXEL character (len=fnlen) :: file
       logical :: llwrite_only=.false.,ldo_all
-      integer, save :: nspec
-      logical, save :: lfirst_call=.true.
-      real, save :: tspec
+!AXEL integer, save :: nspec
+!AXEL logical, save :: lfirst_call=.true.
+!AXEL real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2
@@ -476,26 +507,33 @@ module Snapshot
 !
       if (present(lwrite_only)) llwrite_only=lwrite_only
       ldo_all=.not.llwrite_only
-      lspec=.true.
-!
-!  Output snapshot in 'tpower' time intervals.
-!  File keeps the information about time of last snapshot.
-!
-      file=trim(datadir)//'/tspec.dat'
-!
-!  At first call, need to initialize tspec.
-!  tspec calculated in read_snaptime, but only available to root processor.
-!
-      if (ldo_all .and. lfirst_call) then
-        call read_snaptime(file,tspec,nspec,dspec,t)
-        lfirst_call=.false.
-      endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+!     !lspec=.true. !AB: (Bingert introduced this in 2011 to prevent
+!                   !AB: lspec not being defined. This is now no longer
+!                   !AB: an issue since read_snaptime is now called from run.
+!!
+!!  Output snapshot in 'tpower' time intervals.
+!!  File keeps the information about time of last snapshot.
+!!
+!      file=trim(datadir)//'/tspec.dat'
+!!
+!!  At first call, need to initialize tspec.
+!!  tspec calculated in read_snaptime, but only available to root processor.
+!!
+!      if (ldo_all .and. lfirst_call) then
+!        call read_snaptime(file,tspec,nspec,dspec,t)
+!        lfirst_call=.false.
+!      endif
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 !
 !  Check whether we want to output power snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
-      if (ldo_all) &
-           call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+  !AB: the following 2 lines are now moved to run.f90, because we need
+  !AB: advance notice when spectra will be called, so relevant parts of
+  !AB: the f-array can be updated at those times.
+  !   if (ldo_all) &
+  !        call update_snaptime(file,tspec,nspec,dspec,t,lspec)
       if (lspec.or.llwrite_only) then
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
