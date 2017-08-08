@@ -128,11 +128,9 @@ module Special
       call farray_register_pde('gij',igij,vector=6)
 !
 !  register ggT and ggX as auxiliary arrays
-!  (AB: but what is the difference between
-!  farray_register_auxiliary and register_report_aux?)
 !
-      call register_report_aux('ggT',iggT)
-      call register_report_aux('ggX',iggX)
+      call farray_register_auxiliary('ggT',iggT)
+      call farray_register_auxiliary('ggX',iggX)
 !
       if (lroot) call svn_id( &
            "$Id$")
