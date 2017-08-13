@@ -42,6 +42,52 @@ def avgt1d(tmin=None, **kwarg):
         sd[v] = np.sqrt(dtinv * sd[v] - avg[v]**2)
     return avg, sd
 #=======================================================================
+def eta_z(z, datadir="./data"):
+    """Finds the vertical profile of the resistivity, if any.
+
+    Positional Arguments:
+        z
+            Numpy array of vertical coordinates.
+
+    Keyword Arguments:
+        datadir
+            Data directory.
+
+    Returned values:
+        Magnetic diffusivity at the corresponding z.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2017-08-13
+    # Last Modified: 2017-08-13
+    from . import read
+    from math import sqrt
+    import numpy as np
+    from scipy.special import erfc
+
+    # Read the parameters.
+    par = read.parameters(datadir=datadir, par2=True)
+
+    # Initialize the profile.
+    eta = np.zeros_like(z)
+
+    # Process the resistivities.
+    print("iresistivity = ", par.iresistivity)
+    for res in par.iresistivity:
+        if res == "zdep":
+            if par.zdep_profile == "fs":
+                # Fleming & Stone (2003, ApJ, 585, 908)
+                if par.cs0 > 0 and par.omega > 0:
+                    zoh = z / (sqrt(2) * par.cs0 / par.omega)
+                else:
+                    zoh = z
+                eta += par.eta * np.exp(-0.5 * zoh**2 +
+                                        0.25 * par.sigma_ratio * erfc(abs(zoh)))
+            else:
+                raise NotImplementedError("zdep_profile = " + par.zdep_profile)
+            print("Processed 'zdep'. ")
+
+    return eta
+#=======================================================================
 def midplane(**kwarg):
     """Finds horizontally-averaged mid-plane properties as a function of
     time.
