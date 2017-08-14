@@ -19,9 +19,6 @@ sintheta=sin(theta)
 dphi=phi[1]-phi[0]
 phi=phi-dphi/2.
 ;
-nl=60
-nl=120
-mmax=28
 Em=fltarr(mmax)
 Emodd=fltarr(mmax)
 Emeven=fltarr(mmax)
