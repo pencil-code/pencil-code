@@ -1,7 +1,7 @@
 ;$Id: calc_bl.pro,v 1.4 2017/08/09 23:25:57 brandenb Exp $
 ;
 pro ylm_filter,bb_slice,theta,phi,nl,mmax,Etot,Em,Pm, $
-  debug=debug,modes=modes,quiet=quiet
+  debug=debug,modes=modes,quiet=quiet,brmm_all=brmm_all
 ;
 ;  compute the spherical harmonics decomposition
 ;  input: bb_slice,theta,phi,nl,mmax
@@ -43,11 +43,14 @@ endfor
 brl=complexarr(nl,2*nl+1)
 ;
 for l=m,nl-1 do begin
-  ;fact=.25*(2*l+1)*factorial(double(l-m))/factorial(double(l+m))
   fact=(2*l+1)*factorial(double(l-m))/factorial(double(l+m))
   brl(l,m)=dtheta*total(sintheta*brm[*,m]*plm(double(theta),double(l),abs(m)))*fact
 endfor
 if keyword_set(debug) then print,'m=',m,fact,min(plm(double(theta),l-1,abs(m))),max(plm(double(theta),double(l-1),abs(m)))
+;
+;  correct for double counting in m=0 case
+;
+if m eq 0 then brl(*,m)=.5*brl(*,m)
 ;
 Brmm=fltarr(ntheta,nphi)
 Beven=fltarr(ntheta,nphi)
