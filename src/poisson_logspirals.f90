@@ -57,7 +57,13 @@ module Poisson
   real :: phiMin
   real :: phiMax
   real :: du,dphi
-  real, dimension(2*nx,ny) :: u2d,phi2d,sigma,sr,sphi,sv,kr,kphi,kv,gr,gphi
+  real, dimension(2*nx,ny) :: u2d,phi2d
+  real, dimension(2*nx,ny) :: sigma
+  real, dimension(2*nx,ny) :: sr,sr_fft_real,sr_fft_imag
+  real, dimension(2*nx,ny) :: kr,kr_fft_real,kr_fft_imag
+  real, dimension(2*nx,ny) :: sphi,sphi_fft_real,sphi_fft_imag
+  real, dimension(2*nx,ny) :: kphi,kphi_fft_real,kphi_fft_imag
+  real, dimension(2*nx,ny) :: gr,gphi
   real, dimension(nx) :: r1d
   real :: B,B2
   integer :: counter=1
@@ -298,8 +304,9 @@ contains
 ! Mass fields and kernals are used to compute quatities of interest
 !
       call compute_acceleration()
-      call compute_potential(potential)
-!      
+!
+      potential = 0.0
+!
     endsubroutine inverse_laplacian_logradial_fft
 !***********************************************************************
     subroutine inverse_laplacian_fft_z(phi)
@@ -372,7 +379,12 @@ contains
       kr=krNumerator/kernalDenominator
       kphi=kphiNumerator/kernalDenominator
 !
-      kv=1/sqrt((1+B2)*exp(u_k)+exp(-u_k)-2*cos(phi2d)) !changed from **-.5 to 1/sqrt
+      kr_fft_real = kr
+      kr_fft_imag = 0.0
+      kphi_fft_real = kphi
+      kphi_fft_imag = 0.0
+      call fft_xy_parallel_2D_x_extended(kr_fft_real,kr_fft_imag,.false.,.true.)
+      call fft_xy_parallel_2D_x_extended(kphi_fft_real,kphi_fft_imag,.false.,.true.)
 !
     endsubroutine generate_kernals
 !***********************************************************************
@@ -386,7 +398,12 @@ contains
       sr=sigma*exp(u2d/2)
       sphi=sigma*exp(3*u2d/2)
 !
-      sv = sigma*exp(3*u2d/2)
+      sr_fft_real = sr
+      sr_fft_imag = 0.0
+      sphi_fft_real = sphi
+      sphi_fft_imag = 0.0
+      call fft_xy_parallel_2D_x_extended(sr_fft_real,sr_fft_imag,.false.,.true.)
+      call fft_xy_parallel_2D_x_extended(sphi_fft_real,sphi_fft_imag,.false.,.true.)
 !
     endsubroutine generate_massfields
 !***********************************************************************
@@ -396,100 +413,26 @@ contains
 ! calculate gravitational accelerations.
 !
       real, dimension(2*nx,ny) :: gr_convolution,gr_factor,gphi_convolution,gphi_factor
+      real, dimension(2*nx,ny) :: gr_conv_real,gr_conv_imag
+      real, dimension(2*nx,ny) :: gphi_conv_real,gphi_conv_imag
+      real, parameter          :: normalization_factor=1./(2.*nxgrid*nygrid)
 !
-      call fftconvolve(kr,sr,gr_convolution)
-      call fftconvolve(kphi,sphi,gphi_convolution)
+      gr_conv_real = kr_fft_real*sr_fft_real - kr_fft_imag*sr_fft_imag
+      gr_conv_imag = kr_fft_real*sr_fft_imag + kr_fft_imag*sr_fft_real
+      gphi_conv_real = kphi_fft_real*sphi_fft_real - kphi_fft_imag*sphi_fft_imag
+      gphi_conv_imag = kphi_fft_real*sphi_fft_imag + kphi_fft_imag*sphi_fft_real
+      call fft_xy_parallel_2D_x_extended(gr_conv_real,gr_conv_imag,.true.,.true.)
+      call fft_xy_parallel_2D_x_extended(gphi_conv_real,gphi_conv_imag,.true.,.true.)
+      gr_convolution   = normalization_factor*gr_conv_real
+      gphi_convolution = normalization_factor*gphi_conv_real
 !
       gr_factor=-Gnewton*exp(-u2d/2)*du*dphi
       gphi_factor=-Gnewton*exp(-3*u2d/2)*du*dphi
 !
-      gr=gr_factor*gr_convolution+Gnewton*sigma*du*dphi/B
+      gr=gr_factor*gr_convolution + Gnewton*sigma*du*dphi/B
       gphi=gphi_factor*gphi_convolution
 !
     endsubroutine compute_acceleration
-!***********************************************************************
-    subroutine compute_potential(potential)
-!
-! Uses kernals and mass fields for the potential integral to calculate
-! potential on the grid NOTE: Should actually calculate potential from
-! the accelerations, since the log radial convolution product produces
-! potentials which are known to violate Newton's first law, but produces
-! accelerations that are free of this behavior (See Towards Predictive
-! Scenarios of Planetary Migration, by Clement Baruteau)
-!
-      real, dimension(nx,ny,nz), intent(inout) :: potential
-      real, dimension(2*nx,ny) :: v_convolution,v_factor
-!
-      call fftconvolve(kv,sv,v_convolution)
-      v_factor=-Gnewton*innerRadius*exp(-u2d/2)*du*dphi
-!
-      do n=1,nz
-        potential(:,:,n)=v_factor(:nx,:)*v_convolution(:nx,:)
-      enddo
-!
-    endsubroutine compute_potential
-!***********************************************************************
-    subroutine fftconvolve(array1,array2,convolution)
-!
-!  convolution product using the pencil code fft methods to do the ffts
-!
-      real, intent(in), dimension(:,:) :: array1
-      real, intent(in), dimension(:,:) :: array2
-      real, intent(out), dimension(:,:) :: convolution
-      complex, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier
-      real, dimension(size(convolution,1),size(convolution,2)) :: array1_fourier_real,array1_fourier_imaginary
-      real, dimension(size(convolution,1),size(convolution,2)) :: array2_fourier_real,array2_fourier_imaginary
-      real, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier_real
-      real, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier_imaginary
-      real :: normalization_factor
-      logical :: array1_convolution_diffshape,array2_convolution_diffshape
-!
-      array1_convolution_diffshape=(size(array1,1)/=size(convolution,1)).or.(size(array1,2)/=size(convolution,2))
-      array2_convolution_diffshape=(size(array2,1)/=size(convolution,1)).or.(size(array2,2)/=size(convolution,2))
-      if (array1_convolution_diffshape.or.array2_convolution_diffshape) then
-         if (lroot) print*,'fftconvolve: input and output arrays must be the same shape as each other.'
-         call fatal_error('fftconvolve','')
-         stop
-      else
-!
-!  The input arrays are purely real. Here, I copy the arrays into the ones holding the
-!  real components for the transform, and fill the arrays holding the imaginary
-!  components with 0's
-!
-         array1_fourier_real=array1
-         array1_fourier_imaginary=0.0
-         array2_fourier_real=array2
-         array2_fourier_imaginary=0.0
-      end if
-!
-!  Transforming the arrays
-!
-      call fft_xy_parallel_2D_x_extended(array1_fourier_real,array1_fourier_imaginary, &
-           .false.,.true.)
-      call fft_xy_parallel_2D_x_extended(array2_fourier_real,array2_fourier_imaginary, &
-           .false.,.true.)
-!
-!  Now, the convolution product must be calculated by multiplying the transformed arrays.
-!  They must be multiplied as complex numbers; to save space and function calls, the real
-!  and imaginary parts of the product are calculated separately using the real and imaginary
-!  parts of the two arrays.
-!  Since the normalization required is not standard, it is added in this step rather than
-!  as part of the fourier transform routine.
-!
-!
-      convolution_fourier_real      = normalization_factor* &
-          (array1_fourier_real*array2_fourier_real-array1_fourier_imaginary*array2_fourier_imaginary)
-      convolution_fourier_imaginary = normalization_factor* &
-          (array1_fourier_real*array2_fourier_imaginary+array1_fourier_imaginary*array2_fourier_real)
-!
-!  Finally, the inverse transform moves the convolution product to ordinary space.
-!
-      call fft_xy_parallel_2D_x_extended(convolution_fourier_real,convolution_fourier_imaginary, &
-           .true.,.false.)
-!
-      convolution=convolution_fourier_real
-!
-    endsubroutine fftconvolve
 !***********************************************************************
     subroutine fft_xy_parallel_2D_x_extended(a_re,a_im,linv,lneed_im,shift_y)
 !
