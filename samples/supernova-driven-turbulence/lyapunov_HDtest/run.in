@@ -1,0 +1,77 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid='$Id$',
+  nt=595000, it1=250, isave=5000, it1d=5000, itorder=3, tmax=1.1
+  !nt= 115000, it1=250, isave=5000, it1d=5000, itorder=3, tmax=1.2
+  !nt=4500, it1=250, isave=4500, it1d=4500, itorder=3, tmax=1.2
+  cdt=0.3, cdtv=0.3, dtmin=7.5e-11, cdts=0.3
+  dsnap=.001, dvid=.0002, slice_position='m' 
+  !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo? 
+  !dsnap=2., dvid=2., 
+  bcz = 's','s','ubs','ism','ism','cop','cop'
+  ip=30
+  lpencil_check=T
+  lread_from_other_prec=F
+  lmaximal_cdt=F, lmaximal_cdtv=F
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+  mu=0.531
+/
+&hydro_run_pars
+  Omega=25.0
+  lupw_uu=T
+  cdt_tauf=0.3
+  lcdt_tauf=T
+  ulev = 0.5
+/
+&density_run_pars
+  diffrho=4e-3
+  diffrho_shock=1.0
+  lmassdiff_fixkin=T
+  idiff='normal' , 'shock'
+  lupw_rho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-cspeed' ,'shock'
+  chi_cs=6e-4
+  chi_shock=5.0
+  lthdiff_Hmax=T
+  lupw_ss=T
+/
+&interstellar_run_pars
+  cdt_tauc=0.3
+  width_SN=0.020
+  lSN_scale_rad=T
+  N_mass=60.0
+  SN_interval_rhom=0.282
+  ampl_SN=3.9085e37
+  frac_kin=0.0
+  frac_ecr=0.0
+  mass_width_ratio=0.9
+  thermal_profile='gaussian'
+  lscale_SN_interval=T
+  iSNdx=1.65
+  lreset_ism_seed=F
+  seed_reset=1976
+  lim_zdisk=1.
+  eps_mass=0.05
+  TT_SN_max=4.9e6
+  rho_SN_max=8.
+/
+&shear_run_pars
+  Sshear = -25.0
+/
+&viscosity_run_pars
+  ivisc='nu-cspeed','nu-shock'
+  nu=4e-3,nu_shock=10.0
+/
+&shock_run_pars
+  ishock_max=3
+  lfix_Re_mesh=T
+/
