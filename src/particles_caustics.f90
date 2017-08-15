@@ -12,7 +12,8 @@
 !
 ! MAUX CONTRIBUTION 9
 ! COMMUNICATED AUXILIARIES 9
-! MPVAR CONTRIBUTION 6 
+! MPVAR CONTRIBUTION 7
+! MPAUX CONTRIBUTION 3 
 !
 !***************************************************************
 module Particles_caustics
@@ -61,10 +62,21 @@ module Particles_caustics
       pvarname(npvar+5)='idVp2'
       idVp3=npvar+6
       pvarname(npvar+6)='idVp3'
+      icaustics=npvar+7
+      pvarname(icaustics)='icaustics'
 !
 !  Increase npvar accordingly.
 !
-      npvar=npvar+6
+      npvar=npvar+7
+!
+! Now register the particle auxiliaries
+!
+      idXpo1=mpvar+npaux+1
+      pvarname(idXpo1)='idXpo1'
+      idXpo2=idXpo1+1
+      pvarname(idXpo2)='idXpo2'
+      idXpo3=idXpo1+2
+      pvarname(idXpo3)='idXpo3'
 !
 !  Set indices for velocity gradient matrix at grid points
 !
@@ -78,6 +90,13 @@ module Particles_caustics
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call fatal_error('register_particles','npvar > mpvar')
+      endif
+!
+! Check the same for particle auxiliaries too. 
+!
+      if (npaux > mpaux) then
+        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
+        call fatal_error('register_particles_mass: npaux > mpaux','')
       endif
 !
     endsubroutine register_particles_caustics
@@ -129,6 +148,12 @@ module Particles_caustics
       call calc_gradu(f) 
       do ip=1,npar_loc
 !
+! Initially number of caustics in each particle is zero, and the separation
+! at earlier time is also zero
+!
+        fp(ip,icaustics) = 0.
+        fp(ip,idXpo1:idXpo3) = 0.
+!
 ! Initialize the deltaX by a small random vector. 
 ! It is a factor epsilondX of grid spacing (we ignore non-uniform grids)
 ! Remember; dx_1 is 1/dx available from cdata.f90
@@ -161,10 +186,13 @@ module Particles_caustics
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
-      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
       logical :: lheader, lfirstcall=.true.
+      real, dimension(3) :: dXp,dXpo
+      real :: flip
+      integer :: ip,j
 !
 !  Print out header information in first time step.
 !
@@ -173,11 +201,34 @@ module Particles_caustics
         print*,'dcaustics_dt: Calculate dcaustics_dt'
       endif
 !
-      if (ldiagnos) then
+! Below we do two things. First we check if any component of dXp has gone
+! through a zero crossing from the previous time step (a flip of sign) 
+! and if indeed a zero-crossing has happened we note it down in the slot
+! f(ip,icaustics) . Second we note the present value of dX to dXold (dXo)
+! to be used in the next time step.  
+!
+      do ip = 1,npar_loc
+        dXp = fp(ip,idXp1:idXp3)
+        dXpo = fp(ip,idXpo1:idXpo3)
+        flip = 0
+        do j=1,3
+          flip=sign(1.,dXpo(j))- sign(1.,dXp(j))
+          if (flip .ne. 0) then
+            fp(ip,icaustics) = fp(ip,icaustics) + 1.
+            exit
+          endif 
+        enddo
+        fp(ip,idXpo1:idXpo3) = dXp
+        if (ldiagnos) then
 !
 ! No diagnostic is coded yet, but would be.
 !
-      endif
+!          do k=1,ndustrad
+!            if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
+!            if (idiag_npcaustics(k)/=0) call xysum_mn_name_z(ncaustics(k),idiag_npcaustics(k))
+!          enddo
+        endif
+     enddo
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -204,7 +255,7 @@ module Particles_caustics
 !
 !  Identify module.
 !
-      if (headtt) then
+      if (headtt.and.lfirstpoint) then
         if (lroot) print*,'dcaustics_dt_pencil: calculate dcaustics_dt_pencil'
         if (lroot) print*,'called from dvvp_dt_pencil in the particles_dust module'
       endif
@@ -232,6 +283,15 @@ module Particles_caustics
         dfp(k,idVp1+ii-1)= taup1*(dot_product(Sijp(ii,:),dXp) - dVp(ii)) 
       enddo
 !
+!  
+!
+      write(*,*)'DM,Sij_lin',Sij_lin
+      write(*,*)'DM,Sijp',Sijp
+!
+! set the RHS of the caustics sum to zero
+!
+      dfp(k,icaustics)= 0.
+! 
     endsubroutine dcaustics_dt_pencil
 !***********************************************************************
     subroutine read_pcaustics_init_pars(iostat)
@@ -299,6 +359,10 @@ module Particles_caustics
         write(3,*) 'idVp1=',idVp1
         write(3,*) 'idVp2=',idVp2
         write(3,*) 'idVp3=',idVp3
+!        write(3,*) 'idXpo1=',idXpo1
+!        write(3,*) 'idXpo2=',idXpo2
+!        write(3,*) 'idXpo3=',idXpo3
+        write(3,*) 'icaustics=',icaustics
       endif
 !
 !  Reset everything in case of reset.

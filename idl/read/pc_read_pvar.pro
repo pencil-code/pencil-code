@@ -161,6 +161,12 @@ varcontent[idVp1].idlvar   = 'dVp'
 varcontent[idVp1].idlinit  = INIT_3VECTOR
 varcontent[idVp1].skip     = 2
 ;
+;default, idXpo1, 0
+;varcontent[idXpo1].variable = 'Old Particle Separation (dXpo)'
+;varcontent[idXpo1].idlvar   = 'dXpo'
+;varcontent[idXpo1].idlinit  = INIT_3VECTOR
+;varcontent[idXpo1].skip     = 2
+;
 default, ibpx, 0
 varcontent[ibpx].variable = 'Particle magnetic field (bp)'
 varcontent[ibpx].idlvar   = 'bp'
@@ -171,6 +177,11 @@ default, iap, 0
 varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
 varcontent[iap].idlinit  = INIT_SCALAR
+;
+default, icaustics, 0
+varcontent[icaustics].variable = 'Number of caustics'
+varcontent[icaustics].idlvar   = 'caustics'
+varcontent[icaustics].idlinit  = INIT_SCALAR
 ;
 default, inpswarm, 0
 varcontent[inpswarm].variable = 'Particle internal number (npswarm)'

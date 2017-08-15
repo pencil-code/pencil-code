@@ -2974,7 +2974,7 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
-      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
