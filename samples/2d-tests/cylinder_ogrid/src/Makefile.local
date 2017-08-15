@@ -1,0 +1,13 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = mpicomm
+HYDRO     = hydro
+DENSITY   = density
+NSCBC = NSCBC
+SOLID_CELLS = solid_cells_ogrid
+SOLID_CELLS_MPICOMM = solid_cells_ogrid_mpicomm
+
+REAL_PRECISION = double
