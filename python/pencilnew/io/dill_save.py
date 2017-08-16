@@ -1,5 +1,5 @@
 
-def dill_save(obj, name, folder='.pc'):
+def dill_save(obj, name, folder='pc'):
     """This scripts saves any kind of object as a dill file in a folder.
 
     Args:
@@ -8,14 +8,23 @@ def dill_save(obj, name, folder='.pc'):
     """
     from pencilnew.io.mkdir import mkdir as __mkdir__
     from os.path import join as __join__
-    import pencilnew.backpack.dill as dill
+    import dill
 
     __mkdir__(folder)        ## prepare folder
 
     if (not name.endswith('.dill')): name = name+'.dill'
+    if folder=='pc' and name.startswith('pc/'): name=name[3:]
 
     with open(__join__(folder, name), 'wb') as f:
         dill.dump(obj, f)
-        return True
 
-    return False
+    return True
+
+"""
+    try:
+        with open(__join__(folder, name), 'wb') as f:
+            dill.dump(obj, f)
+        return True
+    except:
+        return False
+"""

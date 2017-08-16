@@ -32,15 +32,13 @@ module Timestep
       use Solid_Cells, only: solid_cells_timestep_first, &
           solid_cells_timestep_second
       use Shear, only: advance_shear
-      use Special, only: special_after_timestep
-      use Snapshot, only: shift_dt
+      use Sub, only: set_dt, shift_dt
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: ds, dtsub
       real :: dt1, dt1_local, dt1_last=0.0
-      integer :: j
 !
 !  Coefficients for up to order 3.
 !
@@ -68,6 +66,7 @@ module Timestep
 !  Set up df and ds for each time sub.
 !
       do itsub=1,itorder
+
         lfirst=(itsub==1)
         llast=(itsub==itorder)
         if (lfirst) then
@@ -93,14 +92,13 @@ module Timestep
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p,itsub)
-!
         ds=ds+1.0
 !
 !  If we are in the first time substep we need to calculate timestep dt.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.ldt) then
-          dt1_local=maxval(dt1_max(1:nx))
+          dt1_local=maxval(dt1_max)
           ! Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
           call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
@@ -109,6 +107,8 @@ module Timestep
           ! Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local/ddt
         endif
+
+!!!        if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
 !
 !  Calculate dt_beta_ts.
 !
@@ -116,15 +116,13 @@ module Timestep
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
         dtsub = ds * dt_beta_ts(itsub)
 !
-!  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
+!  Apply border quenching.
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-!ajwm Note to self... Just how much overhead is there in calling
-!ajwm a sub this often...
-          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
-          if (.not.lgpu) f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
-        enddo; enddo; enddo
+        if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
+!
+!  Time evolution of grid variables.
+!
+        if (.not. lgpu) f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
 !  Time evolution of point masses.
 !
@@ -147,7 +145,7 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif advec
 !
-        if (lspecial) call special_after_timestep(f, df, dtsub)
+        call update_after_timestep(f,df,dtsub)
 !
 !  Increase time.
 !
@@ -186,4 +184,40 @@ module Timestep
 !
     endsubroutine split_update
 !***********************************************************************
+    subroutine update_after_timestep(f,df,dtsub) 
+!
+!   Hooks for modifying f and df after the timestep is performed.
+!
+!  12-03-17/wlyra: coded
+!  28-03-17/MR: removed update_ghosts; checks for already communicated variables enabled.
+!
+      use Density,  only: density_after_timestep
+      use Hydro,    only: hydro_after_timestep
+      use Energy,   only: energy_after_timestep
+      use Magnetic, only: magnetic_after_timestep
+      use Special,  only: special_after_timestep
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+!  Enables checks to avoid unnecessary communication
+!
+      ighosts_updated=0       
+!     
+!  Dispatch to respective modules. The module which communicates 
+!  the biggest number of variables should come first here.
+!
+      if (lhydro)    call hydro_after_timestep   (f,df,dtsub)
+      if (lmagnetic) call magnetic_after_timestep(f,df,dtsub)
+      if (lenergy)   call energy_after_timestep  (f,df,dtsub)
+      if (ldensity)  call density_after_timestep (f,df,dtsub)
+      if (lspecial)  call special_after_timestep (f,df,dtsub)
+!
+!  Disables checks.
+!
+      ighosts_updated=-1
+!
+    endsubroutine update_after_timestep
+!***********************************************************************      
 endmodule Timestep

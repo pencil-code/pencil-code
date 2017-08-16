@@ -1,0 +1,2 @@
+This is a string which is written to a file
+The string has 10 words and keyword string

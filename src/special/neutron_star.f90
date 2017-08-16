@@ -363,19 +363,6 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
     subroutine special_calc_density(f,df,p)
 !   06-oct-03/tony: coded
 !

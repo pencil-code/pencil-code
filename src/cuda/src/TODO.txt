@@ -1,0 +1,107 @@
+#test
+More indepth explanations of todos, marked in code with "TODO.txt: #1" etc
+
+compute.cu:
+	#1) Data save paths somewhere else so that they're easy for user to change
+	to whatever dir (DATA_LNRHO_PATH etc). Can't easily be defined in .confs because
+	strings are nasty with #defines. The most practical solution is probably to
+	read these from a separate plain text file in io.cpp. 
+	
+	#2) Support for continuing execution from where it was left off (load initial
+	conditions from .dat files if they exist, else init new ones). 
+	Currently disabled because of debugging, the code is mostly there though.
+	Just need to save_grid_data in the main loop with proper step numbers
+	and then load the latest step when running again.
+	
+	#3) Can be removed when done debugging. Should stay commented to
+	avoid surprises.
+
+collectiveops.cu:
+
+	#4) (NOTE! Premature optimization is the root of all evil! We may revisit this 
+	issue only if collective operations ever hogs a significant amount of the processing time.)
+	Multiblock support for reduce_max_uu(). Currently all
+	final reductions are done with only one threadblock (of size 1024) and
+	if the problem size (d_partial_result) is larger than that, the rest is evaluated
+	sequentially. Shouldn't be a problem with a 256^3 grid (a thread would have to to
+	reduce only 8 values sequentially because d_partial_result in max_uu() will be size 
+	8192 or something like that), but should be re-evaluated when going higher grid sizes. 
+	A loop that calls reduce_max_uu() multiple times while giving it some clever offsets 
+	(so that it knows which items to reduce) and tactical blockDims should take care this.
+
+
+integrators.cu:
+	-rungekutta_step
+		* Possibility for instruction-level parallelism when using an
+		additional smem buffer, where an extra xy-slab can be loaded
+		during integration. Can also be utilized when loading the
+		halos for the smem block, eg. we have 4 warp schedulers in
+		k40 and each scheduler can double issue instructions, so
+		each of these 4 warps can execute two memory fetch
+		instructions each clock cycle. However, these are quite
+		hard-core optimizations and we shouldn't worry about these
+		too much at the moment.
+		* Also could try to get rid of syncthreads where possible
+
+	#5) The basic structure for the sliding smem implementation can be seen in this 
+	loop. It's fully working at the moment with the difference that it doesn't slide 
+	the smem, but instead loads a whole new smem block from global memory every step.
+	There's no performance benefit with the current implementation.
+
+	Only thing that needs to be done, is to move the slide in smem back, and load the 
+	leading xy plane from global memory, probably by modifying the first smem loading
+	loop that can be found at //TODO.txt #6 in integrators.cu (if it even works correctly).
+
+	It uses RK_ELEMS_PER_THREAD from smem.cuh to determine how many loops it's gotta do. 
+	
+	So, how this thing goes;
+
+		1) Solve continuity
+		2) Solve navier-stokes
+		3) Save the results to global memory in the d_lnrho_dest etc arrays
+		
+		4) Check if we have still work to do, if yes...
+			//--------------------------------------------------------
+			-Slide the smem block forward along the z-axis.
+			(In practice, this happens as follows: We have an index i, which
+			points to the first xy-slab in the smem block. Smem sliding happens
+			by incrementing i by one, and copying the new xy-slab
+			to i-1 (mod SHARED_SIZE_DEPTH). This way we do not have to move any data
+			around in the smem block, which in turn gives us better performance) 
+			//--------------------------------------------------------
+			-Move the current grid index along z one step 
+				++grid_idx_z; 
+				grid_idx += d_NX*d_NY;
+			//--------------------------------------------------------
+			-Load the intermediate array results from global memory
+			-We're done loading, jump to 1
+		
+		5) Else we're done, exit the loop. 
+
+	Basically the idea is the same as in this 
+	developer.download.nvidia.com/CUDA/CUDA_Zone/papers/gpu_3dfd_rev.pdf,
+	but with the exception that instead of sliding the z values in the registers,
+	we slide the whole smem block.
+
+	
+
+
+
+
+general:
+	-"Unlocking" the "makefile modularity". Basically that user can
+	define which equations are used. How?
+	
+	step 0) New parameters need to be added to init.conf; such as "-D USE_HYDRO=1"
+	step 1) Next either include the appropriate module, or replace all calls to
+	that particular module's function calls with no operation, eg. by adding
+
+	//-----------------------------------------------------------------------------
+	#if USE_HYDRO
+    		#include "hydro_module.cuh" //contains function hydro()
+	#else
+    		#define hydro(args) ((void)(0)) //replace all calls to hydro() with NOP
+	#endif
+	//-----------------------------------------------------------------------------
+	to the file. Done!
+	

@@ -4,8 +4,8 @@
 !
 &init_pars
   cvsid='$Id: start.in,v 1.1 2008-11-30 03:16:25 wlyra Exp $'
-  xyz0  = 1.,-0.667,-1.  ! first corner of box
-  xyz1  = 2., 0.667, 1.  ! last corner of box
+  xyz0  = 1.,-0.5,-0.1 ! first corner of box
+  xyz1  = 2., 0.5, 0.1 ! last corner of box
   lwrite_ic=T, lwrite_aux=T
   coord_system='cylindric'
   lperi=F,T,T
@@ -22,7 +22,7 @@
 /
 &hydro_init_pars
   inituu='trilinear-y'
-  ampl_ux=1.333333
+  ampl_ux=1.0 !333333
   ampl_uy=0
   ampl_uz=0
 /
@@ -31,5 +31,8 @@
 /
 &magnetic_init_pars
 /
-&special_init_pars
+&grav_init_pars
+  ipotential='varying-q'
+  qgshear=0.0
+  g0=1.
 /

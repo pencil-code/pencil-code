@@ -1,0 +1,22 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$',
+  ip=14,                        ! debugging parameter
+  xyz0  = -1.1,-1.1,-1.1,       ! first corner of box
+  xyz1  =  1.1, 1.1, 1.1,       ! second corner of box
+  lperi =  F  , F  , F,         ! periodic direction?
+  bcx = 'a','s','s','a2'
+  bcy = 's','a','s','a2'
+  bcz = 's','s','a','s:a2'
+  random_gen='nr_f90',
+/
+&hydro_init_pars
+  inituu='zero'
+  urand=0.05,      ! cp=2.5 version used urand=0.05
+/
+&density_init_pars
+  initlnrho='const_lnrho',
+/

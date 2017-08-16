@@ -26,8 +26,9 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
-  real, dimension (nz) :: glnrhomz
+  logical :: lcalc_lnrhomean=.false., lcalc_glnrhomean=.false.,lupw_lnrho=.false.
+  real, dimension (nz) :: glnrhomz, lnrhomz
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   include 'density.h'
 !
@@ -70,13 +71,13 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
-  endsubroutine calc_ldensity_pars
+  endsubroutine density_after_boundary
 !***********************************************************************
     subroutine pencil_criteria_density
 !
@@ -161,6 +162,17 @@ module Density
       call keep_compiler_quiet(p)
 !
     endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine density_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine density_after_timestep
 !***********************************************************************
     subroutine split_update_density(f)
 !
@@ -321,5 +333,24 @@ module Density
                             =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
 !
     endsubroutine update_char_vel_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Density

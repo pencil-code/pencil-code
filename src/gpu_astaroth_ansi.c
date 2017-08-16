@@ -20,48 +20,51 @@
 
 #include "headers_c.h"
 
-extern REAL cdata_mp_omega_;
-extern REAL cdata_mp_theta_;
-extern REAL viscosity_mp_nu_;
-static FINT nx_, ny_, nz_;
+void initializeGPU();
+int finalizeGPU();
+void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, int full_inner, int full);
 
-extern REAL cdata_mp_dx_;
-extern REAL cdata_mp_dy_;
-extern REAL cdata_mp_dz_;
-/* ---------------------------------------------------------------------- */
-void FTNIZE(initialize_gpu_c)
-     (FINT *nx, FINT *ny, FINT *nz, REAL *x, REAL *y, REAL *z )
+// for Gnu Compiler
+extern char *__cparam_MOD_coornames;
+//extern REAL __cdata_MOD_y[14];
+// ----------------------------------------------------------------------
+void FTNIZE(initialize_gpu_c)()
 /* Initializes GPU.
 */
 {
   /*
   printf("omega = %e\n", cdata_mp_omega_);
-  printf("nu = %e\n", viscosity_mp_nu_);
-  printf("nx = %d\n", *nx);
-  printf("ny = %d\n", *ny);
-  printf("nz = %d\n", *nz);
+  printf("nx = %d\n", *nx_);
+  printf("ny = %d\n", *ny_);
+  printf("nz = %d\n", *nz_);
+  printf("__hydro_MOD_idiag_umax = %d\n", __hydro_MOD_idiag_umax);
   */
-  nx_=*nx;
-  ny_=*ny;
-  nz_=*nz;
+  //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
 
+  //printf("ymin = %f\n", __cdata_MOD_y[0]);
+  initializeGPU();
+
+/*
   printf("xmin = %e\n", x[4]);
-  printf("xmax = %e\n", x[*nx-1+3]);
+  printf("xmax = %e\n", x[nx-1+3]);
   printf("ymin = %e\n", y[4]);
-  printf("ymax = %e\n", y[*ny-1+3]);
+  printf("ymax = %e\n", y[ny-1+3]);
   printf("zmin = %e\n", z[4]);
-  printf("zmax = %e\n", z[*nz-1+3]);
+  printf("zmax = %e\n", z[nz-1+3]);
+*/
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(finalize_gpu_c)
-     (FINT *par)
-/* Frees memory allocated on GPU.
-*/
+void FTNIZE(finalize_gpu_c)()
 {
+
+// Frees memory allocated on GPU.
+
+  finalizeGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
-     (REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho, FINT *isubstep, FINT *full)
+     (REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho, FINT *isubstep, FINT *full_inner, FINT *full)
+
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
    and of continuity eq. by GPU kernels. Perform the Runge-Kutta substep 
@@ -95,8 +98,8 @@ void FTNIZE(rhs_gpu_c)
    If full=1, however, copy the full arrays.
 */
 {
-  printf("nx_ = %d\n", nx_);
-  printf("No GPU implementation yet");
-// add calls to ASTAROTH routines here
+  // copies data back and forth and peforms integration substep isubstep
+
+  substepGPU(uu_x, uu_y, uu_z, lnrho, *isubstep, *full_inner, *full);
 }
 /* ---------------------------------------------------------------------- */

@@ -3254,11 +3254,11 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Calculate <A>, which is needed for test-field methods.
 !
-!   2-jan-10/axel: adapted from calc_lhydro_pars
+!   2-jan-10/axel: adapted from hydro_after_boundary
 !
       use Mpicomm, only: mpiallreduce_sum
       use Deriv, only: der_z,der2_z
@@ -3307,7 +3307,7 @@ module Magnetic
         jjmz(:,3)=0.
       endif
 !
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
 !

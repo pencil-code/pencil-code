@@ -74,6 +74,7 @@ class ParticleData(object):
         import os
         import pencilnew as pcn
         from pencilnew.math import is_number
+        from sys import byteorder
 
         try:
             cwd = os.getcwd()
@@ -88,7 +89,7 @@ class ParticleData(object):
             print('! export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib64:$IDL_HOME/bin/bin.linux.x86_64')
             print('! in your .bashrc')
             print('! ')
-            return False
+            return None
 
         ####### interprate parameters
         if datadir == False:
@@ -102,9 +103,9 @@ class ParticleData(object):
             quiet = '1'
 
         if swap_endian == False:
-            swap_endian = '0'
-        else:
-            swap_endian = '1'
+            if byteorder == 'little': swap_endian = '0'
+            elif byteorder == 'big': swap_endian = '1'
+        else: print('? WARNING: Couldnt determine endianness!')
 
         ####### preparing IDL call
         # cleanup of varfile string
@@ -138,4 +139,10 @@ class ParticleData(object):
         pvar = IDL.pvar
 
         for key in pvar.keys():
-            setattr(self, key, pvar[key])
+            setattr(self, key.lower(), pvar[key])
+        setattr(self, 'xp', pvar['XX'][0])
+        setattr(self, 'yp', pvar['XX'][1])
+        setattr(self, 'zp', pvar['XX'][2])
+        setattr(self, 'vpx', pvar['VV'][0])
+        setattr(self, 'vpy', pvar['VV'][1])
+        setattr(self, 'vpz', pvar['VV'][2])

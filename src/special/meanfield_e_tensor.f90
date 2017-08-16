@@ -1022,19 +1022,6 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -1333,20 +1320,6 @@ module Special
       call keep_compiler_quiet(dt_)
 !
     endsubroutine  special_after_timestep
-!***********************************************************************
-subroutine special_after_boundary(f)
-!
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
-!
-!  06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_after_boundary
-
 !***********************************************************************
 subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !

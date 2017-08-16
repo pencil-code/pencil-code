@@ -135,6 +135,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		HR_ohm_particle:'Ohmic heating rate / particle', $
 		HR_viscous:'viscous heating rate', $
 		HR_viscous_particle:'viscous heating rate / particle', $
+		A_abs:'magnetic vector potential', $
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
@@ -182,6 +183,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_z:'velocity z', $
 		u_abs:'velocity', $
 		grad_u_abs:'velocity gradient', $
+		E_therm:'thermal energy', $
 		E_kin_rho:'kinetic energy density', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
@@ -279,6 +281,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dx:'grid distance x', $
 		dy:'grid distance y', $
 		dz:'grid distance z', $
+		dV:'grid cell volume', $
 		inv_dx:'inverse grid distance x', $
 		inv_dy:'inverse grid distance y', $
 		inv_dz:'inverse grid distance z', $
@@ -324,6 +327,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		HR_ohm_particle:['HR_ohm', 'n_rho'], $
 		HR_viscous:['u', 'rho'], $
 		HR_viscous_particle:['HR_viscous', 'n_rho'], $
+		A_abs:'A', $
 		A_x:'A', $
 		A_y:'A', $
 		A_z:'A', $
@@ -385,6 +389,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'u', $
 		grad_u:'u_abs', $
 		grad_u_abs:'u_abs', $
+		E_therm:['Temp','n_rho'], $
 		E_kin_rho:['u','rho'], $
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm','grad_Temp'], $
@@ -452,9 +457,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dx:'', $
 		dy:'', $
 		dz:'', $
-		inv_dx:'', $
-		inv_dy:'', $
-		inv_dz:'', $
+		dV:['dx', 'dy', 'dz'], $
+		inv_dx:'dx', $
+		inv_dy:'dy', $
+		inv_dz:'dz', $
 		size_x:'', $
 		size_y:'', $
 		size_z:'', $

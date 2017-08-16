@@ -13,7 +13,7 @@ program pc_tecplot_solid
   use Diagnostics
   use Filter
   use General, only: itoa
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid,set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO
@@ -38,7 +38,7 @@ program pc_tecplot_solid
   integer(kind=8) :: rec_len
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
-  lrun=.true.
+  lstart=.true.
   lmpicomm = .false.
   iroot = 0
   lroot = .true.
@@ -73,6 +73,8 @@ program pc_tecplot_solid
 !  read_runpars).
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
+  lstart=.false.; lrun=.true.
 !
 !  Read parameters and output parameter list.
 !
@@ -144,6 +146,7 @@ program pc_tecplot_solid
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
   if (IO_strategy == "collect_xy") then
@@ -256,7 +259,7 @@ program pc_tecplot_solid
 !
 !  Need to re-initialize the local grid for each processor.
 !
-      call initialize_grid
+      call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.

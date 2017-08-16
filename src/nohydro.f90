@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
-! PENCILS PROVIDED del2u(3), curlo(3)
+! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
 !
 !***************************************************************
 module Hydro
@@ -126,7 +126,7 @@ module Hydro
           iuz=iuu+2
         endif
         if (iuu/=0.and.lroot) then
-          print*, 'initialize_velocity: iuu = ', iuu
+          if (ip<14) print*, 'initialize_velocity: iuu = ', iuu
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'iuu=',iuu
           write(3,*) 'iux=',iux
@@ -364,7 +364,7 @@ module Hydro
 !
    endsubroutine coriolis_cartesian
 !***********************************************************************
-    subroutine calc_lhydro_pars(f)
+    subroutine hydro_after_boundary(f)
 !
 !  dummy routine
 !
@@ -373,7 +373,7 @@ module Hydro
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lhydro_pars
+    endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
 !
@@ -982,6 +982,17 @@ module Hydro
 !
     endsubroutine expand_shands_hydro
 !***********************************************************************
+    subroutine hydro_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+
+    endsubroutine hydro_after_timestep
+!***********************************************************************
     subroutine update_char_vel_hydro(f)
 !
 !  Dummy
@@ -993,6 +1004,25 @@ module Hydro
       call keep_compiler_quiet(f)
 
     endsubroutine update_char_vel_hydro
+!***********************************************************************
+    subroutine calc_gradu(f)
+!
+! Dummy 
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+
+    endsubroutine calc_gradu
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Hydro
 

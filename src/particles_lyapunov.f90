@@ -121,12 +121,11 @@ module Particles_lyapunov
 !
     endsubroutine initialize_particles_lyapunov
 !***********************************************************************
-    subroutine init_particles_lyapunov(f,fp)
+    subroutine init_particles_lyapunov(fp)
 !
       use Sub, only: kronecker_delta
       use General, only: keep_compiler_quiet,random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
       integer, dimension (ncpus) :: my_particles=0,all_particles=0

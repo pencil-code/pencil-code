@@ -160,6 +160,10 @@ class Averages(object):
             proc_dirs = ['proc' + str(proc)]
 
         dim = read.dim(datadir, proc)
+        if dim.precision=='S':
+            dtype = np.float32
+        if dim.precision=='D':
+            dtype = np.float64
 
         # Prepare the raw data.
         # This will be reformatted at the end.
@@ -175,8 +179,8 @@ class Averages(object):
             file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
             while True:
                 try:
-                    t.append(file_id.read_record(dtype=np.float32)[0])
-                    proc_data.append(file_id.read_record(dtype=np.float32))
+                    t.append(file_id.read_record(dtype=dtype)[0])
+                    proc_data.append(file_id.read_record(dtype=dtype))
                 except:
                     # Finished reading.
                     break
@@ -190,6 +194,7 @@ class Averages(object):
                 pnu = proc_dim.nx
                 pnv = proc_dim.ny
             proc_data = np.array(proc_data)
+            print(proc_data.shape, len(t), n_vars, pnv, pnu)
             proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
             # Add the proc_data (one proc) to the raw_data (all procs)
@@ -225,13 +230,17 @@ class Averages(object):
         from pencilnew import read
 
         # Determine the structure of the xy/xz/yz averages.
-        nw_string = 'n' + 'xyz'[np.where(np.array(map(plane.find, 'xyz')) == -1)[0][0]]
-        nw = getattr(read.dim(), nw_string)
+        if plane == 'xy':
+            nw = getattr(read.dim(), 'nz')
+        if plane == 'xz':
+            nw = getattr(read.dim(), 'ny')
+        if plane == 'yz':
+            nw = getattr(read.dim(), 'nx')
         file_id = open(os.path.join(datadir, aver_file_name))
         aver_lines = file_id.readlines()
         file_id.close()
         entry_length = int(np.ceil(nw*n_vars/8.))
-        n_times = len(aver_lines)/(1 + entry_length)
+        n_times = int(len(aver_lines)/(1. + entry_length))
 
         # Prepare the data arrays.
         t = np.zeros(n_times, dtype=np.float32)

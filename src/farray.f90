@@ -316,8 +316,8 @@ module FArrayManager
 !  except for auxiliary variables which are not written into var.dat
 !
         if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
-             vartype==iFARRAY_TYPE_AUXILIARY )) return
-
+                                    vartype==iFARRAY_TYPE_AUXILIARY )) return
+!
         if (lroot) then
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'i'//varname, '=', ivar
@@ -491,7 +491,6 @@ module FArrayManager
 !
       type (farray_contents_list), pointer :: item
       integer :: i
-
 !
 !  Put variable name in array for
 !  use by analysis tool output

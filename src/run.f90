@@ -83,7 +83,7 @@ program run
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
   use Snapshot
-  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid
+  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
@@ -101,12 +101,13 @@ program run
   type (pencil_case) :: p
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
-  real :: wall_clock_time=0.0, time_per_step=0.0
-  integer :: icount, i, mvar_in, isave_shift=0
+  real :: wall_clock_time=0.0, time_per_step=0.0, tdummy
+  integer :: icount, i, mvar_in, isave_shift=0, ndummy
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
+  logical :: lonemorestep = .false.
 !
   lrun = .true.
 !
@@ -144,7 +145,7 @@ program run
 !
   call initialize_mpicomm
 !
-  if (any(downsampl>1)) then
+  if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
 !  If downsampling, calculate local start indices and number of data in
 !  output for each direction; inner ghost zones are here disregarded
@@ -152,14 +153,14 @@ program run
     ldownsampl = .true.
     if (dsnap_down<=0.) dsnap_down=dsnap
 !
-      call get_downpars(1,nx,ipx)
-      call get_downpars(2,ny,ipy)
-      call get_downpars(3,nz,ipz)
+    call get_downpars(1,nx,ipx)
+    call get_downpars(2,ny,ipy)
+    call get_downpars(3,nz,ipz)
 !
-      if (any(ndown==0)) &
-        call fatal_error('run','zero points in processor ' &
-                         //trim(itoa(iproc))//' in downsampling')
-    endif
+    if (any(ndown==0)) &
+      call fatal_error('run','zero points in processor ' &
+                       //trim(itoa(iproc))//' for downsampling')
+  endif
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
@@ -559,19 +560,16 @@ program run
       endif
     endif
 !
-    if (t >= tmax) lout = .true.
-!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
 !
       lstop=control_file_exists('STOP',DELETE=.true.)
-      if (lstop .or. t>=tmax .or. emergency_stop) then
+      if (lstop .or. emergency_stop) then
         if (lroot) then
           print*
           if (emergency_stop) print*, 'Emergency stop requested'
           if (lstop) print*, 'Found STOP file'
-          if (t>=tmax) print*, 'Maximum simulation time exceeded'
         endif
         resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
         if (resubmit) print*, 'Cannot be resubmitted'
@@ -644,8 +642,27 @@ program run
 !  If we want to write out video data, wvid_prepare sets lvideo=.true.
 !  This allows pde to prepare some of the data.
 !
-    if (lwrite_slices) call wvid_prepare
-    if (lwrite_2daverages) call write_2daverages_prepare
+    if (lwrite_slices) then
+      call wvid_prepare
+      if (t == 0.0 .and. lwrite_ic) lvideo = .true.
+    endif
+!
+    if (lwrite_2daverages) then
+      call write_2daverages_prepare
+      if (t == 0.0 .and. lwrite_ic) l2davg = .true.
+    endif
+!
+!  Exit do loop if maximum simulation time is reached; allow one extra
+!  step if any diagnostic output needs to be produced.
+!
+    overtmax: if (t >= tmax) then
+      onemorestep: if (lonemorestep .or. &
+                       .not. (lout .or. lvideo .or. l2davg)) then
+        if (lroot) print *, 'Maximum simulation time exceeded'
+        exit Time_loop
+      endif onemorestep
+      lonemorestep = .true.
+    endif overtmax
 !
 !   Prepare for the writing of the trcers and the fixed points.
 !
@@ -661,7 +678,7 @@ program run
 !
 !  Save state vector prior to update for the (implicit) ADI scheme.
 !
-    if (lADI) f(:,:,:,iTTold)=f(:,:,:,ilnTT)
+    if (lADI) f(:,:,:,iTTold)=f(:,:,:,iTT)
 !
     if (ltestperturb) call testperturb_begin(f,df)
 !
@@ -669,9 +686,29 @@ program run
 !
     if (lhydro_kinematic) call kinematic_random_phase
 !
+    if (lgpu) then
+      call update_snaptime(trim(datadir)//'/tsnap.dat', &
+                           tdummy,ndummy,dsnap,t,lsnap,nowrite=.true.)
+      if (ldownsampl) &
+        call update_snaptime(trim(datadir)//'/tsnap_down.dat', &
+                             tdummy,ndummy,dsnap_down,t,lsnap_down,nowrite=.true.)
+    endif
+!
+!  Decide here whether or not we will need a power spectrum.
+!  At least for the graviational wave spectra, this requires
+!  advance warning so the relevant components of the f-array
+!  can be filled.
+!
+    call powersnap_prepare
+!
 !  Time advance.
 !
     call time_step(f,df,p)
+!
+!  If overlapping grids are used to get body-confined grid around the solids
+!  in the flow, call time step on these grids. 
+! 
+    if (lsolid_cells) call time_step_ogrid(f)
 !
 !  Print diagnostic averages to screen and file.
 !
@@ -686,11 +723,6 @@ program run
       call write_sound(tsound)
       lout_sound = .false.
     endif
-!
-!  If overlapping grids are used to get body-confined grid around the solids
-!  in the flow, call time step on these grids. 
-! 
-    if(lsolid_cells) call time_step_ogrid(f)
 !
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
@@ -789,6 +821,7 @@ program run
             call write_snapshot_particles(directory_dist,f,ENUM=.false.)
         if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
+        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
     endif
 !
@@ -859,6 +892,7 @@ program run
       if (lparticles) &
           call write_snapshot_particles(directory_dist,f,ENUM=.false.)
       if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+      if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !
       call wsnap('var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs('timeavg.dat',ENUM=.false.)

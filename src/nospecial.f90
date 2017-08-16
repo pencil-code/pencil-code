@@ -148,15 +148,6 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special')
-      endif
-!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f)
@@ -350,19 +341,6 @@ module Special
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !

@@ -48,6 +48,7 @@ program pc_configtest
   ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING START.IN <<<'
   call read_all_init_pars
+  call set_coorsys_dimmask
 !
 !  Read parameters and output parameter list.
 !
@@ -160,10 +161,6 @@ program pc_configtest
       Lxyz_loc(2) = xyz1_loc(2) - xyz0_loc(3)
       Lxyz_loc(3) = xyz1_loc(3) - xyz0_loc(3)
     endif
-!
-!  Need to re-initialize the local grid for each processor.
-!
-    call initialize_grid
   endif
 !
 !  Give all modules the possibility to exit properly.

@@ -172,13 +172,13 @@ module Hydro
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
-    subroutine calc_lhydro_pars(f)
+    subroutine hydro_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lhydro_pars
+    endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine read_hydro_run_pars(iostat)
 !

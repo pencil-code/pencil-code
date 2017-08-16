@@ -30,7 +30,7 @@ module Energy
 !
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
-  logical, pointer :: lffree
+  logical, pointer :: lffree, lrelativistic_eos
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -55,12 +55,20 @@ module Energy
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
-                               caller='register_energy')
+      call get_shared_variable('lpressuregradient_gas', &
+          lpressuregradient_gas, caller='register_energy')
+!
+!  Check if we are solving the relativistic eos equations.
+!  In that case we'd need to get lrelativistic_eos from density.
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos', &
+            lrelativistic_eos, caller='register_energy')
+      endif
 !
 !  Identify version number.
 !
@@ -76,8 +84,8 @@ module Energy
 !
 !  24-nov-02/tony: coded
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 cs0, select_eos_variable,gamma_m1
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
+      use EquationOfState, only: cs0, select_eos_variable,gamma_m1
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
@@ -113,7 +121,18 @@ module Energy
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
 !
+!  Check that cs0 is set correctly when lrelativistic_eos=.true.
+!
+      if (ldensity.and.lrelativistic_eos) then
+        if (abs(cs0**2-onethird)>0.01) then
+          if (lroot) write(*,*) &
+              'WARNING: consider putting cs0=1/sqrt(3) for relativistic EoS'
+        endif
+      endif
+!
 ! check if we are solving the force-free equations in parts of domain
+! AB: I suspect the following lines won't work here and need
+! AB: do be moved directly to register.
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
@@ -161,7 +180,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
 !
       if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
@@ -245,7 +264,15 @@ module Energy
             if (llocal_iso) then
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
             else
-              p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+!
+!  The relativistic EoS works ok even if cs2 is not 1/3, but
+!  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
+!
+              if (ldensity.and.lrelativistic_eos) then
+                p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+              else
+                p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+              endif
             endif
 !
 !  multiply previous p%fpres pencil with profiles
@@ -268,7 +295,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  Dummy routine.
 !
@@ -276,14 +303,14 @@ module Energy
 
       call keep_compiler_quiet(f)
 
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -458,6 +485,17 @@ module Energy
 !
     endsubroutine rprint_energy
 !***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
+!***********************************************************************
     subroutine split_update_energy(f)
 !
 !  Dummy subroutine
@@ -466,7 +504,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine
+    endsubroutine split_update_energy
 !***********************************************************************
     subroutine expand_shands_energy
 !

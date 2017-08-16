@@ -367,6 +367,10 @@ module Cosmicray
       if (lfirst.and.ldt) then
         if (lvariable_tensor_diff)then
           diffus_cr=max(cosmicray_diff,vKperp,vKpara)*dxyz_2
+        elseif (lcosmicrayflux) then
+          ! If using the cosmicrayflux module, accounts only for isotropic
+          ! diffusion (the rest will accounted for in the cosmicrayflux module)
+          diffus_cr=cosmicray_diff
         else
           diffus_cr=max(cosmicray_diff,K_perp,K_para)*dxyz_2
         endif

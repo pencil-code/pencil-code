@@ -8,10 +8,12 @@
   dsnap=10.0
   lpencil_check=T
   ip=16
+  lwrite_dvar=T
 /
 &eos_run_pars
 /
 &hydro_run_pars
+ lfargoadvection_as_shift=T
 /
 &density_run_pars
 /
@@ -20,7 +22,5 @@
 /
 &viscosity_run_pars
 /
-&special_run_pars
- lno_radial_advection=T
- lfargoadvection_as_shift=T
+&grav_run_pars
 /

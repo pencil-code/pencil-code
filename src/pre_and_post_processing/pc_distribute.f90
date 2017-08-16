@@ -8,7 +8,7 @@ program pc_distribute
   use Cparam, only: fnlen
   use Diagnostics
   use Filter
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid,set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO
@@ -31,7 +31,6 @@ program pc_distribute
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lstart = .false.
-  lrun = .true.
   lmpicomm = .false.
   lroot = .true.
   ipx = 0
@@ -64,6 +63,10 @@ program pc_distribute
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
+!
+  lstart=.false.
+  lrun=.true.
 !
 !  Read parameters and output parameter list.
 !
@@ -148,6 +151,7 @@ program pc_distribute
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules (f)
 !
 ! Loop over processors
@@ -171,8 +175,8 @@ program pc_distribute
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -225,7 +229,7 @@ program pc_distribute
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid
+        call construct_grid(x,y,z,dx,dy,dz)
 !
         ! distribute gf to f:
         f(:,:,:,1:mvar_io) = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)

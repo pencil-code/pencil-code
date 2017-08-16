@@ -1,0 +1,7 @@
+The pdf file is supposed to be checked in under website/doc.
+I have linked it locally to www and then, in the present directory,
+
+  ln -s ../www/doc/hello_disk.pdf .
+
+I have made a soft link to it, so it is updated when compiled,
+but it still needs to be checked in there by hand.

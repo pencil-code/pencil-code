@@ -31,7 +31,7 @@ module General
   public :: bessj, cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, count_bits, parser, write_full_columns
-  public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
+  public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
   public :: compress, fcompress
@@ -56,6 +56,7 @@ module General
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
+  public :: linear_interpolate_2d
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -74,6 +75,7 @@ module General
     module procedure keep_compiler_quiet_sl
     module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_i1d
+    module procedure keep_compiler_quiet_i81d
     module procedure keep_compiler_quiet_i2d
     module procedure keep_compiler_quiet_i3d
     module procedure keep_compiler_quiet_l
@@ -186,7 +188,7 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cdata, only: mm,nn,imn_array,necessary,lroot
+      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -763,6 +765,27 @@ module General
       endif
 !
     endsubroutine keep_compiler_quiet_i
+!***********************************************************************
+    subroutine keep_compiler_quiet_i81d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer(KIND=ikind8), dimension(:) :: v1, v2, v3, v4
+      optional :: v2, v3, v4
+!
+      if (ALWAYS_FALSE) then
+        write(0,*) 'keep_compiler_quiet_i: Never got here...'
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+        STOP 1
+      endif
+!
+    endsubroutine keep_compiler_quiet_i81d
 !***********************************************************************
     subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
 !
@@ -2373,6 +2396,89 @@ module General
 !
     endsubroutine cyclic
 !***********************************************************************
+   function linear_interpolate_2d(f,xx,yy,xxp,lcheck) result(gp)
+!
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using the linear interpolation formula
+!
+!    g(x,y,z) = B*x*y + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!
+!  30-dec-04/anders: coded
+!  04-nov-10/nils: moved from particles_map to general
+!  22-apr-11/MR: changed to logical function to get rid of dependence on
+!                module Messages
+!
+      use Cdata
+!
+      real, dimension(:,:) :: f
+      real, dimension(:) :: xx,yy
+      real, dimension(2) :: xxp
+
+      real :: gp
+!
+      real, parameter :: eps=1.e-5
+      real :: g1, g2, g3, g4
+      real :: xp0, yp0
+      real, save :: dxdy1, dx1, dy1
+      integer :: i, ix0, iy0
+      logical :: lcheck
+!
+      intent(in) :: f, xx, yy, xxp, lcheck
+!
+!  Determine index value of lowest lying corner point of grid box surrounding
+!  the interpolation point.
+!
+      do ix0=1,size(xx)
+        if ( xx(ix0)>=xxp(1) ) exit
+      enddo
+      if (ix0>1) ix0=ix0-1
+
+      do iy0=1,size(yy)
+        if ( yy(iy0)>=xxp(2) ) exit
+      enddo
+      if (iy0>1) iy0=iy0-1
+!
+!  Check if the grid point interval is really correct.
+!
+      if ( xx(ix0)-eps<=xxp(1) .and. xx(ix0+1)+eps>=xxp(1) .and. &
+           yy(iy0)-eps<=xxp(2) .and. yy(iy0+1)+eps>=xxp(2) )  then
+        ! Everything okay
+      else
+        if (lcheck) then
+          print*, 'linear_interpolate: Interpolation point does not ' // &
+                  'lie within the calculated grid point interval.'
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'xp, xp0, xp1 = ', xxp(1), xx(ix0), xx(ix0+1)
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'yp, yp0, yp1 = ', xxp(2), yy(iy0), yy(iy0+1)
+        endif
+        return
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!
+      xp0=xxp(1)-xx(ix0)
+      yp0=xxp(2)-yy(iy0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!
+      dx1=1./(xx(2)-xx(1))
+      dy1=1./(yy(2)-yy(1))
+!
+!  Function values at all corners.
+!
+      g1=f(ix0  ,iy0  )
+      g2=f(ix0+1,iy0  )
+      g3=f(ix0  ,iy0+1)
+      g4=f(ix0+1,iy0+1)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + xp0*yp0*dx1*dy1*(g1-g2-g3+g4)
+
+    endfunction linear_interpolate_2d
+!***********************************************************************
    logical function linear_interpolate(f,ivar1,ivar2,xxp,gp,inear,lcheck)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
@@ -2386,7 +2492,7 @@ module General
 !  30-dec-04/anders: coded
 !  04-nov-10/nils: moved from particles_map to general
 !  22-apr-11/MR: changed to logical function to get rid of dependence on
-!  module Messages
+!                module Messages
 !
       use Cdata
 !
@@ -2678,6 +2784,87 @@ module General
     endif
 !
   endsubroutine write_full_columns_real
+!***********************************************************************
+    function add_merge_range( ranges, ie, range ) result (iel)
+!  
+!  Checks whether range is contained (maybe partly) in any of ranges(:,1:ie) and stores it or its possible
+!  fragments in ranges(:,ie+1:). Returns new total number of ranges.
+!
+!  20-apr-11/MR: coded
+!
+    integer, dimension(:,:),intent(INOUT):: ranges
+    integer,                intent(IN)   :: ie
+    integer, dimension(2),  intent(IN)   :: range
+
+    integer :: iel
+
+    integer, dimension(2,2*size(ranges,2)) :: ranges_loc
+    integer :: i,ieloc,iloc
+ 
+    if (ie==0) then
+      iel=1
+      ranges(:,1) = range
+    else
+      ranges_loc(:,1) = range
+      ieloc=1
+      do i=1,ie
+        iloc=1
+        do while (iloc<=ieloc)
+          call analyze_range(ranges(:,i),ranges_loc,iloc,ieloc)
+        enddo
+      enddo
+      iel=ie
+      do i=1,ieloc
+        if (ranges_loc(1,ieloc)>0) then
+          iel=iel+1
+          ranges(:,iel)=ranges_loc(:,ieloc)
+        endif  
+      enddo
+    endif
+
+    endfunction add_merge_range
+!***********************************************************************
+    subroutine analyze_range(testrange,store,istore,iestore)
+!
+!  Analyzes range in store(:,istore) with respect to testrange.
+!  If fully contained it is marked deleted, if partly contained
+!  leftover(s) is(are) stored in store(:,istore) (and store(:,iestore+1).
+!
+!  20-apr-11/MR: coded
+!
+    integer, dimension(2),  intent(IN)   :: testrange
+    integer, dimension(:,:),intent(INOUT):: store
+    integer,                intent(INOUT):: istore,iestore
+
+    integer, dimension(2) :: range
+
+      range=store(:,istore)
+
+      if (range(1)>=testrange(1) .and. range(1)<=testrange(2)) then
+
+        if (range(2)<=testrange(2)) then
+          store(:,istore) = (/0,0/)                      ! range is completely absorbed
+        else
+          store(:,istore) = (/testrange(2)+1,range(2)/)  ! left leftover
+        endif
+
+      elseif (range(1)<testrange(1)) then
+        if (range(2)>=testrange(1)) then
+          store(:,istore) = (/range(1),testrange(1)-1/)  ! right leftover
+        elseif (range(2)<testrange(1)) then
+          continue                                       ! left unchanged
+        else
+          store(:,istore) = (/range(1),testrange(1)-1/)  ! two leftovers: left
+          iestore=iestore+1
+          store(:,iestore) = (/testrange(2)+1,range(2)/) ! right
+          istore=istore+1
+        endif
+      else
+        continue                                         ! right unchanged
+      endif
+      istore=istore+1
+
+    endsubroutine analyze_range
 !***********************************************************************
     function merge_ranges( ranges, ie, range, ia, istore )
 !
@@ -3999,9 +4186,11 @@ module General
 !  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
+!  23-may-2017/axel: added directory_prestart, not to be erased after start
 !
-      use Cdata, only: iproc_world, directory, datadir, datadir_snap, directory_dist, &
-                       directory_snap, directory_collect
+      use Cdata, only: iproc_world, directory, datadir, directory_dist, &
+                       datadir_snap, directory_snap, directory_collect, &
+                       datadir_prestart, directory_prestart
 
       logical, optional :: lproc
 
@@ -4011,12 +4200,15 @@ module General
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_dist, &
                                             trim(datadir_snap)//'/proc'//chproc)
+      call safe_character_assign(directory_prestart, &
+                                            trim(datadir_prestart)//'/proc'//chproc)
+!
       if (loptest(lproc)) then
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/proc'//chproc)
+                                            trim(datadir_snap)//'/proc'//chproc)
       else
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/allprocs')
+                                            trim(datadir_snap)//'/allprocs')
       endif
       call safe_character_assign(directory_collect, &
                                             trim (datadir_snap)//'/allprocs')
@@ -4317,7 +4509,7 @@ module General
       logical :: notanumber_0
       real :: f
 !
-      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge_real))
 !
     endfunction notanumber_0
 !***********************************************************************
@@ -4333,7 +4525,7 @@ module General
      logical :: notanumber_0d
      double precision :: f
 !
-     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge_double))
 !
     endfunction notanumber_0d
 !***********************************************************************
@@ -4349,7 +4541,7 @@ module General
       logical :: notanumber_1
       real, dimension(:) :: f
 !
-      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_1
 !***********************************************************************
@@ -4365,7 +4557,7 @@ module General
       logical :: notanumber_2
       real, dimension(:,:) :: f
 !
-      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_2
 !***********************************************************************
@@ -4381,7 +4573,7 @@ module General
       logical :: notanumber_3
       real, dimension(:,:,:) :: f
 !
-      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_3
 !***********************************************************************
@@ -4397,7 +4589,7 @@ module General
       logical :: notanumber_4
       real, dimension(:,:,:,:) :: f
 !
-      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_4
 !***********************************************************************
@@ -4413,7 +4605,7 @@ module General
       logical :: notanumber_5
       real, dimension(:,:,:,:,:) :: f
 !
-      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_5
 !***********************************************************************
@@ -4528,11 +4720,12 @@ module General
 ! length(array1)xlength(array2). Analagous to numpy.meshgrid
 !
 ! 19-aug-16/vince: adapted
+! 16-jun-17/MR: double -> real
 !
-      double precision, intent(in), dimension(:) :: array1
-      double precision, intent(in), dimension(:) :: array2
-      double precision, intent(out), dimension(:,:) :: output_array1
-      double precision, intent(out), dimension(:,:) :: output_array2
+      real, intent(in), dimension(:) :: array1
+      real, intent(in), dimension(:) :: array2
+      real, intent(out), dimension(:,:) :: output_array1
+      real, intent(out), dimension(:,:) :: output_array2
 !    
       output_array1=spread(array1,2,size(array2))
       output_array2=spread(array2,1,size(array1))
@@ -4619,17 +4812,17 @@ module General
 !  12-sep-16/MR: coded
 !
       real, dimension(:,:),           intent(INOUT) :: x
-      external :: func
+      !external :: func
       real, dimension(:,:), optional, intent(IN) :: add
       real,                 optional, intent(IN) :: fmax, dxmax
       integer,              optional, intent(IN) :: itmax
 
-      !interface
-      !  pure subroutine func(x,f,df)
-      !    real, intent(in) :: x
-      !    real, intent(out):: f, df
-      !  endsubroutine
-      !endinterface
+      interface
+        pure subroutine func(x,f,df)
+          real, intent(in) :: x
+          real, intent(out):: f, df
+        endsubroutine
+      endinterface
 
       real, parameter :: damp=0.1
       integer :: itmax_, it, i, j
@@ -4642,6 +4835,7 @@ module General
       ladd  =present(add)
 
       do i=1,size(x,1); do j=1,size(x,2)
+
         it=0;  fXi=fmax_
         do while (abs(fXi)>=fmax_)
 !  
@@ -4655,6 +4849,7 @@ module General
           if (it>=itmax_) exit
 !
         enddo
+
       enddo; enddo
       
     endsubroutine newton_arr

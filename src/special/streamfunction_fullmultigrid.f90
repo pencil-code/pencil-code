@@ -971,7 +971,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: dTdz1,dTdz2,dTdz3,dTdz4,nusselt_num,nusselt_den,TTmin_cline,TTmax_cline
       real, dimension (nx) :: devsigzz1,devsigzz2,devsigzz3,devsigzz4
-      real, dimension (nx) :: diffus_special
+      real, dimension (nx) :: diffus_special,advec_special
       type (pencil_case) :: p
 !      
 !  Advection
@@ -997,6 +997,7 @@ module Special
         advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
+        maxadvec=maxadvec+advec_special
 !
         diffus_special = kappa*dxyz_2
         maxdiffus=max(maxdiffus,diffus_special)
@@ -1349,19 +1350,6 @@ module Special
         endselect
 !
     endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
 !***********************************************************************
 !***********************************************************************

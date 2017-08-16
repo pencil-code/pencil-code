@@ -8,11 +8,11 @@
 #   Runs a helper executable; builds it first, if necessary
 
 cd src
-if (-e $0.f90) then
+if (-e $0:t.f90) then
   set dir=.
 else
   set dir=pre_and_post_processing
-  if (!(-e $dir/$0.f90)) then
+  if (!(-e $dir/$0:t.f90)) then
     echo "No helper executable $0:t.x known."
     exit
   endif

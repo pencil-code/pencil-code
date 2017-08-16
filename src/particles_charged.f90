@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="charged"
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED epsp; grhop(3)
@@ -313,7 +314,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp,&

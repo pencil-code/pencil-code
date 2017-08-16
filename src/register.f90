@@ -504,14 +504,15 @@ module Register
 !
       integer :: i
 !
-      if (lroot) print*, 'choose_pencils: finding out which pencils '// &
-          'are needed for the pencil case'
+      if (lroot.and.ip<14) call information('choose_pencils','finding out which pencils '// &
+          'are needed for the pencil case')
 !
 !  Must set all pencil arrays to false in case of reload.
 !
       lpenc_requested=.false.
       lpenc_diagnos=.false.
       lpenc_diagnos2d=.false.
+      lpenc_video=.false.
 !
 !  Find out which pencils are needed for the pencil case.
 !
@@ -1114,7 +1115,7 @@ module Register
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
         idiag_timeperstep=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
-        idiag_dtv=0; idiag_dtdiffus=0; idiag_Rmesh=0; idiag_Rmesh3=0
+        idiag_dtv=0; idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0; idiag_Rmesh=0; idiag_Rmesh3=0
         idiag_maxadvec=0
       endif
 !
@@ -1127,6 +1128,8 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'dt',idiag_dt)
         call parse_name(iname,cname(iname),cform(iname),'dtv',idiag_dtv)
         call parse_name(iname,cname(iname),cform(iname),'dtdiffus',idiag_dtdiffus)
+        call parse_name(iname,cname(iname),cform(iname),'dtdiffus2',idiag_dtdiffus2)
+        call parse_name(iname,cname(iname),cform(iname),'dtdiffus3',idiag_dtdiffus3)
         call parse_name(iname,cname(iname),cform(iname),'Rmesh',idiag_Rmesh)
         call parse_name(iname,cname(iname),cform(iname),'Rmesh3',idiag_Rmesh3)
         call parse_name(iname,cname(iname),cform(iname),'maxadvec',idiag_maxadvec)

@@ -689,7 +689,7 @@ p%del2bb=0
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  Calculate meanmu5, which should be subtracted from mu5 in eqn for gtheta5
 !
@@ -716,7 +716,7 @@ p%del2bb=0
       fact=1./(nw*ncpus)
       meanmu5=fact*meanmu5_tmp
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
@@ -932,19 +932,6 @@ p%del2bb=0
       call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
-!***********************************************************************
-    subroutine special_after_boundary(f)
-!
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
-!
-!  06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !

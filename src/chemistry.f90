@@ -40,11 +40,12 @@ module Chemistry
   include 'chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension(mx,my,mz) :: cp_full, cv_full, mu1_full
+  real, dimension(mx,my,mz) :: cp_full, cv_full
+  real, dimension(:,:,:), pointer :: mu1_full
   real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
   real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
 !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
-! parameters for simiplifyed cases
+! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: Diff_coef_const=impossible
@@ -157,6 +158,14 @@ module Chemistry
   logical :: lcloud=.false.
   integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
+!   Lewis coefficients
+!
+ real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
+!
+!   Transport data
+!
+ real, dimension(nchemspec,7) :: tran_data
+!
 !   Diagnostics
 !
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
@@ -211,6 +220,11 @@ module Chemistry
   integer :: idiag_lambdam=0
   integer :: idiag_num=0
 !
+!  Auxiliaries.
+!
+  integer :: ireac=0
+  integer, dimension(nchemspec) :: ireaci=0
+
   contains
 !
 !***********************************************************************
@@ -305,6 +319,8 @@ module Chemistry
 !                    in the f array for output.
 !
       use FArrayManager
+      use SharedVariables, only: get_shared_variable
+      use Messages, only: warning
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: data_file_exit=.false.
@@ -461,7 +477,7 @@ module Chemistry
         net_react_m = 0.
       endif
 !
-!  Define the chemical reaction rates as auxilliary variables for output
+!  Define the chemical reaction rates as auxiliary variables for output
 !
       if (lreac_as_aux) then
         if (ireac == 0) then
@@ -480,6 +496,12 @@ module Chemistry
           enddo
           close (3)
         endif
+      endif
+!
+      if (leos) then
+        call get_shared_variable('mu1_full',mu1_full,caller='initialize_chemistry')
+      else
+        call warning('initialize_chemistry','mu1_full not provided by eos')
       endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -6139,5 +6161,184 @@ module Chemistry
       f(:,:,:,isN2)=1.0-sum_Y
 !
     endsubroutine chemspec_normalization_N2
+!***********************************************************************
+    subroutine getmu_array(f,mu1_full)
+!
+!  Calculate mean molecular weight
+!
+!  16-mar-10/natalia
+!  30-jun-17/MR: moved here from eos_chemistry.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mu1_full
+      integer :: k,j2,j3
+!
+!  Mean molecular weight
+!
+      mu1_full=0.
+      do k=1,nchemspec
+        if (species_constants(k,imass)>0.) then
+          do j2=mm1,mm2
+            do j3=nn1,nn2
+              mu1_full(:,j2,j3)= &
+                  mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                  /species_constants(k,imass)
+            enddo
+          enddo
+        endif
+      enddo
+!
+    endsubroutine getmu_array
+!***********************************************************************
+   subroutine read_Lewis
+!
+!  Reading of the species Lewis numbers in an input file
+!
+!  21-jun-10/julien: coded
+!  30-jun-17/MR: moved here from eos_chemistry.
+!
+     use Mpicomm, only: stop_it
+!
+      logical :: emptyfile
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem, i
+      real    :: lewisk
+      character (len=10) :: specie_string
+!
+      emptyFile=.true.
+!
+      open(file_id,file="lewis.dat")
+!
+      if (lroot) print*, 'lewis.dat: beginning of the list:'
+!
+      i=0
+      dataloop: do
+        read(file_id,*,end=1000) specie_string, lewisk
+        emptyFile=.false.
+!
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+!
+        if (found_specie) then
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' Lewis=', lewisk
+          Lewis_coef(ind_chem) = lewisk
+          Lewis_coef1(ind_chem) = 1./lewisk
+          i=i+1
+        endif
+      enddo dataloop
+!
+! Stop if lewis.dat is empty
+!
+1000  if (emptyFile)  call stop_it('End of the file!')
+!
+      if (lroot) then
+        print*, 'lewis.dat: end of the list:'
+        if (i == 0) &
+            print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
+      endif
+!
+      close(file_id)
+!
+    endsubroutine read_Lewis
+!***********************************************************************
+   subroutine read_transport_data
+!
+!  Reading of the chemkin transport data
+!
+!  01-apr-08/natalia: coded
+!  30-jun-17/MR: moved here from eos_chemistry.
+!
+     use Mpicomm, only: stop_it
+!
+      logical :: emptyfile
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      integer :: VarNumber
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      logical :: tranin=.false.
+      logical :: trandat=.false.
+!
+      emptyFile=.true.
+!
+      StartInd_1=1; StopInd_1 =0
+
+      inquire (file='tran.dat',exist=trandat)
+      inquire (file='tran.in',exist=tranin)
+      if (tranin .and. trandat) then
+        call fatal_error('eos_chemistry',&
+            'tran.in and tran.dat found. Please decide which one to use.')
+      endif
+
+      if (tranin) open(file_id,file='tran.in')
+      if (trandat) open(file_id,file='tran.dat')
+!
+      if (lroot) print*, 'the following species are found '//&
+          'in tran.in/dat: beginning of the list:'
+!
+      dataloop: do
+!
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+!
+        StopInd_1=index(ChemInpLine,' ')
+        specie_string=trim(ChemInpLine(1:StopInd_1-1))
+!
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+!
+        if (found_specie) then
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
+!
+          VarNumber=1; StartInd=1; StopInd =0
+          stringloop: do while (VarNumber<7)
+!
+            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+            StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+!
+            if (StopInd==StartInd) then
+              StartInd=StartInd+1
+            else
+              if (VarNumber==1) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==2) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==3) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==4) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==5) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==6) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              else
+                call stop_it("No such VarNumber!")
+              endif
+!
+              VarNumber=VarNumber+1
+              StartInd=StopInd
+            endif
+            if (StartInd==80) exit
+          enddo stringloop
+!
+        endif
+      enddo dataloop
+!
+! Stop if tran.dat is empty
+!
+!
+1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
+!
+      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'                    
+!
+      close(file_id)
+!
+    endsubroutine read_transport_data
 !***********************************************************************
 endmodule Chemistry

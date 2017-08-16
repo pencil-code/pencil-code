@@ -147,7 +147,7 @@ module File_io
 !
 !  23-mar-10/PABourdin: implemented
 !
-      use Cparam, only: ip
+      use Cdata, only: ip
       use General, only: loptest
 !
       logical :: file_exists

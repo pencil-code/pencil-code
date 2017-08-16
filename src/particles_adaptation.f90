@@ -20,25 +20,38 @@ module Particles_adaptation
 !
   use Cdata
   use Cparam
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, notanumber
   use Messages
   use Particles_cdata
   use Particles_map
   use Particles_sub
-  use General, only: notanumber
 !
   implicit none
 !
   include 'particles_adaptation.h'
 !
-  integer :: npar_target = 8
+! Runtime parameters
+!
+  character(len=labellen) :: adaptation_method = 'random'
   integer :: npar_min = 4, npar_max = 16
-  character (len=labellen) :: adaptation_method='random'
+  integer :: npar_target = 8
+  real :: dvp_split_kick = 0.0
 !
   namelist /particles_adapt_run_pars/ &
-      npar_target, npar_min, npar_max, adaptation_method
+      adaptation_method, &
+      npar_min, npar_max, npar_target, &
+      dvp_split_kick
+!
+! Module variables
+!
+  integer :: iparmass = 0
+  real :: dvpj_kick = 0.0
 !
   contains
+!***********************************************************************
+!
+! PUBLIC ROUTINES GO BELOW HERE.
+!
 !***********************************************************************
     subroutine initialize_particles_adaptation(f)
 !
@@ -47,13 +60,21 @@ module Particles_adaptation
 !
 !  03-apr-13/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      use EquationOfState, only: cs0
 !
-!  Report fatal error if Particle_mass module not used.
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      if (.not.lparticles_density) &
-          call fatal_error('initialize_particles_adaptation', &
-          'must use Particles_density module for particle adaptation')
+      call keep_compiler_quiet(f)
+!
+!  Report fatal error if Particle_mass or Particle_density module not used.
+!
+      if (lparticles_mass) then
+        iparmass = imp
+      elseif (lparticles_density) then
+        iparmass = irhopswarm
+      else
+        call fatal_error('initialize_particles_adaptation', 'requires Particles_mass or Particles_density')
+      endif
 !
 !  We must be flexible about the particle number.
 !
@@ -62,7 +83,28 @@ module Particles_adaptation
           'must have mpar_loc > 2*npar_loc for particle adaptation')
       call fatal_error_local_collect
 !
-      call keep_compiler_quiet(f)
+      chknpar: if (npar_max < npar_target) then
+        if (lroot) print *, "initialize_particles_adaptation: npar_max = ", npar_max, ", npar_target = ", npar_target
+        call fatal_error("initialize_particles_adaptation", &
+                         "npar_max >= npar_target is required in particles_adaptation_pencils(). ")
+      endif chknpar
+!
+      setdvp: if (adaptation_method /= "random" .and. &
+                  adaptation_method /= "interpolated" .and. &
+                  adaptation_method /= "k-means") then
+!
+!  Set dvp_split_kick to 1E-6 * cs0 if not specified.
+!
+        defkick: if (dvp_split_kick == 0.0) then
+          dvp_split_kick = 1E-6 * cs0
+          if (lroot) print *, "initialize_particles_adaptation: set dvp_split_kick = ", dvp_split_kick
+        endif defkick
+!
+!  Scale it isotropically with dimensionality.
+!
+        dvpj_kick = dvp_split_kick / sqrt(real(dimensionality))
+!
+      endif setdvp
 !
     endsubroutine initialize_particles_adaptation
 !***********************************************************************
@@ -82,11 +124,13 @@ module Particles_adaptation
       integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
 !
       real, dimension(max(maxval(npar_imn),1),mparray) :: fp1
-      real, dimension(npar_target,mparray) :: fp2
+      real, dimension(npar_max,mparray) :: fp2
       real, dimension(mparray,npar_target) :: fp3
       integer, dimension(nx) :: np, k1_l, k2_l
-      integer :: npar_new
+      integer :: npar_new, npar_adapted
       integer :: k, ix, iy, iz
+!
+      call keep_compiler_quiet(ipar)
 !
 !  Do particle adaptation pencil by pencil.
 !
@@ -128,36 +172,72 @@ module Particles_adaptation
         scan: do ix = 1, nx
           if (np(ix) <= 0) cycle scan
 !
-          adapt: if (np(ix) < npar_min .or. np(ix) > npar_max) then
+          adapt: if (np(ix) > npar_max) then
 !
-!           Too many or too little particles - apply adaptation.
+!           Too many particles: merge
 !
-            method: select case (adaptation_method)
-            case ('random') method
-              call new_population_random(ix, iy, iz, np(ix), npar_target, &
-                  fp1(k1_l(ix):k2_l(ix),:), fp2)
-            case ('interpolated') method
-              call new_population_interpolated(ix, iy, iz, np(ix), &
-                  npar_target, fp1(k1_l(ix):k2_l(ix),:), fp2, f)
-            case ('k-means') method
+            merge: select case (adaptation_method)
+!
+            case ('ngp', 'NGP') merge
+              call merge_particles_in_cell_ngp(np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
+!
+            case ('random') merge
+              call new_population_random(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
+!
+            case ('interpolated') merge
+              call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
+!
+            case ('k-means') merge
               call ppcvq(1, 6, 1, 6, np(ix), &
                   transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
-                  fp1(k1_l(ix):k2_l(ix),irhopswarm), npar_target, &
-                  fp3(ixp:ivpz,:), fp3(irhopswarm,:), &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
+                  fp3(ixp:ivpz,:), fp3(iparmass,:), &
                   np(ix) < npar_min, .false., .false.)
-              fp2=transpose(fp3)
-            case default method
-              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
-            endselect method
+              fp2(1:npar_adapted,:) = transpose(fp3)
 !
-            dfp(npar_new+1:npar_new+npar_target,:) = fp2
-            npar_new = npar_new + npar_target
+            case default merge
+              call fatal_error('particles_adaptation_pencils', 'unknown adaptation method')
+!
+            endselect merge
+!
+            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2(1:npar_adapted,:)
+            npar_new = npar_new + npar_adapted
+!
+          elseif (np(ix) < npar_min) then adapt
+!
+!           Too less particles: split
+!
+            split: select case (adaptation_method)
+!
+            case ('random') split
+              call new_population_random(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
+!
+            case ('interpolated') split
+              call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
+!
+            case ('k-means') split
+              call ppcvq(1, 6, 1, 6, np(ix), &
+                  transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
+                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, &
+                  fp3(ixp:ivpz,:), fp3(iparmass,:), &
+                  np(ix) < npar_min, .false., .false.)
+              fp2(1:npar_adapted,:) = transpose(fp3)
+!
+            case default split
+              call split_particles_in_cell(np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2)
+!
+            endselect split
+!
+            dfp(npar_new+1:npar_new+npar_adapted,:) = fp2(1:npar_adapted,:)
+            npar_new = npar_new + npar_adapted
+!
           else adapt
 !
 !           No adaptation is needed.
 !
             dfp(npar_new+1:npar_new+np(ix),:) = fp1(k1_l(ix):k2_l(ix),:)
             npar_new = npar_new + np(ix)
+!
           endif adapt
         enddo scan
       enddo pencil
@@ -169,63 +249,89 @@ module Particles_adaptation
 !
     endsubroutine particles_adaptation_pencils
 !***********************************************************************
-    subroutine new_population_random(ix, iy, iz, npar_old, npar_new, fp_old, fp_new)
+    subroutine read_particles_adapt_run_pars(iostat)
 !
-!  Randomly populates npar_new particles with random positions and approximately
-!  the same total linear momentum.
+      use File_io, only: parallel_unit
 !
-!  14-may-13/ccyang: coded
+      integer, intent(out) :: iostat
 !
-      integer, intent(in) :: ix, iy, iz
-      integer, intent(in) :: npar_old, npar_new
-      real, dimension(npar_old,mparray), intent(in) :: fp_old
-      real, dimension(npar_new,mparray), intent(out) :: fp_new
+      read(parallel_unit, NML=particles_adapt_run_pars, IOSTAT=iostat)
 !
-      integer, dimension(3) :: ipx, ipv
-      real :: mx, dmx, mv, dmv, mtot
-      real :: c1
-      integer :: i
-!
-      ipx = (/ ixp, iyp, izp /)
-      ipv = (/ ivpx, ivpy, ivpz /)
-!
-      mtot = sum(fp_old(:,irhopswarm))
-      fp_new(:,irhopswarm) = mtot / real(npar_new)
-      c1 = real(npar_old) / mtot
-!
-      dir: do i = 1, 3
-        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
-        call statistics(fp_old(:,irhopswarm) * fp_old(:,ipv(i)), mv, dmv)
-        call random_normal(c1 * mv, c1 * dmv, fp_new(:,ipv(i)))
-      enddo dir
-!
-    endsubroutine new_population_random
+    endsubroutine read_particles_adapt_run_pars
 !***********************************************************************
-    subroutine new_population_interpolated(ix, iy, iz, npar_old, npar_new, fp_old, fp_new, f)
+    subroutine write_particles_adapt_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=particles_adapt_run_pars)
+!
+    endsubroutine write_particles_adapt_run_pars
+!***********************************************************************
+    subroutine rprint_particles_adaptation(lreset,lwrite)
+!
+!  Read and register diagnostic parameters.
+!
+!  03-apr-13/anders: adapted
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+!
+    endsubroutine rprint_particles_adaptation
+!***********************************************************************
+!
+! LOCAL ROUTINES GO BELOW HERE.
+!
+!***********************************************************************
+    subroutine merge_particles_in_cell_ngp(npar_old, fp_old, npar_new, fp_new)
+!
+!  Merges all particles in a cell into npar_new = 2 particles by
+!  conserving the NGP assignment of mass, momentum, and kinetic energy
+!  densities on the grid.
+!
+!  01-aug-17/ccyang: stub
+!
+      integer, intent(in) :: npar_old
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
+!
+      npar_new = npar_old
+      fp_new(1:npar_new,:) = fp_old
+!
+    endsubroutine merge_particles_in_cell_ngp
+!***********************************************************************
+    subroutine new_population_interpolated(ix, iy, iz, npar_old, fp_old, npar_new, fp_new, f)
 !
 !  Randomly populates npar_new particles with positions and velocities
 !  interpolated from the assigned particle density and velocity fields.
 !
 !  07-aug-13/anders: coded
+!  01-aug-17/ccyang: changed the API
 !
       integer, intent(in) :: ix, iy, iz
-      integer, intent(in) :: npar_old, npar_new
+      integer, intent(in) :: npar_old
       real, dimension(npar_old,mparray), intent(in) :: fp_old
-      real, dimension(npar_new,mparray), intent(out) :: fp_new
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       real, dimension(3) :: vp_new
       real ::mtot
       integer, dimension(3) :: ipx
-      integer :: i, k, ipar=0
+      integer :: i, k
+!
+      npar_new = npar_target
 !
       ipx = (/ ixp, iyp, izp /)
 !
-      mtot = sum(fp_old(:,irhopswarm))
-      fp_new(:,irhopswarm) = mtot / real(npar_new)
+      mtot = sum(fp_old(:,iparmass))
+      fp_new(1:npar_new,iparmass) = mtot / real(npar_new)
 !
       dir: do i = 1, 3
-        call random_cell(ix+nghost, iy, iz, i, fp_new(:,ipx(i)))
+        call random_cell(ix+nghost, iy, iz, i, fp_new(1:npar_new,ipx(i)))
       enddo dir
 !
       do k=1,npar_new
@@ -235,31 +341,84 @@ module Particles_adaptation
       enddo
 !
       do i=0,2
-        fp_new(:,ivpx+i)=fp_new(:,ivpx+i)-(1/mtot)* &
-            (sum(fp_new(:,irhopswarm)*fp_new(:,ivpx+i),dim=1)- &
-            sum(fp_old(:,irhopswarm)*fp_old(:,ivpx+i),dim=1))
+        fp_new(1:npar_new,ivpx+i)=fp_new(1:npar_new,ivpx+i)-(1/mtot)* &
+            (sum(fp_new(1:npar_new,iparmass)*fp_new(1:npar_new,ivpx+i),dim=1)- &
+            sum(fp_old(:,iparmass)*fp_old(:,ivpx+i),dim=1))
       enddo
 !
     endsubroutine new_population_interpolated
 !***********************************************************************
-    subroutine statistics(a, mean, stddev)
+    subroutine new_population_random(ix, iy, iz, npar_old, fp_old, npar_new, fp_new)
 !
-!  Find the mean and standard deviation of an array.
+!  Randomly populates npar_new particles with random positions and approximately
+!  the same total linear momentum.
 !
 !  14-may-13/ccyang: coded
+!  01-aug-17/ccyang: changed the API
 !
-      real, dimension(:), intent(in) :: a
-      real, intent(out) :: mean, stddev
+      integer, intent(in) :: ix, iy, iz
+      integer, intent(in) :: npar_old
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
 !
-      real :: c
+      integer, dimension(3) :: ipx, ipv
+      real :: mv, dmv, mtot
+      real :: c1
+      integer :: i
 !
-      c = 1.0 / real(size(a))
+      npar_new = npar_target
 !
-      mean = c * sum(a)
-      stddev = sqrt(c * sum(a**2) - mean**2)
-      if (.not. (stddev > 0.0)) stddev=0.0
+      ipx = (/ ixp, iyp, izp /)
+      ipv = (/ ivpx, ivpy, ivpz /)
 !
-    endsubroutine statistics
+      mtot = sum(fp_old(:,iparmass))
+      fp_new(1:npar_new,iparmass) = mtot / real(npar_new)
+      c1 = real(npar_old) / mtot
+!
+      dir: do i = 1, 3
+        call random_cell(ix+nghost, iy, iz, i, fp_new(1:npar_new,ipx(i)))
+        call statistics(fp_old(:,iparmass) * fp_old(:,ipv(i)), mv, dmv)
+        call random_normal(c1 * mv, c1 * dmv, fp_new(1:npar_new,ipv(i)))
+      enddo dir
+!
+    endsubroutine new_population_random
+!***********************************************************************
+    subroutine random_cell(ix, iy, iz, idir, a)
+!
+!  Randomly places the elements of an array inside the local cell.
+!
+!  06-aug-13/anders: coded
+!
+      use General, only: random_number_wrapper
+!
+      integer, intent(in) :: ix, iy, iz, idir
+      real, dimension(:), intent(out) :: a
+!
+      real, dimension(size(a)) :: r
+!
+      call random_number_wrapper(r)
+      if (idir==1) then
+        if (nxgrid/=1) then
+          a = x(ix) - dx/2 + dx*r
+        else
+          a = 0.0
+        endif
+      elseif (idir==2) then
+        if (nygrid/=1) then
+          a = y(iy) - dy/2 + dy*r
+        else
+          a = 0.0
+        endif
+      elseif (idir==3) then
+        if (nzgrid/=1) then
+          a = z(iz) - dz/2 + dz*r
+        else
+          a = 0.0
+        endif
+      endif
+!
+    endsubroutine random_cell
 !***********************************************************************
     subroutine random_normal(mean, width, a)
 !
@@ -290,74 +449,98 @@ module Particles_adaptation
 !
     endsubroutine random_normal
 !***********************************************************************
-    subroutine random_cell(ix, iy, iz, idir, a)
+    subroutine split_particles_in_cell(npar_old, fp_old, npar_new, fp_new)
 !
-!  Randomly places the elements of an array inside the local cell.
+!  Split particles in a cell into npar_new >= npar_min particles by
+!  conserving the assignment of mass and momentum densities on the grid.
+!  Small increase in the velocity dispersion is induced.
 !
-!  06-aug-13/anders: coded
+!  08-aug-17/ccyang: coded
 !
       use General, only: random_number_wrapper
 !
-      integer, intent(in) :: ix, iy, iz, idir
-      real, dimension(:), intent(out) :: a
+      integer, intent(in) :: npar_old
+      real, dimension(npar_old,mparray), intent(in) :: fp_old
+      integer, intent(out) :: npar_new
+      real, dimension(:,:), intent(out) :: fp_new
 !
-      real, dimension(size(a)) :: r, p
+      real, parameter :: factor = 1.0 / log(2.0)
 !
-      call random_number_wrapper(r)
-      if (idir==1) then
-        if (nxgrid/=1) then
-          a = x(ix) - dx/2 + dx*r
-        else
-          a = 0.0
-        endif
-      elseif (idir==2) then
-        if (nygrid/=1) then
-          a = y(iy) - dy/2 + dy*r
-        else
-          a = 0.0
-        endif
-      elseif (idir==3) then
-        if (nzgrid/=1) then
-          a = z(iz) - dz/2 + dz*r
-        else
-          a = 0.0
-        endif
-      endif
+      real, dimension(:), allocatable :: r, p, dvp
+      integer :: npair, nsplit
+      integer :: i, j, k, k1, k2
 !
-    endsubroutine random_cell
+!  Find the number of pairs each particle be split into.
+!
+      npair = ceiling(factor * log(real(npar_min) / real(npar_old)))
+      nsplit = 2**npair
+      npar_new = nsplit * npar_old
+!
+!  Allocate working arrays.
+!
+      allocate(r(npair), p(npair), dvp(npair))
+!
+!  Split each particle.
+!
+      k = 0
+      k1 = 1
+      k2 = nsplit
+      loop: do i = 1, npar_old
+!
+!  Assign the same properties of the original particle.
+!
+        forall(j = 1:mparray, j /= iparmass) fp_new(k1:k2,j) = fp_old(i,j)
+!
+!  Equally divide the mass.
+!
+        fp_new(k1:k2,iparmass) = fp_old(i,iparmass) / real(nsplit)
+!
+!  Add equal and opposite kicks to each pair of split particles.
+!
+        dir: do j = ivpx, ivpz
+          if (.not. lactive_dimension(j-ivpx+1)) continue
+!
+          gauss: if (mod(k,2) == 0) then
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            r = dvpj_kick * sqrt(-2.0 * log(r))
+            dvp = r * cos(twopi * p)
+          else gauss
+            dvp = r * sin(twopi * p)
+          endif gauss
+!
+          fp_new(k1:k2-1:2,j) = fp_new(k1:k2-1:2,j) + dvp
+          fp_new(k1+1:k2:2,j) = fp_new(k1+1:k2:2,j) - dvp
+          k = k + 1
+        enddo dir
+!
+        k1 = k1 + nsplit
+        k2 = k2 + nsplit
+      enddo loop
+!
+!  Deallocate working arrays.
+!
+      deallocate(r, p, dvp)
+!
+    endsubroutine split_particles_in_cell
 !***********************************************************************
-    subroutine read_particles_adapt_run_pars(iostat)
+    subroutine statistics(a, mean, stddev)
 !
-      use File_io, only: parallel_unit
+!  Find the mean and standard deviation of an array.
 !
-      integer, intent(out) :: iostat
+!  14-may-13/ccyang: coded
 !
-      read(parallel_unit, NML=particles_adapt_run_pars, IOSTAT=iostat)
+      real, dimension(:), intent(in) :: a
+      real, intent(out) :: mean, stddev
 !
-    endsubroutine read_particles_adapt_run_pars
-!***********************************************************************
-    subroutine write_particles_adapt_run_pars(unit)
+      real :: c
 !
-      integer, intent(in) :: unit
+      c = 1.0 / real(size(a))
 !
-      write(unit, NML=particles_adapt_run_pars)
+      mean = c * sum(a)
+      stddev = sqrt(c * sum(a**2) - mean**2)
+      if (.not. (stddev > 0.0)) stddev=0.0
 !
-    endsubroutine write_particles_adapt_run_pars
-!***********************************************************************
-    subroutine rprint_particles_adaptation(lreset,lwrite)
-!
-!  Read and register diagnostic parameters.
-!
-!  03-apr-13/anders: adapted
-!
-      use Diagnostics
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
-!
-    endsubroutine rprint_particles_adaptation
+    endsubroutine statistics
 !***********************************************************************
 endmodule Particles_adaptation

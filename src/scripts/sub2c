@@ -1,0 +1,6 @@
+rm -f sub_c.h
+echo '# pragma once' > sub_c.h
+echo '# include "headers_c.h"' >> sub_c.h
+echo '# define set_dt '$MODULE_PREFIX'sub'$MODULE_INFIX'set_dt'$MODULE_SUFFIX >> sub_c.h
+echo 'extern "C" void *set_dt(REAL &dt1_);' >> sub_c.h
+

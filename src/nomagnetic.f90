@@ -194,7 +194,7 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Dummy routine
 !
@@ -203,7 +203,7 @@ module Magnetic
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine rescaling_magnetic(f)
 !
@@ -347,6 +347,17 @@ module Magnetic
       call keep_compiler_quiet(f)
 !
     endsubroutine split_update_magnetic
+!***********************************************************************
+    subroutine magnetic_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine magnetic_after_timestep
 !***********************************************************************
     subroutine expand_shands_magnetic
 !

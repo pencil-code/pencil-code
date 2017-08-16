@@ -16,7 +16,7 @@
 \usepackage{fancyhdr}
 %\usepackage{tocbibind}
 %\usepackage{bibtex}
-\usepackage{wrapfig}
+%\usepackage{wrapfig}
 \usepackage{color}
 \usepackage{hyperref}
 %\usepackage{fmtcount}
@@ -50,6 +50,24 @@
 \newpage
 
 
+\section{Required software}
+
+\subsection{\name{Linux}}
+A \name{Fortran} and a \name{C} compiler are needed to compile the code.
+Both compilers should belong to the same distribution package and version (e.g. GNU GCC 4.8.4, 64 bit Linux).
+
+\subsection{\name{MacOS X}}
+For \name{Mac}, you first need to install \name{Xcode} from the
+website \url{http://developer.apple.com/}, where you have to register as a member.
+Alternatively, an easy to install \command{gfortran} binary package can be found at the website \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download the archive and use the installer contained therein.
+It installs into \directory{/usr/local/gfortran} with
+a symbolic link in \directory{/usr/local/bin/gfortran}. It might be necessary to add
+the following line to the \file{.cshrc}-file in your \directory{/home} folder:
+\begin{verbatim}
+  setenv PATH /usr/local/bin:\$PATH
+\end{verbatim}
+
+
 \section{Download the Pencil Code}
 The Pencil Code is an open source code written mainly in \name{Fortran} and available under GPL.
 General information can be found at our official homepage:
@@ -59,8 +77,15 @@ General information can be found at our official homepage:
 The latest version of the code can be downloaded with \command{svn}. In the
 directory where you want to put the code, type:
 \begin{verbatim}
-  svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code
+  svn checkout https://github.com/pencil-code/pencil-code/trunk/ pencil-code
 \end{verbatim}
+
+Alternatively, you may also use \command{git}:
+\begin{verbatim}
+  git clone https://github.com/pencil-code/pencil-code.git
+\end{verbatim}
+
+More details on download options can be found here: \url{http://pencil-code.nordita.org/download.php}
 
 The downloaded \directory{pencil-code} directory contains several sub-directories:
 \begin{enumerate}
@@ -73,68 +98,50 @@ The downloaded \directory{pencil-code} directory contains several sub-directorie
 \end{enumerate}
 
 
-\section{Configure the shell}
+\section{Configure the shell environment}
 
-For a quick start, you need to load some environment variable into your shell.
-First, you enter to the freshly downloaded directory:
+You need to load some environment variables into your shell.
+Please change to the freshly downloaded directory:
 \begin{verbatim}
   cd pencil-code
 \end{verbatim}
 
-Depending on which shell you use, you can do that by a simple command:
+Probably you use a \command{sh}-compatible shell (like the \name{Linux} default shell \command{bash}), there you just type:
 \begin{verbatim}
   . sourceme.sh
 \end{verbatim}
 
-that will work for \command{bash} and all \command{sh}-compatible shells, while this command:
+(In a \command{csh}-compatible shell, like \command{tcsh}, use this alternative: \command{source sourceme.csh} )
+
+
+\section{Your first simulation run}
+
+\subsection{Create a new run-directory}
+
+Now create a run-directory and clone the input and configuration files from one of the samples that fits you best to get started quickly (here from \directory{pencil-code/samples/1d-tests/jeans-x}):
 \begin{verbatim}
-  source sourceme.csh
+  mkdir -p /data/myuser/myrun/src
+  cd /data/myuser/myrun
+  cp $PENCIL_HOME/samples/1d-tests/jeans-x/*.in ./
+  cp $PENCIL_HOME/samples/1d-tests/jeans-x/src/*.local src/
 \end{verbatim}
+Your run should be put outside of your \directory{/home} directory, if you expect to generate a lot of data and you have a tight storage quota in your \directory{/home}.
 
-is for \command{tcsh} and any \command{csh}-compatible shell.
-
-
-\section{Fortran}
-
-A \name{Fortran} and a \name{C} compiler are needed to compile the code.
-Both compilers should belong to the same distribution package and version (e.g. GNU GCC 4.8.3, 64 bit Linux).
-
-\subsection{Fortran on a \name{Mac}}
-For \name{Mac}, you first need to install \name{Xcode} from the
-website \url{http://developer.apple.com/}, where you have to register as a member.
-Alternatively, an easy to install \command{gfortran} binary package can be found at the website \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download the archive and use the installer contained therein.
-It installs into \directory{/usr/local/gfortran} with
-a symbolic link in \directory{/usr/local/bin/gfortran}. It might be necessary to add
-the following line to the \file{.cshrc}-file in your \directory{/home} folder:
-\begin{verbatim}
-  setenv PATH /usr/local/bin:\$PATH
-\end{verbatim}
-
-
-\section{Try a sample}
-
-Go to a folder that contains one of the many available samples, e.g.:
-\begin{verbatim}
-  cd samples/1d-tests/jeans-x
-\end{verbatim}
-You may also start with a fresh directory and copy over the files from one of the samples.
-
-\subsection{Setting up...}
+\subsection{Linking to the sources}
 
 One command sets up all needed symbolic links to the original Pencil Code directory:
-
 \begin{verbatim}
   pc_setupsrc
 \end{verbatim}
 
-\subsection{Makefile}
+\subsection{Makefile and parameters}
 
 Two basic configuration files define a simulation setup: \file{src/Makefile.local} contains a list of modules that are being used, and \file{src/cparam.local} defines the grid size and the number of processors to be used.
 Take a quick look at these files...
 
 
 \subsubsection{Single-processor}
-An example using the module for only one processor would look like:
+An example \file{src/Makefile.local} using the module for only one processor would look like:
 \begin{verbatim}
 MPICOMM=nompicomm
 \end{verbatim}
@@ -148,7 +155,7 @@ In \file{src/cparam.local} the number of processors needs to be set to \code{1} 
 \end{verbatim}
 
 \subsubsection{Multi-processor}
-If you like to use MPI for multi-processors simulations, be sure that you have a MPI library installed and change \file{src/Makefile.local} to use MPI:
+If you like to use \name{MPI} for multi-processor simulations, be sure that you have a \name{MPI} library installed and change \file{src/Makefile.local} to use \name{MPI}:
 \begin{verbatim}
   MPICOMM=mpicomm
 \end{verbatim}
@@ -160,19 +167,26 @@ For compilation, you have to use a configuration file that includes the \file{\_
 \subsection{Compiling...}
 
 In order to compile the code, you can use a pre-defined configuration file corresponding to your compiler package.
-E.g. the default compilers are \command{gfortran} together with \command{gcc} and the code is being built with default options by issuing the command:
+E.g. the default compilers are \command{gfortran} together with \command{gcc} and the code is being built with default options (not using \name{MPI}) by issuing the command:
 
 \begin{verbatim}
   pc_build
 \end{verbatim}
 
+Alternatively, for multi-processor runs (still using the default \name{GNU-GCC} compilers):
+\begin{verbatim}
+  pc_build -f GNU-GCC_MPI
+\end{verbatim}
+
 \subsubsection{Using a different compiler (optional)}
 
-If you prefer to use a different compiler package (e.g. using \command{ifort} or \command{MPI}), you may try:
+If you prefer to use a different compiler package (e.g. with \name{MPI} support or using \command{ifort}), you may try:
 
 \begin{verbatim}
   pc_build -f Intel
-  pc_build -f GNU-GCC_MPI
+  pc_build -f Intel_MPI
+  pc_build -f Cray
+  pc_build -f Cray_MPI
 \end{verbatim}
 
 More pre-defined configurations are found in the directory \file{pencil-code/config/compilers/*.conf}.
@@ -190,21 +204,25 @@ A good host configuration example, that you may clone and adapt according to you
 \subsection{Running...}
 
 The initial conditions are set in \file{start.in} and the parameters for the main simulation run can be found in \file{run.in}.
-In \file{print.in} you can choose which physical quantities are written to the file \file{data/time\_series.dat}.
+In \file{print.in} you can choose which quantities are written to the file \file{data/time\_series.dat}.
 
-Be sure you have created an empty \directory{data} directory. It is now time to run the code:
+Be sure you have created an empty \directory{data} directory.
 \begin{verbatim}
   mkdir data
+\end{verbatim}
+
+It is now time to run the code:
+\begin{verbatim}
   pc_run
 \end{verbatim}
 Welcome to the world of Pencil Code!
 
 \subsection{Troubleshooting...}
 
-If compiling fails, please try first:
+If compiling fails, please try the following --- with or without the optional \command{\_MPI} for \name{MPI} runs:
 \begin{verbatim}
   pc_build --cleanall
-  pc_build
+  pc_build -f GNU-GCC_MPI
 \end{verbatim}
 
 If some step still fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
@@ -225,7 +243,7 @@ Also please give the full output of these commands:
   pc_build -d
 \end{verbatim}
 
-If you plan to use MPI, please also provide the full output of:
+If you plan to use \name{MPI}, please also provide the full output of:
 \begin{verbatim}
   mpicc --version
   mpif90 --version

@@ -1,5 +1,5 @@
 ! This is a tool to collect distributed data file and convert them to a
-! tecplot file. The generated files are named "OutputN.dat"(N=[0...iproc]),
+! tecplot file. The generated files are named "OutputN.dat"(N=[0...iproc_world]),
 ! where each of them os created from var.dat in the /proc* directories.
 !
 ! This file is derived from pc_collect.f90.
@@ -16,7 +16,7 @@ program pc_tecplot
   use File_io, only: backskip_to_time
   use Filter
   use General, only: itoa
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid,set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO
@@ -74,6 +74,8 @@ program pc_tecplot
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
+  lstart=.false.; lrun=.true.
 !
 !  Read parameters and output parameter list.
 !
@@ -138,7 +140,7 @@ program pc_tecplot
   if (lroot) print *, 'Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
   if (lroot) write (*,*) 'mvar = ', mvar_io
 !
-  iproc = 0
+  iproc_world = 0
   call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_tecplot', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
@@ -147,6 +149,7 @@ program pc_tecplot
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
 ! Loop over processors
@@ -163,8 +166,8 @@ program pc_tecplot
     f = huge(1.0)
     gf = huge(1.0)
 !
-    iproc = ipz * nprocx*nprocy
-    lroot = (iproc==root)
+    iproc_world = ipz * nprocx*nprocy
+    lroot = (iproc_world==root)
     lfirst_proc_z = (ipz == 0)
     llast_proc_z = (ipz == nprocz-1)
 !
@@ -232,8 +235,8 @@ program pc_tecplot
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -289,7 +292,7 @@ program pc_tecplot
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid
+        call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -347,7 +350,7 @@ program pc_tecplot
 !
 ! Write data in tecplot data format
 !
-    chproc=itoa(iproc)
+    chproc=itoa(iproc_world)
     open (lun_output, FILE=trim(directory_out)//'/'//'output'//chproc//'.dat', status='replace', FORM='FORMATTED')
     write(lun_output,*) 'TITLE="Output"'
     write(lun_output,*) 'variables="x","y","z","u","v","w","rho"'

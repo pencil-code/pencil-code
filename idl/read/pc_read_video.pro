@@ -48,28 +48,34 @@ pc_read_dim, obj=dim, datadir=readdir, /quiet
 ;
 ; Define filenames of slices.
 ;
-file_slice1=readdir+'/slice_'+field+'.xy2'
-file_slice2=readdir+'/slice_'+field+'.xy'
-file_slice3=readdir+'/slice_'+field+'.xz'
-file_slice4=readdir+'/slice_'+field+'.yz'
-file_slice5=readdir+'/slice_'+field+'.xz2'
+if (xy2read) then file_slice1=readdir+'/slice_'+field+'.xy2'
+if (xyread) then  file_slice2=readdir+'/slice_'+field+'.xy'
+if (xzread) then  file_slice3=readdir+'/slice_'+field+'.xz'
+if (yzread) then  file_slice4=readdir+'/slice_'+field+'.yz'
+if (xz2read) then file_slice5=readdir+'/slice_'+field+'.xz2'
 ;
 ; Read data with proper precision.
 ;
-xy2_tmp=fltarr(dim.nx,dim.ny)*one
-xy_tmp =fltarr(dim.nx,dim.ny)*one
-xz_tmp =fltarr(dim.nx,dim.nz)*one
-yz_tmp =fltarr(dim.ny,dim.nz)*one
-xz2_tmp=fltarr(dim.nx,dim.nz)*one
+if (xy2read) then xy2_tmp=fltarr(dim.nx,dim.ny)*one
+if (xyread) then xy_tmp =fltarr(dim.nx,dim.ny)*one
+if (xzread) then xz_tmp =fltarr(dim.nx,dim.nz)*one
+if (yzread) then yz_tmp =fltarr(dim.ny,dim.nz)*one
+if (xz2read) then xz2_tmp=fltarr(dim.nx,dim.nz)*one
 t_tmp  =one
 ;
 ; Put data in arrays.
 ;
-xy2=fltarr(dim.nx,dim.ny,nt)*one
-xy =fltarr(dim.nx,dim.ny,nt)*one
-xz =fltarr(dim.nx,dim.nz,nt)*one
-yz =fltarr(dim.ny,dim.nz,nt)*one
-xz2=fltarr(dim.nx,dim.nz,nt)*one
+xy2=0
+xy=0
+xz=0
+yz=0
+xz2=0
+
+if (xy2read) then xy2=fltarr(dim.nx,dim.ny,nt)*one
+if (xyread) then xy =fltarr(dim.nx,dim.ny,nt)*one
+if (xzread) then xz =fltarr(dim.nx,dim.nz,nt)*one
+if (xzread) then yz =fltarr(dim.ny,dim.nz,nt)*one
+if (xz2read) then xz2=fltarr(dim.nx,dim.nz,nt)*one
 t  =fltarr(nt)*one
 ;
 ; Open slice files.
@@ -145,11 +151,11 @@ for it=0,nt-1 do begin
   if (xzread)  then readu, lun_3, xz_tmp, t_tmp, slice_ypos
   if (yzread)  then readu, lun_4, yz_tmp, t_tmp, slice_xpos
   if (xz2read) then readu, lun_5, xz2_tmp, t_tmp, slice_y2pos
-  xy2[*,*,it]=xy2_tmp
-  xy [*,*,it]=xy_tmp
-  xz [*,*,it]=xz_tmp
-  yz [*,*,it]=yz_tmp
-  xz2[*,*,it]=xz2_tmp
+  if (xy2read) then xy2[*,*,it]=xy2_tmp
+  if (xyread) then xy [*,*,it]=xy_tmp
+  if (xzread) then xz [*,*,it]=xz_tmp
+  if (yzread) then yz [*,*,it]=yz_tmp
+  if (xz2read) then xz2[*,*,it]=xz2_tmp
   t[it]=t_tmp
 endfor
 ;
@@ -180,11 +186,11 @@ endif
 ;
 if it lt nt then begin
   it -= 1
-  xy = xy[*,*,0:it]
-  xz = xz[*,*,0:it]
-  yz = yz[*,*,0:it]
-  xy2 = xy2[*,*,0:it]
-  xz2 = xz2[*,*,0:it]
+if (xyread) then  xy = xy[*,*,0:it]
+if (xzread) then  xz = xz[*,*,0:it]
+if (yzread) then  yz = yz[*,*,0:it]
+if (xy2read) then  xy2 = xy2[*,*,0:it]
+if (xz2read) then  xz2 = xz2[*,*,0:it]
   t = t[0:it]
 endif
 ;

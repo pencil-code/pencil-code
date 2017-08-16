@@ -1,0 +1,22 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+SPECIAL   = special/pressure_bump
+
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     =   shear
+
+SHOCK     = shock_highorder
+

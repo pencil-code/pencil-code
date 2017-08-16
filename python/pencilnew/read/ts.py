@@ -16,7 +16,7 @@ def ts(*args, **kwargs):
     call signature:
 
     ts(file_name='time_series.dat', datadir='data',
-       quiet=False, comment_char='#')
+       quiet=False, comment_char='#', sim=False)
 
     Keyword arguments:
 
@@ -31,6 +31,9 @@ def ts(*args, **kwargs):
 
     *comment_char*
       Comment character in the time series file.
+
+    *sim*
+      Simulation object from which to take the datadir.
     """
 
     ts_tmp = TimeSeries()
@@ -52,14 +55,14 @@ class TimeSeries(object):
 
 
     def read(self, file_name='time_series.dat', datadir='data',
-             quiet=False, comment_char='#', sim=False):
+             quiet=False, comment_char='#', sim=None):
         """
         Read Pencil Code time series data.
 
         call signature:
 
         read(self, file_name='time_series.dat', datadir='data',
-             double=0, quiet=0, comment_char='#')
+             double=0, quiet=0, comment_char='#', sim=False)
 
         Keyword arguments:
 
@@ -77,14 +80,18 @@ class TimeSeries(object):
 
         *comment_char*
           Comment character in the time series file.
+
+        *sim*
+          Simulation object from which to take the datadir.
         """
 
         import numpy as np
         import os.path
         import re
 
-        if str(sim.__class__) == "<class 'pencilnew.sim.simulation.__Simulation__'>":
-            datadir = sim.datadir
+        if sim:
+            if str(sim.__class__) == "<class 'pencilnew.sim.simulation.__Simulation__'>":
+                datadir = sim.datadir
 
         datadir = os.path.expanduser(datadir)
         infile = open(os.path.join(datadir, file_name), "r")

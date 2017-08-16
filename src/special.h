@@ -22,8 +22,6 @@
   public :: pencil_criteria_special
   public :: pencil_interdep_special
 
-  public :: calc_lspecial_pars
-
   public :: special_calc_hydro
   public :: special_calc_density
   public :: special_calc_dustdensity

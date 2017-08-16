@@ -4736,6 +4736,44 @@ of blocks any processor may adopt. This should not be so low that there is not
 room for all the bricks with particles, nor so high that the code runs out of
 memory.
 
+\subsubsection{Large number of particles}
+
+When dealing with large number of particles, one needs to make sure that the
+number of particles \code{npar} is less than the maximum integer that the
+compiler can handle with. The maximum integer can be checked by the Fortran
+intrinsic function \code{huge},
+\begin{verbatim}
+program huge_integers
+  print *, huge(0_4) ! for default Fortran integer (32 Bit) 
+  print *, huge(0_8) ! for 64 Bit integer in Fortran
+end program huge_integers
+\end{verbatim}
+If the number of particles \code{npar} is larger than default maximum integer,
+one can promote the maximum integer to 64 Bit by setting
+\begin{verbatim}
+integer(kind=8), parameter :: npar=4294967296
+\end{verbatim}
+in the \code{cparam.local} file. This works because the data type of \code{npar}
+is only set here. It is worth noting that one \textit{should not} use the flag
+\begin{verbatim}
+FFLAGS += -integer-size 64
+\end{verbatim}
+to promote all the integers to 64 Bit. This will break the Fortran-C interface.
+One should also make sure that \code{npar_mig<=npar/ncpus}. It is also beneficial
+to set \code{mpar_loc=2*npar/ncpus}.
+
+\subsubsection{Random number generator}
+
+There are several methods to generate random number in the code.
+It is worth noting that when simulating coagulation with the
+super-particle approach, one should use the intrinsic random number
+generator of FORTRAN instead of the one implemented in the code.
+When invoking \code{random_number_wrapper}, there will be back-reaction
+to the gas flow. This unexpected back-reaction can be tracked by
+inspecting the power spectra, which exhibits the oscillation at the tail.
+To avoid this, one should set \code{luser_random_number_wrapper=F} under
+the module \code{particles_coag_run_pars} in \code{run.in}.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Non-cartesian coordinate systems}
@@ -5420,7 +5458,7 @@ a divergence of a flux that in turn obeys the equation
 \end{equation}
 where $K_{ij}=\tau\tilde{K}_{ij}$ would be the original diffusion tensor
 of \Eq{Difftensor}, if the time derivative were negligible.
-Further details are described in Snodin et al.\ (2005).
+Further details are described in Snodin et al.\ (2006).
 
 
 \subsection{Particles}
@@ -5810,7 +5848,7 @@ What is the problem?
   examples that work.
 
 \item One of the variables for \name{make} has a space appended to it,
-  e.\,g.~if you use the line
+  e.g.\ if you use the line
   \begin{quote}
     \upshape\ttfamily
     MPICOMM = mpicomm_\textvisiblespace
@@ -7835,7 +7873,9 @@ where \code{nw=nx*ny*nz}.
   16 &Triolith&0.075& $128^3$ & magn/noentro & 2x2x4  &  1-mar-14 & AB \\
   16 &Triolith&0.065& $128^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
   16 &Triolith&0.054& $256^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
+  16 &Coma & 0.603 & $128^3$ & GW/magn/noentro & 1x4x4  & 27-jul-17 & SM \\
   24 &Gardar & 0.44 & $128^2\times48$ & magn/noentro &        & 6-nov-13 & AB \\
+  24 &Summit & 0.041& $144^3$ & magn/noentro &        & 28-jul-17 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -7854,6 +7894,7 @@ where \code{nw=nx*ny*nz}.
   36 &Kraken&0.177&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&3x6x2&12-jan-12&WL\\
   36 &scylla &0.096&  $72^3$ & magn/noentro & 1x6x6  &  8-may-16 & AB \\
   48 & janus & 0.028 & $72^2*216$ & magn/noentro &  4x12   &  28-mar-16 & AB \\
+  64 &Coma & 0.573 & $128^3$ & GW/magn/noentro & 1x8x8  & 7-aug-17 & SM \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
@@ -7876,6 +7917,7 @@ where \code{nw=nx*ny*nz}.
   72 & Kraken& 0.151  &$96{\!\times\!}192{\!\times\!}16$ &magn/noentro & 6x12 &17-jan-12 & WL\\
   72 & Kraken& 0.091  &$192{\!\times\!}384{\!\times\!}32$ & magn/noentro & 6x12 &17-jan-12 & WL\\
   72 & Kraken& 0.071  &$384{\!\times\!}768{\!\times\!}64$ & magn/noentro & 6x12 &17-jan-12 & WL\\
+  72 &Summit &0.0128& $576^3$ & magn/noentro &        &  7-aug-17 & AB \\
  128 & fe1   & 0.44 & $256^3$ &nomag/entro/rad8/ion&4x32&10-mar-04& TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -7892,6 +7934,7 @@ where \code{nw=nx*ny*nz}.
  144 & Kraken& 0.058  &$192{\!\times\!}384{\!\times\!}64$ & magn/noentro & 6x12x2 &17-jan-12 & WL\\
  144 & Kraken& 0.044  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
  144 & Gardar& 2.19&  $288{\!\times\!}1{\!\times\!}288$ & coag43&8x1x18 & 13-sep-15& AB \\
+ 144 &Summit &0.0064& $576^3$ & magn/noentro &        &  7-aug-17 & AB \\
  192 &Janus&0.0123&$144{\!\times\!}288{\!\times\!}72$&magn/noentro/sph&1x24x32& 24-jul-16 & AB \\
  256 &Hermit&0.0328&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 &Hermit&0.0285&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
@@ -7909,7 +7952,8 @@ where \code{nw=nx*ny*nz}.
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
  288 & Kraken& 0.0201  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
- 288 & Janus & 0.0360  &$288^3$ & magn/entro/rad & 1x16x18 &22-feb-16 & AB\\
+ 288 & Janus &0.0360& $288^3$ &magn/entro/rad& 1x16x18 &22-feb-16 & AB \\
+ 288 &Summit &0.0033& $576^3$ & magn/noentro & 1x16x18&  7-aug-17 & AB \\
  512 &Hermit&0.01717&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  512 &Hermit&0.0166&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  512 &Hermit&0.0142&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&2x16x16&22-aug-13&PJK\\
@@ -7926,6 +7970,7 @@ where \code{nw=nx*ny*nz}.
  576 &Kraken&0.0257&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x24x4&12-jan-12&WL\\
  576 &Kraken& 0.0317  &$192^2{\!\times\!}64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
  576 &Kraken& 0.0116  &$768^2{\!\times\!}256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
+ 576&Summit&0.00183&$576^3$&magn/noentro&1x24x48&29-jul-17& AB \\
  576&Beskow&0.00174&$576^3$&magn/noentro&1x24x48&23-may-16& AB \\
  768 &Lindgren&0.0049&$256{\!\times\!}1152^2$&magn/noentro/sph&1x24x32& 17-oct-14 & SJ \\
 1024&Hermit&0.00943&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x32&22-aug-13&PJK\\
@@ -7944,6 +7989,7 @@ where \code{nw=nx*ny*nz}.
 1152&Lindgren&0.0066&$1152^3$&magn/noentro&1x32x36&25-nov-14& AB \\
 1152&Beskow&0.0024&$1152^3$&magn/noentro&1x32x36&20-jan-15& AB \\
 1152&Beskow&0.00098&$1152^3$&magn/noentro&1x32x36&18-jan-16& AB-gnu \\
+1152&Beskow&0.00090&$1152^3$&magn/noentro&1x32x36&30-mar-17& AB \\
 1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
 2048&Hermit&0.00451&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&2x32x32&22-aug-13&PJK\\
 2048&Hermit&0.00380&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&8x16x16&22-aug-13&PJK\\
@@ -12614,11 +12660,6 @@ initial condition.
 
 \bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
   \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
-
-\bibitem{Snodin}
-Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
-{Cosmic ray confinement in the diffusion approximation}
-(\astroph{0507176})
 
 \bibitem{SH88} Stanescu, D., Habashi, W. G.,
   \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)

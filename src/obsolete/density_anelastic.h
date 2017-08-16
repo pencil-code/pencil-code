@@ -11,5 +11,5 @@
 
   public :: calc_pencils_density
   public :: pencil_criteria_density, pencil_interdep_density
-  public :: glnrhomz,lcalc_glnrhomean,calc_ldensity_pars,lupw_lnrho
+  public :: glnrhomz,lcalc_glnrhomean,density_after_boundary,lupw_lnrho
   public :: anelastic_after_mn

@@ -10,9 +10,10 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="dust"
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
-! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad); 
+! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
@@ -312,6 +313,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use Particles_caustics, only: register_particles_caustics
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -395,6 +397,10 @@ module Particles
         call fatal_error('register_particles','npvar > mpvar')
       endif
 !
+!  If we are using caustics, here we should call the correspoding register equation:
+!
+      if (lparticles_caustics) call register_particles_caustics()
+!
     endsubroutine register_particles
 !***********************************************************************
     subroutine initialize_particles(f)
@@ -408,6 +414,7 @@ module Particles
       use EquationOfState, only: rho0, cs0
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Density, only: mean_density
+      use Particles_caustics, only: initialize_particles_caustics
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -704,11 +711,11 @@ module Particles
 !  vorticity oo)
 !
       uu: if (lnostore_uu) then
-        if (ldraglaw_steadystate .or. lparticles_spin) &
+        if (ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid) &
             call fatal_error('initialize_particles', 'lnostore_uu = .false. is required. ')
         interp%luu = .false.
       else uu
-        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin
+        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid
       endif uu
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
@@ -846,7 +853,9 @@ module Particles
         close (1)
       endif
 !
-      call keep_compiler_quiet(f)
+!  if we are using caustics:
+!
+      if (lparticles_caustics) call initialize_particles_caustics(f)
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -856,11 +865,13 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs20, rho0
       use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
+      use Particles_caustics, only: init_particles_caustics
 !
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
@@ -872,9 +883,9 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
+      real :: rpar_int, rpar_ext, tausp_par
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
-      real :: rpar_int,rpar_ext
 !
 !  Optionally withhold some number of particles, to be inserted in
 !  insert_particles. The particle indices to be removed are not randomized,
@@ -1542,7 +1553,7 @@ module Particles
               if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
               if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
             else
-              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)   ! generates a random gaussion number*zp0
             endif
           enddo
 !
@@ -1846,10 +1857,15 @@ module Particles
         case ('dragforce_equi_nohydro')
 !
           do k=1,npar_loc
+            if (lparticles_radius) then
+              tausp_par=rhopmat*fp(k,iap)/(sqrt(cs20)*rho0)
+            else
+              tausp_par=tausp
+            endif
             fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
-                1/(1.0/(Omega*tausp)+Omega*tausp)
+                1/(1.0/(Omega*tausp_par)+Omega*tausp_par)
             fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
-                1/(1.0+(Omega*tausp)**2)
+                1/(1.0+(Omega*tausp_par)**2)
           enddo
 !
         case ('dragforce_equi_dust')
@@ -1931,6 +1947,10 @@ module Particles
 !  sorting).
 !
       call sort_particles_imn(fp,ineargrid,ipar)
+!
+!  If we are solving for caustics, then we call their initial condition here:
+!
+      if (lparticles_caustics) call init_particles_caustics(f,fp,ineargrid)
 !
 !  Set the initial auxiliary array for the passive scalar to zero
 !
@@ -2246,7 +2266,7 @@ module Particles
       endif
 !
       if (lbirthring_depletion) then
-        if (lcartesian_coords) then    
+        if (lcartesian_coords) then
          rr_tmp(1:npar_loc) = sqrt(fp(1:npar_loc,ixp)**2.0+fp(1:npar_loc,iyp)**2.0)
         else
          rr_tmp(1:npar_loc) = fp(1:npar_loc,ixp)
@@ -2273,7 +2293,8 @@ module Particles
 !
 !  14-apr-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs0
+      use EquationOfState, only: cs0
+      use Density, only: beta_glnrho_global
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2381,7 +2402,7 @@ module Particles
 !
 !  30-jan-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
@@ -2490,7 +2511,8 @@ module Particles
 !
 !  14-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -2948,10 +2970,11 @@ module Particles
 !
       use Diagnostics
       use EquationOfState, only: cs20
+      use Particles_caustics, only: dcaustics_dt
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
-      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
@@ -3235,12 +3258,11 @@ module Particles
           call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
         endif
       endif
-!
       if (lfirstcall) lfirstcall=.false.
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(ineargrid)
+!  If we are using caustics :
+!
+      if (lparticles_caustics) call dcaustics_dt(f,df,fp,dfp,ineargrid)
 !
     endsubroutine dvvp_dt
 !***********************************************************************
@@ -3575,6 +3597,7 @@ module Particles
       use Particles_diagnos_state, only: persistence_check
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
+      use Particles_caustics, only: dcaustics_dt_pencil
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -3595,7 +3618,7 @@ module Particles
       integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
-      logical :: lsink
+      logical :: lsink, lvapour
       real, pointer :: pscalar_diff, ap0(:)
       real :: Sherwood, mass_trans_coeff, lambda_tilde
       real :: dthetadt, mp_vcell
@@ -3719,13 +3742,38 @@ module Particles
 !
           do k=k1_imn(imn),k2_imn(imn)
 !
-!  Exclude sink particles from the drag.
+!  Vapour particles acquire same speed as the gas.
 !
-            lsink =.false.
+            lvapour=.false.
+            if (lparticles_radius) then
+              if (fp(k,iap)==0.0) then
+                lvapour=.true.
+                inear = ineargrid(k,:)
+                xxp = fp(k,ixp:izp)
+                if (lparticlemesh_cic) then
+                  call interpolate_linear(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  if (linterpolate_spline) then
+                    call interpolate_quadratic_spline(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                  else
+                    call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                  endif
+                else
+                  uup=f(ix0,iy0,iz0,iux:iuz)
+                endif
+                fp(k,ivpx:ivpz)=uup
+                dfp(k,ivpx:ivpz)=0.0
+              endif
+            endif
+!
+!  Exclude sink and vapour particles from the drag.
+!
+            lsink=.false.
             if (lparticles_sink) then
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
-            if (.not. lsink) then
+!
+            if (.not. lsink .and. .not. lvapour) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
@@ -3821,6 +3869,11 @@ module Particles
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+!
+! If we are using the module particles_caustics, then we call for them here:
+!
+              if (lparticles_caustics) & 
+                 call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)  
 !
 !  Account for added mass term beta
 !  JONAS: The advective derivative of velocity is interpolated for each
@@ -4356,13 +4409,13 @@ module Particles
                 if (ldragforce_gas_par) &
                     dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
               endif getdt1
-!  Particle growth by condensation in a passive scalar field,
-!  calculate relaxation time. 1D case for now.
+!  Particle growth by condensation in a active scalar field,
+!  calculate relaxation time.
 !  14-June-16/Xiang-Yu: coded
-      
+
               if (lsupersat) then
                  inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                 if (supersat_ngp) then 
+                 if (supersat_ngp) then
                    l=ineargrid(k,1)
                    !call find_grid_volume(ix0,iy0,iz0,volume_cell)
                    !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
@@ -6107,6 +6160,7 @@ module Particles
 !
       use Diagnostics
       use General,   only: itoa
+      use Particles_caustics, only: rprint_particles_caustics
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -6321,9 +6375,13 @@ module Particles
 !  Check for those quantities for which we want phi-averages.
 !
       do inamerz=1,nnamerz
-        call parse_name(inamerz,cnamerz(inamerz),cformrz(inamerz),'rhopmphi',idiag_rhopmphi)
+       call parse_name(inamerz,cnamerz(inamerz),cformrz(inamerz),'rhopmphi',idiag_rhopmphi)
       enddo
 !
+!    If we are using caustics 
+!
+      if (lparticles_caustics) call rprint_particles_caustics(lreset,lwrite)
+! 
     endsubroutine rprint_particles
 !***********************************************************************
     subroutine particles_final_clean_up

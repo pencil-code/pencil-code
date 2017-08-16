@@ -240,7 +240,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       real, dimension (nx,3) :: glnrho
       real, dimension (nx) :: B2,B21,E2,divE,divE2,divEE2,ou,o2,sij2
       real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
-      real, dimension (nx) :: diffus_eta,diffus_nu
+      real, dimension (nx) :: diffus_eta,diffus_nu,advec_va2
       real :: c2=1
 !
 !
@@ -323,9 +323,10 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       if (lfirst.and.ldt) then
         advec_va2=B2*dxyz_2
+        advec2=advec2+advec_va2
+
         diffus_nu=nu*dxyz_2   ! isn't this done elsewhere ?
         diffus_eta=eta*dxyz_2
-        
         maxdiffus=max(maxdiffus,diffus_eta,diffus_nu)
 !
         if (headtt.or.ldebug) then

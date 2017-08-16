@@ -53,8 +53,8 @@ module Sub
   public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc, del2fj,d2fi_dxj,del2fi_dxjk
   public :: del2m3x3_sym
-  public :: del4v, del4, del2vi_etc
-  public :: del6v, del6, del6_other, del6fj, del6fjv
+  public :: del4v, del4, del2vi_etc, del4graddiv
+  public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
 !
@@ -74,6 +74,7 @@ module Sub
   public :: noform
 !
   public :: update_snaptime, read_snaptime
+  public :: shift_dt, set_dt
   public :: parse_shell
   public :: get_radial_distance, power_law
 !
@@ -106,6 +107,7 @@ module Sub
 !
   public :: vec_dot_3tensor
   public :: traceless_strain,calc_sij2
+  public :: calc_del6_for_upwind
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -1679,9 +1681,10 @@ module Sub
         g(:,2)=g(:,2)-f(l1:l2,m,n,k)*r1_mn
       endif
 !
-!     if (lcylindrical_coords) then
+      if (lcylindrical_coords) then
+        call fatal_error("curl_horizontal","not implemented for cylindrical coords")
 !--     g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
-!     endif
+      endif
 !
     endsubroutine curl_horizontal
 !***********************************************************************
@@ -2381,17 +2384,20 @@ module Sub
 !
     endsubroutine del4v
 !***********************************************************************
-    subroutine del6v(f,k,del6f)
+    subroutine del6v(f,k,del6f,lstrict)
 !
 !  Calculate del6 of a vector, get vector.
 !
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
 !
+      use General, only : loptest
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del6f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
+      logical, optional :: lstrict
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2400,7 +2406,11 @@ module Sub
 !
       k1=k-1
       do i=1,3
-        call del6(f,k1+i,tmp)
+        if (loptest(lstrict)) then
+          call del6_strict(f,k1+i,tmp)
+        else
+          call del6(f,k1+i,tmp)
+        endif
         del6f(:,i)=tmp
       enddo
 !
@@ -2738,6 +2748,133 @@ module Sub
 !
     endsubroutine del6
 !***********************************************************************
+    subroutine del6_strict(f,k,del6)
+!
+!   Calculates del6rho=del2(del2(del2(rho))), with del2=div(grad). The routine is
+!   strictly accurate for Cartesian coordinates, and retains all the leading dx1**6
+!   terms in cylindrical. The subroutine is small enough and memory-cheap enough
+!   that it could be in dlnrhodt. Yet, writing it as a subroutine allows
+!   not only for encapsulation but also better documentation.
+!
+!          d6a    d6a   d6a     / d4d2a    d4d2a    d4d2a    d4d2a    d4d2a    d4d2a  \      d2d2d2a
+!   del6 = --- +  --- + --- + 3 | ------ + ------ + ------ + ------ + ------ + ------ | + 6 ---------
+!          dx6    dy6   dz6     \ dx4dy2   dx4dz2   dx2dy4   dx2dz4   d4ydz2   dz4dy2 /     dx2dy2dz2
+!
+!   02-apr-17/wlad: coded
+!
+      use Deriv, only: der6,der4i2j,der2i2j2k
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: del6,tmp
+      integer :: k,i,j
+!      
+      intent(in) :: f,k
+      intent(out) :: del6
+!
+      del6=0.
+      do i=1,3
+        call der6(f,k,tmp,i)
+        del6 = del6 + tmp
+        do j=1,3
+          if (j/=i) then
+            call der4i2j(f,k,tmp,i,j)
+            del6 = del6 + 3*tmp
+          endif
+        enddo
+      enddo
+      call der2i2j2k(f,k,tmp)
+      del6 = del6 + 6*tmp
+!
+    endsubroutine del6_strict
+!***********************************************************************
+    subroutine del4graddiv(f,ikk,del4graddivu)
+!
+!  Calculate del4(grad(div())), which enters in the formulation of strict
+!  hyperviscosity. This is strictly accurate for Cartesian, and retains all
+!  the leading (dx1**6) terms for polar coordinates. For the x-component of
+!  del4(grad(div())), the result of sympy is
+!
+!               [del4(grad(div(u)))]_x = f(ux) + g(uy) + g(uz)
+!
+!   where f(ux) = der6x(ux)
+!               + 2*(der4x2y(ux)+der4x2z(ux)+der4y2x(ux)+der4z2x(ux))
+!               + 4*der2x2y2z(ux)
+!
+!         g(uy) =   der5x1y(uy) + der1x5y(uy) + 3*der3x3y(uy)
+!               + 2*der3x1y2z(uy) + 3*der1x3y2z(uy) + der1x1y4z(uy)
+!
+!   and similary
+!
+!         h(uz) =  der5x1z(uz) + der1x5z(uz) + 3*der3x3z(uz)
+!               + 2*der3x2y1z(uz) + 3*der1x2y3z(uz) + der1x4y1z(uz)
+!
+!   Per symmetry, the formulation for the y and z components are
+!   identical under the permutation [xyz].
+!
+!   09-apr-17/wlad: coded
+!
+      use Deriv, only: der6,der4i2j,der2i2j2k,der5i1j,der3i3j,der3i2j1k,der4i1j1k
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3) :: del4graddivu
+      real, dimension(nx) :: tmp
+      integer :: ikk,ki,kj
+      integer :: i,j,k
+!
+      intent(in) :: f,ikk
+      intent(out) :: del4graddivu
+!
+      if (ikk .ne. iuu) call fatal_error("del4graddiv",&
+           "del4graddiv only coded for velocity")
+!
+!  The f(ui) part
+!
+      do i=1,3
+        ki = ikk + (i-1)
+        del4graddivu(:,i) = 0.
+        call der6(f,ki,tmp,i);          del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+        do j=1,3
+          if (j/=i) then
+            call der4i2j(f,ki,tmp,i,j); del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+            call der4i2j(f,ki,tmp,j,i); del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+          endif
+        enddo
+        call der2i2j2k(f,ki,tmp) ;      del4graddivu(:,i) =  del4graddivu(:,i) + 4*tmp
+!
+!  The g(uj) and h(uk) parts
+!
+        do j=1,3
+          if (j/=i) then
+            if ((i==1).and.(j==2)) k=3
+            if ((i==1).and.(j==3)) k=2
+            if ((i==2).and.(j==1)) k=3
+            if ((i==2).and.(j==3)) k=1
+            if ((i==3).and.(j==1)) k=2
+            if ((i==3).and.(j==2)) k=1
+!
+            kj = ikk+(j-1)
+            call der5i1j(f,kj,tmp,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+            call der5i1j(f,kj,tmp,j,i)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+!
+            call der3i3j(f,kj,tmp,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 3*tmp
+!
+            call der3i2j1k(f,kj,tmp,i,k,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+!
+            call der3i2j1k(f,kj,tmp,j,k,i)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 3*tmp
+!
+            call der4i1j1k(f,kj,tmp,k,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+          endif
+        enddo
+      enddo
+!
+    endsubroutine del4graddiv
+!***********************************************************************
     subroutine del6_other(f,del6f)
 !
 !  Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
@@ -2856,7 +2993,7 @@ module Sub
       do j=1,3
 !
         grad_f_tmp = gradf(:,j,:)
-        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=upwind)
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -2880,7 +3017,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec
@@ -2939,7 +3076,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec_alt
@@ -3031,13 +3168,11 @@ module Sub
         return
       endif
 !
-      call dot_mn(uu,gradf,ugradf,loptest(ladd))
+      call dot_mn(uu,gradf,ugradf,ladd)
 !
 !  Upwind correction
 !
-      if (present(upwind)) then
-        if (upwind) call doupwind(f,k,uu,ugradf)
-      endif
+      if (loptest(upwind)) call doupwind(f,k,uu,ugradf)
 !
     endsubroutine u_dot_grad_scl
 !***********************************************************************
@@ -3194,6 +3329,8 @@ module Sub
 !
 !  23-mar-08/axel: adapted from u_dot_grad_vec
 !
+      use General, only: loptest
+!
       intent(in) :: hh,gradf,ff
       intent(out) :: hgradf
 !
@@ -3222,7 +3359,7 @@ module Sub
 !
       if (lcylindrical_coords) then
         hgradf(:,1)=hgradf(:,1)-rcyl_mn1*(hh(:,2)*ff(:,2))
-        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,1)*ff(:,2))
+        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,2)*ff(:,1))
       endif
 !
     endsubroutine h_dot_grad_vec
@@ -3530,6 +3667,58 @@ module Sub
       endif
 !
     endsubroutine update_snaptime
+!***********************************************************************
+    subroutine shift_dt(dt_)
+!
+!  Hack to make the code output the VARN files at EXACTLY the times
+!  defined by dsnap, instead of slightly after it.
+!
+!  03-aug-11/wlad: coded
+!
+      use General, only: safe_character_assign
+!
+      real, intent(inout) :: dt_
+      real, save :: tsnap
+      integer, save :: nsnap
+      character (len=fnlen) :: file
+      logical, save :: lfirst_call=.true.
+!
+!  Read the output time defined by dsnap.
+!
+      if (lfirst_call) then
+        call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
+        call read_snaptime(file,tsnap,nsnap,dsnap,t)
+        lfirst_call=.false.
+      endif
+!
+!  Adjust the time-step accordingly, so that the next timestepping
+!  lands the simulation at the precise time defined by dsnap.
+!
+      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
+        dt_=tsnap-t
+        lfirst_call=.true.
+      endif
+!
+    endsubroutine shift_dt
+!***********************************************************************
+    subroutine set_dt(dt1_)
+
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+
+      real :: dt1_
+      real :: dt1, dt1_local
+      real, save :: dt1_last=0.0
+
+      dt1_local=dt1_
+      ! Timestep growth limiter
+      if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
+      call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+      dt=1.0/dt1
+      if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
+      ! Timestep growth limiter
+      if (ddt/=0.) dt1_last=dt1_local/ddt
+
+    endsubroutine set_dt
 !***********************************************************************
     subroutine vecout(lun,file,vv,thresh,nvec)
 !
@@ -3963,6 +4152,7 @@ module Sub
 !  Spherical harmonic
 !
 !   24-nov-14/dhruba: copied from step
+!   15-jun-17/MR: corrected  derivative
 !
       real :: sph_har
       real :: theta,phi
@@ -3985,6 +4175,7 @@ module Sub
       cost=cos(theta); sint=sin(theta); cosp=cos(phi); sinp=sin(phi)
       
  1    aemm=iabs(emm)
+
       select case (ell)
           case (0)
             sph_har=(0.5)*sqrt(1./pi)
@@ -4016,12 +4207,15 @@ module Sub
       endselect
 
       if (present(der)) then
-        if (lother) then
-          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                  ylm_other(theta,phi,ell-1,emm) )/sint
-        else
-          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                  ylm(ell-1,emm) )/sint
+        der = ell*cost*sph_har/sint
+        if (emm<ell) then
+          if (lother) then
+            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                    ylm_other(theta,phi,ell-1,emm)/sint
+          else
+            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                    ylm(ell-1,emm)/sint
+          endif
         endif
       endif
 !
@@ -6451,49 +6645,41 @@ nameloop: do
 !
     endsubroutine unit_vector
 !***********************************************************************
-    subroutine doupwind(f,k,uu,ugradf,mask)
-!
-!  Calculates upwind correction, works incrementally on ugradf
-!
-!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
-!   9-apr-12/MR: optional parameter plus added
-!  12-apr-12/MR: optional parameter modified
+    subroutine calc_del6_for_upwind(f,k,hh,del6f_upwind,mask)
 !
       use Deriv, only: der6, deri_3d_inds
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
-      integer                                           :: k
-      real, dimension (nx,3),             intent(IN)    :: uu
-      real, dimension (nx),               intent(INOUT) :: ugradf
-      integer,                            intent(IN), optional :: mask
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3)             :: del6f, hh
+      real, dimension(nx)               :: del6f_upwind
+      integer, dimension(nx)            :: indxs
+      integer, intent(in), optional     :: mask
+      integer                           :: j, k, msk
 !
-      real, dimension (nx,3) :: del6f
-      integer                :: ii,msk
-      integer, dimension(nx) :: indxs
+      intent(in) :: f,k,hh 
+      intent(out) :: del6f_upwind
 !
       msk=0
-      if (present(mask)) then
-        if ( mask>=1 .and. mask <=3 ) msk=mask
-      endif
+      if (present(mask)) msk=mask
 !
-      do ii=1,3
+      do j=1,3
 !
-        if (ii==msk) then
-          del6f(:,ii) = 0.
+        if (j==msk) then
+          del6f(:,j) = 0.
         else
 !
-          if ( lequidist(ii) ) then
-            call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
+          if (lequidist(j)) then
+            call der6(f,k,del6f(1,j),j,UPWIND=.true.)
           else
-            where( uu(:,ii)>=0 )
+            where(hh(:,j)>=0)
               indxs = 7
             elsewhere
               indxs = 8
             endwhere
-            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
+            call deri_3d_inds(f(1,1,1,k),del6f(1,j),indxs,j,lnometric=.true.)
           endif
 !
-          del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)
+          del6f(:,j) = abs(hh(:,j))*del6f(:,j)
 !
         endif
       enddo
@@ -6506,10 +6692,38 @@ nameloop: do
         del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
       endif
 !
+      del6f_upwind = sum(del6f,2)
+!
+    endsubroutine calc_del6_for_upwind
+!***********************************************************************    
+    subroutine doupwind(f,k,uu,ugradf,mask)
+!
+!  Calculates upwind correction, works incrementally on ugradf
+!
+!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
+!   9-apr-12/MR: optional parameter plus added
+!  12-apr-12/MR: optional parameter modified
+!   8-apr-17/wlyra: encapsulated the calculation of del6     
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
+      integer                                           :: k
+      real, dimension (nx,3),             intent(IN)    :: uu
+      real, dimension (nx),               intent(INOUT) :: ugradf
+      integer,                            intent(IN), optional :: mask
+      real, dimension (nx) :: del6f_upwind
+      integer                :: msk
+!
+      msk=0
+      if (present(mask)) then
+        if ( mask>=1 .and. mask <=3 ) msk=mask
+      endif
+!
+      call calc_del6_for_upwind(f,k,uu,del6f_upwind,msk)
+!
       if (msk>0) then
-        ugradf = ugradf+sum(del6f,2)
+        ugradf = ugradf+del6f_upwind
       else
-        ugradf = ugradf-sum(del6f,2)
+        ugradf = ugradf-del6f_upwind
       endif
 !
     endsubroutine doupwind

@@ -15,12 +15,6 @@ module Cdata
 !
   public
 !
-!  Tiny and huge numbers.
-!
-  real, parameter :: one_real=1.0
-  real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
-  real, parameter :: huge1=0.2*huge(one_real)
-!
 !  Default CVS Id.
 !
   character (len=linelen) :: cvsid='no cvsid is given in start.in or run.in!'
@@ -58,16 +52,22 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+!
+!  Yin-Yang grid.
+!
   logical :: lyinyang=.false., lyang=.false.
+  character(LEN=labellen) :: cyinyang_intpol_type='bilinear'
   integer :: iyinyang_intpol_type=BILIN
   integer :: nzgrid_eff=nzgrid
+  real, dimension(4) :: yy_biquad_weights=impossible
+!
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
   real, dimension (mz) :: sinph,cosph 
   real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc
-  real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
+  real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
@@ -127,14 +127,10 @@ module Cdata
   integer:: ireset_tstart=2
 !
   logical :: lini_t_eq_zero=.false.
-  real, dimension (nx) :: advec_uu=0.,advec_shear,advec_hall,advec_csn2,advec_cs2cr
-  real, dimension (nx) :: advec_cs2=0.,advec_va2,advec_crad2,advec_uud,advec_uun
-  real, dimension (nx) :: advec_kfcr
-  real, dimension (nx) :: advec_special,advec_poly
-  real, dimension (nx) :: advec_hypermesh_rho,advec_hypermesh_uu
-  real, dimension (nx) :: advec_hypermesh_aa,advec_hypermesh_ss
+  real, dimension (nx) :: advec_cs2=0.
+  real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
-  real, dimension (nx) :: dt1_advec=0., dt1_diffus, dt1_src, dt1_max
+  real, dimension (nx) :: dt1_advec=0., dt1_diffus, dt1_diffus2, dt1_diffus3, dt1_src, dt1_max
   real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
   real :: reac_pchem,dt1_preac
@@ -155,10 +151,11 @@ module Cdata
 !
 !  Input/output of data.
 !
-  character (len=fnlen) :: datadir='data'
-  character (len=fnlen) :: directory='',datadir_snap=''
+  character (len=fnlen) :: datadir='data', datadir_prestart='data_prestart'
+  character (len=fnlen) :: directory='', datadir_snap='', directory_prestart=''
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
+  logical :: lsnap=.false., lsnap_down=.false., lspec=.false.
   real :: dsnap=100.,dsnap_down=0.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
@@ -183,6 +180,10 @@ module Cdata
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
   logical :: ldownsampl=.false., ldownsampling
+!
+! Debugging
+!
+  integer :: ip=14
 !
 !  Units (need to be in double precision).
 !
@@ -250,6 +251,7 @@ module Cdata
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.
+  logical :: lvisc_smag=.false.
   logical :: lslope_limit_diff=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
@@ -273,7 +275,7 @@ module Cdata
   integer :: ip21=0,ip22=0,ip23=0
   integer :: ip31=0,ip32=0,ip33=0
   integer :: ipoly_fr=0
-  integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
+  integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0,iphiuu=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: ioo=0, iox=0, ioy=0, ioz=0
   integer :: igradu=0
@@ -288,6 +290,9 @@ module Cdata
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ispx=0,ispy=0,ispz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
+  integer :: ihij,igij
+  integer :: ihhT=0,ihhX=0,iggT=0,iggX=0
+  integer :: istressT,istressX
   integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
   integer :: iqx=0,iqy=0,iqz=0,iqq=0
@@ -340,6 +345,15 @@ module Cdata
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
+!
+!  Data for registering of already updated variable ghost zones for only partly
+!  updating by the *_after_timestep routines.
+!  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
+!  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
+!  
+  integer, parameter :: num_after_timestep=5
+  integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
+  integer :: ighosts_updated=-1
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
@@ -456,10 +470,11 @@ module Cdata
                                 ! PHIAVG_DOC: (useful for debugging)
   integer :: idiag_dtv=0        ! DIAG_DOC:
   integer :: idiag_dtdiffus=0   ! DIAG_DOC:
+  integer :: idiag_dtdiffus2=0  ! DIAG_DOC:
+  integer :: idiag_dtdiffus3=0  ! DIAG_DOC:
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
-  integer :: idiag_nu_LES=0     ! DIAG_DOC:
 !
 !  Emergency brake:
 !   When toggled the code will stop at the next convenient point
@@ -495,6 +510,7 @@ module Cdata
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false.
+  logical :: GWs_spec=.false., Str_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
@@ -553,13 +569,7 @@ module Cdata
 !
   character (len=labellen), dimension(maux) :: aux_var
   integer :: aux_count=1
-  integer :: mvar_io=0, mvar_down=-1, maux_down=0
-  integer :: ireac=0
-  integer, dimension(nchemspec) :: ireaci=0
-!
-!  Number of iterations for multigrid solver.
-!
-  integer :: niter_poisson=30
+  integer :: mvar_io=0, mvar_down=-1, maux_down=-1
 !
 !  Filtering parameters.
 !
@@ -605,9 +615,6 @@ module Cdata
   real :: ampl_kinflow_x=0., ampl_kinflow_y=0., ampl_kinflow_z=0.
   real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.
-! (DM) All previous kinematic stuff can go to hydro_kinematic but I am not sure how
-! to accomodate the following.
-  real :: kinematic_phase=0.
 !
 !  Switch for Galilean-invariant advection for global disks (fargo). Used
 !  in connection with special/fargo
@@ -633,7 +640,7 @@ module Cdata
 !  Used together with entropy, turns iss into ilntt (i.e., entropy
 !  becomes log temperature). It does the same as using the
 !  temperature_idealgas.f90 procedure, but draws on the more available
-!  functionality extant in entropy.f90.
+!  functionality extent in entropy.f90.
 !
   logical :: pretend_lnTT=.false.
 !
@@ -648,10 +655,6 @@ module Cdata
   logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
 !
-! Also to insert particles at specific times
-!
-  logical :: lparticles_insert
-!
 !  Dynamical diffusion coefficients with fixed mesh Reynolds number.
 !
   real :: re_mesh=0.5
@@ -660,8 +663,6 @@ module Cdata
 !
 !  Background stratification.
 !
-  character(len=labellen) :: gztype = 'zero'
   logical :: lstratz = .false.
-  real :: gz_coeff = 0.0
 !***********************************************************************
 endmodule Cdata

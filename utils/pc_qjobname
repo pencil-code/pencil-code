@@ -75,7 +75,7 @@ elsif ($host =~ /p6012/ or $host=~ /jugene/ or $host=~ /genius/){ # LoadLeveler
     print "$job : $a\n";
     }
   }
-elsif ($host =~ /alarik/){ # SLURM
+elsif ($host =~ /alarik/ or $host =~ /aurora/){ # SLURM
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {

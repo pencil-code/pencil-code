@@ -100,6 +100,9 @@
   \var{oxdivu2mz} & $\left<(\omega_x nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{oydivu2mz} & $\left<(\omega_y\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{ozdivu2mz} & $\left<(\omega_z\nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{accpowzmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy}$ \\
+  \var{accpowzupmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy+}$ \\
+  \var{accpowzdownmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy-}$ \\
   \var{fkinxmx}   & $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
@@ -115,7 +118,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
-  \var{fradz}     & $F_{\rm rad}$ \\
+  \var{fradz}     & $\left<F_{\rm rad}\right>_{xy}$ \\
   \var{fconvz}    & $\left<c_p \varrho u_z T \right>_{xy}$ \\
   \var{ssmz}      & $\left< s \right>_{xy}$ \\
   \var{ss2mz}     & $\left< s^2 \right>_{xy}$ \\
@@ -138,8 +141,18 @@
   \var{fturbz}    & $\left<\varrho T \chi_t \nabla_z
                     s\right>_{xy}$ \quad(turbulent
                     heat flux) \\
+  \var{fturbtz}   & $\left<\varrho T \chi_t0 \nabla_z
+                    s\right>_{xy}$ \quad(turbulent
+                    heat flux) \\
+  \var{fturbmz}   & $\left<\varrho T \chi_t0 \nabla_z
+                    \overline{s}\right>_{xy}$
+                    \quad(turbulent heat flux) \\
+  \var{fturbfz}   & $\left<\varrho T \chi_t0 \nabla_z
+                    s'\right>_{xy}$ \quad(turbulent
+                    heat flux) \\
   \var{dcoolz}    & surface cooling flux \\
   \var{Kkramersmz} & $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$ \\
+  \var{ethmz}     & $\left<\varrho e\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -320,7 +333,8 @@
   \var{uxTmz}     & $\left<u_x T\right>_{xy}$ \\
   \var{uyTmz}     & $\left<u_y T\right>_{xy}$ \\
   \var{uzTmz}     & $\left<u_z T\right>_{xy}$ \\
-  \var{fradz}     & $F_{\rm rad}$ \\
+  \var{fradmz}    & $\left<F_{\rm rad}\right>_{xy}$ \\
+  \var{fconvmz}   & $\left<c_p \varrho u_z T \right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_ionization.f90}} \\
 \midrule

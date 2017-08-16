@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED rho_anel
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; glnmumol(3); ppvap; csvap2
+! PENCILS PROVIDED rho1gpp(3)
 !
 !***************************************************************
 module EquationOfState
@@ -60,20 +61,10 @@ module EquationOfState
   !real :: cp=impossible, cp1=impossible
   real :: cp1=impossible,cv=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
-  real :: cs2cool=0.
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
-  integer :: isothtop=0, ics
-  integer :: imass=1
-!
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
+  integer :: imass=1, ics
 !
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
 !
   contains
 !***********************************************************************
@@ -119,20 +110,6 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
-!***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
 !***********************************************************************
     subroutine units_eos
 !
@@ -1406,10 +1383,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -1453,12 +1426,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
      endsubroutine find_mass
 !***********************************************************************
-    subroutine read_Lewis
-!
-!  Dummy routine
-!
-    endsubroutine read_Lewis
-!***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
 !  Get background stratification in z direction.
@@ -1476,5 +1443,14 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=1
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule EquationOfState

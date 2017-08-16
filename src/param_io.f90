@@ -75,13 +75,14 @@ module Param_IO
   real, dimension(mcom) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
-
+  integer :: niter_poisson  ! dummy
+!
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
       coord_system, lpole, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
-      lmodify,modify_filename, &
+      lmodify,modify_filename, dvid, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
@@ -104,7 +105,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors, lyinyang
+      ldirect_access, ltolerate_namelist_errors, lyinyang, cyinyang_intpol_type, yy_biquad_weights
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -115,12 +116,14 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
-      uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, Lor_spec, &
+      uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, &
+      Lor_spec, GWs_spec, Str_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, sp_spec, isaveglobal, lr_spec, r2u_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
-      lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
+      ladv_der_as_aux, lkinflow_as_aux, &
+      ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       lnowrite, noghost_for_isave, nghost_read_fewer, &
@@ -150,7 +153,7 @@ module Param_IO
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
-      crash_file_dtmin_factor, niter_poisson, ltestperturb, eps_rkf, &
+      crash_file_dtmin_factor, ltestperturb, eps_rkf, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, &
@@ -163,7 +166,8 @@ module Param_IO
       lread_from_other_prec, downsampl, lfullvar_in_slices, &
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
-      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
+      cyinyang_intpol_type, yy_biquad_weights
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -665,6 +669,7 @@ module Param_IO
 !
         call write_stub ('particles', lparticles)
         call write_stub ('particles_radius', lparticles_radius)
+        call write_stub ('particles_cond', lparticles_condensation)
         ! call write_stub ('particles_potential', lparticles_potential)
         call write_stub ('particles_spin', lparticles_spin)
         call write_stub ('particles_sink', lparticles_sink)
@@ -681,6 +686,7 @@ module Param_IO
         if (.not. lstart) then
           call write_stub ('particles_adapt', lparticles_adaptation)
           call write_stub ('particles_coag', lparticles_coagulation)
+          call write_stub ('particles_cond', lparticles_condensation)
           call write_stub ('particles_coll', lparticles_collisions)
           call write_stub ('particles_stirring', lparticles_stirring)
           call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
@@ -1043,7 +1049,7 @@ module Param_IO
        do i=1,npencils
          if (lpenc_video(i)) write(unit,*) i, pencil_names(i)
        enddo
-       print*, 'write_pencil_info: pencil information written to the file pencils.list'
+       if (ip<14) call information('write_pencil_info','pencil information written to the file pencils.list')
        close(unit)
      endif
 !

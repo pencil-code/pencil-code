@@ -161,8 +161,12 @@ function pc_generate_parameter_abbreviation, param, label=label
 		cp = pc_get_parameter ('cp', label=label)
 		return, cp * unit_velocity^2/unit_temperature ; Specific heat capacity [SI: m^2/(s^2*K)]
 	end
+	if (strcmp (param, 'degrees_of_freedom', /fold_case)) then begin
+		return, 3 ; default: f=3
+	end
 	if (strcmp (param, 'isentropic_exponent', /fold_case)) then begin
-		return, pc_get_parameter ('kappa_ideal_3', label=label) ; Isentropic exponent (default: f=3) [-]
+		DOF = pc_get_parameter ('degrees_of_freedom', label=label)
+		return, (DOF + 2.0d0) / DOF ; Isentropic exponent (default: 5/3, f=3) [-]
 	end
 	if (strcmp (param, 'kappa_ideal_3', /fold_case)) then begin
 		return, 5/3.0 ; Isentropic exponent for an ideal atomic gas (f=3) [-]
@@ -245,6 +249,7 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 
 	; Some additional units
 	if (strcmp (param, 'unit_time', /fold_case)) then return, pc_get_parameter ('unit_length', label=label) / pc_get_parameter ('unit_velocity', label=label)
+	if (strcmp (param, 'unit_energy', /fold_case)) then return, pc_get_parameter ('unit_density', label=label) * pc_get_parameter ('unit_velocity', label=label)^2 / pc_get_parameter ('unit_length', label=label)^3
 
 	; Some additional mathematical constants
 	if (strcmp (param, 'e', /fold_case)) then return, 2.718281828459045235d0 ; Euler constnat

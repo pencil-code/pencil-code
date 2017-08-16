@@ -3,30 +3,115 @@
 !  FROM MPICOMM.F90
 !***********************************************************************
 !  ROUTINES
-!    initiate_isendrcv_bdry_ogrid
-!    finalize_isendrcv_bdry_ogrid
-!    isendrcv_bdry_x_ogrid
+!     initiate_isendrcv_bdry_ogrid
+!     finalize_isendrcv_bdry_ogrid
+!     isendrcv_bdry_x_ogrid
+!     initialize_mpicomm_ogrid
+!     finalize_isend_init_interpol
 !***********************************************************************
 
 module Solid_Cells_Mpicomm
 
   use Cparam
+  use Cdata
+  use Mpicomm, only: mpisend_nonblock_real, mpirecv_nonblock_real, mpiwait, mpibarrier
 
   implicit none
 
   include 'solid_cells_mpi.h'
-
+  ! Grid parameters
   integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
   integer, parameter :: mx_ogrid=nx_ogrid+2*nghost,l1_ogrid=1+nghost,l2_ogrid=mx_ogrid-nghost
   integer, parameter :: my_ogrid=ny_ogrid+2*nghost,m1_ogrid=1+nghost,m2_ogrid=my_ogrid-nghost
   integer, parameter :: mz_ogrid=nz_ogrid+2*nghost,n1_ogrid=1+nghost,n2_ogrid=mz_ogrid-nghost
+  integer, parameter :: l1i_ogrid=l1_ogrid+nghost-1
+  integer, parameter :: l2i_ogrid=mx_ogrid-2*nghost+1
+  integer, parameter :: m1i_ogrid=m1_ogrid+nghost-1
+  integer, parameter :: m2i_ogrid=my_ogrid-2*nghost+1
+  integer, parameter :: n1i_ogrid=n1_ogrid+nghost-1
+  integer, parameter :: n2i_ogrid=mz_ogrid-2*nghost+1
 
-  real, dimension (nghost,ny_ogrid,nz_ogrid,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
-  real, dimension (:,:,:,:), allocatable :: lbufyi,ubufyi,lbufyo,ubufyo
-  real, dimension (:,:,:,:), allocatable :: lbufzi,ubufzi,lbufzo,ubufzo
-  real, dimension (:,:,:,:), allocatable :: llbufi,lubufi,uubufi,ulbufi
-  real, dimension (:,:,:,:), allocatable :: llbufo,lubufo,uubufo,ulbufo
+  ! MPI variables and parameters
+  real, dimension (nghost,ny_ogrid,nz_ogrid,mcom) :: lbufxi_og,ubufxi_og,lbufxo_og,ubufxo_og
+  integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
+
+  real, dimension (:,:,:,:), allocatable :: lbufyi_og,ubufyi_og,lbufyo_og,ubufyo_og
+  real, dimension (:,:,:,:), allocatable :: lbufzi_og,ubufzi_og,lbufzo_og,ubufzo_og
+  real, dimension (:,:,:,:), allocatable :: llbufi_og,lubufi_og,uubufi_og,ulbufi_og
+  real, dimension (:,:,:,:), allocatable :: llbufo_og,lubufo_og,uubufo_og,ulbufo_og
+  integer, dimension(4,2) :: bufsizes_yz_og
+  integer, parameter :: INYU=1, INZU=2, INYL=3, INZL=4
+  integer, parameter :: INUU=1, INLU=2, INLL=3, INUL=4
+  integer, parameter :: IRCV=1, ISND=2
+  integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
+  integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
+  integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
+  integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !(corners)
+ 
+  logical :: lcorner_yz=.false.
+  integer :: llcorn,lucorn,uucorn,ulcorn            ! (the 4 corners in yz-plane)
+  integer, parameter :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
+  integer, parameter :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
+
   contains 
+
+!***********************************************************************
+    subroutine initialize_mpicomm_ogrid
+!
+!  Initialise MPI communication on the overlapping grids. This is run
+!  after the standard initialize_mpicomm subroutine.
+!
+!  19-apr-17/Jorgen: Adapted and modified, from initialize_mpicomm in mpicomm.f90
+!
+!  Announce myself for pc_run to detect.
+!
+      if (lroot) print *, 'initialize_mpicomm_ogrid: enabled MPI on overlapping grid'
+!
+!  Set corners and neighbours. These are the same as those set in mpicomm.f90
+!
+!  Am I a yz corner?
+!
+      lcorner_yz=(lfirst_proc_y.or.llast_proc_y).and.(lfirst_proc_z.or.llast_proc_z)
+!
+!  Set up `lower' and `upper' neighbours, refer to MPI_COMM_GRID.
+!
+      xlneigh = modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
+      xuneigh = modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
+      ylneigh = ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
+      yuneigh = ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
+      zlneigh = ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      zuneigh = ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
+!
+!  Set the four corners in the yz-plane (in cyclic order).
+!
+      llcorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      ulcorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      uucorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      lucorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+!
+      bufsizes_yz_og(:,IRCV)=(/nz_ogrid,ny_ogrid,nz_ogrid,ny_ogrid/) 
+      bufsizes_yz_og(:,ISND)=(/nz_ogrid,ny_ogrid,nz_ogrid,ny_ogrid/) 
+!
+      allocate( lbufyi_og(mx_ogrid,nghost,bufsizes_yz_og(INYL,IRCV),mcom), &
+                ubufyi_og(mx_ogrid,nghost,bufsizes_yz_og(INYU,IRCV),mcom), &
+                lbufyo_og(mx_ogrid,nghost,bufsizes_yz_og(INYL,ISND),mcom), &
+                ubufyo_og(mx_ogrid,nghost,bufsizes_yz_og(INYU,ISND),mcom), &
+                lbufzi_og(mx_ogrid,bufsizes_yz_og(INZL,IRCV),nghost,mcom), &
+                ubufzi_og(mx_ogrid,bufsizes_yz_og(INZU,IRCV),nghost,mcom), &
+                lbufzo_og(mx_ogrid,bufsizes_yz_og(INZL,ISND),nghost,mcom), &
+                ubufzo_og(mx_ogrid,bufsizes_yz_og(INZU,ISND),nghost,mcom)   )
+!  
+      allocate( llbufi_og(mx_ogrid,nghost,nghost,mcom), &
+                llbufo_og(mx_ogrid,nghost,nghost,mcom), &
+                lubufi_og(mx_ogrid,nghost,nghost,mcom), &
+                lubufo_og(mx_ogrid,nghost,nghost,mcom), &
+                ulbufi_og(mx_ogrid,nghost,nghost,mcom), &
+                ulbufo_og(mx_ogrid,nghost,nghost,mcom), &
+                uubufi_og(mx_ogrid,nghost,nghost,mcom), &
+                uubufo_og(mx_ogrid,nghost,nghost,mcom)   )
+!
+    endsubroutine initialize_mpicomm_ogrid
+!***********************************************************************
 
     subroutine initiate_isendrcv_bdry_ogrid(f)
 !
@@ -34,150 +119,91 @@ module Solid_Cells_Mpicomm
 !  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
 !  leftneigh and rightneigh are initialized by mpicomm_init.
 !
-!  07-feb-17/Jorgen: adapted from mpicomm.f90
+!  apr-17/Jorgen: adapted from mpicomm.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: f
 !
-      integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
-      integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus                 ! placeholder tags
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir
+      integer, dimension(4) :: nbuf_y, nbuf_z, nbuf_yz
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
+      integer, parameter :: sendvar=ivar2-ivar1+1
 !
-      ivar1=1; ivar2=min(mcom,size(f,4))
       if (ivar2==0) return
-!
-      mxl=size(f,1)
 !
 !  Set communication across x-planes.
 !
-      if (nprocx>1) call isendrcv_bdry_x(f)
-!
-!  Set communication across y-planes.
-!  Standard message tags from defaults for surfaces and yz-corners.
-!
-      tolowyr=tolowy; tolowzr=tolowz; TOlls=TOll; TOllr=TOll
-      tolowys=tolowy; tolowzs=tolowz; TOlus=TOlu; TOlur=TOlu
-      touppyr=touppy; touppzr=touppz; TOuus=TOuu; TOuur=TOuu
-      touppys=touppy; touppzs=touppz; TOuls=TOul; TOulr=TOul
+      if (nprocx>1) call isendrcv_bdry_x_ogrid(f)
 !
 !  Allocate and send/receive buffers across y-planes
 !
-      bufact=mxl*nghost*(ivar2-ivar1+1)
-
       if (nprocy>1) then
 !
 !  Internal, periodic exchange y-plane buffers.
 !
-        lbufyo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)         !(lower y-zone)
-        comm=MPI_COMM_GRID
+        lbufyo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)         !(lower y-zone)
+        nbuf_y=(/mx_ogrid,nghost,bufsizes_yz_og(INYL,IRCV),sendvar/)
+        call mpirecv_nonblock_real(lbufyi_og(:,:,:,ivar1:ivar2),nbuf_y,ylneigh,touppy,irecv_rq_fromlowy)
+        call mpisend_nonblock_real(lbufyo_og(:,:,:,ivar1:ivar2),nbuf_y,ylneigh,tolowy,isend_rq_tolowy)
 
-        nbufy=bufact*bufsizes_yz(INYL,IRCV)
-        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       ylneigh,touppyr,comm,irecv_rq_fromlowy,mpierr)
-
-        nbufy=bufact*bufsizes_yz(INYL,ISND)
-        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       ylneigh,tolowys,comm,isend_rq_tolowy,mpierr)
-
-        ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper y-zone)
-        comm=MPI_COMM_GRID
-!
-        nbufy=bufact*bufsizes_yz(INYU,IRCV)
-        call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       yuneigh,tolowyr,comm,irecv_rq_fromuppy,mpierr)
-
-        nbufy=bufact*bufsizes_yz(INYU,ISND)
-        call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       yuneigh,touppys,comm,isend_rq_touppy,mpierr)
+        ubufyo_og(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper y-zone)
+        nbuf_y=(/mx_ogrid,nghost,bufsizes_yz_og(INYU,IRCV),sendvar/)
+        call mpirecv_nonblock_real(ubufyi_og(:,:,:,ivar1:ivar2),nbuf_y,yuneigh,tolowy,irecv_rq_fromuppy)
+        call mpisend_nonblock_real(ubufyo_og(:,:,:,ivar1:ivar2),nbuf_y,yuneigh,touppy,isend_rq_touppy)
       endif
 !
 !  Set communication across z-planes.
 !
       if (nprocz>1) then
 !        
-        lbufzo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2) !lower z-planes
-        comm=MPI_COMM_GRID
-
-        nbufz=bufact*bufsizes_yz(INZL,IRCV)
-        call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zlneigh,touppzr,comm,irecv_rq_fromlowz,mpierr)
-
-        nbufz=bufact*bufsizes_yz(INZL,ISND)
-        call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zlneigh,tolowz,comm,isend_rq_tolowz,mpierr)
+        lbufzo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2) !lower z-planes
+        nbuf_z=(/mx_ogrid,bufsizes_yz_og(INZL,IRCV),nghost,sendvar/)
+        call mpirecv_nonblock_real(lbufzi_og(:,:,:,ivar1:ivar2),nbuf_z,zlneigh,touppz,irecv_rq_fromlowz)
+        call mpisend_nonblock_real(lbufzo_og(:,:,:,ivar1:ivar2),nbuf_z,zlneigh,tolowz,isend_rq_tolowz)
 !
-        ubufzo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2) !upper z-planes
-        comm=MPI_COMM_GRID
-
-        nbufz=bufact*bufsizes_yz(INZU,IRCV)
-        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zuneigh,tolowzr,comm,irecv_rq_fromuppz,mpierr)
-
-        nbufz=bufact*bufsizes_yz(INZU,ISND)
-        call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zuneigh,touppz,comm,isend_rq_touppz,mpierr)
-
+        ubufzo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2) !upper z-planes
+        nbuf_z=(/mx_ogrid,bufsizes_yz_og(INZU,IRCV),nghost,sendvar/)
+        call mpirecv_nonblock_real(ubufzi_og(:,:,:,ivar1:ivar2),nbuf_z,zuneigh,tolowz,irecv_rq_fromuppz)
+        call mpisend_nonblock_real(ubufzo_og(:,:,:,ivar1:ivar2),nbuf_z,zuneigh,touppz,isend_rq_touppz)
       endif
 !
 !  The four corners (in counter-clockwise order).
-!  (NOTE: this should work even for nprocx>1)
 !
       if ((nprocz>1).and.(nprocy>1)) then
 !
 !  Internal and periodic yz-corner buffers.
 !
-        bufact=mxl*(ivar2-ivar1+1)
+        nbuf_yz=(/mx_ogrid,nghost,nghost,sendvar/)
 !
 !  Lower y, lower z.
 !
-        llbufo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-!
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,IRCV))
-        if (llcornr>=0) call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       llcornr,TOuur,comm,irecv_rq_FRll,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,ISND))
-        if (llcorns>=0) call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       llcorns,TOlls,comm,isend_rq_TOll,mpierr)
+        llbufo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
+        if (llcorn>=0) then
+          call mpirecv_nonblock_real(llbufi_og(:,:,:,ivar1:ivar2),nbuf_yz,llcorn,TOuu,irecv_rq_FRll)
+          call mpisend_nonblock_real(llbufo_og(:,:,:,ivar1:ivar2),nbuf_yz,llcorn,TOll,isend_rq_TOll)
+        endif
 !
 !  Upper y, lower z.
 !
-        ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,IRCV))
-        if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       ulcornr,TOlur,comm,irecv_rq_FRul,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,ISND))
-        if (ulcorns>=0) call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       ulcorns,TOuls,comm,isend_rq_TOul,mpierr)
+        ulbufo_og(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
+        if (ulcorn>=0) then
+          call mpirecv_nonblock_real(ulbufi_og(:,:,:,ivar1:ivar2),nbuf_yz,ulcorn,TOlu,irecv_rq_FRul)
+          call mpisend_nonblock_real(ulbufo_og(:,:,:,ivar1:ivar2),nbuf_yz,ulcorn,TOul,isend_rq_TOul)
+        endif
 !
 !  Upper y, upper z.
 !
-        uubufo(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,IRCV))
-        if (uucornr>=0) call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       uucornr,TOllr,comm,irecv_rq_FRuu,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,ISND))
-        if (uucorns>=0) call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       uucorns,TOuus,comm,isend_rq_TOuu,mpierr)
+        uubufo_og(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
+        if (uucorn>=0) then
+          call mpirecv_nonblock_real(uubufi_og(:,:,:,ivar1:ivar2),nbuf_yz,uucorn,TOll,irecv_rq_FRuu)
+          call mpisend_nonblock_real(uubufo_og(:,:,:,ivar1:ivar2),nbuf_yz,uucorn,TOuu,isend_rq_TOuu)
+        endif
 !
 !  Lower y, upper z.
 !
-        lubufo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,IRCV))
-        if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       lucornr,TOulr,comm,irecv_rq_FRlu,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,ISND))
-        if (lucorns>=0) call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       lucorns,TOlus,comm,isend_rq_TOlu,mpierr)
+        lubufo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
+        if (lucorn>=0) then
+          call mpirecv_nonblock_real(lubufi_og(:,:,:,ivar1:ivar2),nbuf_yz,lucorn,TOul,irecv_rq_FRlu)
+          call mpisend_nonblock_real(lubufo_og(:,:,:,ivar1:ivar2),nbuf_yz,lucorn,TOlu,isend_rq_TOlu)
+        endif
 !
       endif
 !
@@ -192,13 +218,10 @@ module Solid_Cells_Mpicomm
 !
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
-      use General, only: transpose_mn, notanumber
-
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
+      integer :: j
 !
-      integer :: ivar1, ivar2, j
-!
-      ivar1=1; ivar2=min(mcom,size(f,4))
       if (ivar2==0) return
 !
 !  1. wait until data received
@@ -206,92 +229,66 @@ module Solid_Cells_Mpicomm
 !  3. wait until send completed, will be overwritten in next time step
 !
 !  Communication across y-planes (includes periodic bc)
+!  Note: Always periodic BC in theta-dir
 !
       if (nprocy>1) then
-        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
-        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
+        call mpiwait(irecv_rq_fromuppy)
+        call mpiwait(irecv_rq_fromlowy)
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then  
-            f(:,1:m1_ogrid-1,n1_ogrid:n2_ogrid,j)=lbufyi(:,:,:,j)       ! set lower buffer
-          endif
-
-          if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-            f(:,m2_ogrid+1:,n1_ogrid:n2_ogrid,j)=ubufyi(:,:,:,j)        ! set upper buffer
-          endif
+          f(:,1:m1_ogrid-1,n1_ogrid:n2_ogrid,j)=lbufyi_og(:,:,:,j)       ! set lower buffer
+          f(:,m2_ogrid+1:,n1_ogrid:n2_ogrid,j)=ubufyi_og(:,:,:,j)        ! set upper buffer
         enddo
-        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
-        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
+        call mpiwait(isend_rq_tolowy)
+        call mpiwait(isend_rq_touppy)
       endif
 !
 !  Communication in z (includes periodic bc)
+!  Note:Assume same z-periodicity for cartesian and curvilinear grid
 !
       if (nprocz>1) then
-        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
-        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-        do j=ivar1,ivar2
-          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            f(:,m1_ogrid:m2_ogrid,1:n1_ogrid-1,j)=lbufzi(:,:,:,j)       ! set lower buffer
-          endif
-
-          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then 
-            f(:,m1_ogrid:m2_ogrid,n2_ogrid+1:,j)=ubufzi(:,:,:,j)        ! set upper buffer
-          endif
-        enddo
-        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
-        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
+        call mpiwait(irecv_rq_fromuppz)
+        call mpiwait(irecv_rq_fromlowz)
+        if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then            
+          do j=ivar1,ivar2
+            f(:,m1_ogrid:m2_ogrid,1:n1_ogrid-1,j)=lbufzi_og(:,:,:,j)       ! set lower buffer
+          enddo
+        endif
+        if (.not. llast_proc_z .or. bcz12(j,2)=='p') then 
+          do j=ivar1,ivar2
+            f(:,m1_ogrid:m2_ogrid,n2_ogrid+1:,j)=ubufzi_og(:,:,:,j)        ! set upper buffer
+          enddo
+        endif
+        call mpiwait(isend_rq_tolowz)
+        call mpiwait(isend_rq_touppz)
       endif
 !
 !  The four yz-corners (in counter-clockwise order)
 !
        if (nprocz>1.and.nprocy>1) then
-
-        if (uucornr>=0) call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-        if (lucornr>=0) call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-        if (llcornr>=0) call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-        if (ulcornr>=0) call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
-
+        if (uucorn>=0) call mpiwait(irecv_rq_FRuu)
+        if (lucorn>=0) call mpiwait(irecv_rq_FRlu)
+        if (llcorn>=0) call mpiwait(irecv_rq_FRll)
+        if (ulcorn>=0) call mpiwait(irecv_rq_FRul)
         do j=ivar1,ivar2
-!
-!  Set ll corner
-!
           if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            if  (.not.lfirst_proc_y.or.bcy12(j,1)=='p') then    ! inner or periodic proc boundaries
-              f(:,1:m1_ogrid-1,1:n1_ogrid-1,j)=llbufi(:,:,:,j)               ! fill lower left corner
-            endif
-!
-!  Set ul corner
-!
-            if (.not.llast_proc_y .or.bcy12(j,2)=='p') then    ! inner or periodic proc boundaries
-                f(:,m2_ogrid+1:,1:n1_ogrid-1,j)=ulbufi(:,:,:,j)                ! fill lower right corner
-            endif
+            f(:,1:m1_ogrid-1,1:n1_ogrid-1,j)=llbufi_og(:,:,:,j)               ! fill lower left corner (ll)
+            f(:,m2_ogrid+1:,1:n1_ogrid-1,j)=ulbufi_og(:,:,:,j)                ! fill lower right corner (ul)
           endif
-!
-!  Set uu corner
-!
           if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
-            if (.not.llast_proc_y.or.bcy12(j,2)=='p') then    ! inner or periodic proc boundaries
-              f(:,m2+1:,n2+1:,j)=uubufi(:,:,:,j)                ! fill upper right corner
-            endif
-!
-!  Set lu corner
-!
-            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
-              f(:,1:m1-1,n2+1:,j)=lubufi(:,:,:,j)                ! fill upper left corner
-            endif
+            f(:,m2+1:,n2+1:,j)=uubufi_og(:,:,:,j)                             ! fill upper right corner (uu)
+            f(:,1:m1-1,n2+1:,j)=lubufi_og(:,:,:,j)                            ! fill upper left corner (lu)
           endif
         enddo
-        
-        if (llcorns>=0) call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
-        if (ulcorns>=0) call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
-        if (uucorns>=0) call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
-        if (lucorns>=0) call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
-
+        if (llcorn>=0) call mpiwait(isend_rq_TOll)
+        if (ulcorn>=0) call mpiwait(isend_rq_TOul)
+        if (uucorn>=0) call mpiwait(isend_rq_TOuu)
+        if (lucorn>=0) call mpiwait(isend_rq_TOlu)
       endif
 !
 !  make sure the other processors don't carry on sending new data
 !  which could be mistaken for an earlier time
 !
-    call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+      call mpibarrier
 !
     endsubroutine finalize_isendrcv_bdry_ogrid
 !***********************************************************************
@@ -301,50 +298,59 @@ module Solid_Cells_Mpicomm
 !  before continuing to y and z boundaries, as this allows the edges
 !  of the grid to be set properly.
 !
-!   2-may-09/anders: coded
+!  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
+      integer :: j
+      integer, dimension(4), parameter ::  nbuf_x=(/ny_ogrid,nz_ogrid,nghost,ivar2-ivar1+1/)
 !
-      integer :: ivar1, ivar2, nbufx, j
+      lbufxo_og(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
+      ubufxo_og(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
+      call mpirecv_nonblock_real(ubufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,tolowx,irecv_rq_fromuppx)
+      call mpirecv_nonblock_real(lbufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,touppx,irecv_rq_fromlowx)
+      call mpisend_nonblock_real(lbufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,tolowx,isend_rq_tolowx)
+      call mpisend_nonblock_real(ubufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,touppx,isend_rq_touppx)
+      call mpiwait(irecv_rq_fromuppx)
+      call mpiwait(irecv_rq_fromlowx)
 !
-      ivar1=1; ivar2=min(mcom,size(f,4))
+!  Inner communication in x
+!  Note: Never periodic BC for radial direction
 !
-      if (nprocx>1) then
-
-        lbufxo(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m_ogrid1:m2,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
-        ubufxo(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m_ogrid1:m2,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
-        nbufx=ny_ogrid*nz_ogrid*nghost*(ivar2-ivar1+1)
-
-        call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,tolowx,MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
-        call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,touppx,MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
-        call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,tolowx,MPI_COMM_GRID,isend_rq_tolowx,mpierr)
-        call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,touppx,MPI_COMM_GRID,isend_rq_touppx,mpierr)
-        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
-        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
-!
-!  Inner communication or (shear-)periodic boundary conditions in x
-!  MR: Communication should only happen under these conditions.
-!
+      if (.not. lfirst_proc_x) then
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_x .or. bcx12(j,1)=='p' .or. &
-              (bcx12(j,1)=='she'.and.nygrid==1)) then
-            f( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi(:,:,:,j)  !!(set lower buffer)
-          endif
-          if (.not. llast_proc_x .or. bcx12(j,2)=='p' .or. &
-              (bcx12(j,2)=='she'.and.nygrid==1)) then
-            f(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
-          endif
+          f( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi_og(:,:,:,j)  !!(set lower buffer)
         enddo
-
-        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
-        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
-
       endif
+      if (.not. llast_proc_x) then
+        do j=ivar1,ivar2
+          f(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi_og(:,:,:,j)  !!(set upper buffer)
+        enddo
+      endif
+      call mpiwait(isend_rq_tolowx)
+      call mpiwait(isend_rq_touppx)
 !
     endsubroutine isendrcv_bdry_x_ogrid
+!***********************************************************************
+    subroutine finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
+!
+!  Wait for non-blocking communication in setting up interpolation arrays to finish
+!
+      integer :: nreq1D, nreq2D
+      integer, dimension(nreq1D) :: ireq1D
+      integer, dimension(nreq2D) :: ireq2D
+      integer :: j
+
+      do j=1,nreq1D
+        call mpiwait(ireq1D(j))
+      enddo
+      do j=1,nreq2D
+        call mpiwait(ireq2D(j))
+      enddo
+!
+      call mpibarrier
+!
+    endsubroutine finalize_isend_init_interpol
+!***********************************************************************
 
 endmodule Solid_Cells_Mpicomm

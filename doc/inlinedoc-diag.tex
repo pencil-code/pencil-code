@@ -16,6 +16,7 @@
 %%   chemistry.f90
 %%   chiral_fluids.f90
 %%   chiral_fluids_gradtheta.f90
+%%   chiral_mhd.f90
 %%   coronae.f90
 %%   cosmicray_current.f90
 %%   density_stratified.f90
@@ -33,6 +34,7 @@
 %%   particles_chemistry.f90
 %%   particles_dust.f90
 %%   particles_dust_brdeplete.f90
+%%   particles_mass_swarm.f90
 %%   particles_surfspec.f90
 %%   polymer.f90
 %%   shear.f90
@@ -57,6 +59,7 @@
 %%   testscalar_axisym.f90
 %%   testscalar_simple.f90
 %%   thermal_energy.f90
+%%   visc_smagorinsky.f90
 %%   viscosity.f90
 
 % ---------------------------------------------------------------- %
@@ -244,6 +247,8 @@
                     the density_xaver_range \\
   \var{rhomzmask} & $\left<\varrho\right>$ for
                     the density_zaver_range \\
+  \var{drho2m}    & $<(\varrho-\varrho_0)^2>$ \\
+  \var{drhom}     & $<\varrho-\varrho_0>$ \\
   \var{rhomin}    & $\min(\rho)$ \\
   \var{rhomax}    & $\max(\rho)$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
@@ -661,25 +666,6 @@
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{dtchem}    & $dt_{chem}$ \\
-  \var{Y1mz}      & $\left<Y_1\right>_{xy}(z)$ \\
-  \var{Y2mz}      & $\left<Y_2\right>_{xy}(z)$ \\
-  \var{Y3mz}      & $\left<Y_3\right>_{xy}(z)$ \\
-  \var{Y4mz}      & $\left<Y_4\right>_{xy}(z)$ \\
-  \var{Y5mz}      & $\left<Y_5\right>_{xy}(z)$ \\
-  \var{Y6mz}      & $\left<Y_6\right>_{xy}(z)$ \\
-  \var{Y7mz}      & $\left<Y_7\right>_{xy}(z)$ \\
-  \var{Y8mz}      & $\left<Y_8\right>_{xy}(z)$ \\
-  \var{Y9mz}      & $\left<Y_9\right>_{xy}(z)$ \\
-  \var{Y10mz}     & $\left<Y_10\right>_{xy}(z)$ \\
-  \var{Y11mz}     & $\left<Y_11\right>_{xy}(z)$ \\
-  \var{Y12mz}     & $\left<Y_12\right>_{xy}(z)$ \\
-  \var{Y13mz}     & $\left<Y_13\right>_{xy}(z)$ \\
-  \var{Y14mz}     & $\left<Y_14\right>_{xy}(z)$ \\
-  \var{Y15mz}     & $\left<Y_15\right>_{xy}(z)$ \\
-  \var{Y16mz}     & $\left<Y_16\right>_{xy}(z)$ \\
-  \var{Y17mz}     & $\left<Y_17\right>_{xy}(z)$ \\
-  \var{Y18mz}     & $\left<Y_18\right>_{xy}(z)$ \\
-  \var{Y19mz}     & $\left<Y_19\right>_{xy}(z)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{chiral_fluids.f90}} \\
 \midrule
@@ -701,6 +687,12 @@
   \var{gtheta5mx} & $\left<\nabla\theta_{5x}\right>$ \\
   \var{gtheta5my} & $\left<\nabla\theta_{5y}\right>$ \\
   \var{gtheta5mz} & $\left<\nabla\theta_{5z}\right>$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{chiral_mhd.f90}} \\
+\midrule
+  \var{mu5m}      & $\left<\mu_5\right>$ \\
+  \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
+  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$F \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -774,7 +766,10 @@
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves.f90}} \\
 \midrule
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+  \var{hhL2m}     & $\left<h_{\rm L}^2\right>$ \\
+  \var{hhT2m}     & $\left<h_{\rm T}^2\right>$ \\
+  \var{hhLhhTm}   & $\left<h_{\rm L}h_{\rm T}\right>$ \\
+  \var{ggLpt}     & $g_{\rm L}(x_1,y_1,z_1,t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
@@ -1118,6 +1113,12 @@
   \var{vpxmin}    & $MIN(u_{part})$ \\
   \var{npm}       & $\rm{mean particle number density}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{particles_mass_swarm.f90}} \\
+\midrule
+  \var{mpm}       & $\overline{m_p}$ \\
+  \var{mpmin}     & $\min_j m_{p,j}$ \\
+  \var{mpmax}     & $\max_j m_{p,j}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{particles_surfspec.f90}} \\
 \midrule
   \var{dtpchem}   & $dt_{particle,chemistry}$ \\
@@ -1162,6 +1163,7 @@
   \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{TTmin}     & $\min (T)$ \\
   \var{TTm}       & $\left< T \right>$ \\
+  \var{TT2m}      & $\left< T^2 \right>$ \\
   \var{TugTm}     & $\left< T\uv\cdot\nabla T \right>$ \\
   \var{Trms}      & $\sqrt{\left< T^2 \right>}$ \\
   \var{uxTm}      & $\left< u_x T \right>$ \\
@@ -1181,7 +1183,9 @@
   \var{Tdypm}     & $\left< T dp/dy \right>$ \\
   \var{Tdzpm}     & $\left< T dp/dz \right>$ \\
   \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
-                    \quad(radiative flux at the top) \\
+                    \quad(top radiative flux) \\
+  \var{fradbot}   & $<-K{dT\over dz}>_{\text{bot}}$
+                    \quad(bottom radiative flux) \\
   \var{yHmax}     & DOCUMENT ME \\
   \var{yHmin}     & DOCUMENT ME \\
   \var{yHm}       & DOCUMENT ME \\
@@ -1191,6 +1195,8 @@
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
+  \var{ethtot}    & $\int_V\varrho e\,dV$
+                    \quad(total thermal energy) \\
   \var{ssm}       & $\overline{S}$ \\
   \var{thcool}    & $\tau_{\rm cool}$ \\
   \var{ppm}       & $\overline{P}$ \\
@@ -2009,12 +2015,18 @@
   \var{ethm}      & $\left< e_{\text{th}}\right> =
                     \left< c_v \rho T \right> $
                     \quad(mean thermal energy) \\
+  \var{ethtot}    & $\int_V e_{\text{th}}\,dV$
+                    \quad(total thermal energy) \\
   \var{ethmin}    & $\mathrm{min} e_\text{th}$ \\
   \var{ethmax}    & $\mathrm{max} e_\text{th}$ \\
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
   \var{etot}      & $\langle e_\textrm{th} + \rho u^2 / 2\rangle$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{visc_smagorinsky.f90}} \\
+\midrule
+  \var{nu_LES}    & Mean value of Smagorinsky viscosity \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
@@ -2028,6 +2040,7 @@
   \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
   \var{nusmagmin} & Min value of Smagorinsky viscosity \\
   \var{nusmagmax} & Max value of Smagorinsky viscosity \\
+  \var{nu_LES}    & Mean value of Smagorinsky viscosity \\
   \var{visc_heatm} & Mean value of viscous heating \\
   \var{qfviscm}   & $\left<\qv\cdot
                     \fv_{\rm visc}\right>$ \\

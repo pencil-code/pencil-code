@@ -10,9 +10,8 @@ ENTROPY     = noentropy
 MAGNETIC    =   magnetic
 SHOCK       = noshock
 VISCOSITY   =   viscosity
-GRAVITY     = nogravity
+GRAVITY     =   gravity_r
 
-SPECIAL = special/fargo
 FOURIER = fourier_fftpack
 
 REAL_PRECISION = double

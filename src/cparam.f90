@@ -68,7 +68,6 @@ module Cparam
 !  Use here symbol mreduce, use nreduce in call.
 !
   integer, parameter :: mreduce=6
-  integer :: ip=14
 !
 !  Number of slots in initlnrho etc.
 !
@@ -97,8 +96,16 @@ module Cparam
 !  Predefine maximum possible numbers.
 !
   integer, parameter :: max_int=huge(0)
+  real, parameter :: huge_real=huge(0.0)
+  double precision, parameter :: huge_double=huge(0.0d0)
   real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
                                                ! huge(0.) illegal when reading it from a namelist 
+!
+!  Tiny and huge numbers.
+!
+  real, parameter :: one_real=1.0
+  real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
+  real, parameter :: huge1=0.2*huge_real
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.
@@ -117,7 +124,7 @@ module Cparam
 !
 ! MPI
 !
-   integer, parameter :: root=0
+  integer, parameter :: root=0
 !
 !  Diagnostic variable types.
 !
@@ -133,7 +140,7 @@ module Cparam
   integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
   integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
-  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
+  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6, ilabel_sum_log10_par=20
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
   integer, parameter :: ilabel_sum_lim=9,ilabel_complex=100
 !
@@ -143,7 +150,8 @@ module Cparam
   real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
   real, parameter :: sqrtpi=1.77245385090551602729816748334115
   real, parameter :: sqrt2=1.41421356237309504880168872420970
-  real, parameter :: four_pi_over_three=4.0/3.0*pi,onethird=1./3.
+  real, parameter :: four_pi_over_three=4.0/3.0*pi
+  real, parameter :: onethird=1./3., fourthird=4./3.
   real, parameter :: twopi = 6.2831853071795864769252867665590
   real, parameter :: dtor = pi/180.
 !
@@ -220,5 +228,6 @@ module Cparam
 !
 !  Symbolic constants for Yin-Yang grid.
 !
-  integer, parameter :: BILIN=1, BIQUAD=2
+  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3
+!
 endmodule Cparam

@@ -359,7 +359,7 @@ module Yinyang_mpi
 
             caproot=find_proc(ipx,0,0)                 ! "cap collector" has lowest rank in layer ipx.
             capzprocs=(/0,nprocz/3/)                   ! range of z ranks in cap.      
-if (iproc==caproot)print*, 'South: yloc=', yloc
+!if (iproc==caproot)print*, 'South: yloc=', yloc
 
           elseif (ipz>=2*nprocz/3-1) then
 !
@@ -370,7 +370,7 @@ if (iproc==caproot)print*, 'South: yloc=', yloc
 
             caproot=find_proc(ipx,nprocy-1,nprocz-1)   ! "cap collector" has highest rank in layer ipx.
             capzprocs=(/2*nprocz/3-1,nprocz-1/)        ! range of z ranks in cap.     
-if (iproc==caproot) print*, 'North: yloc=', yloc
+!if (iproc==caproot) print*, 'North: yloc=', yloc
           endif
 !if (iproc==caproot) print*, 'iproc, yloc=', iproc, yloc(1), yloc(nycap)
 !

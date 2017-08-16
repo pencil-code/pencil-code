@@ -104,6 +104,7 @@ module Dustdensity
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
   real    :: supsatratio_omega=0., self_collision_factor=1.
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
+  real    :: r_lucky=0., r_collected=0., f_lucky=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -117,7 +118,8 @@ module Dustdensity
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
-      lzero_upper_kern, rotat_position, dt_substep
+      lzero_upper_kern, rotat_position, dt_substep, &
+      r_lucky, r_collected, f_lucky
  
 !
   namelist /dustdensity_run_pars/ &
@@ -572,7 +574,8 @@ module Dustdensity
 !   7-nov-01/wolf: coded
 !  28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: cs20, gamma
       use Initcond, only: hat3d, sinwave_phase
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
@@ -694,6 +697,18 @@ module Dustdensity
               endif
             endif
           enddo
+!  Initial condition for lucky droplet            
+        case ('luckyDrop')
+          do k=1,ndustspec
+            if (abs(ad(k)-r_lucky) .eq. minval(abs(ad-r_lucky))) then
+              f(:,:,:,ind(k)) = f_lucky
+            elseif (abs(ad(k)-r_collected) .eq. minval(abs(ad-r_collected))) then
+              f(:,:,:,ind(k)) = amplnd
+            else
+              f(:,:,:,ind(k)) = 0
+            endif
+          enddo
+
 !
 !  lognormal initial condition
 !
@@ -935,7 +950,8 @@ module Dustdensity
 !
 !  18-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1510,7 +1526,11 @@ module Dustdensity
         if (lpencil(i_fcloud)) then
           do i=1, nx
            ff_tmp=p%nd(i,:)*dsize(:)**3
-           if (ndustspec>1) ttt= spline_integral(dsize,ff_tmp)
+           if (ndustspec>1) then
+             ttt=spline_integral(dsize,ff_tmp)
+           else
+             !ttt=     !fill me in
+           endif
            p%fcloud(i)=4.0/3.0*pi*rho_w*ttt(ndustspec)
           enddo
 !
@@ -1533,7 +1553,7 @@ module Dustdensity
 !
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
-          if (dsize(k)>0.) then
+          if (dsize(k)>0. .and. dsize(k)/=1.01e-6) then
           if (.not. ldcore) then
 !
               p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
@@ -1592,11 +1612,12 @@ module Dustdensity
                   endif
                 endif
               enddo
-                if (any(dsize==0.0)) then
-                else
-                  ttt= spline_integral(dsize,ff_tmp)
-                endif
-                 p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
+              if (any(dsize==0.0)) then
+                !ttt=         !fill me in
+              else
+                ttt= spline_integral(dsize,ff_tmp)
+              endif
+               p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
             endif
            enddo
           endif
@@ -2016,7 +2037,7 @@ module Dustdensity
             fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp1*dline_1(:,j)**2
           enddo
           if (lfirst.and.ldt) &
-               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1/dxyz_4
+               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmax_pencil**4
         endif
 !
         if (ldiffd_hyper3lnnd) then

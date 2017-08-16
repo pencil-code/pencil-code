@@ -55,16 +55,17 @@ module Particles_lyapunov
 !
     endsubroutine initialize_particles_lyapunov
 !***********************************************************************
-    subroutine init_particles_lyapunov(f,fp)
+!    subroutine init_particles_lyapunov(f,fp)
+    subroutine init_particles_lyapunov(fp)
 !
-      use Sub, only: kronecker_delta
-      use General, only: keep_compiler_quiet,random_number_wrapper
-      use Mpicomm, only: mpiallreduce_sum
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+!      use Sub, only: kronecker_delta
+!      use General, only: keep_compiler_quiet,random_number_wrapper
+!      use Mpicomm, only: mpiallreduce_sum
+!      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
 !
-      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_lyapunov

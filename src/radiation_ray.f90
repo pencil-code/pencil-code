@@ -55,6 +55,7 @@ module Radiation
   integer, parameter :: maxdir=26
 !
   real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
+  real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
@@ -86,6 +87,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
+  real :: z_cutoff=impossible,cool_wid=impossible
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -107,6 +109,7 @@ module Radiation
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false., lread_source_function=.false.
+  logical :: lcutoff_opticallythin=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -140,7 +143,8 @@ module Radiation
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
-      lread_source_function, kapparho_floor
+      lread_source_function, kapparho_floor,lcutoff_opticallythin, &
+      z_cutoff,cool_wid
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -157,7 +161,8 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
-      lread_source_function, kapparho_floor
+      lread_source_function, kapparho_floor, lcutoff_opticallythin, &
+      z_cutoff,cool_wid
 !
   contains
 !***********************************************************************
@@ -1470,6 +1475,8 @@ module Radiation
                   dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
             else
               dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
+              if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+              dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
             endif
           enddo
           dt1_max=max(dt1_max,dt1_rad)
@@ -1548,12 +1555,16 @@ module Radiation
 !
       use EquationOfState, only: eoscalc
       use Debug_IO, only: output
+      use SharedVariables, only: put_shared_variable
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
       real, dimension(mx) :: lnTT
+      integer :: lun_input = 1
       integer :: inu
+      integer :: ierr
 !
       select case (source_function_type)
 !
@@ -1563,7 +1574,17 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
-          Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+          if (lcutoff_opticallythin) then
+            if (z_cutoff==impossible .or. cool_wid==impossible) &
+            call fatal_error("source_function:","z_cutoff or cool_wid is not set")
+            call put_shared_variable('z_cutoff',z_cutoff,ierr)
+            if (ierr/=0) call stop_it("source_function: "//&
+              "there was a problem when putting z_cutoff")
+               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)* &
+                         0.5*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+          else
+            Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+          endif
         enddo
         enddo
 !
@@ -1618,6 +1639,16 @@ module Radiation
           call calc_Srad_W2(f,Srad)
         endif
 !
+!  Read from file
+!
+      case ('read_file')
+        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='unformatted')
+        read (lun_input) Srad_noghost
+        close (lun_input)
+        Srad(l1:l2,m1:m2,n1:n2)=Srad_noghost
+        Srad(l1:l2,m1:m2,n1-1)=impossible
+        Srad(l1:l2,m1:m2,n2+1)=impossible
+!
 !  Nothing.
 !
       case ('nothing')
@@ -1652,9 +1683,11 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
-      real, dimension(mx) :: kappa1,kappa2
+      real, dimension(mx) :: kappa1,kappa2,kappae
+      real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
+      integer :: lun_input = 1
       integer :: i,inu
 !
       select case (opacity_type)
@@ -1664,6 +1697,31 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
           f(:,m,n,ikapparho)=kapparho_floor+tmp*scalefactor_kappa(inu)
+        enddo
+        enddo
+!
+      case ('total_Rosseland_mean')
+! 
+!  All coefficients valid for cgs units ONLY
+!  We use solar abundances X=0.7381, Y=0.2485, metallicity Z=0.0134
+!  kappa1 is Kramer's opacity, kappa2 is Hminus opacity, kappa_cond is conductive opacity
+!  total kappa is calculated by taking the harmonic mean of radiative nd conductive opacities
+!  kappa_rad=1/(1/kappa2+1/kappa1)
+!  kappa=1/(1/kappa_rad+1/kappa3)
+!
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho)
+          call eoscalc(f,mx,lntt=lntt)
+          kappa1=4.0d25*1.7381*0.0135*unit_density**2*unit_length* &
+                exp(lnrho)*(exp(lnTT)*unit_temperature)**(-3.5)
+          kappa2=1.25d-29*0.0134*unit_density**1.5*unit_length*&
+                 unit_temperature**9*exp(0.5*lnrho)*exp(9.0*lnTT)
+          kappae=0.2*1.7381*(1.+2.7d11*exp(lnrho-2*lnTT)*unit_density/unit_temperature**2)**(-1.)
+          kappa_cond=2.6d-7*unit_length*unit_temperature**2*exp(2*lnTT)*exp(-lnrho)
+          kappa_rad=kapparho_floor+1./(1./(kappa1+kappae)+1./kappa2)
+          kappa_tot=1./(1./kappa_rad+1./kappa_cond)
+          f(:,m,n,ikapparho)=exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
         enddo
         enddo
 !
@@ -1827,8 +1885,20 @@ module Radiation
       case ('B2+W2') !! magnetic field and vorticity
         call calc_kapparho_B2_W2(f)
 !
+!  Read from file
+!
+      case ('read_file')
+        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
+        read (lun_input) kapparho_noghost
+        close (lun_input)
+        f(l1:l2,m1:m2,n1:n2,ikapparho)=kapparho_noghost
+!
       case ('nothing')
-        f(l1:l2,m,n,ikapparho)=0.0
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          f(l1:l2,m,n,ikapparho)=0.0
+        enddo
+        enddo
 !
       case default
         call fatal_error('opacity','no such opacity type: '//trim(opacity_type))
@@ -2077,8 +2147,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine de_dt
@@ -2294,10 +2363,11 @@ module Radiation
       use Diagnostics
       use EquationOfState
       use Sub
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: Krad,chi_rad,g2, diffus_chi
+      real, dimension (nx) :: Krad,chi_rad,g2, diffus_chi,advec_crad2
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
       real :: fact
       integer :: j,k
@@ -2332,13 +2402,12 @@ module Radiation
 !
       if (lfirst.and.ldt) then
         advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
-      endif
+        advec2=advec2+advec_crad2
+        if (notanumber(advec_crad2)) print*, 'advec_crad2=',advec_crad2
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for leading entropy term
 !  is gamma*chi_rad*del2ss.
-!
-      if (lfirst.and.ldt) then
 !
 !  Calculate timestep limitation. In the diffusion approximation the
 !  time step is just the diffusive time step, but with full radiation

@@ -12,6 +12,7 @@ program pc_distribute_z
   use Param_IO
   use Register
   use Sub
+  use Grid, only: set_coorsys_dimmask
 !
   implicit none
 !
@@ -57,9 +58,11 @@ program pc_distribute_z
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
 !
 !  Read parameters and output parameter list.
 !
+  lstart = .false.; lrun=.true.
   call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
@@ -180,8 +183,8 @@ subroutine read_and_distribute(filename,f,lonly_farray)
       enddo
     enddo
 !
-    iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-    lroot = (iproc==root)
+    iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+    lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !

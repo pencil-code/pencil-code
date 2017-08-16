@@ -11,12 +11,11 @@ index.sty is first in your TEXINPUTS. The Makefile takes care of this.
 
 If you cannot compile the text locally, you can get the
 pdf file of the latest version with
-   wget http://www.nordita.org/software/pencil-code/doc/manual.pdf
+   wget http://pencil-code.nordita.org/doc/manual.pdf
 
-Since 1 Dec 2014, the web pages of the Pencil Code reside on a branch,
-so we recommend that in your directory pencil-code/doc you say:
+Since April 2015, the web pages of the Pencil Code are on
 
-  svn checkout https://pencil-code.googlecode.com/svn/branches/www
+  svn checkout https://github.com/pencil-code/website
 
 -------------------------------------------------------------------------------
 make faq

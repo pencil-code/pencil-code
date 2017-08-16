@@ -10,7 +10,7 @@
 # S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the read class for the VAR file reading,
-some simlation attributes and the data cube.
+some simulation attributes and the data cube.
 """
 
 def var(*args, **kwargs):
@@ -29,53 +29,45 @@ def var(*args, **kwargs):
     call signature:
 
     var(var_file='', datadir='data/', proc=-1, ivar=-1,
-        quiet=True, trim_all=False,
-        param=None, dim=None, index=None, run2D=False,
-        magic=None, setup=None, precision='f')
+        quiet=True, trimall=False,
+        magic=None, sim=None, precision='f')
 
     Keyword arguments:
+        var_file:   Name of the VAR file.
+        sim:        Simulation sim object.
+        magic:      Values to be computed from the data, e.g. B = curl(A).
+        trimall:    Trim the data cube to exclude ghost zones.
+        quiet:      Flag for switching off output.
 
-    *var_file*:
-      Name of the VAR file.
-
-    *datadir*:
-      Directory where the data is stored.
-
-    *proc*:
-      Processor to be read. If -1 read all and assemble to one array.
-
-    *ivar*:
-      Index of the VAR file, if var_file is not specified.
-
-    *quiet*
-      Flag for switching off output.
-
-    *trim_all*:
-      Trim the data cube to exclude ghost zones.
-
-    *param*:
-     The params object from read.param.
-
-    *dim*:
-     The dim object from read.dim.
-
-    *index*:
-     The index object from read.dim.
-
-    *run2D*:
-      Specify if the run is purely 2d.
-
-    *magic*:
-      Values to be computed from the data, e.g. B = curl(A).
-
-    *setup*:
-      Simulation setup object.
-
-    *precision*:
-      Precision of the data. Either float 'f' or double 'd'.
+        datadir:    Directory where the data is stored.
+        proc:       Processor to be read. If -1 read all and assemble to one array.
+        ivar:       Index of the VAR file, if var_file is not specified.
     """
 
-    var_tmp = DataCube(*args, **kwargs)
+    from ..sim import __Simulation__
+
+    started = None
+
+    for a in args:
+        if type(a) == __Simulation__:
+            started = a.started()
+            break
+
+    else:
+        if 'sim' in kwargs.keys():
+            started = kwargs['sim'].started()
+        elif 'datadir' in kwargs.keys():
+            from os.path import join, exists
+            if exists(join(kwargs['datadir'], 'time_series.dat')): started = True
+        #else:
+        #    print('!! ERROR: No simulation of path specified..')
+
+    if started == False:
+        print('!! ERROR: Simulation has not jet started. There are not var files.')
+        return False
+
+    var_tmp = DataCube()
+    var_tmp.read(*args, **kwargs)
     return var_tmp
 
 
@@ -84,10 +76,20 @@ class DataCube(object):
     DataCube -- holds Pencil Code VAR file data.
     """
 
-    def __init__(self, var_file='', datadir='data', proc=-1, ivar=-1,
-                 quiet=True, trim_all=False,
-                 param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f4'):
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
+
+        self.t = 0.
+        self.dx = 1.
+        self.dy = 1.
+        self.dz = 1.
+
+
+    def read(self, var_file='', sim=None, datadir='data', proc=-1, ivar=-1,
+             quiet=True, trim_all=True, trimall=True,
+             magic=None,):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -102,51 +104,20 @@ class DataCube(object):
 
         call signature:
 
-        DataCube(self, var_file='', datadir='data', proc=-1, ivar=-1,
-                 quiet=True, trim_all=False,
-                 param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f')
+        read(var_file='', datadir='data/', proc=-1, ivar=-1,
+            quiet=True, trimall=False,
+            magic=None, sim=None)
 
         Keyword arguments:
+            var_file:   Name of the VAR file.
+            sim:        Simulation sim object.
+            magic:      Values to be computed from the data, e.g. B = curl(A).
+            trimall:    Trim the data cube to exclude ghost zones.
+            quiet:      Flag for switching off output.
 
-        *var_file*:
-          Name of the VAR file.
-
-        *datadir*:
-          Directory where the data is stored.
-
-        *proc*:
-          Processor to be read. If -1 read all and assemble to one array.
-
-        *ivar*:
-          Index of the VAR file, if var_file is not specified.
-
-        *quiet*
-          Flag for switching off output.
-
-        *trim_all*:
-          Trim the data cube to exclude ghost zones.
-
-        *param*:
-         The params object from read.param.
-
-        *dim*:
-         The dim object from read.dim.
-
-        *index*:
-         The index object from read.dim.
-
-        *run2D*:
-          Specify if the run is purely 2d.
-
-        *magic*:
-          Values to be computed from the data, e.g. B = curl(A).
-
-        *setup*:
-          Simulation setup object.
-
-        *precision*:
-          Precision of the data. Either float 'f' or double 'd'.
+            datadir:    Directory where the data is stored.
+            proc:       Processor to be read. If -1 read all and assemble to one array.
+            ivar:       Index of the VAR file, if var_file is not specified.
         """
 
         import numpy as np
@@ -154,13 +125,19 @@ class DataCube(object):
         from scipy.io import FortranFile
         from pencilnew.math.derivatives import curl, curl2
         from pencilnew import read
+        from ..sim import __Simulation__
 
-        if setup is not None:
-            datadir = os.path.expanduser(setup.datadir)
-            dim = setup.dim
-            param = setup.param
-            index = setup.index
-            run2D = setup.run2D
+        dim = None; param = None; index = None
+
+        if type(var_file) == __Simulation__:
+            sim = var_file
+            var_file = 'var.dat'
+
+        if sim is not None:
+            datadir = os.path.expanduser(sim.datadir)
+            dim = sim.dim
+            param = read.param(datadir=sim.datadir, quiet=True)
+            index = read.index(datadir=sim.datadir)
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
@@ -169,6 +146,8 @@ class DataCube(object):
                 param = read.param(datadir=datadir, quiet=quiet)
             if index is None:
                 index = read.index(datadir=datadir)
+
+        run2D = param.lwrite_2d
 
         if dim.precision == 'D':
             precision = 'd'
@@ -191,6 +170,8 @@ class DataCube(object):
                                                    os.listdir(datadir)))
         else:
             proc_dirs = ['proc' + str(proc)]
+
+        if trimall != False: trim_all = trimall
 
         # Set up the global array.
         if not run2D:
@@ -316,7 +297,7 @@ class DataCube(object):
             if 'bb' in magic:
                 # Compute the magnetic field before doing trim_all.
                 aa = f[index.ax-1:index.az, ...]
-                self.bb = curl(aa, dx, dy, dz, run2D=param.lwrite_2d)
+                self.bb = curl(aa, dx, dy, dz, run2D=run2D)
                 if trim_all:
                     self.bb = self.bb[:, dim.n1:dim.n2+1,
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
@@ -330,9 +311,9 @@ class DataCube(object):
             if 'vort' in magic:
                 # Compute the vorticity field before doing trim_all.
                 uu = f[index.ux-1:index.uz, ...]
-                self.vort = curl(uu, dx, dy, dz, run2D=param.lwrite_2d)
+                self.vort = curl(uu, dx, dy, dz, run2D=run2D)
                 if trim_all:
-                    if param.lwrite_2d:
+                    if run2D:
                         if dim.nz == 1:
                             self.vort = self.vort[:, dim.m1:dim.m2+1,
                                                   dim.l1:dim.l2+1]
@@ -393,16 +374,16 @@ class DataCube(object):
             self.magic_attributes(param)
 
 
-    def __natural_sort(self, l):
+    def __natural_sort(self, procs_list):
         """
         Sort array in a more natural way, e.g. 9VAR < 10VAR
         """
 
         import re
-       
+
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-        return sorted(l, key=alphanum_key)
+        return sorted(procs_list, key=alphanum_key)
 
 
     def magic_attributes(self, param):

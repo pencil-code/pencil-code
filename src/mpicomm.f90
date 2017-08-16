@@ -65,6 +65,7 @@ module Mpicomm
     module procedure mpirecv_real_arr2
     module procedure mpirecv_real_arr3
     module procedure mpirecv_real_arr4
+    module procedure mpirecv_real_arr5
   endinterface
 !
   interface mpirecv_int
@@ -106,6 +107,7 @@ module Mpicomm
     module procedure mpibcast_logical_arr2
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
+    module procedure mpibcast_int_arr2
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
@@ -125,6 +127,7 @@ module Mpicomm
   interface mpibcast_int
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
+    module procedure mpibcast_int_arr2
   endinterface
 !
   interface mpibcast_real
@@ -309,22 +312,28 @@ module Mpicomm
   interface mpirecv_nonblock_real
     module procedure mpirecv_nonblock_real_arr
     module procedure mpirecv_nonblock_real_arr2
+    module procedure mpirecv_nonblock_real_arr3
     module procedure mpirecv_nonblock_real_arr4
+    module procedure mpirecv_nonblock_real_arr5
   endinterface
 !
   interface mpisend_nonblock_real
     module procedure mpisend_nonblock_real_arr
+    module procedure mpisend_nonblock_real_arr3
     module procedure mpisend_nonblock_real_arr4
+    module procedure mpisend_nonblock_real_arr5
   endinterface
 !
   interface mpirecv_nonblock_int
     module procedure mpirecv_nonblock_int_scl
     module procedure mpirecv_nonblock_int_arr
+    module procedure mpirecv_nonblock_int_arr2
   endinterface
 !
   interface mpisend_nonblock_int
     module procedure mpisend_nonblock_int_scl
     module procedure mpisend_nonblock_int_arr
+    module procedure mpisend_nonblock_int_arr2
   endinterface
 !
 !  interface mpigather_and_out
@@ -946,7 +955,17 @@ module Mpicomm
 
       integer :: len, len_neigh, lenbuf
       integer :: nok, noks, noks_all, nstrip_total
-
+!
+      if (cyinyang_intpol_type=='bilinear') then
+        iyinyang_intpol_type=BILIN
+      elseif (cyinyang_intpol_type=='biquadratic') then
+        iyinyang_intpol_type=BIQUAD
+      elseif (cyinyang_intpol_type=='bicubic') then
+        iyinyang_intpol_type=BICUB
+      else
+        call stop_it('setup_interp_yy: Unknown Yin-Yang interpolation type '//trim(cyinyang_intpol_type))
+      endif
+!
       noks=0
 !
       if (lfirst_proc_z.or.llast_proc_z) then                ! executing proc is at z boundary
@@ -2696,6 +2715,27 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
+    subroutine mpirecv_real_arr5(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive real array(:,:,:,:) from other processor.
+!
+!  24-apr-17/Jorgen: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_src, tag_id, num_elements
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
+!
+    endsubroutine mpirecv_real_arr5
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id)
 !
 !  Receive integer scalar from other processor.
@@ -3021,6 +3061,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_nonblock_int_arr
 !***********************************************************************
+    subroutine mpirecv_nonblock_int_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive integer array(:,:) from other processor, with non-blocking communication.
+!
+!  30-apr-17/Jorgen: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpirecv_nonblock_int_arr2
+!***********************************************************************
     subroutine mpirecv_nonblock_real_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array from other processor, with non-blocking communication.
@@ -3060,6 +3118,26 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_nonblock_real_arr2
 !***********************************************************************
+    subroutine mpirecv_nonblock_real_arr3(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive real array(:,:) from other processor, with non-blocking communication.
+!
+!  07-jul-17/Jorgen: adapted
+!
+      integer, dimension(3) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+!
+      intent(out) :: bcast_array
+
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpirecv_nonblock_real_arr3
+!***********************************************************************
     subroutine mpirecv_nonblock_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array(:,:,:,:) from other processor, with non-blocking communication.
@@ -3080,6 +3158,26 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
+    subroutine mpirecv_nonblock_real_arr5(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive real array(:,:,:,:) from other processor, with non-blocking communication.
+!
+!  24-apr-17/Jorgen: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+!
+      intent(out) :: bcast_array
+
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpirecv_nonblock_real_arr5
+!***********************************************************************
     subroutine mpisend_nonblock_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
 !  Send real array to other processor, with non-blocking communication.
@@ -3096,6 +3194,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+!
+!  Send real array(:,:,:) to other processor, with non-blocking communication.
+!
+!  03-aug-17/Jorgen: adapted
+!
+      integer, dimension(3) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                     tag_id, MPI_COMM_GRID,ireq,mpierr)
+!
+    endsubroutine mpisend_nonblock_real_arr3
 !***********************************************************************
     subroutine mpisend_nonblock_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
@@ -3114,6 +3230,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                      tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr4
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr5(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+!
+!  Send real array(:,:,:,:) to other processor, with non-blocking communication.
+!
+!  24-apr-17/Jorgen: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                     tag_id, MPI_COMM_GRID,ireq,mpierr)
+!
+    endsubroutine mpisend_nonblock_real_arr5
 !***********************************************************************
     subroutine mpisend_nonblock_int_scl(bcast_array,proc_rec,tag_id,ireq)
 !
@@ -3145,6 +3279,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_int_arr
+!***********************************************************************
+    subroutine mpisend_nonblock_int_arr2(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+!
+!  Send 2d integer array to other processor, with non-blocking communication.
+!
+!  18-apr-17/Jorgen: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_ISEND(bcast_array, num_elements, MPI_INTEGER, proc_rec, &
+          tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpisend_nonblock_int_arr2
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
@@ -3265,6 +3417,28 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
+    subroutine mpibcast_int_arr2(ibcast_array,nbcast_array,proc,comm)
+!
+!  Communicate integer array(:,:) to other processors.
+!
+!  30-apr-17/Jorgen: adapted
+!
+      use General, only: ioptest
+
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: ibcast_array
+      integer, optional :: proc,comm
+      integer :: num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+!
+      call MPI_BCAST(ibcast_array,num_elements,MPI_INTEGER,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
+!
+    endsubroutine mpibcast_int_arr2
+!***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,proc,comm)
 !
 !  Communicate real scalar between processors.
@@ -3296,15 +3470,16 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
-    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc,comm)
 !
 !  Communicate real array(:,:) to other processor.
 !
 !  25-feb-08/wlad: adapted
 !
+      use General, only: ioptest
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       integer :: num_elements
@@ -3319,7 +3494,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
       num_elements = product(nbcast_array)
       call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
-                     MPI_COMM_GRID,mpierr)
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************
@@ -8358,8 +8533,16 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       real, dimension(nxgrid,ny,nz):: sendbuf   ! nx=nxgrid !
       real, dimension(:,:,:)       :: recvbuf
 !
-      integer :: ncnt, nshift, nlayer, i
-      integer, dimension(ncpus) :: counts, shifts
+      integer :: ncnt, i
+!
+!  MR: These long integer variables would be necessary for big nxgrid*nygrid,
+!      but there is now MPI_GATHERV which would accept a long int shifts argument.
+!
+      !integer(KIND=ikind8) :: nlayer, nshift
+      integer :: nlayer, nshift
+      !integer(KIND=ikind8), dimension(ncpus) :: shifts
+      integer, dimension(ncpus) :: shifts
+      integer, dimension(ncpus) :: counts
 !
       ncnt = nxgrid*ny
 !
@@ -9116,7 +9299,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           endif
           if (type==BILIN) then
             call bilin_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
-          elseif (type==BIQUAD) then
+          elseif (type==BIQUAD .or. type==BICUB) then
             call biquad_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
           else
             call stop_it('interpolate_yy: Only bilinear and biquadratic interpolations implemented')

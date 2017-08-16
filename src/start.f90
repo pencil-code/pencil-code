@@ -85,6 +85,7 @@ program start
   use Register
   use Selfgravity,      only: calc_selfpotential
   use SharedVariables,  only: sharedvars_clean_up
+  use Slices,           only: setup_slices, wvid_prepare, wvid
   use Snapshot
   use Solid_Cells,      only: init_solid_cells
   use Special,          only: init_special, initialize_mult_special
@@ -595,6 +596,15 @@ program start
         nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
     if (lparticles) call write_dim_particles(trim(datadir))
     call pointmasses_write_qdim(trim(datadir)//'/qdim.dat')
+  endif
+!
+!  Added here possibility two write slice file from start.
+!  This is possible for the radiation module, for example.
+!
+  if (dvid/=0.) then
+    call setup_slices
+    call wvid_prepare
+    call wvid(f,trim(directory)//'/slice_')
   endif
 !
 !  Write global variables.

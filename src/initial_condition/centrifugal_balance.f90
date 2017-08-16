@@ -160,6 +160,13 @@ module InitialCondition
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
       if (lcorotational_frame) then
+        if (lpointmasses) then
+          if (lroot) then
+            print*,'initialize_initial_condition: lcorotational frame not coded for pointmasses'
+            print*,'switch to gravity_r'
+            call fatal_error("","")
+          endif
+        endif
         OOcorot=rcorot**(-1.5)
       else
         OOcorot=0.
@@ -260,8 +267,8 @@ module InitialCondition
         endif
 !
         if (coord_system=='cartesian') then
-          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
@@ -1206,7 +1213,7 @@ module InitialCondition
 !
         fpres_thermal=(gslnrho+gslnTT)*cs2/gamma
 !
-        call correct_azimuthal_velocity(f,fpres_thermal)
+        call correct_azimuthal_velocity(f,fpres_thermal,'pressure gradient')
 !
       enddo;enddo
 !
@@ -1272,7 +1279,7 @@ module InitialCondition
           gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
         endif
 !
-        call correct_azimuthal_velocity(f,gspotself)
+        call correct_azimuthal_velocity(f,gspotself,'self gravity')
 !
       enddo;enddo
 !
@@ -1326,7 +1333,7 @@ module InitialCondition
 !  correct the angular frequency phidot^2
 !
         gspotself=gpotself(:,m-m1+1,n-n1+1,1)
-        call correct_azimuthal_velocity(f,gspotself)
+        call correct_azimuthal_velocity(f,gspotself,'self gravity')
 !
       enddo;enddo
 !
@@ -1359,19 +1366,20 @@ module InitialCondition
         call multsv_mn(rho1,jxb,jxbr)   !jxb/rho
         fpres_magnetic=-jxbr(:,1)
 !
-        call correct_azimuthal_velocity(f,fpres_magnetic)  
+        call correct_azimuthal_velocity(f,fpres_magnetic,'magnetic pressure')  
 !
       enddo; enddo
 !
     endsubroutine correct_lorentz_numerical
 !***********************************************************************
-    subroutine correct_azimuthal_velocity(f,corr)
+    subroutine correct_azimuthal_velocity(f,corr,label)
 !
       use Sub, only: get_radial_distance
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx), intent(in) :: corr
       real, dimension(nx) :: rr_sph, rr_cyl, rr, tmp1, tmp2
+      character (len=*) :: label
 !
       call get_radial_distance(rr_sph,rr_cyl)
 !
@@ -1393,7 +1401,7 @@ module InitialCondition
       else
         rr=rr_sph
       endif
-      call reality_check(tmp2,rr)
+      call reality_check(tmp2,rr,label)
 !
 !  Correct the velocities
 !
@@ -1408,7 +1416,7 @@ module InitialCondition
 !
     endsubroutine correct_azimuthal_velocity
 !***********************************************************************
-    subroutine reality_check(tmp,rr)
+    subroutine reality_check(tmp,rr,label)
 !
 !  Catches unphysical negative values of phidot^2, i.e., impossibility 
 !  of centrifugal equilibrium.
@@ -1421,6 +1429,7 @@ module InitialCondition
       real, dimension(nx) :: tmp,rr 
       logical :: lheader
       integer :: i
+      character (len=*) :: label
 !      
       lheader=lroot.and.lfirstpoint
 !
@@ -1430,14 +1439,18 @@ module InitialCondition
             !it's inside the frozen zone, so
             !just set tmp2 to zero and emit a warning
              tmp(i)=0.
-             if ((ip<=10).and.lheader) &
-                  call warning('reality_check','Cannot '//&
-                  'have centrifugal equilibrium in the inner '//&
-                  'domain. The pressure gradient is too steep.')
+             if ((ip<=10).and.lheader) then
+               print*,'reality_check: ',&
+                    'cannot have centrifugal equilibrium in the inner ',&
+                    'domain. ', label, ' is too strong at ',&
+                    'x,y,z=',x(i+nghost),y(m),z(n)
+               print*,'the angular frequency here is',tmp(i)
+               call warning("","")
+             endif
           else
             print*,'reality_check: ',&
                  'cannot have centrifugal equilibrium in the inner ',&
-                 'domain. The pressure gradient is too steep at ',&
+                 'domain. ', label, ' is too strong at ',&
                  'x,y,z=',x(i+nghost),y(m),z(n)
             print*,'the angular frequency here is',tmp(i)
             call fatal_error("","")

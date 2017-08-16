@@ -681,19 +681,6 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !
 !  Possibility to modify the f and df after df is updated.

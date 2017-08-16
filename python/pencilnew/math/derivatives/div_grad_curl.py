@@ -90,7 +90,7 @@ def curl2(f, dx, dy, dz):
     curl2_value[2, ...] = zder(xder(f[0, ...], dx) + yder(f[1, ...], dy), dz) \
                           -xder2(f[2, ...], dx) - yder2(f[2, ...], dy)
 
-    return curl2
+    return curl2_value
 
 
 def del2(f, dx, dy, dz):

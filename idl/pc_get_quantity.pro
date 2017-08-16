@@ -128,6 +128,9 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	gm2 = m2
 	gn1 = n1
 	gn2 = n2
+	gnx = nx
+	gny = ny
+	gnz = nz
 	if (keyword_set (ghost)) then begin
 		gl1 = 0
 		gl2 += nghostx
@@ -135,6 +138,9 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		gm2 += nghosty
 		gn1 = 0
 		gn2 += nghostz
+		gnx += 2 * nghostx
+		gny += 2 * nghosty
+		gnz += 2 * nghostz
 	end
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
@@ -174,6 +180,14 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, sqrt (dot2 (grad_u))
 	end
 
+	if (strcmp (quantity, 'E_therm', /fold_case)) then begin
+		; Thermal energy [J]
+		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, rho * Temp * cp_SI / gamma * unit.energy
+	end
 	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
 		; Kinetic energy density [J/m^3]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
@@ -421,7 +435,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, rho
 	end
 	if (strcmp (quantity, 'grad_rho', /fold_case)) then begin
-		; Gradient of density
+		; Gradient of density [kg / m^4]
 		if (n_elements (grad_rho) eq 0) then begin
 			if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
 				grad_rho = (grad (exp (vars[*,*,*,index.lnrho])))[l1:l2,m1:m2,n1:n2,*] * unit.density / unit.length
@@ -465,7 +479,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
-		; Gradient of thermal pressure
+		; Gradient of thermal pressure [N / m^3]
 		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
@@ -480,7 +494,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, grad_P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm_abs', /fold_case)) then begin
-		; Absolute value of thermal pressure gradient
+		; Absolute value of thermal pressure gradient [N / m^3]
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		return, sqrt (dot2 (grad_P_therm))
 	end
@@ -492,21 +506,21 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, sqrt (kappa * P_therm / rho)
 	end
 	if (strcmp (quantity, 'H_P_therm_x', /fold_case)) then begin
-		; Scaling height of thermal pressure x-component
+		; Scaling height of thermal pressure x-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dx = grad_P_therm[*,*,*,0]
 		return, -(P_therm / dP_therm_dx)
 	end
 	if (strcmp (quantity, 'H_P_therm_y', /fold_case)) then begin
-		; Scaling height of thermal pressure y-component
+		; Scaling height of thermal pressure y-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dy = grad_P_therm[*,*,*,1]
 		return, -(P_therm / dP_therm_dy)
 	end
 	if (strcmp (quantity, 'H_P_therm_z', /fold_case)) then begin
-		; Scaling height of thermal pressure z-component
+		; Scaling height of thermal pressure z-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dz = grad_P_therm[*,*,*,2]
@@ -639,6 +653,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
+	end
+	if (strcmp (quantity, 'A_abs', /fold_case)) then begin
+		; Magnetic vector potential [T * m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'A')))
 	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
 		; Magnetic vector potential x-component
@@ -1116,19 +1134,32 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'time', /fold_case)) then return, index.time * unit.time
 
 	; Coordinates
-	if (strcmp (quantity, 'x', /fold_case)) then return, x[l1:l2] * unit.length
-	if (strcmp (quantity, 'y', /fold_case)) then return, y[m1:m2] * unit.length
-	if (strcmp (quantity, 'z', /fold_case)) then return, z[n1:n2] * unit.length
+	if (strcmp (quantity, 'x', /fold_case)) then return, x[gl1:gl2] * unit.length
+	if (strcmp (quantity, 'y', /fold_case)) then return, y[gm1:gm2] * unit.length
+	if (strcmp (quantity, 'z', /fold_case)) then return, z[gn1:gn2] * unit.length
 
 	; Grid distances
-	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[l1:l2] * unit.length
-	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[m1:m2] * unit.length
-	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[n1:n2] * unit.length
+	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[gl1:gl2] * unit.length
+	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[gm1:gm2] * unit.length
+	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[gn1:gn2] * unit.length
 
 	; Inverse grid distances
-	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[l1:l2] / unit.length
-	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[m1:m2] / unit.length
-	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[n1:n2] / unit.length
+	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[gl1:gl2] / unit.length
+	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[gm1:gm2] / unit.length
+	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[gn1:gn2] / unit.length
+
+	; Grid volume
+	if (strcmp (quantity, 'dV', /fold_case)) then begin
+		dx = pc_compute_quantity (vars, index, 'dx')
+		dy = pc_compute_quantity (vars, index, 'dy')
+		dz = pc_compute_quantity (vars, index, 'dz')
+		if (all (lequidist[0:1])) then begin
+			dV = dx[0] * dy[0] * dz[0]
+		end else begin
+			dV = spread (dx, [1,2], [gny,gnz]) * spread (dy, [0,2], [gnx,gnz]) * spread (dz, [0,1], [gnx,gny])
+		end
+		return, dV
+	end
 
 	; Box size
 	if (strcmp (quantity, 'size_x', /fold_case)) then return, (x[l2]-x[l1] + lperi[0] * mean (1.0 / dx_1[[l1,l2]])) * unit.length

@@ -14,8 +14,6 @@
 ! CPARAM logical, parameter :: lthermal_energy = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
-! COMMUNICATED AUXILIARIES 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth; sglnTT(3)
 !
@@ -80,6 +78,8 @@ module Energy
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
                               ! DIAG_DOC: \quad(mean thermal energy)
+  integer :: idiag_ethtot=0   ! DIAG_DOC: $\int_V e_{\text{th}}\,dV$
+                              ! DIAG_DOC:   \quad(total thermal energy)
   integer :: idiag_ethmin=0   ! DIAG_DOC: $\mathrm{min} e_\text{th}$
   integer :: idiag_ethmax=0   ! DIAG_DOC: $\mathrm{max} e_\text{th}$
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
@@ -369,7 +369,7 @@ module Energy
 !
 !  Diagnostic pencils.
 !
-      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0) lpenc_diagnos(i_eth)=.true.
+      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0 .or. idiag_ethtot) lpenc_diagnos(i_eth)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       etot: if (idiag_etot /= 0) then
         lpenc_diagnos(i_eth) = .true.
@@ -583,6 +583,7 @@ module Energy
         if (idiag_TTmax/=0)  call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_ethm/=0)   call sum_mn_name(p%eth,idiag_ethm)
+        if (idiag_ethtot/=0) call integrate_mn_name(p%eth,idiag_ethtot)
         if (idiag_ethmin/=0) call max_mn_name(-p%eth,idiag_ethmin,lneg=.true.)
         if (idiag_ethmax/=0) call max_mn_name(p%eth,idiag_ethmax)
         if (idiag_eem/=0)    call sum_mn_name(p%ee,idiag_eem)
@@ -618,7 +619,7 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  Dummy routine.
 !
@@ -630,10 +631,21 @@ module Energy
       call keep_compiler_quiet(f)
 !
       if (lenergy_slope_limited) &
-        call fatal_error('calc_lenergy_pars', &
+        call fatal_error('energy_after_boundary', &
                          'Slope-limited diffusion not implemented')
 !
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
+!***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
@@ -694,7 +706,7 @@ module Energy
       if (lreset) then
         idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
         idiag_ethm=0; idiag_ethmin=0; idiag_ethmax=0; idiag_eem=0
-        idiag_etot = 0
+        idiag_etot = 0; idiag_ethtot=0
         idiag_pdivum=0; idiag_ppm=0
       endif
 !
@@ -711,6 +723,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'etot',idiag_etot)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
+        call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.

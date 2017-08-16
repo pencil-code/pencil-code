@@ -30,7 +30,11 @@
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#   -i              Show the host ID and exit.
+#   -i              Show system host ID and exit. This ignores local
+#                   configuration of the host ID via command-line flags,
+#                   environment variables, and 'host-ID' files.
+#   -I              Show all matching host IDs, in the order in which they
+#                   are tried, and exit.
 #   -D, --debug-config
 #                   Show the config files (existing or not) that would be
 #                   read, then exit
@@ -92,7 +96,7 @@ Pencil::Util::use_pencil_perl_modules(
     'Pencil::ConfigParser'
     ) or die;
 
-use POSIX qw(strftime tmpnam);
+use POSIX qw(strftime);
 use Getopt::Long;
 # Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
@@ -111,6 +115,7 @@ GetOptions(\%opts,
                -f=s --config-files=s
                -H=s --host-id=s
                -i
+               -I
                -D   --debug-config
                     --notify
                     --fast
@@ -133,16 +138,23 @@ my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
 my $debug_config = ($opts{'D'} || $opts{'debug-config'}   || '');
-my $show_host_id = ($opts{'i'}                            || '');
+my $show_system_host_id = ($opts{'i'}                     || '');
+my $show_host_ids = ($opts{'I'}                           || '');
 my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
 
-if ($show_host_id) {
+if ($show_system_host_id) {
     my $id = Pencil::ConfigFinder::get_host_id_system_info();
     print $id."\n";
-    # The desired output is now printed
+    exit 0;
+}
+
+if ($show_host_ids) {
+    foreach my $id (Pencil::ConfigFinder::get_host_ids()) {
+        print $id."\n";
+    }
     exit 0;
 }
 

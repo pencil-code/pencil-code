@@ -10,7 +10,8 @@ something that breaks the auto-test, for example.
 In such cases that person must expect phone calls even outside office hours.
 
 Name,                 email,                         svn-name,             office,            mobile/home/alternative,  skype-name,  institution
-------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Omer Anjum,           oanjum@illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & llinois, USA
 Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
@@ -20,10 +21,10 @@ Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 7
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
 Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +47 228 57529,     +47 9845 2367,            mppiyali,    University of Oslo
 Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, NORDITA
-Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811,   +33 651 053 521,          bdintrans,   CNRS/IRAP
+Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811,   ,                         bdintrans,   CNRS/IRAP
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
-Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
+Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
 Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432,          ,            Universidade Federal de Minas Gerais
 Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98,         ,            Lund Observatory
 Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683,           ,            Norges teknisk-naturvitenskapelige universitet
@@ -32,7 +33,7 @@ Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8
 Sarah Jabbari,        sarahjab/nordita.org,          ,                     ,                  +46 70 097 2365 (mob),    Sarah Jab,   NORDITA
 André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,                  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         ,            Huntsman Corporation Salt Lake City
-Jonas Kruger,         jonas.kruger/ntnu.no,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
+Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
 Maarit Käpylä,        kapyla/mps.mpg.de,             ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
 Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Leibniz-Institut für Astrophysik Potsdam, Aalto University
 Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                                     ,  +46 73 613 71 11,         ,            Lund Observatory
@@ -56,7 +57,12 @@ Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           ,    
 Chao-Chin Yang,       ccyang/astro.lu.se,            ccyang/astro.lu.se,   +46 46 22 21606,   ,                         ,            Lund Observatory
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,            ,                     ,                  +46 73 627 2556,          ,            NORDITA
+Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
    $PENCIL_HOME/license
+
+A separate list of all the committers on github are listed in:
+
+  https://www.nordita.org/~brandenb/pencil-code/PCSC/

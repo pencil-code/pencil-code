@@ -165,6 +165,7 @@ module Magnetic
   real, dimension(nz,3), parameter :: bbmz = 0.0, jjmz = 0.0
   logical, dimension(7) :: lresi_dep = .false.
   real, dimension(3) :: b_ext_inv = 0.0
+  logical, parameter :: lcalc_aamean = .false.
   logical, parameter :: lcalc_aameanz = .false.
   logical, parameter :: lelectron_inertia = .false.
   integer, parameter :: idiag_bcosphz = 0, idiag_bsinphz = 0
@@ -417,7 +418,7 @@ module Magnetic
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
@@ -523,7 +524,7 @@ module Magnetic
         enddo yscan2
       enddo zscan2
 !
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine calc_pencils_magnetic(f, p)
 !
@@ -629,7 +630,6 @@ module Magnetic
 !
       timestep: if (lfirst .and. ldt) then
         call set_advec_va2(p)
-        if (lshear) advec_shear = abs(uy0(l1:l2) * dy_1(m))
         maxdiffus = max(maxdiffus,maxdiffus_eta)
         maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
       endif timestep
@@ -645,6 +645,17 @@ module Magnetic
       endif avg1d
 !
     endsubroutine daa_dt
+!***********************************************************************
+   subroutine magnetic_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine magnetic_after_timestep
 !***********************************************************************
     subroutine split_update_magnetic(f)
 !
@@ -1140,6 +1151,7 @@ module Magnetic
 !  25-jun-13/ccyang: coded.
 !
       type(pencil_case), intent(in) :: p
+      real, dimension(nx) :: advec_va2
 !
       if (lspherical_coords) then
         advec_va2 = ((p%bb(:,1) * dx_1(l1:l2))**2 + &
@@ -1154,6 +1166,7 @@ module Magnetic
                      (p%bb(:,2) * dy_1(m))**2 + &
                      (p%bb(:,3) * dz_1(n))**2) * mu01 * p%rho1
       endif
+      advec2=advec2+advec_va2
 !
     endsubroutine set_advec_va2
 !***********************************************************************

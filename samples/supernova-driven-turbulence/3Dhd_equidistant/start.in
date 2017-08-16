@@ -38,8 +38,11 @@
   lSNII=T
   lSNI=T
   lSN_scale_rad=T
-  N_mass=60.0
+  N_mass=80.0
   width_SN = 0.02
+  frac_kin=0.25
+  frac_ecr=0.0
+  lSN_ecr=F
 /
 &shear_init_pars
   Sshear=-25.0

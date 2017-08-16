@@ -4,11 +4,11 @@
 #
 
 # Load sub-modules.
-import io                  # input und output functions, like save data or call IDL scripts
+from . import io           # input und output functions, like save data or call IDL scripts
 from . import diag         # diagnostic scripts and functions
 from . import visu         # visualization routines
 from . import calc         # math functions and further calculations
-from . import math
+from . import math         # basic math functions, like products and derivatives
 from . import sim          # handling simulations as python objects
 from . import read         # read data and parameters from pencil code directory
 from . import tool_kit     # all nice workarounds get stored here (e.g., resubmit script)
@@ -16,7 +16,6 @@ from . import export       # exporter (e.g., vtk, xml)
 from . import backpack     # third party modules, tribute to the author!
 
 # internal routines
-from pencilnew.sim import simulation as __Simulation__
 def __is_sim_dir__(path='.'):
     """Checks if a path is pointing at a pencil code simulation."""
     return sim.is_sim_dir(path)

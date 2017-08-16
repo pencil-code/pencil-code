@@ -52,8 +52,17 @@ module Boundcond
 !  Update all ghost zones of f.
 !
 !  21-sep-02/wolf: extracted from wsnaps
+!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
 !
       real, dimension (:,:,:,:) :: f
+!
+      if (ighosts_updated>=0) then
+!
+!  If registration is activated, register all variables to have been communicated.
+!
+        ighosts_updated=ighosts_updated+1
+        updated_var_ranges(:,ighosts_updated)=(/1,min(mcom,size(f,4))/)
+      endif
 !
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
@@ -68,19 +77,44 @@ module Boundcond
 !  Update specific ghost zones of f.
 !
 !  11-aug-11/wlad: adapted from update_ghosts
+!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
+!
+      use General, only: add_merge_range
 !
       real, dimension (:,:,:,:) :: f
       integer  :: ivar1,ivar2
       integer, optional :: ivar2_opt
 !
+      integer :: nact_ranges,i
+!
       ivar2=ivar1
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      call boundconds_x(f,ivar1,ivar2)
-      call initiate_isendrcv_bdry(f,ivar1,ivar2)
-      call finalize_isendrcv_bdry(f,ivar1,ivar2)
-      call boundconds_y(f,ivar1,ivar2)
-      call boundconds_z(f,ivar1,ivar2)
+      if (ighosts_updated>=0) then
+!
+!  If registration is activated, figure out which variables out of the range (ivar1,ivar2) have yet to be communicated.
+!  These are appended as a set of ranges to the list of ranges in updated_var_ranges after position ighosts_updated.
+!  The new total number of variable ranges to be communicated is nact_ranges.
+!
+        nact_ranges=add_merge_range( updated_var_ranges, ighosts_updated, (/ivar1,ivar2/) )
+!
+        if (nact_ranges>ighosts_updated) then
+          do i=ighosts_updated+1,nact_ranges
+            call boundconds_x(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call initiate_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call finalize_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call boundconds_y(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call boundconds_z(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+          enddo
+          ighosts_updated=nact_ranges
+        endif
+      else
+        call boundconds_x(f,ivar1,ivar2)
+        call initiate_isendrcv_bdry(f,ivar1,ivar2)
+        call finalize_isendrcv_bdry(f,ivar1,ivar2)
+        call boundconds_y(f,ivar1,ivar2)
+        call boundconds_z(f,ivar1,ivar2)
+      endif
 !
     endsubroutine update_ghosts_range
 !***********************************************************************

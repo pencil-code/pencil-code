@@ -64,12 +64,14 @@ module Io
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
-  integer :: local_type, global_type, mpi_err
+  integer :: local_type, global_type, mpi_err, io_dims
   integer, parameter :: mpi_comm=MPI_COMM_WORLD
   integer, dimension(MPI_STATUS_SIZE) :: status
   integer (kind=MPI_OFFSET_KIND), parameter :: displacement=0
-  integer, parameter :: io_dims=4, order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
-  integer, dimension(io_dims) :: local_size, local_start, global_size, global_start, subsize
+  integer, parameter :: order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
+!  integer, dimension(io_dims) :: local_size, local_start, global_size, global_start, subsize
+  integer, dimension (:), allocatable :: local_size, local_start, global_size, global_start, subsize
+
 !
   contains
 !***********************************************************************
@@ -81,59 +83,108 @@ module Io
 !
 !  06-Oct-2015/PABourdin: reworked, should work now
 !
+      integer :: alloc_err
+!
       if (lroot) call svn_id ("$Id$")
       if (ldistribute_persist) call fatal_error ('io_mpi2', "Distibuted persistent variables are not allowed with MPI-IO.")
 !
+      if (lwrite_2d) then
+        io_dims=3
+      else
+        io_dims=4
+      endif
+      allocate (local_size(io_dims), local_start(io_dims), global_size(io_dims), global_start(io_dims), subsize(io_dims), &
+          stat=alloc_err)
+!
+      if (.not. lwrite_2D) then
+!
 ! Define local full data size.
 !
-      local_size(1) = mx
-      local_size(2) = my
-      local_size(3) = mz
-      local_size(4) = -1
+        local_size(1) = mx
+        local_size(2) = my
+        local_size(3) = mz
+        local_size(4) = -1
 !
 ! Define the subsize of the local data portion to be saved in the global file.
 !
-      subsize(1) = nx
-      subsize(2) = ny
-      subsize(3) = nz
-      subsize(4) = -1
+        subsize(1) = nx
+        subsize(2) = ny
+        subsize(3) = nz
+        subsize(4) = -1
 !
 ! We need to save also the outermost ghost layers if we are on either boundary.
 ! This data subsize is identical for the local portion and the global file.
 !
-      if (lfirst_proc_x) subsize(1) = subsize(1) + nghost
-      if (lfirst_proc_y) subsize(2) = subsize(2) + nghost
-      if (lfirst_proc_z) subsize(3) = subsize(3) + nghost
-      if (llast_proc_x) subsize(1) = subsize(1) + nghost
-      if (llast_proc_y) subsize(2) = subsize(2) + nghost
-      if (llast_proc_z) subsize(3) = subsize(3) + nghost
+        if (lfirst_proc_x) subsize(1) = subsize(1) + nghost
+        if (lfirst_proc_y) subsize(2) = subsize(2) + nghost
+        if (lfirst_proc_z) subsize(3) = subsize(3) + nghost
+        if (llast_proc_x) subsize(1) = subsize(1) + nghost
+        if (llast_proc_y) subsize(2) = subsize(2) + nghost
+        if (llast_proc_z) subsize(3) = subsize(3) + nghost
 !
 ! The displacements in 'local_start' use C-like format, ie. start from zero.
 !
-      local_start(1) = nghost
-      local_start(2) = nghost
-      local_start(3) = nghost
-      local_start(4) = 0
+        local_start(1) = nghost
+        local_start(2) = nghost
+        local_start(3) = nghost
+        local_start(4) = 0
 !
 ! We need to include lower ghost cells if we are on a lower edge;
 ! inclusion of upper ghost cells is taken care of by increased subsize.
 !
-      if (lfirst_proc_x) local_start(1) = local_start(1) - nghost
-      if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
-      if (lfirst_proc_z) local_start(3) = local_start(3) - nghost
+        if (lfirst_proc_x) local_start(1) = local_start(1) - nghost
+        if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
+        if (lfirst_proc_z) local_start(3) = local_start(3) - nghost
 !
 ! Define the size of this processor's data in the global file.
 !
-      global_size(1) = mxgrid
-      global_size(2) = mygrid
-      global_size(3) = mzgrid
+        global_size(1) = mxgrid
+        global_size(2) = mygrid
+        global_size(3) = mzgrid
+        global_size(4) = 0
 !
 ! Define starting position of this processor's data portion in global file.
 !
-      global_start(1) = ipx*nx + local_start(1)
-      global_start(2) = ipy*ny + local_start(2)
-      global_start(3) = ipz*nz + local_start(3)
-      global_start(4) = 0
+        global_start(1) = ipx*nx + local_start(1)
+        global_start(2) = ipy*ny + local_start(2)
+        global_start(3) = ipz*nz + local_start(3)
+        global_start(4) = 0
+      else
+!
+! 2D version for ny=1 or nz=1 when setting lwrite_2D=True
+!
+        local_size(1) = mx
+        local_size(3) = -1
+        subsize(1) = nx
+        subsize(3) = -1
+        if (lfirst_proc_x) subsize(1) = subsize(1) + nghost
+        if (llast_proc_x) subsize(1) = subsize(1) + nghost
+        local_start(1) = nghost
+        local_start(2) = nghost
+        local_start(3) = 0
+        if (lfirst_proc_x) local_start(1) = local_start(1) - nghost
+        global_size(1) = mxgrid
+        global_size(3) = 0
+        global_start(1) = ipx*nx + local_start(1)
+        global_start(3) = 0
+        if (ny == 1) then
+          local_size(2) = mz
+          subsize(2) = nz
+          if (lfirst_proc_z) subsize(2) = subsize(2) + nghost
+          if (llast_proc_z) subsize(2) = subsize(2) + nghost
+          if (lfirst_proc_z) local_start(2) = local_start(2) - nghost
+          global_size(2) = mzgrid
+          global_start(2) = ipz*nz + local_start(2)
+        else
+          local_size(2) = my
+          subsize(2) = ny
+          if (lfirst_proc_y) subsize(2) = subsize(2) + nghost
+          if (llast_proc_y) subsize(2) = subsize(2) + nghost
+          if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
+          global_size(2) = mygrid
+          global_start(2) = ipy*ny + local_start(2)
+        endif
+      endif
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
@@ -287,9 +338,9 @@ module Io
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
-      local_size(4) = nv
-      global_size(4) = nv
-      subsize(4) = nv
+      local_size(io_dims) = nv
+      global_size(io_dims) = nv
+      subsize(io_dims) = nv
 !
 ! Create 'local_type' to be the local data portion that is being saved.
 !
@@ -314,7 +365,15 @@ module Io
       call MPI_FILE_SET_VIEW (handle, displacement, mpi_precision, global_type, 'native', io_info, mpi_err)
       call check_success ('output', 'create view', file)
 !
-      call MPI_FILE_WRITE_ALL (handle, a, 1, local_type, status, mpi_err)
+      if (lwrite_2D) then
+        if (ny == 1) then
+          call MPI_FILE_WRITE_ALL (handle, a(:,m1,:,:), 1, local_type, status, mpi_err)
+        else
+          call MPI_FILE_WRITE_ALL (handle, a(:,:,n1,:), 1, local_type, status, mpi_err)
+        endif
+      else
+        call MPI_FILE_WRITE_ALL (handle, a, 1, local_type, status, mpi_err)
+      endif
       call check_success ('output', 'write', file)
 !
       call MPI_FILE_CLOSE (handle, mpi_err)
@@ -378,9 +437,9 @@ module Io
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
 !
-      local_size(4) = nv
-      global_size(4) = nv
-      subsize(4) = nv
+      local_size(io_dims) = nv
+      global_size(io_dims) = nv
+      subsize(io_dims) = nv
 !
 ! Create 'local_type' to be the local data portion that is being saved.
 !
@@ -404,7 +463,15 @@ module Io
       call MPI_FILE_SET_VIEW (handle, displacement, mpi_precision, global_type, 'native', io_info, mpi_err)
       call check_success ('input', 'create view', file)
 !
-      call MPI_FILE_READ_ALL (handle, a, 1, local_type, status, mpi_err)
+      if (lwrite_2D) then
+        if (ny == 1) then
+          call MPI_FILE_READ_ALL (handle, a(:,m1,:,:), 1, local_type, status, mpi_err)
+        else
+          call MPI_FILE_READ_ALL (handle, a(:,:,n1,:), 1, local_type, status, mpi_err)
+        endif
+      else
+        call MPI_FILE_READ_ALL (handle, a, 1, local_type, status, mpi_err)
+      endif
       call check_success ('input', 'read', file)
 !
       call MPI_FILE_CLOSE (handle, mpi_err)

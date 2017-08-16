@@ -18,6 +18,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="dust_blocks"
 !
 ! PENCILS PROVIDED np; rhop; epsp; grhop(3);peh
 !
@@ -48,7 +49,7 @@ module Particles
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, tausp01=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: epsp_friction_increase=0.0
@@ -318,6 +319,10 @@ module Particles
         endif
       endif
 !
+!  Normalization for Epstein drag with particles radius.
+!
+      if (ldraglaw_epstein .and. iap /= 0) tausp01 = rho0 * cs0 / (rhopmat * Omega)
+!
 !  Global gas pressure gradient seen from the perspective of the dust.
 !
       if (beta_dPdr_dust/=0.0) then
@@ -436,7 +441,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: gamma, beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use Sub
@@ -2401,7 +2407,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhopmat)
+          if (fp(k,iap)/=0.0) tausp1_par = tausp01 / fp(k,iap)
         else
           if (npar_species>1) then
             jspec=npar_species*(ipar(k)-1)/npar+1

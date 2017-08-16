@@ -12,6 +12,7 @@ module Deriv
   use Cdata
   use Messages, only: fatal_error, warning
   use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -19,7 +20,7 @@ module Deriv
 !
   public :: initialize_deriv, finalize_deriv
   public :: der, der2, der3, der4, der5, der6, der10, derij, der5i1j
-  public :: der6_other, der_pencil, der2_pencil
+  public :: der6_other, der_pencil, der2_pencil, der4i2j, der2i2j2k,der3i3j,der3i2j1k,der4i1j1k
   public :: deri_3d_inds
   public :: der_upwind1st, der_z, der2_z, der_x, der2_x
   public :: der_onesided_4_slice
@@ -110,7 +111,7 @@ module Deriv
           call warning('initialize_deriv', &
           'There are not enough grid points for the bval routine')
         endif
-      enddo	  
+      enddo
 !
     endsubroutine initialize_deriv
 !***********************************************************************
@@ -1647,6 +1648,73 @@ module Deriv
 !
     endsubroutine der5i1j
 !***********************************************************************
+    subroutine der4i2j(f,k,df,i,j)
+!
+!  Calculate 6th derivative with respect to two different directions.
+!
+!  02-apr-17/wlyra: adapted from der5i1j
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: df,fac
+      integer :: i,j,k
+!
+      call fatal_error("der4i2j","not implemented in deriv_10th")
+!
+    endsubroutine der4i2j
+!***********************************************************************
+    subroutine der2i2j2k(f,k,df)
+!
+!  Mixed 6th derivative of der2x(der2y(der2z(f))). Worked out symbolically
+!  in python. Result as spit from the python routine.
+!
+!  02-apr-17/wlyra: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (nx) :: fac
+      integer,intent(in) :: k
+      real, dimension(nx), intent(out) :: df
+!
+      call fatal_error("der2i2j2k","not implemented in deriv_10th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der2i2j2k
+!***********************************************************************
+    subroutine der3i3j(f,k,df,i,j)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: k,i,j
+!
+      call fatal_error("der3i3j","not implemented in deriv_10th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der3i3j
+!***********************************************************************          
+    subroutine der3i2j1k(f,ik,df,i,j,k)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: ik,i,j,k
+!
+      call fatal_error("der3i2j1k","not implemented in deriv_10th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der3i2j1k
+!***********************************************************************
+    subroutine der4i1j1k(f,ik,df,i,j,k)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: ik,i,j,k
+!
+      call fatal_error("der4i1j1k","not implemented in deriv_10th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der4i1j1k
+!***********************************************************************
     subroutine der_upwind1st(f,uu,k,df,j)
 !
 !  First order upwind derivative of variable
@@ -1897,6 +1965,10 @@ module Deriv
 !
       call stop_it("deriv_10th: der2_x not implemented yet")
 !
+! To avoid compiler warnings:
+!
+      df2=f(n1:n2)
+!
     endsubroutine der2_x
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
@@ -1913,6 +1985,7 @@ module Deriv
       call fatal_error('der2_minmod','Not implemented for deriv_10th')
 !
 !  Fill with dummy values to keep compiler quiet
+!
       delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
 !
     endsubroutine der2_minmod
@@ -1940,10 +2013,10 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-!      call keep_compiler_quiet(df)
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
 !
 ! dummy computation to avoid compiler warnings of unused variables
+!
       if (present(lignored).and.present(lnometric)) &
           df  = inds + f(l1:l2,1,1) + j
 !

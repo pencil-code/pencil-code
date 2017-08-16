@@ -401,7 +401,7 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  calculate alp_ij eta_ij tensors, which are needed when ltestfield=.true.
 !
@@ -455,7 +455,7 @@ module Special
         eta_ij(:,2,2)=-eta_ij3(:,2,1)
       endif
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
 !
 !********************************************************************

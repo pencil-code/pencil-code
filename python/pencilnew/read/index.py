@@ -85,13 +85,13 @@ class Index(object):
         for line in index_file.readlines():
             clean = line.strip()
             name = clean.split('=')[0].strip().replace('[', '').replace(']', '')
-            if (clean.split('=')[1].strip().startswith('intarr(370)')):
+            if clean.split('=')[1].strip().startswith('intarr(370)'):
                 continue
             val = int(clean.split('=')[1].strip())
 
-            if (val != 0  and val <= totalvars \
-                and not name.startswith('i_') and name.startswith('i')):
+            if val != 0  and val <= totalvars \
+                and not name.startswith('i_') and name.startswith('i'):
                 name = name.lstrip('i')
-                if (name == 'lnTT' and param.ltemperature_nolog):
+                if name == 'lnTT' and param.ltemperature_nolog:
                     name = 'tt'
                 setattr(self, name, val)

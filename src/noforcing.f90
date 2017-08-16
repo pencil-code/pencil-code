@@ -61,7 +61,7 @@ module Forcing
 !
     endsubroutine addforce
 !***********************************************************************
-    subroutine calc_lforcing_cont_pars(f)
+    subroutine forcing_cont_after_boundary(f)
 !
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
@@ -71,7 +71,7 @@ module Forcing
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lforcing_cont_pars
+    endsubroutine forcing_cont_after_boundary
 !***********************************************************************
     subroutine pencil_criteria_forcing
 !
@@ -179,5 +179,14 @@ module Forcing
 !   dummy routine.
 !
     endsubroutine forcing_clean_up
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Forcing

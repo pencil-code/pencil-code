@@ -64,23 +64,27 @@ module Gravity
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
-  logical :: lindirect_terms=.false.
+  logical :: lindirect_terms=.true.
   logical :: lramp_mass=.false.
   integer :: iglobal_gg=0
   logical :: lsecondary_wait=.false.
+  logical :: lcoriolis_force_gravity=.true.
+  logical :: lcentrifugal_force_gravity=.true.
   real :: t_start_secondary = -impossible
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass,&
-      ipotential_secondary,lsecondary_wait,t_start_secondary
+      ipotential_secondary,lsecondary_wait,t_start_secondary, &
+      lcoriolis_force_gravity,lcentrifugal_force_gravity
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
-      ipotential_secondary,lsecondary_wait,t_start_secondary
+      ipotential_secondary,lsecondary_wait,t_start_secondary, &
+      lcoriolis_force_gravity,lcentrifugal_force_gravity
 !
   contains
 !***********************************************************************
@@ -517,6 +521,24 @@ module Gravity
 !  Add the indirect terms from the motion of the primary in a non-inertial frame,
 !  plus the Coriolis and centrifugal terms from the motion of the secondary.
 !
+!  The indirect potential is Phi = GMp/rp**3 r dot rp
+!
+!  Mp is planet mass and rp planet position. For rp=(1,0,0), the potential is
+!
+!    Phi = gp * x = gp * r*cos(phi)
+!
+!  with gp = GMp/rp**2. So the resulting acceleration is, in cylindrical: 
+!
+!    grad = -       dPhi/drad = - gp * cos(phi)
+!    gphi = - 1/r * dPhi/dphi =   gp * sin(phi)
+!    gzed = -       dPhi/dzed =   0.
+!
+!  In spherical coordinates, x = r*sin(tht)*cos(phi), so 
+!
+!    grad = -                  dPhi/drad = - gp * sin(tht)*cos(phi)
+!    gtht = - 1/ r           * dPhi/dtht = - gp * cos(tht)*cos(phi)
+!    gphi = - 1/[r*sin(tht)] * dPhi/dphi =   gp *          sin(phi)  
+!
 !  20-jul-14/wlad: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -545,18 +567,21 @@ module Gravity
 !
         if (lindirect_terms) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + g2*sin(y(m))
         endif
 !
 !  Coriolis force
 !
-        c2 = 2*Omega_corot
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + c2*p%uu(:,2)
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - c2*p%uu(:,1)
+        if (lcoriolis_force_gravity) then
+          c2 = 2*Omega_corot
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + c2*p%uu(:,2)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - c2*p%uu(:,1)
+        endif
 !
 !  Centrifugal force
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_corot**2
+        if (lcentrifugal_force_gravity) &
+             df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_corot**2
 !
       else if (lspherical_coords) then
 !
@@ -568,20 +593,24 @@ module Gravity
           df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sinph(n)
         endif
 !
-        c2 = 2*Omega_corot*costh(m)
-        s2 = 2*Omega_corot*sinth(m)
-!
 !  Coriolis force
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) - s2*p%uu(:,1)
+        if (lcoriolis_force_gravity) then
+          c2 = 2*Omega_corot*costh(m)
+          s2 = 2*Omega_corot*sinth(m)
+!
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) - s2*p%uu(:,1)
+        endif
 !
 !  Centrifugal force
 !
-        rrcyl_mn=x(l1:l2)*sinth(m)
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_corot**2
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_corot**2
+        if (lcentrifugal_force_gravity) then
+          rrcyl_mn=x(l1:l2)*sinth(m)
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_corot**2
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_corot**2
+        endif
 !
       endif
 !

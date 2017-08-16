@@ -30,6 +30,7 @@ module Forcing
 !
   real :: force=0.,force2=0., force1_scl=1., force2_scl=1.
   real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
+  real :: Bconst=1., Bslope=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
@@ -116,7 +117,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
-       rcyl_ff,width_ff,nexp_ff,lff_as_aux, &
+       rcyl_ff,width_ff,nexp_ff,lff_as_aux,Bconst,Bslope, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
@@ -183,6 +184,7 @@ module Forcing
 !                  no such forcing is requested
 !  18-dec-2015/MR: minimal wavevectors k1xyz moved here from grid
 !  14-Jun-2016/MR+NS: added forcing sinx*exp(-z^2)
+!  11-May-2017/NS: added forcing Aycont_z
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -434,9 +436,19 @@ module Forcing
        profz_ampl=1.; profz_hel=1.
 !
 !  turn off helicity of forcing above x=r_ff
+!  used in Jabbari et al. (2015)
 !
       elseif (iforce_profile=='surface_helx_cosy*siny**n_hel_sin_pow') then
         profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profy_ampl=1.; profy_hel=cos(y)*sin(y)**n_hel_sin_pow
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off helicity of forcing above x=r_ff
+!  but with step function in radius, as in Warnecke et al. (2011)
+!
+      elseif (iforce_profile=='surface_stepx_cosy*siny**n_hel_sin_pow') then
+        profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profx_hel=1.
         profy_ampl=1.; profy_hel=cos(y)*sin(y)**n_hel_sin_pow
         profz_ampl=1.; profz_hel=1.
 !
@@ -510,7 +522,7 @@ module Forcing
         profz_ampl=1.; profz_hel=1.
 !
 !  turn off forcing intensity above x=x0, and
-!  stepy profile of helicity
+!  stepy profile of helicity, used in Warnecke et al. (2011)
 !
       elseif (iforce_profile=='surface_x_stepy') then
         profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
@@ -865,7 +877,7 @@ module Forcing
         call get_2dmodes (.false.)
         if (lroot) then
 ! The root processors also write out the forced modes.
-          open(unit=10,file=trim(datadir)//'2drandomk.out',status='unknown')
+          open(unit=10,file=trim(datadir)//'/2drandomk.out',status='unknown')
           do ikmodes = 1, random2d_nmodes
             write(10,*) random2d_kmodes(1,ikmodes),random2d_kmodes(2,ikmodes)
           enddo
@@ -4735,7 +4747,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_counter_centrifugal
 !***********************************************************************
-    subroutine calc_lforcing_cont_pars(f)
+    subroutine forcing_cont_after_boundary(f)
 !
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
@@ -4771,7 +4783,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lforcing_cont_pars
+    endsubroutine forcing_cont_after_boundary
 !***********************************************************************
     subroutine pencil_criteria_forcing
 !
@@ -5037,6 +5049,16 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=ampl_ff(i)*sinx(l1:l2,i)*exp(-((z(n)-r_ff)/width_ff)**2) &
                      *(step(x(l1:l2),xminf,2.)-step(x(l1:l2),xmaxf,2.))
+          force(:,3)=0.
+!
+!  f=(0,Aycont_z,0)
+!  This ensures vanishing Ay at both boundaries if Bslope=-2Bconst/Lz
+!  (making it suitable for perfect conductor boundary condition)
+!
+        case ('(0,Aycont_z,0)')
+          force(:,1)=0.
+          force(:,2)=-ampl_ff(i)*((Bconst*(z(n)-xyz0(3))) &
+                      +(0.5*Bslope*((z(n)-xyz0(3))**2.)))
           force(:,3)=0.
 !
 !  f=(sinz,cosz,0)
@@ -5321,5 +5343,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
       endif
 !
     endsubroutine forcing_clean_up
+!***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=2
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(force,p_par(1))
+    call copy_addr_c(tforce_stop,p_par(1))
+
+    endsubroutine push2c
 !*******************************************************************
 endmodule Forcing

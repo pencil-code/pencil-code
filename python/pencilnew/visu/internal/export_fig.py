@@ -1,12 +1,13 @@
 
 def export_fig(fig, filepath, filename=False,
-                    PNG=True, PDF=False, EPS=False, DPI=300, EXPORT_BBOX_INCES='tight',
+                    PNG=True, PDF=False, EPS=False, DPI=300, EXPORT_BBOX_INCES='tight', transparent=True,
                     timestamp=False):
     """Does a proper export of a figure handle to all kind of image files.
     """
     import datetime as dt
     from os.path import join, split
-    from pencilnew.io import exists, mkdir
+    from pencilnew.io import exists_file as exists
+    from pencilnew.io import mkdir
 
     ######## parse filepath and filename
     if not filename:
@@ -23,7 +24,7 @@ def export_fig(fig, filepath, filename=False,
     mkdir(filepath)
 
     ######## generate timestamp if demanded
-    if (not timestamp):
+    if timestamp == True:
         timestamp = str(dt.datetime.now())[:-7]
         timestamp = timestamp.replace(" ", "_").replace(":","-")
         complete_filepath = complete_filepath+'_'+timestamp
@@ -32,24 +33,24 @@ def export_fig(fig, filepath, filename=False,
     if PNG:
         fig.savefig(complete_filepath+'.png',
         	bbox_inches = EXPORT_BBOX_INCES,
-        	dpi = DPI)
-    print('~ .png saved')
+        	dpi = DPI, transparent=transparent)
+        print('~ .png saved')
 
     if PDF:
         fig.savefig(complete_filepath+'.pdf',
         	bbox_inches = EXPORT_BBOX_INCES,
-        	dpi = DPI)
-    print('~ .pdf saved')
+        	dpi = DPI, transparent=transparent)
+        print('~ .pdf saved')
 
     if EPS:
         fig.savefig(complete_filepath+'.png',
         	bbox_inches = EXPORT_BBOX_INCES,
-        	dpi = DPI)
-    print('~ .eps saved')
+        	dpi = DPI, transparent=transparent)
+        print('~ .eps saved')
 
     if not PNG and not EPS and not EPS:
         print('? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!')
     else:
         print('~ Plots saved to '+complete_filepath)
 
-    return fig
+    return True

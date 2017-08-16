@@ -25,7 +25,8 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, cs20, beta_glnrho_global
+  use EquationOfState, only: gamma, gamma_m1, cs20
+  use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
   use Viscosity
@@ -175,9 +176,8 @@ module Energy
       use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState,  only: mpoly, isothtop, &
-                                rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss, eoscalc, ilnrho_pp
+      use EquationOfState,  only: rho0, lnrho0, isothermal_entropy, &
+                                  isothermal_lnrho_ss, eoscalc, ilnrho_pp
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -229,7 +229,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) then
@@ -403,7 +403,7 @@ module Energy
 !
 !      use Conductivity, only: heat_conductivity
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Special, only: special_calc_energy
       use Sub
 !
@@ -499,7 +499,7 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  dummy routine
 !
@@ -509,10 +509,10 @@ module Energy
       call keep_compiler_quiet(f)
 !
       if (lenergy_slope_limited) &
-        call fatal_error('calc_lenergy_pars', &
+        call fatal_error('energy_after_boundary', &
                          'Slope-limited diffusion not implemented')
 
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine fill_farray_pressure(f)
 !
@@ -654,6 +654,17 @@ module Energy
 !
     endsubroutine rprint_energy
 !***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
+!***********************************************************************    
     subroutine update_char_vel_energy(f)
 !
 ! TB implemented.

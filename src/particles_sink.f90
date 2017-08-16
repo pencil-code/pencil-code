@@ -10,8 +10,6 @@
 ! CPARAM logical, parameter :: lparticles_sink=.true.
 !
 ! MPVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
-! COMMUNICATED AUXILIARIES 1
 !
 !***************************************************************
 module Particles_sink

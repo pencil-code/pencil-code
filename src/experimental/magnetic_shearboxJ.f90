@@ -3021,7 +3021,8 @@ module Magnetic
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini, tanhx2
-      real, dimension (nx) :: diffus_eta, diffus_eta2, diffus_eta3
+      real, dimension (nx) :: diffus_eta, diffus_eta2, diffus_eta3, &
+                              advec_hall,advec_hypermesh_aa,advec_va2
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3116,7 +3117,7 @@ module Magnetic
         else exp_zdep
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
-          if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n)) * dz_1(n)
+          if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
         endif exp_zdep
         etatotal = etatotal + eta_z(n)
       endif eta_zdep
@@ -3218,6 +3219,7 @@ module Magnetic
           else
             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
         endif
       endif
 !
@@ -3655,9 +3657,10 @@ module Magnetic
           advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
                      abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
                      abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
+          advec2=advec2+advec_hall**2
+          if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
+                                        maxval(advec_hall)
         endif
-        if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
-                                     maxval(advec_hall)
       endif
 !
 !  Add Battery term.
@@ -3726,6 +3729,7 @@ module Magnetic
 !  Consider advective timestep only when lhydro=T.
 !
       if (lfirst.and.ldt) then
+        advec_va2=0.
         if (lhydro) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
@@ -3761,11 +3765,12 @@ module Magnetic
 !    Please check
 !
         if (lisotropic_advection) then
-          if (lfirst.and.ldt) then
-            if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
-                 advec_va2=sqrt(p%va2*dxyz_2)
-          endif
+          if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
+             advec_va2=sqrt(p%va2*dxyz_2)
         endif
+        
+        advec2=advec2+advec_va2
+
       endif
 !
 !  Apply border profiles.
@@ -4716,11 +4721,11 @@ module Magnetic
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
 !-- subroutine magnetic_after_boundary(f)
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Calculate <A>, which is needed for test-field methods.
 !
-!   2-jan-10/axel: adapted from calc_lhydro_pars
+!   2-jan-10/axel: adapted from hydro_after_boundary
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
       use General, only: notanumber
@@ -4837,10 +4842,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
 !  XX
 !
-!     if (lmagn_mf) call calc_lmagnetic_pars
+!     if (lmagn_mf) call magnetic_after_boundary
 !
 !-- endsubroutine magnetic_after_boundary
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
 !

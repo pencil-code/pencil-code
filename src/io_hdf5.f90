@@ -270,8 +270,8 @@ module Io
           call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
           call create_group_hdf5 ('dim')
           call output_hdf5 ('dim/mx', nxgrid+2*nghost)
-          call output_hdf5 ('dim/my', nxgrid+2*nghost)
-          call output_hdf5 ('dim/mz', nxgrid+2*nghost)
+          call output_hdf5 ('dim/my', nygrid+2*nghost)
+          call output_hdf5 ('dim/mz', nzgrid+2*nghost)
           call output_hdf5 ('dim/nx', nxgrid)
           call output_hdf5 ('dim/ny', nygrid)
           call output_hdf5 ('dim/nz', nzgrid)
@@ -311,7 +311,7 @@ module Io
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
         write (lun_output) id_block_PERSISTENT
         persist_initialized = .false.
-        close (lun_input)
+        close (lun_output)
       endif
 !
     endsubroutine output_snap_finalize

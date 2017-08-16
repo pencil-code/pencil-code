@@ -403,6 +403,8 @@ module PointMasses
       real, dimension(nqpar,3) :: velocity
       real, dimension(nqpar,3) :: positions
       real :: tmp,parc
+      real :: absolute_offset_star,baricenter_secondaries
+      real :: velocity_baricenter_secondaries,mass_secondaries
       integer :: k,ks
 !
       intent (in) :: f
@@ -510,22 +512,26 @@ module PointMasses
           positions(1:nqpar,iyq)=pi/2
         endif
 !
-        tmp = 0.;parc=0
+        mass_secondaries = 0.
+        baricenter_secondaries=0.
         do ks=1,nqpar
           if (ks/=istar) then
-            sma(ks)=abs(positions(ks,1))
-            tmp=tmp+pmass(ks)
-            parc = parc - sma(ks)*pmass(ks)
+            sma(ks) = abs(positions(ks,1))
+            mass_secondaries = mass_secondaries + pmass(ks)
+            baricenter_secondaries = baricenter_secondaries + positions(ks,1)*pmass(ks)
           endif
         enddo
+        absolute_offset_star = abs(baricenter_secondaries)
 !
 !  Fixed-cm assumes that the total mass is always one. The mass of the
 !  star is adjusted to ensure this.
 !
-        pmass(istar)=1.- tmp;pmass1=1./max(pmass,tini);totmass=1.;totmass1=1.
+        pmass(istar)=1.- mass_secondaries
+        pmass1=1./max(pmass,tini)
+        totmass=1.;totmass1=1.
 !
-        parc = parc*totmass1
-        if (tmp >= 1.0) &
+        absolute_offset_star = absolute_offset_star*totmass1
+        if (mass_secondaries >= 1.0) &
             call fatal_error('init_pointmasses', &
             'The mass of one '//&
             '(or more) of the particles is too big! The masses should '//&
@@ -534,21 +540,25 @@ module PointMasses
             'The mass of the last particle in the pmass array will be '//&
             'reassigned to ensure that the total mass is g0')
 !
+!  Correct the semimajor of the secondaries by the offset they generate. 
+!
         do ks=1,nqpar
+          ! sign(A,B) returns the value of A with the sign of B
           if (ks/=istar) &
-              positions(ks,1)=sign(1.,positions(ks,1))* (sma(ks) + parc)
+              positions(ks,1)=sign(1.,positions(ks,1))* (sma(ks) - absolute_offset_star)
         enddo
 !
 !  The last one (star) fixes the CM at Rcm=zero
 !
         if (lcartesian_coords) then
-          positions(istar,1)=parc
+          !put the star opposite to the baricenter of planets
+          positions(istar,1)=-sign(1.,baricenter_secondaries)*absolute_offset_star
         elseif (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
-          positions(istar,1)=abs(parc)
+          positions(istar,1)=absolute_offset_star
           positions(istar,2)=pi
         elseif (lspherical_coords) then
-          positions(istar,1)=abs(parc)
+          positions(istar,1)=absolute_offset_star
           positions(istar,3)=pi
         endif
 !
@@ -561,7 +571,7 @@ module PointMasses
 !
         do k=1,nqpar
 !
-!  Here I substitute the first nqpar dust particles by massive ones,
+!  Here we substitute the first nqpar dust particles by massive ones,
 !  since the first ipars are less than nqpar
 !
             fq(k,ixq:izq)=positions(k,1:3)
@@ -649,23 +659,23 @@ module PointMasses
 !
 !  Keplerian velocities for the planets
 !
-        parc=0.
+        velocity_baricenter_secondaries=0.
         do ks=1,nqpar
           if (ks/=istar) then
             kep_vel(ks)=sqrt(1./sma(ks)) !circular velocity
-            parc = parc - kep_vel(ks)*pmass(ks)
+            velocity_baricenter_secondaries = velocity_baricenter_secondaries + kep_vel(ks)*pmass(ks)
           endif
         enddo
-        parc = parc*totmass
+        velocity_baricenter_secondaries = velocity_baricenter_secondaries*totmass
         do ks=1,nqpar
           if (ks/=istar) then
             if (lcartesian_coords) then
-              velocity(ks,2) = sign(1.,positions(ks,1))*(kep_vel(ks) + parc)
+              velocity(ks,2) = sign(1.,positions(ks,1))*(kep_vel(ks) - velocity_baricenter_secondaries)
             elseif (lcylindrical_coords) then
               !positive for the planets
-              velocity(ks,2) = abs(kep_vel(ks) + parc)
+              velocity(ks,2) = kep_vel(ks) - velocity_baricenter_secondaries
             elseif (lspherical_coords) then
-              velocity(ks,3) = abs(kep_vel(ks) + parc)
+              velocity(ks,3) = kep_vel(ks) - velocity_baricenter_secondaries
             endif
           endif
         enddo
@@ -673,11 +683,11 @@ module PointMasses
 !  The last one (star) fixes the CM also with velocity zero
 !
         if (lcartesian_coords) then
-          velocity(istar,2)=parc
+          velocity(istar,2)= -sign(1.,baricenter_secondaries)*velocity_baricenter_secondaries
         elseif (lcylindrical_coords) then
-          velocity(istar,2)=-parc
+          velocity(istar,2)= velocity_baricenter_secondaries
         elseif (lspherical_coords) then
-          velocity(istar,3)=-parc
+          velocity(istar,3)= velocity_baricenter_secondaries
         endif
 !
 !  Revert all velocities if retrograde
@@ -1548,7 +1558,6 @@ module PointMasses
 !
       if (lroot) then
         open(1,FILE=filename,FORM='unformatted')
-        print*,'opened file'
         read(1) nqpar_read
         if (nqpar_read /= nqpar) call fatal_error("","")
         if (nqpar_read/=0) read(1) fq

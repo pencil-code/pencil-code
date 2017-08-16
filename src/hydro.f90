@@ -20,7 +20,9 @@
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
-! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3) 
+! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
+! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
+! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
 !
 !***************************************************************
 !
@@ -53,6 +55,10 @@ module Hydro
   real, dimension (mx,mz,3) :: uumxz=0.0
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
+!
+!  phi-averaged arrays for orbital advection
+!
+  real, dimension (nx,nz) :: uu_average=0.
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -94,13 +100,14 @@ module Hydro
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
-  real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sldchar_hyd=1.0
+  real :: u_out_kep=0.0, velocity_ceiling=.0, w_sldchar_hyd=1.0
+  integer :: n_ceiling=0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   integer :: nb_rings=0
   integer :: neddy=0
 !
-! variables for expansion into spherical harmonics 
+! variables for expansion into spherical harmonics
 !
   integer,parameter :: lSH_max=2
 ! Nmodes_SH=(lSH_max+1)*(lSH_max+1)
@@ -153,7 +160,7 @@ module Hydro
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
       lskip_projection, lno_second_ampl, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
-      lprecession, omega_precession, alpha_precession, velocity_ceiling, &
+      lprecession, omega_precession, alpha_precession, velocity_ceiling, n_ceiling,  &
       loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
@@ -196,6 +203,9 @@ module Hydro
   logical :: lpropagate_borderuu=.true.
   logical :: lgradu_as_aux=.false.
   logical :: lOmega_cyl_xy=.false.
+  logical :: lno_radial_advection=.false.
+  logical :: lfargoadvection_as_shift=.true.
+  logical :: lhelmholtz_decomp=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -208,7 +218,7 @@ module Hydro
 !
 !  Option to constrain time for large df.
 !
-  real :: cdt_tauf=1.0, ulev_cgs=1.0, ulev=impossible 
+  real :: cdt_tauf=1.0, ulev_cgs=1.0, ulev=impossible
   logical :: lcdt_tauf=.false.
 !
   namelist /hydro_run_pars/ &
@@ -228,14 +238,15 @@ module Hydro
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-      velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
+      velocity_ceiling, n_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
       lcdt_tauf, cdt_tauf, ulev,&
-      w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy
+      w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
+      lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -261,7 +272,9 @@ module Hydro
                                 ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
+  integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
+  integer :: idiag_uyrms=0      ! DIAG_DOC: $\left<u_y^2\right>^{1/2}$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
   integer :: idiag_uxmin=0      ! DIAG_DOC: $\min(|u_x|)$
@@ -407,7 +420,7 @@ module Hydro
   integer :: idiag_ugurmsx=0    ! DIAG_DOC: $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
                                 ! DIAG_DOC: for the hydro_xaver_range
   integer :: idiag_ugu2m=0      ! DIAG_DOC: $\left<\uv\nabla\uv\right>^2$
-  integer :: idiag_dudx=0        ! DIAG_DOC: $\left<\frac{\delta \uv}{\delta x}\right>$ 
+  integer :: idiag_dudx=0        ! DIAG_DOC: $\left<\frac{\delta \uv}{\delta x}\right>$
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
@@ -533,6 +546,9 @@ module Hydro
   integer :: idiag_u2u31mz=0    ! XYAVG_DOC:
   integer :: idiag_u3u12mz=0    ! XYAVG_DOC:
   integer :: idiag_u1u23mz=0    ! XYAVG_DOC:
+  integer :: idiag_accpowzmz=0  ! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy}$
+  integer :: idiag_accpowzupmz=0  ! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy+}$
+  integer :: idiag_accpowzdownmz=0! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy-}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -631,6 +647,7 @@ module Hydro
                                 ! ZAVG_DOC: u_x\right>_{z}$
   integer :: idiag_fkinymxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_y\right>_{z}$
+  integer :: idiag_nshift=0
 !
 !  Auxiliary variables
 !
@@ -674,6 +691,13 @@ module Hydro
         i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
       endif
 !
+!  For Helmholtz decomposition of uu the potential of the curl-free part is registered  as an auxiliary.
+!
+      if (lhelmholtz_decomp) then
+        call farray_register_auxiliary('phiuu',iphiuu)
+        if (dsnap_down==0.) call fatal_error('register_hydro','Helmholtz decomposition requires dsnap_down>0')
+      endif
+!
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
@@ -707,7 +731,7 @@ module Hydro
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
 !
-! If we are to solve for gradient of dust particle velocity, we must store gradient 
+! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
 !
       if (lparticles_grad) lgradu_as_aux=.true.
@@ -722,10 +746,10 @@ module Hydro
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !  26-mar-10/axel: lreinitialize_uu added
-!  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation 
+!  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation
 !                of \vec{Omega} on Yang grid added.
 !   7-jun.16/MR: modifications for calculation of z average on Yin-Yang grid, not yet operational
-! 
+!
       use BorderProfiles, only: request_border_driving
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
@@ -808,8 +832,8 @@ module Hydro
           Omegav(1) = Omega*sin(theta*dtor)*cos(phi*dtor)
           Omegav(2) = Omega*sin(theta*dtor)*sin(phi*dtor)
           Omegav(3) = Omega*cos(theta*dtor)
-        endif        
-      endif        
+        endif
+      endif
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
@@ -850,14 +874,6 @@ module Hydro
         ladvection_velocity=.false.
         if (lroot) print*, &
              'initialize_hydro: 0-D run, turned off advection of velocity'
-      endif
-!
-!  If fargo is used, advection is taken care of in special/fargo.f90
-!
-      if (lfargo_advection) then
-        ladvection_velocity=.false.
-        if (lroot) print*, &
-             'initialize_hydro: fargo used. turned off advection of velocity'
       endif
 !
 !  Border profile backward compatibility. For a vector, if only the first
@@ -1028,6 +1044,12 @@ module Hydro
         uumxy=0.0
       endif
 !
+      if (idiag_uxp2/=0.or.idiag_uyp2/=0.or.idiag_uzp2/=0) then
+        print*,'hydro: pointwise diagnostics at'
+        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
+        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
+      endif
+!
       call keep_compiler_quiet(f)
 !
       endsubroutine initialize_hydro
@@ -1036,7 +1058,7 @@ module Hydro
 !
 ! calculates various means
 !
-!  14-oct-13/MR: outsourced from calc_lhydro_pars
+!  14-oct-13/MR: outsourced from hydro_after_boundary
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Mpicomm, only: mpiallreduce_sum
@@ -1136,7 +1158,7 @@ module Hydro
           else
 !
 ! Normal summing-up in Yin procs.
-! 
+!
             uumxy(:,:,j)=fact*sum(f(:,:,n1:n2,iuu+j-1),3)  ! requires equidistant grid
           endif
         enddo
@@ -1178,9 +1200,9 @@ module Hydro
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only:update_ghosts
-      use Density, only: calc_pencils_density
+      use Density, only: calc_pencils_density, beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
-      use EquationOfState, only: cs20, beta_glnrho_scaled
+      use EquationOfState, only: cs20
       use General
       use Gravity, only: gravz_const,z1
       use Initcond
@@ -1248,7 +1270,7 @@ module Hydro
           do ix=l1,l2
              if ((iz0 .le. n2) .and. (iz0 .gt. n1) )  &
              f(ix,:,iz0,iux) = ampluu(j)*sin(kx_uu*x(ix))
-          enddo 
+          enddo
         case ('random_isotropic_shell')
           call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
@@ -1655,8 +1677,9 @@ module Hydro
 !
         case ('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
-          f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
-          f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
+          f(:,:,:,iux) = f(:,:,:,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)
+          f(:,:,:,iuy) = f(:,:,:,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
+          ! superimpose here for the case of pressure bump special module chaning f as well
 !
         case ('rigid')
           do n=n1,n2; do m=m1,m2; do l=l1,l2
@@ -1926,7 +1949,8 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      if (lparticles_lyapunov) lpenc_requested(i_uij) = .true.
+      if (lparticles_lyapunov .or. lparticles_caustics) & 
+        lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
         if (lweno_transport) then
           lpenc_requested(i_uu)=.true.
@@ -1962,6 +1986,11 @@ module Hydro
       if (lboussinesq.and.ltemperature.and.lsphere_in_a_box) then
         lpenc_requested(i_evr)=.true.
         lpenc_requested(i_r_mn)=.true.
+      endif
+!
+      if (lfargo_advection) then
+        lpenc_requested(i_uu_advec)=.true.
+        lpenc_requested(i_uuadvec_guu)=.true.
       endif
 !
 !  video pencils
@@ -2011,6 +2040,10 @@ module Hydro
       if (idiag_u2u31m/=0 .or. idiag_u2u31mz/=0) lpenc_diagnos(i_u2u31)=.true.
       if (idiag_u3u12m/=0 .or. idiag_u3u12mz/=0) lpenc_diagnos(i_u3u12)=.true.
       if (idiag_u1u23m/=0 .or. idiag_u1u23mz/=0) lpenc_diagnos(i_u1u23)=.true.
+      if (idiag_accpowzmz/=0 .or. idiag_accpowzupmz/=0 .or. idiag_accpowzdownmz/=0) then
+        lpenc_diagnos(i_fpres)=.true.; lpenc_diagnos(i_fvisc)=.true.
+        if (lgrav) lpenc_diagnos(i_gg)=.true.
+      endif
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
@@ -2167,12 +2200,18 @@ module Hydro
       if (lpencil_in(i_oij).and.(.not.lcartesian_coords)) &
           lpencil_in(i_oo)=.true.
 !
+      if (lpencil_in(i_uu_advec)) lpencil_in(i_uu)=.true.
+      if (lpencil_in(i_uuadvec_guu)) then
+        lpencil_in(i_uu_advec)=.true.
+        lpencil_in(i_uij)=.true.
+      endif
+!
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
     subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
 ! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is
-! selected or not.
+! selected or not (the default is nonlinear).
 !
 ! 24-jun-13/dhruba: coded
 ! 20-sep-13/MR    : added optional list of indices in lpencil, penc_inds,
@@ -2227,18 +2266,19 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, tmp2
-      integer :: i, j, ju, ij,jj,kk,jk
+      integer :: i, j, ju, ij, jj, kk, jk
 !
       intent(in) :: lpenc_loc
       intent(out):: p
+
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
-      if (lpenc_loc(i_uij)) then 
+      if (lpenc_loc(i_uij)) then
         call gij(f,iuu,p%uij,1)
-        if (lparticles_lyapunov) then
+        if (lparticles_lyapunov .or. lparticles_caustics) then
           jk=0
           do jj=1,3; do kk=1,3
             jk=jk+1
@@ -2257,7 +2297,7 @@ module Hydro
         do i=1,3
           do j=1,3
             ij=ij+1
-            f(l1:l2,m,n,ij) = p%uij(:,i,j) 
+            f(l1:l2,m,n,ij) = p%uij(:,i,j)
           enddo
         enddo
       endif
@@ -2270,13 +2310,13 @@ module Hydro
 ! uij5
       if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo (=curlu)
-      oo: if (lpenc_loc(i_oo)) then
+      if (lpenc_loc(i_oo)) then
         if (ioo /= 0) then
           p%oo = f(l1:l2,m,n,iox:ioz)
         else
           call curl_mn(p%uij,p%oo,p%uu)
         endif
-      endif oo
+      endif
 ! o2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
@@ -2327,9 +2367,11 @@ module Hydro
       if (lpenc_loc(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
       if (lpenc_loc(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
       if (lpenc_loc(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
-! del4u and del6u
+! del4u, del6u, del4graddivu, and del6u_strict
       if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
       if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del6u_strict)) call del6v(f,iuu,p%del6u_strict,LSTRICT=.true.)
+      if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
@@ -2380,14 +2422,11 @@ module Hydro
 !
 !del2uj, d^u/dx^2 etc
 !
-      if (lpenc_loc(i_d2uidxj)) &
-        call d2fi_dxj(f,iuu,p%d2uidxj)
+      if (lpenc_loc(i_d2uidxj)) call d2fi_dxj(f,iuu,p%d2uidxj)
 !
 ! deluidxjk
 !
-      if (lpenc_loc(i_uijk)) then
-        call del2fi_dxjk(f,iuu,p%uijk)
-      endif
+      if (lpenc_loc(i_uijk)) call del2fi_dxjk(f,iuu,p%uijk)
 !
 ! grad5divu
 !
@@ -2416,6 +2455,24 @@ module Hydro
           call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
           call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
         endif
+      endif
+!
+      if (lpenc_loc(i_uu_advec)) then
+!
+! Advect by the original radial and vertical, but residual azimuthal (= relative) velocity
+!
+        p%uu_advec(:,1)=p%uu(:,1)
+        p%uu_advec(:,2)=p%uu(:,2)-uu_average(:,n-nghost)
+        p%uu_advec(:,3)=p%uu(:,3)
+!
+        do j=1,3
+          ! This is calling scalar h_dot_grad, that does not add
+          ! the inertial terms. They will be added here.
+          call h_dot_grad(p%uu_advec,p%uij(:,j,:),tmp)
+          p%uuadvec_guu(:,j)=tmp
+        enddo
+        p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
+        p%uuadvec_guu(:,2)=p%uuadvec_guu(:,2)+rcyl_mn1*p%uu(:,2)*p%uu(:,1)
       endif
 !
     endsubroutine calc_pencils_hydro_nonlinear
@@ -2484,9 +2541,11 @@ module Hydro
         .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then
         call fatal_error('calc_pencils_hydro_linearized:','ujukl pencils not calculated')
       endif
-! del4u and del6u
+! del4u, del6u, and del4graddivu
       if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
       if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del6u_strict)) call del6v(f,iuu,p%del6u_strict,LSTRICT=.true.)
+      if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
@@ -2575,10 +2634,16 @@ module Hydro
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
       use Sub, only: curl
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3) :: pv
+!
+      real, dimension (nx,nz) :: fsum_tmp
+      real, dimension (nx) :: uphi
+      real :: nygrid1
+      integer :: nnghost
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -2600,6 +2665,32 @@ module Hydro
           enddo mloop
         enddo nloop
       endif getoo
+!
+!  For FARGO (orbital advection) algorithm.
+!  Calculate the average velocity at the first sub-timestep.
+!
+      if (lfargo_advection.and.lfirst) then
+!
+!  Pre-calculate the average large scale speed of the flow
+!
+        fsum_tmp=0.
+!
+        nygrid1=1.0/nygrid
+        do n=n1,n2
+          do m=m1,m2
+            nnghost=n-nghost
+            uphi=f(l1:l2,m,n,iuy)
+            fsum_tmp(:,nnghost)=fsum_tmp(:,nnghost)+uphi*nygrid1
+          enddo
+        enddo
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+! --only relevant for 3D, but is here for generality
+!
+        call mpiallreduce_sum(fsum_tmp,uu_average,&
+             (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
+      endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
@@ -2639,7 +2730,7 @@ module Hydro
       use Diagnostics
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
-      use General, only: transform_thph_yy
+      use General, only: transform_thph_yy, notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2651,13 +2742,13 @@ module Hydro
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
-      real, dimension (nx) :: uus,ftot,Fmax
+      real, dimension (nx) :: uus,ftot,Fmax,advec_uu
       real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
       integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
 !
-      Fmax=0.0
+      Fmax=tini
 !
 !  Identify module and boundary conditions.
 !
@@ -2672,7 +2763,7 @@ module Hydro
 !  Advection term.
 !
       if (ladvection_velocity .and. .not. lweno_transport .and. &
-          .not. lno_meridional_flow) then
+          .not. lno_meridional_flow .and. .not. lfargo_advection) then
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
       endif
 !
@@ -2689,11 +2780,15 @@ module Hydro
 !  useful for debugging.
 !
 !  18-Mar-2010/AJ: this should probably go in a special module.
+!  12-Mar-2017/WL: Agree, looks very specific.
 !
       if (ladvection_velocity .and. lno_meridional_flow) then
         f(l1:l2,m,n,iux:iuy)=0.0
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
       endif
+!
+      if (ladvection_velocity .and. lfargo_advection) &
+           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -2737,9 +2832,15 @@ module Hydro
                        abs(p%uu(:,2))*dline_1(:,2),&
                        abs(p%uu(:,3))*dline_1(:,3))
         else
-          advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
-                       abs(p%uu(:,2))*dline_1(:,2)+&
-                       abs(p%uu(:,3))*dline_1(:,3)
+          if (.not.lfargo_advection) then
+            advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
+                         abs(p%uu(:,2))*dline_1(:,2)+&
+                         abs(p%uu(:,3))*dline_1(:,3)
+          else
+            advec_uu=    abs(p%uu_advec(:,1))*dline_1(:,1)+&
+                         abs(p%uu_advec(:,2))*dline_1(:,2)+&
+                         abs(p%uu_advec(:,3))*dline_1(:,3)
+          endif
         endif
 !        if (lspherical_coords) then
 !          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
@@ -2757,8 +2858,9 @@ module Hydro
 !                   abs(p%uu(:,2))*dy_1(  m  )+ &
 !                   abs(p%uu(:,3))*dz_1(  n  )
 !        endif
+      else
+        advec_uu=0.0
       endif
-      if (.not. ldt) advec_uu=0.0
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
 !  into account for computing the time step. It is not clear why.
@@ -2773,7 +2875,11 @@ module Hydro
                  advec_uu=sqrt(p%u2*dxyz_2)
          endif
       endif
-      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+      if (lfirst.and.ldt) then
+        if (notanumber(advec_uu)) print*, 'advec_uu   =',advec_uu
+        maxadvec=maxadvec+advec_uu
+        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+      endif
 !
 !  Ekman Friction, used only in two dimensional runs.
 !
@@ -2815,9 +2921,9 @@ module Hydro
 !
 !  Save the advective derivative as an auxiliary
 !
-      if(ladv_der_as_aux) then
-        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = &
-            -p%fpres + p%fvisc
+      if (ladv_der_as_aux) then
+        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = p%fpres + p%fvisc
+        if (lgrav) f(l1:l2,m,n,i_adv_derx:i_adv_derz) = f(l1:l2,m,n,i_adv_derx:i_adv_derz) + p%gg
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
@@ -2839,7 +2945,7 @@ module Hydro
 !
       if (lborder_profiles) call set_border_hydro(f,df,p)
 !
-!  Fred: Option to constrain timestep for large forces 
+!  Fred: Option to constrain timestep for large forces
 !
       if (lfirst.and.ldt.and.lcdt_tauf) then
         if (ulev==impossible) ulev=ulev_cgs/unit_velocity
@@ -2849,7 +2955,7 @@ module Hydro
           where (uus <= ulev) uus = ulev
           dt1_max=max(dt1_max,ftot/(cdt_tauf*uus))
           Fmax=max(Fmax,ftot/uus)
-        enddo 
+        enddo
        ! call dot2(df(l1:l2,m,n,iux:iuz),ftot,FAST_SQRT=.true.)
        ! call dot2(p%uu,uus,FAST_SQRT=.true.)
        ! where (uus <= ulev) uus = ulev
@@ -2922,8 +3028,8 @@ module Hydro
         if ((idiag_taufmin/=0).and.lcdt_tauf) then
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
-! urlm 
-! This is being always calculated but written out only when asked. 
+! urlm
+! This is being always calculated but written out only when asked.
 ! It should not be done this way, but calculated only is must be written out.
 !
         if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH)
@@ -2958,7 +3064,7 @@ module Hydro
         if (idiag_uguxm/=0) call sum_mn_name(p%ugu(:,1),idiag_uguxm)
         if (idiag_uguym/=0) call sum_mn_name(p%ugu(:,2),idiag_uguym)
         if (idiag_uguzm/=0) call sum_mn_name(p%ugu(:,3),idiag_uguzm)
-        if (idiag_dudx/=0) then 
+        if (idiag_dudx/=0) then
           call sum_mn_name(p%uij(:,1,1),idiag_dudx)
         endif
         if (idiag_ugu2m/=0) call sum_mn_name(p%ugu2,idiag_ugu2m)
@@ -3242,6 +3348,14 @@ module Hydro
 !
       endif
 !
+      if (lfargo_advection.and.idiag_nshift/=0) then
+        !nnghost=n-nghost
+        !phidot=uu_average(:,nnghost)*rcyl_mn1
+        !nshift=phidot*dt*dy_1(m)
+        !call max_mn_name(nshift,idiag_nshift)
+        call max_mn_name(uu_average(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+      endif
+!
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst) then
@@ -3352,7 +3466,33 @@ module Hydro
         call xysum_mn_name_z(p%u2u31,idiag_u2u31mz)
         call xysum_mn_name_z(p%u3u12,idiag_u3u12mz)
         call xysum_mn_name_z(p%u1u23,idiag_u1u23mz)
+        if (idiag_accpowzmz/=0) then
+          uus = p%fpres(:,3) + p%fvisc(:,3)
+          if (lgrav) uus = uus + p%gg(:,3)
+          uus=p%uu(:,3)*uus
+          call xysum_mn_name_z(uus,idiag_accpowzmz)   ! yet incorrect for Yin-Yang
+        endif
+        if (idiag_accpowzupmz/=0) then
+          where (p%uu(:,3) > 0.) 
+            uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
+            uus = p%uu(:,3)*uus
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_accpowzupmz)   ! yet incorrect for Yin-Yang
+        endif
+        if (idiag_accpowzdownmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
+            uus = p%uu(:,3)*uus
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_accpowzdownmz)   ! yet incorrect for Yin-Yang
+        endif
+!
 !  phi-z averages
+!
         if (idiag_Remz/=0) then
           Remz = sqrt(p%ugu2/p%diffus_total**2)
           where (p%diffus_total < tini) Remz = 0.
@@ -3506,7 +3646,7 @@ module Hydro
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
-    subroutine calc_lhydro_pars(f)
+    subroutine hydro_after_boundary(f)
 !
 !  Calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
 !  or tau_damp_ruzm are different from zero. Was used to remove net
@@ -3629,7 +3769,7 @@ module Hydro
       endif
 !
 !
-    endsubroutine calc_lhydro_pars
+    endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)
 !
@@ -3764,7 +3904,7 @@ module Hydro
 !
         if (lcoriolis_force) then
 !
-          if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
+          if (headtt) print*,'coriolis_cartesian: add Coriolis force; Omega=',Omega
 !
           c2=2*Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
@@ -3778,7 +3918,7 @@ module Hydro
 !
         if (lcentrifugal_force) then
 !
-          if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
+          if (headtt) print*,'coriolis_cartesian: add Centrifugal force; Omega=',Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*Omega**2
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*Omega**2
 !
@@ -3796,7 +3936,7 @@ module Hydro
         if (lcoriolis_force) then
 !
           if (headtt) &
-              print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+              print*,'coriolis_cartesian: Coriolis force; Omega, theta=', Omega, theta
 !
 !  Note the minus sign in front of the sin_theta term!
 !
@@ -3809,7 +3949,7 @@ module Hydro
 !
 !  Add -2 \Omega \times U^shear, if requested.
 !
-          if (lshear_in_coriolis) then 
+          if (lshear_in_coriolis) then
             df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*Sshear*x(l1:l2)
             df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)-s2*Sshear*x(l1:l2)
           endif
@@ -3841,7 +3981,7 @@ module Hydro
       if (lcoriolis_force) then
 !
         if (headtt) &
-          print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+          print*,'coriolis_cartesian_xaxis: Coriolis force; Omega, theta=', Omega, theta
 !
         c2= 2*Omega*cos(theta*pi/180.)
         s2=-2*Omega*sin(theta*pi/180.)
@@ -3984,7 +4124,7 @@ module Hydro
 !  Centrifugal force
 !
       if (lcentrifugal_force) &
-          call fatal_error("duu_dt","Centrifugal force not "//&
+          call fatal_error("coriolis_spherical_del2p","Centrifugal force not "//&
           "implemented in spherical coordinates")
 !
       call keep_compiler_quiet(f)
@@ -4377,6 +4517,9 @@ module Hydro
         idiag_rux2m=0
         idiag_ruy2m=0
         idiag_ruz2m=0
+        idiag_uxmx=0
+        idiag_uymx=0
+        idiag_uzmx=0
         idiag_ux2mx=0
         idiag_uy2mx=0
         idiag_uz2mx=0
@@ -4412,6 +4555,7 @@ module Hydro
         idiag_ruzupmz=0
         idiag_ruzdownmz=0
         idiag_divumz=0
+        idiag_divu2mz=0
         idiag_uzdivumz=0
         idiag_divrhourms=0
         idiag_divrhoumax=0
@@ -4424,6 +4568,9 @@ module Hydro
         idiag_uxuym=0
         idiag_uxuzm=0
         idiag_uyuzm=0
+        idiag_uxuymx=0
+        idiag_uxuzmx=0
+        idiag_uyuzmx=0
         idiag_uxuymz=0
         idiag_uxuzmz=0
         idiag_uyuzmz=0
@@ -4460,6 +4607,9 @@ module Hydro
         idiag_u2u31mz=0
         idiag_u3u12mz=0
         idiag_u1u23mz=0
+        idiag_accpowzmz=0
+        idiag_accpowzupmz=0
+        idiag_accpowzdownmz=0
         idiag_urmphi=0
         idiag_ursphmphi=0
         idiag_uthmphi=0
@@ -4631,6 +4781,7 @@ module Hydro
         idiag_udpxym=0;idiag_udpyzm=0;idiag_udpxzm=0
         idiag_taufmin=0
         idiag_dtF=0
+        idiag_nshift=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -4785,6 +4936,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'udpxzm',idiag_udpxzm)
         call parse_name(iname,cname(iname),cform(iname),'taufmin',idiag_taufmin)
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
+        call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
       enddo
 !
 !  Loop over dust species (for species-dependent diagnostics).
@@ -4981,6 +5133,12 @@ module Hydro
              'u3u12mz',idiag_u3u12mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
              'u1u23mz',idiag_u1u23mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'accpowzmz',idiag_accpowzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'accpowzupmz',idiag_accpowzupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'accpowzdownmz',idiag_accpowzdownmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -5063,6 +5221,7 @@ module Hydro
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy
         write(3,*) 'iuz=',iuz
+        if (lhelmholtz_decomp) write(3,*) 'iphiuu=',iphiuu
       endif
 !
     endsubroutine rprint_hydro
@@ -5181,6 +5340,165 @@ module Hydro
       endselect
 !
     endsubroutine get_slices_hydro
+!***********************************************************************
+    function decomp_prepare() result (ldecomp)
+!
+!  Prepare for Helmholtz decomposition.
+!
+!  20-oct-97/axel: coded
+!
+      use Sub, only: read_snaptime, update_snaptime
+!
+      logical :: ldecomp
+
+      character (len=fnlen) :: file
+      integer :: ndummy
+      real :: tdummy
+!
+!  Perform the decomposition in dsnap_down time intervals.
+!
+      file = trim(datadir)//'/tsnap_down.dat'
+!
+!  This routine sets ldecomp=T whenever its time to perform the decomposition.
+!
+      call update_snaptime(file,tdummy,ndummy,dsnap_down,t,ldecomp,nowrite=.true.)
+!
+    endfunction decomp_prepare
+!***********************************************************************
+    subroutine hydro_after_timestep(f,df,dt_sub)
+!
+!  Hook for modification of the f and df arrays
+!  according to the hydro module, after the
+!  timestep is performed.
+!
+!  12-mar-17/wlyra: coded.
+!  28-mar-17/MR: reinstated update_ghosts.
+!
+      use Boundcond, only: update_ghosts
+      use Sub, only: div
+      use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_sub
+!
+      logical :: lwrite_debug=.false.
+      integer :: iorder_z=4
+!
+      fargo: if (lfargo_advection) then
+!
+!  Call update ghosts as derivatives are needed.
+!
+        call update_ghosts(f)
+!
+        fourier: if (lfargoadvection_as_shift) then
+          call fourier_shift_fargo(f,df,dt_sub)
+        else
+          if (lroot) then
+            print*,'Fargo advection without Fourier shift'
+            print*,'is not functional.'
+            call fatal_error("hydro_after_timestep","")
+          endif
+        endif fourier
+!
+!  To disable radial advection, intended for tests in cylindrical coordinates
+!
+        if (lno_radial_advection) then
+          f(:,:,:,iux) = 0.
+          df(:,:,:,iux) = 0.
+        endif
+!
+      endif fargo
+
+      if (lhelmholtz_decomp) then 
+
+        call fatal_error("hydro_after_timestep","Helmholtz decomposition not yet operational")
+
+        if (decomp_prepare()) then
+!
+!  Find the divergence of uu
+!
+          do n=n1,n2; do m=m1,m2
+            call div(f,iuu,f(l1:l2,m,n,iphiuu))
+          enddo; enddo
+!
+!print*, 'minmaxi(div)=', minval(f(l1:l2,m1:m2,n1:n2,iphiuu)),maxval(f(l1:l2,m1:m2,n1:n2,iphiuu))
+          if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,iphiuu)
+!
+          if (lperi(3)) then
+            call inverse_laplacian(f(l1:l2,m1:m2,n1:n2,iphiuu))
+          else
+            if (iorder_z==2) then
+              !call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,iphiuu))
+            else
+              ! call inverse_laplacian_fft_z(f(l1:l2,m1:m2,n1:n2,iphiuu))
+              ! call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,iphiuu),(/'n1s','n1s'/),f(:,:,n1,iuz),f(:,:,n2,iuz))
+            endif
+          endif
+          if (lwrite_debug) write(32) f(l1:l2,4,n1:n2,iphiuu)
+
+        endif
+      endif
+!
+    endsubroutine hydro_after_timestep
+!***********************************************************************
+    subroutine fourier_shift_fargo(f,df,dt_)
+!
+!  Add the fargo shift to the f and df-array, in
+!  fourier space.
+!
+!  12-mar-17/wlyra: moved here from special
+!
+      use Sub
+      use Fourier, only: fft_y_parallel,fourier_shift_y
+      use Cdata
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,ny) :: a_re,a_im
+      real, dimension (nx) :: phidot
+      integer :: ivar,ng
+      real :: dt_
+!
+!  Pencil uses linear velocity. Fargo will shift based on
+!  angular velocity. Get phidot from uphi.
+!
+      do n=n1,n2
+        ng=n-n1+1
+        phidot=uu_average(:,ng)*rcyl_mn1
+!
+        do ivar=1,mvar
+!
+          a_re=f(l1:l2,m1:m2,n,ivar)
+          a_im=0.
+!
+!  Forward transform. No need for computing the imaginary part.
+!  The transform is just a shift in y, so no need to compute
+!  the x-transform either.
+!
+          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+!
+!  Inverse transform of the shifted array back into real space.
+!  No need again for either imaginary part of x-transform.
+!
+          call fft_y_parallel(a_re,a_im,linv=.true.)
+          f(l1:l2,m1:m2,n,ivar)=a_re
+!
+!  Also shift df, unless it is the last subtimestep.
+!
+          if (.not.llast) then
+            a_re=df(l1:l2,m1:m2,n,ivar)
+            a_im=0.
+            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,linv=.true.)
+            df(l1:l2,m1:m2,n,ivar)=a_re
+          endif
+!
+        enddo
+      enddo
+!
+    endsubroutine fourier_shift_fargo
 !***********************************************************************
     subroutine calc_mflow
 !
@@ -6015,13 +6333,24 @@ module Hydro
 !
       case ('damp_corona')
       zbot=rdampext
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("damp_corona","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
-        prof_amp1=0.5*(tanh((x(l1:l2)-zbot)/wdamp)+1.)
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
+      if (lspherical_coords) then
+        if (.not.lcalc_uumeanxy) then
+          call fatal_error("damp_corona","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+        else
+          prof_amp1=0.5*(tanh((x(l1:l2)-zbot)/wdamp)+1.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
+        endif
+      else if (lcartesian_coords) then
+        if (.not.lcalc_uumeanz) then
+          call fatal_error("damp_corona","you need to set lcalc_uumean=T in hydro_run_pars")
+        else
+          prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumz(n,1)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumz(n,2)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumz(n,3)-0.)
+        endif
       endif
 !
 !  Latitudinal shear profile
@@ -6061,7 +6390,7 @@ module Hydro
 !  no profile matches
 !
       case default
-         if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
+         if (lroot) print*,'impose_profile_diffrot: No such profile ',trim(prof_diffrot)
       endselect
 !
     endsubroutine impose_profile_diffrot
@@ -6180,5 +6509,51 @@ module Hydro
       enddo
 
     endsubroutine amp_lm
+!***********************************************************************
+    subroutine calc_gradu(f)
+!
+    use Sub, only : gij
+    real, dimension (mx,my,mz,mfarray) :: f
+    integer :: imn,jk,jj,kk,nyz
+    real, dimension(nx,3,3) :: gradu
+!
+! Calculated gradu and stores it as an auxiliary. This is expected to be called
+! only once either during initialization or post-processing. 
+!
+    nyz=ny*nz
+    do imn=1,nyz
+       n=nn(imn)
+       m=mm(imn)
+       lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
+       llastpoint=(imn==nyz) 
+       call gij(f,iuu,gradu,1)
+       jk=0
+       do jj=1,3; do kk=1,3
+         f(l1:l2,m,n,iguij+jk) = gradu(:,jj,kk)
+         jk=jk+1
+       enddo;enddo
+    enddo
+!
+    endsubroutine calc_gradu
+!***********************************************************************
+    subroutine push2c(p_idiag)
+
+    integer, parameter :: ndiags=12
+    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+
+    call copy_addr_c(idiag_urms,p_idiag(1))
+    call copy_addr_c(idiag_uxrms,p_idiag(2))
+    call copy_addr_c(idiag_uyrms,p_idiag(3))
+    call copy_addr_c(idiag_uzrms,p_idiag(4))
+    call copy_addr_c(idiag_umax,p_idiag(5))
+    call copy_addr_c(idiag_umin,p_idiag(6))
+    call copy_addr_c(idiag_uxmin,p_idiag(7))
+    call copy_addr_c(idiag_uymin,p_idiag(8))
+    call copy_addr_c(idiag_uzmin,p_idiag(9))
+    call copy_addr_c(idiag_uxmax,p_idiag(10))
+    call copy_addr_c(idiag_uymax,p_idiag(11))
+    call copy_addr_c(idiag_uzmax,p_idiag(12))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Hydro
