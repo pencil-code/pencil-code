@@ -2392,11 +2392,11 @@ module Solid_Cells
     real, dimension (3) :: xyz
     integer :: ivar1,ivar2
     integer, dimension (3) :: inear
-    real, dimension (ilnrho-iux+1) :: gp
+    real, dimension (mvar) :: gp
     integer :: i,j,k
 !
-    ivar1=iux
-    ivar2=ilnrho
+    ivar1=1
+    ivar2=mvar
     do k=n1_ogrid,n2_ogrid
       do j=m1_ogrid,m2_ogrid
         do i=l2_ogrid+1,l2_ogrid+nghost
@@ -2429,8 +2429,8 @@ module Solid_Cells
     real, dimension (3) :: rthz
     integer :: i,j,k
     integer, dimension (3) :: inear
-    real, dimension (irho-iux+1) :: gp
-    integer, parameter :: ivar1=1,ivar2=4
+    real, dimension (mvar) :: gp
+    integer, parameter :: ivar1=1,ivar2=mvar
   
     do k=n1,n2
       do j=m1,m2
@@ -4422,7 +4422,7 @@ module Solid_Cells
 !  recieved from appropriate processor
 !
 !TODO TODO
-    call communicate_ip_cart_to_curv(f_cartesian,iux,irho)
+    call communicate_ip_cart_to_curv(f_cartesian,1,mvar)
     !call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
 !
 !  Time step for ogrid
@@ -4486,7 +4486,7 @@ module Solid_Cells
 !  recieved from appropriate processor
 !
     call update_ghosts_ogrid
-    call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
+    call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
     !call flow_curvilinear_to_cartesian(f_cartesian)
     !TODO: Should use the partifle flow info in the interpolation point
     !      computation above
