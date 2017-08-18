@@ -193,6 +193,16 @@ varcontent[irhopswarm].variable = 'Particle mass density (rhopswarm)'
 varcontent[irhopswarm].idlvar   = 'rhopswarm'
 varcontent[irhopswarm].idlinit  = INIT_SCALAR
 ;
+default, ivpxt, 0
+varcontent[ivpxt].variable = 'Particle turbulent speed (vpxt)'
+varcontent[ivpxt].idlvar   = 'vpxt'
+varcontent[ivpxt].idlinit  = INIT_SCALAR
+;
+default, ivpzt, 0
+varcontent[ivpzt].variable = 'Particle turbulent speed (vpxt)'
+varcontent[ivpzt].idlvar   = 'zpxt'
+varcontent[ivpzt].idlinit  = INIT_SCALAR
+;
 default, iaps, 0
 varcontent[iaps].variable = 'Particle sink radius (aps)'
 varcontent[iaps].idlvar   = 'aps'
