@@ -447,6 +447,10 @@ module Energy
       call put_shared_variable('mpoly0', mpoly0)
       call put_shared_variable('mpoly1', mpoly1)
       call put_shared_variable('mpoly2', mpoly2)
+      call put_shared_variable('chi', chi)
+      call put_shared_variable('ladvection_temperature',ladvection_temperature)
+      call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
+      call put_shared_variable('lupw_lnTT',lupw_lnTT)
 !
 !  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
 !  problem).
