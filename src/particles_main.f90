@@ -64,6 +64,7 @@ module Particles_main
       call register_particles_spin         ()
       call register_particles_number       ()
       call register_particles_density      ()
+      call register_particles_stirring     ()
       call register_particles_selfgrav     ()
       call register_particles_sink         ()
       call register_particles_TT           ()
