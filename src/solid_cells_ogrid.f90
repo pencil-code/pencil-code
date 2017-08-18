@@ -58,7 +58,7 @@ module Solid_Cells
   integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
 !***************************************************
 ! Pencil case ogrid
-  integer, parameter :: npencils_ogrid=29
+  integer, parameter :: npencils_ogrid=33
   type pencil_case_ogrid
     real, dimension (nx_ogrid)     :: x_mn    
     real, dimension (nx_ogrid)     :: y_mn    
@@ -89,6 +89,10 @@ module Solid_Cells
     real, dimension (nx_ogrid)     :: cs2
     real, dimension (nx_ogrid)     :: pp
     real, dimension (nx_ogrid)     :: ss
+    real, dimension (nx_ogrid)     :: ugTT
+    real, dimension (nx_ogrid)     :: TT
+    real, dimension (nx_ogrid,3)   :: gTT
+    real, dimension (nx_ogrid)     :: del2TT
   endtype pencil_case_ogrid
 !  
   integer :: i_og_x_mn    =1
@@ -97,8 +101,8 @@ module Solid_Cells
   integer :: i_og_rcyl_mn =4
   integer :: i_og_phi_mn  =5
   integer :: i_og_rcyl_mn1=6
-  !integer :: i_og_fpres   =7  ! Unused variables
-  !integer :: i_og_fvisc   =8
+  integer :: i_og_fpres   =7  
+  !integer :: i_og_fvisc   =8 ! Unused variables
   !integer :: i_og_rho     =9
   integer :: i_og_rho1    =10
   integer :: i_og_lnrho   =11
@@ -120,6 +124,11 @@ module Solid_Cells
   integer :: i_og_cs2     =27
   integer :: i_og_pp      =28
   integer :: i_og_ss      =29
+  integer :: i_og_ugTT    =30
+  integer :: i_og_TT      =31
+  integer :: i_og_gTT     =32
+  integer :: i_og_del2TT  =33
+
 !
   ! Unused variables
   !character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names_ogrid = &
@@ -266,6 +275,10 @@ module Solid_Cells
 !  EOS parameters
   real :: rho0, lnrho0, lnTT0
 
+!  Energy parameters
+  real, pointer :: chi
+  logical, pointer :: ladvection_temperature, lheatc_chiconst, lupw_lnTT
+
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
   integer :: idiag_c_dragy=0
@@ -316,6 +329,8 @@ module Solid_Cells
 !  feb--apr-17/Jorgen: Coded
 !
       use Solid_Cells_Mpicomm, only: initialize_mpicomm_ogrid
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer :: i
 !
@@ -545,6 +560,22 @@ module Solid_Cells
           print*, 'WARNING: Interpolation method is not working for parallel runs at the moment'
         endif
       endif
+!
+!  Get thermal diffusivity from energy module
+!
+      if (iTT .ne. 0) then
+        call get_shared_variable('chi',chi)
+        call get_shared_variable('ladvection_temperature',&
+            ladvection_temperature)
+        call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+        call get_shared_variable('lupw_lnTT',lupw_lnTT)
+      else
+        if (ilnTT .ne. 0) then
+          call fatal_error('initialize_solid_cells',&
+              'Most use linear temperature for solid_cells_ogrid') 
+        endif
+      endif
+!
     end subroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -665,6 +696,9 @@ module Solid_Cells
 !  Rotate system if the flow is in y-direction
       flowy=-flowy*pi*0.5
       f_ogrid(:,:,:,iux:iuz)=0.
+      if(iTT.ne.0) then
+        f_ogrid(:,:,:,iTT)=f(l1,m1,n1,iTT)
+      endif
       if(ldensity_nolog) then
         f_ogrid(:,:,:,irho)=1.
       else
@@ -727,6 +761,7 @@ module Solid_Cells
         call wdim(trim(datadir)//'/ogdim.dat', &
             mxgrid_ogrid,mygrid_ogrid,mzgrid_ogrid,lglobal=.true.)
       endif
+
     endsubroutine init_solid_cells
 !***********************************************************************
     subroutine initialize_pencils_ogrid(penc0)
@@ -765,8 +800,21 @@ module Solid_Cells
       p_ogrid%cs2=penc0
       p_ogrid%pp=penc0
       p_ogrid%ss=penc0
-    
+      p_ogrid%ugTT=penc0
+      p_ogrid%TT=penc0
+      p_ogrid%gTT=penc0
+      p_ogrid%del2TT=penc0
+!    
+!  Defined which pencils to solve
+!
       lpencil_ogrid=.true.
+
+      if (iTT == 0) then
+        lpencil_ogrid(i_og_ugTT)=.false.
+        lpencil_ogrid(i_og_TT)=.false.
+        lpencil_ogrid(i_og_gTT)=.false.
+        lpencil_ogrid(i_og_del2TT)=.false.
+      endif
 !
     endsubroutine initialize_pencils_ogrid
 !***********************************************************************
@@ -4002,12 +4050,18 @@ module Solid_Cells
 !   31-jan-17/Jorgen: Adapted from calc_pencils_grid in grid.f90
 !                     Only cylindrical coodrinats included
 !
-    if (lpencil_ogrid(i_og_x_mn))     p_ogrid%x_mn    = x_ogrid(l1_ogrid:l2_ogrid)*cos(y_ogrid(m_ogrid))
-    if (lpencil_ogrid(i_og_y_mn))     p_ogrid%y_mn    = x_ogrid(l1_ogrid:l2_ogrid)*sin(y_ogrid(m_ogrid))
-    if (lpencil_ogrid(i_og_z_mn))     p_ogrid%z_mn    = spread(z_ogrid(n_ogrid),1,nx_ogrid)
-    if (lpencil_ogrid(i_og_rcyl_mn))  p_ogrid%rcyl_mn = x_ogrid(l1_ogrid:l2_ogrid)
-    if (lpencil_ogrid(i_og_phi_mn))   p_ogrid%phi_mn  = spread(y_ogrid(m_ogrid),1,nx_ogrid)
-    if (lpencil_ogrid(i_og_rcyl_mn1)) p_ogrid%rcyl_mn1= 1./max(p_ogrid%rcyl_mn,tini)
+    if (lpencil_ogrid(i_og_x_mn))     &
+        p_ogrid%x_mn    = x_ogrid(l1_ogrid:l2_ogrid)*cos(y_ogrid(m_ogrid))
+    if (lpencil_ogrid(i_og_y_mn))     &
+        p_ogrid%y_mn    = x_ogrid(l1_ogrid:l2_ogrid)*sin(y_ogrid(m_ogrid))
+    if (lpencil_ogrid(i_og_z_mn))     &
+        p_ogrid%z_mn    = spread(z_ogrid(n_ogrid),1,nx_ogrid)
+    if (lpencil_ogrid(i_og_rcyl_mn))  &
+        p_ogrid%rcyl_mn = x_ogrid(l1_ogrid:l2_ogrid)
+    if (lpencil_ogrid(i_og_phi_mn))   &
+        p_ogrid%phi_mn  = spread(y_ogrid(m_ogrid),1,nx_ogrid)
+    if (lpencil_ogrid(i_og_rcyl_mn1)) &
+        p_ogrid%rcyl_mn1= 1./max(p_ogrid%rcyl_mn,tini)
 !
   endsubroutine calc_pencils_grid_ogrid
 !***********************************************************************
@@ -4692,6 +4746,8 @@ module Solid_Cells
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
 !
+      use EquationOfState, only: gamma_m1
+!
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
       integer :: j,ju
       intent(inout) :: df
@@ -4703,7 +4759,71 @@ module Solid_Cells
         df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)=df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)+p_ogrid%fpres(:,j)
       enddo
 !
+!  Solve Energy equation (in case of non-isothermal equation of state)
+!
+      if (iTT .ne. 0) then        
+!
+!  Advection term and PdV-work.
+!
+        if (ladvection_temperature) then
+          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) = &
+              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) - p_ogrid%ugTT
+        endif
+!
+!  Add divu term.
+!
+        if (ldensity) then
+          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) = &
+              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) - &
+              gamma_m1*p_ogrid%TT*p_ogrid%divu
+        endif
+!
+!  Calculate viscous contribution to temperature.
+!
+!      if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
+!
+!  Thermal conduction
+!
+        if (lheatc_chiconst) then
+          call calc_heatcond_constchi_ogrid(df,p_ogrid)
+        else
+          call fatal_error('denergy_dt_ogrid','Must use lheatc_chicons=T')
+        endif
+!
+      endif
+!
     endsubroutine denergy_dt_ogrid
+!***********************************************************************
+    subroutine calc_heatcond_constchi_ogrid(df,p_ogrid)
+!
+!  Calculate the radiative diffusion term for constant chi:
+!  lnTT version: cp*chi*Div(rho*TT*glnTT)/(rho*cv*TT)
+!           = gamma*chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
+!    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
+!           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
+!
+!  17-aug-17/ewa+nils: adapted from temperature_idealgas
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
+      type (pencil_case_ogrid) :: p_ogrid
+      real, dimension (nx_ogrid) :: g2
+!
+      intent(in) :: p_ogrid
+      intent(inout) :: df
+!
+      call dot(p_ogrid%glnrho,p_ogrid%gTT,g2)
+      g2=g2+p_ogrid%del2TT
+!
+!  Add heat conduction to RHS of temperature equation.
+!
+      df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) = &
+          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) + gamma*chi*g2
+!
+    endsubroutine calc_heatcond_constchi_ogrid
 !***********************************************************************
     subroutine calc_pencils_hydro_ogrid()
 !
@@ -4742,6 +4862,8 @@ module Solid_Cells
       integer :: i
       logical :: lupw_rho=.false.
 !
+!NILS: This part does not have to be evaluated for every pencil - 
+!NILS: it could therefore be moved for example to the initialization.
       if (.not. ldensity_nolog) then
         call fatal_error('calc_pencils_density_ogrid','Must use linear density for solid_cells_ogrid')
       endif
@@ -4826,16 +4948,35 @@ module Solid_Cells
 !
 !  Work out thermodynamic quantities for given lnrho or rho and ss.
 !
-      if (leos_isentropic) then
-        if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=0.0
-        if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20*exp(gamma_m1*(p_ogrid%lnrho-lnrho0))
-      elseif (leos_isothermal) then
-        if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=-(cp-cv)*(p_ogrid%lnrho-lnrho0)
-        if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
-      endif
+      
 !
-      if (lpencil_ogrid(i_og_lnTT)) p_ogrid%lnTT=lnTT0+cv1*p_ogrid%ss+gamma_m1*(p_ogrid%lnrho-lnrho0)
-      if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=(cp-cv)*exp(p_ogrid%lnTT+p_ogrid%lnrho)
+
+      if (iTT .ne. 0) then
+        if (lpencil_ogrid(i_og_TT)) &
+            p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+        if (lpencil_ogrid(i_og_lnTT)) &
+            p_ogrid%lnTT=log(f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT))
+        if (lpencil_ogrid(i_og_gTT)) call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
+        if (lpencil_ogrid(i_og_cs2))  &
+            p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+        if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
+        if (lpencil_ogrid(i_og_del2TT)) call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
+      else
+        if (leos_isentropic) then
+          if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=0.0
+          if (lpencil_ogrid(i_og_cs2)) &
+              p_ogrid%cs2=cs20*exp(gamma_m1*(p_ogrid%lnrho-lnrho0))
+        elseif (leos_isothermal) then
+          if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=-(cp-cv)*(p_ogrid%lnrho-lnrho0)
+          if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
+        endif
+        if (lpencil_ogrid(i_og_lnTT)) &
+            p_ogrid%lnTT=lnTT0+cv1*p_ogrid%ss+gamma_m1*(p_ogrid%lnrho-lnrho0)
+        if (lpencil_ogrid(i_og_pp)) &
+            p_ogrid%pp=(cp-cv)*exp(p_ogrid%lnTT+p_ogrid%lnrho)
+      endif
+
+
     endsubroutine calc_pencils_eos_ogrid
 !***********************************************************************
     subroutine calc_pencils_energy_ogrid()
@@ -4847,9 +4988,17 @@ module Solid_Cells
 !
 !  Pencils: fpres (=pressure gradient force)
 !
-      do j=1,3
-        p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
-      enddo
+      if (lpencil_ogrid(i_og_fpres)) then
+        do j=1,3
+          p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
+        enddo
+      endif
+
+      if (iTT .ne. 0) then
+        if (lpencil_ogrid(i_og_ugTT)) &
+            call u_dot_grad_ogrid(f_ogrid,iTT,p_ogrid%gTT,p_ogrid%uu,&
+            p_ogrid%ugTT,UPWIND=lupw_lnTT)
+      endif
 !
     endsubroutine calc_pencils_energy_ogrid
 !***********************************************************************
