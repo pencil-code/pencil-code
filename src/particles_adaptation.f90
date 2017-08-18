@@ -242,6 +242,8 @@ module Particles_adaptation
         enddo scan
       enddo pencil
 !
+      call fatal_error_local_collect()
+!
 !  Reconstruct the fp array.
 !
       fp(1:npar_new,:) = dfp(1:npar_new,:)
@@ -285,21 +287,85 @@ module Particles_adaptation
 ! LOCAL ROUTINES GO BELOW HERE.
 !
 !***********************************************************************
+    subroutine find_velocity_pair(mass, momentum, energy, vp1, vp2)
+!
+! Find the velocities of a pair of identical particles given the total
+! mass, momentum, and kinetic energy in one dimension.
+!
+! 18-aug-17/ccyang: coded
+!
+! Preconditions: mass > 0, momentum >= 0, and energy >= 0.
+!                2 * mass * energy - momentum**2 >= 0.
+!
+      real, intent(in) :: mass, momentum, energy
+      real, intent(out) :: vp1, vp2
+!
+      real, parameter :: small = 4.0 * epsilon(1.0)
+      real :: tmp1, tmp2
+!
+!  Find the discriminant.
+!
+      tmp1 = 2.0 * mass * energy
+      tmp2 = tmp1 - momentum**2
+      tmp1 = small * abs(tmp1)
+!
+!  Normal calculation if the discriminant is greater than zero.
+!
+      chkdisc: if (tmp2 >= tmp1) then
+        tmp2 = sqrt(tmp2)
+!
+!  Otherwise, allow some round-off errors.
+!
+      else chkdisc
+        if (tmp2 < -tmp1) call fatal_error_local("find_velocity_pair", "too much momentum")
+        tmp2 = sqrt(tmp1)
+      endif chkdisc
+!
+!  Assign the two velocities.
+!
+      vp1 = (momentum + tmp2) / mass
+      vp2 = (momentum - tmp2) / mass
+!
+    endsubroutine find_velocity_pair
+!***********************************************************************
     subroutine merge_particles_in_cell_ngp(npar_old, fp_old, npar_new, fp_new)
 !
 !  Merges all particles in a cell into npar_new = 2 particles by
 !  conserving the NGP assignment of mass, momentum, and kinetic energy
 !  densities on the grid.
 !
-!  01-aug-17/ccyang: stub
+!  18-aug-17/ccyang: coded
 !
       integer, intent(in) :: npar_old
       real, dimension(npar_old,mparray), intent(in) :: fp_old
       integer, intent(out) :: npar_new
       real, dimension(:,:), intent(out) :: fp_new
 !
-      npar_new = npar_old
-      fp_new(1:npar_new,:) = fp_old
+      real, dimension(3) :: momentum, energy
+      integer :: i
+      real :: mass, mass1
+!
+!  Find total mass and total momentum and energy in each direction.
+!
+      mass = sum(fp_old(:,iparmass))
+      tot: forall(i = 1:3)
+        momentum(i) = sum(fp_old(:,iparmass) * fp_old(:,ivpx+i-1))
+        energy(i) = 0.5 * sum(fp_old(:,iparmass) * fp_old(:,ivpx+i-1)**2)
+      endforall tot
+!
+!  Assign the mass and velocities.
+!
+      npar_new = 2
+      fp_new(1:npar_new,iparmass) = 0.5 * mass
+      do i = 1, 3
+        call find_velocity_pair(mass, momentum(i), energy(i), fp_new(1,ivpx+i-1), fp_new(2,ivpx+i-1))
+      enddo
+!
+!  Use weighted average to assign the rest of the properties.
+!
+      mass1 = 1.0 / mass
+      forall(i = 1:mparray, i /= iparmass .and. .not. (ivpx <= i .and. i <= ivpz)) &
+          fp_new(1:npar_new,i) = mass1 * sum(fp_old(:,iparmass) * fp_old(:,i))
 !
     endsubroutine merge_particles_in_cell_ngp
 !***********************************************************************
