@@ -4,7 +4,7 @@
 !
 &run_pars
   ip=14,
-  nt=1000, it1=10, isave=1000, itorder=3, ialive=0
+  nt=100, it1=10, isave=1000, itorder=3, ialive=0
   cdt=1.0,
   cdtv=1.0,
   dtmin=1e-10
