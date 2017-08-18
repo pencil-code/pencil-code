@@ -34,6 +34,10 @@ module Particles_stirring
 !
   contains
 !***********************************************************************
+    subroutine register_particles_stirring()
+!
+    endsubroutine register_particles_stirring
+!***********************************************************************
     subroutine particle_stirring(fp,ineargrid)
 !
 !  Particle stirring by random, uncorrelated kicks.
