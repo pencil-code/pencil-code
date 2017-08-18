@@ -694,6 +694,13 @@ program run
                              tdummy,ndummy,dsnap_down,t,lsnap_down,nowrite=.true.)
     endif
 !
+!  Decide here whether or not we will need a power spectrum.
+!  At least for the graviational wave spectra, this requires
+!  advance warning so the relevant components of the f-array
+!  can be filled.
+!
+    call powersnap_prepare
+!
 !  Time advance.
 !
     call time_step(f,df,p)

@@ -236,9 +236,6 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-  !?  lpenc_requested(i_bb)=.true.
-  !?  lpenc_requested(i_b2)=.true.
-!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -371,9 +368,6 @@ module Special
            if (idiag_strXpt/=0) call save_name(f(lpoint,m,n,istressX),idiag_strXpt)
          endif
        endif
-!
-      !call keep_compiler_quiet(f,df)
-      !call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -955,7 +949,6 @@ module Special
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
 !
-!AXEL if (lroot .AND. ip<10) print*,'stress_from_TandX:fft ...'
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -983,9 +976,9 @@ module Special
         if (lhydro)    Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
           +f(l1:l2,m1:m2,n1:n2,iux+i-1) &
           *f(l1:l2,m1:m2,n1:n2,iux+j-1)
-        !if (lmagnetic) Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
-        !  +f(l1:l2,m1:m2,n1:n2,ibx+i-1) &
-        !  *f(l1:l2,m1:m2,n1:n2,ibx+j-1)
+        if (lmagnetic) Tpq_re(:,:,:,ij)=Tpq_re(:,:,:,ij) &
+          +f(l1:l2,m1:m2,n1:n2,ibx+i-1) &
+          *f(l1:l2,m1:m2,n1:n2,ibx+j-1)
       enddo
       enddo
 !

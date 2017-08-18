@@ -284,6 +284,7 @@ module Mpicomm
 !
   interface mpisend_nonblock_real
     module procedure mpisend_nonblock_real_arr
+    module procedure mpisend_nonblock_real_arr3
     module procedure mpisend_nonblock_real_arr4
     module procedure mpisend_nonblock_real_arr5
   endinterface
@@ -862,6 +863,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, iref
 !
     endsubroutine mpisend_nonblock_int_arr2
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr3(bcast_array,nb,proc_rec,ireq,tag_id)
+!
+      integer, dimension(3) :: nb
+      real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
+!
+    endsubroutine mpisend_nonblock_real_arr3
 !***********************************************************************
     subroutine mpisend_nonblock_real_arr4(bcast_array,nb,proc_rec,ireq,tag_id)
 !

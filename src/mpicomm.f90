@@ -319,6 +319,7 @@ module Mpicomm
 !
   interface mpisend_nonblock_real
     module procedure mpisend_nonblock_real_arr
+    module procedure mpisend_nonblock_real_arr3
     module procedure mpisend_nonblock_real_arr4
     module procedure mpisend_nonblock_real_arr5
   endinterface
@@ -3193,6 +3194,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+!
+!  Send real array(:,:,:) to other processor, with non-blocking communication.
+!
+!  03-aug-17/Jorgen: adapted
+!
+      integer, dimension(3) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                     tag_id, MPI_COMM_GRID,ireq,mpierr)
+!
+    endsubroutine mpisend_nonblock_real_arr3
 !***********************************************************************
     subroutine mpisend_nonblock_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !

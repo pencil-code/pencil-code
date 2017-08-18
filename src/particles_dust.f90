@@ -987,32 +987,26 @@ module Particles
 !
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
-          xyz0_par(1) = x(l1)
-          Lxyz_par(1) = x(l2)-x(l1)
-          xyz0_par(2) = y(m1)
-          Lxyz_par(2) = y(m2)-y(m1)
-          xyz0_par(3) = z(n1)
-          Lxyz_par(3) = z(n2)-z(n1)
           do k=1,npar_loc
             if (nxgrid/=1) then
               call random_number_wrapper(r)
-              fp(k,ixp)=xyz0_par(1)+r*Lxyz_par(1)
+              fp(k,ixp)=r
             endif
             if (nygrid/=1) then
               call random_number_wrapper(r)
-              fp(k,iyp)=xyz0_par(2)+r*Lxyz_par(2)
+              fp(k,iyp)=r
             endif
             if (nzgrid/=1) then
               call random_number_wrapper(r)
-              fp(k,izp)=xyz0_par(3) + r*Lxyz_par(3)
+              fp(k,izp)=r
             endif
           enddo
-!          if (nxgrid/=1) &
-!              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-!          if (nygrid/=1) &
-!              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-!          if (nzgrid/=1) &
-!              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 
         case ('random-shift')
           if (lroot) print*, 'init_particles: Randomly distribute particle positions, then shift them'
@@ -2988,7 +2982,7 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
-      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !

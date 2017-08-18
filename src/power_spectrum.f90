@@ -1409,13 +1409,25 @@ module power_spectrum
 !  Gravitational wave tensor (spectra of L*L^*)
 !
   if (sp=='GWs') then
-    a_re=f(l1:l2,m1:m2,n1:n2,iggX)
-    b_re=f(l1:l2,m1:m2,n1:n2,iggT)
+    if (iggX>0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,iggX)
+      b_re=f(l1:l2,m1:m2,n1:n2,iggT)
+    elseif (igij>0) then
+      call fatal_error('powerGWs','should not come here')
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+3)
+      b_re=f(l1:l2,m1:m2,n1:n2,igij)
+    else
+      call fatal_error('powerGWs','must compile GW module for GWs')
+    endif
     a_im=0.
     b_im=0.
   elseif (sp=='Str') then
-    a_re=f(l1:l2,m1:m2,n1:n2,istressX)
-    b_re=f(l1:l2,m1:m2,n1:n2,istressT)
+    if (istressX>0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,istressX)
+      b_re=f(l1:l2,m1:m2,n1:n2,istressT)
+    else
+      call fatal_error('powerGWs','must compile GW module for Str')
+    endif
     a_im=0.
     b_im=0.
   else

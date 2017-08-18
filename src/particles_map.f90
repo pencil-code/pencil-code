@@ -2183,7 +2183,7 @@ module Particles_map
       real, dimension(k1_imn(imn):k2_imn(imn)) :: rp2
       real :: r2_ogrid
       integer, dimension(4) :: inear_ogrid
-      logical :: lfirstcall=.true.
+      real, dimension(3) :: rthz
 
       intent(in) :: f,i1,i2,fp,ineargrid
       intent(inout) :: vec
@@ -2193,15 +2193,16 @@ module Particles_map
 !
       if (npar_imn(imn)/=0) then
         rp2 = (fp(k1_imn(imn):k2_imn(imn),ixp)-xorigo_ogrid(1))**2 &
-             +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2 &
-             +(fp(k1_imn(imn):k2_imn(imn),izp)-xorigo_ogrid(3))**2
+             +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2
         do k=k1_imn(imn),k2_imn(imn)
           if(rp2(k)>r2_ogrid) then
             call interpolate_linear( &
                 f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
           else
-            call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid)
-            call interpolate_linear_ogrid(i1,i2,fp(k,ixp:izp),vec(k,:),inear_ogrid)
+            call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
+            call interpolate_linear_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
+            !call interpolate_linear( &
+            !    f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
           endif
         enddo
       endif

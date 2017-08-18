@@ -32,16 +32,20 @@ module Particles_adaptation
 !
 ! Runtime parameters
 !
-  integer :: npar_target = 8
+  character(len=labellen) :: adaptation_method = 'random'
   integer :: npar_min = 4, npar_max = 16
-  character (len=labellen) :: adaptation_method='random'
+  integer :: npar_target = 8
+  real :: dvp_split_kick = 0.0
 !
   namelist /particles_adapt_run_pars/ &
-      npar_target, npar_min, npar_max, adaptation_method
+      adaptation_method, &
+      npar_min, npar_max, npar_target, &
+      dvp_split_kick
 !
 ! Module variables
 !
   integer :: iparmass = 0
+  real :: dvpj_kick = 0.0
 !
   contains
 !***********************************************************************
@@ -55,6 +59,8 @@ module Particles_adaptation
 !  parameters.
 !
 !  03-apr-13/anders: coded
+!
+      use EquationOfState, only: cs0
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
@@ -82,6 +88,23 @@ module Particles_adaptation
         call fatal_error("initialize_particles_adaptation", &
                          "npar_max >= npar_target is required in particles_adaptation_pencils(). ")
       endif chknpar
+!
+      setdvp: if (adaptation_method /= "random" .and. &
+                  adaptation_method /= "interpolated" .and. &
+                  adaptation_method /= "k-means") then
+!
+!  Set dvp_split_kick to 1E-6 * cs0 if not specified.
+!
+        defkick: if (dvp_split_kick == 0.0) then
+          dvp_split_kick = 1E-6 * cs0
+          if (lroot) print *, "initialize_particles_adaptation: set dvp_split_kick = ", dvp_split_kick
+        endif defkick
+!
+!  Scale it isotropically with dimensionality.
+!
+        dvpj_kick = dvp_split_kick / sqrt(real(dimensionality))
+!
+      endif setdvp
 !
     endsubroutine initialize_particles_adaptation
 !***********************************************************************
@@ -428,19 +451,76 @@ module Particles_adaptation
 !***********************************************************************
     subroutine split_particles_in_cell(npar_old, fp_old, npar_new, fp_new)
 !
-!  Split particles in a cell into npar_new > npar_min particles by
+!  Split particles in a cell into npar_new >= npar_min particles by
 !  conserving the assignment of mass and momentum densities on the grid.
 !  Small increase in the velocity dispersion is induced.
 !
-!  01-aug-17/ccyang: stub
+!  08-aug-17/ccyang: coded
+!
+      use General, only: random_number_wrapper
 !
       integer, intent(in) :: npar_old
       real, dimension(npar_old,mparray), intent(in) :: fp_old
       integer, intent(out) :: npar_new
       real, dimension(:,:), intent(out) :: fp_new
 !
-      npar_new = npar_old
-      fp_new(1:npar_new,:) = fp_old
+      real, parameter :: factor = 1.0 / log(2.0)
+!
+      real, dimension(:), allocatable :: r, p, dvp
+      integer :: npair, nsplit
+      integer :: i, j, k, k1, k2
+!
+!  Find the number of pairs each particle be split into.
+!
+      npair = ceiling(factor * log(real(npar_min) / real(npar_old)))
+      nsplit = 2**npair
+      npar_new = nsplit * npar_old
+!
+!  Allocate working arrays.
+!
+      allocate(r(npair), p(npair), dvp(npair))
+!
+!  Split each particle.
+!
+      k = 0
+      k1 = 1
+      k2 = nsplit
+      loop: do i = 1, npar_old
+!
+!  Assign the same properties of the original particle.
+!
+        forall(j = 1:mparray, j /= iparmass) fp_new(k1:k2,j) = fp_old(i,j)
+!
+!  Equally divide the mass.
+!
+        fp_new(k1:k2,iparmass) = fp_old(i,iparmass) / real(nsplit)
+!
+!  Add equal and opposite kicks to each pair of split particles.
+!
+        dir: do j = ivpx, ivpz
+          if (.not. lactive_dimension(j-ivpx+1)) continue
+!
+          gauss: if (mod(k,2) == 0) then
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            r = dvpj_kick * sqrt(-2.0 * log(r))
+            dvp = r * cos(twopi * p)
+          else gauss
+            dvp = r * sin(twopi * p)
+          endif gauss
+!
+          fp_new(k1:k2-1:2,j) = fp_new(k1:k2-1:2,j) + dvp
+          fp_new(k1+1:k2:2,j) = fp_new(k1+1:k2:2,j) - dvp
+          k = k + 1
+        enddo dir
+!
+        k1 = k1 + nsplit
+        k2 = k2 + nsplit
+      enddo loop
+!
+!  Deallocate working arrays.
+!
+      deallocate(r, p, dvp)
 !
     endsubroutine split_particles_in_cell
 !***********************************************************************

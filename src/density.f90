@@ -94,6 +94,7 @@ module Density
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
+  logical :: lrelativistic_eos=.false.
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -145,7 +146,8 @@ module Density
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
-      lreduced_sound_speed, lscale_to_cs2top, density_zaver_range, &
+      lreduced_sound_speed, lrelativistic_eos, &
+      lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, &
       lconserve_total_mass, total_mass, ireference_state
 !
@@ -161,7 +163,8 @@ module Density
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fixmom, lmassdiff_fixkin, &
       lcalc_lnrhomean, lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
-      density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
+      density_xaver_range, mass_source_tau1, reduce_cs2, &
+      lreduced_sound_speed, lrelativistic_eos, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
       ieos_profile, width_eos_prof, beta_glnrho_global,&
@@ -270,10 +273,16 @@ module Density
       if (lroot) call svn_id( &
           "$Id$")
 !
-! mpoly needs tobe put here as it initialize_density it were to late for other 
-! modules
+! mpoly needs to be put here as it initialize_density it were
+! to late for other modules (especially the nomodule noentropy).
 !
-      call put_shared_variable('mpoly',mpoly,caller='register_density')
+      call put_shared_variable('mpoly', &
+          mpoly, caller='register_density')
+!
+!  Communicate lrelativistic_eos to entropy too.
+!
+      call put_shared_variable('lrelativistic_eos', &
+          lrelativistic_eos, caller='initialize_density')
 
     endsubroutine register_density
 !***********************************************************************
@@ -2306,6 +2315,7 @@ module Density
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !  21-oct-15/MR: changes for slope-limited diffusion
+!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
 !
       use Deriv, only: der6
       use Diagnostics
@@ -2321,6 +2331,7 @@ module Density
 !
       real, dimension (nx) :: fdiff,gshockglnrho, gshockgrho, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
       real, dimension (nx) :: tmp                                       !GPU := p%aux
+      real, dimension (nx,3) :: tmpv
       real, dimension (nx), parameter :: unitpencil=1.
       real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3,advec_hypermesh_rho
       integer :: j
@@ -2338,9 +2349,17 @@ module Density
           .not. lffree .and. .not. lreduced_sound_speed .and. &
           ieos_profile=='nothing' .and. .not. lfargo_advection) then
         if (ldensity_nolog) then
-          density_rhs= - p%ugrho   - p%rho*p%divu
+          density_rhs= - p%ugrho - p%rho*p%divu
         else
-          density_rhs= - p%uglnrho - p%divu
+          if (lrelativistic_eos) then
+            density_rhs=-fourthird*(p%uglnrho+p%divu)
+            if (lhydro) then
+              call multvs(p%uu,p%uglnrho+p%divu,tmpv)
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+onethird*tmpv
+            endif
+          else
+            density_rhs= - p%uglnrho - p%divu
+          endif
         endif
       else
         density_rhs=0.

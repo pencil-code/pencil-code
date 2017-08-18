@@ -98,6 +98,8 @@ indices = [ $
   { name:'iggX', label:'ggX', dims:1 }, $
   { name:'ihhT', label:'hhT', dims:1 }, $
   { name:'ihhX', label:'hhX', dims:1 }, $
+  { name:'ihij', label:'hij', dims:6 }, $
+  { name:'igij', label:'gij', dims:6 }, $
   { name:'istressT', label:'stressT', dims:1 }, $
   { name:'istressX', label:'stressX', dims:1 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
@@ -106,7 +108,6 @@ indices = [ $
   { name:'ip22', label:'Polymer Tensor 22', dims:1 }, $
   { name:'ip23', label:'Polymer Tensor 23', dims:1 }, $
   { name:'ip33', label:'Polymer Tensor 33', dims:1 }, $
-  { name:'igij', label:'Gravitational Metric', dims:3 }, $
   { name:'iuut', label:'Integrated velocity', dims:3 }, $
   { name:'iaatest', label:'Testmethod vector potential', dims:ntestfield }, $
   { name:'iuutest', label:'Testmethod velocity', dims:ntestflow }, $

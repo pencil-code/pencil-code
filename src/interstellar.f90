@@ -936,8 +936,8 @@ module Interstellar
 !
       use IO, only: read_persist, lun_input
 !
-      integer :: id
-      logical :: done
+      integer, intent(in) :: id
+      logical, intent(inout) :: done
 !
       integer :: i
 !
@@ -2275,7 +2275,8 @@ module Interstellar
 !  parameters for random location of SN - about zdisk
 !
     real, dimension(nzgrid) :: cum_prob_SN
-    real :: z00, x00, y00
+    !Fred: appears redundant to be deleted?
+    !real :: z00, x00, y00
     real, dimension(3) :: fran3
     integer :: i, nzskip=10 !prevent SN from being too close to boundaries
 !
@@ -2283,9 +2284,10 @@ module Interstellar
 !
 !  Calculate the global (nzgrid) lower z-coordinate.
 !
-    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
-    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
-    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
+    !Fred: appears redundant to be deleted?
+    !if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
+    !if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
+    !if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
 !  The disk oscillates. to keep the random dist centred at the disk find
 !  zmode where the peak mean density(z) resides and shift gaussian up/down
@@ -2537,17 +2539,18 @@ module Interstellar
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !
-    real :: z00, x00, y00
+    !Fred: appears redundant to be deleted?
+    !real :: z00, x00, y00
     real, dimension(3) :: fran3
     integer :: i   !prevent SN from being too close to boundaries
 !
     if (headtt) print*,'position_SN_uniformz: ENTER'
 !
 !  Calculate the global (nzgrid) lower z-coordinate.
-!
-    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
-    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
-    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
+!    Fred: appears redundant to be deleted?
+!    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
+!    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
+!    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
@@ -2558,7 +2561,8 @@ module Interstellar
     if (lroot) then
       i=int(fran3(1)*nxgrid)+1
       if (nxgrid==1) i=1
-      SNR%indx%l=i+nghost
+      SNR%indx%ipx=(i-1)/nx ! uses integer division
+      SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
 !
       i=int(fran3(2)*nygrid)+1
       if (nygrid==1) i=1

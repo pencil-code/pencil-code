@@ -1,0 +1,44 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+
+&init_pars
+  ip = 14
+  xyz0 =-0.5, 0.0, -0.05
+  xyz1 = 0.5, 2.0, 0.05
+  fbcy1 = 0.0,1.0,0.,1.0
+  lperi=T,F,T
+  bcy = 'e2','e2','e2','e2'
+/
+&eos_init_pars
+  cs0=10
+  cp=1.0
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_lnrho'
+  lnrho_const=0.0
+/
+&solid_cells_init_pars
+  ncylinders=1
+  cylinder_radius=50.0e-3
+  cylinder_xpos=0.0
+  cylinder_ypos=1.0
+  cylinder_zpos=0.0
+  skin_depth=4e-3
+  initsolid_cells='cylinderstream_y'
+  init_uu=1.
+  grid_func_ogrid = 'sinh', ,
+  xyz_star_ogrid=50.0e-3
+  coeff_grid_o=30, ,
+  lexpl_rho=.true.
+  interpolation_method=2
+/
+&NSCBC_init_pars
+  nscbc_bc = '','part_ref_inlet:part_ref_outlet',''
+  nscbc_sigma_in=4.0
+  nscbc_sigma_out=0.28
+  p_infty=100
+/

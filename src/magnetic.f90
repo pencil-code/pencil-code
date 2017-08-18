@@ -150,6 +150,7 @@ module Magnetic
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
   integer :: N_modes_aa=1, naareset
+  logical, pointer :: lrelativistic_eos
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., llorentz_norho=.false., linduction=.true.
@@ -839,6 +840,7 @@ module Magnetic
 ! 15-oct-15/MR: changes for slope-limited diffusion
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
+      use SharedVariables, only: get_shared_variable
 !
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
@@ -882,6 +884,14 @@ module Magnetic
         if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
         if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
         if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
+      endif
+!
+!  Check if we are solving the relativistic eos equations.
+!  In that case we'd need to get lrelativistic_eos from density.
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos', &
+            lrelativistic_eos, caller='register_energy')
       endif
 !
 !  register the mean-field module
@@ -3238,6 +3248,7 @@ module Magnetic
 !  25-aug-13/MR: simplified calls of save_name_sound
 !  15-oct-15/MR: changes for slope-limited diffusion
 !  14-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
+!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -3327,7 +3338,13 @@ module Magnetic
             elseif (llorentz_norho) then
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
             else
-              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+              if (ldensity.and.lrelativistic_eos) then
+                call dot(p%uu,p%jxbr,tmp1)
+                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp1
+                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+.75*p%jxbr
+              else
+                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+              endif
             endif
           endif
         endif
@@ -6649,7 +6666,7 @@ module Magnetic
 !
 !  Alfven wave propagating in the x-direction
 !
-!  ux = +sink(x-vA*t)
+!  uy = +sink(x-vA*t)
 !  Az = -cosk(x-vA*t)*sqrt(rho*mu0)/k
 !
 !  Alfven and slow magnetosonic are the same here and both incompressible, and
@@ -6663,6 +6680,7 @@ module Magnetic
 !
 !   8-nov-03/axel: coded
 !  29-apr-03/axel: added sqrt(rho*mu0)/k factor
+!   7-aug-17/axel: added sqrt(.75) for lrelativistic_eos=T
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,ampl_Az
@@ -6673,7 +6691,11 @@ module Magnetic
 !
       ampl_lr=+0.
       ampl_ux=+0.
-      ampl_uy=+ampl
+      if (ldensity.and.lrelativistic_eos) then
+        ampl_uy=+ampl*sqrt(.75)
+      else
+        ampl_uy=+ampl
+      endif
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
