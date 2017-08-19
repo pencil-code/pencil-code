@@ -2358,7 +2358,8 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy,chi_xy
+      real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,lnrho_xy,rho_xy, &
+        TT_xy,dlnrhodz_xy,chi_xy
       real, dimension (l2-l1+1) :: quench
       integer :: i
 !
@@ -2383,14 +2384,14 @@ module EquationOfState
 !
 !  lmeanfield_chitB and chi_t0
 !
-      if (lmagnetic) then
-        call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
-        if (lmeanfield_chitB) then
-          call get_shared_variable('chi_t0',chi_t0)
-        else
-          lmeanfield_chitB=.false.
-        endif
-      endif
+!     if (lmagnetic) then
+!       call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
+!       if (lmeanfield_chitB) then
+!         call get_shared_variable('chi_t0',chi_t0)
+!       else
+!         lmeanfield_chitB=.false.
+!       endif
+!     endif
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
@@ -2407,8 +2408,8 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        call getlnrho(f(:,:,n1,ilnrho),rho_xy)            ! here rho_xy=log(rho)
-        cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n1,iss)
+        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)            ! here rho_xy=log(rho)
+        cs2_xy=gamma_m1*(lnrho_xy-lnrho0)+cv1*f(:,:,n1,iss)
         if (lreference_state) &
           cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*spread(reference_state(:,iref_s),2,my)
         cs2_xy=cs20*exp(cs2_xy)
@@ -2442,19 +2443,23 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        call getlnrho(f(:,:,n2,ilnrho),rho_xy)            ! here rho_xy=log(rho)
-        cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n2,iss)
-        if (lreference_state) &
-          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*spread(reference_state(:,iref_s),2,my)
-        cs2_xy=cs20*exp(cs2_xy)
-
-        call getrho(f(:,:,n2,ilnrho),rho_xy)              ! here rho_xy=rho
+        if (ilnrho/=0) then
+          call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)            ! here rho_xy=log(rho)
+          cs2_xy=gamma_m1*(lnrho_xy-lnrho0)+cv1*f(:,:,n2,iss) ! this is lncs2
+          if (lreference_state) &
+            cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*spread(reference_state(:,iref_s),2,my)
+          cs2_xy=cs20*exp(cs2_xy)
+          call getrho(f(:,:,n2,ilnrho),rho_xy)                ! here rho_xy=rho
+        endif
+!
+!  This TT_xy is used for b.c. used in BB14
+!
         TT_xy=cs2_xy/(gamma_m1*cp)
         dlnrhodz_xy= coeffs_1_z(1,2)*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                     +coeffs_1_z(2,2)*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                     +coeffs_1_z(3,2)*(f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho))
 
-        if (ldensity_nolog) dlnrhodz_xy=dlnrhodz_xy/rho_xy
+        if (ldensity_nolog) dlnrhodz_xy=dlnrhodz_xy/rho_xy   ! (not used)
 !
 !  Set chi_xy=chi, which sets also the ghost zones.
 !  chi_xy consists of molecular and possibly turbulent values.
@@ -2462,36 +2467,39 @@ module EquationOfState
 !
       chi_xy=chi
       if (lmagnetic) then
-        if (lmeanfield_chitB) then
-          n=n2
-          do m=m1,m2
-            call bdry_magnetic(f,quench,'meanfield_chitB')
-          enddo
-          chi_xy(l1:l2,m)=chi+chi_t0*quench
-        endif
+        !if (lmeanfield_chitB) then
+        !  n=n2
+        !  do m=m1,m2
+        !    call bdry_magnetic(f,quench,'meanfield_chitB')
+        !  enddo
+        !  chi_xy(l1:l2,m)=chi+chi_t0*quench
+        !endif
       endif
 !
 !  Select to use either: sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
 !                    or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
 !
-        if (lheatc_kramers) then
-          dsdz_xy=-cv*(sigmaSBt*TT_xy**3+hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers)* &
-                       gamma_m1*dlnrhodz_xy)/(hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers) &
+      if (lheatc_kramers) then
+        dsdz_xy=-cv*(sigmaSBt*TT_xy**3+hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers)* &
+                gamma_m1*dlnrhodz_xy)/(hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers) &
                        + chit_prof2*chi_t*rho_xy/gamma)
-        elseif (hcondztop==impossible) then
-          dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
-                   (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
-        else
-          dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*gamma_m1*dlnrhodz_xy)/ &
-                   (chit_prof2*chi_t*rho_xy+hcondztop/cv)
-        endif
+      elseif (hcondztop==impossible) then
+        dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
+            (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
+      else
+!
+!  This is what was used in the BB14 paper.
+!
+        dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*gamma_m1*dlnrhodz_xy)/ &
+                 (chit_prof2*chi_t*rho_xy+hcondztop/cv)
+      endif
 !
 !  Apply condition;
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
-        do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
-        enddo
+      do i=1,nghost
+        f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
+      enddo
 !
 !  capture undefined entries
 !
