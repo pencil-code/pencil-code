@@ -1,0 +1,79 @@
+% $Id: notes.tex,v 1.71 2017/07/19 05:21:56 brandenb Exp $
+%\documentclass{article}
+\documentclass[twocolumn]{article}
+\setlength{\textwidth}{168mm}
+\setlength{\oddsidemargin}{-0mm}
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-8mm}
+%\usepackage{graphicx,natbib,bm,url,color,slashed,amsmath,mathtools}
+\usepackage{graphicx,natbib,bm,url,color,mathtools}
+\newcommand{\fsl}[1]{\ensuremath{\mathrlap{\!\not{\phantom{#1}}}#1}}
+\graphicspath{{./fig/}{./png/}}
+\thispagestyle{empty}
+\input macros
+\def\red{\textcolor{red}}
+\def\blue{\textcolor{blue}}
+\title{}
+\author{}
+\date{\today,~ $ $Revision: 1.71 $ $}
+\begin{document}
+\maketitle
+
+\section{Radiative boundary condition}
+
+\begin{equation}
+-K{\partial T\over\partial z}=\sigmaSB T^4
+\end{equation}
+\begin{equation}
+{\partial\ln T\over\partial z}=-{\sigmaSB T^3\over K}
+\end{equation}
+
+\section{Replace in terms $\rho$ and $s$}
+
+\begin{equation}
+{\partial s/\cp\over\partial z}
+={1\over\gamma}{\partial\ln p\over\partial z}
+-{\partial\ln\rho\over\partial z}
+\end{equation}
+\begin{equation}
+{\partial s/\cp\over\partial z}
+={1\over\gamma}{\partial\ln T\over\partial z}
+-\left(1-{1\over\gamma}\right){\partial\ln\rho\over\partial z}
+\end{equation}
+\begin{equation}
+{\partial s/\cv\over\partial z}
+={\partial\ln T\over\partial z}
+-\left(\gamma-1\right){\partial\ln\rho\over\partial z}
+\end{equation}
+\begin{equation}
+{\partial s/\cv\over\partial z}
+=-{\sigmaSB T^3\over K}
+-\left(\gamma-1\right){\partial\ln\rho\over\partial z}
+\end{equation}
+\begin{equation}
+{\partial s\over\partial z}
+=-\cv{\sigmaSB T^3\over K}
+-\cv\left(\gamma-1\right){\partial\ln\rho\over\partial z}
+\end{equation}
+
+%\begin{table}[htb]\caption{
+%}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
+%\hline
+%\label{Ttimescale}\end{tabular}}\end{table}
+
+\begin{verbatim}
+\end{verbatim}
+
+%r e f
+%\begin{thebibliography}{}
+
+%\bibitem[Biskamp \& M\"uller(1999)]{BM99}
+%Biskamp, D., \& M\"uller, W.-C.\yprl{1999}{83}{2195}
+
+%\end{thebibliography}
+
+\vfill\bigskip\noindent\tiny\begin{verbatim}
+$Header: /var/cvs/brandenb/tex/etc/notes.tex,v 1.71 2017/07/19 05:21:56 brandenb Exp $
+\end{verbatim}
+
+\end{document}
