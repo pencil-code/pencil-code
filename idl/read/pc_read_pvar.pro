@@ -199,8 +199,8 @@ varcontent[ivpxt].idlvar   = 'vpxt'
 varcontent[ivpxt].idlinit  = INIT_SCALAR
 ;
 default, ivpzt, 0
-varcontent[ivpzt].variable = 'Particle turbulent speed (vpxt)'
-varcontent[ivpzt].idlvar   = 'zpxt'
+varcontent[ivpzt].variable = 'Particle turbulent speed (vpzt)'
+varcontent[ivpzt].idlvar   = 'vpzt'
 varcontent[ivpzt].idlinit  = INIT_SCALAR
 ;
 default, iaps, 0
