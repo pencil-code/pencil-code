@@ -133,6 +133,7 @@ module Particles
   logical :: ldiffuse_passive = .false.,ldiff_pass=.false.
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
+  logical :: lnpmin_exclude_zero = .false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -267,7 +268,7 @@ module Particles
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      supersat_ngp, supersat_cic, rp_int, rp_ext
+      supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -4557,7 +4558,15 @@ module Particles
         if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
         if (idiag_np2m/=0)     call sum_mn_name(p%np**2,idiag_np2m)
         if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
-        if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
+!
+        npmin: if (idiag_npmin/=0) then
+          if (lnpmin_exclude_zero) then
+            call max_mn_name(-merge(p%np,1.0,p%np/=0),idiag_npmin,lneg=.true.)
+          else
+            call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
+          endif
+        endif npmin
+!
         if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
         if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
         if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
