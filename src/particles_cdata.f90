@@ -96,6 +96,9 @@ module Particles_cdata
   logical :: lcommunicate_np=.false.
   logical :: lparticles_radius_rpbeta=.false.
   logical :: lignore_rhop_swarm=.false.
+  logical :: lnocollapse_xdir_onecell=.false.
+  logical :: lnocollapse_ydir_onecell=.false.
+  logical :: lnocollapse_zdir_onecell=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=10), dimension(mparray) :: pvarname

@@ -161,7 +161,7 @@ module Particles_sub
 !    y \in [y0,y1[
 !    z \in [z0,z1[
 !
-        if (nxgrid/=1) then
+        if (nxgrid/=1 .or. lnocollapse_xdir_onecell) then
           if (bcpx=='p') then
 !  xp < x0
             if (fp(k,ixp)< xyz0(1)) then
@@ -337,7 +337,7 @@ module Particles_sub
 !
 !  Boundary condition in the y-direction.
 !
-        if (nygrid/=1) then
+        if (nygrid/=1 .or. lnocollapse_ydir_onecell) then
           if (bcpy=='p') then
 !  yp < y0
             if (fp(k,iyp)< xyz0(2)) then
@@ -394,7 +394,7 @@ module Particles_sub
 !
 !  Boundary condition in the z-direction.
 !
-        if (nzgrid/=1) then
+        if (nzgrid/=1 .or. lnocollapse_zdir_onecell) then
           if (bcpz=='p') then
 !  zp < z0
             if (fp(k,izp)< xyz0(3)) then

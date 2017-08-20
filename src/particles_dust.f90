@@ -179,8 +179,9 @@ module Particles
       ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, &
       kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
-      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, lparticle_gravity,&
+      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, &
+      linterpolate_spline, &
+      tstart_dragforce_par, tstart_grav_par, lparticle_gravity, &
       tstart_grav_x_par, tstart_grav_z_par,tstart_grav_r_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, tausp_species, tau_coll_min, &
@@ -191,8 +192,8 @@ module Particles
       lmigration_real_check, ldraglaw_epstein,ldraglaw_simple, &
       ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, &
-      ldragforce_stiff, &
+      ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, &
+      pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, tstart_liftforce_par, &
       ldraglaw_purestokes,rpbeta_species, rpbeta, gab_width, &
@@ -212,9 +213,12 @@ module Particles
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
       lwithhold_init_particles, frac_init_particles, lvector_gravity, &
-      birthring_r, birthring_width, lgaussian_birthring, ldraglaw_stokesschiller, &
-      lbirthring_depletion, &
-      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size
+      birthring_r, birthring_width, lgaussian_birthring, &
+      ldraglaw_stokesschiller, lbirthring_depletion, &
+      remove_particle_at_time, remove_particle_criteria, &
+      remove_particle_criteria_size, &
+      lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
+      lnocollapse_zdir_onecell
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -988,24 +992,24 @@ module Particles
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) then
+            if (nxgrid/=1 .or. lnocollapse_xdir_onecell) then
               call random_number_wrapper(r)
               fp(k,ixp)=r
             endif
-            if (nygrid/=1) then
+            if (nygrid/=1 .or. lnocollapse_ydir_onecell) then
               call random_number_wrapper(r)
               fp(k,iyp)=r
             endif
-            if (nzgrid/=1) then
+            if (nzgrid/=1 .or. lnocollapse_zdir_onecell) then
               call random_number_wrapper(r)
               fp(k,izp)=r
             endif
           enddo
-          if (nxgrid/=1) &
+          if (nxgrid/=1 .or. lnocollapse_xdir_onecell) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
+          if (nygrid/=1 .or. lnocollapse_ydir_onecell) &
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
-          if (nzgrid/=1) &
+          if (nzgrid/=1 .or. lnocollapse_zdir_onecell) &
               fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
 
         case ('random-shift')
@@ -1631,12 +1635,15 @@ module Particles
 !
       if (linitial_condition) call initial_condition_xxp(f,fp)
 !
-!  Particles are not allowed to be present in non-existing dimensions.
-!  This would give huge problems with interpolation later.
+!  Particles are by default not allowed to be present in non-existing
+!  dimensions. This could give huge problems with interpolation later.
 !
-      if (nxgrid==1) fp(1:npar_loc,ixp)=x(nghost+1)
-      if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
-      if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
+      if (nxgrid==1 .and. .not.lnocollapse_xdir_onecell) &
+          fp(1:npar_loc,ixp)=x(nghost+1)
+      if (nygrid==1 .and. .not.lnocollapse_ydir_onecell) &
+          fp(1:npar_loc,iyp)=y(nghost+1)
+      if (nzgrid==1 .and. .not.lnocollapse_zdir_onecell) &
+          fp(1:npar_loc,izp)=z(nghost+1)
 !
       if (init_repeat/=0) call repeated_init(fp,init_repeat)
 !
@@ -2928,30 +2935,30 @@ module Particles
       if (.not.lpointmasses) then
         if (lcartesian_coords) then
 !
-          if (nxgrid/=1) &
+          if (nxgrid/=1 .or. lnocollapse_xdir_onecell) &
               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
+          if (nygrid/=1 .or. lnocollapse_ydir_onecell) &
               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
-          if (nzgrid/=1) &
+          if (nzgrid/=1 .or. lnocollapse_zdir_onecell) &
               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
         elseif (lcylindrical_coords) then
-          if (nxgrid/=1) &
+          if (nxgrid/=1 .or. lnocollapse_xdir_onecell) &
               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
+          if (nygrid/=1 .or. lnocollapse_ydir_onecell) &
               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
                 fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
+          if (nzgrid/=1 .or. lnocollapse_zdir_onecell) &
               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
         elseif (lspherical_coords) then
 !
-          if (nxgrid/=1) &
+          if (nxgrid/=1 .or. lnocollapse_xdir_onecell) &
               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
+          if (nygrid/=1 .or. lnocollapse_ydir_onecell) &
               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
                 fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
+          if (nzgrid/=1 .or. lnocollapse_zdir_onecell) &
               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
                 fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*sin(fp(1:npar_loc,iyp)))
         endif

@@ -19,8 +19,6 @@ module Particles_stirring
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Particles_map
-  use Particles_mpicomm
   use Particles_sub
 !
   implicit none
