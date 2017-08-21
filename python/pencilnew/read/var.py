@@ -89,7 +89,7 @@ class DataCube(object):
 
     def read(self, var_file='', sim=None, datadir='data', proc=-1, ivar=-1,
              quiet=True, trim_all=True, trimall=True,
-             magic=None,):
+             magic=None, varfile=''):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -109,7 +109,8 @@ class DataCube(object):
             magic=None, sim=None)
 
         Keyword arguments:
-            var_file:   Name of the VAR file.
+            var_file/varfile:
+                        Name of the VAR file.
             sim:        Simulation sim object.
             magic:      Values to be computed from the data, e.g. B = curl(A).
             trimall:    Trim the data cube to exclude ghost zones.
@@ -128,6 +129,9 @@ class DataCube(object):
         from ..sim import __Simulation__
 
         dim = None; param = None; index = None
+
+        if varfile != '' and var_file == '':
+            var_file = varfile
 
         if type(var_file) == __Simulation__:
             sim = var_file
