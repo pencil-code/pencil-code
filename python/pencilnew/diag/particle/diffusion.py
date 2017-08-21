@@ -1,5 +1,6 @@
 
-def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=True, jump_distance=0.5):
+def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=True, jump_distance=0.5, 
+              use_existing_pstalk_sav=False):
     """
     Calculate particle diffusion via stalked particles: PSTALK
     Therefore, it read PSTALK files from Pencil Code using IDL by
@@ -26,6 +27,9 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
                         default =False
 
         - quiet        verbosity, default =False
+        
+        - use_existing_pstalk_sav 
+                        use existing <sim.datadir>/data/pc/tmp/pstalk.sav for speed up
 
     Returns:
         diffusion object for simulation,
@@ -44,14 +48,16 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
                                 trange=trange,
                                 sim=sims[0],
                                 OVERWRITE=OVERWRITE,
-                                quiet=quiet)
+                                quiet=quiet,
+                                use_existing_pstalk_sav=use_existing_pstalk_sav)
         else:
             for ii, direction in enumerate(directions):
                 directions[ii] = DiffusionData(direction=direction,
                                                 trange=trange,
                                                 sim=sims[0],
                                                 OVERWRITE=OVERWRITE,
-                                                quiet=quiet)
+                                                quiet=quiet,
+                                                use_existing_pstalk_sav=use_existing_pstalk_sav)
             return directions
     else:
         DiffusionData_Dict = {}
@@ -61,7 +67,8 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
                                              trange=trange,
                                              sim=sim,
                                              OVERWRITE=OVERWRITE,
-                                             quiet=quiet)
+                                             quiet=quiet,
+                                             use_existing_pstalk_sav=use_existing_pstalk_sav)
         return DiffusionData_Dict
     return False
 
@@ -72,7 +79,7 @@ class DiffusionData(object):
     """
 
     def __init__(self, direction='x', trange=[0, -1], sim='.',
-                 OVERWRITE=False, quiet=True, jump_distance=0.5):
+                 OVERWRITE=False, quiet=True, jump_distance=0.5, use_existing_pstalk_sav=False):
 
         from os.path import join
         from os.path import exists as path_exists
@@ -105,7 +112,7 @@ class DiffusionData(object):
             print('## Calculating particle diffusion for "'+sim.name+'" in "'+sim.path+'"')
 
             print('## reading particle stalker file..')
-            pstalk = read_pstalk(sim=sim)
+            pstalk = read_pstalk(sim=sim, use_existing_pstalk_sav=use_existing_pstalk_sav)
             grid = sim.grid
             dim = sim.dim
 
