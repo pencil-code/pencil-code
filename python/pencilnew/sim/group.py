@@ -1,5 +1,5 @@
 
-def group(simulations, groupby, sort=True, only_started=False):
+def group(simulations, groupby, sort=True, only_started=False, reverse=False):
   """Group simulation by a quantity. Each Simulation object can only be part of one group.
 
   Args:
@@ -28,19 +28,19 @@ def group(simulations, groupby, sort=True, only_started=False):
   # sort out simulations that has not started
   if only_started == True: sim_list = [s for s in sim_list if s.started()]
 
+  # special cases:
+  if groupby in ['Lx', 'Ly', 'Lz']:
+      for sim in sim_list:
+        q = str(sim.param['lxyz'][0])
+        if (not q in sim_dict_grouped.keys()):
+          sim_dict_grouped[q] = [sim]
+        else:
+          sim_dict_grouped[q].append(sim)
+
   # case the groupby-keyword can be found via __simulation__.get_value
-  if sim_list[0].get_value(groupby) != None:
+  elif sim_list[0].get_value(groupby) != None:
     for sim in sim_list:
       q = str(sim.get_value(groupby))
-      if (not q in sim_dict_grouped.keys()):
-        sim_dict_grouped[q] = [sim]
-      else:
-        sim_dict_grouped[q].append(sim)
-
-  # special cases:
-  elif groupby in ['Lx', 'Ly', 'Lz']:
-    for sim in sim_list:
-      q = str(sim.param['lxyz'][0])
       if (not q in sim_dict_grouped.keys()):
         sim_dict_grouped[q] = [sim]
       else:
@@ -52,8 +52,10 @@ def group(simulations, groupby, sort=True, only_started=False):
 
   if sort:
     sim_dict_grouped_n_sorted = OrderedDict()
-    for key in natural_sort(sim_dict_grouped.keys()):
+    keys = sim_dict_grouped.keys()
+    for key in natural_sort(keys, reverse=reverse):
       sim_dict_grouped_n_sorted[key] = sim_dict_grouped[key]
+
     return sim_dict_grouped_n_sorted
 
   return sim_dict_grouped
