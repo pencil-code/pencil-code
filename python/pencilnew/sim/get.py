@@ -5,19 +5,19 @@ def get(path='.', quiet=False):
     from pencilnew.io import load
     from . simulation import simulation
 
-    if exists(join(path, '.pc/sim.dill')):
+    if exists(join(path, 'pc/sim.dill')):
         try:
-            sim = load('sim', folder=join(path, '.pc'))
+            sim = load('sim', folder=join(path, 'pc'))
             sim.update(quiet=quiet)
             return sim
         except:
             import os
             print('? Warning: sim.dill in '+path+' is not up to date, recreating simulation object..')
-            os.system('rm '+join(path, '.pc/sim.dill'))
+            os.system('rm '+join(path, 'pc/sim.dill'))
 
     from pencilnew import __is_sim_dir__
     if __is_sim_dir__(path):
-        print('? Warning: Found simulation in '+path+' and simulation object is created for the first time. May take some time.. ')
+        if quiet == False: print('~ Found simulation in '+path+' and simulation object is created for the first time. May take some time.. ')
         return simulation(path, quiet=quiet)
     else:
         print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
