@@ -20,3 +20,4 @@ from .natural_sort import natural_sort
 
 # helper
 from .logrange import logrange
+from .round_next_magnitude import round_next_magnitude
