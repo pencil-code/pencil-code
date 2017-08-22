@@ -65,7 +65,7 @@ def dispersion_and_drift(sim=False, OVERWRITE=False, GLOBAL=True, LOCAL=True, us
       print('## Starting the calculation for DISPERSON and DRIFT for  ### VAR'+str(file_no)+' ###')
 
       # check if files already exist
-      if (not OVERWRITE) and pcn.io.exists('sigma'+file_no, folder=SIM.pc_datadir) and pcn.io.exists('zeta'+file_no, folder=SIM.pc_datadir) and pcn.io.exists('sigma_l_'+file_no, folder=join(SIM.pc_datadir, 'sigma_l')) and pcn.io.exists('zeta_l_'+file_no, folder=join(SIM.pc_datadir, 'zeta_l')):
+      if (not OVERWRITE) and pcn.io.exists('sigma_'+file_no, folder=SIM.pc_datadir) and pcn.io.exists('zeta_'+file_no, folder=SIM.pc_datadir) and pcn.io.exists('sigma_l_'+file_no, folder=join(SIM.pc_datadir, 'sigma_l')) and pcn.io.exists('zeta_l_'+file_no, folder=join(SIM.pc_datadir, 'zeta_l')):
         print('## Skipping calculations')
         continue
 
