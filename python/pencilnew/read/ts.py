@@ -34,6 +34,9 @@ def ts(*args, **kwargs):
 
     *sim*
       Simulation object from which to take the datadir.
+
+    *unique_clean*
+      set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs
     """
 
     ts_tmp = TimeSeries()
@@ -55,7 +58,7 @@ class TimeSeries(object):
 
 
     def read(self, file_name='time_series.dat', datadir='data',
-             quiet=False, comment_char='#', sim=None):
+             quiet=False, comment_char='#', sim=None, unique_clean=False):
         """
         Read Pencil Code time series data.
 
@@ -65,9 +68,6 @@ class TimeSeries(object):
              double=0, quiet=0, comment_char='#', sim=False)
 
         Keyword arguments:
-
-        *SIM*:
-          return time series for this simulation object
 
         *file_name*:
           Name of the time series file.
@@ -83,6 +83,9 @@ class TimeSeries(object):
 
         *sim*
           Simulation object from which to take the datadir.
+
+        *unique_clean*
+          set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs
         """
 
         import numpy as np
@@ -130,3 +133,10 @@ class TimeSeries(object):
         # Assemble into a TimeSeries class.
         for i in range(0, len(self.keys)):
             setattr(self, self.keys[i], data[:, i])
+
+        # do unique cleanup
+        if unique_clean == True:
+           clean_t, unique_indices = np.unique(self.t, return_index=True)
+           if np.size(clean_t) != np.size(self.t):
+               for key in self.keys:
+                   setattr(self, key, getattr(self, key)[unique_indices])

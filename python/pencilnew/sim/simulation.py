@@ -259,6 +259,10 @@ class __Simulation__(object):
                 self.dim = dim(datadir=self.datadir)
                 if not quiet: print('# Updating grid and ghost_grid succesfull')
                 REEXPORT = True
+                # adding lx, dx etc to params
+                self.param['Lx'] = self.grid.Lx; self.param['Ly'] = self.grid.Ly; self.param['Lz'] = self.grid.Lz
+                self.param['lx'] = self.grid.Lx; self.param['ly'] = self.grid.Ly; self.param['lz'] = self.grid.Lz
+                self.param['dx'] = self.grid.dx; self.param['dy'] = self.grid.dy; self.param['dz'] = self.grid.dz
             except:
                 if not quiet: print('? WARNING: Updating grid and ghost_grid was not succesfull, since reading grid had an error')
                 if self.started() or (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
@@ -571,15 +575,17 @@ class __Simulation__(object):
         print('! ERROR: Couldnt find '+quantity+'!')
         return None
 
-    def get_ts(self):
-        """Returns time series object."""
+    def get_ts(self, unique_clean=True):
+        """Returns time series object.
+        Args:
+            unique_clean:       set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs"""
         from pencilnew.read import ts
 
         # check if already loaded
         if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] == self.get_T_last(): return self.tmp_dict['ts']
 
         if self.started():
-            ts = ts(sim=self, quiet=True)
+            ts = ts(sim=self, quiet=True, unique_clean=unique_clean)
             self.tmp_dict['ts'] = ts
             return ts
         else:
