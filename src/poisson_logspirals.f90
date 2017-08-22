@@ -40,7 +40,6 @@ module Poisson
   implicit none
 !
   include 'poisson.h'
-  include 'mpif.h'
 !
   real, pointer :: Gnewton_ptr
   real :: Gnewton
@@ -276,8 +275,8 @@ contains
       real, dimension(2*nx)     :: u1d
       integer                   :: partner,ipx_loop,ipy_loop
       integer                   :: ixlower,ixupper,iylower,iyupper
-      integer, parameter        :: RADIAL_COORDINATE_EXCHANGE_TAG=1285
-      integer, parameter        :: AZIMUTHAL_COORDINATE_EXCHANGE_TAG=1286
+      integer, parameter        :: RADIAL_COORDINATE_TAG=1285
+      integer, parameter        :: AZIMUTHAL_COORDINATE_TAG=1286
       real, dimension(nxgrid)   :: r1d_global
       real, dimension(nygrid)   :: phi1d_global
       real, dimension(2*nxgrid) :: u1d_global
@@ -300,15 +299,15 @@ contains
             send_buffer_radial = x(l1:l2)
             if (iproc > partner) then ! above diagonal: send first, receive then
                call mpisend_real(send_buffer_radial,nx,partner, &
-                    RADIAL_COORDINATE_EXCHANGE_TAG)
+                    RADIAL_COORDINATE_TAG)
                call mpirecv_real(recv_buffer_radial,nx,partner, &
-                    RADIAL_COORDINATE_EXCHANGE_TAG)
+                    RADIAL_COORDINATE_TAG)
                
             else                      ! below diagonal: receive first, send then
                call mpirecv_real(recv_buffer_radial,nx,partner, &
-                    RADIAL_COORDINATE_EXCHANGE_TAG)
+                    RADIAL_COORDINATE_TAG)
                call mpisend_real(send_buffer_radial,nx,partner, &
-                    RADIAL_COORDINATE_EXCHANGE_TAG)
+                    RADIAL_COORDINATE_TAG)
             endif
             r1d_global(ixlower:ixupper) = recv_buffer_radial
          endif
@@ -326,14 +325,14 @@ contains
           send_buffer_azimuthal = y(m1:m2)
           if (iproc > partner) then ! above diagonal: send first, receive then
             call mpisend_real(send_buffer_azimuthal,ny,partner, &
-                 AZIMUTHAL_COORDINATE_EXCHANGE_TAG)
+                 AZIMUTHAL_COORDINATE_TAG)
             call mpirecv_real(recv_buffer_azimuthal,ny,partner, &
-                 AZIMUTHAL_COORDINATE_EXCHANGE_TAG)
+                 AZIMUTHAL_COORDINATE_TAG)
           else                      ! below diagonal: receive first, send then
             call mpirecv_real(recv_buffer_azimuthal,ny,partner, &
-                 AZIMUTHAL_COORDINATE_EXCHANGE_TAG)
+                 AZIMUTHAL_COORDINATE_TAG)
             call mpisend_real(send_buffer_azimuthal,ny,partner, &
-                 AZIMUTHAL_COORDINATE_EXCHANGE_TAG)
+                 AZIMUTHAL_COORDINATE_TAG)
           endif
           phi1d_global(iylower:iyupper) = recv_buffer_azimuthal
         endif
@@ -543,8 +542,7 @@ contains
       real, dimension(nx,ny)              :: send_recv_buffer
       integer, dimension(2)               :: send_recv_size
       integer                             :: target_proc
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-      integer, parameter                  :: FOURIER_DENSITY_EXCHANGE_TAG=1828
+      integer, parameter                  :: DENSITY_TAG=1828
 !
       if(nprocx == 1) then
 !
@@ -564,7 +562,7 @@ contains
             sigma(:nx,:) = potential(:,:,1)
             target_proc  = ipx + 1 + ipy*nprocx
             call mpirecv_real(send_recv_buffer,send_recv_size,target_proc, &
-                 FOURIER_DENSITY_EXCHANGE_TAG)
+                 DENSITY_TAG)
             sigma(nx+1:,:) = send_recv_buffer
 !
          else
@@ -576,7 +574,7 @@ contains
             send_recv_buffer = potential(:,:,1)
             target_proc = ipx - 1 + ipy*nprocx
             call mpisend_real(send_recv_buffer,send_recv_size,target_proc, &
-                 FOURIER_DENSITY_EXCHANGE_TAG)
+                 DENSITY_TAG)
 !
          end if
 !
@@ -608,8 +606,8 @@ contains
       kr_fft_imag = 0.0
       kphi_fft_real = kphi
       kphi_fft_imag = 0.0
-      call fft_xy_parallel_2D_x_extended(kr_fft_real,kr_fft_imag,.false.,.true.)
-      call fft_xy_parallel_2D_x_extended(kphi_fft_real,kphi_fft_imag,.false.,.true.)
+      call fft_fouriergrid(kr_fft_real,kr_fft_imag,.false.,.true.)
+      call fft_fouriergrid(kphi_fft_real,kphi_fft_imag,.false.,.true.)
 !
     endsubroutine generate_kernals
 !***********************************************************************
@@ -626,8 +624,8 @@ contains
       sr_fft_imag = 0.0
       sphi_fft_real = sphi
       sphi_fft_imag = 0.0
-      call fft_xy_parallel_2D_x_extended(sr_fft_real,sr_fft_imag,.false.,.true.)
-      call fft_xy_parallel_2D_x_extended(sphi_fft_real,sphi_fft_imag,.false.,.true.)
+      call fft_fouriergrid(sr_fft_real,sr_fft_imag,.false.,.true.)
+      call fft_fouriergrid(sphi_fft_real,sphi_fft_imag,.false.,.true.)
 !
     endsubroutine generate_massfields
 !***********************************************************************
@@ -645,8 +643,8 @@ contains
       real, dimension(nx,ny) :: send_recv_buffer_radial,send_recv_buffer_azimuthal
       integer, dimension(2)  :: send_recv_size
       integer                :: target_proc
-      integer, parameter     :: FOURIER_RADIAL_ACCELERATION_EXCHANGE_TAG=1283    ! CHECK
-      integer, parameter     :: FOURIER_AZIMUTHAL_ACCELERATION_EXCHANGE_TAG=1284 ! CHECK
+      integer, parameter     :: RADIAL_ACC_TAG=1283
+      integer, parameter     :: AZIMUTHAL_ACC_TAG=1284
 !
       send_recv_size(1) = nx
       send_recv_size(2) = ny
@@ -655,8 +653,8 @@ contains
       gr_conv_imag = kr_fft_real*sr_fft_imag + kr_fft_imag*sr_fft_real
       gphi_conv_real = kphi_fft_real*sphi_fft_real - kphi_fft_imag*sphi_fft_imag
       gphi_conv_imag = kphi_fft_real*sphi_fft_imag + kphi_fft_imag*sphi_fft_real
-      call fft_xy_parallel_2D_x_extended(gr_conv_real,gr_conv_imag,.true.,.true.)
-      call fft_xy_parallel_2D_x_extended(gphi_conv_real,gphi_conv_imag,.true.,.true.)
+      call fft_fouriergrid(gr_conv_real,gr_conv_imag,.true.,.true.)
+      call fft_fouriergrid(gphi_conv_real,gphi_conv_imag,.true.,.true.)
       gr_convolution   = normalization_factor*gr_conv_real
       gphi_convolution = normalization_factor*gphi_conv_real
 !
@@ -681,9 +679,9 @@ contains
             send_recv_buffer_azimuthal = gphi_fourier(nx+1:,:)
             target_proc = ipx + 1 + ipy*nprocx
             call mpisend_real(send_recv_buffer_radial   ,send_recv_size,target_proc, &
-                 FOURIER_RADIAL_ACCELERATION_EXCHANGE_TAG   )
+                 RADIAL_ACC_TAG   )
             call mpisend_real(send_recv_buffer_azimuthal,send_recv_size,target_proc, &
-                 FOURIER_AZIMUTHAL_ACCELERATION_EXCHANGE_TAG)
+                 AZIMUTHAL_ACC_TAG)
          else
 !
 !  This processor sent its density to another, and must now collect the resulting acceleration on
@@ -691,9 +689,9 @@ contains
 !
             target_proc = ipx - 1 + ipy*nprocx
             call mpirecv_real(send_recv_buffer_radial   ,send_recv_size,target_proc, &
-                 FOURIER_RADIAL_ACCELERATION_EXCHANGE_TAG   )
+                 RADIAL_ACC_TAG   )
             call mpirecv_real(send_recv_buffer_azimuthal,send_recv_size,target_proc, &
-                 FOURIER_AZIMUTHAL_ACCELERATION_EXCHANGE_TAG)
+                 AZIMUTHAL_ACC_TAG)
             gr   = send_recv_buffer_radial
             gphi = send_recv_buffer_azimuthal
          end if
@@ -701,7 +699,7 @@ contains
 !
     endsubroutine compute_acceleration
 !***********************************************************************
-    subroutine fft_xy_parallel_2D_x_extended(a_re,a_im,linv,lneed_im,shift_y)
+    subroutine fft_fouriergrid(a_re,a_im,linv,lneed_im,shift_y)
 !
 !  Subroutine to do FFT of distributed 2D data in the x- and y-direction,
 !  on a grid which is twice the size of the physical grid in the x-diction.
@@ -734,9 +732,9 @@ contains
       real, dimension (tny)              :: deltay_x
       real, dimension (tny)              :: dshift_y
 !
-      integer    :: l, m, stat, x_offset
-      integer(8) :: nxgrid_fourier,nx_fourier
-      logical    :: lforward, lcompute_im, lshift
+      integer :: l, m, stat, x_offset
+      integer :: nxgrid_fourier,nx_fourier
+      logical :: lforward, lcompute_im, lshift
 !
       nxgrid_fourier = 2*nxgrid
       nx_fourier = 2*nx
@@ -792,15 +790,15 @@ contains
 !  Forward FFT:
 !
         ! Remap the data we need into pencil shape.
-        call remap_to_pencil_xy_2D_x_extended (a_re, p_re)
+        call remap_to_pencil_fouriergrid (a_re, p_re)
         if (lcompute_im) then
-          call remap_to_pencil_xy_2D_x_extended (a_im, p_im)
+          call remap_to_pencil_fouriergrid (a_im, p_im)
         else
           p_im = 0.0
         endif
 !
-        call transp_pencil_xy_2D_x_extended (p_re, t_re)
-        call transp_pencil_xy_2D_x_extended (p_im, t_im)
+        call transp_pencil_fouriergrid (p_re, t_re)
+        call transp_pencil_fouriergrid (p_im, t_im)
 !
         ! Transform y-direction.
         do l = 1, tny
@@ -812,8 +810,8 @@ contains
           t_im(:,l) = aimag (ay)
         enddo
 !
-        call transp_pencil_xy_2D_x_extended (t_re, p_re)
-        call transp_pencil_xy_2D_x_extended (t_im, p_im)
+        call transp_pencil_fouriergrid (t_re, p_re)
+        call transp_pencil_fouriergrid (t_im, p_im)
 !
         ! Transform x-direction.
         do m = 1, pny
@@ -824,8 +822,8 @@ contains
         enddo
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy_2D_x_extended (p_re, a_re)
-        call unmap_from_pencil_xy_2D_x_extended (p_im, a_im)
+        call unmap_from_pencil_fouriergrid (p_re, a_re)
+        call unmap_from_pencil_fouriergrid (p_im, a_im)
 !
 ! Apply normalization factor to fourier coefficients.
 ! Since I am using this internally only for fftconvolve,
@@ -837,8 +835,8 @@ contains
 !  Inverse FFT:
 !
         ! Remap the data we need into transposed pencil shape.
-        call remap_to_pencil_xy_2D_x_extended (a_re, p_re)
-        call remap_to_pencil_xy_2D_x_extended (a_im, p_im)
+        call remap_to_pencil_fouriergrid (a_re, p_re)
+        call remap_to_pencil_fouriergrid (a_im, p_im)
 !
         do m = 1, pny
           ! Transform x-direction back.
@@ -848,8 +846,8 @@ contains
           p_im(:,m) = aimag (ax)
         enddo
 !
-        call transp_pencil_xy_2D_x_extended (p_re, t_re)
-        call transp_pencil_xy_2D_x_extended (p_im, t_im)
+        call transp_pencil_fouriergrid (p_re, t_re)
+        call transp_pencil_fouriergrid (p_im, t_im)
 !
         do l = 1, tny
           ! Transform y-direction back.
@@ -860,20 +858,20 @@ contains
           if (lcompute_im) t_im(:,l) = aimag (ay)
         enddo
 !
-        call transp_pencil_xy_2D_x_extended (t_re, p_re)
-        if (lcompute_im) call transp_pencil_xy_2D_x_extended (t_im, p_im)
+        call transp_pencil_fouriergrid (t_re, p_re)
+        if (lcompute_im) call transp_pencil_fouriergrid (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
-        call unmap_from_pencil_xy_2D_x_extended (p_re, a_re)
-        if (lcompute_im) call unmap_from_pencil_xy_2D_x_extended (p_im, a_im)
+        call unmap_from_pencil_fouriergrid (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_fouriergrid (p_im, a_im)
 !
       endif
 !
       deallocate (p_re, p_im, t_re, t_im)
 !
-    endsubroutine fft_xy_parallel_2D_x_extended
+    endsubroutine fft_fouriergrid
 !***********************************************************************
-    subroutine remap_to_pencil_xy_2D_x_extended(in, out)
+    subroutine remap_to_pencil_fouriergrid(in, out)
 !
 !  Remaps data distributed on several processors into pencil shape.
 !  This routine remaps 2D arrays in x and y only for nprocx>1.
@@ -890,7 +888,6 @@ contains
       integer, dimension(2) :: send_recv_size
       integer, parameter    :: ltag=104, utag=105
 !
-      integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable   :: send_buf, recv_buf
 !
       if (nprocx == 1) then
@@ -938,9 +935,9 @@ contains
 !
       deallocate (send_buf, recv_buf)
 !
-    endsubroutine remap_to_pencil_xy_2D_x_extended
+    endsubroutine remap_to_pencil_fouriergrid
 !***********************************************************************
-    subroutine unmap_from_pencil_xy_2D_x_extended(in, out)
+    subroutine unmap_from_pencil_fouriergrid(in, out)
 !
 !  Unmaps pencil shaped 2D data distributed on several processors back to normal shape.
 !  This routine is the inverse of the remap function for nprocx>1.
@@ -957,7 +954,6 @@ contains
       integer, dimension(2) :: send_recv_size
       integer, parameter    :: ltag=106, utag=107
 !
-      integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable   :: send_buf, recv_buf
 !
       if (nprocx == 1) then
@@ -1002,9 +998,9 @@ contains
 !
       deallocate (send_buf, recv_buf)
 !
-    endsubroutine unmap_from_pencil_xy_2D_x_extended
+    endsubroutine unmap_from_pencil_fouriergrid
 !***********************************************************************
-    subroutine transp_pencil_xy_2D_x_extended(in, out)
+    subroutine transp_pencil_fouriergrid(in, out)
 !
 !  Transpose 2D data distributed on several processors.
 !  This routine transposes arrays in x and y only.
@@ -1025,7 +1021,6 @@ contains
       integer               :: it, ibox, partner,partner_fourier, alloc_err
       integer, parameter    :: ltag=108, utag=109
 !
-      integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable   :: send_buf, recv_buf
 !
 !
@@ -1076,7 +1071,7 @@ contains
 !
       deallocate (send_buf, recv_buf)
 !
-    endsubroutine transp_pencil_xy_2D_x_extended
+    endsubroutine transp_pencil_fouriergrid
 !***********************************************************************
     subroutine stop_fatal(msg,force)
 !
