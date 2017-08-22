@@ -48,5 +48,15 @@ def dill_load(name, folder=False, sim=False, quiet=True):
                 # obj = dill.load(f)
             # return obj
 
-    except: # if anything goes wrong
-       print('!! ERROR: Something went wrong while importing dill-file: '+filepath); return False
+    except: # if anything goes wrong, try dry importing, i.e. if python2 and python3 usage was mixed
+        print('? Something went wrong with the dill importer, trying backup solution..')
+        try:
+            import pickle
+            with open(filepath, 'rb') as f:
+                u = pickle._Unpickler(f)
+                u.encoding = 'latin1'
+                data = u.load()
+                print('? Success!')
+                return data
+        except:
+            print('!! ERROR: Something went wrong while importing dill-file: '+filepath); return False
