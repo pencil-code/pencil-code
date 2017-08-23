@@ -1,4 +1,4 @@
-def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False, filepath=False, DEBUG=False, silent=False):
+def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, filepath=False, DEBUG=False, silent=False):
     """ Use to read in a quantity from
         - *.in
         - *.local
@@ -13,6 +13,9 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         filepath:   normally not needed, specify here where to find the file with filename, can be a list of paths if unshure
         DEBUG:      make dry run, tell me what you would do but dont change anything!
         silent:     suppress certain output by setting True
+
+    Return:
+        Returns None if not successful
     """
 
     import os, pencilnew
@@ -74,7 +77,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         search_paths = filepath
 
     else:
-        print('! ERROR: Filename '+str(filename)+' could not be interprated or found!'); return False
+        print('! ERROR: Filename '+str(filename)+' could not be interprated or found!'); return None
 
     absolute_filepath = None
     for search_path in search_paths:
@@ -206,7 +209,8 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
 
     ######## if value of quantity has to be changed do:
-    if change_quantity_to:
+    if change_quantity_to != None:
+
 
         ####### prepare change_quantity_to for string injection
         if q_type == 'STRING':

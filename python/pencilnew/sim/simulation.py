@@ -547,8 +547,6 @@ class __Simulation__(object):
     def get_value(self, quantity, DEBUG=False):
         """Optimized version of get_value_from_file. Just state quantity for simulation and param-list together with searchable components will be searched."""
 
-        if quantity in self.tmp_dict.keys(): return self.tmp_dict[quantity]
-
         if DEBUG: print('~ DEBUG: Updating simulation.')
         self.update()
 
@@ -557,17 +555,14 @@ class __Simulation__(object):
             if quantity in self.param.keys():
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 q = self.param[quantity]
-                self.tmp_dict[quantity] = q
                 return q
 
         if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
         for filename in self.quantity_searchables:
-            q = get_value_from_file(filename, quantity, change_quantity_to=False,
-                                    sim=self, DEBUG=DEBUG, silent=True)
+            q = get_value_from_file(filename, quantity, sim=self, DEBUG=DEBUG, silent=True)
             if q is not None:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
-                self.tmp_dict[quantity] = q
                 return q
             else:
                 if DEBUG: print('~ DEBUG: Couldnt find quantity here.. continue searching')
