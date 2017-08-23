@@ -4699,6 +4699,7 @@ module Solid_Cells
         df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
       enddo
       if(lexpl_rho) df(l1_ogrid,:,:,irho) = 0.
+      if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
 !
     endsubroutine pde_ogrid
 !***********************************************************************
@@ -5042,7 +5043,7 @@ module Solid_Cells
 !  Boundary conditions at the cylinder surface in the radial direction (xdir).
 !  For ogrids, only boundary conditions at cylinder surface is set. The BC on
 !  the 'top' is set by interpolation from cartesian grid, outside the timestep.
-!  Only need to conpute boundary value for the density, using stencil that
+!  Only need to compute boundary value for the density, using stencil that
 !  satisfies the SBP energy conservation. No-slip on the surface is respected
 !  automatically since we set df(l1_ogrid,:,:,:)=0 after the mn-loop (freeze).
 !  If SBP is not used, the grid ponts inside the surface are computed using 
