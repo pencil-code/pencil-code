@@ -85,7 +85,7 @@ class __Simulation__(object):
             Name in submit scripts will be renamed if possible! Submit scripts will be identified by submit* plus appearenace of old simulation name inside, latter will be renamed!
 
         Args:
-            path_root:               Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing!
+            path_root:               Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing! Relative paths are thought to be relative to the python current workdir
             name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
             optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
             quiet:                   Set True to suppress output.
