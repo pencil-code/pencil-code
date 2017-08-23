@@ -33,6 +33,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #     ! COMMUNICATED AUXILIARIES 1
 #     ! NDUSTSPEC CONTRIBUTION 17
 #     ! NDUSTRAD  CONTRIBUTION 10
+#     ! NPARTDISP  CONTRIBUTION 30
 #     ! NCHEMSPEC CONTRIBUTION 3
 #     ! NPSCALAR CONTRIBUTION 3
 #   and accumulates the numbers mvar, maux, maux_com, mglobal, mscratch,
