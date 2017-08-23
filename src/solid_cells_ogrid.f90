@@ -282,6 +282,7 @@ module Solid_Cells
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
   integer :: idiag_c_dragy=0
+  integer :: idiag_Nusselt=0
 !
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
@@ -1773,8 +1774,6 @@ module Solid_Cells
 !  F_x=\vec{F}.\hat{x}=F_p\cos{\theta}-F_s\sin{theta}
 !  F_y=\vec{F}.\hat{y}=F_p\sin{\theta}+F_s\cos{theta}
 !
-!  Normalization computed in find_drag_coeff routine.
-!
 !  10-apr-17/Jorgen: Coded
 !
       use Viscosity, only: getnu
@@ -1820,6 +1819,51 @@ module Solid_Cells
 !
     endsubroutine drag_coeffs
 !***********************************************************************
+    subroutine Nusselt_pencils(Nusselt)
+!
+!  Compute the Nusselt number of the cylinder 
+!
+!  23-aug-17/Ewa+Nils: Coded
+!
+      real, intent(inout) :: Nusselt
+      real :: gradT, Nusselt_norm, deltaT, surfaceelement, dlong
+!
+
+Nusselt_norm=1.
+
+      dlong = twopi/nygrid_ogrid
+      surfaceelement = dlong*cylinder_radius/nzgrid_ogrid
+
+
+      deltaT=cylinder_temp-T0
+      gradT=p_ogrid%gTT(1,1)
+      Nusselt = gradT*cylinder_radius*2./deltaT * surfaceelement * Nusselt_norm
+!
+    endsubroutine Nusselt_pencils
+!***********************************************************************
+    subroutine Nusselt_coeffs(Nusselt)
+!
+!  Sum up the computed Nusselt number on root processor.
+!  Normalization done in the end of the computation.
+!
+!  23-aug-17/Ewa+Nils: Coded
+!
+      use Mpicomm, only: mpireduce_sum
+      real, intent(inout) :: Nusselt
+      real :: Nusselt_all
+      real :: norm
+!
+      norm=dy_ogrid/(nzgrid_ogrid*rho0*init_uu**2)
+!
+      call mpireduce_sum(Nusselt,Nusselt_all)
+!
+      if(lroot) then
+        Nusselt=Nusselt_all*norm
+        if (idiag_Nusselt /= 0) fname(idiag_Nusselt)=Nusselt
+      endif
+!
+    endsubroutine Nusselt_coeffs
+!***********************************************************************
     subroutine dsolid_dt(f,df,p)
 !
 !  Dummy routine
@@ -1862,6 +1906,7 @@ module Solid_Cells
       if (lreset) then
         idiag_c_dragx = 0
         idiag_c_dragy = 0
+        idiag_Nusselt = 0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1869,6 +1914,7 @@ module Solid_Cells
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
         call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
+        call parse_name(iname,cname(iname),cform(iname),'Nusselt',idiag_Nusselt)
       enddo
 !
     endsubroutine rprint_solid_cells
@@ -4627,9 +4673,10 @@ module Solid_Cells
       integer :: nyz_ogrid
 !
       intent(out)    :: df
-      real :: c_dragx,c_dragy
+      real :: c_dragx,c_dragy, Nusselt
       c_dragx=0.
       c_dragy=0.
+      Nusselt=0.
 !
 !  Initiate communication and do boundary conditions.
 !
@@ -4675,15 +4722,28 @@ module Solid_Cells
 !  Compute drag and lift coefficient, if this is the last sub-timestep
 !
 
-        if(llast_ogrid.and.lfirst_proc_x.and.((idiag_c_dragx/=0).or.(idiag_c_dragy/=0))) then
-          call drag_force_pencils(c_dragx,c_dragy)
+        if(llast_ogrid.and.lfirst_proc_x) then
+          if ((idiag_c_dragx/=0).or.(idiag_c_dragy/=0)) then
+            call drag_force_pencils(c_dragx,c_dragy)
+          endif
+          if (idiag_Nusselt/=0) then
+            call Nusselt_pencils(Nusselt)
+          endif
         endif
 !
 !  End of loops over m and n.
 !
       enddo mn_loop
 !
-      if(llast_ogrid.and.((idiag_c_dragx/=0).or.(idiag_c_dragy/=0))) call drag_coeffs(c_dragx,c_dragy)
+      if(llast_ogrid) then
+        if ((idiag_c_dragx/=0).or.(idiag_c_dragy/=0)) then
+          call drag_coeffs(c_dragx,c_dragy)
+        endif
+        if ((idiag_Nusselt/=0)) then
+          call Nusselt_coeffs(Nusselt)
+        endif
+      endif
+
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
