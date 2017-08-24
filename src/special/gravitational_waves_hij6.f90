@@ -95,6 +95,7 @@ module Special
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
+  real, parameter :: c2=1
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -143,6 +144,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use EquationOfState, only: cs0
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical, pointer :: lbb_as_comaux
 !
@@ -169,6 +172,11 @@ module Special
       ij_table(2,1)=4
       ij_table(3,2)=5
       ij_table(1,3)=6
+!
+!  give a warning if cs0**2=1
+!
+      if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
+          'cs0 should probably not be unity')
 !
       call keep_compiler_quiet(f)
 !
@@ -304,7 +312,7 @@ module Special
         jgij=igij-1+ij
         call del2(f,jhij,del2hij(:,ij))
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+del2hij(:,ij)+p%stress_ij(:,ij)
+        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c2*del2hij(:,ij)+p%stress_ij(:,ij)
         if (diffhh/=0.) then
           call del2(f,jhij,del2hij(:,ij))
           df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+diffhh*del2hij(:,ij)
@@ -314,6 +322,10 @@ module Special
           df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+diffgg*del2gij(:,ij)
         endif
       enddo
+!
+!  timestep constraint
+!
+      if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c2*dxyz_2)
 !
 !  diagnostics
 !
