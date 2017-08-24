@@ -58,3 +58,27 @@ def var(**kwarg):
     path = datadir + "/allprocs/" + varfile
     gridToVTK(path, g.x, g.y, g.z, pointData=pointData)
     print("Done. ")
+#=======================================================================
+def var_all(**kwarg):
+    """Writes all VAR files in VTK format under allprocs/.
+
+    Keyword Arguments
+        **kwarg
+            Keywords passed to var().
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2017-08-24
+    # Last Modified: 2017-08-24
+    from . import read
+
+    # Read the list of files.
+    datadir = kwarg.setdefault("datadir", "./data")
+    varNlist = read.varname(datadir=datadir, filename="proc0/varN.list")
+
+    # Read the parameters if necessary and pass it forward.
+    if kwarg.setdefault("par") is None:
+        kwarg["par"] = read.parameters(datadir=datadir)
+
+    # Process each VAR.
+    for varfile in varNlist:
+        var(varfile=varfile, **kwarg)
