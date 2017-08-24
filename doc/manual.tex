@@ -6531,6 +6531,32 @@ and in sed (but that's harder to read)
 \end{Verbatim}
 
 
+\subsubsection{Problems with \code{pc_varcontent.pro}}
+
+{\bf Q}:
+
+\begin{Verbatim}
+  % Subscript range values of the form low:high must be >= 0, < size, with low
+  <= high: VARCONTENT.
+% Error occurred at: PC_VARCONTENT     391
+  /home/brandenb/pencil-code/idl/read/pc_varcontent.pro
+%                    PC_READ_VAR       318
+  /home/brandenb/pencil-code/idl/read/pc_read_var.pro
+%                    $MAIN$          
+\end{Verbatim}
+
+\medskip
+
+{\bf A}:
+Make sure you don't have any unused items in your
+\code{src/cparam.local} such as
+\begin{Verbatim}
+! MAUX CONTRIBUTION 3
+! COMMUNICATED AUXILIARIES 3
+\end{Verbatim}
+They would leave gaps in the counting of entries in your
+\code{data/index.pro} file.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{General questions}
