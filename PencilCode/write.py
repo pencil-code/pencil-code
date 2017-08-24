@@ -30,10 +30,6 @@ def var(**kwarg):
     if par.coord_system != "cartesian":
         raise NotImplementedError("Non-rectilinear grid")
 
-    # Read the grid.
-    grid_kw = get.pairs(kwarg, "trim")
-    g = read.grid(datadir=datadir, par=par, **grid_kw)
-
     # Read the variable names.
     varnames = read.varname(datadir=datadir)
 
@@ -56,7 +52,7 @@ def var(**kwarg):
     # Write the data.
     print("Writing", varfile, "in VTK under allprocs/...")
     path = datadir + "/allprocs/" + varfile
-    gridToVTK(path, g.x, g.y, g.z, pointData=pointData)
+    gridToVTK(path, f.x, f.y, f.z, pointData=pointData)
     print("Done. ")
 #=======================================================================
 def var_all(**kwarg):
