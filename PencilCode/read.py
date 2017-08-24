@@ -864,7 +864,7 @@ def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
     """
     # Author: Chao-Chin Yang
     # Created: 2014-12-03
-    # Last Modified: 2017-04-30
+    # Last Modified: 2017-08-24
     from collections import namedtuple
     import numpy as np
 
@@ -970,7 +970,7 @@ def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
     keys = ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'] + var
     values = [t, x, y, z, dx, dy, dz, deltay]
     for i in range(len(var)):
-        values.append(f[:,:,:,i].reshape(fdim))
+        values.append(f[:,:,:,i].ravel().reshape(fdim))
     Var = namedtuple('Var', keys)
     return Var(**dict(zip(keys, values)))
 #=======================================================================
