@@ -147,15 +147,6 @@ module Special
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, pointer :: lbb_as_comaux
-!
-!  Check whether diffgg=diffhh (which  is the default)
-!
-      if (lmagnetic) then
-        call get_shared_variable('lbb_as_comaux',lbb_as_comaux)
-        if (.not.lbb_as_comaux) call fatal_error('initialize_special', &
-            'lbb_as_comaux needs to be T')
-      endif
 !
 !  Check whether diffgg=diffhh (which  is the default)
 !
@@ -231,6 +222,9 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      if (lhydro)    lpenc_requested(i_uu)=.true.
+      if (lmagnetic) lpenc_requested(i_bb)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -265,12 +259,8 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lhydro) p%stress_ij(:,ij)=p%stress_ij(:,ij) &
-          +f(l1:l2,m,n,iux+i-1) &
-          *f(l1:l2,m,n,iux+j-1)
-        if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij) &
-          +f(l1:l2,m,n,ibx+i-1) &
-          *f(l1:l2,m,n,ibx+j-1)
+        if (lhydro)    p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
+        if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%bb(:,i)*p%bb(:,j)
       enddo
       enddo
 !
