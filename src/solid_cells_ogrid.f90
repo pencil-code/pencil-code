@@ -5036,20 +5036,31 @@ module Solid_Cells
 !  Calculate Energy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
+      use EquationOfState, only: gamma1
+!
       integer :: j
 !
 !  Pencils: fpres (=pressure gradient force)
 !
-      if (lpencil_ogrid(i_og_fpres)) then
-        do j=1,3
-          p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
-        enddo
-      endif
+    
 
       if (iTT .ne. 0) then
-        if (lpencil_ogrid(i_og_ugTT)) &
-            call u_dot_grad_ogrid(f_ogrid,iTT,p_ogrid%gTT,p_ogrid%uu,&
-            p_ogrid%ugTT,UPWIND=lupw_lnTT)
+        if (lpencil_ogrid(i_og_ugTT)) then
+          call u_dot_grad_ogrid(f_ogrid,iTT,p_ogrid%gTT,p_ogrid%uu,&
+              p_ogrid%ugTT,UPWIND=lupw_lnTT)
+        endif
+        if (lpencil_ogrid(i_og_fpres)) then
+          do j=1,3
+            p_ogrid%fpres(:,j)=-gamma1*p_ogrid%cs2*&
+                (p_ogrid%glnrho(:,j)+p_ogrid%gTT(:,j)/p_ogrid%TT)
+          enddo
+      endif
+      else
+        if (lpencil_ogrid(i_og_fpres)) then
+          do j=1,3
+            p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
+          enddo
+        endif
       endif
 !
     endsubroutine calc_pencils_energy_ogrid
