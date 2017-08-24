@@ -1826,18 +1826,10 @@ module Solid_Cells
 !  23-aug-17/Ewa+Nils: Coded
 !
       real, intent(inout) :: Nusselt
-      real :: gradT, Nusselt_norm, deltaT, surfaceelement, dlong
+      real :: gradT, deltaT, surfaceelement, dlong
 !
-
-Nusselt_norm=1.
-
-      dlong = twopi/nygrid_ogrid
-      surfaceelement = dlong*cylinder_radius/nzgrid_ogrid
-
-
-      deltaT=cylinder_temp-T0
       gradT=p_ogrid%gTT(1,1)
-      Nusselt = gradT*cylinder_radius*2./deltaT * surfaceelement * Nusselt_norm
+      Nusselt = Nusselt - gradT  
 !
     endsubroutine Nusselt_pencils
 !***********************************************************************
@@ -1853,7 +1845,7 @@ Nusselt_norm=1.
       real :: Nusselt_all
       real :: norm
 !
-      norm=dy_ogrid/(nzgrid_ogrid*rho0*init_uu**2)
+      norm = 2.*cylinder_radius/(cylinder_temp-T0)/(ny_ogrid*nz_ogrid)
 !
       call mpireduce_sum(Nusselt,Nusselt_all)
 !
@@ -4721,7 +4713,6 @@ Nusselt_norm=1.
 !
 !  Compute drag and lift coefficient, if this is the last sub-timestep
 !
-
         if(llast_ogrid.and.lfirst_proc_x) then
           if ((idiag_c_dragx/=0).or.(idiag_c_dragy/=0)) then
             call drag_force_pencils(c_dragx,c_dragy)
