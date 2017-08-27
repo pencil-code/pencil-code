@@ -86,6 +86,7 @@ module Particles
   real :: birthring_r=1.0, birthring_width=0.1
   real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
+  real :: r0gaussz=1.0, qgaussz=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -219,7 +220,7 @@ module Particles
       remove_particle_at_time, remove_particle_criteria, &
       remove_particle_criteria_size, &
       lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
-      lnocollapse_zdir_onecell
+      lnocollapse_zdir_onecell, qgaussz, r0gaussz
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -1505,26 +1506,25 @@ module Particles
               if (nxgrid/=1) then
                 call random_number_wrapper(r)
                 fp(k,ixp)=r
+                fp(k,ixp)=xyz0_par(1)+fp(k,ixp)*Lxyz_par(1)
               endif
               if (nygrid/=1) then
                 call random_number_wrapper(r)
                 fp(k,iyp)=r
+                fp(k,iyp)=xyz0_par(2)+fp(k,iyp)*Lxyz_par(2)
               endif
               call random_number_wrapper(r)
               call random_number_wrapper(p)
               if (nprocz==2) then
-                if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-                if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*  p))
+                if (lfirst_proc_z) fp(k,izp)=-abs(zp0*(fp(k,ixp)/r0gaussz)**qgaussz*sqrt(-2*alog(r))*cos(2*pi*p))
+                if (llast_proc_z) fp(k,izp)=abs(zp0*(fp(k,ixp)/r0gaussz)**qgaussz*sqrt(-2*alog(r))*cos(2*pi*p))
               else
-                fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+                fp(k,izp)= zp0*(fp(k,ixp)/r0gaussz)**qgaussz* &
+                    sqrt(-2*alog(r))*cos(2*pi*p)
               endif
               if ((fp(k,izp)>=xyz0(3)) .and. (fp(k,izp)<=xyz1(3))) exit
             enddo
           enddo
-          if (nxgrid/=1) &
-              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
-          if (nygrid/=1) &
-              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
 !
         case ('gaussian-x')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
