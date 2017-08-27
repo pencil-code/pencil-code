@@ -34,7 +34,7 @@ module Particles_radius
   real :: tau_damp_evap=0.0, tau_damp_evap1=0.0
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
-  real :: aplow=1.0, aphigh=2.0, mbar=1.0
+  real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20, ip1=npar/2
@@ -54,7 +54,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
-      aplow, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
+      aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
       lfixed_particles_radius
 !
@@ -250,6 +250,18 @@ module Particles_radius
           do k = npar_low,npar_high
             if (mod(k,2)==0) then
               fp(k,iap)=aplow
+            else
+              fp(k,iap)=aphigh
+            endif
+          enddo
+!
+        case ('3-size-alternate')
+          if (initial .and. lroot) print*, 'set_particles_radius: give particles alternating three radii'
+          do k = npar_low,npar_high
+            if (mod(k,3)==0) then
+              fp(k,iap)=aplow
+            else if (mod(k,3)==1) then
+              fp(k,iap)=apmid
             else
               fp(k,iap)=aphigh
             endif
