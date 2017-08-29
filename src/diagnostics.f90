@@ -1406,14 +1406,15 @@ if (ios/=0) print*, 'ios, i=', ios, i
           if (scan(cform(1:1), "eEdD")==1) then
 
             index_i=index(cform,'.')
-            tmp=cform(2:index_i-1)
-            read(tmp,*) iwidth
-            tmp=cform(index_i+1:)
-            read(tmp,*) idecs
-            idiff=iwidth-idecs-7
-            if (idiff<0) &
-              cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
-
+            if (index_i>=3.and.index_i<len(cform)) then
+              tmp=cform(2:index_i-1)
+              read(tmp,*) iwidth
+              tmp=cform(index_i+1:)
+              read(tmp,*) idecs
+              idiff=iwidth-idecs-7
+              if (idiff<0) &
+                cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
+            endif
           endif
 !
 !  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
