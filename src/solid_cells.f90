@@ -84,6 +84,7 @@ module Solid_Cells
   real, allocatable    :: c_dragx_p(:), c_dragy_p(:), c_dragz_p(:)
 !  Dummy variables
   real :: r_ogrid
+  real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
 !
   contains

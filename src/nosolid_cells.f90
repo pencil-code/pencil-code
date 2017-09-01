@@ -23,6 +23,7 @@ module Solid_Cells
   include 'solid_cells.h'
 !
   real :: r_ogrid
+  real :: r_int_outer
   real, dimension(3) :: xorigo_ogrid
 !
   contains
