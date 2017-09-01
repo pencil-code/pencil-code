@@ -2171,7 +2171,7 @@ module Particles_map
 !  16-jul-08/kapelrud: coded
 !
       use Solid_Cells, only: interpolate_linear_ogrid, map_nearest_grid_ogrid, &
-                             r_ogrid, xorigo_ogrid
+                             r_int_outer, xorigo_ogrid
 !
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i1,i2
@@ -2189,7 +2189,10 @@ module Particles_map
       intent(inout) :: vec
 !
       integer :: k
-      r2_ogrid=r_ogrid*r_ogrid
+      ! TODO
+      real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec2
+
+      r2_ogrid=r_int_outer*r_int_outer
 !
       if (npar_imn(imn)/=0) then
         rp2 = (fp(k1_imn(imn):k2_imn(imn),ixp)-xorigo_ogrid(1))**2 &
