@@ -34,6 +34,8 @@ module Solid_Cells
     module procedure get_polar_coords_3D_alt
   endinterface
 !
+!  Force same timestep on all grids
+  logical :: lock_dt=.false.
 !  Cylinder parameters
   logical :: lset_flow_dir=.false.
   real :: cylinder_radius=0.                        ! Set in start.in
@@ -217,6 +219,7 @@ module Solid_Cells
   integer, dimension(:), allocatable :: send_part_data_to
   integer :: n_procs_recv_part_data 
   integer :: n_procs_send_part_data 
+  integer :: ivar1_part,ivar2_part
   !public :: xgrid_ogrid, ygrid_ogrid, zgrid_ogrid, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
   !public :: f_ogrid_procs
   !public :: r_ogrid, xorigo_ogrid
@@ -291,7 +294,7 @@ module Solid_Cells
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, inter_stencil_len, &
-      lexpl_rho, interpolation_method
+      lexpl_rho, interpolation_method, lock_dt
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -439,6 +442,7 @@ module Solid_Cells
       r_int_inner=xyz0_ogrid(1)
       if(lroot) then
         if(.not.lequidist_ogrid(1)) then
+          print*, ''
           print*, 'Non-linear grid in radial direction - dx_rcyl, dx_rogrid:', &
               0.5*(xglobal_ogrid(nghost+1)-xglobal_ogrid(nghost-1)), &
               0.5*(xglobal_ogrid(mxgrid_ogrid-nghost+1)-xglobal_ogrid(mxgrid_ogrid-nghost-1))
@@ -446,6 +450,18 @@ module Solid_Cells
               xyz0_ogrid(1)*(yglobal_ogrid(2)-yglobal_ogrid(1)), &
               r_int_outer*(yglobal_ogrid(2)-yglobal_ogrid(1)), &
               r_ogrid*(yglobal_ogrid(2)-yglobal_ogrid(1))
+          print*, ''
+          print*, 'dtheta/dr_surf', &
+                  xyz0_ogrid(1)*(yglobal_ogrid(2)-yglobal_ogrid(1)) /&
+                  (0.5*(xglobal_ogrid(nghost+1)-xglobal_ogrid(nghost-1)))
+          print*, 'dtheta/dr_rogrid',&
+                  r_ogrid*(yglobal_ogrid(2)-yglobal_ogrid(1)) / &
+                  (0.5*(xglobal_ogrid(mxgrid_ogrid-nghost+1)-xglobal_ogrid(mxgrid_ogrid-nghost-1)) )
+          print*, 'dx/dr_rogrid', dx/ &
+                  (0.5*(xglobal_ogrid(mxgrid_ogrid-nghost+1)-xglobal_ogrid(mxgrid_ogrid-nghost-1)) )
+          print*, 'dx/dtheta_rogrid', dx/ &
+                  (r_ogrid*(yglobal_ogrid(2)-yglobal_ogrid(1))) 
+          print*, ''
           print*, 'Cartesian grid spacing - dx, dy, dz:', dx,dy,dz
           print*, 'Timestep factor:', ceiling(dxmin/dxmin_ogrid)
         else
@@ -544,9 +560,11 @@ module Solid_Cells
 !  If particles are used in the simulation, set up 'local' arrays of f_ogrid variables to use
 !  when computing particle velocities (etc.) for particles inside r_ogrid
 !
-!HEREHERE
-      !TODO: iux,iuz should be replaced by parameters set in start.in
-      if(lparticles) call initialize_particles_ogrid(iux,irho)
+      if(lparticles) then 
+        ivar1_part=iux
+        ivar2_part=irho
+        call initialize_particles_ogrid(ivar1_part,ivar2_part)
+      endif
 
       if(lroot) then
         print*, 'Interpolation zone: r_ogrid, r_int_outer, r_int_inner',r_ogrid,r_int_outer,r_int_inner
@@ -3524,7 +3542,8 @@ module Solid_Cells
 !  Do a reality check on the interpolation scheme.
 !
       if (lcheck) then
-        do i=1,ivar2-ivar1+1
+        i=1
+        !do i=1,ivar2-ivar1+1
           if (fp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
             print*, 'linear_interpolate_curvilinear: interpolated value is LARGER than'
             print*, 'linear_interpolate_curvilinear: a values at the corner points!'
@@ -3549,15 +3568,18 @@ module Solid_Cells
           if (fp(i)/=fp(i)) then
             print*, 'linear_interpolate_curvilinear: interpolated value is NaN'
             print*, 'linear_interpolate_curvilinear: xxp=', xxp
+            print*, 'linear_interpolate_curvilinear: ix0, iy0, iz0=', ix0,iy0,iz0
             print*, 'linear_interpolate_curvilinear: x0, y0, z0=', &
                 xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'linear_interpolate_curvilinear: x0+1, y0+1, z0+1=', &
+                xglobal_ogrid(ix0+1), yglobal_ogrid(iy0+1), zglobal_ogrid(iz0+1)
             print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
             print*, 'linear_interpolate_curvilinear: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
             print*, '------------------'
             linear_interpolate_curvilinear=.false.
           endif
-        enddo
+        !enddo
       endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -4465,9 +4487,13 @@ module Solid_Cells
 !
 !  Time step for ogrid
 !
-    timestep_factor = ceiling(dxmin/dxmin_ogrid)   ! number of timesteps on cylinder grid for one timestep on cartesian grid
-    if(timestep_factor < 1)  then
+    if(lock_dt) then
       timestep_factor = 1
+    else
+      timestep_factor = ceiling(dxmin/dxmin_ogrid)   ! number of timesteps on cylinder grid for one timestep on cartesian grid
+      if(timestep_factor < 1)  then
+        timestep_factor = 1
+      endif
     endif
 !
 !  Uncomment for forced timestep factor = 1
@@ -4529,7 +4555,7 @@ module Solid_Cells
     !TODO: Should use the partifle flow info in the interpolation point
     !      computation above
     !TODO: iux,iuz, should be replaced by parameters set in start.in
-    if(lparticles)  call update_ogrid_flow_info(iux,iuz)
+    if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
 !
 ! !!TODO:Printing
 ! if(ncpus==1 .or. iproc==1) then
@@ -6811,7 +6837,7 @@ module Solid_Cells
             !xxp(3)>=zglobal(ineargrid(3)+1)) then
           print*, 'Information about what went wrong:'
           print*, '----------------------------------'
-          print*, 'ERROR: find nearest grid point, cartesian'
+          print*, 'ERROR: find nearest grid point, curvilinear'
           print*, 'Information about what went wrong:'
           print*, '----------------------------------'
           print*, 'it, itsub, t=', it, itsub, t
@@ -7615,7 +7641,7 @@ module Solid_Cells
       do i=l1,l2
         do j=m1,m2
           rr = radius_ogrid(x(i),y(j))
-          if(rr<r_int_outer .and. rr>cylinder_radius) then
+          if(rr<=r_int_outer .and. rr>=cylinder_radius) then
             do k=n1,n2
               call get_polar_coords(x(i),y(j),z(k),rthz)
               call find_proc_curvilinear(rthz,from_proc)
@@ -7766,15 +7792,13 @@ module Solid_Cells
 !
 !  06-jul-17/Jorgen: Adapted from linear_interpolate_curvilinear in solid_cells_ogrid.f90
 !
-      !use Solid_Cells, only: f_ogrid_procs, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
-!
       integer :: ivar1, ivar2
       real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       integer, dimension (4) :: inear_glob
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
-      real :: xp0, yp0, zp0
+      real :: xp0, yp0, zp0, tmp
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: ix0, iy0, iz0, i 
       integer :: ix0_proc, iy0_proc, iz0_proc, proc, ind_proc
@@ -7782,12 +7806,9 @@ module Solid_Cells
       intent(in)  :: ivar1, ivar2, xxp, inear_glob
       intent(out) :: gp
 !
-!  Determine index value of lowest lying corner point of grid box surrounding
-!  the interpolation point.
-!
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<0) print*, 'ERROR: Pointing to f_array that does not exist'
+      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
 !
 !  Check if the grid point interval is really correct.
 !
@@ -7834,10 +7855,10 @@ module Solid_Cells
       ix0_proc=ix0-nx_ogrid*ip_proc(ind_proc,1)
       iy0_proc=iy0-ny_ogrid*ip_proc(ind_proc,2)
       iz0_proc=iz0-nz_ogrid*ip_proc(ind_proc,3)
-!      print*, ''
-!      print*, 'iproc',iproc
-!      print*, 'Local coods:',ix0_proc,iy0_proc,iz0_proc
-!      print*, 'Global coord:',ix0,iy0,iz0
+      !TODO TODO : REMOVE THIS
+      if(ivar2>irho) then
+        print*, 'ERROR: Variable not existing on f_ogrid requested'
+      endif
 !
 !  Function values at all corners.
 !
@@ -7885,6 +7906,12 @@ module Solid_Cells
             call fatal_error('interpolate_linear_ogrid','particle velocity interpolation error')
           endif
         enddo
+      endif
+      if(ivar1<=iux.and.ivar2>=iuy) then
+        tmp=gp(iux)
+        !g2=gp(iuy)
+        gp(iux)=tmp*cos(xxp(2))-gp(iuy)*sin(xxp(2))
+        gp(iuy)=tmp*sin(xxp(2))+gp(iuy)*cos(xxp(2))
       endif
 !
     endsubroutine interpolate_linear_ogrid
