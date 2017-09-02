@@ -22,7 +22,7 @@ Pen will do all imports and diagnostics on your pencil code data in the best and
 1. Add $PENCIL_HOME/python to your $PYTHONPATH or enshure this is already done by using 'echo $PYTHONPATH' in your bash shell.
 
 2. Start Python (or better ipython) from your simulation main folder (where the data directory is located) and try:
-  import pen
+  import pencil as pen
 
 3. Try to read your time series:
 
