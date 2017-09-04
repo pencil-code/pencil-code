@@ -32,7 +32,6 @@ module Yinyang
 !
 !  20-dec-15/MR: coded
 ! 
-      use Cdata, only: y,z
       use General, only: transform_spher_cart_yy, notanumber
 
       type(ind_coeffs),         intent(IN) :: indcoeffs
@@ -88,13 +87,14 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !  20-dec-15/MR: coded
 ! 
       use General, only: transform_spher_cart_yy, notanumber
+      use Cdata, only: lrun, nx, lyang, iproc
 
       type(ind_coeffs),         intent(IN) :: indcoeffs
       integer,                  intent(IN) :: ith, iph, i2buf, i3buf
       real, dimension(:,:,:,:), intent(IN) :: f
       real, dimension(:,:,:,:), intent(OUT):: buffer
 
-      integer :: indth, indph
+      integer :: indth, indph, indx
       real, dimension(:,:,:,:), allocatable :: tmp
 
       indth=indcoeffs%inds(ith,iph,1)
@@ -122,8 +122,16 @@ if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indth,indph, i2buf,i3buf=', in
                                  +indcoeffs%coeffs(ith,iph,2)*f(:,indth-1,indph  ,1) &
                                  +indcoeffs%coeffs(ith,iph,3)*f(:,indth  ,indph-1,1) &
                                  +indcoeffs%coeffs(ith,iph,4)*f(:,indth  ,indph  ,1)
+
 if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
   ',indth,indph, i2buf,i3buf=', indth,indph,ith,iph,i2buf,i3buf
+
+if (.false..and.lrun.and..not.lyang) then
+  write(iproc+60,*) indth, indph
+  indx=nx/2
+  write(iproc+60,*) buffer(indx,i2buf,i3buf,1), f(indx,indth-1,indph-1,1), f(indx,indth,indph-1,1), &
+                    f(indx,indth-1,indph,1), f(indx,indth,indph,1)
+endif
       endif
 
     endsubroutine bilin_interp
@@ -192,7 +200,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
           w1ph=yy_biquad_weights(3); w2ph=yy_biquad_weights(4)
         else
           w1ph=-qph(3); w2ph=qph(2)
-if (lroot) print*, 'w1ph, w2ph=', w1ph, w2ph
+!if (lroot) print*, 'w1ph, w2ph=', w1ph, w2ph
         endif
         indcoeffs%coeffs2(ip,jp,1:3,1:3)=w1ph*indcoeffs%coeffs2(ip,jp,1:3,1:3)
 
@@ -211,7 +219,7 @@ if (lroot) print*, 'w1ph, w2ph=', w1ph, w2ph
           w1=yy_biquad_weights(1); w2th=yy_biquad_weights(2)
         else
           w1=-qth(3); w2th=qth(2)
-if (lroot) print*, 'w1th, w2th=', w1, w2th
+!if (lroot) print*, 'w1th, w2th=', w1, w2th
         endif
         indcoeffs%coeffs2(ip,jp,1:3,:)=w1*indcoeffs%coeffs2(ip,jp,1:3,:)
        
@@ -286,7 +294,7 @@ if (lroot) print*, 'w1th, w2th=', w1, w2th
 !  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
 !  phprime-extent), arbitrarily positioned in the yz-plane, determine in
 !  which cell of the grid y(ma:me) x z(na:ne) it lies, store indices of the
-!  cells upper right corner in indcoeffs%inds and the weights of bilinear
+!  cell's upper right corner in indcoeffs%inds and the weights of bilinear
 !  interpolation for the four corners in indcoeffs%coeffs. If no cell is found
 !  for a point, indcoeffs%inds and indcoeffs%coeffs are set zero.
 !  If present, return in th_range the interval in thprime-extent in which
@@ -296,8 +304,8 @@ if (lroot) print*, 'w1th, w2th=', w1, w2th
 !
 !  20-dec-15/MR: coded
 !
-      use General, only: find_index_range_hill
-      use Cdata,   only: y, z, lfirst_proc_y, ipy, lfirst_proc_z, ipz, lroot
+      use General, only: find_index_range_hill, notanumber
+      use Cdata,   only: y, z, lfirst_proc_y, ipy, lfirst_proc_z, ipz, lroot, iproc, lyang, lstart
       use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD, BICUB
 
       real, dimension(:,:,:),          intent(IN) :: thphprime
@@ -319,7 +327,7 @@ if (lroot) print*, 'w1th, w2th=', w1, w2th
       elseif (itype==BILIN) then
         allocate(indcoeffs%inds(sz1,sz2,2))
       else
-        if (lroot) print*, 'prep_interp: Only bilinear and biquadratic interpolations implemented'
+        if (lroot) print*, 'prep_interp: Only bilinear, biquadratic and bicubic interpolations implemented'
         stop
       endif
       indcoeffs%inds=0
@@ -417,14 +425,14 @@ if (lroot) print*, 'w1th, w2th=', w1, w2th
               qph2 = dphp/dph; qph1 = 1.-qph2
 
               indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
-!if (iproc_world==0) &
-  !print*, 'iproc_world, coeffs=', iproc_world, indcoeffs%inds(ip,jp,:)
+if (notanumber(indcoeffs%coeffs(ip,jp,:))) print*, 'ip,jp=', ip,jp
+if (abs(sum(indcoeffs%coeffs(ip,jp,:))-1.)>5.e-7) print*, 'coefficient sum /=1: ip,jp,residual=', ip,jp,sum(indcoeffs%coeffs(ip,jp,:))-1. 
             endif
           endif
 
         enddo
       enddo
-
+!
       if (present(th_range)) then
         if (nok>0) then
 ! 
