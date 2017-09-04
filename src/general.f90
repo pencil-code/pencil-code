@@ -4391,16 +4391,16 @@ module General
     subroutine transform_thph_yy( vec, powers, transformed, theta, phi )
 !
 !  Transforms theta and phi components of vector vec defined with the Yang
-!  grid basis
-!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
-!  Without optional parameters theta, phi For use on pencils within mn-loop.
+!  grid basis to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  Without optional parameters theta, phi: for use on pencils within mn-loop.
 !  Note that components of transformed are undefined if corresponding power
 !  in mask powers is 0.
 !  If theta, phi are present, it is for use outside mn-loop or for other
-!  coordinate than y(m), z(n)
+!  coordinates than y(m), z(n).
 !
 ! 30-mar-2016/MR: coded
 ! 28-jun-2016/MR: added optional parameters
+! 28-aug-2017/MR: cared for singularity at pole
 !
       use Cdata, only: costh, sinth, cosph, sinph, m, n
 
@@ -4409,25 +4409,35 @@ module General
       real,    dimension(:,:),intent(OUT):: transformed
       real, optional,         intent(IN) :: theta, phi
 
-      real :: sinth1, a, b, cost, cosp
+      real :: sinth1, a, b, sinp, sisisq
 
       if (any(powers(2:3)/=0)) then
         if (present(theta)) then
-          cosp=cos(phi); cost=cos(theta)
-          sinth1=1./sqrt(cost**2+(sin(theta)*cosp)**2)
-          a=-cosp*sinth1; b=sin(phi)*cost*sinth1
+          sinp=sin(phi)
+          sisisq=sqrt(1.-(sinp*sin(theta))**2)
+          if (sisisq==0.) then                 ! i.e. at pole of other grid -> theta and phi components indefined
+            a=0.; b=0.
+          else
+            sinth1=1./sisisq
+            a=cos(phi)*sinth1; b=sinp*cos(theta)*sinth1
+          endif
         else
-          sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
-          a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+          sisisq=sqrt(1.-(sinth(m)*sinph(n))**2)
+          if (sisisq==0.) then
+            a=0.; b=0.
+          else
+            sinth1=1./sisisq
+            a=cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+          endif
         endif
       endif
 
       if (powers(1)/=0) &
         transformed(:,1) = vec(:,1)
       if (powers(2)/=0) &
-        transformed(:,2) = b*vec(:,2) - a*vec(:,3)
+        transformed(:,2) = b*vec(:,2) + a*vec(:,3)
       if (powers(3)/=0) &
-        transformed(:,3) = a*vec(:,2) + b*vec(:,3)
+        transformed(:,3) =-a*vec(:,2) + b*vec(:,3)
 
     endsubroutine transform_thph_yy
 !***********************************************************************
@@ -4439,6 +4449,7 @@ module General
 !  For use outside mn-loop.
 !
 ! 30-mar-2016/MR: coded
+! 28-aug-2017/MR: cared for singularity at pole
 !
       use Cdata, only: costh, sinth, cosph, sinph
 
@@ -4446,17 +4457,22 @@ module General
       real, dimension(:,:,:,:), intent(OUT):: vec_transformed
 
       integer :: i,j,ig,jg
-      real :: sinth1,a,b
+      real :: sisisq,sinth1,a,b
 
       do i=1,nz
         do j=1,ny
 
           ig=i+nghost; jg=j+nghost
-          sinth1=1./sqrt(costh(jg)**2+(sinth(jg)*cosph(ig))**2)
-          a=-cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
+          sisisq=sqrt(1.-(sinth(jg)*sinph(ig))**2)
+          if (sisisq==0.) then                     ! i.e. at pole of other grid -> theta and phi components indefined
+            a=0.; b=0.
+          else
+            sinth1=1./sisisq
+            a=cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
+          endif
 
-          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) - a*vec(:,j,i,2)
-          vec_transformed(:,j,i,2) = a*vec(:,j,i,1) + b*vec(:,j,i,2)
+          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) + a*vec(:,j,i,2)
+          vec_transformed(:,j,i,2) =-a*vec(:,j,i,1) + b*vec(:,j,i,2)
 
         enddo
       enddo
