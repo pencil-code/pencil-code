@@ -6,13 +6,20 @@
       result=arr
 
       for i=0,n_elements(z)-1 do begin
+
+        sinp=sin(z(i))
         for j=0,n_elements(y)-1 do begin
 
-          sinth1=1./sqrt(cos(y(j))^2+sin(y(j))^2*cos(z(i))^2)
-          a=-cos(z(i))*sinth1 & b=sin(z(i))*cos(y(j))*sinth1
+          sisisq=sqrt(1.-(sin(y(j))*sinp)^2)
+          if sisisq  eq 0. then begin             ; i.e. at pole of other grid -> theta and phi components indefined
+            a=0. & b=0.
+          endif else begin
+            sinth1=1./sisisq
+            a=cos(z(i))*sinth1 & b=sinp*cos(y(j))*sinth1
+          endelse
 
-          result[*,j,i,1] = b*arr[*,j,i,1] - a*arr[*,j,i,2]
-          result[*,j,i,2] = a*arr[*,j,i,1] + b*arr[*,j,i,2]
+          result[*,j,i,1] = b*arr[*,j,i,1] + a*arr[*,j,i,2]
+          result[*,j,i,2] =-a*arr[*,j,i,1] + b*arr[*,j,i,2]
 
         endfor
       endfor
