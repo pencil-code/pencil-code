@@ -68,6 +68,10 @@ module Mpicomm
     module procedure mpirecv_real_arr5
   endinterface
 !
+  interface mpirecv_cmplx
+    module procedure mpirecv_cmplx_arr3
+  endinterface
+!
   interface mpirecv_int
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
@@ -85,6 +89,10 @@ module Mpicomm
     module procedure mpisend_real_arr2
     module procedure mpisend_real_arr3
     module procedure mpisend_real_arr4
+  endinterface
+!
+  interface mpisend_cmplx
+    module procedure mpisend_cmplx_arr3
   endinterface
 !
   interface mpisendrecv_real
@@ -955,6 +963,8 @@ module Mpicomm
 
       integer :: len, len_neigh, lenbuf
       integer :: nok, noks, noks_all, nstrip_total
+      logical :: stop_flag
+      character(LEN=linelen) :: msg
 !
       if (cyinyang_intpol_type=='bilinear') then
         iyinyang_intpol_type=BILIN
@@ -1319,12 +1329,16 @@ module Mpicomm
 !  along boundary of each grid (nstrip_total).
 !
       call mpireduce_sum_int(noks, noks_all)
+      stop_flag=.false.; msg=''
       if (iproc==root) then
         nstrip_total=2*(nprocz*mz + (nprocy-2)*my + 2*(my-nghost))*nghost
-        if (noks_all<nstrip_total) &
-          print*, 'setup_interp_yy -- WARNING: ',cyinyang//' grid: number of caught points '// &
-                       trim(itoa(noks_all))//' smaller than goal ', trim(itoa(nstrip_total))
+        if (noks_all<nstrip_total) then
+          msg='setup_interp_yy: '//cyinyang//' grid: number of caught points '// &
+               trim(itoa(noks_all))//' smaller than goal '// trim(itoa(nstrip_total))
+          stop_flag=.true.
+        endif
       endif
+      call stop_it_if_any(stop_flag,msg)
 !call  mpifinalize
 !stop
     endsubroutine setup_interp_yy
@@ -1351,6 +1365,7 @@ module Mpicomm
       integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
+
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
       if (ivar2==0) return
@@ -1396,6 +1411,7 @@ module Mpicomm
 !  Interpolate variables ivar1 ... ivar2 for lower y neighbor in other grid.
 !  Result in lbufyo.
 !
+
           call interpolate_yy(f,ivar1,ivar2,lbufyo,MIDZ,iyinyang_intpol_type) !
 if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 !print*, 'lbufyo:', iproc_world, minval(sum(lbufyo(:,:,:,1:3)**2,4)), maxval(sum(lbufyo(:,:,:,1:3)**2,4))
@@ -2694,6 +2710,35 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
+    subroutine mpirecv_cmplx_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
+!
+!  Receive complex array(:,:,:) from other processor.
+!
+!  20-may-06/anders: adapted
+!
+      use General, only: ioptest
+
+      integer, dimension(3) :: nbcast_array
+      complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+      integer :: proc_src, tag_id, num_elements
+      integer, optional :: comm,nonblock
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, num_elements, MPI_COMPLEX, proc_src, &
+                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else
+        call MPI_RECV(bcast_array, num_elements, MPI_COMPLEX, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
+!
+    endsubroutine mpirecv_cmplx_arr3
+!***********************************************************************
     subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id)
 !
 !  Receive real array(:,:,:,:) from other processor.
@@ -2906,6 +2951,32 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       endif
 !
     endsubroutine mpisend_real_arr3
+!***********************************************************************
+    subroutine mpisend_cmplx_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
+!
+!  Send real array(:,:,:) to other processor.
+!
+!  20-may-06/anders: adapted
+!
+      use General, only: ioptest
+
+      integer, dimension(3) :: nbcast_array
+      complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+      integer :: proc_rec, tag_id, num_elements
+      integer, optional :: comm,nonblock
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      if (present(nonblock)) then
+        call MPI_ISEND(bcast_array, num_elements, MPI_COMPLEX, proc_rec, &
+                       tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
+      else
+        call MPI_SEND(bcast_array, num_elements, MPI_COMPLEX, proc_rec, &
+                      tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
+      endif
+!
+    endsubroutine mpisend_cmplx_arr3
 !***********************************************************************
     subroutine mpisend_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id)
 !
@@ -4461,7 +4532,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !***********************************************************************
     subroutine die_gracefully
 !
-!  Stop having shutdown MPI neatly
+!  Stop having shutdown MPI neatly.
 !  With at least some MPI implementations, this only stops if all
 !  processors agree to call die_gracefully.
 !
@@ -4485,7 +4556,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !***********************************************************************
     subroutine die_immediately
 !
-!  Stop without shuting down MPI
+!  Stop without shutting down MPI.
 !  For those MPI implementations, which only finalize when all
 !  processors agree to finalize.
 !
