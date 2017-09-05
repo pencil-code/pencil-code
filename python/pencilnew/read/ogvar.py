@@ -131,6 +131,7 @@ class DataCube(object):
         from pencilnew.math.derivatives import curl, curl2
         from pencilnew import read
         from ..sim import __Simulation__
+        from pencilnew.math.transform import pospolar2cart, velpolar2cart
 
         ogdim = None; param = None; index = None
 
@@ -382,6 +383,19 @@ class DataCube(object):
         self.magic = magic
         if self.magic is not None:
             self.magic_attributes(param)
+
+        if transform: 
+            if trim_all:
+                zcoord=0
+            else:
+                zcoord=3
+
+            self.r = self.x
+            self.th = self.y
+            self.x, self.y = pospolar2cart(self.r,self.th)
+            self.ur = self.ux
+            self.uth = self.uy
+            self.ux, self.uy = velpolar2cart(self.ur,self.uth,self.r,self.th,zcoord)
 
 
     def __natural_sort(self, procs_list):
