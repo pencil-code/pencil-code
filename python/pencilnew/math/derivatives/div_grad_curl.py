@@ -1,3 +1,4 @@
+
 # div_grad_curl.py
 #
 # Contains the vector calculus derivatives.
@@ -40,7 +41,7 @@ def grad(f, dx, dy, dz):
     return grad_value
 
 
-def curl(f, dx, dy, dz, run2D=False):
+def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesian'):
     """
     Take the curl of a pencil code vector array.
     The run2D parameter deals with pure 2-D snapshots (solved the (x,z)-plane pb).
@@ -55,10 +56,15 @@ def curl(f, dx, dy, dz, run2D=False):
 
     curl_value = np.empty_like(f)
     if (dy != 0. and dz != 0.):
-        # 3-D case
-        curl_value[0, ...] = yder(f[2, ...], dy) - zder(f[1, ...], dz)
-        curl_value[1, ...] = zder(f[0, ...], dz) - xder(f[2, ...], dx)
-        curl_value[2, ...] = xder(f[1, ...], dx) - yder(f[0, ...], dy)
+        # 3-D case	
+        if coordinate_system == 'cartesian':
+            curl_value[0, ...] = yder(f[2, ...], dy) - zder(f[1, ...], dz)
+            curl_value[1, ...] = zder(f[0, ...], dz) - xder(f[2, ...], dx)
+            curl_value[2, ...] = xder(f[1, ...], dx) - yder(f[0, ...], dy)
+        if coordinate_system == 'cylindrical':
+            curl_value[0, ...] = (1/x)*yder(f[2, ...], dy) - zder(f[1, ...], dz)
+            curl_value[1, ...] = zder(f[0, ...], dz) - xder(f[2, ...], dx)
+            curl_value[2, ...] = (1/x)*xder(x*f[1, ...], dx) - (1/x)*yder(f[0, ...], dy)
     elif (dy == 0.):
         # 2-D case in the xz-plane
         curl_value[0, ...] = zder(f, dz, run2D)[0, ...] - xder(f, dx)[2, ...]
@@ -90,7 +96,7 @@ def curl2(f, dx, dy, dz):
     curl2_value[2, ...] = zder(xder(f[0, ...], dx) + yder(f[1, ...], dy), dz) \
                           -xder2(f[2, ...], dx) - yder2(f[2, ...], dy)
 
-    return curl2_value
+    return curl2
 
 
 def del2(f, dx, dy, dz):
