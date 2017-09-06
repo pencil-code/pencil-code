@@ -231,7 +231,8 @@ module Solid_Cells
   real, dimension (my_ogrid) :: y_ogrid,dy_1_ogrid,dy2_ogrid,dy_tilde_ogrid,yprim_ogrid
   real, dimension (mz_ogrid) :: z_ogrid,dz_1_ogrid,dz2_ogrid,dz_tilde_ogrid,zprim_ogrid
 !  Grid properties computed in grid routines and used in external routines
-  real :: dxmin_ogrid,dxmax_ogrid
+  integer :: timestep_factor
+  real :: dxmin_ogrid,dxmax_ogrid,drmax_ogrid
   logical, dimension(3) :: lequidist_ogrid
   real, dimension (nx_ogrid) :: rcyl_mn_ogrid,rcyl_mn1_ogrid,rcyl_mn2_ogrid,rcyl_weight_ogrid
 !  Grid properties computed in grid routines and used other grid routines by call from external routines
@@ -435,10 +436,21 @@ module Solid_Cells
 !  Initialize overlapping grid
 !
       call initialize_grid_ogrid
-! 
+!
+!  Factor difference between timestep on background grid and overset grid 
+!
+    if(lock_dt) then
+      timestep_factor = 1
+    else
+      timestep_factor = ceiling(dxmin/dxmin_ogrid) +1
+      if(timestep_factor < 1)  then
+        timestep_factor = 1
+      endif
+    endif
+!
 !  Set interpolation zone for curvilinear to cartesian
 !
-      r_int_outer=r_ogrid-inter_stencil_len*dxmax_ogrid*sqrt(2.)
+      r_int_outer=r_ogrid-inter_stencil_len*drmax_ogrid*sqrt(2.)
       r_int_inner=xyz0_ogrid(1)
       if(lroot) then
         if(.not.lequidist_ogrid(1)) then
@@ -463,7 +475,6 @@ module Solid_Cells
                   (r_ogrid*(yglobal_ogrid(2)-yglobal_ogrid(1))) 
           print*, ''
           print*, 'Cartesian grid spacing - dx, dy, dz:', dx,dy,dz
-          print*, 'Timestep factor:', ceiling(dxmin/dxmin_ogrid)
         else
           print*, 'Radial grid spacing - dx_ogrid:', &
               0.5*(xglobal_ogrid(nghost+1)-xglobal_ogrid(nghost-1))
@@ -472,8 +483,8 @@ module Solid_Cells
               r_int_outer*(yglobal_ogrid(2)-yglobal_ogrid(1)), &
               r_ogrid*(yglobal_ogrid(2)-yglobal_ogrid(1))
           print*, 'Cartesian grid spacing - dx, dy, dz:', dx,dy,dz
-          print*, 'Timestep factor:', ceiling(dxmin/dxmin_ogrid)
         endif
+        print*, 'Timestep factor:', timestep_factor
         if(.not.lequidist_ogrid(2)) then
           call fatal_error('initialize_solid_cells','non-linear grid in theta direction not allowed')
         endif
@@ -568,7 +579,6 @@ module Solid_Cells
 
       if(lroot) then
         print*, 'Interpolation zone: r_ogrid, r_int_outer, r_int_inner',r_ogrid,r_int_outer,r_int_inner
-        print*, 'Timestep factor',  max(1,ceiling(dxmin/dxmin_ogrid))
       endif
 ! Check interpolation method
       if(lroot) then
@@ -3945,7 +3955,7 @@ module Solid_Cells
 !
     use Mpicomm, only: mpiallreduce_min,mpiallreduce_max,mpibcast_real,mpirecv_real,mpisend_real
 !
-    real :: dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
+    real :: dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z, dxmax_r
     real :: Area_xy_ogrid, Area_yz_ogrid, Area_xz_ogrid
 !
 ! CALL TO COORDS_AUX REMOVED, ONLY CYLINDRICAL NEEDED
@@ -3969,12 +3979,12 @@ module Solid_Cells
       dxmax_x = maxval(xprim_ogrid(l1_ogrid:l2_ogrid))
     endif
 !
-    if (lequidist_ogrid(2) .or. nxgrid_ogrid <= 1) then
-      dxmin_y = dy_ogrid
-      dxmax_y = dy_ogrid
-    else
+    if (lequidist_ogrid(2) .or. nygrid_ogrid <= 1) then
       dxmin_y = dy_ogrid*minval(x_ogrid(l1_ogrid:l2_ogrid))
       dxmax_y = dy_ogrid*maxval(x_ogrid(l1_ogrid:l2_ogrid))
+    else
+      dxmin_y = minval(yprim_ogrid(m1_ogrid:m2_ogrid))
+      dxmax_y = maxval(yprim_ogrid(m1_ogrid:m2_ogrid))
     endif
 !
     if (lequidist_ogrid(3) .or. nzgrid_ogrid <= 1) then
@@ -3999,10 +4009,16 @@ module Solid_Cells
     if (dxmin_ogrid == 0) &
       call fatal_error ("initialize_grid", "check Lx_og,Ly_og,Lz_og: is one of them 0?", .true.)
 !
+!  Maximum radial grid spacing needed for interpolation region
+!
+    drmax_ogrid=dxmax_x
+    call mpiallreduce_max(drmax_ogrid,dxmax_r)
+    drmax_ogrid=dxmax_r
+!
     dxmax_ogrid = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx_ogrid)/), &
               MASK=((/nxgrid_ogrid, nygrid_ogrid, nzgrid_ogrid, 2/) > 1) )
-
-    call mpiallreduce_max(dxmax,dxmax_x)
+!
+    call mpiallreduce_max(dxmax_ogrid,dxmax_x)
     dxmax_ogrid=dxmax_x
 !
 ! Box volume, cylinder symmetrical
@@ -4456,7 +4472,7 @@ module Solid_Cells
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
     real :: ds, dtsub_ogrid, dt_ogrid
-    integer :: timestep_factor, tstep_ogrid
+    integer :: tstep_ogrid
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 !
@@ -4481,25 +4497,8 @@ module Solid_Cells
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
-!TODO TODO
     call communicate_ip_cart_to_curv(f_cartesian,1,mvar)
     !call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
-!
-!  Time step for ogrid
-!
-    if(lock_dt) then
-      timestep_factor = 1
-    else
-      timestep_factor = ceiling(dxmin/dxmin_ogrid)   ! number of timesteps on cylinder grid for one timestep on cartesian grid
-      if(timestep_factor < 1)  then
-        timestep_factor = 1
-      endif
-    endif
-!
-!  Uncomment for forced timestep factor = 1
-!  Should be used with care, typically when dt is set in run.in
-!
-    !timestep_factor=1
 !
     dt_ogrid = dt/timestep_factor
     dt_beta_ts_ogrid=dt_ogrid*beta_ts_ogrid
