@@ -1334,7 +1334,8 @@ module Mpicomm
         nstrip_total=2*(nprocz*mz + (nprocy-2)*my + 2*(my-nghost))*nghost
         if (noks_all<nstrip_total) then
           msg='setup_interp_yy: '//cyinyang//' grid: number of caught points '// &
-               trim(itoa(noks_all))//' smaller than goal '// trim(itoa(nstrip_total))
+               trim(itoa(noks_all))//' smaller than goal '// trim(itoa(nstrip_total)) &
+               //'. Reduce dang in start.f90'
           stop_flag=.true.
         endif
       endif

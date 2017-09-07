@@ -206,7 +206,7 @@ program start
           Lxyz(i)=2*pi*real(nzgrid)/real(nxgrid)
           xyz0(i)=-pi*real(nzgrid)/real(nxgrid)
 !
-!  FG: force theta coordinate to spam 0:pi for periodic across pole 
+!  FG: force theta coordinate to span 0:pi for periodic across pole 
 !
         elseif (lpole(i)) then
           if (lperi(i)) call fatal_error('start',&
@@ -258,7 +258,7 @@ program start
 !
 ! Min(dy,dz) put between Yin and Yang grid at closest distance to minimize overlap.
 !
-    dang=.999*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+    dang=.995*min(1./(nygrid-1),3./(nzgrid-1))*0.5*pi      ! only valid for equidistant grid!!
     xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
     Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
