@@ -48,6 +48,9 @@ module Solid_Cells
   real :: T0 ! Inlet temperature
   integer :: ncylinders=1,flow_dir=0, flow_dir_set
   real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
+!  Shift periodic grid, useful for accuracy assessment
+  logical, dimension(3) :: lshift_origin_ogrid=.false. ! Set in start.in
+  logical, dimension(3) :: lshift_origin_lower_ogrid=.false.   ! Set in start.in
 !  Boundary condition
   logical :: SBP=.true.
   logical :: lexpl_rho=.true.         ! Set in start.in
@@ -295,7 +298,8 @@ module Solid_Cells
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, inter_stencil_len, &
-      lexpl_rho, interpolation_method, lock_dt
+      lexpl_rho, interpolation_method, lock_dt, &
+      lshift_origin_ogrid,lshift_origin_lower_ogrid
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -2190,6 +2194,7 @@ module Solid_Cells
       endif
     elseif(interpolation_method==2) then
       inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
+      call adjust_inear_cart(inear_loc,xyz_ip)
       farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-1:inear_loc(1)+1, &
           inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
       call interpolate_quadratic_spline(farr_large,ivar1,ivar2,xyz_ip,f_ip,inear_loc)
@@ -2223,14 +2228,15 @@ module Solid_Cells
     real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
 !
     xyz_ip=curvilinear_to_cartesian(id)%xyz
-    inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
 !
     if(interpolation_method==1) then
+      inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
     elseif(interpolation_method==2) then
       inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+      call adjust_inear_curv(inear_loc,xyz_ip)
       farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-1:inear_loc(1)+1, &
            inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
       call interpolate_quadratic_sp_og(farr_large,ivar1,ivar2,xyz_ip,f_ip,inear_loc)
@@ -2926,98 +2932,8 @@ module Solid_Cells
         fp(ivar1:ivar2)=fp(ivar1:ivar2)+g_interp(i,ivar1:ivar2)*lagrange(i)
       enddo
 
-!!       dx01=1/(xglobal_ogrid(ix0-1)-xglobal_ogrid(ix0))
-!!       dx02=1/(xglobal_ogrid(ix0-1)-xglobal_ogrid(ix0+1))
-!!       dx03=1/(xglobal_ogrid(ix0-1)-xglobal_ogrid(ix0+2))
-!!       dx10=-dx01
-!!       dx12=1/(xglobal_ogrid(ix0)-xglobal_ogrid(ix0+1))
-!!       dx13=1/(xglobal_ogrid(ix0)-xglobal_ogrid(ix0+2))
-!!       dx20=-dx02
-!!       dx21=-dx12
-!!       dx23=1/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0+2))
-!!       dx30=-dx03
-!!       dx31=-dx12
-!!       dx32=-dx23
-!! !
-!!       xp=xxp(1)
-!! !
-        
-!!       l0=(xp-xglobal_ogrid(ix0  ))*dx01*(xp-xglobal_ogrid(ix0+1))*dx02!*(xp-xglobal_ogrid(ix0+2))*dx03 
-!!       l1=(xp-xglobal_ogrid(ix0-1))*dx10*(xp-xglobal_ogrid(ix0+1))*dx12!*(xp-xglobal_ogrid(ix0+2))*dx03 
-!!       l2=(xp-xglobal_ogrid(ix0-1))*dx20*(xp-xglobal_ogrid(ix0  ))*dx21!*(xp-xglobal_ogrid(ix0+2))*dx23 
-!!       l3=(xp-xglobal_ogrid(ix0-1))*dx30*(xp-xglobal_ogrid(ix0  ))*dx31*(xp-xglobal_ogrid(ix0+1))*dx32 
-!! !
-!! !  Compute interpolation in x-direction (radial direction)
-!! !
-!!       g0=farr(1,1,1,ivar1:ivar2)*l0+farr(2,1,1,ivar1:ivar2)*l1+farr(3,1,1,ivar1:ivar2)*l2!+farr(4,1,1,ivar1:ivar2)*l3
-!!       g1=farr(1,2,1,ivar1:ivar2)*l0+farr(2,2,1,ivar1:ivar2)*l1+farr(3,2,1,ivar1:ivar2)*l2!+farr(4,2,1,ivar1:ivar2)*l3
-!!       g2=farr(1,3,1,ivar1:ivar2)*l0+farr(2,3,1,ivar1:ivar2)*l1+farr(3,3,1,ivar1:ivar2)*l2!+farr(4,3,1,ivar1:ivar2)*l3
-!!       g3=farr(1,4,1,ivar1:ivar2)*l0+farr(2,4,1,ivar1:ivar2)*l1+farr(3,4,1,ivar1:ivar2)*l2+farr(4,4,1,ivar1:ivar2)*l3
-!! !
-!! !  Set up 1D Lagrange basis polynomials in y-direction
-!! ! 
-!!       dy01=1/(yglobal_ogrid(iy0-1)-yglobal_ogrid(iy0))
-!!       dy02=1/(yglobal_ogrid(iy0-1)-yglobal_ogrid(iy0+1))
-!!       dy03=1/(yglobal_ogrid(iy0-1)-yglobal_ogrid(iy0+2))
-!!       dy10=-dy01
-!!       dy12=1/(yglobal_ogrid(iy0)-yglobal_ogrid(iy0+1))
-!!       dy13=1/(yglobal_ogrid(iy0)-yglobal_ogrid(iy0+2))
-!!       dy20=-dy02
-!!       dy21=-dy12
-!!       dy23=1/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0+2))
-!!       dy30=-dy03
-!!       dy31=-dy12
-!!       dy32=-dy23
-!! !
-!!       yp=xxp(2)
-!! !
-!!       l4=(yp-yglobal_ogrid(iy0  ))*dy01*(yp-yglobal_ogrid(iy0+1))*dy02!*(yp-yglobal_ogrid(iy0+2))*dy03 
-!!       l5=(yp-yglobal_ogrid(iy0-1))*dy10*(yp-yglobal_ogrid(iy0+1))*dy12!*(yp-yglobal_ogrid(iy0+2))*dy03 
-!!       l6=(yp-yglobal_ogrid(iy0-1))*dy20*(yp-yglobal_ogrid(iy0  ))*dy21!*(yp-yglobal_ogrid(iy0+2))*dy23 
-!!       l7=(yp-yglobal_ogrid(iy0-1))*dy30*(yp-yglobal_ogrid(iy0  ))*dy31*(yp-yglobal_ogrid(iy0+1))*dy32 
-!! !
-!! !  Compute interpolation in y-direction (radial direction)
-!! !
-!!       fp=g0*l4+g1*l5+g2*l6!+g3*l7
-!! !
-!! !  Do a reality check on the interpolation scheme.
-!
       if (lcheck) then
         do i=1,ivar2-ivar1+1
-          !if (fp(i)>maxval(farr(:,:,1,i)).and.i/=3) then
-            !print*, 'linear_interpolate_curvilinear: interpolated value is LARGER than'
-            !print*, 'linear_interpolate_curvilinear: a values at the corner points!'
-            !print*, 'linear_interpolate_curvilinear: xp, yp =',xxp(1:2)
-            !print*, 'linear_interpolate_curvilinear: x0, y0 =', &
-            !    xglobal_ogrid(ix0), yglobal_ogrid(iy0)
-            !print*, 'linear_interpolate_curvilinear: x0+1, y0+1=', &
-            !    xglobal_ogrid(ix0+1), yglobal_ogrid(iy0+1)
-            !print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,1)=', farr(1:order,1,1,i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,2)=', farr(1:order,2,1,i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,3)=', farr(1:order,3,1,i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,4)=', farr(1:order,4,1,i)
-            !print*, 'linear_interpolate_curvilinear: g0,g1,g2,g3=', g0(i),g1(i),g2(i),g3(i)
-            !print*, 'linear_interpolate_curvilinear: l0,l1,l2,l3=', l0,l1,l2,l3
-            !print*, '------------------'
-          !endif
-          !if (fp(i)<minval(farr(:,:,1,i)).and.i/=3) then
-            !print*, 'linear_interpolate_curvilinear: interpolated value is smaller than'
-            !print*, 'linear_interpolate_curvilinear: a values at the corner points!'
-            !print*, 'linear_interpolate_curvilinear: xp, yp =',xxp(1:2)
-            !print*, 'linear_interpolate_curvilinear: x0, y0 =', &
-            !    xglobal_ogrid(ix0), yglobal_ogrid(iy0)
-            !print*, 'linear_interpolate_curvilinear: x0+1, y0+1=', &
-            !    xglobal_ogrid(ix0+1), yglobal_ogrid(iy0+1)
-            !print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,1)=', farr(1:order,1,1,i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,2)=', farr(1:order,2,1,i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,3)=', farr(1:order,3,1,i)
-            !print*, 'linear_interpolate_curvilinear: farr(1:order,4)=', farr(1:order,4,1,i)
-            !print*, 'linear_interpolate_curvilinear: g0,g1,g2,g3=', g0(i),g1(i),g2(i),g3(i)
-            !print*, 'linear_interpolate_curvilinear: l0,l1,l2,l3=', l0,l1,l2,l3
-            !print*, '------------------'
-          !endif
           if (fp(i)>maxval(farr(:,:,1,i)).and.i/=3) then 
            l1=(xp-xglobal_ogrid(ix0+1))/(xglobal_ogrid(ix0)-xglobal_ogrid(ix0+1))
            l2=(xp-xglobal_ogrid(ix0  ))/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
@@ -3177,36 +3093,6 @@ module Solid_Cells
 !
       if (lcheck) then
         do i=1,ivar2-ivar1+1
-          !if (fp(i)>maxval(farr(:,:,1,i)).and.i/=3) then
-          !  print*, 'linear_interpolate_cart_HO: interpolated value is LARGER than'
-          !  print*, 'linear_interpolate_cart_HO: a values at the corner points!'
-          !  print*, 'linear_interpolate_cart_HO: xp, yp =',xxp(1:2)
-          !  print*, 'linear_interpolate_cart_HO: x0, y0 =', &
-          !      xglobal(ix0), yglobal(iy0)
-          !  print*, 'linear_interpolate_cart_HO: x0+1, y0+1=', &
-          !      xglobal(ix0+1), yglobal(iy0+1)
-          !  print*, 'linear_interpolate_cart_HO: i, fp(i)=', i, fp(i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,1)=', farr(1:order,1,1,i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,2)=', farr(1:order,2,1,i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,3)=', farr(1:order,3,1,i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,4)=', farr(1:order,4,1,i)
-          !  print*, '------------------'
-          !endif
-          !if (fp(i)<minval(farr(:,:,1,i)).and.i/=3) then
-          !  print*, 'linear_interpolate_cart_HO: interpolated value is smaller than'
-          !  print*, 'linear_interpolate_cart_HO: a values at the corner points!'
-          !  print*, 'linear_interpolate_cart_HO: xp, yp =',xxp(1:2)
-          !  print*, 'linear_interpolate_cart_HO: x0, y0 =', &
-          !      xglobal(ix0), yglobal(iy0)
-          !  print*, 'linear_interpolate_cart_HO: x0+1, y0+1=', &
-          !      xglobal(ix0+1), yglobal(iy0+1)
-          !  print*, 'linear_interpolate_cart_HO: i, fp(i)=', i, fp(i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,1)=', farr(1:order,1,1,i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,2)=', farr(1:order,2,1,i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,3)=', farr(1:order,3,1,i)
-          !  print*, 'linear_interpolate_cart_HO: farr(1:order,4)=', farr(1:order,4,1,i)
-          !  print*, '------------------'
-          !endif
           if (fp(i)>maxval(farr(:,:,1,i)).and.i/=3) then 
            l1=(xp-xglobal(ix0+1))/(xglobal(ix0)-xglobal(ix0+1))
            l2=(xp-xglobal(ix0  ))/(xglobal(ix0+1)-xglobal(ix0))
@@ -3706,6 +3592,7 @@ module Solid_Cells
 
     real :: Lx_og,Ly_og,Lz_og
     real :: x00,y00,z00
+    real :: x0,y0,z0
     real :: xi1lo,xi1up,g1lo,g1up
     real :: xi2lo,xi2up,g2lo,g2up
     real :: xi3lo,xi3up,g3lo,g3up
@@ -3726,25 +3613,35 @@ module Solid_Cells
 !
 !  Abbreviations
 !
+    x0 = xyz0_ogrid(1)
+    y0 = xyz0_ogrid(2)
+    z0 = xyz0_ogrid(3)
     Lx_og = Lxyz_ogrid(1)
     Ly_og = Lxyz_ogrid(2)
     Lz_og = Lxyz_ogrid(3)
 !
 !  Set the lower boundary and the grid size.
 !
-    x00 = xyz0_ogrid(1)
-    y00 = xyz0_ogrid(2)
-    z00 = xyz0_ogrid(3)
+    x00 = x0
+    y00 = y0
+    z00 = z0
 !
     dx_ogrid = Lx_og / merge(nxgrid_ogrid, max(nxgrid_ogrid-1,1), .false.)
     dy_ogrid = Ly_og / merge(nygrid_ogrid, max(nygrid_ogrid-1,1), .true.)
     dz_ogrid = Lz_og / merge(nzgrid_ogrid, max(nzgrid_ogrid-1,1), lperi(3))
 !
-!  REMOVED OPTION
 !  Shift the lower boundary if requested, but only for periodic directions.
+!
+      if (lshift_origin_ogrid(1)) x00 = x0 + 0.5 * dx_ogrid
+      if (lshift_origin_ogrid(2)) y00 = y0 + 0.5 * dy_ogrid
+      if (lshift_origin_ogrid(3)) z00 = z0 + 0.5 * dz_ogrid
+!
 !  Shift the lower boundary if requested, but only for periodic directions.
 !  Contrary to the upper case (lshift_origin)
-!  REMOVED OPTION
+!
+      if (lshift_origin_lower_ogrid(1)) x00 = x0 - 0.5 * dx_ogrid
+      if (lshift_origin_lower_ogrid(2)) y00 = y0 - 0.5 * dy_ogrid
+      if (lshift_origin_lower_ogrid(3)) z00 = z0 - 0.5 * dz_ogrid
 !
 !  Produce index arrays xi1, xi2, and xi3:
 !    xi = 0, 1, 2, ..., N-1 for non-periodic grid
@@ -4553,18 +4450,8 @@ module Solid_Cells
     !call flow_curvilinear_to_cartesian(f_cartesian)
     !TODO: Should use the partifle flow info in the interpolation point
     !      computation above
-    !TODO: iux,iuz, should be replaced by parameters set in start.in
     if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
 !
-! !!TODO:Printing
-! if(ncpus==1 .or. iproc==1) then
-!     iterator = iterator+1
-!   if(mod(iterator,25)==0) then
-!     call print_ogrid(int(iterator/25))
-!     call print_cgrid(int(iterator/25),f_cartesian)
-!   endif
-! endif
-
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
 !
   endsubroutine time_step_ogrid
@@ -6721,26 +6608,67 @@ module Solid_Cells
 !
 !  If requested, check if the correct grid points are found
 !
+      !if(lcheck) then
+      !  if ((xglobal(ineargrid(1))-xxp(1)  )>1.e-14 .or. &
+      !      (xxp(1)-xglobal(ineargrid(1)+1))>1.e-14 .or. &
+      !      (yglobal(ineargrid(2))-xxp(2)  )>1.e-14 .or. & 
+      !      (xxp(2)-yglobal(ineargrid(2)+1))>1.e-14 .or. & 
+      !      (zglobal(ineargrid(3))-xxp(3)  )>1.e-14 .or. & 
+      !      (xxp(3)-zglobal(ineargrid(3)+1))>1.e-14) then
       if(lcheck) then
-        if (xxp(1)<=xglobal(ineargrid(1)).or. &
-            xxp(1)>=xglobal(ineargrid(1)+1).or. &
-            xxp(2)<=yglobal(ineargrid(2)).or. & 
-            xxp(2)>=yglobal(ineargrid(2)+1)) then!.or. & 
-            !xxp(3)<=zglobal(ineargrid(3)).or. & 
-            !xxp(3)>=zglobal(ineargrid(3)+1)) then
-          print*, 'Information about what went wrong:'
-          print*, '----------------------------------'
-          print*, 'ERROR: find nearest grid point, cartesian'
-          print*, 'Information about what went wrong:'
-          print*, '----------------------------------'
-          print*, 'it, itsub, t=', it, itsub, t
-          print*, 'iproc  =', iproc
-          print*, 'xxp    =', xxp
-          print*, 'ineargrid   =', ineargrid(:)
-          print*, 'xglobal(ix0),xglobal(ix0+1)',xglobal(ineargrid(1)),xglobal(ineargrid(1)+1)
-          print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal(ineargrid(2)),yglobal(ineargrid(2)+1)
-          print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal(ineargrid(3)),zglobal(ineargrid(3)+1)
-          call fatal_error_local('find_near_grid_point_cartesian','')
+        if ((xglobal(ineargrid(1))-xxp(1)  )>0. .or. &
+            (xxp(1)-xglobal(ineargrid(1)+1))>0. .or. &
+            (yglobal(ineargrid(2))-xxp(2)  )>0. .or. &
+            (xxp(2)-yglobal(ineargrid(2)+1))>0. .or. &
+            (zglobal(ineargrid(3))-xxp(3)  )>0. .or. &
+            (xxp(3)-zglobal(ineargrid(3)+1))>0.) then 
+!
+!  Try adjusting. Might be needed if there is a very close overlap between grid points
+!
+          if ((xglobal(ineargrid(1))-xxp(1)  )>0. .and. & 
+              (xglobal(ineargrid(1))-xxp(1)  )<1.e-12) then
+            ineargrid(1) = ineargrid(1) - 1
+          elseif ((xxp(1)-xglobal(ineargrid(1)+1))>0. .and. &
+              (xxp(1)-xglobal(ineargrid(1)+1))<1.e-12) then
+            ineargrid(1) = ineargrid(1) + 1
+          endif
+          if ((yglobal(ineargrid(2))-xxp(2)  )>0. .and. & 
+              (yglobal(ineargrid(2))-xxp(2)  )<1.e-12) then
+            ineargrid(2) = ineargrid(2) - 1
+          elseif ((xxp(2)-yglobal(ineargrid(2)+1))>0. .and. &
+              (xxp(2)-yglobal(ineargrid(2)+1))<1.e-12) then
+            ineargrid(2) = ineargrid(2) + 1
+          endif
+          if ((zglobal(ineargrid(3))-xxp(3)  )>0. .and. & 
+              (zglobal(ineargrid(3))-xxp(3)  )<1.e-12) then
+            ineargrid(3) = ineargrid(3) - 1
+          elseif ((xxp(3)-zglobal(ineargrid(3)+1))>0. .and. &
+              (xxp(3)-zglobal(ineargrid(3)+1))<1.e-12) then
+            ineargrid(3) = ineargrid(3) + 1
+          endif
+!             
+!  If there is still a problem, return an error message
+!
+          if ((xglobal(ineargrid(1))-xxp(1)  )>0. .or. & 
+              (xxp(1)-xglobal(ineargrid(1)+1))>0. .or. & 
+              (yglobal(ineargrid(2))-xxp(2)  )>0. .or. & 
+              (xxp(2)-yglobal(ineargrid(2)+1))>0. .or. & 
+              (zglobal(ineargrid(3))-xxp(3)  )>0. .or. & 
+              (xxp(3)-zglobal(ineargrid(3)+1))>0.) then  
+            print*, 'Information about what went wrong:'
+            print*, '----------------------------------'
+            print*, 'ERROR: find nearest grid point, cartesian'
+            print*, 'Information about what went wrong:'
+            print*, '----------------------------------'
+            print*, 'it, itsub, t=', it, itsub, t
+            print*, 'iproc  =', iproc
+            print*, 'xxp    =', xxp
+            print*, 'ineargrid   =', ineargrid(:)
+            print*, 'xglobal(ix0),xglobal(ix0+1)',xglobal(ineargrid(1)),xglobal(ineargrid(1)+1)
+            print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal(ineargrid(2)),yglobal(ineargrid(2)+1)
+            print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal(ineargrid(3)),zglobal(ineargrid(3)+1)
+            call fatal_error_local('find_near_grid_point_cartesian','')
+          endif
         endif
       endif
     endsubroutine find_near_ind_global_cart
@@ -6828,25 +6756,60 @@ module Solid_Cells
 !  If requested, check if the correct grid points are found
 !
       if(lcheck) then
-        if (xxp(1)<=xglobal_ogrid(ineargrid(1)).or. &
-            xxp(1)>=xglobal_ogrid(ineargrid(1)+1).or. &
-            xxp(2)<=yglobal_ogrid(ineargrid(2)).or. & 
-            xxp(2)>=yglobal_ogrid(ineargrid(2)+1)) then!.or. & 
-            !xxp(3)<=zglobal(ineargrid(3)).or. & 
-            !xxp(3)>=zglobal(ineargrid(3)+1)) then
-          print*, 'Information about what went wrong:'
-          print*, '----------------------------------'
-          print*, 'ERROR: find nearest grid point, curvilinear'
-          print*, 'Information about what went wrong:'
-          print*, '----------------------------------'
-          print*, 'it, itsub, t=', it, itsub, t
-          print*, 'iproc  =', iproc
-          print*, 'xxp    =', xxp
-          print*, 'ineargrid   =', ineargrid(:)
-          print*, 'xglobal(ix0),xglobal(ix0+1)',xglobal_ogrid(ineargrid(1)),xglobal_ogrid(ineargrid(1)+1)
-          print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal_ogrid(ineargrid(2)),yglobal_ogrid(ineargrid(2)+1)
-          print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal_ogrid(ineargrid(3)),zglobal_ogrid(ineargrid(3)+1)
-          call fatal_error_local('find_near_ind_global_curvilinear','')
+        if ((xglobal_ogrid(ineargrid(1))-xxp(1)  )>0. .or. & !1.e-14 .or. &  
+            (xxp(1)-xglobal_ogrid(ineargrid(1)+1))>0. .or. & !1.e-14 .or. &  
+            (yglobal_ogrid(ineargrid(2))-xxp(2)  )>0. .or. & !1.e-14 .or. &  
+            (xxp(2)-yglobal_ogrid(ineargrid(2)+1))>0. .or. & !1.e-14 .or. &  
+            (zglobal_ogrid(ineargrid(3))-xxp(3)  )>0. .or. & !1.e-14 .or. &  
+            (xxp(3)-zglobal_ogrid(ineargrid(3)+1))>0.) then  !1.e-14) then
+!
+!  Try adjusting. Might be needed if there is a very close overlap between grid points
+!
+          if ((xglobal_ogrid(ineargrid(1))-xxp(1)  )>0. .and. & 
+              (xglobal_ogrid(ineargrid(1))-xxp(1)  )<1.e-12) then
+            ineargrid(1) = ineargrid(1) - 1
+          elseif ((xxp(1)-xglobal_ogrid(ineargrid(1)+1))>0. .and. &
+              (xxp(1)-xglobal_ogrid(ineargrid(1)+1))<1.e-12) then
+            ineargrid(1) = ineargrid(1) + 1
+          endif
+          if ((yglobal_ogrid(ineargrid(2))-xxp(2)  )>0. .and. & 
+              (yglobal_ogrid(ineargrid(2))-xxp(2)  )<1.e-12) then
+            ineargrid(2) = ineargrid(2) - 1
+          elseif ((xxp(2)-yglobal_ogrid(ineargrid(2)+1))>0. .and. &
+              (xxp(2)-yglobal_ogrid(ineargrid(2)+1))<1.e-12) then
+            ineargrid(2) = ineargrid(2) + 1
+          endif
+          if ((zglobal_ogrid(ineargrid(3))-xxp(3)  )>0. .and. & 
+              (zglobal_ogrid(ineargrid(3))-xxp(3)  )<1.e-12) then
+            ineargrid(3) = ineargrid(3) - 1
+          elseif ((xxp(3)-zglobal_ogrid(ineargrid(3)+1))>0. .and. &
+              (xxp(3)-zglobal_ogrid(ineargrid(3)+1))<1.e-12) then
+            ineargrid(3) = ineargrid(3) + 1
+          endif
+!             
+!  If there is still a problem, return an error message
+!
+          if ((xglobal_ogrid(ineargrid(1))-xxp(1)  )>0. .or. & 
+              (xxp(1)-xglobal_ogrid(ineargrid(1)+1))>0. .or. & 
+              (yglobal_ogrid(ineargrid(2))-xxp(2)  )>0. .or. & 
+              (xxp(2)-yglobal_ogrid(ineargrid(2)+1))>0. .or. & 
+              (zglobal_ogrid(ineargrid(3))-xxp(3)  )>0. .or. & 
+              (xxp(3)-zglobal_ogrid(ineargrid(3)+1))>0.) then  
+!
+            print*, 'Information about what went wrong:'
+            print*, '----------------------------------'
+            print*, 'ERROR: find nearest grid point, curvilinear'
+            print*, 'Information about what went wrong:'
+            print*, '----------------------------------'
+            print*, 'it, itsub, t=', it, itsub, t
+            print*, 'iproc  =', iproc
+            print*, 'xxp    =', xxp
+            print*, 'ineargrid   =', ineargrid(:)
+            print*, 'xglobal(ix0),xglobal(ix0+1)',xglobal_ogrid(ineargrid(1)),xglobal_ogrid(ineargrid(1)+1)
+            print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal_ogrid(ineargrid(2)),yglobal_ogrid(ineargrid(2)+1)
+            print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal_ogrid(ineargrid(3)),zglobal_ogrid(ineargrid(3)+1)
+            call fatal_error_local('find_near_ind_global_curvilinear','')
+          endif
         endif
       endif
 !
@@ -7939,6 +7902,7 @@ module Solid_Cells
       intent(in)  :: farr, xxp
       intent(out) :: gp
 !TODO
+      integer :: i
       f(:,:,:,:)=farr(:,:,:,:)
 !
 !  Redefine the interpolation point in coordinates relative to nearest grid
@@ -8062,6 +8026,36 @@ module Solid_Cells
                                 f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
       endif
 !
+      if (lcheck_interpolation) then
+        do i=1,ivar2-ivar1+1
+          if ((gp(i)>maxval(f(:,:,4,i))) .or. &
+              (gp(i)<minval(f(:,:,4,i))) .or. &
+              (gp(i)/=gp(i))) then
+            if (gp(i)>maxval(f(:,:,4,i))) then
+              print*, 'interpolate_quadratic_spline: interpolated value is LARGER than'
+              print*, 'interpolate_quadratic_spline: values at the corner points!'
+            elseif  (gp(i)<minval(f(:,:,4,i))) then
+              print*, 'interpolate_quadratic_spline: interpolated value is SMALLER than'
+              print*, 'interpolate_quadratic_spline: values at the corner points!'
+            elseif (gp(i)/=gp(i)) then
+              print*, 'interpolate_quadratic_spline: interpolated value is NaN'
+            endif
+            print*, 'iproc = ', iproc
+            print*, 'dimensionality = ',dimensionality
+            print*, 'interpolate_quadratic_spline: xxp=', xxp
+            print*, 'interpolate_quadratic_spline: i, gp(i)=', i, gp(i)
+            print*, 'Nearest neighbours: x - ', x(ix0-1:ix0+1)
+            print*, 'Nearest neighbours: y - ', y(iy0-1:iy0+1)
+            !print*, 'interpolate_quadratic_spline: x0, y0, z0=', &
+                !xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'interpolate_quadratic_spline: f(ix0-1,iy0-1:iy0+1,4,i)=', f(ix0-1,iy0-1:iy0+1,4,i)
+            print*, 'interpolate_quadratic_spline: f(ix0  ,iy0-1:iy0+1,4,i)=', f(ix0  ,iy0-1:iy0+1,4,i)
+            print*, 'interpolate_quadratic_spline: f(ix0+1,iy0-1:iy0+1,4,i)=', f(ix0+1,iy0-1:iy0+1,4,i)
+            print*, '------------------'
+            call fatal_error('interpolate_quadratic_spline','interpolation error, quadratic spline')
+          endif
+        enddo
+      endif
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
     subroutine interpolate_quadratic_sp_og(farr,ivar1,ivar2,xxp,gp,inear)
@@ -8103,23 +8097,23 @@ module Solid_Cells
       if (dimensionality==0) then
         gp=f(ix0,iy0,iz0,ivar1:ivar2)
       elseif (dimensionality==1) then
-        if (nxgrid/=1) then
+        if (nxgrid_ogrid/=1) then
           gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
                   (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
                0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
         endif
-        if (nygrid/=1) then
+        if (nygrid_ogrid/=1) then
           gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
                   (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
                0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
         endif
-        if (nzgrid/=1) then
+        if (nzgrid_ogrid/=1) then
           gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
                   (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
                0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
         endif
       elseif (dimensionality==2) then
-        if (nxgrid==1) then
+        if (nxgrid_ogrid==1) then
           fac_y_m1 = 0.5*(0.5-dyp0)**2
           fac_y_00 = 0.75-dyp0**2
           fac_y_p1 = 0.5*(0.5+dyp0)**2
@@ -8136,7 +8130,7 @@ module Solid_Cells
                          f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
               fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
                          f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
-        elseif (nygrid==1) then
+        elseif (nygrid_ogrid==1) then
           fac_x_m1 = 0.5*(0.5-dxp0)**2
           fac_x_00 = 0.75-dxp0**2
           fac_x_p1 = 0.5*(0.5+dxp0)**2
@@ -8153,7 +8147,7 @@ module Solid_Cells
                          f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
               fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
                          f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
-        elseif (nzgrid==1) then
+        elseif (nzgrid_ogrid==1) then
           fac_x_m1 = 0.5*(0.5-dxp0)**2
           fac_x_00 = 0.75-dxp0**2
           fac_x_p1 = 0.5*(0.5+dxp0)**2
@@ -8278,5 +8272,43 @@ module Solid_Cells
       rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),zp /)
 !
     endsubroutine get_polar_coords_3D_alt
+!***********************************************************************
+    subroutine adjust_inear_cart(inear,xxp)
+!
+!  Adjust inear coordinates to guarantee that they point to the CLOSEST point to xxp,
+!  not to the bottom left corner of the cell that contains xxp.
+!  Necessary for interpolation with asymmetric stencils (e.g., quadratic spline)
+!
+!  07-sep-17/Jorgen: Coded
+!
+      integer, dimension(3),intent(inout) :: inear
+      real, dimension(3), intent(in) :: xxp
+!
+      if((xxp(1)-x(inear(1)))>(x(inear(1)+1)-xxp(1))) inear(1) = inear(1)+1
+      if((xxp(2)-y(inear(2)))>(y(inear(2)+1)-xxp(2))) inear(2) = inear(2)+1
+      if(nzgrid_ogrid>1) then
+        if((xxp(3)-z(inear(3)))>(z(inear(3)+1)-xxp(3))) inear(3) = inear(3)+1
+      endif
+!
+    endsubroutine adjust_inear_cart
+!***********************************************************************
+    subroutine adjust_inear_curv(inear,xxp)
+!
+!  Adjust inear coordinates to guarantee that they point to the CLOSEST point to xxp,
+!  not to the bottom left corner of the cell that contains xxp.
+!  Necessary for interpolation with asymmetric stencils (e.g., quadratic spline)
+!
+!  07-sep-17/Jorgen: Coded
+!
+      integer, dimension(3),intent(inout) :: inear
+      real, dimension(3), intent(in) :: xxp
+!
+      if((xxp(1)-x_ogrid(inear(1)))>(x_ogrid(inear(1)+1)-xxp(1))) inear(1) = inear(1)+1
+      if((xxp(2)-y_ogrid(inear(2)))>(y_ogrid(inear(2)+1)-xxp(2))) inear(2) = inear(2)+1
+      if(nzgrid_ogrid>1) then
+        if((xxp(3)-z_ogrid(inear(3)))>(z_ogrid(inear(3)+1)-xxp(3))) inear(3) = inear(3)+1
+      endif
+!
+    endsubroutine adjust_inear_curv
 !***********************************************************************
 end module Solid_Cells
