@@ -942,18 +942,18 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	if (strcmp (quantity, 'H_mag', /fold_case)) then begin
-		; Magnetic field helicity [T^2 * m^4]
+		; Magnetic field helicity density [T^2 * m]
 		aa = pc_compute_quantity (vars, index, 'A')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, dot (aa, bb)
 	end
 	if (strcmp (quantity, 'H_mag_pos', /fold_case)) then begin
-		; Magnetic field helicity (positive part) [T^2 * m^4]
+		; Magnetic field helicity density (positive part) [T^2 * m]
 		H_mag_pos = pc_compute_quantity (vars, index, 'H_mag') > 0.0
 		return, H_mag_pos
 	end
 	if (strcmp (quantity, 'H_mag_neg', /fold_case)) then begin
-		; Magnetic field helicity (negative part) [T^2 * m^4]
+		; Magnetic field helicity density (negative part) [T^2 * m]
 		H_mag_neg = (-pc_compute_quantity (vars, index, 'H_mag')) > 0.0
 		return, H_mag_neg
 	end
@@ -964,7 +964,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, dot (jj, bb)
 	end
 	if (strcmp (quantity, 'dH_mag_dt', /fold_case)) then begin
-		; Change rate of magnetic field helicity [T^2 * m^4 / s =?= A * T * m^3 / s]
+		; Change rate of magnetic field helicity density [T^2 * m / s =?= A * T / s]
 		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 		H_j = pc_compute_quantity (vars, index, 'H_j')
 		return, -2 * eta * H_j
