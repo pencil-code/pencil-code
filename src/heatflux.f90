@@ -31,11 +31,13 @@ module Heatflux
   character (len=labellen) :: iheatflux='nothing'
   logical :: lreset_heatflux
   real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
-  real :: Kspitzer_para=0.
+  real :: Ksaturation_SI = 7e7, Ksaturation=0.
+  real :: Kspitzer_para=0.,hyper3_coeff=0.
 !
   namelist /heatflux_run_pars/ &
       lreset_heatflux,iheatflux,saturation_flux,  &
-      tau1_eighthm,Kspitzer_para,tau_inv_spitzer
+      tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
+      hyper3_coeff
 !
 !  variables for video slices:
 !
@@ -45,9 +47,7 @@ module Heatflux
   real, target, dimension (ny,nz) :: hflux_yz
 !
   real, dimension(:), pointer :: B_ext
-  real :: saturation_fluxuration=0.,nu_ee,ln_unit_TT
-  real :: Ksaturation_SI = 7e7,Ksaturation=0.
-  real :: e_m
+  real :: nu_ee, e_m
 !
   real, target, dimension (nx,ny) :: divq_xy,divq_xy2,divq_xy3,divq_xy4
   real, target, dimension (nx,nz) :: divq_xz
@@ -92,7 +92,7 @@ contains
           write(4,*) ',qq $'
         endif
         write(15,*) 'qq = fltarr(mx,my,mz,3)*one'
-      endif    
+      endif
 !
   endsubroutine register_heatflux
 !***********************************************************************
@@ -100,7 +100,7 @@ contains
 !
 !  Called after reading parameters, but before the time loop.
 !
-!  06-oct-03/tony: coded
+!  07-sept-17/bingert: updated
 !
     use SharedVariables, only: get_shared_variable
 !
@@ -146,7 +146,7 @@ contains
   subroutine init_heatflux(f)
 !
 !  initialise heatflux condition; called from start.f90
-!  06-oct-2003/tony: coded
+!  07-sept-17/bingert: updated
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -160,7 +160,7 @@ contains
 !
 !  All pencils that this heatflux module depends on are specified here.
 !
-!  18-07-06/tony: coded
+!  07-sept-17/bingert: updated
 !
     if (iheatflux == 'eighth') then
       lpenc_requested(i_qq)=.true.
@@ -194,6 +194,7 @@ contains
     if (idiag_qmax/=0 .or. idiag_qrms/=0) then
        lpenc_diagnos(i_q2)=.true.
        lpenc_requested(i_q2)=.true.
+       lpenc_requested(i_lnrho)=.true.
     endif
 !
     if (idiag_qxmax/=0 .or. idiag_qxmin/=0) lpenc_requested(i_qq)=.true.
@@ -206,7 +207,7 @@ contains
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
-!  18-07-06/tony: coded
+!  07-sept-17/bingert: updated
 !
     logical, dimension(npencils), intent(inout) :: lpencil_in
 !
@@ -219,7 +220,8 @@ contains
 !  Calculate Heatflux pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  24-nov-04/tony: coded
+!  07-sept-17/bingert: updated
+
 !
     use Sub, only: dot2_mn, div
 !
@@ -245,7 +247,8 @@ contains
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
-    real, dimension (nx) :: hc,hyper3_coeff
+    real, dimension (nx) :: hc
+
     integer :: i
 !
     intent(in) :: f,p
@@ -269,7 +272,10 @@ contains
       call eighth_moment_approx(df,p)
     endselect
 !
-
+    if (hyper3_coeff /= 0.) then
+       call del6(f,iqx,hc,IGNOREDX=.true.)
+       df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff*hc
+    endif
 !
     if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
     if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
@@ -304,7 +310,7 @@ contains
 !
 !  Reads and registers print parameters relevant to heatflux.
 !
-!  06-oct-03/tony: coded
+!  07-sept-17/bingert: updated
 !
     use Diagnostics, only: parse_name
 !
@@ -340,7 +346,7 @@ contains
 !
 !  Write slices for animation of Heatflux variables.
 !
-!  26-jun-06/tony: dummy
+!  07-sept-17/bingert: updated
 !
     real, dimension (mx,my,mz,mfarray) :: f
     type (slice_data) :: slices
@@ -354,14 +360,20 @@ contains
         slices%ready=.false.
       else
         slices%index=slices%index+1
-        slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index)
-        slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index)
-        slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index)
-        slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index)
+        slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index) * &
+             exp(-f(ix_loc,m1:m2 ,n1:n2  ,ilnrho-1+slices%index))
+        slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index) * &
+             exp(-f(l1:l2 ,iy_loc,n1:n2  ,ilnrho-1+slices%index))
+        slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index) * &
+             exp(-f(l1:l2 ,m1:m2 ,iz_loc ,ilnrho-1+slices%index))
+        slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index) * &
+             exp(-f(l1:l2 ,m1:m2 ,iz2_loc,ilnrho-1+slices%index))
         if (lwrite_slice_xy3) &
-            slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index)
+            slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index) * &
+            exp(-f(l1:l2,m1:m2,iz3_loc,ilnrho-1+slices%index))
         if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index)
+              slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index) * &
+              exp(-f(l1:l2,m1:m2,iz4_loc,ilnrho-1+slices%index))
         if (slices%index<=3) slices%ready=.true.
       endif
 !
@@ -379,7 +391,7 @@ contains
 !***********************************************************************
   subroutine non_fourier_spitzer(df,p)
 !
-!  26-jun-06/tony: dummy
+!  07-sept-17/bingert: updated
 !
     use EquationOfState
     use Sub
@@ -393,19 +405,24 @@ contains
     real, dimension(nx) :: tmp
     integer :: i
 !
+! Compute Spizter coefficiant K_0 * T^(5/2) * rho where
+! we introduced an additional factor rho.
+!
     b2_1=1./(p%b2+tini)
 !
-    call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
+    call multsv(Kspitzer_para*exp(p%lnrho+3.5*p%lnTT),p%glnTT,K1)
 !
     call dot(K1,p%bb,tmp)
-    call multsv(-b2_1*tmp,p%bb,spitzer_vec)
+    call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
 ! Reduce the heat conduction at places of low density or very
 ! high temperatures
 !
     if (saturation_flux/=0.) then
       call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
-      qsat = saturation_flux* exp(1.5*p%lnTT)
+!
+! We have to regard he additional factor rho
+      qsat = saturation_flux* exp(2.*p%lnrho+1.5*p%lnTT) * Ksaturation
 !
       qsat = 1./(1./qsat +1./qabs)
       where (qabs > sqrt(tini))
@@ -416,29 +433,58 @@ contains
     endif
 !
     do i=1,3
-      df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) + &
-          tau_inv_spitzer*(-p%qq(:,i)+spitzer_vec(:,i))  +  &
+      df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  -  &
           p%qq(:,i)*(p%uglnrho + p%divu)
     enddo
 !
+! Add to energy equation
+!
+
     call dot(p%qq,p%glnrho,tmp)
 !
-    rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
+    rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
 
+    if (ltemperature) then
+       if (ltemperature_nolog) then
+          call fatal_error('non_fourier_spitzer', &
+               'not implemented for current set of thermodynamic variables')
+       else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+       endif
+    else if (lentropy.and.pretend_lnTT) then
+       call fatal_error('non_fourier_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+    else if (lthermal_energy .and. ldensity) then
+       call fatal_error('non_fourier_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+    else
+       call fatal_error('non_fourier_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+    endif
 !
-    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
-!
+
     if (lfirst.and.ldt) then
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
       rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-          gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
-      advec_uu = max(advec_uu,rhs/dxmax_pencil)
+           gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
+      maxadvec = maxadvec + rhs/dxmax_pencil
 !
-!          if (idiag_dtspitzer/=0) &
-!              call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
- !         !
+!      if (idiag_dtspitzer/=0) &
+!           call max_mn_name(rhs/dxmax_pencil/cdt,idiag_dtspitzer,l_dt=.true.)
+!
       dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+    endif
+!
+    if (lvideo) then
+       rhs = (p%divq - tmp)*exp(-p%lnrho)
+       divq_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
+       if (m == iy_loc)  divq_xz(:,n-n1+1)= rhs
+       if (n == iz_loc)  divq_xy(:,m-m1+1)= rhs
+       if (n == iz2_loc) divq_xy2(:,m-m1+1)= rhs
+       if (n == iz3_loc) divq_xy3(:,m-m1+1)= rhs
+       if (n == iz4_loc) divq_xy4(:,m-m1+1)= rhs
     endif
 !
   endsubroutine non_fourier_spitzer
@@ -447,7 +493,7 @@ contains
 !
 !  This heatconduction refers to the eighth moment approximation
 !
-!  26-jun-06/tony: dummy
+!  07-sept-17/bingert: updated
 !
     use EquationOfState, only: gamma
     use Sub
@@ -513,7 +559,8 @@ contains
       dt_1_8th = nu_coll !+ e_m /sqrt(b2_1)
 
       dt1_max=max(dt1_max,dt_1_8th/cdts)
-      advec_uu = max(advec_uu,advec_uu*7./5.)
+!      advec_uu = max(advec_uu,advec_uu*7./5.)
+      maxadvec = maxadvec*7./5.
 !     advec_uu = max(advec_uu,sqrt(coeff*exp(p%lnTT)*gamma*p%cp1)/dxmax_pencil)
     endif
 !
