@@ -8,7 +8,6 @@
 !
 module GPU
 !
-  use Cdata
   use General, only: keep_compiler_quiet
 
   implicit none
@@ -28,12 +27,11 @@ contains
 !**************************************************************************
     subroutine rhs_GPU(f,itsub)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: itsub
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(itsub)
-      call keep_compiler_quiet(lsnap)
 !
     endsubroutine rhs_GPU
 !**************************************************************************
