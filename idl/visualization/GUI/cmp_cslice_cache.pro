@@ -1082,12 +1082,16 @@ pro cslice_draw_averages, number
 	vert_label = (['X', 'Y', 'Z', 'r'])[selected_axis]
 	if (unit.default_length_str) then begin
 		vert_label += ' ['+unit.default_length_str+']'
+		unit_system = '-'
 	end else if (strupcase (param.unit_system) eq "SI") then begin
 		vert_label += ' [m]'
+		unit_system = 'SI'
 	end else if (strupcase (param.unit_system) eq "CGS") then begin
 		vert_label += ' [cm]'
+		unit_system = 'cgs'
 	end else begin
 		vert_label += ' [code units]'
+		unit_system = '-'
 	end
 
 	prefix = varfiles[selected_snapshot].title + "_" + (tag_names (set))[selected_cube]
@@ -1098,12 +1102,12 @@ pro cslice_draw_averages, number
 	if (selected_axis eq 3) then begin
 		coords = { x:coord.x*unit.default_length, y:coord.y*unit.default_length, z:coord.z*unit.default_length }
 		anchor = [ coords.x[px], coords.y[py], coords.z[pz] ]*unit.default_length
-		pc_radial_profile, cube, coord=coords, anchor=anchor, title=title, log=log_plot, horiz_label=vert_label, vert_label='['+param.unit_system+']', file_label=prefix, time=time
+		pc_radial_profile, cube, coord=coords, anchor=anchor, title=title, log=log_plot, horiz_label=vert_label, vert_label='['+unit_system+']', file_label=prefix, time=time
 	end else begin
 		if (selected_axis eq 0) then coords = coord.x
 		if (selected_axis eq 1) then coords = coord.y
 		if (selected_axis eq 2) then coords = coord.z
-		pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+		pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 	end
 end
 
