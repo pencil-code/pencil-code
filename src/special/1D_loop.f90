@@ -605,8 +605,9 @@ module Special
       real :: Ksatb,Kcb
       integer :: i,j
 !
-      chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
-          cubic_step(real(t),init_time,init_time)*p%cp1
+      chi=Kpara*exp(p%lnTT*2.5-p%lnrho)*p%cp1
+!
+      if (init_time /= 0.) chi=chi*cubic_step(real(t),init_time,init_time)
 !
 !      do i=1,3
 !        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
@@ -799,7 +800,7 @@ module Special
 !
     endif
 !
-    rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_time)
+    if (init_time /= 0.) rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_time)
 !
 !     add to temperature equation
 !
@@ -940,7 +941,7 @@ module Special
       endif
 !
 !  Adjust time scale by the initialization time
-      tau_inv_tmp =  tau_inv_tmp * cubic_step(real(t),init_time,init_time)
+      if (init_time /= 0.) tau_inv_tmp =  tau_inv_tmp * cubic_step(real(t),init_time,init_time)
 !
       newton  = newton * tau_inv_tmp
 !
@@ -1244,8 +1245,8 @@ module Special
 !
 ! Add to energy equation
 !
-      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-          cubic_step(real(t),init_time,init_time)
+      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
+      if (init_time /=0.) rhs=rhs*cubic_step(real(t),init_time,init_time)
 !
       if (ltemperature .and. (.not. ltemperature_nolog)) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
