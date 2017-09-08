@@ -7,7 +7,7 @@
 
 #module load gcc/4.9.3 cuda/7.5 openmpi/2.0.1
 
-set -xe
-
-#rm -f LOCK
+rm -f LOCK
 start.csh
+touch data/jobid.dat
+run.csh
