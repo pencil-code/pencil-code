@@ -73,4 +73,5 @@ deviceobjs: $(deviceobjs)
 clean:
 	@rm -f *.o
 	@rm -f *.so
+	@rm -f $(CHEADERS)
 
