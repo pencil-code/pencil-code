@@ -1,0 +1,9 @@
+rm -f forcing_c.h
+echo '#pragma once' > forcing_c.h
+echo '#include "headers_c.h"' >> forcing_c.h
+echo 'const int n_pars_force=2;' >> forcing_c.h
+echo 'EXTERN float *p_pars_force[n_pars_force];' >> forcing_c.h
+echo '#define force *p_pars_force[0]' >> forcing_c.h
+echo '#define tforce_stop *p_pars_force[1]' >> forcing_c.h
+
+echo 'extern "C" void *'$MODULE_PREFIX'forcing'$MODULE_INFIX'push2c'$MODULE_SUFFIX'(float *(&p_pars)[n_pars_force]);' >> forcing_c.h

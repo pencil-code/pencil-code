@@ -1,0 +1,12 @@
+rm -f density_c.h
+echo '# pragma once' > density_c.h
+echo '# include "headers_c.h"' >> density_c.h
+echo '# define idiag_rhom *p_diags_density[0]' >> density_c.h
+echo '# define idiag_rhomin *p_diags_density[1]' >> density_c.h
+echo '# define idiag_rhomax *p_diags_density[2]' >> density_c.h
+echo '# define idiag_rhomass *p_diags_density[3]' >> density_c.h
+echo '# define idiag_rhorms *p_diags_density[4]' >> density_c.h
+echo 'const int n_diags_density=5;' >> density_c.h
+echo 'EXTERN int *p_diags_density[n_diags_density];' >> density_c.h
+echo 'extern "C" void *'$MODULE_PREFIX'density'$MODULE_INFIX'push2c'$MODULE_SUFFIX'(int *(&p_diags)[n_diags_density]);' >> density_c.h
+
