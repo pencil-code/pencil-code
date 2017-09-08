@@ -258,7 +258,7 @@ program start
 !
 ! Min(dy,dz) put between Yin and Yang grid at closest distance to minimize overlap.
 !
-    dang=.995*min(1./(nygrid-1),3./(nzgrid-1))*0.5*pi      ! only valid for equidistant grid!!
+    dang=.995*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
     xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
     Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
