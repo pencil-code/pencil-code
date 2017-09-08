@@ -754,10 +754,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ;  Merge Yang and Yin grids; yz[2,*] is merged coordinate array; inds is index vector for Yang points outside Yin into its *1D* coordinate vectors
 ;
-    merge_yin_yang, y[m1:m2], z[n1:n2], dy, dz, yz, inds
+    merge_yin_yang, dim.m1, dim.m2, dim.n1, dim.n2, y, z, dy, dz, yz, inds, yghosts=yghosts, zghosts=zghosts
 ;
     if keyword_set(sphere) then begin
-      triangulate, yz[0,*], yz[1,*], triangles ;, sphere=sphere_data $  ; not operational, IDL bug?
+      triangulate, yz[0,*], yz[1,*], triangles, sphere=sphere_data    ; not operational, IDL bug?
       sphere_data=''
     endif else $
       triangulate, yz[0,*], yz[1,*], triangles
@@ -811,6 +811,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   if yinyang then begin
     tagnames += ",'yz','triangles'" 
+    if is_defined(yghosts) then tagnames += ",'yghosts'"
+    if is_defined(zghosts) then tagnames += ",'zghosts'"
     if keyword_set(sphere) then tagnames += ",'sphere_data'"
   endif 
   tagnames += arraytostring(tags,QUOTE="'") 
@@ -825,6 +827,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if (param.lshear) then makeobject+=",deltay"
   if yinyang then begin
     makeobject += ",yz,triangles"
+    if is_defined(yghosts) then makeobject += ",yghosts"
+    if is_defined(zghosts) then makeobject += ",zghosts"
     if keyword_set(sphere) then makeobject += ",sphere_data"
     mergevars=arraytostring(variables+'_merge')
   endif
