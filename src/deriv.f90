@@ -380,6 +380,11 @@ module Deriv
             + 45.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
             -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
             +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
+        if (lspherical_coords) then
+          df(m1:m2)=df(m1:m2)*r1_mn(lglob)
+        elseif (lcylindrical_coords) then
+          df(m1:m2)=df(m1:m2)*rcyl_mn1(lglob)
+        endif
       else if (j==3) then
 !
 !  z-derivative
@@ -392,13 +397,11 @@ module Deriv
             + 45.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
             -  9.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
             +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
+        if (lspherical_coords) df(n1:n2)=df(n1:n2)*r1_mn(lglob)*sin1th(m)
       else
         if (lroot) print*, 'der_pencil: no such direction j=', j
         call fatal_error('der_pencil','')
       endif
-!
-      if (lcylindrical_coords.or.lspherical_coords) &
-           call fatal_error("der_pencil","Not implemented for non-cartesian")
 !
     endsubroutine der_pencil
 !***********************************************************************
@@ -5697,7 +5700,7 @@ module Deriv
 
     endsubroutine bval_from_neumann_arr
 !***********************************************************************
-    subroutine bval_from_3rd_arr(f,topbot,j,idir,val,func)
+    subroutine bval_from_3rd_arr(f,topbot,j,idir,val)
 !
 !  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
 !  one-sided difference formulae. val depends on x,y.
@@ -5709,7 +5712,6 @@ module Deriv
       character(LEN=3) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
-      external :: func
 !
       integer :: k
 
@@ -5768,7 +5770,6 @@ module Deriv
       endif
 
     endsubroutine bval_from_3rd_arr
-!***********************************************************************
 !***********************************************************************
     subroutine bval_from_4th_arr(f,topbot,j,idir,val)
 !

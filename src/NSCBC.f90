@@ -18,14 +18,12 @@ module NSCBC
 !
   use Cdata
   use Cparam
-  use Messages
-  use Mpicomm
-  use EquationOfState
-  use Boundcond
+  use Messages, only: fatal_error
+  use Mpicomm, only: stop_it
 !
   implicit none
 !
-include 'NSCBC.h'
+  include 'NSCBC.h'
 !
 ! Format: nscbc_bc = 'bottom_x:top_x','bottom_y:top_y','bottom_z:top_z'
 ! for top and bottom boundary treatment at x, y and z-boundaries.
@@ -375,9 +373,9 @@ include 'NSCBC.h'
 !                    enable a relaxation of the species mass fractions at the inlet
 !                    in the case of a multi-species flow
 !
-      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+      use Deriv, only: der_onesided_4_slice
       use Chemistry
-      use General, only: random_number_wrapper
+      use EquationOfState, only: imass, species_constants
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -964,6 +962,8 @@ include 'NSCBC.h'
 !
 !  2010.01.20/Nils Erland L. Haugen: coded
 !
+      use Boundcond, only: jet_x
+
       logical, intent(out) :: non_zero_transveral_velo
       real, dimension(:,:,:), intent(out) :: u_in
       real, dimension(:,:), intent(out) :: scalar_profile
@@ -1238,7 +1238,7 @@ include 'NSCBC.h'
 !
 !  2010.07.26/Julien Savre: coded
 !
-      use EquationOfState
+      use EquationOfState, only: find_species_index
       use General, only: keep_compiler_quiet
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
@@ -1410,7 +1410,6 @@ include 'NSCBC.h'
 ! 2010.01.21/Nils Erland: coded
 !
         use Chemistry
-        use Viscosity
         use EquationOfState, only: cs0, cs20, eoscalc, irho_TT, gamma
 !
         integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax
@@ -1523,7 +1522,7 @@ include 'NSCBC.h'
 !
 !  2010.01.21/Nils Erland: coded
 !
-        use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+        use Deriv, only: der_onesided_4_slice, der_pencil
 !
         integer, intent(in) :: sgn,dir,lll
         real, dimension(:,:,:,:), intent(out) :: dui_dxj
@@ -1592,6 +1591,7 @@ include 'NSCBC.h'
 !  Do central differencing in the directions parallell to the boundary
 !
         if (dir == 1) then
+          lglob=lll-nghost
           if (nygrid /= 1) then
             do i=n1,n2
               call der_pencil(2,f(lll,:,i,iux),tmp1(:,i))
@@ -1614,6 +1614,7 @@ include 'NSCBC.h'
           endif
           if (nzgrid /= 1) then
             do i=m1,m2
+              m=i
               call der_pencil(3,f(lll,i,:,iux),tmp1(i,:))
               call der_pencil(3,f(lll,i,:,iuy),tmp2(i,:))
               call der_pencil(3,f(lll,i,:,iuz),tmp3(i,:))
@@ -1654,7 +1655,9 @@ include 'NSCBC.h'
             if (ilnTT>0) grad_T(:,:,1)=0
           endif
           if (nzgrid /= 1) then
+            m=lll
             do i=l1,l2
+              lglob=i-nghost
               call der_pencil(3,f(i,lll,:,iux),tmp1(i,:))
               call der_pencil(3,f(i,lll,:,iuy),tmp2(i,:))
               call der_pencil(3,f(i,lll,:,iuz),tmp3(i,:))
@@ -1696,6 +1699,7 @@ include 'NSCBC.h'
           endif
           if (nygrid /= 1) then
             do i=l1,l2
+              lglob=i-nghost
               call der_pencil(2,f(i,:,lll,iux),tmp1(i,:))
               call der_pencil(2,f(i,:,lll,iuy),tmp2(i,:))
               call der_pencil(2,f(i,:,lll,iuz),tmp3(i,:))
@@ -1767,7 +1771,6 @@ include 'NSCBC.h'
 !
 !   16-nov-08/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil
       use Chemistry
 !
@@ -1917,7 +1920,6 @@ include 'NSCBC.h'
 !
 !   16-nov-08/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil
       use Chemistry
 !
@@ -2118,7 +2120,6 @@ include 'NSCBC.h'
 !
 !   16-nov-08/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
       use Chemistry
 !
@@ -2578,7 +2579,6 @@ include 'NSCBC.h'
 !
 !   16-jun-09/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
       use Chemistry
 !
@@ -3016,7 +3016,6 @@ include 'NSCBC.h'
 !
 !   16-jun-09/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
       use Chemistry
 !
@@ -3442,10 +3441,6 @@ include 'NSCBC.h'
 !    ux,uy,T are fixed, drho  is calculated
 !
 !   16-nov-08/natalia: coded.
-!
-      use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil
-      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
