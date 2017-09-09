@@ -365,7 +365,7 @@ module Cdata
 !  Pencil-related stuff.
 !
   integer :: imn
-  integer, target :: m,n
+  integer, target :: lglob=1,m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
   integer, dimension (my,mz) :: imn_array
