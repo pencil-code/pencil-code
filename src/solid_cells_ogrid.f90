@@ -53,7 +53,6 @@ module Solid_Cells
   logical, dimension(3) :: lshift_origin_lower_ogrid=.false.   ! Set in start.in
 !  Boundary condition
   logical :: SBP=.true.
-  logical :: lexpl_rho=.true.         ! Set in start.in
 !  Interpolation method
   integer :: interpolation_method=1  ! Set in start.in
 !  Fundamental grid parameters
@@ -298,7 +297,7 @@ module Solid_Cells
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, inter_stencil_len, &
-      lexpl_rho, interpolation_method, lock_dt, &
+      interpolation_method, lock_dt, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid
 
 !  Read run.in file
@@ -4654,15 +4653,17 @@ module Solid_Cells
 !  Frerzing must be done after the full (m,n) loop, as df may be modified
 !  outside of the considered pencil.
 !
-!  Freezing boundary conditions in x (radial direction)
+!  Freezing boundary conditions in x (radial direction), only on points
+!  at the surface
 !
-      do imn_ogrid=1,nyz_ogrid
-        n_ogrid=nn_ogrid(imn_ogrid)
-        m_ogrid=mm_ogrid(imn_ogrid)
-        df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
-      enddo
-      if(lexpl_rho) df(l1_ogrid,:,:,irho) = 0.
-      if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
+      if(lfirst_proc_x) then
+        do imn_ogrid=1,nyz_ogrid
+          n_ogrid=nn_ogrid(imn_ogrid)
+          m_ogrid=mm_ogrid(imn_ogrid)
+          df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
+        enddo
+        if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
+      endif
 !
     endsubroutine pde_ogrid
 !***********************************************************************
@@ -5035,12 +5036,12 @@ module Solid_Cells
 !
       if(lfirst_proc_x) then
         if(SBP) then
-          if(lexpl_rho) call bval_from_neumann_arr_ogrid_alt
+          call bval_from_neumann_arr_ogrid_alt
         else
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
           call set_ghosts_onesided_ogrid(iuz)
-          if(lexpl_rho) call bval_from_neumann_arr_ogrid
+          call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
         endif
       endif
