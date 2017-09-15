@@ -55,10 +55,10 @@ module Solid_Cells
   logical :: SBP=.true.
 !  Interpolation method
   integer :: interpolation_method=1  ! Set in start.in
+  integer :: inter_len=2             ! Length of interpolation stencil
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! Set in start.in
-  integer :: inter_stencil_len = 1                                ! set in start.in?
   integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
 !***************************************************
 ! Pencil case ogrid
@@ -154,7 +154,7 @@ module Solid_Cells
   type interpol_comm_metadata
     integer :: send_to_proc
     integer :: ip_id
-    integer, dimension(3) :: i_low_corner
+    integer, dimension(3) :: i_near_neighbour         ! Lower left corner for interpolation_method=1, closest point for > 1
   endtype interpol_comm_metadata
 !***************************************************
   type interpol_grid_data
@@ -170,7 +170,6 @@ module Solid_Cells
   type(interpol_comm_metadata), dimension(:), allocatable :: send_curvilinear_to_cartesian
   type(interpol_comm_metadata), dimension(:), allocatable :: send_cartesian_to_curvilinear
 !***************************************************
-  character(len=9) :: grid_interpolation='trilinear'
   real, dimension(ncpus,3) :: xyz0_loc_all            ! Grid start, cartesian grid, all processors
   real, dimension(ncpus,3) :: xyz1_loc_all            ! Grid stop, cartesian grid, all processors
   real, dimension(3) :: xyz0_loc_ogrid                ! Grid start, curviliner grid, local
@@ -295,8 +294,8 @@ module Solid_Cells
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
-      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation, &
-      lcheck_interpolation, lcheck_init_interpolation, SBP, inter_stencil_len, &
+      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
+      lcheck_interpolation, lcheck_init_interpolation, SBP, &
       interpolation_method, lock_dt, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid
 
@@ -452,8 +451,20 @@ module Solid_Cells
     endif
 !
 !  Set interpolation zone for curvilinear to cartesian
+!  Make sure that no points outside x_ogrid(l2_ogrid) are used
 !
-      r_int_outer=r_ogrid-inter_stencil_len*drmax_ogrid*sqrt(2.)
+      if(interpolation_method==1) then
+        r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*0.01
+      elseif (interpolation_method==2) then
+        r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*0.51
+        if((r_int_outer-x_ogrid(l2_ogrid))<(x_ogrid(l2_ogrid-1)-r_int_outer)) then
+          print*, 'WARNING: An error occured when setting interpolation zone.'
+          print*, '         Zone adjusted.'
+          r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*1.01
+        endif
+      else
+        call fatal_error('initialize_solid_cells','interpolation method > 2 does not exist')
+      endif
       r_int_inner=xyz0_ogrid(1)
       if(lroot) then
         if(.not.lequidist_ogrid(1)) then
@@ -886,10 +897,14 @@ module Solid_Cells
       real, dimension(3) :: xyz,rthz
       integer :: i,j,k,ii
 !
-!  Only implemented for trilinear interpolation between grids
+!  Set the length of the interoplation stencil based on choice of method 
 !
-      if(.not.grid_interpolation=='trilinear') then
-        call fatal_error('initialize_interpolate_points','only implemented for trilinear interpolation')
+      if(interpolation_method==1) then
+        inter_len=2    
+      elseif(interpolation_method==2) then
+        inter_len=3
+      else
+        call fatal_error('initialize_interpolate_points','selected interpolation method does not exist!')
       endif
 !
 !  Set up interpolation stencil and data for interpolation from cartesian
@@ -915,6 +930,14 @@ module Solid_Cells
               cartesian_to_curvilinear(ii)%xyz = xyz
               call find_near_ind_global_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
                   xyz,lcheck_init_interpolation)
+!
+!  If higher order interpolation is used, adjust nearest index to be the index to point actually nearest
+!  the interpolation point, NOT the index of bottom left point in cell containing interpolation point
+!
+              if(interpolation_method>1) then
+                call adjust_inear_cart_glob(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
+              endif
+!
               if(.not. this_proc_cartesian(xyz)) then
                 call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc)
                 if(cartesian_to_curvilinear(ii)%from_proc==iproc) then
@@ -964,6 +987,14 @@ module Solid_Cells
               curvilinear_to_cartesian(ii)%xyz = rthz
               call find_near_ind_global_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
                   rthz,lcheck_init_interpolation)
+!
+!  If higher order interpolation is used, adjust nearest index to be the index to point actually nearest
+!  the interpolation point, NOT the index of bottom left point in cell containing interpolation point
+!  Also, make sure that no interpolation points try to use points inside the cylinder
+!
+              if(interpolation_method>1) then
+                call adjust_inear_curv_glob(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
+              endif
               if(.not. this_proc_curvilinear(rthz,lcheck_init_interpolation)) then
                 call find_proc_curvilinear(rthz,curvilinear_to_cartesian(ii)%from_proc)
               else
@@ -977,353 +1008,353 @@ module Solid_Cells
       enddo
 !
     endsubroutine initialize_interpolate_points
-!***********************************************************************
-    subroutine initialize_send_ip_points
-!
-! Build arrays of interpolation data on processors that contain data 
-! necessary for interpolation on other processors. 
-!
-! apr-17/Jorgen: Coded
-!
-      use Mpicomm, only: mpirecv_int, mpisend_nonblock_int, mpibarrier, mpiwait
-      use Solid_Cells_Mpicomm, only: finalize_isend_init_interpol
-      integer :: i,iip,npoint
-      integer, dimension(ncpus) :: from_proc_curv_to_cart=0
-      integer, dimension(ncpus) :: from_proc_cart_to_curv=0
-      integer, dimension(:,:,:), allocatable :: ind_from_proc_curv
-      integer, dimension(:,:,:), allocatable :: ind_from_proc_cart
-      integer, dimension(:,:), allocatable :: ip_id_curv_to_cart
-      integer, dimension(:,:), allocatable :: ip_id_cart_to_curv
-      integer, dimension(:), allocatable   :: send_to_curv_to_cart
-      integer, dimension(:), allocatable   :: send_to_cart_to_curv
-      integer, dimension(:,:), allocatable :: send_data_curv_to_cart
-      integer, dimension(:,:), allocatable :: send_data_cart_to_curv
-      integer, dimension(:), allocatable   :: send_id_curv_to_cart
-      integer, dimension(:), allocatable   :: send_id_cart_to_curv
-      integer :: max_from_proc, from_proc
-      integer, dimension(2) :: nelements
-      integer :: size_arr, npoints_requested
-      integer, dimension(:), allocatable   :: tmp_arr1D
-      integer, dimension(:,:), allocatable :: tmp_arr2D
-      integer :: nreq0D,nreq1D,nreq2D
-      integer, dimension(ncpus-1) :: ireq0D,ireq1D
-      integer, dimension(3*(ncpus-1)) :: ireq2D
-      integer :: iter1,iter2
-! TODO: COULD THIS BE MOVED INTO SOLID_CELLS_OGRID_MPICOMM?
-      if(n_ip_curv_to_cart>0) then
-        do i=1,n_ip_curv_to_cart
-          from_proc=curvilinear_to_cartesian(i)%from_proc
-          if(from_proc/=iproc) then
-! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
-            from_proc_curv_to_cart(from_proc+1)=from_proc_curv_to_cart(from_proc+1)+1
-          endif
-        enddo
-      endif
-!
-      max_from_proc=maxval(from_proc_curv_to_cart)
-      if(max_from_proc>0) then
-        allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
-        allocate(ip_id_curv_to_cart(ncpus,max_from_proc))
-        do iip=0,ncpus-1
-          if(from_proc_curv_to_cart(iip+1)>0) then
-            npoint=0
-            do i=1,n_ip_curv_to_cart
-              if(curvilinear_to_cartesian(i)%from_proc==iip) then
-                npoint=npoint+1
-! Must access iip+1 instead of iip, to avoid accessing element 0
-                ind_from_proc_curv(iip+1,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
-                ip_id_curv_to_cart(iip+1,npoint)=i
-              endif
-            enddo
-          endif
-        enddo
-      endif
-!
-      if(n_ip_cart_to_curv>0) then
-        do i=1,n_ip_cart_to_curv
-          from_proc=cartesian_to_curvilinear(i)%from_proc
-          if(from_proc/=iproc) then
-! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
-            from_proc_cart_to_curv(from_proc+1)=from_proc_cart_to_curv(from_proc+1)+1
-          endif
-        enddo
-      endif
-!
-      max_from_proc=maxval(from_proc_cart_to_curv)
-      if(max_from_proc>0) then
-        allocate(ind_from_proc_cart(ncpus,max_from_proc,3))
-        allocate(ip_id_cart_to_curv(ncpus,max_from_proc))
-        do iip=0,ncpus-1
-         if(from_proc_cart_to_curv(iip+1)>0) then
-            npoint=0
-            do i=1,n_ip_cart_to_curv
-              if(cartesian_to_curvilinear(i)%from_proc==iip) then
-                npoint=npoint+1
-! Must access iip+1 instead of iip, to avoid accessing element 0
-                ind_from_proc_cart(iip+1,npoint,:)=cartesian_to_curvilinear(i)%ind_global_neighbour
-                ip_id_cart_to_curv(iip+1,npoint)=i
-              endif
-            enddo
-          endif
-        enddo
-      endif
-! 
-!  Arrays containing information about which points should be sent by what processor to this
-!  processor has now been created. Now, there should be some communication to let all processors
-!  know which grid points they should SEND and who should RECIEVE them.
-!
-!  Note: Code is repeated twice in stead of being programmed as a function, since some compilers do
-!  not support allocatable arrays as in/out from subroutines/functions
-!  Use som variant of processor number as unique MPI tag (iip,iip+ncpus,etc.) in communication.
-!
-!  Curvilinear to Cartesian
-!
-      nreq0D=0
-      nreq1D=0
-      nreq2D=0
-      do iip=0,ncpus-1
-!  Send number of points requested from each processors, and send what points are requested
-!  if the number of points is larger than zero.
-!  Avoid sending to oneself
-        if(iip/=iproc) then
-          nreq0D=nreq0D+1
-          call mpisend_nonblock_int(from_proc_curv_to_cart(iip+1),iip,iip,ireq0D(nreq0D))
-          if(from_proc_curv_to_cart(iip+1)>0) then
-            nelements=(/ from_proc_curv_to_cart(iip+1),3 /)
-            do i=1,3
-              nreq2D=nreq2D+1
-              call mpisend_nonblock_int(ind_from_proc_curv(iip+1,1:nelements(1),i),nelements(1),iip,200+i,ireq2D(nreq2D))
-            enddo
-            nreq1D=nreq1D+1
-            call mpisend_nonblock_int(ip_id_curv_to_cart(iip+1,1:nelements(1)),nelements(1),iip,iip+2*ncpus,ireq1D(nreq1D))
-          endif
-        endif
-      enddo
-      allocate(send_to_curv_to_cart(0))
-      allocate(send_data_curv_to_cart(0,3))
-      allocate(send_id_curv_to_cart(0))
-      do iip=0,ncpus-1
-!  Recieve data from all processors. If any points are requested, create array of request.
-!  Avoid recieving from oneself
-        if(iip/=iproc) then
-          call mpirecv_int(npoints_requested,iip,iproc)
-!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
-!  so memory effieient code is a priority.
-          if(npoints_requested>0) then
-!  Expand array
-            size_arr=size(send_to_curv_to_cart)
-            allocate(tmp_arr1D(size_arr))
-            tmp_arr1D = send_to_curv_to_cart
-            deallocate(send_to_curv_to_cart)
-            allocate(send_to_curv_to_cart(size_arr+npoints_requested))
-            send_to_curv_to_cart(1:size_arr)=tmp_arr1D
-            deallocate(tmp_arr1D)
-            !
-            send_to_curv_to_cart(size_arr+1:size_arr+npoints_requested)=iip
-            nelements=(/ npoints_requested,3 /)
-!  Expand array
-            allocate(tmp_arr2D(size_arr,3))
-            tmp_arr2D = send_data_curv_to_cart
-            deallocate(send_data_curv_to_cart)
-            allocate(send_data_curv_to_cart(size_arr+npoints_requested,3))
-          
-            send_data_curv_to_cart(1:size_arr,:)=tmp_arr2D
-            deallocate(tmp_arr2D)
-            do i=1,3
-              call mpirecv_int(send_data_curv_to_cart(size_arr+1:size_arr+npoints_requested,i),nelements(1),iip,200+i)
-            enddo
-!  Expand array
-            allocate(tmp_arr1D(size_arr))
-            tmp_arr1D=send_id_curv_to_cart
-            deallocate(send_id_curv_to_cart)
-            allocate(send_id_curv_to_cart(size_arr+npoints_requested))
-            send_id_curv_to_cart(1:size_arr)=tmp_arr1D
-            deallocate(tmp_arr1D)
-            call mpirecv_int(send_id_curv_to_cart(size_arr+1:size_arr+npoints_requested),npoints_requested,iip,iproc+2*ncpus)
-          endif
-        endif
-      enddo
-      do i=1,nreq0D
-        call mpiwait(ireq0D(i))
-      enddo
-      do i=1,nreq1D
-        call mpiwait(ireq1D(i))
-      enddo
-      do i=1,nreq2D
-        call mpiwait(ireq2D(i))
-      enddo
-      call mpibarrier
-      !call finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
-!
-!  Cartesian to curvilinear
-!
-      nreq1D=0
-      nreq2D=0
-      do iip=0,ncpus-1
-!  Send number of points requested from each processors, and send what points are requested
-!  if the number of points is larger than zero.
-!  Avoid sending to oneself
-        if(iip/=iproc) then
-          nreq1D=nreq1D+1
-          call mpisend_nonblock_int(from_proc_cart_to_curv(iip+1),iip,iip+3*ncpus,ireq1D(nreq1D))
-          if(from_proc_cart_to_curv(iip+1)>0) then
-            nelements=(/ from_proc_cart_to_curv(iip+1),3 /)
-            nreq2D=nreq2D+2
-            call mpisend_nonblock_int(ind_from_proc_cart(iip+1,1:nelements(1),:),nelements,iip,iip+4*ncpus,ireq2D(nreq2D-1))
-            call mpisend_nonblock_int(ip_id_cart_to_curv(iip+1,1:nelements(1)),nelements(1),iip,iip+5*ncpus,ireq2D(nreq2D))
-          endif
-        endif
-      enddo
-      allocate(send_to_cart_to_curv(0))
-      allocate(send_data_cart_to_curv(0,3))
-      allocate(send_id_cart_to_curv(0))
-      do iip=0,ncpus-1
-!  Recieve data from all processors. If any points are requested, create array of request.
-!  Avoid recieving from oneself
-        if(iip/=iproc) then
-          call mpirecv_int(npoints_requested,iip,iproc+3*ncpus)
-!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
-!  so memory effieient code is a priority.
-          if(npoints_requested>0) then
-!  Expand array
-            size_arr=size(send_to_cart_to_curv)
-            allocate(tmp_arr1D(size_arr))
-            tmp_arr1D = send_to_cart_to_curv
-            deallocate(send_to_cart_to_curv)
-            allocate(send_to_cart_to_curv(size_arr+npoints_requested))
-            send_to_cart_to_curv(1:size_arr)=tmp_arr1D
-            deallocate(tmp_arr1D)
-            !
-            send_to_cart_to_curv(size_arr+1:size_arr+npoints_requested)=iip
-            nelements=(/ npoints_requested,3 /)
-!  Expand array
-            allocate(tmp_arr2D(size_arr,3))
-            tmp_arr2D = send_data_cart_to_curv
-            deallocate(send_data_cart_to_curv)
-            allocate(send_data_cart_to_curv(size_arr+npoints_requested,3))
-            send_data_cart_to_curv(1:size_arr,:)=tmp_arr2D
-            deallocate(tmp_arr2D)
-            call mpirecv_int(send_data_cart_to_curv(size_arr+1:size_arr+npoints_requested,:),nelements,iip,iproc+4*ncpus)
-!  Expand array
-            allocate(tmp_arr1D(size_arr))
-            tmp_arr1D=send_id_cart_to_curv
-            deallocate(send_id_cart_to_curv)
-            allocate(send_id_cart_to_curv(size_arr+npoints_requested))
-            send_id_cart_to_curv(1:size_arr)=tmp_arr1D
-            deallocate(tmp_arr1D)
-            call mpirecv_int(send_id_cart_to_curv(size_arr+1:size_arr+npoints_requested),npoints_requested,iip,iproc+5*ncpus)
-          endif
-        endif
-      enddo
-      call finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
-!
-!  Deallocate arrays not not needed later
-!
-      if(allocated(ind_from_proc_curv))  deallocate(ind_from_proc_curv)
-      if(allocated(ind_from_proc_cart))  deallocate(ind_from_proc_cart)
-      if(allocated(ip_id_curv_to_cart))  deallocate(ip_id_curv_to_cart)
-      if(allocated(ip_id_cart_to_curv))  deallocate(ip_id_cart_to_curv)
-!
-!  Translate recieved global indices to local indices and save the module variables for communication 
-!
-      size_arr=size(send_data_curv_to_cart(:,1))
-      allocate(send_curvilinear_to_cartesian(size_arr))
-      do i=1,size_arr
-        send_curvilinear_to_cartesian(i)%send_to_proc=send_to_curv_to_cart(i)
-        send_curvilinear_to_cartesian(i)%ip_id=send_id_curv_to_cart(i)
-        call ind_global_to_local_curv(send_data_curv_to_cart(i,:), &
-            send_curvilinear_to_cartesian(i)%i_low_corner,lcheck_init_interpolation)
-      enddo
-      size_arr=size(send_data_cart_to_curv(:,1))
-      allocate(send_cartesian_to_curvilinear(size_arr))
-      do i=1,size_arr
-        send_cartesian_to_curvilinear(i)%send_to_proc=send_to_cart_to_curv(i)
-        send_cartesian_to_curvilinear(i)%ip_id=send_id_cart_to_curv(i)
-        call ind_global_to_local_cart(send_data_cart_to_curv(i,:), &
-            send_cartesian_to_curvilinear(i)%i_low_corner,lcheck_init_interpolation)
-      enddo
-!
-!  Set some auxiliary parameters to help with the interpolation communication
-!  Global to module, not to proc
-!
-      size_arr=size(send_data_curv_to_cart(:,1))
-      n_procs_send_curv_to_cart=0
-      if(size_arr>0) then
-        n_procs_send_curv_to_cart=1
-        do i=2,size_arr
-          if(send_curvilinear_to_cartesian(i)%send_to_proc /= &
-              send_curvilinear_to_cartesian(i-1)%send_to_proc) then
-            n_procs_send_curv_to_cart=n_procs_send_curv_to_cart+1
-          endif
-        enddo
-      endif
-      allocate(n_ip_to_proc_curv_to_cart(n_procs_send_curv_to_cart))
-      n_ip_to_proc_curv_to_cart=1
-      do i=2,size_arr
-        if(send_curvilinear_to_cartesian(i)%send_to_proc == &
-            send_curvilinear_to_cartesian(i-1)%send_to_proc) then
-          n_ip_to_proc_curv_to_cart=n_ip_to_proc_curv_to_cart+1
-        endif
-      enddo
-      size_arr=size(send_data_cart_to_curv(:,1))
-      n_procs_send_cart_to_curv=0
-      if(size_arr>0) then
-        n_procs_send_cart_to_curv=1
-        do i=2,size_arr
-          if(send_cartesian_to_curvilinear(i)%send_to_proc /= &
-              send_cartesian_to_curvilinear(i-1)%send_to_proc) then
-            n_procs_send_cart_to_curv=n_procs_send_cart_to_curv+1
-          endif
-        enddo
-      endif
-      allocate(n_ip_to_proc_cart_to_curv(n_procs_send_cart_to_curv))
-      n_ip_to_proc_cart_to_curv=1
-      do i=2,size_arr
-        if(send_cartesian_to_curvilinear(i)%send_to_proc == &
-            send_cartesian_to_curvilinear(i-1)%send_to_proc) then
-          n_ip_to_proc_cart_to_curv=n_ip_to_proc_cart_to_curv+1
-        endif
-      enddo
-!
-      n_procs_recv_curv_to_cart=count(from_proc_curv_to_cart.gt.0)
-      n_procs_recv_cart_to_curv=count(from_proc_cart_to_curv.gt.0)
-      allocate(n_ip_recv_proc_curv_to_cart(n_procs_recv_curv_to_cart))
-      allocate(n_ip_recv_proc_cart_to_curv(n_procs_recv_cart_to_curv))
-      n_ip_recv_proc_curv_to_cart=pack(from_proc_curv_to_cart,from_proc_curv_to_cart.gt.0)
-      n_ip_recv_proc_cart_to_curv=pack(from_proc_cart_to_curv,from_proc_cart_to_curv.gt.0)
-      allocate(procs_recv_curv_to_cart(n_procs_recv_curv_to_cart))
-      allocate(procs_recv_cart_to_curv(n_procs_recv_cart_to_curv))
-      iter1=1
-      iter2=1
-      do iip=0,ncpus-1
-        if(from_proc_cart_to_curv(iip+1)>0) then 
-          procs_recv_cart_to_curv(iter1)=iip
-          iter1=iter1+1
-        endif
-        if(from_proc_curv_to_cart(iip+1)>0) then
-          procs_recv_curv_to_cart(iter2)=iip
-          iter2=iter2+1
-        endif
-      enddo
-      max_send_ip_curv_to_cart=maxval(n_ip_to_proc_curv_to_cart)
-      max_recv_ip_curv_to_cart=maxval(n_ip_recv_proc_curv_to_cart)
-      max_send_ip_cart_to_curv=maxval(n_ip_to_proc_cart_to_curv)
-      max_recv_ip_cart_to_curv=maxval(n_ip_recv_proc_cart_to_curv)
-!
-!  Deallocate arrays
-!
-      deallocate(send_to_curv_to_cart)
-      deallocate(send_to_cart_to_curv)
-      deallocate(send_data_curv_to_cart)
-      deallocate(send_data_cart_to_curv)
-      deallocate(send_id_curv_to_cart)
-      deallocate(send_id_cart_to_curv)
-!
-!  Make sure that all processors complete this initialization before continuing
-!
-      call mpibarrier
-    endsubroutine initialize_send_ip_points
-!***********************************************************************
+!!***********************************************************************
+!    subroutine initialize_send_ip_points
+!!
+!! Build arrays of interpolation data on processors that contain data 
+!! necessary for interpolation on other processors. 
+!!
+!! apr-17/Jorgen: Coded
+!!
+!      use Mpicomm, only: mpirecv_int, mpisend_nonblock_int, mpibarrier, mpiwait
+!      use Solid_Cells_Mpicomm, only: finalize_isend_init_interpol
+!      integer :: i,iip,npoint
+!      integer, dimension(ncpus) :: from_proc_curv_to_cart=0
+!      integer, dimension(ncpus) :: from_proc_cart_to_curv=0
+!      integer, dimension(:,:,:), allocatable :: ind_from_proc_curv
+!      integer, dimension(:,:,:), allocatable :: ind_from_proc_cart
+!      integer, dimension(:,:), allocatable :: ip_id_curv_to_cart
+!      integer, dimension(:,:), allocatable :: ip_id_cart_to_curv
+!      integer, dimension(:), allocatable   :: send_to_curv_to_cart
+!      integer, dimension(:), allocatable   :: send_to_cart_to_curv
+!      integer, dimension(:,:), allocatable :: send_data_curv_to_cart
+!      integer, dimension(:,:), allocatable :: send_data_cart_to_curv
+!      integer, dimension(:), allocatable   :: send_id_curv_to_cart
+!      integer, dimension(:), allocatable   :: send_id_cart_to_curv
+!      integer :: max_from_proc, from_proc
+!      integer, dimension(2) :: nelements
+!      integer :: size_arr, npoints_requested
+!      integer, dimension(:), allocatable   :: tmp_arr1D
+!      integer, dimension(:,:), allocatable :: tmp_arr2D
+!      integer :: nreq0D,nreq1D,nreq2D
+!      integer, dimension(ncpus-1) :: ireq0D,ireq1D
+!      integer, dimension(3*(ncpus-1)) :: ireq2D
+!      integer :: iter1,iter2
+!! TODO: COULD THIS BE MOVED INTO SOLID_CELLS_OGRID_MPICOMM?
+!      if(n_ip_curv_to_cart>0) then
+!        do i=1,n_ip_curv_to_cart
+!          from_proc=curvilinear_to_cartesian(i)%from_proc
+!          if(from_proc/=iproc) then
+!! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
+!            from_proc_curv_to_cart(from_proc+1)=from_proc_curv_to_cart(from_proc+1)+1
+!          endif
+!        enddo
+!      endif
+!!
+!      max_from_proc=maxval(from_proc_curv_to_cart)
+!      if(max_from_proc>0) then
+!        allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
+!        allocate(ip_id_curv_to_cart(ncpus,max_from_proc))
+!        do iip=0,ncpus-1
+!          if(from_proc_curv_to_cart(iip+1)>0) then
+!            npoint=0
+!            do i=1,n_ip_curv_to_cart
+!              if(curvilinear_to_cartesian(i)%from_proc==iip) then
+!                npoint=npoint+1
+!! Must access iip+1 instead of iip, to avoid accessing element 0
+!                ind_from_proc_curv(iip+1,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
+!                ip_id_curv_to_cart(iip+1,npoint)=i
+!              endif
+!            enddo
+!          endif
+!        enddo
+!      endif
+!!
+!      if(n_ip_cart_to_curv>0) then
+!        do i=1,n_ip_cart_to_curv
+!          from_proc=cartesian_to_curvilinear(i)%from_proc
+!          if(from_proc/=iproc) then
+!! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
+!            from_proc_cart_to_curv(from_proc+1)=from_proc_cart_to_curv(from_proc+1)+1
+!          endif
+!        enddo
+!      endif
+!!
+!      max_from_proc=maxval(from_proc_cart_to_curv)
+!      if(max_from_proc>0) then
+!        allocate(ind_from_proc_cart(ncpus,max_from_proc,3))
+!        allocate(ip_id_cart_to_curv(ncpus,max_from_proc))
+!        do iip=0,ncpus-1
+!         if(from_proc_cart_to_curv(iip+1)>0) then
+!            npoint=0
+!            do i=1,n_ip_cart_to_curv
+!              if(cartesian_to_curvilinear(i)%from_proc==iip) then
+!                npoint=npoint+1
+!! Must access iip+1 instead of iip, to avoid accessing element 0
+!                ind_from_proc_cart(iip+1,npoint,:)=cartesian_to_curvilinear(i)%ind_global_neighbour
+!                ip_id_cart_to_curv(iip+1,npoint)=i
+!              endif
+!            enddo
+!          endif
+!        enddo
+!      endif
+!! 
+!!  Arrays containing information about which points should be sent by what processor to this
+!!  processor has now been created. Now, there should be some communication to let all processors
+!!  know which grid points they should SEND and who should RECIEVE them.
+!!
+!!  Note: Code is repeated twice in stead of being programmed as a function, since some compilers do
+!!  not support allocatable arrays as in/out from subroutines/functions
+!!  Use som variant of processor number as unique MPI tag (iip,iip+ncpus,etc.) in communication.
+!!
+!!  Curvilinear to Cartesian
+!!
+!      nreq0D=0
+!      nreq1D=0
+!      nreq2D=0
+!      do iip=0,ncpus-1
+!!  Send number of points requested from each processors, and send what points are requested
+!!  if the number of points is larger than zero.
+!!  Avoid sending to oneself
+!        if(iip/=iproc) then
+!          nreq0D=nreq0D+1
+!          call mpisend_nonblock_int(from_proc_curv_to_cart(iip+1),iip,iip,ireq0D(nreq0D))
+!          if(from_proc_curv_to_cart(iip+1)>0) then
+!            nelements=(/ from_proc_curv_to_cart(iip+1),3 /)
+!            do i=1,3
+!              nreq2D=nreq2D+1
+!              call mpisend_nonblock_int(ind_from_proc_curv(iip+1,1:nelements(1),i),nelements(1),iip,200+i,ireq2D(nreq2D))
+!            enddo
+!            nreq1D=nreq1D+1
+!            call mpisend_nonblock_int(ip_id_curv_to_cart(iip+1,1:nelements(1)),nelements(1),iip,iip+2*ncpus,ireq1D(nreq1D))
+!          endif
+!        endif
+!      enddo
+!      allocate(send_to_curv_to_cart(0))
+!      allocate(send_data_curv_to_cart(0,3))
+!      allocate(send_id_curv_to_cart(0))
+!      do iip=0,ncpus-1
+!!  Recieve data from all processors. If any points are requested, create array of request.
+!!  Avoid recieving from oneself
+!        if(iip/=iproc) then
+!          call mpirecv_int(npoints_requested,iip,iproc)
+!!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
+!!  so memory effieient code is a priority.
+!          if(npoints_requested>0) then
+!!  Expand array
+!            size_arr=size(send_to_curv_to_cart)
+!            allocate(tmp_arr1D(size_arr))
+!            tmp_arr1D = send_to_curv_to_cart
+!            deallocate(send_to_curv_to_cart)
+!            allocate(send_to_curv_to_cart(size_arr+npoints_requested))
+!            send_to_curv_to_cart(1:size_arr)=tmp_arr1D
+!            deallocate(tmp_arr1D)
+!            !
+!            send_to_curv_to_cart(size_arr+1:size_arr+npoints_requested)=iip
+!            nelements=(/ npoints_requested,3 /)
+!!  Expand array
+!            allocate(tmp_arr2D(size_arr,3))
+!            tmp_arr2D = send_data_curv_to_cart
+!            deallocate(send_data_curv_to_cart)
+!            allocate(send_data_curv_to_cart(size_arr+npoints_requested,3))
+!          
+!            send_data_curv_to_cart(1:size_arr,:)=tmp_arr2D
+!            deallocate(tmp_arr2D)
+!            do i=1,3
+!              call mpirecv_int(send_data_curv_to_cart(size_arr+1:size_arr+npoints_requested,i),nelements(1),iip,200+i)
+!            enddo
+!!  Expand array
+!            allocate(tmp_arr1D(size_arr))
+!            tmp_arr1D=send_id_curv_to_cart
+!            deallocate(send_id_curv_to_cart)
+!            allocate(send_id_curv_to_cart(size_arr+npoints_requested))
+!            send_id_curv_to_cart(1:size_arr)=tmp_arr1D
+!            deallocate(tmp_arr1D)
+!            call mpirecv_int(send_id_curv_to_cart(size_arr+1:size_arr+npoints_requested),npoints_requested,iip,iproc+2*ncpus)
+!          endif
+!        endif
+!      enddo
+!      do i=1,nreq0D
+!        call mpiwait(ireq0D(i))
+!      enddo
+!      do i=1,nreq1D
+!        call mpiwait(ireq1D(i))
+!      enddo
+!      do i=1,nreq2D
+!        call mpiwait(ireq2D(i))
+!      enddo
+!      call mpibarrier
+!      !call finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
+!!
+!!  Cartesian to curvilinear
+!!
+!      nreq1D=0
+!      nreq2D=0
+!      do iip=0,ncpus-1
+!!  Send number of points requested from each processors, and send what points are requested
+!!  if the number of points is larger than zero.
+!!  Avoid sending to oneself
+!        if(iip/=iproc) then
+!          nreq1D=nreq1D+1
+!          call mpisend_nonblock_int(from_proc_cart_to_curv(iip+1),iip,iip+3*ncpus,ireq1D(nreq1D))
+!          if(from_proc_cart_to_curv(iip+1)>0) then
+!            nelements=(/ from_proc_cart_to_curv(iip+1),3 /)
+!            nreq2D=nreq2D+2
+!            call mpisend_nonblock_int(ind_from_proc_cart(iip+1,1:nelements(1),:),nelements,iip,iip+4*ncpus,ireq2D(nreq2D-1))
+!            call mpisend_nonblock_int(ip_id_cart_to_curv(iip+1,1:nelements(1)),nelements(1),iip,iip+5*ncpus,ireq2D(nreq2D))
+!          endif
+!        endif
+!      enddo
+!      allocate(send_to_cart_to_curv(0))
+!      allocate(send_data_cart_to_curv(0,3))
+!      allocate(send_id_cart_to_curv(0))
+!      do iip=0,ncpus-1
+!!  Recieve data from all processors. If any points are requested, create array of request.
+!!  Avoid recieving from oneself
+!        if(iip/=iproc) then
+!          call mpirecv_int(npoints_requested,iip,iproc+3*ncpus)
+!!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
+!!  so memory effieient code is a priority.
+!          if(npoints_requested>0) then
+!!  Expand array
+!            size_arr=size(send_to_cart_to_curv)
+!            allocate(tmp_arr1D(size_arr))
+!            tmp_arr1D = send_to_cart_to_curv
+!            deallocate(send_to_cart_to_curv)
+!            allocate(send_to_cart_to_curv(size_arr+npoints_requested))
+!            send_to_cart_to_curv(1:size_arr)=tmp_arr1D
+!            deallocate(tmp_arr1D)
+!            !
+!            send_to_cart_to_curv(size_arr+1:size_arr+npoints_requested)=iip
+!            nelements=(/ npoints_requested,3 /)
+!!  Expand array
+!            allocate(tmp_arr2D(size_arr,3))
+!            tmp_arr2D = send_data_cart_to_curv
+!            deallocate(send_data_cart_to_curv)
+!            allocate(send_data_cart_to_curv(size_arr+npoints_requested,3))
+!            send_data_cart_to_curv(1:size_arr,:)=tmp_arr2D
+!            deallocate(tmp_arr2D)
+!            call mpirecv_int(send_data_cart_to_curv(size_arr+1:size_arr+npoints_requested,:),nelements,iip,iproc+4*ncpus)
+!!  Expand array
+!            allocate(tmp_arr1D(size_arr))
+!            tmp_arr1D=send_id_cart_to_curv
+!            deallocate(send_id_cart_to_curv)
+!            allocate(send_id_cart_to_curv(size_arr+npoints_requested))
+!            send_id_cart_to_curv(1:size_arr)=tmp_arr1D
+!            deallocate(tmp_arr1D)
+!            call mpirecv_int(send_id_cart_to_curv(size_arr+1:size_arr+npoints_requested),npoints_requested,iip,iproc+5*ncpus)
+!          endif
+!        endif
+!      enddo
+!      call finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
+!!
+!!  Deallocate arrays not not needed later
+!!
+!      if(allocated(ind_from_proc_curv))  deallocate(ind_from_proc_curv)
+!      if(allocated(ind_from_proc_cart))  deallocate(ind_from_proc_cart)
+!      if(allocated(ip_id_curv_to_cart))  deallocate(ip_id_curv_to_cart)
+!      if(allocated(ip_id_cart_to_curv))  deallocate(ip_id_cart_to_curv)
+!!
+!!  Translate recieved global indices to local indices and save the module variables for communication 
+!!
+!      size_arr=size(send_data_curv_to_cart(:,1))
+!      allocate(send_curvilinear_to_cartesian(size_arr))
+!      do i=1,size_arr
+!        send_curvilinear_to_cartesian(i)%send_to_proc=send_to_curv_to_cart(i)
+!        send_curvilinear_to_cartesian(i)%ip_id=send_id_curv_to_cart(i)
+!        call ind_global_to_local_curv(send_data_curv_to_cart(i,:), &
+!            send_curvilinear_to_cartesian(i)%i_near_neighbour,lcheck_init_interpolation)
+!      enddo
+!      size_arr=size(send_data_cart_to_curv(:,1))
+!      allocate(send_cartesian_to_curvilinear(size_arr))
+!      do i=1,size_arr
+!        send_cartesian_to_curvilinear(i)%send_to_proc=send_to_cart_to_curv(i)
+!        send_cartesian_to_curvilinear(i)%ip_id=send_id_cart_to_curv(i)
+!        call ind_global_to_local_cart(send_data_cart_to_curv(i,:), &
+!            send_cartesian_to_curvilinear(i)%i_near_neighbour,lcheck_init_interpolation)
+!      enddo
+!!
+!!  Set some auxiliary parameters to help with the interpolation communication
+!!  Global to module, not to proc
+!!
+!      size_arr=size(send_data_curv_to_cart(:,1))
+!      n_procs_send_curv_to_cart=0
+!      if(size_arr>0) then
+!        n_procs_send_curv_to_cart=1
+!        do i=2,size_arr
+!          if(send_curvilinear_to_cartesian(i)%send_to_proc /= &
+!              send_curvilinear_to_cartesian(i-1)%send_to_proc) then
+!            n_procs_send_curv_to_cart=n_procs_send_curv_to_cart+1
+!          endif
+!        enddo
+!      endif
+!      allocate(n_ip_to_proc_curv_to_cart(n_procs_send_curv_to_cart))
+!      n_ip_to_proc_curv_to_cart=1
+!      do i=2,size_arr
+!        if(send_curvilinear_to_cartesian(i)%send_to_proc == &
+!            send_curvilinear_to_cartesian(i-1)%send_to_proc) then
+!          n_ip_to_proc_curv_to_cart=n_ip_to_proc_curv_to_cart+1
+!        endif
+!      enddo
+!      size_arr=size(send_data_cart_to_curv(:,1))
+!      n_procs_send_cart_to_curv=0
+!      if(size_arr>0) then
+!        n_procs_send_cart_to_curv=1
+!        do i=2,size_arr
+!          if(send_cartesian_to_curvilinear(i)%send_to_proc /= &
+!              send_cartesian_to_curvilinear(i-1)%send_to_proc) then
+!            n_procs_send_cart_to_curv=n_procs_send_cart_to_curv+1
+!          endif
+!        enddo
+!      endif
+!      allocate(n_ip_to_proc_cart_to_curv(n_procs_send_cart_to_curv))
+!      n_ip_to_proc_cart_to_curv=1
+!      do i=2,size_arr
+!        if(send_cartesian_to_curvilinear(i)%send_to_proc == &
+!            send_cartesian_to_curvilinear(i-1)%send_to_proc) then
+!          n_ip_to_proc_cart_to_curv=n_ip_to_proc_cart_to_curv+1
+!        endif
+!      enddo
+!!
+!      n_procs_recv_curv_to_cart=count(from_proc_curv_to_cart.gt.0)
+!      n_procs_recv_cart_to_curv=count(from_proc_cart_to_curv.gt.0)
+!      allocate(n_ip_recv_proc_curv_to_cart(n_procs_recv_curv_to_cart))
+!      allocate(n_ip_recv_proc_cart_to_curv(n_procs_recv_cart_to_curv))
+!      n_ip_recv_proc_curv_to_cart=pack(from_proc_curv_to_cart,from_proc_curv_to_cart.gt.0)
+!      n_ip_recv_proc_cart_to_curv=pack(from_proc_cart_to_curv,from_proc_cart_to_curv.gt.0)
+!      allocate(procs_recv_curv_to_cart(n_procs_recv_curv_to_cart))
+!      allocate(procs_recv_cart_to_curv(n_procs_recv_cart_to_curv))
+!      iter1=1
+!      iter2=1
+!      do iip=0,ncpus-1
+!        if(from_proc_cart_to_curv(iip+1)>0) then 
+!          procs_recv_cart_to_curv(iter1)=iip
+!          iter1=iter1+1
+!        endif
+!        if(from_proc_curv_to_cart(iip+1)>0) then
+!          procs_recv_curv_to_cart(iter2)=iip
+!          iter2=iter2+1
+!        endif
+!      enddo
+!      max_send_ip_curv_to_cart=maxval(n_ip_to_proc_curv_to_cart)
+!      max_recv_ip_curv_to_cart=maxval(n_ip_recv_proc_curv_to_cart)
+!      max_send_ip_cart_to_curv=maxval(n_ip_to_proc_cart_to_curv)
+!      max_recv_ip_cart_to_curv=maxval(n_ip_recv_proc_cart_to_curv)
+!!
+!!  Deallocate arrays
+!!
+!      deallocate(send_to_curv_to_cart)
+!      deallocate(send_to_cart_to_curv)
+!      deallocate(send_data_curv_to_cart)
+!      deallocate(send_data_cart_to_curv)
+!      deallocate(send_id_curv_to_cart)
+!      deallocate(send_id_cart_to_curv)
+!!
+!!  Make sure that all processors complete this initialization before continuing
+!!
+!      call mpibarrier
+!    endsubroutine initialize_send_ip_points
+!!***********************************************************************
     subroutine initialize_send_ip_points_alt
 !
 ! Build arrays of interpolation data on processors that contain data 
@@ -1561,7 +1592,7 @@ module Solid_Cells
         do i=ind_start,ind_stop
           indices_global = ijk_bufi(i,:)
           call ind_global_to_local_curv(indices_global, &
-              send_curvilinear_to_cartesian(i)%i_low_corner,lcheck_init_interpolation)
+              send_curvilinear_to_cartesian(i)%i_near_neighbour,lcheck_init_interpolation)
         enddo
         call mpiwait(ireq1D(iter))
         send_curvilinear_to_cartesian(ind_start:ind_stop)%ip_id=id_bufi(ind_start:ind_stop)
@@ -1635,7 +1666,7 @@ module Solid_Cells
         do i=ind_start,ind_stop
           indices_global=ijk_bufi(i,:)
           call ind_global_to_local_cart(indices_global, &
-              send_cartesian_to_curvilinear(i)%i_low_corner,lcheck_init_interpolation)
+              send_cartesian_to_curvilinear(i)%i_near_neighbour,lcheck_init_interpolation)
         enddo
         call mpiwait(ireq1D(iter))
         send_cartesian_to_curvilinear(ind_start:ind_stop)%ip_id=id_bufi(ind_start:ind_stop)
@@ -2028,15 +2059,22 @@ module Solid_Cells
     integer, dimension(n_procs_send_cart_to_curv) :: ireq1D, ireq5D
     integer, dimension(5) :: nbuf_farr
     integer, dimension(max_recv_ip_cart_to_curv) :: id_bufi
-    real, dimension(max_send_ip_cart_to_curv,2,2,2,ivar2-ivar1+1) :: f_bufo
-    real, dimension(max_recv_ip_cart_to_curv,2,2,2,ivar2-ivar1+1) :: f_bufi
-    real, dimension(2,2,2,ivar2-ivar1+1) :: farr
+    real, dimension(max_send_ip_cart_to_curv,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufo
+    real, dimension(max_recv_ip_cart_to_curv,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufi
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1) :: farr
     integer :: i,j,k,id,ipp
+    integer :: ii1,ii2,jj1,jj2,kk1,kk2
     integer :: iter, send_to, recv_from
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
 !
-    nbuf_farr(2:4)=2
+    if(interpolation_method==1) then
+      nbuf_farr(2:4)=2
+      ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
+    elseif(interpolation_method==2) then
+      nbuf_farr(2:4)=3
+      ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
+    endif
     nbuf_farr(5)=ivar2-ivar1+1
 !
     ind_send_first=1
@@ -2045,10 +2083,10 @@ module Solid_Cells
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ipp=1,nbuf_farr(1)
-        i=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_low_corner(1)
-        j=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_low_corner(2)
-        k=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_low_corner(3)
-        f_bufo(ipp,:,:,:,:)=f_cartesian(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
+        i=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(1)
+        j=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(2)
+        k=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(3)
+        f_bufo(ipp,:,:,:,:)=f_cartesian(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
       enddo
       !print*, 'iproc: send id info', iproc,send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
       call mpisend_nonblock_int(send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id, &
@@ -2072,11 +2110,10 @@ module Solid_Cells
 !  Interpolate remaining points 
 !
     do id=1,n_ip_cart_to_curv
-    ! TODO: Make this more efficient by only looping over id's not used above and eliminate if-statement 
       if(cartesian_to_curvilinear(id)%from_proc==iproc) then
         inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
-        farr(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1):inear_loc(1)+1,inear_loc(2):inear_loc(2)+1, &
-          inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
+        farr(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+          inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
         call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian)
       endif
     enddo
@@ -2104,15 +2141,22 @@ module Solid_Cells
     integer, dimension(n_procs_send_curv_to_cart) :: ireq1D, ireq5D
     integer, dimension(5) :: nbuf_farr
     integer, dimension(max_recv_ip_curv_to_cart) :: id_bufi
-    real, dimension(max_send_ip_curv_to_cart,2,2,2,ivar2-ivar1+1) :: f_bufo
-    real, dimension(max_recv_ip_curv_to_cart,2,2,2,ivar2-ivar1+1) :: f_bufi
-    real, dimension(2,2,2,ivar2-ivar1+1) :: farr
+    real, dimension(max_send_ip_curv_to_cart,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufo
+    real, dimension(max_recv_ip_curv_to_cart,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufi
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1) :: farr
     integer :: i,j,k,id,ipp
+    integer :: ii1,ii2,jj1,jj2,kk1,kk2
     integer :: iter, send_to, recv_from
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
 !
-    nbuf_farr(2:4)=2
+    if(interpolation_method==1) then
+      nbuf_farr(2:4)=2
+      ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
+    elseif(interpolation_method==2) then
+      nbuf_farr(2:4)=3
+      ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
+    endif
     nbuf_farr(5)=ivar2-ivar1+1
 !
     ind_send_first=1
@@ -2121,10 +2165,10 @@ module Solid_Cells
       send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ipp=1,nbuf_farr(1)
-        i=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_low_corner(1)
-        j=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_low_corner(2)
-        k=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_low_corner(3)
-        f_bufo(ipp,:,:,:,:)=f_ogrid(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
+        i=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(1)
+        j=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(2)
+        k=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(3)
+        f_bufo(ipp,:,:,:,:)=f_ogrid(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
       enddo
       call mpisend_nonblock_int(send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id, &
         nbuf_farr(1),send_to,send_to,ireq1D(iter))
@@ -2150,8 +2194,8 @@ module Solid_Cells
     ! TODO: Make more efficient
       if(curvilinear_to_cartesian(id)%from_proc==iproc) then
         inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-        farr(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1):inear_loc(1)+1,inear_loc(2):inear_loc(2)+1, &
-          inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
+        farr(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+          inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
         call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
       endif
     enddo
@@ -2173,30 +2217,32 @@ module Solid_Cells
 !
     real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
     integer, intent(in) :: id,ivar1,ivar2
-    real, dimension(2,2,2,ivar2-ivar1+1), intent(in) :: farr
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1), intent(in) :: farr
     integer :: i,j,k
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
-    !TODO
-    real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
-    integer, dimension(3) :: inear_loc
+    !TODO:REMOVE
+    !real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
+    !integer, dimension(3) :: inear_loc
 !
     xyz_ip=cartesian_to_curvilinear(id)%xyz
+    inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
 ! 
 !  Perform interpolation on cartesian grid
 !
     if(interpolation_method==1) then
-      inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
       if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
       endif
     elseif(interpolation_method==2) then
-      inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
-      call adjust_inear_cart(inear_loc,xyz_ip)
-      farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-1:inear_loc(1)+1, &
-          inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
-      call interpolate_quadratic_spline(farr_large,ivar1,ivar2,xyz_ip,f_ip,inear_loc)
+!NEWNEW
+      !inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
+      !call adjust_inear_cart(inear_loc,xyz_ip)
+!/NEWNEW
+      !farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-1:inear_loc(1)+1, &
+          !inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
+      call interpolate_quadratic_spline(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     endif
 !
 !  Update curvilinear grid with the new data values
@@ -2217,28 +2263,30 @@ module Solid_Cells
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f_cartesian
     integer, intent(in) :: id,ivar1,ivar2
-    real, dimension(2,2,2,ivar2-ivar1+1), intent(in) :: farr
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1), intent(in) :: farr
     integer :: i,j,k
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
-    !TODO
-    integer, dimension(3) :: inear_loc
-    real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
+    !TODO:REMOVE
+    !integer, dimension(3) :: inear_loc
+    !real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
 !
     xyz_ip=curvilinear_to_cartesian(id)%xyz
+    inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
 !
     if(interpolation_method==1) then
-      inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
     elseif(interpolation_method==2) then
-      inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-      call adjust_inear_curv(inear_loc,xyz_ip)
-      farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-1:inear_loc(1)+1, &
-           inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
-      call interpolate_quadratic_sp_og(farr_large,ivar1,ivar2,xyz_ip,f_ip,inear_loc)
+!NEWNEW
+      !inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+      !call adjust_inear_curv(inear_loc,xyz_ip)
+      !farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-1:inear_loc(1)+1, &
+           !inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
+!/NEWNEW
+      call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     endif
 !
 !  Update curvilinear grid with the new data values
@@ -2507,7 +2555,7 @@ module Solid_Cells
       do j=m1,m2
         do i=l1,l2
           call get_polar_coords(x(i),y(j),z(k),rthz)
-          if((rthz(1)<=r_int_outer) .and.(rthz(1)>=r_int_inner)) then  
+          if((rthz(1)<=r_int_outer) .and.(rthz(1)>r_int_inner)) then  
             call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)  
             if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
               call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
@@ -7910,9 +7958,9 @@ module Solid_Cells
 !  point and normalize with the cell size.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
-      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
-      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+      dxp0=(xxp(1)-xglobal(ix0))*dx1grid(ix0-nghost)
+      dyp0=(xxp(2)-yglobal(iy0))*dy1grid(iy0-nghost)
+      dzp0=(xxp(3)-zglobal(iz0))*dz1grid(iz0-nghost)
 !
 !  Interpolation formulae.
 !
@@ -8045,8 +8093,8 @@ module Solid_Cells
             print*, 'dimensionality = ',dimensionality
             print*, 'interpolate_quadratic_spline: xxp=', xxp
             print*, 'interpolate_quadratic_spline: i, gp(i)=', i, gp(i)
-            print*, 'Nearest neighbours: x - ', x(ix0-1:ix0+1)
-            print*, 'Nearest neighbours: y - ', y(iy0-1:iy0+1)
+            print*, 'Nearest neighbours: xglobal - ', xglobal(ix0-1:ix0+1)
+            print*, 'Nearest neighbours: yglobal - ', yglobal(iy0-1:iy0+1)
             !print*, 'interpolate_quadratic_spline: x0, y0, z0=', &
                 !xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
             print*, 'interpolate_quadratic_spline: f(ix0-1,iy0-1:iy0+1,4,i)=', f(ix0-1,iy0-1:iy0+1,4,i)
@@ -8089,9 +8137,9 @@ module Solid_Cells
 !  point and normalize with the cell size.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      dxp0=(xxp(1)-x_ogrid(ix0))*dx_1_ogrid(ix0)
-      dyp0=(xxp(2)-y_ogrid(iy0))*dy_1_ogrid(iy0)
-      dzp0=(xxp(3)-z_ogrid(iz0))*dz_1_ogrid(iz0)
+      dxp0=(xxp(1)-xglobal_ogrid(ix0))*dx1grid_ogrid(ix0-nghost)
+      dyp0=(xxp(2)-yglobal_ogrid(iy0))*dy1grid_ogrid(iy0-nghost)
+      dzp0=(xxp(3)-zglobal_ogrid(iz0))*dz1grid_ogrid(iz0-nghost)
 !
 !  Interpolation formulae.
 !
@@ -8311,5 +8359,43 @@ module Solid_Cells
       endif
 !
     endsubroutine adjust_inear_curv
+!***********************************************************************
+    subroutine adjust_inear_cart_glob(inear_glob,xxp)
+!
+!  Adjust inear GLOBAL coordinates to guarantee that they point to the CLOSEST point to xxp,
+!  not to the bottom left corner of the cell that contains xxp.
+!  Necessary for interpolation with asymmetric stencils (e.g., quadratic spline)
+!
+!  14-sep-17/Jorgen: Coded
+!
+      integer, dimension(3),intent(inout) :: inear_glob
+      real, dimension(3), intent(in) :: xxp
+!
+      if((xxp(1)-xglobal(inear_glob(1)))>(xglobal(inear_glob(1)+1)-xxp(1))) inear_glob(1) = inear_glob(1)+1
+      if((xxp(2)-yglobal(inear_glob(2)))>(yglobal(inear_glob(2)+1)-xxp(2))) inear_glob(2) = inear_glob(2)+1
+      if(nzgrid>1) then
+        if((xxp(3)-zglobal(inear_glob(3)))>(zglobal(inear_glob(3)+1)-xxp(3))) inear_glob(3) = inear_glob(3)+1
+      endif
+!
+    endsubroutine adjust_inear_cart_glob
+!***********************************************************************
+    subroutine adjust_inear_curv_glob(inear_glob,xxp)
+!
+!  Adjust inear GLOBAL coordinates to guarantee that they point to the CLOSEST point to xxp,
+!  not to the bottom left corner of the cell that contains xxp.
+!  Necessary for interpolation with asymmetric stencils (e.g., quadratic spline)
+!
+!  14-sep-17/Jorgen: Coded
+!
+      integer, dimension(3),intent(inout) :: inear_glob
+      real, dimension(3), intent(in) :: xxp
+!
+      if((xxp(1)-xglobal_ogrid(inear_glob(1)))>(xglobal_ogrid(inear_glob(1)+1)-xxp(1))) inear_glob(1) = inear_glob(1)+1
+      if((xxp(2)-yglobal_ogrid(inear_glob(2)))>(yglobal_ogrid(inear_glob(2)+1)-xxp(2))) inear_glob(2) = inear_glob(2)+1
+      if(nzgrid_ogrid>1) then
+        if((xxp(3)-zglobal_ogrid(inear_glob(3)))>(zglobal_ogrid(inear_glob(3)+1)-xxp(3))) inear_glob(3) = inear_glob(3)+1
+      endif
+!
+    endsubroutine adjust_inear_curv_glob
 !***********************************************************************
 end module Solid_Cells
