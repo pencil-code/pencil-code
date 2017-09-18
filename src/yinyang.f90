@@ -7,7 +7,7 @@
 !
 module Yinyang
 !
-  use Cparam, only: impossible
+  use Cparam, only: impossible, nygrid
   use Cdata, only: iproc_world, lroot, yy_biquad_weights
 
   implicit none
@@ -472,7 +472,7 @@ if (abs(sum(indcoeffs%coeffs(ip,jp,:))-1.)>5.e-7) print*, 'coefficient sum /=1: 
 
       integer :: mm, nn, i, j, indth, indph, dindth, dindph, sz1, sz2, thpos, ith, ithmax
       real :: coeff
-      integer, parameter :: nlines_max=128   ! perhaps too small.
+      integer, parameter :: nlines_max=nygrid   ! perhaps too small.
       logical :: ltoo_many_lines
 
        if (allocated(indweights%inds)) deallocate(indweights%inds)
