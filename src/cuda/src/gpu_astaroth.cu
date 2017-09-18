@@ -79,8 +79,6 @@ void load_dconsts()
 	checkErr( cudaMemcpyToSymbol(d_NY, &NY, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_NZ, &NZ, sizeof(int)) );
 
-        const int pad_size=PAD_SIZE;
-	checkErr( cudaMemcpyToSymbol(d_PAD_SIZE, &pad_size, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_BOUND_SIZE, &BOUND_SIZE, sizeof(int)) );
 
 	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_X, &COMP_DOMAIN_SIZE_X, sizeof(int)) );
@@ -229,8 +227,10 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
 	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
 	halo = (float*) malloc(sizeof(float)*halo_size);
+printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN \n");
+printf("halo_size= %d \n",halo_size);
+printf("halo= %d \n",halo);
 	checkErr(cudaMalloc(&d_halo, sizeof(float)*halo_size));
-
 	// Allocate device memory
 
 	checkErr( cudaMalloc(&d_lnrho, sizeof(float)*GRID_SIZE) );

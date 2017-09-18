@@ -1,9 +1,9 @@
 CHEADERS = ../cparam_c.h ../cparam.inc_c.h ../cparam.local_c.h ../cdata_c.h ../density_c.h ../diagnostics_c.h ../eos_c.h ../forcing_c.h ../hydro_c.h ../viscosity_c.h ../sub_c.h
-copyHalosConcur.o: copyHalosConcur.cu ../cparam_c.h ../cdata_c.h
+copyHalosConcur.o: copyHalosConcur.cu ../cparam_c.h ../cdata_c.h dconsts.cuh
 timestep.o: timestep.cu ../cparam_c.h ../cdata_c.h ../density_c.h ../diagnostics_c.h ../hydro_c.h defines_PC.h
-gpu_astaroth.o: gpu_astaroth.cu ../cparam_c.h ../cdata_c.h ../diagnostics_c.h ../density_c.h ../hydro_c.h ../viscosity_c.h ../eos_c.h ../forcing_c.h defines_PC.h
+gpu_astaroth.o: gpu_astaroth.cu ../cparam_c.h ../cdata_c.h ../diagnostics_c.h ../density_c.h ../hydro_c.h ../viscosity_c.h ../eos_c.h ../forcing_c.h defines_PC.h dconsts.cuh
 diagnostics.o: diagnostics.cu ../cparam_c.h ../cdata_c.h defines_PC.h ../viscosity_c.h ../eos_c.h ../forcing_c.h
-integrators_v5s.o: integrators_v5s.cu ../sub_c.h
+integrators_v5s.o: integrators_v5s.cu ../sub_c.h dconsts.cuh
 
 ../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam.local ../scripts/cparam2c
 	@cd ..; cparam2c
