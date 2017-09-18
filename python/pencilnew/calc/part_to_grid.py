@@ -5,7 +5,7 @@ def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=F
     Args:
         - xp, yp:       array of x and y positions
         - zp:           specify if 3D run, set False to have zp == 0
-        - quantity:     array of same shape as xp and yp, but with quanittiy to bin, set ti False to count number of occurrences/histrogram2d
+        - quantity:     array of same shape as xp and yp, but with quantity to bin, set it False to count number of occurrences/histrogram2d
         - Nbins:        number of histrogram bins for each direction. if 2d only the first two entries in Nbins are used
         - sim:          to extract extent from by loading ghostzone-free grid
         - extent:       [[xmin, xmax],[ymin, ymax]] or set false and instead give a sim
@@ -30,6 +30,9 @@ def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=F
 
     if extent == False and sim == False:
         sim = get_sim()
+
+    if quantity == False:
+        quantity = xp/xp
 
     if extent == False:
         grid = sim.grid
