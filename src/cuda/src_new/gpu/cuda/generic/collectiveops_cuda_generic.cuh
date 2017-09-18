@@ -1,8 +1,13 @@
 #pragma once
 #include "common/config.h"
 
+typedef struct {
+    real* d_vec_res;
+    real* d_partial_result;
+} ReductionArray;
 
-void init_collectiveops_cuda_generic(CParamConfig* cparams);
-void destroy_collectiveops_cuda_generic();
+void init_reduction_array_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams);
+void destroy_reduction_array_cuda_generic(ReductionArray* reduct_arr);
 
-real get_reduction_cuda_generic(ReductType t, real* d_a, real* d_b = NULL, real* d_c = NULL);
+real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParamConfig* cparams, 
+                                real* d_a, real* d_b = NULL, real* d_c = NULL);

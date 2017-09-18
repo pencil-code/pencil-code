@@ -31,9 +31,7 @@ typedef struct vec3i {
 } vec3i;
 
 
-typedef enum {MAX_VEC, MIN_VEC, RMS_VEC, MAX_SCAL, MIN_SCAL, RMS_SCAL, RMS_EXP, NUM_REDUCT_TYPES} ReductType;
-
-typedef enum {LNRHO, UU_X, UU_Y, UU_Z, UU, NUM_ARR_TYPES} ArrType;
+typedef enum {MAX_VEC_UU, MIN_VEC_UU, RMS_VEC_UU, MAX_SCAL, MIN_SCAL, RMS_SCAL, RMS_EXP, NUM_REDUCT_TYPES} ReductType; //This should be defined somewhere else (like reduce.h, but would prefer not to make a new header file just for a single enumerator)
 
 
 

@@ -15,33 +15,10 @@
 #include "boundcond_cuda_generic.cuh"
 #include "gpu/cuda/core/dconsts_core.cuh"
 #include "gpu/cuda/core/errorhandler_cuda.cuh"
-#include "common/errorhandler.h"
-
-
-static bool is_initialized      = false;
-static CParamConfig* cparams    = NULL;
-
-
-void init_boundcond_cuda_generic(CParamConfig* cparamcfg)
-{
-    if (is_initialized) CRASH("boundcond_cuda_generic() already initialized!");
-    is_initialized = true;
-
-    cparams = cparamcfg;
-}
-
-void destroy_boundcond_cuda_generic()
-{
-    if (!is_initialized) CRASH("boundcond_cuda_generic() wasn't initialized!");
-        is_initialized = false;
-
-    cparams = NULL;
-}
-
 
 //Copies the front and back of the computational domain to an appropriate
 //boundary zone (does not include the edges and corners of the boundary zone)
-__global__ void per_z_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_z_sides(Grid d_grid)
 {
 	int iz, iz_bound;
 	if (blockIdx.z < 3) { //Copy front of the computational domain to the boundary zone at the back
@@ -62,17 +39,14 @@ __global__ void per_z_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 		int grid_idx =  ix + iy*d_mx + iz*d_mx*d_my;
 		int bound_idx =  ix + iy*d_mx + iz_bound*d_mx*d_my;
 
-		d_lnrho[bound_idx] = d_lnrho[grid_idx];
-		d_uu_x[bound_idx] = d_uu_x[grid_idx];
-		d_uu_y[bound_idx] = d_uu_y[grid_idx];
-		d_uu_z[bound_idx] = d_uu_z[grid_idx];
-
+        for (int i=0; i < NUM_ARRS; ++i)
+            d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
 	}
 }
 
 //Copies the top and bottom of the computational domain to an appropriate
 //boundary zone (does not include the edges and corners of the boundary zone)
-__global__ void per_y_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_y_sides(Grid d_grid)
 {
 	int iy, iy_bound;
 	if (blockIdx.z < 3) { //Copy bottom of the computational domain to the boundary zone at the top
@@ -93,18 +67,15 @@ __global__ void per_y_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 		int grid_idx =  ix + iy*d_mx + iz*d_mx*d_my;
 		int bound_idx =  ix + iy_bound*d_mx + iz*d_mx*d_my;
 
-		d_lnrho[bound_idx] = d_lnrho[grid_idx];
-		d_uu_x[bound_idx] = d_uu_x[grid_idx];
-		d_uu_y[bound_idx] = d_uu_y[grid_idx];
-		d_uu_z[bound_idx] = d_uu_z[grid_idx];
-
+        for (int i=0; i < NUM_ARRS; ++i)
+            d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
 	}
 }
 
 
 //Copies the left and right sides of the computational domain to an appropriate
 //boundary zone (does not include the edges and corners of the boundary zone)
-__global__ void per_x_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_x_sides(Grid d_grid)
 {
 
         int ix, ix_bound;
@@ -121,15 +92,11 @@ __global__ void per_x_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
         iz = threadIdx.z + blockIdx.z*blockDim.z + d_nz_min;//Don't add edges
         iy = threadIdx.y + blockIdx.y*blockDim.y + d_ny_min;
 
+        int grid_idx =  ix + iy*d_mx + iz*d_mx*d_my;
+        int bound_idx =  ix_bound + iy*d_mx + iz*d_mx*d_my;
 
-
-    int grid_idx =  ix + iy*d_mx + iz*d_mx*d_my;
-	int bound_idx =  ix_bound + iy*d_mx + iz*d_mx*d_my;
-
-	d_lnrho[bound_idx] = d_lnrho[grid_idx];
-	d_uu_x[bound_idx] = d_uu_x[grid_idx];
-	d_uu_y[bound_idx] = d_uu_y[grid_idx];
-	d_uu_z[bound_idx] = d_uu_z[grid_idx];
+        for (int i=0; i < NUM_ARRS; ++i)
+            d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
     /*//Uncommented this TODO recheck if causes issues
 	//Normal periodic boundary if shearing is not included
     int sid_depth = threadIdx.x;
@@ -170,7 +137,7 @@ __global__ void per_x_sides(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 //Copy the edges from upper front & back and bottom front & back to
 //the appropriate boundary zones
 //(Requires thread dims of (32, 3, 3) and blockDims of (ceil((real) d_nx / (real)threadsPerBlock.x), 1, 4)
-__global__ void per_yz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_yz_edges(Grid d_grid)
 {
 	int ix, iy, iz;
 	int grid_idx, bound_idx;
@@ -183,7 +150,7 @@ __global__ void per_yz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 		case 0: //Copy upper front edge of the computational domain to the boundary zone at bottom back
 			grid_idx = ix + (iy + d_ny-3)*d_mx + iz*d_mx*d_my;
 			bound_idx = 	ix + 
-					(iy-d_bound_size)*d_mx + 
+					(iy-BOUND_SIZE)*d_mx + 
 					(iz+d_nz)*d_mx*d_my;
 			break;
 
@@ -197,32 +164,30 @@ __global__ void per_yz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 		case 2: //Copy upper back edge of the computational domain to the boundary zone at bottom front
 			grid_idx = ix + (iy + d_ny-3)*d_mx + (iz + d_nz-3)*d_mx*d_my;
 			bound_idx = 	ix + 
-					(iy-d_bound_size)*d_mx + 
-					(iz-d_bound_size)*d_mx*d_my;
+					(iy-BOUND_SIZE)*d_mx + 
+					(iz-BOUND_SIZE)*d_mx*d_my;
 			break;
 
 		case 3: //Copy bottom back edge of the computational domain to the boundary zone at upper front
 			grid_idx = ix + iy*d_mx + (iz + d_nz-3)*d_mx*d_my;
 			bound_idx = 	ix + 
 					(iy+d_ny)*d_mx + 
-					(iz-d_bound_size)*d_mx*d_my;
+					(iz-BOUND_SIZE)*d_mx*d_my;
 			break;
 
 
 	}
 	
 	if (ix < d_nx_max) {
-		d_lnrho[bound_idx] = d_lnrho[grid_idx];
-		d_uu_x[bound_idx] = d_uu_x[grid_idx];
-		d_uu_y[bound_idx] = d_uu_y[grid_idx];
-		d_uu_z[bound_idx] = d_uu_z[grid_idx];
+        for (int i=0; i < NUM_ARRS; ++i)
+            d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
 	}
 }
 
 //Copy the edges from front left & right and back left & right to
 //the appropriate boundary zones
 //(Requires thread dims of (3, 32, 3) and blockDims of (1, ceil((real) d_ny / (real)threadsPerBlock.y), 4))
-__global__ void per_xz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_xz_edges(Grid d_grid)
 {
 	int ix, iy, iz;
 	int grid_idx, bound_idx;
@@ -241,7 +206,7 @@ __global__ void per_xz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 
 		case 1: //Copy right front edge of the computational domain to the boundary zone at left back
 			grid_idx = (ix + d_nx-3) + iy*d_mx + iz*d_mx*d_my;
-			bound_idx = 	(ix-d_bound_size) + 
+			bound_idx = 	(ix-BOUND_SIZE) + 
 					iy*d_mx + 
 					(iz+d_nz)*d_mx*d_my;
 			break;
@@ -250,24 +215,22 @@ __global__ void per_xz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 			grid_idx = ix + iy*d_mx + (iz + d_nz-3)*d_mx*d_my;
 			bound_idx = 	(ix + d_nx) + 
 					iy*d_mx + 
-					(iz-d_bound_size)*d_mx*d_my;
+					(iz-BOUND_SIZE)*d_mx*d_my;
 			break;
 
 		case 3: //Copy right back edge of the computational domain to the boundary zone at left front
 			grid_idx = (ix + d_nx-3) + iy*d_mx + (iz + d_nz-3)*d_mx*d_my;
-			bound_idx = 	(ix-d_bound_size) + 
+			bound_idx = 	(ix-BOUND_SIZE) + 
 					iy*d_mx + 
-					(iz-d_bound_size)*d_mx*d_my;
+					(iz-BOUND_SIZE)*d_mx*d_my;
 			break;
 
 
 	}
 	
 	if (iy < d_ny_max) {
-		d_lnrho[bound_idx] = d_lnrho[grid_idx];
-		d_uu_x[bound_idx] = d_uu_x[grid_idx];
-		d_uu_y[bound_idx] = d_uu_y[grid_idx];
-		d_uu_z[bound_idx] = d_uu_z[grid_idx];
+        for (int i=0; i < NUM_ARRS; ++i)
+            d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
 	}
 }
 
@@ -275,7 +238,7 @@ __global__ void per_xz_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 //Copy the edges from upper left & right and bottom left & right to
 //the appropriate boundary zones
 //(Requires thread dims of (3, 3, 32) and blockDims of (1, 4, ceil((real) d_nz / (real)threadsPerBlock.z)))
-__global__ void per_xy_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_xy_edges(Grid d_grid)
 {
 	int ix, iy, iz;
 	int grid_idx, bound_idx;
@@ -288,14 +251,14 @@ __global__ void per_xy_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 		case 0: //Copy upper left edge of the computational domain to the boundary zone at bottom right
 			grid_idx = ix + (iy + d_ny-3)*d_mx + iz*d_mx*d_my;
 			bound_idx = 	(ix + d_nx) + 
-					(iy-d_bound_size)*d_mx + 
+					(iy-BOUND_SIZE)*d_mx + 
 					iz*d_mx*d_my;
 			break;
 
 		case 1: //Copy upper right edge of the computational domain to the boundary zone at bottom left
 			grid_idx = (ix + d_nx-3) + (iy + d_ny-3)*d_mx + iz*d_mx*d_my;
-			bound_idx = 	(ix-d_bound_size) + 
-					(iy-d_bound_size)*d_mx + 
+			bound_idx = 	(ix-BOUND_SIZE) + 
+					(iy-BOUND_SIZE)*d_mx + 
 					iz*d_mx*d_my;
 			break;
 
@@ -308,7 +271,7 @@ __global__ void per_xy_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 
 		case 3: //Copy bottom right edge of the computational domain to the boundary zone at upper left
 			grid_idx = (ix + d_nx-3) + iy*d_mx + iz*d_mx*d_my;
-			bound_idx = 	(ix-d_bound_size) + 
+			bound_idx = 	(ix-BOUND_SIZE) + 
 					(iy + d_ny)*d_mx + 
 					iz*d_mx*d_my;
 			break;
@@ -317,10 +280,8 @@ __global__ void per_xy_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 	}
 	
 	if (iz < d_nz_max) {
-		d_lnrho[bound_idx] = d_lnrho[grid_idx];
-		d_uu_x[bound_idx] = d_uu_x[grid_idx];
-		d_uu_y[bound_idx] = d_uu_y[grid_idx];
-		d_uu_z[bound_idx] = d_uu_z[grid_idx];
+        for (int i=0; i < NUM_ARRS; ++i)
+            d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
 	}
 }
 
@@ -329,7 +290,7 @@ __global__ void per_xy_edges(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_
 //Uses x,y,z to determine the index inside the block and blockIdx.z to determine 
 //which one of the eight corners to copy.  
 //(Requires thread dims of (3, 3, 3) and blockDims of (1, 1, 8))
-__global__ void per_xyz_corners(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+__global__ void per_xyz_corners(Grid d_grid)
 {
 	int ix, iy, iz;
 	int grid_idx, bound_idx;
@@ -350,41 +311,41 @@ __global__ void per_xyz_corners(real* d_lnrho, real* d_uu_x, real* d_uu_y, real*
 			grid_idx = ix + iy*d_mx + (iz+d_nz-3)*d_mx*d_my;
 			bound_idx = 	(ix + d_nx) + 
 					(iy + d_ny)*d_mx + 
-					(iz - d_bound_size)*d_mx*d_my;
+					(iz - BOUND_SIZE)*d_mx*d_my;
 			break;
 
 		case 2: //Copy the upper left front corner to boundary zone at bottom right back (x=0, y=1, z=0)
 			grid_idx = ix + (iy+d_ny-3)*d_mx + iz*d_mx*d_my;
 			bound_idx = 	(ix + d_nx) + 
-					(iy - d_bound_size)*d_mx + 
+					(iy - BOUND_SIZE)*d_mx + 
 					(iz + d_nz)*d_mx*d_my;
 			break;
 
 		case 3: //Copy the upper left back corner to boundary zone at bottom right front (x=0, y=1, z=1)
 			grid_idx = ix + (iy+d_ny-3)*d_mx + (iz+d_nz-3)*d_mx*d_my;
 			bound_idx = 	(ix + d_nx) + 
-					(iy - d_bound_size)*d_mx + 
-					(iz - d_bound_size)*d_mx*d_my;
+					(iy - BOUND_SIZE)*d_mx + 
+					(iz - BOUND_SIZE)*d_mx*d_my;
 			break;
 
 		case 4: //Copy the bottom right front corner to boundary zone at upper left back (Do x=1, y=0, z=0)
 			grid_idx = (ix+d_nx-3) + iy*d_mx + iz*d_mx*d_my;
-			bound_idx = 	(ix - d_bound_size) + 
+			bound_idx = 	(ix - BOUND_SIZE) + 
 					(iy + d_ny)*d_mx + 
 					(iz + d_nz)*d_mx*d_my;
 			break;
 
 		case 5: //Copy the bottom right back corner to boundary zone at upper left front (x=1, y=0, z=1)
 			grid_idx = (ix+d_nx-3) + iy*d_mx + (iz+d_nz-3)*d_mx*d_my;
-			bound_idx = 	(ix - d_bound_size) + 
+			bound_idx = 	(ix - BOUND_SIZE) + 
 					(iy + d_ny)*d_mx + 
-					(iz - d_bound_size)*d_mx*d_my;
+					(iz - BOUND_SIZE)*d_mx*d_my;
 			break;
 
 		case 6: //Copy the upper right front corner to boundary zone at bottom left back (x=1, y=1, z=0)
 			grid_idx = (ix+d_nx-3) + (iy+d_ny-3)*d_mx + iz*d_mx*d_my;
-			bound_idx = 	(ix - d_bound_size) + 
-					(iy - d_bound_size)*d_mx + 
+			bound_idx = 	(ix - BOUND_SIZE) + 
+					(iy - BOUND_SIZE)*d_mx + 
 					(iz + d_nz)*d_mx*d_my;
 			break;
 
@@ -393,15 +354,14 @@ __global__ void per_xyz_corners(real* d_lnrho, real* d_uu_x, real* d_uu_y, real*
 					(iy+d_ny-3)*d_mx + 
 					(iz+d_nz-3)*d_mx*d_my;
 			
-			bound_idx = 	(ix - d_bound_size) + 
-					(iy - d_bound_size)*d_mx + 
-					(iz - d_bound_size)*d_mx*d_my;
+			bound_idx = 	(ix - BOUND_SIZE) + 
+					(iy - BOUND_SIZE)*d_mx + 
+					(iz - BOUND_SIZE)*d_mx*d_my;
 			break;
 	}
-		d_lnrho[bound_idx] = d_lnrho[grid_idx];
-		d_uu_x[bound_idx] = d_uu_x[grid_idx];
-		d_uu_y[bound_idx] = d_uu_y[grid_idx];
-		d_uu_z[bound_idx] = d_uu_z[grid_idx];
+
+    for (int i=0; i < NUM_ARRS; ++i)
+        d_grid.arr[i][bound_idx] = d_grid.arr[i][grid_idx]; 
 }
 
 
@@ -411,7 +371,7 @@ __global__ void per_xyz_corners(real* d_lnrho, real* d_uu_x, real* d_uu_y, real*
 #define BOUNDCOND_TYPE_X PERIODIC_BOUNDCONDS
 #define BOUNDCOND_TYPE_Y PERIODIC_BOUNDCONDS
 #define BOUNDCOND_TYPE_Z PERIODIC_BOUNDCONDS
-void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_uu_z)
+void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams)
 {
 	//TODO: Adapt for shearing-periodic case
 
@@ -446,7 +406,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 			blocksPerGrid.x = 1;
 			blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
 			blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
-			per_x_sides<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+			per_x_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 			CUDA_ERRCHK_KERNEL();
 
 			//Copy periodic xy edges
@@ -457,7 +417,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 				blocksPerGrid.x = 1;
 				blocksPerGrid.y = 4;
 				blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
-				per_xy_edges<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+				per_xy_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 			}
 			//Copy periodic xz edges
@@ -468,7 +428,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 				blocksPerGrid.x = 1;
 				blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
 				blocksPerGrid.z = 4;
-				per_xz_edges<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+				per_xz_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 			}
 			//If fully periodic, copy all corners
@@ -479,7 +439,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 				blocksPerGrid.x = 1;
 				blocksPerGrid.y = 1;
 				blocksPerGrid.z = 8;
-				per_xyz_corners<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+				per_xyz_corners<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 			}
 			break;
@@ -500,7 +460,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 			blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
 			blocksPerGrid.y = ceil((real) cparams->nz / (real)threadsPerBlock.y);
 			blocksPerGrid.z = 6;
-			per_y_sides<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+			per_y_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 			CUDA_ERRCHK_KERNEL();
 	
 			//Copy periodic yz edges
@@ -511,7 +471,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 				blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
 				blocksPerGrid.y = 1;
 				blocksPerGrid.z = 4;
-				per_yz_edges<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+				per_yz_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 
 			}
@@ -535,7 +495,7 @@ void boundcond_cuda_generic(real* d_lnrho, real* d_uu_x, real* d_uu_y, real* d_u
 			blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
 			blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
 			blocksPerGrid.z = 6;
-			per_z_sides<<<blocksPerGrid, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
+			per_z_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
 			CUDA_ERRCHK_KERNEL();
 			break;
 		default:

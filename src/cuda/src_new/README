@@ -1,12 +1,8 @@
---------2017-07-28
+--------2017-09-18
 
 
 Building instructions:
-    The CMakeLists.txt provided with this minimal version (2017-07-28) is 
-more or less a direct copy from the standalone Astaroth and is not modified to
-compile object files only. Therefore the compilation fails if there's no main()
-function in gpu_astaroth_new.cc. Hypothetically the project could be built with
-"mkdir build && cd build && cmake .. && make -j" once this is fixed.
+    "mkdir build && cd build && cmake .. && make -j" and run with "./ac_run". 
 
 
 
@@ -20,7 +16,16 @@ common/config.cc
 common/config.h
 common/datatypes.h
 common/errorhandler.h
+common/defines_dims_PC.h
+common/defines_PC.h
+common/grid.cc
+common/grid.h
+common/slice.cc
+common/slice.h
+common/forcing.h
 utils/utils.h
+gpu/CMakeLists.txt
+gpu/gpu.cc
 gpu/gpu.h
 gpu/cuda/cuda_generic.cu
 gpu/cuda/cuda_generic.cuh

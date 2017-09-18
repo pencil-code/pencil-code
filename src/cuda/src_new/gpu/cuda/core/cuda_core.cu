@@ -1,16 +1,8 @@
-#define INCLUDED_FROM_CUDA_CORE
 #include "cuda_core.cuh"
-#include "errorhandler_cuda.cuh"
-#include "common/config.h"
-#include "common/errorhandler.h"
-
 #define INCLUDED_FROM_DCONST_DEFINER
 #include "dconsts_core.cuh"
-
-
-static CParamConfig* cparams = NULL;
-static RunConfig* run_params = NULL;
-static bool is_initialized = false;
+#include "errorhandler_cuda.cuh"
+#include "common/config.h"
 
 
 void print_gpu_config()
@@ -20,6 +12,8 @@ void print_gpu_config()
 
     printf("Num CUDA devices found: %u\n", n_devices);
 
+    int initial_device;
+    cudaGetDevice(&initial_device);
     for (int i = 0; i < n_devices; i++) {
         cudaSetDevice(i);
 
@@ -39,10 +33,28 @@ void print_gpu_config()
         printf("  GPU memory free (MiB): %f\n", (double) free_bytes / (1024*1024));
         printf("  GPU memory total (MiB): %f\n", (double) total_bytes / (1024*1024));
     }
+    cudaSetDevice(initial_device);
+    
+    if (n_devices < NUM_DEVICES) CRASH("Invalid number of devices requested!");
 }
 
 
-void load_dconsts_core()
+void load_forcing_dconsts_cuda_core(ForcingParams* forcing_params)
+{
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_ENABLED, &forcing_params->forcing_enabled, sizeof(bool)) );
+    //Copy forcing coefficients to the device's constant memory
+    const size_t k_idx = forcing_params->k_idx;
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_KK_VEC_X, &forcing_params->kk_x[k_idx], sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_KK_VEC_Y, &forcing_params->kk_y[k_idx], sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_KK_VEC_Z, &forcing_params->kk_z[k_idx], sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_KK_PART_X, &forcing_params->kk_part_x, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_KK_PART_Y, &forcing_params->kk_part_y, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_KK_PART_Z, &forcing_params->kk_part_z, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_PHI, &forcing_params->phi, sizeof(real)) );
+}
+
+
+void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, const vec3i start_idx)
 { 
     //Grid dimensions
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_nx, &(cparams->nx), sizeof(int)) );
@@ -60,9 +72,24 @@ void load_dconsts_core()
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_nz_min, &(cparams->nz_min), sizeof(int)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_nz_max, &(cparams->nz_max), sizeof(int)) );
 
-    const int bound_size = BOUND_SIZE;
-    CUDA_ERRCHK( cudaMemcpyToSymbol(d_bound_size, &bound_size, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_DSX, &(cparams->dsx), sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_DSY, &(cparams->dsy), sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_DSZ, &(cparams->dsz), sizeof(real)) );
 
+    const real dsx_offset = cparams->dsx*start_idx.x;
+    const real dsy_offset = cparams->dsy*start_idx.y;
+    const real dsz_offset = cparams->dsz*start_idx.z;
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_DSX_OFFSET, &dsx_offset, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_DSY_OFFSET, &dsy_offset, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_DSZ_OFFSET, &dsz_offset, sizeof(real)) ); 
+
+    const real xorig = XORIG;
+    const real yorig = YORIG;
+    const real zorig = ZORIG;
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_XORIG, &xorig, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_YORIG, &yorig, sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_ZORIG, &zorig, sizeof(real)) );    
+    
 
     //Diff constants
     const real diff1_dx = 1.0/(60.0*cparams->dsx);
@@ -96,93 +123,106 @@ void load_dconsts_core()
     //Speed of sound
     const real cs2_sound = pow(run_params->cs_sound, 2.0);
 	CUDA_ERRCHK( cudaMemcpyToSymbol(d_CS2_SOUND, &cs2_sound, sizeof(real)) );	
+
+    //Induction
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_ETA, &(run_params->eta), sizeof(real)) );
 }
 
 
-void init_cuda_core(CParamConfig* cparamconf, RunConfig* runconf)
+void init_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst, CParamConfig* cparams)
 {
-    if (is_initialized) CRASH("init_cuda_core() already initialized!");
-    is_initialized = true;
-
     //Print the GPU configuration
-    //print_gpu_config();
+    print_gpu_config();
 
-    //Store config
-    cparams = cparamconf;
-    run_params = runconf;
-
-    //Load core constants
-    load_dconsts_core();
-
-    const int grid_size = cparams->mx * cparams->my * cparams->mz; 
+    const size_t grid_size_bytes = sizeof(real) * cparams->mx * cparams->my * cparams->mz; 
 
     //Init device arrays
-	CUDA_ERRCHK( cudaMalloc(&d_lnrho, sizeof(real)*grid_size) );
-	CUDA_ERRCHK( cudaMalloc(&d_uu_x,  sizeof(real)*grid_size) );
-	CUDA_ERRCHK( cudaMalloc(&d_uu_y,  sizeof(real)*grid_size) );
-	CUDA_ERRCHK( cudaMalloc(&d_uu_z,  sizeof(real)*grid_size) );
-
-	CUDA_ERRCHK( cudaMalloc(&d_lnrho_dst, sizeof(real)*grid_size) );
-	CUDA_ERRCHK( cudaMalloc(&d_uu_x_dst,  sizeof(real)*grid_size) );
-	CUDA_ERRCHK( cudaMalloc(&d_uu_y_dst,  sizeof(real)*grid_size) );
-	CUDA_ERRCHK( cudaMalloc(&d_uu_z_dst,  sizeof(real)*grid_size) );
-
-    CUDA_ERRCHK( cudaMemset(d_lnrho, INT_MAX, sizeof(real)*grid_size) );
-    CUDA_ERRCHK( cudaMemset(d_uu_x,  INT_MAX, sizeof(real)*grid_size) );
-    CUDA_ERRCHK( cudaMemset(d_uu_y,  INT_MAX, sizeof(real)*grid_size) );
-    CUDA_ERRCHK( cudaMemset(d_uu_z,  INT_MAX, sizeof(real)*grid_size) );
-
-    CUDA_ERRCHK( cudaMemset(d_lnrho_dst, INT_MAX, sizeof(real)*grid_size) );
-    CUDA_ERRCHK( cudaMemset(d_uu_x_dst,  INT_MAX, sizeof(real)*grid_size) );
-    CUDA_ERRCHK( cudaMemset(d_uu_y_dst,  INT_MAX, sizeof(real)*grid_size) );
-    CUDA_ERRCHK( cudaMemset(d_uu_z_dst,  INT_MAX, sizeof(real)*grid_size) );
+    for (int i=0; i < NUM_ARRS; ++i) {
+        CUDA_ERRCHK( cudaMalloc(&(d_grid->arr[i]), grid_size_bytes) );
+        CUDA_ERRCHK( cudaMemset(d_grid->arr[i], INT_MAX, grid_size_bytes) );
+        CUDA_ERRCHK( cudaMalloc(&(d_grid_dst->arr[i]), grid_size_bytes) );
+        CUDA_ERRCHK( cudaMemset(d_grid_dst->arr[i], INT_MAX, grid_size_bytes) );
+    }
 }
 
 
-void destroy_cuda_core()
+void destroy_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst)
 {
-    if (!is_initialized) CRASH("destroy_cuda_core() wasn't initialized!");
-    is_initialized = false;
-
-    //Get rid of the config ptr
-    cparams = NULL;
-    run_params = NULL;
-
-    //Free device arrays
-    CUDA_ERRCHK( cudaFree(d_lnrho) );
-    CUDA_ERRCHK( cudaFree(d_uu_x)  );
-    CUDA_ERRCHK( cudaFree(d_uu_y)  );
-    CUDA_ERRCHK( cudaFree(d_uu_z)  );
-
-    CUDA_ERRCHK( cudaFree(d_lnrho_dst) );
-    CUDA_ERRCHK( cudaFree(d_uu_x_dst)  );
-    CUDA_ERRCHK( cudaFree(d_uu_y_dst)  );
-    CUDA_ERRCHK( cudaFree(d_uu_z_dst)  );
+    for (int i=0; i < NUM_ARRS; ++i) {
+        CUDA_ERRCHK( cudaFree(d_grid->arr[i]) );
+        CUDA_ERRCHK( cudaFree(d_grid_dst->arr[i]) );
+    }
 }
 
-
-void load_grid_cuda_core(real* lnrho, real* uu_x, real* uu_y, real* uu_z)
+void load_grid_cuda_core(Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx, Grid* h_grid, CParamConfig* h_cparams)
 {
-    if (!is_initialized) CRASH("destroy_cuda_core() wasn't initialized!");
+    //Create a host buffer to minimize the number of device-host-device memcpys (very high latency)
+    Grid buffer;
+    grid_malloc(&buffer, d_cparams);
 
-    const int grid_size = cparams->mx * cparams->my * cparams->mz; 
-    CUDA_ERRCHK( cudaMemcpy(d_lnrho, lnrho, sizeof(real)*grid_size, cudaMemcpyHostToDevice) );
-	CUDA_ERRCHK( cudaMemcpy(d_uu_x,  uu_x,  sizeof(real)*grid_size, cudaMemcpyHostToDevice) );
-	CUDA_ERRCHK( cudaMemcpy(d_uu_y,  uu_y,  sizeof(real)*grid_size, cudaMemcpyHostToDevice) );
-	CUDA_ERRCHK( cudaMemcpy(d_uu_z,  uu_z,  sizeof(real)*grid_size, cudaMemcpyHostToDevice) );
+    const size_t slab_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my;
+    for (int w=0; w < NUM_ARRS; ++w)
+        for (int k=0; k < d_cparams->mz; ++k)
+            memcpy(&buffer.arr[w][k*d_cparams->mx*d_cparams->my], &h_grid->arr[w][h_start_idx->y*h_cparams->mx + k*h_cparams->mx*h_cparams->my], slab_size_bytes);
+
+    cudaStream_t stream;
+    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+    const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->mz; 
+    for (int w=0; w < NUM_ARRS; ++w)
+        CUDA_ERRCHK( cudaMemcpyAsync(d_grid->arr[w], buffer.arr[w], grid_size_bytes, cudaMemcpyHostToDevice, stream) );
+
+    cudaStreamDestroy(stream);
+    grid_free(&buffer);
 }
 
 
-void store_grid_cuda_core(real* lnrho, real* uu_x, real* uu_y, real* uu_z)
+void store_grid_cuda_core(Grid* h_grid, CParamConfig* h_cparams, Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx)
 {
-    if (!is_initialized) CRASH("destroy_cuda_core() wasn't initialized!");
+    Grid buffer;
+    grid_malloc(&buffer, d_cparams);
 
-    const int grid_size = cparams->mx * cparams->my * cparams->mz; 
-    CUDA_ERRCHK( cudaMemcpy(lnrho, d_lnrho, sizeof(real)*grid_size, cudaMemcpyDeviceToHost) );
-	CUDA_ERRCHK( cudaMemcpy(uu_x,  d_uu_x,  sizeof(real)*grid_size, cudaMemcpyDeviceToHost) );
-	CUDA_ERRCHK( cudaMemcpy(uu_y,  d_uu_y,  sizeof(real)*grid_size, cudaMemcpyDeviceToHost) );
-	CUDA_ERRCHK( cudaMemcpy(uu_z,  d_uu_z,  sizeof(real)*grid_size, cudaMemcpyDeviceToHost) );
+    cudaStream_t stream;
+    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+    const size_t grid_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my * d_cparams->mz;
+    for (int w=0; w < NUM_ARRS; ++w)
+        cudaMemcpyAsync(buffer.arr[w], d_grid->arr[w], grid_size_bytes, cudaMemcpyDeviceToHost, stream);
+
+    const size_t row_size_bytes = sizeof(real) * d_cparams->nx; 
+    for (int w=0; w < NUM_ARRS; ++w) {
+        for (int k=d_cparams->nz_min; k < d_cparams->nz_max; ++k)
+            for (int j=d_cparams->ny_min; j < d_cparams->ny_max; ++j)
+                memcpy(&h_grid->arr[w][h_cparams->nx_min + (j+h_start_idx->y)*h_cparams->mx + k*h_cparams->mx*h_cparams->my], 
+                       &buffer.arr[w][d_cparams->nx_min + j*d_cparams->mx + k*d_cparams->mx*d_cparams->my], row_size_bytes);
+    } 
+
+    cudaStreamDestroy(stream);
+    grid_free(&buffer);
 }
+
+
+void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h_run_params, Slice* d_slice, CParamConfig* d_cparams, vec3i* h_start_idx)
+{
+    if (h_run_params->slice_axis != 'z') CRASH("Slice axis other that z not yet supported!");
+
+    Slice buffer;
+    slice_malloc(&buffer, d_cparams, h_run_params);
+
+    cudaStream_t stream;
+    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+    const size_t slice_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my;
+    for (int w=0; w < NUM_SLICES; ++w)
+        CUDA_ERRCHK( cudaMemcpyAsync(buffer.arr[w], d_slice->arr[w], slice_size_bytes, cudaMemcpyDeviceToHost, stream) );
+    
+    const size_t row_size_bytes = sizeof(real) * d_cparams->nx;
+    for (int w=0; w < NUM_SLICES; ++w)
+        for (int j=d_cparams->ny_min; j < d_cparams->ny_max; ++j)
+            memcpy(&h_slice->arr[w][h_cparams->nx_min + (j+h_start_idx->y)*h_cparams->mx], 
+                   &buffer.arr[w][d_cparams->nx_min + j*d_cparams->mx], row_size_bytes);
+    
+    cudaStreamDestroy(stream);
+    slice_free(&buffer);
+}
+
 
 
 

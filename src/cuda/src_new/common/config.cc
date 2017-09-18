@@ -70,6 +70,10 @@ void RunConfig::parse(const char* keyword, const char* value)
         load_value(value, &nu_visc);
     else if (strcmp(keyword, "cs_sound") == 0)
         load_value(value, &cs_sound);
+    else if (strcmp(keyword, "eta") == 0)
+        load_value(value, &eta);
+    else if (strcmp(keyword, "relhel") == 0)
+        load_value(value, &relhel);
     else
         CRASH("Invalid keyword!");    
 }
