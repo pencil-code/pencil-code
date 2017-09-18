@@ -96,6 +96,9 @@ void load_dconsts()
 	const int h_w_grid_z_offset = COMP_DOMAIN_SIZE_X*COMP_DOMAIN_SIZE_Y;
 	const int h_grid_y_offset = NX;
 	const int h_grid_z_offset = NX*NY;
+        const int cx_top = CX_TOP;
+        const int cy_top = CY_TOP;
+        const int cz_top = CZ_TOP;
 
 	checkErr( cudaMemcpyToSymbol(d_W_GRID_Y_OFFSET, &h_w_grid_y_offset, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_W_GRID_Z_OFFSET, &h_w_grid_z_offset, sizeof(int)) );
@@ -104,9 +107,9 @@ void load_dconsts()
 
 	//------Computational domain's bottom and top indices---------
 
-	checkErr( cudaMemcpyToSymbol(d_CX_TOP, &CX_TOP, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CY_TOP, &CY_TOP, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CZ_TOP, &CZ_TOP, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CX_TOP, &cx_top, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CY_TOP, &cy_top, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CZ_TOP, &cz_top, sizeof(int)) );
 
 	checkErr( cudaMemcpyToSymbol(d_CX_BOT, &CX_BOT, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_CY_BOT, &CY_BOT, sizeof(int)) );

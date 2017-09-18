@@ -193,7 +193,6 @@ void print_run_config()
 void print_additional_defines()
 {
 	printf("bound size %d\n", BOUND_SIZE);
-	printf("pad size %d\n", PAD_SIZE);
 	//printf(" %d", NDIM 3 //useless?
 
 	printf("Comp domain top indices xyz:\n%d\n", CX_TOP);

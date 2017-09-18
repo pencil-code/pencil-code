@@ -32,11 +32,11 @@ void save_grid_information(float time)
    FILE* nnfile;
 
    // Format:
-   //   NX   NY   NZ   GRID_SIZE   COMP_DOMAIN_SIZE_X   COMP_DOMAIN_SIZE_Y   COMP_DOMAIN_SIZE_Z   PAD_SIZE   BOUND_SIZE   DX   DY   DZ   time
+   //   NX   NY   NZ   GRID_SIZE   COMP_DOMAIN_SIZE_X   COMP_DOMAIN_SIZE_Y   COMP_DOMAIN_SIZE_Z   BOUND_SIZE   DX   DY   DZ   time
    
    nnfile = fopen("data/grid_info.ac", "w");
    fprintf(nnfile, "%i %i %i %i %i %i %i %i %i %f %f %f %f \n", NX, NY, NZ, GRID_SIZE, COMP_DOMAIN_SIZE_X, COMP_DOMAIN_SIZE_Y, COMP_DOMAIN_SIZE_Z, 
-           PAD_SIZE, BOUND_SIZE, DX, DY, DZ, time);
+           BOUND_SIZE, DX, DY, DZ, time);
    fclose(nnfile);
 
 }

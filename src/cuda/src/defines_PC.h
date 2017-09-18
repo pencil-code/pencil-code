@@ -1,7 +1,5 @@
 #pragma once
 
-#define PAD_SIZE 0 //Pad size in x axis (total padding 2*PAD_SIZE), includes the boundary zone
-
 #define DX dx
 #define DY dy
 #define DZ dz
