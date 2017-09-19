@@ -5707,7 +5707,7 @@ module Solid_Cells
       if (j==1) then
         if (nxgrid_ogrid/=1) then
           if(SBP.and.lfirst_proc_x) then
-            call der_ogrid_SBP(f(1:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
+            call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
             i=6
           else
             i=0
@@ -5777,7 +5777,7 @@ module Solid_Cells
       if (j==1) then
         if (nxgrid_ogrid/=1) then
           if(SBP.and.lfirst_proc_x) then
-            call der2_ogrid_SBP(f(1:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
+            call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
             i=6
           else
             i=0
@@ -7459,7 +7459,7 @@ module Solid_Cells
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(:), intent(in) :: f
+      real, dimension(l1_ogrid:l1_ogrid+8), intent(in) :: f
       real, dimension(6), intent(out) :: df
       integer :: i
 
@@ -7483,7 +7483,7 @@ module Solid_Cells
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(:), intent(in) :: f
+      real, dimension(l1_ogrid:l1_ogrid+8), intent(in) :: f
       real, dimension(6), intent(out) :: df2
       integer :: i
 
