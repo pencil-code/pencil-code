@@ -95,20 +95,10 @@ module Timestep
         ds=ds+1.0
 !
 !  If we are in the first time substep we need to calculate timestep dt.
-!  Only do it on the root processor, then broadcast dt to all others.
+!  Takes minimum over and distributes to all processors.
+!  With GPUs this is done on the CUDA side.
 !
-        if (lfirst.and.ldt) then
-          dt1_local=maxval(dt1_max)
-          ! Timestep growth limiter
-          if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-          call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
-          dt=1.0/dt1
-          if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
-          ! Timestep growth limiter
-          if (ddt/=0.) dt1_last=dt1_local/ddt
-        endif
-
-!!!        if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
+        if (lfirst.and.ldt.and..not.lgpu) call set_dt(maxval(dt1_max))
 !
 !  Calculate dt_beta_ts.
 !
@@ -122,7 +112,8 @@ module Timestep
 !
 !  Time evolution of grid variables.
 !
-        if (.not. lgpu) f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
+        if (.not. lgpu) f(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) &
+                                                     + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
 !  Time evolution of point masses.
 !
