@@ -145,7 +145,10 @@ class DataCube(object):
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
-                dim = read.dim(datadir, proc)
+                if(var_file[0:2].lower() == 'og'):
+                    dim = read.ogdim(datadir, proc)
+                else:
+                    dim = read.dim(datadir, proc)
             if param is None:
                 param = read.param(datadir=datadir, quiet=quiet)
             if index is None:
@@ -193,7 +196,10 @@ class DataCube(object):
 
         for directory in proc_dirs:
             proc = int(directory[4:])
-            procdim = read.dim(datadir, proc)
+            if(var_file[0:2].lower() == 'og'):
+                procdim = read.ogdim(datadir, proc)
+            else:
+                procdim = read.dim(datadir, proc)
             if not quiet:
                 print("Reading data from processor {0} of {1} ...".format( \
                       proc, len(proc_dirs)))
