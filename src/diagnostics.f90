@@ -25,6 +25,7 @@ module Diagnostics
   public :: name_is_present
   public :: expand_cname, parse_name, fparse_name
 ! GPU-START
+  public :: set_type
   public :: save_name
   public :: save_name_halfz, save_name_sound
   public :: max_name, sum_name
@@ -1618,25 +1619,48 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
     endsubroutine expand_cname_full
 !***********************************************************************
+    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin)
+!
+!  Sets the diagnostic type in itype_name.
+!
+!  21-sep-17/MR: coded
+!
+      integer :: iname
+      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin
+
+      if (iname==0) return
+
+      if (present(lsqrt)) &
+        itype_name(iname)=ilabel_sum_sqrt
+      if (present(lsqrt)) then
+        itype_name(iname)=ilabel_sum_sqrt
+      elseif (present(llog10)) then
+        itype_name(iname)=ilabel_sum_log10
+      elseif (present(lint)) then
+        itype_name(iname)=ilabel_integrate
+      elseif (present(lsum)) then
+        itype_name(iname)=ilabel_sum
+      elseif (present(lmax)) then
+        itype_name(iname)=ilabel_max
+      elseif (present(lmin)) then
+        itype_name(iname)=ilabel_max_neg
+      else
+        itype_name(iname)=ilabel_save
+      endif
+
+    endsubroutine set_type
+!***********************************************************************
     subroutine save_name(a,iname)
 !
-!  Lists the value of a (must be treated as real) in fname array
+!  Sets the value of a (must be treated as real) in fname array
 !
 !  26-may-02/axel: adapted from max_mn_name
+!  20-sep-17/MR: removed setting of itype_name as it is set to "save" by default.
 !
       real :: a
       integer :: iname
 !
-!  Set corresponding entry in itype_name
-!  This routine is to be called only once per step
-!
-      if (iname/=0) then
-!  18-June-17/xiangyu: when I adapted the log output for high moments of swarm model, the print command is
-!  always invoked, so I commented the "print" out for now.
-!print*, 'save_name: a,iname=', a,iname
-        fname(iname)=a
-        itype_name(iname)=ilabel_save
-      endif
+      if (iname/=0) fname(iname)=a
 !
    endsubroutine save_name
 !***********************************************************************
@@ -1831,7 +1855,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
 
         call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart)
         call sum_mn_name_real(a(2,:),iname,fname_keep)
-        itype_name(iname)=itype_name(iname)+ilabel_complex
+        if (itype_name(iname) < ilabel_complex ) &
+          itype_name(iname)=itype_name(iname)+ilabel_complex
 
       endif
 !

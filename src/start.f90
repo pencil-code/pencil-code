@@ -448,7 +448,7 @@ program start
   endif
 !
   if (lyinyang.and.lroot) &
-    call warning('start','Any initial condition depending on y or z will be set correctly only on Yin grid.')
+    call warning('start','Most initial conditions depending on y or z will be set correctly only on Yin grid.')
 !
 !  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??

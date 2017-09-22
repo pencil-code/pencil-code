@@ -943,7 +943,8 @@ module Density
         call get_shared_variable('mpoly0', mpoly0,caller='init_lnrho')
         call get_shared_variable('mpoly1', mpoly1)
         call get_shared_variable('mpoly2', mpoly2)
-      else
+      elseif ( any(initlnrho=='piecew-poly') .or. any(initlnrho=='piecew-disc') .or. any(initlnrho=='polytropic') .or. &
+               any(initlnrho(:)(1:1)=='4') .or. any(initlnrho=='5') ) then
         if (lroot) call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
         allocate(mpoly0,mpoly1,mpoly2)
         mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
@@ -1570,7 +1571,7 @@ module Density
       real, dimension (nx) :: tmp
 !
       integer :: nl,j
-
+!
       fact=1./nxygrid
 !
 !  Calculate mean (= xy-average) of lnrho.
@@ -3721,14 +3722,21 @@ module Density
 !***********************************************************************
     subroutine push2c(p_idiag)
 
+    use Diagnostics, only: set_type
+
     integer, parameter :: ndiags=5
     integer(KIND=ikind8), dimension(ndiags) :: p_idiag
 
     call copy_addr_c(idiag_rhom,p_idiag(1))
+    call set_type(idiag_rhom,lsum=.true.)
     call copy_addr_c(idiag_rhomin,p_idiag(2))
+    call set_type(idiag_rhomin,lmin=.true.)
     call copy_addr_c(idiag_rhomax,p_idiag(3))
+    call set_type(idiag_rhomax,lmax=.true.)
     call copy_addr_c(idiag_mass,p_idiag(4))
+    call set_type(idiag_mass,lint=.true.)
     call copy_addr_c(idiag_rhorms,p_idiag(5))
+    call set_type(idiag_rhorms,lsqrt=.true.)
 
     endsubroutine push2c
 !***********************************************************************
