@@ -1645,11 +1645,15 @@ module Hydro
 !
           if (lroot) print*,'init_uu: up-down'
           do n=n1,n2; do m=m1,m2
+
             prof = ampluu(j)*exp(-0.5*(z(n)-z1)**2/widthuu**2) ! vertical profile
+
             tmp = sqrt((x(l1:l2)-(x0+0.3*Lx))**2+(y(m)-(y0+0.3*Ly))**2)! dist. from spot 1
             f(l1:l2,m,n,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
+
             tmp = sqrt((x(l1:l2)-(x0+0.5*Lx))**2+(y(m)-(y0+0.8*Ly))**2)! dist. from spot 1
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
+
           enddo; enddo
 !
         case ('powern')
@@ -6538,21 +6542,35 @@ module Hydro
 !***********************************************************************
     subroutine push2c(p_idiag)
 
+    use Diagnostics, only: set_type
+
     integer, parameter :: ndiags=12
     integer(KIND=ikind8), dimension(ndiags) :: p_idiag
 
     call copy_addr_c(idiag_urms,p_idiag(1))
+    call set_type(idiag_urms,lsqrt=.true.)
     call copy_addr_c(idiag_uxrms,p_idiag(2))
+    call set_type(idiag_uxrms,lsqrt=.true.)
     call copy_addr_c(idiag_uyrms,p_idiag(3))
+    call set_type(idiag_uyrms,lsqrt=.true.)
     call copy_addr_c(idiag_uzrms,p_idiag(4))
+    call set_type(idiag_uzrms,lsqrt=.true.)
     call copy_addr_c(idiag_umax,p_idiag(5))
+    call set_type(idiag_umax,lmax=.true.)
     call copy_addr_c(idiag_umin,p_idiag(6))
+    call set_type(idiag_umin,lmin=.true.)
     call copy_addr_c(idiag_uxmin,p_idiag(7))
+    call set_type(idiag_uxmin,lmin=.true.)
     call copy_addr_c(idiag_uymin,p_idiag(8))
+    call set_type(idiag_uymin,lmin=.true.)
     call copy_addr_c(idiag_uzmin,p_idiag(9))
+    call set_type(idiag_uzmin,lmin=.true.)
     call copy_addr_c(idiag_uxmax,p_idiag(10))
+    call set_type(idiag_uxmax,lmax=.true.)
     call copy_addr_c(idiag_uymax,p_idiag(11))
+    call set_type(idiag_uymax,lmax=.true.)
     call copy_addr_c(idiag_uzmax,p_idiag(12))
+    call set_type(idiag_uzmax,lmax=.true.)
 
     endsubroutine push2c
 !***********************************************************************
