@@ -41,7 +41,7 @@ module Energy
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
   real, target :: chi=0.0, cs2cool=0., mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, pointer :: mpoly
-  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_speed
   real :: chi_t0=0.0, chi_t1=0.0
   real :: chi_hyper3_mesh=5.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
