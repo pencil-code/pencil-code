@@ -43,7 +43,7 @@ module Energy
   real, pointer :: mpoly
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
   real :: chi_t0=0.0, chi_t1=0.0
-  real :: chi_hyper3_mesh=5.0, chi_cs=0.0, chi_rho=0.0
+  real :: chi_hyper3_mesh=5.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
@@ -168,7 +168,7 @@ module Energy
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
-      chi_t, chi_cs, chi_rho, pp_const, ss_left, ss_right, &
+      chi_t, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
 !      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
@@ -187,7 +187,7 @@ module Energy
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
       lcooling_general, lcooling_ss_mz, &
-      ss_const, chi_t, chi_cs, chi_rho, chit_prof1, zcool2, &
+      ss_const, chi_t, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -212,7 +212,8 @@ module Energy
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
-      Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct
+      Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
+      chi_cspeed
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -923,8 +924,8 @@ module Energy
       if (lheatc_chiconst .and. (chi==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi and chi_t are zero!')
       endif
-      if (lheatc_chi_cspeed .and. (chi_cs==0.0 .and. chi_t==0.0)) then
-        call warning('initialize_energy','chi_cs and chi_t are zero!')
+      if (lheatc_chi_cspeed .and. (chi==0.0 .and. chi_t==0.0)) then
+        call warning('initialize_energy','chi and chi_t are zero!')
       endif
       if (lheatc_sqrtrhochiconst .and. (chi_rho==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi_rho and chi_t are zero!')
@@ -3787,7 +3788,7 @@ module Energy
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(T)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_cs*rho*gradT + chi_t*rho*T*grads
+!  flux = chi*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
@@ -3805,7 +3806,7 @@ module Energy
 !
 !  Check that chi is ok.
 !
-      if (headtt) print*,'calc_heatcond_cspeed_chi: chi_cs=',chi_cs
+      if (headtt) print*,'calc_heatcond_cspeed_chi: chi=',chi
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -3823,18 +3824,18 @@ module Energy
 !
 !  Note: need thermally sensitive diffusion without magnetic field
 !  for interstellar hydro runs to contrain SNr core temp
+!  fred: 23.9.17 replaced 0.5 with chi_cspeed so exponent can be generalised
 !
-!
-      thchi=chi_cs*exp(0.5*p%lnTT)
+      thchi=chi*exp(chi_cspeed*p%lnTT)
       if (pretend_lnTT) then
-        call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
+        call dot(p%glnrho+(1.+chi_speed)*p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
         endif
       else
-        call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
+        call dot(p%glnrho+(1.+chi_cspeed)*p%glnTT,p%glnTT,g2)
         thdiff=thchi*(p%del2lnTT+g2)*p%cp
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
@@ -3879,7 +3880,7 @@ module Energy
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(rho)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_cs*rho*gradT + chi_t*rho*T*grads
+!  flux = chi*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
