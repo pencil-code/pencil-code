@@ -121,6 +121,11 @@ module InitialCondition
   real :: bump_radius = 1.,bump_ampl = 0.4, bump_width = 0.1
   character (len=labellen) :: ipressurebump='nobump'
 !
+! Magnetic spiral
+  real :: B0_spiral=0.012042837784031205
+  real :: etamu0_spiral = 1.0
+  real :: Omega0_spiral=1.0, r0_spiral=1.0
+!
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
@@ -132,7 +137,8 @@ module InitialCondition
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
        bump_radius,bump_ampl,bump_width,ipressurebump,&
-       lselfgravity_logspirals
+       lselfgravity_logspirals,B0_spiral,etamu0_spiral,Omega0_spiral,&
+       r0_spiral
 !
   contains
 !***********************************************************************
@@ -176,6 +182,11 @@ module InitialCondition
            call put_shared_variable('itemperature_power_law',&
              temperature_power_law,&
              caller='initialize_particles')
+! for magnetic spiral
+      call put_shared_variable('B0_spiral',B0_spiral)
+      call put_shared_variable('etamu0_spiral',etamu0_spiral)
+      call put_shared_variable('Omega0_spiral',Omega0_spiral)
+      call put_shared_variable('r0_spiral',r0_spiral)
 !
       call keep_compiler_quiet(f)
 !
@@ -398,6 +409,7 @@ module InitialCondition
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: ics2
       logical                :: lheader,lpresent_zed
+      real, dimension (mx) :: njxbr !negative J x B radial
 !
       if (lroot) print*,&
            'initial_condition_lnrho: locally isothermal approximation'
@@ -495,6 +507,7 @@ module InitialCondition
            if (lroot) print*, 'No such value for ipressurebump: ', trim(ipressurebump)
            call fatal_error("initial_condition_lnrho","")
         endselect
+        rho_bump = 1e-10*m
 !
         if (lexponential_smooth) then
           !radial_percent_smooth = percentage of the grid
