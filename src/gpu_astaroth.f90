@@ -103,14 +103,16 @@ contains
       enddo; enddo; enddo
       f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
 
-1     lfull_inner = (lsnap.or.lsnap_down.or.lspec) .and. isubstep==itorder
-
+1     lfull_inner = (lsnap.or.lsnap_down.or.lspec)             !.and. isubstep==itorder
+if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
+!if (lroot) print*, 'lnrho(1:3)-PC=', f(l1:l1+2,m1,n1,ilnrho)
       call rhs_gpu_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho), &
                      isubstep,lfull_inner,lvery_first)
 !
       lvery_first=.false.
 
       return
+!
       if (.not.lroot) return
       do nn=1,mz   !  nghost+1,mz-nghost   !1,mz
         print*, 'nn=', nn

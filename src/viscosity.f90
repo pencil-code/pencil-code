@@ -30,7 +30,7 @@ module Viscosity
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
-  real :: nu=0.0
+  real :: nu=0.0, nu_cspeed=0.5
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
@@ -121,7 +121,7 @@ module Viscosity
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
-      lvisc_smag_Ma, nu_smag_Ma2_power
+      lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -1202,12 +1202,14 @@ module Viscosity
       endif
 !
 !  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+S.glnTT)
+!  fred: 23.9.17 replaced 0.5 with nu_cspeed so exponent can be generalised
 !
       if (lvisc_mu_cspeed) then
-        muTT=nu*p%rho1*exp(0.5*p%lnTT)
+        muTT=nu*p%rho1*exp(nu_cspeed*p%lnTT)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
-              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)+p%sglnTT(:,i))
+              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)&
+             +2*nu_cspeed*p%sglnTT(:,i))
         enddo
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+muTT
@@ -1227,13 +1229,15 @@ module Viscosity
 !
 !  viscous force: nu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)
 !  -- for numerical stability viscous force propto soundspeed in interstellar run
+!  fred: 23.9.17 replaced 0.5 with nu_cspeed so exponent can be generalised
 !
       if (lvisc_nu_cspeed) then
-        muTT=nu*exp(0.5*p%lnTT)
+        muTT=nu*exp(nu_cspeed*p%lnTT)
         if (ldensity) then
           do i=1,3
             p%fvisc(:,i) = p%fvisc(:,i) + 2*muTT*p%sglnrho(:,i)&
-                +muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i)+p%sglnTT(:,i))
+                +muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i)&
+                +2*nu_cspeed*p%sglnTT(:,i))
           enddo
           ! Tobi: This is not quite the full story in the presence of linear
           ! shear. In this case the rate-of-strain tensor S has xy and yx

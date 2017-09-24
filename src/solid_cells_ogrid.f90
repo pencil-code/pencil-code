@@ -288,7 +288,9 @@ module Solid_Cells
   integer :: idiag_c_dragx=0
   integer :: idiag_c_dragy=0
   integer :: idiag_Nusselt=0
-!
+
+!  Zero-gradiant boundary condition for rho
+  logical :: lexpl_rho = .true.
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
@@ -296,12 +298,12 @@ module Solid_Cells
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, &
-      interpolation_method, lock_dt, &
+      interpolation_method, lock_dt, lexpl_rho, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
-      flow_dir_set, lset_flow_dir, interpolation_method
+      flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -745,7 +747,7 @@ module Solid_Cells
       if(ldensity_nolog) then
         f_ogrid(:,:,:,irho)=1.
       else
-        f_ogrid(:,:,:,ilnrho)=0.
+        call fatal_error('init_solid_cells','Must use linear density for solid_cells_ogrid')
       endif
       call gaunoise_ogrid(ampl_noise,iux,iuz)
       do i=l1_ogrid,l2_ogrid+nghost
@@ -4487,6 +4489,9 @@ module Solid_Cells
         enddo
       enddo
     enddo
+    !TODO: HEREHERE
+    !print*, 'f_ogrid(l1_ogrid:10,5,4,iuy)',f_ogrid(l1_ogrid:10,5,4,iuy)
+    !print*, 'f_ogrid(l1_ogrid:10,5,4,irho)',f_ogrid(l1_ogrid:10,5,4,irho)
 !
 !  Interpolate data from curvilinear to cartesian grid.
 !  Before interpolating, necessary points outside this processors domain are
@@ -4873,16 +4878,6 @@ module Solid_Cells
       use density, only:lupw_lnrho
 !
       integer :: i
-      logical :: lupw_rho=.false.
-!
-!NILS: This part does not have to be evaluated for every pencil - 
-!NILS: it could therefore be moved for example to the initialization.
-      if (.not. ldensity_nolog) then
-        call fatal_error('calc_pencils_density_ogrid','Must use linear density for solid_cells_ogrid')
-      endif
-      if(lupw_lnrho) then
-        lupw_rho=.true.
-      endif
 !
 ! Pencils: rho, rho1, lnrho, glnrho, grho, ugrho, sglnrho
 !
@@ -4895,20 +4890,8 @@ module Solid_Cells
           p_ogrid%glnrho(:,i)=p_ogrid%rho1*p_ogrid%grho(:,i)
         enddo
       endif
-      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_rho)
+      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_lnrho)
       if (lpencil_ogrid(i_og_sglnrho)) call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%glnrho,p_ogrid%sglnrho)
-!
-! rho
-! rho1
-! lnrho
-! glnrho and grho
-! uglnrho
-! ugrho
-! sglnrho
-! uij5glnrho
-      !if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
-!
-      !if (lpencil(i_uuadvec_grho)) call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
 !
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
@@ -5084,12 +5067,12 @@ module Solid_Cells
 !
       if(lfirst_proc_x) then
         if(SBP) then
-          call bval_from_neumann_arr_ogrid_alt
+          if(lexpl_rho) call bval_from_neumann_arr_ogrid_alt
         else
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
           call set_ghosts_onesided_ogrid(iuz)
-          call bval_from_neumann_arr_ogrid
+          if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
         endif
       endif
@@ -5724,7 +5707,7 @@ module Solid_Cells
       if (j==1) then
         if (nxgrid_ogrid/=1) then
           if(SBP.and.lfirst_proc_x) then
-            call der_ogrid_SBP(f(1:l1_ogrid+8,:,:,:),k,df(1:6))
+            call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
             i=6
           else
             i=0
@@ -5794,7 +5777,7 @@ module Solid_Cells
       if (j==1) then
         if (nxgrid_ogrid/=1) then
           if(SBP.and.lfirst_proc_x) then
-            call der2_ogrid_SBP(f(1:l1_ogrid+8,:,:,:),k,df2(1:6))
+            call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
             i=6
           else
             i=0
@@ -6159,6 +6142,7 @@ module Solid_Cells
 !        endif
       endif
 !
+! JORGEN: DO I USE THIS?
       if(SBP.and.lfirst_proc_x) i=6
         
       if (j==1) then
@@ -7469,52 +7453,50 @@ module Solid_Cells
 !
     endsubroutine setup_mm_nn_ogrid
 !***********************************************************************
-    subroutine der_ogrid_SBP(f,k,df)
+    subroutine der_ogrid_SBP(f,df)
 ! 
 !  Summation by parts boundary condition for first derivative.
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(:,:,:,:), intent(in) :: f
+      real, dimension(l1_ogrid:l1_ogrid+8), intent(in) :: f
       real, dimension(6), intent(out) :: df
-      integer, intent(in) :: k
       integer :: i
 
       do i=1,6
-        df(i)=dx_1_ogrid(i)*(D1_SBP(i,1)*f(l1_ogrid  ,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,2)*f(l1_ogrid+1,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,3)*f(l1_ogrid+2,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,4)*f(l1_ogrid+3,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,5)*f(l1_ogrid+4,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,6)*f(l1_ogrid+5,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,7)*f(l1_ogrid+6,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,8)*f(l1_ogrid+7,m_ogrid,n_ogrid,k) + &
-                             D1_SBP(i,9)*f(l1_ogrid+8,m_ogrid,n_ogrid,k) )
+        df(i)=dx_1_ogrid(l1_ogrid+i-1)*(D1_SBP(i,1)*f(l1_ogrid  ) + &
+                                        D1_SBP(i,2)*f(l1_ogrid+1) + &
+                                        D1_SBP(i,3)*f(l1_ogrid+2) + &
+                                        D1_SBP(i,4)*f(l1_ogrid+3) + &
+                                        D1_SBP(i,5)*f(l1_ogrid+4) + &
+                                        D1_SBP(i,6)*f(l1_ogrid+5) + &
+                                        D1_SBP(i,7)*f(l1_ogrid+6) + &
+                                        D1_SBP(i,8)*f(l1_ogrid+7) + &
+                                        D1_SBP(i,9)*f(l1_ogrid+8) )
       enddo
 
     endsubroutine der_ogrid_SBP
 !***********************************************************************
-    subroutine der2_ogrid_SBP(f,k,df2)
+    subroutine der2_ogrid_SBP(f,df2)
 ! 
 !  Summation by parts boundary condition for second derivative.
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(:,:,:,:), intent(in) :: f
+      real, dimension(l1_ogrid:l1_ogrid+8), intent(in) :: f
       real, dimension(6), intent(out) :: df2
-      integer, intent(in) :: k
       integer :: i
 
       do i=1,6
-        df2(i)=(dx_1_ogrid(i)**2)*(D2_SBP(i,1)*f(l1_ogrid  ,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,2)*f(l1_ogrid+1,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,3)*f(l1_ogrid+2,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,4)*f(l1_ogrid+3,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,5)*f(l1_ogrid+4,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,6)*f(l1_ogrid+5,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,7)*f(l1_ogrid+6,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,8)*f(l1_ogrid+7,m_ogrid,n_ogrid,k) + &
-                                  D2_SBP(i,9)*f(l1_ogrid+8,m_ogrid,n_ogrid,k) )
+        df2(i)=(dx_1_ogrid(l1_ogrid+i-1)**2)*(D2_SBP(i,1)*f(l1_ogrid  ) + &
+                                              D2_SBP(i,2)*f(l1_ogrid+1) + &
+                                              D2_SBP(i,3)*f(l1_ogrid+2) + &
+                                              D2_SBP(i,4)*f(l1_ogrid+3) + &
+                                              D2_SBP(i,5)*f(l1_ogrid+4) + &
+                                              D2_SBP(i,6)*f(l1_ogrid+5) + &
+                                              D2_SBP(i,7)*f(l1_ogrid+6) + &
+                                              D2_SBP(i,8)*f(l1_ogrid+7) + &
+                                              D2_SBP(i,9)*f(l1_ogrid+8) )
       enddo
 
     endsubroutine der2_ogrid_SBP

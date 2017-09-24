@@ -781,7 +781,7 @@ module Particles_main
 !
 !  Correct for curvilinear geometry.
 !
-      call correct_curvilinear
+      if (lparticles) call correct_curvilinear
 !
 !  Output particle size distribution to file.
 !
@@ -933,7 +933,13 @@ module Particles_main
       real :: rpcyl1,rp1,lat,costhp,sinthp,sin1thp,cotthp
       integer :: k
 !
-      if (.not.lpointmasses) then
+!  The subroutine does not need to be called if either pointmasses
+!  or particle tracers is used. Pointmasses correct for curvilinear
+!  coordinates already, and particle tracers do not have particle 
+!  velocities as they follow the gas. The npvar>3 means that only
+!  ip[xyz] exist. A logical lparticles_tracers is missing. 
+!
+      if ((.not.lpointmasses).and.(npvar>3)) then
         do k=1,npar_loc
 !
 !  Correct acceleration.
