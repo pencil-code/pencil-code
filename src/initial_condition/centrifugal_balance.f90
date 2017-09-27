@@ -85,7 +85,7 @@ module InitialCondition
   real :: radial_percent_smooth=10.0,rshift=0.0
   real :: gravitational_const=0.
   real :: magnetic_power_law=impossible
-  real :: dustdensity_powerlaw=1.5,edtg=0.01
+  real :: dustdensity_powerlaw=1.5,edtog=0.01
 !
 ! For the magnetic field
 !
@@ -138,7 +138,7 @@ module InitialCondition
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
        bump_radius,bump_ampl,bump_width,ipressurebump,&
-       lselfgravity_logspirals,dustdensity_powerlaw,edtg,&
+       lselfgravity_logspirals,dustdensity_powerlaw,edtog,&
        B0_spiral,etamu0_spiral,Omega0_spiral,r0_spiral
 !
   contains
