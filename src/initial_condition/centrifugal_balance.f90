@@ -657,7 +657,7 @@ module InitialCondition
 !  Midplane density
 !
           call get_radial_distance(rr_sph,rr_cyl)
-          lnrhomid=log(edtg*rho0)+p*log(rr_cyl/r_ref)
+          lnrhomid=log(edtog*rho0)+p*log(rr_cyl/r_ref)
           do k=1,ndustspec
              f(:,m,n,ind(k)) = f(:,m,n,ind(k))+exp(lnrhomid)
           enddo
