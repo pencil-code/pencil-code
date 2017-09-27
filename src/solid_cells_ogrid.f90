@@ -42,7 +42,7 @@ module Solid_Cells
   real :: cylinder_temp=703.0                       ! Set in start.in
   real :: cylinder_xpos=0., cylinder_ypos=0.        ! Set in start.in
   real :: cylinder_zpos=0.                          ! Set in start.in
-  real :: skin_depth=0.                             ! Set in start.in
+  real :: skin_depth_solid=0.                       ! Set in start.in
   real :: init_uu=0., ampl_noise=0.
   character(len=labellen) :: initsolid_cells='cylinderstream_x'! Set in start.in
   real :: T0 ! Inlet temperature
@@ -291,10 +291,13 @@ module Solid_Cells
 
 !  Zero-gradiant boundary condition for rho
   logical :: lexpl_rho = .true.
+!  For equation of state
+  logical :: leos_isothermal
+  logical :: leos_isentropic
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
-      cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth, &
+      cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth_solid, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, &
@@ -450,6 +453,7 @@ module Solid_Cells
       if(timestep_factor < 1)  then
         timestep_factor = 1
       endif
+      !timestep_factor = timestep_factor*timestep_factor
     endif
 !
 !  Set interpolation zone for curvilinear to cartesian
@@ -695,7 +699,7 @@ module Solid_Cells
           if (rr2 > a2) then
             do cyl = 0,100
               if (cyl == 0) then
-                wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
+                wall_smoothing = 1-exp(-(rr2-a2)/skin_depth_solid**2)
                 f(i,j,:,iorth) = f(i,j,:,iorth)-init_uu* &
                   2*flow_r*orth_r*a2/rr2**2*wall_smoothing
                 f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
@@ -704,7 +708,7 @@ module Solid_Cells
                   wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
                   f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
                     +cylinder_temp*(1-wall_smoothing_temp)
-                  f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
+                  f(i,j,:,irho) = f(l2,m2,n2,irho) &
                     *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
               else
@@ -726,7 +730,7 @@ module Solid_Cells
             f(i,j,:,iux:iuz)=0.
             if (ilnTT /= 0) then
               f(i,j,:,ilnTT) = cylinder_temp
-              f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
+              f(i,j,:,irho) = f(l2,m2,n2,irho) &
                 *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
           endif
@@ -752,7 +756,7 @@ module Solid_Cells
       call gaunoise_ogrid(ampl_noise,iux,iuz)
       do i=l1_ogrid,l2_ogrid+nghost
         rr2=x_ogrid(i)**2
-        wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
+        wall_smoothing = 1-exp(-(rr2-a2)/skin_depth_solid**2)
         do j=m1_ogrid,m2_ogrid
 !  Compute potential flow past single cylinder
           f_ogrid(i,j,:,iux) = +init_uu*(1-a2/rr2)*cos(y_ogrid(j)+flowy)
@@ -761,7 +765,7 @@ module Solid_Cells
             wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
             f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
               +cylinder_temp*(1-wall_smoothing_temp)
-            f_ogrid(i,j,:,ilnrho) = f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnrho) &
+            f_ogrid(i,j,:,irho) = f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,irho) &
               *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
           endif
 !  Compute contribution to flow from cylinders above and below, due to periodic boundary conditions
@@ -884,8 +888,10 @@ module Solid_Cells
       lnrho0=log(rho0)
       if (gamma_m1/=0.0) then
         lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
+        leos_isentropic=.true.
       else
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
+        leos_isothermal=.true.
       endif
     endsubroutine initialize_eos
 !***********************************************************************
@@ -4417,7 +4423,7 @@ module Solid_Cells
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
-    real :: ds, dtsub_ogrid, dt_ogrid
+    real :: dt_ogrid
     integer :: tstep_ogrid
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
@@ -4454,44 +4460,26 @@ module Solid_Cells
 !
     do tstep_ogrid=1,timestep_factor
 !
-!  Set up df and ds for each time sub.
+!  Set up df for each time sub.
 !
+      df_ogrid=0.0
       do itsub=1,itorder
+        df_ogrid=alpha_ts_ogrid(itsub)*df_ogrid
         llast_ogrid=(tstep_ogrid==timestep_factor).and.(itsub==itorder)
-        if (itsub==1) then
-          df_ogrid=0.0
-          ds=0.0
-        else
-          df_ogrid=alpha_ts_ogrid(itsub)*df_ogrid !(could be subsumed into pde, but is dangerous!)
-          ds=alpha_ts_ogrid(itsub)*ds
-        endif
 !
 !  Change df according to the chosen physics modules.
 !
         call pde_ogrid(df_ogrid)
 !
-        ds=ds+1.0
-!
-!  Calculate substep 
-!
-        dtsub_ogrid = ds * dt_beta_ts_ogrid(itsub)
-!
 !  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
 !
         do j=1,mvar 
-          do n_ogrid=n1_ogrid,n2_ogrid
-            do m_ogrid=m1_ogrid,m2_ogrid
-              f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j) &
-                +dt_beta_ts_ogrid(itsub)*df_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)
-            enddo
-          enddo
+          f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
+              f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+            + dt_beta_ts_ogrid(itsub)*df_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)
         enddo
       enddo
     enddo
-    !TODO: HEREHERE
-    !print*, 'f_ogrid(l1_ogrid:10,5,4,iuy)',f_ogrid(l1_ogrid:10,5,4,iuy)
-    !print*, 'f_ogrid(l1_ogrid:10,5,4,irho)',f_ogrid(l1_ogrid:10,5,4,irho)
 !
 !  Interpolate data from curvilinear to cartesian grid.
 !  Before interpolating, necessary points outside this processors domain are
@@ -4500,6 +4488,7 @@ module Solid_Cells
     call update_ghosts_ogrid
     call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
     !call flow_curvilinear_to_cartesian(f_cartesian)
+
     !TODO: Should use the partifle flow info in the interpolation point
     !      computation above
     if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
@@ -4636,6 +4625,7 @@ module Solid_Cells
 !
 !  Initiate communication and do boundary conditions.
 !
+      call boundconds_x_ogrid
       call update_ghosts_ogrid
 !
 !------------------------------------------------------------------------------
@@ -4752,6 +4742,7 @@ module Solid_Cells
 !  Continuity equation.
 !      
       density_rhs= - p_ogrid%ugrho   - p_ogrid%rho*p_ogrid%divu      
+      !!!!!TODO
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
@@ -4881,6 +4872,14 @@ module Solid_Cells
 !
 ! Pencils: rho, rho1, lnrho, glnrho, grho, ugrho, sglnrho
 !
+!if(t>1)then
+!      print*, ''
+!      print*, 'ogrid'
+!      print*, 'm_og,y_og(m_og)',m_ogrid,y_ogrid(m_ogrid)
+!      do i = 1,mx_ogrid
+!      print*,'rho',f_ogrid(i,m_ogrid,n_ogrid,irho)
+!      enddo
+!endif
       p_ogrid%rho=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho)
       if (lpencil_ogrid(i_og_rho1)) p_ogrid%rho1=1.0/p_ogrid%rho
       if (lpencil_ogrid(i_og_lnrho)) p_ogrid%lnrho=log(p_ogrid%rho)
@@ -4890,7 +4889,7 @@ module Solid_Cells
           p_ogrid%glnrho(:,i)=p_ogrid%rho1*p_ogrid%grho(:,i)
         enddo
       endif
-      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_lnrho)
+      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,irho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_lnrho)
       if (lpencil_ogrid(i_og_sglnrho)) call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%glnrho,p_ogrid%sglnrho)
 !
     endsubroutine calc_pencils_density_ogrid
@@ -4905,8 +4904,6 @@ module Solid_Cells
       use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1
 !
       real :: cp1, cv1, cp, cv
-      logical :: leos_isentropic=.true.
-      logical :: leos_isothermal=.false.
 !
 !  Inverse cv and cp values.
 !
@@ -4914,39 +4911,7 @@ module Solid_Cells
       call get_cv1(cv1)
       cp=1./cp1
       cv=1./cv1
-!!  !
-!!  !  Work out thermodynamic quantities for given lnrho or rho and TT.
-!!  !
-!!        if (iTT .gt. 0) then
-!!          if (lpencil_ogrid(i_og_TT))   p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-!!          if (lpencil_ogrid(i_og_TT1))  p_ogrid%TT1=1/f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-!!          if (lpencil_ogrid(i_og_cs2))  p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-!!          if (lpencil_ogrid(i_og_gTT))  call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
-!!          if (lpencil_ogrid(i_og_del2TT)) &
-!!              call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
-!!          if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
-!!          if (lpencil_ogrid(i_og_ee)) p_ogrid%ee=cv*p_ogrid%TT
-!!  !
-!!  !  Work out thermodynamic quantities for given lnrho or rho and cs2.
-!!  !
-!!        else
-!!          if (leos_isentropic) then
-!!            call fatal_error('calc_pencils_eos', &
-!!                'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
-!!          elseif (leos_isothermal) then
-!!            if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
-!!            if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=gamma1*p_ogrid%rho*cs20
-!!          else
-!!            call fatal_error('calc_pencils_eos', &
-!!                'Full equation of state not implemented for ilnrho_cs2')
-!!          endif
-!!        endif
 !
-!  Work out thermodynamic quantities for given lnrho or rho and ss.
-!
-      
-!
-
       if (iTT .ne. 0) then
         if (lpencil_ogrid(i_og_TT)) &
             p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
@@ -4962,14 +4927,15 @@ module Solid_Cells
           if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=0.0
           if (lpencil_ogrid(i_og_cs2)) &
               p_ogrid%cs2=cs20*exp(gamma_m1*(p_ogrid%lnrho-lnrho0))
+          if (lpencil_ogrid(i_og_lnTT)) &
+              p_ogrid%lnTT=lnTT0+cv1*p_ogrid%ss+gamma_m1*(p_ogrid%lnrho-lnrho0)
+          if (lpencil_ogrid(i_og_pp)) &
+              p_ogrid%pp=(cp-cv)*exp(p_ogrid%lnTT+p_ogrid%lnrho)
         elseif (leos_isothermal) then
           if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=-(cp-cv)*(p_ogrid%lnrho-lnrho0)
           if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
+          if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=p_ogrid%cs2*p_ogrid%rho
         endif
-        if (lpencil_ogrid(i_og_lnTT)) &
-            p_ogrid%lnTT=lnTT0+cv1*p_ogrid%ss+gamma_m1*(p_ogrid%lnrho-lnrho0)
-        if (lpencil_ogrid(i_og_pp)) &
-            p_ogrid%pp=(cp-cv)*exp(p_ogrid%lnTT+p_ogrid%lnrho)
       endif
 
 
@@ -5026,12 +4992,6 @@ module Solid_Cells
 !
       p_ogrid%fvisc=0.0                              
 !
-!  viscous force: nu*del2v
-!  -- not physically correct (no momentum conservation), but
-!  numerically easy and in most cases qualitatively OK
-!
-      !p_ogrid%fvisc=p_ogrid%fvisc+nu*p_ogrid%del2u
-!
       do j=1,3
         p_ogrid%fvisc(:,j) = p_ogrid%fvisc(:,j) + nu*(2*p_ogrid%sglnrho(:,j)+p_ogrid%del2u(:,j) + 1./3.*p_ogrid%graddivu(:,j))
       enddo
@@ -5065,6 +5025,8 @@ module Solid_Cells
 !
 !  Only set cyinder boundary here, not processor boundaries
 !
+      use density, only:lupw_lnrho
+!
       if(lfirst_proc_x) then
         if(SBP) then
           if(lexpl_rho) call bval_from_neumann_arr_ogrid_alt
@@ -5075,6 +5037,10 @@ module Solid_Cells
           if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
         endif
+        !if(lupw_lnrho) then
+        !  if(lexpl_rho) call bval_from_neumann_upw_ogrid
+        !  call set_ghosts_onesided_upw_ogrid(irho)
+        !endif
       endif
 !
     endsubroutine boundconds_x_ogrid
@@ -5521,20 +5487,8 @@ module Solid_Cells
       integer, dimension(nx_ogrid) :: indxs
 !
       do ii=1,3
-!
-        if ( lequidist_ogrid(ii) ) then
-          call der6_ogrid(f,k,del6f(1,ii),ii,UPWIND=.true.)
-        else
-          where( uu(:,ii)>=0 )
-            indxs = 7
-          elsewhere
-            indxs = 8
-          endwhere
-          call deri_3d_inds_ogrid(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
-        endif
-!
+        call der6_ogrid(f,k,del6f(:,ii),ii)
         del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)
-!
       enddo
 !
       del6f(:,2) = rcyl_mn1_ogrid*del6f(:,2)
@@ -6093,84 +6047,41 @@ module Solid_Cells
 !
     endsubroutine derij_ogrid
 !***********************************************************************
-    subroutine der6_ogrid(f,k,df,j,ignoredx,upwind)
+    subroutine der6_ogrid(f, k, df, j)
 !
-!  Calculate 6th derivative of a scalar, get scalar
-!    Used for hyperdiffusion that affects small wave numbers as little as
-!  possible (useful for density).
-!    The optional flag IGNOREDX is useful for numerical purposes, where
-!  you want to affect the Nyquist scale in each direction, independent of
-!  the ratios dx:dy:dz.
-!    The optional flag UPWIND is a variant thereof, which calculates
-!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
+!  Calculats D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   27-feb-17/Jorgen: Adapted from deriv.f90
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df,fac
-      integer :: j,k,i=0
-      logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
+      integer :: j,k,i
 !
-      intent(in)  :: f,k,j,ignoredx,upwind
+      intent(in)  :: f,k,j
       intent(out) :: df
 !
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        if (.not. lequidist_ogrid(j)) then
-          call fatal_error('der6','for non-equidistant grid only '//&
-              'if dx is ignored.')
-          igndx = .true.
-        endif
-        igndx = .false.
-      endif
-!
-      if (present(upwind)) then
-        if (.not. lequidist_ogrid(j)) then
-          call fatal_error('der6','upwind cannot be used with '//&
-              'non-equidistant grid.')
-        endif
-        upwnd = upwind
-      else
-        upwnd = .false.
-!        if ((.not.lcartesian_coords).and.(.not.igndx)) then
-!DM: non cartesian grids should not necessarily use upwinding. Wlad do you disagree ?
-!         if (.not.igndx) then
-!          call fatal_error('der6','in non-cartesian coordinates '//&
-!              'just works if upwinding is used')
-!        endif
-      endif
-!
-! JORGEN: DO I USE THIS?
-      if(SBP.and.lfirst_proc_x) i=6
-        
       if (j==1) then
         if (nxgrid_ogrid/=1) then
-          if (igndx) then
-            fac=1.
-          else if (upwnd) then
-            fac=(1.0/60)*dx_1_ogrid(l1_ogrid:l2_ogrid)
-          else
-            fac=dx_1_ogrid(l1_ogrid:l2_ogrid)**6
-          endif
-          df(1:i+1)=0
-          df(1+i:nxgrid)=fac(1+i:nxgrid)*(- 20.0* f(l1_ogrid+i:l2_ogrid,m_ogrid,n_ogrid,k) &
-                        + 15.0*(f(l1_ogrid+1+i:l2_ogrid+1,m_ogrid,n_ogrid,k)+f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
-                        -  6.0*(f(l1_ogrid+2+i:l2_ogrid+2,m_ogrid,n_ogrid,k)+f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
-                        +      (f(l1_ogrid+3+i:l2_ogrid+3,m_ogrid,n_ogrid,k)+f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid,k)))
+          fac=(1.0/60)*dx_1_ogrid(l1_ogrid:l2_ogrid)
+          !df(1:i)=0
+          df(1:nxgrid_ogrid)=fac(1:nxgrid_ogrid)* &
+                               (- 20.0* f(l1_ogrid  :l2_ogrid  ,m_ogrid,n_ogrid,k) &
+                                + 15.0*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid,k)+f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
+                                -  6.0*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid,k)+f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
+                                +      (f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid,k)+f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid,k)))
         else
           df=0.
         endif
+!
+!  Settin df(1:3) = 0 means setting the upwind correction to zero for the two points 
+!  closest to the surface and at the surface. This is necessary since we have not 
+!  given any value to f_ogrid(l1_ogrid-3:l1_ogrid-1,:,:,irho), and these are used
+!  to compute df(1:3).
+!
+        df(1:3)=0.
       elseif (j==2) then
         if (nygrid_ogrid/=1) then
-          if (igndx) then
-            fac=1.
-          else if (upwnd) then
-            fac=(1.0/60)*dy_1_ogrid(m_ogrid)
-          else
-            fac=dy_1_ogrid(m_ogrid)**6
-          endif
+          fac=(1.0/60)*dy_1_ogrid(m_ogrid)
           df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid  ,n_ogrid,k) &
                   + 15.0*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid,k)) &
                   -  6.0*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid,k)) &
@@ -6180,13 +6091,7 @@ module Solid_Cells
         endif
       elseif (j==3) then
         if (nzgrid_ogrid/=1) then
-          if (igndx) then
-            fac=1.
-          else if (upwnd) then
-            fac=(1.0/60)*dz_1_ogrid(n_ogrid)
-          else
-            fac=dz_1_ogrid(n_ogrid)**6
-          endif
+          fac=(1.0/60)*dz_1_ogrid(n_ogrid)
           df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid  ,k) &
                   + 15.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+1,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
                   -  6.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+2,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2,k)) &
@@ -6197,7 +6102,75 @@ module Solid_Cells
       endif
 !
     endsubroutine der6_ogrid
-!***********************************************************************
+!! !***********************************************************************
+!!     subroutine der_upwnd(f, k, df, j)
+!! !
+!! !  Calculats d(f)/dx_j using 5th order upwind meathod, with 3rd order closure near surface
+!! !  Only to be used for irho at the moment
+!! !
+!! !   25-sep-17/Jorgen: Coded
+!! !
+!!       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+!!       real, dimension (nx_ogrid) :: df,fac
+!!       integer :: j,k,i
+!! !
+!!       intent(in)  :: f,k,j
+!!       intent(out) :: df
+!! !
+!!         
+!! !TODO: FIX THIS
+!! !TODO: FIX THIS
+!!       if (j==1) then
+!!         if (nxgrid_ogrid/=1) then
+!!           fac=(1.0/60)*dx_1_ogrid(l1_ogrid:l2_ogrid)
+!!           fac(2) = fac(2)*10
+!!           if(k==irho) then
+!!             if(lfirst_proc_x) then
+!!               df(1)=0.
+!!               df(2)=fac(2)*(3.0*f(l1_ogrid+1  ,m_ogrid,n_ogrid,k) &
+!!                            -6.0*f(l1_ogrid+1+1,m_ogrid,n_ogrid,k) &
+!!                            +2.0*f(l1_ogrid+1-1,m_ogrid,n_ogrid,k) &
+!!                            +    f(l1_ogrid+1+2,m_ogrid,n_ogrid,k))
+!!               i=2
+!!             else
+!!               i=0
+!!           else
+!!             call fatal_error('der_upwnd','Upwinding only implemented for density')
+!!           i3=l1_ogrid+2
+!!           df(1+i:nx_ogrid)=fac(1+i:nx_ogrid)* &
+!!                                (  20.0*f(i3  :l2_ogrid  ,m_ogrid,n_ogrid,k) &
+!!                                 - 60.0*f(i3+1:l2_ogrid+1,m_ogrid,n_ogrid,k) &
+!!                                 + 30.0*f(i3-1:l2_ogrid-1,m_ogrid,n_ogrid,k) &
+!!                                 + 15.0*f(i3+2:l2_ogrid+2,m_ogrid,n_ogrid,k) &
+!!                                 -  3.0*f(i3-2:l2_ogrid-2,m_ogrid,n_ogrid,k) &
+!!                                 -  2.0*f(i3+3:l2_ogrid+3,m_ogrid,n_ogrid,k) )
+!!         else
+!!           df=0.
+!!         endif
+!!       elseif (j==2) then
+!!         if (nygrid_ogrid/=1) then
+!!           fac=(1.0/60)*dy_1_ogrid(m_ogrid)
+!!           df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid  ,n_ogrid,k) &
+!!                   + 15.0*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid,k)) &
+!!                   -  6.0*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid,k)) &
+!!                   +      (f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid,k)))
+!!         else
+!!           df=0.
+!!         endif
+!!       elseif (j==3) then
+!!         if (nzgrid_ogrid/=1) then
+!!           fac=(1.0/60)*dz_1_ogrid(n_ogrid)
+!!           df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid  ,k) &
+!!                   + 15.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+1,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
+!!                   -  6.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+2,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2,k)) &
+!!                   +      (f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+3,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-3,k)))
+!!         else
+!!           df=0.
+!!         endif
+!!       endif
+!! !
+!!     endsubroutine der6_ogrid
+!! !***********************************************************************
     subroutine deri_3d_inds_ogrid(f,df,inds,j,lignored,lnometric)
 !
 !  dummy routine for compatibility
@@ -6241,7 +6214,6 @@ module Solid_Cells
                            -7*f_ogrid(k+6,:,:,ivar) &
                              +f_ogrid(k+7,:,:,ivar)
       enddo
-
     endsubroutine set_ghosts_onesided_ogrid
 !***********************************************************************
     subroutine bval_from_neumann_arr_ogrid
@@ -6255,13 +6227,12 @@ module Solid_Cells
       integer :: k
 
       k=l1_ogrid
-      f_ogrid(k,:,:,ilnrho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ilnrho) &
-                                                 - 450.*f_ogrid(k+2,:,:,ilnrho) &
-                                                 + 400.*f_ogrid(k+3,:,:,ilnrho) &
-                                                 - 225.*f_ogrid(k+4,:,:,ilnrho) &
-                                                 +  72.*f_ogrid(k+5,:,:,ilnrho) &
-                                                 -  10.*f_ogrid(k+6,:,:,ilnrho) )/147.
-
+      f_ogrid(k,:,:,irho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,irho) &
+                                               - 450.*f_ogrid(k+2,:,:,irho) &
+                                               + 400.*f_ogrid(k+3,:,:,irho) &
+                                               - 225.*f_ogrid(k+4,:,:,irho) &
+                                               +  72.*f_ogrid(k+5,:,:,irho) &
+                                               -  10.*f_ogrid(k+6,:,:,irho) )/147.
     endsubroutine bval_from_neumann_arr_ogrid
 !***********************************************************************
     subroutine bval_from_neumann_arr_ogrid_alt
@@ -6929,7 +6900,7 @@ module Solid_Cells
 !
       use Solid_Cells_Mpicomm, only: initiate_isendrcv_bdry_ogrid, finalize_isendrcv_bdry_ogrid
 !
-      call boundconds_x_ogrid
+      !call boundconds_x_ogrid
       call initiate_isendrcv_bdry_ogrid(f_ogrid)
       call finalize_isendrcv_bdry_ogrid(f_ogrid)
 !  Since only periodic implementation of boundconds in y- and z-dir, call only
