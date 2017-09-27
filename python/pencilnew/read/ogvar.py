@@ -54,15 +54,12 @@ def ogvar(*args, **kwargs):
         if type(a) == __Simulation__:
             started = a.started()
             break
-
     else:
         if 'sim' in kwargs.keys():
             started = kwargs['sim'].started()
         elif 'datadir' in kwargs.keys():
             from os.path import join, exists
             if exists(join(kwargs['datadir'], 'time_series.dat')): started = True
-        #else:
-        #    print('!! ERROR: No simulation of path specified..')
 
     if started == False:
         print('!! ERROR: Simulation has not jet started. There are not ogvar files.')
@@ -71,7 +68,7 @@ def ogvar(*args, **kwargs):
     if('var_file' in kwargs):
         if type(kwargs['var_file']) == __Simulation__:
             sim = kwargs['var_file']
-            kwargs['var_file'] = 'var.dat'
+            kwargs['var_file'] = 'ogvar.dat'
     else:
         if('varfile' in kwargs):
             kwargs['var_file']=kwargs['varfile']
@@ -83,7 +80,6 @@ def ogvar(*args, **kwargs):
         else:
             kwargs['var_file']='ogvar.dat'
 
-    print(kwargs['var_file'])
     if(kwargs['var_file'][0:2].lower() != 'og'):
         print('!! ERROR: Read procedure not called with ogvar-file.')
         print('          Did you mean to call read.var() instead?')
