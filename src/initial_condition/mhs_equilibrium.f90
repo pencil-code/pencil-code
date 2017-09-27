@@ -25,7 +25,9 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: g0=1,qgshear=1.5,density_power_law=1.5,temperature_power_law=1.0,plasma_beta=25.
+  real :: g0=1, qgshear=1.5
+  real :: density_power_law=1.5,temperature_power_law=1.0,plasma_beta=25.
+  real :: dustdensity_powerlaw=1.5,edtog=0.01
   real :: rm_int=0.0,rm_ext=impossible
   real :: tm_bot=0.0,tm_top=impossible
   real :: ampluu_cs_factor=0.01
@@ -39,7 +41,8 @@ module InitialCondition
       g0,qgshear,density_power_law,temperature_power_law,plasma_beta,&
       lnumerical_mhsequilibrium,lintegrate_potential,&
       rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
-      ladd_noise_propto_cs, ampluu_cs_factor, ladd_field
+      ladd_noise_propto_cs, ampluu_cs_factor, ladd_field,&
+      dustdensity_powerlaw,edtog
 !
   real :: ksi=1.
 !
@@ -251,6 +254,41 @@ module InitialCondition
            call enforce_numerical_equilibrium(f,lhd=.true.)
 !
     endsubroutine initial_condition_lnrho
+!***********************************************************************
+    subroutine initial_condition_nd(f)
+!
+!  Initialize logarithmic density. init_lnrho 
+!  will take care of converting it to linear 
+!  density if you use ldensity_nolog
+!
+!  20-sep-17/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl
+      real, dimension (mx) :: lnrhomid
+      real    :: p
+      integer :: k
+!
+      p=-dustdensity_powerlaw 
+      if (lroot) print*,'Radial dust density stratification with power law=',p
+!
+!  Pencilize the density allocation.
+!
+      do n=1,mz
+        do m=1,my
+!
+!  Midplane density
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          lnrhomid=log(edtog*rho0)+p*log(rr_cyl/r_ref)
+          do k=1,ndustspec
+             f(:,m,n,ind(k)) = f(:,m,n,ind(k))+exp(lnrhomid)
+          enddo
+!
+        enddo
+      enddo
+!
+    endsubroutine initial_condition_nd
 !***********************************************************************
     subroutine initial_condition_aa(f)
 !
