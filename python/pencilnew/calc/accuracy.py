@@ -1,3 +1,13 @@
+# accuracy.py
+#
+# Module containing routines used for assessment of formal accuracy of runs
+# using the ogrid module. Formal order of accuracy computed by L2-norms
+#
+# Can be extended to also be used on regular grids, if needed
+#
+# Author:
+# J. Aarnes (jorgenaarnes@gmail.com)
+#
 def twonorm_accuracy(simulations, field='ux', strip=0, varfile='ogvar.dat',direction='x',noerr=True):
     """
     Assessment of accuracy of simulation:

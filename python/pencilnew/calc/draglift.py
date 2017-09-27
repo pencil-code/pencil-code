@@ -1,3 +1,11 @@
+# draglift.py
+#
+# Routines for computing drag and lift coefficients, as well as non-dimensional
+# shedding frequency (Strouhal number) of unsteady flow past a circular cylinder.
+#
+# Author:
+# J. Aarnes (jorgenaarnes@gmail.com)
+#
 import numpy as np
 
 def draglift(simulations, d_cylinder=0.1, u_0=1.0, flow_dir='y', t_start=-1, sortby='dx'):
