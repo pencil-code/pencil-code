@@ -920,8 +920,9 @@ module Solid_Cells
 !
       real, dimension(3) :: xyz,rthz
       integer :: i,j,k,ii
+      real, dimension(3) :: xyz_neigh, rthz_neigh
 !
-!  Set the length of the interoplation stencil based on choice of method 
+!  Set the length of the interpolation stencil based on choice of method 
 !
       if(interpolation_method==1) then
         inter_len=2    
@@ -964,17 +965,13 @@ module Solid_Cells
                 call adjust_inear_cart_glob(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
               endif
 !
-              if(.not. this_proc_cartesian(xyz)) then
-                call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc)
-                if(cartesian_to_curvilinear(ii)%from_proc==iproc) then
-                  ! Some ghost points might have this_proc!=iproc, but still return iproc from find_proc_cartesian
-                  call ind_global_to_local_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
-                        cartesian_to_curvilinear(ii)%ind_local_neighbour,lcheck_init_interpolation)
-                endif
-              else
-                cartesian_to_curvilinear(ii)%from_proc=iproc
+              xyz_neigh= (/ xglobal(cartesian_to_curvilinear(ii)%ind_global_neighbour(1)), &
+                            yglobal(cartesian_to_curvilinear(ii)%ind_global_neighbour(2)), &
+                            zglobal(cartesian_to_curvilinear(ii)%ind_global_neighbour(3)) /)
+              call find_proc_cartesian(xyz_neigh,cartesian_to_curvilinear(ii)%from_proc)
+              if (cartesian_to_curvilinear(ii)%from_proc == iproc) then
                 call ind_global_to_local_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
-                      cartesian_to_curvilinear(ii)%ind_local_neighbour,lcheck_init_interpolation)
+                          cartesian_to_curvilinear(ii)%ind_local_neighbour,lcheck_init_interpolation)
               endif
             enddo
           enddo
@@ -1021,10 +1018,12 @@ module Solid_Cells
               if(interpolation_method>1) then
                 call adjust_inear_curv_glob(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
               endif
-              if(.not. this_proc_curvilinear(rthz,lcheck_init_interpolation)) then
-                call find_proc_curvilinear(rthz,curvilinear_to_cartesian(ii)%from_proc)
-              else
-                curvilinear_to_cartesian(ii)%from_proc=iproc
+!
+              rthz_neigh= (/ xglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(1)), &
+                             yglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(2)), &
+                             zglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(3)) /)
+              call find_proc_curvilinear(rthz_neigh,curvilinear_to_cartesian(ii)%from_proc)
+              if(curvilinear_to_cartesian(ii)%from_proc==iproc) then
                 call ind_global_to_local_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
                       curvilinear_to_cartesian(ii)%ind_local_neighbour,lcheck_init_interpolation)
               endif
@@ -1405,6 +1404,7 @@ module Solid_Cells
       !
       integer, dimension(ncpus,ncpus) :: from_proc_curv_to_cart_glob=0
       integer, dimension(ncpus,ncpus) :: from_proc_cart_to_curv_glob=0
+      integer, dimension(ncpus) :: from_proc_bufi =0
       integer :: iter, ind_start, ind_stop, ip_recv_tot, ip_send_tot, n_ip_proc
       integer, dimension(2) :: buf_size
       integer, dimension(:), allocatable :: id_bufi, id_bufo
@@ -1483,8 +1483,10 @@ module Solid_Cells
       if(lroot) then
         do iip=0,ncpus-1
           if(iip/=root) then
-            call mpirecv_int(from_proc_curv_to_cart_glob(iip+1,:),ncpus,iip,110)
-            call mpirecv_int(from_proc_cart_to_curv_glob(iip+1,:),ncpus,iip,115)
+            call mpirecv_int(from_proc_bufi,ncpus,iip,110)
+            from_proc_curv_to_cart_glob(iip+1,:)=from_proc_bufi
+            call mpirecv_int(from_proc_bufi,ncpus,iip,115)
+            from_proc_cart_to_curv_glob(iip+1,:)=from_proc_bufi
           else
             from_proc_curv_to_cart_glob(root+1,:)=from_proc_curv_to_cart
             from_proc_cart_to_curv_glob(root+1,:)=from_proc_cart_to_curv
@@ -1756,96 +1758,6 @@ module Solid_Cells
 !
     endsubroutine ind_global_to_local_cart
 !!***********************************************************************
-    subroutine print_grids_only(num)
-!  Print to file
-    character(len=16) :: xofile,yofile,xcfile,ycfile
-    integer :: i,num
-
-    print*,'iproc,x_og(l1_ogrid-1)-r_cyl,lfirst_proc_x,llast_proc_x',iproc,x_ogrid(l1_ogrid-1)-cylinder_radius,&
-      lfirst_proc_x,llast_proc_x
-
-    
-    xofile='x_ogrid'
-    yofile='y_ogrid'
-    xcfile='x_cgrid'
-    ycfile='y_cgrid'
-    write(xofile,"(A7,I1)") trim(xofile),num
-    write(yofile,"(A7,I1)") trim(yofile),num
-    write(xcfile,"(A7,I1)") trim(xcfile),num
-    write(ycfile,"(A7,I1)") trim(ycfile),num
-
-    xofile=trim(xofile)//'.dat'
-    yofile=trim(yofile)//'.dat'
-    xcfile=trim(xcfile)//'.dat'
-    ycfile=trim(ycfile)//'.dat'
-    open(unit=1,file=trim(xofile))
-    open(unit=2,file=trim(yofile))
-    open(unit=3,file=trim(xcfile))
-    open(unit=4,file=trim(ycfile))
-    do i=l1_ogrid-nghost,l2_ogrid+nghost
-      write(1,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
-      write(2,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
-    enddo
-    do i=l1-nghost,l2+nghost
-      write(3,*) x(i)
-    enddo
-    write(4,*) y(m1-nghost:m2+nghost)
-
-    close(1)
-    close(2)
-    close(3)
-    close(4)
-
-    endsubroutine print_grids_only
-!***********************************************************************
-    logical function this_proc_cartesian(xyz)
-      !TODO: Should perhaps use xyz0_loc and xyz1_loc for this
-      !      to make it consistent with find_proc_cartesian
-!
-!  Check if the grid points needed for interpolation between from cartesian
-!  to curvilinear grid are prestemt on this processor.
-!  At present only valid for trilinear interpolation, where points the 
-!  four points [(x_i,y_j,z_k) for i=ii:ii+1 etc] are needed
-!
-!  06-apr-17/Jorgen: Coded
-!
-      real, dimension(3), intent(in) :: xyz
-!
-      this_proc_cartesian=.true.
-      if(xyz(1)<x(l1).or.xyz(1)>x(l2)) this_proc_cartesian=.false.
-      if(xyz(2)<y(m1).or.xyz(2)>y(m2)) this_proc_cartesian=.false.
-      if(xyz(3)<z(n1).or.xyz(3)>z(n2)) this_proc_cartesian=.false.
-!
-    end function this_proc_cartesian
-!***********************************************************************
-    logical function this_proc_curvilinear(rthz,lcheck)
-      !TODO: Should perhaps use xyz0_loc_ogrid and xyz1_loc_ogrid for this
-      !      to make it consistent with find_proc_curvilinear
-!
-!  Check if the grid points needed for interpolation between from curvilinear
-!  to cartesian grid are prestemt on this processor.
-!  At present only valid for trilinear interpolation, where points the 
-!  four points [(x_i,y_j,z_k) for i=ii:ii+1 etc] are needed
-!
-!  06-apr-17/Jorgen: Coded
-!
-      real, dimension(3), intent(in) :: rthz
-      logical, intent(in) :: lcheck
-!
-      this_proc_curvilinear=.true.
-      if(rthz(1)<x_ogrid(1).or.rthz(1)>x_ogrid(mx_ogrid)) this_proc_curvilinear=.false.
-      if(rthz(2)<y_ogrid(1).or.rthz(2)>y_ogrid(my_ogrid)) this_proc_curvilinear=.false.
-      if(rthz(3)<z_ogrid(1).or.rthz(3)>z_ogrid(mz_ogrid)) this_proc_curvilinear=.false.
-!
-      if(lcheck) then
-        if(rthz(1)<xyz0_ogrid(1)) then
-          call fatal_error('this_proc_curvilinear','interpolation point is INSIDE the solid cylinder!')
-        elseif(rthz(1)>r_ogrid) then
-          call fatal_error('this_proc_curvilinear','interpolation point is OUTSIDE the curvilinear grid!')
-        endif
-      endif
-    end function this_proc_curvilinear
-!***********************************************************************
     subroutine drag_force_pencils(c_dragx,c_dragy)
 !
 !  Compute the total fluid force upon the cylinder 
@@ -2085,14 +1997,15 @@ module Solid_Cells
     integer, dimension(n_procs_send_cart_to_curv) :: ireq1D, ireq5D
     integer, dimension(5) :: nbuf_farr
     integer, dimension(max_recv_ip_cart_to_curv) :: id_bufi
-    real, dimension(max_send_ip_cart_to_curv,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufo
-    real, dimension(max_recv_ip_cart_to_curv,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufi
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1,max_send_ip_cart_to_curv) :: f_bufo
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1,max_recv_ip_cart_to_curv) :: f_bufi
     real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1) :: farr
     integer :: i,j,k,id,ipp
     integer :: ii1,ii2,jj1,jj2,kk1,kk2
     integer :: iter, send_to, recv_from
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
+    integer, dimension(max_send_ip_cart_to_curv) :: ip_bufo
 !
     if(interpolation_method==1) then
       nbuf_farr(2:4)=2
@@ -2115,12 +2028,14 @@ module Solid_Cells
         i=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(1)
         j=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(2)
         k=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(3)
-        f_bufo(ipp,:,:,:,:)=f_cartesian(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
+        f_bufo(:,:,:,:,ipp)=f_cartesian(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
       enddo
       !print*, 'iproc: send id info', iproc,send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
-      call mpisend_nonblock_int(send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id, &
-        nbuf_farr(1),send_to,send_to,ireq1D(iter))
-      call mpisend_nonblock_real(f_bufo(1:nbuf_farr(1),:,:,:,:),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
+      !call mpisend_nonblock_int(send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id, &
+        !nbuf_farr(1),send_to,send_to,ireq1D(iter))
+      ip_bufo(1:nbuf_farr(1)) = send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
+      call mpisend_nonblock_int(ip_bufo(1:nbuf_farr(1)),nbuf_farr(1),send_to,send_to,ireq1D(iter))
+      call mpisend_nonblock_real(f_bufo(:,:,:,:,1:nbuf_farr(1)),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
       ind_send_first=ind_send_last+1
     enddo
     ind_recv_first=1
@@ -2129,10 +2044,10 @@ module Solid_Cells
       recv_from=procs_recv_cart_to_curv(iter)
       nbuf_farr(1)=ind_recv_last-ind_recv_first+1
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
-      call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
+      call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(1)),nbuf_farr,recv_from,iproc+ncpus)
       do ipp=1,nbuf_farr(1)
-        farr = f_bufi(ipp,:,:,:,:)
-        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,farr,f_cartesian)
+        farr = f_bufi(:,:,:,:,ipp)
+        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,farr)
       enddo
     enddo
 !
@@ -2143,7 +2058,7 @@ module Solid_Cells
         inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
         farr(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-ii1:inear_loc(1)+ii2, &
           inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
-        call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian)
+        call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
       endif
     enddo
 !
@@ -2170,14 +2085,15 @@ module Solid_Cells
     integer, dimension(n_procs_send_curv_to_cart) :: ireq1D, ireq5D
     integer, dimension(5) :: nbuf_farr
     integer, dimension(max_recv_ip_curv_to_cart) :: id_bufi
-    real, dimension(max_send_ip_curv_to_cart,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufo
-    real, dimension(max_recv_ip_curv_to_cart,inter_len,inter_len,inter_len,ivar2-ivar1+1) :: f_bufi
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1,max_send_ip_curv_to_cart) :: f_bufo
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1,max_recv_ip_curv_to_cart) :: f_bufi
     real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1) :: farr
     integer :: i,j,k,id,ipp
     integer :: ii1,ii2,jj1,jj2,kk1,kk2
     integer :: iter, send_to, recv_from
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
+    integer, dimension(max_send_ip_curv_to_cart) :: ip_bufo
 !
     if(interpolation_method==1) then
       nbuf_farr(2:4)=2
@@ -2200,11 +2116,13 @@ module Solid_Cells
         i=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(1)
         j=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(2)
         k=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(3)
-        f_bufo(ipp,:,:,:,:)=f_ogrid(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
+        f_bufo(:,:,:,:,ipp)=f_ogrid(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
       enddo
-      call mpisend_nonblock_int(send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id, &
-        nbuf_farr(1),send_to,send_to,ireq1D(iter))
-      call mpisend_nonblock_real(f_bufo(1:nbuf_farr(1),:,:,:,:),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
+      !call mpisend_nonblock_int(send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id, &
+      !  nbuf_farr(1),send_to,send_to,ireq1D(iter))
+      ip_bufo(1:nbuf_farr(1)) = send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id
+      call mpisend_nonblock_int(ip_bufo(1:nbuf_farr(1)),nbuf_farr(1),send_to,send_to,ireq1D(iter))
+      call mpisend_nonblock_real(f_bufo(:,:,:,:,1:nbuf_farr(1)),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
       ind_send_first=ind_send_last+1
     enddo
     ind_recv_first=1
@@ -2213,9 +2131,9 @@ module Solid_Cells
       recv_from=procs_recv_curv_to_cart(iter)
       nbuf_farr(1)=ind_recv_last-ind_recv_first+1
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
-      call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
+      call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(1)),nbuf_farr,recv_from,iproc+ncpus)
       do ipp=1,nbuf_farr(1)
-        farr = f_bufi(ipp,:,:,:,:)
+        farr = f_bufi(:,:,:,:,ipp)
         call interpolate_point_curv_to_cart(f_cartesian,id_bufi(ipp),ivar1,ivar2,farr)
       enddo
     enddo
@@ -2226,7 +2144,23 @@ module Solid_Cells
     ! TODO: Make more efficient
       if(curvilinear_to_cartesian(id)%from_proc==iproc) then
         inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-        farr(1:inter_len,1:inter_len,1:inter_len,ivar1:ivar2)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+        !TODO: Remove
+      !  if(inear_loc(1)<4 .or. inear_loc(2)<4) then
+      !    print*, 'iproc',iproc
+      !  print*, 'inear_loc',inear_loc
+      !  print*, 'xxp',curvilinear_to_cartesian(id)%xyz
+      !  if(inear_loc(1)>1) then
+      !    print*, 'x_ogrid(ix0-1),x_ogrid(ix0),x_ogrid(ix0+1)',x_ogrid(inear_loc(1)-1),x_ogrid(inear_loc(1)),x_ogrid(inear_loc(1)+1)
+      !  else
+      !    print*, 'x_ogrid(ix0),x_ogrid(ix0+1)',x_ogrid(inear_loc(1)),x_ogrid(inear_loc(1)+1)
+      !  endif
+      !  if(inear_loc(2)>1) then
+      !    print*, 'y_ogrid(iy0-1),y_ogrid(iy0),y_ogrid(iy0+1)',y_ogrid(inear_loc(2)-1),y_ogrid(inear_loc(2)),y_ogrid(inear_loc(2)+1)
+      !  else
+      !    print*, 'y_ogrid(iy0),y_ogrid(iy0+1)',y_ogrid(inear_loc(2)),y_ogrid(inear_loc(2)+1)
+      !  endif
+      !endif
+        farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
           inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
         call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
       endif
@@ -2242,12 +2176,11 @@ module Solid_Cells
 !
   endsubroutine communicate_ip_curv_to_cart
 !***********************************************************************
-  subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian)
+  subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
 !
 !  Use linear interpolation routine to interpolate the values on the cartesian 
 !  grid to the interpolation point on the curvilinear grid
 !
-    real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
     integer, intent(in) :: id,ivar1,ivar2
     real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1), intent(in) :: farr
     integer :: i,j,k
@@ -2255,14 +2188,15 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO:REMOVE FARR_LARGE
-    real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
+    !real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
+    !real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
     !integer, dimension(3) :: inear_loc
 !
     xyz_ip=cartesian_to_curvilinear(id)%xyz
     inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
-    farr_large(:,:,:,:) = f_cartesian(inear_glob(1)-2:inear_glob(1)+2, &
-                                      inear_glob(2)-2:inear_glob(2)+2, &
-                                      inear_glob(3)-2:inear_glob(3)+2,:)
+    !farr_large(:,:,:,:) = f_cartesian(inear_glob(1)-2:inear_glob(1)+2, &
+    !                                  inear_glob(2)-2:inear_glob(2)+2, &
+    !                                  inear_glob(3)-2:inear_glob(3)+2,:)
 ! 
 !  Perform interpolation on cartesian grid
 !
@@ -2273,7 +2207,7 @@ module Solid_Cells
     elseif(interpolation_method==2) then
       call interpolate_quadratic_spline(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     elseif(interpolation_method==3) then
-      if(.not. interp_lagrange4(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
+      if(.not. interp_lagrange4(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange4','interpolation from cartesian to curvilinear')
       endif
     endif
@@ -2302,13 +2236,13 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO:REMOVE
-    real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
+    !real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
 !
     xyz_ip=curvilinear_to_cartesian(id)%xyz
     inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
-    farr_large = f_ogrid(inear_glob(1)-2:inear_glob(1)+2, &
-                         inear_glob(2)-2:inear_glob(2)+2, &
-                         inear_glob(3)-2:inear_glob(3)+2,:)
+    !farr_large = f_ogrid(inear_glob(1)-2:inear_glob(1)+2, &
+    !                     inear_glob(2)-2:inear_glob(2)+2, &
+    !                     inear_glob(3)-2:inear_glob(3)+2,:)
 !
     if(interpolation_method==1) then
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
@@ -2317,7 +2251,7 @@ module Solid_Cells
     elseif(interpolation_method==2) then
       call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
     elseif(interpolation_method==3) then
-      if(.not. interp_lagrange4(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+      if(.not. interp_lagrange4(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange4','interpolation from curvilinear to cartesian')
       endif
     endif
@@ -2931,7 +2865,6 @@ module Solid_Cells
       real :: lag_2,lag_1,lag0,lag1,lag2
       real, dimension(-2:2,ivar2-ivar1+1) :: g_2,g_1,g0,g1,g2
       real, dimension(-2:2,ivar2-ivar1+1) :: gp
-      real :: x0,x1,y0,y1
       integer :: i,ix0,ix1,iy0,iy1
 !
       interp_lagrange4= .true.
@@ -4435,117 +4368,6 @@ module Solid_Cells
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
 !
   endsubroutine time_step_ogrid
-!***********************************************************************
-    subroutine print_ogrid(num)
-!  Print to file
-    character(len=16) :: xfile,yfile,fxfile,fyfile,rhfile
-    integer :: i,num
-
-    
-    if(num<10) then
-      xfile='x_ogrid0'
-      yfile='y_ogrid0'
-      fxfile='fx_ogrid0'
-      fyfile='fy_ogrid0'
-      rhfile='rh_ogrid0'
-      write(fxfile,"(A9,I1)") trim(fxfile),num
-      write(fyfile,"(A9,I1)") trim(fyfile),num
-      write(rhfile,"(A9,I1)") trim(rhfile),num
-    else
-      xfile='x_ogrid'
-      yfile='y_ogrid'
-      fxfile='fx_ogrid'
-      fyfile='fy_ogrid'
-      rhfile='rh_ogrid'
-      write(fxfile,"(A8,I2)") trim(fxfile),num
-      write(fyfile,"(A8,I2)") trim(fyfile),num
-      write(rhfile,"(A8,I2)") trim(rhfile),num
-    endif
-
-    xfile=trim(xfile)//'.dat'
-    yfile=trim(yfile)//'.dat'
-    fxfile=trim(fxfile)//'.dat'
-    fyfile=trim(fyfile)//'.dat'
-    rhfile=trim(rhfile)//'.dat'
-    open(unit=1,file=trim(xfile))
-    open(unit=2,file=trim(yfile))
-    open(unit=11,file=trim(fxfile))
-    open(unit=12,file=trim(fyfile))
-    open(unit=13,file=trim(rhfile))
-    !TODO: nghost
-    do i=l1_ogrid-nghost,l2_ogrid+nghost
-      write(1,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
-      write(2,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
-      write(11,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,iux)*cos(y_ogrid(m1_ogrid:m2_ogrid)) &
-            -f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*sin(y_ogrid(m1_ogrid:m2_ogrid))
-      write(12,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,iux)*sin(y_ogrid(m1_ogrid:m2_ogrid)) &
-            +f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*cos(y_ogrid(m1_ogrid:m2_ogrid))
-      write(13,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,irho)
-    enddo
-
-    close(1)
-    close(2)
-    close(11)
-    close(12)
-    close(13)
-    !write(*,*) 'Press any key to continue'
-    !read(*,*) 
-
-    endsubroutine print_ogrid
-!***********************************************************************
-    subroutine print_cgrid(num,f_cartesian)
-!  Print to file
-    character(len=16) :: xfile,yfile,fxfile,fyfile,rhfile
-    real, dimension (mx,my,mz,mfarray) :: f_cartesian
-    integer :: i,num
-
-    if(num<10) then
-      xfile='x_cgrid0'
-      yfile='y_cgrid0'
-      fxfile='fx_cgrid0'
-      fyfile='fy_cgrid0'
-      rhfile='rh_cgrid0'
-      write(fxfile,"(A9,I1)") trim(fxfile),num
-      write(fyfile,"(A9,I1)") trim(fyfile),num
-      write(rhfile,"(A9,I1)") trim(rhfile),num
-    else
-      xfile='x_cgrid'
-      yfile='y_cgrid'
-      fxfile='fx_cgrid'
-      fyfile='fy_cgrid'
-      rhfile='rh_cgrid'
-      write(fxfile,"(A8,I2)") trim(fxfile),num
-      write(fyfile,"(A8,I2)") trim(fyfile),num
-      write(rhfile,"(A8,I2)") trim(rhfile),num
-    endif
-
-    xfile=trim(xfile)//'.dat'
-    yfile=trim(yfile)//'.dat'
-    fxfile=trim(fxfile)//'.dat'
-    fyfile=trim(fyfile)//'.dat'
-    rhfile=trim(rhfile)//'.dat'
-    open(unit=1,file=trim(xfile))
-    open(unit=2,file=trim(yfile))
-    open(unit=11,file=trim(fxfile))
-    open(unit=12,file=trim(fyfile))
-    open(unit=13,file=trim(rhfile))
-    do i=l1,l2
-      write(1,*) x(i)
-      write(11,*) f_cartesian(i,m1:m2,4,iux)
-      write(12,*) f_cartesian(i,m1:m2,4,iuy)
-      write(13,*) f_cartesian(i,m1:m2,4,irho)
-    enddo
-    write(2,*) y(m1:m2)
-
-    close(1)
-    close(2)
-    close(11)
-    close(12)
-    close(13)
-    !write(*,*) 'Press any key to continue'
-    !read(*,*) 
-
-    endsubroutine print_cgrid
 !***********************************************************************
     subroutine pde_ogrid(df)
 !
