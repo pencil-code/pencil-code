@@ -32,7 +32,7 @@ def ogdim(*args, **kwargs):
     """
 
     ogdim_tmp = ogDim()
-    ogdim_tmp.read(*args, **kwargs, ogrid=True)
+    ogdim_tmp.read(*args, ogrid=True, **kwargs)
     return ogdim_tmp
 
 
