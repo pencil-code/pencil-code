@@ -209,9 +209,9 @@ module Solid_Cells
   real, dimension(nxgrid_ogrid) :: xgrid_ogrid, dx1grid_ogrid, dxtgrid_ogrid
   real, dimension(nygrid_ogrid) :: ygrid_ogrid, dy1grid_ogrid, dytgrid_ogrid
   real, dimension(nzgrid_ogrid) :: zgrid_ogrid, dz1grid_ogrid, dztgrid_ogrid
-  real, dimension(mxgrid_ogrid) :: xglobal_ogrid
-  real, dimension(mygrid_ogrid) :: yglobal_ogrid
-  real, dimension(mzgrid_ogrid) :: zglobal_ogrid
+  real, dimension(mxgrid_ogrid) :: xglobal_ogrid, dx1global_ogrid
+  real, dimension(mygrid_ogrid) :: yglobal_ogrid, dy1global_ogrid
+  real, dimension(mzgrid_ogrid) :: zglobal_ogrid, dz1global_ogrid
 !  Necessary for particle runs
   real, dimension(:,:,:,:,:), allocatable ::  f_ogrid_procs
   integer, dimension(:,:), allocatable :: ip_proc
@@ -446,15 +446,15 @@ module Solid_Cells
 !
 !  Factor difference between timestep on background grid and overset grid 
 !
-    if(lock_dt) then
-      timestep_factor = 1
-    else
-      timestep_factor = ceiling(dxmin/dxmin_ogrid) +1
-      if(timestep_factor < 1)  then
+      if(lock_dt) then
         timestep_factor = 1
+      else
+        timestep_factor = ceiling(dxmin/dxmin_ogrid) +1
+        if(timestep_factor < 1)  then
+          timestep_factor = 1
+        endif
+        !timestep_factor = timestep_factor*timestep_factor
       endif
-      !timestep_factor = timestep_factor*timestep_factor
-    endif
 !
 !  Set interpolation zone for curvilinear to cartesian
 !  Make sure that no points outside x_ogrid(l2_ogrid) are used
@@ -468,10 +468,24 @@ module Solid_Cells
           print*, '         Zone adjusted.'
           r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*1.01
         endif
+      elseif (interpolation_method==3) then
+        r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*1.51
+        if((r_int_outer-x_ogrid(l2_ogrid))<(x_ogrid(l2_ogrid-2)-r_int_outer)) then
+          print*, 'WARNING: An error occured when setting interpolation zone.'
+          print*, '         Zone adjusted.'
+          r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*2.01
+        endif
       else
-        call fatal_error('initialize_solid_cells','interpolation method > 2 does not exist')
+        call fatal_error('initialize_solid_cells','interpolation method > 3 does not exist')
       endif
-      r_int_inner=xyz0_ogrid(1)
+!
+!  Set limit of the interpolation zone, r_int_intter
+!
+      !if(interpolation_method<=2) then 
+        r_int_inner=xyz0_ogrid(1)
+      !else
+        !r_int_inner=xyz0_ogrid(1) + 1.01/dx1grid_ogrid(1)
+      !endif
       if(lroot) then
         if(.not.lequidist_ogrid(1)) then
           print*, ''
@@ -606,6 +620,8 @@ module Solid_Cells
           print*, 'interpolation_method==1: Linear interpolation used'
         elseif(interpolation_method==2) then
           print*, 'interpolation_method==2: Quadratic spline interpolation used'
+        elseif(interpolation_method==3) then
+          print*, 'interpolation_method==3: Fourth order Lagrangian interpolation used'
           print*, 'WARNING: Interpolation method is not working for parallel runs at the moment'
         endif
       endif
@@ -911,6 +927,8 @@ module Solid_Cells
         inter_len=2    
       elseif(interpolation_method==2) then
         inter_len=3
+      elseif(interpolation_method==3) then
+        inter_len=5
       else
         call fatal_error('initialize_interpolate_points','selected interpolation method does not exist!')
       endif
@@ -1896,7 +1914,7 @@ module Solid_Cells
 !  23-aug-17/Ewa+Nils: Coded
 !
       real, intent(inout) :: Nusselt
-      real :: gradT, deltaT, surfaceelement, dlong
+      real :: gradT
 !
       gradT=p_ogrid%gTT(1,1)
       Nusselt = Nusselt - gradT  
@@ -2082,6 +2100,9 @@ module Solid_Cells
     elseif(interpolation_method==2) then
       nbuf_farr(2:4)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
+    elseif(interpolation_method==3) then
+      nbuf_farr(2:4)=5
+      ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
     endif
     nbuf_farr(5)=ivar2-ivar1+1
 !
@@ -2164,6 +2185,9 @@ module Solid_Cells
     elseif(interpolation_method==2) then
       nbuf_farr(2:4)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
+    elseif(interpolation_method==3) then
+      nbuf_farr(2:4)=5
+      ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
     endif
     nbuf_farr(5)=ivar2-ivar1+1
 !
@@ -2202,7 +2226,7 @@ module Solid_Cells
     ! TODO: Make more efficient
       if(curvilinear_to_cartesian(id)%from_proc==iproc) then
         inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-        farr(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+        farr(1:inter_len,1:inter_len,1:inter_len,ivar1:ivar2)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
           inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
         call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
       endif
@@ -2230,12 +2254,15 @@ module Solid_Cells
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
-    !TODO:REMOVE
-    !real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
+    !TODO:REMOVE FARR_LARGE
+    real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
     !integer, dimension(3) :: inear_loc
 !
     xyz_ip=cartesian_to_curvilinear(id)%xyz
     inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
+    farr_large(:,:,:,:) = f_cartesian(inear_glob(1)-2:inear_glob(1)+2, &
+                                      inear_glob(2)-2:inear_glob(2)+2, &
+                                      inear_glob(3)-2:inear_glob(3)+2,:)
 ! 
 !  Perform interpolation on cartesian grid
 !
@@ -2244,13 +2271,11 @@ module Solid_Cells
         call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
       endif
     elseif(interpolation_method==2) then
-!NEWNEW
-      !inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
-      !call adjust_inear_cart(inear_loc,xyz_ip)
-!/NEWNEW
-      !farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-1:inear_loc(1)+1, &
-          !inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
       call interpolate_quadratic_spline(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
+    elseif(interpolation_method==3) then
+      if(.not. interp_lagrange4(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
+        call fatal_error('interp_lagrange4','interpolation from cartesian to curvilinear')
+      endif
     endif
 !
 !  Update curvilinear grid with the new data values
@@ -2277,24 +2302,24 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO:REMOVE
-    !integer, dimension(3) :: inear_loc
-    !real, dimension(3,3,3,ivar2-ivar1+1) :: farr_large
+    real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
 !
     xyz_ip=curvilinear_to_cartesian(id)%xyz
     inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
+    farr_large = f_ogrid(inear_glob(1)-2:inear_glob(1)+2, &
+                         inear_glob(2)-2:inear_glob(2)+2, &
+                         inear_glob(3)-2:inear_glob(3)+2,:)
 !
     if(interpolation_method==1) then
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
       endif
     elseif(interpolation_method==2) then
-!NEWNEW
-      !inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-      !call adjust_inear_curv(inear_loc,xyz_ip)
-      !farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)-1:inear_loc(1)+1, &
-           !inear_loc(2)-1:inear_loc(2)+1,inear_loc(3)-1:inear_loc(3)+1,ivar1:ivar2)
-!/NEWNEW
       call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
+    elseif(interpolation_method==3) then
+      if(.not. interp_lagrange4(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+        call fatal_error('interp_lagrange4','interpolation from curvilinear to cartesian')
+      endif
     endif
 !
 !  Update curvilinear grid with the new data values
@@ -2868,164 +2893,259 @@ module Solid_Cells
 !
   endfunction linear_interpolate_cartesian
 !***********************************************************************
-  logical function linear_interpolate_curv_HO(farr,ivar1,ivar2,xxp,inear_glob,fp,lcheck,order)
+  logical function interp_lagrange4(farr_in,ivar1,ivar2,xxp,inear_glob,fp,lcart_to_curv,lcurv_to_cart,lcheck)
 !
-!  Interpolate the value of f to arbitrary (xp, yp) CURVILINEAR coordinate
-!  using the high-order lagrangian interpolation.
+!  Interpolate the value of f to (xp, yp) CURVILINEAR coordinate
+!  using the fourth-order lagrangian interpolation.
 ! 
 !  TODO: Extend to 3D
+!  TODO: Adjust nearest point to be ACTUALLY NEAREST, not bottom left corner
+!        Needed due to asymetric stencil
 !
-!  The coefficients are determined by the 2xN grid points surrounding the
+!  The coefficients are determined by the 5x5 grid points surrounding the
 !  interpolation point.
 !  Global coordinates are used for the interpolation, to allow interpolation of 
 !  values outside this processors domain.
 !
-!  26-apr-17/Jorgen: Adapted from linear_interpolate_curvilinear
+!  28-sep-17/Jorgen: Coded
 !
       integer :: ivar1, ivar2
-      integer, intent(in) :: order
       real, dimension (3) :: xxp
-      real, dimension (order,order,2,ivar2-ivar1+1) :: farr
+      real, dimension (5,5,5,ivar2-ivar1+1) :: farr_in
+      !TODO
+      real, dimension (-2:2,-2:2,ivar2-ivar1+1) :: farr
       real, dimension (ivar2-ivar1+1) :: fp
       integer, dimension (3) :: inear_glob
-      logical :: lcheck
+      logical :: lcart_to_curv, lcurv_to_cart, lcheck 
 !
-      intent(in)  :: farr, ivar1, ivar2, xxp, inear_glob, lcheck
+      intent(in)  :: farr_in, ivar1, ivar2, xxp, inear_glob, lcheck, lcart_to_curv, lcurv_to_cart
       intent(out) :: fp
-      integer :: i,ix0,iy0,iz0
-      real, dimension(ivar2-ivar1+1) :: g1,g2
-      real :: xp,yp,l1,l2,l3,l4
-      real, dimension(order,ivar2-ivar1+1) :: g_interp
-      real, dimension(order) :: lagrange
-      real, dimension(order,order) :: dx1,dy1
-      integer :: j,k,l
+
+      real, dimension(-2:2) :: xglob, yglob
+      real :: dx_2_1,dx_20,dx_21,dx_22,dx_1_2,dx_10,dx_11,dx_12,dx0_2,dx0_1, &
+              dx01,dx02,dx1_2,dx1_1,dx10,dx12,dx2_2,dx2_1,dx20,dx21
+      real :: deltax_2,deltax_1,deltax0,deltax1,deltax2
+      real :: dy_2_1,dy_20,dy_21,dy_22,dy_1_2,dy_10,dy_11,dy_12,dy0_2,dy0_1, &
+              dy01,dy02,dy1_2,dy1_1,dy10,dy12,dy2_2,dy2_1,dy20,dy21
+      real :: deltay_2,deltay_1,deltay0,deltay1,deltay2
+      real :: lag_2,lag_1,lag0,lag1,lag2
+      real, dimension(-2:2,ivar2-ivar1+1) :: g_2,g_1,g0,g1,g2
+      real, dimension(-2:2,ivar2-ivar1+1) :: gp
+      real :: x0,x1,y0,y1
+      integer :: i,ix0,ix1,iy0,iy1
 !
-!  Determine index value of lowest lying corner point of grid box surrounding
-!  the interpolation point.
+      interp_lagrange4= .true.
+      farr(:,:,:) = farr_in(:,:,3,:)
 !
-      linear_interpolate_curv_HO= .true.
+!  Get grid points
 !
-      ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3)
-!
-!  Check if the grid point interval is really correct.
-!
-      if ((xglobal_ogrid(ix0)<=xxp(1) .and. xglobal_ogrid(ix0+1)>=xxp(1) .or. nxgrid==1) .and. &
-          (yglobal_ogrid(iy0)<=xxp(2) .and. yglobal_ogrid(iy0+1)>=xxp(2) .or. nygrid==1) .and. &
-          (zglobal_ogrid(iz0)<=xxp(3) .and. zglobal_ogrid(iz0+1)>=xxp(3) .or. nzgrid==1)) then
-        ! Everything okay
+      if(lcart_to_curv) then
+        xglob(-2:2) = xglobal(inear_glob(1)-2:inear_glob(1)+2)
+        yglob(-2:2) = yglobal(inear_glob(2)-2:inear_glob(2)+2)
+      elseif(lcurv_to_cart) then
+        xglob(-2:2) = xglobal_ogrid(inear_glob(1)-2:inear_glob(1)+2)
+        yglob(-2:2) = yglobal_ogrid(inear_glob(2)-2:inear_glob(2)+2)
       else
-        print*, 'linear_interpolate_curvilinear_highorder: Global interpolation point does not ' // &
-            'lie within the calculated grid point interval.'
-        print*, 'iproc = ', iproc_world
-        print*, 'mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid) = ', & 
-            mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid)
-        print*, 'mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid) = ', &
-            mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid)
-        print*, 'mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid) = ', & 
-            mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid)
-        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
-        print*, 'xp, xp0, xp1 = ', xxp(1), xglobal_ogrid(ix0), xglobal_ogrid(ix0+1)
-        print*, 'yp, yp0, yp1 = ', xxp(2), yglobal_ogrid(iy0), yglobal_ogrid(iy0+1)
-        print*, 'zp, zp0, zp1 = ', xxp(3), zglobal_ogrid(iz0), zglobal_ogrid(iz0+1)
-        linear_interpolate_curv_HO= .false.
+        print*,'interp_lagrange4:Not interpolated to any specific grid!'
+        interp_lagrange4= .false.
         return
       endif
 !
-!  Set up 1D Lagrange basis polynomials in x-direction
+!  Compute distance from xxp to surrounding grid points
+!  Needed for checking that inear_glob is correct, and for lagrange polynomials
+!
+      deltax_2 = xxp(1)-xglob(-2)
+      deltax_1 = xxp(1)-xglob(-1)
+      deltax0  = xxp(1)-xglob( 0)
+      deltax1  = xxp(1)-xglob( 1)
+      deltax2  = xxp(1)-xglob( 2)
+!
+      deltay_2 = xxp(2)-yglob(-2)
+      deltay_1 = xxp(2)-yglob(-1)
+      deltay0  = xxp(2)-yglob( 0)
+      deltay1  = xxp(2)-yglob( 1)
+      deltay2  = xxp(2)-yglob( 2)
+!
+!  Check that inear_glob actually points to the grid point closest to xxp
+!
+      if(lcheck) then
+        if((abs(deltax0)<=min(abs(deltax_2),abs(deltax_1),abs(deltax1),abs(deltax2))) .or. &
+           (abs(deltay0)<=min(abs(deltay_2),abs(deltay_1),abs(deltay1),abs(deltay2)))) then 
+        ! Everything okay
+        else
+          print*, 'interp_lagrange4: Interpolation point does not lie closest to center grid point.' 
+          print*, 'ix0, iy0, iz0 = ', inear_glob(1:3)
+          print*, 'xp, xglob(-2:2) = ', xxp(1), xglob
+          print*, 'yp, yglob(-2:2) = ', xxp(2), yglob
+          interp_lagrange4= .false.
+          return
+        endif
+      endif
+!
+!  Interpolate in x-direction
 ! 
-      k=-floor(order/2.)
-      do i=1,order
-        k=k+1
-        l=-floor(order/2.)
-        do j=1,order
-          l=l+1
-          dx1(i,j)=xglobal_ogrid(ix0+k)-xglobal_ogrid(ix0+l)
-        enddo
-        dx1(i,i)=1 ! To avoid division by zero
+!  Compute distances
+!
+      dx_2_1=xglob(-2)-xglob(-1)
+      dx_20 =xglob(-2)-xglob( 0)
+      dx_21 =xglob(-2)-xglob( 1)
+      dx_22 =xglob(-2)-xglob( 2)
+
+      dx_1_2=-dx_2_1
+      dx_10 =xglob(-1)-xglob( 0)
+      dx_11 =xglob(-1)-xglob( 1)
+      dx_12 =xglob(-1)-xglob( 2)
+
+      dx0_2 =-dx_20
+      dx0_1 =-dx_10
+      dx01  =xglob( 0)-xglob( 1)
+      dx02  =xglob( 0)-xglob( 2)
+
+      dx1_2 =-dx_21
+      dx1_1 =-dx_11
+      dx10  =-dx01
+      dx12  =xglob( 1)-xglob( 2)
+
+      dx2_2 =-dx_22
+      dx2_1 =-dx_12
+      dx20  =-dx02
+      dx21  =-dx12
+!
+!  Compute products of x-x_k/(x_i-x_k) for (i!=k)
+!
+      lag_2 = (deltax_1/dx_2_1)*(deltax0 /dx_20)*(deltax1/dx_21)*(deltax2/dx_22)
+      lag_1 = (deltax_2/dx_1_2)*(deltax0 /dx_10)*(deltax1/dx_11)*(deltax2/dx_12)
+      lag0  = (deltax_2/dx0_2 )*(deltax_1/dx0_1)*(deltax1/dx01 )*(deltax2/dx02 )
+      lag1  = (deltax_2/dx1_2 )*(deltax_1/dx1_1)*(deltax0/dx10 )*(deltax2/dx12 )
+      lag2  = (deltax_2/dx2_2 )*(deltax_1/dx2_1)*(deltax0/dx20 )*(deltax1/dx21 )
+
+      g_2 = farr(-2,:,:)
+      g_1 = farr(-1,:,:)
+      g0  = farr( 0,:,:)
+      g1  = farr( 1,:,:)
+      g2  = farr( 2,:,:)
+!
+!  Interpolate points in x-direction
+!
+      do i=ivar1,ivar2
+        gp(:,i) = lag_2*g_2(:,i)+lag_1*g_1(:,i)+lag0*g0(:,i)+lag1*g1(:,i)+lag2*g2(:,i)
       enddo
-      dx1=1./dx1
-      xp=xxp(1)
-      k=-floor(order/2.)
-      do i=1,order
-        k=k+1
-        lagrange(i)=1./(xp-xglobal_ogrid(ix0+k))
+      !gp = lag_2*g_2 + lag_1*g_1 + lag0*g0 + lag1*g1 * lag2*g2
+!
+!  Interpolate in y-direction
+! 
+!  Compute distances
+!
+      dy_2_1=yglob(-2)-yglob(-1)
+      dy_20 =yglob(-2)-yglob( 0)
+      dy_21 =yglob(-2)-yglob( 1)
+      dy_22 =yglob(-2)-yglob( 2)
+
+      dy_1_2=-dy_2_1
+      dy_10 =yglob(-1)-yglob( 0)
+      dy_11 =yglob(-1)-yglob( 1)
+      dy_12 =yglob(-1)-yglob( 2)
+
+      dy0_2 =-dy_20
+      dy0_1 =-dy_10
+      dy01  =yglob( 0)-yglob( 1)
+      dy02  =yglob( 0)-yglob( 2)
+
+      dy1_2 =-dy_21
+      dy1_1 =-dy_11
+      dy10  =-dy01
+      dy12  =yglob( 1)-yglob( 2)
+
+      dy2_2 =-dy_22
+      dy2_1 =-dy_12
+      dy20  =-dy02
+      dy21  =-dy12
+!
+!  Compute products of x-x_k/(x_i-x_k) for (i!=k)
+!
+      lag_2 = (deltay_1/dy_2_1)*(deltay0 /dy_20)*(deltay1/dy_21)*(deltay2/dy_22)
+      lag_1 = (deltay_2/dy_1_2)*(deltay0 /dy_10)*(deltay1/dy_11)*(deltay2/dy_12)
+      lag0  = (deltay_2/dy0_2 )*(deltay_1/dy0_1)*(deltay1/dy01 )*(deltay2/dy02 )
+      lag1  = (deltay_2/dy1_2 )*(deltay_1/dy1_1)*(deltay0/dy10 )*(deltay2/dy12 )
+      lag2  = (deltay_2/dy2_2 )*(deltay_1/dy2_1)*(deltay0/dy20 )*(deltay1/dy21 )
+!
+!  Interpolate points in y-direction
+!
+      do i=ivar1,ivar2
+        fp(i) = lag_2*gp(-2,i)+lag_1*gp(-1,i)+lag0*gp(0,i)+lag1*gp(1,i)+lag2*gp(2,i)
       enddo
-      k=-floor(order/2.)
-      do i=1,order
-        k=k+1
-        lagrange(:)=lagrange(:)*(xp-xglobal_ogrid(ix0+k))*dx1(:,i)
-      enddo
-      g_interp=0
-      do i=1,order
-        g_interp(:,ivar1:ivar2)=g_interp(:,ivar1:ivar2)+farr(i,:,1,ivar1:ivar2)*lagrange(i)
-      enddo
-      ! y-dir
-      k=-floor(order/2.)
-      do i=1,order
-        k=k+1
-        l=-floor(order/2.)
-        do j=1,order
-          l=l+1
-          dy1(i,j)=yglobal_ogrid(iy0+k)-yglobal_ogrid(iy0+l)
-        enddo
-        dy1(i,i)=1 ! To avoid division by zero
-      enddo
-      dy1=1./dy1
-      yp=xxp(2)
-      k=-floor(order/2.)
-      do i=1,order
-        k=k+1
-        lagrange(i)=1./(yp-yglobal_ogrid(iy0+k))
-      enddo
-      k=-floor(order/2.)
-      do i=1,order
-        k=k+1
-        lagrange(:)=lagrange(:)*(yp-yglobal_ogrid(iy0+k))*dy1(:,i)
-      enddo
-      fp=0
-      do i=1,order
-        fp(ivar1:ivar2)=fp(ivar1:ivar2)+g_interp(i,ivar1:ivar2)*lagrange(i)
-      enddo
+      !fp = lag_2*gp(-2,:)+lag_1*gp(-1,:)+lag0*gp(0,:)+lag1*gp(1,:)+lag2*gp(2,:)
 
       if (lcheck) then
         do i=1,ivar2-ivar1+1
-          if (fp(i)>maxval(farr(:,:,1,i)).and.i/=3) then 
-           l1=(xp-xglobal_ogrid(ix0+1))/(xglobal_ogrid(ix0)-xglobal_ogrid(ix0+1))
-           l2=(xp-xglobal_ogrid(ix0  ))/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
-           g1=farr(k,k,1,ivar1:ivar2)*l1+farr(k+1,k,1,ivar1:ivar2)*l2
-           g2=farr(k,k+1,1,ivar1:ivar2)*l1+farr(k,k+1,1,ivar1:ivar2)*l2
-           l3=(yp-yglobal_ogrid(iy0+1))/(yglobal_ogrid(iy0)-yglobal_ogrid(iy0+1))
-           l4=(yp-yglobal_ogrid(iy0  ))/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-           fp=g1*l3+g2*l4
-          elseif (fp(i)<minval(farr(:,:,1,i)).and.i/=3) then
-           l1=(xp-xglobal_ogrid(ix0+1))/(xglobal_ogrid(ix0)-xglobal_ogrid(ix0+1))
-           l2=(xp-xglobal_ogrid(ix0  ))/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
-           g1=farr(k,k,1,ivar1:ivar2)*l1+farr(k+1,k,1,ivar1:ivar2)*l2
-           g2=farr(k,k+1,1,ivar1:ivar2)*l1+farr(k,k+1,1,ivar1:ivar2)*l2
-           l3=(yp-yglobal_ogrid(iy0+1))/(yglobal_ogrid(iy0)-yglobal_ogrid(iy0+1))
-           l4=(yp-yglobal_ogrid(iy0  ))/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-           fp=g1*l3+g2*l4
-          endif
-          if ((fp(i)>maxval(farr(:,:,1,i)).and.i/=3) .or. (fp(i)<minval(farr(:,:,1,i)).and.i/=3)) then
-            print*, 'linear_interpolate_curvilinear_HO: interpolated value is smaller or larger than'
-            print*, 'linear_interpolate_curvilinear_HO: a values at the corner points, even after linearization!'
-            print*, '------------------'
-            linear_interpolate_curv_HO=.false.
+          if ((fp(i)>maxval(farr(:,:,i)).and.i/=3) .or. (fp(i)<minval(farr(:,:,i)).and.i/=3)) then
+!
+!  Compensate for overshoots by linear interpolation
+!
+            ix0=0; ix1=1; iy0=0; iy1=1
+            if(xglob(0)>xxp(1)) then
+              ix0=2; ix1=3
+            else
+              ix0=3; ix1=4
+            endif
+            if(yglob(0)>xxp(2)) then
+              iy0=2; iy1=3
+            else
+              iy0=3; iy1=4
+            endif
+            if(lcart_to_curv) then
+              interp_lagrange4= linear_interpolate_cartesian(farr_in(ix0:ix1,iy0:iy1,3:4,:),ivar1,ivar2,xxp, &
+                                           (/inear_glob(1)+ix0-3,inear_glob(2)+iy0-3,inear_glob(3)/),&
+                                           gp(0,:),lcheck_interpolation)
+            else
+              interp_lagrange4= linear_interpolate_curvilinear(farr_in(ix0:ix1,iy0:iy1,3:4,:),ivar1,ivar2,xxp, &
+                                           (/inear_glob(1)+ix0-3,inear_glob(2)+iy0-3,inear_glob(3)/),&
+                                           gp(0,:),lcheck_interpolation)
+            endif
+!
+            fp(i)=gp(0,i)
+            !if (fp(i)>maxval(farr(:,:,i))) then
+            !  print*, 'ERROR: fp larger than largest value for i =',i
+            !  if((fp(i)-maxval(farr(:,:,i)))/fp(i) <= 1e-3) cycle
+            !  print*, 'ERROR: fp larger than largest value for i =',i
+            !  print*, 'Relative difference is:',(fp(i)-maxval(farr(:,:,i)))/fp(i)
+            !  print*, 'Absolute difference is:', fp(i)-maxval(farr(:,:,i))
+            !else
+            !  print*, 'ERROR: fp smaller than largest value for i =',i
+            !  if((minval(farr(:,:,i))-fp(i))/fp(i) <= 1e-3) cycle
+            !  print*, 'ERROR: fp smaller than largest value for i =',i
+            !  print*, 'Relative difference is:',(minval(farr(:,:,i))-fp(i))/fp(i)
+            !  print*, 'Absolute difference is:', minval(farr(:,:,i))-fp(i)
+            !endif
+            !print*, 'Other useful data:'
+            !print*, '------------------------'
+            !print*, 'g_2(:,i)',g_2(:,i)
+            !print*, 'g_1(:,i)',g_1(:,i)
+            !print*, 'g0(:,i)',g0(:,i)
+            !print*, 'g1(:,i)',g1(:,i)
+            !print*, 'g2(:,i)',g2(:,i)
+            !print*, '------------------------'
+            !print*, 'gp(i)',gp(:,i)
+            !print*, 'fp(i)',fp(i)
+            !print*, 'interp_interpolate: farr(:,-2,i)=', farr(:,-2,i)
+            !print*, 'interp_interpolate: farr(:,-1,i)=', farr(:,-1,i)
+            !print*, 'interp_interpolate: farr(:, 0,i)=', farr(:, 0,i)
+            !print*, 'interp_interpolate: farr(:, 1,i)=', farr(:, 1,i)
+            !print*, 'interp_interpolate: farr(:, 2,i)=', farr(:, 2,i)
+            !print*, '------------------'
+            !interp_lagrange4=.false.
           endif
           if (fp(i)/=fp(i)) then
-            print*, 'linear_interpolate_curvilinear: interpolated value is NaN'
-            print*, 'linear_interpolate_curvilinear: xxp=', xxp
-            print*, 'linear_interpolate_curvilinear: x0, y0, z0=', &
-                xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
-            print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
-            print*, 'linear_interpolate_curvilinear: farr=', farr(:,:,1,i)
+            print*, 'interp_interpolate: interpolated value is NaN'
+            print*, 'interp_interpolate: xxp=', xxp
+            print*, 'interp_interpolate: i, fp(i)=', i, fp(i)
             print*, '------------------'
-            linear_interpolate_curv_HO=.false.
+            interp_lagrange4=.false.
           endif
         enddo
       endif
 !
-  endfunction linear_interpolate_curv_HO
+  endfunction interp_lagrange4
 !***********************************************************************
   logical function linear_interpolate_cart_HO(farr,ivar1,ivar2,xxp,inear_glob,fp,lcheck,order)
 !
@@ -3185,209 +3305,6 @@ module Solid_Cells
       endif
 !
   endfunction linear_interpolate_cart_HO
-!***********************************************************************
-  logical function hermite_interpolate_curv(farr,ivar1,ivar2,xxp,inear_glob,inear_loc,fp,lcheck) 
-!
-!  Interpolate between 2D-grids using Hermite surface interpolation
-!
-    integer :: ivar1, ivar2
-    real, dimension(3) :: xxp
-    real, dimension(2,2,2,ivar2-ivar1+1) :: farr
-    real, dimension(ivar2-ivar1+1) :: fp
-    integer, dimension(3) :: inear_glob, inear_loc
-    logical :: lcheck
-!    
-    intent(in)  :: farr, ivar1, ivar2, xxp, inear_glob, lcheck
-    intent(out) :: fp
-!
-    real, dimension(4) :: Fu, Fv
-    real, dimension(4,4,ivar2-ivar1+1) :: B
-    real :: u,v
-!
-    integer :: ix0,iy0,iz0,ix0_loc,iy0_loc,iz0_loc,i
-    real, parameter :: a = 1.0 / 60.0
-    real :: fac
-!
-    ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3)
-    ix0_loc=inear_loc(1); iy0_loc=inear_loc(2); iz0_loc=inear_loc(3)
-    u = (xxp(1)-xglobal_ogrid(ix0))/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
-    v = (xxp(2)-yglobal_ogrid(iy0))/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
-    Fu(1) =  2*u**3 - 3*u*u +1
-    Fu(2) = -2*u**3 + 3*u*u 
-    Fu(3) =    u**3 - 2*u*u +u
-    Fu(4) =    u**3 - u**2
-    Fv(1) =  2*v**3 - 3*v*v +1
-    Fv(2) = -2*v**3 + 3*v*v 
-    Fv(3) =    v**3 - 2*v*v +v
-    Fv(4) =    v**3 - v**2
-    B(1,1,:) = farr(1,1,1,:)
-    B(2,1,:) = farr(2,1,1,:)
-    B(1,2,:) = farr(1,2,1,:)
-    B(2,2,:) = farr(2,2,1,:)
-!
-    fac = a
-    B(3,1,:) = fac*(+ 45.0*(f_ogrid(ix0_loc+1  ,iy0_loc  ,iz0_loc,:)-f_ogrid(ix0_loc-1  ,iy0_loc  ,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc+2  ,iy0_loc  ,iz0_loc,:)-f_ogrid(ix0_loc-2  ,iy0_loc  ,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc+3  ,iy0_loc  ,iz0_loc,:)-f_ogrid(ix0_loc-3  ,iy0_loc  ,iz0_loc,:)))
-    B(4,1,:) = fac*(+ 45.0*(f_ogrid(ix0_loc+1+1,iy0_loc  ,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc  ,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc+2+1,iy0_loc  ,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc  ,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc+3+1,iy0_loc  ,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc  ,iz0_loc,:)))
-    B(3,2,:) = fac*(+ 45.0*(f_ogrid(ix0_loc+1  ,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-1  ,iy0_loc+1,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc+2  ,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-2  ,iy0_loc+1,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc+3  ,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-3  ,iy0_loc+1,iz0_loc,:)))
-    B(4,2,:) = fac*(+ 45.0*(f_ogrid(ix0_loc+1+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+1,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc+2+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+1,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc+3+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+1,iz0_loc,:)))
-!
-    fac = a*rcyl_mn1_ogrid(ix0_loc)
-    B(1,3,:) = fac*(+ 45.0*(f_ogrid(ix0_loc  ,iy0_loc+1  ,iz0_loc,:)-f_ogrid(ix0_loc  ,iy0_loc-1  ,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc  ,iy0_loc+2  ,iz0_loc,:)-f_ogrid(ix0_loc  ,iy0_loc-2  ,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc  ,iy0_loc+3  ,iz0_loc,:)-f_ogrid(ix0_loc  ,iy0_loc-3  ,iz0_loc,:)))
-    B(1,4,:) = fac*(+ 45.0*(f_ogrid(ix0_loc  ,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc  ,iy0_loc-1+1,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc  ,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc  ,iy0_loc-2+1,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc  ,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc  ,iy0_loc-3+1,iz0_loc,:)))
-    B(2,3,:) = fac*(+ 45.0*(f_ogrid(ix0_loc+1,iy0_loc+1  ,iz0_loc,:)-f_ogrid(ix0_loc+1,iy0_loc-1  ,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc+1,iy0_loc+2  ,iz0_loc,:)-f_ogrid(ix0_loc+1,iy0_loc-2  ,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc+1,iy0_loc+3  ,iz0_loc,:)-f_ogrid(ix0_loc+1,iy0_loc-3  ,iz0_loc,:)))
-    B(2,4,:) = fac*(+ 45.0*(f_ogrid(ix0_loc+1,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc+1,iy0_loc-1+1,iz0_loc,:)) &
-                    -  9.0*(f_ogrid(ix0_loc+1,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc+1,iy0_loc-2+1,iz0_loc,:)) &
-                    +      (f_ogrid(ix0_loc+1,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc+1,iy0_loc-3+1,iz0_loc,:)))
-!  
-    fac=(1./60.**2)*rcyl_mn1_ogrid(ix0_loc)
-    B(3,3,:)=fac*( &
-              45.*((45.*(f_ogrid(ix0_loc+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1,iy0_loc-1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc-1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc-1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc-1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc-1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc-1,iz0_loc,:))))&
-              -9.*((45.*(f_ogrid(ix0_loc+1,iy0_loc+2,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc+2,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc+2,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc+2,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc+2,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc+2,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1,iy0_loc-2,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc-2,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc-2,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc-2,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc-2,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc-2,iz0_loc,:))))&
-                 +((45.*(f_ogrid(ix0_loc+1,iy0_loc+3,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc+3,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc+3,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc+3,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc+3,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc+3,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1,iy0_loc-3,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc-3,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc-3,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc-3,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc-3,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc-3,iz0_loc,:))))&
-                   )
-    B(4,3,:)=fac*( &
-              45.*((45.*(f_ogrid(ix0_loc+1+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1+1,iy0_loc-1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc-1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc-1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc-1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc-1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc-1,iz0_loc,:))))&
-              -9.*((45.*(f_ogrid(ix0_loc+1+1,iy0_loc+2,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+2,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc+2,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+2,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc+2,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+2,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1+1,iy0_loc-2,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc-2,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc-2,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc-2,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc-2,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc-2,iz0_loc,:))))&
-                 +((45.*(f_ogrid(ix0_loc+1+1,iy0_loc+3,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+3,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc+3,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+3,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc+3,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+3,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1+1,iy0_loc-3,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc-3,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc-3,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc-3,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc-3,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc-3,iz0_loc,:))))&
-                   )
-    B(3,4,:)=fac*( &
-              45.*((45.*(f_ogrid(ix0_loc+1,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc+1+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc+1+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc+1+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1,iy0_loc-1+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc-1+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc-1+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc-1+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc-1+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc-1+1,iz0_loc,:))))&
-              -9.*((45.*(f_ogrid(ix0_loc+1,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc+2+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc+2+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc+2+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1,iy0_loc-2+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc-2+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc-2+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc-2+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc-2+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc-2+1,iz0_loc,:))))&
-                 +((45.*(f_ogrid(ix0_loc+1,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc+3+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc+3+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc+3+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1,iy0_loc-3+1,iz0_loc,:)-f_ogrid(ix0_loc-1,iy0_loc-3+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2,iy0_loc-3+1,iz0_loc,:)-f_ogrid(ix0_loc-2,iy0_loc-3+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3,iy0_loc-3+1,iz0_loc,:)-f_ogrid(ix0_loc-3,iy0_loc-3+1,iz0_loc,:))))&
-                   )
-    B(4,4,:)=fac*( &
-              45.*((45.*(f_ogrid(ix0_loc+1+1,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+1+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+1+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc+1+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+1+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1+1,iy0_loc-1+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc-1+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc-1+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc-1+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc-1+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc-1+1,iz0_loc,:))))&
-              -9.*((45.*(f_ogrid(ix0_loc+1+1,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+2+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+2+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc+2+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+2+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1+1,iy0_loc-2+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc-2+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc-2+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc-2+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc-2+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc-2+1,iz0_loc,:))))&
-                 +((45.*(f_ogrid(ix0_loc+1+1,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc+3+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc+3+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc+3+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc+3+1,iz0_loc,:))) &
-                  -(45.*(f_ogrid(ix0_loc+1+1,iy0_loc-3+1,iz0_loc,:)-f_ogrid(ix0_loc-1+1,iy0_loc-3+1,iz0_loc,:))  &
-                    -9.*(f_ogrid(ix0_loc+2+1,iy0_loc-3+1,iz0_loc,:)-f_ogrid(ix0_loc-2+1,iy0_loc-3+1,iz0_loc,:))  &
-                       +(f_ogrid(ix0_loc+3+1,iy0_loc-3+1,iz0_loc,:)-f_ogrid(ix0_loc-3+1,iy0_loc-3+1,iz0_loc,:))))&
-                   )
-!
-    do i=ivar1,ivar2
-      fp(i)=dot_product(matmul(Fu,B(:,:,i)),Fv)
-    enddo
-
-    hermite_interpolate_curv=.true.
-!
-!  Do a reality check on the interpolation scheme.
-!
-    if (lcheck) then
-      do i=1,ivar2-ivar1+1
-        if (fp(i)>maxval(farr)) then
-          print*, 'hermite_interpolate_curvilinear: interpolated value is LARGER than'
-          print*, 'hermite_interpolate_curvilinear: a values at the corner points!'
-          print*, 'hermite_interpolate_curvilinear: xxp=', xxp
-          print*, 'hermite_interpolate_curvilinear: x0, y0, z0=', &
-              xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
-          print*, 'hermite_interpolate_curvilinear: x1, y1, z1=', &
-              xglobal_ogrid(ix0+1), yglobal_ogrid(iy0+1), zglobal_ogrid(iz0+1)
-          print*, 'hermite_interpolate_curvilinear: u, v =',u,v
-          print*, 'hermite_interpolate_curvilinear: i, fp(i)=', i, fp(i)
-          print*, 'hermite_interpolate_curvilinear: farr=', farr(:,:,1,i)
-          print*, 'B-matrix', B(:,:,i)
-          print*, '------------------'
-        endif
-        if (fp(i)<minval(farr)) then 
-          print*, 'hermite_interpolate_curvilinear: interpolated value is smaller than'
-          print*, 'hermite_interpolate_curvilinear: a values at the corner points!'
-          print*, 'hermite_interpolate_curvilinear: xxp=', xxp
-          print*, 'hermite_interpolate_curvilinear: x0, y0, z0=', &
-              xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
-          print*, 'hermite_interpolate_curvilinear: x1, y1, z1=', &
-              xglobal_ogrid(ix0+1), yglobal_ogrid(iy0+1), zglobal_ogrid(iz0+1)
-          print*, 'hermite_interpolate_curvilinear: u, v =',u,v
-          print*, 'hermite_interpolate_curvilinear: i, fp(i)=', i, fp(i)
-          print*, 'hermite_interpolate_curvilinear: farr=', farr(:,:,1,i)
-          print*, 'B-matrix', B(:,:,i)
-          print*, '------------------'
-        endif
-        if (fp(i)/=fp(i)) then
-          print*, 'linear_interpolate_curvilinear: interpolated value is NaN'
-          print*, 'linear_interpolate_curvilinear: xxp=', xxp
-          print*, 'linear_interpolate_curvilinear: x0, y0, z0=', &
-              xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
-          print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
-          print*, 'hermite_interpolate_curvilinear: farr=', farr(:,:,1,i)
-          print*, '------------------'
-          hermite_interpolate_curv=.false.
-        endif
-      enddo
-    endif
-  
-  
-  endfunction hermite_interpolate_curv
 !***********************************************************************
   logical function linear_interpolate_curvilinear(farr,ivar1,ivar2,xxp,inear_glob,fp,lcheck)
 !
@@ -4353,7 +4270,7 @@ module Solid_Cells
     xglobal_ogrid(nghost+1:mxgrid_ogrid-nghost) = xgrid_ogrid
     yglobal_ogrid(nghost+1:mygrid_ogrid-nghost) = ygrid_ogrid
     zglobal_ogrid(nghost+1:mzgrid_ogrid-nghost) = zgrid_ogrid
-!
+
     xglobal_ogrid(1:nghost) = x_ogrid(1:nghost)
     yglobal_ogrid(1:nghost) = y_ogrid(1:nghost)
     zglobal_ogrid(1:nghost) = z_ogrid(1:nghost)
@@ -4369,6 +4286,28 @@ module Solid_Cells
     call mpibcast_real(xglobal_ogrid(mxgrid_ogrid-nghost+1:mxgrid_ogrid), nghost, iproc_last)
     call mpibcast_real(yglobal_ogrid(mygrid_ogrid-nghost+1:mygrid_ogrid), nghost, iproc_last)
     call mpibcast_real(zglobal_ogrid(mzgrid_ogrid-nghost+1:mzgrid_ogrid), nghost, iproc_last)
+!
+!  Do the same for the 1/dx arrays
+!
+    dx1global_ogrid(nghost+1:mxgrid_ogrid-nghost) = dx1grid_ogrid
+    dy1global_ogrid(nghost+1:mygrid_ogrid-nghost) = dy1grid_ogrid
+    dz1global_ogrid(nghost+1:mzgrid_ogrid-nghost) = dz1grid_ogrid
+!
+    dx1global_ogrid(1:nghost) = dx_1_ogrid(1:nghost)
+    dy1global_ogrid(1:nghost) = dy_1_ogrid(1:nghost)
+    dz1global_ogrid(1:nghost) = dz_1_ogrid(1:nghost)
+!
+    dx1global_ogrid(mxgrid_ogrid-nghost+1:mxgrid_ogrid) = dx_1_ogrid(mx_ogrid-nghost+1:mx_ogrid)
+    dy1global_ogrid(mygrid_ogrid-nghost+1:mygrid_ogrid) = dy_1_ogrid(my_ogrid-nghost+1:my_ogrid)
+    dz1global_ogrid(mzgrid_ogrid-nghost+1:mzgrid_ogrid) = dz_1_ogrid(mz_ogrid-nghost+1:mz_ogrid)
+!
+    call mpibcast_real(dx1global_ogrid(1:nghost), nghost, iproc_first)
+    call mpibcast_real(dy1global_ogrid(1:nghost), nghost, iproc_first)
+    call mpibcast_real(dz1global_ogrid(1:nghost), nghost, iproc_first)
+!
+    call mpibcast_real(dx1global_ogrid(mxgrid_ogrid-nghost+1:mxgrid_ogrid), nghost, iproc_last)
+    call mpibcast_real(dy1global_ogrid(mygrid_ogrid-nghost+1:mygrid_ogrid), nghost, iproc_last)
+    call mpibcast_real(dz1global_ogrid(mzgrid_ogrid-nghost+1:mzgrid_ogrid), nghost, iproc_last)
 !
   endsubroutine construct_serial_arrays
 !***********************************************************************
@@ -5484,7 +5423,6 @@ module Solid_Cells
 !
       real, dimension (nx_ogrid,3) :: del6f
       integer                      :: ii
-      integer, dimension(nx_ogrid) :: indxs
 !
       do ii=1,3
         call der6_ogrid(f,k,del6f(:,ii),ii)
@@ -6055,7 +5993,7 @@ module Solid_Cells
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df,fac
-      integer :: j,k,i
+      integer :: j,k
 !
       intent(in)  :: f,k,j
       intent(out) :: df
@@ -6064,7 +6002,7 @@ module Solid_Cells
         if (nxgrid_ogrid/=1) then
           fac=(1.0/60)*dx_1_ogrid(l1_ogrid:l2_ogrid)
           !df(1:i)=0
-          df(1:nxgrid_ogrid)=fac(1:nxgrid_ogrid)* &
+          df(1:nx_ogrid)=fac(1:nx_ogrid)* &
                                (- 20.0* f(l1_ogrid  :l2_ogrid  ,m_ogrid,n_ogrid,k) &
                                 + 15.0*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid,k)+f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
                                 -  6.0*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid,k)+f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
@@ -6078,9 +6016,9 @@ module Solid_Cells
 !  given any value to f_ogrid(l1_ogrid-3:l1_ogrid-1,:,:,irho), and these are used
 !  to compute df(1:3).
 !
-        df(1:3)=0.
+        if(lfirst_proc_x) df(1:3)=0.
       elseif (j==2) then
-        if (nygrid_ogrid/=1) then
+        if (ny_ogrid/=1) then
           fac=(1.0/60)*dy_1_ogrid(m_ogrid)
           df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid  ,n_ogrid,k) &
                   + 15.0*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid,k)) &
@@ -6090,7 +6028,7 @@ module Solid_Cells
           df=0.
         endif
       elseif (j==3) then
-        if (nzgrid_ogrid/=1) then
+        if (nz_ogrid/=1) then
           fac=(1.0/60)*dz_1_ogrid(n_ogrid)
           df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid  ,k) &
                   + 15.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+1,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
@@ -8090,9 +8028,9 @@ module Solid_Cells
 !  point and normalize with the cell size.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      dxp0=(xxp(1)-xglobal_ogrid(ix0))*dx1grid_ogrid(ix0-nghost)
-      dyp0=(xxp(2)-yglobal_ogrid(iy0))*dy1grid_ogrid(iy0-nghost)
-      dzp0=(xxp(3)-zglobal_ogrid(iz0))*dz1grid_ogrid(iz0-nghost)
+      dxp0=(xxp(1)-xglobal_ogrid(ix0))*dx1global_ogrid(ix0)
+      dyp0=(xxp(2)-yglobal_ogrid(iy0))*dy1global_ogrid(iy0)
+      dzp0=(xxp(3)-zglobal_ogrid(iz0))*dz1global_ogrid(iz0)
 !
 !  Interpolation formulae.
 !
