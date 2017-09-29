@@ -126,9 +126,13 @@ def twonorm_accuracy(simulations, field='ux', strip=0, varfile='ogvar.dat',direc
         i = i + 1
 
     print('Two-norm computed for field:',field,', along strip:',strip)
-    if(direction==1):
+    if(direction=='x'):
+        print('Along x-direction')
+    elif(direction=='r'):
         print('Along r-direction')
-    else:
+    elif(direction=='y'):
+        print('Along y-direction')
+    elif(direction=='th'):
         print('Along th-direction')
 
     if not noerr:
