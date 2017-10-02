@@ -33,7 +33,6 @@ module Solid_Cells
     module procedure get_polar_coords_3D
     module procedure get_polar_coords_3D_alt
   endinterface
-!
 !  Force same timestep on all grids
   logical :: lock_dt=.false.
 !  Cylinder parameters
@@ -320,8 +319,16 @@ module Solid_Cells
     module procedure read_snap_double_ogrid
     module procedure read_snap_single_ogrid
   endinterface
+!---------------------------------
 !
-
+!  The two lines below can be included, together with the subroutine send_rcv_all_data
+!  for MPI-testing purposes. Exchanges all data between processors. Should not be used
+!  for other than testing, due to inefficiency.
+!!   real, dimension (mxgrid_ogrid, mygrid_ogrid, mzgrid_ogrid,mfarray_ogrid), save ::  fgrid_ogrid=0.
+!!   real, dimension (mxgrid, mygrid, mzgrid,mfarray), save ::  fgrid_cartesian=0.
+!
+!---------------------------------
+!
   contains 
 !***********************************************************************
     subroutine register_solid_cells
@@ -2006,6 +2013,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
     integer, dimension(max_send_ip_cart_to_curv) :: ip_bufo
+    integer :: ind
 !
     if(interpolation_method==1) then
       nbuf_farr(2:4)=2
@@ -2025,15 +2033,16 @@ module Solid_Cells
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ipp=1,nbuf_farr(1)
-        i=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(1)
-        j=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(2)
-        k=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_near_neighbour(3)
+        ind=ind_send_first+ipp-1
+        i=send_cartesian_to_curvilinear(ind)%i_near_neighbour(1)
+        j=send_cartesian_to_curvilinear(ind)%i_near_neighbour(2)
+        k=send_cartesian_to_curvilinear(ind)%i_near_neighbour(3)
         f_bufo(:,:,:,:,ipp)=f_cartesian(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
       enddo
+      ip_bufo(1:nbuf_farr(1)) = send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
       !print*, 'iproc: send id info', iproc,send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
       !call mpisend_nonblock_int(send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id, &
         !nbuf_farr(1),send_to,send_to,ireq1D(iter))
-      ip_bufo(1:nbuf_farr(1)) = send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
       call mpisend_nonblock_int(ip_bufo(1:nbuf_farr(1)),nbuf_farr(1),send_to,send_to,ireq1D(iter))
       call mpisend_nonblock_real(f_bufo(:,:,:,:,1:nbuf_farr(1)),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
       ind_send_first=ind_send_last+1
@@ -2094,6 +2103,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
     integer, dimension(max_send_ip_curv_to_cart) :: ip_bufo
+    integer :: ind
 !
     if(interpolation_method==1) then
       nbuf_farr(2:4)=2
@@ -2113,9 +2123,10 @@ module Solid_Cells
       send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ipp=1,nbuf_farr(1)
-        i=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(1)
-        j=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(2)
-        k=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_near_neighbour(3)
+        ind=ind_send_first+ipp-1
+        i=send_curvilinear_to_cartesian(ind)%i_near_neighbour(1)
+        j=send_curvilinear_to_cartesian(ind)%i_near_neighbour(2)
+        k=send_curvilinear_to_cartesian(ind)%i_near_neighbour(3)
         f_bufo(:,:,:,:,ipp)=f_ogrid(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
       enddo
       !call mpisend_nonblock_int(send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id, &
@@ -2144,22 +2155,6 @@ module Solid_Cells
     ! TODO: Make more efficient
       if(curvilinear_to_cartesian(id)%from_proc==iproc) then
         inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-        !TODO: Remove
-      !  if(inear_loc(1)<4 .or. inear_loc(2)<4) then
-      !    print*, 'iproc',iproc
-      !  print*, 'inear_loc',inear_loc
-      !  print*, 'xxp',curvilinear_to_cartesian(id)%xyz
-      !  if(inear_loc(1)>1) then
-      !    print*, 'x_ogrid(ix0-1),x_ogrid(ix0),x_ogrid(ix0+1)',x_ogrid(inear_loc(1)-1),x_ogrid(inear_loc(1)),x_ogrid(inear_loc(1)+1)
-      !  else
-      !    print*, 'x_ogrid(ix0),x_ogrid(ix0+1)',x_ogrid(inear_loc(1)),x_ogrid(inear_loc(1)+1)
-      !  endif
-      !  if(inear_loc(2)>1) then
-      !    print*, 'y_ogrid(iy0-1),y_ogrid(iy0),y_ogrid(iy0+1)',y_ogrid(inear_loc(2)-1),y_ogrid(inear_loc(2)),y_ogrid(inear_loc(2)+1)
-      !  else
-      !    print*, 'y_ogrid(iy0),y_ogrid(iy0+1)',y_ogrid(inear_loc(2)),y_ogrid(inear_loc(2)+1)
-      !  endif
-      !endif
         farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
           inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
         call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
@@ -2187,16 +2182,9 @@ module Solid_Cells
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
-    !TODO:REMOVE FARR_LARGE
-    !real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
-    !real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
-    !integer, dimension(3) :: inear_loc
 !
     xyz_ip=cartesian_to_curvilinear(id)%xyz
     inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
-    !farr_large(:,:,:,:) = f_cartesian(inear_glob(1)-2:inear_glob(1)+2, &
-    !                                  inear_glob(2)-2:inear_glob(2)+2, &
-    !                                  inear_glob(3)-2:inear_glob(3)+2,:)
 ! 
 !  Perform interpolation on cartesian grid
 !
@@ -2235,14 +2223,9 @@ module Solid_Cells
     real, dimension(3) :: xyz_ip
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
-    !TODO:REMOVE
-    !real, dimension(5,5,5,ivar2-ivar1+1) :: farr_large
 !
     xyz_ip=curvilinear_to_cartesian(id)%xyz
     inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
-    !farr_large = f_ogrid(inear_glob(1)-2:inear_glob(1)+2, &
-    !                     inear_glob(2)-2:inear_glob(2)+2, &
-    !                     inear_glob(3)-2:inear_glob(3)+2,:)
 !
     if(interpolation_method==1) then
       if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
@@ -3037,36 +3020,6 @@ module Solid_Cells
             endif
 !
             fp(i)=gp(0,i)
-            !if (fp(i)>maxval(farr(:,:,i))) then
-            !  print*, 'ERROR: fp larger than largest value for i =',i
-            !  if((fp(i)-maxval(farr(:,:,i)))/fp(i) <= 1e-3) cycle
-            !  print*, 'ERROR: fp larger than largest value for i =',i
-            !  print*, 'Relative difference is:',(fp(i)-maxval(farr(:,:,i)))/fp(i)
-            !  print*, 'Absolute difference is:', fp(i)-maxval(farr(:,:,i))
-            !else
-            !  print*, 'ERROR: fp smaller than largest value for i =',i
-            !  if((minval(farr(:,:,i))-fp(i))/fp(i) <= 1e-3) cycle
-            !  print*, 'ERROR: fp smaller than largest value for i =',i
-            !  print*, 'Relative difference is:',(minval(farr(:,:,i))-fp(i))/fp(i)
-            !  print*, 'Absolute difference is:', minval(farr(:,:,i))-fp(i)
-            !endif
-            !print*, 'Other useful data:'
-            !print*, '------------------------'
-            !print*, 'g_2(:,i)',g_2(:,i)
-            !print*, 'g_1(:,i)',g_1(:,i)
-            !print*, 'g0(:,i)',g0(:,i)
-            !print*, 'g1(:,i)',g1(:,i)
-            !print*, 'g2(:,i)',g2(:,i)
-            !print*, '------------------------'
-            !print*, 'gp(i)',gp(:,i)
-            !print*, 'fp(i)',fp(i)
-            !print*, 'interp_interpolate: farr(:,-2,i)=', farr(:,-2,i)
-            !print*, 'interp_interpolate: farr(:,-1,i)=', farr(:,-1,i)
-            !print*, 'interp_interpolate: farr(:, 0,i)=', farr(:, 0,i)
-            !print*, 'interp_interpolate: farr(:, 1,i)=', farr(:, 1,i)
-            !print*, 'interp_interpolate: farr(:, 2,i)=', farr(:, 2,i)
-            !print*, '------------------'
-            !interp_lagrange4=.false.
           endif
           if (fp(i)/=fp(i)) then
             print*, 'interp_interpolate: interpolated value is NaN'
@@ -4292,6 +4245,7 @@ module Solid_Cells
 !  07-feb-17/Jorgen+Nils: Adapded from timestep.f90
 !
     use Mpicomm, only: mpifinalize, mpiallreduce_max
+    use Boundcond, only: update_ghosts
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
@@ -4321,6 +4275,8 @@ module Solid_Cells
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
+    call update_ghosts(f_cartesian,1,mvar)
+!!    call send_rcv_all_data(1,mvar,f_cartesian)
     call communicate_ip_cart_to_curv(f_cartesian,1,mvar)
     !call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
 !
@@ -4358,6 +4314,7 @@ module Solid_Cells
 !  recieved from appropriate processor
 !
     call update_ghosts_ogrid
+!!    call send_rcv_all_data(1,mvar,f_cartesian)
     call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
     !call flow_curvilinear_to_cartesian(f_cartesian)
 
@@ -6663,8 +6620,6 @@ module Solid_Cells
       !call boundconds_x_ogrid
       call initiate_isendrcv_bdry_ogrid(f_ogrid)
       call finalize_isendrcv_bdry_ogrid(f_ogrid)
-!  Since only periodic implementation of boundconds in y- and z-dir, call only
-!  if single processor in said direction. Otherwise, handled in MPI-communication.
       if (nprocy==1)                  call boundconds_y_ogrid
       if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid
 
@@ -7831,8 +7786,6 @@ module Solid_Cells
       real, dimension (3) :: xxp
       real, dimension (ivar2-ivar1+1) :: gp
       integer, dimension (3), intent(in) :: inear
-!
-      
 !TODO
       real, dimension(inear(1)-1:inear(1)+1,inear(2)-1:inear(2)+1,inear(3)-1:inear(3)+1,ivar2-ivar1+1) :: f
       real :: fac_x_m1, fac_x_00, fac_x_p1
@@ -7843,7 +7796,6 @@ module Solid_Cells
 !
       intent(in)  :: farr, xxp
       intent(out) :: gp
-!TODO
       f(:,:,:,:)=farr(:,:,:,:)
 !
 !  Redefine the interpolation point in coordinates relative to nearest grid
@@ -8111,4 +8063,173 @@ module Solid_Cells
 !
     endsubroutine adjust_inear_curv_glob
 !***********************************************************************
+!!     subroutine send_rcv_all_data(ivar1,ivar2,f_cartesian)
+!! 
+!! !   Subroutine that exhanges all data in f-arrays, both for curvilinear and cartesian grid,
+!! !   between all processors. 
+!! !   Very inefficient, but can be useful for testing.
+!! !   Only works properly in 2D.
+!! !
+!! !   30-sep-17/Jorgen: Coded
+!! 
+!!       use mpicomm, only: mpisend_int, mpisend_real, mpirecv_int, mpirecv_real, mpibcast_real
+!!       real, dimension (mx,my,mz,mfarray),intent(in) :: f_cartesian
+!!       integer, intent(in) :: ivar1,ivar2
+!!       real, dimension (nx_ogrid, ny_ogrid, nz_ogrid,ivar2-ivar1+1) :: fbuf_og
+!!       real, dimension (nx,       ny,       nz,      ivar2-ivar1+1) :: fbuf_cg
+!!       real, dimension (nxgrid_ogrid, nygrid_ogrid, nzgrid_ogrid,ivar2-ivar1+1) ::  fgrid_ogrid_tmp
+!!       real, dimension (nxgrid, nygrid, nzgrid,ivar2-ivar1+1) ::  fgrid_cartesian_tmp
+!!       integer, dimension(4) :: nfbuf_og
+!!       integer, dimension(4) :: nfbuf_cg
+!!       integer, dimension(3) :: ipxyz
+!!       integer :: ixdo,ixup,iydo,iyup,izdo,izup
+!!       integer :: jx, iproc_recv
+!!       integer :: i,j
+!! 
+!!       nfbuf_og= (/ nxgrid_ogrid, nygrid_ogrid, nzgrid_ogrid,ivar2-ivar1+1/)
+!!       nfbuf_cg= (/ nxgrid, nygrid, nzgrid,ivar2-ivar1+1/)
+!! !
+!!     if (iproc/=root) then
+!!       fbuf_og = f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
+!!       fbuf_cg = f_cartesian(l1:l2,m1:m2,n1:n2,ivar1:ivar2)
+!!       call mpisend_int((/ipx,ipy,ipz/),3,root,111)
+!!       do i = 1,nx_ogrid
+!!         do j = 1,ny_ogrid
+!!           call mpisend_real(fbuf_og(i,j,:,:),nfbuf_og(3:4),root,i*ny_ogrid+j)
+!!         enddo
+!!       enddo
+!!       do i = 1,nx
+!!         do j = 1,ny
+!!           call mpisend_real(fbuf_cg(i,j,:,:),nfbuf_cg(3:4),root,i*ny_ogrid+j)
+!!         enddo
+!!       enddo
+!!     else
+!! !
+!! !  The root processor, in turn, receives the data from the others
+!! !
+!!       do jx=0,ncpus-1
+!!         !avoid send-to-self
+!!         if (jx/=root) then
+!! !
+!! !  Formula of the serial processor number:
+!! !  iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+!! !  Since for the x-row ipy=ipz=0, this reduces
+!! !  to iproc_recv=jx.
+!! !
+!!           iproc_recv=jx
+!!           call mpirecv_int(ipxyz,3,iproc_recv,111)
+!!           do i = 1,nx_ogrid
+!!             do j = 1,ny_ogrid
+!!               call mpirecv_real(fbuf_og(i,j,:,:),nfbuf_og(3:4),iproc_recv,i*ny_ogrid+j)
+!!             enddo
+!!           enddo
+!!           !call mpirecv_real(fbuf_og,nfbuf_og,iproc_recv,111)
+!!           do i = 1,nx
+!!             do j = 1,ny
+!!               call mpirecv_real(fbuf_cg(i,j,:,:),nfbuf_cg(3:4),iproc_recv,i*ny_ogrid+j)
+!!             enddo
+!!           enddo
+!!           !call mpirecv_real(fbuf_cg,nfbuf_cg,iproc_recv,112)
+!! !
+!!           ixdo=ipxyz(1)*nx_ogrid+1
+!!           ixup=(ipxyz(1)+1)*nx_ogrid
+!!           iydo=ipxyz(2)*ny_ogrid+1
+!!           iyup=(ipxyz(2)+1)*ny_ogrid
+!!           izdo=ipxyz(3)*nz_ogrid+1
+!!           izup=(ipxyz(3)+1)*nz_ogrid
+!! 
+!!       fgrid_ogrid_tmp    (ixdo:ixup,iydo:iyup,izdo:izup,ivar1:ivar2) = fbuf_og
+!! 
+!!           ixdo=ipxyz(1)*nx+1
+!!           ixup=(ipxyz(1)+1)*nx
+!!           iydo=ipxyz(2)*ny+1
+!!           iyup=(ipxyz(2)+1)*ny
+!!           izdo=ipxyz(3)*nz+1
+!!           izup=(ipxyz(3)+1)*nz
+!!       fgrid_cartesian_tmp(ixdo:ixup,iydo:iyup,izdo:izup,ivar1:ivar2) = fbuf_cg
+!!       
+!!         else
+!!       fgrid_ogrid_tmp(1:nx_ogrid,1:ny_ogrid,1:nz_ogrid,ivar1:ivar2) = &
+!!           f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
+!!       fgrid_cartesian_tmp(1:nx,1:ny,1:nz,ivar1:ivar2) = &
+!!           f_cartesian(l1:l2,m1:m2,n1:n2,ivar1:ivar2)
+!!         endif
+!!       enddo
+!!     endif
+!!     if(iproc==root) then
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         nghost+1:mzgrid_ogrid-nghost,ivar1:ivar2) = fgrid_ogrid_tmp
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         nghost+1:mzgrid-nghost,ivar1:ivar2) = fgrid_cartesian_tmp
+!! ! Ghosts cells x-direction      
+!!       fgrid_ogrid(1:nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         nghost+1:mzgrid_ogrid-nghost,ivar1:ivar2) = &
+!!         fgrid_ogrid_tmp(nxgrid_ogrid-nghost+1:nxgrid_ogrid,1:nygrid_ogrid, &
+!!         1:nzgrid_ogrid,ivar1:ivar2) 
+!!       fgrid_ogrid(mxgrid_ogrid-nghost+1:mxgrid_ogrid,nghost+1:mygrid_ogrid-nghost, &
+!!         nghost+1:mzgrid_ogrid-nghost,ivar1:ivar2) = &
+!!         fgrid_ogrid_tmp(1:nghost,1:nygrid_ogrid, &
+!!         1:nzgrid_ogrid,ivar1:ivar2) 
+!!       fgrid_cartesian(1:nghost,nghost+1:mygrid-nghost, &
+!!         nghost+1:mzgrid-nghost,ivar1:ivar2) = &
+!!         fgrid_cartesian_tmp(nxgrid-nghost+1:nxgrid,1:nygrid, &
+!!         1:nzgrid,ivar1:ivar2) 
+!!       fgrid_cartesian(mxgrid-nghost+1:mxgrid,nghost+1:mygrid-nghost, &
+!!         nghost+1:mzgrid-nghost,ivar1:ivar2) = &
+!!         fgrid_cartesian_tmp(1:nghost,1:nygrid, &
+!!         1:nzgrid,ivar1:ivar2) 
+!! ! Ghosts cells y-direction      
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,1:nghost, &
+!!         nghost+1:mzgrid_ogrid-nghost,ivar1:ivar2) = &
+!!         fgrid_ogrid_tmp(1:nxgrid_ogrid,nygrid_ogrid-nghost+1:nygrid_ogrid, &
+!!         1:nzgrid_ogrid,ivar1:ivar2) 
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,mygrid_ogrid-nghost+1:mygrid_ogrid, &
+!!         nghost+1:mzgrid_ogrid-nghost,ivar1:ivar2) = &
+!!         fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nghost, &
+!!         1:nzgrid_ogrid,ivar1:ivar2) 
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,1:nghost, &
+!!         nghost+1:mzgrid-nghost,ivar1:ivar2) = &
+!!         fgrid_cartesian_tmp(1:nxgrid,nygrid-nghost+1:nygrid, &
+!!         1:nzgrid,ivar1:ivar2) 
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,mygrid-nghost+1:mygrid, &
+!!         nghost+1:mzgrid-nghost,ivar1:ivar2) = &
+!!         fgrid_cartesian_tmp(1:nxgrid,1:nghost, &
+!!         1:nzgrid,ivar1:ivar2) 
+!! ! Ghosts cells z-direction (2D runs!)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         1,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         2,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         3,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         4,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         5,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         6,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_ogrid(nghost+1:mxgrid_ogrid-nghost,nghost+1:mygrid_ogrid-nghost, &
+!!         7,ivar1:ivar2) = fgrid_ogrid_tmp(1:nxgrid_ogrid,1:nygrid_ogrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         1,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         2,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         3,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         4,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         5,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         6,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!       fgrid_cartesian(nghost+1:mxgrid-nghost,nghost+1:mygrid-nghost, &
+!!         7,ivar1:ivar2) = fgrid_cartesian_tmp(1:nxgrid,1:nygrid,1,ivar1:ivar2)
+!!     endif
+!! 
+!!     nfbuf_og= (/ mxgrid_ogrid, mygrid_ogrid, mzgrid_ogrid,ivar2-ivar1+1/)
+!!     nfbuf_cg= (/ mxgrid, mygrid, mzgrid,ivar2-ivar1+1/)
+!!     call mpibcast_real(fgrid_ogrid, nfbuf_og, root)
+!!     call mpibcast_real(fgrid_cartesian, nfbuf_cg, root)
+!!     endsubroutine send_rcv_all_data
+!! !***********************************************************************
 end module Solid_Cells
