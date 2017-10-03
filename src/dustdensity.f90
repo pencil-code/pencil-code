@@ -54,7 +54,7 @@ module Dustdensity
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
   real :: diffnd_exponent=0.0, adref_diffnd=0.0
-  real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
+  real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_hyper3_mesh=5.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
   real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
   real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0
@@ -86,6 +86,7 @@ module Dustdensity
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
+  logical :: ldiffd_hyper3_mesh=.false.
   logical :: ldiffd_simpl_anisotropic=.false.
   logical :: latm_chemistry=.false., lsubstep=.false.
   logical :: lresetuniform_dustdensity=.false.
@@ -123,7 +124,7 @@ module Dustdensity
  
 !
   namelist /dustdensity_run_pars/ &
-      rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
+      rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, deltavd_const, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
@@ -455,6 +456,7 @@ module Dustdensity
       ldiffd_dusttogasratio=.false.
       ldiffd_hyper3=.false.
       ldiffd_hyper3_polar=.false.
+      ldiffd_hyper3_mesh=.false.
       ldiffd_shock=.false.
       ldiffd_simpl_anisotropic=.false.
 !
@@ -477,6 +479,9 @@ module Dustdensity
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(nd))^6/Deltaq^2'
           ldiffd_hyper3_polar=.true.
+       case ('hyper3_mesh','hyper3-mesh')
+          if (lroot) print*,'diffusion: mesh hyperdiffusion'
+          ldiffd_hyper3_mesh=.true.
         case ('hyper3lnnd')
           if (lroot) print*,'dust diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnnd'
           ldiffd_hyper3lnnd=.true.
@@ -1789,7 +1794,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
-      real, dimension (nx) :: diffus_diffnd,diffus_diffnd3
+      real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
       integer :: k,i,j
@@ -2039,6 +2044,19 @@ module Dustdensity
           if (lfirst.and.ldt) &
                diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmax_pencil**4
         endif
+!
+      if (ldiffd_hyper3_mesh) then
+        do j=1,3
+          call der6(f,ind(k),tmp1,j,IGNOREDX=.true.)
+          fdiffd = fdiffd + diffnd_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,j)
+        enddo
+        if (lfirst.and.ldt) then 
+           advec_hypermesh_nd=diffnd_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_nd**2
+        endif
+        if (headtt) print*,'dnd_dt: diffnd_hyper3_mesh=', &
+            diffnd_hyper3_mesh
+      endif
 !
         if (ldiffd_hyper3lnnd) then
           if (ldustdensity_log) then
