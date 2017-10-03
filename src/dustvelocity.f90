@@ -43,7 +43,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: surfd, mi, rhodsad1
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
   real :: betad0=0.
-  real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0
+  real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0, nud_hyper3_mesh=5.0
   real :: uudx0=0.0, uudy0=0.0, uudz0=0.0
   real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
@@ -71,6 +71,7 @@ module Dustvelocity
   logical :: lviscd_hyper3_rhod_nud_const=.false.
   logical :: lviscd_hyper3_nud_const=.false.
   logical :: lviscd_hyper3_polar=.false.
+  logical :: lviscd_hyper3_mesh=.false.
   logical :: lstokes_highspeed_corr=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: borderuud='nothing'
@@ -98,7 +99,7 @@ module Dustvelocity
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
-      nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
+      nud_hyper3, nud_hyper3_mesh, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
       lstokes_highspeed_corr
 !
   integer :: idiag_ekintot_dust=0
@@ -413,6 +414,9 @@ module Dustvelocity
         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
           if (lroot) print*,'viscous force: nud_hyper3/pi^4 *(Deltav)^6/Deltaq^2'
           lviscd_hyper3_polar=.true.
+       case ('hyper3-mesh')
+          if (lroot) print*,'viscous force: nud_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
+          lviscd_hyper3_mesh=.true.
         case default
           if (lroot) print*, 'No such value for iviscd: ', trim(iviscd(i))
           call fatal_error('initialize_dustvelocity','')
@@ -1032,7 +1036,7 @@ module Dustvelocity
 !
       real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
       real, dimension (nx) :: tausg1, mudrhod1, tmp3
-      real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud
+      real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud,advec_hypermesh_uud
       real :: c2, s2
       integer :: i, j, k, ju
 !
@@ -1251,6 +1255,24 @@ module Dustvelocity
                    diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmax_pencil**4
             enddo
           endif
+!
+!  Viscous force: Axel's mesh formulation
+!
+          if (lviscd_hyper3_mesh) then
+            do j=1,3
+              ju=j+iuud(k)-1
+              do i=1,3
+                call der6(f,ju,tmp3,i,IGNOREDX=.true.)
+                fviscd(:,j) = fviscd(:,j) + &
+                     nud_hyper3_mesh(k)*pi5_1/60.*tmp3*dline_1(:,i)
+              enddo
+            enddo
+            if (lfirst .and. ldt) then
+               advec_hypermesh_uud=nud_hyper3_mesh(k)*pi5_1*sqrt(dxyz_2)
+               advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2
+             endif
+          endif
+
 !
 !  Viscous force: mud/rhod*del6ud
 !
