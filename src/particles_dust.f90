@@ -407,9 +407,13 @@ module Particles
 !
       if (lparticles_caustics) call register_particles_caustics()
 !
+!  If we are using particles_potential, here we should call the correspoding register equation:
+!
+      if (lparticles_potential) call register_particles_potential()
+!
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -423,6 +427,7 @@ module Particles
       use Particles_caustics, only: initialize_particles_caustics
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       real :: rhom
       integer :: ierr, jspec
@@ -442,7 +447,7 @@ module Particles
 !  Hand over Coriolis force and shear acceleration to Particles_drag.
 !
       drag: if (lparticles_drag) then
-        coriolis: if (lcoriolis_force_par) then
+         coriolis: if (lcoriolis_force_par) then
           lcoriolis_force_par = .false.
           if (lroot) print *, 'initialize_particles: turned off and hand over Coriolis force to Particles_drag. '
         endif coriolis
@@ -862,6 +867,10 @@ module Particles
 !  if we are using caustics:
 !
       if (lparticles_caustics) call initialize_particles_caustics(f)
+!
+!  if we are using particles_potential:
+!
+      if (lparticles_potential) call initialize_particles_potential(fp)
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -1968,6 +1977,10 @@ module Particles
 !
       if (lparticles_caustics) call init_particles_caustics(f,fp,ineargrid)
 !
+!  If we are solving for particles_potential, then we call their initial condition here:
+!
+      if (lparticles_potential) call init_particles_potential(f,fp,ineargrid)
+!
 !  Set the initial auxiliary array for the passive scalar to zero
 !
       if (ldiffuse_passive) f(:,:,:,idlncc) = 0.0
@@ -2978,7 +2991,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -2993,7 +3006,8 @@ module Particles
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
-!
+      type (pencil_case) :: p
+      !
       real :: Omega2
       integer :: npar_found
       logical :: lheader, lfirstcall=.true.
@@ -6412,8 +6426,9 @@ module Particles
 !
 !  cleanup (dummy)
 !
+      if (lparticles_potential) call particles_potential_cleanup()
       print*,'particles_tracer: Nothing to clean up'
-
+!
     endsubroutine particles_final_clean_up
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
@@ -6519,4 +6534,23 @@ module Particles
 !
     endsubroutine diffuse_backreaction
 !***********************************************************************
-endmodule Particles
+    subroutine get_boundary_particles(idirn,porm,npbuf)
+!
+! fp_buffer in known globally
+!
+      integer, intent(in) :: idirn,porm
+      integer, intent(out) :: npbuf
+!
+      call fatal_error("particles_dust","dont call get_boundary_particles")
+!
+      endsubroutine get_boundary_particles
+!***********************************************************************
+    subroutine assimilate_incoming(npbuf)
+      integer,intent(in) :: npbuf
+!
+      call fatal_error("particles_dust","dont call assimilate_incoming")
+!
+    endsubroutine assimilate_incoming
+!***********************************************************************
+
+  endmodule Particles

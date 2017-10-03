@@ -12,6 +12,7 @@ module Particles_mpicomm
   implicit none
 !
   include 'particles_mpicomm.h'
+  include 'mpif.h'
 !
   integer, parameter :: nxb=1, nyb=1, nzb=1, nbx=1, nby=1, nbz=1
   integer, parameter :: nbricks=0, nghostb=0, mxb=1, myb=1, mzb=1
@@ -784,5 +785,36 @@ module Particles_mpicomm
       call keep_compiler_quiet(ibrick)
 !
     endsubroutine get_brick_index
+!***********************************************************************
+    subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
+
+      use Mpicomm
+      integer, intent(in) :: to_neigh,from_neigh
+      integer, intent(in) :: her_npbuf,my_npbuf
+      integer :: comm,mpierr
+      integer :: tolow=-1,toup=1
+      integer :: irecv_rq_fromlow,irecv_rq_fromupp,isend_rq_tolow,isend_rq_toupp
+      integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu,&
+           isend_stat_tl,isend_stat_tu
+!---------
+      comm=MPI_COMM_WORLD
+!
+! We assume below that send and receive is non-blocking.
+!
+      call MPI_IRECV(her_npbuf,1,MPI_INTEGER, &
+           from_neigh,toup,comm,irecv_rq_fromlow,mpierr)
+      call MPI_ISEND(my_npbuf,1,MPI_INTEGER, &
+           to_neigh,toup,comm,isend_rq_toupp,mpierr)
+      call MPI_WAIT(irecv_rq_fromlow,irecv_stat_fl,mpierr)
+      call MPI_WAIT(isend_rq_toupp,isend_stat_tu,mpierr)
+!
+      call MPI_IRECV(fp_buffer_in,mparray*nslab,MPI_REAL, &
+           from_neigh,toup,comm,irecv_rq_fromlow,mpierr)
+      call MPI_ISEND(fp_buffer_out,mparray*nslab,MPI_REAL, &
+           to_neigh,toup,comm,isend_rq_toupp,mpierr)
+      call MPI_WAIT(irecv_rq_fromlow,irecv_stat_fl,mpierr)
+      call MPI_WAIT(isend_rq_toupp,isend_stat_tu,mpierr)
+!
+    endsubroutine communicate_fpbuf
 !***********************************************************************
 endmodule Particles_mpicomm

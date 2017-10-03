@@ -8,7 +8,6 @@ EOS      =   eos_idealgas
 HYDRO    =   hydro
 DENSITY  =   density
 ENTROPY  = noentropy
-MAGNETIC =   magnetic
 GRAVITY  = nogravity
 FORCING  =   forcing
 
@@ -17,5 +16,6 @@ POWER    =   power_spectrum
 
 PARTICLES_MAIN       =   particles_main
 PARTICLES_SUB        =   particles_sub
-PARTICLES            =   particles_potential
+PARTICLES            =   particles_dust
+PARTICLES_POTENTIAL  =   experimental/particles_potential
 PARTICLES_RADIUS     =   particles_radius

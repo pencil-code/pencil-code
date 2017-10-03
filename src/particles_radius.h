@@ -7,4 +7,4 @@
   public :: read_particles_rad_init_pars, write_particles_rad_init_pars
   public :: read_particles_rad_run_pars, write_particles_rad_run_pars
   public :: rprint_particles_radius, set_particle_radius
-  public :: get_stbin,get_mass_from_radius
+  public :: get_stbin,get_mass_from_radius,get_maxrad

@@ -176,7 +176,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -187,7 +187,7 @@ module Particles
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
+      real, dimension (mpar_loc,mparray) :: fp
       real :: rhom
       integer :: ierr, jspec
 !
@@ -1386,11 +1386,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
-!  Evolution of dust particle velocity.
+!  Evolution of charged particle velocity.
 !
-!  29-dec-04/anders: coded
 !
       use Diagnostics
       use EquationOfState, only: cs20
@@ -1400,6 +1399,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       real :: Omega2
       integer :: npar_found
@@ -1671,9 +1671,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of dust particle velocity (called from main pencil loop).
+!  Evolution of charged particle velocity (called from main pencil loop).
 !
-!  25-apr-06/anders: codedg
 !
       use Diagnostics
       use EquationOfState, only: cs20
@@ -2233,6 +2232,22 @@ k_loop:   do while (.not. (k>npar_loc))
       else
         call fatal_error('periodic_boundcond_on_aux','particles_charged demands iEE ne 0')
       endif
+      if (lparticles_grad) then
+        if (igradu .ne. 0) then
+          call set_periodic_boundcond_on_aux(f,igradu11)
+          call set_periodic_boundcond_on_aux(f,igradu12)
+          call set_periodic_boundcond_on_aux(f,igradu13)
+          call set_periodic_boundcond_on_aux(f,igradu21)
+          call set_periodic_boundcond_on_aux(f,igradu22)
+          call set_periodic_boundcond_on_aux(f,igradu23)
+          call set_periodic_boundcond_on_aux(f,igradu31)
+          call set_periodic_boundcond_on_aux(f,igradu32)
+          call set_periodic_boundcond_on_aux(f,igradu33)
+        else
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+        endif
+      endif
+
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)
@@ -2248,5 +2263,23 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine particles_dragforce_stiff
+!***********************************************************************
+    subroutine get_boundary_particles(idirn,porm,npbuf)
+!
+! dummy
+!
+      integer, intent(in) :: idirn,porm
+      integer, intent(out) :: npbuf
+!
+      call fatal_error("particles_dust","dont call get_boundary_particles")
+!
+      endsubroutine get_boundary_particles
+!***********************************************************************
+    subroutine assimilate_incoming(npbuf)
+      integer,intent(in) :: npbuf
+!
+      call fatal_error("particles_dust","dont call assimilate_incoming")
+!
+    endsubroutine assimilate_incoming
 !***********************************************************************
 endmodule Particles

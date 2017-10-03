@@ -1,32 +1,66 @@
-! $Id: particles_potential dhruba.mitra@gmail.com$
+! $Id$
 !
-!  This module takes care of everything related to pairwise interaction 
-!  of particles. It is experimental now (April 2016)
+!  This module takes care of everything related to inertial particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
-! CPARAM logical, parameter :: lparticles_potential=.true.
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! MPVAR CONTRIBUTION 6
+! MAUX CONTRIBUTION 2
+! CPARAM logical, parameter :: lparticles=.true.
+! PENCILS PROVIDED np; rhop; vol; peh
+! PENCILS PROVIDED np_rad(5); npvz(5); npuz(5); sherwood
+! PENCILS PROVIDED epsp; grhop(3)
+! PENCILS PROVIDED tausupersat
 !
 !
 !***************************************************************
-module Particles_potential
+module Particles
 !
   use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
+  use Mpicomm
   use Particles_cdata
+  use Particles_map
+  use Particles_mpicomm
   use Particles_sub
   use Particles_radius
 !
   implicit none
 !
-  include 'particles_potential.h'
+  include 'particles.h'
+  include 'particles_common.h'
 !
+
+!
+  character (len=labellen) :: interp_pol_uu ='ngp'
+  character (len=labellen) :: interp_pol_oo ='ngp'
+  character (len=labellen) :: interp_pol_TT ='ngp'
+  character (len=labellen) :: interp_pol_rho='ngp'
+  character (len=labellen) :: interp_pol_pp ='ngp'
+  character (len=labellen) :: interp_pol_species='ngp'
+  character (len=labellen) :: interp_pol_gradTT='ngp'
+  character (len=labellen) :: interp_pol_nu='ngp'
+!
+  character (len=labellen), dimension (ninit) :: initxxp='nothing'
+  character (len=labellen), dimension (ninit) :: initvvp='nothing'
+!
+  integer :: init_repeat=0       !repeat particle initialization for distance statistics
+!
+!
+
+
+
   character (len=labellen) :: ppotential='nothing'
-  integer :: sigma_in_grid = 1, cell_in_grid=1
-  real :: psigma_by_dx=0.1,ppowerby2=19,skin_factor=2.,pampl=1.
-  real :: Rcutoff=0.,dRbin=1.,cell_length=0.
-  integer :: Rcutoff_in_grid=1,Nbin_in_Rcutoff=100
+  real :: ppower=19.,skin_factor=2.,fampl=1.
+  real :: rescale_diameter=1.
+  logical :: lpotential=.true.
+
+! 
 !
 ! ----------- About Potential ----------------------
 ! This module calculates all quantities related to particle-particle
@@ -45,318 +79,622 @@ module Particles_potential
 ! typically of the form
 !   V(r) = function of (r/psigma) , \xi = r/psigma
 ! The default potential is repulsive
-!  V(r) = pampl*(1/xi)^(beta)
+!  V(r) = fampl*(1/xi)^(beta)
 ! with beta = 2*ppowerby2
 ! This potential is quite steep (almost hard-sphere) hence the effective force on a particle
 ! due to other particles which are within a distance of skin_factor*psigma. Particles
 ! within this distance are included in the neighbourlist.
 !
+  real :: cell_length=0.
+  integer :: ncell=0
   integer :: mcellx=0,mcelly=0,mcellz=0
-  logical :: lhead_allcated=.false.
+  integer :: arb_factor=10
+  logical :: lhead_allocated=.false.
   integer, allocatable, dimension(:,:,:) :: head
   integer, allocatable,dimension(:) :: link_list
-  integer :: ysteps_int,zsteps_int
-  namelist /particles_potential_init_pars/ &
-    ppotential, cell_in_grid, psigma_by_dx, ppowerby2, skin_factor, &
-      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff
+  logical :: ldragforce_gas_par, ldragforce_dust_par
+  logical :: lup_as_aux=.false.
+  real :: xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
+      xp1,yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
+      xp3, yp3, zp3, vpx3, vpy3, vpz3
+  real :: cdtp=0.2, cdtpgrav=0.1, cdtp_drag=0.2,gas_nu
+  real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
+  character (len=labellen) :: draglaw='none'
+  integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
+  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
+  integer :: idiag_vrelpabsm=0                          ! DIAG_DOC: $\rm{Absolute value of mean relative velocity}$
+  integer :: idiag_rpm=0, idiag_rp2m=0
+  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0   ! DIAG_DOC: $u_{part}$
+  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0 ! DIAG_DOC: $u^2_{part}$
+  integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
+  integer :: idiag_vdotupm=0
+  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
+  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
+  integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
+  integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
+  integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
+  integer :: idiag_rhopvpysm=0
+  integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
+  integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
+  integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0 ! DIAG_DOC: $\rm{mean particle number density}$
+  integer :: idiag_dtdragp=0
+  integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
+  integer :: idiag_nparsum=0
+  integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
+  integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
+  integer :: idiag_epspmin=0, idiag_epspmax=0, idiag_epspm=0
+  integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
+  integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
+  integer :: idiag_rhop2mx=0, idiag_rhop2my=0, idiag_rhop2mz=0
+  integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
+  integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
+  integer :: idiag_sigmap=0
+  integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
+  integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
+  integer :: idiag_rhopmxz=0, idiag_nparpmax=0, idiag_npmxy=0
+  integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
+  integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
+  integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
+  integer :: idiag_Shm=0
+  integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
+  integer, dimension(ninit)  :: idiag_npuzmz=0
+!------------------------!
+  namelist /particles_init_pars/ &
+      initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
+      ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, &
+      rhopmat, xp1, &
+      yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
+      xp3, yp3, zp3, vpx3, vpy3, vpz3, &
+      lpotential,arb_factor,ppotential,skin_factor,rescale_diameter 
 !
-  namelist /particles_potential_run_pars/ &
-    ppotential, cell_in_grid, psigma_by_dx, ppowerby2, skin_factor, &
-      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff
-!
-  integer :: idiag_particles_vijm=0,idiag_particles_vijrms=0
-!
+  namelist /particles_run_pars/ &
+      bcpx, bcpy, bcpz,  &
+      ldragforce_gas_par
+!-----------------------
   contains
 !***********************************************************************
-    subroutine register_particles()
+    subroutine register_particles
 !
 !  Set up indices for access to the fp and dfp arrays
 !
+!  29-dec-04/anders: coded
+!
+      use FArrayManager, only: farray_register_auxiliary
+!
       if (lroot) call svn_id( &
-           "$Id: particles_potential.f90 dhruba.mitra@gmail.com $")
-
+          "$Id$")
+!
+!  Indices for particle position.
+!
+      ixp=npvar+1
+      pvarname(npvar+1)='ixp'
+      iyp=npvar+2
+      pvarname(npvar+2)='iyp'
+      izp=npvar+3
+      pvarname(npvar+3)='izp'
+!
+!  Indices for particle velocity.
+!
+      ivpx=npvar+4
+      pvarname(npvar+4)='ivpx'
+      ivpy=npvar+5
+      pvarname(npvar+5)='ivpy'
+      ivpz=npvar+6
+      pvarname(npvar+6)='ivpz'
+!
+!  Increase npvar accordingly.
+!
+      npvar=npvar+6
+!
+!  Check that the fp and dfp arrays are big enough.
+!
+      if (npvar > mpvar) then
+        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
+        call fatal_error('register_particles','npvar > mpvar')
+      endif
+!
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles_potential(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
+!  29-dec-04/anders: coded
+!   5-mar-15/MR: reference state included in calculation of mean density
 !
-! assume isotropy 
+      use EquationOfState, only: rho0, cs0
+      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use Density, only: mean_density
+      use Viscosity, only: getnu
 !
-      Rcutoff=Rcutoff_in_grid*dx
-      cell_length=cell_in_grid*dx
-      dRbin=Rcutoff/(real)Nbin_in_Rcutoff
-      mcellx=int(abs(x(l2)-x(l1))/cell_length)+1
-      mcelly=int(abs(y(m2)-y(m1))/cell_length)+1
-      mcellz=int(abs(z(n2)-z(n1))/cell_length)+1
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+!
+      real :: nu_
+      character (len=labellen) :: ivis='nothing'
+      integer :: ierr, jspec
+      logical, pointer :: lshearadvection_as_shift
+!
+!  This module is incompatible with particle block domain decomposition.
+!
+      if (lparticles_blocks) then
+        if (lroot) then
+          print*, 'initialize_particles: must use PARTICLES =  PARTICLES_DUST_BLOCKS'
+          print*, '                      with particle block domain decomposition'
+        endif
+        call fatal_error('initialize_particles','')
+      endif
+      !
+! prepare array for fluid velocity at particle positions if necessary.
+!  Register an extra aux slot for uup if requested. This is needed
+!  for calculating the correlation time from <u.intudt>. For this to work
+!  you must reserve enough auxiliary workspace by setting, for example,
+!     ! MPAUX CONTRIBUTION 3
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+      if (lup_as_aux) then
+         iuf = mpvar+npaux+1
+         iufx=iuf;iufy=iuf+1;iufz=iuf+2
+         npaux=npaux+3
+      endif
+! Check that the fp and dfp arrays are big enough.
+      if (npaux > mpaux) then
+         if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
+         call fatal_error('register_particles_potential: npaux > mpaux','')
+      endif
+!
+!  Inverse material density.
+!
+      if (rhopmat/=0.0) rhopmat1=1/rhopmat
+!
+!  Gas density (also sometime gas-viscosity) is needed for back-reaction friction force.
+!
+      if (ldragforce_gas_par) then
+         if (.not. ldensity) then
+            if (lroot) then
+               print*, 'initialize_particles: friction force on gas only works '
+               print*, '                      together with gas density module!'
+            endif
+            call fatal_error('initialize_particles','density not found!')
+         endif
+      
+!
+!  Find the kinematic viscosity
+!
+         call getnu(nu_input=nu_,ivis=ivis)
+         select case(ivis)
+         case('nu-const')
+            gas_nu=nu_
+         case default
+            call fatal_error("particles_potential","works only with nu_const")
+         endselect
+      endif
+!
+!
+! The size of a cell is twice the radius of the biggest particle. This assumes that
+! the size of the particles are now going to change over time. Otherwise the input      
+! parameter cell_length, if not equal to zero, sets the size of the cell. 
+!
+      if (cell_length.eq.0.) then 
+         cell_length=2*maxval(fp(:,iap))
+      endif
+!
+! the following line assumes that the domain is roughly size in all three      
+! directions. If not, we need to code some more
+!      
+      ncell=int(abs(x(l2)-x(l1))/cell_length)+1
+      cell_length=(x(l2)-x(l1))/ncell
+!
+! Assuming uniform distribution we can estimate the number of particles
+! in a slab. These number are then multiplied
+! an arbitrary factor (arb_factor) for which the default value is 10        
+!
+      nslab=arb_factor*(npar/ncpus)/ncell
+!
+! If we are using many processors then our domain effectively includes
+! three neighbouring processors in each directions.
+!
+      mcellx=ncell;mcelly=ncell;mcellz=ncell
+!
+! Allocate the arrays head and link_list (only if they have
+! not been allocated before)      
 !
       if(.not.lhead_allocated) then
-        allocate(head(0:mcellx+1,0:mcelly+1,0:mcellz+1))
-        allocate(link_list(mp_loc))
+         if (lmpicomm) then
+            lpar_max=max(arb_factor*(npar/ncpus)+6*nslab,mpar_loc)
+            allocate(fp_buffer_in(nslab,mparray))
+            allocate(fp_buffer_out(nslab,mparray))
+         else
+           lpar_max=mpar_loc         
+        endif
+        allocate(head(-1:mcellx,-1:mcelly,-1:mcellz))
+        allocate(link_list(lpar_max))
+!
+! We also need to allocate a larger array in case of parallel communications
+!
+        allocate(fpwn(lpar_max,mparray))
         lhead_allocated=.true.
+        fpwn=0.
         head=0
         link_list=0
       endif
 
+
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_particles_potential
+    endsubroutine initialize_particles
 !***********************************************************************
-    subroutine particles_potential_clean_up
-!
-!  cleanup after the particles_potential module
-!
-      if(lhead_allocated) then
-        deallocate(head)
-        deallocate(link_list)
-        lhead_allocated=.false.
-      endif
-!
-    endsubroutine particles_potential_clean_up
-!***********************************************************************
-    subroutine init_particles_potential(f,fp,ineargrid)
+    subroutine init_particles(f,fp,ineargrid)
 !
 !  Initial positions and velocities of dust particles.
 !
-
+!  29-dec-04/anders: coded
 !
-    endsubroutine init_particles_potential
+      use EquationOfState, only: beta_glnrho_global, cs20
+      use General, only: random_number_wrapper, normal_deviate
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
+      use Particles_diagnos_dv, only: repeated_init
+!
+      real, dimension (mx,my,mz,mfarray), intent (out) :: f
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer, dimension (mpar_loc,3), intent (out) :: ineargrid
+      real, dimension (mpar_loc) :: rr_tmp, az_tmp
+!
+      real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
+      real :: vpx_sum, vpy_sum, vpz_sum
+      real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
+      real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
+      real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
+      integer :: l, j, k, ix0, iy0, iz0, n_kill
+      logical :: lequidistant=.false.
+      real :: rpar_int,rpar_ext
+!
+        Lxyz_par=Lxyz_loc
+        xyz0_par=xyz0_loc
+        xyz1_par=xyz1_loc
+!
+!  Initial particle position.
+!
+      do j=1,ninit
+!
+        select case (initxxp(j))
+!
+        case ('nothing')
+          if (lroot .and. j==1) print*, 'init_particles: nothing'
+!
+        case ('origin')
+          if (lroot) print*, 'init_particles: All particles at origin'
+          fp(1:npar_loc,ixp:izp)=0.0
+!
+        case ('zero-z')
+          if (lroot) print*, 'init_particles: Zero z coordinate'
+          fp(1:npar_loc,izp)=0.0
+!
+        case ('constant')
+          if (lroot) &
+              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+          fp(1:npar_loc,ixp)=xp0
+          fp(1:npar_loc,iyp)=yp0
+          fp(1:npar_loc,izp)=zp0
+          !
+        case ('random-constz')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=zp0
+!
+        case ('random')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
+            if (nzgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,izp)=r
+            endif
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+!
+        case default
+          call fatal_error('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
+!
+        endselect
+!
+      enddo ! do j=1,ninit
+!
+!  Interface for user's own initial condition for position
+!
+      if (linitial_condition) call initial_condition_xxp(f,fp)
+!
+!  Particles are not allowed to be present in non-existing dimensions.
+!  This would give huge problems with interpolation later.
+!
+      if (nxgrid==1) fp(1:npar_loc,ixp)=x(nghost+1)
+      if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
+      if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
+!
+      if (init_repeat/=0) call repeated_init(fp,init_repeat)
+!
+!  Redistribute particles among processors (now that positions are determined).
+!
+      call boundconds_particles(fp,ipar)
+!
+!  Map particle position on the grid.
+!
+      call map_nearest_grid(fp,ineargrid)
+      call map_xxp_grid(f,fp,ineargrid)
+!
+!  Initial particle velocity.
+!
+      do j=1,ninit
+!
+        select case (initvvp(j))
+!
+        case ('nothing')
+          if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
+!
+        case ('zero')
+          if (lroot) print*, 'init_particles: Zero particle velocity'
+          fp(1:npar_loc,ivpx:ivpz)=0.0
+!
+        case ('constant')
+          if (lroot) print*, 'init_particles: Constant particle velocity'
+          if (lroot) &
+              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          if (lcylindrical_coords) then
+            fp(1:npar_loc,ivpx)=vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpy)=vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpz)=vpz0
+          else
+            fp(1:npar_loc,ivpx)=vpx0
+            fp(1:npar_loc,ivpy)=vpy0
+            fp(1:npar_loc,ivpz)=vpz0
+          endif
+!
+        case ('random')
+          if (lroot) print*, 'init_particles: Random particle velocities; '// &
+              'delta_vp0=', delta_vp0
+          do k=1,npar_loc
+            call random_number_wrapper(r)
+            fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
+            call random_number_wrapper(r)
+            fp(k,ivpy) = fp(k,ivpy) + delta_vp0*(2*r-1)
+            call random_number_wrapper(r)
+            fp(k,ivpz) = fp(k,ivpz) + delta_vp0*(2*r-1)
+          enddo
+!
+        case ('follow-gas')
+          if (lroot) &
+              print*, 'init_particles: Particle velocity equal to gas velocity'
+          do k=1,npar_loc
+            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
+                ineargrid(k,:),0,0)
+            fp(k,ivpx:ivpz) = uup
+          enddo
+!
+        case default
+          call fatal_error('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
+!
+        endselect
+!
+      enddo ! do j=1,ninit
+!
+!  Interface for user's own initial condition
+!
+      if (linitial_condition) call initial_condition_vvp(f,fp)
+!
+!  Sort particles (must happen at the end of the subroutine so that random
+!  positions and velocities are not displaced relative to when there is no
+!  sorting).
+!
+      call sort_particles_imn(fp,ineargrid,ipar)
+!
+    endsubroutine init_particles
 !***********************************************************************
-    subroutine construct_link_list(fp)
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: ip
-      integer,dimension(3) :: cell_vec
-      integer :: ipx0=1,ipxL=1,ipy0=1,ipyL=1,ipz0=1,ipzL=1
+    subroutine insert_lost_particles(f,fp,ineargrid)
 !
-      if (.not.lhead_allocated) &
-        call fatal_error('dvvp_dt_potential', 'The linked list is not allocated; ABORTING') 
+!  14-oct-12/dhruba: dummy
 !
-      do ip=1,np_loc
-        xxi=fp(ip,ixp:izp)
-        cell_vec=floor(xxi-xyz0)/cell_length)+1
-        link_list(ip)=head(cell_vec(1),cell_vec(2),cell_vec(3))
-        head(cell_vec(1),cell_vec(2),cell_vec(3))=ip
-      enddo
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
-!  Now load the particles to planes 
-!        
-! two planes perpendicular to x direction:
-      do iz=1,mcellz;do iy=1,mcelly
-!Plane x=0
-        ix=1
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpx0(ipx0,:) = fp(ip,:)
-          ipx0=ipx0+1
-! Line x=0,y=0
-          if (iy .eq. 1) then
-            fpx0y0(ipx0y0,:) = fp(ip,:)
-            ipx0y0=ipx0y0+1
-! cell x=0,y=0,z=0
-            if(iz .eq. 1) then
-              fpx0y0z0(ipx0y0z0,:) = fp(ip,:)
-              ipx0y0z0=ipx0y0z0+1
-            endif
-! cell x=0,y=0,z=Lz
-            if(iz .eq. mcellz) then
-              fpx0y0zL(ipx0y0zL,:) = fp(ip,:)
-              ipx0y0zL=ipx0y0zL+1
-            endif
-          endif
-! Line x=0,y=Ly
-          if (iy .eq. mcelly) then
-            fpx0yL(ipx0yL,:) = fp(ip,:)
-            ipx0yL=ipx0yL+1
-! cell x=0,y=Ly,z=0
-            if(iz .eq. 1) then
-              fpx0yLz0(ipx0yLz0,:) = fp(ip,:)
-              ipx0yLz0=ipx0yLz0+1
-            endif
-! cell x=0,y=Ly,z=Lz
-            if(iz .eq. Lz) then
-              fpx0yLzL(ipx0yLzL,:) = fp(ip,:)
-              ipx0yLzL=ipx0yLzL+1
-            endif
-          endif
-!Line x=0,z=0
-          if (iz .eq. 1) then
-            fpx0z0(ipx0z0,:) = fp(ip,:)
-            ipx0z0=ipx0z0+1
-! cell x=0,z=0,y=0 is already done
-! cell x=0,z=0,y=Ly is already done
-          endif
-!Line x=0,z=Lz
-          if (iz .eq. mcellz) then
-            fpx0zL(ipx0zL,:) = fp(ip,:)
-            ipx0zL=ipx0zL+1
-! cell x=0,z=Lz,y=0 is already done
-! cell x=0,z=Lz,y=Lz is already done 
-          endif
-          ip=list(ip)
-        enddo
-! Plane x=Lx
-        ix=mcellx
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpxL(ipxL,:) = fp(ip,:)
-          ipxL=ipxL+1
-! Line x=L,y=0
-          if (iy .eq. 1) then
-            fpxLy0(ipxLy0,:) = fp(ip,:)
-            ipxLy0=ipxLy0+1
-! cell x=L,y=0,z=0
-            if(iz .eq. 1) then
-              fpxLy0z0(ipxLy0z0,:) = fp(ip,:)
-              ipxLy0z0=ipxLy0z0+1
-            endif
-! cell x=L,y=0,z=Lz
-            if(iz .eq. mcellz) then
-              fpxLy0zL(ipxLy0zL,:) = fp(ip,:)
-              ipxLy0zL=ipxLy0zL+1
-            endif
-          endif
-! Line x=L,y=Ly
-          if (iy .eq. mcelly) then
-            fpxLyL(ipxLyL,:) = fp(ip,:)
-            ipxLyL=ipxLyL+1
-! cell x=L,y=Ly,z=0
-            if(iz .eq. 1) then
-              fpxLyLz0(ipxLyLz0,:) = fp(ip,:)
-              ipxLyLz0=ipxLyLz0+1
-            endif
-! cell x=L,y=Ly,z=Lz
-            if(iz .eq. Lz) then
-              fpxLyLzL(ipxLyLzL,:) = fp(ip,:)
-              ipxLyLzL=ipxLyLzL+1
-            endif
-          endif
-!Line x=L,z=0
-          if (iz .eq. 1) then
-            fpxLz0(ipxLz0,:) = fp(ip,:)
-            ipxLz0=ipxLz0+1
-! cell x=0,z=0,y=0 is already done
-! cell x=0,z=0,y=Ly is already done
-          endif
-!Line x=0,z=Lz
-          if (iz .eq. mcellz) then
-            fpxLzL(ipxLzL,:) = fp(ip,:)
-            ipxLzL=ipxLzL+1
-! cell x=0,z=Lz,y=0 is already done
-! cell x=0,z=Lz,y=Lz is already done 
-          endif
-          ip=list(ip)
-        enddo !while loop over ip ends
-      enddo;enddo
-!        
-! two planes perpendicular to y direction:
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
-      do iz=1,mcellz;do ix=1,mcellx
-!Plane y=0
-        iy=1
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpy0(ipy0,:) = fp(ip,:)
-          ipy0=ipy0+1
-! Line x=0,y=0 is already done
-! cell x=0,y=0,z=0 is already done
-! cell x=0,y=0,z=Lz is already done
-! Line y=0,z=0
-          if (iz .eq. 1) then
-            fpy0z0(ipy0z0,:) = fp(ip,:)
-            ipy0z0=ipy0z0+1
-          endif
-! Line y=0,z=Lz
-          if (iz .eq. mcellz) then
-            fpy0zL(ipy0zL,:) = fp(ip,:)
-            ipy0zL=ipy0zL+1
-          endif
-          ip=list(ip)
-        enddo
-!Plane y=Ly
-        iy=mcelly
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpyL(ipyL,:) = fp(ip,:)
-          ipyL=ipyL+1
-! Line x=0,y=L is already done
-! cell x=0,y=L,z=0 is already done
-! cell x=0,y=L,z=Lz is already done
-! Line y=L,z=0
-          if (iz .eq. 1) then
-            fpyLz0(ipyLz0,:) = fp(ip,:)
-            ipyLz0=ipyLz0+1
-          endif
-! Line y=L,z=Lz
-          if (iz .eq. mcellz) then
-            fpyLzL(ipyLzL,:) = fp(ip,:)
-            ipyLzL=ipyLzL+1
-          endif
-          ip=list(ip)
-        enddo
-      enddo;enddo
-!        
-! two planes perpendicular to z direction:
-!
-      do iy=1,mcelly;do ix=1,mcellx
-!Plane z=0
-        iz=1
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpz0(ipz0,:) = fp(ip,:)
-          ipz0=ipz0+1
-! Line x=0,z=0 is already done
-! cell x=0,y=0,z=0 is already done
-! Line y=0,z=0 is already done
-          ip=list(ip)
-        enddo
-!Plane z=Lz
-        iz=mcellz
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpzL(ipzL,:) = fp(ip,:)
-          ipzL=ipzL+1
-! Line x=0,z=L is already done
-! cell x=0,y=0,z=L is already done
-! Line y=0,z=L is already done
-          ip=list(ip)
-        enddo
-      enddo;enddo
-!
-! Now the boundaries must be exchanged
-! then the new particles on the boundaries 
-! moved into the fp array and then
-! another segregation into the head and link_list
-! must be done
-    endsubroutine construct_link_list
+    endsubroutine insert_lost_particles
 !***********************************************************************
-    subroutine dxxp_dt_potential(f,df,fp,dfp,ineargrid)
+    subroutine pencil_criteria_particles
+!
+!  All pencils that the Particles module depends on are specified here.
+!
+!  20-04-06/anders: coded
+!
+      if (ldragforce_gas_par) then
+        lpenc_requested(i_epsp)=.true.
+        lpenc_requested(i_np)=.true.
+        lpenc_requested(i_rho1) = .true.
+        if (draglaw=='epstein') lpenc_requested(i_cs2)=.true.
+      endif
+!
+      if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
+          idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
+          idiag_npmz/=0 .or. idiag_nparpmax/=0) lpenc_diagnos(i_np)=.true.
+      if (idiag_rhopm/=0 .or. idiag_rhoprms/=0 .or. idiag_rhop2m/=0 .or. &
+          idiag_rhopmax/=0 .or. idiag_rhopmin/=0 .or. idiag_rhopmphi/=0 .or. &
+          idiag_rhopmx/=0 .or. idiag_rhopmy/=0 .or. idiag_rhopmz/=0) &
+          lpenc_diagnos(i_rhop)=.true.
+      if (idiag_rhop2mx /= 0 .or. idiag_rhop2my /= 0 .or. idiag_rhop2mz /= 0) lpenc_diagnos(i_rhop) = .true.
+      if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
+        lpenc_diagnos(i_TT1)=.true.
+        lpenc_diagnos(i_rho1)=.true.
+      endif
+      if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0 .or. &
+          idiag_epspmin/=0 .or. idiag_epspmax/=0 .or. idiag_epspm/=0) &
+          lpenc_diagnos(i_epsp)=.true.
+      if (idiag_rhopmxy/=0 .or. idiag_rhopmxz/=0 .or. idiag_rhopmphi/=0) &
+          lpenc_diagnos2d(i_rhop)=.true.
+      if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
+      if (idiag_sigmap /= 0) lpenc_diagnos2d(i_rhop) = .true.
+!
+      if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
+      if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz)=.true.
+      if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
+      if (idiag_Shm /= 0) lpenc_requested(i_sherwood)=.true.
+!
+    endsubroutine pencil_criteria_particles
+!***********************************************************************
+    subroutine pencil_interdep_particles(lpencil_in)
+!
+!  Interdependency among pencils provided by the Particles module
+!  is specified here.
+!
+!  16-feb-06/anders: dummy
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_rhop) .and. irhop==0) then
+        lpencil_in(i_np)=.true.
+      endif
+!
+      if (lpencil_in(i_epsp)) then
+        lpencil_in(i_rhop)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
+!
+      if (lsupersat) lpencil_in(i_tausupersat)=.true.
+!
+    endsubroutine pencil_interdep_particles
+!***********************************************************************
+    subroutine calc_pencils_particles(f,p)
+!
+      use Sub, only: grad
+!
+!  Calculate Particles pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  16-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_np)) then
+        if (inp/=0) then
+          p%np=f(l1:l2,m,n,inp)
+        else
+          p%np=0.0
+        endif
+      endif
+!
+    endsubroutine calc_pencils_particles
+!***********************************************************************
+    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle position.
 !
 !  02-jan-05/anders: coded
 !
-      use General, only: random_number_wrapper, random_seed_wrapper
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-
+!  Print out header information in first time step.
+!
+      lheader=lfirstcall .and. lroot
+!
+!  Identify module and boundary conditions.
+!
+      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
+      if (lheader) then
+        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
+        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
+        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
+      endif
+!
+      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
+          'position equal to particle velocity.'
+!
+!  The rate of change of a particle's position is the particle's velocity.
+!  If pointmasses are used do the evolution in that module, for better
+!  conservation of the Jacobi constant.
+!
+      if (.not.lpointmasses) then
+        if (lcartesian_coords) then
+!
+          if (nxgrid/=1) &
+              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+          if (nygrid/=1) &
+              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
+          if (nzgrid/=1) &
+              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+!
+        elseif (lcylindrical_coords) then
+          if (nxgrid/=1) &
+              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+          if (nygrid/=1) &
+              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+                fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+          if (nzgrid/=1) &
+              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+!
+        elseif (lspherical_coords) then
+!
+          if (nxgrid/=1) &
+              dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+          if (nygrid/=1) &
+              dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+                fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+          if (nzgrid/=1) &
+              dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
+                fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*sin(fp(1:npar_loc,iyp)))
+        endif
+      endif
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+      if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
+          dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
+!
+      if (lfirstcall) lfirstcall=.false.
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt_potential(fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -364,207 +702,363 @@ module Particles_potential
 !
       use Diagnostics
       use EquationOfState, only: cs20
-!
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-!
-! We need to calculate pairwise quantities only if we are calculating
-! pairwise diagnostic or if we actually have a potential of interaction
-!
-      if (ldiagnos.or.lpotential) & 
-        call calculate_potential (fp,dfp,ineargrid)
-!
-!
-      endsubroutine dvvp_dt_potential
-!***********************************************************************
-    subroutine calculate_potential(fp,dfp,ineargrid)
-!
-!  particle velocity due to particle-particle interaction
-!
-!
-      use Diagnostics
       use Sub, only: periodic_fold_back
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-!----------------------------------
-      integer :: ix,iy,iz,ip,jp,kp
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      type (pencil_case) :: p
+      intent (in) :: p
       integer,parameter :: Nnab=13
       integer,dimension(Nnab,3) :: neighbours
+      integer :: inab,ix2,ip,jp,kp
+      real,dimension(3) :: xxij,vvij
+      integer,dimension(3) :: cell_vec
+      real,dimension(3) :: xxip,my_origin
 !
-!  Print out header information in first time step.
+      real :: Omega2
+      integer :: npar_found,i
+      logical :: lheader, lfirstcall=.true.
 !
-      lheader=lfirstcall .and. lroot
-      if (lheader) then
-        print*,'dvvp_dt: Calculate dvvp_dt_potential'
-      endif
-      
+! first fill up fpwn with particles in local fp (do this even 
+! in the serial case )
+! 
+      lpar_loc=npar_loc
+      my_origin(1)=x(l1);my_origin(2)=y(m1);my_origin(3)=z(n1)
+      do ip=1,npar_loc
+         fpwn(ip,:) = fp(ip,:)
 !
-! At this stage we know the linked list so we access by particles
-! by it. 
+! Now make the linked list for the local particles         
 !
-! check if the link list has been allocated, otherwise abort
-      if (.not.lhead_allocated) &
-        call fatal_error('dvvp_dt_potential', 'The linked list is not allocated; ABORTING') 
-!    
-      do iz=1,mcellz;do iy=1,mcelly;do ix=1,mcellx
-        ip = head(ix,iy,iz)
+         xxip=fpwn(ip,ixp:izp)
+         cell_vec=floor((xxip-my_origin)/cell_length)
+         link_list(ip)=head(cell_vec(1),cell_vec(2),cell_vec(3))
+         head(cell_vec(1),cell_vec(2),cell_vec(3))=ip
+         call accn_single_particle(dfp,f,fp,p,ineargrid,ip)
+      enddo
+      if (ldiagnos) call single_particle_diagnos(fp)
+!
+! We need to know about particles in neighbouring processors      
+! only if we are dealing with mutual interaction potential between
+! particles. Otherwise we merely access the particles by their
+! link-list, this keeps the memory access in the f arrays somewhat
+! local.
+! Now modify the link list for particles in neighbouring
+! processors. This is different in parallel and serial case.
+! In the latter, this merely takes care of periodic boundary       
+! conditions.
+!         
+      call particles_neighbour_proc()
+!
+!
+      ! Now access all the cells and calculate their acceleration for
+      ! the particles in them.      
+!
+      do iz=-1,mcellz;do iy=-1,mcelly;do ix=-1,mcellx
+         ip = head(ix,iy,iz)
 !
 ! within the same cell 
 !
-        do while (ip.ne.0) 
-          jp = link_list(ip)
-          do while (jp.ne.0)
-            xxij= fp(jp,ixp:izp)-fp(ip,ixp:izp)
-            vvij=fp(jp,ivxp:ivzp)-fp(ip,ivxp:ivzp)
-            call two_particle_int(fp,dfp,ip,jp,xxij,vvij)
-            jp = link_list(jp)
-          enddo
-          ip = link_list(ip)
-        enddo ! loop all the particles in a cell ends
-!
-! Now for neighbouring cells
-!
-        ip = head(ix,iy,iz)
-        neighbours = get_neighbours(ix,iy,iz)
-        do while (ip.ne.0) 
-          do inab = 1,Nnab						
-            ix2 = neighbours(inab,1)      
-            iy2 = neighbours(inab,2)
-            iz2 = neighbours(inab,3)
-            jp = head(ix2,iy2,iz2)
-            do while (jp.ne.0) 
-              xxij= fp(jp,ixp:izp)-fp(ip,ixp:izp)
-              call periodic_fold_back(xxij)
-              vvij=fp(jp,ivxp:ivzp)-fp(ip,ivxp:ivzp)
-              call two_particle_int(fp,dfp,ip,jp,xxij,vvij)
-              jp = link_list(jp)       
+         do while (ip.ne.0) 
+            jp = link_list(ip)
+            do while (jp.ne.0)
+               xxij= fpwn(jp,ixp:izp)-fpwn(ip,ixp:izp)
+               vvij=fpwn(jp,ivpx:ivpz)-fpwn(ip,ivpx:ivpz)
+               if (lpotential) &
+                    call two_particle_int(dfp,ip,jp,xxij,vvij)
+               jp = link_list(jp)
             enddo
-          enddo
+! Now for neighbouring cells
+               
+            call get_cell_neighbours(ix,iy,iz,neighbours) 
+            do inab = 1,Nnab						
+               ix2 = neighbours(inab,1)      
+               iy2 = neighbours(inab,2)
+               iz2 = neighbours(inab,3)
+               if (( ix2.eq.-1).or.(iy2.eq.-1).or.(iz2.eq.-1)&
+                 .or.( ix2.eq.mcellx+1).or.(iy2.eq.mcelly+1).or.(iz2.eq.mcellz+1) ) then
+               else
+                  kp = head(ix2,iy2,iz2)
+                  do while (kp.ne.0) 
+                     xxij= fpwn(kp,ixp:izp)-fpwn(ip,ixp:izp)
+                     call periodic_fold_back(xxij, Lxyz)
+                     vvij=fpwn(kp,ivpx:ivpz)-fpwn(ip,ivpx:ivpz)
+                     if (lpotential) &
+                          call two_particle_int(dfp,ip,kp,xxij,vvij)
+                     kp = link_list(kp)       
+                  enddo
+               endif
+            enddo
+            ip = link_list(ip)
+         enddo
 !
       enddo; enddo; enddo
 !
 ! loop over cells done
-!
-!
-      if (lfirstcall) lfirstcall=.false.
-!
-      call keep_compiler_quiet(ineargrid)
+!      
+
+      call keep_compiler_quiet(f)
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine two_particle_int(fp,dfp,ip,jp,xxij,vvij)
+    subroutine accn_single_particle(dfp,f,fp,p,ineargrid,kp)
+
+      integer,intent(in) :: kp
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      type (pencil_case) :: p
+      intent (in) :: p
+      real :: mp_k,radp,taup1
+      real :: rhof
+      real,dimension(3) :: xxp,vvp,uup
+      integer :: inx0
+!
+      if (ldragforce_gas_par) then
+         radp=fp(kp,iap)
+         xxp=fp(kp,ixp:izp)
+         vvp=fp(kp,ivpx:ivpz)
+         call interpolate_linear(f,ilnrho,xxp,rhof,ineargrid(kp,:),0,0)
+         if (.not.ldensity_nolog) rhof=exp(rhof)
+         call interpolate_linear(f,iux,iuz,xxp,uup,ineargrid(kp,:),0,0)
+         if (luf_as_aux) fp(kp,iufx:iufz)=uup
+!   get the inverse stopping time
+         select case (draglaw)
+!
+         case ('stokes')
+            taup1=18.0*gas_nu/((rhopmat/rhof)*4.*radp**2)
+!
+         case('epstein')
+            inx0=ineargrid(kp,1)-nghost
+            taup1=(sqrt(p%cs2(inx0))*rhof)/(radp*rhopmat)
+!
+         case default
+            call fatal_error("particles_potential:","no draglaw of this name")
+         endselect
+         dfp(kp,ivpx:ivpz) = dfp(kp,ivpx:ivpz)+taup1*(uup-vvp)
+      endif
+    endsubroutine accn_single_particle
+!***********************************************************************
+    subroutine construct_link_list(plist_min,plist_max)
+      integer :: ip
+      integer, intent(in) :: plist_min,plist_max
+      integer,dimension(3) :: cell_vec
+      real,dimension(3) :: xxip,my_origin
+!
+      my_origin(1)=x(l1);my_origin(2)=y(m1);my_origin(3)=z(n1)
+      do ip=plist_min,plist_max
+        xxip=fpwn(ip,ixp:izp)
+        cell_vec=floor((xxip-my_origin)/cell_length)
+        link_list(ip)=head(cell_vec(1),cell_vec(2),cell_vec(3))
+        head(cell_vec(1),cell_vec(2),cell_vec(3))=ip
+      enddo
+!
+    endsubroutine construct_link_list
+!***********************************************************************
+    subroutine assimilate_incoming(npbuf)
+      integer,intent(in) :: npbuf
+      fpwn(lpar_loc+1:lpar_loc+npbuf,:)=fp_buffer_in(1:npbuf,:)
+      call construct_link_list(lpar_loc+1,lpar_loc+npbuf)
+      lpar_loc=lpar_loc+npbuf
+!
+    endsubroutine assimilate_incoming
+!***********************************************************************
+    subroutine get_boundary_particles(idirn,porm,npbuf)
+!
+! fp_buffer in known globally
+!
+      integer, intent(in) :: idirn,porm
+      integer, intent(out) :: npbuf
+!
+      select case(idirn)
+      case(3)
+         if (porm.eq.1) then
+            call make_fpbuffer(mcellz-1,mcellz-1,0,mcelly-1,0,mcellx-1,npbuf)
+         else
+            call make_fpbuffer(0,0,0,mcelly-1,0,mcellx-1,npbuf)
+         endif
+      case(2)
+         if (porm.eq.1) then
+            call make_fpbuffer(-1,mcellz,mcelly-1,mcelly-1,0,mcellx-1,npbuf)
+         else
+            call make_fpbuffer(-1,mcellz,0,0,0,mcellx-1,npbuf)
+         endif
+      case(1)
+         if (porm.eq.1) then
+            call make_fpbuffer(-1,mcellz,-1,mcelly,mcellx-1,mcellx-1,npbuf)
+         else
+            call make_fpbuffer(-1,mcellz,-1,mcelly,0,0,npbuf)
+         endif
+         case default
+          !
+          !  Catch unknown values
+          !
+          call fatal_error("particles_potential", &
+              "get_boundary_particles is called with wrong idirn")
+!
+        endselect
+!
+      endsubroutine get_boundary_particles
+!***********************************************************************
+    subroutine make_fpbuffer(izmin,izmax,iymin,iymax,ixmin,ixmax,npbuf)
+!
+! fp_buffer_out is known globally
+!
+      integer, intent(in) :: izmin,izmax,iymin,iymax,ixmin,ixmax
+      integer, intent(out) :: npbuf
+      integer :: ipbuf
+      fp_buffer_out=0.
+      npbuf=0
+      ipbuf=0
+      do iz=izmin,izmax
+         do iy=iymin,iymax
+            do ix=ixmin,ixmax
+               ip = head(ix,iy,iz)
+               do while (ip.ne.0)
+                  ipbuf=ipbuf+1
+                  fp_buffer_out(ipbuf,:)=fpwn(ip,:)
+                  ip = link_list(ip)
+               enddo ! loop all the particles in a cell ends
+            enddo
+         enddo
+      enddo
+      npbuf=ipbuf
+    endsubroutine make_fpbuffer
+!***********************************************************************
+    subroutine two_particle_int(dfp,ip,jp,xxij,vvij)
 !
       use Diagnostics
+      use particles_radius, only: get_mass_from_radius
 !
-      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
 !
       integer,intent(in) :: ip,jp
-      real,dimnesion(3),intent(in) :: xxij,vvij
-      real,dimension(3) :: accni,accnj
-      real :: Rsqr,Vsqr,Vparallel
+      real, dimension(3),intent(in) :: xxij,vvij
+      real,dimension(3) :: force_ij
+      real :: mp_i,mp_j
 !!---------------------------------
-      Rsqr=xxij(1)*xxij(1)+xxij(2)*xxij(2)+xxij(3)*xxij(3)
-      RR = sqrt(Rsqr)
-      if (lpotential) then
-        call get_accn(RR,accni,accnj)
-        dfp(ip,ivx:ivz) = dfp(ip,ivx:ivz)+accni
-        dfp(jp,ivx:ivz) = dfp(jp,ivx:ivz)+accnj
-      endif
-      if (ldiagnos) then
-        if (RR .lt. Rcutoff) then 
-          Vsqr=vvij(1)*vvij(1)+vvij(2)*vvij(2)+vvij(3)*vvij(3)
-          Vparallel=dot(xxij,vvij)/RR
-          iRbin=floor(RR/dRbin)
-          if (idiag_gr) &
-            MomJntPDF(1,iRbin) = MomJntPDF(1,iRbin)+1.
-          if (idiag_colvel_mom) then
-            if (Vparallel .lt. 0) &
-              MomColJntPDF(1,iRbin) = MomColJntPDF(1,iRbin)+1.
-          endif
-          do jmom=2,mom_max
-            pmom=mom_array(jmom)
-            if (idiag_abs_mom) &
-              MomJntPDF(jmom,iRbin) = MomJntPDF(jmom,iRbin)+(abs(Vparallel))**pmom
-            if (Vparallel .lt. 0) then
-              MomColJntPDF(jmom,iRbin) = MomColJntPDF(jmom,iRbin)+(-Vparallel)**pmom
-            endif
-          enddo
-        endif
+!
+! The particle may be in a different processor. If that is the
+! case then we do nothing. 
+!
+      
+      if (ip .le. npar_loc) then
+         call get_interaction_force(force_ij,xxij,ip,jp)
+         call get_mass_from_radius(mp_i,fpwn,ip)
+         dfp(ip,ivpx:ivpz) = dfp(ip,ivpx:ivpz)+force_ij/mp_i
+         if (ldiagnos) call two_particle_diagnos(xxij,vvij)
+         if (jp .le. npar_loc) then
+            call get_mass_from_radius(mp_j,fpwn,jp)
+            !don't forget Newton's 3rd law
+            dfp(jp,ivpx:ivpz) = dfp(jp,ivpx:ivpz)-force_ij/mp_j
+         endif
       endif
 !
     endsubroutine two_particle_int
 !***********************************************************************
-    subroutine get_neighbours(ix,iy,iz,neighbours)
+    subroutine get_interaction_force(force_ij,RR,ip,jp)
+      integer, intent(in) :: ip,jp
+      real,dimension(3),intent(in) :: RR
+      real,dimension(3),intent(out) :: force_ij
+      real :: RR_mod,sigma
+      real,dimension(3) :: Rcap
+      real :: radiusi,radiusj,diameter_ij,force_amps
+!
+      select case (ppotential)
+      case ('rep-power-law-cutoff')
+!
+! repulsive power law, force = -1/(RR/(radi+radj))^p
+!
+        RR_mod=sqrt(RR(1)*RR(1)+RR(2)*RR(2)+RR(3)*RR(3))
+        Rcap=RR/RR_mod
+        radiusi=fpwn(ip,iap)
+        radiusj=fpwn(jp,iap)
+        diameter_ij=rescale_diameter*(radiusi+radiusj)
+        sigma=RR_mod/diameter_ij
+        if (sigma .lt. 1.) then
+          force_ij=0.
+        else
+          force_amps=fampl*sigma**(-ppower)
+          force_ij=-force_amps*Rcap
+        endif
+      case default
+        call fatal_error('particles_potential: no potential coded ','get_interaction_force')
+      endselect
+!
+    endsubroutine get_interaction_force
+!***********************************************************************
+    subroutine get_cell_neighbours(ix,iy,iz,neighbours)
       integer,intent(in) :: ix,iy,iz
       integer,parameter :: Nnab=13
       integer,dimension(Nnab,3) :: neighbours
+      integer :: il,im,in,inab
+      !
+! All the 9 neighbours above (in z) are covered.
+      !
+      inab=0
+      !
+      ! neighbours at one level up (9 of them) in z
+      !
+      do il=-1,1
+         do im=-1,1
+            inab=inab+1
+            neighbours(inab,1) = ix+il
+            neighbours(inab,2) = iy+im
+            neighbours(inab,3) = iz+1
+         enddo
+      enddo
+      !
+      !neighbours in same z (selected 4)
+      !
+      do il=-1,1
+         inab=inab+1
+         neighbours(inab,1)=ix+il
+         neighbours(inab,2)=iy+1
+         neighbours(inab,3)=iz
+      enddo
+      !
+      !and the final one
+      !
+      inab=inab+1
+      neighbours(inab,1) = ix + 1
+      neighbours(inab,2) = iy
+      neighbours(inab,3) = iz
 !
-	neighbours(1,1) = ix + 1
-	neighbours(1,2) = iy
-	neighbours(1,3) = iz
+    endsubroutine get_cell_neighbours
+!***********************************************************************
+    subroutine two_particle_diagnos(xxij,vvij)
+      real, dimension(3) :: xxij,vvij
+    endsubroutine two_particle_diagnos
+!***********************************************************************
+    subroutine single_particle_diagnos(fp)
+!      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
-	neighbours(2,1) = ix - 1
-	neighbours(2,2) = iy - 1
-	neighbours(2,3) = iz + 1  
-!
-	neighbours(3,1) = ix
-	neighbours(3,2) = iy - 1
-	neighbours(3,3) = iz + 1
-!
-	neighbours(4,1) = ix + 1
-	neighbours(4,2) = iy - 1
-	neighbours(4,3) = iz + 1
-!
-	neighbours(5,1) = ix - 1
-	neighbours(5,2) = iy 
-	neighbours(5,3) = iz + 1
-!
-	neighbours(6,1) = ix
-	neighbours(6,2) = iy
-	neighbours(6,3) = iz + 1
-!
-	neighbours(7,1) = ix + 1
-	neighbours(7,2) = iy
-	neighbours(7,3) = iz + 1
-!
-	neighbours(8,1) = ix - 1
-	neighbours(8,2) = iy + 1
-	neighbours(8,3) = iz + 1
-!
-	neighbours(9,1) = ix
-	neighbours(9,2) = iy + 1
-	neighbours(9,3) = iz + 1
-!
-	neighbours(10,1) = ix + 1
-	neighbours(10,2) = iy + 1
-	neighbours(10,3) = iz + 1
-!
-	neighbours(11,1) = ix - 1
-	neighbours(11,2) = iy + 1
-	neighbours(11,3) = iz 
-!
-	neighbours(12,1) = ix
-	neighbours(12,2) = iy + 1
-	neighbours(12,3) = iz
-!
-	neighbours(13,1) = ix + 1
-	neighbours(13,2) = iy + 1
-	neighbours(13,3) = iz
-endsubroutine get_neighbours
+      if (idiag_vpx2m/=0) &
+           call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
+      if (idiag_vpy2m/=0) &
+           call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
+      if (idiag_vpz2m/=0) &
+           call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+      if (idiag_vprms/=0) &
+           call sum_par_name((fp(1:npar_loc,ivpx)**2 &
+                              +fp(1:npar_loc,ivpy)**2 &
+                              +fp(1:npar_loc,ivpz)**2),idiag_vprms,lsqrt=.true.)
+      if (idiag_ekinp/=0) then
+         call sum_par_name(0.5*(4./3.)*pi*(fp(1:npar_loc,iap)**3)*rhopmat*&
+              ( fp(1:npar_loc,ivpx)**2 &
+              +fp(1:npar_loc,ivpy)**2 &
+              +fp(1:npar_loc,ivpz)**2),idiag_ekinp)
+      endif
+      if (idiag_vdotupm/=0) then
+         call sum_par_name((fp(1:npar_loc,ivpx)*fp(1:npar_loc,iufx) +& 
+              fp(1:npar_loc,ivpy)*fp(1:npar_loc,iufy) +&
+              fp(1:npar_loc,ivpz)*fp(1:npar_loc,iufz) ), idiag_vdotupm) 
+      endif
+    endsubroutine single_particle_diagnos
 !***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
@@ -584,22 +1078,7 @@ endsubroutine get_neighbours
 !
 !  Contribution of dust particles to time step.
 !
-      if (lfirst.and.ldt) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
-              if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
-              else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
-              endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
-              dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
-                   sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
-          enddo
-        endif
-      endif
+
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -612,107 +1091,33 @@ endsubroutine get_neighbours
 !
 !  Evolution of dust particle velocity (called from main pencil loop).
 !
-!  25-apr-06/anders: coded
+!  Jan-2017, dhruba: dummy
 !
       use Diagnostics
-      use EquationOfState, only: cs20
-      use Sub, only: cross
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
+      type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
-      real :: vsqr
-      real, dimension (3) :: uup,accn,interparticle_accn,velocity,fmagnetic
-      real,save :: vsqr_max=0.
-      integer :: ix0,iy0,iz0,k
-      real :: Vij
 !
-      intent (inout) :: f, df, dfp, fp, ineargrid
-!
-!  Identify module.
-!
-      if (headtt) then
-        if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
-      endif
-!
-      if (npar_imn(imn)/=0) then
-!
-!  Loop over all particles in current pencil.
-!
-        do k=k1_imn(imn),k2_imn(imn)
-!
-          ix0=ineargrid(k,1)
-          iy0=ineargrid(k,2)
-          iz0=ineargrid(k,3)
-!
-!  The interpolated gas velocity is either precalculated, and stored in
-!  interp_uu, or it must be calculated here.
-!
-          if (lflowdrag) then
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp), uup,ineargrid(k,:),0,ipar(k))
-            accn = tausp1*(uup-fp(k,ivpx:ivpz))
-          endif
-!
-          call get_interparticle_accn(fp,f,k,ineargrid,interparticle_accn,Vij)
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accn + interparticle_accn
-          write(*,*) 'DM,ipaccn',interparticle_accn
-        enddo
-!
-!  No particles in this pencil.
-!
-      endif
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ineargrid)
 !
 !  Diagnostic output.
 !
-      if (ldiagnos) then
-        if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
-        if (idiag_np2m/=0)     call sum_mn_name(p%np**2,idiag_np2m)
-        if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
-        if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
-        if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
-        if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
-        if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
-        if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
-        if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
-        if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
-        if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
-        if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
-            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
-            call calculate_rms_speed(fp,ineargrid,p)
-!        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
-!            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
-      endif
+!      if (ldiagnos) then
+!
+!      endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
-      if (l1davgfirst) then
-        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
-        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
-        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
-        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
-      endif
-!
-      if (l2davgfirst) then
-        if (idiag_npmxy/=0)    call zsum_mn_name_xy(p%np,idiag_npmxy)
-        if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
-        if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
-        if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
-      endif
-!
-!  particle-particle separation and relative velocity diagnostics
-!
-      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
-        if (t > t_nextcol) call collisions(fp)
-      endif
+!      if (l1davgfirst) 
+
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
@@ -755,239 +1160,7 @@ endsubroutine get_neighbours
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine dvvp_dt_blocks
-!***********************************************************************
-    subroutine get_interparticle_accn(fp,f,k,ineargrid,interparticle_accn,Vij)
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: k
-      integer :: ineighbour,kneighbour,nindex
-      real :: Vij
-      real,dimension(3) :: unit_vector,interparticle_accn,force_ij
-      real :: xi,yi,zi,xj,yj,zj,rij_sqr,force
-      integer :: ll,mm,nn,startp,endp,ip,ix0,iy0,iz0
-!
-      xi=fp(k,ixp);yi=fp(k,iyp);zi=fp(k,izp);
-      ix0=ineargrid(k,1);iy0=ineargrid(k,2);iz0=ineargrid(k,3);
-      interparticle_accn=0.
-      do nn=-sigma_in_grid,sigma_in_grid
-        do mm=-sigma_in_grid,sigma_in_grid
-          do ll=-sigma_in_grid,sigma_in_grid
-            startp=int(f(ix0+ll,iy0+mm,iz0+nn,iinvgrid))
-            endp=int(f(ix0+ll,iy0+mm,iz0+nn,iinvgrid+1))
-!            write(*,*) 'out:startp,endp,k,ip',startp,endp,k,ip
-            do ip=startp,endp
-              if ((ip.ne.k).and.(ip.ne.0)) then 
-                xj=fp(ip,ixp);yj=fp(ip,iyp);zj=fp(ip,izp);
-                unit_vector(1)=xj-xi
-                unit_vector(2)=yj-yi
-                unit_vector(3)=zj-zi
-                write(*,*)'DM unitvector',unit_vector
-                write(*,*) 'startp,endp,k,ip',startp,endp,k,ip
-                write(*,*) 'DM fp1',fp(k,:)
-                write(*,*) 'DM ip',xi,yi,zi
-                write(*,*) 'DM fp2',fp(ip,:)
-                write(*,*) 'DM jp',xj,yj,zj
-                rij_sqr=(xi-xj)**2+(yi-yj)**2+(zi-zj)**2
-                call get_interaction_force(rij_sqr,force,Vij)
-                force_ij=force*unit_vector
-! Note : This assumes that the mass of the particles are unity. If we use
-! particles_density with this module then we need to change here
-!
-                interparticle_accn=interparticle_accn+force_ij
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
-!
-    endsubroutine get_interparticle_accn
-!***********************************************************************
-    subroutine get_interaction_force(rij_sqr,force,Vij)
-!
-!  calculates the force due to interparticle interaction
-!
-      real :: rij_sqr
-      real :: sigma,xi_sqr,force,Vij
-!
-!Note : there are two powers of 1/r in the force compared to the potential
-! one is due to radial derivative the other because we have not multiplied by
-! 1/r while calculating the unit vector.
-!Note :  While calculating the force we have assumed that the interparticle potential
-! is given as a function of (r/sigma) where sigma is the particle
-! radius. If we use the particle_radius module we need to change the calculation of
-! sigma below
-!
-      sigma=psigma_by_dx*dx
-      xi_sqr=rij_sqr/(sigma**2)
-      select case (ppotential)
-      case ('rep-power-law')
-!
-! repulsive power law
-!
-        force=pampl*(2*ppowerby2/sigma**2)*(1./xi_sqr**(ppowerby2+1))
-        Vij = pampl*(1./xi_sqr**(ppowerby2))
-      case default
-        call fatal_error('particles_potential: no potential coded ','get_interaction_force')
-      endselect
-!
-    endsubroutine get_interaction_force
-!***********************************************************************
-!    subroutine update_neighbour_list(fp)
-!
-!  Update the neighbour list for all the particles
-!
-!      real, dimension (mpar_loc,mparray) :: fp
-!      integer :: k,kneighbour,kn
-!      real :: xi,yi,zi,xj,yj,zj,rij_sqr
-!      integer :: jp
-!
-! Go through the whole array fp to find the neighbours
-!
-!      do ip=1,npar_loc
-!
-! The coordinate of the particle in question
-!
-!        xi=fp(ip,ixp)
-!        yi=fp(ip,iyp)
-!        zi=fp(ip,izp)
-!        kn=1
-!        neighbour_list(ip,:) = 0.
-!!
-! Now loop over mpar_loc number of particles. This is of course very time consuming.
-! This can be improved upon.
-!
-!        do jp=1,mpar_loc
-!
-! The neighbourlist cannot include the particle itself
-!
-!          if (jp .ne. ip) then
-!            xj=fp(jp,ixp)
-!            yj=fp(jp,iyp)
-!            zj=fp(jp,izp)
-!            rij_sqr=(xj-xi)**2+(yj-yi)**2+(zj-zi)**2
-!            if (rij_sqr <= (skin_factor*psigma)**2) then
-! If the distance of between the particles are less than a skin_factor multiplied by the
-! effective radius (psigma) of the particles then they are included in the neighbour list
-!              kn=kn+1
-!              neighbour_list(ip,kn)=jp
-!            endif
-!          endif
-!        enddo
-!        neighbour_list(ip,1)=kn-1
-!      enddo
-!
-!    endsubroutine update_neighbour_list
-!***********************************************************************
-    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
-!
-!  Subroutine for taking particles out of the simulation due to their proximity
-!  to a sink particle or sink point.
-!
-!  25-sep-08/anders: coded
-!
-      use Mpicomm
-      use Solid_Cells
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real, dimension(3) :: momp_swarm_removed, momp_swarm_removed_send
-      real :: rp, rp_box, rhop_swarm_removed, rhop_swarm_removed_send
-      real :: xsinkpar, ysinkpar, zsinkpar
-      integer :: k, ksink, iproc_sink, iproc_sink_send
-      integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
-      integer, parameter :: itag1=100, itag2=101
-      real :: particle_radius
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine remove_particles_sink_simple
-!***********************************************************************
-    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
-!
-!  Subroutine for creating new sink particles or sink points.
-!
-!  Just a dummy routine for now.
-!
-!  25-sep-08/anders: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine create_particles_sink_simple
-!***********************************************************************
 
-
-!***********************************************************************
-
-!***********************************************************************
-    subroutine calculate_rms_speed(fp,ineargrid,p)
-!
-      use Diagnostics
-!
-!  Calculate the rms speed dvpm=sqrt(<(vvp-<vvp>)^2>) of the
-!  particle for diagnostic purposes
-!
-!  08-04-08/wlad: coded
-!
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      real,dimension(nx,3) :: vvpm,dvp2m
-      integer :: inx0,k,l
-      type (pencil_case) :: p
-!
-!  Initialize the variables
-!
-      vvpm=0.0; dvp2m=0.0
-!
-!  Calculate the average velocity at each cell
-!  if there are particles in the pencil only
-!
-      if (npar_imn(imn)/=0) then
-!
-        do k=k1_imn(imn),k2_imn(imn)
-            inx0=ineargrid(k,1)-nghost
-            vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
-        enddo
-        do l=1,nx
-          if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
-        enddo
-!
-!  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
-!
-        do k=k1_imn(imn),k2_imn(imn)
-            inx0=ineargrid(k,1)-nghost
-            dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
-            dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
-            dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
-        enddo
-        do l=1,nx
-          if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
-        enddo
-!
-      endif
-!
-!  Output the diagnostics
-!
-      if (idiag_dvpx2m/=0) call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
-      if (idiag_dvpy2m/=0) call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
-      if (idiag_dvpz2m/=0) call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
-      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpm,lsqrt=.true.)
-      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpmax,lsqrt=.true.)
-!
-    endsubroutine calculate_rms_speed
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
@@ -1015,6 +1188,7 @@ endsubroutine get_neighbours
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
 !
+!
     endsubroutine read_particles_run_pars
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
@@ -1035,7 +1209,7 @@ endsubroutine get_neighbours
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (lpar_spec) call power_1d(f,'p',0,irhop)
+!      if (lpar_spec) call power_1d(f,'p',0,irhop)
 !
     endsubroutine powersnap_particles
 !***********************************************************************
@@ -1046,12 +1220,15 @@ endsubroutine get_neighbours
 !  29-dec-04/anders: coded
 !
       use Diagnostics
+      use General,   only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
+      integer :: k
       logical :: lwr
+      character (len=intlen) :: srad
 !
 !  Write information to index.pro.
 !
@@ -1067,20 +1244,22 @@ endsubroutine get_neighbours
         write(3,*) 'ivpz=', ivpz
         write(3,*) 'inp=', inp
         write(3,*) 'irhop=', irhop
-        write(3,*) 'iupx=', iupx
-        write(3,*) 'iupy=', iupy
-        write(3,*) 'iupz=', iupz
+        write(3,*) 'iufx=', iufx
+        write(3,*) 'iufy=', iufy
+        write(3,*) 'iufz=', iufz
       endif
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+        idiag_vrelpabsm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
-        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpmax=0
+        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
+        idiag_vpxmin=0; idiag_vpymin=0; idiag_vpzmin=0
         idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0; idiag_rhopvpysm=0
         idiag_rhopvpxt=0; idiag_rhopvpyt=0; idiag_rhopvpzt=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
@@ -1089,28 +1268,36 @@ endsubroutine get_neighbours
         idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
-        idiag_epspmin=0; idiag_epspmax=0
-        idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
+        idiag_epspmin=0; idiag_epspmax=0; idiag_epspm=0;
+        idiag_nparmin=0; idiag_nparmax=0; idiag_nparsum=0
+        idiag_nmigmax=0; idiag_nmigmmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
+        idiag_rhop2mx=0; idiag_rhop2my=0; idiag_rhop2mz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
+        idiag_sigmap = 0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
+        idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
+        idiag_npuzmz=0
+        idiag_vdotupm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'nparsum',idiag_nparsum)
         call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
+        call parse_name(iname,cname(iname),cform(iname),'vrelpabsm',idiag_vrelpabsm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
@@ -1131,23 +1318,18 @@ endsubroutine get_neighbours
         call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
+        call parse_name(iname,cname(iname),cform(iname),'vpxmin',idiag_vpxmin)
+        call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
+        call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
-            idiag_rhopvpxm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
-            idiag_rhopvpym)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
-            idiag_rhopvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt', &
-            idiag_rhopvpxt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt', &
-            idiag_rhopvpyt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt', &
-            idiag_rhopvpzt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt',idiag_rhopvpxt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt',idiag_rhopvpyt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt',idiag_rhopvpzt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
         call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
         call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
@@ -1170,29 +1352,27 @@ endsubroutine get_neighbours
         call parse_name(iname,cname(iname),cform(iname),'rhop2m',idiag_rhop2m)
         call parse_name(iname,cname(iname),cform(iname),'rhopmin',idiag_rhopmin)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
+        call parse_name(iname,cname(iname),cform(iname),'epspm',idiag_epspm)
         call parse_name(iname,cname(iname),cform(iname),'epspmin',idiag_epspmin)
         call parse_name(iname,cname(iname),cform(iname),'epspmax',idiag_epspmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
+        call parse_name(iname,cname(iname),cform(iname),'nmigmmax',idiag_nmigmmax)
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
         call parse_name(iname,cname(iname),cform(iname),'dvpx2m',idiag_dvpx2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpy2m',idiag_dvpy2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
         call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dedragp',idiag_dedragp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'decollp',idiag_decollp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'epotpm',idiag_epotpm)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npargone',idiag_npargone)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'vpyfull2m',idiag_vpyfull2m)
+        call parse_name(iname,cname(iname),cform(iname),'dedragp',idiag_dedragp)
+        call parse_name(iname,cname(iname),cform(iname),'decollp',idiag_decollp)
+        call parse_name(iname,cname(iname),cform(iname),'epotpm',idiag_epotpm)
+        call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
+        call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'vdotupm',idiag_vdotupm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
@@ -1200,6 +1380,7 @@ endsubroutine get_neighbours
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhop2mx',idiag_rhop2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
       enddo
 !
@@ -1207,7 +1388,8 @@ endsubroutine get_neighbours
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'npmy',idiag_npmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhopmy',idiag_npmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhopmy',idiag_rhopmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhop2my',idiag_rhop2my)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'epspmy',idiag_epspmy)
       enddo
 !
@@ -1216,7 +1398,15 @@ endsubroutine get_neighbours
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhop2mz',idiag_rhop2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
+        do k=1,ninit
+          srad=itoa(k)
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npuzmz'//trim(srad),idiag_npuzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'nptz'//trim(srad),idiag_nptz(k))
+        enddo
+
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
@@ -1224,6 +1414,7 @@ endsubroutine get_neighbours
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'npmxy',idiag_npmxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'sigmap',idiag_sigmap)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -1246,33 +1437,120 @@ endsubroutine get_neighbours
 !
     endsubroutine rprint_particles
 !***********************************************************************
+    subroutine particles_final_clean_up
+!
+!  cleanup (dummy)
+!
+
+
+    endsubroutine particles_final_clean_up
+!***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
-! Impose periodic boundary condition on bb and EE
+!
+! Impose periodic boundary condition on gradu as auxiliary variable
 !
       use Boundcond, only: set_periodic_boundcond_on_aux
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 
-! dummy
-      call keep_compiler_quiet(f)
+!
+      if (lparticles_grad) then
+        if (igradu .ne. 0) then
+          call set_periodic_boundcond_on_aux(f,igradu11)
+          call set_periodic_boundcond_on_aux(f,igradu12)
+          call set_periodic_boundcond_on_aux(f,igradu13)
+          call set_periodic_boundcond_on_aux(f,igradu21)
+          call set_periodic_boundcond_on_aux(f,igradu22)
+          call set_periodic_boundcond_on_aux(f,igradu23)
+          call set_periodic_boundcond_on_aux(f,igradu31)
+          call set_periodic_boundcond_on_aux(f,igradu32)
+          call set_periodic_boundcond_on_aux(f,igradu33)
+        else
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+        endif
+      endif
+!
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************
-    subroutine list_particles_near_boundary(fp)
+    subroutine calc_relative_velocity(f,fp,ineargrid)
 !
-!  Makes a list of properties of the particles close to processor boundaries.
-! These information about these particles must be communicated to processors
-! who share those boundaries. This subroutine is useless in a single processor
-! hence does nothing when a single processor is used; otherwise calls the subroutine
-! that actually lists the particles near boundary
+      use Diagnostics
 !
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, dimension(3) :: uup,rel_vel_sing
+      real, dimension(:), allocatable :: rel_vel
+      integer :: k,ix0,iy0,iz0
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+!  Calculate particle relative velocity
+!
+      allocate(rel_vel(npar_loc))
+!
+      rel_vel = 0.0
+!
+      do k = 1,npar_loc
+        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
+        rel_vel_sing = (fp(k,ivpx:ivpz)-uup)**2
+        rel_vel(k) = sqrt(sum(rel_vel_sing))
+      enddo
+!
+      call sum_par_name(rel_vel(1:npar_loc),idiag_vrelpabsm)
+      if (allocated(rel_vel)) deallocate(rel_vel)
+!
+    endsubroutine calc_relative_velocity
+!***********************************************************************
+    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
+!
+      real,    dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
-
-      if (ncpus .ne. 1) then
-        call really_list_particles_near_boundary(fp)
-      else
-        call keep_compiler_quiet(fp)
-      endif
-    endsubroutine list_particles_near_boundary
+      real, dimension (mpar_loc,mpvar) :: dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine remove_particles_sink_simple
+!***********************************************************************
+    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
+!
+      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
+      integer, dimension (mpar_loc,3)       :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine create_particles_sink_simple
+!***********************************************************************
+    subroutine insert_particles(f,fp,ineargrid)
+!
+! Insert particles continuously (when linsert_particles_continuously == T),
+! i.e. in each timestep. If number of particles to be inserted are less
+! than unity, accumulate number over several timesteps until the integer value
+! is larger than one. Keep the remainder and accumulate this to the next insert.
+!
+! Works only for particles_dust - add neccessary variable
+! declarations in particles_tracers to make it work here.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+!
+      intent (inout) :: fp,ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine insert_particles
+!***********************************************************************
 !***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)
 !
@@ -1288,4 +1566,6 @@ endsubroutine get_neighbours
 !
     endsubroutine particles_dragforce_stiff
 !***********************************************************************
+
+    
 endmodule Particles

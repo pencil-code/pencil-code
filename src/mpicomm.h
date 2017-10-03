@@ -62,6 +62,7 @@
   public :: report_clean_output
   public :: mpiwait
 
+  
 ! Radiation ray routines
   public :: radboundary_xy_recv, radboundary_xy_send
   public :: radboundary_zx_recv, radboundary_zx_send

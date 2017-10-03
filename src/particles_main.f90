@@ -24,7 +24,7 @@ module Particles_main
   use Particles_mpicomm
   use Particles_number
   use Particles_radius
-  use Particles_potential
+!  use Particles_potential
   use Particles_grad
   use Particles_selfgravity
   use Particles_sink
@@ -57,7 +57,7 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-      call register_particles_potential    ()
+!      call register_particles_potential    ()
       call register_particles_lyapunov    ()
       call register_particles_radius       ()
       call register_particles_grad         ()
@@ -122,13 +122,14 @@ module Particles_main
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
-    subroutine particles_initialize_modules(f)
+        subroutine particles_initialize_modules(f)
 !
 !  Initialize particle modules.
 !
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
 !
       if (lyinyang) &
         call fatal_error('particles_initialize_modules','Particles not implemented on Yin-Yang grid')
@@ -199,7 +200,7 @@ module Particles_main
 !  Initialize individual modules.
 !
       call initialize_particles_mpicomm      (f)
-      call initialize_particles              (f)
+      call initialize_particles              (f,fp)
       call initialize_particles_map
       call initialize_particles_adaptation   (f)
       call initialize_particles_density      (f)
@@ -220,7 +221,7 @@ module Particles_main
       call initialize_particles_collisions   (f)
       call initialize_pars_diagnos_state     (f)
       call initialize_particles_diagnos_dv   (f)
-      call initialize_particles_potential    (f)
+!      call initialize_particles_potential    (f)
 !
       if (lparticles_blocks) then
         if (lrun) then
@@ -731,7 +732,7 @@ module Particles_main
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
-    subroutine particles_pde(f,df)
+    subroutine particles_pde(f,df,p)
 !
 !  Dynamical evolution of particle variables.
 !
@@ -742,9 +743,11 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       intent (inout)  :: f
       intent (out) :: df
+      intent (in) :: p
 !
 !  Write information about local particle environment to file.
 !
@@ -754,7 +757,7 @@ module Particles_main
 !  Dynamical equations.
 !
       if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles)             call dvvp_dt(f,df,p,fp,dfp,ineargrid)
       if (lparticles_potential)   call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
       if (lparticles_lyapunov)    call dlyapunov_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)

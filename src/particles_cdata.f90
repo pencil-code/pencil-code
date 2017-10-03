@@ -49,6 +49,7 @@ module Particles_cdata
   integer :: idXp1=0, idXp2=0, idXp3=0, idVp1=0, idVp2=0, idVp3=0
   integer :: idXpo1=0, idXpo2=0, idXpo3=0
   integer :: icaustics
+  integer :: iuf=0,iufx=0,iufy=0,iufz=0
   integer :: isigmap11=0,isigmap12=0,isigmap13=0
   integer :: isigmap21=0,isigmap22=0,isigmap23=0
   integer :: isigmap31=0,isigmap32=0,isigmap33=0
@@ -139,6 +140,21 @@ module Particles_cdata
   integer, parameter :: ngp=2
 !
   real :: t_nextcol=0. !collision diagnostic times, set to turn-over of largest eddies
+!
+! The following in necessary for particle-particle interaction. If it is used,
+! the array fpwn in allocated in the module particles_potential and its
+! dimensions are lpar_max and mparray respectively.
+! The array fpwn contains fp of this processor with the neighbours
+!  
+!
+! Notation: lpar_max is the maximum number of particles that
+! can be accommodated in the array fpwn which includes the   
+! the particles from this processors and its neighbours.
+! lpar_loc is the number upto which the array fpwn is actually 
+! filled, all the rest of the elements should be zero.
+!
+  integer :: lpar_max=0,lpar_loc=0,nslab=0
+  real, allocatable, dimension(:,:) :: fpwn,fp_buffer_in,fp_buffer_out
 !
 ! Number of grid points that are considered neighbouring grids. This is determined by
 ! the grid resolution and the number psigma which determines that range of interaction of
