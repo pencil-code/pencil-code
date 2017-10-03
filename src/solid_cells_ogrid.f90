@@ -154,6 +154,8 @@ module Solid_Cells
     integer :: send_to_proc
     integer :: ip_id
     integer, dimension(3) :: i_near_neighbour         ! Lower left corner for interpolation_method=1, closest point for > 1
+    integer, dimension(3) :: i_global_neighbour       
+    real, dimension(3) :: xyz
   endtype interpol_comm_metadata
 !***************************************************
   type interpol_grid_data
@@ -463,36 +465,12 @@ module Solid_Cells
         !timestep_factor = timestep_factor*timestep_factor
       endif
 !
-!  Set interpolation zone for curvilinear to cartesian
-!  Make sure that no points outside x_ogrid(l2_ogrid) are used
+!  Set interpolation limits
 !
-      if(interpolation_method==1) then
-        r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*0.01
-      elseif (interpolation_method==2) then
-        r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*0.51
-        if((r_int_outer-x_ogrid(l2_ogrid))<(x_ogrid(l2_ogrid-1)-r_int_outer)) then
-          print*, 'WARNING: An error occured when setting interpolation zone.'
-          print*, '         Zone adjusted.'
-          r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*1.01
-        endif
-      elseif (interpolation_method==3) then
-        r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*1.51
-        if((r_int_outer-x_ogrid(l2_ogrid))<(x_ogrid(l2_ogrid-2)-r_int_outer)) then
-          print*, 'WARNING: An error occured when setting interpolation zone.'
-          print*, '         Zone adjusted.'
-          r_int_outer=r_ogrid-(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1))*2.01
-        endif
-      else
-        call fatal_error('initialize_solid_cells','interpolation method > 3 does not exist')
-      endif
+      call set_interpolation_limits
 !
-!  Set limit of the interpolation zone, r_int_intter
+!  Inform user
 !
-      !if(interpolation_method<=2) then 
-        r_int_inner=xyz0_ogrid(1)
-      !else
-        !r_int_inner=xyz0_ogrid(1) + 1.01/dx1grid_ogrid(1)
-      !endif
       if(lroot) then
         if(.not.lequidist_ogrid(1)) then
           print*, ''
@@ -1396,7 +1374,8 @@ module Solid_Cells
 ! apr-17/Jorgen: Coded
 !
       use Mpicomm, only: mpirecv_int, mpisend_nonblock_int, mpibarrier, &
-                         mpirecv_nonblock_int, mpisend_int, mpiwait, mpibcast_int
+                         mpirecv_nonblock_int, mpisend_int, mpiwait, mpibcast_int, &
+                         mpirecv_nonblock_real, mpisend_real
 
       use Solid_Cells_Mpicomm, only: finalize_isend_init_interpol
       integer :: i,iip,npoint
@@ -1409,6 +1388,7 @@ module Solid_Cells
       integer :: max_from_proc, from_proc
       integer, dimension(ncpus-1) :: ireq1D
       integer, dimension(ncpus-1,3) :: ireq2D
+      integer, dimension(ncpus-1,3) :: ireq2D_xyz
       !
       integer, dimension(ncpus,ncpus) :: from_proc_curv_to_cart_glob=0
       integer, dimension(ncpus,ncpus) :: from_proc_cart_to_curv_glob=0
@@ -1417,8 +1397,12 @@ module Solid_Cells
       integer, dimension(2) :: buf_size
       integer, dimension(:), allocatable :: id_bufi, id_bufo
       integer, dimension(:,:), allocatable :: ijk_bufi, ijk_bufo
+      real, dimension(:,:), allocatable :: xyz_bufi, xyz_bufo
       integer, dimension(3) :: indices_global
-      ! TODO TODO TODO : Ensure that every ID in cartesian_to_curvilinear array (etc.) are unique!!!
+      !TODO TEMP BELOW
+      real, dimension(:,:,:), allocatable :: xyz_from_curv_to_cart
+
+
       if(n_ip_curv_to_cart>0) then
         do i=1,n_ip_curv_to_cart
           from_proc=curvilinear_to_cartesian(i)%from_proc
@@ -1434,6 +1418,7 @@ module Solid_Cells
       if(max_from_proc>0) then
         allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
         allocate(ip_id_curv_to_cart(ncpus,max_from_proc))
+        allocate(xyz_from_curv_to_cart(ncpus,max_from_proc,3))
         do iip=0,ncpus-1
           if(from_proc_curv_to_cart(iip+1)>0) then
             npoint=0
@@ -1443,6 +1428,7 @@ module Solid_Cells
 ! Must access iip+1 instead of iip, to avoid accessing element 0
                 ind_from_proc_curv(iip+1,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
                 ip_id_curv_to_cart(iip+1,npoint)=i
+                xyz_from_curv_to_cart(iip+1,npoint,:)=curvilinear_to_cartesian(i)%xyz
               endif
             enddo
           endif
@@ -1572,6 +1558,7 @@ module Solid_Cells
 !
       ip_send_tot=sum(from_proc_curv_to_cart_glob(:,iproc+1))
       allocate(ijk_bufi(ip_send_tot,3))
+      allocate(xyz_bufi(ip_send_tot,3))
       allocate(id_bufi(ip_send_tot))
 !
 !  Post non-blocking recieves
@@ -1581,9 +1568,9 @@ module Solid_Cells
         ind_stop=ind_start+n_ip_to_proc_curv_to_cart(iter)-1
         iip=procs_send_curv_to_cart(iter)
         buf_size=(/ind_stop-ind_start+1,3/)
-        print*, 'iproc,iip,n_procs_send,n_ip', iproc,iip,n_procs_send_curv_to_cart,n_ip_to_proc_curv_to_cart(iter)
         do i=1,3
           call mpirecv_nonblock_int(ijk_bufi(ind_start:ind_stop,i),buf_size(1),iip,200+i,ireq2D(iter,i))
+          call mpirecv_nonblock_real(xyz_bufi(ind_start:ind_stop,i),buf_size(1),iip,190+i,ireq2D_xyz(iter,i))
         enddo
         call mpirecv_nonblock_int(id_bufi(ind_start:ind_stop),buf_size(1),iip,210,ireq1D(iter))
         ind_start=ind_stop+1
@@ -1596,18 +1583,22 @@ module Solid_Cells
 !
       ip_recv_tot=sum(from_proc_curv_to_cart)
       allocate(ijk_bufo(ip_recv_tot,3))
+      allocate(xyz_bufo(ip_recv_tot,3))
       allocate(id_bufo(ip_recv_tot))
       ind_start=1
       do iter=1,n_procs_recv_curv_to_cart
         n_ip_proc=n_ip_recv_proc_curv_to_cart(iter)
         ind_stop=ind_start+n_ip_proc-1
         iip=procs_recv_curv_to_cart(iter)
-        print*, 'iproc,iip,n_procs_recv,n_ip', iproc,iip,n_procs_recv_curv_to_cart,n_ip_proc
         ijk_bufo(ind_start:ind_stop,:)=ind_from_proc_curv(iip+1,1:n_ip_proc,:)
+        !TODO TEMP
+        xyz_bufo(ind_start:ind_stop,:)=xyz_from_curv_to_cart(iip+1,1:n_ip_proc,:)
+        !
         id_bufo(ind_start:ind_stop)=ip_id_curv_to_cart(iip+1,1:n_ip_proc)
         buf_size=(/ind_stop-ind_start+1,3/)
         do i=1,3
           call mpisend_int(ijk_bufo(ind_start:ind_stop,i),buf_size(1),iip,200+i)
+          call mpisend_real(xyz_bufo(ind_start:ind_stop,i),buf_size(1),iip,190+i)
         enddo
         call mpisend_int(id_bufo(ind_start:ind_stop),buf_size(1),iip,210)
         ind_start=ind_stop+1
@@ -1624,9 +1615,12 @@ module Solid_Cells
         send_curvilinear_to_cartesian(ind_start:ind_stop)%send_to_proc=iip
         do i=1,3
           call mpiwait(ireq2D(iter,i))
+          call mpiwait(ireq2D_xyz(iter,i))
         enddo
         do i=ind_start,ind_stop
           indices_global = ijk_bufi(i,:)
+          send_curvilinear_to_cartesian(i)%i_global_neighbour=indices_global
+          send_curvilinear_to_cartesian(i)%xyz=xyz_bufi(i,:)
           call ind_global_to_local_curv(indices_global, &
               send_curvilinear_to_cartesian(i)%i_near_neighbour,lcheck_init_interpolation)
         enddo
@@ -1635,8 +1629,10 @@ module Solid_Cells
         ind_start=ind_stop+1
       enddo
       deallocate(ijk_bufi)
+      deallocate(xyz_bufi)
       deallocate(id_bufi)
       deallocate(ijk_bufo)
+      deallocate(xyz_bufo)
       deallocate(id_bufo)
 !
 !  SEND/RECV CARTESIAN TO CURVILINEAR
@@ -1953,7 +1949,7 @@ module Solid_Cells
 !
 !
       do i=l1,l2
-        if(radius_ogrid(x(i),y(m)) < r_int_outer) then
+        if(radius_ogrid(x(i),y(m)) <= r_int_outer) then
           df(i,m,n,:)=0.
         endif
       enddo
@@ -2172,6 +2168,105 @@ module Solid_Cells
 !
   endsubroutine communicate_ip_curv_to_cart
 !***********************************************************************
+  subroutine comm_ip_curv_to_cart_alt(f_cartesian,ivar1,ivar2)
+!
+!  Send and recieve necessary information to perform interpolation from 
+!  the curvilinear to the cartesian grid.
+!  This version of the communication between grids is optimized for the case
+!  where all processors have a part of the ogrid, and not all processors have
+!  parts of the cartesian grid near the ogrid. Hence, we want as much as 
+!  possible to be done with the data before passing it from the curvilinear
+!  to the cartesian grid
+!  
+!  02-okt-17/Jorgen: Coded
+!  
+    use Mpicomm, only: mpisend_nonblock_int,mpisend_nonblock_real,mpirecv_int,mpirecv_real,mpiwait,mpibarrier
+    real, dimension(mx,my,mz,mfarray), intent(inout) :: f_cartesian
+    integer, intent(in) :: ivar1,ivar2
+    integer, dimension(n_procs_send_curv_to_cart) :: ireq1D, ireq5D
+    integer, dimension(2) :: nbuf_farr
+    integer, dimension(max_recv_ip_curv_to_cart) :: id_bufi
+    real, dimension(ivar2-ivar1+1,max_send_ip_curv_to_cart) :: f_bufo
+    real, dimension(ivar2-ivar1+1,max_recv_ip_curv_to_cart) :: f_bufi
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1) :: farr
+    integer :: i,j,k,id,ipp
+    integer :: ii1,ii2,jj1,jj2,kk1,kk2
+    integer :: iter, send_to, recv_from
+    integer, dimension(3) :: inear_loc
+    integer, dimension(3) :: inear_glob
+    integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
+    integer, dimension(max_send_ip_curv_to_cart) :: ip_bufo
+    integer :: ind
+    real, dimension(3) :: xyz_ip
+!
+    if(interpolation_method==1) then
+      ii1=0; ii2=1; jj1=0; jj2=1; kk1=0; kk2=1
+    elseif(interpolation_method==2) then
+      ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
+    elseif(interpolation_method==3) then
+      ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    endif
+    nbuf_farr(1)=ivar2-ivar1+1
+!
+!  Before sending data, interpolate. Only send interpolated f-data
+!
+    ind_send_first=1
+    do iter=1,n_procs_send_curv_to_cart
+      ind_send_last=n_ip_to_proc_curv_to_cart(iter)+ind_send_first-1
+      send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
+      nbuf_farr(1)=ind_send_last-ind_send_first+1
+      do ipp=1,nbuf_farr(1)
+        ind=ind_send_first+ipp-1
+        i=send_curvilinear_to_cartesian(ind)%i_near_neighbour(1)
+        j=send_curvilinear_to_cartesian(ind)%i_near_neighbour(2)
+        k=send_curvilinear_to_cartesian(ind)%i_near_neighbour(3)
+        farr(:,:,:,:)=f_ogrid(i-ii1:i+ii2,j-jj1:j+jj2,k-kk1:k+kk2,ivar1:ivar2)
+!
+!  Need global coordinates for interpolation.
+!
+        inear_glob=send_curvilinear_to_cartesian(ind)%i_global_neighbour
+        xyz_ip=send_curvilinear_to_cartesian(ind)%xyz
+        call interp_point_curv_to_cart_alt(xyz_ip,inear_glob,ivar1,ivar2,farr,f_bufo(:,ipp))
+      enddo
+      ip_bufo(1:nbuf_farr(1)) = send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id
+      call mpisend_nonblock_int(ip_bufo(1:nbuf_farr(1)),nbuf_farr(1),send_to,send_to,ireq1D(iter))
+      call mpisend_nonblock_real(f_bufo(:,1:nbuf_farr(1)),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
+      ind_send_first=ind_send_last+1
+    enddo
+    ind_recv_first=1
+    do iter=1,n_procs_recv_curv_to_cart
+      ind_recv_last=n_ip_recv_proc_curv_to_cart(iter)
+      recv_from=procs_recv_curv_to_cart(iter)
+      nbuf_farr(1)=ind_recv_last-ind_recv_first+1
+      call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
+      call mpirecv_real(f_bufi(:,1:nbuf_farr(1)),nbuf_farr,recv_from,iproc+ncpus)
+      do ipp=1,nbuf_farr(1)
+        call transform_curv_to_cart(f_bufi(:,ipp),f_cartesian,id_bufi(ipp),ivar1,ivar2)
+      enddo
+    enddo
+!
+!  Interpolate remaining points 
+!
+    do id=1,n_ip_curv_to_cart
+      if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+        inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+        farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+          inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
+        call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
+      endif
+    enddo
+!
+!  Finalize nonblocking sends
+!
+    do iter=1,n_procs_send_curv_to_cart
+      call mpiwait(ireq1D(iter))
+      call mpiwait(ireq5D(iter))
+    enddo
+    call mpibarrier
+!
+  endsubroutine comm_ip_curv_to_cart_alt
+!***********************************************************************
+!***********************************************************************
   subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
 !
 !  Use linear interpolation routine to interpolate the values on the cartesian 
@@ -2240,7 +2335,7 @@ module Solid_Cells
       endif
     endif
 !
-!  Update curvilinear grid with the new data values
+!  Update cartesian grid with the new data values
 !
     i=curvilinear_to_cartesian(id)%i_xyz(1)
     j=curvilinear_to_cartesian(id)%i_xyz(2)
@@ -2250,6 +2345,54 @@ module Solid_Cells
     f_cartesian(i,j,k,iuz:ivar2)=f_ip(iuz:ivar2)
 !
   endsubroutine interpolate_point_curv_to_cart
+!***********************************************************************
+  subroutine interp_point_curv_to_cart_alt(xyz_ip,inear_glob,ivar1,ivar2,farr,f_ip)
+!
+!  Use linear interpolation routine to interpolate the values on the cartesian 
+!  grid to the interpolation point on the curvilinear grid
+!
+    real, dimension(3), intent(in) :: xyz_ip
+    integer, dimension(3), intent(in) :: inear_glob
+    integer, intent(in) :: ivar1,ivar2
+    real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1), intent(in) :: farr
+    integer :: i,j,k
+    real, dimension(ivar2-ivar1+1), intent(out) :: f_ip
+!
+    if(interpolation_method==1) then
+      if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+        call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
+      endif
+    elseif(interpolation_method==2) then
+      call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
+    elseif(interpolation_method==3) then
+      if(.not. interp_lagrange4(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+        call fatal_error('interp_lagrange4','interpolation from curvilinear to cartesian')
+      endif
+    endif
+!
+  endsubroutine interp_point_curv_to_cart_alt
+!***********************************************************************
+  subroutine transform_curv_to_cart(f_ip,f_cartesian,id,ivar1,ivar2)
+!
+!  Update curvilinear grid with the new data values
+!
+!  02-okt-17/Jorgen: Coded
+!
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f_cartesian
+    integer, intent(in) :: id,ivar1,ivar2
+    real, dimension(ivar2-ivar1+1), intent(in) :: f_ip
+    integer :: i,j,k
+    real, dimension(3) :: xyz_ip
+
+    xyz_ip=curvilinear_to_cartesian(id)%xyz
+    i=curvilinear_to_cartesian(id)%i_xyz(1)
+    j=curvilinear_to_cartesian(id)%i_xyz(2)
+    k=curvilinear_to_cartesian(id)%i_xyz(3)
+    f_cartesian(i,j,k,iux)=f_ip(iux)*cos(xyz_ip(2))-f_ip(iuy)*sin(xyz_ip(2))
+    f_cartesian(i,j,k,iuy)=f_ip(iux)*sin(xyz_ip(2))+f_ip(iuy)*cos(xyz_ip(2))
+    f_cartesian(i,j,k,iuz:ivar2)=f_ip(iuz:ivar2)
+!
+  endsubroutine transform_curv_to_cart
 !***********************************************************************
   logical function HO_interp_curv_loc(farr,ivar1,ivar2,xxp,inear_glob,inear_loc,fp,lcheck,order)
 !
@@ -4316,6 +4459,7 @@ module Solid_Cells
 !
     call update_ghosts_ogrid
     !! call send_rcv_all_data(1,mvar,f_cartesian)
+    !call comm_ip_curv_to_cart_alt(f_cartesian,1,mvar)
     call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
     !call flow_curvilinear_to_cartesian(f_cartesian)
 
@@ -8064,6 +8208,53 @@ module Solid_Cells
       endif
 !
     endsubroutine adjust_inear_curv_glob
+!***********************************************************************
+    subroutine set_interpolation_limits
+!
+!  Set interpolation zone for curvilinear to cartesian grid
+!  Make sure that no points outside x_ogrid(l2_ogrid) are used
+!
+      use mpicomm, only: mpibcast_real
+      real :: dx_outer
+
+        if(lroot) then
+          dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
+          if(interpolation_method==1) then
+            r_int_outer=r_ogrid-dx_outer*0.01
+          elseif (interpolation_method==2) then
+            r_int_outer=r_ogrid-dx_outer*0.51
+            if((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
+              print*, 'WARNING: An error occured when setting interpolation zone.'
+              print*, '         Zone adjusted.'
+              print*, 'iproc, r_int_outer first, r_int_outer second',&
+                iproc,r_int_outer,r_ogrid-dx_outer*1.01
+              r_int_outer=r_ogrid-dx_outer*1.01
+            endif
+          elseif (interpolation_method==3) then
+            r_int_outer=r_ogrid-dx_outer*1.51
+            if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
+              print*, 'WARNING: An error occured when setting interpolation zone.'
+              print*, '         Zone adjusted.'
+              r_int_outer=r_ogrid-dx_outer*2.01
+            endif
+          else
+            call fatal_error('initialize_solid_cells','interpolation method > 3 does not exist')
+          endif
+        endif
+!
+!  Broadcast the value set for r_int_outer
+!
+        call mpibcast_real(r_int_outer)
+!
+!  Set limit of the interpolation zone, r_int_inner
+!
+      !if(interpolation_method<=2) then 
+        r_int_inner=xyz0_ogrid(1)
+      !else
+        !r_int_inner=xyz0_ogrid(1) + 1.01/dx1grid_ogrid(1)
+      !endif
+
+    endsubroutine set_interpolation_limits
 !***********************************************************************
 !!     subroutine send_rcv_all_data(ivar1,ivar2,f_cartesian)
 !! 
