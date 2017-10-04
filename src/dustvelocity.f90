@@ -159,6 +159,19 @@ module Dustvelocity
       if (lroot) call svn_id( &
           "$Id$")
 !
+!
+!  Writing files for use with IDL.
+!
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',uud $'
+          if (nvar == mvar) write(4,*) ',uud'
+        else
+          write(4,*) ',uud $'
+        endif
+        write(15,*) 'uud = fltarr(mx,my,mz,3)*one'
+      endif
+!
     endsubroutine register_dustvelocity
 !***********************************************************************
     subroutine initialize_dustvelocity(f)
@@ -1711,6 +1724,10 @@ module Dustvelocity
 !
       if (lwr) then
         write(3,*) 'ndustspec=',ndustspec
+        write(3,*) 'iuud=',iuud
+        write(3,*) 'iudx=',iudx
+        write(3,*) 'iudy=',iudy
+        write(3,*) 'iudz=',iudz
       endif
 !
 !  Reset everything in case of reset.
