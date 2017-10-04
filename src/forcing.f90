@@ -157,6 +157,7 @@ module Forcing
 !
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: k1xyz=0.
+  real, dimension(mz) :: profz_k
 !
   contains
 !
@@ -643,7 +644,6 @@ module Forcing
       if (lstart) return
 
       if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
-
 !
 !  Get reference_state. Requires that density is initialized before forcing.
 !
@@ -725,6 +725,14 @@ module Forcing
           sinx(:,i)=sin(kf_fcont(i)*x)
         elseif (iforcing_cont(i)=='(0,0,cosx)') then
           cosx(:,i)=cos(kf_fcont(i)*x)
+        elseif (iforcing_cont(i)=='(0,0,cosxcosy)') then
+          cosx(:,i)=cos(kf_fcont(i)*x)
+          cosy(:,i)=cos(kf_fcont(i)*y)
+        elseif (iforcing_cont(i)=='B=(0,0,cosxcosy)') then
+          sinx(:,i)=sin(kf_fcont(i)*x)
+          siny(:,i)=sin(kf_fcont(i)*y)
+          cosx(:,i)=cos(kf_fcont(i)*x)
+          cosy(:,i)=cos(kf_fcont(i)*y)
         elseif (iforcing_cont(i)=='(sinz,cosz,0)') then
           sinz(:,i)=sin(kf_fcont(i)*z)
           cosz(:,i)=cos(kf_fcont(i)*z)
@@ -749,9 +757,6 @@ module Forcing
           profz_ampl=exp(-.5*z**2/radius_ff**2)
         elseif (iforcing_cont(i)=='fluxring_cylindrical') then
           if (lroot) print*,'forcing_cont: fluxring cylindrical'
-        !elseif (iforcing_cont(i)=='counter_centrifugal') then
-          !if (lroot) print*,'forcing_cont: counter_centrifugal'
-!AB: this wasn't doing anything, so we might as well skip it
         endif
       enddo
       if (lroot .and. n_forcing_cont==0) &
@@ -760,6 +765,8 @@ module Forcing
 !  minimal wavenumbers
 !
       where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
+!
+      if (r_ff /=0. .or. rcyl_ff/=0.) profz_k = tanh(z/width_ff)
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -1046,7 +1053,6 @@ module Forcing
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: ikk
-      logical, dimension (3), save :: extent
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
@@ -1071,9 +1077,6 @@ module Forcing
           call inevitably_fatal_error ('forcing_irro:', &
               'you must give an input k.dat file')
         endif
-        extent(1)=nx/=1
-        extent(2)=ny/=1
-        extent(3)=nz/=1
         lfirst_call=.false.
       endif
 !
@@ -1176,7 +1179,7 @@ module Forcing
           rho1=1.
         endif
         do j=1,3
-          if (extent(j)) then
+          if (lactive_dimension(j)) then
             jf=j+ifff-1
             forcing_rhs(:,j)=profx_ampl*profy_ampl(m)*profz_ampl(n) &
                 *rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
@@ -1211,77 +1214,54 @@ module Forcing
 !
     endsubroutine forcing_irro
 !***********************************************************************
-    subroutine forcing_hel(f)
+    subroutine forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
 !
-!  Add helical forcing function, using a set of precomputed wavevectors.
-!  The relative helicity of the forcing function is determined by the factor
-!  sigma, called here also relhel. If it is +1 or -1, the forcing is a fully
-!  helical Beltrami wave of positive or negative helicity. For |relhel| < 1
-!  the helicity less than maximum. For relhel=0 the forcing is nonhelical.
-!  The forcing function is now normalized to unity (also for |relhel| < 1).
+!  Calculates position-independent and 1D coefficients for helical forcing.
 !
-!  10-apr-00/axel: coded
-!   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
-!  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
-!   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
-!  23-feb-10/axel: added helicity profile with finite second derivative.
-!  13-jun-13/axel: option of symmetry of forcing function about z direction
-!  06-dec-13/nishant: made kkx etc allocatable
-!  20-aug-14/MR: discard wavevectors analogously to forcing_irrot
-!  21-jan-15/MR: changes for use of reference state.
-!  26-nov-15/AB: The cs0eff factor used for normalization can now be set.
+!  4-oct-17/MR: outsourced from forcing_hel.
+!               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined - nees to be fixed
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm
       use Sub
+      use Mpicomm, only: stop_it
 !
-      real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm,fsum_tmp,fsum
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3
+      complex, dimension (mx),intent(out) :: fx
+      complex, dimension (my),intent(out) :: fy
+      complex, dimension (mz),intent(out) :: fz
+      real,    dimension (3), intent(out) :: fda
+!
+      real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (nx) :: rho1,ruf,rho
-      real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
-      real, dimension (nx,3) :: force_all
-      real, dimension (nx,3) :: fda
-      real, dimension (mx,my,mz,mfarray) :: f
-      complex, dimension (mx) :: fx
-      complex, dimension (my) :: fy
-      complex, dimension (mz) :: fz
-      real, dimension (3) :: coef1,coef2,coef3
-      logical, dimension (3), save :: extent
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik,j,jf,j2f
-      real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
-      real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
+      integer :: ik
+      real :: kx0,kx,ky,kz,k2,k,pi_over_Lx
+      real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
       real :: fd,fd2
       logical :: lk_dot_dat_exists
 !
-!  additional stuff for test fields
-!
       if (lfirst_call) then
-        if (lroot.and.ip<14) print*,'forcing_hel: opening k.dat'
+        if (lroot.and.ip<14) print*,'forcing_coefs_hel: opening k.dat'
         inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
         if (lk_dot_dat_exists) then
           open(9,file='k.dat',status='old')
           read(9,*) nk,kav
-          if (lroot.and.ip<14) print*,'forcing_hel: average k=',kav
+          if (lroot.and.ip<14) print*,'forcing_coefs_hel: average k=',kav
           allocate(kkx(nk),kky(nk),kkz(nk))
           read(9,*) (kkx(ik),ik=1,nk)
           read(9,*) (kky(ik),ik=1,nk)
           read(9,*) (kkz(ik),ik=1,nk)
           close(9)
         else
-          call inevitably_fatal_error ('forcing_hel:', &
+          call inevitably_fatal_error ('forcing_coefs_hel:', &
               'you must give an input k.dat file')
         endif
-        extent(1)=nx/=1
-        extent(2)=ny/=1
-        extent(3)=nz/=1
         lfirst_call=.false.
 !
 !  At the moment, cs0 is used for normalization.
@@ -1289,7 +1269,7 @@ module Forcing
         if (cs0eff==impossible) then
           if (cs0==impossible) then
             cs0eff=1.
-            if (headt) print*,'forcing_hel: for normalization, use cs0eff=',cs0eff
+            if (headt) print*,'forcing_coefs_hel: for normalization, use cs0eff=',cs0eff
           else
             cs0eff=cs0
           endif
@@ -1320,9 +1300,11 @@ module Forcing
         endif
       enddo
 !
-      if (ip<=6) print*,'forcing_hel: ik,phase=',ik,phase
-      if (ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
-      if (ip<=6) print*,'forcing_hel: dt, lfirst_call=',dt,lfirst_call
+      if (ip<=6) then
+        print*,'forcing_coefs_hel: ik,phase=',ik,phase
+        print*,'forcing_coefs_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+        print*,'forcing_coefs_hel: dt, lfirst_call=',dt,lfirst_call
+      endif
 !
 !  normally we want to use the wavevectors as they are,
 !  but in some cases, e.g. when the box is bigger than 2pi,
@@ -1378,14 +1360,17 @@ module Forcing
       else
         ex=1; ey=0; ez=0
       endif
-      if (.not. old_forcing_evector) then
- !
- !  Isotropize ee in the plane perp. to kk by
- !  (1) constructing two basis vectors for the plane perpendicular
- !      to kk, and
- !  (2) choosing a random direction in that plane (angle phi)
- !  Need to do this in order for the forcing to be isotropic.
- !
+!
+      if (old_forcing_evector) then
+!!! kk, ee not defined!
+      else
+!
+!  Isotropize ee in the plane perp. to kk by
+!  (1) constructing two basis vectors for the plane perpendicular
+!      to kk, and
+!  (2) choosing a random direction in that plane (angle phi)
+!  Need to do this in order for the forcing to be isotropic.
+!
         kk = (/kx, ky, kz/)
         ee = (/ex, ey, ez/)
         call cross(kk,ee,e1)
@@ -1430,10 +1415,12 @@ module Forcing
 !  Note: kav is not to be scaled with k1_ff (forcing should remain
 !  unaffected when changing k1_ff).
 !
-      ffnorm=sqrt(1.+relhel**2) &
-        *k*sqrt(k2-kde**2)/sqrt(kav*cs0eff**3)*(k/kav)**slope_ff
-      if (ip<=9) print*,'forcing_hel: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
-      if (ip<=9) print*,'forcing_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      ffnorm = sqrt(1.+relhel**2) &
+              *k*sqrt(k2-kde**2)/sqrt(kav*cs0eff**3)*(k/kav)**slope_ff
+      if (ip<=9) then
+        print*,'forcing_coefs_hel: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
+        print*,'forcing_cofes_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      endif
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -1446,10 +1433,10 @@ module Forcing
 !  symmetry of forcing function about z direction
 !
       select case (iforcing_zsym)
-      case(0); fz=exp(cmplx(0.,kz*k1_ff*z))
-      case(1); fz=cos(kz*k1_ff*z)
-      case(-1); fz=sin(kz*k1_ff*z)
-      case default; call stop_it('forcing: incorrect iforcing_zsym')
+        case(0); fz=exp(cmplx(0.,kz*k1_ff*z))
+        case(1); fz=cos(kz*k1_ff*z)
+        case(-1); fz=sin(kz*k1_ff*z)
+        case default; call stop_it('forcing_coefs_hel: incorrect iforcing_zsym')
       endselect
 !
 !  possibly multiply forcing by z-profile
@@ -1463,30 +1450,32 @@ module Forcing
 !
 ! need to discuss with axel
 !
-!  possibly multiply forcing by sgn(z) and radial profile
-!
-       if (rcyl_ff/=0.) then
-         if (lroot .and. (.not. lfirst_call)) &
-              print*,'forcing_hel: applying sgn(z)*xi(r) profile'
-         !
-         ! only z-dependent part can be done here; radial stuff needs to go
-!        ! into the loop
-         !
-         tmpz = tanh(z/width_ff)
-         fz = fz*tmpz
-       endif
-!
-      if (ip<=5) print*,'forcing_hel: fx=',fx
-      if (ip<=5) print*,'forcing_hel: fy=',fy
-      if (ip<=5) print*,'forcing_hel: fz=',fz
-!
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
 !  so they can be multiplied by different profiles below.
 !
-      coef1(1)=k*kex; coef2(1)=relhel*kkex; coef3(1)=crosshel*k*kkex
-      coef1(2)=k*key; coef2(2)=relhel*kkey; coef3(2)=crosshel*k*kkey
-      coef1(3)=k*kez; coef2(3)=relhel*kkez; coef3(3)=crosshel*k*kkez
-      if (ip<=5) print*,'forcing_hel: coef=',coef1,coef2
+      coef1=k*(/kex,key,kez/)
+      coef2=relhel*(/kkex,kkey,kkez/)
+!
+!  possibly multiply forcing by sgn(z) and radial profile
+!
+      if (rcyl_ff/=0.) then
+        if (lroot .and. (.not. lfirst_call)) &
+          print*,'forcing_coefs_hel: applying sgn(z)*xi(r) profile'
+        !
+        ! only z-dependent part can be done here; radial stuff needs to go
+!       ! into the loop
+        !
+        fz = fz*profz_k
+      else
+        coef3=crosshel*k*(/kkex,kkey,kkez/)
+      endif
+!
+      if (ip<=5) then
+        print*,'forcing_coefs_hel: fx=',fx
+        print*,'forcing_coefs_hel: fy=',fy
+        print*,'forcing_coefs_hel: fz=',fz
+        !print*,'forcing_coefs_hel: coef=',coef1,coef2
+     endif
 !
 ! An attempt to implement anisotropic forcing using direction
 ! dependent forcing amplitude. Activated only if force_strength,
@@ -1503,75 +1492,114 @@ module Forcing
       if (force_strength/=0.) then
         call dot(force_direction,force_direction,fd2)
         fd=sqrt(fd2)
-        do j=1,3
-           fda(:,j) = 1. + (force_strength/force) &
-                *(kk(j)*force_direction(j)/(k*fd))**2 &
-                *force_direction(j)/fd
-        enddo
+        fda = 1. + (force_strength/force) &
+              *(kk*force_direction/(k*fd))**2 * force_direction/fd 
       else
         fda = 1.
       endif
+
+    endsubroutine forcing_coefs_hel
+!***********************************************************************
+    subroutine forcing_hel(f)
 !
-!  In the past we always forced the du/dt, but in some cases
-!  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
-!  For compatibility with earlier results, lmomentum_ff=.false. by default.
+!  Add helical forcing function, using a set of precomputed wavevectors.
+!  The relative helicity of the forcing function is determined by the factor
+!  sigma, called here also relhel. If it is +1 or -1, the forcing is a fully
+!  helical Beltrami wave of positive or negative helicity. For |relhel| < 1
+!  the helicity less than maximum. For relhel=0 the forcing is nonhelical.
+!  The forcing function is now normalized to unity (also for |relhel| < 1).
 !
-      if (ldensity) then
-        if (lmomentum_ff) then
-          if (ldensity_nolog) then
-            if (lreference_state) then
-              rho1=1./(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-            else
-              rho1=1./f(l1:l2,m,n,irho)
-            endif
-          else
-            rho1=exp(-f(l1:l2,m,n,ilnrho))
-          endif
-          rho=1./rho1
-        else
-          rho1=1.
-          rho=exp(f(l1:l2,m,n,ilnrho))
-        endif
-      else
-        rho1=1.
-        rho=1.
-      endif
+!  10-apr-00/axel: coded
+!   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
+!  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
+!   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
+!  23-feb-10/axel: added helicity profile with finite second derivative.
+!  13-jun-13/axel: option of symmetry of forcing function about z direction
+!  06-dec-13/nishant: made kkx etc allocatable
+!  20-aug-14/MR: discard wavevectors analogously to forcing_irrot
+!  21-jan-15/MR: changes for use of reference state.
+!  26-nov-15/AB: The cs0eff factor used for normalization can now be set.
+!   4-oct-17/MR: outsourced forcing_coefs_hel for calculation of coefficients
+!                which can be obtained outside an mn-loop. 
+!                Moved density calculation into mn-loop where it belongs.
+!                Spotted possible bug: for lforcing2_curl=T, calculation of forcing_rhs 
+!                seems not to be meaningful.
+!
+      use Mpicomm
+      use Sub
+      use EquationOfState, only: rho0
+      use DensityMethods, only: getrho1
+!
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+
+      real :: irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm,fsum_tmp,fsum
+      real, dimension (nx) :: rho1,ruf,rho,force_ampl
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
+      real, dimension (nx,3) :: force_all
+      real, dimension (3) :: fda
+      complex, dimension (mx) :: fx
+      complex, dimension (my) :: fy
+      complex, dimension (mz) :: fz
+      real, dimension (3) :: coef1,coef2,coef3
+      integer :: j,jf,j2f
+      complex, dimension (nx) :: fxyz
+      real :: profyz
+      real, dimension(3) :: profyz_hel_coef2
+!
+      call forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
-      force_ampl=1.0
       irufm=0; iruxfxm=0; iruxfym=0; iruyfxm=0; iruyfym=0; iruzfzm=0
+!
       if (rcyl_ff == 0) then       ! no radial profile
         do n=n1,n2
           do m=m1,m2
-            if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
-              *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2),force_ampl)
-            variable_rhs=f(l1:l2,m,n,iffx:iffz)
+
+            profyz=profy_ampl(m)*profz_ampl(n)
+            profyz_hel_coef2=profy_hel(m)*profz_hel(n)*coef2
+
+            fxyz=fx(l1:l2)*fy(m)*fz(n)
+            force_ampl=profx_ampl*profyz
+
+            if (lwork_ff) &
+              force_ampl=force_ampl*calc_force_ampl(f,fx,fy,fz,profyz*cmplx(coef1,profyz_hel_coef2))
+!
+!  In the past we always forced the du/dt, but in some cases
+!  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
+!  For compatibility with earlier results, lmomentum_ff=.false. by default.
+!
+            if (ldensity) then
+              if (lmomentum_ff.or.lout) then
+                call getrho1(f(:,m,n,ilnrho),rho1)
+                if (lmomentum_ff) force_ampl=force_ampl*rho1
+              endif
+            endif
+
             do j=1,3
-              if (extent(j)) then
+              if (lactive_dimension(j)) then
 !
 !  Primary forcing function.
 !
-                forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
-                  *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
-                  *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                forcing_rhs(:,j) = force_ampl*real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)*fda(j)
+
                 ! put force into auxiliary variable, if requested
-                if (lff_as_aux) f(l1:l2,m,n,ifx:ifz) = forcing_rhs(:,:)
+                if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = forcing_rhs(:,j)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
-!  It can optionally be the same. Alterantively, one has to set crosshel=1.
+!  It can optionally be the same. Alternatively, one has to set crosshel=1.
 !
                 if (lforcing2_same) then
                   forcing_rhs2(:,j)=forcing_rhs(:,j)
                 elseif (lforcing2_curl) then
-                  forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
-                    *real(cmplx(0.,coef3(j)))*fda(:,j)
+!
+!  Something seems to be missing here as real(cmplx(0.,coef3(j))) is zero.
+!
+                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j)))*fda(j) 
                 else
-                  forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
-                    *real(cmplx(0.,coef3(j)) &
-                    *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j))*fxyz)*fda(j)
                 endif
 !
 !  Choice of different possibilities.
@@ -1595,8 +1623,7 @@ module Forcing
 !  Forcing with enhanced xx correlation.
 !
                     if (lxxcorr_forcing) then
-                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
-                        +forcing_rhs(:,1)*force2_scl
+                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,1)*force2_scl
                     endif
                   endif
 !
@@ -1623,7 +1650,7 @@ module Forcing
 !  Can only come outside the previous j loop.
 !
             do j=1,3
-              if (extent(j)) then
+              if (lactive_dimension(j)) then
                 if (ifff/=0) then
                   jf=j+ifff-1
                   j2f=j+i2fff-1
@@ -1647,24 +1674,21 @@ module Forcing
                   idiag_ruyfxm/=0 .or. idiag_ruyfym/=0 .or. &
                   idiag_ruzfzm/=0) then
 !
-!  Compute rhs and density.
+!  Compute density.
 !
-                variable_rhs=f(l1:l2,m,n,iffx:iffz)
                 if (ldensity) then
-                  if (ldensity_nolog) then
-                    if (lreference_state) then
-                      rho1=1./(f(l1:l2,m,n,irho)+reference_state(:,iref_rho))
-                    else
-                      rho=f(l1:l2,m,n,irho)
-                    endif
-                  else
-                    rho=exp(f(l1:l2,m,n,ilnrho))
-                  endif
+                  rho=1./rho1
+                else
+                  rho=rho0
                 endif
 !
 !  Evaluate the various choices.
 !
                 if (idiag_rufm/=0) then
+!
+!  Compute rhs.
+!
+                  variable_rhs=f(l1:l2,m,n,iffx:iffz)
                   call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   irufm=irufm+sum(ruf)
@@ -1690,19 +1714,19 @@ module Forcing
 !
 !  Radial profile, but this is old fashioned and probably no longer used.
 !
+call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works ok')
         do j=1,3
-          if (extent(j)) then
+          if (lactive_dimension(j)) then
             jf=j+ifff-1
             do n=n1,n2
-              sig = relhel*tmpz(n)
-call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok')
-              coef1(1)=cmplx(k*kex,sig*kkex)
-              coef1(2)=cmplx(k*key,sig*kkey)
-              coef1(3)=cmplx(k*kez,sig*kkez)
               do m=m1,m2
-                forcing_rhs(:,j)=rho1 &
-                  *profx_ampl*profy_ampl(m)*profz_ampl(n) &
-                  *real(cmplx(coef1(j),profy_hel(m)*coef2(j)) &
+                if (ldensity) then
+                  call getrho1(f(:,m,n,ilnrho),rho1)
+                else
+                  rho1=1./rho0
+                endif
+                forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n) &
+                  *real(cmplx(coef1(j),profy_hel(m)*profz_k(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
@@ -1795,7 +1819,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       real, save :: kav
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1,ff,uf,of,qf,rho
-      real, dimension (mz) :: tmpz,kfscl
+      real, dimension (mz) :: kfscl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: fda,uu,oo,bb,fxb,curlo
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1803,7 +1827,6 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2,coef3
-      logical, dimension (3), save :: extent
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
@@ -1834,9 +1857,6 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
           call inevitably_fatal_error ('forcing_hel_kprof:', &
               'you must give an input k.dat file')
         endif
-        extent(1)=nx/=1
-        extent(2)=ny/=1
-        extent(3)=nz/=1
         lfirst_call=.false.
       endif
 !
@@ -1847,9 +1867,11 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*(.9999*fran(2))+1
-      if (ip<=6) print*,'forcing_hel_kprof: ik,phase=',ik,phase
-      if (ip<=6) print*,'forcing_hel_kprof: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
-      if (ip<=6) print*,'forcing_hel_kprof: dt, lfirst_call=',dt,lfirst_call
+      if (ip<=6) then
+        print*,'forcing_hel_kprof: ik,phase=',ik,phase
+        print*,'forcing_hel_kprof: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+        print*,'forcing_hel_kprof: dt, lfirst_call=',dt,lfirst_call
+      endif
 !
 !  compute z-dependent scaling factor, regard kav as kmax and write
 !    kinv=1./kav+(1.-1./kav)*(ztop-z)/(ztop-zbot)
@@ -1978,8 +2000,10 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip<=9) print*,'forcing_hel_kprof: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
-      if (ip<=9) print*,'forcing_hel_kprof: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip<=9) then
+        print*,'forcing_hel_kprof: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
+        print*,'forcing_hel_kprof: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      endif
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -2003,13 +2027,14 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
          ! only z-dependent part can be done here; radial stuff needs to go
 !        ! into the loop
          !
-         tmpz = tanh(z/width_ff)
-         fz = fz*tmpz
+         fz = fz*profz_k
        endif
 !
-      if (ip<=5) print*,'forcing_hel_kprof: fx=',fx
-      if (ip<=5) print*,'forcing_hel_kprof: fy=',fy
-      if (ip<=5) print*,'forcing_hel_kprof: fz=',fz
+      if (ip<=5) then
+        print*,'forcing_hel_kprof: fx=',fx
+        print*,'forcing_hel_kprof: fy=',fy
+        print*,'forcing_hel_kprof: fz=',fz
+      endif
 !
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
 !  so they can be multiplied by different profiles below.
@@ -2068,11 +2093,11 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       irufm=0
       if (rcyl_ff == 0) then       ! no radial profile
           do m=m1,m2
-            if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
-              *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2),force_ampl)
+            if (lwork_ff) force_ampl=calc_force_ampl(f,fx,fy,fz,profy_ampl(m)*profz_ampl(n) &
+              *cmplx(coef1,profy_hel(m)*profz_hel(n)*coef2))
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
-              if (extent(j)) then
+              if (lactive_dimension(j)) then
 !
                 forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
@@ -2124,9 +2149,9 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
 !  Radial profile, but this is old fashioned and probably no longer used.
 !
         do j=1,3
-          if (extent(j)) then
+          if (lactive_dimension(j)) then
             jf=j+ifff-1
-              sig = relhel*tmpz(n)
+              sig = relhel*profz_k(n)
 call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff works ok')
               coef1(1)=cmplx(k*kex,sig*kkex)
               coef1(2)=cmplx(k*key,sig*kkey)
@@ -2223,7 +2248,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2
-      logical, dimension (3), save :: extent
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
@@ -2248,9 +2272,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
         close(9)
-        extent(1)=nx/=1
-        extent(2)=ny/=1
-        extent(3)=nz/=1
         lfirst_call=.false.
       endif
 !
@@ -2261,9 +2282,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*(.9999*fran(2))+1
-      if (ip<=6) print*,'forcing_hel_both: ik,phase=',ik,phase
-      if (ip<=6) print*,'forcing_hel_both: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
-      if (ip<=6) print*,'forcing_hel_both: dt, lfirst_call=',dt,lfirst_call
+      if (ip<=6) then 
+        print*,'forcing_hel_both: ik,phase=',ik,phase
+        print*,'forcing_hel_both: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+        print*,'forcing_hel_both: dt, lfirst_call=',dt,lfirst_call
+      endif
 !
 !  normally we want to use the wavevectors as they are,
 !  but in some cases, e.g. when the box is bigger than 2pi,
@@ -2353,8 +2376,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip<=9) print*,'forcing_hel_both: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
-      if (ip<=9) print*,'forcing_hel_both: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip<=9) then
+        print*,'forcing_hel_both: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
+        print*,'forcing_hel_both: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      endif
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -2370,9 +2395,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       fy=cmplx(0.,sin(ky*k1_ff*y))
       fz=exp(cmplx(0.,kz*k1_ff*z))
 !
-      if (ip<=5) print*,'forcing_hel: fx=',fx
-      if (ip<=5) print*,'forcing_hel: fy=',fy
-      if (ip<=5) print*,'forcing_hel: fz=',fz
+      if (ip<=5) then
+        print*,'forcing_hel_both: fx=',fx
+        print*,'forcing_hel_both: fy=',fy
+        print*,'forcing_hel_both: fz=',fz
+      endif
 !
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
 !  so they can be multiplied by different profiles below.
@@ -2380,7 +2407,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       coef1(1)=k*kex; coef2(1)=relhel*kkex
       coef1(2)=k*key; coef2(2)=relhel*kkey
       coef1(3)=k*kez; coef2(3)=relhel*kkez
-      if (ip<=5) print*,'forcing_hel: coef=',coef1,coef2
+      if (ip<=5) print*,'forcing_hel_both: coef=',coef1,coef2
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
@@ -2391,7 +2418,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         do m=m1,m2
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
           do j=1,3
-            if (extent(j)) then
+            if (lactive_dimension(j)) then
               jf=j+ifff-1
               if (y(m)>equator)then
                 forcing_rhs(:,j)=rho1*real(cmplx(coef1(j),coef2(j)) &
@@ -2448,12 +2475,14 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
 !
-!========================================================
-      if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
+      if (.not. lspherical_coords) call warning('chandra-kendall forcing:', &
+                                   'This forcing works only in spherical coordinates!')
       if (lfirst_call) then
+!
 ! If this is the first time this function is being called allocate \psi.
 ! Next read from file "alpha_in.dat" the two values of \ell. If this two
 ! matches Legendrel_min and Legendrel_max proceed.
+!
         if (lroot) print*,'Helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
@@ -2632,12 +2661,14 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
               rmin,rmax,rphase2
       real, dimension(mx) :: Z_psi
 !
-!========================================================
-      if (.not. lspherical_coords) call warning('chandra-kendall forcing:','This forcing works only in spherical coordinates!')
+      if (.not. lspherical_coords) call warning('forcing_cktest:', &
+                                   'This forcing works only in spherical coordinates!')
       if (lfirst_call) then
+!
 ! If this is the first time this function is being called allocate \psi.
 ! Next read from file "alpha_in.dat" the two values of \ell. If this two
 ! matches Legendrel_min and Legendrel_max proceed.
+!
         if (lroot) print*,'Testing helical forcing in spherical polar coordinate'
         if (lroot) print*,'allocating psif ..'
         allocate(psif(mx,my,mz))
@@ -2693,19 +2724,23 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         if (lroot) write(*,*) 'dhruba: first time in Chandra-Kendall successful'
       else
       endif
+!
 ! This is designed from 5 emm values and for each one 5 ell values. Total 25 values
+!
    icklist=icklist+1
    if (icklist==(nlist_ck+1)) &
-            call stop_it("CK testing: no more value in list; ending")
+            call stop_it("CK testing: no more values in list; ending")
    lmindex=icklist
    emm = cklist(lmindex,1)
    Legendrel = cklist(lmindex,2)
    call random_number_wrapper(ralpha)
    aindex=nint(ralpha*2)
    Balpha = cklist(lmindex,3)
+!
 ! Now calculate the "potential" for the helical forcing. The expression
 ! is taken from Chandrasekhar and Kendall.
 ! Now construct the Z_psi(r)
+!
    call random_number_wrapper(rphase1)
    rphase1=rphase1*2*pi
    if (lfastCK) then
@@ -2739,13 +2774,15 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
        enddo
      enddo
    endif
+!
 ! ----- Now calculate the force from the potential and add this to
 ! velocity
 ! get a random unit vector with three components ee_r, ee_theta, ee_phi
 ! psi at present is just Z_{ell}^m. We next do a sum over random coefficients
 ! get random psi.
 !      write(*,*) 'mmin=',mmin
-!! ----------now generate and add the force ------------
+! ----------now generate and add the force ------------
+!
    call random_number_wrapper(rz)
    ee(3) = rz
    call random_number_wrapper(rphase2)
@@ -2874,7 +2911,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (mx), save :: sinx,cosx
       real, dimension (my), save :: siny,cosy
       real, dimension (mz), save :: cosz
-      logical, dimension (3), save :: extent
       logical, save :: lfirst_call=.true.
       integer :: j,jf
       real :: fact
@@ -2886,9 +2922,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         siny=sin(k1_ff*y)
         cosy=cos(k1_ff*y)
         cosz=cos(k1_ff*z)
-        extent(1)=nx/=1
-        extent(2)=ny/=1
-        extent(3)=nz/=1
         lfirst_call=.false.
       endif
 !
@@ -2915,7 +2948,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           forcing_rhs(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
           forcing_rhs(:,3)=0.
           do j=1,3
-            if (extent(j)) then
+            if (lactive_dimension(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
             endif
@@ -3073,7 +3106,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (mx), save :: sinx
       real, dimension (my), save :: siny
       real, dimension (mz), save :: sinz
-      logical, dimension (3), save :: extent
       logical, save :: lfirst_call=.true.
       integer :: j,jf
       real :: fact
@@ -3083,13 +3115,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         sinx=sin(k1_ff*x)
         siny=sin(k1_ff*y)
         sinz=sin(k1_ff*z)
-        extent(1)=nx/=1
-        extent(2)=ny/=1
-        extent(3)=nz/=1
         lfirst_call=.false.
       endif
 !
-      if (ip<=6) print*,'forcing_hel: dt, lfirst_call=',dt,lfirst_call
+      if (ip<=6) print*,'forcing_hel_noshear: dt, lfirst_call=',dt,lfirst_call
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -3112,7 +3141,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           forcing_rhs(:,2)=fact*sinx(l1:l2)
           forcing_rhs(:,3)=fact*siny(m)
           do j=1,3
-            if (extent(j)) then
+            if (lactive_dimension(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
             endif
@@ -3169,19 +3198,12 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (3) :: fran
       real, dimension (nx) :: radius2,gaussian,ruf,rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
-      logical, dimension (3), save :: extent
       integer :: j,jf
       real :: irufm,fact,width_ff21,fsum_tmp,fsum
 !
 !  check length of time step
 !
       if (ip<=6) print*,'forcing_gaussianpot: dt=',dt
-!
-!  check whether there is any extent in each of the three directions
-!
-      extent(1)=nx/=1
-      extent(2)=ny/=1
-      extent(3)=nz/=1
 !
 !  generate random numbers
 !
@@ -3202,9 +3224,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 !  reset location(i) to x, y, or z
 !
-        if (.not.extent(1)) location(1)=x(1)
-        if (.not.extent(2)) location(2)=y(1)
-        if (.not.extent(3)) location(3)=z(1)
+        if (.not.lactive_dimension(1)) location(1)=x(1)
+        if (.not.lactive_dimension(2)) location(2)=y(1)
+        if (.not.lactive_dimension(3)) location(3)=z(1)
 !
 !  write location to file
 !
@@ -3290,7 +3312,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
                   where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
                 endif
               endif
-              if (.not.extent(j)) delta(:,j)=0.
+              if (.not.lactive_dimension(j)) delta(:,j)=0.
             enddo
 !
 !  compute gaussian blob and set to forcing function
@@ -3299,7 +3321,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
             gaussian=fact*exp(-radius2*width_ff21)
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
-              if (extent(j)) then
+              if (lactive_dimension(j)) then
                 jf=j+ifff-1
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian*delta(:,j)
               endif
@@ -3363,7 +3385,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real, dimension (3) :: fran
       real, dimension (nx) :: r, r2, r3, r5, pom2, ruf, rho
       real, dimension (nx,3) :: variable_rhs, force_all, delta
-      logical, dimension (3), save :: extent
       integer :: j,jf
       real :: irufm, fact, fsum_tmp, fsum
       real :: a_hill, a2_hill, a3_hill
@@ -3371,12 +3392,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  check length of time step
 !
       if (ip<=6) print*,'forcing_hillrain: dt=',dt
-!
-!  check whether there is any extent in each of the three directions
-!
-      extent(1)=nx/=1
-      extent(2)=ny/=1
-      extent(3)=nz/=1
 !
 !  generate random numbers
 !
@@ -3397,8 +3412,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 !  reset location(i) to x or y, and keep location(3)=0 fixed
 !
-        if (.not.extent(1)) location(1)=x(1)
-        if (.not.extent(2)) location(2)=y(1)
+        if (.not.lactive_dimension(1)) location(1)=x(1)
+        if (.not.lactive_dimension(2)) location(2)=y(1)
         location(3)=0.
 !
 !  write location to file
@@ -3477,7 +3492,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
                 where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
               endif
             endif
-            if (.not.extent(j)) delta(:,j)=0.
+            if (.not.lactive_dimension(j)) delta(:,j)=0.
           enddo
 !
 !  compute factors for Hill vortex
@@ -3506,7 +3521,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  add to the relevant variable
 !
           do j=1,3
-            if (extent(j)) then
+            if (lactive_dimension(j)) then
               jf=j+ifff-1
               f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+fact*variable_rhs(:,j)
             endif
@@ -3568,7 +3583,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       real, dimension (nx) :: r,p,tmp,rho,ruf
       real, dimension (nx,3) :: force_all,variable_rhs,forcing_rhs
-      logical, dimension (3), save :: extent
       integer :: j,jf
       real :: irufm
 !
@@ -3576,17 +3590,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       if (ip<=6) print*,'forcing_white_noise: dt=',dt
 !
-!  check whether there is any extent in each of the three directions
-!
-      extent(1)=nx/=1
-      extent(2)=ny/=1
-      extent(3)=nz/=1
-!
 !  extent
 !
-      if (.not.extent(1)) location(1)=x(1)
-      if (.not.extent(2)) location(2)=y(1)
-      if (.not.extent(3)) location(3)=z(1)
+      if (.not.lactive_dimension(1)) location(1)=x(1)
+      if (.not.lactive_dimension(2)) location(2)=y(1)
+      if (.not.lactive_dimension(3)) location(3)=z(1)
       if (ip<=6) print*,'forcing_white_noise: location=',location
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
@@ -3613,7 +3621,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       do n=n1,n2
         do m=m1,m2
           do j=1,3
-            if (extent(j)) then
+            if (lactive_dimension(j)) then
               jf=j+ifff-1
               if (modulo(j-1,2)==0) then
                 call random_number_wrapper(r)
@@ -3664,7 +3672,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
     endsubroutine forcing_white_noise
 !***********************************************************************
-    subroutine calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
+    function calc_force_ampl(f,fx,fy,fz,coef) result(force_ampl)
 !
 !  calculates the coefficient for a forcing that satisfies
 !  <rho*u*f> = constant.
@@ -3709,16 +3717,13 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  scale forcing function
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
-!
-!print*,fname(idiag_urms)
-!
         if (headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
         !      force_ampl=work_ff/(.1+max(0.,rho_uu_ff))
         force_ampl=work_ff/rho_uu_ff
         if (force_ampl > max_force) force_ampl=max_force
         if (force_ampl < -max_force) force_ampl=-max_force
 !
-    endsubroutine calc_force_ampl
+    endfunction calc_force_ampl
 !***********************************************************************
     subroutine forcing_hel_noshear(f)
 !
@@ -3836,8 +3841,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  we have to set force=0.07.
 !
       ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
-      if (ip<=12) print*,'force_hel_noshear: k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
-      if (ip<=12) print*,'force_hel_noshear: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip<=12) then
+        print*,'force_hel_noshear: k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+        print*,'force_hel_noshear: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      endif
       !!(debug...) write(21,'(f10.4,3i3,f7.3)') t,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
@@ -3876,9 +3883,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !        fz = fz*tmpz
 !      endif
 !
-      if (ip<=5) print*,'force_hel_noshear: fx=',fx
-      if (ip<=5) print*,'force_hel_noshear: fy=',fy
-      if (ip<=5) print*,'force_hel_noshear: fz=',fz
+      if (ip<=5) then
+        print*,'force_hel_noshear: fx=',fx
+        print*,'force_hel_noshear: fy=',fy
+        print*,'force_hel_noshear: fz=',fz
+      endif
 !
 !  prefactor
 !
@@ -4530,7 +4539,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (mx,my,mz,3) :: force1
 !
       real, dimension (nx) :: radius,tmpx
-      real, dimension (mz) :: tmpz
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -4619,9 +4627,10 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip<=9) print*,'hel_vec: k,kde,ffnorm,kav,dt,cs0=',k,kde, &
-                                                        ffnorm,kav,dt,cs0
-      if (ip<=9) print*,'hel_vec: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip<=9) then
+        print*,'hel_vec: k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+        print*,'hel_vec: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      endif
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -4653,13 +4662,14 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
         ! only z-dependent part can be done here; radial stuff needs to go
         ! into the loop
         !
-        tmpz = tanh(z/width_ff)
-        fz = fz*tmpz
+        fz = fz*profz_k
       endif
 !
-      if (ip<=5) print*,'hel_vec: fx=',fx
-      if (ip<=5) print*,'hel_vec: fy=',fy
-      if (ip<=5) print*,'hel_vec: fz=',fz
+      if (ip<=5) then
+        print*,'hel_vec: fx=',fx
+        print*,'hel_vec: fy=',fy
+        print*,'hel_vec: fz=',fz
+      endif
 !
 !  prefactor
 !
@@ -4672,7 +4682,11 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 ! each loop cycle which could inhibit (pseudo-)vectorisation
 !
       if (r_ff == 0) then       ! no radial profile
-        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
+        if (lwork_ff) then
+          force_ampl=calc_force_ampl(f,fx,fy,fz,coef)
+        else
+          force_ampl=1.
+        endif
         do j=1,3
           jf=j+ifff-1
           do n=n1,n2
@@ -4981,6 +4995,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           fact2=ampl_ff(i)*ampl_ff(i)*kx*ky
 !
 !!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
+!
           force(:,1)=-fact*ky*cosx(l1:l2,i)*siny(m,i) - fact2*ky*sinx(l1:l2,i)*cosx(l1:l2,i)
           force(:,2)=+fact*kx*sinx(l1:l2,i)*cosy(m,i) - fact2*kx*siny(m,i)*cosy(m,i)
           force(:,3)=+fact*kf*cosx(l1:l2,i)*cosy(m,i)
@@ -5028,6 +5043,20 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=0.
           force(:,3)=ampl_ff(i)*cosx(l1:l2,i)
+!
+!  f=(0,0,cosx)
+!
+        case ('(0,0,cosxcosy)')
+          force(:,1)=0.
+          force(:,2)=0.
+          force(:,3)=ampl_ff(i)*cosx(l1:l2,i)*cosy(m,i)
+!
+!  f=B=(0,0,cosx*cosy)
+!
+        case ('B=(0,0,cosxcosy)')
+          force(:,1)=-0.5*ampl_ff(i)*cosx(l1:l2,i)*siny(m,i)
+          force(:,2)= 0.5*ampl_ff(i)*sinx(l1:l2,i)*cosy(m,i)
+          force(:,3)= 0.
 !
 !  f=(0,sinx,0)
 !
@@ -5336,21 +5365,26 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !   12-aug-09/dhruba: coded
 !
       if (iforce=='chandra-kendall') then
-        print*,'Deallocating arrays relevent to Chanrasekhar-Kendall forcing ..'
+        print*,'Deallocating arrays relevent to Chanrasekhar-Kendall forcing.'
         deallocate(psif,cklist)
         if (lfastCK)  deallocate(Zpsi_list,RYlm_list)
-        print*,'Done.'
       endif
 !
     endsubroutine forcing_clean_up
 !***********************************************************************
     subroutine push2c(p_par)
 
-    integer, parameter :: npars=2
+    integer, parameter :: npars=8
     integer(KIND=ikind8), dimension(npars) :: p_par
 
     call copy_addr_c(force,p_par(1))
-    call copy_addr_c(tforce_stop,p_par(1))
+    call copy_addr_c(tforce_stop,p_par(2))
+    call copy_addr_c(profx_ampl,p_par(3))
+    call copy_addr_c(profy_ampl,p_par(4))
+    call copy_addr_c(profz_ampl,p_par(5))
+    call copy_addr_c(profx_hel,p_par(6))
+    call copy_addr_c(profy_hel,p_par(7))
+    call copy_addr_c(profz_hel,p_par(8))
 
     endsubroutine push2c
 !*******************************************************************

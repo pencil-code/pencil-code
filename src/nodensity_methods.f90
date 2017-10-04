@@ -14,6 +14,10 @@ module DensityMethods
     module procedure getrho_2d
   endinterface
 !
+  interface getrho1
+    module procedure getrho1_1d
+  endinterface
+!
   interface getlnrho
     module procedure getlnrho_1d_x
     module procedure getlnrho_1d_y
@@ -44,6 +48,20 @@ module DensityMethods
       call get_shared_variable('lnrho0',lnrho0)
 
     endsubroutine initialize_density_methods
+!***********************************************************************
+    subroutine getrho1_1d(f,rho1)
+!
+!  Fetches inverse of density.
+!
+!   4-oct.17/MR: derived from getrho_1d.
+!
+
+      real, dimension(mx), intent(in) :: f
+      real, dimension(nx), intent(out):: rho1
+
+      rho1=1./rho0
+
+    endsubroutine getrho1_1d
 !***********************************************************************
     function getrho_s(f,irf)
 

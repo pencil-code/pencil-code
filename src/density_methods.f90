@@ -9,6 +9,10 @@ module DensityMethods
 
   include 'density_methods.h'  
 
+  interface getrho1
+    module procedure getrho1_1d
+  endinterface
+!
   interface getrho
     module procedure getrho_1d
     module procedure getrho_2dyz
@@ -46,6 +50,27 @@ module DensityMethods
                                  caller='initialize_density_methods')
 
     endsubroutine initialize_density_methods
+!***********************************************************************
+    subroutine getrho1_1d(f,rho1)
+!
+!  Fetches inverse of density from x-dependent 1D array f.
+!
+!   4-oct.17/MR: derived from getrho_1d.
+!
+      real, dimension(mx), intent(in) :: f
+      real, dimension(nx), intent(out):: rho1
+
+      if (ldensity_nolog) then
+        if (lreference_state) then
+          rho1=1./(f(l1:l2)+reference_state(:,iref_rho))
+        else
+          rho1=1./f(l1:l2)
+        endif
+      else
+        rho1=exp(-f(l1:l2))
+      endif
+
+    endsubroutine getrho1_1d
 !***********************************************************************
     function getrho_s(f,lf)
 
