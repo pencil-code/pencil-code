@@ -19,7 +19,7 @@ module Particles_potential
 !
   implicit none
 !
-  include '../particles_potential.h'
+  include 'particles_potential.h'
 !
   character (len=labellen) :: ppotential='nothing'
   integer :: sigma_in_grid = 1, cell_in_grid=1
