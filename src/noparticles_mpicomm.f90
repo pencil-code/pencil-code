@@ -231,4 +231,9 @@ module Particles_mpicomm
 
     endsubroutine particles_neighbour_proc
 !***********************************************************************
+    subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
+! dummy
+    integer :: to_neigh,from_neigh,her_npbuf,my_npbuf
+    endsubroutine communicate_fpbuf
+!***********************************************************************
 endmodule Particles_mpicomm
