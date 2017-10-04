@@ -92,6 +92,7 @@ module Particles_potential
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
+      use particles_radius, only: get_maxrad
       real, dimension (mpar_loc,mparray), intent (in) :: fp
       integer :: mom_tmp,imom
       real :: rmax
@@ -529,6 +530,7 @@ module Particles_potential
 !***********************************************************************
     subroutine two_particle_int(dfp,ip,jp,xxij,vvij)
 !
+      use particles_radius, only: get_stbin
       use Diagnostics
       use Sub, only: lower_triangular_index
 !

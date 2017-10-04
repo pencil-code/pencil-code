@@ -30,6 +30,7 @@ module Particles
   use Particles_mpicomm
   use Particles_sub
   use Particles_radius
+  use Particles_potential
 !
   implicit none
 !
@@ -320,6 +321,7 @@ module Particles
 !
       use FArrayManager, only: farray_register_auxiliary
       use Particles_caustics, only: register_particles_caustics
+      use Particles_potential, only: register_particles_potential
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -425,6 +427,7 @@ module Particles
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Density, only: mean_density
       use Particles_caustics, only: initialize_particles_caustics
+      use Particles_potential, only: initialize_particles_potential
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (in) :: fp
@@ -1977,10 +1980,6 @@ module Particles
 !
       if (lparticles_caustics) call init_particles_caustics(f,fp,ineargrid)
 !
-!  If we are solving for particles_potential, then we call their initial condition here:
-!
-      if (lparticles_potential) call init_particles_potential(f,fp,ineargrid)
-!
 !  Set the initial auxiliary array for the passive scalar to zero
 !
       if (ldiffuse_passive) f(:,:,:,idlncc) = 0.0
@@ -3000,6 +2999,7 @@ module Particles
       use Diagnostics
       use EquationOfState, only: cs20
       use Particles_caustics, only: dcaustics_dt
+      use Particles_potential, only: dvvp_dt_potential
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -3293,6 +3293,10 @@ module Particles
 !  If we are using caustics :
 !
       if (lparticles_caustics) call dcaustics_dt(f,df,fp,dfp,ineargrid)
+!
+! and potential
+!
+      if (lparticles_potential) call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
 !
 !
     endsubroutine dvvp_dt
@@ -6147,6 +6151,10 @@ module Particles
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
+! if we are using particles_potential
+!
+      if (lparticles_potential) call read_particles_pot_init_pars(iostat)
+!
     endsubroutine read_particles_init_pars
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
@@ -6154,6 +6162,10 @@ module Particles
       integer, intent(in) :: unit
 !
       write(unit, NML=particles_init_pars)
+!
+! if we are using particles_potential
+!
+      if (lparticles_potential) call write_particles_pot_init_pars(unit)
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
@@ -6164,6 +6176,10 @@ module Particles
       integer, intent(out) :: iostat
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
+!
+! if we are using particles_potential
+!
+      if (lparticles_potential) call read_particles_pot_run_pars(iostat)
 !
 !  If we have bubbles, the advective derivative has to be saved in
 !  an auxiliary variable
@@ -6179,6 +6195,10 @@ module Particles
       integer, intent(in) :: unit
 !
       write(unit, NML=particles_run_pars)
+!
+! if we are using particles_potential
+!
+      if (lparticles_potential) call write_particles_pot_run_pars(unit)
 !
     endsubroutine write_particles_run_pars
 !***********************************************************************
@@ -6205,6 +6225,7 @@ module Particles
       use Diagnostics
       use General,   only: itoa
       use Particles_caustics, only: rprint_particles_caustics
+      use Particles_potential, only: rprint_particles_potential
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -6425,6 +6446,10 @@ module Particles
 !    If we are using caustics 
 !
       if (lparticles_caustics) call rprint_particles_caustics(lreset,lwrite)
+!
+! ... and potential
+!
+      if (lparticles_potential) call rprint_particles_potential(lreset,lwrite)
 ! 
     endsubroutine rprint_particles
 !***********************************************************************

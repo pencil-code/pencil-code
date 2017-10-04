@@ -1048,13 +1048,11 @@ module Particles_radius
 !
     endsubroutine rprint_particles_radius
 !***********************************************************************
-    subroutine get_stbin(api)
+    subroutine get_stbin(api,iStbin)
       integer, intent(out) :: iStbin
-      integer, intent(in) :: ip
       integer :: k=0
       real :: api
       k = 1
-
       if (lfixed_particles_radius) then
         do while((api  >=  ap0(k)).and.(k  <=  ndustrad))
           iStbin = k
