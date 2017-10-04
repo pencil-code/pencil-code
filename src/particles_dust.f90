@@ -3294,6 +3294,7 @@ module Particles
 !
       if (lparticles_caustics) call dcaustics_dt(f,df,fp,dfp,ineargrid)
 !
+!
     endsubroutine dvvp_dt
 !***********************************************************************
     subroutine particle_gravity(f,df,fp,dfp,ineargrid)
@@ -3681,7 +3682,10 @@ module Particles
 !
 !  When the field based handling of passive scalar consumption is enabled, set
 !  the current pencil of the lncc auxiliary to zero
-!
+!     
+      
+! supersat
+      if (lsupersat) f(:,m,n,itausupersat) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
       if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
           'ldiffuse_passive needs pscalar_nolog=F')
@@ -4451,6 +4455,8 @@ module Particles
                    !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
                    !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
                    f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
+!                   print*,'inversetau=',inversetau
+!                   print*,'tau=',f(l,m,n,itausupersat)
                  elseif (supersat_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0

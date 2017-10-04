@@ -12,7 +12,6 @@ EXTERN __constant__ int d_CX_TOP, d_CY_TOP, d_CZ_TOP;
 
 //Computational domain's dims
 EXTERN __constant__ int d_COMP_DOMAIN_SIZE_X, d_COMP_DOMAIN_SIZE_Y, d_COMP_DOMAIN_SIZE_Z;
-EXTERN __constant__ int d_PAD_SIZE; //Pad size on X-axis (includes boundary zone)
 EXTERN __constant__ int d_BOUND_SIZE; //Boundary zone size
 EXTERN __constant__ float d_NELEMENTS_FLOAT; //Number of grid point elements for averaging. 
 EXTERN __constant__ float d_DOMAIN_SIZE_X, d_DOMAIN_SIZE_Y, d_DOMAIN_SIZE_Z;

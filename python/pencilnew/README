@@ -58,5 +58,17 @@ matplotlib assumes [y,x] ordering for 2D plotting, the f array returned is in
 the opposite order from how it is in pencil: var.f.shape will return
 (nvar,nz,ny,nx).
 
+#############################
+## WHAT IS WHERE?
+##
 
-
+~ io           input und output functions, like save data or call IDL scripts
+~ diag         diagnostic scripts and functions that produce physical meaningfull output
+~ visu         visualization routines, here you find also helpers for e.g. exporting figures
+~ calc         complex math functions and further calculations and helpers
+~ math         basic math functions, like products and derivatives, but also numerical helpers, like is_number
+~ sim          handling simulations as python objects and do stuff with simulations objects, like grouping and sorting
+~ read         read data and parameters from your pencil code simulation, many of these functions can be accessed directly from simulation objects
+~ tool_kit     all nice workarounds get stored here (e.g., resubmit script), but your dirty tools here!
+~ export       exporter (e.g., vtk, xml)
+~ backpack     third party modules, tribute goes to the authors!

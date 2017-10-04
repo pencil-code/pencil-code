@@ -1,17 +1,16 @@
 #pragma once
 #include "common/config.h"
+#include "common/grid.h"
+#include "common/slice.h"
+#include "common/forcing.h"
 
-#ifdef INCLUDED_FROM_CUDA_CORE
-    #define EXTERN
-#else
-    #define EXTERN extern 
-#endif
+void init_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst, CParamConfig* cparams);
+void destroy_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst);
 
-EXTERN real *d_lnrho, *d_uu_x, *d_uu_y, *d_uu_z;
-EXTERN real *d_lnrho_dst, *d_uu_x_dst, *d_uu_y_dst, *d_uu_z_dst;
+void load_grid_cuda_core(Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx, Grid* h_grid, CParamConfig* h_cparams);
+void store_grid_cuda_core(Grid* h_grid, CParamConfig* h_cparams, Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx);
 
-void init_cuda_core(CParamConfig* cparams, RunConfig* runconf);
-void destroy_cuda_core();
+void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h_run_params, Slice* d_slice, CParamConfig* d_cparams, vec3i* h_start_idx);
 
-void load_grid_cuda_core(real* lnrho, real* uu_x, real* uu_y, real* uu_z);
-void store_grid_cuda_core(real* lnrho, real* uu_x, real* uu_y, real* uu_z);
+void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, const vec3i start_idx);
+void load_forcing_dconsts_cuda_core(ForcingParams* forcing_params);

@@ -6,7 +6,7 @@
 hostobjs = 
 #model_collectiveops.o
 
-deviceobjs = diagnostics.o integrators_v5s.o collectiveops.o copyHalosConcur.o timestep.o gpu_astaroth.o
+deviceobjs = diagnostics.o integrators_v5.o collectiveops.o copyHalosConcur.o timestep.o gpu_astaroth.o
 #boundcond.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
 #copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
 
@@ -51,10 +51,10 @@ VPATH = verification
 	#nvcc -g $(CFLAGS) $(hostobjs) $(deviceobjs) $(main) -o ac_run_gdb	
 
 %.o: %.cpp
-	nvcc -g $(CFLAGS) $(ENVIRON) -dc $< -o $@
+	nvcc $(CFLAGS) $(ENVIRON) -dc $< -o $@
 
 %.o: %.cu
-	nvcc -g ${MFLAGS} $(CFLAGS) $(ENVIRON) -dc $< -o $@
+	nvcc ${MFLAGS} $(CFLAGS) $(ENVIRON) -dc $< -o $@
 
 #main: $(main)
 #%.o: %.cu
@@ -63,7 +63,7 @@ VPATH = verification
 	#nvcc -g ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 
 astaroth_sgl.so: $(hostobjs) $(deviceobjs) defines_PC.h defines_dims_PC.h
-	nvcc -g $(CFLAGS) ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
+	nvcc $(CFLAGS) ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
 	cp -f astaroth_sgl.so ..
 
 include makefile.depend

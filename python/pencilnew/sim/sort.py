@@ -1,5 +1,5 @@
 
-def sort(simulations, sortby, only_started=False):
+def sort(simulations, sortby, only_started=False, reverse=False):
   """Sort simulations by a quantity.
   Based on group.py
 
@@ -27,6 +27,7 @@ def sort(simulations, sortby, only_started=False):
   sim_dict = group(simulations=simulations,
                    groupby=sortby,
                    sort=True,
-                   only_started=only_started)
+                   only_started=only_started,
+                   reverse=reverse)
 
   return flatten(sim_dict.values())

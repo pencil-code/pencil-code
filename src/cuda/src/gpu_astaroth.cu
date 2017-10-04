@@ -79,8 +79,6 @@ void load_dconsts()
 	checkErr( cudaMemcpyToSymbol(d_NY, &NY, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_NZ, &NZ, sizeof(int)) );
 
-        const int pad_size=PAD_SIZE;
-	checkErr( cudaMemcpyToSymbol(d_PAD_SIZE, &pad_size, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_BOUND_SIZE, &BOUND_SIZE, sizeof(int)) );
 
 	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_X, &COMP_DOMAIN_SIZE_X, sizeof(int)) );
@@ -98,6 +96,9 @@ void load_dconsts()
 	const int h_w_grid_z_offset = COMP_DOMAIN_SIZE_X*COMP_DOMAIN_SIZE_Y;
 	const int h_grid_y_offset = NX;
 	const int h_grid_z_offset = NX*NY;
+        const int cx_top = CX_TOP;
+        const int cy_top = CY_TOP;
+        const int cz_top = CZ_TOP;
 
 	checkErr( cudaMemcpyToSymbol(d_W_GRID_Y_OFFSET, &h_w_grid_y_offset, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_W_GRID_Z_OFFSET, &h_w_grid_z_offset, sizeof(int)) );
@@ -106,9 +107,9 @@ void load_dconsts()
 
 	//------Computational domain's bottom and top indices---------
 
-	checkErr( cudaMemcpyToSymbol(d_CX_TOP, &CX_TOP, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CY_TOP, &CY_TOP, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CZ_TOP, &CZ_TOP, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CX_TOP, &cx_top, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CY_TOP, &cy_top, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CZ_TOP, &cz_top, sizeof(int)) );
 
 	checkErr( cudaMemcpyToSymbol(d_CX_BOT, &CX_BOT, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_CY_BOT, &CY_BOT, sizeof(int)) );
@@ -229,8 +230,10 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
 	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
 	halo = (float*) malloc(sizeof(float)*halo_size);
+printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN \n");
+printf("halo_size= %d \n",halo_size);
+printf("halo= %d \n",halo);
 	checkErr(cudaMalloc(&d_halo, sizeof(float)*halo_size));
-
 	// Allocate device memory
 
 	checkErr( cudaMalloc(&d_lnrho, sizeof(float)*GRID_SIZE) );

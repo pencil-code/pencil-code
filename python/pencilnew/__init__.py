@@ -35,3 +35,18 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=True):
                 hidden sim will stay hidden.
     """
     return sim.get_sims(path_root=path_root, depth=1, unhide_all=unhide_all, quiet=quiet)
+
+def check_dependencies():
+    """ Check if dependencies are fullfilled for pencilnew. """
+    import importlib
+    from itertools import compress
+
+    dependencies = ['vtk' ,'tqdm']
+
+    not_found = [importlib.util.find_spec(dep) is None for dep in dependencies]
+    missing_dependencies = list(compress(dependencies, not_found))
+
+    print('? WARNING: The following python modules have not been found. Full functionallity may not be granted!')
+
+    if 'vtk' in missing_dependencies: print('? Try to install the python-vtk module. But this is outdated anyway, check out pyevtk, its much better anyway!')
+    if 'tqdm' in missing_dependencies: print('? Check out https://github.com/tqdm/tqdm')

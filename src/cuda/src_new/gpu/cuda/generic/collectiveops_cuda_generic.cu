@@ -6,17 +6,11 @@
 #include "collectiveops_cuda_generic.cuh"
 #include "gpu/cuda/core/dconsts_core.cuh"
 #include "gpu/cuda/core/errorhandler_cuda.cuh"
-#include "common/errorhandler.h"
 #include "utils/utils.h"//For templated max/min/sum
 
 #define COL_THREADS_X (32) //TODO read from config
-#define COL_THREADS_Y (8)
-#define COL_ELEMS_PER_THREAD (8) //TODO ifndef, define here, else get from the compile flag
-
-static real* d_vec_res          = NULL;
-static real* d_partial_result   = NULL;
-static bool is_initialized      = false;
-static CParamConfig* cparams    = NULL;
+#define COL_THREADS_Y (4)
+#define COL_ELEMS_PER_THREAD (1) //TODO ifndef, define here, else get from the compile flag
 
 
 //Comparison funcs (template magic :D)
@@ -60,34 +54,25 @@ __device__ void reduce_warp(volatile real* shared, int tid)
 }
 
 
-void init_collectiveops_cuda_generic(CParamConfig* conf)
+void init_reduction_array_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams)
 {
-    if (is_initialized) CRASH("collectiveops_cuda_generic() already initialized!");
-    is_initialized = true;
-
-    cparams = conf;
-
     // The device variable where the maximum found value found is written to
-    CUDA_ERRCHK( cudaMalloc((real**) &d_vec_res, sizeof(real)) );
+    CUDA_ERRCHK( cudaMalloc((real**) &reduct_arr->d_vec_res, sizeof(real)) );
  
     //An intermediate array used in computing the reduction
-	dim3 blocks_per_grid;
-	blocks_per_grid.x = ceil(cparams->nx / (double)COL_THREADS_X);
-	blocks_per_grid.y = ceil(cparams->ny / (double)COL_THREADS_Y);
-	blocks_per_grid.z = ceil(cparams->nz / (double)COL_ELEMS_PER_THREAD);
-	const int blocks_total = blocks_per_grid.x * blocks_per_grid.y * blocks_per_grid.z;
-	CUDA_ERRCHK( cudaMalloc((real**) &d_partial_result, sizeof(real)*blocks_total) );
+	dim3 bpg;
+	bpg.x = ceil(cparams->nx / (double)COL_THREADS_X);
+	bpg.y = ceil(cparams->ny / (double)COL_THREADS_Y);
+	bpg.z = ceil(cparams->nz / (double)COL_ELEMS_PER_THREAD);
+	const int blocks_total = bpg.x * bpg.y * bpg.z;
+	CUDA_ERRCHK( cudaMalloc((real**) &reduct_arr->d_partial_result, sizeof(real)*blocks_total) );
 }
 
 
-void destroy_collectiveops_cuda_generic()
+void destroy_reduction_array_cuda_generic(ReductionArray* reduct_arr)
 {
-    if (!is_initialized) CRASH("collectiveops_cuda_generic() wasn't initialized!");
-    is_initialized = false;
-
-    cparams = NULL;
-    CUDA_ERRCHK( cudaFree(d_vec_res) ); d_vec_res = NULL;
-    CUDA_ERRCHK( cudaFree(d_partial_result) ); d_partial_result = NULL;
+    CUDA_ERRCHK( cudaFree(reduct_arr->d_vec_res) ); reduct_arr->d_vec_res = NULL;
+    CUDA_ERRCHK( cudaFree(reduct_arr->d_partial_result) ); reduct_arr->d_partial_result = NULL;
 }
 
 
@@ -131,7 +116,7 @@ __global__ void reduce(real* dest, real* src, int problem_size)
 		}
 	}
 	if (tid < 32)
-		reduce_warp<reduce_op>(shared, tid);		
+		reduce_warp<reduce_op>(shared, tid);
 
 	if (tid == 0) *dest = shared[0];
 }
@@ -141,33 +126,42 @@ __global__ void reduce(real* dest, real* src, int problem_size)
 template <unsigned int block_size, ReduceFunc reduce_op, ReduceInitFunc reduce_init_op>//inline const T& min(const T& a, const T& b)
 __global__ void reduce_initial(real* d_partial_result, real* d_vec_x, real* d_vec_y = NULL, real* d_vec_z = NULL)
 {
-	int tid, grid_idx;
 	extern __shared__ real vec_shared[];
 
-	tid = threadIdx.x + threadIdx.y*blockDim.x;//index inside the shared mem array
-	grid_idx = 	(threadIdx.x + blockIdx.x*blockDim.x + d_nx_min) 	+	 
-			(threadIdx.y + blockIdx.y*blockDim.y + d_ny_min)*d_mx +
-			(blockIdx.z*COL_ELEMS_PER_THREAD 	     + d_nz_min)*d_mx*d_my;
+	const int tid = threadIdx.x + threadIdx.y*blockDim.x;//index inside the shared mem array
 
-	
+    const int tx = threadIdx.x + blockIdx.x*blockDim.x + d_nx_min;
+    const int ty = threadIdx.y + blockIdx.y*blockDim.y + d_ny_min;
+    const int tz = blockIdx.z*COL_ELEMS_PER_THREAD 	   + d_nz_min;
+
+	const int base_idx = tx + ty*d_mx + tz*d_mx*d_my;
+
+    assert(tx >= d_nx_min);
+	assert(tx < d_nx_max);
+    assert(ty >= d_ny_min);
+    assert(ty < d_ny_max);
+    assert(tz >= d_nz_min);
+    assert(tz < d_nz_max);
 	
 	real vec;
 
     const bool REDUCE_VEC = (d_vec_y != NULL);
     if (REDUCE_VEC)
-	    vec_shared[tid] = reduce_init_op(d_vec_x[grid_idx], 
-                                         d_vec_y[grid_idx], 
-                                         d_vec_z[grid_idx]); //init first value
+	    vec_shared[tid] = reduce_init_op(d_vec_x[base_idx], 
+                                         d_vec_y[base_idx], 
+                                         d_vec_z[base_idx]); //init first value
     else
-        vec_shared[tid] = reduce_init_op(d_vec_x[grid_idx], 0, 0);
+        vec_shared[tid] = reduce_init_op(d_vec_x[base_idx], 0, 0);
 
-	for (int i=1; i < COL_ELEMS_PER_THREAD; i++)
+	for (int i=1; i < COL_ELEMS_PER_THREAD && tz+i < d_nz_max; i++)
 	{	
-		grid_idx += d_mx*d_my;
+		const int grid_idx = base_idx + i*d_mx*d_my;
+        assert(tz+i < d_nz_max);
+        
         if (REDUCE_VEC)
 	        vec = reduce_init_op(d_vec_x[grid_idx], 
-                                             d_vec_y[grid_idx], 
-                                             d_vec_z[grid_idx]); //init first value
+                                 d_vec_y[grid_idx], 
+                                 d_vec_z[grid_idx]); //init first value
         else
             vec = reduce_init_op(d_vec_x[grid_idx], 0, 0);
 	
@@ -195,12 +189,12 @@ __global__ void reduce_initial(real* d_partial_result, real* d_vec_x, real* d_ve
 			__syncthreads(); 
 		}
 	}
-
-	if (tid < 64) 
-	{ 			
-		vec_shared[tid] = reduce_op(vec_shared[tid], vec_shared[tid+64]); 
-		__syncthreads(); 
-	}
+    if (block_size >= 128) {
+	    if (tid < 64) { 			
+		    vec_shared[tid] = reduce_op(vec_shared[tid], vec_shared[tid+64]); 
+		    __syncthreads(); 
+	    }
+    }
 
 	if (tid < 32)
 		reduce_warp<reduce_op>(vec_shared, tid);
@@ -211,48 +205,50 @@ __global__ void reduce_initial(real* d_partial_result, real* d_vec_x, real* d_ve
 
 /*
 * Calculates the max vec found in the grid
-* Puts the result in d_vec_res (in device memory)
+* Puts the result in reduct_arr->d_vec_res (in device memory)
 */
 template<ReduceFunc reduce_op, ReduceInitFunc reduce_init_op>
-void reduce_cuda_generic(real* d_vec_x, real* d_vec_y = NULL, real* d_vec_z = NULL)
+void reduce_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams, real* d_vec_x, real* d_vec_y = NULL, real* d_vec_z = NULL)
 {
-    if (!is_initialized) CRASH("collectiveops_cuda_generic() wasn't initialized!");
-
 	//-------------------------------------------------
-	dim3 threads_per_block, blocks_per_grid;
-	threads_per_block.x = COL_THREADS_X;
-	threads_per_block.y = COL_THREADS_Y;
-	threads_per_block.z = 1; // 2D blockdims only 
-	const int SMEM_PER_BLOCK = threads_per_block.x * threads_per_block.y *threads_per_block.z * sizeof(real);
+	dim3 tpb, bpg;
+	tpb.x = COL_THREADS_X;
+	tpb.y = COL_THREADS_Y;
+	tpb.z = 1; // 2D blockdims only 
+	const int SMEM_PER_BLOCK = tpb.x * tpb.y *tpb.z * sizeof(real);
 
-	blocks_per_grid.x = ceil((real) cparams->nx / (real)COL_THREADS_X);
-	blocks_per_grid.y = ceil((real) cparams->ny / (real)COL_THREADS_Y);
-	blocks_per_grid.z = ceil((real) cparams->nz / (real)COL_ELEMS_PER_THREAD);
-	const int BLOCKS_TOTAL = blocks_per_grid.x * blocks_per_grid.y * blocks_per_grid.z;
+	bpg.x = ceil((real) cparams->nx / (real)COL_THREADS_X);
+	bpg.y = ceil((real) cparams->ny / (real)COL_THREADS_Y);
+	bpg.z = ceil((real) cparams->nz / (real)COL_ELEMS_PER_THREAD);
+	const int BLOCKS_TOTAL = bpg.x * bpg.y * bpg.z;
 	//------------------------------------------------
+
+    //Collectiveops works only when BLOCKS_TOTAL is divisible by the thread block size.
+    //This is not good and collectiveops should be rewritten to support arbitrary grid dims
+    assert(BLOCKS_TOTAL % (tpb.x * tpb.y * tpb.z) == 0);
 	
-	switch (threads_per_block.x*threads_per_block.y*threads_per_block.z)
+	switch (tpb.x*tpb.y*tpb.z)
 	{
 		case 512:
-			reduce_initial<512, reduce_op, reduce_init_op><<<blocks_per_grid, threads_per_block, SMEM_PER_BLOCK>>>(d_partial_result, d_vec_x, d_vec_y, d_vec_z); CUDA_ERRCHK_KERNEL(); break;
+			reduce_initial<512, reduce_op, reduce_init_op><<<bpg, tpb, SMEM_PER_BLOCK>>>(reduct_arr->d_partial_result, d_vec_x, d_vec_y, d_vec_z); CUDA_ERRCHK_KERNEL(); break;
 		case 256:
-			reduce_initial<256, reduce_op, reduce_init_op><<<blocks_per_grid, threads_per_block, SMEM_PER_BLOCK>>>(d_partial_result, d_vec_x, d_vec_y, d_vec_z); CUDA_ERRCHK_KERNEL(); break;
+			reduce_initial<256, reduce_op, reduce_init_op><<<bpg, tpb, SMEM_PER_BLOCK>>>(reduct_arr->d_partial_result, d_vec_x, d_vec_y, d_vec_z); CUDA_ERRCHK_KERNEL(); break;
 		case 128:
-			reduce_initial<128, reduce_op, reduce_init_op><<<blocks_per_grid, threads_per_block, SMEM_PER_BLOCK>>>(d_partial_result, d_vec_x, d_vec_y, d_vec_z); CUDA_ERRCHK_KERNEL(); break;
+			reduce_initial<128, reduce_op, reduce_init_op><<<bpg, tpb, SMEM_PER_BLOCK>>>(reduct_arr->d_partial_result, d_vec_x, d_vec_y, d_vec_z); CUDA_ERRCHK_KERNEL(); break;
 		default:
 			printf("INCORRECT THREAD SIZE!\n");
 			exit(EXIT_FAILURE);
 	}
     if (BLOCKS_TOTAL >= 1024) {
-        reduce<1024, reduce_op><<<1, 1024, 1024*sizeof(real)>>>(d_vec_res, d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
+        reduce<1024, reduce_op><<<1, 1024, 1024*sizeof(real)>>>(reduct_arr->d_vec_res, reduct_arr->d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
     } else if (BLOCKS_TOTAL >= 512) {
-        reduce<512, reduce_op><<<1, 512, 512*sizeof(real)>>>(d_vec_res, d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
+        reduce<512, reduce_op><<<1, 512, 512*sizeof(real)>>>(reduct_arr->d_vec_res, reduct_arr->d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
     } else if (BLOCKS_TOTAL >= 256) {
-        reduce<256, reduce_op><<<1, 256, 256*sizeof(real)>>>(d_vec_res, d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
+        reduce<256, reduce_op><<<1, 256, 256*sizeof(real)>>>(reduct_arr->d_vec_res, reduct_arr->d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
     } else if (BLOCKS_TOTAL >= 128) {
-        reduce<128, reduce_op><<<1, 128, 128*sizeof(real)>>>(d_vec_res, d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
+        reduce<128, reduce_op><<<1, 128, 128*sizeof(real)>>>(reduct_arr->d_vec_res, reduct_arr->d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
     } else if (BLOCKS_TOTAL >= 16) {
-        reduce<16, reduce_op><<<1, 16, 16*sizeof(real)>>>(d_vec_res, d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
+        reduce<16, reduce_op><<<1, 16, 16*sizeof(real)>>>(reduct_arr->d_vec_res, reduct_arr->d_partial_result, BLOCKS_TOTAL); CUDA_ERRCHK_KERNEL();
     } else {
         printf("INCORRECT BLOCKS_TOTAL (= %d) IN collectiveops.cu!\n", BLOCKS_TOTAL);
 				exit(EXIT_FAILURE);
@@ -264,36 +260,36 @@ void reduce_cuda_generic(real* d_vec_x, real* d_vec_y = NULL, real* d_vec_z = NU
 
 
 //template<ReductType t>
-real get_reduction_cuda_generic(ReductType t, real* d_a, real* d_b, real* d_c)
+real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParamConfig* cparams, real* d_a, real* d_b, real* d_c)
 {
     real res;
     switch (t) {
-        case MAX_VEC:
-            reduce_cuda_generic<dmax, ddist>(d_a, d_b, d_c);
+        case MAX_VEC_UU:
+            reduce_cuda_generic<dmax, ddist>(reduct_arr, cparams, d_a, d_b, d_c);
             break;
-        case MIN_VEC:
-            reduce_cuda_generic<dmin, ddist>(d_a, d_b, d_c);
+        case MIN_VEC_UU:
+            reduce_cuda_generic<dmin, ddist>(reduct_arr, cparams, d_a, d_b, d_c);
             break;
-        case RMS_VEC:
-            reduce_cuda_generic<dsum, dsqrsum>(d_a, d_b, d_c);
+        case RMS_VEC_UU:
+            reduce_cuda_generic<dsum, dsqrsum>(reduct_arr, cparams, d_a, d_b, d_c);
             break;
         case MAX_SCAL:
-            reduce_cuda_generic<dmax, dscal>(d_a);
+            reduce_cuda_generic<dmax, dscal>(reduct_arr, cparams, d_a);
             break;
         case MIN_SCAL:
-            reduce_cuda_generic<dmin, dscal>(d_a);
+            reduce_cuda_generic<dmin, dscal>(reduct_arr, cparams, d_a);
             break;
         case RMS_SCAL:
-            reduce_cuda_generic<dsum, dsqrsum>(d_a);
+            reduce_cuda_generic<dsum, dsqrsum>(reduct_arr, cparams, d_a);
             break;
         case RMS_EXP:
-            reduce_cuda_generic<dsum, dexpsqrscal>(d_a);
+            reduce_cuda_generic<dsum, dexpsqrscal>(reduct_arr, cparams, d_a);
             break;
         default:
             CRASH("Invalid type!");
     }
     cudaDeviceSynchronize();
-    CUDA_ERRCHK( cudaMemcpy(&res, (real*)d_vec_res, sizeof(real), cudaMemcpyDeviceToHost) );
+    CUDA_ERRCHK( cudaMemcpy(&res, (real*)reduct_arr->d_vec_res, sizeof(real), cudaMemcpyDeviceToHost) );
     cudaDeviceSynchronize();
     return res;
 }

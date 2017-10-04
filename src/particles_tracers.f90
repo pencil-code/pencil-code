@@ -89,8 +89,11 @@ module Particles
       npvar=npvar+3
 !
       ivpx=mpvar+npaux+1
+      pvarname(mpvar+npaux+1)='ivpx'
       ivpy=mpvar+npaux+2
+      pvarname(mpvar+npaux+2)='ivpy'
       ivpz=mpvar+npaux+3
+      pvarname(mpvar+npaux+3)='ivpz'
       npaux = npaux+3
 !
 !  Set indices for auxiliary variables.

@@ -5,6 +5,27 @@
 
 //Compile-time PC defines: anyone who reads Configs should also have access to these
 #define BOUND_SIZE (3)
+#define LFORCING (1)
+#define LINDUCTION (1) //What might L be? Just following the convention set by LFORCING...
+#define DOMAIN_SIZE_X (6.28318530718)
+#define DOMAIN_SIZE_Y (6.28318530718)
+#define DOMAIN_SIZE_Z (6.28318530718)
+
+#define XORIG (DOMAIN_SIZE_X / 2.0)
+#define YORIG (DOMAIN_SIZE_Y / 2.0)
+#define ZORIG (DOMAIN_SIZE_Z / 2.0)
+
+#define T_STOP_FORCING (1.0)
+#define FORCING (1e-5)
+#define KK1 (4.5)
+#define KK2 (5.5)
+#define KMAX (10.0)
+#define DKX (1.0)
+#define DKY (1.0)
+#define DKZ (1.0)   
+
+//GPU defines
+#define NUM_DEVICES (1)
 
 //Purely virtual parent for the config structs
 typedef struct Config {
@@ -40,11 +61,10 @@ typedef struct CParamConfig : public Config {
         nz_max = nz + BOUND_SIZE;
 
         //Spacing in the grid (TODO read from file)
-        const real domain_size = 6.28318530718; 
-        dsx = domain_size / nx;
-        dsy = domain_size / ny;
-        dsz = domain_size / nz;
-        dsmin = domain_size / max(nx, max(ny, nz));
+        dsx = DOMAIN_SIZE_X / nx;
+        dsy = DOMAIN_SIZE_Y / ny;
+        dsz = DOMAIN_SIZE_Z / nz;
+        dsmin = min(dsx, min(dsy, dsz));
     }
 } CParamConfig;
 
@@ -73,7 +93,13 @@ typedef struct RunConfig : public Config {
 
     real nu_visc;       //
     real cs_sound;      //
+
+    //Magnetic
+    real eta;           //Magnetic diffusivity
     
+    //Forcing
+    real relhel;        //Helicity of forcing
+
     //Implementation for virtual functions
     virtual void parse(const char* keyword, const char* value) override;
 } RunConfig;

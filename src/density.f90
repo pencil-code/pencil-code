@@ -66,7 +66,7 @@ module Density
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
-  real :: cdiffrho=0.0, diffrho=0.0
+  real :: cdiffrho=0.0, diffrho=0.0, diff_cspeed=0.5
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
   real :: xblob=0.0, yblob=0.0, zblob=0.0, mass_source_omega=0.
@@ -154,7 +154,7 @@ module Density
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
       cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, &
-      lmass_source, lmass_source_random, &
+      lmass_source, lmass_source_random, diff_cspeed, &
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
@@ -943,7 +943,8 @@ module Density
         call get_shared_variable('mpoly0', mpoly0,caller='init_lnrho')
         call get_shared_variable('mpoly1', mpoly1)
         call get_shared_variable('mpoly2', mpoly2)
-      else
+      elseif ( any(initlnrho=='piecew-poly') .or. any(initlnrho=='piecew-disc') .or. any(initlnrho=='polytropic') .or. &
+               any(initlnrho(:)(1:1)=='4') .or. any(initlnrho=='5') ) then
         if (lroot) call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
         allocate(mpoly0,mpoly1,mpoly2)
         mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
@@ -1570,7 +1571,7 @@ module Density
       real, dimension (nx) :: tmp
 !
       integer :: nl,j
-
+!
       fact=1./nxygrid
 !
 !  Calculate mean (= xy-average) of lnrho.
@@ -2467,12 +2468,12 @@ module Density
 !
       if (ldiff_cspeed) then  ! Normal diffusion operator
         if (ldensity_nolog) then
-          fdiff = fdiff + diffrho*p%TT**0.5*p%del2rho
+          fdiff = fdiff + diffrho*p%TT**diff_cspeed*p%del2rho
         else
           if (ldiffusion_nolog) then
-            fdiff = fdiff + diffrho*p%TT**0.5*p%rho1*p%del2rho
+            fdiff = fdiff + diffrho*p%TT**diff_cspeed*p%rho1*p%del2rho
           else
-            fdiff = fdiff + diffrho*p%TT**0.5*(p%del2lnrho+p%glnrho2)
+            fdiff = fdiff + diffrho*p%TT**diff_cspeed*(p%del2lnrho+p%glnrho2)
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
@@ -3721,14 +3722,21 @@ module Density
 !***********************************************************************
     subroutine push2c(p_idiag)
 
+    use Diagnostics, only: set_type
+
     integer, parameter :: ndiags=5
     integer(KIND=ikind8), dimension(ndiags) :: p_idiag
 
     call copy_addr_c(idiag_rhom,p_idiag(1))
+    call set_type(idiag_rhom,lsum=.true.)
     call copy_addr_c(idiag_rhomin,p_idiag(2))
+    call set_type(idiag_rhomin,lmin=.true.)
     call copy_addr_c(idiag_rhomax,p_idiag(3))
+    call set_type(idiag_rhomax,lmax=.true.)
     call copy_addr_c(idiag_mass,p_idiag(4))
+    call set_type(idiag_mass,lint=.true.)
     call copy_addr_c(idiag_rhorms,p_idiag(5))
+    call set_type(idiag_rhorms,lsqrt=.true.)
 
     endsubroutine push2c
 !***********************************************************************

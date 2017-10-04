@@ -178,14 +178,15 @@ __global__ void reduce_min(float* dest, float* src, int problem_size)
 //assumes 512/1024 threads 
 //TODO more flexible
 template <unsigned int block_size>
-__global__ void reduce_rms(float* dest, float* src, int problem_size)
+__global__ void reduce_rms(float* dest, float* src, int problem_size, bool root=true)
 {
 	int tid = threadIdx.x;
 	int i = tid + blockDim.x;//tid + offset
 	extern __shared__ float sum_shared[];
+
 	sum_shared[tid] = src[tid];
 	
-	//Add sequantially all blocks above block size
+	//Add sequentially all blocks above block size
 	while (i < problem_size) {
 		sum_shared[tid] += src[i];
 		i += blockDim.x;
@@ -228,7 +229,13 @@ __global__ void reduce_rms(float* dest, float* src, int problem_size)
 	}
 
 	//Finishes the mean of scal^2 and calculates the sqrt of it to get rms.
-	if (tid == 0) *dest = sqrtf( sum_shared[0]/d_NELEMENTS_FLOAT );
+	if (tid == 0) 
+	{
+		if (root) 
+        	  *dest = sqrtf( sum_shared[0]/d_NELEMENTS_FLOAT );
+     		else
+        	  *dest = sum_shared[0];
+	}
 }
 
 //Calculates the maximum vector magnitude found in the system
@@ -306,22 +313,22 @@ __global__ void min_vec(float* d_partial_result, float* d_vec_x, float* d_vec_y,
 	extern __shared__ float min_vec_shared[];
 
 	tid = threadIdx.x + threadIdx.y*blockDim.x;//index inside the shared mem array
-	grid_idx = 	(threadIdx.x + blockIdx.x*blockDim.x + d_CX_BOT) 	+	 
-			(threadIdx.y + blockIdx.y*blockDim.y + d_CY_BOT)*d_NX +
-			(blockIdx.z*elementsPerThread 	     + d_CZ_BOT)*d_NX*d_NY;
+	grid_idx = (threadIdx.x + blockIdx.x*blockDim.x + d_CX_BOT) 	 +	 
+		   (threadIdx.y + blockIdx.y*blockDim.y + d_CY_BOT)*d_NX +
+	       	   (blockIdx.z*elementsPerThread 	+ d_CZ_BOT)*d_NX*d_NY;
 
 	
 	
 	float vec;
-	min_vec_shared[tid] = sqrtf(	d_vec_x[grid_idx]*d_vec_x[grid_idx]   + 
-					d_vec_y[grid_idx]*d_vec_y[grid_idx] + 
-					d_vec_z[grid_idx]*d_vec_z[grid_idx] ); //init first value
+	min_vec_shared[tid] = sqrtf(d_vec_x[grid_idx]*d_vec_x[grid_idx] + 
+				    d_vec_y[grid_idx]*d_vec_y[grid_idx] + 
+				    d_vec_z[grid_idx]*d_vec_z[grid_idx] ); //init first value
 	for (int i=1; i < elementsPerThread; i++)
 	{	
 		grid_idx += d_NX*d_NY;
-		vec = sqrtf(	d_vec_x[grid_idx]*d_vec_x[grid_idx]   + 
-				d_vec_y[grid_idx]*d_vec_y[grid_idx] + 
-				d_vec_z[grid_idx]*d_vec_z[grid_idx] );
+		vec = sqrtf(d_vec_x[grid_idx]*d_vec_x[grid_idx] + 
+			    d_vec_y[grid_idx]*d_vec_y[grid_idx] + 
+		   	    d_vec_z[grid_idx]*d_vec_z[grid_idx] );
 	
 		if (vec < min_vec_shared[tid])
 			min_vec_shared[tid] = vec;
@@ -506,20 +513,16 @@ __global__ void vec2_sum(float* d_partial_result, float* d_vec_x, float* d_vec_y
 
 	
 	//Initialize	
-	float vec2;
-	vec2 = d_vec_x[grid_idx]*d_vec_x[grid_idx] +
-               d_vec_y[grid_idx]*d_vec_y[grid_idx] +
-               d_vec_z[grid_idx]*d_vec_z[grid_idx];
-	vec2_sum_shared[tid] = vec2;
+	vec2_sum_shared[tid] = d_vec_x[grid_idx]*d_vec_x[grid_idx] +
+        		       d_vec_y[grid_idx]*d_vec_y[grid_idx] +
+           		       d_vec_z[grid_idx]*d_vec_z[grid_idx];
 
 	for (int i=1; i < elementsPerThread; i++)
 	{	
 		grid_idx += d_NX*d_NY;
-		vec2 = d_vec_x[grid_idx]*d_vec_x[grid_idx] + 
-		       d_vec_y[grid_idx]*d_vec_y[grid_idx] + 
-		       d_vec_z[grid_idx]*d_vec_z[grid_idx];
-	
-		vec2_sum_shared[tid] += vec2;
+		vec2_sum_shared[tid] += d_vec_x[grid_idx]*d_vec_x[grid_idx] + 
+		       			d_vec_y[grid_idx]*d_vec_y[grid_idx] + 
+		       			d_vec_z[grid_idx]*d_vec_z[grid_idx];
 	}
 	__syncthreads();
 
@@ -559,9 +562,10 @@ __global__ void vec2_sum(float* d_partial_result, float* d_vec_x, float* d_vec_y
 	if (tid == 0) d_partial_result[blockIdx.x + blockIdx.y*gridDim.x + blockIdx.z*gridDim.x*gridDim.y] = vec2_sum_shared[0];
 }
 
-//Calculates the rms of a scalar
+//  Calculates the sum of a scalar or the sum of its squares.
+
 template <unsigned int block_size>
-__global__ void scal2_sum(float* d_partial_result, float* d_scal, const int elementsPerThread)
+__global__ void scal2_sum(float* d_partial_result, float* d_scal, const int elementsPerThread, bool sqr=true)
 {
 	int tid, grid_idx;
 	extern __shared__ float scal2_sum_shared[];
@@ -571,12 +575,19 @@ __global__ void scal2_sum(float* d_partial_result, float* d_scal, const int elem
 			(threadIdx.y + blockIdx.y*blockDim.y + d_CY_BOT)*d_NX +
 			(blockIdx.z*elementsPerThread 	     + d_CZ_BOT)*d_NX*d_NY;
 
-	scal2_sum_shared[tid] = d_scal[grid_idx]*d_scal[grid_idx]; //init first values
+        if (sqr) 
+		scal2_sum_shared[tid] = d_scal[grid_idx]*d_scal[grid_idx]; //init first values
+        else
+		scal2_sum_shared[tid] = d_scal[grid_idx]; //init first value
+
 	for (int i=1; i < elementsPerThread; i++)
 	{	
 		grid_idx += d_NX*d_NY;
 	
-		scal2_sum_shared[tid] += d_scal[grid_idx]*d_scal[grid_idx];
+        	if (sqr) 
+			scal2_sum_shared[tid] += d_scal[grid_idx]*d_scal[grid_idx];
+		else
+			scal2_sum_shared[tid] += d_scal[grid_idx];
 	}
 	__syncthreads();
 
@@ -618,7 +629,7 @@ __global__ void scal2_sum(float* d_partial_result, float* d_scal, const int elem
 
 //Calculates the rms of a exp(scalar)
 template <unsigned int block_size>
-__global__ void scal2_exp_sum(float* d_partial_result, float* d_scal, const int elementsPerThread)
+__global__ void scal2_exp_sum(float* d_partial_result, float* d_scal, const int elementsPerThread, bool sqr=true)
 {
 	int tid, grid_idx;
 	extern __shared__ float scal2_sum_shared[];
@@ -627,13 +638,21 @@ __global__ void scal2_exp_sum(float* d_partial_result, float* d_scal, const int 
 	grid_idx = 	(threadIdx.x + blockIdx.x*blockDim.x + d_CX_BOT) 	+	 
 			(threadIdx.y + blockIdx.y*blockDim.y + d_CY_BOT)*d_NX +
 			(blockIdx.z*elementsPerThread 	     + d_CZ_BOT)*d_NX*d_NY;
+        float tmp;
+        tmp=exp(d_scal[grid_idx]);
+	if (sqr) 
+		scal2_sum_shared[tid] = tmp*tmp; //Initialize
+        else
+		scal2_sum_shared[tid] = tmp; //Initialize
 
-	scal2_sum_shared[tid] = exp(d_scal[grid_idx])*exp(d_scal[grid_idx]); //Initialize
 	for (int i=1; i < elementsPerThread; i++)
 	{	
 		grid_idx += d_NX*d_NY;
-	
-		scal2_sum_shared[tid] += exp(d_scal[grid_idx])*exp(d_scal[grid_idx]);
+		tmp=exp(d_scal[grid_idx]);	
+		if (sqr) 
+			scal2_sum_shared[tid] += tmp*tmp;
+		else
+			scal2_sum_shared[tid] += tmp;
 	}
 	__syncthreads();
 
@@ -745,8 +764,6 @@ void max_vec_cuda(float* d_vec_max, float* d_partial_result, float* d_vec_x, flo
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
 
 void min_vec_cuda(float* d_vec_min, float* d_partial_result, float* d_vec_x, float* d_vec_y, float* d_vec_z)
@@ -803,12 +820,10 @@ void min_vec_cuda(float* d_vec_min, float* d_partial_result, float* d_vec_x, flo
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
 
 //Calculate the rms of the velocity vector 
-void vec_rms_cuda(float* d_vec_rms, float* d_partial_result, float* d_vec_x, float* d_vec_y, float* d_vec_z)
+void vec_rms_cuda(float* d_vec_rms, float* d_partial_result, float* d_vec_x, float* d_vec_y, float* d_vec_z, bool root=true)
 {
 	//-------------------------------------------------
 	static dim3 threadsPerBlock, blocksPerGrid;
@@ -837,24 +852,24 @@ void vec_rms_cuda(float* d_vec_rms, float* d_partial_result, float* d_vec_x, flo
 	}
 	switch (BLOCKS_TOTAL){
 		case 1024:
-			reduce_rms<1024><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<1024><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 512:
-			reduce_rms<512><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<512><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 256:
-			reduce_rms<256><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<256><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 128:
-			reduce_rms<128><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<128><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 16:
-			reduce_rms<16><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<16><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		default:
 			//TODO:#4
 			if (BLOCKS_TOTAL > 1024) {
-				reduce_rms<1024><<<1, 1024, 1024*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL);		
+				reduce_rms<1024><<<1, 1024, 1024*sizeof(float)>>>(d_vec_rms, d_partial_result, BLOCKS_TOTAL, root);		
 			}
 			else {
 				//Todo support for other sizes
@@ -862,8 +877,6 @@ void vec_rms_cuda(float* d_vec_rms, float* d_partial_result, float* d_vec_x, flo
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
 
 void max_scal_cuda(float* d_scal_max, float* d_partial_result, float* d_scal)
@@ -924,8 +937,6 @@ void max_scal_cuda(float* d_scal_max, float* d_partial_result, float* d_scal)
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
 
 void min_scal_cuda(float* d_scal_min, float* d_partial_result, float* d_scal)
@@ -982,12 +993,10 @@ void min_scal_cuda(float* d_scal_min, float* d_partial_result, float* d_scal)
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
 
 //Calculate the rms of a scalar 
-void scal_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal)
+void scal_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal, bool sqr=true, bool root=true)
 {
 	//-------------------------------------------------
 	static dim3 threadsPerBlock, blocksPerGrid;
@@ -1005,35 +1014,35 @@ void scal_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal)
 	switch (threadsPerBlock.x*threadsPerBlock.y*threadsPerBlock.z)
 	{
 		case 512:
-			scal2_sum<512><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD); break;
+			scal2_sum<512><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD, sqr); break;
 		case 256:
-			scal2_sum<256><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD); break;
+			scal2_sum<256><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD, sqr); break;
 		case 128:
-			scal2_sum<128><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD); break;
+			scal2_sum<128><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD, sqr); break;
 		default:
 			printf("INCORRECT THREAD SIZE!\n");
 			exit(EXIT_FAILURE);
 	}
 	switch (BLOCKS_TOTAL){
 		case 1024:
-			reduce_rms<1024><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<1024><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 512:
-			reduce_rms<512><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<512><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 256:
-			reduce_rms<256><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<256><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 128:
-			reduce_rms<128><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<128><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 16:
-			reduce_rms<16><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<16><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		default:
 			//TODO:#4
 			if (BLOCKS_TOTAL > 1024) {
-				reduce_rms<1024><<<1, 1024, 1024*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);		
+				reduce_rms<1024><<<1, 1024, 1024*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);		
 			}
 			else {
 				//Todo support for other sizes
@@ -1041,12 +1050,10 @@ void scal_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal)
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
 
 //Calculate the rms of a exp(scalar) 
-void scal_exp_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal)
+void scal_exp_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal, bool sqr=true, bool root=true)
 {
 	//-------------------------------------------------
 	static dim3 threadsPerBlock, blocksPerGrid;
@@ -1060,39 +1067,38 @@ void scal_exp_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal
 	blocksPerGrid.z = ceil((float) COMP_DOMAIN_SIZE_Z / (float)COL_ELEMS_PER_THREAD);
 	static const int BLOCKS_TOTAL = blocksPerGrid.x * blocksPerGrid.y * blocksPerGrid.z;
 	//------------------------------------------------
-	
 	switch (threadsPerBlock.x*threadsPerBlock.y*threadsPerBlock.z)
 	{
 		case 512:
-			scal2_exp_sum<512><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD); break;
+			scal2_exp_sum<512><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD, sqr); break;
 		case 256:
-			scal2_exp_sum<256><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD); break;
+			scal2_exp_sum<256><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD, sqr); break;
 		case 128:
-			scal2_exp_sum<128><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD); break;
+			scal2_exp_sum<128><<<blocksPerGrid, threadsPerBlock, SMEM_PER_BLOCK>>>(d_partial_result, d_scal, COL_ELEMS_PER_THREAD, sqr); break;
 		default:
 			printf("INCORRECT THREAD SIZE!\n");
 			exit(EXIT_FAILURE);
 	}
 	switch (BLOCKS_TOTAL){
 		case 1024:
-			reduce_rms<1024><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<1024><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 512:
-			reduce_rms<512><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<512><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 256:
-			reduce_rms<256><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<256><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 128:
-			reduce_rms<128><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<128><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		case 16:
-			reduce_rms<16><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);
+			reduce_rms<16><<<1, BLOCKS_TOTAL, BLOCKS_TOTAL*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);
 			break;
 		default:
 			//TODO:#4
 			if (BLOCKS_TOTAL > 1024) {
-				reduce_rms<1024><<<1, 1024, 1024*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL);		
+				reduce_rms<1024><<<1, 1024, 1024*sizeof(float)>>>(d_scal_rms, d_partial_result, BLOCKS_TOTAL, root);		
 			}
 			else {
 				//Todo support for other sizes
@@ -1100,30 +1106,4 @@ void scal_exp_rms_cuda(float* d_scal_rms, float* d_partial_result, float* d_scal
 				exit(EXIT_FAILURE);
 			}
 	}
-	//We're done
-	return;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

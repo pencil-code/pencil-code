@@ -232,7 +232,7 @@ module Magnetic
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,& 
           eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
-  real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.
+  real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
@@ -3745,21 +3745,22 @@ module Magnetic
       endif
 !
 ! Resistivity proportional to sound speed for stability of SN Turbulent ISM
+! fred: 23.9.17 replaced 0.5 with eta_cspeed so exponent can be generalised
 !
       if (lresi_cspeed) then
-        etatotal = etatotal + eta_cspeed*exp(0.5*p%lnTT)
+        etatotal = etatotal + eta*exp(eta_cspeed*p%lnTT)
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i)=fres(:,i)-eta_cspeed*exp(0.5*p%lnTT)*mu0*p%jj(:,i)
+            fres(:,i)=fres(:,i)-eta*exp(eta_cspeed*p%lnTT)*mu0*p%jj(:,i)
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+eta_cspeed*exp(0.5*p%lnTT)* &
+            fres(:,i)=fres(:,i)+eta*exp(eta_cspeed*p%lnTT)* &
                 (p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
           enddo
         endif
         if (lfirst.and.ldt) then
-          diffus_eta=diffus_eta+eta_cspeed*exp(0.5*p%lnTT)
+          diffus_eta=diffus_eta+eta*exp(eta_cspeed*p%lnTT)
         endif
       endif
 !

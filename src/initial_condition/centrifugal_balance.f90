@@ -85,6 +85,7 @@ module InitialCondition
   real :: radial_percent_smooth=10.0,rshift=0.0
   real :: gravitational_const=0.
   real :: magnetic_power_law=impossible
+  real :: dustdensity_powerlaw=1.5,edtog=0.01
 !
 ! For the magnetic field
 !
@@ -121,6 +122,11 @@ module InitialCondition
   real :: bump_radius = 1.,bump_ampl = 0.4, bump_width = 0.1
   character (len=labellen) :: ipressurebump='nobump'
 !
+! Magnetic spiral
+  real :: B0_spiral=0.012042837784031205
+  real :: etamu0_spiral = 1.0
+  real :: Omega0_spiral=1.0, r0_spiral=1.0
+!
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
@@ -132,7 +138,8 @@ module InitialCondition
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
        bump_radius,bump_ampl,bump_width,ipressurebump,&
-       lselfgravity_logspirals
+       lselfgravity_logspirals,dustdensity_powerlaw,edtog,&
+       B0_spiral,etamu0_spiral,Omega0_spiral,r0_spiral
 !
   contains
 !***********************************************************************
@@ -176,6 +183,11 @@ module InitialCondition
            call put_shared_variable('itemperature_power_law',&
              temperature_power_law,&
              caller='initialize_particles')
+! for magnetic spiral
+      call put_shared_variable('B0_spiral',B0_spiral)
+      call put_shared_variable('etamu0_spiral',etamu0_spiral)
+      call put_shared_variable('Omega0_spiral',Omega0_spiral)
+      call put_shared_variable('r0_spiral',r0_spiral)
 !
       call keep_compiler_quiet(f)
 !
@@ -613,6 +625,169 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ss
+!***********************************************************************
+    subroutine initial_condition_nd(f)
+!
+!  Initialize logarithmic density. init_lnrho 
+!  will take care of converting it to linear 
+!  density if you use ldensity_nolog
+!
+!  20-sep-17/wlad: coded
+!
+      use EquationOfState, only: rho0
+      use Sub,             only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl
+      real, dimension (mx) :: lnrhomid !,strat
+      !real, dimension (mx) :: cs2,tmp1,tmp2
+      real    :: p !,q
+      integer :: k
+      !integer :: ics2
+      !integer, pointer :: iglobal_cs2
+!
+      p=-dustdensity_powerlaw 
+      if (lroot) print*,'Radial dust density stratification with power law=',p
+!
+!  Pencilize the density allocation.
+!
+      do n=1,mz
+        do m=1,my
+!
+!  Midplane density
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          lnrhomid=log(edtog*rho0)+p*log(rr_cyl/r_ref)
+          do k=1,ndustspec
+             f(:,m,n,ind(k)) = f(:,m,n,ind(k))+exp(lnrhomid)
+          enddo
+!
+!  Dust stratification          
+!
+          !if (lgrav) then
+          !  call potential(POT=tmp1,RMN=rr_sph)
+          !  call potential(POT=tmp2,RMN=rr_cyl)
+          !elseif (lpointmasses) then
+          !  tmp1=-g0/rr_sph 
+          !  tmp2=-g0/rr_cyl
+          !endif
+          !if (lcylindrical_gravity) then 
+          !  strat=0.
+          !else
+          !  strat=-gamma*(tmp1-tmp2)/vrms2
+          !endif
+          !f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
+!
+        enddo
+      enddo
+!
+    endsubroutine initial_condition_nd
+!***********************************************************************
+    subroutine initial_condition_uud(f)
+!
+!  Initialize the velocity field.
+!
+!  This subroutine is a general routine that takes
+!  the gravity acceleration and adds the centrifugal force
+!  that numerically balances it.
+!
+!  Pressure corrections to ensure centrifugal equilibrium are
+!  added in the respective modules
+!
+!  24-feb-05/wlad: coded
+!  04-jul-07/wlad: generalized for any shear
+!  08-sep-07/wlad: moved here from initcond
+!
+      use Gravity, only: acceleration
+      use Sub,     only: get_radial_distance,power_law
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: rr_cyl,rr_sph,OO,g_r,tmp
+      integer :: i,k
+!
+      if (lroot) &
+           print*,'centrifugal_balance: initializing velocity field'
+!
+      if ((rsmooth/=0.).or.(r0_pot/=0)) then
+        if (rsmooth/=r0_pot) &
+             call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
+        if (n_pot<=2) &
+             call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
+      endif
+!
+      do m=m1,m2
+      do n=n1,n2
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+!
+        if (lgrav) then
+!
+! Gravity of a static central body
+!
+          call acceleration(g_r)
+!
+! Sanity check
+!
+          if (any(g_r > 0.)) then
+            do i=l1,l2
+              if (g_r(i-l1+1) > 0) then
+                print*,"centrifugal_balance: gravity at physical point ",&
+                     x(i),y(m),z(n),"is directed outwards"
+                call fatal_error("","")
+              endif
+            enddo
+          else
+            if ( (coord_system=='cylindric')  .or.&
+                 (coord_system=='cartesian')) then
+              OO=sqrt(max(-g_r/rr_cyl,0.))
+            else if (coord_system=='spherical') then
+              OO=sqrt(max(-g_r/rr_sph,0.))
+            endif
+          endif
+!
+        elseif (lpointmasses) then
+!
+! Gravity from dynamical point masses with a dominating central body
+!
+          call power_law(sqrt(g0),rr_sph,qgshear,tmp)
+!
+          if (lcartesian_coords.or.&
+               lcylindrical_coords) then
+            OO=tmp
+            if (lcylindrical_gravity) &
+                 OO=tmp*sqrt(rr_sph/rr_cyl)
+          elseif (lspherical_coords) then
+            OO=tmp
+          endif
+!
+        else
+!
+          print*,"both gravity and pointmasses are switched off"
+          print*,"there is no gravity to determine the azimuthal velocity"
+          call fatal_error("initial_condition_uud","")
+!
+        endif
+!
+        do k=1,ndustspec 
+        if (coord_system=='cartesian') then
+          f(l1:l2,m,n,iudx(k)) = f(l1:l2,m,n,iudx(k)) - y(  m  )*OO
+          f(l1:l2,m,n,iudy(k)) = f(l1:l2,m,n,iudy(k)) + x(l1:l2)*OO
+          f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) + 0.
+        elseif (coord_system=='cylindric') then
+          f(l1:l2,m,n,iudx(k)) = f(l1:l2,m,n,iudx(k)) + 0.
+          f(l1:l2,m,n,iudy(k)) = f(l1:l2,m,n,iudy(k)) + (OO-OOcorot)*rr_cyl
+          f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) + 0.
+        elseif (coord_system=='spherical') then
+          f(l1:l2,m,n,iudx(k)) = f(l1:l2,m,n,iudx(k)) + 0.
+          f(l1:l2,m,n,iudy(k)) = f(l1:l2,m,n,iudy(k)) + 0.
+          f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) + (OO-OOcorot)*rr_sph
+       endif
+       enddo
+!
+      enddo
+      enddo
+!
+    endsubroutine initial_condition_uud
 !***********************************************************************
     subroutine set_thermodynamical_quantities&
          (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
