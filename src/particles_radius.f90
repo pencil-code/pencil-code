@@ -1048,14 +1048,11 @@ module Particles_radius
 !
     endsubroutine rprint_particles_radius
 !***********************************************************************
-    subroutine get_stbin(iStbin,fp,ip)
-      real, dimension(mpar_loc,mparray) :: fp
+    subroutine get_stbin(api,iStbin)
       integer, intent(out) :: iStbin
-      integer, intent(in) :: ip
       integer :: k=0
       real :: api
       k = 1
-      api = fp(ip,iap)
       if (lfixed_particles_radius) then
         do while((api  >=  ap0(k)).and.(k  <=  ndustrad))
           iStbin = k
@@ -1064,13 +1061,18 @@ module Particles_radius
       endif
     endsubroutine get_stbin
 !***********************************************************************
-    subroutine get_mass_from_radius(mpi,fp,ip)
-      real, dimension(mpar_loc,mparray) :: fp
-      integer, intent(in) :: ip
-      real, intent(out) :: mpi
+    subroutine get_mass_from_radius(mpi,fpwn,ip)
+      real, dimension (lpar_max,mparray) :: fpwn
+      integer,intent(in) :: ip
+      real,intent(out) :: mpi
       real :: api
-      api = fp(ip,iap)
-      mpi = (4./3.)*pi*rhopmat*(api**3)
+      api = fpwn(ip,iap)
+      mpi=(4./3.)*pi*rhopmat*(api**3)      
     endsubroutine get_mass_from_radius
 !***********************************************************************
-endmodule Particles_radius
+    subroutine get_maxrad(apmax)
+      real :: apmax
+      apmax=maxval(ap0)
+    endsubroutine get_maxrad
+!***********************************************************************
+  endmodule Particles_radius

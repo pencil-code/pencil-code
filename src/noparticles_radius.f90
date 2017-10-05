@@ -190,4 +190,9 @@ module Particles_radius
 !
     endsubroutine get_mass_from_radius
 !***********************************************************************
+    subroutine get_maxrad(apmax)
+      real :: apmax
+
+    endsubroutine get_maxrad
+!***********************************************************************
 endmodule Particles_radius

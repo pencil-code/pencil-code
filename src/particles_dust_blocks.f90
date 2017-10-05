@@ -218,7 +218,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -232,6 +232,7 @@ module Particles
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       real :: rhom
       integer :: ierr, jspec
@@ -1543,7 +1544,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -1557,6 +1558,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       real, dimension(3) :: ggp
       real :: Omega2, rr, vv, OO2

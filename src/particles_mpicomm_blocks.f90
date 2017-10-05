@@ -2494,4 +2494,10 @@ module Particles_mpicomm
 !
     endsubroutine get_brick_index
 !***********************************************************************
+    subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
+
+      integer, intent(in) :: to_neigh,from_neigh
+      integer, intent(in) :: her_npbuf,my_npbuf
+    endsubroutine communicate_fpbuf
+!***********************************************************************
 endmodule Particles_mpicomm

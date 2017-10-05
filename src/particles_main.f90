@@ -24,7 +24,6 @@ module Particles_main
   use Particles_mpicomm
   use Particles_number
   use Particles_radius
-  use Particles_potential
   use Particles_grad
   use Particles_selfgravity
   use Particles_sink
@@ -57,7 +56,6 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-      call register_particles_potential    ()
       call register_particles_lyapunov    ()
       call register_particles_radius       ()
       call register_particles_grad         ()
@@ -114,7 +112,6 @@ module Particles_main
       call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
       call rprint_particles_condensation (lreset,LWRITE=lroot)
-!      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_state(lreset,LWRITE=lroot)
@@ -122,13 +119,14 @@ module Particles_main
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
-    subroutine particles_initialize_modules(f)
+        subroutine particles_initialize_modules(f)
 !
 !  Initialize particle modules.
 !
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
 !
       if (lyinyang) &
         call fatal_error('particles_initialize_modules','Particles not implemented on Yin-Yang grid')
@@ -199,7 +197,7 @@ module Particles_main
 !  Initialize individual modules.
 !
       call initialize_particles_mpicomm      (f)
-      call initialize_particles              (f)
+      call initialize_particles              (f,fp)
       call initialize_particles_map
       call initialize_particles_adaptation   (f)
       call initialize_particles_density      (f)
@@ -220,7 +218,6 @@ module Particles_main
       call initialize_particles_collisions   (f)
       call initialize_pars_diagnos_state     (f)
       call initialize_particles_diagnos_dv   (f)
-      call initialize_particles_potential    (f)
 !
       if (lparticles_blocks) then
         if (lrun) then
@@ -308,7 +305,6 @@ module Particles_main
       call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
       call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
       call read_namelist(read_particles_cond_init_pars ,'particles_cond'  ,lparticles_condensation)
-!     call read_namelist(read_particles_pot_init_pars  ,'particles_potential',lparticles_potential)
       call read_namelist(read_particles_spin_init_pars ,'particles_spin'    ,lparticles_spin)
       call read_namelist(read_particles_sink_init_pars ,'particles_sink'    ,lparticles_sink)
       call read_namelist(read_particles_num_init_pars  ,'particles_number'  ,lparticles_number)
@@ -332,7 +328,6 @@ module Particles_main
       call read_namelist(read_particles_run_pars          ,'particles'              ,lparticles)
       call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt'        ,lparticles_adaptation)
       call read_namelist(read_particles_rad_run_pars      ,'particles_radius'       ,lparticles_radius)
-!      call read_namelist(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
       call read_namelist(read_particles_spin_run_pars     ,'particles_spin'         ,lparticles_spin)
       call read_namelist(read_particles_sink_run_pars     ,'particles_sink'         ,lparticles_sink)
       call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
@@ -731,7 +726,7 @@ module Particles_main
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
-    subroutine particles_pde(f,df)
+    subroutine particles_pde(f,df,p)
 !
 !  Dynamical evolution of particle variables.
 !
@@ -742,9 +737,11 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       intent (inout)  :: f
       intent (out) :: df
+      intent (in) :: p
 !
 !  Write information about local particle environment to file.
 !
@@ -754,8 +751,7 @@ module Particles_main
 !  Dynamical equations.
 !
       if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_potential)   call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
+      if (lparticles)             call dvvp_dt(f,df,p,fp,dfp,ineargrid)
       if (lparticles_lyapunov)    call dlyapunov_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
@@ -840,8 +836,6 @@ module Particles_main
       if (lparticles_density)   call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
-!      if (lparticles_potential) &
-!          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_polymer) &
 !          call dRR_dt_pencil(f,df,fp,dfp,ineargrid)
 !
@@ -987,7 +981,6 @@ module Particles_main
       call write_particles_init_pars(unit)
       if (lparticles_radius)      call write_particles_rad_init_pars(unit)
       if (lparticles_condensation)call write_particles_cond_init_pars(unit)
-!      if (lparticles_potential)   call write_particles_pot_init_pars(unit)
       if (lparticles_spin)        call write_particles_spin_init_pars(unit)
       if (lparticles_sink)        call write_particles_sink_init_pars(unit)
       if (lparticles_number)      call write_particles_num_init_pars(unit)
@@ -1012,7 +1005,6 @@ module Particles_main
 !
       if (lparticles)                call write_particles_run_pars(unit)
       if (lparticles_radius)         call write_particles_rad_run_pars(unit)
-!      if (lparticles_potential)      call write_particles_pot_run_pars(unit)
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
       if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)

@@ -2926,5 +2926,11 @@ module Mpicomm
       if (ALWAYS_FALSE) print*,flag,message
 !
     endfunction report_clean_output
+!***********************************************************************
+    subroutine particles_neighbour_proc()
+!
+      call fatal_error("nompicomm","should not be called")
+
+    endsubroutine particles_neighbour_proc
 !**************************************************************************
 endmodule Mpicomm

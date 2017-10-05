@@ -1180,12 +1180,6 @@ module Particles_map
         close (lun)
       endif
 !
-! If we are using particles_potential, this is the time to update the neighbour list
-!
-      if (lparticles_potential) then
-        call invert_ineargrid_list(fp,ineargrid,ipar,dfp,f)
-      endif
-!
       if (ip<=8) print '(A,i4,i8,i4,l4)', &
            'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
            iproc, ncount, isorttype, lrunningsort

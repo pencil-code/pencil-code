@@ -110,7 +110,7 @@ module Particles
 !
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -118,6 +118,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       real :: rhom
 !
@@ -516,7 +517,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -527,6 +528,7 @@ module Particles
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)

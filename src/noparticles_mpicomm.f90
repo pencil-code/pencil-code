@@ -224,4 +224,16 @@ module Particles_mpicomm
 !
     endsubroutine get_brick_index
 !***********************************************************************
+    subroutine particles_neighbour_proc()
+!
+! There is no neighbouring processors    
+!      
+
+    endsubroutine particles_neighbour_proc
+!***********************************************************************
+    subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
+! dummy
+    integer :: to_neigh,from_neigh,her_npbuf,my_npbuf
+    endsubroutine communicate_fpbuf
+!***********************************************************************
 endmodule Particles_mpicomm

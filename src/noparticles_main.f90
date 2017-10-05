@@ -259,7 +259,7 @@ module Particles_main
 !
     endsubroutine particles_special_bfre_bdary
 !***********************************************************************
-    subroutine particles_pde(f,df)
+    subroutine particles_pde(f,df,p)
 !
 !  Dynamical evolution of particle variables.
 !
@@ -267,9 +267,11 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine particles_pde
 !***********************************************************************
