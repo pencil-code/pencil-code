@@ -436,7 +436,7 @@ module Particles_potential
 !
 ! send and receive buffers      
 !
-      call communicate_fpbuf(lneigh,uneigh)
+      call communicate_fpbuf(lneigh,uneigh,her_npbuf,my_npbuf)
 !
 ! Now my buffer size is changed      
 !
