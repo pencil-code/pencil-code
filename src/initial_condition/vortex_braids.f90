@@ -1,4 +1,4 @@
-!  Initial condition (density, magnetic field, velocity) 
+!  Initial condition (density, magnetic field, velocity)
 !  for a particular configuration of a braided vortex field.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -12,7 +12,7 @@ module InitialCondition
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet  
+  use General, only: keep_compiler_quiet
   use Mpicomm
   use Messages
 !
@@ -96,7 +96,7 @@ module InitialCondition
             call curl(f,iux,uu(l1:l2,m,n,:))
         enddo
     enddo
-    
+
     f(:,:,:,iux:iuz) = uu
 !
 !     if (n_blobs > 0) then
@@ -124,8 +124,8 @@ module InitialCondition
 !***********************************************************************
   subroutine initial_condition_lnrho(f)
 !
-!  Initialize logarithmic density. init_lnrho 
-!  will take care of converting it to linear 
+!  Initialize logarithmic density. init_lnrho
+!  will take care of converting it to linear
 !  density if you use ldensity_nolog
 !
 !  07-may-09/wlad: coded
