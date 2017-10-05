@@ -134,7 +134,10 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     import pylab as plt
     import time
     import os # for making the movie
-    import thread # for GUI
+    try:
+        import thread # for GUI
+    except:
+        import _thread as thread
     from matplotlib.colors import LightSource
 
     global tStep, sliderTime, pause
