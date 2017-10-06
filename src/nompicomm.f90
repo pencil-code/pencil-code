@@ -2927,9 +2927,9 @@ module Mpicomm
 !
     endfunction report_clean_output
 !***********************************************************************
-    subroutine particles_neighbour_proc()
+    subroutine particles_neighbour_proc
 !
-      call fatal_error("nompicomm","should not be called")
+      call stop_it("nompicomm: particles_neighbour_proc should not be called")
 
     endsubroutine particles_neighbour_proc
 !**************************************************************************
