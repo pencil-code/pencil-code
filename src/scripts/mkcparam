@@ -91,6 +91,7 @@ my $mpaux_decl    = '^\s*!\s*MPAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mqvar_decl    = '^\s*!\s*MQVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mqaux_decl    = '^\s*!\s*MQAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $ndustrad_decl    = '^\s*!\s*NDUSTRAD\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $npartdisp_decl    = '^\s*!\s*NPARTDISP\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
@@ -107,6 +108,7 @@ my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
 my $ndustrad = 5;
+my $npartdisp = 20;
 my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux, $mqvar, $mqaux) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
 my $npscalar = 0;
@@ -166,6 +168,7 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $nadsspec_decl, \$nadsspec );
     extract_decl ($line, $nsurfreacspec_decl, \$nsurfreacspec);
     extract_decl_reset ($line, $ndustrad_decl, \$ndustrad );
+    extract_decl_reset ($line, $npartdisp_decl, \$npartdisp);
     # Check for information about number of chemical and dust species
     # and discretization type:
     if ($line=~ /$chem_decl/) {$chem_string=$1;}
@@ -309,6 +312,7 @@ integer, parameter :: npscalar=${\($npscalar+0)}
 integer, parameter :: nadsspec=${\($nadsspec+0)}
 integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
 integer, parameter :: ndustrad=${\($ndustrad+0)}
+integer, parameter :: npartdisp=${\($npartdisp+0)}
 
 EOF
 

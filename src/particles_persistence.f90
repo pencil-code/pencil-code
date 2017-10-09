@@ -9,12 +9,12 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lparticles_presistence=.true.
+! CPARAM logical, parameter :: lparticles_persistence=.true.
 !
 ! MPAUX CONTRIBUTION 4
 !
 !***************************************************************
-module Particles_presistence
+module Particles_persistence
 !
   use Cdata
   use Messages
@@ -24,13 +24,13 @@ module Particles_presistence
 !
   implicit none
 !
-  include 'particles_presistence.h'
+  include 'particles_persistence.h'
 !
   real,dimension(NPARTDISP) :: RR=0.0
   integer(kind=4),dimension(NPARTDISP) :: pinside=0
 
 !
-  namelist /particles_presistence_init_pars/ &
+  namelist /particles_persistence_init_pars/ &
    RR 
 !
   namelist /particles_persistence_run_pars/ &
@@ -104,10 +104,8 @@ contains
          fp(ip,izp0)=fp(ip,izp)
          fp(ip,ippersist) = 0.
       enddo
-!
-! 
 !      
-    endsubroutine init_particles_persist
+    endsubroutine init_particles_persistence
 !***********************************************************************
     subroutine dpersist_dt(f,df,fp,dfp,ineargrid)
 !
@@ -117,14 +115,14 @@ contains
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
-      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
       logical :: lheader, lfirstcall=.true.
       real,dimension(mpar_loc) :: Ds2
       real, dimension(3) :: Xp,Xp0
       real :: dR,dR2
-      integer :: plabel
+      integer :: plabel,j
 !
 !  Print out header information in first time step.
 !
@@ -172,7 +170,7 @@ contains
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_presistence_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_persistence_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_ppersist_init_pars
 !***********************************************************************
@@ -180,7 +178,7 @@ contains
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_presistence_init_pars)
+      write(unit, NML=particles_persistence_init_pars)
 !
     endsubroutine write_ppersist_init_pars
 !***********************************************************************
@@ -190,7 +188,7 @@ contains
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_presistence_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_persistence_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_ppersist_run_pars
 !***********************************************************************
@@ -198,7 +196,7 @@ contains
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_presistence_run_pars)
+      write(unit, NML=particles_persistence_run_pars)
 !
     endsubroutine write_ppersist_run_pars
 !***********************************************************************
@@ -243,23 +241,14 @@ contains
 !
       do iname=1,nname
          call parse_name(iname,cname(iname),cform(iname),'ds2pm',idiag_ds2pm)
-      endif
+      enddo
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_ds2pm=0;idiag_by2pm=0;idiag_bz2pm=0
+        idiag_ds2pm=0
       endif
 !
-!  Run through all possible names that may be listed in print.in.
-!
-      if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'bx2pm',idiag_bx2pm)
-        call parse_name(iname,cname(iname),cform(iname),'by2pm',idiag_by2pm)
-        call parse_name(iname,cname(iname),cform(iname),'bz2pm',idiag_bz2pm)
-      enddo
-!
-    endsubroutine rprint_particles_lyapunov
+    endsubroutine rprint_particles_persist
 !***********************************************************************
-endmodule Particles_lyapunov
+endmodule Particles_persistence 

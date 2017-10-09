@@ -46,6 +46,7 @@ module Particles_cdata
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, npar_total=0, npaux=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0, irpbeta=0
+  integer :: ixp0=0, iyp0=0, izp0=0,ippersist=0
   integer :: idXp1=0, idXp2=0, idXp3=0, idVp1=0, idVp2=0, idVp3=0
   integer :: idXpo1=0, idXpo2=0, idXpo3=0
   integer :: icaustics
