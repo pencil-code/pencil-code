@@ -393,7 +393,7 @@ module Particles_potential
 !***********************************************************************
     subroutine particles_neighbour_proc_dirn(idirn)
 
-!      use Mpicomm
+      use Particles_mpicomm
 !      use Particles
       integer, intent(in) :: idirn
       integer :: uneigh,lneigh

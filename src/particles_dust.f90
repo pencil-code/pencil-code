@@ -6457,7 +6457,9 @@ module Particles
 !
 !  cleanup (dummy)
 !
-      if (lparticles_potential) call particles_potential_cleanup()
+    use Particles_potential, only: particles_potential_clean_up 
+!
+      if (lparticles_potential) call particles_potential_clean_up()
       print*,'particles_tracer: Nothing to clean up'
 !
     endsubroutine particles_final_clean_up
