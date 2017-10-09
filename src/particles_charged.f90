@@ -2264,22 +2264,4 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine particles_dragforce_stiff
 !***********************************************************************
-    subroutine get_boundary_particles(idirn,porm,npbuf)
-!
-! dummy
-!
-      integer, intent(in) :: idirn,porm
-      integer, intent(out) :: npbuf
-!
-      call fatal_error("particles_dust","dont call get_boundary_particles")
-!
-      endsubroutine get_boundary_particles
-!***********************************************************************
-    subroutine assimilate_incoming(npbuf)
-      integer,intent(in) :: npbuf
-!
-      call fatal_error("particles_dust","dont call assimilate_incoming")
-!
-    endsubroutine assimilate_incoming
-!***********************************************************************
 endmodule Particles

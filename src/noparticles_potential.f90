@@ -30,16 +30,16 @@ module Particles_potential
 !
     endsubroutine register_particles_potential
 !***********************************************************************
-    subroutine initialize_particles_potential(f)
+    subroutine initialize_particles_potential(fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  25-nov-05/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
 !
     endsubroutine initialize_particles_potential
 !***********************************************************************
