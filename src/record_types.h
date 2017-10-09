@@ -2,6 +2,12 @@
 !
 ! This file declares all the integer tags used to allow variable
 ! numbers and types of records in varfiles and other datafiles.
+!
+! ***WARNING*** Fred 09/10/17 If persistent variables are generated in
+! your init routine and depend on random seeds take care to force
+! independence of processor as the default from start.f90 is processor
+! dependent. See e.g. initialize_interstellar
+!
 
 ! Persistent
 integer, parameter :: id_block_PERSISTENT        = 2000
