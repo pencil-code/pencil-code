@@ -292,20 +292,10 @@ program start
   if (.not.lperi(3).and.nzgrid<2) &
       call fatal_error('start','for lperi(3)=F: must have nzgrid>1')
 !
-!  Initialise random number generator in processor-dependent fashion for
-!  random initial data.
-!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
-!  would produce very short-period random numbers with the Intel compiler;
-!  so we need to retain most of the initial entropy of the generator.
+!  Initialise random number generator in processor-independent fashion
 !
   call get_nseed(nseed)   ! get state length of random number generator
   call random_seed_wrapper(GET=seed)
-!
-!  Different initial seed (seed0) and random numbers on different CPUs
-!  The default is seed0=1812 for some obscure Napoleonic reason
-!
-  seed(1)=-((seed0-1812+1)*10+iproc_world)
-  call random_seed_wrapper(PUT=seed)
 !
 !  Generate grid and initialize specific grid variables.
 !
@@ -415,14 +405,6 @@ program start
     kz_nyq=0.0
   endif
 !
-!  Set random seed independent of processor prior to initial conditions.
-!  Do this only if seed0 is modified from its original value.
-!
-  if (seed0/=1812) then
-    seed(1)=seed0
-    call random_seed_wrapper(PUT=seed)
-  endif
-!
 !  Parameter dependent initialization of module variables and final
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
@@ -453,7 +435,27 @@ program start
 !  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??
 !
-  if (lroot) print*
+!  Initialise random number generator in processor-dependent fashion for
+!  random initial data.
+!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
+!  would produce very short-period random numbers with the Intel compiler;
+!  so we need to retain most of the initial entropy of the generator.
+!  Different initial seed (seed0) and random numbers on different CPUs
+!  The default is seed0=1812 for some obscure Napoleonic reason
+!  Fred: NB, when using persistent variables take care whether seeds need
+!        to be synchronous or not for init_*
+!
+  seed(1)=-((seed0-1812+1)*10+iproc_world)
+  call random_seed_wrapper(PUT=seed)
+!
+!  Set random seed independent of processor prior to initial conditions.
+!  Do this only if seed0 is modified from its original value.
+!
+  if (seed0/=1812) then
+    seed(1)=seed0
+    call random_seed_wrapper(PUT=seed)
+  endif
+!
   do i=1,init_loops
     if (lroot .and. init_loops/=1) &
         print '(A33,i3,A25)', 'start: -- performing loop number', i, &
