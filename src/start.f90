@@ -432,9 +432,6 @@ program start
   if (lyinyang.and.lroot) &
     call warning('start','Most initial conditions depending on y or z will be set correctly only on Yin grid.')
 !
-!  The following init routines only need to add to f.
-!  wd: also in the case where we have read in an existing snapshot??
-!
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -450,11 +447,16 @@ program start
 !
 !  Set random seed independent of processor prior to initial conditions.
 !  Do this only if seed0 is modified from its original value.
+!  NB Default is proc dependent seed during init_* then reverts proc independ
+!     seed0\=1812 proc independent seed throughout
 !
   if (seed0/=1812) then
     seed(1)=seed0
     call random_seed_wrapper(PUT=seed)
   endif
+!
+!  The following init routines only need to add to f.
+!  wd: also in the case where we have read in an existing snapshot??
 !
   do i=1,init_loops
     if (lroot .and. init_loops/=1) &
