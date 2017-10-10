@@ -34,7 +34,7 @@ contains
 !
     endsubroutine register_particles_persistence
 !***********************************************************************
-    subroutine initialize_particles_persistence(f)
+    subroutine initialize_particles_persist(f)
 !
 !  Dummy.
 !
@@ -44,7 +44,7 @@ contains
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_particles_persistence
+    endsubroutine initialize_particles_persist
 !***********************************************************************
     subroutine init_particles_persistence(fp)
 !

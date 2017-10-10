@@ -40,7 +40,7 @@ module Particles_persistence
 !
 contains
 !***********************************************************************
-    subroutine register_particles_persistence()
+    subroutine register_particles_persistence
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -68,7 +68,7 @@ contains
 !
     endsubroutine register_particles_persistence
 !***********************************************************************
-    subroutine initialize_particles_persistence(f)
+    subroutine initialize_particles_persist(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -82,7 +82,7 @@ contains
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_particles_persistence
+    endsubroutine initialize_particles_persist
 !***********************************************************************
     subroutine init_particles_persistence(fp)
 !
