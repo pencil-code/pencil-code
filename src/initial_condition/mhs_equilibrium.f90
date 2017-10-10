@@ -263,6 +263,8 @@ module InitialCondition
 !
 !  20-sep-17/wlad: coded
 !
+      use EquationOfState, only: rho0
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: rr_sph,rr_cyl
       real, dimension (mx) :: lnrhomid
