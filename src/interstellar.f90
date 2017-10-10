@@ -162,6 +162,7 @@ module Interstellar
 !
   double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
+  real :: SNI_factor=1.0, SNII_factor=1.0
 !
 !  SNII rate=5.E-12 mass(H1+HII)/solar_mass
 !  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
@@ -389,6 +390,7 @@ module Interstellar
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
+      SNI_factor,SNII_factor, &
       inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, &
@@ -568,8 +570,8 @@ module Interstellar
 !
       preSN(:,:)=0
 !
-      t_interval_SNI  = 1./(SNI_area_rate  * Lxyz(1) * Lxyz(2))
-      t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNI  = 1./(SNI_factor*SNI_area_rate  * Lxyz(1) * Lxyz(2))
+      t_interval_SNII = 1./(SNII_factor*SNII_area_rate * Lxyz(1) * Lxyz(2))
       if (average_SNI_heating == impossible) average_SNI_heating = &
           r_SNI *ampl_SN/(sqrt(pi)*h_SNI )
       if (average_SNII_heating == impossible) average_SNII_heating = &
@@ -1197,7 +1199,7 @@ module Interstellar
 !  Initialise some explosions etc.
 !  24-nov-2002/tony: coded
 !
-      use General, only: itoa
+      use General, only: itoa, random_seed_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1206,6 +1208,13 @@ module Interstellar
       integer :: i,j,iSNR
 !
       intent(inout) :: f
+!
+!  Fred: 07Oct17 The random numbers must be synchronized on all processors or
+!        else the treatment of SN explosions shall diverge and the MPI will
+!        break or worse hang
+!      
+      seed(1)=seed0
+      call random_seed_wrapper(PUT=seed)
 !
       do j=1,ninit
 !
@@ -1567,8 +1576,6 @@ module Interstellar
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (lfirst.and.ldt) then
-!MR@Fred: is the following statement meaningful, given that Hmax is used in timestep control in entropy?
-!        if (leos_idealgas) dt1_max=max(dt1_max,abs(heatcool)*p%cv1/cdt_tauc)
         Hmax=Hmax+heat-cool
       endif
 !
@@ -1688,7 +1695,6 @@ module Interstellar
 !
       if (headtt .and. (ip<14)) print*,'check_SNI: ENTER'
 !
-      l_SNI=.false.
       if (t >= t_next_SNI) then
         iSNR=get_free_SNR()
         SNRs(iSNR)%site%TT=1E20
@@ -1728,10 +1734,6 @@ module Interstellar
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
             l_SNI=.true.
-            if (lSN_mass_rate) then
-              call set_interval(f,t_interval_SNI,l_SNI)
-            endif
-            !call set_next_SNI
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot .and. (ip<14)) print*,'check_SNI: TOO HOT, (x,y,z) =',&
@@ -1818,23 +1820,19 @@ module Interstellar
 !
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
-            if (lSN_mass_rate) then
-              call set_interval(f,t_interval_SNI,l_SNI)
-            endif
-            !call set_next_SNII
             exit
-            elseif (ierr==iEXPLOSION_TOO_HOT) then
-              if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
-                  SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                  'rho =', SNRs(iSNR)%site%rho
-            elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-              if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO UNEVEN, (x,y,z) =',&
-                  SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                  'rho =', SNRs(iSNR)%site%rho
-            elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-              if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO RARIFIED, (x,y,z) =',&
-                  SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
-                  'rho =', SNRs(iSNR)%site%rho
+          elseif (ierr==iEXPLOSION_TOO_HOT) then
+            if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
+                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
+                'rho =', SNRs(iSNR)%site%rho
+          elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
+            if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO UNEVEN, (x,y,z) =',&
+                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
+                'rho =', SNRs(iSNR)%site%rho
+          elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
+            if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO RARIFIED, (x,y,z) =',&
+                SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
+                'rho =', SNRs(iSNR)%site%rho
           endif
         enddo
 !
@@ -1858,8 +1856,7 @@ module Interstellar
 !***********************************************************************
     subroutine set_next_SNI(f,scaled_interval)
 !
-      use General, only: random_number_wrapper
-      use Mpicomm, only: mpiallreduce_sum
+      use General, only:  random_seed_wrapper, random_number_wrapper
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(1) :: franSN
@@ -1871,23 +1868,34 @@ module Interstellar
 !  Pre-determine time for next SNI.
 !
       if (lroot) print*, &
-          "check_SNI: Old t_next_SNI=", t_next_SNI
+          "set_next_SNI: Old t_next_SNI=", t_next_SNI
+      if (lreset_ism_seed) then
+        seed=seed_reset
+        call random_seed_wrapper(PUT=seed)
+        lreset_ism_seed=.false.
+      endif
+      !Fred: plan to time and locate SN via stellar mass, add variable
+      !      stellar mass, routine to accrete stellar mass function of
+      !      ISM density, explode SN based on stellar mass distribution
+      !if (lSN_mass_rate) then
+      !  call set_interval(f,t_interval_SNI,l_SNI)
+      !endif
       call random_number_wrapper(franSN)
-!
-      scaled_interval=t_interval_SNI
 !
 !  Vary the time interval with a uniform random distribution between
 !  \pm0.875 times the average interval required.
 !
-      t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
+      t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * t_interval_SNI
+!
+      scaled_interval=t_next_SNI - t
       if (lroot) print*, &
-          'check_SNI: Next SNI at time = ' ,t_next_SNI
+          'set_next_SNI: Next SNI at time = ' ,t_next_SNI
 !
     endsubroutine set_next_SNI
 !*****************************************************************************
     subroutine set_next_SNII(f,scaled_interval)
 !
-      use General, only: random_number_wrapper
+      use General, only:  random_seed_wrapper, random_number_wrapper
       use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_grid_mn
 !
@@ -1905,6 +1913,11 @@ module Interstellar
 !
       if (lroot) print*, &
           "check_SNII: Old t_next_SNII=", t_next_SNII
+      if (lreset_ism_seed) then
+        seed=seed_reset
+        call random_seed_wrapper(PUT=seed)
+        lreset_ism_seed=.false.
+      endif
       call random_number_wrapper(franSN)
 !
 !  fred: the SN rate can be varied to reduce with mass outflows and increase
@@ -1944,6 +1957,12 @@ module Interstellar
       else
         scaled_interval=t_interval_SNII
       endif
+      !Fred: plan to time and locate SN via stellar mass, add variable
+      !      stellar mass, routine to accrete stellar mass function of
+      !      ISM density, explode SN based on stellar mass distribution
+      !if (lSN_mass_rate) then
+      !  call set_interval(f,t_interval_SNII,l_SNI)
+      !endif
 !
 !  Vary the time interval with a uniform random distribution between
 !  \pm0.875 times the average interval required.
@@ -1952,6 +1971,7 @@ module Interstellar
       if (lroot) print*, &
           'check_SNII: Next SNII at time = ' ,t_next_SNII
 !
+      scaled_interval=t_next_SNII - t
     endsubroutine set_next_SNII
 !*****************************************************************************
     subroutine set_interval(f,t_interval,l_SNI)
@@ -2031,7 +2051,7 @@ module Interstellar
 !
 !  03-feb-10/fred: Tested and working correctly.
 !
-      use General, only: random_number_wrapper
+      use General, only: random_seed_wrapper,  random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
       use Grid, only: get_grid_mn
@@ -2062,7 +2082,6 @@ module Interstellar
 !  l_SNII_guassian skips this algorithm and switches to check_SNIIb. 
 !
       if (lSNII_gaussian) then  ! Skip location by mass.
-        call check_SNIIb(f,l_SNI)
         return
       endif
 !
@@ -2125,6 +2144,11 @@ module Interstellar
         freq_SNII=frac_heavy*frac_converted*cloud_mass_dim/ &
             mass_SN_progenitor/cloud_tau
         prob_SNII=freq_SNII*dtsn*5.
+        if (lreset_ism_seed) then
+          seed=seed_reset
+          call random_seed_wrapper(PUT=seed)
+          lreset_ism_seed=.false.
+        endif
         call random_number_wrapper(franSN)
 !
         if (lroot.and.ip<14) then
@@ -2179,7 +2203,6 @@ module Interstellar
             if (lSN_mass_rate) then
               call set_interval(f,t_interval_SNII,l_SNI)
             endif
-            !call set_next_SNII
             last_SN_t=t
           endif
 !
@@ -2275,19 +2298,10 @@ module Interstellar
 !  parameters for random location of SN - about zdisk
 !
     real, dimension(nzgrid) :: cum_prob_SN
-    !Fred: appears redundant to be deleted?
-    !real :: z00, x00, y00
     real, dimension(3) :: fran3
     integer :: i, nzskip=10 !prevent SN from being too close to boundaries
 !
     if (headtt .and. (ip<14)) print*,'position_SN_gaussianz: ENTER'
-!
-!  Calculate the global (nzgrid) lower z-coordinate.
-!
-    !Fred: appears redundant to be deleted?
-    !if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
-    !if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
-    !if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
 !  The disk oscillates. to keep the random dist centred at the disk find
 !  zmode where the peak mean density(z) resides and shift gaussian up/down
@@ -2534,26 +2548,23 @@ module Interstellar
 !
 !  Determine position for next SN (w/ fixed scale-height).
 !
-    use General, only: random_number_wrapper
+    use General, only: random_seed_wrapper, random_number_wrapper
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !
-    !Fred: appears redundant to be deleted?
-    !real :: z00, x00, y00
     real, dimension(3) :: fran3
     integer :: i   !prevent SN from being too close to boundaries
 !
     if (headtt) print*,'position_SN_uniformz: ENTER'
 !
-!  Calculate the global (nzgrid) lower z-coordinate.
-!    Fred: appears redundant to be deleted?
-!    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
-!    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
-!    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
-!
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
+    if (lreset_ism_seed) then
+      seed=seed_reset
+      call random_seed_wrapper(PUT=seed)
+      lreset_ism_seed=.false.
+    endif
     call random_number_wrapper(fran3)
 !
 !  Get 3 random numbers on all processors to keep rnd. generators in sync.
@@ -2590,7 +2601,7 @@ module Interstellar
 !  the SN position is *not* independent of ncpus (nor of nprocy and nprocz).
 !  It is repeatable given fixed nprocy/z though.
 !
-    use General, only: random_number_wrapper
+    use General, only: random_seed_wrapper,  random_number_wrapper
     use EquationOfState, only: eoscalc,ilnrho_ss,irho_ss
     use Mpicomm, only: mpibcast_int, mpibcast_real
 !
@@ -2630,6 +2641,11 @@ module Interstellar
 !  Use random number to detemine which processor SN is on.
 !  (Use root processor for rand, to ensure repeatability.)
 !
+      if (lreset_ism_seed) then
+        seed=seed_reset
+        call random_seed_wrapper(PUT=seed)
+        lreset_ism_seed=.false.
+      endif
       call random_number_wrapper(franSN)
       do icpu=1,ncpus
         if (cum_prob_byproc(icpu-1)<=franSN(1) .and. &
@@ -2679,7 +2695,7 @@ module Interstellar
 !
                 do ipsn=1,npreSN
                   if (lroot .and. ip<14) &
-                  print*,'position_by_cloudmass: preSN,iproc,it =',&
+                      print*,'position_by_cloudmass: preSN,iproc,it =',&
                       preSN,iproc,it
                   if ((SNR%indx%l==preSN(1,ipsn)) .and. &
                       (SNR%indx%m==preSN(2,ipsn)) .and. &
@@ -2737,7 +2753,7 @@ module Interstellar
       type (SNRemnant), intent(inout) :: SNR
 !
       real, dimension(nx) :: lnTT
-      real, dimension(6) :: fmpi5
+      real, dimension(6) :: fmpi6
       integer, dimension(4) :: impi4
 !
 !  Broadcast position to all processors from root; also broadcast SNR%indx%iproc,
@@ -2790,15 +2806,16 @@ module Interstellar
         SNR%feat%x=0.
         SNR%feat%y=0.
         SNR%feat%z=0.
+        SNR%feat%radius=0.
       endif
 !
 !    Broadcast to all processors.
 !
-      fmpi5=(/ SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%lnrho, SNR%site%lnTT, SNR%feat%radius /)
-      call mpibcast_real(fmpi5,6,SNR%indx%iproc)
+      fmpi6=(/ SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%lnrho, SNR%site%lnTT, SNR%feat%radius /)
+      call mpibcast_real(fmpi6,6,SNR%indx%iproc)
 !
-      SNR%feat%x=fmpi5(1); SNR%feat%y=fmpi5(2); SNR%feat%z=fmpi5(3);
-      SNR%site%lnrho=fmpi5(4); SNR%site%lnTT=fmpi5(5); SNR%feat%radius=fmpi5(6)
+      SNR%feat%x=fmpi6(1); SNR%feat%y=fmpi6(2); SNR%feat%z=fmpi6(3);
+      SNR%site%lnrho=fmpi6(4); SNR%site%lnTT=fmpi6(5); SNR%feat%radius=fmpi6(6)
 !
       SNR%site%rho=exp(SNR%site%lnrho);
 !
@@ -3235,7 +3252,8 @@ module Interstellar
 !  10-oct-09/axel: return zero density if the volume is zero
 !
       use Sub
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum,mpibcast_real,mpireduce_min,&
+                         mpireduce_max
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3329,7 +3347,7 @@ module Interstellar
 !  10-oct-09/axel: return zero density if the volume is zero
 !
       use Sub
-      use Mpicomm
+      use Mpicomm, only: mpireduce_sum,mpibcast_real
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3408,7 +3426,7 @@ module Interstellar
 !
 !  22-may-03/tony: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpireduce_max,mpibcast_real
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: SNR
