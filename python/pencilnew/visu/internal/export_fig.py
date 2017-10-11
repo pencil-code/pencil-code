@@ -1,6 +1,7 @@
 
 def export_fig(fig, filepath, filename=False,
                     PNG=True, PDF=False, EPS=False, DPI=300, EXPORT_BBOX_INCES='tight', transparent=True,
+                    verbose=True,
                     timestamp=False):
     """Does a proper export of a figure handle to all kind of image files.
     """
@@ -34,23 +35,23 @@ def export_fig(fig, filepath, filename=False,
         fig.savefig(complete_filepath+'.png',
         	bbox_inches = EXPORT_BBOX_INCES,
         	dpi = DPI, transparent=transparent)
-        print('~ .png saved')
+        if verbose: print('~ .png saved')
 
     if PDF:
         fig.savefig(complete_filepath+'.pdf',
         	bbox_inches = EXPORT_BBOX_INCES,
         	dpi = DPI, transparent=transparent)
-        print('~ .pdf saved')
+        if verbose: print('~ .pdf saved')
 
     if EPS:
         fig.savefig(complete_filepath+'.png',
         	bbox_inches = EXPORT_BBOX_INCES,
         	dpi = DPI, transparent=transparent)
-        print('~ .eps saved')
+        if verbose: print('~ .eps saved')
 
     if not PNG and not EPS and not EPS:
-        print('? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!')
+        if verbose: print('? WARNING: NO OUTPUT FILE HAS BEEN PRODUCED !!')
     else:
-        print('~ Plots saved to '+complete_filepath)
+        if verbose: print('~ Plots saved to '+complete_filepath)
 
     return True
