@@ -144,7 +144,7 @@ class DiffusionData(object):
             pbar = False; Nt = np.size(pos_series)
             for i_t,pos in enumerate(pos_series):
                 if i_t == 0: continue                                 # skip first time_step
-                pbar = pcn.backpack.printProgressBar(i_t, Nt, pbar=pbar)
+                pbar = printProgressBar(i_t, Nt, pbar=pbar)
 
                 # calculate the distance dx made in dt for all particles at once
                 dx = pos - pos_series[i_t-1]
