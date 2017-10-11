@@ -77,7 +77,8 @@ class __Simulation__(object):
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
+    def copy(self, path_root='.', name=False,
+             optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -89,7 +90,7 @@ class __Simulation__(object):
             name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
             optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
             quiet:                   Set True to suppress output.
-            rename_submit_script:   Set False if no renames shall be performed in subnmit* files
+            rename_submit_script:    Set False if no renames shall be performed in subnmit* files
             OVERWRITE:               Set True to overwrite no matter what happens!
         """
         from os import listdir
@@ -207,6 +208,70 @@ class __Simulation__(object):
 
         # done
         return get_sim(path_newsim)
+
+    def resume_from_var(self, sim_source, varno, DEBUG=False):
+        """
+        Copies everything to resume a run from an older state.
+
+        It uses VAR-file number >varno< as new VAR0 and var.dat.
+        Does copy PVAR as well if available.
+
+        Args:
+            sim_source:        simulation from where to copy all the files
+            varno:             provide number # of which var-file VAR# should be copied from
+        """
+
+        from os import listdir
+        from os.path import exists, join, isdir
+        import glob
+        from pencilnew.math import is_int
+        from pencilnew.io import mkdir
+
+        def copyfile(src, dst, DEBUG=False):
+            from shutil import copy2
+            from os.path import exists
+
+            if not exists(src): return False
+            if DEBUG: print('< '+src)
+            if DEBUG: print('> '+dst)
+            copy2(src, dst)
+
+        src = sim_source.datadir; dst = self.datadir
+        if is_int(varno): varno ='VAR'+str(int(varno))
+
+        if not exists(src): print('! ERROR: Source data directory does not exits: '+str(src)); return False
+        if not exists(dst): print('! ERROR: Destination data directory does not exits: '+str(dst)); return False
+        if not varno in sim_source.get_varlist(): print('! ERROR: Could not find '+varno+' in procX folder of sim_source: '+sim_source.name); return False
+
+        data_folders = [p for p in listdir(src) if isdir(join(src, p))]
+        procX_folder = [p for p in data_folders if p.startswith('proc')]
+        for p in data_folders: mkdir(join(dst,p))
+
+        # data/
+        files = ['def_var.pro', 'dim.dat', 'index.pro', 'move-me.list', 'particles_stalker_header.dat',
+                                       'params.log', 'pc_constants.pro', 'pdim.dat', 'pencils.list', 'pvarname.dat', 'svnid.dat', 'var.general', 'variables.pro', 'varname.dat']
+        for f in files: copyfile(join(src, f), dst, DEBUG=DEBUG)
+
+        # data/allprocs/
+        files = ['grid.dat']
+        for f in files: copyfile(join(src, 'allprocs', f), join(dst, 'allprocs/'), DEBUG=DEBUG)
+
+        # data/procX
+        files = ['dim.dat', 'grid.dat', 'proc_bounds.dat']
+        for X in procX_folder:
+            for f in files:
+                copyfile(join(src, X, f), join(dst, X), DEBUG=DEBUG)
+            copyfile(join(src, X, varno), join(dst, X, 'VAR0'), DEBUG=DEBUG)
+            copyfile(join(src, X, 'P'+varno), join(dst, X, 'PVAR0'), DEBUG=DEBUG)
+            copyfile(join(src, X, varno), join(dst, X, 'var.dat'), DEBUG=DEBUG)
+            copyfile(join(src, X, 'P'+varno), join(dst, X, 'pvar.dat'), DEBUG=DEBUG)
+
+        print('? WARNING: KNOWN ERRORS:')
+        print('? RUN MIGHT NOT START BECAUSE data/param.nml can get damaged in a run that crashes. This is not fixed by this routine.')
+        print('? TRY AND START A SINGLE CORE RUN WITH THIS SETUP AND USE THE CREATED param.nml FOR YOUR PURPOSE INSTEAD.')
+        print('? SAME FOR: - tstalk.dat')
+
+        return True
 
 
     def update(self, hard=False, quiet=True):
