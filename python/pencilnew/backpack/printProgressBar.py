@@ -1,5 +1,3 @@
-#from __future__ import print_function   # BACK TO THE FUTURE!
-
 def printProgressBar(iteration, total, pbar=False, prefix = '', suffix = '', decimals = 1, length = 50, fill = 'X', verbose=False):
     """
     Call in a loop to create terminal progress bar
