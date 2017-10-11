@@ -19,7 +19,8 @@ class ParticleStalkData(object):
     ParticleStalkData -- holds Pencil Code PSTALK file data.
     """
 
-    def __init__(self, datadir=False, sim=False, noutmax='-1',
+    def __init__(self, datadir=False, sim=False,
+                 tmin=0, tmax=-1, noutmax='-1',
                  swap_endian=False, quiet=False, use_existing_pstalk_sav=False):
         """
         Read PSTALK files from Pencil Code using IDL.
@@ -55,18 +56,18 @@ class ParticleStalkData(object):
             swap_endian = '0'
         else:
             swap_endian = '1'
-            
+
         if use_existing_pstalk_sav == True:
             from scipy.io.idl import readsav
-            
+
             print('~ reading existing pstalk..')
-            
+
             ps = readsav(join(sim.pc_datadir,'tmp','pstalk.sav'))('pstalk')
 
             for key in set(ps.dtype.fields.keys()):
                 if hasattr(self, key.lower()): continue
                 setattr(self, key.lower(), ps[key][0].T)
-                
+
         else:
             try:
                 cwd = os.getcwd()
@@ -75,7 +76,7 @@ class ParticleStalkData(object):
 
                 print('~ reading pstalk in IDL..')
 
-                idl_call = ', '.join(['pc_read_pstalk', 'obj=pstalk', 'datadir="'+datadir+'"', 'quiet='+quiet, 'swap_endian='+swap_endian, 'noutmax='+str(noutmax)])
+                idl_call = ', '.join(['pc_read_pstalk', 'obj=pstalk', 'datadir="'+datadir+'"', 'it0='+str(tmin), 'it1='+str(tmax), 'quiet='+quiet, 'swap_endian='+swap_endian, 'noutmax='+str(noutmax)])
 
                 IDL.run(idl_call)
 
@@ -105,11 +106,11 @@ class ParticleStalkData(object):
 
                 ## read tstalk file
                 print('## reading particle stalker file..')
-                IDL('pc_read_pstalk, object=pstalk, datadir="'+sim.datadir+'"'+', quiet='+quiet+', swap_endian='+swap_endian)
+                IDL('pc_read_pstalk, object=pstalk, datadir="'+sim.datadir+'"'+', quiet='+quiet+', it0='+str(tmin)+', it1='+str(tmax)+', swap_endian='+swap_endian)
 
                 print('## transfering pstalk file from IDL to python..')
                 mkdir(join(sim.pc_datadir,'tmp'))
-                IDL('save, pstalk, filename="'+join(sim.pc_datadir,'tmp','pstalk.sav')+'"')
+                IDL('save, pstalk, filename="'+join(sim.pc_datadir,'tmp','pstalk_'+str(tmin)+'_'+str(tmax)+'.sav')+'"')
                 ps = readsav(join(sim.pc_datadir,'tmp','pstalk.sav'))('pstalk')
 
                 #from pencilnew.io import debug_breakpoint; debug_breakpoint()

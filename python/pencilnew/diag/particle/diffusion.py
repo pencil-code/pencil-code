@@ -1,5 +1,5 @@
 
-def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=True, jump_distance=0.5, 
+def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=True, jump_distance=0.5,
               use_existing_pstalk_sav=False):
     """
     Calculate particle diffusion via stalked particles: PSTALK
@@ -27,8 +27,8 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
                         default =False
 
         - quiet        verbosity, default =False
-        
-        - use_existing_pstalk_sav 
+
+        - use_existing_pstalk_sav
                         use existing <sim.datadir>/data/pc/tmp/pstalk.sav for speed up
 
     Returns:
@@ -112,7 +112,7 @@ class DiffusionData(object):
             print('## Calculating particle diffusion for "'+sim.name+'" in "'+sim.path+'"')
 
             print('## reading particle stalker file..')
-            pstalk = read_pstalk(sim=sim, use_existing_pstalk_sav=use_existing_pstalk_sav)
+            pstalk = read_pstalk(sim=sim, use_existing_pstalk_sav=use_existing_pstalk_sav, tmin=trange[0], tmax=trange[1])
             grid = sim.grid
             dim = sim.dim
 
@@ -141,9 +141,10 @@ class DiffusionData(object):
             sigma = np.array(0)
 
             ## calulate travel distances for each particle with corrections for jumps at the boundary
+            pbar = False; Nt = np.size(pos_series)
             for i_t,pos in enumerate(pos_series):
                 if i_t == 0: continue                                 # skip first time_step
-                printProgressBar(i_t, N_dt)
+                pbar = pcn.backpack.printProgressBar(i_t, Nt, pbar=pbar)
 
                 # calculate the distance dx made in dt for all particles at once
                 dx = pos - pos_series[i_t-1]
