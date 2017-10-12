@@ -4801,14 +4801,6 @@ module Solid_Cells
 !
 ! Pencils: rho, rho1, lnrho, glnrho, grho, ugrho, sglnrho
 !
-!if(t>1)then
-!      print*, ''
-!      print*, 'ogrid'
-!      print*, 'm_og,y_og(m_og)',m_ogrid,y_ogrid(m_ogrid)
-!      do i = 1,mx_ogrid
-!      print*,'rho',f_ogrid(i,m_ogrid,n_ogrid,irho)
-!      enddo
-!endif
       p_ogrid%rho=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho)
       if (lpencil_ogrid(i_og_rho1)) p_ogrid%rho1=1.0/p_ogrid%rho
       if (lpencil_ogrid(i_og_lnrho)) p_ogrid%lnrho=log(p_ogrid%rho)
@@ -5474,6 +5466,8 @@ module Solid_Cells
 !
       real, dimension (nx_ogrid,3,3,3) :: d2A
       integer :: iref1,i,j
+      !TODO
+      real, dimension (nx_ogrid) :: tmp
 !
 !  Reference point of argument.
 !
@@ -5495,13 +5489,6 @@ module Solid_Cells
         call derij_ogrid(f,iref1+i,d2A(:,3,1,i),3,1); d2A(:,1,3,i)=d2A(:,3,1,i)
         call derij_ogrid(f,iref1+i,d2A(:,1,2,i),1,2); d2A(:,2,1,i)=d2A(:,1,2,i)
       enddo
-!
-!  Since we have cylindrical coordinates
-!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom .
-!
-        do i=1,3
-          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1_ogrid
-        enddo
 !
 !  Calculate optionally b_i,j = eps_ikl A_l,kj,
 !  del2_i = A_i,jj and graddiv_i = A_j,ji .
@@ -5532,29 +5519,19 @@ module Solid_Cells
 !
 !  Calculate del2 and graddiv, if requested.
 !
-! HEREHEREHERE: THIS CANNOT BE CORRECT FOR CYLINDER COORDINATES
-!               MUST FIX THIS
       if (present(graddiv)) then
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
-!!!! ONLY FOR SHPERICAL COORDINATES?
-!!!! !  Since we have cylindrical coordinates
-!!!!         graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*rcyl_mn1_ogrid*2+ &
-!!!!            aij(:,2,1)*rcyl_mn1_ogrid*cotth(m_ogrid) &
-!!!!            -aa(:,2)*rcyl_mn2_ogrid*cotth(m_ogrid)-aa(:,1)*rcyl_mn2_ogrid*2
-!!!!         graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*rcyl_mn1_ogrid*2+ &
-!!!!            aij(:,2,2)*rcyl_mn1_ogrid*cotth(m_ogrid) &
-!!!!            -aa(:,2)*rcyl_mn2_ogrid*sin2th(m_ogrid)
-!!!!         graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*rcyl_mn1_ogrid*2+ &
-!!!!            aij(:,2,3)*rcyl_mn1_ogrid*cotth(m_ogrid)
+!  Since we have cylindrical coordinates
+        graddiv(:,1)=graddiv(:,1)+rcyl_mn1_ogrid*aij(:,1,1) - rcyl_mn2_ogrid*aa(:,1)
+        graddiv(:,2)=graddiv(:,2)+rcyl_mn1_ogrid*aij(:,1,2)
+        graddiv(:,3)=graddiv(:,3)+rcyl_mn1_ogrid*aij(:,1,3)
       endif
 !
       if (present(del2)) then
         del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
 !  Since we have cylindrical coordinates
-        del2(:,1)= del2(:,1)+&
-          rcyl_mn1_ogrid*(aij(:,1,1)-2*aij(:,2,2))-rcyl_mn2_ogrid*aa(:,1)
-        del2(:,2)=del2(:,2)+&               
-          rcyl_mn1_ogrid*(aij(:,2,1)-2*aij(:,1,2))-rcyl_mn2_ogrid*aa(:,2)
+        del2(:,1)= del2(:,1) + rcyl_mn1_ogrid*(aij(:,1,1)-2*aij(:,2,2)) - rcyl_mn2_ogrid*aa(:,1)
+        del2(:,2)= del2(:,2) + rcyl_mn1_ogrid*(aij(:,2,1)-2*aij(:,1,2)) - rcyl_mn2_ogrid*aa(:,2)
       endif
 !
     endsubroutine gij_etc_ogrid
@@ -5790,40 +5767,41 @@ module Solid_Cells
           if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
             if(SBP.and.lfirst_proc_x) then
               ii=6
-              do kk=1,6
-                facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dy_1_ogrid(m_ogrid)
-                df(kk)=facSBP(kk)*( &
-                  45.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+1,n_ogrid,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+1,n_ogrid,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+1,n_ogrid,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+1,n_ogrid,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+1,n_ogrid,k)) &
-                      -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-1,n_ogrid,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-1,n_ogrid,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-1,n_ogrid,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-1,n_ogrid,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-1,n_ogrid,k))) &
-                  -9.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+2,n_ogrid,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+2,n_ogrid,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+2,n_ogrid,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+2,n_ogrid,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+2,n_ogrid,k)) &
-                      -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-2,n_ogrid,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-2,n_ogrid,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-2,n_ogrid,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-2,n_ogrid,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-2,n_ogrid,k))) &
-                     +((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+3,n_ogrid,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+3,n_ogrid,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+3,n_ogrid,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+3,n_ogrid,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+3,n_ogrid,k)) &
-                      -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-3,n_ogrid,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-3,n_ogrid,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-3,n_ogrid,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-3,n_ogrid,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-3,n_ogrid,k))))
-              enddo
+              call der_ijm_ogrid_SBP(f,df(1:6))
+              !! do kk=1,6
+              !!   facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dy_1_ogrid(m_ogrid)
+              !!   df(kk)=facSBP(kk)*( &
+              !!     45.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+1,n_ogrid,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+1,n_ogrid,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+1,n_ogrid,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+1,n_ogrid,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+1,n_ogrid,k)) &
+              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-1,n_ogrid,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-1,n_ogrid,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-1,n_ogrid,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-1,n_ogrid,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-1,n_ogrid,k))) &
+              !!     -9.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+2,n_ogrid,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+2,n_ogrid,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+2,n_ogrid,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+2,n_ogrid,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+2,n_ogrid,k)) &
+              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-2,n_ogrid,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-2,n_ogrid,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-2,n_ogrid,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-2,n_ogrid,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-2,n_ogrid,k))) &
+              !!        +((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+3,n_ogrid,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+3,n_ogrid,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+3,n_ogrid,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+3,n_ogrid,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+3,n_ogrid,k)) &
+              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-3,n_ogrid,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-3,n_ogrid,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-3,n_ogrid,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-3,n_ogrid,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-3,n_ogrid,k))))
+              !! enddo
             else
               ii=0
             endif
@@ -5883,40 +5861,41 @@ module Solid_Cells
           if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
             if(SBP.and.lfirst_proc_x) then
               ii=6
-              do kk=1,6
-                facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dz_1_ogrid(n_ogrid)
-                df(kk)=facSBP(kk)*( &
-                  45.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+1,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+1,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+1,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+1,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+1,k))                                           &
-                      -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-1,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-1,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-1,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-1,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-1,k)))                                          &
-                  -9.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+2,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+2,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+2,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+2,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+2,k))                                           &
-                      -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-2,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-2,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-2,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-2,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-2,k)))                                          &
-                     +((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+3,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+3,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+3,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+3,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+3,k))                                           &
-                      -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-3,k) + &
-                        D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-3,k) + &
-                        D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-3,k) + &
-                        D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-3,k) + &
-                        D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-3,k))))
-              enddo
+              call der_ijn_ogrid_SBP(f,df(1:6))
+              !! do kk=1,6
+              !!   facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dz_1_ogrid(n_ogrid)
+              !!   df(kk)=facSBP(kk)*( &
+              !!     45.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+1,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+1,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+1,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+1,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+1,k))                                           &
+              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-1,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-1,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-1,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-1,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-1,k)))                                          &
+              !!     -9.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+2,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+2,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+2,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+2,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+2,k))                                           &
+              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-2,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-2,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-2,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-2,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-2,k)))                                          &
+              !!        +((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+3,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+3,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+3,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+3,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+3,k))                                           &
+              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-3,k) + &
+              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-3,k) + &
+              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-3,k) + &
+              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-3,k) + &
+              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-3,k))))
+              !! enddo
             else
               ii=0
             endif
@@ -7398,6 +7377,46 @@ module Solid_Cells
       enddo
 
     endsubroutine der2_ogrid_SBP
+!***********************************************************************
+    subroutine der_ijm_ogrid_SBP(f,df)
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(6), intent(out) :: df
+      real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+1,n_ogrid),df_mn1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-1,n_ogrid),df_mn_1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+2,n_ogrid),df_mn2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-2,n_ogrid),df_mn_2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+3,n_ogrid),df_mn3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-3,n_ogrid),df_mn_3)
+
+      
+      df(1:6)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
+                      45.*(df_mn1-df_mn_1) &
+                      -9.*(df_mn2-df_mn_2) &
+                         +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijm_ogrid_SBP
+!*********************************************************************** 
+    subroutine der_ijn_ogrid_SBP(f,df)
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(6), intent(out) :: df
+      real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+1),df_mn1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-1),df_mn_1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+2),df_mn2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-2),df_mn_2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+3),df_mn3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-3),df_mn_3)
+
+      
+      df(1:6)=(1./60.)*dz_1_ogrid(n_ogrid)*( &
+                       45.*(df_mn1-df_mn_1) &
+                       -9.*(df_mn2-df_mn_2) &
+                          +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijn_ogrid_SBP
 !*********************************************************************** 
     subroutine der_ogrid_SBP_experimental(f,k,df)
 ! 
@@ -8491,4 +8510,89 @@ module Solid_Cells
 !!     call mpibcast_real(fgrid_cartesian, nfbuf_cg, root)
 !!     endsubroutine send_rcv_all_data
 !***********************************************************************
+    subroutine del2v_etc_ogrid(f,k,del2,graddiv)
+!
+!  Calculates a number of second derivative expressions of a vector
+!  outputs a number of different vector fields.
+!  gradcurl is not the vector gradient.
+!  Surprisingly, calling derij only if graddiv or curlcurl are present
+!  does not speed up the code on Mephisto @ 32x32x64.
+!
+!  12-sep-01/axel: coded
+!  15-mar-07/wlad: added cylindrical coordinates
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid,3,3) :: fjji,fijj
+      real, dimension (nx_ogrid,3), optional :: del2,graddiv
+      real, dimension (nx_ogrid,3) ::  fjik
+      real, dimension (nx_ogrid) :: tmp
+      integer :: i,j,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del2,graddiv
+!
+!  calculate f_{i,jj} and f_{j,ji}
+!  AJ: graddiv needs diagonal elements from the first tmp (derij only sets
+!      off-diagonal elements)
+!
+      k1=k-1
+      do i=1,3
+      do j=1,3
+        if (present(del2) .or. present(graddiv)) then
+          call der2_ogrid(f,k1+i,tmp,  j) 
+          fijj(:,i,j)=tmp  ! f_{i,jj}
+        endif
+        if (present(graddiv)) then
+          call derij_ogrid(f,k1+j,tmp,j,i) 
+          fjji(:,i,j)=tmp  ! f_{j,ji}
+        endif
+      enddo
+      enddo
+!
+!  the diagonal terms have not been set in derij; do this now
+!  ** They are automatically set above, because derij   **
+!  ** doesn't overwrite the value of tmp for i=j!       **
+!
+!     do j=1,3
+!       fjji(:,j,j)=fijj(:,j,j)
+!     enddo
+!
+!  calculate f_{i,jk} for i /= j /= k
+!
+!
+!  del2
+!
+      if (present(del2)) then
+        do i=1,3
+          del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
+        enddo
+        !r-component
+        call der_ogrid(f,k1+2,tmp,2)
+        del2(:,1)=del2(:,1) -(2*tmp+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+1))*rcyl_mn2_ogrid
+        call der_ogrid(f,k1+1,tmp,1)
+        del2(:,1)=del2(:,1) + tmp*rcyl_mn1_ogrid
+        !phi-component
+        call der_ogrid(f,k1+1,tmp,2)
+        del2(:,2)=del2(:,2) +(2*tmp-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+2))*rcyl_mn2_ogrid
+        call der_ogrid(f,k1+2,tmp,1)
+        del2(:,2)=del2(:,2) + tmp*rcyl_mn1_ogrid
+        !z-component
+        call der_ogrid(f,k1+3,tmp,1)
+        del2(:,3)=del2(:,3) + tmp*rcyl_mn1_ogrid
+      endif
+!
+      if (present(graddiv)) then
+        do i=1,3
+          graddiv(:,i)=fjji(:,i,1)+fjji(:,i,2)+fjji(:,i,3)
+        enddo
+        call der_ogrid(f,k1+1,tmp,1)
+        graddiv(:,1)=graddiv(:,1)+tmp*rcyl_mn1_ogrid - f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+1)*rcyl_mn2_ogrid
+        call der_ogrid(f,k1+1,tmp,2)
+        graddiv(:,2)=graddiv(:,2)+tmp*rcyl_mn1_ogrid
+        call der_ogrid(f,k1+1,tmp,3)
+        graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1_ogrid
+      endif
+    endsubroutine del2v_etc_ogrid
+!***********************************************************************
+
 end module Solid_Cells
