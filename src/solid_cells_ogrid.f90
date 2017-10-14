@@ -2421,7 +2421,6 @@ module Solid_Cells
     integer, dimension(3), intent(in) :: inear_glob
     integer, intent(in) :: ivar1,ivar2
     real, dimension(inter_len,inter_len,inter_len,ivar2-ivar1+1), intent(in) :: farr
-    integer :: i,j,k
     real, dimension(ivar2-ivar1+1), intent(out) :: f_ip
 !
     if(interpolation_method==1) then
@@ -5478,8 +5477,6 @@ module Solid_Cells
 !
       real, dimension (nx_ogrid,3,3,3) :: d2A
       integer :: iref1,i,j
-      !TODO
-      real, dimension (nx_ogrid) :: tmp
 !
 !  Reference point of argument.
 !
@@ -5574,8 +5571,6 @@ module Solid_Cells
       integer :: i
       real, parameter :: a = 1.0 / 60.0
       real, dimension(nx_ogrid) :: fac
-
-      real, dimension(6) :: df_2
 !
       if (j==1) then
         if (nxgrid_ogrid/=1) then
@@ -5659,7 +5654,8 @@ module Solid_Cells
               call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
               i=6
             elseif(BDRY5) then
-              call der2_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df2(1:3))
+              call der2_ogrid_bdry5(f(l1_ogrid:l1_ogrid+6,m_ogrid,n_ogrid,k),df2(1:3))
+              !call der2_ogrid_bdry5_alt(f,df2(1:3),k)
               i=3
             else
               i=0
@@ -5724,8 +5720,7 @@ module Solid_Cells
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df,fac
-      real, dimension (6) :: facSBP
-      integer :: i,j,k,ii,kk
+      integer :: i,j,k,ii
 !
       intent(in) :: f,k,i,j
       intent(out) :: df
@@ -5794,47 +5789,13 @@ module Solid_Cells
             if(lfirst_proc_x) then
               if(SBP) then
                 ii=6
-                call der_ijm_ogrid_SBP(f,df(1:6))
+                call der_ijm_ogrid_SBP(f,df(1:6),k)
               elseif(BDRY5) then
                 ii=3
-                call der_ijm_ogrid_bdry5(f,df(1:3))
+                call der_ijm_ogrid_bdry5(f,df(1:3),k)
               else
                 ii=0
               endif
-              !! do kk=1,6
-              !!   facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dy_1_ogrid(m_ogrid)
-              !!   df(kk)=facSBP(kk)*( &
-              !!     45.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+1,n_ogrid,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+1,n_ogrid,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+1,n_ogrid,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+1,n_ogrid,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+1,n_ogrid,k)) &
-              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-1,n_ogrid,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-1,n_ogrid,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-1,n_ogrid,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-1,n_ogrid,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-1,n_ogrid,k))) &
-              !!     -9.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+2,n_ogrid,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+2,n_ogrid,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+2,n_ogrid,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+2,n_ogrid,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+2,n_ogrid,k)) &
-              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-2,n_ogrid,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-2,n_ogrid,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-2,n_ogrid,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-2,n_ogrid,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-2,n_ogrid,k))) &
-              !!        +((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+3,n_ogrid,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+3,n_ogrid,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+3,n_ogrid,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+3,n_ogrid,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+3,n_ogrid,k)) &
-              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-3,n_ogrid,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-3,n_ogrid,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-3,n_ogrid,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-3,n_ogrid,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-3,n_ogrid,k))))
-              !! enddo
             else
               ii=0
             endif
@@ -5895,47 +5856,13 @@ module Solid_Cells
             if(lfirst_proc_x) then
               if(SBP) then
                 ii=6
-                call der_ijn_ogrid_SBP(f,df(1:6))
+                call der_ijn_ogrid_SBP(f,df(1:6),k)
               elseif(BDRY5) then
                 ii=3
-                call der_ijn_ogrid_bdry5(f,df(1:3))
+                call der_ijn_ogrid_bdry5(f,df(1:3),k)
               else
                 ii=0
               endif
-              !! do kk=1,6
-              !!   facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dz_1_ogrid(n_ogrid)
-              !!   df(kk)=facSBP(kk)*( &
-              !!     45.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+1,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+1,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+1,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+1,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+1,k))                                           &
-              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-1,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-1,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-1,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-1,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-1,k)))                                          &
-              !!     -9.*((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+2,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+2,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+2,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+2,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+2,k))                                           &
-              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-2,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-2,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-2,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-2,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-2,k)))                                          &
-              !!        +((D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+3,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+3,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+3,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+3,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+3,k))                                           &
-              !!         -(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-3,k) + &
-              !!           D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-3,k) + &
-              !!           D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-3,k) + &
-              !!           D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-3,k) + &
-              !!           D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-3,k))))
-              !! enddo
             else
               ii=0
             endif
@@ -6217,8 +6144,6 @@ module Solid_Cells
 !
 !  14-okt-17/Jorgen: Adapted from deriv.f90
 !
-      integer :: k
-
      f_ogrid(l1_ogrid,:,:,irho)  = ( 5.0000000000000000 *f_ogrid(l1_ogrid+1,:,:,irho) &
                                     -5.0000000000000000 *f_ogrid(l1_ogrid+2,:,:,irho) &
                                     +3.3333333333333333 *f_ogrid(l1_ogrid+3,:,:,irho) &
@@ -7427,7 +7352,6 @@ module Solid_Cells
 !  13-okt-17/Jorgen: Coded
       real, dimension(l1_ogrid:l1_ogrid+5), intent(in) :: f
       real, dimension(3), intent(out) :: df
-      integer :: i
 
       df(1) = dx_1_ogrid(l1_ogrid)*(&
               -2.2833333333333333   *f(l1_ogrid  ) &
@@ -7561,47 +7485,50 @@ module Solid_Cells
 
     endsubroutine der2_ogrid_SBP
 !***********************************************************************
-    subroutine der_ijm_ogrid_SBP(f,df)
+    subroutine der_ijm_ogrid_SBP(f,df,k)
 ! 
 !  Cross derivatives for SBP boundary closures 
 !  Only implemented in radial direction.
 !
 !  10-okt-17/Jorgen: Coded
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df
       real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+      integer, intent(in) :: k
 
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+1,n_ogrid),df_mn1)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-1,n_ogrid),df_mn_1)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+2,n_ogrid),df_mn2)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-2,n_ogrid),df_mn_2)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+3,n_ogrid),df_mn3)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-3,n_ogrid),df_mn_3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+1,n_ogrid,k),df_mn1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-1,n_ogrid,k),df_mn_1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+2,n_ogrid,k),df_mn2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-2,n_ogrid,k),df_mn_2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+3,n_ogrid,k),df_mn3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-3,n_ogrid,k),df_mn_3)
 
       
-      df(1:6)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
-                      45.*(df_mn1-df_mn_1) &
-                      -9.*(df_mn2-df_mn_2) &
-                         +(df_mn3-df_mn_3))
+
+     df(1:6)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
+                        45.*(df_mn1-df_mn_1) &
+                        -9.*(df_mn2-df_mn_2) &
+                           +(df_mn3-df_mn_3))
 
      endsubroutine der_ijm_ogrid_SBP
 !*********************************************************************** 
-    subroutine der_ijn_ogrid_SBP(f,df)
+    subroutine der_ijn_ogrid_SBP(f,df,k)
 ! 
 !  Cross derivatives for SBP boundary closures 
 !  Only implemented in radial direction.
 !
 !  10-okt-17/Jorgen: Coded
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      integer, intent(in) :: k
       real, dimension(6), intent(out) :: df
       real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
 
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+1),df_mn1)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-1),df_mn_1)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+2),df_mn2)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-2),df_mn_2)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+3),df_mn3)
-      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-3),df_mn_3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+1,k),df_mn1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-1,k),df_mn_1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+2,k),df_mn2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-2,k),df_mn_2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+3,k),df_mn3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-3,k),df_mn_3)
 
       
       df(1:6)=(1./60.)*dz_1_ogrid(n_ogrid)*( &
@@ -7611,22 +7538,23 @@ module Solid_Cells
 
      endsubroutine der_ijn_ogrid_SBP
 !*********************************************************************** 
-    subroutine der_ijm_ogrid_bdry5(f,df)
+    subroutine der_ijm_ogrid_bdry5(f,df,k)
 ! 
 !  Cross derivatives for fifth order boundary closures 
 !  Only implemented in radial direction.
 !
 !  13-okt-17/Jorgen: Coded
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      integer, intent(in) :: k
       real, dimension(3), intent(out) :: df
       real, dimension(3)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
 
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+1,n_ogrid),df_mn1)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-1,n_ogrid),df_mn_1)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+2,n_ogrid),df_mn2)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-2,n_ogrid),df_mn_2)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+3,n_ogrid),df_mn3)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-3,n_ogrid),df_mn_3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+1,n_ogrid,k),df_mn1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-1,n_ogrid,k),df_mn_1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+2,n_ogrid,k),df_mn2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-2,n_ogrid,k),df_mn_2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+3,n_ogrid,k),df_mn3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-3,n_ogrid,k),df_mn_3)
 
       
       df(1:3)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
@@ -7636,22 +7564,23 @@ module Solid_Cells
 
      endsubroutine der_ijm_ogrid_bdry5
 !*********************************************************************** 
-    subroutine der_ijn_ogrid_bdry5(f,df)
+    subroutine der_ijn_ogrid_bdry5(f,df,k)
 ! 
 !  Cross derivatives for fifth order boundary closures 
 !  Only implemented in radial direction.
 !
 !  13-okt-17/Jorgen: Coded
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      integer, intent(in) :: k
       real, dimension(3), intent(out) :: df
       real, dimension(3)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
 
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+1),df_mn1)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-1),df_mn_1)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+2),df_mn2)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-2),df_mn_2)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+3),df_mn3)
-      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-3),df_mn_3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+1,k),df_mn1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-1,k),df_mn_1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+2,k),df_mn2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-2,k),df_mn_2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+3,k),df_mn3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-3,k),df_mn_3)
 
       
       df(1:3)=(1./60.)*dz_1_ogrid(n_ogrid)*( &
@@ -8767,7 +8696,6 @@ module Solid_Cells
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3,3) :: fjji,fijj
       real, dimension (nx_ogrid,3), optional :: del2,graddiv
-      real, dimension (nx_ogrid,3) ::  fjik
       real, dimension (nx_ogrid) :: tmp
       integer :: i,j,k,k1
 !
@@ -8841,55 +8769,215 @@ module Solid_Cells
 
     real :: velocity
     real :: R2
-    real, dimension(mx_ogrid,my_ogrid) :: Vr,Vth
-    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) ::  psi_ogrid
-    integer :: i,j,k,ivar
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) ::  f_pflow
+    real, dimension (mx_ogrid, my_ogrid,2,2) ::  df_pflow, df_pflow_ex
+    real, dimension (mx_ogrid, my_ogrid,2,2) ::  df2_pflow, df2_pflow_ex
+    real, dimension (mx_ogrid, my_ogrid,2,2,2) ::  df2ij_pflow, df2ij_pflow_ex
+    real, dimension (2,2) :: df_twonorm, df2_twonorm
+    real, dimension (2,2,2) :: df2ij_twonorm
+    integer :: i,j,k
   
     R2 = cylinder_radius**2
     velocity = 1.0
+!
+!  Set up potential flow
+!  No velocity in z-direction, or density variation
+!
     do i=1,mx_ogrid
       do j=1,my_ogrid
         do k=1,mz_ogrid
-          do ivar=1,mfarray_ogrid
-            psi_ogrid(i,j,k,ivar) = velocity*(x_ogrid(i)-R2/x_ogrid(i))*sin(y_ogrid(j))
-          enddo
+          f_pflow(i,j,k,1) = velocity*(1-R2/(x_ogrid(i)**2))*cos(y_ogrid(j))
+          f_pflow(i,j,k,2) =-velocity*(1+R2/(x_ogrid(i)**2))*sin(y_ogrid(j))
+          f_pflow(i,j,k,3) =0.
+          f_pflow(i,j,k,4) =1.
         enddo
       enddo
     enddo
+!
+!  Set values inside cylinder to something crazy, as these should never
+!  be used in the differentiation
+!
+!    do i=1,l1_ogrid-1
+!      do ivar=1,mfarray_ogrid
+!        f_pflow(i,:,:,ivar) = velocity*10000.
+!      enddo
+!    enddo
+        !lbidiagonal_derij=.true.
 
-    n_ogrid=1
+!
+!  Compute first order derivatives
+!
     do m_ogrid=m1_ogrid,m2_ogrid
-      call der_ogrid(psi_ogrid,1,Vth(l1_ogrid:l2_ogrid,m_ogrid),1)
-      Vth(:,m_ogrid)=-Vth(:,m_ogrid)
-      call der_ogrid(psi_ogrid,1,Vr(l1_ogrid:l2_ogrid,m_ogrid),2)
+      call der_ogrid(f_pflow,1,df_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,1),1)
+      call der_ogrid(f_pflow,1,df_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,2),2)
+      call der_ogrid(f_pflow,2,df_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,1),1)
+      call der_ogrid(f_pflow,2,df_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,2),2)
+    enddo
+!
+!  Compute second order derivatives
+!
+    do m_ogrid=m1_ogrid,m2_ogrid
+      call der2_ogrid(f_pflow,1,df2_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,1),1)
+      call der2_ogrid(f_pflow,1,df2_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,2),2)
+      call der2_ogrid(f_pflow,2,df2_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,1),1)
+      call der2_ogrid(f_pflow,2,df2_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,2),2)
     enddo
 
-    open(1,file='r.dat',status='unknown')
-    open(2,file='th.dat',status='unknown')
-    open(10,file='x.dat',status='unknown')
+!
+!  Compute mixed derivatives
+!
+    do m_ogrid=m1_ogrid,m2_ogrid
+      call derij_ogrid(f_pflow,1,df2ij_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,1,2),1,2)
+      call derij_ogrid(f_pflow,1,df2ij_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,2,1),2,1)
+      call derij_ogrid(f_pflow,2,df2ij_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,1,2),1,2)
+      call derij_ogrid(f_pflow,2,df2ij_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,2,1),2,1)
+    enddo
+!
+!  Set up exact solutions to derivatives 
+!  All values in cylindrical coordinates, hence d/dy = 1/r d/dth, etc.
+!
+    do i=1,mx_ogrid
+      do j=1,my_ogrid
+        df_pflow_ex(i,j,1,1) = 2.*velocity*R2*cos(y_ogrid(j))/(x_ogrid(i)**3)
+        df_pflow_ex(i,j,1,2) = (velocity*sin(y_ogrid(j))*(R2/(x_ogrid(i)**2)-1.))/x_ogrid(i)
+        df_pflow_ex(i,j,2,1) = 2.*velocity*R2*sin(y_ogrid(j))/(x_ogrid(i)**3)
+        df_pflow_ex(i,j,2,2) = -(velocity*cos(y_ogrid(j))*(R2/(x_ogrid(i)**2)+1.))/x_ogrid(i)
+
+        
+        df2_pflow_ex(i,j,1,1) = -6.*velocity*R2*cos(y_ogrid(j))/(x_ogrid(i)**4)
+        df2_pflow_ex(i,j,1,2) = (velocity*cos(y_ogrid(j))*(R2/(x_ogrid(i)**2)-1.))/(x_ogrid(i)**2)
+        df2_pflow_ex(i,j,2,1) = -6.*velocity*R2*sin(y_ogrid(j))/(x_ogrid(i)**4)
+        df2_pflow_ex(i,j,2,2) = (velocity*sin(y_ogrid(j))*(R2/(x_ogrid(i)**2)+1.))/(x_ogrid(i)**2)
+
+        df2ij_pflow_ex(i,j,1,1,2) = -2.*velocity*R2*sin(y_ogrid(j))/(x_ogrid(i)**4)
+        !df2ij_pflow_ex(i,j,1,2,1) = -2.*velocity*R2*sin(y_ogrid(j))/(x_ogrid(i)**4)
+        df2ij_pflow_ex(i,j,1,2,1) = df2ij_pflow_ex(i,j,1,1,2)
+        df2ij_pflow_ex(i,j,2,1,2) = 2.*velocity*R2*cos(y_ogrid(j))/(x_ogrid(i)**4)
+        df2ij_pflow_ex(i,j,2,2,1) = df2ij_pflow_ex(i,j,2,1,2)
+        !df2ij_pflow_ex(i,j,2,2,1) = 2.*velocity*R2*cos(y_ogrid(j))/(x_ogrid(i)**4)
+      enddo
+    enddo
+!
+!  Compute two-norms
+!
+    df_twonorm=0.
+    df2_twonorm=0.
+    df2ij_twonorm=0.
+    do i=l1_ogrid,l2_ogrid
+      do j=m1_ogrid,m2_ogrid
+        df_twonorm(1,1)=df_twonorm(1,1)+(df_pflow_ex(i,j,1,1)-df_pflow(i,j,1,1))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df_twonorm(1,2)=df_twonorm(1,2)+(df_pflow_ex(i,j,1,2)-df_pflow(i,j,1,2))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df_twonorm(2,1)=df_twonorm(2,1)+(df_pflow_ex(i,j,2,1)-df_pflow(i,j,2,1))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df_twonorm(2,2)=df_twonorm(2,2)+(df_pflow_ex(i,j,2,2)-df_pflow(i,j,2,2))**2 &
+                            *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2_twonorm(1,1)=df2_twonorm(1,1)+(df2_pflow_ex(i,j,1,1)-df2_pflow(i,j,1,1))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2_twonorm(1,2)=df2_twonorm(1,2)+(df2_pflow_ex(i,j,1,2)-df2_pflow(i,j,1,2))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2_twonorm(2,1)=df2_twonorm(2,1)+(df2_pflow_ex(i,j,2,1)-df2_pflow(i,j,2,1))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2_twonorm(2,2)=df2_twonorm(2,2)+(df2_pflow_ex(i,j,2,2)-df2_pflow(i,j,2,2))**2 &
+                            *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2ij_twonorm(1,1,2)=df2ij_twonorm(1,1,2)+(df2ij_pflow_ex(i,j,1,1,2)-df2ij_pflow(i,j,1,1,2))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2ij_twonorm(1,2,1)=df2ij_twonorm(1,2,1)+(df2ij_pflow_ex(i,j,1,2,1)-df2ij_pflow(i,j,1,2,1))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2ij_twonorm(2,1,2)=df2ij_twonorm(2,1,2)+(df2ij_pflow_ex(i,j,2,1,2)-df2ij_pflow(i,j,2,1,2))**2 &
+                        *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        df2ij_twonorm(2,2,1)=df2ij_twonorm(2,2,1)+(df2ij_pflow_ex(i,j,2,2,1)-df2ij_pflow(i,j,2,2,1))**2 &
+                            *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+      enddo
+    enddo
+    df_twonorm=sqrt(df_twonorm)
+    df2_twonorm=sqrt(df2_twonorm)
+    df2ij_twonorm=sqrt(df2ij_twonorm)
+!
+!  Print two-norms
+!
+    if(SBP) then
+      open(10,file='runinfo.dat',status='unknown')
+      open(1,file='SBP2norm_df.dat',status='unknown')
+      open(2,file='SBP2norm_df2.dat',status='unknown')
+      open(3,file='SBP2norm_df2ij.dat',status='unknown')
+      write(10,*) '% Summation by parts'
+    elseif(BDRY5) then
+      open(10,file='runinfo.dat',status='unknown')
+      open(1,file='BDRY5norm_df.dat',status='unknown')
+      open(2,file='BDRY5norm_df2.dat',status='unknown')
+      open(3,file='BDRY5norm_df2ij.dat',status='unknown')
+      write(10,*) '# Fifth order boundary closures'
+    else
+      open(10,file='runinfo.dat',status='unknown')
+      open(1,file='NOBDRYnorm_df.dat',status='unknown')
+      open(2,file='NOBDRYnorm_df2.dat',status='unknown')
+      open(3,file='NOBDRYnorm_df2ij.dat',status='unknown')
+      write(10,*) '# No boundary condition given'
+    endif
+    write(10,*) '# nx_ogrid, ny_ogrid'
+    write(10,*)  nx_ogrid,ny_ogrid
+    write(1,*)  '# df_twonorm'
+    write(1,*)  '# dvrdr, dvrdth'
+    write(1,*)  '# dvthdr, dvthdth'
+    write(1,*)  df_twonorm(1,1), df_twonorm(1,2)
+    write(1,*)  df_twonorm(2,1), df_twonorm(2,2)
+    write(2,*)  '# df2_twonorm'
+    write(2,*)  '# d2vrdr2, d2vrdth2'
+    write(2,*)  '# d2vthdr2, d2vthdth2'
+    write(2,*)  df2_twonorm(1,1), df2_twonorm(1,2)
+    write(2,*)  df2_twonorm(2,1), df2_twonorm(2,2)
+    write(3,*)  '# df2ij_twonorm'
+    write(3,*)  '# d2vrdrdth, d2vrdthdr'
+    write(3,*)  '# d2vthdrdth, d2vthdthdr'
+    write(3,*)  df2ij_twonorm(1,1,2), df2ij_twonorm(1,2,1)
+    write(3,*)  df2ij_twonorm(2,1,2), df2ij_twonorm(2,2,1)
+    close(1)
+    close(2)
+    close(3)
+    close(10)
+
+    open(111,file='r.dat',status='unknown')
+    open(211,file='th.dat',status='unknown')
+    open(100,file='x.dat',status='unknown')
     open(11,file='y.dat',status='unknown')
     open(20,file='vr.dat',status='unknown')
     open(21,file='vth.dat',status='unknown')
-    write(1,*) x_ogrid(l1_ogrid:l2_ogrid)
-    write(2,*) y_ogrid(m1_ogrid:m2_ogrid)
+    open(30,file='der2vr_r.dat',status='unknown')
+    open(31,file='der2vr_th.dat',status='unknown')
+    open(32,file='der2vth_r.dat',status='unknown')
+    open(33,file='der2vth_th.dat',status='unknown')
+    !open(32,file='der2r_indirect.dat',status='unknown')
+    !open(33,file='der2th_indirect.dat',status='unknown')
+    write(111,*) x_ogrid(l1_ogrid:l2_ogrid)
+    write(211,*) y_ogrid(m1_ogrid:m2_ogrid)
     do i=l1_ogrid,l2_ogrid
       !do j=m1_ogrid,m2_ogrid
-        write(10,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
+        write(100,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
         write(11,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
       !enddo
     enddo  
     do i=l1_ogrid,l2_ogrid
-      write(20,*) Vr(i,m1_ogrid:m2_ogrid)
-      write(21,*) Vth(i,m1_ogrid:m2_ogrid)
+      write(20,*) f_pflow(i,m1_ogrid:m2_ogrid,1,1)
+      write(21,*) f_pflow(i,m1_ogrid:m2_ogrid,1,2)
+      write(30,*) df2_pflow(i,m1_ogrid:m2_ogrid,1,1)
+      write(31,*) df2_pflow(i,m1_ogrid:m2_ogrid,1,2)
+      write(32,*) df2_pflow(i,m1_ogrid:m2_ogrid,2,1)
+      write(33,*) df2_pflow(i,m1_ogrid:m2_ogrid,2,2)
     enddo  
       
-    close(1)
-    close(2)
-    close(10)
+    close(111)
+    close(211)
+    close(100)
     close(11)
     close(20)
     close(21)
+    close(30)
+    close(31)
+    close(32)
+    close(33)
+
   endsubroutine run_tests_ogrid
 !***********************************************************************
-
 end module Solid_Cells
