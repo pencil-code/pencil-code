@@ -52,6 +52,7 @@ module Solid_Cells
   logical, dimension(3) :: lshift_origin_lower_ogrid=.false.   ! Set in start.in
 !  Boundary condition
   logical :: SBP=.true.
+  logical :: BDRY5=.false.
 !  Interpolation method
   integer :: interpolation_method=1  ! Set in start.in
   integer :: inter_len=2             ! Length of interpolation stencil
@@ -301,7 +302,7 @@ module Solid_Cells
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth_solid, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
-      lcheck_interpolation, lcheck_init_interpolation, SBP, &
+      lcheck_interpolation, lcheck_init_interpolation, SBP, BDRY5, &
       interpolation_method, lock_dt, lexpl_rho, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid
 
@@ -529,6 +530,7 @@ module Solid_Cells
 !
 !  Construct summation by parts-stencils, if SBP is on
 !
+      if(BDRY5) SBP=.false.
       if(SBP) then
         lbidiagonal_derij=.false.
         D1_SBP(1,:)=(/ -21600./13649.  , 104009./54596.  , 30443./81894.   , & 
@@ -4463,6 +4465,8 @@ module Solid_Cells
     integer :: tstep_ogrid
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
+
+    call run_tests_ogrid
 !
 !  Coefficients for up to order 3.
 !
@@ -4950,7 +4954,9 @@ module Solid_Cells
 !
       if(lfirst_proc_x) then
         if(SBP) then
-          if(lexpl_rho) call bval_from_neumann_arr_ogrid_alt
+          if(lexpl_rho) call bval_from_neumann_SBP
+        elseif(BDRY5) then
+          if(lexpl_rho) call bval_from_neumann_bdry5
         else
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
@@ -5103,7 +5109,7 @@ module Solid_Cells
           g(:,j,i)=tmp
         enddo
       enddo
-      if(SBP) then
+      if(SBP.or.BDRY5) then
         call fatal_error('solid_cells: g2ij_ogrid',&
           'not implemented with summation by parts property')
       endif
@@ -5562,12 +5568,21 @@ module Solid_Cells
       integer :: i
       real, parameter :: a = 1.0 / 60.0
       real, dimension(nx_ogrid) :: fac
+
+      real, dimension(6) :: df_2
 !
       if (j==1) then
         if (nxgrid_ogrid/=1) then
-          if(SBP.and.lfirst_proc_x) then
-            call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
-            i=6
+          if(lfirst_proc_x) then
+            if(SBP) then
+              call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df(1:6))
+              i=6
+            elseif(BDRY5) then
+              call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df(1:3))
+              i=3
+            else
+              i=0
+            endif
           else
             i=0
           endif
@@ -5619,8 +5634,6 @@ module Solid_Cells
 !
 !  07-feb-17/Jorgen: Adapted from deriv.f90
 !
-      use General, only: loptest
-
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df2,fac,df
       integer :: j,k,i
@@ -5635,9 +5648,16 @@ module Solid_Cells
 
       if (j==1) then
         if (nxgrid_ogrid/=1) then
-          if(SBP.and.lfirst_proc_x) then
-            call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
-            i=6
+          if(lfirst_proc_x) then
+            if(SBP) then
+              call der2_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid,k),df2(1:6))
+              i=6
+            elseif(BDRY5) then
+              call der2_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df2(1:3))
+              i=3
+            else
+              i=0
+            endif
           else
             i=0
           endif
@@ -5765,9 +5785,16 @@ module Solid_Cells
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
-            if(SBP.and.lfirst_proc_x) then
-              ii=6
-              call der_ijm_ogrid_SBP(f,df(1:6))
+            if(lfirst_proc_x) then
+              if(SBP) then
+                ii=6
+                call der_ijm_ogrid_SBP(f,df(1:6))
+              elseif(BDRY5) then
+                ii=3
+                call der_ijm_ogrid_bdry5(f,df(1:3))
+              else
+                ii=0
+              endif
               !! do kk=1,6
               !!   facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dy_1_ogrid(m_ogrid)
               !!   df(kk)=facSBP(kk)*( &
@@ -5859,9 +5886,16 @@ module Solid_Cells
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
-            if(SBP.and.lfirst_proc_x) then
-              ii=6
-              call der_ijn_ogrid_SBP(f,df(1:6))
+            if(lfirst_proc_x) then
+              if(SBP) then
+                ii=6
+                call der_ijn_ogrid_SBP(f,df(1:6))
+              elseif(BDRY5) then
+                ii=3
+                call der_ijn_ogrid_bdry5(f,df(1:3))
+              else
+                ii=0
+              endif
               !! do kk=1,6
               !!   facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dz_1_ogrid(n_ogrid)
               !!   df(kk)=facSBP(kk)*( &
@@ -6142,10 +6176,11 @@ module Solid_Cells
                                                -  10.*f_ogrid(k+6,:,:,irho) )/147.
     endsubroutine bval_from_neumann_arr_ogrid
 !***********************************************************************
-    subroutine bval_from_neumann_arr_ogrid_alt
+    subroutine bval_from_neumann_SBP
 !
 !  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
 !  one-sided difference formulae. val depends on x,y.
+!  Only implemented for df/dx_i = 0 at boundary.
 !
 !  16-feb-17/Jorgen: Adapted from deriv.f90
 !
@@ -6161,7 +6196,26 @@ module Solid_Cells
                               D1_SBP(1,8)*f_ogrid(k+7,:,:,irho) + &
                               D1_SBP(1,9)*f_ogrid(k+8,:,:,irho) )/D1_SBP(1,1)
 
-    endsubroutine bval_from_neumann_arr_ogrid_alt
+    endsubroutine bval_from_neumann_SBP
+!***********************************************************************
+    subroutine bval_from_neumann_bdry5
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
+!  Only implemented for df/dx_i = 0 at boundary.
+!
+!  14-okt-17/Jorgen: Adapted from deriv.f90
+!
+      integer :: k
+
+     f_ogrid(l1_ogrid,:,:,irho)  = ( 5.0000000000000000 *f_ogrid(l1_ogrid+1,:,:,irho) &
+                                    -5.0000000000000000 *f_ogrid(l1_ogrid+2,:,:,irho) &
+                                    +3.3333333333333333 *f_ogrid(l1_ogrid+3,:,:,irho) &
+                                    -1.2500000000000000 *f_ogrid(l1_ogrid+4,:,:,irho) &
+                                    +0.20000000000000000*f_ogrid(l1_ogrid+5,:,:,irho))&
+                                    /( 2.2833333333333333)   
+
+    endsubroutine bval_from_neumann_bdry5
 !***********************************************************************
     subroutine gaunoise_ogrid(ampl,i1,i2)
 !
@@ -7354,6 +7408,124 @@ module Solid_Cells
 
     endsubroutine der_ogrid_SBP
 !***********************************************************************
+    subroutine der_ogrid_bdry5(f,df)
+! 
+!  Fifth order boundary closures for first derivatives 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(l1_ogrid:l1_ogrid+5), intent(in) :: f
+      real, dimension(3), intent(out) :: df
+      integer :: i
+
+      df(1) = dx_1_ogrid(l1_ogrid)*(&
+              -2.2833333333333333   *f(l1_ogrid  ) &
+              +5.0000000000000000   *f(l1_ogrid+1) &
+              -5.0000000000000000   *f(l1_ogrid+2) &
+              +3.3333333333333333   *f(l1_ogrid+3) &
+              -1.2500000000000000   *f(l1_ogrid+4) &
+              +0.20000000000000000  *f(l1_ogrid+5) )
+      
+      df(2) = dx_1_ogrid(l1_ogrid+1)*(&
+              -0.20000000000000000  *f(l1_ogrid  ) &
+              -1.0833333333333333   *f(l1_ogrid+1) &
+              +2.0000000000000000   *f(l1_ogrid+2) &
+              -1.0000000000000000   *f(l1_ogrid+3) &
+              +0.33333333333333333  *f(l1_ogrid+4) &
+              -0.050000000000000000 *f(l1_ogrid+5) )
+      
+      df(3) = dx_1_ogrid(l1_ogrid+2)*(&
+              +0.050000000000000000 *f(l1_ogrid  ) &
+              -0.50000000000000000  *f(l1_ogrid+1) &
+              -0.33333333333333333  *f(l1_ogrid+2) &
+              +1.0000000000000000   *f(l1_ogrid+3) &
+              -0.25000000000000000  *f(l1_ogrid+4) &
+              +0.033333333333333333 *f(l1_ogrid+5) )
+
+    endsubroutine der_ogrid_bdry5
+!***********************************************************************
+    subroutine der2_ogrid_bdry5(f,df)
+! 
+!  Fifth order boundary closures for second derivatives 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(l1_ogrid:l1_ogrid+6), intent(in) :: f
+      real, dimension(3), intent(out) :: df
+      integer :: i
+
+      df(1) = dx_1_ogrid(l1_ogrid)**2*(&
+              +4.5111111111111111 *f(l1_ogrid  ) &
+              -17.39999999999999  *f(l1_ogrid+1) &
+              +29.25000000000000  *f(l1_ogrid+2) &
+              -28.22222222222222  *f(l1_ogrid+3) &
+              +16.50000000000000  *f(l1_ogrid+4) &
+              -5.4000000000000000 *f(l1_ogrid+5) &
+              +0.76111111111111111*f(l1_ogrid+6) )
+
+      df(2) = dx_1_ogrid(l1_ogrid+1)**2*(&
+              +0.76111111111111111  *f(l1_ogrid  ) &
+              -0.81666666666666667  *f(l1_ogrid+1) &
+              -1.4166666666666667   *f(l1_ogrid+2) &
+              +2.6111111111111111   *f(l1_ogrid+3) &
+              -1.5833333333333333   *f(l1_ogrid+4) &
+              +0.51666666666666667  *f(l1_ogrid+5) &
+              -0.072222222222222222 *f(l1_ogrid+6) )
+                
+      df(3) = dx_1_ogrid(l1_ogrid+2)**2*(&
+              -0.072222222222222222*f(l1_ogrid  ) &
+              +1.26666666666666667 *f(l1_ogrid+1) &
+              -2.33333333333333333 *f(l1_ogrid+2) &
+              +1.11111111111111111 *f(l1_ogrid+3) &
+              +0.083333333333333333*f(l1_ogrid+4) &
+              -0.066666666666666666*f(l1_ogrid+5) &
+              +0.011111111111111111*f(l1_ogrid+6) )
+    endsubroutine der2_ogrid_bdry5
+!***********************************************************************
+    subroutine der2_ogrid_bdry5_alt(f,df2,k)
+! 
+!  Fifth order boundary closures for second derivatives 
+!  Only implemented in radial direction.
+!  Alternative edition, that uses first derivatives twice, instead
+!  of explicit use of second derivatives
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(3), intent(out) :: df2
+      integer, intent(in) :: k
+      real, dimension(6) :: df
+
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df(1:3))
+      df(4:6)=(1/60.)*dx_1_ogrid(l1_ogrid+3:l1_ogrid+5) *( &
+                      + 45.0*(f(l1_ogrid+4:l1_ogrid+6,m_ogrid,n_ogrid,k)-f(l1_ogrid+2:l1_ogrid+4,m_ogrid,n_ogrid,k)) &
+                      -  9.0*(f(l1_ogrid+5:l1_ogrid+7,m_ogrid,n_ogrid,k)-f(l1_ogrid+1:l1_ogrid+3,m_ogrid,n_ogrid,k)) &
+                      +      (f(l1_ogrid+6:l1_ogrid+8,m_ogrid,n_ogrid,k)-f(l1_ogrid  :l1_ogrid+2,m_ogrid,n_ogrid,k)))
+      df2(1) = dx_1_ogrid(l1_ogrid)*(&
+              -2.2833333333333333   *df(1) &
+              +5.0000000000000000   *df(2) &
+              -5.0000000000000000   *df(3) &
+              +3.3333333333333333   *df(4) &
+              -1.2500000000000000   *df(5) &
+              +0.20000000000000000  *df(6) )
+      
+      df2(2) = dx_1_ogrid(l1_ogrid+1)*(&
+              -0.20000000000000000  *df(1) &
+              -1.0833333333333333   *df(2) &
+              +2.0000000000000000   *df(3) &
+              -1.0000000000000000   *df(4) &
+              +0.33333333333333333  *df(5) &
+              -0.050000000000000000 *df(6) )
+      
+      df2(3) = dx_1_ogrid(l1_ogrid+2)*(&
+              +0.050000000000000000 *df(1) &
+              -0.50000000000000000  *df(2) &
+              -0.33333333333333333  *df(3) &
+              +1.0000000000000000   *df(4) &
+              -0.25000000000000000  *df(5) &
+              +0.033333333333333333 *df(6) )
+
+    endsubroutine der2_ogrid_bdry5_alt
+!***********************************************************************
     subroutine der2_ogrid_SBP(f,df2)
 ! 
 !  Summation by parts boundary condition for second derivative.
@@ -7379,6 +7551,11 @@ module Solid_Cells
     endsubroutine der2_ogrid_SBP
 !***********************************************************************
     subroutine der_ijm_ogrid_SBP(f,df)
+! 
+!  Cross derivatives for SBP boundary closures 
+!  Only implemented in radial direction.
+!
+!  10-okt-17/Jorgen: Coded
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df
       real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
@@ -7399,6 +7576,11 @@ module Solid_Cells
      endsubroutine der_ijm_ogrid_SBP
 !*********************************************************************** 
     subroutine der_ijn_ogrid_SBP(f,df)
+! 
+!  Cross derivatives for SBP boundary closures 
+!  Only implemented in radial direction.
+!
+!  10-okt-17/Jorgen: Coded
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df
       real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
@@ -7417,6 +7599,56 @@ module Solid_Cells
                           +(df_mn3-df_mn_3))
 
      endsubroutine der_ijn_ogrid_SBP
+!*********************************************************************** 
+    subroutine der_ijm_ogrid_bdry5(f,df)
+! 
+!  Cross derivatives for fifth order boundary closures 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(3), intent(out) :: df
+      real, dimension(3)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+1,n_ogrid),df_mn1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-1,n_ogrid),df_mn_1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+2,n_ogrid),df_mn2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-2,n_ogrid),df_mn_2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+3,n_ogrid),df_mn3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-3,n_ogrid),df_mn_3)
+
+      
+      df(1:3)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
+                      45.*(df_mn1-df_mn_1) &
+                      -9.*(df_mn2-df_mn_2) &
+                         +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijm_ogrid_bdry5
+!*********************************************************************** 
+    subroutine der_ijn_ogrid_bdry5(f,df)
+! 
+!  Cross derivatives for fifth order boundary closures 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid), intent(in) :: f
+      real, dimension(3), intent(out) :: df
+      real, dimension(3)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+1),df_mn1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-1),df_mn_1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+2),df_mn2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-2),df_mn_2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+3),df_mn3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-3),df_mn_3)
+
+      
+      df(1:3)=(1./60.)*dz_1_ogrid(n_ogrid)*( &
+                       45.*(df_mn1-df_mn_1) &
+                       -9.*(df_mn2-df_mn_2) &
+                          +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijn_ogrid_bdry5
 !*********************************************************************** 
     subroutine der_ogrid_SBP_experimental(f,k,df)
 ! 
@@ -8593,6 +8825,60 @@ module Solid_Cells
         graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1_ogrid
       endif
     endsubroutine del2v_etc_ogrid
+!***********************************************************************
+  subroutine run_tests_ogrid
+
+    real :: velocity
+    real :: R2
+    real, dimension(mx_ogrid,my_ogrid) :: Vr,Vth
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) ::  psi_ogrid
+    integer :: i,j,k,ivar
+  
+    R2 = cylinder_radius**2
+    velocity = 1.0
+    do i=1,mx_ogrid
+      do j=1,my_ogrid
+        do k=1,mz_ogrid
+          do ivar=1,mfarray_ogrid
+            psi_ogrid(i,j,k,ivar) = velocity*(x_ogrid(i)-R2/x_ogrid(i))*sin(y_ogrid(j))
+          enddo
+        enddo
+      enddo
+    enddo
+
+    n_ogrid=1
+    do m_ogrid=m1_ogrid,m2_ogrid
+      call der_ogrid(psi_ogrid,1,Vth(l1_ogrid:l2_ogrid,m_ogrid),1)
+      Vth(:,m_ogrid)=-Vth(:,m_ogrid)
+      call der_ogrid(psi_ogrid,1,Vr(l1_ogrid:l2_ogrid,m_ogrid),2)
+    enddo
+
+    open(1,file='r.dat',status='unknown')
+    open(2,file='th.dat',status='unknown')
+    open(10,file='x.dat',status='unknown')
+    open(11,file='y.dat',status='unknown')
+    open(20,file='vr.dat',status='unknown')
+    open(21,file='vth.dat',status='unknown')
+    write(1,*) x_ogrid(l1_ogrid:l2_ogrid)
+    write(2,*) y_ogrid(m1_ogrid:m2_ogrid)
+    do i=l1_ogrid,l2_ogrid
+      !do j=m1_ogrid,m2_ogrid
+        write(10,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
+        write(11,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
+      !enddo
+    enddo  
+    do i=l1_ogrid,l2_ogrid
+      write(20,*) Vr(i,m1_ogrid:m2_ogrid)
+      write(21,*) Vth(i,m1_ogrid:m2_ogrid)
+    enddo  
+      
+    close(1)
+    close(2)
+    close(10)
+    close(11)
+    close(20)
+    close(21)
+  endsubroutine run_tests_ogrid
 !***********************************************************************
 
 end module Solid_Cells
