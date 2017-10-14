@@ -530,8 +530,12 @@ module Solid_Cells
 !
 !  Construct summation by parts-stencils, if SBP is on
 !
-      if(BDRY5) SBP=.false.
-      if(SBP) then
+      if(BDRY5) then 
+        if(lroot) print*, 'Cylinder boundary condition: Fifth order boundary closures'
+        SBP=.false.
+        lbidiagonal_derij=.false.
+      elseif(SBP) then
+        if(lroot) print*, 'Cylinder boundary condition: Third order SBP boundary closures'
         lbidiagonal_derij=.false.
         D1_SBP(1,:)=(/ -21600./13649.  , 104009./54596.  , 30443./81894.   , & 
                        -33311./27298.  , 16863./27298.   , -15025./163788. , &
@@ -569,6 +573,8 @@ module Solid_Cells
         D2_SBP(6,:)=(/ 21035./525612.  , -24641./131403. ,  30409./87602.  , & 
                        -54899./131403. ,  820271./525612., -117600./43801. , &
                        64800./43801.   , -6480./43801.   , 480./43801.     /)
+      else
+        if(lroot) print*, 'WARNING: No cylinder boundary condition set'
       endif
 !
 !  Set up necessary units for equation of state
@@ -4466,7 +4472,7 @@ module Solid_Cells
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 
-    call run_tests_ogrid
+    !call run_tests_ogrid
 !
 !  Coefficients for up to order 3.
 !
@@ -6021,9 +6027,10 @@ module Solid_Cells
         if(lfirst_proc_x) then
           if(SBP) then
             df(1:6)=0.
-          elseif(BDRY5)
+          elseif(BDRY5) then
             df(1:3)=0.
           endif
+        endif
       elseif (j==2) then
         if (ny_ogrid/=1) then
           fac=(1.0/60)*dy_1_ogrid(m_ogrid)
