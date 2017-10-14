@@ -6014,12 +6014,16 @@ module Solid_Cells
           df=0.
         endif
 !
-!  Settin df(1:3) = 0 means setting the upwind correction to zero for the two points 
-!  closest to the surface and at the surface. This is necessary since we have not 
-!  given any value to f_ogrid(l1_ogrid-3:l1_ogrid-1,:,:,irho), and these are used
-!  to compute df(1:3).
+!  Settin df(1:i) = 0 means setting the upwind correction to zero for the points 
+!  closest to the surface and at the surface. This is necessary to be consistent
+!  with the boundary closures, and to not use values of f_ogrid inside the cylinder
 !
-        if(lfirst_proc_x) df(1:3)=0.
+        if(lfirst_proc_x) then
+          if(SBP) then
+            df(1:6)=0.
+          elseif(BDRY5)
+            df(1:3)=0.
+          endif
       elseif (j==2) then
         if (ny_ogrid/=1) then
           fac=(1.0/60)*dy_1_ogrid(m_ogrid)
