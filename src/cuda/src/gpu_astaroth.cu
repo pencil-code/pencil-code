@@ -54,9 +54,6 @@ float *d_halo;
 
 // Device pointer for diagnostic quantities
 
-float *d_umax, *d_umin; 
-float *d_urms, *d_rhorms; 
-float *d_uxrms, *d_uyrms, *d_uzrms; 
 float *d_partial_result, *d_scaldiag;                    //Device pointer for partial result for the reductions
 
 /***********************************************************************************************/
@@ -222,6 +219,7 @@ printf("l1,l2,m1,m2,n1,n2= %d %d %d %d %d %d \n", l1,l2,m1,m2,n1,n2);
 printf("xyz0, xyz1 %f %f %f %f %f %f \n", xyz0[0], xyz0[1], xyz0[2], xyz1[0], xyz1[1], xyz1[2]); 
 printf("Lxyz %f %f %f \n", lxyz[0], lxyz[1], lxyz[2]); 
 printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN");
+printf("halo_size= %d \n",halo_size);
 }
 printf("[xyz]minmax %f %f %f %f %f %f \n", x[l1-1], x[l2-1], y[m1-1], y[m2-1], z[n1-1], z[n2-1]); 
 printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z[0], z[mz-1]); */
@@ -230,9 +228,6 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
 	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
 	halo = (float*) malloc(sizeof(float)*halo_size);
-printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN \n");
-printf("halo_size= %d \n",halo_size);
-printf("halo= %d \n",halo);
 	checkErr(cudaMalloc(&d_halo, sizeof(float)*halo_size));
 	// Allocate device memory
 
@@ -255,13 +250,6 @@ printf("halo= %d \n",halo);
 
         // Diagnostics quantities. TODO this somewhere else?
 
-	checkErr( cudaMalloc( &d_umax, sizeof(float)) );   
-	checkErr( cudaMalloc( &d_umin, sizeof(float)) );   
-	checkErr( cudaMalloc( &d_urms, sizeof(float)) );   
-	checkErr( cudaMalloc( &d_uxrms, sizeof(float)) );  
-	checkErr( cudaMalloc( &d_uyrms, sizeof(float)) );  
-	checkErr( cudaMalloc( &d_uzrms, sizeof(float)) );  
-	checkErr( cudaMalloc( &d_rhorms, sizeof(float)) ); 
 	checkErr( cudaMalloc( &d_partial_result, sizeof(float)) );   
 	checkErr( cudaMalloc( &d_scaldiag, sizeof(float)) );   
 
@@ -272,7 +260,7 @@ printf("halo= %d \n",halo);
                   //       NX,NY,NZ,COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
         }
         // Get private data from physics modules.
-        
+
  	if (ldensity){
         	density_push2c(p_diags_density); 
 	}
@@ -344,20 +332,30 @@ float max_diffus()
         return maxdiffus_;
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full_inner=false, bool full=false){
+extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full=false){
 	//need to make those calls asynchronize
 	/*copyouterhalostodevice(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
 //printf(full ? "full\n" : "not full\n");
-int offset=54273 + 134^2+134+60;
+//int offset=mx*my*nghost + mx*nghost + nghost;     // index of first element in comp domain
 /*if (iproc==0) {
 printf("uu_x= %f %f %f \n", *(uu_x+offset),*(uu_x+offset+1), *(uu_x+offset+2));
 printf("uu_y= %f %f %f \n", *(uu_y+offset),*(uu_y+offset+1), *(uu_y+offset+2));
 printf("uu_z= %f %f %f \n", *(uu_z+offset),*(uu_z+offset+1), *(uu_z+offset+2));
 printf("lnrho= %f %f %f \n", *(lnrho+offset),*(lnrho+offset+1), *(lnrho+offset+2));
 }*/
+//for (int i=0; i<mx*my*mz; i++) *(uu_y+i) = 0.;
+//for (int i=0; i<mx*my*mz; i++) *(uu_z+i) = 0.;
+
+/*int offset=mx*my*nghost + mx*nghost;
+//int offset=mx*my*nghost + mx*(nghost-1);
+//int offset=mx*my*nghost + mx*(nghost+1);
+printf("lnrho vor Hintransfer: isubstep= %d \n",isubstep);
+for (int ii=0; ii<13; ii++) printf(" %f,", *(lnrho+offset+ii));
+printf("\n");*/
+
         if (full) 
 	{
           copyAll(lnrho, d_lnrho);
@@ -372,27 +370,50 @@ printf("lnrho= %f %f %f \n", *(lnrho+offset),*(lnrho+offset+1), *(lnrho+offset+2
           copyOuterHalos(uu_y, d_uu_y);
           copyOuterHalos(uu_z, d_uu_z);
 	}
-float val1, val2, val3;
+
+float lnrhoslice[mx];
+/*cudaMemcpy(&lnrhoslice,d_lnrho+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
+  printf("lnrho nach Hintransfer: isubstep= %d \n",isubstep);
+  for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
+  printf("\n");
+
+cudaMemcpy(&lnrhoslice,d_uu_x+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
+  printf("uu_x nach Hintransfer: isubstep= %d \n",isubstep);
+  for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
+  printf("\n");
+*/
+/*int offset=mx*my*nghost + mx*nghost + nghost;
+float lnrhoslice[nx];
+cudaMemcpy(&lnrhoslice,d_lnrho+offset,nx*sizeof(float),cudaMemcpyDeviceToHost);
+for (int ii=0; ii<nx; ii++) printf(" %f", lnrhoslice[ii]);
+printf("\n");*/
+
+//float zero[mx*my*mz]={0.};
+//for (int i=0; i<mx*my*mz; i++) zero[i]=0.;
+//cudaMemcpy(d_uu_y,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
+//cudaMemcpy(d_uu_z,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
+/*float val1, val2, val3;
 if (iproc==0) {
-printf("isubstep= %d \n",isubstep);
+//printf("isubstep, dt= %d %e \n",isubstep,dt);
 cudaMemcpy(&val1, d_uu_x+offset, sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val2, d_uu_x+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val3, d_uu_x+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
-printf("d_uu_x= %f %f %f \n", val1, val2, val3);
+//printf("d_uu_x-before= %e %e %e \n", val1, val2, val3);
 //printf("uu_y= %f %f %f \n", *uu_y,*(uu_y+1), *(uu_y+2));
 //printf("uu_z= %f %f %f \n", *uu_z,*(uu_z+1), *(uu_z+2));
 cudaMemcpy(&val1, d_lnrho+offset, sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val2, d_lnrho+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
-printf("d_lnrho= %f %f %f \n", val1, val2, val3);
+//printf("d_lnrho-before= %e %e %e \n", val1, val2, val3);
 }
+*/
         if (lfirst && ldt) {
                 float dt1_advec  = max_advec()/cdt;
                 float dt1_diffus = max_diffus()/cdtv;
                 float dt1_=sqrt(pow(dt1_advec,2) + pow(dt1_diffus,2));
                 set_dt(dt1_);
         }
-        checkErr( cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)));
+        checkErr(cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)));
 
 	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
                           d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
@@ -403,40 +424,47 @@ printf("d_lnrho= %f %f %f \n", val1, val2, val3);
 	swap_ptrs(&d_uu_y, &d_uu_y_dest);
 	swap_ptrs(&d_uu_z, &d_uu_z_dest);
 
-if (iproc==0) {
-cudaMemcpy(&val1, d_uu_x+offset, sizeof(float), cudaMemcpyDeviceToHost);
-cudaMemcpy(&val2, d_uu_x+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
-cudaMemcpy(&val3, d_uu_x+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
-printf("d_uu_x-nach= %f %f %f \n", val1, val2, val3);
-//printf("uu_y-nach= %f %f %f \n", *uu_y,*(uu_y+1), *(uu_y+2));
-//printf("uu_z-nach= %f %f %f \n", *uu_z,*(uu_z+1), *(uu_z+2));
+/*if (iproc==0) {
+cudaMemcpy(&val1, (void *) (d_uu_x+offset), sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val2, (void *) (d_uu_x+offset+1), sizeof(float), cudaMemcpyDeviceToHost);
+cudaMemcpy(&val3, (void *) (d_uu_x+offset+2), sizeof(float), cudaMemcpyDeviceToHost);
+//printf("d_uu_x-after= %e %e %e \n", val1, val2, val3);
+//printf("uu_y-after= %f %f %f \n", *uu_y,*(uu_y+1), *(uu_y+2));
+//printf("uu_z-after= %f %f %f \n", *uu_z,*(uu_z+1), *(uu_z+2));
 cudaMemcpy(&val1, d_lnrho+offset, sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val2, d_lnrho+offset+1, sizeof(float), cudaMemcpyDeviceToHost);
 cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
-printf("d_lnrho-nach= %f %f %f \n", val1, val2, val3);
+//printf("d_lnrho-after= %e %e %e \n", val1, val2, val3);
 }
+*/
 	/*copyinternalhalostohost(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
-//printf(full_inner ? "full_inner\n" : "not full_inner\n");
-        if (full_inner) 
-	{
-        	copyInnerAll(lnrho, d_lnrho);
-        	copyInnerAll(uu_x, d_uu_x);
-        	copyInnerAll(uu_y, d_uu_y);
-        	copyInnerAll(uu_z, d_uu_z);
-	}
-	else
-	{
-        	copyInnerHalos(lnrho, d_lnrho);
-        	copyInnerHalos(uu_x, d_uu_x);
-        	copyInnerHalos(uu_y, d_uu_y);
-        	copyInnerHalos(uu_z, d_uu_z);
-	}
+
+//cudaMemcpy(d_uu_x,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
+//cudaMemcpy(d_uu_y,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
+//cudaMemcpy(d_uu_z,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
+
+/*cudaMemcpy(&lnrhoslice,d_lnrho+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
+printf("lnrho vor Backtransfer: isubstep= %d \n",isubstep);
+for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
+printf("\n");*/
+
+       	copyInnerHalos(lnrho, d_lnrho);
+       	copyInnerHalos(uu_x, d_uu_x);
+       	copyInnerHalos(uu_y, d_uu_y);
+       	copyInnerHalos(uu_z, d_uu_z);
 
         if (ldiagnos) timeseries_diagnostics_cuda(it, dt, t);
-
+}
+/***********************************************************************************************/
+extern "C" void copyFarray(float *uu_x, float *uu_y, float *uu_z, float *lnrho)
+{
+	copyInnerAll(lnrho, d_lnrho);
+        copyInnerAll(uu_x, d_uu_x);
+        copyInnerAll(uu_y, d_uu_y);
+        copyInnerAll(uu_z, d_uu_z);
 }
 /***********************************************************************************************/
 extern "C" void finalizeGPU()
@@ -455,10 +483,6 @@ extern "C" void finalizeGPU()
         checkErr( cudaFree(d_uu_z) );
 
         //Free diagnostic helper variables/arrays
-        checkErr( cudaFree(d_umax) ); checkErr( cudaFree(d_umin) );
-        checkErr( cudaFree(d_urms) );
-        checkErr( cudaFree(d_uxrms) ); checkErr( cudaFree(d_uyrms) ); checkErr( cudaFree(d_uzrms) );
-        checkErr( cudaFree(d_rhorms) );
         checkErr( cudaFree(d_partial_result) );
         checkErr( cudaFree(d_halo) );
 
