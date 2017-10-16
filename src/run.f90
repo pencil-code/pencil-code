@@ -664,7 +664,7 @@ program run
       lonemorestep = .true.
     endif overtmax
 !
-!   Prepare for the writing of the trcers and the fixed points.
+!   Prepare for the writing of the tracers and the fixed points.
 !
     if (lwrite_tracers) call tracers_prepare
     if (lwrite_fixed_points) call fixed_points_prepare
@@ -685,14 +685,6 @@ program run
 !  A random phase for the hydro_kinematic module
 !
     if (lhydro_kinematic) call kinematic_random_phase
-!
-    if (lgpu) then
-      call update_snaptime(trim(datadir)//'/tsnap.dat', &
-                           tdummy,ndummy,dsnap,t,lsnap,nowrite=.true.)
-      if (ldownsampl) &
-        call update_snaptime(trim(datadir)//'/tsnap_down.dat', &
-                             tdummy,ndummy,dsnap_down,t,lsnap_down,nowrite=.true.)
-    endif
 !
 !  Decide here whether or not we will need a power spectrum.
 !  At least for the graviational wave spectra, this requires
