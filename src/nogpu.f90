@@ -35,4 +35,12 @@ contains
 !
     endsubroutine rhs_GPU
 !**************************************************************************
+    subroutine copy_farray_from_GPU(f)
+
+      real, dimension (:,:,:,:), intent(OUT) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine copy_farray_from_GPU
+!**************************************************************************
 endmodule  GPU
