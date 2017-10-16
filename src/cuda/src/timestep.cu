@@ -116,8 +116,6 @@ void get_sumscal_from_device(float & sum,float *d_src,bool exp=false)
 	cudaDeviceSynchronize();
 }
 
-/*void timeseries_diagnostics_cuda(float* d_umax, float* d_umin, float* d_urms, float* d_uxrms, 
-                                 float* d_uyrms, float* d_uzrms, float* d_rhorms, */
 void timeseries_diagnostics_cuda(int step, float dt, double t)
 {
 	//Calculate and save all of the diagnostic variables calculated within the CUDA devices. 
