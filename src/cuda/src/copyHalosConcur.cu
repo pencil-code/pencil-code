@@ -26,12 +26,20 @@ __global__ void unpackOyzPlates(float* d_grid,float* d_halo_yz)
 {
 //  unpacks buffer for yz halos in global memory
         
-        int halo_ind=threadIdx.x + (threadIdx.y + threadIdx.z*d_COMP_DOMAIN_SIZE_Y)*(2*d_BOUND_SIZE), grid_ind;
-        const int start_offset=(d_W_GRID_Z_OFFSET+d_NX)*d_BOUND_SIZE;
-        
-        grid_ind=start_offset + threadIdx.z*d_W_GRID_Z_OFFSET + threadIdx.y*d_NX + threadIdx.x;
+        int halo_ind=threadIdx.x + (threadIdx.y + blockIdx.x*d_COMP_DOMAIN_SIZE_Y)*(2*d_BOUND_SIZE), grid_ind;
+        const int start_offset=(d_GRID_Z_OFFSET+d_NX)*d_BOUND_SIZE;
+
+        grid_ind=start_offset + blockIdx.x*d_GRID_Z_OFFSET + threadIdx.y*d_NX + threadIdx.x;
         if (threadIdx.x>=d_BOUND_SIZE) grid_ind+=d_COMP_DOMAIN_SIZE_X;
-        
+/*if (threadIdx.y>120 && blockIdx.x==0) printf("threadIdx.y,halo_ind,grid_ind= %d, %d, %d \n",threadIdx.y,halo_ind,grid_ind);        
+if (blockIdx.x==0){
+if (threadIdx.x==0&& threadIdx.y==0) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+if (threadIdx.x==5&& threadIdx.y==127) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+}
+if (blockIdx.x==127){
+if (threadIdx.x==0&& threadIdx.y==0) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+if (threadIdx.x==5&& threadIdx.y==127) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+}*/
         d_grid[grid_ind]=d_halo_yz[halo_ind];
 }
 /****************************************************************************************/
@@ -39,18 +47,26 @@ __global__ void packIyzPlates(float* d_grid,float* d_halo_yz)
 {
 //  packs inner yz halos in buffer d_halo_yz on device
 
-        const int halo_ind=threadIdx.x + (threadIdx.y + threadIdx.z*(d_COMP_DOMAIN_SIZE_Y-2*d_BOUND_SIZE))*(2*d_BOUND_SIZE);
-        const int start_offset=((d_W_GRID_Z_OFFSET+d_NX)*2+1)*d_BOUND_SIZE;
+        const int halo_ind=threadIdx.x + (threadIdx.y + blockIdx.x*(d_COMP_DOMAIN_SIZE_Y-2*d_BOUND_SIZE))*(2*d_BOUND_SIZE);
+        const int start_offset=((d_GRID_Z_OFFSET+d_NX)*2+1)*d_BOUND_SIZE;
 
-        int grid_ind=start_offset + threadIdx.z*d_W_GRID_Z_OFFSET + threadIdx.y*d_NX + threadIdx.x;
+        int grid_ind=start_offset + blockIdx.x*d_GRID_Z_OFFSET + threadIdx.y*d_NX + threadIdx.x;
         if (threadIdx.x>=d_BOUND_SIZE) grid_ind+=d_COMP_DOMAIN_SIZE_X-2*d_BOUND_SIZE;
 
+/*if (blockIdx.x==0){
+if (threadIdx.x==0&& threadIdx.y==0) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+if (threadIdx.x==5&& threadIdx.y==127-6) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+}
+if (blockIdx.x==127-6){
+if (threadIdx.x==0&& threadIdx.y==0) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+if (threadIdx.x==5&& threadIdx.y==127-6) printf("halo_ind,grid_ind= %d %d, %d \n",blockIdx.x,halo_ind,grid_ind);        
+}*/
         d_halo_yz[halo_ind] = d_grid[grid_ind];
 }
+/****************************************************************************************/
 //Headers
 #include "../cdata_c.h"
 //using namespace PC;
-
 /****************************************************************************************************************/
 __host__ void initializeCopying()
 { 
@@ -154,9 +170,15 @@ __host__ void copyOyzPlates(float* grid, float* d_grid)
 
 //  unpacking in global memory; done by GPU kernel in stream strLeftRight
 
-        int numBlocks=1;
-        dim3 threads(2*nghost,ny,nz);
+        int numBlocks=nz;
+        dim3 threads(2*nghost,ny,1);    // 2*nghost*ny  need to be <=1024 !!!
+//printf("halo_yz(0:2)= %f, %f, %f, \n",*(halo_yz),*(halo_yz+1),*(halo_yz+2));
         unpackOyzPlates<<<numBlocks,threads,0,strLeftRight>>>(d_grid,d_halo_yz);
+        cudaDeviceSynchronize();
+/*float buf[3];
+offset=mxy*nghost+mx*nghost;
+cudaMemcpy(&buf,d_grid+offset,3*sizeof(float),cudaMemcpyDeviceToHost);
+printf("buf(0:2)= %f, %f, %f, \n",buf[0],buf[1],buf[2]); */
 }
 /****************************************************************************************************************/
 __host__ void unlockHostMemOuter(float* grid,float* d_grid)
@@ -321,9 +343,9 @@ __host__ void copyIyzPlates(float* grid, float* d_grid)
         int i,j;
         int halo_ind=0;
         int offset=((mxy+mx)*2+1)*nghost;
-        dim3 threads(2*nghost,ny-2*nghost,nz-2*nghost);
+        dim3 threads(2*nghost,ny-2*nghost,1);
 
-        packIyzPlates<<<1,threads,0,strLeftRight>>>(d_grid,d_halo_yz);
+        packIyzPlates<<<nz-2*nghost,threads,0,strLeftRight>>>(d_grid,d_halo_yz);
         cudaHostRegister(halo_yz, halo_size, cudaHostRegisterDefault);
         cudaMemcpyAsync(halo_yz, d_halo_yz, halo_size, cudaMemcpyDeviceToHost,strLeftRight);
 
@@ -427,10 +449,10 @@ __host__ void copyInnerAll(float* grid, float* d_grid)
 
         size_t px=mx*sizeof(float);
         size_t sx=nx*sizeof(float);
-	long offset=mxy*nghost, offset_data;
+	const long offset=mxy*nghost;
+        long offset_data=offset+(mx+1)*nghost;
 
         cudaHostRegister(grid+offset,mxy*nz*sizeof(float),cudaHostRegisterDefault);
-        offset_data=offset+(mx+1)*nghost;
         for (int nn=0;nn<nz;nn++) {
         	cudaMemcpy2DAsync( grid+offset_data, px, d_grid+offset_data, px, sx, ny, cudaMemcpyDeviceToHost, strFront);
     		offset_data+=mxy;
