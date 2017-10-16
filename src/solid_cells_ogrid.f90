@@ -556,24 +556,42 @@ module Solid_Cells
         D1_SBP(6,:)=(/ 15025./525612.  , -36661./262806. , 21999./87602.   , & 
                        -25427./262806. , -342523./525612., 0.              , &
                        32400./43801.   , -6480./43801.   , 720./43801.     /)
-        D2_SBP(1,:)=(/ 114170./40947.  , -438107./54596. ,  336409./40947. , & 
-                       -276997./81894. ,  3747./13649.   , 21035./163788.  , &
-                       0.              , 0.              , 0.              /)
-        D2_SBP(2,:)=(/ 6173./5860.     , -2066./879.     ,  3283./1758.    , & 
-                       -303./293.      ,  2111./3516.    , -601./4395.     , &
-                       0.              , 0.              , 0.              /)
-        D2_SBP(3,:)=(/ -52391./81330.  ,  134603./32532. ,  -21982./2711.  , & 
-                       112915./16266.  , -46969./16266.  , 30409./54220.   , &
-                       0.              , 0.              , 0.              /)
-        D2_SBP(4,:)=(/ 68603./321540.  , -12423./10718.  ,  112915./32154. , & 
-                       -75934./16077.  ,  53369./21436.  , -54899./160770. , &
-                       48./5359.       , 0.              , 0.              /)
-        D2_SBP(5,:)=(/ -7053./39385.   ,  86551./94524.  ,  -46969./23631. , & 
-                       53369./15754.   , -87904./23631.  , 820271./472620. , &
-                       -1296./7877.    , 96./7877.       , 0.              /)
-        D2_SBP(6,:)=(/ 21035./525612.  , -24641./131403. ,  30409./87602.  , & 
-                       -54899./131403. ,  820271./525612., -117600./43801. , &
-                       64800./43801.   , -6480./43801.   , 480./43801.     /)
+        !D2_SBP(1,:)=(/ 114170./40947.  , -438107./54596. ,  336409./40947. , & 
+        !               -276997./81894. ,  3747./13649.   , 21035./163788.  , &
+        !               0.              , 0.              , 0.              /)
+        !D2_SBP(2,:)=(/ 6173./5860.     , -2066./879.     ,  3283./1758.    , & 
+        !               -303./293.      ,  2111./3516.    , -601./4395.     , &
+        !               0.              , 0.              , 0.              /)
+        !D2_SBP(3,:)=(/ -52391./81330.  ,  134603./32532. ,  -21982./2711.  , & 
+        !               112915./16266.  , -46969./16266.  , 30409./54220.   , &
+        !               0.              , 0.              , 0.              /)
+        !D2_SBP(4,:)=(/ 68603./321540.  , -12423./10718.  ,  112915./32154. , & 
+        !               -75934./16077.  ,  53369./21436.  , -54899./160770. , &
+        !               48./5359.       , 0.              , 0.              /)
+        !D2_SBP(5,:)=(/ -7053./39385.   ,  86551./94524.  ,  -46969./23631. , & 
+        !               53369./15754.   , -87904./23631.  , 820271./472620. , &
+        !               -1296./7877.    , 96./7877.       , 0.              /)
+        !D2_SBP(6,:)=(/ 21035./525612.  , -24641./131403. ,  30409./87602.  , & 
+        !               -54899./131403. ,  820271./525612., -117600./43801. , &
+        !               64800./43801.   , -6480./43801.   , 480./43801.     /)
+        D2_SBP(1,1) =0.3548420602490798e1  ; D2_SBP(3,1) =-0.5393903966319141e-1 ; D2_SBP(5,1) = 0.1623318041994786e-1
+        D2_SBP(1,2) =-0.1162385694827807e2 ; D2_SBP(3,2) =0.1153943542621719e1  ; D2_SBP(5,2) =-0.8794616833597996e-1
+        D2_SBP(1,3) =0.1480964237069501e2  ; D2_SBP(3,3) =-0.2040716873611299e1 ; D2_SBP(5,3) = 0.103577624811612e0
+        D2_SBP(1,4) =-0.8968412049815223e1 ; D2_SBP(3,4) =0.698739734417074e0   ; D2_SBP(5,4) = 0.114967901600216e1
+        D2_SBP(1,5) =0.2059642370694317e1  ; D2_SBP(3,5) =0.421429883414006e0   ; D2_SBP(5,5) =-0.2443599523155367e1
+        D2_SBP(1,6) =0.3761430517226221e0  ; D2_SBP(3,6) =-0.2262171762222378e0 ; D2_SBP(5,6) = 0.1375113224609842e1
+        D2_SBP(1,7) =-0.2015793975095019e0 ; D2_SBP(3,7) =0.5090670369467911e-1  ; D2_SBP(5,7) =-0.1218565837960692e0
+        D2_SBP(1,8) =0.5117538641997827e-13 ; D2_SBP(3,8) =-0.4371323842747547e-2 ; D2_SBP(5,8) = 0.8668492495883396e-2
+        D2_SBP(1,9) =-0.3386357570016522e-15; D2_SBP(3,9) =0.2245491919975288e-3  ; D2_SBP(5,9) = 0.1307369479706344e-3
+        D2_SBP(2,1) =0.857883182233682e0   ; D2_SBP(4,1) =-0.2032638843942139e-1 ; D2_SBP(6,1) =-0.3185308684167192e-2
+        D2_SBP(2,2) =-0.1397247220064007e1 ; D2_SBP(4,2) =0.4181668262047738e-1  ; D2_SBP(6,2) = 0.1943844988205038e-1
+        D2_SBP(2,3) =0.3461647289468133e-1  ; D2_SBP(4,3) =0.1009041221554696e1  ; D2_SBP(6,3) =-0.3865422059089032e-1
+        D2_SBP(2,4) =0.6763679122231971e0  ; D2_SBP(4,4) =-0.2044119911750601e1 ; D2_SBP(6,4) =-0.8123817099768654e-1
+        D2_SBP(2,5) =-0.1325900419870384e0 ; D2_SBP(4,5) =0.9609112011420257e0  ; D2_SBP(6,5) = 0.1445296692538394e1
+        D2_SBP(2,6) =-0.6345391502339508e-1 ; D2_SBP(4,6) =0.9142374273488277e-1  ; D2_SBP(6,6) =-0.2697689107917306e1
+        D2_SBP(2,7) =0.244383001412735e-1   ; D2_SBP(4,7) =-0.4316909959745465e-1 ; D2_SBP(6,7) = 0.1494463382995396e1
+        D2_SBP(2,8) =-0.2800316968929196e-4 ; D2_SBP(4,8) =0.4668725019017949e-2  ; D2_SBP(6,8) =-0.1495167135596915e0
+        D2_SBP(2,9) =0.1331275129575954e-4  ; D2_SBP(4,9) =-0.2461732836225921e-3 ; D2_SBP(6,9) = 0.110849963339009e-1
       else
         if(lroot) print*, 'WARNING: No cylinder boundary condition set'
       endif
@@ -4472,7 +4490,7 @@ module Solid_Cells
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 
-    !call run_tests_ogrid
+    call run_tests_ogrid
 !
 !  Coefficients for up to order 3.
 !
@@ -8778,7 +8796,14 @@ module Solid_Cells
     real, dimension (mx_ogrid, my_ogrid,2,2) ::  df2_pflow, df2_pflow_ex
     real, dimension (mx_ogrid, my_ogrid,2,2,2) ::  df2ij_pflow, df2ij_pflow_ex
     real, dimension (2,2) :: df_twonorm, df2_twonorm
+    real, dimension (3) :: graddivu_twonorm
+    real, dimension (3) :: graddivu2_twonorm
     real, dimension (2,2,2) :: df2ij_twonorm
+    real, dimension (nx_ogrid,3)     :: u_vec
+    real, dimension (nx_ogrid,3,3) :: uij_tensor
+    real, dimension (mx_ogrid,my_ogrid,3) :: graddivu_vec_exact
+    real, dimension (mx_ogrid,my_ogrid,3) :: graddivu_vec
+    real, dimension (mx_ogrid,my_ogrid,3) :: graddivu_vec_exact2
     integer :: i,j,k
   
     R2 = cylinder_radius**2
@@ -8811,6 +8836,7 @@ module Solid_Cells
 !
 !  Compute first order derivatives
 !
+    n_ogrid=4
     do m_ogrid=m1_ogrid,m2_ogrid
       call der_ogrid(f_pflow,1,df_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,1),1)
       call der_ogrid(f_pflow,1,df_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,2),2)
@@ -8837,6 +8863,22 @@ module Solid_Cells
       call derij_ogrid(f_pflow,2,df2ij_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,2,1),2,1)
     enddo
 !
+!  Compute grad(div u)
+!
+    do m_ogrid=m1_ogrid,m2_ogrid
+      u_vec(1:nx_ogrid,1)=f_pflow(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,1)
+      u_vec(1:nx_ogrid,2)=f_pflow(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,2)
+      u_vec(1:nx_ogrid,3)=f_pflow(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,3)
+      call gij_ogrid(f_pflow,iuu,uij_tensor)
+
+!      print*, 'dvr_dr  :', uij_tensor(:,1,1)-df_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,1)
+!      print*, 'dvr_dth :', uij_tensor(:,1,2)-df_pflow(l1_ogrid:l2_ogrid,m_ogrid,1,2)
+!      print*, 'dvth_dr :', uij_tensor(:,2,1)-df_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,1)
+!      print*, 'dvth_dth:', uij_tensor(:,2,2)-df_pflow(l1_ogrid:l2_ogrid,m_ogrid,2,2)
+
+      call gij_etc_ogrid(f_pflow,iuu,u_vec,uij_tensor,GRADDIV=graddivu_vec(l1_ogrid:l2_ogrid,m_ogrid,:))
+    enddo
+!
 !  Set up exact solutions to derivatives 
 !  All values in cylindrical coordinates, hence d/dy = 1/r d/dth, etc.
 !
@@ -8859,6 +8901,17 @@ module Solid_Cells
         df2ij_pflow_ex(i,j,2,1,2) = 2.*velocity*R2*cos(y_ogrid(j))/(x_ogrid(i)**4)
         df2ij_pflow_ex(i,j,2,2,1) = df2ij_pflow_ex(i,j,2,1,2)
         !df2ij_pflow_ex(i,j,2,2,1) = 2.*velocity*R2*cos(y_ogrid(j))/(x_ogrid(i)**4)
+        graddivu_vec_exact(i,j,1) = df2_pflow_ex(i,j,1,1)+df2ij_pflow_ex(i,j,2,1,2) + &
+                                (1./x_ogrid(i))*(df_pflow_ex(i,j,1,1)-df_pflow_ex(i,j,2,2)) - &
+                                (1./(x_ogrid(i)**2))*(f_pflow(i,j,1,1))
+        graddivu_vec_exact2(i,j,2) = df2_pflow_ex(i,j,2,2)+df2ij_pflow_ex(i,j,1,1,2) + &
+                                (1./x_ogrid(i))*(df_pflow_ex(i,j,1,2))
+        graddivu_vec_exact2(i,j,1) = df2_pflow(i,j,1,1)+df2ij_pflow(i,j,2,1,2) + &
+                                (1./x_ogrid(i))*(df_pflow(i,j,1,1)-df_pflow(i,j,2,2)) - &
+                                (1./(x_ogrid(i)**2))*(f_pflow(i,j,1,1))
+        graddivu_vec_exact2(i,j,2) = df2_pflow(i,j,2,2)+df2ij_pflow(i,j,1,1,2) + &
+                                (1./x_ogrid(i))*(df_pflow(i,j,1,2)) 
+          !f_pflow(i,j,k,1) = velocity*(1-R2/(x_ogrid(i)**2))*cos(y_ogrid(j))
       enddo
     enddo
 !
@@ -8867,6 +8920,8 @@ module Solid_Cells
     df_twonorm=0.
     df2_twonorm=0.
     df2ij_twonorm=0.
+    graddivu_twonorm=0.
+    graddivu2_twonorm=0.
     do i=l1_ogrid,l2_ogrid
       do j=m1_ogrid,m2_ogrid
         df_twonorm(1,1)=df_twonorm(1,1)+(df_pflow_ex(i,j,1,1)-df_pflow(i,j,1,1))**2 &
@@ -8893,8 +8948,14 @@ module Solid_Cells
                         *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
         df2ij_twonorm(2,2,1)=df2ij_twonorm(2,2,1)+(df2ij_pflow_ex(i,j,2,2,1)-df2ij_pflow(i,j,2,2,1))**2 &
                             *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        graddivu_twonorm(:)=graddivu_twonorm(:)+(graddivu_vec(i,j,:)-graddivu_vec_exact(i,j,:))**2 &
+                            *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
+        graddivu2_twonorm(:)=graddivu2_twonorm(:)+(graddivu_vec(i,j,:)-graddivu_vec_exact2(i,j,:))**2 &
+                            *(1./dx_1_ogrid(i))*(x_ogrid(i)/dy_1_ogrid(j))
       enddo
     enddo
+    print*, graddivu_twonorm
+    print*, graddivu2_twonorm
     df_twonorm=sqrt(df_twonorm)
     df2_twonorm=sqrt(df2_twonorm)
     df2ij_twonorm=sqrt(df2ij_twonorm)
@@ -8922,21 +8983,21 @@ module Solid_Cells
     endif
     write(10,*) '# nx_ogrid, ny_ogrid'
     write(10,*)  nx_ogrid,ny_ogrid
-    write(1,*)  '# df_twonorm'
-    write(1,*)  '# dvrdr, dvrdth'
-    write(1,*)  '# dvthdr, dvthdth'
-    write(1,*)  df_twonorm(1,1), df_twonorm(1,2)
-    write(1,*)  df_twonorm(2,1), df_twonorm(2,2)
-    write(2,*)  '# df2_twonorm'
-    write(2,*)  '# d2vrdr2, d2vrdth2'
-    write(2,*)  '# d2vthdr2, d2vthdth2'
-    write(2,*)  df2_twonorm(1,1), df2_twonorm(1,2)
-    write(2,*)  df2_twonorm(2,1), df2_twonorm(2,2)
-    write(3,*)  '# df2ij_twonorm'
-    write(3,*)  '# d2vrdrdth, d2vrdthdr'
-    write(3,*)  '# d2vthdrdth, d2vthdthdr'
-    write(3,*)  df2ij_twonorm(1,1,2), df2ij_twonorm(1,2,1)
-    write(3,*)  df2ij_twonorm(2,1,2), df2ij_twonorm(2,2,1)
+    write(*,*)  '# df_twonorm'
+    write(*,*)  '# dvrdr, dvrdth'
+    write(*,*)  '# dvthdr, dvthdth'
+    write(*,*)  df_twonorm(1,1), df_twonorm(1,2)
+    write(*,*)  df_twonorm(2,1), df_twonorm(2,2)
+    write(*,*)  '# df2_twonorm'
+    write(*,*)  '# d2vrdr2, d2vrdth2'
+    write(*,*)  '# d2vthdr2, d2vthdth2'
+    write(*,*)  df2_twonorm(1,1), df2_twonorm(1,2)
+    write(*,*)  df2_twonorm(2,1), df2_twonorm(2,2)
+    write(*,*)  '# df2ij_twonorm'
+    write(*,*)  '# d2vrdrdth, d2vrdthdr'
+    write(*,*)  '# d2vthdrdth, d2vthdthdr'
+    write(*,*)  df2ij_twonorm(1,1,2), df2ij_twonorm(1,2,1)
+    write(*,*)  df2ij_twonorm(2,1,2), df2ij_twonorm(2,2,1)
     close(1)
     close(2)
     close(3)
