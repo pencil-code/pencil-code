@@ -4490,7 +4490,6 @@ module Solid_Cells
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 
-    call run_tests_ogrid
 !
 !  Coefficients for up to order 3.
 !
