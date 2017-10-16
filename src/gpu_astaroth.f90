@@ -17,6 +17,7 @@ module GPU
   external initialize_gpu_c
   external finalize_gpu_c
   external rhs_gpu_c
+  external copy_farray_c
 
   include 'gpu.h'
 
@@ -92,7 +93,6 @@ contains
       integer :: ll, mm, nn
       real :: val
       logical, save :: lvery_first=.true.
-      logical :: lfull_inner
 
       goto 1
       val=1.
@@ -103,11 +103,12 @@ contains
       enddo; enddo; enddo
       f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
 
-1     lfull_inner = (lsnap.or.lsnap_down.or.lspec)             !.and. isubstep==itorder
-if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
+1     continue
+!if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
 !if (lroot) print*, 'lnrho(1:3)-PC=', f(l1:l1+2,m1,n1,ilnrho)
+!f(:,:,:,iuy)=0.; f(:,:,:,iuz)=0.
       call rhs_gpu_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho), &
-                     isubstep,lfull_inner,lvery_first)
+                     isubstep,lvery_first)
 !
       lvery_first=.false.
 
@@ -121,5 +122,13 @@ if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
       enddo; enddo
 
     endsubroutine rhs_GPU
+!**************************************************************************
+    subroutine copy_farray_from_GPU(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
+
+      call copy_farray_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho))
+
+    endsubroutine copy_farray_from_GPU
 !**************************************************************************
 endmodule GPU
