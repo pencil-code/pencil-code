@@ -308,7 +308,8 @@ module Solid_Cells
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
-      flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation
+      flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
+      SBP, BDRY5
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -4781,7 +4782,7 @@ module Solid_Cells
 !
       if (lpencil_ogrid(i_og_uu)) p_ogrid%uu=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)
       if (lpencil_ogrid(i_og_u2)) call dot2_mn_ogrid(p_ogrid%uu,p_ogrid%u2)
-      if (lpencil_ogrid(i_og_uij)) call gij_ogrid(f_ogrid,iuu,p_ogrid%uij,1)
+      if (lpencil_ogrid(i_og_uij)) call gij_ogrid(f_ogrid,iuu,p_ogrid%uij)!,1)
       if (lpencil_ogrid(i_og_divu)) call div_mn_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%uu)
       if (lpencil_ogrid(i_og_sij)) call traceless_strain_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%sij,p_ogrid%uu)
       if (lpencil_ogrid(i_og_sij2)) call multm2_sym_mn_ogrid(p_ogrid%sij,p_ogrid%sij2)
@@ -5137,28 +5138,31 @@ module Solid_Cells
 !
     endsubroutine dot2_mn_ogrid
 !***********************************************************************
-    subroutine gij_ogrid(f,k,g,nder)
+    subroutine gij_ogrid(f,k,g)!,nder)
 !
 !  Calculate gradient of a vector, return matrix.
 !
 !   07-feb-17/Jorgen: Adapted from sub.f90
+!   16-okt-17/Jorgen: Possibility of gradient squadred is removed, as 
+!                     the expression is not tested properly, and it should
+!                     most likely contain a +(1/r)df/dr term
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3,3) :: g
       real, dimension (nx_ogrid) :: tmp
-      integer :: i,j,k,k1,nder
+      integer :: i,j,k,k1!,nder
 !
-      intent(in) :: f,k,nder
+      intent(in) :: f,k!,nder
       intent(out) :: g
 !
       k1=k-1
       do i=1,3 
         do j=1,3
-          if (nder == 1) then
+!          if (nder == 1) then
             call der_ogrid(f,k1+i,tmp,j)
-          elseif (nder == 2) then
-            call der2_ogrid(f,k1+i,tmp,j)
-          endif
+!          elseif (nder == 2) then
+!            call der2_ogrid(f,k1+i,tmp,j)
+!          endif
           g(:,i,j)=tmp
         enddo 
       enddo
@@ -5531,7 +5535,7 @@ module Solid_Cells
       if (present(graddiv)) then
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
 !  Since we have cylindrical coordinates
-        graddiv(:,1)=graddiv(:,1)+rcyl_mn1_ogrid*aij(:,1,1) - rcyl_mn2_ogrid*aa(:,1)
+        graddiv(:,1)=graddiv(:,1)+rcyl_mn1_ogrid*(aij(:,1,1)-aij(:,2,2)) - rcyl_mn2_ogrid*aa(:,1)
         graddiv(:,2)=graddiv(:,2)+rcyl_mn1_ogrid*aij(:,1,2)
         graddiv(:,3)=graddiv(:,3)+rcyl_mn1_ogrid*aij(:,1,3)
       endif
