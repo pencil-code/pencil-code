@@ -37,6 +37,13 @@ svn add *.in
 svn add -N src
 svn propset svn:keywords "Id" *.in
 
+if ($simdir) then
+    svn add --depth=empty ./data/proc0/
+    svn add ./data/proc0/grid.dat
+    svn add ./data/proc0/dim.dat
+    set extended = 1
+endif
+
 if ($extended) then
     svn add k.dat
     svn add -N ./data/
@@ -46,11 +53,6 @@ if ($extended) then
     svn add ./data/dim.dat
 endif
 
-if ($simdir) then
-    svn add --depth=empty ./data/proc0/
-    svn add ./data/proc0/grid.dat
-    svn add ./data/proc0/dim.dat
-endif
 svn add src/*.local
 svn propset svn:keywords "Id" src/*.local
 
