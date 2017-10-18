@@ -621,7 +621,7 @@ class __Simulation__(object):
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 q = self.param[quantity]
                 return q
-            elif quantity in [d for d in dir(self.dim) if not d.startswith('__')]::
+            elif quantity in [d for d in dir(self.dim) if not d.startswith('__')]:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 q = getattr(self.dim, quantity)
                 return q
