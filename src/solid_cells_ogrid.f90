@@ -4698,7 +4698,6 @@ module Solid_Cells
 !  Continuity equation.
 !      
       density_rhs= - p_ogrid%ugrho   - p_ogrid%rho*p_ogrid%divu      
-      !!!!!TODO
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
@@ -5233,7 +5232,7 @@ module Solid_Cells
       enddo
     enddo
     sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1_ogrid*uu(:,2)
-    sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1_ogrid*uu(:,1)
+    sij(:,2,2)=sij(:,2,2)+rcyl_mn1_ogrid*uu(:,1)
     sij(:,2,1)=sij(:,1,2)
 !
     endsubroutine traceless_strain_ogrid
