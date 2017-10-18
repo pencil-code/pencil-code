@@ -615,11 +615,15 @@ class __Simulation__(object):
         if DEBUG: print('~ DEBUG: Updating simulation.')
         self.update()
 
-        if DEBUG: print('~ DEBUG: Searching through simulation.params ...')
+        if DEBUG: print('~ DEBUG: Searching through simulation.params and dim ...')
         if type(self.param) == type({'dictionary': 'with_values'}):
             if quantity in self.param.keys():
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 q = self.param[quantity]
+                return q
+            elif quantity in [d for d in dir(self.dim) if not d.startswith('__')]::
+                if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
+                q = getattr(self.dim, quantity)
                 return q
 
         if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')

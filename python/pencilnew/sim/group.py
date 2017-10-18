@@ -30,8 +30,19 @@ def group(simulations, groupby, sort=True, only_started=False, reverse=False):
 
   # special cases:
   if groupby in ['Lx', 'Ly', 'Lz']:
+      if groupby[-1] == 'x': ii = 0
+      elif groupby[-1] == 'y': ii = 1
+      elif groupby[-1] == 'z': ii = 2
       for sim in sim_list:
-        q = str(sim.param['lxyz'][0])
+        q = str(sim.param['lxyz'][ii])
+        if (not q in sim_dict_grouped.keys()):
+          sim_dict_grouped[q] = [sim]
+        else:
+          sim_dict_grouped[q].append(sim)
+          
+  elif groupby in ['nx', 'ny', 'nz']:
+      for sim in sim_list:
+        q = str(getattr(sim.dim, groupby))
         if (not q in sim_dict_grouped.keys()):
           sim_dict_grouped[q] = [sim]
         else:
