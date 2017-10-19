@@ -35,13 +35,14 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
+  real :: ap1=1.0, qplaw=0.0, GS_condensation=0., G_condensation=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: lsupersat_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
+  logical :: lcondensation_rate=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
@@ -67,7 +68,8 @@ module Particles_radius
       lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
       lsupersat_par,lconstant_radius_w_chem, &
-      reinitialize_ap, initap
+      reinitialize_ap, initap, &
+      G_condensation, lcondensation_rate
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -905,9 +907,10 @@ module Particles_radius
         ix0 = ineargrid(k,1)
         ix = ix0-nghost
         if (lsupersat) then
-          dapdt = f(ix,m,n,issat)/fp(k,iap)
-          !print*,'ssat=',f(ix,m,n,issat)
-          !print*,'r=',fp(k,iap)
+          dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+          if (lcondensation_rate) then
+            dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+          endif
           dfp(k,iap) = dfp(k,iap)+dapdt
         endif
       enddo
@@ -919,7 +922,6 @@ module Particles_radius
 !  Evolution of particle radius.
 !
 !  21-nov-06/anders: coded
-!
       use Sub
 !
       real, dimension(mx,my,mz,mfarray) :: f

@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED gssat(3); ugssat
 ! PENCILS PROVIDED del2ssat
 ! PENCILS PROVIDED tausupersat
+! PENCILS PROVIDED condensationRate
 !
 !***************************************************************
 module Supersat
@@ -28,6 +29,8 @@ module Supersat
 !
   include 'supersat.h'
 !
+! Define local variables in this special module, not in "Cdata.f90"
+  integer :: icondensationRate=0
 !  Init parameters.
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
@@ -63,6 +66,7 @@ module Supersat
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
   integer :: idiag_tausupersatrms=0, idiag_tausupersatmax=0, idiag_tausupersatmin=0
+!  integer :: idiag_condensateRaterms=0, idiag_condensateRatemax=0,idiag_condensateRatemin=0
 !
   contains
 !***********************************************************************
@@ -172,6 +176,7 @@ module Supersat
       if (lsupersat_sink) then 
         lpenc_requested(i_ssat)=.true.
         lpenc_requested(i_tausupersat)=.true.
+        lpenc_requested(i_condensationRate)=.true.
       endif
       if (supersat_diff/=0.) lpenc_requested(i_del2ssat)=.true.
  
@@ -190,6 +195,7 @@ module Supersat
         lpencil_in(i_gssat)=.true.
       endif
       lpencil_in(i_tausupersat)=.true.
+      lpencil_in(i_condensationRate)=.true.
     endsubroutine pencil_interdep_supersat
 !**********************************************************************
     subroutine calc_pencils_supersat(f,p)
@@ -246,7 +252,7 @@ module Supersat
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
-      real, dimension (nx) :: radius_sum, condensation_rate_Cd, qv, superaturation
+      real, dimension (nx) :: radius_sum, condensation_rate_Cd, qv, supersaturation
       real :: ssat_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer, parameter :: nxy=nxgrid*nygrid
@@ -292,15 +298,24 @@ module Supersat
 !  compute sum of particle radii
 !
         qv=f(l1:l2,m,n,issat)
-        superaturation=qv/vapor_mixing_ratio_qvs-1.
+        supersaturation=qv/vapor_mixing_ratio_qvs-1.
         radius_sum=0.
 !       do k=1,ndustspec
 !         radius_sum=radius_sum+p%ad(:,k)*p%nd(:,k)
 !         print*,k,radius_sum(1:5)
 !       enddo
-        condensation_rate_Cd=4.*pi*superaturation*radius_sum
+        condensation_rate_Cd=4.*pi*supersaturation*p%condensationRate
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-condensation_rate_Cd
         if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
+      endif
+!
+! 17-10-18: Xiang-Yu coded. Solve supersaturation by solving equations for the temperature, mixing ratio
+      
+      if (lcondensation_rate) then
+        qv=f(l1:l2,m,n,issat)
+       ! f(l1:l2,m,n,issat)=qv/vapor_mixing_ratio_qvs-1.
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-f(l1:l2,m,n,icondensationRate)
+        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+f(l1:l2,m,n,icondensationRate)/(p%cp*p%TT)
       endif
 !
 !  Diagnostics
@@ -313,6 +328,7 @@ module Supersat
         if (idiag_uyssatm/=0) call sum_mn_name(p%uu(:,2)*p%ssat,idiag_uyssatm)
         if (idiag_uzssatm/=0) call sum_mn_name(p%uu(:,3)*p%ssat,idiag_uzssatm)
         if (idiag_tausupersatrms/=0) &
+            !print*,'tau=',p%tausupersat
             call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
         if (idiag_tausupersatmax/=0) call max_mn_name(p%tausupersat,idiag_tausupersatmax)
         if (idiag_tausupersatmin/=0) call max_mn_name(-p%tausupersat,idiag_tausupersatmin,lneg=.true.)

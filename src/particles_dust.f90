@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 2
+! MAUX CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM character (len=20), parameter :: particles_module="dust"
 !
@@ -17,6 +17,7 @@
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
+! PENCILS PROVIDED condensationRate
 !
 !***************************************************************
 module Particles
@@ -154,6 +155,9 @@ module Particles
 !
   integer :: init_repeat=0       !repeat particle initialization for distance statistics
 !
+  integer :: icondensationRate=0
+  logical :: lcondensation_rate=.false.
+!
 !  Interactions with special/shell
 !
   integer :: k_shell=-1            !k associated with minshell (special/shell.f90)
@@ -270,7 +274,8 @@ module Particles
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero
+      supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
+      lcondensation_rate
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -390,6 +395,7 @@ module Particles
 !  Relaxation time of supersaturation
       if (lsupersat) &
         call farray_register_auxiliary('tausupersat', itausupersat)
+        call farray_register_auxiliary('condensationRate', icondensationRate)
 !
 !  Kill particles that spend enough time in birth ring
       if (lbirthring_depletion) then
@@ -2807,6 +2813,7 @@ module Particles
 !
       if (lsupersat) &
          lpenc_requested(i_tausupersat)=.true.
+         lpenc_requested(i_condensationRate)=.true.
 
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
@@ -2856,6 +2863,7 @@ module Particles
       endif
 !
       if (lsupersat) lpencil_in(i_tausupersat)=.true.
+      if (lsupersat) lpencil_in(i_condensationRate)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -2908,6 +2916,7 @@ module Particles
 !
 !
       if (itausupersat>0) p%tausupersat=f(l1:l2,m,n,itausupersat)
+      if (icondensationRate>0) p%condensationRate=f(l1:l2,m,n,icondensationRate)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -3690,6 +3699,7 @@ module Particles
       
 ! supersat
       if (lsupersat) f(:,m,n,itausupersat) = 0.0
+      if (lsupersat) f(:,m,n,icondensationRate) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
       if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
           'ldiffuse_passive needs pscalar_nolog=F')
@@ -3702,6 +3712,7 @@ module Particles
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
       if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
+      if (lpenc_requested(i_condensationRate)) p%condensationRate=0.
 !
       if (idiag_urel /= 0) urel_sum=0.
 !
@@ -4461,6 +4472,9 @@ module Particles
                    f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
 !                   print*,'inversetau=',inversetau
 !                   print*,'tau=',f(l,m,n,itausupersat)
+                   if (lcondensation_rate) then
+                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*f(l,m,n,issat)*fp(k,iap)
+                   endif
                  elseif (supersat_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
