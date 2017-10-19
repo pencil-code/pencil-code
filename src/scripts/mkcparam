@@ -120,6 +120,7 @@ my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
 my %open_files;
+my $penc_name_len='';
 
 #
 # Process command line.
@@ -417,12 +418,23 @@ foreach my $pencil (@pencil_names) {
   $i++;
 }
 
+unless (open(INPUT,"< cparam.f90")) {
+  die "Can't open cparam.f90 for reading"
+}
+while (defined($line=<INPUT>)) {
+  if ( $line =~ /penc_name_len\s*=\s*[0-9]/ )
+  {
+    ($penc_name_len) = $line =~ m/=([0-9]+)/; 
+    last;
+  }
+}
+
 # Define pencil names:
 print $out_pencil "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
 $i=0;
 foreach my $pencil (@pencil_names){
   print $out_pencil ", " if ($i != 0);
-  print $out_pencil "'$pencil" . " " x (14-length($pencil)) . "'";
+  print $out_pencil "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
   print $out_pencil "  &\n   " if (($i % 4) == 3);
   $i++;
 }
