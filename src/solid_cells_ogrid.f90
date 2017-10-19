@@ -53,9 +53,12 @@ module Solid_Cells
 !  Boundary condition
   logical :: SBP=.true.
   logical :: BDRY5=.false.
+!  Time discretization
+  logical :: lrk_tvd=.false.
 !  Interpolation method
   integer :: interpolation_method=1  ! Set in start.in
   integer :: inter_len=2             ! Length of interpolation stencil
+  integer :: interpol_filter=0       ! Distance between interpolation r_int_outer and r_ogrid
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! Set in start.in
@@ -304,12 +307,13 @@ module Solid_Cells
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, &
       lcheck_interpolation, lcheck_init_interpolation, SBP, BDRY5, &
       interpolation_method, lock_dt, lexpl_rho, &
-      lshift_origin_ogrid,lshift_origin_lower_ogrid
+      lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
+      lrk_tvd
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
-      SBP, BDRY5
+      SBP, BDRY5, lrk_tvd
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -4489,23 +4493,26 @@ module Solid_Cells
     integer :: tstep_ogrid
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) ::  f_tmp
 
+    if(.not.lrk_tvd) then
 !
 !  Coefficients for up to order 3.
 !
-    if (itorder==1) then
-      alpha_ts_ogrid=(/ 0.0, 0.0, 0.0 /)
-      beta_ts_ogrid=(/ 1.0, 0.0, 0.0 /)
-    elseif (itorder==2) then
-      alpha_ts_ogrid=(/   0.0, -1/2.0, 0.0 /)
-      beta_ts_ogrid=(/ 1/2.0,    1.0, 0.0 /)
-    elseif (itorder==3) then
-      !  use coefficients of Williamson (1980)
-      alpha_ts_ogrid=(/   0.0, -5/9.0 , -153/128.0 /)
-      beta_ts_ogrid=(/ 1/3.0, 15/16.0,    8/15.0  /)
-    else
-      if (lroot) print*,'Not implemented: itorder=',itorder
-      call mpifinalize
+      if (itorder==1) then
+        alpha_ts_ogrid=(/ 0.0, 0.0, 0.0 /)
+        beta_ts_ogrid=(/ 1.0, 0.0, 0.0 /)
+      elseif (itorder==2) then
+        alpha_ts_ogrid=(/   0.0, -1/2.0, 0.0 /)
+        beta_ts_ogrid=(/ 1/2.0,    1.0, 0.0 /)
+      elseif (itorder==3) then
+        !  use coefficients of Williamson (1980)
+        alpha_ts_ogrid=(/   0.0, -5/9.0 , -153/128.0 /)
+        beta_ts_ogrid=(/ 1/3.0, 15/16.0,    8/15.0  /)
+      else
+        if (lroot) print*,'Not implemented: itorder=',itorder
+        call mpifinalize
+      endif
     endif
 !
 !  Interpolate data from cartesian to curvilinear grid.
@@ -4518,7 +4525,7 @@ module Solid_Cells
     !call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
 !
     dt_ogrid = dt/timestep_factor
-    dt_beta_ts_ogrid=dt_ogrid*beta_ts_ogrid
+    if(.not. lrk_tvd) dt_beta_ts_ogrid=dt_ogrid*beta_ts_ogrid
 !
 !  Perform a number of timestep equal to timestep_factor, such that the
 !  endtime t_ogrid is equal to t after the timesteps
@@ -4528,29 +4535,60 @@ module Solid_Cells
 !  Set up df for each time sub.
 !
       df_ogrid=0.0
-      do itsub=1,itorder
-        df_ogrid=alpha_ts_ogrid(itsub)*df_ogrid
-        llast_ogrid=(tstep_ogrid==timestep_factor).and.(itsub==itorder)
+      if(lrk_tvd) then
+!  First subtimestep
+        call pde_ogrid(f_ogrid,df_ogrid)
+        do j=1,mvar 
+          f_tmp(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
+              f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+            + dt_ogrid*df_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)
+        enddo
+        f_tmp(l2_ogrid+1:mx_ogrid,:,:,:)=f_ogrid(l2_ogrid+1:mx_ogrid,:,:,:)
+!  Second subtimestep
+        df_ogrid=0.0
+        call pde_ogrid(f_tmp,df_ogrid)
+        do j=1,mvar 
+          f_tmp(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
+              (3./4.)*f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+            +(1./4.)*(f_tmp(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+                      +dt_ogrid*df_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j))
+        enddo
+!  Third subtimestep
+        llast_ogrid=(tstep_ogrid==timestep_factor)
+        df_ogrid=0.0
+        call pde_ogrid(f_tmp,df_ogrid)
+        do j=1,mvar 
+          f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
+              (1./3.)*f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+            +(2./3.)*(f_tmp(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+                      +dt_ogrid*df_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j))
+        enddo
+      else
+        do itsub=1,itorder
+          df_ogrid=alpha_ts_ogrid(itsub)*df_ogrid
+          llast_ogrid=(tstep_ogrid==timestep_factor).and.(itsub==itorder)
+
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde_ogrid(df_ogrid)
+          call pde_ogrid(f_ogrid,df_ogrid)
 !
 !  Time evolution of grid variables.
 !
-        do j=1,mvar 
-          f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
-              f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
-            + dt_beta_ts_ogrid(itsub)*df_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)
+          do j=1,mvar 
+            f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
+                f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
+              + dt_beta_ts_ogrid(itsub)*df_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)
+          enddo
         enddo
-      enddo
+      endif
     enddo
 !
 !  Interpolate data from curvilinear to cartesian grid.
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
-    call update_ghosts_ogrid
+    call update_ghosts_ogrid(f_ogrid)
     !! call send_rcv_all_data(1,mvar,f_cartesian)
     !call comm_ip_curv_to_cart_alt(f_cartesian,1,mvar)
     call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
@@ -4564,7 +4602,7 @@ module Solid_Cells
 !
   endsubroutine time_step_ogrid
 !***********************************************************************
-    subroutine pde_ogrid(df)
+    subroutine pde_ogrid(f_og,df)
 !
 !  06-feb-17/Jorgen+Nils: Adapded from equ.f90
 !
@@ -4572,7 +4610,7 @@ module Solid_Cells
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
       integer :: nyz_ogrid
-!
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       intent(out)    :: df
       real :: c_dragx,c_dragy, Nusselt
       c_dragx=0.
@@ -4581,8 +4619,8 @@ module Solid_Cells
 !
 !  Initiate communication and do boundary conditions.
 !
-      call boundconds_x_ogrid
-      call update_ghosts_ogrid
+      call boundconds_x_ogrid(f_og)
+      call update_ghosts_ogrid(f_og)
 !
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
@@ -4603,10 +4641,10 @@ module Solid_Cells
 !
 !  Calculate pencils for the pencil_case.
 !
-        call calc_pencils_hydro_ogrid
-        call calc_pencils_density_ogrid
-        call calc_pencils_eos_ogrid
-        call calc_pencils_energy_ogrid
+        call calc_pencils_hydro_ogrid(f_og)
+        call calc_pencils_density_ogrid(f_og)
+        call calc_pencils_eos_ogrid(f_og)
+        call calc_pencils_energy_ogrid(f_og)
         call calc_pencils_viscosity_ogrid
 !
 !  --------------------------------------------------------
@@ -4789,32 +4827,34 @@ module Solid_Cells
 !
     endsubroutine calc_heatcond_constchi_ogrid
 !***********************************************************************
-    subroutine calc_pencils_hydro_ogrid()
+    subroutine calc_pencils_hydro_ogrid(f_og)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 ! Pencils: uu, u2, uij, divu, sij, sij2, ugu, ugu2, del2u
 !
-      if (lpencil_ogrid(i_og_uu)) p_ogrid%uu=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
+
+      if (lpencil_ogrid(i_og_uu)) p_ogrid%uu=f_og   (l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)
       if (lpencil_ogrid(i_og_u2)) call dot2_mn_ogrid(p_ogrid%uu,p_ogrid%u2)
-      if (lpencil_ogrid(i_og_uij)) call gij_ogrid(f_ogrid,iuu,p_ogrid%uij)!,1)
+      if (lpencil_ogrid(i_og_uij)) call gij_ogrid(f_og   ,iuu,p_ogrid%uij)!,1)
       if (lpencil_ogrid(i_og_divu)) call div_mn_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%uu)
       if (lpencil_ogrid(i_og_sij)) call traceless_strain_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%sij,p_ogrid%uu)
       if (lpencil_ogrid(i_og_sij2)) call multm2_sym_mn_ogrid(p_ogrid%sij,p_ogrid%sij2)
-      if (lpencil_ogrid(i_og_ugu)) call u_dot_grad_ogrid(f_ogrid,iuu,p_ogrid%uij,p_ogrid%uu,p_ogrid%ugu)
+      if (lpencil_ogrid(i_og_ugu)) call u_dot_grad_ogrid(f_og   ,iuu,p_ogrid%uij,p_ogrid%uu,p_ogrid%ugu)
       if (lpencil_ogrid(i_og_ugu2)) call dot2_mn_ogrid(p_ogrid%ugu,p_ogrid%ugu2)
       if (lpencil_ogrid(i_og_graddivu).and.lpencil_ogrid(i_og_del2u)) then
-        call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u,GRADDIV=p_ogrid%graddivu)
+        call gij_etc_ogrid(f_og   ,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u,GRADDIV=p_ogrid%graddivu)
       elseif(lpencil_ogrid(i_og_graddivu)) then
-        call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,GRADDIV=p_ogrid%graddivu)
+        call gij_etc_ogrid(f_og   ,iuu,p_ogrid%uu,p_ogrid%uij,GRADDIV=p_ogrid%graddivu)
       elseif(lpencil_ogrid(i_og_del2u)) then
-        call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u)
+        call gij_etc_ogrid(f_og   ,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u)
       endif
 !
     endsubroutine calc_pencils_hydro_ogrid
 !***********************************************************************
-    subroutine calc_pencils_density_ogrid()
+    subroutine calc_pencils_density_ogrid(f_og)
 !
 !  Calculate Density pencils for linear density.
 !  Most basic pencils should come first, as others may depend on them.
@@ -4824,24 +4864,25 @@ module Solid_Cells
       use density, only:lupw_lnrho
 !
       integer :: i
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
 ! Pencils: rho, rho1, lnrho, glnrho, grho, ugrho, sglnrho
 !
-      p_ogrid%rho=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho)
+      p_ogrid%rho=f_og   (l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho)
       if (lpencil_ogrid(i_og_rho1)) p_ogrid%rho1=1.0/p_ogrid%rho
       if (lpencil_ogrid(i_og_lnrho)) p_ogrid%lnrho=log(p_ogrid%rho)
       if (lpencil_ogrid(i_og_glnrho)) then
-        call grad_ogrid(f_ogrid,irho,p_ogrid%grho)
+        call grad_ogrid(f_og   ,irho,p_ogrid%grho)
         do i=1,3
           p_ogrid%glnrho(:,i)=p_ogrid%rho1*p_ogrid%grho(:,i)
         enddo
       endif
-      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,irho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_lnrho)
+      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_og   ,irho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_lnrho)
       if (lpencil_ogrid(i_og_sglnrho)) call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%glnrho,p_ogrid%sglnrho)
 !
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
-    subroutine calc_pencils_eos_ogrid()
+    subroutine calc_pencils_eos_ogrid(f_og)
 !
 !  Calculate EquationOfState pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -4851,6 +4892,7 @@ module Solid_Cells
       use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1
 !
       real :: cp1, cv1, cp, cv
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
 !  Inverse cv and cp values.
 !
@@ -4861,14 +4903,14 @@ module Solid_Cells
 !
       if (iTT .ne. 0) then
         if (lpencil_ogrid(i_og_TT)) &
-            p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+            p_ogrid%TT=f_og   (l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
         if (lpencil_ogrid(i_og_lnTT)) &
-            p_ogrid%lnTT=log(f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT))
-        if (lpencil_ogrid(i_og_gTT)) call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
+            p_ogrid%lnTT=log(f_og   (l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT))
+        if (lpencil_ogrid(i_og_gTT)) call grad_ogrid(f_og   ,iTT,p_ogrid%gTT)
         if (lpencil_ogrid(i_og_cs2))  &
-            p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+            p_ogrid%cs2=cp*gamma_m1*f_og   (l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
         if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
-        if (lpencil_ogrid(i_og_del2TT)) call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
+        if (lpencil_ogrid(i_og_del2TT)) call del2_ogrid(f_og   ,iTT,p_ogrid%del2TT)
       else
         if (leos_isentropic) then
           if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=0.0
@@ -4888,7 +4930,7 @@ module Solid_Cells
 
     endsubroutine calc_pencils_eos_ogrid
 !***********************************************************************
-    subroutine calc_pencils_energy_ogrid()
+    subroutine calc_pencils_energy_ogrid(f_og)
 !
 !  Calculate Energy pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -4896,6 +4938,7 @@ module Solid_Cells
       use EquationOfState, only: gamma1
 !
       integer :: j
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
 !  Pencils: fpres (=pressure gradient force)
 !
@@ -4903,7 +4946,7 @@ module Solid_Cells
 
       if (iTT .ne. 0) then
         if (lpencil_ogrid(i_og_ugTT)) then
-          call u_dot_grad_ogrid(f_ogrid,iTT,p_ogrid%gTT,p_ogrid%uu,&
+          call u_dot_grad_ogrid(f_og   ,iTT,p_ogrid%gTT,p_ogrid%uu,&
               p_ogrid%ugTT,UPWIND=lupw_lnTT)
         endif
         if (lpencil_ogrid(i_og_fpres)) then
@@ -4922,7 +4965,7 @@ module Solid_Cells
 !
     endsubroutine calc_pencils_energy_ogrid
 !***********************************************************************
-    subroutine calc_pencils_viscosity_ogrid()
+    subroutine calc_pencils_viscosity_ogrid
 !
 !  Calculate Viscosity pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -4951,7 +4994,7 @@ module Solid_Cells
 !    boundconds_y_ogrid
 !    boundconds_z_ogrid
 !***********************************************************************
-    subroutine boundconds_x_ogrid
+    subroutine boundconds_x_ogrid(f_og)
 !
 !  Boundary conditions at the cylinder surface in the radial direction (xdir).
 !  For ogrids, only boundary conditions at cylinder surface is set. The BC on
@@ -4973,13 +5016,15 @@ module Solid_Cells
 !  Only set cyinder boundary here, not processor boundaries
 !
       use density, only:lupw_lnrho
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
       if(lfirst_proc_x) then
         if(SBP) then
-          if(lexpl_rho) call bval_from_neumann_SBP
+          if(lexpl_rho) call bval_from_neumann_SBP(f_og)
         elseif(BDRY5) then
-          if(lexpl_rho) call bval_from_neumann_bdry5
+          if(lexpl_rho) call bval_from_neumann_bdry5(f_og)
         else
+          !TODO set f_og as input
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
           call set_ghosts_onesided_ogrid(iuz)
@@ -4994,7 +5039,7 @@ module Solid_Cells
 !
     endsubroutine boundconds_x_ogrid
 !***********************************************************************
-    subroutine boundconds_y_ogrid
+    subroutine boundconds_y_ogrid(f_og)
 !
 !  Periodic boundary condition for runs with a single processor in y-direction 
 !
@@ -5004,6 +5049,7 @@ module Solid_Cells
       integer :: ivar1, ivar2, j
       integer :: m1i_ogrid=m1_ogrid+nghost-1
       integer :: m2i_ogrid=my_ogrid-2*nghost+1
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
       ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
 !
@@ -5012,14 +5058,14 @@ module Solid_Cells
 !
       do j=ivar1,ivar2
 !  Bottom boundary
-        f_ogrid(:,1:m1_ogrid-1,:,j) = f_ogrid(:,m2i_ogrid:m2_ogrid,:,j)
+        f_og   (:,1:m1_ogrid-1,:,j) = f_og   (:,m2i_ogrid:m2_ogrid,:,j)
 !  Top boundary
-        f_ogrid(:,m2_ogrid+1:,:,j) = f_ogrid(:,m1_ogrid:m1i_ogrid,:,j)
+        f_og   (:,m2_ogrid+1:,:,j) = f_og   (:,m1_ogrid:m1i_ogrid,:,j)
       enddo
 !
     endsubroutine boundconds_y_ogrid
 !***********************************************************************
-    subroutine boundconds_z_ogrid
+    subroutine boundconds_z_ogrid(f_og)
 !
 !  Periodic boundary condition for 3D-runs with a single processor in z-direction 
 !
@@ -5029,6 +5075,7 @@ module Solid_Cells
       integer :: ivar1, ivar2, j
       integer :: n1i_ogrid=n1_ogrid+nghost-1
       integer :: n2i_ogrid=mz_ogrid-2*nghost+1
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
       ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
 !
@@ -5036,9 +5083,9 @@ module Solid_Cells
 !
       do j=ivar1,ivar2
 !  Bottom boundary
-        f_ogrid(:,:,1:n1_ogrid-1,j) = f_ogrid(:,:,n2i_ogrid:n2_ogrid,j)
+        f_og   (:,:,1:n1_ogrid-1,j) = f_og   (:,:,n2i_ogrid:n2_ogrid,j)
 !  Top boundary
-        f_ogrid(:,:,n2_ogrid+1:,j) = f_ogrid(:,:,n1_ogrid:n1i_ogrid,j)
+        f_og   (:,:,n2_ogrid+1:,j) = f_og   (:,:,n1_ogrid:n1i_ogrid,j)
       enddo
 !
     endsubroutine boundconds_z_ogrid
@@ -5319,37 +5366,6 @@ module Solid_Cells
       b = dot_product(a,a)
 !
     endsubroutine dot2_0_ogrid
-!***********************************************************************
-    subroutine del2v_ogrid(f,k,del2f)
-!
-!  Calculate del2 of a vector, get vector.
-!
-!  14-feb-17/Jorgen: Adapted from del2v_ogrid in der.f90
-!  15-mar-07/wlad: added cylindrical coordinates
-!
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
-      real, dimension (nx_ogrid,3) :: del2f
-      real, dimension (nx_ogrid) :: tmp
-      integer :: i,k,k1
-!
-      intent(in) :: f,k
-      intent(out) :: del2f
-!
-!  do the del2 diffusion operator
-!
-      k1=k-1
-      do i=1,3
-        call del2_ogrid(f,k1+i,tmp)
-        del2f(:,i)=tmp
-      enddo
-!
-      !del2 already contains the extra term 1/r*d(uk)/dt
-      call der_ogrid(f,k1+2,tmp,2)
-      del2f(:,1)=del2f(:,1) -(2*tmp+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+1))*rcyl_mn2_ogrid
-      call der_ogrid(f,k1+1,tmp,2)
-      del2f(:,2)=del2f(:,2) +(2*tmp-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+2))*rcyl_mn2_ogrid
-!
-    endsubroutine del2v_ogrid
 !***********************************************************************
     subroutine u_dot_grad_vec_ogrid(f,k,gradf,uu,ugradf,upwind)
 !
@@ -6134,7 +6150,7 @@ module Solid_Cells
                                                -  10.*f_ogrid(k+6,:,:,irho) )/147.
     endsubroutine bval_from_neumann_arr_ogrid
 !***********************************************************************
-    subroutine bval_from_neumann_SBP
+    subroutine bval_from_neumann_SBP(f_og)
 !
 !  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
 !  one-sided difference formulae. val depends on x,y.
@@ -6143,20 +6159,21 @@ module Solid_Cells
 !  16-feb-17/Jorgen: Adapted from deriv.f90
 !
       integer :: k
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 
       k=l1_ogrid
-      f_ogrid(k,:,:,irho) = -(D1_SBP(1,2)*f_ogrid(k+1,:,:,irho) + &
-                              D1_SBP(1,3)*f_ogrid(k+2,:,:,irho) + &
-                              D1_SBP(1,4)*f_ogrid(k+3,:,:,irho) + &
-                              D1_SBP(1,5)*f_ogrid(k+4,:,:,irho) + &
-                              D1_SBP(1,6)*f_ogrid(k+5,:,:,irho) + &
-                              D1_SBP(1,7)*f_ogrid(k+6,:,:,irho) + &
-                              D1_SBP(1,8)*f_ogrid(k+7,:,:,irho) + &
-                              D1_SBP(1,9)*f_ogrid(k+8,:,:,irho) )/D1_SBP(1,1)
+      f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
+                              D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
+                              D1_SBP(1,4)*f_og   (k+3,:,:,irho) + &
+                              D1_SBP(1,5)*f_og   (k+4,:,:,irho) + &
+                              D1_SBP(1,6)*f_og   (k+5,:,:,irho) + &
+                              D1_SBP(1,7)*f_og   (k+6,:,:,irho) + &
+                              D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
+                              D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/D1_SBP(1,1)
 
     endsubroutine bval_from_neumann_SBP
 !***********************************************************************
-    subroutine bval_from_neumann_bdry5
+    subroutine bval_from_neumann_bdry5(f_og)
 !
 !  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
 !  one-sided difference formulae. val depends on x,y.
@@ -6164,11 +6181,12 @@ module Solid_Cells
 !
 !  14-okt-17/Jorgen: Adapted from deriv.f90
 !
-     f_ogrid(l1_ogrid,:,:,irho)  = ( 5.0000000000000000 *f_ogrid(l1_ogrid+1,:,:,irho) &
-                                    -5.0000000000000000 *f_ogrid(l1_ogrid+2,:,:,irho) &
-                                    +3.3333333333333333 *f_ogrid(l1_ogrid+3,:,:,irho) &
-                                    -1.2500000000000000 *f_ogrid(l1_ogrid+4,:,:,irho) &
-                                    +0.20000000000000000*f_ogrid(l1_ogrid+5,:,:,irho))&
+     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
+     f_og   (l1_ogrid,:,:,irho)  = ( 5.0000000000000000 *f_og   (l1_ogrid+1,:,:,irho) &
+                                    -5.0000000000000000 *f_og   (l1_ogrid+2,:,:,irho) &
+                                    +3.3333333333333333 *f_og   (l1_ogrid+3,:,:,irho) &
+                                    -1.2500000000000000 *f_og   (l1_ogrid+4,:,:,irho) &
+                                    +0.20000000000000000*f_og   (l1_ogrid+5,:,:,irho))&
                                     /( 2.2833333333333333)   
 
     endsubroutine bval_from_neumann_bdry5
@@ -6783,7 +6801,7 @@ module Solid_Cells
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
-          call update_ghosts_ogrid
+          call update_ghosts_ogrid(f_ogrid)
           call safe_character_assign(file,trim(chsnap)//ch)
           call output_snap_ogrid(f_ogrid,file=file)
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
@@ -6794,7 +6812,7 @@ module Solid_Cells
 !
 !  Write snapshot without label (typically, var.dat).
 !
-        call update_ghosts_ogrid
+        call update_ghosts_ogrid(f_ogrid)
         call safe_character_assign(file,trim(chsnap))
         call output_snap_ogrid(f_ogrid,file=file)
         if (present(flist)) call log_filename_to_file(file,flist)
@@ -6804,7 +6822,7 @@ module Solid_Cells
 !
     endsubroutine wsnap_ogrid
 !***********************************************************************
-    subroutine update_ghosts_ogrid
+    subroutine update_ghosts_ogrid(f_og)
 !
 !  Update all ghost zones of f_ogrid.
 !  Initiate communication and do boundary conditions.
@@ -6817,12 +6835,13 @@ module Solid_Cells
 !
       use Solid_Cells_Mpicomm, only: initiate_isendrcv_bdry_ogrid, finalize_isendrcv_bdry_ogrid
       use Mpicomm, only: mpibarrier
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
       !call boundconds_x_ogrid
-      call initiate_isendrcv_bdry_ogrid(f_ogrid)
-      call finalize_isendrcv_bdry_ogrid(f_ogrid)
-      if (nprocy==1)                  call boundconds_y_ogrid
-      if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid
+      call initiate_isendrcv_bdry_ogrid(f_og   )
+      call finalize_isendrcv_bdry_ogrid(f_og   )
+      if (nprocy==1)                  call boundconds_y_ogrid(f_og)
+      if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid(f_og)
 
 !
     endsubroutine update_ghosts_ogrid
@@ -8497,22 +8516,22 @@ module Solid_Cells
         if(lroot) then
           dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
           if(interpolation_method==1) then
-            r_int_outer=r_ogrid-dx_outer*0.01
+            r_int_outer=r_ogrid-dx_outer*0.01-dx_outer*interpol_filter
           elseif (interpolation_method==2 .or. interpolation_method==4) then
-            r_int_outer=r_ogrid-dx_outer*0.51
+            r_int_outer=r_ogrid-dx_outer*0.51-dx_outer*interpol_filter
             if((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
               print*, 'iproc, r_int_outer first, r_int_outer second',&
                 iproc,r_int_outer,r_ogrid-dx_outer*1.01
-              r_int_outer=r_ogrid-dx_outer*1.01
+              r_int_outer=r_ogrid-dx_outer*1.01-dx_outer*interpol_filter
             endif
           elseif (interpolation_method==3) then
-            r_int_outer=r_ogrid-dx_outer*1.51
+            r_int_outer=r_ogrid-dx_outer*1.51-dx_outer*interpol_filter
             if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
-              r_int_outer=r_ogrid-dx_outer*2.01
+              r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interpol_filter
             endif
           else
             call fatal_error('initialize_solid_cells','interpolation method > 4 does not exist')
