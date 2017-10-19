@@ -106,6 +106,9 @@ module Interstellar
   real :: lim_zdisk_cgs=1.543E+22, lim_zdisk=impossible !limit location of centre of mass of the disk
   logical :: lfirst_zdisk
 !
+!
+!
+  logical :: lfirst_warning=.true.
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
 !  ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
 !    2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
@@ -218,9 +221,9 @@ module Interstellar
 !  Size of SN insertion site (energy and mass) and shell in mass movement
 !
   real :: sigma_SN, sigma_SN1
-  real, parameter :: width_SN_cgs=3.086E19
+  real, parameter :: width_SN_cgs=6.172E19
   real :: energy_width_ratio=1.
-  real :: mass_width_ratio=0.9
+  real :: mass_width_ratio=1.
   real :: velocity_width_ratio=1.
   real :: outer_shell_proportion = 1.2
   real :: inner_shell_proportion = 1.
@@ -320,7 +323,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=60.0, eps_mass=0.025, eps_radius=0.000005
+  real :: N_mass=100.0, eps_mass=0.025, eps_radius=0.00005, rfactor_SN=5.
 !
 !  Requested SNe location (used for test SN)
 !
@@ -344,7 +347,7 @@ module Interstellar
   character (len=labellen) :: heating_select  = 'wolfire'
   character (len=labellen) :: thermal_profile = 'gaussian'
   character (len=labellen) :: velocity_profile= 'gaussian'
-  character (len=labellen) :: mass_profile    = 'gaussian3'
+  character (len=labellen) :: mass_profile    = 'gaussian'
 !
 !  Variables required for returning mass to disk given no inflow
 !  boundary condition used in addmassflux
@@ -381,7 +384,7 @@ module Interstellar
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
       average_SNI_heating, SN_rho_ratio, &
-      eps_mass, eps_radius
+      eps_mass, eps_radius, rfactor_SN
 !
 ! run parameters
 !
@@ -409,7 +412,7 @@ module Interstellar
       l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
       lreset_ism_seed, SN_rho_ratio, eps_mass, eps_radius, lim_zdisk,&
-      lscale_SN_interval, SN_interval_rhom, iSNdx
+      lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx
 !
   contains
 !
@@ -532,7 +535,7 @@ module Interstellar
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / real(unit_length),3.01*dxmin)
+            max(width_SN_cgs / real(unit_length),rfactor_SN*dxmin)
         if (SN_clustering_radius==impossible) &
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
@@ -570,14 +573,14 @@ module Interstellar
 !
       preSN(:,:)=0
 !
-      t_interval_SNI  = 1./(SNI_factor*SNI_area_rate  * Lxyz(1) * Lxyz(2))
-      t_interval_SNII = 1./(SNII_factor*SNII_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lxyz(1) * Lxyz(2))
       if (average_SNI_heating == impossible) average_SNI_heating = &
           r_SNI *ampl_SN/(sqrt(pi)*h_SNI )
       if (average_SNII_heating == impossible) average_SNII_heating = &
           r_SNII*ampl_SN/(sqrt(pi)*h_SNII)
-      if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
-          t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+      if (lroot) print*,'initialize_interstellar: t_interval_SNI, SNI rate =', &
+          t_interval_SNI,SNI_factor*SNI_area_rate
       if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
           average_SNI_heating  * t_interval_SNI / &
           (t_interval_SNI  + t * heatingfunction_fadefactor) * &
@@ -600,7 +603,7 @@ module Interstellar
             '---it----------t-------itype---iproc---l-----m-----n--', &
             '-----x------------y------------z-------', &
             '----rho-----------TT-----------EE---------t_sedov----', &
-            '--radius------site_mass------maxTT----t_interval---'
+            '--radius------site_mass------maxTT----t_interval---SN_rate-'
         close(1)
       endif
 !
@@ -1883,9 +1886,9 @@ module Interstellar
       call random_number_wrapper(franSN)
 !
 !  Vary the time interval with a uniform random distribution between
-!  \pm0.875 times the average interval required.
+!  \pm0.375 times the average interval required.
 !
-      t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * t_interval_SNI
+      t_next_SNI=t + (1.0 + 0.75*(franSN(1)-0.5)) * t_interval_SNI
 !
       scaled_interval=t_next_SNI - t
       if (lroot) print*, &
@@ -1965,9 +1968,9 @@ module Interstellar
       !endif
 !
 !  Vary the time interval with a uniform random distribution between
-!  \pm0.875 times the average interval required.
+!  \pm0.375 times the average interval required.
 !
-      t_next_SNII=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
+      t_next_SNII=t + (1.0 + 0.75*(franSN(1)-0.5)) * scaled_interval
       if (lroot) print*, &
           'check_SNII: Next SNII at time = ' ,t_next_SNII
 !
@@ -2783,7 +2786,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) then
             SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-            SNR%feat%radius=max(SNR%feat%radius,3.01*dxmin) ! minimum grid resolution
+            SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin) ! minimum grid resolution
         endif
 !
         m=SNR%indx%m
@@ -2841,8 +2844,8 @@ module Interstellar
 !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
                                  ilnrho_ss, irho_ss
-      use Mpicomm, only: mpireduce_max, mpibcast_real, &
-                         mpireduce_sum, mpibcast_int
+      use Mpicomm, only: mpiallreduce_max, mpibcast_real, &
+                         mpiallreduce_sum, mpibcast_int
       use General, only: keep_compiler_quiet
       use Grid, only: get_grid_mn
 !
@@ -2863,7 +2866,7 @@ module Interstellar
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
       real :: maxlnTT, site_mass, maxTT=0.,mmpi, mpi_tmp
-      real :: t_interval_SN
+      real :: t_interval_SN, SNrate
       integer :: i
 !
       SNR%indx%state=SNstate_exploding
@@ -2885,6 +2888,7 @@ module Interstellar
       if (lSN_scale_rad) then
         do i=1,25
           SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
+          SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin)
           if (present(ierr)) then
             call get_properties(f,SNR,rhom,ekintot,ierr)
             SNR%feat%rhom=0.2*(rhom+4*SNR%feat%rhom)
@@ -2897,13 +2901,13 @@ module Interstellar
           old_radius=(0.75*solar_mass/rhom*pi_1*N_mass)**(1.0/3.0)
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,3.01*dxmin)
+        SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin)
       endif
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (SNR%feat%radius>3.01*dxmin) then
+        if (SNR%feat%radius>rfactor_SN*dxmin) then
           if (abs(N_mass/ambient_mass*solar_mass-1.)>eps_mass) then
             ierr=iEXPLOSION_TOO_RARIFIED
             return
@@ -3094,8 +3098,7 @@ module Interstellar
       endif
 !
       mpi_tmp=site_mass
-      call mpireduce_sum(mpi_tmp,mmpi)
-      call mpibcast_real(mmpi)
+      call mpiallreduce_sum(mpi_tmp,mmpi)
       site_mass=mmpi
 !
       SNR%feat%EE=0.
@@ -3186,8 +3189,7 @@ module Interstellar
 !  Sum and share diagnostics etc. amongst processors.
 !
       dmpi2_tmp=(/ SNR%feat%MM, SNR%feat%EE, SNR%feat%CR /)
-      call mpireduce_sum(dmpi2_tmp,dmpi2,3)
-      call mpibcast_real(dmpi2,3)
+      call mpiallreduce_sum(dmpi2_tmp,dmpi2,3)
       SNR%feat%MM=dmpi2(1)
       SNR%feat%EE=dmpi2(2)+ekintot_new-ekintot !include added kinetic energy
       SNR%feat%CR=dmpi2(3)
@@ -3199,12 +3201,17 @@ module Interstellar
           'explode_SN: SNR%feat%MM=',SNR%feat%MM
       if (SNR%indx%SN_type==1) then
         call set_next_SNI(f,t_interval_SN)
+        SNrate = t_interval_SNI
       else
         call set_next_SNII(f,t_interval_SN)
+        SNrate = t_interval_SNII
       endif
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+        if (lfirst_warning) &
+            call warning('sn_series.dat','new column SN_rate added 19.10.17 '//&
+            'continuation of old data may need header and extra column appended')
         print*, 'explode_SN:    step, time = ', it,t
         print*, 'explode_SN:          dVol = ', dVol(1)
         print*, 'explode_SN:       SN type = ', SNR%indx%SN_type
@@ -3220,12 +3227,13 @@ module Interstellar
         print*, 'explode_SN:  Ambient mass = ', site_mass
         print*, 'explode_SN:    Sedov time = ', SNR%feat%t_sedov
         print*, 'explode_SN:    Shell velocity  = ', uu_sedov
-        write(1,'(i10,E13.5,5i6,11E13.5)')  &
+        write(1,'(i10,E13.5,5i6,12E13.5)')  &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, SNR%indx%n, &
             SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, SNR%site%TT, SNR%feat%EE,&
-            SNR%feat%t_sedov, SNR%feat%radius, site_mass, maxTT, t_interval_SN
+            SNR%feat%t_sedov, SNR%feat%radius, site_mass, maxTT, t_interval_SN, SNrate
         close(1)
       endif
+      lfirst_warning=.false.
 !
       if (present(preSN)) then
         do i=2,npreSN
@@ -3252,8 +3260,8 @@ module Interstellar
 !  10-oct-09/axel: return zero density if the volume is zero
 !
       use Sub
-      use Mpicomm, only: mpireduce_sum,mpibcast_real,mpireduce_min,&
-                         mpireduce_max
+      use Mpicomm, only: mpiallreduce_sum,mpiallreduce_min,&
+                         mpiallreduce_max
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3313,8 +3321,7 @@ module Interstellar
 !  Calculate mean density inside the remnant and return error if the volume is
 !  zero.
 !
-      call mpireduce_sum(tmp,tmp2,3)
-      call mpibcast_real(tmp2,3)
+      call mpiallreduce_sum(tmp,tmp2,3)
       ekintot=0.5*tmp2(3)
       if ((frac_kin/=0).and.(abs(tmp2(2)) < tini)) then
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
@@ -3327,11 +3334,9 @@ module Interstellar
 !
       if (present(ierr)) then
         rhotmp=rhomin
-        call mpireduce_min(rhotmp,rhomin)
-        call mpibcast_real(rhomin)
+        call mpiallreduce_min(rhotmp,rhomin)
         rhotmp=rhomax
-        call mpireduce_max(rhotmp,rhomax)
-        call mpibcast_real(rhomax)
+        call mpiallreduce_max(rhotmp,rhomax)
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
         if (lroot .and. (ip<14)) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
                                    rhomax, rhomin, ierr, remnant%feat%radius
@@ -3347,7 +3352,7 @@ module Interstellar
 !  10-oct-09/axel: return zero density if the volume is zero
 !
       use Sub
-      use Mpicomm, only: mpireduce_sum,mpibcast_real
+      use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
@@ -3408,8 +3413,7 @@ module Interstellar
 !  zero.
 !
       tmp2=tmp
-      call mpireduce_sum(tmp,tmp2,3)
-      call mpibcast_real(tmp2,3)
+      call mpiallreduce_sum(tmp,tmp2,3)
       ekintot=0.5*tmp2(3)
       if ((frac_kin/=0).and.(abs(tmp2(2)) < tini)) then
         write(0,*) 'tmp2 = ', tmp2
@@ -3426,7 +3430,7 @@ module Interstellar
 !
 !  22-may-03/tony: coded
 !
-      use Mpicomm, only: mpireduce_max,mpibcast_real
+      use Mpicomm, only: mpiallreduce_max
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: SNR
@@ -3454,8 +3458,7 @@ module Interstellar
       enddo
 !
       tmp=-exp(rho_lowest)
-      call mpireduce_max(tmp,rho_lowest)
-      call mpibcast_real(rho_lowest)
+      call mpiallreduce_max(tmp,rho_lowest)
 !
     endsubroutine get_lowest_rho
 !*****************************************************************************
