@@ -20,6 +20,7 @@ module Cparam
 !
   include 'cparam.inc'
 !
+  integer, parameter :: penc_name_len=16
   include 'cparam_pencils.inc'
 !
 !  Derived and fixed parameters.
@@ -228,6 +229,6 @@ module Cparam
 !
 !  Symbolic constants for Yin-Yang grid.
 !
-  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3
+  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3, QUADSPLINE=4
 !
 endmodule Cparam

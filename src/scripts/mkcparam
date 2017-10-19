@@ -418,7 +418,7 @@ foreach my $pencil (@pencil_names) {
 }
 
 # Define pencil names:
-print $out_pencil "character (len=15), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+print $out_pencil "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
 $i=0;
 foreach my $pencil (@pencil_names){
   print $out_pencil ", " if ($i != 0);
