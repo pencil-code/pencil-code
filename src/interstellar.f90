@@ -323,7 +323,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.025, eps_radius=0.00005, rfactor_SN=5.
+  real :: N_mass=100.0, eps_mass=0.025, eps_radius=0.001, rfactor_SN=5.
 !
 !  Requested SNe location (used for test SN)
 !
@@ -2908,7 +2908,7 @@ module Interstellar
         if (ierr==iEXPLOSION_TOO_UNEVEN) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
         if (SNR%feat%radius>rfactor_SN*dxmin) then
-          if (abs(N_mass/ambient_mass*solar_mass-1.)>eps_mass) then
+          if (1.-ambient_mass/(N_mass*solar_mass)>eps_mass) then
             ierr=iEXPLOSION_TOO_RARIFIED
             return
           endif
