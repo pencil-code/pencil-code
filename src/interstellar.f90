@@ -1679,8 +1679,14 @@ module Interstellar
 !
       if (t < t_settle) return
       call tidy_SNRs
-      if (lSNI)  call check_SNI (f,l_SNI)
-      if (lSNII) call check_SNII(f,l_SNI)
+      if (lSNI) call check_SNI(f,l_SNI)
+      if (lSNII) then
+        if (lSNII_gaussian) then
+          call check_SNIIb(f,l_SNI)
+        else
+          call check_SNII(f,l_SNI)
+        endif
+      endif
 !
     endsubroutine check_SN
 !*****************************************************************************
@@ -2082,11 +2088,6 @@ module Interstellar
 !  into diffuse bubbles left by their neighbours anyway. This routine left for
 !  reference and possible later applications for clustering and feedback through
 !  star formation, which to date has been neglected
-!  l_SNII_guassian skips this algorithm and switches to check_SNIIb. 
-!
-      if (lSNII_gaussian) then  ! Skip location by mass.
-        return
-      endif
 !
       iSNR=get_free_SNR()
 !
