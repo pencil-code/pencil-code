@@ -175,7 +175,7 @@ def yder2_6th(f,dy,x=[],y=[],z=[],param=[],dim=[]):
     m2 = f.shape[-2]-3
 
     if (m2 > m1 and dim.ny!=1):
-        for m in range(m1,m2+1):
+        for m in range(m1,m2):
             dfdy[...,m,:] = dy2[m]*(-490.* f[...,m,:]
                                     +270.*(f[...,m-1,:]+f[...,m+1,:])
                                     - 27.*(f[...,m-2,:]+f[...,m+2,:])
