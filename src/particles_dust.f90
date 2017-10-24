@@ -89,6 +89,7 @@ module Particles
   real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
+  real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -137,6 +138,7 @@ module Particles
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
+  logical :: ltausupersat = .false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -275,7 +277,8 @@ module Particles
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
-      lcondensation_rate
+      lcondensation_rate, vapor_mixing_ratio_qvs, &
+      ltausupersat
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -4466,14 +4469,10 @@ module Particles
                  inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
                  if (supersat_ngp) then
                    l=ineargrid(k,1)
-                   !call find_grid_volume(ix0,iy0,iz0,volume_cell)
-                   !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
-                   !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                   f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
-!                   print*,'inversetau=',inversetau
-!                   print*,'tau=',f(l,m,n,itausupersat)
+                   if (ltausupersat) f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
                    if (lcondensation_rate) then
-                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*f(l,m,n,issat)*fp(k,iap)
+                     supersaturation=f(l,m,n,issat)/vapor_mixing_ratio_qvs-1.
+                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*supersaturation*fp(k,iap)
                    endif
                  elseif (supersat_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0

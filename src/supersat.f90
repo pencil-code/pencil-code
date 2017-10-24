@@ -47,6 +47,7 @@ module Supersat
   real :: vapor_mixing_ratio_qvs=0.0
   real :: updraft=0.0
   real :: A1=0.0
+  real :: latent_heat=0.0, cp=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
   logical :: lsupersat_sink=.false., Rsupersat_sink=.false.,lupdraft=.false.
   logical :: lupw_ssat=.false., lcondensation_rate=.false.
@@ -54,7 +55,7 @@ module Supersat
   namelist /supersat_run_pars/ &
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
       supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
-      lupdraft, updraft, A1
+      lupdraft, updraft, A1, latent_heat, cp
 !
 ! Declare index of new variables in f array
 !
@@ -312,10 +313,8 @@ module Supersat
 ! 17-10-18: Xiang-Yu coded. Solve supersaturation by solving equations for the temperature, mixing ratio
       
       if (lcondensation_rate) then
-        qv=f(l1:l2,m,n,issat)
-       ! f(l1:l2,m,n,issat)=qv/vapor_mixing_ratio_qvs-1.
-        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-f(l1:l2,m,n,icondensationRate)
-        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+f(l1:l2,m,n,icondensationRate)/(p%cp*p%TT)
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%condensationRate
+        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
       endif
 !
 !  Diagnostics
@@ -328,7 +327,6 @@ module Supersat
         if (idiag_uyssatm/=0) call sum_mn_name(p%uu(:,2)*p%ssat,idiag_uyssatm)
         if (idiag_uzssatm/=0) call sum_mn_name(p%uu(:,3)*p%ssat,idiag_uzssatm)
         if (idiag_tausupersatrms/=0) &
-            !print*,'tau=',p%tausupersat
             call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
         if (idiag_tausupersatmax/=0) call max_mn_name(p%tausupersat,idiag_tausupersatmax)
         if (idiag_tausupersatmin/=0) call max_mn_name(-p%tausupersat,idiag_tausupersatmin,lneg=.true.)
