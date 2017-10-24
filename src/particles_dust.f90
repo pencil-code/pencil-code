@@ -90,6 +90,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
+  real :: es_T, qvs_T, c1, c2, Rv, rho0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -278,7 +279,8 @@ module Particles
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltausupersat
+      ltausupersat, &
+      c1, c2, Rv, rho0
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -4471,7 +4473,10 @@ module Particles
                    l=ineargrid(k,1)
                    if (ltausupersat) f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
                    if (lcondensation_rate) then
-                     supersaturation=f(l,m,n,issat)/vapor_mixing_ratio_qvs-1.
+                     es_T=c1*exp(-c2/f(l,m,n,ilnTT))
+                     qvs_T=es_T/(Rv*rho0*f(l,m,n,ilnTT))
+                     supersaturation=f(l,m,n,issat)/qvs_T-1.
+                     !supersaturation=f(l,m,n,issat)/vapor_mixing_ratio_qvs-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*supersaturation*fp(k,iap)
                    endif
                  elseif (supersat_cic) then

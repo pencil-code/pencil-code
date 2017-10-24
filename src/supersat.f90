@@ -67,7 +67,7 @@ module Supersat
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
   integer :: idiag_tausupersatrms=0, idiag_tausupersatmax=0, idiag_tausupersatmin=0
-!  integer :: idiag_condensateRaterms=0, idiag_condensateRatemax=0,idiag_condensateRatemin=0
+  integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
 !
   contains
 !***********************************************************************
@@ -330,6 +330,10 @@ module Supersat
             call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
         if (idiag_tausupersatmax/=0) call max_mn_name(p%tausupersat,idiag_tausupersatmax)
         if (idiag_tausupersatmin/=0) call max_mn_name(-p%tausupersat,idiag_tausupersatmin,lneg=.true.)
+        if (idiag_condensationRaterms/=0) &
+            call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
+        if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
+        if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
       endif
 !
     endsubroutine dssat_dt
@@ -387,8 +391,10 @@ module Supersat
       if (lreset) then
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
-        idiag_tausupersatrms=0
+        !idiag_tausupersatrms=0
         idiag_tausupersatrms=0; idiag_tausupersatmax=0; idiag_tausupersatmin=0
+        idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
+
       endif
 !
       do iname=1,nname
@@ -401,11 +407,16 @@ module Supersat
         call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
         call parse_name(iname,cname(iname),cform(iname),'tausupersatmax',idiag_tausupersatmax)
         call parse_name(iname,cname(iname),cform(iname),'tausupersatmin',idiag_tausupersatmin)
+        call parse_name(iname,cname(iname),cform(iname),'condensationRaterms',idiag_condensationRaterms)
+        call parse_name(iname,cname(iname),cform(iname),'condensationRatemax',idiag_condensationRatemax)
+        call parse_name(iname,cname(iname),cform(iname),'condensationRatemin',idiag_condensationRatemin)
+
       enddo
 !
       if (lwr) then 
         write(3,*) 'issat = ', issat
         write(3,*) 'itausupersat=', itausupersat
+        write(3,*) 'icondensationRate=', icondensationRate
       endif
 !
     endsubroutine rprint_supersat 
