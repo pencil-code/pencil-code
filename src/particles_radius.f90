@@ -47,6 +47,7 @@ module Particles_radius
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
+  logical :: ltausupersat = .false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -71,7 +72,8 @@ module Particles_radius
       lsupersat_par,lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       G_condensation, lcondensation_rate, vapor_mixing_ratio_qvs, &
-      c1, c2, Rv, rho0
+      c1, c2, Rv, rho0, &
+      ltausupersat
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -911,7 +913,7 @@ module Particles_radius
         ix0 = ineargrid(k,1)
         ix = ix0-nghost
         if (lsupersat) then
-          dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+          if (ltausupersat) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
           if (lcondensation_rate) then
             es_T=c1*exp(-c2/f(ix,m,n,ilnTT))
             qvs_T=es_T/(Rv*rho0*f(ix,m,n,ilnTT))

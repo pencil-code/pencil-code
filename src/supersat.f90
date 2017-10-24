@@ -49,13 +49,16 @@ module Supersat
   real :: A1=0.0
   real :: latent_heat=0.0, cp=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
+  real :: c1, c2, Rv, rho0
+  real, dimension(nx) :: es_T, qvs_T 
   logical :: lsupersat_sink=.false., Rsupersat_sink=.false.,lupdraft=.false.
   logical :: lupw_ssat=.false., lcondensation_rate=.false.
 
   namelist /supersat_run_pars/ &
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
       supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
-      lupdraft, updraft, A1, latent_heat, cp
+      lupdraft, updraft, A1, latent_heat, cp, &
+      c1, c2, Rv, rho0
 !
 ! Declare index of new variables in f array
 !
@@ -68,6 +71,8 @@ module Supersat
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
   integer :: idiag_tausupersatrms=0, idiag_tausupersatmax=0, idiag_tausupersatmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
+  integer :: idiag_temperaturerms=0, idiag_temperaturemax=0,idiag_temperaturemin=0
+  integer :: idiag_supersaturationrms=0, idiag_supersaturationmax=0,idiag_supersaturationmin=0
 !
   contains
 !***********************************************************************
@@ -177,7 +182,6 @@ module Supersat
       if (lsupersat_sink) then 
         lpenc_requested(i_ssat)=.true.
         lpenc_requested(i_tausupersat)=.true.
-        lpenc_requested(i_condensationRate)=.true.
       endif
       if (supersat_diff/=0.) lpenc_requested(i_del2ssat)=.true.
  
@@ -282,17 +286,17 @@ module Supersat
       if (supersat_diff/=0.) &
           df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+supersat_diff*p%del2ssat
 !
-        ! 1-June-16/XY coded 
-        if (lsupersat_sink) then
-          if (Rsupersat_sink) then
-            bump=A1*p%uu(:,3)
-          elseif (lupdraft) then
-            bump=A1*updraft
-          else
-            bump=A1*p%uu(:,3)-f(l1:l2,m,n,issat)*p%tausupersat
-          endif
-          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
+      ! 1-June-16/XY coded 
+      if (lsupersat_sink) then
+        if (Rsupersat_sink) then
+          bump=A1*p%uu(:,3)
+        elseif (lupdraft) then
+          bump=A1*updraft
+        else
+          bump=A1*p%uu(:,3)-f(l1:l2,m,n,issat)*p%tausupersat
         endif
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
+      endif
 !
       if (ldustdensity.and.lcondensation_rate) then
 !
@@ -315,6 +319,9 @@ module Supersat
       if (lcondensation_rate) then
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%condensationRate
         if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
+        es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
+        qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
+        supersaturation=f(l1:l2,m,n,issat)/qvs_T-1.
       endif
 !
 !  Diagnostics
@@ -334,6 +341,15 @@ module Supersat
             call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
+        if (idiag_temperaturerms/=0) &
+            call sum_mn_name(p%lnTT**2,idiag_temperaturerms,lsqrt=.true.)
+        if (idiag_temperaturemax/=0) call max_mn_name(p%lnTT,idiag_temperaturemax)
+        if (idiag_temperaturemin/=0) call max_mn_name(-p%lnTT,idiag_temperaturemin,lneg=.true.)
+
+        if (idiag_supersaturationrms/=0) &
+            call sum_mn_name(supersaturation**2,idiag_temperaturerms,lsqrt=.true.)
+        if (idiag_supersaturationmax/=0) call max_mn_name(supersaturation,idiag_supersaturationmax)
+        if (idiag_supersaturationmin/=0) call max_mn_name(-supersaturation,idiag_supersaturationmin,lneg=.true.)
       endif
 !
     endsubroutine dssat_dt
@@ -391,9 +407,10 @@ module Supersat
       if (lreset) then
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
-        !idiag_tausupersatrms=0
         idiag_tausupersatrms=0; idiag_tausupersatmax=0; idiag_tausupersatmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
+        idiag_temperaturerms=0; idiag_temperaturemax=0; idiag_temperaturemin=0
+        idiag_supersaturationrms=0; idiag_supersaturationmax=0; idiag_supersaturationmin=0
 
       endif
 !
@@ -410,6 +427,13 @@ module Supersat
         call parse_name(iname,cname(iname),cform(iname),'condensationRaterms',idiag_condensationRaterms)
         call parse_name(iname,cname(iname),cform(iname),'condensationRatemax',idiag_condensationRatemax)
         call parse_name(iname,cname(iname),cform(iname),'condensationRatemin',idiag_condensationRatemin)
+        call parse_name(iname,cname(iname),cform(iname),'temperaturerms',idiag_temperaturerms)
+        call parse_name(iname,cname(iname),cform(iname),'temperaturemax',idiag_temperaturemax)
+        call parse_name(iname,cname(iname),cform(iname),'temperaturemin',idiag_temperaturemin)
+
+        call parse_name(iname,cname(iname),cform(iname),'supersaturationrms',idiag_supersaturationrms)
+        call parse_name(iname,cname(iname),cform(iname),'supersaturationmax',idiag_supersaturationmax)
+        call parse_name(iname,cname(iname),cform(iname),'supersaturationmin',idiag_supersaturationmin)
 
       enddo
 !
@@ -417,6 +441,8 @@ module Supersat
         write(3,*) 'issat = ', issat
         write(3,*) 'itausupersat=', itausupersat
         write(3,*) 'icondensationRate=', icondensationRate
+        write(3,*) 'ilnTT=', ilnTT
+        write(3,*) 'isupersaturaitonrms=', idiag_supersaturationrms
       endif
 !
     endsubroutine rprint_supersat 
