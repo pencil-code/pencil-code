@@ -33,13 +33,9 @@
 
 static __device__ __forceinline__ real der_scalx(const int smem_idx, const real __restrict__ s_scal[])
 {
-    const real res = (
-      -               s_scal[smem_idx - 3] 
-	  + (real) 9.0  * s_scal[smem_idx - 2] 
-	  - (real) 45.0 * s_scal[smem_idx - 1] 
-	  + (real) 45.0 * s_scal[smem_idx + 1] 
-	  - (real) 9.0  * s_scal[smem_idx + 2] 
-	  +               s_scal[smem_idx + 3] ) 
+    const real res = ((s_scal[smem_idx + 3] - s_scal[smem_idx - 3]) 
+	  + (real) 9.0  * (s_scal[smem_idx - 2] - s_scal[smem_idx + 2])
+	  + (real) 45.0 * (s_scal[smem_idx + 1] - s_scal[smem_idx - 1])) 
       * d_DIFF1_DX_DIV;
     return res;
 }
@@ -47,13 +43,9 @@ static __device__ __forceinline__ real der_scalx(const int smem_idx, const real 
 
 static __device__ __forceinline__ real der_scaly(const int smem_idx, const real __restrict__ s_scal[])
 {
-    const real res = (
-      -               s_scal[smem_idx - 3*SMEM_WIDTH] 
-	  + (real) 9.0  * s_scal[smem_idx - 2*SMEM_WIDTH] 
-	  - (real) 45.0 * s_scal[smem_idx - 1*SMEM_WIDTH] 
-	  + (real) 45.0 * s_scal[smem_idx + 1*SMEM_WIDTH] 
-	  - (real) 9.0  * s_scal[smem_idx + 2*SMEM_WIDTH] 
-	  +               s_scal[smem_idx + 3*SMEM_WIDTH] ) 
+    const real res = ((s_scal[smem_idx + 3*SMEM_WIDTH] - s_scal[smem_idx - 3*SMEM_WIDTH]) 
+	  + (real) 9.0  * (s_scal[smem_idx - 2*SMEM_WIDTH] - s_scal[smem_idx + 2*SMEM_WIDTH]) 
+	  + (real) 45.0 * (s_scal[smem_idx + 1*SMEM_WIDTH] - s_scal[smem_idx - 1*SMEM_WIDTH]))
       * d_DIFF1_DY_DIV;
     return res;
 }
@@ -61,13 +53,9 @@ static __device__ __forceinline__ real der_scaly(const int smem_idx, const real 
 
 static __device__ __forceinline__ real der_scalz(const real __restrict__ r_scal[])
 {
-    const real res = (
-      -               r_scal[0] 
-	  + (real) 9.0  * r_scal[1] 
-	  - (real) 45.0 * r_scal[2] 
-	  + (real) 45.0 * r_scal[4] 
-	  - (real) 9.0  * r_scal[5] 
-	  +               r_scal[6] ) 
+    const real res = ((r_scal[6] - r_scal[0]) 
+	  + (real) 9.0  * (r_scal[1] - r_scal[5]) 
+	  + (real) 45.0 * (r_scal[4] - r_scal[2])) 
       * d_DIFF1_DZ_DIV;
     return res;
 }
@@ -75,13 +63,10 @@ static __device__ __forceinline__ real der_scalz(const real __restrict__ r_scal[
 
 static __device__ __forceinline__ real der2_scalx(const int smem_idx, const real __restrict__ s_scal[])
 {
-	const real res = ((real) 2.0   * s_scal[smem_idx - 3]
-	                - (real) 27.0  * s_scal[smem_idx - 2] 
-	                + (real) 270.0 * s_scal[smem_idx - 1] 
-	                - (real) 490.0 * s_scal[smem_idx]
-	                + (real) 270.0 * s_scal[smem_idx + 1]
-	                - (real) 27.0  * s_scal[smem_idx + 2]
-	                + (real) 2.0   * s_scal[smem_idx + 3] )
+	const real res = ((real) 2.0   * (s_scal[smem_idx - 3] + s_scal[smem_idx + 3])
+	                - (real) 27.0  * (s_scal[smem_idx - 2] + s_scal[smem_idx + 2]) 
+	                + (real) 270.0 * (s_scal[smem_idx - 1] + s_scal[smem_idx + 1]) 
+	                - (real) 490.0 * s_scal[smem_idx])
 	                * d_DIFF2_DX_DIV;
     return res;
 }
@@ -90,13 +75,10 @@ static __device__ __forceinline__ real der2_scalx(const int smem_idx, const real
 
 static __device__ __forceinline__ real der2_scaly(const int smem_idx, const real __restrict__ s_scal[])
 {
-	const real res = ((real) 2.0   * s_scal[smem_idx - 3*SMEM_WIDTH]
-	                - (real) 27.0  * s_scal[smem_idx - 2*SMEM_WIDTH] 
-	                + (real) 270.0 * s_scal[smem_idx - 1*SMEM_WIDTH] 
-	                - (real) 490.0 * s_scal[smem_idx]
-	                + (real) 270.0 * s_scal[smem_idx + 1*SMEM_WIDTH]
-	                - (real) 27.0  * s_scal[smem_idx + 2*SMEM_WIDTH]
-	                + (real) 2.0   * s_scal[smem_idx + 3*SMEM_WIDTH] )
+	const real res = ((real) 2.0   * (s_scal[smem_idx - 3*SMEM_WIDTH] + s_scal[smem_idx + 3*SMEM_WIDTH])
+	                - (real) 27.0  * (s_scal[smem_idx - 2*SMEM_WIDTH] + s_scal[smem_idx + 2*SMEM_WIDTH]) 
+	                + (real) 270.0 * (s_scal[smem_idx - 1*SMEM_WIDTH] + s_scal[smem_idx + 1*SMEM_WIDTH]) 
+	                - (real) 490.0 * s_scal[smem_idx])
 	                * d_DIFF2_DY_DIV;
     return res;
 }
@@ -104,13 +86,10 @@ static __device__ __forceinline__ real der2_scaly(const int smem_idx, const real
 
 static __device__ __forceinline__ real der2_scalz(const real __restrict__ r_scal[])
 {
-	const real res = ((real) 2.0   * r_scal[0]
-	                - (real) 27.0  * r_scal[1] 
-	                + (real) 270.0 * r_scal[2] 
-	                - (real) 490.0 * r_scal[3]
-	                + (real) 270.0 * r_scal[4]
-	                - (real) 27.0  * r_scal[5]
-	                + (real) 2.0   * r_scal[6] )
+	const real res = ((real) 2.0   * (r_scal[0] + r_scal[6])
+	                - (real) 27.0  * (r_scal[1] + r_scal[5]) 
+	                + (real) 270.0 * (r_scal[2] + r_scal[4]) 
+	                - (real) 490.0 * r_scal[3])
 	                * d_DIFF2_DZ_DIV;
     return res;
 }

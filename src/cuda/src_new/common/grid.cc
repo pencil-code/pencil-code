@@ -366,11 +366,66 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
         init_lnrho_to_const(grid, cparams, start_params);
 		gaussian_radial_explosion(grid, cparams, start_params);
 		break;
+    
+    case GRID_XWAVE:
+        grid_init(grid, GRID_ALL_ZERO, cparams, start_params);
+	    for (int k=0; k < mz; k++) {
+		    for (int j=0; j < my; j++) {
+			    for (int i=0; i < mx; i++) {
+				    int idx = i + j*mx + k*mx*my;
+                    grid->arr[UUX][idx] = sin(j*M_PI / mx);
+			    }
+		    }
+	    }
+        break;
 
 	default:
 		printf("Invalid init_type in init_grid!\n");
 		exit(-1);
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

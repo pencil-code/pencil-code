@@ -32,6 +32,7 @@ typedef enum {
     GRID_ALL_UNIQUE,
     GRID_ALL_ZERO,
     GRID_GAUSSIAN_RADIAL_EXPL,
+    GRID_XWAVE,
     NUM_GRID_TYPES
 } InitType;
 
@@ -49,7 +50,8 @@ typedef enum {
                                     "GRID_RAND_WITH_NEG",
                                     "GRID_ALL_UNIQUE",
                                     "GRID_ALL_ZERO",
-                                    "GRID_GAUSSIAN_RADIAL_EXPL"};
+                                    "GRID_GAUSSIAN_RADIAL_EXPL",
+                                    "GRID_XWAVE"};
 #else
     extern const char* init_type_names[];
 #endif
