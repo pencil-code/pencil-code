@@ -34,14 +34,18 @@ module Supersat
 !  Init parameters.
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
+  real :: lnTT_const=0.
   logical :: nosupersat=.false., reinitialize_ssat=.false.
   character (len=labellen) :: initssat='nothing'
+  character (len=labellen) :: initlnTT='nothing'
 !
   namelist /supersat_init_pars/ &
-           initssat, ssat_const, amplssat, widthssat
+           initssat, ssat_const, amplssat, widthssat, &
+           initlnTT, lnTT_const
 !
 !  Run parameters.
 !
+  real :: thermal_diff=0.0
   real :: supersat_diff=0.0
   real :: supersat_sink=0.0
   real :: vapor_mixing_ratio_qvs=0.0
@@ -49,6 +53,7 @@ module Supersat
   real :: A1=0.0
   real :: latent_heat=0.0, cp=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
+  real, dimension(3) :: gradlnTT0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rho0
   real, dimension(nx) :: es_T, qvs_T 
   logical :: lsupersat_sink=.false., Rsupersat_sink=.false.,lupdraft=.false.
@@ -58,7 +63,8 @@ module Supersat
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
       supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
-      c1, c2, Rv, rho0
+      c1, c2, Rv, rho0, &
+      thermal_diff, gradlnTT0
 !
 ! Declare index of new variables in f array
 !
@@ -147,7 +153,16 @@ module Supersat
 !
         case default
           call fatal_error('initssat','initssat value not recognised')
-       endselect
+      endselect
+!
+! Temperature, initial profile
+      select case (initlnTT)
+        case ('nothing')
+        case ('zero'); f(:,:,:,ilnTT)=0.0
+        case ('constant'); f(:,:,:,ilnTT)=lnTT_const
+        case default
+          call fatal_error('initlnTT','initlnTT value not recognised')
+      endselect
 !
 !  modify the density to have lateral pressure equilibrium
 !
@@ -186,6 +201,14 @@ module Supersat
       if (supersat_diff/=0.) lpenc_requested(i_del2ssat)=.true.
  
       lpenc_diagnos(i_ssat)=.true.
+!     
+!  temperature
+      if (ltemperature) lpenc_requested(i_lnTT)=.true.
+      if (thermal_diff/=0.) lpenc_requested(i_del2lnTT)=.true.
+      do i=1,3
+        if (gradlnTT0(i)/=0.) lpenc_requested(i_uu)=.true.
+      enddo
+!
     endsubroutine pencil_criteria_supersat
 !***********************************************************************
     subroutine pencil_interdep_supersat(lpencil_in)
@@ -238,6 +261,24 @@ module Supersat
         call del2(f,issat,p%del2ssat)
       endif
 !
+! temperature
+      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+! Compute glnTT
+      if (lpencil(i_glnTT)) then
+        call grad(f,ilnTT,p%glnTT)
+        do j=1,3
+          if (gradlnTT0(j)/=0.) p%glnTT(:,j)=p%glnTT(:,j)+gradlnTT0(j)
+        enddo
+      endif
+! uglnTT
+      if (lpencil(i_uglnTT)) then
+        call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT)
+      endif
+! del2lnTT
+      if (lpencil(i_del2lnTT)) then
+        call del2(f,ilnTT,p%del2lnTT)
+      endif
+!
     endsubroutine calc_pencils_supersat
 !***********************************************************************
     subroutine dssat_dt(f,df,p)
@@ -283,8 +324,12 @@ module Supersat
 !  Passive scalar equation.
 !
       df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-p%uglnTT
       if (supersat_diff/=0.) &
           df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+supersat_diff*p%del2ssat
+!
+      if (thermal_diff/=0.) &
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+thermal_diff*p%del2lnTT
 !
       ! 1-June-16/XY coded 
       if (lsupersat_sink) then
@@ -319,6 +364,7 @@ module Supersat
       if (lcondensation_rate) then
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%condensationRate
         if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
+!           print*,'T=',df(l1:l2,m,n,ilnTT)
         es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
         qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
         supersaturation=f(l1:l2,m,n,issat)/qvs_T-1.
