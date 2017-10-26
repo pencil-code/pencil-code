@@ -29,7 +29,7 @@ module Magnetic
   real, dimension (nz,3) :: bbmz,jjmz
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
-  logical :: lcalc_aameanz=.false.
+  logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcovariant_magnetic=.false.
 !
