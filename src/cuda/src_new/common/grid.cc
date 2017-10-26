@@ -27,26 +27,28 @@ void grid_free(Grid* g)
 }
 
 
+static void arr_set(real* arr, real val, CParamConfig* cparams)
+{
+    const size_t arr_size = cparams->mx*cparams->my*cparams->mz; 
+    for (size_t i=0; i < arr_size; ++i) {
+        arr[i] = val;
+    }    
+}
+
 //Initialize all grid values into 0.0 to avoid weird errors
 void grid_clear(Grid* g, CParamConfig* cparams)
 {
-    const int mx = cparams->mx;
-    const int my = cparams->my;
-    const int mz = cparams->mz;
-    
 	//Note: initialises also the pad zone and boundaries
     for (int w=0; w < NUM_ARRS; ++w) {
-	    for (int k=0; k < mz; k++) {
-		    for (int j=0; j < my; j++) {
-			    for (int i=0; i < mx; i++) {
-				    int idx = i + j*mx + k*mx*my;
-                    g->arr[w][idx] = 0;
-			    }
-		    }
-	    }
+        arr_set(g->arr[w], 0.0, cparams);
     }
 }
 
+
+void init_lnrho_to_const(Grid* grid, CParamConfig* cparams, StartConfig* start_params)
+{
+    arr_set(grid->arr[LNRHO], start_params->ampl_lnrho, cparams);
+}
 
 void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* start_params)	
 {
@@ -185,8 +187,7 @@ void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* s
 					uu_radial = 0.0; //TODO: There will be a discontinuity in the origin... Should the shape of the distribution be different?
 				}
 
-				//Determine the carthesian velocity components
-
+				//Determine the carthesian velocity components and lnrho
 				uu_x[idx] = uu_radial*sin(theta)*cos(phi);
 				uu_y[idx] = uu_radial*sin(theta)*sin(phi);
 				uu_z[idx] = uu_radial*cos(theta);
@@ -361,6 +362,8 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		break;
 
 	case GRID_GAUSSIAN_RADIAL_EXPL:
+        grid_init(grid, GRID_RAND_WITH_NEG, cparams, start_params); //Sets magnetic field to rand if applicable
+        init_lnrho_to_const(grid, cparams, start_params);
 		gaussian_radial_explosion(grid, cparams, start_params);
 		break;
 

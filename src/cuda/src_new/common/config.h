@@ -16,7 +16,7 @@
 #define ZORIG (DOMAIN_SIZE_Z / 2.0)
 
 #define T_STOP_FORCING (1.0)
-#define FORCING (1e-5)
+#define FORCING (1e-4)
 #define KK1 (4.5)
 #define KK2 (5.5)
 #define KMAX (10.0)
@@ -25,7 +25,7 @@
 #define DKZ (1.0)   
 
 //GPU defines
-#define NUM_DEVICES (1)
+//#define NUM_DEVICES (1)//Deprecated, determined now at runtime
 
 //Purely virtual parent for the config structs
 typedef struct Config {
@@ -71,6 +71,7 @@ typedef struct CParamConfig : public Config {
 
 typedef struct StartConfig : public Config {
     real ampl_uu;
+    real ampl_lnrho;
 
     //Implementation for virtual functions
     virtual void parse(const char* keyword, const char* value) override;

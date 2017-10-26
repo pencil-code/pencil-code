@@ -507,3 +507,112 @@ void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams)
 }
 
 
+void periodic_xy_boundconds_cuda_generic(Grid* d_grid, CParamConfig* cparams)
+{
+    static dim3 blocksPerGrid, threadsPerBlock;
+
+    //Copy periodic x sides
+    threadsPerBlock.x = 6;
+    threadsPerBlock.y = 4;
+    threadsPerBlock.z = 1;
+    blocksPerGrid.x = 1;
+    blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
+    blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
+    per_x_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+    CUDA_ERRCHK_KERNEL();
+
+    //Copy periodic xy edges
+	threadsPerBlock.x = 3;
+	threadsPerBlock.y = 3;
+	threadsPerBlock.z = 32;
+	blocksPerGrid.x = 1;
+	blocksPerGrid.y = 4;
+	blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
+	per_xy_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+	CUDA_ERRCHK_KERNEL();
+
+    //Copy periodic y sides
+    threadsPerBlock.x = 32;
+    threadsPerBlock.y = 32;
+    threadsPerBlock.z = 1;
+    blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
+    blocksPerGrid.y = ceil((real) cparams->nz / (real)threadsPerBlock.y);
+    blocksPerGrid.z = 6;
+    per_y_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+    CUDA_ERRCHK_KERNEL();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

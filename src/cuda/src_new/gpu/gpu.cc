@@ -22,8 +22,8 @@ GPUGetSliceFunc  GPUGetSlice = &get_slice_cuda_generic;
 //Names for grid types. TODO note. Possibly error prone, but how else to define these at compile time
     //without additional init functions or malloc/frees?
 const char* impl_type_names[] = {"CUDA_GENERIC",
-                                 "CUDA_19P",
-                                 "CUDA_55P",
+                                 //"CUDA_19P",
+                                 //"CUDA_55P",
                                  "CUDA_MAXWELL"}; 
 
 #define DO_MINIMAL_BUILD
@@ -36,11 +36,9 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
         }
     } 
 #else
-    #include "cuda/cuda_19p.cuh"
-    #include "cuda/cuda_55p.cuh"
+    //#include "cuda/cuda_19p.cuh"
+    //#include "cuda/cuda_55p.cuh"
     #include "cuda/cuda_maxwell.cuh"
-
-    static void dummy_function() { printf("WARNING!\n"); }
 
     //Select the GPU implementation (yes, this could be done much more nicely
     //with classes and inheritance, but doing this the "Pure C Way" makes it
@@ -62,7 +60,7 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
 
             //Misc
             GPUGetSlice = &get_slice_cuda_generic;
-        } else if (type == CUDA_19P) {
+        } /*else if (type == CUDA_19P) {
             //Memory management interface
             GPUInit    = &init_cuda_19p;
             GPUDestroy = &destroy_cuda_19p;
@@ -94,18 +92,18 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
 
             //Misc
             GPUGetSlice = &get_slice_cuda_55p;
-        } else if (type == CUDA_MAXWELL) {
+        }*/ else if (type == CUDA_MAXWELL) {
             //Memory management interface
-            GPUInit    = &init_cuda_maxwell;
-            GPUDestroy = &destroy_cuda_maxwell;
-            GPULoad    = &load_grid_cuda_maxwell;  //Load from host to device
-            GPUStore   = &store_grid_cuda_maxwell; //Store from device to host
-            GPULoadForcingParams = NULL;
+            GPUInit              = &init_cuda_maxwell;
+            GPUDestroy           = &destroy_cuda_maxwell;
+            GPULoad              = &load_grid_cuda_maxwell;  //Load from host to device
+            GPUStore             = &store_grid_cuda_maxwell; //Store from device to host
+            GPULoadForcingParams = &load_forcing_params_cuda_maxwell;
 
             //GPU solver interface
             GPUIntegrate     = &integrate_cuda_maxwell;
-            GPUIntegrateStep = NULL;
-            GPUBoundcondStep = NULL;
+            GPUBoundcondStep = &boundcond_step_cuda_maxwell;
+            GPUIntegrateStep = &integrate_step_cuda_maxwell;
             GPUReduce        = &reduce_cuda_maxwell;
 
             //Misc

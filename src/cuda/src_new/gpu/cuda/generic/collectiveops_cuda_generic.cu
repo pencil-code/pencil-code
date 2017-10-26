@@ -291,6 +291,7 @@ real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParam
     cudaDeviceSynchronize();
     CUDA_ERRCHK( cudaMemcpy(&res, (real*)reduct_arr->d_vec_res, sizeof(real), cudaMemcpyDeviceToHost) );
     cudaDeviceSynchronize();
+
     return res;
 }
 

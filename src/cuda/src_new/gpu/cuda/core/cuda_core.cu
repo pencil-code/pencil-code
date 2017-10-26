@@ -9,7 +9,6 @@ void print_gpu_config()
 {
     int n_devices;
     if (cudaGetDeviceCount(&n_devices) != cudaSuccess) CRASH("No CUDA devices found!");
-
     printf("Num CUDA devices found: %u\n", n_devices);
 
     int initial_device;
@@ -17,25 +16,36 @@ void print_gpu_config()
     for (int i = 0; i < n_devices; i++) {
         cudaSetDevice(i);
 
-        cudaDeviceProp prop;
-        cudaGetDeviceProperties(&prop, i);
+        cudaDeviceProp props;
+        cudaGetDeviceProperties(&props, i);
+        printf("--------------------------------------------------\n");
         printf("Device Number: %d\n", i);
-        printf("  Device name: %s\n", prop.name);
-        printf("  Memory Clock Rate (KHz): %d\n", prop.memoryClockRate);
-        printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
-        printf("  Peak Memory Bandwidth (GiB/s): %f\n", 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/(1024*1024));
-
+        printf("  Device name: %s\n", props.name);
+        printf("  Compute capability: %d.%d\n", props.major, props.minor);
+        printf("  Global memory\n");
+        printf("    Memory Clock Rate (MHz): %d\n", props.memoryClockRate / (1000));
+        printf("    Memory Bus Width (bits): %d\n", props.memoryBusWidth);
+        printf("    Peak Memory Bandwidth (GiB/s): %f\n", 2.0*props.memoryClockRate*(props.memoryBusWidth/8)/(1024*1024));
+        printf("    ECC enabled: %d\n", props.ECCEnabled);
         //Memory usage
         size_t free_bytes, total_bytes;
         CUDA_ERRCHK( cudaMemGetInfo(&free_bytes, &total_bytes) );
         const size_t used_bytes = total_bytes - free_bytes;     
-        printf("  GPU memory used (MiB): %f\n", (double) used_bytes / (1024*1024));
-        printf("  GPU memory free (MiB): %f\n", (double) free_bytes / (1024*1024));
-        printf("  GPU memory total (MiB): %f\n", (double) total_bytes / (1024*1024));
+        printf("    Total global mem: %.2f GiB\n", props.totalGlobalMem / (1024.0*1024*1024));
+        printf("    Gmem used (GiB): %.2f\n", used_bytes / (1024.0*1024*1024));
+        printf("    Gmem memory free (GiB): %.2f\n", free_bytes / (1024.0*1024*1024));
+        printf("    Gmem memory total (GiB): %.2f\n", total_bytes / (1024.0*1024*1024));
+        printf("  Caches\n");
+        printf("    L2 size: %d KiB\n", props.l2CacheSize / (1024));
+        printf("    Total const mem: %ld KiB\n", props.totalConstMem / (1024));
+        printf("    Shared mem per block: %ld KiB\n", props.sharedMemPerBlock / (1024));
+        printf("  Other\n");
+        printf("    Warp size: %d\n", props.warpSize);
+        //printf("    Single to double perf. ratio: %dx\n", props.singleToDoublePrecisionPerfRatio); //Not supported with older CUDA versions
+        printf("    Stream priorities supported: %d\n", props.streamPrioritiesSupported);
+        printf("--------------------------------------------------\n");
     }
     cudaSetDevice(initial_device);
-    
-    if (n_devices < NUM_DEVICES) CRASH("Invalid number of devices requested!");
 }
 
 
@@ -156,47 +166,22 @@ void destroy_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst)
 
 void load_grid_cuda_core(Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx, Grid* h_grid, CParamConfig* h_cparams)
 {
-    //Create a host buffer to minimize the number of device-host-device memcpys (very high latency)
-    Grid buffer;
-    grid_malloc(&buffer, d_cparams);
-
-    const size_t slab_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my;
-    for (int w=0; w < NUM_ARRS; ++w)
-        for (int k=0; k < d_cparams->mz; ++k)
-            memcpy(&buffer.arr[w][k*d_cparams->mx*d_cparams->my], &h_grid->arr[w][h_start_idx->y*h_cparams->mx + k*h_cparams->mx*h_cparams->my], slab_size_bytes);
-
-    cudaStream_t stream;
-    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
-    const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->mz; 
-    for (int w=0; w < NUM_ARRS; ++w)
-        CUDA_ERRCHK( cudaMemcpyAsync(d_grid->arr[w], buffer.arr[w], grid_size_bytes, cudaMemcpyHostToDevice, stream) );
-
-    cudaStreamDestroy(stream);
-    grid_free(&buffer);
+    const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->mz;
+    const size_t slice_size = h_cparams->mx*h_cparams->my;
+    for (int w=0; w < NUM_ARRS; ++w) {
+        CUDA_ERRCHK( cudaMemcpyAsync(&(d_grid->arr[w][0]), &(h_grid->arr[w][h_start_idx->z*slice_size]), grid_size_bytes, cudaMemcpyHostToDevice) );//NOTE: if stream not specified, uses the default stream->non-async behaviour
+    }
 }
 
 
 void store_grid_cuda_core(Grid* h_grid, CParamConfig* h_cparams, Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx)
 {
-    Grid buffer;
-    grid_malloc(&buffer, d_cparams);
-
-    cudaStream_t stream;
-    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
-    const size_t grid_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my * d_cparams->mz;
-    for (int w=0; w < NUM_ARRS; ++w)
-        cudaMemcpyAsync(buffer.arr[w], d_grid->arr[w], grid_size_bytes, cudaMemcpyDeviceToHost, stream);
-
-    const size_t row_size_bytes = sizeof(real) * d_cparams->nx; 
+    const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->nz;
+    const size_t slice_size = h_cparams->mx * h_cparams->my;
+    const size_t z_offset = BOUND_SIZE * slice_size;
     for (int w=0; w < NUM_ARRS; ++w) {
-        for (int k=d_cparams->nz_min; k < d_cparams->nz_max; ++k)
-            for (int j=d_cparams->ny_min; j < d_cparams->ny_max; ++j)
-                memcpy(&h_grid->arr[w][h_cparams->nx_min + (j+h_start_idx->y)*h_cparams->mx + k*h_cparams->mx*h_cparams->my], 
-                       &buffer.arr[w][d_cparams->nx_min + j*d_cparams->mx + k*d_cparams->mx*d_cparams->my], row_size_bytes);
-    } 
-
-    cudaStreamDestroy(stream);
-    grid_free(&buffer);
+        CUDA_ERRCHK( cudaMemcpyAsync(&(h_grid->arr[w][z_offset + h_start_idx->z*slice_size]), &(d_grid->arr[w][z_offset]), grid_size_bytes, cudaMemcpyDeviceToHost) ); //NOTE: if stream not specified, uses the default stream->non-async behaviour
+    }    
 }
 
 

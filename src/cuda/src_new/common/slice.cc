@@ -9,7 +9,8 @@ void slice_malloc(Slice* s, CParamConfig *cparams, RunConfig *run_params)
     const size_t slice_size_bytes = sizeof(real) * cparams->mx * cparams->my;
 
     for (int i=0; i < NUM_SLICES; ++i) {
-        s->arr[i] = (real*) malloc(slice_size_bytes); 
+        //s->arr[i] = (real*) malloc(slice_size_bytes);
+        s->arr[i] = (real*) calloc(sizeof(real), cparams->mx*cparams->my);
         if (s->arr[i] == NULL) CRASH("Malloc fail");
     }
 }

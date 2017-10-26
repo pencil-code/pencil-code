@@ -51,6 +51,8 @@ void StartConfig::parse(const char* keyword, const char* value)
 {
     if (strcmp(keyword, "ampl_uu") == 0)
         load_value(value, &ampl_uu);
+    else if (strcmp(keyword, "ampl_lnrho") == 0)
+        load_value(value, &ampl_lnrho);
     else
         CRASH("Invalid keyword!");
 }

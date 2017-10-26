@@ -11,13 +11,13 @@
 #include "common/datatypes.h"
 
 
-#define RK_THREADS_X (64)
-#define RK_THREADS_Y (8)
+#define RK_THREADS_X (128)
+#define RK_THREADS_Y (4)
 #define RK_THREADS_Z (1)
 
 #define RK_THREADS_PER_BLOCK (RK_THREADS_X*RK_THREADS_Y*RK_THREADS_Z)
 
-#define RK_ELEMS_PER_THREAD (128)
+#define RK_ELEMS_PER_THREAD (32)
 
 //Shared memory
 #define UNROLL_FACTOR (1)
