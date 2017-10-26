@@ -11,6 +11,7 @@ module Snapshot
   use Cdata
   use Cparam
   use Messages
+  use Gpu, only: copy_farray_from_GPU
 !
   implicit none
 !
@@ -71,6 +72,7 @@ module Snapshot
       call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap_down,ch)
       if (lsnap_down) then
 !
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (maux_down>0) call update_auxiliaries(a)
 !
 !  Number of downsampled data points on local processor in each direction
@@ -266,6 +268,7 @@ module Snapshot
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
+          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
@@ -282,6 +285,7 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (msnap==mfarray) then
           if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -535,6 +539,7 @@ module Snapshot
   !   if (ldo_all) &
   !        call update_snaptime(file,tspec,nspec,dspec,t,lspec)
       if (lspec.or.llwrite_only) then
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')
