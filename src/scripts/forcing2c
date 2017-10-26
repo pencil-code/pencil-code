@@ -5,12 +5,12 @@ echo 'const int n_pars_force=8;' >> forcing_c.h
 echo 'EXTERN float *p_pars_force[n_pars_force];' >> forcing_c.h
 echo '#define force       (*p_pars_force[0])' >> forcing_c.h
 echo '#define tforce_stop (*p_pars_force[1])' >> forcing_c.h
-echo '#define profx_ampl  (*p_par[2])' >> forcing_c.h
-echo '#define profy_ampl  (*p_par[3])' >> forcing_c.h
-echo '#define profz_ampl  (*p_par[4])' >> forcing_c.h
-echo '#define profx_hel   (*p_par[5])' >> forcing_c.h
-echo '#define profy_hel   (*p_par[6])' >> forcing_c.h
-echo '#define profz_hel   (*p_par[7])' >> forcing_c.h
+echo '#define profx_ampl  (*p_pars_force[2])' >> forcing_c.h
+echo '#define profy_ampl  (*p_pars_force[3])' >> forcing_c.h
+echo '#define profz_ampl  (*p_pars_force[4])' >> forcing_c.h
+echo '#define profx_hel   (*p_pars_force[5])' >> forcing_c.h
+echo '#define profy_hel   (*p_pars_force[6])' >> forcing_c.h
+echo '#define profz_hel   (*p_pars_force[7])' >> forcing_c.h
 
 echo 'extern "C" void *'$MODULE_PREFIX'forcing'$MODULE_INFIX'push2c'$MODULE_SUFFIX'(float *(&p_pars)[n_pars_force]);' >> forcing_c.h
 echo 'extern "C" void *'$MODULE_PREFIX'forcing'$MODULE_INFIX'forcing_coefs_hel'$MODULE_SUFFIX'(const float coef1[3], const float coef2[3],const float coef3[3], const float fx[nx][2],const float fy[ny][2],const float fz[nz][2],const float fda[3]);' >> forcing_c.h
