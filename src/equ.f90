@@ -88,6 +88,7 @@ module Equ
       real, dimension(nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)  :: mass_per_proc
       integer :: iv,nyz
+      logical, dimension(npencils) :: lpenc_loc
 !
 !  Print statements when they are first executed.
 !
@@ -149,7 +150,7 @@ module Equ
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
                      lslope_limit_diff .or. lvisc_smag .or. &
-                     lyinyang
+                     lyinyang .or.lgpu
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -227,9 +228,8 @@ module Equ
 !  before the call to update_solid_cells in order to avoid corrections
 !  within the solid structure.
 !
-      if (lsolid_cells .and. lchemistry) then
+      if (lsolid_cells .and. lchemistry) &
         call chemspec_normalization_N2(f)
-      endif
 !
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
@@ -334,8 +334,6 @@ module Equ
 !
       if (lgpu) then
         call rhs_gpu(f,ioptest(itsub,0))
-!print*, 'uu:', maxval(abs(f(:,:,:,iux:iuz)))
-!print*, 'rho:',maxval(abs(f(:,:,:,ilnrho)))
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif
@@ -408,72 +406,93 @@ module Equ
 !  outside of the considered pencil.
 !
       do imn=1,ny*nz
+
         n=nn(imn)
         m=mm(imn)
 !
 !  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
 !  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
 !
-        if (any(lfreeze_varext).or.any(lfreeze_varint)) &
-            call calc_pencils_grid(f,p)
+        if (any(lfreeze_varext).or.any(lfreeze_varint)) then
+
+          lpenc_loc=.false. 
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then 
+            lpenc_loc(i_rcyl_mn)=.true.
+          else
+            lpenc_loc(i_r_mn)=.true.
+          endif
+          call calc_pencils_grid(f,p,lpenc_loc)
 !
 !  Set df=0 for r_mn<r_int.
 !
-        if (any(lfreeze_varint)) then
-          if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
-              ' : ', lfreeze_varint
-          if (lcylinder_in_a_box.or.lcylindrical_coords) then
-            if (wfreeze_int==0.0) then
-              where (p%rcyl_mn<=rfreeze_int) pfreeze_int=0.0
-              where (p%rcyl_mn> rfreeze_int) pfreeze_int=1.0
+          if (any(lfreeze_varint)) then
+            if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
+                                ' : ', lfreeze_varint
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              if (wfreeze_int==0.0) then
+                where (p%rcyl_mn<=rfreeze_int)
+                  pfreeze_int=0.0
+                elsewhere  
+                  pfreeze_int=1.0
+                endwhere  
+              else
+                pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
+                                         SHIFT=fshift_int)
+              endif
             else
-              pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
-                  SHIFT=fshift_int)
+              if (wfreeze_int==0.0) then
+                where (p%r_mn<=rfreeze_int)
+                  pfreeze_int=0.0
+                elsewhere 
+                  pfreeze_int=1.0
+                endwhere  
+              else
+                pfreeze_int=quintic_step(p%r_mn,rfreeze_int,wfreeze_int, &
+                                         SHIFT=fshift_int)
+              endif
             endif
-          else
-            if (wfreeze_int==0.0) then
-              where (p%r_mn<=rfreeze_int) pfreeze_int=0.0
-              where (p%r_mn> rfreeze_int) pfreeze_int=1.0
-            else
-              pfreeze_int=quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int, &
-                  SHIFT=fshift_int)
-            endif
+!
+            do iv=1,nvar
+              if (lfreeze_varint(iv)) &
+                  df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
+            enddo
+!
           endif
-!
-          do iv=1,nvar
-            if (lfreeze_varint(iv)) &
-                df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
-          enddo
-!
-        endif
 !
 !  Set df=0 for r_mn>r_ext.
 !
-        if (any(lfreeze_varext)) then
-          if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
-              ' : ', lfreeze_varext
-          if (lcylinder_in_a_box) then
-            if (wfreeze_ext==0.0) then
-              where (p%rcyl_mn>=rfreeze_ext) pfreeze_ext=0.0
-              where (p%rcyl_mn< rfreeze_ext) pfreeze_ext=1.0
+          if (any(lfreeze_varext)) then
+            if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
+                                ' : ', lfreeze_varext
+            if (lcylinder_in_a_box.or.lcylindrical_coords) then
+              if (wfreeze_ext==0.0) then
+                where (p%rcyl_mn>=rfreeze_ext)
+                  pfreeze_ext=0.0
+                elsewhere  
+                  pfreeze_ext=1.0
+                endwhere  
+              else
+                pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
+                                             SHIFT=fshift_ext)
+              endif
             else
-              pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
-                SHIFT=fshift_ext)
+              if (wfreeze_ext==0.0) then
+                where (p%r_mn>=rfreeze_ext)
+                  pfreeze_ext=0.0
+                elsewhere 
+                  pfreeze_ext=1.0
+                endwhere  
+              else
+                pfreeze_ext=1.0-quintic_step(p%r_mn,rfreeze_ext,wfreeze_ext, &
+                                             SHIFT=fshift_ext)
+              endif
             endif
-          else
-            if (wfreeze_ext==0.0) then
-              where (p%r_mn>=rfreeze_ext) pfreeze_ext=0.0
-              where (p%r_mn< rfreeze_ext) pfreeze_ext=1.0
-            else
-              pfreeze_ext=1.0-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext, &
-                  SHIFT=fshift_ext)
-            endif
-          endif
 !
-          do iv=1,nvar
-            if (lfreeze_varext(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
-          enddo
+            do iv=1,nvar
+              if (lfreeze_varext(iv)) &
+                  df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
+            enddo
+          endif
         endif
 !
 !  Set df=0 inside square.
@@ -482,11 +501,10 @@ module Equ
           if (headtt) print*, 'pde: freezing variables inside square : ', &
               lfreeze_varsquare
           pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
-              quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
+                  quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
 !
           do iv=1,nvar
-            if (lfreeze_varsquare(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+            if (lfreeze_varsquare(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
           enddo
         endif
 !
@@ -501,16 +519,8 @@ module Equ
 !  processor and in left/right--most pencils
 !
           if (.not. lperi(1)) then
-            if (lfirst_proc_x) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_x) then
-              do iv=1,nvar
-                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
-              enddo
-            endif
+            if (lfirst_proc_x) where (lfrozen_bot_var_x(1:nvar)) df(l1,m,n,1:nvar) = 0.
+            if (llast_proc_x) where (lfrozen_top_var_x(1:nvar)) df(l2,m,n,1:nvar) = 0.
           endif
 !
         endif
@@ -684,8 +694,7 @@ module Equ
       use Shear
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
-      use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
-                             dsolid_dt,update_solid_cells_pencil
+      use Solid_Cells, only: update_solid_cells_pencil, dsolid_dt
       use Special, only: calc_pencils_special, dspecial_dt
       use Sub, only: sum_mn
       use Supersat

@@ -218,7 +218,7 @@ module Fourier
 !
 !  19-dec-06/anders: adapted from fourier_transform
 !
-      real, dimension (nx,ny,nz) :: a_re,a_im
+      real, dimension (:,:,:) :: a_re,a_im
       logical, optional :: linv
 !
       complex, dimension (nx) :: ax
@@ -302,8 +302,8 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-        a_re=a_re/(nxgrid*nygrid)
-        a_im=a_im/(nxgrid*nygrid)
+        a_re=a_re/nxygrid
+        a_im=a_im/nxygrid
       endif
 !
       if (lroot .and. ip<10) print*, 'fourier_transform_xy: fft has finished'

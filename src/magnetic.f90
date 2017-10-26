@@ -153,7 +153,7 @@ module Magnetic
   logical, pointer :: lrelativistic_eos
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
-  logical :: llorentzforce=.true., llorentz_norho=.false., linduction=.true.
+  logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false.
@@ -261,7 +261,7 @@ module Magnetic
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
   logical :: lcalc_aameanz=.false.,lcalc_aamean
-  equivalence (lcalc_aamean,lcalc_aameanz)     ! for compatibility
+  equivalence (lcalc_aameanz,lcalc_aamean)     ! for compatibility
   logical :: lforcing_cont_aa=.false.
   integer :: iforcing_cont_aa=0
   logical :: lelectron_inertia=.false.
@@ -284,6 +284,7 @@ module Magnetic
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1.
+  real :: rhoref=impossible, rhoref1
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -306,7 +307,7 @@ module Magnetic
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
-      va2power_jxb, llorentzforce, llorentz_norho, linduction, ldiamagnetism, &
+      va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
@@ -327,7 +328,8 @@ module Magnetic
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
-      lboris_correction,lkeplerian_gauge,lremove_volume_average
+      lboris_correction,lkeplerian_gauge,lremove_volume_average, &
+      rhoref
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -933,19 +935,19 @@ module Magnetic
 !  Share the external magnetic field with module Shear.
 !
       if (lmagn_mf.or.lshock .or. leos .or. lspecial) &
-        call put_shared_variable('B_ext', B_ext, caller='initialize_magnetic')
+        call put_shared_variable('B_ext', B_ext)
 !
 !  Share the external magnetic field with mean field module.
 !
       if (lmagn_mf) &
-        call put_shared_variable('B_ext2', B_ext2, caller='initialize_magnetic')
+        call put_shared_variable('B_ext2', B_ext2)
 !
 !  Share several parameters for Alfven limiter with module Shock.
 !
-      alfven: if (lshock) then
-        call put_shared_variable('va2power_jxb', va2power_jxb, caller='initialize_magnetic')
-        call put_shared_variable('betamin_jxb', betamin_jxb, caller='initialize_magnetic')
-      endif alfven
+      if (lshock) then
+        call put_shared_variable('va2power_jxb', va2power_jxb)
+        call put_shared_variable('betamin_jxb', betamin_jxb)
+      endif
 !
 !  Shear of B_ext,x is not implemented.
 !
@@ -1324,7 +1326,7 @@ module Magnetic
 !  eta is also needed with the chiral fluids procedure.
 !
         if (lmagn_mf .or. lspecial) &
-          call put_shared_variable('eta',eta,caller='initialize_magnetic')
+          call put_shared_variable('eta',eta)
       endif
 !
 !  precalculating fixed (on timescales larger than tau) vectorpotential
@@ -1487,6 +1489,7 @@ module Magnetic
         close (1)
       endif
 !
+      if (.not.lforcing_cont) lforcing_cont_aa=.false.
       if (lforcing_cont_aa) then
         iforcing_cont_aa=min(n_forcing_cont,2)
         if (iforcing_cont_aa==0) &
@@ -1514,6 +1517,9 @@ module Magnetic
         print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
         print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
       endif
+
+      llorentz_rhoref = llorentzforce .and. rhoref/=impossible .and. rhoref>0.
+      if (llorentz_rhoref) rhoref1=rhoref
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -3135,7 +3141,7 @@ module Magnetic
 ! ss12
       if (lpenc_loc(i_ss12)) p%ss12=sqrt(abs(p%sj))
 !
-!  Store bb in auxiliary variable if requested.
+!  Store bb, jj or jxb in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
@@ -3335,8 +3341,8 @@ module Magnetic
                                   (p%bb(:,3)**2*(p%ugu(:,3)+p%rho1gpp(:,3))+&
                                   p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1))+&
                                   p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2)))
-            elseif (llorentz_norho) then
-              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb
+            elseif (llorentz_rhoref) then
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxb*rhoref1
             else
               if (ldensity.and.lrelativistic_eos) then
                 call dot(p%uu,p%jxbr,tmp1)

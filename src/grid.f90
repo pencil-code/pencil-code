@@ -44,6 +44,11 @@ module Grid
     module procedure grid_profile_1D
   endinterface
 !
+  interface calc_pencils_grid
+    module procedure calc_pencils_grid_pencpar
+    module procedure calc_pencils_grid_std
+  endinterface calc_pencils_grid
+!
   integer, parameter :: BOT=1, TOP=2
 !
   contains
@@ -71,6 +76,8 @@ module Grid
 !                three neighbouring points from the boundary point
 !   9-mar-17/MR: removed unneeded use of optional parameters in calls to grid_profile
 !
+      use Cdata, only: xprim, yprim, zprim, dx_1, dx_tilde, dy_1, dy_tilde, dz_1, dz_tilde
+
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
@@ -929,6 +936,7 @@ module Grid
 !                initialization of Yin-Yang grid; added dimensionality mask:
 !                lists the indices of the non-degenerate directions in the first 
 !                dimensionality elements of dim_mask 
+!  10-oct-17/MR: avoided communication in calculation of r_int and r_ext
 !
       use Sub, only: remove_zprof
       use Mpicomm
@@ -1245,49 +1253,19 @@ module Grid
       dVol1_y = 1./dVol_y
       dVol1_z = 1./dVol_z
 !
+      if (lspherical_coords.or.lcylindrical_coords) then
+!
 !  Define inner and outer radii for non-cartesian coords.
 !  If the user did not specify them yet (in start.in),
 !  these are the first point of the first x-processor,
 !  and the last point of the last x-processor.
+!  r_int and r_ext can be taken from the domain's x-extent as periodic BC can't 
+!  appear for r.
 !
-      if (lspherical_coords.or.lcylindrical_coords) then
-!
-        if (nprocx/=1) then
-!
-!  The root (iproc=0) has by default the first value of x
-!
-          if (lroot) then
-            if (r_int==0) r_int=x(l1)
-!
-!  The root should also receive the value of r_ext from
-!  from the last x-processor (which is simply nprocx-1
-!  for iprocy=0 and iprocz=0) for broadcasting.
-!
-            if (r_ext==impossible) &
-                 call mpirecv_real(r_ext,nprocx-1,111)
-          endif
-!
-!  The last x-processor knows the value of r_ext, and sends
-!  it to root, for broadcasting.
-!
-          if ((r_ext==impossible).and.&
-               (llast_proc_x.and.lfirst_proc_y.and.lfirst_proc_z)) then
-            r_ext=x(l2)
-            call mpisend_real(r_ext,0,111)
-          endif
-!
-!  Broadcast the values of r_int and r_ext
-!
-          call mpibcast_real(r_int,comm=MPI_COMM_WORLD)
-          call mpibcast_real(r_ext,comm=MPI_COMM_WORLD)
-        else
-!
-!  Serial-x. Just get the local grid values.
-!
-          if (r_int == 0)         r_int=x(l1)
-          if (r_ext ==impossible) r_ext=x(l2)
-        endif
-        if (lroot) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
+        if (r_int == 0)         r_int=xyz0(1)
+        if (r_ext ==impossible) r_ext=xyz1(1)
+        
+        if (lroot.and.ip<14) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
       endif
 !
 !  For a non-periodic mesh, multiply boundary points by 1/2.
@@ -1320,8 +1298,6 @@ module Grid
         lpoint2=min(max(l1,lpoint2),l2)
         mpoint2=min(max(m1,mpoint2),m2)
         npoint2=min(max(n1,npoint2),n2)
-        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
-        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
       endif
 !
 !  Clean up profile files.
@@ -1619,13 +1595,12 @@ module Grid
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
-    subroutine calc_pencils_grid(f,p)
+    subroutine calc_pencils_grid_std(f,p)
 !
-!  Calculate Grid/geometry related pencils.
-!  Most basic pencils should come first, as others may depend on them.
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
 !
-!   15-nov-06/tony: coded
-!   27-aug-07/wlad: generalized for cyl. and sph. coordinates
+! 10-oct-17/MR: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1633,52 +1608,72 @@ module Grid
       intent(in) :: f
       intent(inout) :: p
 !
+      call calc_pencils_grid_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_grid_std
+!***********************************************************************
+    subroutine calc_pencils_grid_pencpar(f,p,lpenc_loc)
+!
+!  Calculate Grid/geometry related pencils. Uses arbitrary pencil mask lpenc_loc.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!   15-nov-06/tony: coded
+!   27-aug-07/wlad: generalized for cyl. and sph. coordinates
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
+!
+      intent(in) :: f
+      intent(inout) :: p
+      intent(in) :: lpenc_loc
+!
       if (lcartesian_coords) then
 !coordinates vectors
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)
-        if (lpencil(i_y_mn))     p%y_mn    = spread(y(m),1,nx)
-        if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
+        if (lpenc_loc(i_x_mn))     p%x_mn    = x(l1:l2)
+        if (lpenc_loc(i_y_mn))     p%y_mn    = spread(y(m),1,nx)
+        if (lpenc_loc(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
 !spherical distance
-        if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        if (lpenc_loc(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !cylindrical distance (pomega)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
+        if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
 !azimuthal angle (phi)
-        if (lpencil(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
+        if (lpenc_loc(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
 !inverse cylindrical distance 1/pomega
-        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
 !inverse spherical distance 1/r
-        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+        if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
 !pomega unit vectors: pomx=cos(phi) and pomy=sin(phi) where phi=azimuthal angle
-        if (lpencil(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
-        if (lpencil(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
+        if (lpenc_loc(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
+        if (lpenc_loc(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
 !phi unit vectors
-        if (lpencil(i_phix))     p%phix    =-y(  m  )*p%rcyl_mn1
-        if (lpencil(i_phiy))     p%phiy    = x(l1:l2)*p%rcyl_mn1
+        if (lpenc_loc(i_phix))     p%phix    =-y(  m  )*p%rcyl_mn1
+        if (lpenc_loc(i_phiy))     p%phiy    = x(l1:l2)*p%rcyl_mn1
 !
       elseif (lcylindrical_coords) then
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*cos(y(m))
-        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))
-        if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
-        if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)
-        if (lpencil(i_phi_mn))   p%phi_mn  = spread(y(m),1,nx)
-        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
-        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
-        if (lpencil(i_pomx))     p%pomx    = 1.
-        if (lpencil(i_pomy))     p%pomy    = 0.
-        if (lpencil(i_phix))     p%phix    = 0.
-        if (lpencil(i_phiy))     p%phiy    = 1.
+        if (lpenc_loc(i_x_mn))     p%x_mn    = x(l1:l2)*cos(y(m))
+        if (lpenc_loc(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))
+        if (lpenc_loc(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
+        if (lpenc_loc(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
+        if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)
+        if (lpenc_loc(i_phi_mn))   p%phi_mn  = spread(y(m),1,nx)
+        if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+        if (lpenc_loc(i_pomx))     p%pomx    = 1.
+        if (lpenc_loc(i_pomy))     p%pomy    = 0.
+        if (lpenc_loc(i_phix))     p%phix    = 0.
+        if (lpenc_loc(i_phiy))     p%phiy    = 1.
       elseif (lspherical_coords) then
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(y(m))*cos(z(n))
-        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))*sin(z(n))
-        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(y(m))
-        if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(y(m))
-        if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx)
-        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
-        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
-        if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
-            lpencil(i_phix).or.lpencil(i_phiy)) &
+        if (lpenc_loc(i_x_mn))     p%x_mn    = x(l1:l2)*sin(y(m))*cos(z(n))
+        if (lpenc_loc(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))*sin(z(n))
+        if (lpenc_loc(i_z_mn))     p%z_mn    = x(l1:l2)*cos(y(m))
+        if (lpenc_loc(i_r_mn))     p%r_mn    = x(l1:l2)
+        if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(y(m))
+        if (lpenc_loc(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx)
+        if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+        if (lpenc_loc(i_pomx).or.lpenc_loc(i_pomy).or.&
+            lpenc_loc(i_phix).or.lpenc_loc(i_phiy)) &
             call fatal_error('calc_pencils_grid', &
                 'pomx, pomy, phix and phix not implemented for '// &
                 'spherical polars')
@@ -1686,7 +1681,7 @@ module Grid
 !
 !  set position vector
 !
-      if (lpencil(i_rr)) then
+      if (lpenc_loc(i_rr)) then
         if (lcartesian_coords) then
           p%rr(:,1)=p%x_mn
           p%rr(:,2)=p%y_mn
@@ -1700,7 +1695,7 @@ module Grid
 !
 !  evr is the radial unit vector
 !
-      if (lpencil(i_evr)) then
+      if (lpenc_loc(i_evr)) then
         if (lcartesian_coords) then
           p%evr(:,1) = p%rcyl_mn*p%r_mn1*p%pomx
           p%evr(:,2) = p%rcyl_mn*p%r_mn1*p%pomy
@@ -1714,7 +1709,7 @@ module Grid
 !
 !  evth is the co-latitudinal unit vector
 !
-      if (lpencil(i_evth)) then
+      if (lpenc_loc(i_evth)) then
         if (lcartesian_coords) then
           p%evth(:,1) = z(n)*p%r_mn1*p%pomx
           p%evth(:,2) = z(n)*p%r_mn1*p%pomy
@@ -1728,7 +1723,7 @@ module Grid
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_grid
+    endsubroutine calc_pencils_grid_pencpar
 !***********************************************************************
     subroutine grid_profile_0D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta)
 !

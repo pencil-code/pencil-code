@@ -973,6 +973,8 @@ module Mpicomm
         iyinyang_intpol_type=BIQUAD
       elseif (cyinyang_intpol_type=='bicubic') then
         iyinyang_intpol_type=BICUB
+      elseif (cyinyang_intpol_type=='quadspline') then
+        iyinyang_intpol_type=QUADSPLINE
       else
         call stop_it('setup_interp_yy: Unknown Yin-Yang interpolation type '//trim(cyinyang_intpol_type))
       endif
@@ -1222,13 +1224,13 @@ module Mpicomm
 !  print*, 'proc ,',iproc_world,',  from ', ylneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)   
 !, size(intcoeffs(MIDZ)%inds,1), size(intcoeffs(MIDZ)%inds,2)
 !  print'(3(i3,1x))', intcoeffs(MIDZ)%inds(:,:,1)
-!print*, 'lowy: ', iproc_world, nok 
+!if (iproc_world==6) print*, 'lowy: ', iproc_world, nok 
 !,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds),minval(intcoeffs(MIDZ)%inds)
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         if (llcorn>=0) then
           call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
           nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type); noks=noks+nok
-!print*,'ll:', iproc_world,nok
+!if (iproc_world==6) print*,'ll:', iproc_world,nok
 !,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
         endif
@@ -1236,7 +1238,7 @@ module Mpicomm
         if (lucorn>=0) then
           call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
           nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type); noks=noks+nok
-!print*,'lu:',iproc_world,nok
+!if (iproc_world==6) print*,'lu:',iproc_world,nok
 !maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
         endif
@@ -1417,7 +1419,7 @@ module Mpicomm
           call interpolate_yy(f,ivar1,ivar2,lbufyo,MIDZ,iyinyang_intpol_type) !
 if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 !print*, 'lbufyo:', iproc_world, minval(sum(lbufyo(:,:,:,1:3)**2,4)), maxval(sum(lbufyo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; touppyr=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; touppyr=ylneigh; tolowys=iproc_world   !touppyr=MPI_ANY_TAG
         else
           lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2)         !(lower y-zone)
           if (lcommunicate_y) then
@@ -1448,7 +1450,7 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 ! if (iproc_world==41) print*, 'ubufyo:', iproc_world, minval(sum(ubufyo(:,:,:,1:3)**2,4)), &
 ! maxval(sum(ubufyo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; tolowyr=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; tolowyr=yuneigh; touppys=iproc_world  !tolowyr=MPI_ANY_TAG
         else
           ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
 !
@@ -1485,7 +1487,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
           call interpolate_yy(f,ivar1,ivar2,lbufzo,MIDY,iyinyang_intpol_type)
 ! if (iproc_world==1) print*, 'lbufzo:', iproc_world, minval(sum(lbufzo(:,:,:,1:3)**2,4)), &
 ! maxval(sum(lbufzo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; touppzr=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; touppzr=zlneigh; tolowzs=iproc_world  !touppzr=MPI_ANY_TAG
         else
           lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !lower z-planes
           comm=MPI_COMM_GRID
@@ -1498,7 +1500,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 
         nbufz=bufact*bufsizes_yz(INZL,ISND)
         call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zlneigh,tolowz,comm,isend_rq_tolowz,mpierr)
+                       zlneigh,tolowzs,comm,isend_rq_tolowz,mpierr)
 !
         if (lyinyang.and.llast_proc_z) then
 !
@@ -1507,7 +1509,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           call interpolate_yy(f,ivar1,ivar2,ubufzo,MIDY,iyinyang_intpol_type)
 !print*, 'ubufzo:', iproc_world, minval(sum(ubufzo(:,:,:,1:3)**2,4)), maxval(sum(ubufzo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; tolowzr=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; tolowzr=zuneigh; touppzs=iproc_world   !tolowzr=MPI_ANY_TAG
         else
           ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !upper z-planes
           comm=MPI_COMM_GRID
@@ -1519,7 +1521,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 
         nbufz=bufact*bufsizes_yz(INZU,ISND)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zuneigh,touppz,comm,isend_rq_touppz,mpierr)
+                       zuneigh,touppzs,comm,isend_rq_touppz,mpierr)
 
       endif
 !
@@ -1571,7 +1573,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (llcorns>=0) call interpolate_yy(f,ivar1,ivar2,llbufo,dir,iyinyang_intpol_type)
 !if (llcorns>=0) print*, 'llbufo:', iproc_world, minval(sum(llbufo(:,:,:,1:3)**2,4)), maxval(sum(llbufo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; TOuur=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; TOuur=llcornr; TOlls=iproc_world   !TOuur=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -1604,7 +1606,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
           if (ulcorns>=0) call interpolate_yy(f,ivar1,ivar2,ulbufo,dir,iyinyang_intpol_type)
 ! if (iproc_world==44) print*, 'ulbufo:', iproc_world, minval(sum(ulbufo(:,:,:,1:3)**2,4)), &
 ! maxval(sum(ulbufo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; TOlur=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; TOlur=ulcornr; TOuls=iproc_world   !TOlur=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -1636,7 +1638,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (uucorns>=0) call interpolate_yy(f,ivar1,ivar2,uubufo,dir,iyinyang_intpol_type)
 !if (uucorns>=0) print*, 'uubufo:', iproc_world, minval(sum(uubufo(:,:,:,1:3)**2,4)), maxval(sum(uubufo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; TOllr=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; TOllr=uucornr; TOuus=iproc_world   !TOllr=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -1666,7 +1668,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
           if (lucorns>=0) call interpolate_yy(f,ivar1,ivar2,lubufo,dir,iyinyang_intpol_type)
 !if (lucorns>=0) print*, 'lubufo:', iproc_world, minval(sum(lubufo(:,:,:,1:3)**2,4)), maxval(sum(lubufo(:,:,:,1:3)**2,4))
-          comm=MPI_COMM_WORLD; TOulr=MPI_ANY_TAG
+          comm=MPI_COMM_WORLD; TOulr=lucornr; TOlus=iproc_world   !TOulr=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
           comm=MPI_COMM_GRID
@@ -9390,10 +9392,10 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           endif
           if (type==BILIN) then
             call bilin_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
-          elseif (type==BIQUAD .or. type==BICUB) then
+          elseif (type==BIQUAD .or. type==BICUB .or. type==QUADSPLINE) then
             call biquad_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
           else
-            call stop_it('interpolate_yy: Only bilinear and biquadratic interpolations implemented')
+            call stop_it('interpolate_yy: Only bilinear, biquadratic and bicubic interpolations implemented')
           endif
 
         enddo; enddo
