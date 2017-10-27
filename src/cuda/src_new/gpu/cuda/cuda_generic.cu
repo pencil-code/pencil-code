@@ -24,6 +24,7 @@ typedef struct {
     Grid            d_grid, d_grid_dst; //Core arrays
     Slice           d_slice;            //Slice arrays
     ReductionArray  d_reduct_arr;       //Reduction arrays
+    real*           d_halobuffer;       //Buffer used for multi-node halo transfers
 } GPUContext;
 
 static GPUContext* gpu_contexts;
@@ -77,6 +78,7 @@ void init_cuda_generic(CParamConfig* cparamconf, RunConfig* runconf)
         init_grid_cuda_core(&ctx->d_grid, &ctx->d_grid_dst, &ctx->d_cparams);
         init_slice_cuda_generic(&ctx->d_slice, &ctx->d_cparams, &h_run_params);
         init_reduction_array_cuda_generic(&ctx->d_reduct_arr, &ctx->d_cparams);
+        init_halo_cuda_core(ctx->d_halobuffer); //Note: Called even without multi-node
     }
 }
 
@@ -94,6 +96,7 @@ void destroy_cuda_generic()
         destroy_slice_cuda_generic(&ctx->d_slice);
         destroy_reduction_array_cuda_generic(&ctx->d_reduct_arr);
         destroy_grid_cuda_core(&ctx->d_grid, &ctx->d_grid_dst);
+        destroy_halo_cuda_core(ctx->d_halobuffer);
         cudaDeviceSynchronize(); cudaDeviceReset();
     }
     free(gpu_contexts);
@@ -410,6 +413,27 @@ void load_forcing_params_cuda_generic(ForcingParams* forcing_params)
     }
 }
 
+
+void load_outer_halos_cuda_generic(Grid* h_grid, real* h_halobuffer)
+{
+    for (int device_id=0; device_id < num_devices; ++device_id) {
+        cudaSetDevice(device_id);
+        GPUContext* ctx = &gpu_contexts[device_id];
+        load_outer_halo_cuda_core(&ctx->d_grid, ctx->d_halobuffer, &ctx->d_cparams, 
+                                  h_grid, h_halobuffer, &h_cparams, &ctx->start_idx);
+    }
+}
+
+
+void store_internal_halos_cuda_generic(Grid* h_grid, real* h_halobuffer)
+{
+    for (int device_id=0; device_id < num_devices; ++device_id) {
+        cudaSetDevice(device_id);
+        GPUContext* ctx = &gpu_contexts[device_id];
+        store_internal_halo_cuda_core(h_grid, h_halobuffer, &h_cparams, &ctx->start_idx,
+                                     &ctx->d_grid, ctx->d_halobuffer, &ctx->d_cparams);
+    }
+}
 
 
 

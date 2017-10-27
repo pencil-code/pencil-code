@@ -11,6 +11,8 @@ void destroy_cuda_generic();
 void load_grid_cuda_generic(Grid* h_grid);
 void store_grid_cuda_generic(Grid* h_grid);
 void load_forcing_params_cuda_generic(ForcingParams* forcing_params);
+void load_outer_halos_cuda_generic(Grid* g, real* halo);
+void store_internal_halos_cuda_generic(Grid* g, real* halo);
 
 //Solver functions
 void integrate_cuda_generic(real dt);

@@ -20,11 +20,16 @@ extern const char* impl_type_names[];
 
 
 //Memory management functions
+//Single-node
 typedef void (*GPUInitFunc)(CParamConfig* cparamconf, RunConfig* runconf);
 typedef void (*GPUDestroyFunc)();
 typedef void (*GPULoadFunc)(Grid* g);
 typedef void (*GPUStoreFunc)(Grid* g);
 typedef void (*GPULoadForcingParamsFunc)(ForcingParams* fp);
+//Multi-node
+typedef void (*GPULoadOuterHalosFunc)(Grid* g, real* halo);
+typedef void (*GPUStoreInternalHalosFunc)(Grid* g, real* halo);
+
 
 //GPU solver functions
 typedef void (*GPUIntegrateFunc)(real dt);
@@ -37,11 +42,13 @@ typedef void (*GPUGetSliceFunc)(Slice* s);
 
 
 //Memory management interface
-extern GPUInitFunc              GPUInit;
-extern GPUDestroyFunc           GPUDestroy;
-extern GPULoadFunc              GPULoad;  //Load from host to device
-extern GPUStoreFunc             GPUStore; //Store from device to host
-extern GPULoadForcingParamsFunc GPULoadForcingParams;
+extern GPUInitFunc               GPUInit;
+extern GPUDestroyFunc            GPUDestroy;
+extern GPULoadFunc               GPULoad;  //Load from host to device
+extern GPUStoreFunc              GPUStore; //Store from device to host
+extern GPULoadForcingParamsFunc  GPULoadForcingParams;
+extern GPULoadOuterHalosFunc     GPULoadOuterHalos;
+extern GPUStoreInternalHalosFunc GPULoadInternalHalos;
 
 //GPU solver interface
 extern GPUIntegrateFunc     GPUIntegrate;

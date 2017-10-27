@@ -209,6 +209,44 @@ void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h
 }
 
 
+void init_halo_cuda_core(real* d_halo)
+{
+    printf("init_halo_cuda_core\n");
+/*
+* Allocate memory for d_halo here
+*   CUDA_ERRCHK( cudaMalloc(....));
+*/
+}
+
+
+void destroy_halo_cuda_core(real* d_halo)
+{
+    printf("destroy_halo_cuda_core\n");
+/*
+*   Free d_halo here
+*  CUDA_ERRCHK( cudaFree(d_halo) );
+*/
+}
+
+void load_outer_halo_cuda_core(Grid* d_grid, real* d_halobuffer, CParamConfig* d_cparams,
+                               Grid* h_grid, real* h_halobuffer, CParamConfig* h_cparams, vec3i* h_start_idx)
+{
+    printf("load_outer_halo_cuda_core\n");
+/*
+    Load outer halo from h_halobuffer to d_halobuffer (copyouterhalostodevice())
+    and update the halo of the device (fillhalos)
+*/
+}
+
+void store_internal_halo_cuda_core(Grid* h_grid, real* h_halobuffer, CParamConfig* h_cparams, vec3i* h_start_idx, 
+                                   Grid* d_grid, real* d_halobuffer, CParamConfig* d_cparams)
+{
+    printf("store_internal_halo_cuda_core\n");
+/*
+    Store internal halos in d_halobuffer to host memory in h_halobuffer/h_grid
+*/
+}
+
 
 
 

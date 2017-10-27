@@ -4,11 +4,14 @@
 
 
 //Memory management interface
-GPUInitFunc    GPUInit                    = &init_cuda_generic;
-GPUDestroyFunc GPUDestroy                 = &destroy_cuda_generic;
-GPULoadFunc    GPULoad                    = &load_grid_cuda_generic;  //Load from host to device
-GPUStoreFunc   GPUStore                   = &store_grid_cuda_generic; //Store from device to host
-GPULoadForcingParamsFunc GPULoadForcingParams = &load_forcing_params_cuda_generic;
+GPUInitFunc               GPUInit               = &init_cuda_generic;
+GPUDestroyFunc            GPUDestroy            = &destroy_cuda_generic;
+GPULoadFunc               GPULoad               = &load_grid_cuda_generic;  //Load from host to device
+GPUStoreFunc              GPUStore              = &store_grid_cuda_generic; //Store from device to host
+GPULoadForcingParamsFunc  GPULoadForcingParams  = &load_forcing_params_cuda_generic;
+GPULoadOuterHalosFunc     GPULoadOuterHalos     = &load_outer_halos_cuda_generic;
+GPUStoreInternalHalosFunc GPUStoreInternalHalos = &store_internal_halos_cuda_generic;
+
 
 //GPU solver interface
 GPUIntegrateFunc     GPUIntegrate     = &integrate_cuda_generic;
@@ -21,10 +24,10 @@ GPUGetSliceFunc  GPUGetSlice = &get_slice_cuda_generic;
 
 //Names for grid types. TODO note. Possibly error prone, but how else to define these at compile time
     //without additional init functions or malloc/frees?
-const char* impl_type_names[] = {"CUDA_GENERIC",
-                                 //"CUDA_19P",
-                                 //"CUDA_55P",
-                                 "CUDA_MAXWELL"}; 
+const char* impl_type_names[] = {"CUDA_GENERIC"};/*,
+                                 "CUDA_19P",
+                                 "CUDA_55P",
+                                 "CUDA_MAXWELL"};*/
 
 #define DO_MINIMAL_BUILD
 #ifdef DO_MINIMAL_BUILD
@@ -38,7 +41,7 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
 #else
     //#include "cuda/cuda_19p.cuh"
     //#include "cuda/cuda_55p.cuh"
-    #include "cuda/cuda_maxwell.cuh"
+    //#include "cuda/cuda_maxwell.cuh"
 
     //Select the GPU implementation (yes, this could be done much more nicely
     //with classes and inheritance, but doing this the "Pure C Way" makes it
@@ -46,11 +49,13 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
     void GPUSelectImplementation(ImplType type) {
         if (type == CUDA_GENERIC) {
             //Memory management interface
-            GPUInit              = &init_cuda_generic;
-            GPUDestroy           = &destroy_cuda_generic;
-            GPULoad              = &load_grid_cuda_generic;  //Load from host to device
-            GPUStore             = &store_grid_cuda_generic; //Store from device to host
-            GPULoadForcingParams = &load_forcing_params_cuda_generic;
+            GPUInit                 = &init_cuda_generic;
+            GPUDestroy              = &destroy_cuda_generic;
+            GPULoad                 = &load_grid_cuda_generic;  //Load from host to device
+            GPUStore                = &store_grid_cuda_generic; //Store from device to host
+            GPULoadForcingParams    = &load_forcing_params_cuda_generic;
+            GPULoadOuterHalos       = &load_outer_halos_cuda_generic;
+            GPUStoreInternalHalos   = &store_internal_halos_cuda_generic;
 
             //GPU solver interface
             GPUIntegrate     = &integrate_cuda_generic;
@@ -92,7 +97,7 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
 
             //Misc
             GPUGetSlice = &get_slice_cuda_55p;
-        }*/ else if (type == CUDA_MAXWELL) {
+        } else if (type == CUDA_MAXWELL) {
             //Memory management interface
             GPUInit              = &init_cuda_maxwell;
             GPUDestroy           = &destroy_cuda_maxwell;
@@ -108,7 +113,7 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
 
             //Misc
             GPUGetSlice = &get_slice_cuda_maxwell;
-        } else {
+        }*/ else {
             CRASH("Invalid implementation type!");
         }
     }
