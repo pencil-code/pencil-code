@@ -386,10 +386,24 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 	__shared__ float mom_x[RK_THREADS_PER_BLOCK][BOUND_SIZE+1];
 	__shared__ float mom_y[RK_THREADS_PER_BLOCK][BOUND_SIZE+1];
 	__shared__ float mom_z[RK_THREADS_PER_BLOCK][BOUND_SIZE+1];
-		
+
+	
 	//---------------------------------------------------------
 	
+	
 	for(int zplane = -3 ; zplane < RK_ELEMS_PER_THREAD_FIRST + 3; zplane++) {
+
+		//if ( blockIdx.x == blockIdx.y && threadIdx.x == 0 && blockIdx.x == blockIdx.y && blockIdx.y == 0 && zplane == -3){
+		//	printf("stop: d_DT = %f inside kernel\n", d_DT);
+		//}
+		// debug -- check if halos are correctly copied 
+		/*if ( blockIdx.x == blockIdx.y && blockIdx.x == 0 && threadIdx.x == 0 && threadIdx.x == threadIdx.y && isubstep == 1 && zplane == -3){
+			for(int k = 0; k < 3; k++){
+				for(int i = 0; i < d_NX; i++){
+					printf("d_uu_x[%d] = %f \n", (i+(k*d_NX)+((zplane+6)*d_NX*d_NY)), d_uu_x[(i+(k*d_NX)+((zplane+6)*d_NX*d_NY))]);
+				}
+			}
+		}*/
 
 		switch (isubstep) {
 			case 1:
@@ -499,8 +513,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 				//Solve derivatives
-				const float ddz_lnrho = der_scalz( behind3_lnrho, behind2_lnrho, behind1_lnrho, 
-		                                           infront1_lnrho, infront2_lnrho, infront3_lnrho );
+				const float ddz_lnrho = 0;//der_scalz( behind3_lnrho, behind2_lnrho, behind1_lnrho, infront1_lnrho, infront2_lnrho, infront3_lnrho );
 				const float ddz_uu_x =  der_scalz( behind3_uu_x, behind2_uu_x, behind1_uu_x, 
 		                                           infront1_uu_x, infront2_uu_x, infront3_uu_x );
 				const float ddz_uu_y =  der_scalz( behind3_uu_y, behind2_uu_y, behind1_uu_y, 
@@ -508,12 +521,12 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				const float ddz_uu_z =  der_scalz( behind3_uu_z, behind2_uu_z, behind1_uu_z, 
 		                                           infront1_uu_z, infront2_uu_z, infront3_uu_z );
 	
-				const float ddx_lnrho = der_scalx(sid_row, sid_col, s_lnrho);
+				const float ddx_lnrho = 0;//der_scalx(sid_row, sid_col, s_lnrho);
 				const float ddx_uu_x  = der_scalx(sid_row, sid_col, s_uu_x);
 				const float ddx_uu_y  = der_scalx(sid_row, sid_col, s_uu_y);
 				const float ddx_uu_z  = der_scalx(sid_row, sid_col, s_uu_z);
 
-				const float ddy_lnrho = der_scaly(sid_row, sid_col, s_lnrho);
+				const float ddy_lnrho = 0;//der_scaly(sid_row, sid_col, s_lnrho);
 				const float ddy_uu_x  = der_scaly(sid_row, sid_col, s_uu_x);
 				const float ddy_uu_y  = der_scaly(sid_row, sid_col, s_uu_y);
 				const float ddy_uu_z  = der_scaly(sid_row, sid_col, s_uu_z);
@@ -591,21 +604,27 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 					const float div_uux = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_ux[0]); 
 					const float div_uuy = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_uy[0]);
 					const float div_uuz = d_NU_VISC*(1.0f/3.0f)*(div_z_partial_uz[0]);
+
 					
 					w_uu_x = ALPHA*w_uu_x + d_DT*(mom_x[(threadIdx.y*RK_THREADS_X)+threadIdx.x][(4+zplane+1)%4] + div_uux);
 					w_uu_y = ALPHA*w_uu_y + d_DT*(mom_y[(threadIdx.y*RK_THREADS_X)+threadIdx.x][(4+zplane+1)%4] + div_uuy);
 					w_uu_z = ALPHA*w_uu_z + d_DT*(mom_z[(threadIdx.y*RK_THREADS_X)+threadIdx.x][(4+zplane+1)%4] + div_uuz);
 				
 					d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_x + BETA*w_uu_x;
+					//d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET] = d_uu_x[grid_idx-3*d_GRID_Z_OFFSET];//debug
 					d_uu_y_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_y + BETA*w_uu_y;
-					d_uu_z_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_z + BETA*w_uu_z;	
-
-					
+					d_uu_z_dest [grid_idx-3*d_GRID_Z_OFFSET] = behind3_uu_z + BETA*w_uu_z;
+				
 					d_w_uu_x [w_grid_idx-3*d_W_GRID_Z_OFFSET] = w_uu_x;
 					d_w_uu_y [w_grid_idx-3*d_W_GRID_Z_OFFSET] = w_uu_y;
 					d_w_uu_z [w_grid_idx-3*d_W_GRID_Z_OFFSET] = w_uu_z;
-					
-					
+
+					//if ( threadIdx.x == threadIdx.y && threadIdx.x == 0 && threadIdx.z == 0 && blockIdx.x == blockIdx.y && blockIdx.x == blockIdx.z && blockIdx.z == 0) {//threadIdx.x == threadIdx.y && threadIdx.x == 0 && blockIdx.x == 1 && blockIdx.y == 16){
+					//	printf("d_uu_x = %f, d_uu_x_dest = %f @ zplane = %d & widx = %d\n", d_uu_x[grid_idx-3*d_GRID_Z_OFFSET], d_uu_x_dest[grid_idx-3*d_GRID_Z_OFFSET],zplane, 					//	w_grid_idx-3*d_W_GRID_Z_OFFSET);
+					//}
+					//if(grid_idx-3*d_GRID_Z_OFFSET == 54728){
+					//	printf("d_uu_x_dest [54728] = %f\n", d_uu_x_dest [grid_idx-3*d_GRID_Z_OFFSET]);
+					//}		
 				}
 		
 				// Shift
@@ -722,6 +741,9 @@ void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_u
         rungekutta_step_first_half<0><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
                                                                                d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, 
                                                                                d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
+	
+	cudaDeviceSynchronize();
+	//printf("dt = %f in integrators_v5c.cu", dt);
 /*
 	//cudaDeviceSynchronize();
 	//checkKernelErr();
@@ -803,7 +825,7 @@ void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_u
 	cudaEventDestroy( stop );
 	printf("A Single rungekutta step time elapsed: \t%f ms\n", time);
 */
-	cudaDeviceSynchronize();
+	
 
 }
 
