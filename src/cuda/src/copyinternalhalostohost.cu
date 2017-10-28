@@ -8,7 +8,7 @@ Omer Anjum
 Very first version of code written. 
 */
 #include <stdio.h>
-
+#include "copyhalos.cuh"
 /****************************************************************************************/
 __global__ void copy_internal_rows(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
@@ -77,7 +77,7 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 
 	//Create streams for executing the boundary copy 
 	//kernels concurrently.
-	static cudaStream_t per_row_stream = NULL; 
+	/*static cudaStream_t per_row_stream = NULL; 
 	if (per_row_stream == NULL)
 		cudaStreamCreate(&per_row_stream);
 	static cudaStream_t per_col_stream = NULL; 
@@ -85,7 +85,7 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 		cudaStreamCreate(&per_col_stream);
 	static cudaStream_t per_frtbk_stream = NULL; 
 	if (per_frtbk_stream == NULL)
-		cudaStreamCreate(&per_frtbk_stream);
+		cudaStreamCreate(&per_frtbk_stream);*/
 
 	//Copy the top and bottom halos around the compute grid
 	threadsPerBlock.x = 6;// increase to 32
@@ -97,8 +97,10 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 	blocksPerGrid.z = nz-(2*halo_depth);
 	//printf(" %d block in z= %d",threadsPerBlock.z, blocksPerGrid.z);
 	//printf("\n----------------------\ngoing inside the kernel to copy rows\n-----------------------------\n");
-	copy_internal_rows<<<blocksPerGrid, threadsPerBlock, 0, per_row_stream>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
-	cudaThreadSynchronize();
+	copy_internal_rows<<<blocksPerGrid, threadsPerBlock>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
+	checkKernelErr();
+	cudaDeviceSynchronize();
+	
 
 	//Copy the top and bottom halos around the compute grid
 	threadsPerBlock.x = halo_depth; // do not change
@@ -111,8 +113,10 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 	blocksPerGrid.z = nz-(2*halo_depth);
 	//printf(" %d block in z= %d",threadsPerBlock.z, blocksPerGrid.z);
 	//printf("\n----------------------\ngoing inside the kernel to copy cols\n-----------------------------\n");
-	copy_internal_cols<<<blocksPerGrid, threadsPerBlock, 0, per_col_stream>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
-	cudaThreadSynchronize();
+	copy_internal_cols<<<blocksPerGrid, threadsPerBlock>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
+	checkKernelErr();
+	cudaDeviceSynchronize();
+	
 
 	//Copy the front and back halos around the compute grid
 	threadsPerBlock.x = 4;// increase to 32
@@ -125,9 +129,13 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 	blocksPerGrid.z = halo_depth;
 	//printf(" %d block in z= %d",threadsPerBlock.z, blocksPerGrid.z);
 	//printf("\n----------------------\ngoing inside the kernel to copy frtbk\n-----------------------------\n");
-	copy_internal_frtbk<<<blocksPerGrid, threadsPerBlock, 0, per_frtbk_stream>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
-	cudaThreadSynchronize();
-
+	copy_internal_frtbk<<<blocksPerGrid, threadsPerBlock>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
+	checkKernelErr();
+	cudaDeviceSynchronize();
+	
+	//checkErr(cudaStreamDestroy(per_row_stream));
+	//checkErr(cudaStreamDestroy(per_col_stream));
+	//checkErr(cudaStreamDestroy(per_frtbk_stream));
 	//printf("\n came back \n");
 
 return;
