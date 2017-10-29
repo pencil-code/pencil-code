@@ -6,9 +6,8 @@
 hostobjs = 
 #model_collectiveops.o
 
-deviceobjs = diagnostics.o integrators_v5.o collectiveops.o copyHalosConcur.o timestep.o gpu_astaroth.o
+deviceobjs = diagnostics.o integrators_v5.o collectiveops.o copyHalosConcur.o timestep.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
 #boundcond.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
-#copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
 
 hostcpps = initutils.cpp io.cpp model_collectiveops.cpp
 devicecus = slice.cu collectiveops.cu diagnostics.cu integrators_v5.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
