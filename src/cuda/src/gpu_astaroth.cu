@@ -29,7 +29,7 @@
 #include "../forcing_c.h"
 #include "../sub_c.h"
 #include "defines_PC.h"
-//#include "copyhalos.cuh"
+#include "copyhalos.cuh"
 #include "copyHalosConcur.cuh"
 
 //DEBUG
@@ -292,7 +292,7 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
         // Allocating arrays for halos
 
-	if (omerCopy)
+	if (copyOmer)
 	{
        		//halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
         	printf("mx = %d, my = %d, mz = %d, nghost = %d", mx, my, mz, nghost);
