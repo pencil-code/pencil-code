@@ -46,15 +46,16 @@
 #include <fcntl.h>
 #include <dlfcn.h>
 
+bool copyOmer=false;
 int halo_size;
 float *halo; 
 float *d_halo;
+float *output;
 
 #include "dfdf.cuh"
 
-// Device pointer for diagnostic quantities
-
-float *d_partial_result, *d_scaldiag;                    //Device pointer for partial result for the reductions
+//Device pointer for partial results of the reductions.
+float *d_partial_result, *d_scaldiag;
 
 /***********************************************************************************************/
 inline void swap_ptrs(float** a, float** b)
@@ -66,8 +67,6 @@ inline void swap_ptrs(float** a, float** b)
 	*b = temp;
 }
 /***********************************************************************************************/
-//using namespace PC;
-
 void load_dconsts()
 {
 //  Loads constants into device memory
@@ -218,17 +217,10 @@ printf("nxgrid,nygrid,nzgrid= %d %d %d \n", nxgrid,nygrid,nzgrid);
 printf("l1,l2,m1,m2,n1,n2= %d %d %d %d %d %d \n", l1,l2,m1,m2,n1,n2);
 printf("xyz0, xyz1 %f %f %f %f %f %f \n", xyz0[0], xyz0[1], xyz0[2], xyz1[0], xyz1[1], xyz1[2]); 
 printf("Lxyz %f %f %f \n", lxyz[0], lxyz[1], lxyz[2]); 
-printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN");
-printf("halo_size= %d \n",halo_size);
 }
 printf("[xyz]minmax %f %f %f %f %f %f \n", x[l1-1], x[l2-1], y[m1-1], y[m2-1], z[n1-1], z[n2-1]); 
 printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z[0], z[mz-1]); */
 
-	// Allocating arrays for halos
-
-	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
-	halo = (float*) malloc(sizeof(float)*halo_size);
-	checkErr(cudaMalloc(&d_halo, sizeof(float)*halo_size));
 	// Allocate device memory
 
 	checkErr( cudaMalloc(&d_lnrho, sizeof(float)*GRID_SIZE) );
@@ -297,7 +289,21 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 
 	// Load constants into device memory.
 	load_dconsts();
-        initializeCopying();
+
+        // Allocating arrays for halos
+
+	if (omerCopy)
+	{
+       		//halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
+        	printf("mx = %d, my = %d, mz = %d, nghost = %d", mx, my, mz, nghost);
+        	halo_size = (mx*my*mz) - (mx-2*nghost)*(my-2*nghost)*(mz-2*nghost);
+        	printf("in initializeGPU halo_size = %d\n",halo_size);
+        	halo = (float*) malloc(sizeof(float)*halo_size);
+        	checkErr(cudaMalloc((float**)&d_halo, sizeof(float)*halo_size));
+        	printf("Inside initializeGPU in gpu_astaroth &halo, &d_halo  %p %p pointing to  %p %p\n",&halo,&d_halo, halo, d_halo);
+	}
+	else
+        	initializeCopying();
 }
 /***********************************************************************************************/
 float max_advec()
@@ -333,12 +339,7 @@ float max_diffus()
 }
 /***********************************************************************************************/
 extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full=false){
-	//need to make those calls asynchronize
-	/*copyouterhalostodevice(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
-	copyouterhalostodevice(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
-	copyouterhalostodevice(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
-	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
-//printf(full ? "full\n" : "not full\n");
+
 //int offset=mx*my*nghost + mx*nghost + nghost;     // index of first element in comp domain
 /*if (iproc==0) {
 printf("uu_x= %f %f %f \n", *(uu_x+offset),*(uu_x+offset+1), *(uu_x+offset+2));
@@ -358,26 +359,61 @@ printf("\n");*/
 
         if (full) 
 	{
-          copyAll(lnrho, d_lnrho);
-          copyAll(uu_x, d_uu_x);
-          copyAll(uu_y, d_uu_y);
-          copyAll(uu_z, d_uu_z);
-   	}
+        	printf("Stop: Going to copy grid to GPU or copyOuterHalos inside gpu_astaroth.cu\n");
+        	if (copyOmer) 
+		{
+               	//----------------------------------------------------------
+               	// Load data into device memory
+               	//----------------------------------------------------------
+                	//halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
+                	//halo = (float*) malloc(sizeof(float)*halo_size);
+                	printf("Stop: Going to copy grid to GPU inside gpu_astaroth.cu\n");
+                	checkErr( cudaMemcpy(d_lnrho, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                	checkErr( cudaMemcpy(d_uu_x, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                	checkErr( cudaMemcpy(d_uu_y, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                	checkErr( cudaMemcpy(d_uu_z, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                //Init also the dest arrays to avoid roaming NaN values
+		//MR: Should be avoided.
+                	checkErr( cudaMemcpy(d_lnrho_dest, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                	checkErr( cudaMemcpy(d_uu_x_dest, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                	checkErr( cudaMemcpy(d_uu_y_dest, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+                	checkErr( cudaMemcpy(d_uu_z_dest, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+		}
+		else
+		{
+        		copyAll(lnrho, d_lnrho);
+        		copyAll(uu_x, d_uu_x);
+        		copyAll(uu_y, d_uu_y);
+        		copyAll(uu_z, d_uu_z);
+   		}
+	}
 	else
 	{
-          copyOuterHalos(lnrho, d_lnrho);
-          copyOuterHalos(uu_x, d_uu_x);
-          copyOuterHalos(uu_y, d_uu_y);
-          copyOuterHalos(uu_z, d_uu_z);
+        	if (copyOmer) 
+		{
+        		printf("Inside substepGPU in gpu_astaroth &halo, &d_halo  %p %p pointing to  %p %p\n",&halo,&d_halo, halo, d_halo);
+                	printf("Stop: Going to call copyouterhalostodevice inside gpu_astaroth.cu\n");
+                	copyouterhalostodevice(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
+                	copyouterhalostodevice(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
+                	copyouterhalostodevice(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
+                	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);
+		}
+		else
+		{
+        		copyOuterHalos(lnrho, d_lnrho);
+        		copyOuterHalos(uu_x, d_uu_x);
+        		copyOuterHalos(uu_y, d_uu_y);
+        		copyOuterHalos(uu_z, d_uu_z);
+		}
 	}
 
-float lnrhoslice[mx];
-/*cudaMemcpy(&lnrhoslice,d_lnrho+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
+/*float lnrhoslice[mx];
+  cudaMemcpy(&lnrhoslice,d_lnrho+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
   printf("lnrho nach Hintransfer: isubstep= %d \n",isubstep);
   for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
   printf("\n");
 
-cudaMemcpy(&lnrhoslice,d_uu_x+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
+  cudaMemcpy(&lnrhoslice,d_uu_x+offset,mx*sizeof(float),cudaMemcpyDeviceToHost);
   printf("uu_x nach Hintransfer: isubstep= %d \n",isubstep);
   for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
   printf("\n");
@@ -415,6 +451,7 @@ cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
         }
         checkErr(cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)));
 
+        printf("Calling rungekutta2N_cuda\n");
 	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
                           d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
 
@@ -437,10 +474,6 @@ cudaMemcpy(&val3, d_lnrho+offset+2, sizeof(float), cudaMemcpyDeviceToHost);
 //printf("d_lnrho-after= %e %e %e \n", val1, val2, val3);
 }
 */
-	/*copyinternalhalostohost(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
-	copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
-	copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
-	copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
 
 //cudaMemcpy(d_uu_x,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
 //cudaMemcpy(d_uu_y,&zero,mx*my*mz*sizeof(float),cudaMemcpyHostToDevice);
@@ -451,33 +484,56 @@ printf("lnrho vor Backtransfer: isubstep= %d \n",isubstep);
 for (int ii=0; ii<13; ii++) printf(" %f,", lnrhoslice[ii]);
 printf("\n");*/
 
-       	copyInnerHalos(lnrho, d_lnrho);
-       	copyInnerHalos(uu_x, d_uu_x);
-       	copyInnerHalos(uu_y, d_uu_y);
-       	copyInnerHalos(uu_z, d_uu_z);
+       if (copyOmer) 
+        {
+                //copyinternalhalostohost(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
+                copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
+                //copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
+                //copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);
+                printf("Stop: after copyinternalhalostohost\n");
+        }
+	else
+	{
+       		copyInnerHalos(lnrho, d_lnrho);
+       		copyInnerHalos(uu_x, d_uu_x);
+       		copyInnerHalos(uu_y, d_uu_y);
+       		copyInnerHalos(uu_z, d_uu_z);
+	}
 
         if (ldiagnos) timeseries_diagnostics_cuda(it, dt, t);
 }
 /***********************************************************************************************/
 extern "C" void copyFarray(float *uu_x, float *uu_y, float *uu_z, float *lnrho)
 {
-	copyInnerAll(lnrho, d_lnrho);
-        copyInnerAll(uu_x, d_uu_x);
-        copyInnerAll(uu_y, d_uu_y);
-        copyInnerAll(uu_z, d_uu_z);
+        if (copyOmer)
+        {
+                printf("Stop: Inside full_inner to copy grid to host or inner halos to host\n");
+
+                checkErr( cudaMemcpy(lnrho, d_lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+                checkErr( cudaMemcpy(uu_x,  d_uu_x,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+                checkErr( cudaMemcpy(uu_y,  d_uu_y,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+                checkErr( cudaMemcpy(uu_z,  d_uu_z,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+        }
+        else
+	{
+		copyInnerAll(lnrho, d_lnrho);
+        	copyInnerAll(uu_x, d_uu_x);
+        	copyInnerAll(uu_y, d_uu_y);
+        	copyInnerAll(uu_z, d_uu_z);
+        }
 }
 /***********************************************************************************************/
 extern "C" void finalizeGPU()
 {
 // Frees memory allocated on GPU.
-//return;
+
+        printf("stop1: inside finalizeGPU in gpy_astaroth.cu\n");
         //Destroy timers
         //cudaEventDestroy( start );
         //cudaEventDestroy( stop );
 
         //Free device memory of grids
         checkErr( cudaFree(d_lnrho) );
-//printf("vor helper, iproc= %d\n",iproc);
         checkErr( cudaFree(d_uu_x) );
         checkErr( cudaFree(d_uu_y) );
         checkErr( cudaFree(d_uu_z) );
@@ -493,7 +549,14 @@ extern "C" void finalizeGPU()
         checkErr( cudaFreeHost(slice_uu_y) );
         checkErr( cudaFreeHost(slice_uu_z) );*/
 
+        free(halo);
         finalizeCopying();
+
+        printf("stop2: inside finalizeGPU in gpy_astaroth.cu\n");
+        cudaDeviceSynchronize();
+        //checkErr(cudaDeviceReset());
+
         cudaDeviceReset();
+        printf("GPU finalized %d", iproc);
 }
 /***********************************************************************************************/
