@@ -20,6 +20,7 @@ option (USE_CUDA "Determines whether we compile the CUDA code" ON)
 find_package(CUDA REQUIRED)
 set (CUDA_SEPARABLE_COMPILATION ON)
 set (CUDA_PROPAGATE_HOST_FLAGS ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #Subdirectories
 include_directories(.)#So that the following modules can include their parent dir (f.ex. #include "common/stuff.h" instead of "../common/stuff")
@@ -62,14 +63,17 @@ set (CUDA_GENERIC
 #set (CUDA_MODULES ${CUDA_CORE} ${CUDA_GENERIC} ${CUDA_55P} ${CUDA_MAXWELL} ${CUDA_19P})
 set (CUDA_MODULES ${CUDA_CORE} ${CUDA_GENERIC})
 
-CUDA_ADD_LIBRARY (cuda_modules ${CUDA_MODULES})
+
+CUDA_ADD_LIBRARY (cuda_modules ${CUDA_MODULES} OPTIONS --compiler-options "-fPIC")
+CUDA_ADD_LIBRARY(ac SHARED gpu_astaroth_new.cc)
+target_link_libraries(ac gpu cuda_modules common)
 
 #Definitions
 #add_definitions(-DSRC_DIR=${CMAKE_SOURCE_DIR})
 
 #Link libraries
-cuda_add_executable(ac_run gpu_astaroth_new.cc)
-target_link_libraries (ac_run gpu cuda_modules common)
+#cuda_add_executable(ac_run gpu_astaroth_new.cc)
+#target_link_libraries (ac_run gpu cuda_modules common)
 
 
 
