@@ -2164,7 +2164,7 @@ module Particles_map
 !
 !  16-jul-08/kapelrud: coded
 !
-      use Solid_Cells, only: interpolate_linear_ogrid, map_nearest_grid_ogrid, &
+      use Solid_Cells, only: interpolate_particles_ogrid, map_nearest_grid_ogrid, &
                              r_int_outer, xorigo_ogrid
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -2197,9 +2197,7 @@ module Particles_map
                 f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
           else
             call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
-            call interpolate_linear_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
-            !call interpolate_linear( &
-            !    f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
+            call interpolate_particles_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
           endif
         enddo
       endif

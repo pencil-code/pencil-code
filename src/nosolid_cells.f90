@@ -277,7 +277,7 @@ module Solid_Cells
 !      
     endsubroutine map_nearest_grid_ogrid
 !***********************************************************************
-    subroutine interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+    subroutine interpolate_particles_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
 !
 !  Dummy routine
 !
@@ -295,6 +295,6 @@ module Solid_Cells
       endif
       gp=0.
 !
-    endsubroutine interpolate_linear_ogrid
+    endsubroutine interpolate_particles_ogrid
 !***********************************************************************
 endmodule Solid_Cells

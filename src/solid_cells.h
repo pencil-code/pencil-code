@@ -28,4 +28,4 @@ public ::  r_ogrid, r_int_outer
 public ::  xorigo_ogrid
 public ::  map_nearest_grid_ogrid
 public ::  interpolate_linear_ogrid
-
+public ::  interpolate_particles_ogrid
