@@ -62,13 +62,10 @@ __device__ float der_scalx(	int sid_row, int sid_column,
 	float res ;
 
 	res = (
-	-            s_scal[sid_row][sid_column-3] 
-	+ d_FLT_9  * s_scal[sid_row][sid_column-2] 
-	- d_FLT_45 * s_scal[sid_row][sid_column-1] 
-	+ d_FLT_45 * s_scal[sid_row][sid_column+1] 
-	- d_FLT_9  * s_scal[sid_row][sid_column+2] 
-	+            s_scal[sid_row][sid_column+3] )
-	* d_DIFF1_DX_DIV;
+	-            (s_scal[sid_row][sid_column-3]-s_scal[sid_row][sid_column+3]) 
+	+ d_FLT_9  * (s_scal[sid_row][sid_column-2]-s_scal[sid_row][sid_column+2]) 
+	- d_FLT_45 * (s_scal[sid_row][sid_column-1]-s_scal[sid_row][sid_column+1]) 
+	      )* d_DIFF1_DX_DIV;
 	// / ( d_FLT_60*d_DX ); 
 
 	return res;
@@ -85,13 +82,10 @@ __device__ float der_scaly(	int sid_row, int sid_column,
 	float res ;
 
 	res = (
-	-            s_scal[sid_row-3][sid_column] 
-	+ d_FLT_9  * s_scal[sid_row-2][sid_column] 
-	- d_FLT_45 * s_scal[sid_row-1][sid_column] 
-	+ d_FLT_45 * s_scal[sid_row+1][sid_column] 
-	- d_FLT_9  * s_scal[sid_row+2][sid_column] 
-	+            s_scal[sid_row+3][sid_column] )
-	* d_DIFF1_DY_DIV;
+	-            (s_scal[sid_row-3][sid_column]-s_scal[sid_row+3][sid_column]) 
+	+ d_FLT_9  * (s_scal[sid_row-2][sid_column]-s_scal[sid_row+2][sid_column]) 
+	- d_FLT_45 * (s_scal[sid_row-1][sid_column]-s_scal[sid_row+1][sid_column]) 
+	      )* d_DIFF1_DY_DIV;
 	// / ( d_FLT_60*d_DY ); //MV: Made these divisions to go away. -> need only be calculated once and used as a constant. 
 
    return res;
@@ -107,13 +101,10 @@ __device__ float der_scalz(	float behind3, float behind2, float behind1,
 	float res ;
 
 	res = (
-	-            behind3 
-	+ d_FLT_9  * behind2
-	- d_FLT_45 * behind1 
-	+ d_FLT_45 * infront1 
-	- d_FLT_9  * infront2 
-	+            infront3 )
-	* d_DIFF1_DZ_DIV;
+	-            (behind3-infront3)
+	+ d_FLT_9  * (behind2-infront2)
+	- d_FLT_45 * (behind1-infront1) 
+	      )* d_DIFF1_DZ_DIV;
 	// / ( d_FLT_60*d_DZ );
 
 	return res;
@@ -133,18 +124,14 @@ __device__ float der2_scalx(int sid_row, int sid_column, float s_scal[SHARED_SIZ
 	float res;
 
 	res = (
-	  d_FLT_2   * s_scal[sid_row][sid_column-3]
-	- d_FLT_27  * s_scal[sid_row][sid_column-2] 
-	+ d_FLT_270 * s_scal[sid_row][sid_column-1] 
-	- d_FLT_490 * s_scal[sid_row][sid_column  ]
-	+ d_FLT_270 * s_scal[sid_row][sid_column+1]
-	- d_FLT_27  * s_scal[sid_row][sid_column+2]
-	+ d_FLT_2   * s_scal[sid_row][sid_column+3] )
-	* d_DIFF2_DX_DIV;
+	  d_FLT_2   * (s_scal[sid_row][sid_column-3]+s_scal[sid_row][sid_column+3])
+	- d_FLT_27  * (s_scal[sid_row][sid_column-2]+s_scal[sid_row][sid_column+2]) 
+	+ d_FLT_270 * (s_scal[sid_row][sid_column-1]+s_scal[sid_row][sid_column+1]) 
+	- d_FLT_490 *  s_scal[sid_row][sid_column  ]
+	      )* d_DIFF2_DX_DIV;
 	// / ( d_FLT_180*d_DX*d_DX );
 
 	return res;
-
 }
 
 __device__ float der2_scaly(int sid_row, int sid_column, float s_scal[SHARED_SIZE_ROW][SHARED_SIZE_COL])
@@ -155,14 +142,11 @@ __device__ float der2_scaly(int sid_row, int sid_column, float s_scal[SHARED_SIZ
 	float res;
 
 	res = (
-	  d_FLT_2   * s_scal[sid_row-3][sid_column] 
-	- d_FLT_27  * s_scal[sid_row-2][sid_column] 
-	+ d_FLT_270 * s_scal[sid_row-1][sid_column] 
-	- d_FLT_490 * s_scal[sid_row  ][sid_column] 
-	+ d_FLT_270 * s_scal[sid_row+1][sid_column] 
-	- d_FLT_27  * s_scal[sid_row+2][sid_column] 
-	+ d_FLT_2   * s_scal[sid_row+3][sid_column] )
-	* d_DIFF2_DY_DIV;
+	  d_FLT_2   * (s_scal[sid_row-3][sid_column]+s_scal[sid_row+3][sid_column]) 
+	- d_FLT_27  * (s_scal[sid_row-2][sid_column]+s_scal[sid_row+2][sid_column]) 
+	+ d_FLT_270 * (s_scal[sid_row-1][sid_column]+s_scal[sid_row+1][sid_column])
+	- d_FLT_490 *  s_scal[sid_row  ][sid_column] 
+	      )* d_DIFF2_DY_DIV;
 	// / ( d_FLT_180*d_DY*d_DY );
 
 	return res;
@@ -178,18 +162,14 @@ __device__ float der2_scalz(int sid_row, int sid_column, float s_scal[SHARED_SIZ
 	float res;
 
 	res = (
-	  d_FLT_2   * behind3 
-	- d_FLT_27  * behind2 
-	+ d_FLT_270 * behind1 
-	- d_FLT_490 * s_scal[sid_row][sid_column] 
-	+ d_FLT_270 * infront1 
-	- d_FLT_27  * infront2 
-	+ d_FLT_2   * infront3 )
-	* d_DIFF2_DZ_DIV;
+	  d_FLT_2   * (behind3+infront3) 
+	- d_FLT_27  * (behind2+infront2) 
+	+ d_FLT_270 * (behind1+infront1)
+	- d_FLT_490 *  s_scal[sid_row][sid_column] 
+	      )* d_DIFF2_DZ_DIV;
 	// / ( d_FLT_180*d_DY*d_DY );
 
 	return res;
-
 }
 
 __device__ float der2_scalxy(int sid_row, int sid_column, float s_scal[SHARED_SIZE_ROW][SHARED_SIZE_COL])
@@ -201,59 +181,62 @@ __device__ float der2_scalxy(int sid_row, int sid_column, float s_scal[SHARED_SI
 
 	res = (
 	  (float) 2.0   * (  s_scal[sid_row - 3][sid_column - 3]
-                        -s_scal[sid_row + 3][sid_column - 3]
-                        +s_scal[sid_row + 3][sid_column + 3]
-                        -s_scal[sid_row - 3][sid_column + 3])
+                            -s_scal[sid_row + 3][sid_column - 3]
+                            +s_scal[sid_row + 3][sid_column + 3]
+                            -s_scal[sid_row - 3][sid_column + 3])
 	- (float) 27.0  * (  s_scal[sid_row - 2][sid_column - 2]
-                        -s_scal[sid_row + 2][sid_column - 2]
-                        +s_scal[sid_row + 2][sid_column + 2]
-                        -s_scal[sid_row - 2][sid_column + 2])
+                            -s_scal[sid_row + 2][sid_column - 2]
+                            +s_scal[sid_row + 2][sid_column + 2]
+                            -s_scal[sid_row - 2][sid_column + 2])
 	+ (float) 270.0 * (  s_scal[sid_row - 1][sid_column - 1]//ok
-                        -s_scal[sid_row + 1][sid_column - 1]//ok
-                        +s_scal[sid_row + 1][sid_column + 1]//ok
-                        -s_scal[sid_row - 1][sid_column + 1])//ok
-	)* d_DIFFMN_DXDY_DIV;
+                            -s_scal[sid_row + 1][sid_column - 1]//ok
+                            +s_scal[sid_row + 1][sid_column + 1]//ok
+                            -s_scal[sid_row - 1][sid_column + 1])//ok
+	      )* d_DIFFMN_DXDY_DIV;
 	return res;
 }
 
-__device__ float der2_scalxz(int sid_row, int sid_column, float s_scal[SHARED_SIZE_ROW][SHARED_SIZE_COL], float res[])
+__device__ float der2_scalxz(int sid_row, int sid_column, float s_scal[SHARED_SIZE_ROW][SHARED_SIZE_COL], float res[3])
 {
 	//
 	// Double derivative in xz-direction
 	//
-	res[0] =  d_DIFFMN_DXDZ_DIV*d_FLT_2 * (-s_scal[sid_row ][sid_column + 3] + s_scal[sid_row ][sid_column - 3]);
-	res[1] =  -d_DIFFMN_DXDZ_DIV*d_FLT_27 * (-s_scal[sid_row ][sid_column + 2] + s_scal[sid_row ][sid_column - 2]);
+	res[0] =  d_DIFFMN_DXDZ_DIV*d_FLT_2 *   (-s_scal[sid_row ][sid_column + 3] + s_scal[sid_row ][sid_column - 3]);
+	res[1] = -d_DIFFMN_DXDZ_DIV*d_FLT_27 *  (-s_scal[sid_row ][sid_column + 2] + s_scal[sid_row ][sid_column - 2]);
 	res[2] =  d_DIFFMN_DXDZ_DIV*d_FLT_270 * (-s_scal[sid_row ][sid_column + 1] + s_scal[sid_row ][sid_column - 1]);
 	return 0;
 }
-__device__ float der2_scalyz(int sid_row, int sid_column, float s_scal[SHARED_SIZE_ROW][SHARED_SIZE_COL], float res[])
+__device__ float der2_scalyz(int sid_row, int sid_column, float s_scal[SHARED_SIZE_ROW][SHARED_SIZE_COL], float res[3])
 {
 	//
 	// Double derivative in yz-direction
 	//
-	res[0] =  d_DIFFMN_DYDZ_DIV*d_FLT_2 * (-s_scal[sid_row + 3][sid_column] + s_scal[sid_row - 3][sid_column]);
-	res[1] =  -d_DIFFMN_DYDZ_DIV*d_FLT_27 * (-s_scal[sid_row + 2][sid_column] + s_scal[sid_row - 2][sid_column]);
-	res[2] =  d_DIFFMN_DYDZ_DIV*d_FLT_270 * (-s_scal[sid_row + 1][sid_column] + s_scal[sid_row - 1][sid_column]);
+	res[0] =   d_DIFFMN_DYDZ_DIV*d_FLT_2 *   (-s_scal[sid_row + 3][sid_column] + s_scal[sid_row - 3][sid_column]);
+	res[1] =  -d_DIFFMN_DYDZ_DIV*d_FLT_27 *  (-s_scal[sid_row + 2][sid_column] + s_scal[sid_row - 2][sid_column]);
+	res[2] =   d_DIFFMN_DYDZ_DIV*d_FLT_270 * (-s_scal[sid_row + 1][sid_column] + s_scal[sid_row - 1][sid_column]);
 	return 0;
 }
 
-static __device__ void nebla_nebla_div(int sid_row, int sid_column, float s_uu_x[][SHARED_SIZE_COL], float s_uu_y[][SHARED_SIZE_COL], float s_uu_z[][SHARED_SIZE_COL], float div_z_partial_ux[], float div_z_partial_uy[], float div_z_partial_uz[], int zplane){
+static __device__ void nabla_nabla_div(int sid_row, int sid_column, float s_uu_x[][SHARED_SIZE_COL], float s_uu_y[][SHARED_SIZE_COL], float s_uu_z[][SHARED_SIZE_COL], float div_z_partial_ux[], float div_z_partial_uy[], float div_z_partial_uz[], int zplane){
 	
  //Calculate front
-        if(zplane - 3 >= 0 && zplane - 3 < RK_ELEMS_PER_THREAD_FIRST) {
+        if (zplane - 3 >= 0 && zplane - 3 < RK_ELEMS_PER_THREAD_FIRST) {
             div_z_partial_ux[0] += d_DIFFMN_DXDZ_DIV*(float) 2.0 * (s_uu_z[sid_row ][sid_column + 3]- s_uu_z[sid_row ][sid_column - 3]);
             div_z_partial_uy[0] += d_DIFFMN_DYDZ_DIV*(float) 2.0 * (s_uu_z[sid_row + 3][sid_column]- s_uu_z[sid_row - 3][sid_column]);
-            div_z_partial_uz[0] += (d_DIFFMN_DXDZ_DIV*(float) 2.0 * (s_uu_x[sid_row ][sid_column + 3]- s_uu_x[sid_row ][sid_column - 3])+ d_DIFFMN_DYDZ_DIV*(float) 2.0 * (s_uu_y[sid_row + 3][sid_column]- s_uu_y[sid_row - 3][sid_column]));
+            div_z_partial_uz[0] += d_DIFFMN_DXDZ_DIV*(float) 2.0 * (s_uu_x[sid_row ][sid_column + 3]- s_uu_x[sid_row ][sid_column - 3])
+                                  +d_DIFFMN_DYDZ_DIV*(float) 2.0 * (s_uu_y[sid_row + 3][sid_column]- s_uu_y[sid_row - 3][sid_column]);
         }
-        if(zplane - 2 >= 0 && zplane - 2 < RK_ELEMS_PER_THREAD_FIRST) {
+        if (zplane - 2 >= 0 && zplane - 2 < RK_ELEMS_PER_THREAD_FIRST) {
             div_z_partial_ux[1] += -d_DIFFMN_DXDZ_DIV*(float) 27.0 * (s_uu_z[sid_row ][sid_column + 2]- s_uu_z[sid_row ][sid_column - 2]);
             div_z_partial_uy[1] += -d_DIFFMN_DYDZ_DIV*(float) 27.0 * (s_uu_z[sid_row + 2][sid_column]- s_uu_z[sid_row - 2][sid_column]);
-            div_z_partial_uz[1] += (-d_DIFFMN_DXDZ_DIV*(float) 27.0 * (s_uu_x[sid_row ][sid_column + 2]- s_uu_x[sid_row ][sid_column - 2])+ (-d_DIFFMN_DYDZ_DIV)*(float) 27.0 * (s_uu_y[sid_row + 2][sid_column]- s_uu_y[sid_row - 2][sid_column]));
+            div_z_partial_uz[1] += -d_DIFFMN_DXDZ_DIV*(float) 27.0 * (s_uu_x[sid_row ][sid_column + 2]- s_uu_x[sid_row ][sid_column - 2])
+                                   -d_DIFFMN_DYDZ_DIV*(float) 27.0 * (s_uu_y[sid_row + 2][sid_column]- s_uu_y[sid_row - 2][sid_column]);
         }
-        if(zplane - 1 >= 0 && zplane - 1 < RK_ELEMS_PER_THREAD_FIRST) {
+        if (zplane - 1 >= 0 && zplane - 1 < RK_ELEMS_PER_THREAD_FIRST) {
             div_z_partial_ux[2] += d_DIFFMN_DXDZ_DIV*(float) 270.0 * (s_uu_z[sid_row ][sid_column + 1]- s_uu_z[sid_row ][sid_column - 1]);
             div_z_partial_uy[2] += d_DIFFMN_DYDZ_DIV*(float) 270.0 * (s_uu_z[sid_row + 1][sid_column]- s_uu_z[sid_row - 1][sid_column]);
-            div_z_partial_uz[2] += (d_DIFFMN_DXDZ_DIV*(float) 270.0 * (s_uu_x[sid_row ][sid_column + 1]- s_uu_x[sid_row ][sid_column - 1])+ d_DIFFMN_DYDZ_DIV*(float) 270.0 * (s_uu_y[sid_row + 1][sid_column]- s_uu_y[sid_row - 1][sid_column]));
+            div_z_partial_uz[2] += d_DIFFMN_DXDZ_DIV*(float) 270.0 * (s_uu_x[sid_row ][sid_column + 1]- s_uu_x[sid_row ][sid_column - 1])
+                                  +d_DIFFMN_DYDZ_DIV*(float) 270.0 * (s_uu_y[sid_row + 1][sid_column]- s_uu_y[sid_row - 1][sid_column]);
         }
 
         // div_z_partial_xx[3] += 0;
@@ -261,20 +244,22 @@ static __device__ void nebla_nebla_div(int sid_row, int sid_column, float s_uu_x
 	if(zplane + 1 >= 0 && zplane + 1 < RK_ELEMS_PER_THREAD_FIRST) {
             div_z_partial_ux[4] -= d_DIFFMN_DXDZ_DIV*(float) 270.0 * (s_uu_z[sid_row ][sid_column + 1]- s_uu_z[sid_row ][sid_column - 1]);
             div_z_partial_uy[4] -= d_DIFFMN_DYDZ_DIV*(float) 270.0 * (s_uu_z[sid_row + 1][sid_column]- s_uu_z[sid_row - 1][sid_column]);
-            div_z_partial_uz[4] -= (d_DIFFMN_DXDZ_DIV*(float) 270.0 * (s_uu_x[sid_row ][sid_column + 1]- s_uu_x[sid_row ][sid_column - 1])+ d_DIFFMN_DYDZ_DIV*(float) 270.0 * (  s_uu_y[sid_row + 1][sid_column]- s_uu_y[sid_row - 1][sid_column]));
+            div_z_partial_uz[4] -= d_DIFFMN_DXDZ_DIV*(float) 270.0 * (s_uu_x[sid_row ][sid_column + 1]- s_uu_x[sid_row ][sid_column - 1])
+                                  +d_DIFFMN_DYDZ_DIV*(float) 270.0 * (s_uu_y[sid_row + 1][sid_column]- s_uu_y[sid_row - 1][sid_column]);
         }
         if(zplane + 2 >= 0 && zplane + 2 < RK_ELEMS_PER_THREAD_FIRST) {
             div_z_partial_ux[5] -= -d_DIFFMN_DXDZ_DIV*(float) 27.0 * (s_uu_z[sid_row ][sid_column + 2]- s_uu_z[sid_row ][sid_column - 2]);
             div_z_partial_uy[5] -= -d_DIFFMN_DYDZ_DIV*(float) 27.0 * (s_uu_z[sid_row + 2][sid_column]- s_uu_z[sid_row - 2][sid_column]);
-            div_z_partial_uz[5] -= (-d_DIFFMN_DXDZ_DIV*(float) 27.0 * (s_uu_x[sid_row ][sid_column + 2]- s_uu_x[sid_row ][sid_column - 2])+ (-d_DIFFMN_DYDZ_DIV)*(float) 27.0 * (s_uu_y[sid_row + 2][sid_column]- s_uu_y[sid_row - 2][sid_column]));
+            div_z_partial_uz[5] -= -d_DIFFMN_DXDZ_DIV*(float) 27.0 * (s_uu_x[sid_row ][sid_column + 2]- s_uu_x[sid_row ][sid_column - 2])
+                                   -d_DIFFMN_DYDZ_DIV*(float) 27.0 * (s_uu_y[sid_row + 2][sid_column]- s_uu_y[sid_row - 2][sid_column]);
         }
         if(zplane + 3 >= 0 && zplane + 3 < RK_ELEMS_PER_THREAD_FIRST) {
             div_z_partial_ux[6] = -d_DIFFMN_DXDZ_DIV*(float) 2.0 * (s_uu_z[sid_row ][sid_column + 3]- s_uu_z[sid_row ][sid_column - 3]);
             div_z_partial_uy[6] = -d_DIFFMN_DYDZ_DIV*(float) 2.0 * (s_uu_z[sid_row + 3][sid_column]- s_uu_z[sid_row - 3][sid_column]);
-            div_z_partial_uz[6] = -(d_DIFFMN_DXDZ_DIV*(float) 2.0 * (s_uu_x[sid_row ][sid_column + 3]- s_uu_x[sid_row ][sid_column - 3])+ d_DIFFMN_DYDZ_DIV*(float) 2.0 * (s_uu_y[sid_row + 3][sid_column]- s_uu_y[sid_row - 3][sid_column]));
+            div_z_partial_uz[6] = -d_DIFFMN_DXDZ_DIV*(float) 2.0 * (s_uu_x[sid_row ][sid_column + 3]- s_uu_x[sid_row ][sid_column - 3])
+                                  -d_DIFFMN_DYDZ_DIV*(float) 2.0 * (s_uu_y[sid_row + 3][sid_column]- s_uu_y[sid_row - 3][sid_column]);
         }
 }
-
 
 //------------------------------------------------------------------------------------------------------
  
@@ -418,7 +403,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				}else {
 					w_lnrho = NAN;
 				}
-				if(zplane - 3 >= 0 && zplane -3 < RK_ELEMS_PER_THREAD_FIRST) {
+				if (zplane - 3 >= 0 && zplane -3 < RK_ELEMS_PER_THREAD_FIRST) {
 				 	const int mature_w_idx = w_grid_idx-3*d_W_GRID_Z_OFFSET;
 					w_uu_x  = d_w_uu_x [mature_w_idx];
 					w_uu_y  = d_w_uu_y [mature_w_idx];
@@ -498,7 +483,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 		
 			
 		//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-		nebla_nebla_div(sid_row, sid_col, s_uu_x, s_uu_y, s_uu_z, div_z_partial_ux, div_z_partial_uy, div_z_partial_uz, zplane);
+		nabla_nabla_div(sid_row, sid_col, s_uu_x, s_uu_y, s_uu_z, div_z_partial_ux, div_z_partial_uy, div_z_partial_uz, zplane);
 
 		
 			if(zplane >= 0 && zplane < RK_ELEMS_PER_THREAD_FIRST){
@@ -513,7 +498,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 				//Solve derivatives
-				const float ddz_lnrho = 0;//der_scalz( behind3_lnrho, behind2_lnrho, behind1_lnrho, infront1_lnrho, infront2_lnrho, infront3_lnrho );
+				const float ddz_lnrho = der_scalz( behind3_lnrho, behind2_lnrho, behind1_lnrho, infront1_lnrho, infront2_lnrho, infront3_lnrho );
 				const float ddz_uu_x =  der_scalz( behind3_uu_x, behind2_uu_x, behind1_uu_x, 
 		                                           infront1_uu_x, infront2_uu_x, infront3_uu_x );
 				const float ddz_uu_y =  der_scalz( behind3_uu_y, behind2_uu_y, behind1_uu_y, 
@@ -521,42 +506,42 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 				const float ddz_uu_z =  der_scalz( behind3_uu_z, behind2_uu_z, behind1_uu_z, 
 		                                           infront1_uu_z, infront2_uu_z, infront3_uu_z );
 	
-				const float ddx_lnrho = 0;//der_scalx(sid_row, sid_col, s_lnrho);
+				const float ddx_lnrho = der_scalx(sid_row, sid_col, s_lnrho);
 				const float ddx_uu_x  = der_scalx(sid_row, sid_col, s_uu_x);
 				const float ddx_uu_y  = der_scalx(sid_row, sid_col, s_uu_y);
 				const float ddx_uu_z  = der_scalx(sid_row, sid_col, s_uu_z);
 
-				const float ddy_lnrho = 0;//der_scaly(sid_row, sid_col, s_lnrho);
+				const float ddy_lnrho = der_scaly(sid_row, sid_col, s_lnrho);
 				const float ddy_uu_x  = der_scaly(sid_row, sid_col, s_uu_x);
 				const float ddy_uu_y  = der_scaly(sid_row, sid_col, s_uu_y);
 				const float ddy_uu_z  = der_scaly(sid_row, sid_col, s_uu_z);
 
 	
 				//Save the divergence field of uu to global memory
-				//d_div_uu[grid_idx] = ddx_uu_x + ddy_uu_y + ddz_uu_z; // Omer: nebla.u_i Eq(.1)
+				//d_div_uu[grid_idx] = ddx_uu_x + ddy_uu_y + ddz_uu_z; // Omer: nabla.u_i Eq(.1)
 
 				//Continuity	
-				const float cont_res = - (s_uu_x[sid_row][sid_col] * ddx_lnrho +
-		                                  s_uu_y[sid_row][sid_col] * ddy_lnrho +
-		                                  s_uu_z[sid_row][sid_col] * ddz_lnrho) 
-		                               - (ddx_uu_x + ddy_uu_y + ddz_uu_z);  // Omer: -(u.nebla)rho - nebla.u  Eq(.2)
+				const float cont_res = - (  s_uu_x[sid_row][sid_col] * ddx_lnrho
+		                                          + s_uu_y[sid_row][sid_col] * ddy_lnrho 
+		                                          + s_uu_z[sid_row][sid_col] * ddz_lnrho) 
+		                                       - (ddx_uu_x + ddy_uu_y + ddz_uu_z);  // Omer: -(u.nabla)rho - nabla.u  Eq(.2)
 
 				//ILP: compute nu_const_uu and S_grad_lnrho before using cont_res  //Omer: Eq(.6)
 				const float nu_const_uu_x = der2_scalx(sid_row, sid_col, s_uu_x) +
-		                                    der2_scaly(sid_row, sid_col, s_uu_x) +
-		                                    der2_scalz(sid_row, sid_col, s_uu_x, 
-		                                               behind3_uu_x, behind2_uu_x, behind1_uu_x, 
-		                                               infront1_uu_x, infront2_uu_x, infront3_uu_x);
+		                                 	    der2_scaly(sid_row, sid_col, s_uu_x) +
+		                                   	    der2_scalz(sid_row, sid_col, s_uu_x, 
+		                                       	               behind3_uu_x, behind2_uu_x, behind1_uu_x, 
+		                                                       infront1_uu_x, infront2_uu_x, infront3_uu_x);
 				const float nu_const_uu_y = der2_scalx(sid_row, sid_col, s_uu_y) +
-		                                    der2_scaly(sid_row, sid_col, s_uu_y) +
-		                                    der2_scalz(sid_row, sid_col, s_uu_y, 
-		                                               behind3_uu_y, behind2_uu_y, behind1_uu_y, 
-		                                               infront1_uu_y, infront2_uu_y, infront3_uu_y);
+		                          	            der2_scaly(sid_row, sid_col, s_uu_y) +
+		                                  	    der2_scalz(sid_row, sid_col, s_uu_y, 
+		                                              	       behind3_uu_y, behind2_uu_y, behind1_uu_y, 
+		                                                       infront1_uu_y, infront2_uu_y, infront3_uu_y);
 				const float nu_const_uu_z = der2_scalx(sid_row, sid_col, s_uu_z) +
-		                                    der2_scaly(sid_row, sid_col, s_uu_z) +
-		                                    der2_scalz(sid_row, sid_col, s_uu_z, 
-		                                               behind3_uu_z, behind2_uu_z, behind1_uu_z, 
-		                                               infront1_uu_z, infront2_uu_z, infront3_uu_z);
+		                                   	    der2_scaly(sid_row, sid_col, s_uu_z) +
+		                                	    der2_scalz(sid_row, sid_col, s_uu_z, 
+		                                              	       behind3_uu_z, behind2_uu_z, behind1_uu_z, 
+		                                                       infront1_uu_z, infront2_uu_z, infront3_uu_z);
 
 				//S_grad_lnrho  //Eq(.9)
 				const float Sxx = (2.0f/3.0f)*ddx_uu_x - (1.0f/3.0f)*(ddy_uu_y + ddz_uu_z);
@@ -580,19 +565,23 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 		                            + d_NU_VISC * nu_const_uu_x                            //nu_const 
 		                            + 2.0f*d_NU_VISC*(Sxx*ddx_lnrho + Sxy*ddy_lnrho + Sxz*ddz_lnrho)+d_NU_VISC*(1.0f/3.0f)*(d2x_uu_x + d2xy_uu_y); //S_grad_lnrho
 				
-				mom_y[(threadIdx.y*RK_THREADS_X)+threadIdx.x][zplane%4] = - (s_uu_x[sid_row][sid_col] * ddx_uu_y +               //vec_dot_nabla_scal
+				mom_y[(threadIdx.y*RK_THREADS_X)+threadIdx.x][zplane%4] = 
+                                            - (s_uu_x[sid_row][sid_col] * ddx_uu_y +               //vec_dot_nabla_scal
 		                               s_uu_y[sid_row][sid_col] * ddy_uu_y +
 		                               s_uu_z[sid_row][sid_col] * ddz_uu_y)
 		                            - d_CS2_SOUND*ddy_lnrho                                //ddy part of grad lnrho
 		                            + d_NU_VISC * nu_const_uu_y                            //nu_const
-		                            + 2.0f*d_NU_VISC*(Sxy*ddx_lnrho + Syy*ddy_lnrho + Syz*ddz_lnrho)+d_NU_VISC*(1.0f/3.0f)*(d2xy_uu_x + d2y_uu_y); //S_grad_lnrho
+		                            + 2.0f*d_NU_VISC*(Sxy*ddx_lnrho + Syy*ddy_lnrho + Syz*ddz_lnrho)
+                                            +d_NU_VISC*(1.0f/3.0f)*(d2xy_uu_x + d2y_uu_y); //S_grad_lnrho 
 				
-				mom_z[(threadIdx.y*RK_THREADS_X)+threadIdx.x][zplane%4] = - (s_uu_x[sid_row][sid_col] * ddx_uu_z +               //vec_dot_nabla_scal
+				mom_z[(threadIdx.y*RK_THREADS_X)+threadIdx.x][zplane%4] =
+      					    - (s_uu_x[sid_row][sid_col] * ddx_uu_z +               //vec_dot_nabla_scal
 		                               s_uu_y[sid_row][sid_col] * ddy_uu_z +
 		                               s_uu_z[sid_row][sid_col] * ddz_uu_z)
 		                            - d_CS2_SOUND*ddz_lnrho                                //ddz part of grad lnrho
 		                            + d_NU_VISC * nu_const_uu_z                            //nu_const
-		                            + 2.0f*d_NU_VISC*(Sxz*ddx_lnrho + Syz*ddy_lnrho + Szz*ddz_lnrho)+d_NU_VISC*(1.0f/3.0f)*d2z_uu_z; //S_grad_lnrho
+		                            + 2.0f*d_NU_VISC*(Sxz*ddx_lnrho + Syz*ddy_lnrho + Szz*ddz_lnrho)
+                                            +d_NU_VISC*(1.0f/3.0f)*d2z_uu_z; //S_grad_lnrho 
 				
 
 				d_lnrho_dest[grid_idx] = s_lnrho[sid_row][sid_col] + BETA*w_lnrho;
@@ -733,108 +722,10 @@ void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_u
 	blocksPerGridSecond.y = ceil((float) COMP_DOMAIN_SIZE_Y / (float)threadsPerBlock.y);
 	blocksPerGridSecond.z = ceil((float) COMP_DOMAIN_SIZE_Z / (float)(threadsPerBlock.z*RK_ELEMS_PER_THREAD_SECOND));
 
-	//Calculate steps in kernels 
-	// Step 1:
-	//-------------------------------------------------------------------------------------------------------------------------------
-	//FIRST HALF
+	//Calculate substeps in kernels 
 
         rungekutta_step_first_half<0><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
                                                                                d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, 
                                                                                d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
-	
 	cudaDeviceSynchronize();
-	//printf("dt = %f in integrators_v5c.cu", dt);
-/*
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-
-	//SECOND HALF
-	////periodic_boundcond_scal_cuda(d_div_uu); //Boundary conditions for the divergence field 
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	////rungekutta_step_second_half<0><<<blocksPerGridSecond, threadsPerBlock>>>(d_div_uu,
-        ////                                                                         d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
-        ////                                                                         d_w_uu_x, d_w_uu_y, d_w_uu_z);
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	boundcond_cuda(d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest);
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	//-------------------------------------------------------------------------------------------------------------------------------
-
-	// Step 2:
-	//-------------------------------------------------------------------------------------------------------------------------------
-	//FIRST HALF
-        rungekutta_step_first_half<1><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
-                                                                          d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
-                                                                          d_lnrho, d_uu_x, d_uu_y, d_uu_z,
-                                                                          d_div_uu);
-        //cudaDeviceSynchronize();
-	//checkKernelErr();
-		
-	//SECOND HALF	
-	////periodic_boundcond_scal_cuda(d_div_uu); //Boundary conditions for the divergence field 
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	////rungekutta_step_second_half<1><<<blocksPerGridSecond, threadsPerBlock>>>(d_div_uu,
-        ////                                                                   d_uu_x, d_uu_y, d_uu_z, 
-        ////                                                                  d_w_uu_x, d_w_uu_y, d_w_uu_z);
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	boundcond_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z);
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	//-------------------------------------------------------------------------------------------------------------------------------
-
-	//TIME START
-	cudaEvent_t start, stop;
-	float time;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-	cudaEventRecord( start, 0 );
-
-	// Step 3:
-	//-------------------------------------------------------------------------------------------------------------------------------
-	//FIRST HALF
-        rungekutta_step_first_half<2><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
-                                                                          d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, 
-                                                                          d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest,
-                                                                          d_div_uu);
-        //cudaDeviceSynchronize();
-	//checkKernelErr();
-		
-	//SECOND HALF
-	////periodic_boundcond_scal_cuda(d_div_uu);; //Boundary conditions for the divergence field 
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	////rungekutta_step_second_half<2><<<blocksPerGridSecond, threadsPerBlock>>>(d_div_uu,
-        ////                                                                   d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
-        ////                                                                   d_w_uu_x, d_w_uu_y, d_w_uu_z);
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	boundcond_cuda(d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest);
-	//cudaDeviceSynchronize();
-	//checkKernelErr();
-	//-------------------------------------------------------------------------------------------------------------------------------
-
-	//TIME END
-	cudaEventRecord( stop, 0 );
-	cudaEventSynchronize( stop );
-	cudaEventElapsedTime( &time, start, stop );
-	cudaEventDestroy( start );
-	cudaEventDestroy( stop );
-	printf("A Single rungekutta step time elapsed: \t%f ms\n", time);
-*/
-	
-
 }
-
-
-
-
-
-
-
-
-
-
