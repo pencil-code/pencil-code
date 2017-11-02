@@ -10,7 +10,7 @@ function multm2,f
 ;
   if (sf[0] eq 5) then begin
 ;
-    w=make_array(size=sg,/nozero)
+    w=0
     for j=0,2 do begin
     for i=0,2 do begin
       w = w + f[*,*,*,i,j]^2
