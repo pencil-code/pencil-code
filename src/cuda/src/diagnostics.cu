@@ -159,7 +159,6 @@ float check_grid_for_nan(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_
 #include "../eos_c.h"
 #include "../forcing_c.h"
 #include "defines_PC.h"
-//using namespace PC;
 
 /****************************************************************************************************************/
 void print_init_config()

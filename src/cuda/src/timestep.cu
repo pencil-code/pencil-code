@@ -18,8 +18,6 @@
 #include "../viscosity_c.h"
 #include "../eos_c.h"
 
-//using namespace PC;
-
 //----------------------------------------------------------
 //  Calculate Courant timestep for the system. 
 //----------------------------------------------------------
@@ -188,7 +186,6 @@ void timeseries_diagnostics_cuda(int step, float dt, double t)
  	if (idiag_rhom){
 		get_sumscal_from_device(diag,d_lnrho,!ldensity_nolog);
                 save_name(diag,idiag_rhom);
-printf("iproc, rhom= %d %f \n",iproc,diag);
 	}
  	if (idiag_rhorms){
 		get_sumsqscal_from_device(diag,d_lnrho,!ldensity_nolog);

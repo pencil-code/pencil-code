@@ -95,5 +95,5 @@ EXTERN __constant__ float d_DIFFMN_DXDZ_DIV;
 //EXTERN __constant__ float d_FLT_MAX;
 //EXTERN __constant__ float d_FLT_MIN;
 
-
+EXTERN __constant__ int d_halo_widths_x[3], d_halo_widths_y[3], d_halo_widths_z[3];
 //btw <cmath> has isnan function etc
