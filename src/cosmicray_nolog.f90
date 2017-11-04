@@ -323,7 +323,8 @@ module Cosmicray
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      if (.not.lnegl) then
+      if (.not.lnegl .and. &
+          (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux))) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
               gammacr1*p%rho1*p%gecr(:,1+j)

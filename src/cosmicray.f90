@@ -293,7 +293,8 @@ print*,"init_ecr: initecr = ", initecr
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !  should rename lnegl to, eg, lcrpressureforce
 !
-      if (.not.lnegl) then
+      if (.not.lnegl .and. &
+          (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux))) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
               gammacr1*p%rho1*p%gecr(:,1+j)*exp(p%ecr(:))
@@ -584,7 +585,7 @@ print*,"init_ecr: initecr = ", initecr
           enddo
         enddo
 !
-!
+!  apply CR diffusion
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
         + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
