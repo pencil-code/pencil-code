@@ -194,7 +194,7 @@ module Cosmicray
       lpenc_requested(i_ecr)=.true.
       lpenc_requested(i_ugecr)=.true.
       lpenc_requested(i_divu)=.true.
-      if (.not.lnegl) lpenc_requested(i_rho1)=.true.
+      if (.not.lnegl.and.lhydro) lpenc_requested(i_rho1)=.true.
       if (K_perp/=0. .or. K_para/=0. .or. lvariable_tensor_diff) then
         lpenc_requested(i_gecr)=.true.
         lpenc_requested(i_bij)=.true.
@@ -323,8 +323,7 @@ module Cosmicray
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      if (.not.lnegl .and. &
-          (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux))) then
+      if (.not.lnegl .and. lhydro) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
               gammacr1*p%rho1*p%gecr(:,1+j)
