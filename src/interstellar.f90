@@ -597,13 +597,16 @@ module Interstellar
         print*,'initialize_interstellar: finished'
       endif
 !
+!  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_N_sol
+!        Note changes may affect reading/meaning of pre-existing file contents
+!
       if (lroot .and. lstart) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",4A)')  &
             '---it----------t-------itype---iproc---l-----m-----n--', &
             '-----x------------y------------z-------', &
             '----rho-----------TT-----------EE---------t_sedov----', &
-            '--radius------site_mass------maxTT----t_interval---SN_rate-'
+            '--radius-----site_N_sol------maxTT----t_interval---SN_rate-'
         close(1)
       endif
 !
@@ -2857,7 +2860,7 @@ module Interstellar
 !
       real :: c_SN,cmass_SN,cvelocity_SN
       real :: width_energy, width_mass, width_velocity
-      real :: rhom, ekintot, old_radius
+      real :: rhom, rhomin, ekintot, old_radius
       real ::  rhom_new, ekintot_new, ambient_mass
       real :: uu_sedov
 !
@@ -2878,44 +2881,35 @@ module Interstellar
 !
 !  Calculate explosion site mean density.
 !
-      call get_properties(f,SNR,rhom,ekintot)
+      call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
-      rhom_new=rhom
-      old_radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
+      old_radius=SNR%feat%radius
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
 !  improve match of mass to radius.
 !
       if (lSN_scale_rad) then
         do i=1,25
-          SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
+          SNR%feat%radius=(2.*0.75*solar_mass/(SNR%feat%rhom+rhomin)*pi_1*N_mass)**(1.0/3.0)
           SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin)
-          if (present(ierr)) then
-            call get_properties(f,SNR,rhom,ekintot,ierr)
-            SNR%feat%rhom=0.2*(rhom+4*SNR%feat%rhom)
-            if (abs(SNR%feat%radius/old_radius-1.)<eps_radius) exit
-          else 
-            call get_properties(f,SNR,rhom,ekintot)
-            SNR%feat%rhom=0.2*(rhom+4*SNR%feat%rhom)
-            if (abs(SNR%feat%radius/old_radius-1.)<eps_radius) exit
-          endif
-          old_radius=(0.75*solar_mass/rhom*pi_1*N_mass)**(1.0/3.0)
+          call get_properties(f,SNR,rhom,ekintot,rhomin)
+          SNR%feat%rhom=0.25*(rhom+3*SNR%feat%rhom)
+          if (abs(SNR%feat%radius/old_radius-1.)<eps_radius) exit
+          old_radius=(2.*0.75*solar_mass/(SNR%feat%rhom+rhomin)*pi_1*N_mass)**(1.0/3.0)
         enddo
-        SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin)
       endif
       if (present(ierr)) then
-        call get_properties(f,SNR,rhom,ekintot,ierr)
+        call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (SNR%feat%radius>rfactor_SN*dxmin) then
+        if (SNR%feat%radius>=rfactor_SN*dxmin) then
           if (1.-ambient_mass/(N_mass*solar_mass)>eps_mass) then
             ierr=iEXPLOSION_TOO_RARIFIED
             return
           endif
         endif
       else
-        call get_properties(f,SNR,rhom,ekintot)
+        call get_properties(f,SNR,rhom,ekintot,rhomin)
       endif
       SNR%feat%rhom=rhom
 !
@@ -3184,7 +3178,7 @@ module Interstellar
       enddo
       enddo
 !
-      call get_properties(f,SNR,rhom_new,ekintot_new)
+      call get_properties(f,SNR,rhom_new,ekintot_new,rhomin)
       if (lroot) print*,"TOTAL KINETIC ENERGY CHANGE:",ekintot_new-ekintot
 !
 !  Sum and share diagnostics etc. amongst processors.
@@ -3225,13 +3219,13 @@ module Interstellar
         print*, 'explode_SN:  Total energy = ', SNR%feat%EE
         print*, 'explode_SN:    CR energy  = ', SNR%feat%CR
         print*, 'explode_SN:    Added mass = ', SNR%feat%MM
-        print*, 'explode_SN:  Ambient mass = ', site_mass
+        print*, 'explode_SN: Ambient N_sol = ', site_mass/solar_mass
         print*, 'explode_SN:    Sedov time = ', SNR%feat%t_sedov
-        print*, 'explode_SN:    Shell velocity  = ', uu_sedov
+        print*, 'explode_SN:   Shell speed = ', uu_sedov
         write(1,'(i10,E13.5,5i6,12E13.5)')  &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, SNR%indx%n, &
             SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, SNR%site%TT, SNR%feat%EE,&
-            SNR%feat%t_sedov, SNR%feat%radius, site_mass, maxTT, t_interval_SN, SNrate
+            SNR%feat%t_sedov, SNR%feat%radius, site_mass/solar_mass, maxTT, t_interval_SN, SNrate
         close(1)
       endif
       lfirst_warning=.false.
@@ -3253,7 +3247,7 @@ module Interstellar
 !
     endsubroutine explode_SN
 !***********************************************************************
-    subroutine get_properties(f,remnant,rhom,ekintot,ierr)
+    subroutine get_properties(f,remnant,rhom,ekintot,rhomin,ierr)
 !
 !  Calculate integral of mass cavity profile and total kinetic energy.
 !
@@ -3268,8 +3262,9 @@ module Interstellar
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant) :: remnant
       integer, optional :: ierr
+      real, intent(out) :: rhomin
       real :: radius2
-      real :: rhom, ekintot, rhotmp, rhomin, rhomax
+      real :: rhom, ekintot, rhotmp, rhomax
       real, dimension(nx) :: rho, u2
       real, dimension(nx,3) :: uu
       integer, dimension(nx) :: mask, maxmask, minmask
@@ -3291,7 +3286,7 @@ module Interstellar
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        if (present(ierr)) then
+        if (lSN_scale_rad) then
           maxmask=0
           minmask=999999
           where (dr2_SN(1:nx) <= radius2)
@@ -3331,13 +3326,13 @@ module Interstellar
         rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
-!  Determine the density rarification ratio in order to avoid exxessive spikes
+!  Determine the density rarification ratio in order to avoid excessive spikes
 !
+      rhotmp=rhomin
+      call mpiallreduce_min(rhotmp,rhomin)
+      rhotmp=rhomax
+      call mpiallreduce_max(rhotmp,rhomax)
       if (present(ierr)) then
-        rhotmp=rhomin
-        call mpiallreduce_min(rhotmp,rhomin)
-        rhotmp=rhomax
-        call mpiallreduce_max(rhotmp,rhomax)
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
         if (lroot .and. (ip<14)) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
                                    rhomax, rhomin, ierr, remnant%feat%radius
