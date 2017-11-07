@@ -109,7 +109,14 @@ module Special
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
+  integer :: idiag_g11pt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
   integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
+  integer :: idiag_g33pt=0       ! DIAG_DOC: $g_{33}(x_1,y_1,z_1,t)$
+  integer :: idiag_g12pt=0       ! DIAG_DOC: $g_{12}(x_1,y_1,z_1,t)$
+  integer :: idiag_g23pt=0       ! DIAG_DOC: $g_{23}(x_1,y_1,z_1,t)$
+  integer :: idiag_g31pt=0       ! DIAG_DOC: $g_{31}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggXpt=0       ! DIAG_DOC: $g_{X}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -320,9 +327,16 @@ module Special
 !  diagnostics
 !
        if (ldiagnos) then
-!        if (lroot.and.m==mpoint.and.n==npoint) then
-!          if (idiag_g22pt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_g22pt)
-!        endif
+         if (lroot.and.m==mpoint.and.n==npoint) then
+           if (idiag_g11pt/=0) call save_name(f(lpoint-nghost,m,n,igij+1-1),idiag_g11pt)
+           if (idiag_g22pt/=0) call save_name(f(lpoint-nghost,m,n,igij+2-1),idiag_g22pt)
+           if (idiag_g33pt/=0) call save_name(f(lpoint-nghost,m,n,igij+3-1),idiag_g33pt)
+           if (idiag_g12pt/=0) call save_name(f(lpoint-nghost,m,n,igij+4-1),idiag_g12pt)
+           if (idiag_g23pt/=0) call save_name(f(lpoint-nghost,m,n,igij+5-1),idiag_g23pt)
+           if (idiag_g31pt/=0) call save_name(f(lpoint-nghost,m,n,igij+6-1),idiag_g31pt)
+           if (idiag_ggTpt/=0) call save_name(f(lpoint-nghost,m,n,iggT),idiag_ggTpt)
+           if (idiag_ggXpt/=0) call save_name(f(lpoint-nghost,m,n,iggX),idiag_ggXpt)
+         endif
        endif
 !
     endsubroutine dspecial_dt
@@ -738,11 +752,20 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_g22pt=0
+        idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
+        idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
+        idiag_ggTpt=0; idiag_ggXpt=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'g11pt',idiag_g11pt)
         call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
+        call parse_name(iname,cname(iname),cform(iname),'g33pt',idiag_g33pt)
+        call parse_name(iname,cname(iname),cform(iname),'g12pt',idiag_g12pt)
+        call parse_name(iname,cname(iname),cform(iname),'g23pt',idiag_g23pt)
+        call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
+        call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
+        call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
