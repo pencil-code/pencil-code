@@ -211,7 +211,7 @@ module Solid_Cells
   integer :: max_send_ip_cart_to_curv                 ! Maximum number of ip sent
   integer :: max_recv_ip_cart_to_curv                 ! Maximum number of ip recv
   !
-  real :: r_int_outer, r_int_inner
+  real :: r_int_outer, r_int_inner, r_int_inner_poly
 !***************************************************
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 !  Global ogrid
@@ -2483,7 +2483,41 @@ module Solid_Cells
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
       endif
     elseif(interpolation_method==5) then
-      call poly_interp_curv(ivar1,ivar2,xyz_ip,f_ip,id,interpol_order_poly)
+      if(xyz_ip(1)>=r_int_inner_poly) then 
+        call poly_interp_curv(ivar1,ivar2,xyz_ip,f_ip,id,interpol_order_poly)
+      else
+!
+!  Use linear inteprolation if too near surface to use high order polynomial
+!  Preliminary solution to get inear_glob to point to bottom left corner of cell
+!
+        ii=floor(interpol_order_poly*0.5)
+        jj=floor(interpol_order_poly*0.5)
+        if(xyz_ip(1)<xglobal_ogrid(inear_glob(1))) then
+          if(xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
+            if(.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii-1:ii,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1)-1,inear_glob(2)-1,inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          else
+            if(.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii:ii+1,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1)-1,inear_glob(2),inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          endif
+        else
+          if(xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
+            if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii-1:ii,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1),inear_glob(2)-1,inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          else
+            if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii:ii+1,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1),inear_glob(2),inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          endif
+        endif
+      endif
     endif
 !
 !  Update cartesian grid with the new data values
@@ -8854,12 +8888,6 @@ module Solid_Cells
     enddo
     ii1=-floor(order*0.5)+1-1
     ii2=-floor(order*0.5)+order-1
-    !print*, 'rthz[:,',id,0,']=[',xa1(1),',',xa1(2),',',xa1(3),',',xa1(4),',',xa1(5),']'
-    !print*, 'rthz[:,',id,1,']=[',xa2(1),',',xa2(2),',',xa2(3),',',xa2(4),',',xa2(5),']'
-    !!print*, 'cartesian:xa2',xa2
-    !print*, 'rthp[',id,',:]=[',xyz_ip(1),',',xyz_ip(2),']'
-    !print*, 'cylinder:xa1',xa1
-    !print*, 'xp,yp',xyz_ip(1:2)
     do ivar=ivar1,ivar2
       do j=1,order
         jj=-floor(order*0.5)+j-1
@@ -9059,11 +9087,13 @@ module Solid_Cells
 !
 !  Set limit of the interpolation zone, r_int_inner
 !
-      !if(interpolation_method<=2) then 
         r_int_inner=xyz0_ogrid(1)
-      !else
-        !r_int_inner=xyz0_ogrid(1) + 1.01/dx1grid_ogrid(1)
-      !endif
+        if(interpolation_method==5) then
+          r_int_inner_poly=x_ogrid(l1_ogrid+floor(interpol_order_poly*0.5))
+          print*, 'Polynomial integration: r_int_outer, r_int_inner, r_int_inner_poly' &
+                  , r_int_outer, r_int_inner, r_int_inner_poly
+        endif
+
 
     endsubroutine set_interpolation_limits
 !***********************************************************************
@@ -9610,7 +9640,7 @@ module Solid_Cells
     real, dimension(nx_ogrid,4) :: bx
     real, dimension(ny_ogrid), save :: aWy, aPy, aEy
     real, dimension(nx_ogrid), save :: aWx, aPx, aEx
-    integer :: i,j
+    integer :: i,j,jj
 
     real :: a0=(193+126*af)/256.
     real :: a1=(105+302*af)/256.
@@ -9679,8 +9709,9 @@ module Solid_Cells
 !  10th order on interior points, 6th order near boundaries on the edge 
 !  of cylindrical grid (near interpolation zone).
 !  One-sided filter on cylinder surface can be set to 6th, 8th or 10th order
-!  Surface point is not filtered
+!  Surface point is not filtered, and neither are points in the 'filter'-zone between interpolations
 !
+    jj=interpol_filter
     do i=m1_ogrid,m2_ogrid
       bx(6:nx_ogrid-2,:) = a0*f_og(l1_ogrid+5:l2_ogrid-2,i,4,:) &
                          + a1*0.5*(f_og(l1_ogrid+4:l2_ogrid-3,i,4,:) + f_og(l1_ogrid+ 6:l2_ogrid-1,i,4,:)) &
@@ -9698,10 +9729,10 @@ module Solid_Cells
       !call boundary_x_8th(bx(1:5,:),f_og,af,i)
       !call boundary_x_10th(bx(1:5,:),f_og,af,i)
       call boundary_x_8_6th(bx(1:5,:),f_og,af,i)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,1),bx(:,1),aEx,aWx,aPx,1,nx_ogrid)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,2),bx(:,2),aEx,aWx,aPx,1,nx_ogrid)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,3),bx(:,3),aEx,aWx,aPx,1,nx_ogrid)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,4),bx(:,4),aEx,aWx,aPx,1,nx_ogrid)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,1),bx(:,1),aEx,aWx,aPx,1,nx_ogrid-jj)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,2),bx(:,2),aEx,aWx,aPx,1,nx_ogrid-jj)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,3),bx(:,3),aEx,aWx,aPx,1,nx_ogrid-jj)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,4),bx(:,4),aEx,aWx,aPx,1,nx_ogrid-jj)
     enddo
 !
   endsubroutine pade_filter
