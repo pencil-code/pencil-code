@@ -9641,22 +9641,22 @@ module Solid_Cells
     real, dimension(ny_ogrid), save :: aWy, aPy, aEy
     real, dimension(nx_ogrid), save :: aWx, aPx, aEx
     integer :: i,j,jj
-
-    real :: a0=(193+126*af)/256.
-    real :: a1=(105+302*af)/256.
-    real :: a2=15*(-1+2*af)/64.
-    real :: a3=45*(1-2*af)/512.
-    real :: a4=5*(-1+2*af)/256.
-    real :: a5=(1-2*af)/512.
-
-    real :: a0_6=11./16.+5.*af/8.
-    real :: a1_6=15./32.+17.*af/16.
-    real :: a2_6=-3./16.+3.*af/8.
-    real :: a3_6=1./32.-af/16.
-
+    real, save :: a0, a1, a2, a3, a4, a5
+    real, save :: a0_6, a1_6, a2_6, a3_6
     logical :: lfirstcall = .true.
 
     if(lfirstcall) then
+      a0=(193+126*af)/256.
+      a1=(105+302*af)/256.
+      a2=15*(-1+2*af)/64.
+      a3=45*(1-2*af)/512.
+      a4=5*(-1+2*af)/256.
+      a5=(1-2*af)/512.
+      a0_6=11./16.+5.*af/8.
+      a1_6=15./32.+17.*af/16.
+      a2_6=-3./16.+3.*af/8.
+      a3_6=1./32.-af/16.
+
       aWy = -af
       aPy = 1.
       aEy = -af
@@ -9835,7 +9835,7 @@ module Solid_Cells
     real, intent(in) :: af
     integer, intent(in) :: i
     real, dimension(2:4,9), save :: aB_8
-    real :: a0_8, a1_8, a2_8, a3_8, a4_8
+    real, save :: a0_8, a1_8, a2_8, a3_8, a4_8
     integer :: j
     logical :: lfirstcall = .true.
 !
@@ -9912,7 +9912,7 @@ module Solid_Cells
     real, intent(in) :: af
     integer, intent(in) :: i
     real, dimension(2:3,7), save :: aB_6
-    real :: a0_6, a1_6, a2_6, a3_6
+    real, save :: a0_6, a1_6, a2_6, a3_6
     logical :: lfirstcall = .true.
 !
     if(lfirstcall) then
@@ -9974,10 +9974,10 @@ module Solid_Cells
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     real, intent(in) :: af
     integer, intent(in) :: i
-    real :: a0_8, a1_8, a2_8, a3_8, a4_8
-    real :: a0_6, a1_6, a2_6, a3_6
-    real :: a0_4, a1_4, a2_4
-    real :: a0_2, a1_2
+    real, save :: a0_8, a1_8, a2_8, a3_8, a4_8
+    real, save :: a0_6, a1_6, a2_6, a3_6
+    real, save :: a0_4, a1_4, a2_4
+    real, save :: a0_2, a1_2
     logical :: lfirstcall = .true.
 !
     if(lfirstcall) then
@@ -10034,7 +10034,7 @@ module Solid_Cells
     integer, intent(in) :: i
     real, dimension(3:4,9), save :: aB_8
     real, dimension(7), save :: aB_6
-    real :: a0_8, a1_8, a2_8, a3_8, a4_8
+    real, save :: a0_8, a1_8, a2_8, a3_8, a4_8
     logical :: lfirstcall = .true.
     integer :: j
 !
