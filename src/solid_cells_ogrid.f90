@@ -9693,11 +9693,15 @@ module Solid_Cells
                                 + a2_6*0.5*(f_og(l2_ogrid-3:l2_ogrid-2,i,4,:) + f_og(l2_ogrid+1:l2_ogrid+2,i,4,:)) &
                                 + a3_6*0.5*(f_og(l2_ogrid-4:l2_ogrid-3,i,4,:) + f_og(l2_ogrid+2:l2_ogrid+3,i,4,:)) 
 
-      call boundary_x_10th(bx(1:5,:),f_og,af,i)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,1),bx(:,1),aEx,aWx,aPx,1,nx_ogrid-3)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,2),bx(:,2),aEx,aWx,aPx,1,nx_ogrid-3)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,3),bx(:,3),aEx,aWx,aPx,1,nx_ogrid-3)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,4),bx(:,4),aEx,aWx,aPx,1,nx_ogrid-3)
+      !call boundary_x_central(bx(1:5,:),f_og,af,i)
+      !call boundary_x_6th(bx(1:5,:),f_og,af,i)
+      !call boundary_x_8th(bx(1:5,:),f_og,af,i)
+      !call boundary_x_10th(bx(1:5,:),f_og,af,i)
+      call boundary_x_8_6th(bx(1:5,:),f_og,af,i)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,1),bx(:,1),aEx,aWx,aPx,1,nx_ogrid)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,2),bx(:,2),aEx,aWx,aPx,1,nx_ogrid)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,3),bx(:,3),aEx,aWx,aPx,1,nx_ogrid)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,4),bx(:,4),aEx,aWx,aPx,1,nx_ogrid)
     enddo
 !
   endsubroutine pade_filter
@@ -9925,6 +9929,147 @@ module Solid_Cells
     bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
 !
   endsubroutine boundary_x_6th
+!***********************************************************************
+  subroutine boundary_x_central(bx_bound,f_og,af,i)
+!
+!  Compute the 6th order filter function for the radial boundary near the surface.
+!  Use central differences for points i=3:5 (with i=1 at the boundary) and 
+!  one-sided differences fro points i=2:3 
+!  Weights from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real :: a0_8, a1_8, a2_8, a3_8, a4_8
+    real :: a0_6, a1_6, a2_6, a3_6
+    real :: a0_4, a1_4, a2_4
+    real :: a0_2, a1_2
+    logical :: lfirstcall = .true.
+!
+    if(lfirstcall) then
+      a0_8=(93+70*af)/128.
+      a1_8=(7+18*af)/16.
+      a2_8=(-7+14*af)/32.
+      a3_8=1/16.-af/8.
+      a4_8=-1/128.+af/64.
+!
+      a0_6=11./16.+5.*af/8.
+      a1_6=15./32.+17.*af/16.
+      a2_6=-3./16.+3.*af/8.
+      a3_6=1./32.-af/16.
+
+      a0_4=5/8. + 3*af/4.
+      a1_4=1/2. + af
+      a2_4=-1/8. + af/4.
+
+      a0_2=0.5+af
+      a1_2=0.5+af
+      lfirstcall = .false.
+    endif
+
+    bx_bound(5,:) = a0_8*     f_og(l1_ogrid+4,i,4,:) &
+                  + a1_8*0.5*(f_og(l1_ogrid+3,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a2_8*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+6,i,4,:)) &
+                  + a3_8*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+7,i,4,:)) &
+                  + a4_8*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+8,i,4,:)) 
+    bx_bound(4,:) = a0_6*     f_og(l1_ogrid+3,i,4,:) &
+                  + a1_6*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+4,i,4,:)) &
+                  + a2_6*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a3_6*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+6,i,4,:)) 
+    bx_bound(3,:) = a0_4*     f_og(l1_ogrid+2,i,4,:) &
+                  + a1_4*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+3,i,4,:)) &
+                  + a1_4*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+4,i,4,:))
+    bx_bound(2,:) = a0_2*     f_og(l1_ogrid+1,i,4,:) &
+                  + a1_2*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+1,i,4,:))
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+!
+  endsubroutine boundary_x_central
+!***********************************************************************
+  subroutine boundary_x_8_6th(bx_bound,f_og,af,i)
+!
+!  Compute the 8th order filter function for the radial boundary near the surface.
+!  Use central differences point i=5 (with i=1 at the boundary) and 
+!  one-sided differences fro points i=2:4 
+!  Weights from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real, dimension(3:4,9), save :: aB_8
+    real, dimension(7), save :: aB_6
+    real :: a0_8, a1_8, a2_8, a3_8, a4_8
+    logical :: lfirstcall = .true.
+    integer :: j
+!
+    if(lfirstcall) then
+      a0_8=(93+70*af)/128.
+      a1_8=(7+18*af)/16.
+      a2_8=(-7+14*af)/32.
+      a3_8=1/16.-af/8.
+      a4_8=-1/128.+af/64.
+      aB_8(4,1)  =  1/256. -   af/128.
+      aB_8(4,2)  = -1/32.  +   af/16.
+      aB_8(4,3)  =  7/64.  +25*af/32.
+      aB_8(4,4)  = 25/32.  + 7*af/16.
+      aB_8(4,5)  = 35/128. +29*af/64.
+      aB_8(4,6)  = -7/32.  + 7*af/16.
+      aB_8(4,7)  =  7/64.  - 7*af/32.
+      aB_8(4,8)  = -1/32.  +   af/16.
+      aB_8(4,9)  =  1/256. -   af/128.
+
+      aB_8(3,1)  = -1/256. +   af/128.
+      aB_8(3,2)  =  1/32.  +15*af/16.
+      aB_8(3,3)  = 57/64.  + 7*af/32.
+      aB_8(3,4)  =  7/32.  + 9*af/16.
+      aB_8(3,5)  = 7*(-5 + 10*af)/128.
+      aB_8(3,6)  =  7/32.  - 7*af/16.
+      aB_8(3,7)  = -7/64.  + 7*af/32.
+      aB_8(3,8)  =  1/32.  -   af/16.
+      aB_8(3,9)  = -1/256. +   af/128.
+
+      aB_6(1)  =  1/64. +31*af/32.
+      aB_6(2)  = 29/32. + 3*af/16.
+      aB_6(3)  = 15/64. +17*af/32.
+      aB_6(4)  = -5/16. + 5*af/8.
+      aB_6(5)  = 15/64. -15*af/32.
+      aB_6(6)  = -3/32. + 3*af/16.
+      aB_6(7)  =  1/64. -   af/32.
+
+      lfirstcall = .false.
+    endif
+
+    bx_bound(5,:) = a0_8*f_og(l1_ogrid+4,i,4,:) &
+                  + a1_8*0.5*(f_og(l1_ogrid+3,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a2_8*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+6,i,4,:)) &
+                  + a3_8*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+7,i,4,:)) &
+                  + a4_8*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+8,i,4,:)) 
+    do j=3,4
+      bx_bound(j,:) = aB_8(j,1)*f_og(l1_ogrid  ,i,4,:) + &
+                      aB_8(j,2)*f_og(l1_ogrid+1,i,4,:) + &
+                      aB_8(j,3)*f_og(l1_ogrid+2,i,4,:) + &
+                      aB_8(j,4)*f_og(l1_ogrid+3,i,4,:) + &
+                      aB_8(j,5)*f_og(l1_ogrid+4,i,4,:) + &
+                      aB_8(j,6)*f_og(l1_ogrid+5,i,4,:) + &
+                      aB_8(j,7)*f_og(l1_ogrid+6,i,4,:) + &
+                      aB_8(j,8)*f_og(l1_ogrid+7,i,4,:) + &
+                      aB_8(j,9)*f_og(l1_ogrid+8,i,4,:)
+    enddo
+    bx_bound(2,:) = aB_6(1)*f_og(l1_ogrid  ,i,4,:) + &
+                    aB_6(2)*f_og(l1_ogrid+1,i,4,:) + &
+                    aB_6(3)*f_og(l1_ogrid+2,i,4,:) + &
+                    aB_6(4)*f_og(l1_ogrid+3,i,4,:) + &
+                    aB_6(5)*f_og(l1_ogrid+4,i,4,:) + &
+                    aB_6(6)*f_og(l1_ogrid+5,i,4,:) + &
+                    aB_6(7)*f_og(l1_ogrid+6,i,4,:)
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+
+  endsubroutine boundary_x_8_6th
 !***********************************************************************
 subroutine TDMA(fi,b,aE,aW,aP,Istart,Iend)
 !
