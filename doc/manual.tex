@@ -1243,6 +1243,7 @@ outputs a few lines of diagnostics for each sub-shell, which will break
 many applications.
 To suppress all output, follow the instructions given in the header
 documentation of \file{sourceme.csh} and \file{sourceme.sh}.
+Likewise, output from other files invoked by \code{source} should also be suppressed.  
 
 \paragraph{Note 4}
 The second time you source \file{sourceme}, it will not add
@@ -7450,13 +7451,13 @@ most of them. The recommended course of action is to make use of
 the InitialCondition module.
 
 InitialCondition works pretty much like the Special module. To implement your
-own custom initial conditions, create a \file{src/initial\_condition} directory
-either in the main \path{PENCIL_HOME} or in one specific of your run directories,
-and copy the file \file{noinitial_condition.f90} from the
-\path{src/} to it, with a new, descriptive, name.
+own custom initial conditions,
+copy the file \file{noinitial_condition.f90} from the
+\path{src/} to \path{src/initial_condition}, with a new, descriptive, name.
 
 The first thing to do in your new module is to change the
 linitialcondition=.false. header to say linitialcondition=.true.
+Also, don't forget to add \path{../} in front of the file names in \code{include} statements.
 
 This file has hooks to implement a custom initial condition to
 most variables. After implementing your initial condition,
