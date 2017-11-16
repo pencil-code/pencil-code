@@ -90,7 +90,7 @@ endif
 ifeq ($(SPECIAL_OBJ),nospecial.o)
   $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS) 
 else ifeq ($(filter-out pressure_bump,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ)
 else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ)
 else ifeq ($(shell grep 'Use Particles_cdata' $(SPECIAL_SRC)),)
