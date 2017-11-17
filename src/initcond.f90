@@ -25,7 +25,7 @@ module Initcond
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
-  public :: beltrami_complex, beltrami_old, bhyperz, bihelical
+  public :: beltrami_general, beltrami_complex, beltrami_old, bhyperz, bihelical
   public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: stratification_xz
@@ -1639,6 +1639,46 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine beltrami_general(ampl,f,i,kx,ky,kz,phase)
+!
+!  Beltrami field (as initial condition)
+!
+!  19-jun-02/axel: coded
+!   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
+!
+      integer :: i,j,l,m,n
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: kx, ky, kz, phase, k, cfunc, sfunc
+      real :: ex=.1, ey=.33, ez=.58
+      real :: kxe_x, kxe_y, kxe_z, kxkxe_x, kxkxe_y, kxkxe_z
+      real :: ampl
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+      kxe_x=ky*ez-kz*ey
+      kxe_y=kz*ex-kx*ez
+      kxe_z=kx*ey-ky*ex
+!
+      kxkxe_x=ky*kxe_z-kz*kxe_y
+      kxkxe_y=kz*kxe_x-kx*kxe_z
+      kxkxe_z=kx*kxe_y-ky*kxe_x
+!
+      k=sqrt(kx**2+ky**2+kz**2)
+!
+      do n=1,mz
+      do m=1,my
+      do l=1,mx
+        cfunc=ampl*cos(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        sfunc=ampl*sin(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        j=i  ; f(l,m,n,j)=f(l,m,n,j)+kxkxe_x*cfunc+k*kxe_x*sfunc
+        j=i+1; f(l,m,n,j)=f(l,m,n,j)+kxkxe_y*cfunc+k*kxe_y*sfunc
+        j=i+2; f(l,m,n,j)=f(l,m,n,j)+kxkxe_z*cfunc+k*kxe_z*sfunc
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine beltrami_general
 !***********************************************************************
     subroutine bihelical(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sym)
 !
