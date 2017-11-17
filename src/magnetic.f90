@@ -90,6 +90,7 @@ module Magnetic
   real, dimension (ninit) :: phase_ax=0.0, phase_ay=0.0, phase_az=0.0
   real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
+  real, dimension (ninit) :: phase_aa=0.0
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
   integer :: nzav=0,indzav=0,nzav_start=1, izav_start=1
   character (len=fnlen) :: source_zav=''
@@ -206,7 +207,7 @@ module Magnetic
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
-      coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
+      coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
@@ -1589,6 +1590,8 @@ module Magnetic
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
+        case ('Beltrami-general')
+               call beltrami_general(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),phase_aa(j))
         case ('Beltrami-x')
                call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
         case ('Beltrami-xy-samehel')
