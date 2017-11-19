@@ -4506,7 +4506,18 @@ In addition one must edit
   \begin{alltt}
   STRUCT_FUNC = struct_func
   \end{alltt}
-You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
+
+In \file[cparam.local]{src/cparam.local}, define \var{lb_nxgrid} and make
+sure that
+\begin{alltt}
+  nxgrid = nygrid = nzgrid = 2**lb_nxgrid
+\end{alltt}
+E.g.
+\begin{alltt}
+  integer, parameter :: lb_nxgrid=5
+  integer, parameter :: nxgrid=2**lb_nxgrid,nygrid=nxgrid,nzgrid=nxgrid
+\end{alltt}
+
 
 Running the code will now create the files: \\
 \file{sfu-1.dat},
