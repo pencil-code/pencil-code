@@ -32,7 +32,6 @@ module struct_func
       !   28-dec-02/axel: need also n_pdf in normalization
       !
       use Cdata
-      use Cparam,  only: lb_nxgrid
       use Sub
       use General
       use Mpicomm
