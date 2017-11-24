@@ -58,7 +58,8 @@ module Hydro
 !
 !  phi-averaged arrays for orbital advection
 !
-  real, dimension (nx,nz) :: uu_average=0.
+  real, dimension (nx,nz) :: uu_average_cyl=0.
+  real, dimension (nx,ny) :: uu_average_sph=0.
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -2466,8 +2467,13 @@ module Hydro
 ! Advect by the original radial and vertical, but residual azimuthal (= relative) velocity
 !
         p%uu_advec(:,1)=p%uu(:,1)
-        p%uu_advec(:,2)=p%uu(:,2)-uu_average(:,n-nghost)
-        p%uu_advec(:,3)=p%uu(:,3)
+        if (lcylindrical_coords) then
+          p%uu_advec(:,2)=p%uu(:,2)-uu_average_cyl(:,n-nghost)
+          p%uu_advec(:,3)=p%uu(:,3)
+        elseif (lspherical_coords) then
+          p%uu_advec(:,2)=p%uu(:,2)
+          p%uu_advec(:,3)=p%uu(:,3)-uu_average_sph(:,m-nghost)
+        endif
 !
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
@@ -2475,8 +2481,12 @@ module Hydro
           call h_dot_grad(p%uu_advec,p%uij(:,j,:),tmp)
           p%uuadvec_guu(:,j)=tmp
         enddo
-        p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
-        p%uuadvec_guu(:,2)=p%uuadvec_guu(:,2)+rcyl_mn1*p%uu(:,2)*p%uu(:,1)
+        if (lcylindrical_coords) then
+          p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
+          p%uuadvec_guu(:,2)=p%uuadvec_guu(:,2)+rcyl_mn1*p%uu(:,2)*p%uu(:,1)
+        elseif (lspherical_coords) then
+          call fatal_error("calc_pencils_hydro_nonlinear","")
+        endif
       endif
 !
     endsubroutine calc_pencils_hydro_nonlinear
@@ -2644,10 +2654,11 @@ module Hydro
 !
       real, dimension(nx,3) :: pv
 !
-      real, dimension (nx,nz) :: fsum_tmp
+      real, dimension (nx,nz) :: fsum_tmp_cyl
+      real, dimension (nx,ny) :: fsum_tmp_sph
       real, dimension (nx) :: uphi
-      real :: nygrid1
-      integer :: nnghost
+      real :: nygrid1,nzgrid1
+      integer :: nnghost,mnghost
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -2677,23 +2688,36 @@ module Hydro
 !
 !  Pre-calculate the average large scale speed of the flow
 !
-        fsum_tmp=0.
-!
-        nygrid1=1.0/nygrid
-        do n=n1,n2
-          do m=m1,m2
-            nnghost=n-nghost
-            uphi=f(l1:l2,m,n,iuy)
-            fsum_tmp(:,nnghost)=fsum_tmp(:,nnghost)+uphi*nygrid1
+        if (lcylindrical_coords) then
+          fsum_tmp_cyl=0.
+          nygrid1=1.0/nygrid
+          do n=n1,n2
+            do m=m1,m2
+              nnghost=n-nghost
+              uphi=f(l1:l2,m,n,iuy)
+              fsum_tmp_cyl(:,nnghost)=fsum_tmp_cyl(:,nnghost)+uphi*nygrid1
+            enddo
           enddo
-        enddo
 !
 ! The sum has to be done processor-wise
 ! Sum over processors of same ipz, and different ipy
 ! --only relevant for 3D, but is here for generality
 !
-        call mpiallreduce_sum(fsum_tmp,uu_average,&
-             (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
+          call mpiallreduce_sum(fsum_tmp_cyl,uu_average_cyl,&
+               (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
+!
+        elseif (lspherical_coords) then
+          nzgrid1=1.0/nzgrid
+          do n=n1,n2
+            do m=m1,m2
+              mnghost=m-nghost
+              uphi=f(l1:l2,m,n,iuz)
+              fsum_tmp_sph(:,mnghost)=fsum_tmp_sph(:,mnghost)+uphi*nzgrid1
+            enddo
+          enddo
+          call mpiallreduce_sum(fsum_tmp_sph,uu_average_sph,&
+               (/nx,ny/),idir=3) !idir=2 is equal to old LSUMY=.true.
+        endif
       endif
 !
     endsubroutine hydro_before_boundary
@@ -3353,11 +3377,19 @@ module Hydro
       endif
 !
       if (lfargo_advection.and.idiag_nshift/=0) then
-        !nnghost=n-nghost
-        !phidot=uu_average(:,nnghost)*rcyl_mn1
-        !nshift=phidot*dt*dy_1(m)
-        !call max_mn_name(nshift,idiag_nshift)
-        call max_mn_name(uu_average(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+        if (lcylindrical_coords) then
+          !nnghost=n-nghost
+          !phidot=uu_average_cyl(:,nnghost)*rcyl_mn1
+          !nshift=phidot*dt*dy_1(m)
+          !call max_mn_name(nshift,idiag_nshift)
+          call max_mn_name(uu_average_cyl(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+        elseif (lspherical_coords) then
+          !mnghost=m-nghost
+          !phidot=uu_average_sph(:,nnghost)*rcyl_mn1  ! rcyl = r*sinth(m)
+          !nshift=phidot*dt*dz_1(n)
+          !call max_mn_name(nshift,idiag_nshift)
+          call max_mn_name(uu_average_sph(:,m-nghost)*rcyl_mn1*dt*dz_1(n),idiag_nshift)
+        endif
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
@@ -5454,53 +5486,90 @@ module Hydro
 !  12-mar-17/wlyra: moved here from special
 !
       use Sub
-      use Fourier, only: fft_y_parallel,fourier_shift_y
+      use Fourier, only: fft_y_parallel,fft_z_parallel
       use Cdata
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,ny) :: a_re,a_im
+      real, dimension (nx,ny) :: acyl_re,acyl_im
+      real, dimension (nx,nz) :: asph_re,asph_im
       real, dimension (nx) :: phidot
-      integer :: ivar,ng
+      integer :: ivar,ng,mg
       real :: dt_
 !
 !  Pencil uses linear velocity. Fargo will shift based on
 !  angular velocity. Get phidot from uphi.
 !
-      do n=n1,n2
-        ng=n-n1+1
-        phidot=uu_average(:,ng)*rcyl_mn1
+      if (lcylindrical_coords) then
+        do n=n1,n2
+          ng=n-n1+1
+          phidot=uu_average_cyl(:,ng)*rcyl_mn1
 !
-        do ivar=1,mvar
+          do ivar=1,mvar
 !
-          a_re=f(l1:l2,m1:m2,n,ivar)
-          a_im=0.
+            acyl_re=f(l1:l2,m1:m2,n,ivar)
+            acyl_im=0.
 !
 !  Forward transform. No need for computing the imaginary part.
 !  The transform is just a shift in y, so no need to compute
 !  the x-transform either.
 !
-          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+            call fft_y_parallel(acyl_re,acyl_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
 !
 !  Inverse transform of the shifted array back into real space.
 !  No need again for either imaginary part of x-transform.
 !
-          call fft_y_parallel(a_re,a_im,linv=.true.)
-          f(l1:l2,m1:m2,n,ivar)=a_re
+            call fft_y_parallel(acyl_re,acyl_im,linv=.true.)
+            f(l1:l2,m1:m2,n,ivar)=acyl_re
 !
 !  Also shift df, unless it is the last subtimestep.
 !
-          if (.not.llast) then
-            a_re=df(l1:l2,m1:m2,n,ivar)
-            a_im=0.
-            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
-            call fft_y_parallel(a_re,a_im,linv=.true.)
-            df(l1:l2,m1:m2,n,ivar)=a_re
-          endif
+            if (.not.llast) then
+              acyl_re=df(l1:l2,m1:m2,n,ivar)
+              acyl_im=0.
+              call fft_y_parallel(acyl_re,acyl_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+              call fft_y_parallel(acyl_re,acyl_im,linv=.true.)
+              df(l1:l2,m1:m2,n,ivar)=acyl_re
+            endif
 !
+          enddo
         enddo
-      enddo
+      elseif (lspherical_coords) then
+        do m=m1,m2
+          mg=m-m1+1
+          phidot=uu_average_sph(:,mg)*rcyl_mn1
+!
+          do ivar=1,mvar
+!
+            asph_re=f(l1:l2,m,n1:n2,ivar)
+            asph_im=0.
+!
+!  Forward transform. No need for computing the imaginary part.
+!  The transform is just a shift in y, so no need to compute
+!  the x-transform either.
+!
+            call fft_z_parallel(asph_re,asph_im,SHIFT_Z=phidot*dt_,lneed_im=.false.)
+!
+!  Inverse transform of the shifted array back into real space.
+!  No need again for either imaginary part of x-transform.
+!
+            call fft_z_parallel(asph_re,asph_im,linv=.true.)
+            f(l1:l2,m,n1:n2,ivar)=asph_re
+!
+!  Also shift df, unless it is the last subtimestep.
+!
+            if (.not.llast) then
+              asph_re=df(l1:l2,m,n1:n2,ivar)
+              asph_im=0.
+              call fft_z_parallel(asph_re,asph_im,SHIFT_Z=phidot*dt_,lneed_im=.false.)
+              call fft_z_parallel(asph_re,asph_im,linv=.true.)
+              df(l1:l2,m,n1:n2,ivar)=asph_re
+            endif
+!
+          enddo
+        enddo
+      endif
 !
     endsubroutine fourier_shift_fargo
 !***********************************************************************
