@@ -2485,7 +2485,9 @@ module Hydro
           p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
           p%uuadvec_guu(:,2)=p%uuadvec_guu(:,2)+rcyl_mn1*p%uu(:,2)*p%uu(:,1)
         elseif (lspherical_coords) then
-          call fatal_error("calc_pencils_hydro_nonlinear","")
+          p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-r1_mn*(p%uu(:,2)*p%uu(:,2)+p%uu(:,3)*p%uu(:,3))
+          p%uuadvec_guu(:,2)=p%uuadvec_guu(:,2)+r1_mn*(p%uu(:,2)*p%uu(:,1)-p%uu(:,3)*p%uu(:,3)*cotth(m))
+          p%uuadvec_guu(:,3)=p%uuadvec_guu(:,3)+r1_mn*(p%uu(:,3)*p%uu(:,1)+p%uu(:,3)*p%uu(:,2)*cotth(m))
         endif
       endif
 !
@@ -5493,20 +5495,20 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ny) :: acyl_re,acyl_im
-      real, dimension (nx,nz) :: asph_re,asph_im
+      real, dimension (nz) :: asph_re,asph_im
       real, dimension (nx) :: phidot
-      integer :: ivar,ng,mg
+      integer :: ivar,ng,mg,ig,i
       real :: dt_
 !
 !  Pencil uses linear velocity. Fargo will shift based on
 !  angular velocity. Get phidot from uphi.
 !
-      if (lcylindrical_coords) then
-        do n=n1,n2
+      ifcoordinates: if (lcylindrical_coords) then
+        zloopcyl: do n=n1,n2
           ng=n-n1+1
           phidot=uu_average_cyl(:,ng)*rcyl_mn1
 !
-          do ivar=1,mvar
+          varloopcyl: do ivar=1,mvar
 !
             acyl_re=f(l1:l2,m1:m2,n,ivar)
             acyl_im=0.
@@ -5533,43 +5535,46 @@ module Hydro
               df(l1:l2,m1:m2,n,ivar)=acyl_re
             endif
 !
-          enddo
-        enddo
+          enddo varloopcyl
+        enddo zloopcyl
       elseif (lspherical_coords) then
-        do m=m1,m2
+        yloopsph: do m=m1,m2
           mg=m-m1+1
-          phidot=uu_average_sph(:,mg)*rcyl_mn1
+          xloopsph: do i=l1,l2
+            ig=i-l1+1
+            phidot=uu_average_sph(ig,mg)*rcyl_mn1
 !
-          do ivar=1,mvar
+            varloopsph: do ivar=1,mvar
 !
-            asph_re=f(l1:l2,m,n1:n2,ivar)
-            asph_im=0.
+              asph_re=f(i,m,n1:n2,ivar)
+              asph_im=0.
 !
 !  Forward transform. No need for computing the imaginary part.
-!  The transform is just a shift in y, so no need to compute
+!  The transform is just a shift in z, so no need to compute
 !  the x-transform either.
 !
-            call fft_z_parallel(asph_re,asph_im,SHIFT_Z=phidot*dt_,lneed_im=.false.)
+              call fft_z_parallel(asph_re,asph_im,SHIFT_Z=phidot(ig)*dt_,lneed_im=.false.)
 !
 !  Inverse transform of the shifted array back into real space.
 !  No need again for either imaginary part of x-transform.
 !
-            call fft_z_parallel(asph_re,asph_im,linv=.true.)
-            f(l1:l2,m,n1:n2,ivar)=asph_re
+              call fft_z_parallel(asph_re,asph_im,linv=.true.)
+              f(i,m,n1:n2,ivar)=asph_re
 !
 !  Also shift df, unless it is the last subtimestep.
 !
-            if (.not.llast) then
-              asph_re=df(l1:l2,m,n1:n2,ivar)
-              asph_im=0.
-              call fft_z_parallel(asph_re,asph_im,SHIFT_Z=phidot*dt_,lneed_im=.false.)
-              call fft_z_parallel(asph_re,asph_im,linv=.true.)
-              df(l1:l2,m,n1:n2,ivar)=asph_re
-            endif
+              if (.not.llast) then
+                asph_re=df(i,m,n1:n2,ivar)
+                asph_im=0.
+                call fft_z_parallel(asph_re,asph_im,SHIFT_Z=phidot(ig)*dt_,lneed_im=.false.)
+                call fft_z_parallel(asph_re,asph_im,linv=.true.)
+                df(i,m,n1:n2,ivar)=asph_re
+              endif
 !
-          enddo
-        enddo
-      endif
+            enddo varloopsph
+          enddo xloopsph
+        enddo yloopsph
+      endif ifcoordinates
 !
     endsubroutine fourier_shift_fargo
 !***********************************************************************
