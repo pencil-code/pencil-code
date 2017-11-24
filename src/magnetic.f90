@@ -2010,7 +2010,7 @@ module Magnetic
 !  need uga always for advective gauge.
 !
       if (ladvective_gauge) then
-        if (lfargo_advection) then 
+        if (lfargo_advection) then
           lpenc_requested(i_uuadvec_gaa)=.true.
         else
           lpenc_requested(i_uga)=.true.
@@ -2852,8 +2852,12 @@ module Magnetic
           call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
           p%uuadvec_gaa(:,j)=tmp
         enddo
-        p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
-        p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,2)*p%aa(:,1)
+        if (lcylindrical_coords) then
+          p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
+          p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,2)*p%aa(:,1)
+        elseif (lspherical_coords) then
+          call fatal_error("uuadvec_gaa","not implemented yet for spherical coordinates")
+        endif
       endif
 !
 !  bij, del2a, graddiva
@@ -3907,7 +3911,7 @@ module Magnetic
               if (lfargo_advection) call fatal_error("daadt","fargo advection with external field not tested")
               call cross(p%uu,B_ext,ujiaj)
             else
-              if (lfargo_advection) then 
+              if (lfargo_advection) then
                 ajiuj=0.
               else
                 ujiaj=0.
@@ -3918,7 +3922,7 @@ module Magnetic
 !
             do j=1,3
               do k=1,3
-                if (lfargo_advection) then 
+                if (lfargo_advection) then
                   ajiuj(:,j)=ajiuj(:,j)+p%uu(:,k)*p%aij(:,k,j)
                 else
                   ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
@@ -3935,7 +3939,7 @@ module Magnetic
                 ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
               endif
 !
-            else if (lspherical_coords) then 
+            else if (lspherical_coords) then
               if (lfargo_advection) call fatal_error("daadt",&
                    "curvature terms on ajiuj not added for spherical coordinates yet.")
               ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
@@ -3945,7 +3949,7 @@ module Magnetic
                                          p%uu(:,3)*p%aa(:,3)*cotth(m))*r1_mn
             endif
 !
-            if (.not.lfargo_advection) then 
+            if (.not.lfargo_advection) then
               dAdt = dAdt-p%uga-ujiaj+fres
             else
               ! the gauge above, with -ujiaj is unstable due to the buildup of the irrotational term 
