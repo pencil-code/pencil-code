@@ -857,15 +857,15 @@ module Grid
         enddo
       endif
 !
-!  Fargo (orbital advection acceleration) is implemented for cylindrical coordinates.
+!  Fargo (orbital advection acceleration) is implemented for polar coordinates only.
 !  Die otherwise.       
 !
-      if (lfargo_advection.and.coord_system/='cylindric') then
+      if (lfargo_advection.and.coord_system=='cartesian') then
         if (lroot) then
           print*,""
           print*,"Fargo advection is only implemented for"
-          print*,"cylindrical coordinates. Switch"
-          print*," coord_system='cylindric'"
+          print*,"polar coordinates. Switch"
+          print*," coord_system='cylindric' or 'spherical'"
           print*,"in init_pars of start.in if you"
           print*,"want to use the fargo algorithm"
           print*,""
