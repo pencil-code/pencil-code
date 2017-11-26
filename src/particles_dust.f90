@@ -1392,9 +1392,9 @@ module Particles
           if (dimensionality==3) then
 !  3-D
             do k=2,npar_loc
-              fp(k,ixp)=fp(k-1,ixp)+dx_par
-              fp(k,iyp)=fp(k-1,iyp)
-              fp(k,izp)=fp(k-1,izp)
+              fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
+              fp(k,iyp)=fp(1,iyp)
+              fp(k,izp)=fp(1,izp)
               if (fp(k,ixp)>xyz1_loc(1)) then
                 fp(k,ixp)=fp(1,ixp)
                 fp(k,iyp)=fp(k,iyp)+dy_par
@@ -1408,9 +1408,9 @@ module Particles
 !  2-D
             if (nxgrid==1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(k-1,ixp)
-                fp(k,iyp)=fp(k-1,iyp)+dy_par
-                fp(k,izp)=fp(k-1,izp)
+                fp(k,ixp)=fp(1,ixp)
+                fp(k,iyp)=fp(1,iyp)+(k-1)*dy_par
+                fp(k,izp)=fp(1,izp)
                 if (fp(k,iyp)>xyz1_loc(2)) then
                   fp(k,iyp)=fp(1,iyp)
                   fp(k,izp)=fp(k,izp)+dz_par
@@ -1418,9 +1418,9 @@ module Particles
               enddo
             elseif (nygrid==1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(k-1,ixp)+dx_par
-                fp(k,iyp)=fp(k-1,iyp)
-                fp(k,izp)=fp(k-1,izp)
+                fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
+                fp(k,iyp)=fp(1,iyp)
+                fp(k,izp)=fp(1,izp)
                 if (fp(k,ixp)>xyz1_loc(1)) then
                   fp(k,ixp)=fp(1,ixp)
                   fp(k,izp)=fp(k,izp)+dz_par
@@ -1428,9 +1428,9 @@ module Particles
               enddo
             elseif (nzgrid==1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(k-1,ixp)+dx_par
-                fp(k,iyp)=fp(k-1,iyp)
-                fp(k,izp)=fp(k-1,izp)
+                fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
+                fp(k,iyp)=fp(1,iyp)
+                fp(k,izp)=fp(1,izp)
                 if (fp(k,ixp)>xyz1_loc(1)) then
                   fp(k,ixp)=fp(1,ixp)
                   fp(k,iyp)=fp(k,iyp)+dy_par
@@ -1441,21 +1441,21 @@ module Particles
 !  1-D
             if (nxgrid/=1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(k-1,ixp)+dx_par
-                fp(k,iyp)=fp(k-1,iyp)
-                fp(k,izp)=fp(k-1,izp)
+                fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
+                fp(k,iyp)=fp(1,iyp)
+                fp(k,izp)=fp(1,izp)
               enddo
             elseif (nygrid/=1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(k-1,ixp)
-                fp(k,iyp)=fp(k-1,iyp)+dy_par
-                fp(k,izp)=fp(k-1,izp)
+                fp(k,ixp)=fp(1,ixp)
+                fp(k,iyp)=fp(1,iyp)+(k-1)*dy_par
+                fp(k,izp)=fp(1,izp)
               enddo
             elseif (nzgrid/=1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(k-1,ixp)
-                fp(k,iyp)=fp(k-1,iyp)
-                fp(k,izp)=fp(k-1,izp)+dz_par
+                fp(k,ixp)=fp(1,ixp)
+                fp(k,iyp)=fp(1,iyp)
+                fp(k,izp)=fp(1,izp)+(k-1)*dz_par
               enddo
             endif
           else
