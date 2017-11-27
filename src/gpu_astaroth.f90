@@ -78,6 +78,20 @@ contains
 
     endsubroutine initialize_GPU
 !**************************************************************************
+    subroutine gpu_init
+!
+      call init_gpu_c
+!
+    endsubroutine gpu_init
+!**************************************************************************
+    subroutine register_GPU(f)
+!
+      real, dimension(:,:,:,:), intent(IN) :: f
+
+      call register_gpu_c(f)
+!
+    endsubroutine register_GPU
+!**************************************************************************
     subroutine finalize_GPU
 !
       call finalize_gpu_c
@@ -100,14 +114,13 @@ contains
           do ll=1,mx
             f(ll,mm,nn,iux)=val; val=val+1.
       enddo; enddo; enddo
-      f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
+      !f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
 
 1     continue
 !if (lroot) print*, 'ux(1:3)-PC=', f(l1:l1+2,m1,n1,iux)
 !if (lroot) print*, 'lnrho(1:3)-PC=', f(l1:l1+2,m1,n1,ilnrho)
 !f(:,:,:,iuy)=0.; f(:,:,:,iuz)=0.
-      call rhs_gpu_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho), &
-                     isubstep,lvery_first)
+      call rhs_gpu_c(isubstep,lvery_first)
 !
       lvery_first=.false.
 

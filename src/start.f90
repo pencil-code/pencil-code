@@ -63,6 +63,7 @@ program start
   use Filter
   use Gravity,          only: init_gg
   use Grid
+  use Gpu,              only: gpu_init, register_gpu
   use Hydro,            only: init_uu
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
@@ -106,6 +107,10 @@ program start
 !  Check processor layout, get processor numbers and define whether we are root.
 !
   call mpicomm_init
+!
+!  Initialize GPU use.
+!
+  call gpu_init
 !
 !  Identify version.
 !
@@ -159,6 +164,8 @@ program start
 !
   call register_modules
   if (lparticles) call particles_register_modules
+!
+  call register_gpu(f)
 !
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !

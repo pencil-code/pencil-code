@@ -19,11 +19,15 @@
 #include <dlfcn.h>
 
 #include "headers_c.h"
+//#define bool int
+//#include "cdata_c.h"
 
+void initGPU();
+void registerGPU(REAL*);
 void initializeGPU();
-int finalizeGPU();
-void substepGPU(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho, int isubstep, int full);
-void copyFarray(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho);
+void finalizeGPU();
+void substepGPU(int isubstep, int full);
+void copyFarray();
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
@@ -43,6 +47,8 @@ void FTNIZE(initialize_gpu_c)()
   //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
 
   //printf("ymin = %f\n", __cdata_MOD_y[0]);
+  //printf("llast_proc_x = %d\n", __cdata_MOD_llast_proc_x);
+  //printf("ldiagnos = %d\n", ldiagnos);
   initializeGPU();
 
 /*
@@ -55,6 +61,22 @@ void FTNIZE(initialize_gpu_c)()
 */
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(init_gpu_c)()
+{
+
+// Initializes GPU use.
+
+  initGPU();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(register_gpu_c)(REAL* f)
+{
+
+// Allocates memory on GPU according to setup needs.
+
+  registerGPU(f);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)()
 {
 
@@ -64,7 +86,7 @@ void FTNIZE(finalize_gpu_c)()
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
-     (REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho, FINT *isubstep, FINT *full)
+     (FINT *isubstep, FINT *full)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -101,7 +123,7 @@ void FTNIZE(rhs_gpu_c)
 {
   // copies data back and forth and peforms integration substep isubstep
 
-  substepGPU(uu_x, uu_y, uu_z, lnrho, *isubstep, *full);
+  substepGPU(*isubstep, *full);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho)

@@ -21,6 +21,18 @@ contains
 !
     endsubroutine initialize_GPU
 !**************************************************************************
+    subroutine gpu_init
+!
+    endsubroutine gpu_init
+!**************************************************************************
+    subroutine register_GPU(f)
+!
+      real, dimension(:,:,:,:), intent(IN) :: f
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine register_GPU
+!**************************************************************************
     subroutine finalize_GPU
 !
     endsubroutine finalize_GPU

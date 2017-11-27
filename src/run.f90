@@ -66,6 +66,7 @@ program run
   use Forcing,         only: forcing_clean_up,addforce
   use General,         only: random_seed_wrapper, touch_file, itoa
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask
+  use Gpu,             only: gpu_init, register_gpu
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
@@ -114,6 +115,10 @@ program run
 !  Get processor numbers and define whether we are root.
 !
   call mpicomm_init
+!
+!  Initialize GPU use.
+!
+  call gpu_init
 !
 !  Identify version.
 !
@@ -253,6 +258,8 @@ program run
 !
   call register_modules
   if (lparticles) call particles_register_modules
+!
+  call register_gpu(f) 
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
