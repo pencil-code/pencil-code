@@ -496,6 +496,11 @@ module Particles_main
         enddo
       endif
 !
+!
+!  Remove particles according to some criterion.
+!
+      call remove_particles_criterion()
+!
 !  Evolve particle state.
 !
       if (.not.lpointmasses) &
@@ -1270,12 +1275,12 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real :: rp
-      integer :: k
+      real :: rp, epsd2g_tmp
+      integer :: k, ix0, iy0, iz0
 !
       if (remove_particle_at_time > 0) then
           !
-          ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly?
+          ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly? (signed who?)
           !
           if (remove_particle_at_time-dt < t) then
               if (t < remove_particle_at_time+2*dt) then
@@ -1304,6 +1309,24 @@ module Particles_main
                       enddo
                       remove_particle_at_time = -1.
 
+                  case ('density-threshold')
+                      k=1
+                      do while (k <= npar_loc)
+                         ! find closest cell
+                         ix0=ineargrid(k,1)
+                         iy0=ineargrid(k,2)
+                         iz0=ineargrid(k,3)
+                         ! dust-to-gas ratio of closest cell
+                         epsd2g_tmp = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
+                         ! if dust-to-gas-ratio of closest cell is bigger than threshold, remove
+                         if (epsd2g_tmp  > remove_particle_criteria_density) then
+                              call remove_particle(fp,ipar,k,dfp,ineargrid)
+                          else
+                              k=k+1
+                          endif
+                      enddo
+                      remove_particle_at_time = -1.
+                      
                   case ('xycylinder')
                       k=1
                       do while (k<=npar_loc)
