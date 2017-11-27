@@ -110,7 +110,7 @@ module Particles
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      rad_sphere, pos_sphere, rhopmat, &
+      remove_particle_criteria_density, rad_sphere, pos_sphere, rhopmat, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
@@ -130,7 +130,7 @@ module Particles
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      ldt_grav_par, lsinkpoint, rhopmat, &
+      remove_particle_criteria_density, ldt_grav_par, lsinkpoint, rhopmat, &
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
