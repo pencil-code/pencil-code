@@ -226,7 +226,7 @@ module Particles
       birthring_r, birthring_width, lgaussian_birthring, &
       ldraglaw_stokesschiller, lbirthring_depletion, &
       remove_particle_at_time, remove_particle_criteria, &
-      remove_particle_criteria_size, &
+      remove_particle_criteria_size, remove_particle_criteria_density, &
       lnocollapse_xdir_onecell, lnocollapse_ydir_onecell, &
       lnocollapse_zdir_onecell, qgaussz, r0gaussz
 !
@@ -277,6 +277,7 @@ module Particles
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
+      remove_particle_criteria_density, &
       supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltausupersat, &
