@@ -496,11 +496,6 @@ module Particles_main
         enddo
       endif
 !
-!
-!  Remove particles according to some criterion.
-!
-      call remove_particles_criterion()
-!
 !  Evolve particle state.
 !
       if (.not.lpointmasses) &
