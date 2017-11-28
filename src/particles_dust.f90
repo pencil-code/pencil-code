@@ -284,6 +284,8 @@ module Particles
       c1, c2, Rv, rho0
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
+  integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
+  integer :: idiag_xpmax=0, idiag_ypmax=0, idiag_zpmax=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
   integer :: idiag_vrelpabsm=0                          ! DIAG_DOC: $\rm{Absolute value of mean relative velocity}$
   integer :: idiag_rpm=0, idiag_rp2m=0
@@ -3106,6 +3108,12 @@ module Particles
         if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
         if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xpmax/=0)  call max_par_name(fp(1:npar_loc,ixp),idiag_xpmax)
+        if (idiag_ypmax/=0)  call max_par_name(fp(1:npar_loc,iyp),idiag_ypmax)
+        if (idiag_zpmax/=0)  call max_par_name(fp(1:npar_loc,izp),idiag_zpmax)
+        if (idiag_xpmin/=0)  call max_par_name(-fp(1:npar_loc,ixp),idiag_xpmin,lneg=.true.)
+        if (idiag_ypmin/=0)  call max_par_name(-fp(1:npar_loc,iyp),idiag_ypmin,lneg=.true.)
+        if (idiag_zpmin/=0)  call max_par_name(-fp(1:npar_loc,izp),idiag_zpmin,lneg=.true.)
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
@@ -6280,6 +6288,8 @@ module Particles
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+        idiag_xpmax=0; idiag_ypmax=0; idiag_zpmax=0
+        idiag_xpmin=0; idiag_ypmin=0; idiag_zpmin=0
         idiag_vrelpabsm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0; idiag_urel=0
@@ -6322,10 +6332,16 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)
-        call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'vrelpabsm',idiag_vrelpabsm)
+        call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
+        call parse_name(iname,cname(iname),cform(iname),'xpmin',idiag_xpmin)
+        call parse_name(iname,cname(iname),cform(iname),'ypmin',idiag_ypmin)
+        call parse_name(iname,cname(iname),cform(iname),'zpmin',idiag_zpmin)
+        call parse_name(iname,cname(iname),cform(iname),'xpmax',idiag_xpmax)
+        call parse_name(iname,cname(iname),cform(iname),'ypmax',idiag_ypmax)
+        call parse_name(iname,cname(iname),cform(iname),'zpmax',idiag_zpmax)
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
         call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
