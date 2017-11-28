@@ -1308,9 +1308,7 @@ module Particles_main
                       k=1
                       do while (k <= npar_loc)
                          ! find closest cell
-                         ix0=ineargrid(k,1)
-                         iy0=ineargrid(k,2)
-                         iz0=ineargrid(k,3)
+                         ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                          ! dust-to-gas ratio of closest cell
                          epsd2g_tmp = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
                          ! if dust-to-gas-ratio of closest cell is bigger than threshold, remove
