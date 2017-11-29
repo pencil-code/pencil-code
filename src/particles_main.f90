@@ -1312,7 +1312,7 @@ module Particles_main
                          ! dust-to-gas ratio of closest cell
                          epsd2g_tmp = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
                          ! if dust-to-gas-ratio of closest cell is bigger than threshold, remove
-                         if (epsd2g_tmp  > remove_particle_criteria_density) then
+                         if (epsd2g_tmp  > remove_particle_criteria_edtog) then
                               call remove_particle(fp,ipar,k,dfp,ineargrid)
                           else
                               k=k+1
