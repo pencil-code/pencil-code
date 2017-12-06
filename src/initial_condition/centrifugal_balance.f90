@@ -121,6 +121,7 @@ module InitialCondition
 !
   real :: bump_radius = 1.,bump_ampl = 0.4, bump_width = 0.1
   character (len=labellen) :: ipressurebump='nobump'
+  character (len=labellen) :: imidplane='power-law'
 !
 ! Magnetic spiral
   real :: B0_spiral=0.012042837784031205
@@ -137,7 +138,7 @@ module InitialCondition
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
-       bump_radius,bump_ampl,bump_width,ipressurebump,&
+       bump_radius,bump_ampl,bump_width,ipressurebump,imidplane,&
        lselfgravity_logspirals,dustdensity_powerlaw,edtog,&
        B0_spiral,etamu0_spiral,Omega0_spiral,r0_spiral
 !
@@ -413,8 +414,6 @@ module InitialCondition
 !
       if (lroot) print*,&
            'initial_condition_lnrho: locally isothermal approximation'
-      if (lroot) print*,'Radial stratification with power law=',&
-           density_power_law
 !
       if (lenergy.and.llocal_iso) then
         if (lroot) then
@@ -508,15 +507,29 @@ module InitialCondition
            call fatal_error("initial_condition_lnrho","")
         endselect
 !
-        if (lexponential_smooth) then
-          !radial_percent_smooth = percentage of the grid
-          !that the smoothing is applied
-          rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-          lnrhomid=log(rho0) &
-               + density_power_law*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
-        else
-          lnrhomid=log(rho0) -.5*density_power_law*log((rr/r_ref)**2+rsmooth**2)
-        endif
+        select case (imidplane)
+        case ('power-law')
+           if (lheader) print*,'Radial stratification with power law=',&
+                density_power_law
+          if (lexponential_smooth) then
+            !radial_percent_smooth = percentage of the grid
+            !that the smoothing is applied
+            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+            lnrhomid=log(rho0) &
+                 + density_power_law*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
+          else
+            lnrhomid=log(rho0) -.5*density_power_law*log((rr/r_ref)**2+rsmooth**2)
+          endif
+        case ('exponential')
+          if (lheader) print*,'Exponential disk'
+          lnrhomid=log(rho0) - rr/r_ref
+        case ('truncated')
+          if (lheader) print*,'Truncated disk'
+          lnrhomid=log(rho0) - density_power_law*log((rr/r_ref)) -(2-density_power_law)*rr/r_ref
+       case default
+           if (lroot) print*, 'No such value for imidplane: ', trim(ipressurebump)
+           call fatal_error("initial_condition_lnrho","")
+        endselect
 !
 !  Vertical stratification, if needed
 !
@@ -1473,7 +1486,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx,ny,nz) :: rho
-      real, dimension (nx,ny,nz,3) :: gpotself
+      real, dimension (nx,ny,nz,3) :: acceleration
       real, dimension (nx) :: gspotself
       real :: rhs_poisson_const
 !
@@ -1501,13 +1514,15 @@ module InitialCondition
       rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !     
       call inverse_laplacian(rho)
-      call get_acceleration(gpotself)
+      call get_acceleration(acceleration)
+!
+!  The acceleration is the negative of the potential gradient
 !
       do n=n1,n2 ; do m=m1,m2
 !
 !  correct the angular frequency phidot^2
 !
-        gspotself=gpotself(:,m-m1+1,n-n1+1,1)
+        gspotself = -acceleration(:,m-m1+1,n-n1+1,1)
         call correct_azimuthal_velocity(f,gspotself,'self gravity')
 !
       enddo;enddo
