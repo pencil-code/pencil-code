@@ -16,10 +16,9 @@ def var(**kwarg):
     """
     # Author: Chao-Chin Yang
     # Created: 2017-08-24
-    # Last Modified: 2017-08-24
+    # Last Modified: 2017-12-08
     from . import read
     from evtk.hl import gridToVTK
-    from Toolbox import get
 
     # Read the parameters.
     datadir = kwarg.pop("datadir", "./data")
