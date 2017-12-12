@@ -35,7 +35,7 @@ module PointMasses
   real, dimension(nqpar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: totmass, totmass1
-  real :: GNewton1, GNewton=impossible
+  real :: GNewton1, GNewton=impossible, density_scale=0.001
   real :: cdtq=0.1
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
@@ -58,6 +58,8 @@ module PointMasses
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
   !logical :: linertial_frame=.true.
+  logical :: lnoselfgrav_primary=.true.
+  logical :: lgas_gravity=.false.,ldust_gravity=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newtonian'
@@ -78,7 +80,8 @@ module PointMasses
       ldt_pointmasses, cdtq, lretrograde, &
 !      linertial_frame,
       eccentricity, semimajor_axis, & !lcartesian_evolution, &
-      ipotential_pointmass
+      ipotential_pointmass, density_scale,&
+      lgas_gravity,ldust_gravity
 !
   namelist /pointmasses_run_pars/ &
       lreset_cm, &
@@ -87,7 +90,8 @@ module PointMasses
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
       ltempering, & !linertial_frame, & !lcartesian_evolution,
-      ipotential_pointmass 
+      ipotential_pointmass, density_scale,&
+      lgas_gravity,ldust_gravity
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -779,8 +783,10 @@ module PointMasses
 !
       real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
       real, dimension (mx,3) :: ggt
+      real, dimension (3) :: xxq,accg
       real, dimension (nx) :: pot_energy
       integer :: ks
+      logical :: lintegrate, lparticle_out
 !
       intent (in) :: f, p
       intent (inout) :: df
@@ -788,35 +794,85 @@ module PointMasses
 !  Get the total gravity field. In the case of dust, it is already
 !  pre-calculated
 !
-      if (lhydro) then
+      lhydroif: if (lhydro) then
         call get_total_gravity(ggt)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggt(l1:l2,:)
 !
+!  Integrate the disk gravity to the particle
+!
+!  Backreaction of the gas+dust gravity onto the massive particles
+!  The integration is needed for these two cases:
+!
+!   1. We are not solving the Poisson equation (lbackreaction)
+!   2. We are, but a particle is out of the box (a star, for instance)
+!      and therefore the potential cannot be interpolated.
+!
+        pointmasses1: do ks=1,nqpar
+          lparticle_out=.false.
+          if (lselfgravity) then
+            if ((fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
+                (fq(ks,iyq)< xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
+                (fq(ks,izq)< xyz0(3)).or.(fq(ks,izq) > xyz1(3))) then
+              !particle out of box
+              lparticle_out=.true.
+            endif
+          endif
+          lintegrate=lbackreaction.or.lparticle_out
+!
+!  Sometimes making the star feel the selfgravity of the disk leads to
+!  numerical troubles as the star is too close to the origin (in cylindrical
+!  coordinates).
+!
+          if ((ks==istar).and.lnoselfgrav_primary) lintegrate=.false.
+!
+          diskgravity: if (lintegrate) then
+!
+!  Get the acceleration particle ks suffers due to self-gravity.
+!
+            call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
+            xxq = fq(ks,ixq:izq)
+!
+            if (lcylindrical_gravity_nbody(ks)) then
+              call integrate_selfgravity(p,rpcyl_mn(:,ks),&
+                  xxq,accg,r_smooth(ks))
+            else
+              call integrate_selfgravity(p,rp_mn(:,ks),&
+                  xxq,accg,r_smooth(ks))
+            endif
+!
+!  Add it to its dfp
+!
+            dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
+          endif diskgravity
+        enddo pointmasses1
+!
 !  Diagnostic
 !
-        if (ldiagnos) then
-          do ks=1,nqpar
-            if (idiag_totenergy/=0) pot_energy=0.0
-            call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                 E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
-!
-!  Calculate torques for output, if needed
-!
-            if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
-                 call calc_torque(p,rpcyl_mn(:,ks),ks)
+        diagnos: if (ldiagnos) then
+          pointmasses2: do ks=1,nqpar
 !
 !  Total energy
 !
-            if (idiag_totenergy/=0) then
+            if (idiag_totenergy/=0) then 
+              pot_energy=0.0
+              call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                   E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
               !potential energy
               pot_energy = pot_energy - &
                    GNewton*pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
               if (ks==nqpar) &
                    call sum_lim_mn_name(.5*p%rho*p%u2 + pot_energy,idiag_totenergy,p)
             endif
-          enddo
-        endif
-      endif
+!
+!  Calculate torques for output, if needed
+!
+            if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
+                 call calc_torque(p,rpcyl_mn(:,ks),ks)
+!
+          enddo pointmasses2
+        endif diagnos
+      endif lhydroif
 !
       call keep_compiler_quiet(f)
 !      
@@ -921,7 +977,7 @@ module PointMasses
 !
 !  Identify module.
 !
-      if (lheader) print*, 'dvvp_dt_pointmasses: Calculate dvvp_dt_pointmasses'
+      if (lheader) print*, 'dvvq_dt_pointmasses: Calculate dvvq_dt_pointmasses'
 !
 !  Evolve massive particle positions due to the gravity of other massive
 !  particles. The gravity of the massive particles on the dust will be added
@@ -1545,6 +1601,127 @@ module PointMasses
 !
     endsubroutine add_indirect_term
 !***********************************************************************
+    subroutine integrate_selfgravity(p,rrp,xxpar,accg,rp0)
+!
+!  Calculates acceleration on the point (x,y,z)=xxpar
+!  due to the gravity of the gas+dust.
+!
+!  15-sep-06/wlad : coded
+!
+      use Mpicomm
+!
+      real, dimension(nx,3) :: dist
+      real, dimension(nx) :: rrp,selfgrav,density
+      real, dimension(nx) :: dv,jac,dqy,tmp
+      real :: dqx,dqz,rp0,fac
+      real, dimension(3) :: xxpar,accg,sum_loc
+      integer :: j
+      type (pencil_case) :: p
+      logical :: lfirstcall=.true.
+!
+      intent(out) :: accg
+!
+      if (lfirstcall) &
+          print*,'Adding gas+dust gravity to the massive particles'
+!
+!  Sanity check
+!
+      if (.not.(lgas_gravity.or.ldust_gravity)) &
+           call fatal_error("lintegrate_selfgravity",&
+           "No gas gravity or dust gravity to add. "//&
+           "Switch on lgas_gravity or ldust_gravity in n-body parameters")
+!
+      if (coord_system=='cartesian') then
+        jac=1.;dqx=dx;dqy=dy;dqz=dz
+        dist(:,1)=x(l1:l2)-xxpar(1)
+        dist(:,2)=y(  m  )-xxpar(2)
+        dist(:,3)=z(  n  )-xxpar(3)
+      elseif (coord_system=='cylindric') then
+        jac=x(l1:l2);dqx=dx;dqy=x(l1:l2)*dy;dqz=dz
+        dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
+        dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
+        dist(:,3)=z(  n  )-xxpar(3)
+      elseif (coord_system=='spherical') then
+        call fatal_error('integrate_selfgravity', &
+            ' not yet implemented for spherical polars')
+        dqx=0.;dqy=0.;dqz=0.
+      else
+        call fatal_error('integrate_selfgravity','wrong coord_system')
+        dqx=0.;dqy=0.;dqz=0.
+      endif
+!
+      if (nzgrid==1) then
+        dv=dqx*dqy
+      else
+        dv=dqx*dqy*dqz
+      endif
+!
+!  The gravity of every single cell - should exclude inner and outer radii...
+!
+!  selfgrav = G*((rho+rhop)*dv)*mass*r*(r**2 + r0**2)**(-1.5)
+!  gx = selfgrav * r\hat dot x\hat
+!  -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
+!
+      density=0.
+      if (lgas_gravity) density=p%rho
+!
+!  Add the particle gravity if npar>mspar (which means dust is being used)
+!
+      if (ldust.and.ldust_gravity) density=density+p%rhop
+!
+      selfgrav = GNewton*density_scale*&
+           density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
+!
+!  Everything inside the accretion radius of the particle should
+!  not exert gravity (numerical problems otherwise)
+!
+      where (rrp<=rp0)
+        selfgrav = 0
+      endwhere
+!
+!  Exclude the frozen zones
+!
+      if (lexclude_frozen) then
+        if (lcylinder_in_a_box) then
+          where ((p%rcyl_mn<=r_int).or.(p%rcyl_mn>=r_ext))
+            selfgrav = 0
+          endwhere
+        else
+          where ((p%r_mn<=r_int).or.(p%r_mn>=r_ext))
+            selfgrav = 0
+          endwhere
+        endif
+      endif
+!
+!  Integrate the accelerations on this processor
+!  And sum over processors with mpireduce
+!
+      do j=1,3
+        tmp=selfgrav*dist(:,j)
+        !take proper care of the trapezoidal rule
+        !in the case of non-periodic boundaries
+        fac = 1.
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
+          if (.not.lperi(2)) fac = .5*fac
+        endif
+!
+        if (lperi(1)) then
+          sum_loc(j) = fac*sum(tmp)
+        else
+          sum_loc(j) = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
+        endif
+        call mpireduce_sum(sum_loc(j),accg(j))
+      enddo
+!
+!  Broadcast particle acceleration
+!
+      call mpibcast_real(accg,3)
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+    endsubroutine integrate_selfgravity
+!***********************************************************************
+
     subroutine pointmasses_read_snapshot(filename)
 !
 !  Read nbody particle info
