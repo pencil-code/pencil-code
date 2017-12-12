@@ -59,7 +59,7 @@ contains
 
     endsubroutine biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,itype,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,th_range,ngap) result (nok)
 !
 !  Dummy routine.
 !
@@ -70,9 +70,9 @@ contains
       integer,                         intent(IN) :: itype
       integer, dimension(2), optional, intent(OUT):: th_range
 
-      integer :: nok
+      integer :: nok,ngap
 
-      nok=0
+      nok=0; ngap=0
       if (lroot) &
         print*, 'prep_interp: not implemented in Fortran 95'
       stop
@@ -100,5 +100,14 @@ contains
       indweights%coeffs=0.
 
     endsubroutine coeffs_to_weights
+!*******************************************************************
+    function in_overlap_mask(indth,indph) result (ok)
+
+      integer, intent(IN) :: indth,indph
+      logical :: ok
+
+      ok=.true.
+
+    endfunction in_overlap_mask
 !*******************************************************************
 endmodule Yinyang
