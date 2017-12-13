@@ -59,7 +59,7 @@ contains
 
     endsubroutine biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,itype,th_range,ngap) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,n_onegap,n_twogap,th_range) result (nok)
 !
 !  Dummy routine.
 !
@@ -68,11 +68,12 @@ contains
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
       integer,                         intent(IN) :: itype
+      integer,               optional, intent(IN) :: n_onegap,n_twogap
       integer, dimension(2), optional, intent(OUT):: th_range
 
-      integer :: nok,ngap
+      integer :: nok
 
-      nok=0; ngap=0
+      nok=0
       if (lroot) &
         print*, 'prep_interp: not implemented in Fortran 95'
       stop
