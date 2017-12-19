@@ -824,6 +824,39 @@ module Grid
                  'linear+log not implemented for particles.')
           endif
 !
+        case ('squared')
+          ! Grid distance increases linearily
+          a=max(nzgrid,1)
+          b=-max(nzgrid,1)/10
+          !b=0.
+          call grid_profile(a*(xi3  -b),grid_func(3),g3,g3der1,g3der2)
+          call grid_profile(a*(xi3lo-b),grid_func(3),g3lo)
+          call grid_profile(a*(xi3up-b),grid_func(3),g3up)
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+          zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+!
+          if (lfirst_proc_z) then
+            bound_prim1=z(n1+1)-z(n1)
+            do i=1,nghost
+              z(n1-i)=z(n1)-i*bound_prim1
+              zprim(1:n1)=bound_prim1
+            enddo
+          endif
+          if (llast_proc_z) then
+            bound_prim2=z(n2)-z(n2-1)
+            do i=1,nghost
+              z(n2+i)=z(n2)+i*bound_prim2
+              zprim(n2:mz)=bound_prim2
+            enddo
+          endif
+!
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'squared not implemented for particles.')
+          endif
+!
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
