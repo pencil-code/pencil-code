@@ -1,6 +1,6 @@
 # ts.py
 #
-# Read the time_series.dat and return a TimeSeries class of 1D numpy
+# Read the time_series.dat and return a TimeSeries object of 1D numpy
 # arrrays
 #
 # Author: S. Candelaresi (iomsn1@gmail.com).
@@ -36,7 +36,7 @@ def ts(*args, **kwargs):
       Simulation object from which to take the datadir.
 
     *unique_clean*
-      set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs
+      Set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs.
     """
 
     ts_tmp = TimeSeries()
@@ -85,13 +85,14 @@ class TimeSeries(object):
           Simulation object from which to take the datadir.
 
         *unique_clean*
-          set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs
+          Set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs.
         """
 
         import numpy as np
         import os.path
         import re
 
+        # TODO: Change from string to class.
         if sim:
             if str(sim.__class__) == "<class 'pencilnew.sim.simulation.__Simulation__'>":
                 datadir = sim.datadir
@@ -128,13 +129,13 @@ class TimeSeries(object):
         data = np.resize(data, (nlines, len(self.keys)))
 
         if not quiet:
-            print("Read {0} lines".format(nlines))
+            print("Read {0} lines.".format(nlines))
 
         # Assemble into a TimeSeries class.
         for i in range(0, len(self.keys)):
             setattr(self, self.keys[i], data[:, i])
 
-        # do unique cleanup
+        # Do unique clean up.
         if unique_clean == True:
            clean_t, unique_indices = np.unique(self.t, return_index=True)
            if np.size(clean_t) != np.size(self.t):
