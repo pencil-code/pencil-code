@@ -2526,19 +2526,19 @@ module Initcond
       case ('lnrho_ss')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
             if (ldensity) lnrho0(n)=var1
             if (lentropy) ss0(n)=var2
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
         enddo
 !
       case ('lnrho_lnTT')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
             if (ldensity) lnrho0(n)=var1
             if (ltemperature) lnTT0(n)=var2
@@ -2547,14 +2547,14 @@ module Initcond
               ss0(n)=tmp
             endif
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
         enddo
 !
       case ('lnrho_lnTT_ssat')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2,var3
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2, var3=', tmp, var1, var2, var3
             if (ldensity) lnrho0(n)=var1
             if (ltemperature) lnTT0(n)=var2
@@ -2564,18 +2564,18 @@ module Initcond
             endif
             if (lsupersat) ssat0(n)=var3
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
         enddo
 !
       case ('lnrho')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1=', tmp, var1
             if (ldensity) lnrho0(n)=var1
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
 !
         enddo
