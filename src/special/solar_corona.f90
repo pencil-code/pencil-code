@@ -249,8 +249,10 @@ module Special
       ! Setup atmosphere stratification for later use
       call setup_profiles()
 !
-      if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
-      if (lslope_limited_special) call generate_halfgrid(x12,y12,z12)
+      if (lslope_limited_special) then
+        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+        call generate_halfgrid(x12,y12,z12)
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -4159,11 +4161,23 @@ module Special
       real, dimension (my), intent(out) :: y12
       real, dimension (mz), intent(out) :: z12
 !
-      x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
+      if (nxgrid == 1) then
+        x12 = x
+      else
+        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
+      endif
 !
-      y12     =y+0.5/dy_1-0.25*dy_tilde/dy_1**2
+      if (nygrid == 1) then
+        y12 = y
+      else
+        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
+      endif
 !
-      z12     =z+0.5/dz_1-0.25*dz_tilde/dz_1**2
+      if (nzgrid == 1) then
+        z12 = z
+      else
+        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
+      endif
 !
     endsubroutine generate_halfgrid
 !*******************************************************************************
