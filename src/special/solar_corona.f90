@@ -83,7 +83,8 @@ module Special
   character(len=labellen) :: flux_type='uniform'
 !
   ! input parameters
-  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type
+  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type, &
+           lslope_limited_special
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -249,7 +250,7 @@ module Special
       call setup_profiles()
 !
       if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
-      call generate_halfgrid(x12,y12,z12)
+      if (lslope_limited_special) call generate_halfgrid(x12,y12,z12)
 !
       call keep_compiler_quiet(f)
 !
