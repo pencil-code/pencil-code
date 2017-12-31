@@ -70,7 +70,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
 #   or Pencil::Util).
 
-# Copyright (C) 2009-2012 The Pencil Code Team
+# Copyright (C) 2009-2017 The Pencil Code Team
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the same conditions as Perl or under the GNU General Public
@@ -359,7 +359,7 @@ sub mpi_run_cmd {
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
-        dump_parameters(undef, undef, 1) if $debug;
+        dump_parameters(undef, undef, 1, '') if $debug;
         time_system_cmd(@cmd_line, @extra_opts);
     }
 
@@ -1502,7 +1502,7 @@ sub usage {
         last;                        # ignore body
     }
     close $fh;
-    return $_ or "<No usage information found>\n";
+    return $_ || "<No usage information found>\n";
 }
 # ---------------------------------------------------------------------- #
 sub version {
