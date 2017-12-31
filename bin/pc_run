@@ -35,6 +35,19 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                   Use the given <files> (a comma-separated list) as
 #                   configuration files, rather than trying to find a
 #                   config file based on a host ID.
+#                   If the file name starts with '/' or with './', the
+#                   file name will be treated as absolute (/) or relative
+#                   to the current working directory (./).
+#                   Otherwise, search the standard configuration path
+#                   (something like
+#                     ./config
+#                     $PENCIL_HOME/config-local
+#                     $HOME/.pencil/config
+#                     $PENCIL_HOME/config
+#                     $PENCIL_HOME/config/compilers
+#                     $PENCIL_HOME/config/compilers/extensions
+#                   )
+#                   The suffix '.conf' may be omitted.
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
