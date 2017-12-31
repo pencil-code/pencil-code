@@ -254,7 +254,7 @@ ifeq ($(SOLID_CELLS),solid_cells_ogrid)
     SOLID_CELLS_MPICOMM= solid_cells_ogrid_nompicomm
   endif
 endif
-		
+
 #
 # Check for inconsistent settings in Makefile.local.
 #
