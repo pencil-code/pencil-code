@@ -338,7 +338,7 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
     """
     # Chao-Chin Yang, 2015-05-05
     from collections.abc import Sequence
-    from matplotlib.animation import FuncAnimation
+    from matplotlib.animation import FuncAnimation, writers
     from matplotlib import cm
     from matplotlib.colors import LogNorm, Normalize
     import matplotlib.pyplot as plt
@@ -422,5 +422,22 @@ def _slices3d(field, t, slices, dim, par, grid, **kwarg):
         timestamp.set_text("$t = {:#.4G}$".format(t[num]))
         return cols
     anim = FuncAnimation(fig, update, nt, fargs=(surfaces,), interval=1, blit=False, repeat=False)
-    #anim.save('slices3d.mp4', writer='mencoder')
+    # Save or show the animation.
+    if "ffmpeg" in writers.list():
+        writer = "ffmpeg"
+    elif "mencoder" in writers.list():
+        writer = "mencoder"
+    else:
+        raise RuntimeError("no appropriate animation writer available. ")
+
+    anim = FuncAnimation(fig, update, len(t), interval=40, repeat=False)
+    if True:
+        fname = "pc_anim.mp4"
+        FFMpegWriter = writers["ffmpeg"]
+        metadata = dict(title='Pencil Code Animation', artist='ccyang')
+        writer = FFMpegWriter(fps=25, metadata=metadata, bitrate=16000)
+        anim.save(fname, writer=writer)
+        print("Saved the animation in {}. ".format(fname))
+    else:
+        plt.show()
     plt.show()
