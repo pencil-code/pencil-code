@@ -17,7 +17,7 @@ gsl_wrapper.o: gsl_wrapper.c Makefile.src Makefile.local
 #
 nogsl.o: nogsl.c Makefile.src Makefile.local
 #
-$(SYSCALLS_OBJ): syscalls_ansi.o $(CPARAM_OBJ) $(GENERAL_OBJ) Makefile.src Makefile.local
+$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ) $(GENERAL_OBJ) Makefile.src Makefile.local
 #
 syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
 #
@@ -80,7 +80,7 @@ $(BOUNDCOND_OBJ): $(BOUNDCOND_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(DERIV_OBJ) $(EOS
 $(INITCOND_OBJ): $(INITCOND_SRC) $(CDATA_OBJ) $(EOS_OBJ) $(FARRAY_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) 
 #
 ifeq ($(INITIAL_CONDITION_OBJ),noinitial_condition.o)
-  $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) 
+  $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) 
 else ifeq ($(shell grep 'Use Particles_cdata' $(INITIAL_CONDITION_OBJ)),)
   $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ) $(PARTICLES_CDATA_OBJ)
 else

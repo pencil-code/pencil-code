@@ -403,15 +403,5 @@ module InitialCondition
 ! dummy
 !
     endsubroutine initial_condition_clean_up
-!***********************************************************************
-!
-!********************************************************************
-!************        DO NOT DELETE THE FOLLOWING       **************
-!********************************************************************
-!**  This is an automatically generated include file that creates  **
-!**  copies dummy routines from noinitial_condition.f90 for any    **
-!**  InitialCondition routines not implemented in this file        **
-!**                                                                **
-    include 'initial_condition_dummies.inc'
 !********************************************************************
 endmodule InitialCondition

@@ -2550,7 +2550,7 @@ else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
 endif
 #
-initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
+initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL_CONDITION).f90
 	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 -o initial_condition_dummies.inc
 #
 file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
