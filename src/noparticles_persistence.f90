@@ -9,9 +9,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lparticles_persistence=.true.
-!
-! MPAUX CONTRIBUTION 4
+! CPARAM logical, parameter :: lparticles_persistence=.false.
 !
 !***************************************************************
 module Particles_persistence
