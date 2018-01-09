@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 2
+! MPVAR CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
 !***************************************************************
@@ -58,7 +58,7 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
+      sigma_initdist, a0_initdist, rpbeta0, &
       lfixed_particles_radius
 !
   namelist /particles_radius_run_pars/ &
@@ -97,12 +97,6 @@ module Particles_radius
 !  Increase npvar accordingly.
 !
       npvar = npvar+1
-!
-      if (lparticles_radius_rpbeta) then
-        irpbeta = npvar+1
-        pvarname(npvar+1) = 'irpbeta'
-        npvar = npvar+1
-      endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -439,9 +433,6 @@ module Particles_radius
 !  Set initial particle radius if lparticles_mass=T
 !
       if (lparticles_mass) fp(:,iapinit) = fp(:,iap)
-!
-      if (lparticles_radius_rpbeta) &
-          fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
 !
 ! Reinitialize particle radius if reinitialize_ap=T
 ! 09-Feb-17/Xiangyu: adapted from set_particles_radius

@@ -24,6 +24,7 @@
 %%   dustdensity.f90
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
+%%   gravitational_waves_hij6.f90
 %%   gravity_simple.f90
 %%   heatflux.f90
 %%   lorenz_gauge.f90
@@ -34,6 +35,7 @@
 %%   particles_chemistry.f90
 %%   particles_dust.f90
 %%   particles_dust_brdeplete.f90
+%%   particles_lagrangian.f90
 %%   particles_mass_swarm.f90
 %%   particles_surfspec.f90
 %%   polymer.f90
@@ -102,7 +104,9 @@
                     the hydro_zaver_range \\
   \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
   \var{umax}      & $\max(|\uv|)$ \\
+  \var{umin}      & $\min(|\uv|)$ \\
   \var{uxrms}     & $\left<u_x^2\right>^{1/2}$ \\
+  \var{uyrms}     & $\left<u_y^2\right>^{1/2}$ \\
   \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
   \var{uxmin}     & $\min(|u_x|)$ \\
   \var{uymin}     & $\min(|u_y|)$ \\
@@ -728,15 +732,9 @@
 \midrule
   \var{KKm}       & $\sum {\cal T}_k^{\rm coag}$ \\
   \var{KK2m}      & $\sum {\cal T}_k^{\rm coag}$ \\
-<<<<<<< Updated upstream
   \var{MMxm}      & $\sum {\cal M}^x_{k,{\rm coag}}$ \\
   \var{MMym}      & $\sum {\cal M}^y_{k,{\rm coag}}$ \\
   \var{MMzm}      & $\sum {\cal M}^z_{k,{\rm coag}}$ \\
-=======
-  \var{MMxm}      & $\sum {\cal M}^x_k^{\rm coag}$ \\
-  \var{MMym}      & $\sum {\cal M}^y_k^{\rm coag}$ \\
-  \var{MMzm}      & $\sum {\cal M}^z_k^{\rm coag}$ \\
->>>>>>> Stashed changes
 \midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
@@ -772,10 +770,23 @@
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves.f90}} \\
 \midrule
-  \var{hhL2m}     & $\left<h_{\rm L}^2\right>$ \\
   \var{hhT2m}     & $\left<h_{\rm T}^2\right>$ \\
-  \var{hhLhhTm}   & $\left<h_{\rm L}h_{\rm T}\right>$ \\
-  \var{ggLpt}     & $g_{\rm L}(x_1,y_1,z_1,t)$ \\
+  \var{hhX2m}     & $\left<h_{\rm X}^2\right>$ \\
+  \var{hhThhXm}   & $\left<h_{\rm T}h_{\rm X}\right>$ \\
+  \var{ggTpt}     & $g_{\rm T}(x_1,y_1,z_1,t)$ \\
+  \var{strTpt}    & $S_{\rm T}(x_1,y_1,z_1,t)$ \\
+  \var{strXpt}    & $S_{\rm X}(x_1,y_1,z_1,t)$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{gravitational_waves_hij6.f90}} \\
+\midrule
+  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
+  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
+  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
+  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
+  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
+  \var{ggTpt}     & $g_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXpt}     & $g_{X}(x_1,y_1,z_1,t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
@@ -1119,6 +1130,18 @@
   \var{vpxmin}    & $MIN(u_{part})$ \\
   \var{npm}       & $\rm{mean particle number density}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{particles_lagrangian.f90}} \\
+\midrule
+  \var{xpm}       & $x_{part}$ \\
+  \var{xp2m}      & $x^2_{part}$ \\
+  \var{vrelpabsm} & $\rm{Absolute value of mean relative velocity}$ \\
+  \var{vpxm}      & $u_{part}$ \\
+  \var{vpx2m}     & $u^2_{part}$ \\
+  \var{ekinp}     & $E_{kin,part}$ \\
+  \var{vpxmax}    & $MAX(u_{part})$ \\
+  \var{vpxmin}    & $MIN(u_{part})$ \\
+  \var{npm}       & $\rm{mean particle number density}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{particles_mass_swarm.f90}} \\
 \midrule
   \var{mpm}       & $\overline{m_p}$ \\
@@ -1201,11 +1224,8 @@
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
-<<<<<<< Updated upstream
   \var{ethtot}    & $\int_V\varrho e\,dV$
                     \quad(total thermal energy) \\
-=======
->>>>>>> Stashed changes
   \var{ssm}       & $\overline{S}$ \\
   \var{thcool}    & $\tau_{\rm cool}$ \\
   \var{ppm}       & $\overline{P}$ \\

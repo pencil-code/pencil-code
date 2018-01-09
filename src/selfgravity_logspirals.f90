@@ -89,9 +89,14 @@ module Selfgravity
 !
       call farray_register_auxiliary('potself',ipotself,communicated=.true.)
 !
-      call farray_register_auxiliary('gpotselfx',igpotselfx,communicated=.true.)
-      call farray_register_auxiliary('gpotselfy',igpotselfy,communicated=.true.)
-      call farray_register_auxiliary('gpotselfz',igpotselfz,communicated=.true.)
+!  Register, unless particles selfgravity already did so (it also needs to use
+!  accelerations instead of potential).
+!
+      if (.not.lparticles_selfgravity) then
+        call farray_register_auxiliary('gpotselfx',igpotselfx,communicated=.true.)
+        call farray_register_auxiliary('gpotselfy',igpotselfy,communicated=.true.)
+        call farray_register_auxiliary('gpotselfz',igpotselfz,communicated=.true.)
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !

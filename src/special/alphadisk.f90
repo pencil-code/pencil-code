@@ -66,12 +66,17 @@ module Special
                                        !   the temperature table has min and max
                                        !   in a range slightly bigger than the
                                        !   simulation variable.
+!
+  real    :: temperature_star=4000     ! Stellar temperature, in Kelvin
+  real    :: radius_star=1e11          ! Stellar radius, in cm
+!
   real    :: cprime
 !
   real :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
   real :: plaw_temperature=0.5, temperature0=280.0
   real :: mumol=2.34, nut_constant=0.0, lambda_nut=0.0, ampl_nut=0.0
   real :: r0_gaussian=1.0, width_gaussian=1.0
+  real :: dlnHdlnR = 9./7
 !
   character (len=labellen), dimension(ninit) :: initsigma='nothing'
   character (len=labellen), dimension(ninit) :: inittmid='nothing'
@@ -83,7 +88,8 @@ module Special
       r0_gaussian, width_gaussian, temperature_model, nut_constant, &
       lambda_nut, ampl_nut, &
       temperature_background, temperature_precision, nsigma_table, &
-      sigma_middle, sigma_floor, tmid_table_buffer
+      sigma_middle, sigma_floor, tmid_table_buffer,&
+      temperature_star,radius_star, dlnHdlnR
 !
   namelist /special_run_pars/ &
       lwind
@@ -1105,13 +1111,19 @@ module Special
       real :: taueff,edot,temp1
       real :: phi,dtaudt,dtau2dt
       real :: a_exp,b_exp
+      real :: rr, temperature_irradiation
       real, save :: stbz
       logical, save :: lfirstcall=.true.
       real, optional :: dphi,d2phi
 !
+      real :: Rgas,mmol,Rgasmu,gamma,cp,H
+      real :: grazing_irradiation,flaring_term
+!
       if (lfirstcall) then
         !stefan_boltzmann_cgs = 5.6704d-5  ! erg cm-2 s-1 K-4
         stbz=5.6704d-5
+        Rgas=8.314d7 ; mmol=2.4 ; Rgasmu=Rgas/2.4 ; gamma=1.4
+        cp=gamma*Rgasmu/(gamma-1)
         lfirstcall=.false.
       endif
 !
@@ -1128,14 +1140,27 @@ module Special
 !      taueff = 3*tau/8 + sqrt(3)/4 + 1/(4*tau),
 !
 ! handles both optically thin and thick regions.
-
 !
       taueff = 0.375*tau + 0.43301270 + .25*tau1
 !
-! Phi is the left-hand-side of the equation to solve.
+! Viscous heating
 !
       edot=0.75*pi_1*mdot*omega**2
-      phi  = 2*stbz*(temp**4-temperature_background**4)-taueff*edot
+!
+! Stellar heating.
+!
+      rr = (GNewton_cgs*Msun_cgs/omega**2)**(1./3)
+      H=sqrt(temp*cp*(gamma-1))/omega
+!
+      grazing_irradiation = 2./(3*pi) * (radius_star/rr)**3
+      flaring_term       = .5*( (radius_star/rr)**2 * (H/rr) * (dlnHdlnR - 1))
+!
+      temperature_irradiation = &
+           temperature_star * (grazing_irradiation + flaring_term)**0.25
+!
+! Phi is the left-hand-side of the equation to solve.
+!
+      phi  = 2*stbz*(temp**4-temperature_background**4-temperature_irradiation**4)-taueff*edot
 !
 ! First and second analytical derivatives of Phi, to speed
 ! up the iterations.

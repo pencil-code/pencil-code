@@ -54,6 +54,8 @@ module Solid_Cells
   logical :: SBP=.true.
   logical :: BDRY5=.false.
   logical :: SBP_optimized=.false.
+!  Filtering
+  logical :: lfilter_solution=.false.
 !  Particle interpolation scheme
   integer :: particle_interpolate=1     ! 1: linear, 2: pseudo_quadratic, 3: quadratic
   logical :: lparticle_uradonly=.false.  ! Turn on to have linear inteprolation of all but ur
@@ -64,6 +66,7 @@ module Solid_Cells
   integer :: interpolation_method=1  ! Set in start.in
   integer :: inter_len=2             ! Length of interpolation stencil
   integer :: interpol_filter=0       ! Distance between interpolation r_int_outer and r_ogrid
+  integer :: interpol_order_poly=5   ! Interpolation order for polynomial interpolation
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! Set in start.in
@@ -208,7 +211,7 @@ module Solid_Cells
   integer :: max_send_ip_cart_to_curv                 ! Maximum number of ip sent
   integer :: max_recv_ip_cart_to_curv                 ! Maximum number of ip recv
   !
-  real :: r_int_outer, r_int_inner
+  real :: r_int_outer, r_int_inner, r_int_inner_poly
 !***************************************************
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 !  Global ogrid
@@ -315,14 +318,15 @@ module Solid_Cells
       interpolation_method, lock_dt, lexpl_rho, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
       lrk_tvd, SBP_optimized, &
-      particle_interpolate, lparticle_uradonly
+      particle_interpolate, lparticle_uradonly, &
+      interpol_order_poly, lfilter_solution
 
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
       SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
-      particle_interpolate, lparticle_uradonly
+      particle_interpolate, lparticle_uradonly, lfilter_solution
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -674,6 +678,9 @@ module Solid_Cells
           print*, 'interpolation_method==4: Quadratic spline interpolation for velocities'
           print*, '                       : Linear interpolation for density'
           print*, 'WARNING                : NOT IMPLEMENTED FOR TEMPERATURE YET!'
+        elseif(interpolation_method==5) then
+          print*, 'interpolation_method==5: Polynomial interpolation'
+          print*, 'WARNING                : ONLY SERIAL AT THE MOMENT!!'
         endif
       endif
 !
@@ -984,6 +991,8 @@ module Solid_Cells
         inter_len=3
       elseif(interpolation_method==3) then
         inter_len=5
+      elseif(interpolation_method==5) then
+        inter_len=interpol_order_poly
       else
         call fatal_error('initialize_interpolate_points','selected interpolation method does not exist!')
       endif
@@ -1085,6 +1094,8 @@ module Solid_Cells
           enddo
         enddo
       enddo
+!print*, 'read ii'
+!read(*,*) ii
 !
     endsubroutine initialize_interpolate_points
 !!***********************************************************************
@@ -2078,7 +2089,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
     integer, dimension(max_send_ip_cart_to_curv) :: ip_bufo
-    integer :: ind
+    integer :: ind, ipoly
 !
     if(interpolation_method==1) then
       nbuf_farr(2:4)=2
@@ -2089,6 +2100,10 @@ module Solid_Cells
     elseif(interpolation_method==3) then
       nbuf_farr(2:4)=5
       ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    elseif(interpolation_method==5) then
+      nbuf_farr(2:4)=interpol_order_poly
+      ipoly=floor((interpol_order_poly)*0.5)
+      ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
     endif
     nbuf_farr(5)=ivar2-ivar1+1
 !
@@ -2121,7 +2136,7 @@ module Solid_Cells
       call mpirecv_real(f_bufi(:,:,:,:,1:nbuf_farr(1)),nbuf_farr,recv_from,iproc+ncpus)
       do ipp=1,nbuf_farr(1)
         farr = f_bufi(:,:,:,:,ipp)
-        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,farr)
+        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,farr,f_cartesian)
       enddo
     enddo
 !
@@ -2132,7 +2147,8 @@ module Solid_Cells
         inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
         farr(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)-ii1:inear_loc(1)+ii2, &
           inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
-        call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
+        !call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
+        call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian)
       endif
     enddo
 !
@@ -2168,7 +2184,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
     integer, dimension(max_send_ip_curv_to_cart) :: ip_bufo
-    integer :: ind
+    integer :: ind, ipoly
 !
     if(interpolation_method==1) then
       nbuf_farr(2:4)=2
@@ -2176,9 +2192,13 @@ module Solid_Cells
     elseif(interpolation_method==2 .or. interpolation_method==4) then
       nbuf_farr(2:4)=3
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
-    elseif(interpolation_method==3) then
+    elseif(interpolation_method>=3) then
       nbuf_farr(2:4)=5
       ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    elseif(interpolation_method==5) then
+      nbuf_farr(2:4)=interpol_order_poly
+      ipoly=floor((interpol_order_poly)*0.5)
+      ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
     endif
     nbuf_farr(5)=ivar2-ivar1+1
 !
@@ -2264,7 +2284,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
     integer, dimension(max_send_ip_curv_to_cart) :: ip_bufo
-    integer :: ind
+    integer :: ind, ipoly
     real, dimension(3) :: xyz_ip
 !
     if(interpolation_method==1) then
@@ -2273,6 +2293,9 @@ module Solid_Cells
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
     elseif(interpolation_method==3) then
       ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    elseif(interpolation_method==5) then
+      ipoly=floor((interpol_order_poly)*0.5)
+      ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
     endif
     nbuf_farr(1)=ivar2-ivar1+1
 !
@@ -2335,7 +2358,9 @@ module Solid_Cells
   endsubroutine comm_ip_curv_to_cart_alt
 !***********************************************************************
 !***********************************************************************
-  subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
+  subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian)
+!
+    real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
 !
 !  Use linear interpolation routine to interpolate the values on the cartesian 
 !  grid to the interpolation point on the curvilinear grid
@@ -2389,6 +2414,8 @@ module Solid_Cells
               xyz_ip,inear_glob,f_ip(irho),lcheck_interpolation)) then
         call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
       endif
+    elseif(interpolation_method==5) then
+      call poly_interp_cart(ivar1,ivar2,xyz_ip,f_ip,id,f_cartesian,interpol_order_poly)
     endif
 !
 !  Update curvilinear grid with the new data values
@@ -2454,6 +2481,42 @@ module Solid_Cells
       if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,jj:jj+1,kk:kk+1,irho),irho,irho,&
             xyz_ip,inear_glob,f_ip(irho),lcheck_interpolation)) then
         call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+      endif
+    elseif(interpolation_method==5) then
+      if(xyz_ip(1)>=r_int_inner_poly) then 
+        call poly_interp_curv(ivar1,ivar2,xyz_ip,f_ip,id,interpol_order_poly)
+      else
+!
+!  Use linear inteprolation if too near surface to use high order polynomial
+!  Preliminary solution to get inear_glob to point to bottom left corner of cell
+!
+        ii=floor(interpol_order_poly*0.5)
+        jj=floor(interpol_order_poly*0.5)
+        if(xyz_ip(1)<xglobal_ogrid(inear_glob(1))) then
+          if(xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
+            if(.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii-1:ii,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1)-1,inear_glob(2)-1,inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          else
+            if(.not. linear_interpolate_curvilinear(farr(ii-1:ii,ii:ii+1,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1)-1,inear_glob(2),inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          endif
+        else
+          if(xyz_ip(2)<yglobal_ogrid(inear_glob(2))) then
+            if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii-1:ii,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1),inear_glob(2)-1,inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          else
+            if(.not. linear_interpolate_curvilinear(farr(ii:ii+1,ii:ii+1,ii:ii+1,:),iux,irho,&
+                  xyz_ip,(/inear_glob(1),inear_glob(2),inear_glob(3)/),f_ip,lcheck_interpolation)) then
+              call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian ')
+            endif
+          endif
+        endif
       endif
     endif
 !
@@ -4547,6 +4610,7 @@ module Solid_Cells
         call mpifinalize
       endif
     endif
+
 !
 !  Interpolate data from cartesian to curvilinear grid.
 !  Before interpolating, necessary points outside this processors domain are
@@ -4558,6 +4622,9 @@ module Solid_Cells
     !call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
 !
     dt_ogrid = dt/timestep_factor
+    !print*, 'dt_ogrid', dt_ogrid
+    !print*, 'convective timestep', dxmin_ogrid/maxval(f_ogrid(:,:,4,iux:iuy))
+    !print*, 'viscous timestep', dxmin_ogrid**2/1.e-3
     if(.not. lrk_tvd) dt_beta_ts_ogrid=dt_ogrid*beta_ts_ogrid
 !
 !  Perform a number of timestep equal to timestep_factor, such that the
@@ -4622,6 +4689,15 @@ module Solid_Cells
 !  recieved from appropriate processor
 !
     call update_ghosts_ogrid(f_ogrid)
+
+!
+!  Filter solution if this option is set
+!
+    if(lfilter_solution) then
+      call pade_filter(f_ogrid)
+      call update_ghosts_ogrid(f_ogrid)
+    endif
+
     !! call send_rcv_all_data(1,mvar,f_cartesian)
     !call comm_ip_curv_to_cart_alt(f_cartesian,1,mvar)
     call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
@@ -6275,12 +6351,14 @@ module Solid_Cells
       real, dimension(3), intent(in) :: xyz
       integer, intent(out) :: from_proc
       integer :: i
-      logical :: found_proc=.false.
+      logical :: found_proc
+      real, parameter :: fDP=1.e-15
 !
+      found_proc=.false.
       do i=1,ncpus
-        if( ((xyz(1)>=xyz0_loc_all(i,1)).and.(xyz(1)<=xyz1_loc_all(i,1))) .and. &
-            ((xyz(2)>=xyz0_loc_all(i,2)).and.(xyz(2)<=xyz1_loc_all(i,2))) .and. &
-            ((xyz(3)>=xyz0_loc_all(i,3)).and.(xyz(3)<=xyz1_loc_all(i,3))) )  then
+        if( ((xyz(1)>=(xyz0_loc_all(i,1)-fDP)).and.(xyz(1)<=(xyz1_loc_all(i,1)+fDP))) .and. &
+            ((xyz(2)>=(xyz0_loc_all(i,2)-fDP)).and.(xyz(2)<=(xyz1_loc_all(i,2)+fDP))) .and. &
+            ((xyz(3)>=(xyz0_loc_all(i,3)-fDP)).and.(xyz(3)<=(xyz1_loc_all(i,3)+fDP))) )  then
             from_proc=i-1
             found_proc=.true.
             exit
@@ -6313,19 +6391,23 @@ module Solid_Cells
       real, dimension(3), intent(in) :: rthz
       integer, intent(out) :: from_proc
       integer :: i
-      logical :: found_proc=.false.
+      logical :: found_proc
+      real, parameter :: fDP=1.e-15
 !
+      found_proc=.false.
       do i=1,ncpus
-        if( ((rthz(1)>=xyz0_loc_all_ogrid(i,1)).and.(rthz(1)<=xyz1_loc_all_ogrid(i,1))) .and. &
-            ((rthz(2)>=xyz0_loc_all_ogrid(i,2)).and.(rthz(2)<=xyz1_loc_all_ogrid(i,2))) .and. &
-            ((rthz(3)>=xyz0_loc_all_ogrid(i,3)).and.(rthz(3)<=xyz1_loc_all_ogrid(i,3))) )  then
+        if( ((rthz(1)>=(xyz0_loc_all_ogrid(i,1)-fDP)).and.(rthz(1)<=(xyz1_loc_all_ogrid(i,1)+fDP))) .and. &
+            ((rthz(2)>=(xyz0_loc_all_ogrid(i,2)-fDP)).and.(rthz(2)<=(xyz1_loc_all_ogrid(i,2)+fDP))) .and. &
+            ((rthz(3)>=(xyz0_loc_all_ogrid(i,3)-fDP)).and.(rthz(3)<=(xyz1_loc_all_ogrid(i,3)+fDP))) )  then
             from_proc=i-1
             found_proc=.true.
             exit
         endif
       enddo
-      if(.not.found_proc) call fatal_error('find_proc_curvilinear', &
+      if(.not.found_proc) then
+        call fatal_error('find_proc_curvilinear', &
           'could not locate interpolation point on any processor!')
+      endif
 !
     endsubroutine find_proc_curvilinear
 !***********************************************************************
@@ -8741,6 +8823,85 @@ module Solid_Cells
 !
     endsubroutine interpolate_quadratic_sp_og
 !***********************************************************************
+  subroutine poly_interp_cart(ivar1,ivar2,xyz_ip,gp,id,f_cartesian,order)
+    use General, only: polynomial_interpolation
+    real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
+
+    real, dimension(3), intent(in) :: xyz_ip
+    integer, intent(in) :: id
+    integer, intent(in) :: ivar1,ivar2
+    integer, intent(in) :: order
+    real, dimension(ivar2-ivar1+1), intent(out) :: gp
+
+    real, dimension(order) :: xa1,xa2,ya
+    real, dimension(order,order-1) :: up
+    real, dimension(ivar2-ivar1+1,order-1) :: gpp
+    integer :: ix0,iy0,ivar,j,jj,ii1,ii2
+
+    ix0=cartesian_to_curvilinear(id)%ind_local_neighbour(1)
+    iy0=cartesian_to_curvilinear(id)%ind_local_neighbour(2)
+    do j=1,order
+      jj=-floor(order*0.5)+j-1
+      xa1(j)=xglobal(ix0+jj)
+      xa2(j)=yglobal(iy0+jj)
+    enddo
+    ii1=-floor(order*0.5)+1-1
+    ii2=-floor(order*0.5)+order-1
+    !print*, 'xyz[:,',id,0,']=[',xa1(1),',',xa1(2),',',xa1(3),',',xa1(4),',',xa1(5),']'
+    !print*, 'xyz[:,',id,1,']=[',xa2(1),',',xa2(2),',',xa2(3),',',xa2(4),',',xa2(5),']'
+    !!print*, 'cartesian:xa2',xa2
+    !print*, 'rthp[',id,',:]=[',xyz_ip(1),',',xyz_ip(2),']'
+    do ivar=ivar1,ivar2
+      do j=1,order
+        jj=-floor(order*0.5)+j-1
+        ya=f_cartesian(ix0+ii1:ix0+ii2,iy0+jj,4,ivar)
+        call polynomial_interpolation(xa1, ya, xyz_ip(1), up(j,:))
+      enddo
+      ya=up(:,order-1)
+      call polynomial_interpolation(xa2, ya, xyz_ip(2), gpp(ivar,:))
+    enddo
+
+    gp=gpp(:,order-1)
+
+  endsubroutine poly_interp_cart
+!***********************************************************************
+  subroutine poly_interp_curv(ivar1,ivar2,xyz_ip,gp,id,order)
+    use General, only: polynomial_interpolation
+
+    real, dimension(3), intent(in) :: xyz_ip
+    integer, intent(in) :: id
+    integer, intent(in) :: ivar1,ivar2
+    integer, intent(in) :: order
+    real, dimension(ivar2-ivar1+1), intent(out) :: gp
+
+    real, dimension(order) :: xa1,xa2,ya
+    real, dimension(order,order-1) :: up,vp,wp,rhop
+    real, dimension(ivar2-ivar1+1,order-1) :: gpp
+    integer :: ix0,iy0,ivar,j,jj,ii1,ii2
+
+    ix0=curvilinear_to_cartesian(id)%ind_local_neighbour(1)
+    iy0=curvilinear_to_cartesian(id)%ind_local_neighbour(2)
+    do j=1,order
+      jj=-floor(order*0.5)+j-1
+      xa1(j)=xglobal_ogrid(ix0+jj)
+      xa2(j)=yglobal_ogrid(iy0+jj)
+    enddo
+    ii1=-floor(order*0.5)+1-1
+    ii2=-floor(order*0.5)+order-1
+    do ivar=ivar1,ivar2
+      do j=1,order
+        jj=-floor(order*0.5)+j-1
+        ya=f_ogrid(ix0+ii1:ix0+ii2,iy0+jj,4,ivar)
+        call polynomial_interpolation(xa1, ya, xyz_ip(1), up(j,:))
+      enddo
+      ya=up(:,order-1)
+      call polynomial_interpolation(xa2, ya, xyz_ip(2), gpp(ivar,:))
+    enddo
+
+    gp=gpp(:,order-1)
+
+  endsubroutine poly_interp_curv
+!***********************************************************************
     real function radius_ogrid(xp,yp) 
 !
 !  Transform cartesian coordinates xxp to polar coordinates on the cylindrical ogrid
@@ -8895,7 +9056,8 @@ module Solid_Cells
           dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
           if(interpolation_method==1) then
             r_int_outer=r_ogrid-dx_outer*0.01-dx_outer*interpol_filter
-          elseif (interpolation_method==2 .or. interpolation_method==4) then
+          elseif (interpolation_method==2 .or. interpolation_method==4 &
+                 .or. interpolation_method==5) then
             r_int_outer=r_ogrid-dx_outer*0.51-dx_outer*interpol_filter
             if((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
@@ -8903,6 +9065,9 @@ module Solid_Cells
               print*, 'iproc, r_int_outer first, r_int_outer second',&
                 iproc,r_int_outer,r_ogrid-dx_outer*1.01
               r_int_outer=r_ogrid-dx_outer*1.01-dx_outer*interpol_filter
+            endif
+            if(interpolation_method==5) then
+              print*, 'WARNING: Polynomal interpolation used, you better know what you are doing!'
             endif
           elseif (interpolation_method==3) then
             r_int_outer=r_ogrid-dx_outer*1.51-dx_outer*interpol_filter
@@ -8922,11 +9087,13 @@ module Solid_Cells
 !
 !  Set limit of the interpolation zone, r_int_inner
 !
-      !if(interpolation_method<=2) then 
         r_int_inner=xyz0_ogrid(1)
-      !else
-        !r_int_inner=xyz0_ogrid(1) + 1.01/dx1grid_ogrid(1)
-      !endif
+        if(interpolation_method==5) then
+          r_int_inner_poly=x_ogrid(l1_ogrid+floor(interpol_order_poly*0.5))
+          print*, 'Polynomial integration: r_int_outer, r_int_inner, r_int_inner_poly' &
+                  , r_int_outer, r_int_inner, r_int_inner_poly
+        endif
+
 
     endsubroutine set_interpolation_limits
 !***********************************************************************
@@ -9448,4 +9615,535 @@ module Solid_Cells
 
   endsubroutine run_tests_ogrid
 !***********************************************************************
-end module Solid_Cells
+  subroutine pade_filter(f_og)
+!
+!  High order padé filtering of solution array 
+!  10th order on interor points, can choose 6th, 8th or 10th order at cylinder
+!  boundary. 
+!
+!  Filtering will stabilize solution, necessary for certain boundary conditions
+!  and grids (e.g., with large stretching)
+!  Coefficients from Gaitonde & Visbal (2000)
+!
+!  WARNING: Only works for 2D serial runs at the moment
+!
+!  10-nov-17/Jorgen - Coded
+!
+
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout)::  f_og
+!
+!  Free paramter in filter coefficients:
+!
+    real, parameter :: af=0.1
+!      
+    real, dimension(ny_ogrid,4) :: by
+    real, dimension(nx_ogrid,4) :: bx
+    real, dimension(ny_ogrid), save :: aWy, aPy, aEy
+    real, dimension(nx_ogrid), save :: aWx, aPx, aEx
+    integer :: i,j,jj
+    real, save :: a0, a1, a2, a3, a4, a5
+    real, save :: a0_6, a1_6, a2_6, a3_6
+    logical :: lfirstcall = .true.
+
+    if(lfirstcall) then
+      a0=(193+126*af)/256.
+      a1=(105+302*af)/256.
+      a2=15*(-1+2*af)/64.
+      a3=45*(1-2*af)/512.
+      a4=5*(-1+2*af)/256.
+      a5=(1-2*af)/512.
+      a0_6=11./16.+5.*af/8.
+      a1_6=15./32.+17.*af/16.
+      a2_6=-3./16.+3.*af/8.
+      a3_6=1./32.-af/16.
+
+      aWy = -af
+      aPy = 1.
+      aEy = -af
+      aWx = -af
+      aPx = 1.
+      aEx = -af
+!  Since we do not filter the point at the boundary:
+      aWx(1) = 0.
+      aPx(1) = 1.
+      aEx(1) = 0.
+      lfirstcall = .false.
+    endif
+! 
+!  Filtering in theta direction
+!  10th order on all points
+!  Requires special handling near processor bondaries, due to not enough ghost points
+!  Note! Only works for serial runs
+!
+    do i=l1_ogrid,l2_ogrid
+      by(3:ny_ogrid-2,:) = a0*f_og(i,m1_ogrid+2:m2_ogrid-2,4,:) &
+               + a1*0.5*(f_og(i,m1_ogrid+1:m2_ogrid-3,4,:) + f_og(i,m1_ogrid+3:m2_ogrid-1,4,:)) &
+               + a2*0.5*(f_og(i,m1_ogrid  :m2_ogrid-4,4,:) + f_og(i,m1_ogrid+4:m2_ogrid  ,4,:)) &
+               + a3*0.5*(f_og(i,m1_ogrid-1:m2_ogrid-5,4,:) + f_og(i,m1_ogrid+5:m2_ogrid+1,4,:)) &
+               + a4*0.5*(f_og(i,m1_ogrid-2:m2_ogrid-6,4,:) + f_og(i,m1_ogrid+6:m2_ogrid+2,4,:)) &
+               + a5*0.5*(f_og(i,m1_ogrid-3:m2_ogrid-7,4,:) + f_og(i,m1_ogrid+7:m2_ogrid+3,4,:))
+!
+!  Special handling outside of ghost points
+!
+! Note use of m2_ogrid-3:m2_ogrid-2 etc, on next the last two lines
+      by(1:2,:) = a0*f_og(i,m1_ogrid:m1_ogrid+1,4,:) &
+               + a1*0.5*(f_og(i,m1_ogrid-1:m1_ogrid  ,4,:) + f_og(i,m1_ogrid+1:m1_ogrid+2,4,:)) &
+               + a2*0.5*(f_og(i,m1_ogrid-2:m1_ogrid-1,4,:) + f_og(i,m1_ogrid+2:m1_ogrid+3,4,:)) &
+               + a3*0.5*(f_og(i,m1_ogrid-3:m1_ogrid-2,4,:) + f_og(i,m1_ogrid+3:m1_ogrid+4,4,:)) &
+               + a4*0.5*(f_og(i,m2_ogrid-3:m2_ogrid-2,4,:) + f_og(i,m1_ogrid+4:m1_ogrid+5,4,:)) &
+               + a5*0.5*(f_og(i,m2_ogrid-4:m2_ogrid-3,4,:) + f_og(i,m1_ogrid+5:m1_ogrid+6,4,:))
+! Note use of m1_ogrid+2:m1_ogrid+3 etc, on next two lines
+      by(ny_ogrid-1:ny_ogrid,:) = a0*f_og(i,m2_ogrid-1:m2_ogrid,4,:) &
+               + a1*0.5*(f_og(i,m2_ogrid-2:m2_ogrid-1,4,:) + f_og(i,m2_ogrid  :m2_ogrid+1,4,:)) &
+               + a2*0.5*(f_og(i,m2_ogrid-3:m2_ogrid-2,4,:) + f_og(i,m2_ogrid+1:m2_ogrid+2,4,:)) &
+               + a3*0.5*(f_og(i,m2_ogrid-4:m2_ogrid-3,4,:) + f_og(i,m2_ogrid+2:m2_ogrid+3,4,:)) &
+               + a4*0.5*(f_og(i,m2_ogrid-5:m2_ogrid-4,4,:) + f_og(i,m1_ogrid+2:m1_ogrid+3,4,:)) &
+               + a5*0.5*(f_og(i,m2_ogrid-6:m2_ogrid-5,4,:) + f_og(i,m1_ogrid+3:m1_ogrid+4,4,:))
+      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,1),by(:,1),aEy,aWy,aPy,1,ny_ogrid)
+      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,2),by(:,2),aEy,aWy,aPy,1,ny_ogrid)
+      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,3),by(:,3),aEy,aWy,aPy,1,ny_ogrid)
+      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,4),by(:,4),aEy,aWy,aPy,1,ny_ogrid)
+    enddo
+! 
+!  Filtering in radial direction
+!  10th order on interior points, 6th order near boundaries on the edge 
+!  of cylindrical grid (near interpolation zone).
+!  One-sided filter on cylinder surface can be set to 6th, 8th or 10th order
+!  Surface point is not filtered, and neither are points in the 'filter'-zone between interpolations
+!
+    jj=interpol_filter
+    do i=m1_ogrid,m2_ogrid
+      bx(6:nx_ogrid-2,:) = a0*f_og(l1_ogrid+5:l2_ogrid-2,i,4,:) &
+                         + a1*0.5*(f_og(l1_ogrid+4:l2_ogrid-3,i,4,:) + f_og(l1_ogrid+ 6:l2_ogrid-1,i,4,:)) &
+                         + a2*0.5*(f_og(l1_ogrid+3:l2_ogrid-4,i,4,:) + f_og(l1_ogrid+ 7:l2_ogrid  ,i,4,:)) &
+                         + a3*0.5*(f_og(l1_ogrid+2:l2_ogrid-5,i,4,:) + f_og(l1_ogrid+ 8:l2_ogrid+1,i,4,:)) &
+                         + a4*0.5*(f_og(l1_ogrid+1:l2_ogrid-6,i,4,:) + f_og(l1_ogrid+ 9:l2_ogrid+2,i,4,:)) &
+                         + a5*0.5*(f_og(l1_ogrid  :l2_ogrid-7,i,4,:) + f_og(l1_ogrid+10:l2_ogrid+3,i,4,:))
+      bx(nx_ogrid-1:nx_ogrid,:) = a0_6*f_og(l2_ogrid-1:l2_ogrid,i,4,:) &
+                                + a1_6*0.5*(f_og(l2_ogrid-2:l2_ogrid-1,i,4,:) + f_og(l2_ogrid  :l2_ogrid+1,i,4,:)) &
+                                + a2_6*0.5*(f_og(l2_ogrid-3:l2_ogrid-2,i,4,:) + f_og(l2_ogrid+1:l2_ogrid+2,i,4,:)) &
+                                + a3_6*0.5*(f_og(l2_ogrid-4:l2_ogrid-3,i,4,:) + f_og(l2_ogrid+2:l2_ogrid+3,i,4,:)) 
+
+      !call boundary_x_central(bx(1:5,:),f_og,af,i)
+      !call boundary_x_6th(bx(1:5,:),f_og,af,i)
+      !call boundary_x_8th(bx(1:5,:),f_og,af,i)
+      !call boundary_x_10th(bx(1:5,:),f_og,af,i)
+      call boundary_x_8_6th(bx(1:5,:),f_og,af,i)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,1),bx(:,1),aEx,aWx,aPx,1,nx_ogrid-jj)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,2),bx(:,2),aEx,aWx,aPx,1,nx_ogrid-jj)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,3),bx(:,3),aEx,aWx,aPx,1,nx_ogrid-jj)
+      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,4),bx(:,4),aEx,aWx,aPx,1,nx_ogrid-jj)
+    enddo
+!
+  endsubroutine pade_filter
+!***********************************************************************
+  subroutine boundary_x_10th(bx_bound,f_og,af,i)
+!
+!  Compute the 10th order filter function for the radial boundary near the surface.
+!  Use one-sided differences from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real, dimension(2:5,11), save :: aB_10
+    integer :: j
+    logical :: lfirstcall = .true.
+!
+    if(lfirstcall) then
+      aB_10(2,1)  = (1   +1022*af)/1024.
+      aB_10(2,2)  = (507 + 10*af)/512.
+      aB_10(2,3)  = (45  +934*af)/1024.
+      aB_10(2,4)  =  15*(-1+2*af)/128.
+      aB_10(2,5)  = 105*( 1-2*af)/512.
+      aB_10(2,6)  =  63*(-1+2*af)/256.
+      aB_10(2,7)  = 105*( 1-2*af)/512.
+      aB_10(2,8)  =  15*(-1+2*af)/128.
+      aB_10(2,9)  =  45*( 1-2*af)/1024.
+      aB_10(2,10) =   5*(-1+2*af)/512.
+      aB_10(2,11) =     ( 1-2*af)/1024.
+
+      aB_10(3,1)  =     (-1+2*af)/1024.
+      aB_10(3,2)  = (5   +502*af)/512.
+      aB_10(3,3)  = (979 + 90*af)/1024.
+      aB_10(3,4)  = (15  + 98*af)/128.
+      aB_10(3,5)  = 105*(-1+2*af)/512.
+      aB_10(3,6)  =  63*( 1-2*af)/256.
+      aB_10(3,7)  = 105*(-1+2*af)/512.
+      aB_10(3,8)  =  15*( 1-2*af)/128.
+      aB_10(3,9)  =  45*(-1+2*af)/1024.
+      aB_10(3,10) =   5*( 1-2*af)/512.
+      aB_10(3,11) =     (-1+2*af)/1024.
+
+      aB_10(4,1)  =     ( 1-2*af)/1024.
+      aB_10(4,2)  =   5*(-1+2*af)/512.
+      aB_10(4,3)  = (45  +934*af)/1024.
+      aB_10(4,4)  = (113 +30*af)/128.
+      aB_10(4,5)  = (105 +302*af)/512.
+      aB_10(4,6)  =  63*(-1+2*af)/256.
+      aB_10(4,7)  = 105*( 1-2*af)/512.
+      aB_10(4,8)  =  15*(-1+2*af)/128.
+      aB_10(4,9)  =  45*( 1-2*af)/1024.
+      aB_10(4,10) =   5*(-1+2*af)/512.
+      aB_10(4,11) =     ( 1-2*af)/1024.
+
+      aB_10(5,1)  =     (-1+2*af)/1024.
+      aB_10(5,2)  =   5*( 1-2*af)/512.
+      aB_10(5,3)  =  45*(-1+2*af)/1024.
+      aB_10(5,4)  = (15  +98*af)/128.
+      aB_10(5,5)  = (407 +210*af)/512.
+      aB_10(5,6)  = (63  +130*af)/256.
+      aB_10(5,7)  = 105*(-1+2*af)/512.
+      aB_10(5,8)  =  15*( 1-2*af)/128.
+      aB_10(5,9)  =  45*(-1+2*af)/1024.
+      aB_10(5,10) =   5*( 1-2*af)/512.
+      aB_10(5,11) =     (-1+2*af)/1024.
+
+      lfirstcall = .false.
+    endif
+!
+    do j=2,5
+      bx_bound(j,:) = aB_10(j, 1)*f_og(l1_ogrid   ,i,4,:) + &
+                      aB_10(j, 2)*f_og(l1_ogrid+ 1,i,4,:) + &
+                      aB_10(j, 3)*f_og(l1_ogrid+ 2,i,4,:) + &
+                      aB_10(j, 4)*f_og(l1_ogrid+ 3,i,4,:) + &
+                      aB_10(j, 5)*f_og(l1_ogrid+ 4,i,4,:) + &
+                      aB_10(j, 6)*f_og(l1_ogrid+ 5,i,4,:) + &
+                      aB_10(j, 7)*f_og(l1_ogrid+ 6,i,4,:) + &
+                      aB_10(j, 8)*f_og(l1_ogrid+ 7,i,4,:) + &
+                      aB_10(j, 9)*f_og(l1_ogrid+ 8,i,4,:) + &
+                      aB_10(j,10)*f_og(l1_ogrid+ 9,i,4,:) + &
+                      aB_10(j,11)*f_og(l1_ogrid+10,i,4,:) 
+    enddo
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+!
+  endsubroutine boundary_x_10th
+!***********************************************************************
+  subroutine boundary_x_8th(bx_bound,f_og,af,i)
+!
+!  Compute the 8th order filter function for the radial boundary near the surface.
+!  Use central differences point i=5 (with i=1 at the boundary) and 
+!  one-sided differences fro points i=2:4 
+!  Weights from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real, dimension(2:4,9), save :: aB_8
+    real, save :: a0_8, a1_8, a2_8, a3_8, a4_8
+    integer :: j
+    logical :: lfirstcall = .true.
+!
+    if(lfirstcall) then
+      a0_8=(93+70*af)/128.
+      a1_8=(7+18*af)/16.
+      a2_8=(-7+14*af)/32.
+      a3_8=1/16.-af/8.
+      a4_8=-1/128.+af/64.
+      aB_8(4,1)  =  1/256. -   af/128.
+      aB_8(4,2)  = -1/32.  +   af/16.
+      aB_8(4,3)  =  7/64.  +25*af/32.
+      aB_8(4,4)  = 25/32.  + 7*af/16.
+      aB_8(4,5)  = 35/128. +29*af/64.
+      aB_8(4,6)  = -7/32.  + 7*af/16.
+      aB_8(4,7)  =  7/64.  - 7*af/32.
+      aB_8(4,8)  = -1/32.  +   af/16.
+      aB_8(4,9)  =  1/256. -   af/128.
+
+      aB_8(3,1)  = -1/256. +   af/128.
+      aB_8(3,2)  =  1/32.  +15*af/16.
+      aB_8(3,3)  = 57/64.  + 7*af/32.
+      aB_8(3,4)  =  7/32.  + 9*af/16.
+      aB_8(3,5)  = 7*(-5 + 10*af)/128.
+      aB_8(3,6)  =  7/32.  - 7*af/16.
+      aB_8(3,7)  = -7/64.  + 7*af/32.
+      aB_8(3,8)  =  1/32.  -   af/16.
+      aB_8(3,9)  = -1/256. +   af/128.
+      
+      aB_8(2,1)  =  1/256. +127*af/128.
+      aB_8(2,2)  = 31/32.  +   af/16.
+      aB_8(2,3)  =  7/64.  +25*af/32.
+      aB_8(2,4)  = -7/32.  + 7*af/16.
+      aB_8(2,5)  = 7*( 5 - 10*af)/128.
+      aB_8(2,6)  = -7/32.  + 7*af/16.
+      aB_8(2,7)  =  7/64.  - 7*af/32.
+      aB_8(2,8)  = -1/32.  +   af/16.
+      aB_8(2,9)  =  1/256. -   af/128.
+
+      lfirstcall = .false.
+    endif
+
+    bx_bound(5,:) = a0_8*f_og(l1_ogrid+4,i,4,:) &
+                  + a1_8*0.5*(f_og(l1_ogrid+3,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a2_8*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+6,i,4,:)) &
+                  + a3_8*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+7,i,4,:)) &
+                  + a4_8*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+8,i,4,:)) 
+    do j=2,4
+      bx_bound(j,:) = aB_8(j,1)*f_og(l1_ogrid  ,i,4,:) + &
+                      aB_8(j,2)*f_og(l1_ogrid+1,i,4,:) + &
+                      aB_8(j,3)*f_og(l1_ogrid+2,i,4,:) + &
+                      aB_8(j,4)*f_og(l1_ogrid+3,i,4,:) + &
+                      aB_8(j,5)*f_og(l1_ogrid+4,i,4,:) + &
+                      aB_8(j,6)*f_og(l1_ogrid+5,i,4,:) + &
+                      aB_8(j,7)*f_og(l1_ogrid+6,i,4,:) + &
+                      aB_8(j,8)*f_og(l1_ogrid+7,i,4,:) + &
+                      aB_8(j,9)*f_og(l1_ogrid+8,i,4,:)
+    enddo
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+
+  endsubroutine boundary_x_8th
+!***********************************************************************
+  subroutine boundary_x_6th(bx_bound,f_og,af,i)
+!
+!  Compute the 6th order filter function for the radial boundary near the surface.
+!  Use central differences for points i=3:5 (with i=1 at the boundary) and 
+!  one-sided differences fro points i=2:3 
+!  Weights from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real, dimension(2:3,7), save :: aB_6
+    real, save :: a0_6, a1_6, a2_6, a3_6
+    logical :: lfirstcall = .true.
+!
+    if(lfirstcall) then
+      a0_6=11./16.+5.*af/8.
+      a1_6=15./32.+17.*af/16.
+      a2_6=-3./16.+3.*af/8.
+      a3_6=1./32.-af/16.
+
+      aB_6(2,1)  =  1/64. +31*af/32.
+      aB_6(2,2)  = 29/32. + 3*af/16.
+      aB_6(2,3)  = 15/64. +17*af/32.
+      aB_6(2,4)  = -5/16. + 5*af/8.
+      aB_6(2,5)  = 15/64. -15*af/32.
+      aB_6(2,6)  = -3/32. + 3*af/16.
+      aB_6(2,7)  =  1/64. -   af/32.
+
+      aB_6(3,1)  = -1/64. +   af/32.
+      aB_6(3,2)  =  3/32. +13*af/16.
+      aB_6(3,3)  = 49/64. +15*af/32.
+      aB_6(3,4)  =  5/16. + 3*af/8.
+      aB_6(3,5)  =-15/64. +15*af/32.
+      aB_6(3,6)  =  3/32. - 3*af/16.
+      aB_6(3,7)  = -1/64. +   af/32.
+
+      lfirstcall = .false.
+    endif
+    bx_bound(4:5,:) = a0_6*f_og(l1_ogrid+3:l1_ogrid+4,i,4,:) &
+                    + a1_6*0.5*(f_og(l1_ogrid+2:l1_ogrid+3,i,4,:) + f_og(l1_ogrid+4:l1_ogrid+5,i,4,:)) &
+                    + a2_6*0.5*(f_og(l1_ogrid+1:l1_ogrid+2,i,4,:) + f_og(l1_ogrid+5:l1_ogrid+6,i,4,:)) &
+                    + a3_6*0.5*(f_og(l1_ogrid  :l1_ogrid+1,i,4,:) + f_og(l1_ogrid+6:l1_ogrid+7,i,4,:)) 
+    bx_bound(3,:) = aB_6(3,1)*f_og(l1_ogrid  ,i,4,:) + &
+                    aB_6(3,2)*f_og(l1_ogrid+1,i,4,:) + &
+                    aB_6(3,3)*f_og(l1_ogrid+2,i,4,:) + &
+                    aB_6(3,4)*f_og(l1_ogrid+3,i,4,:) + &
+                    aB_6(3,5)*f_og(l1_ogrid+4,i,4,:) + &
+                    aB_6(3,6)*f_og(l1_ogrid+5,i,4,:) + &
+                    aB_6(3,7)*f_og(l1_ogrid+6,i,4,:)
+    bx_bound(2,:) = aB_6(2,1)*f_og(l1_ogrid  ,i,4,:) + &
+                    aB_6(2,2)*f_og(l1_ogrid+1,i,4,:) + &
+                    aB_6(2,3)*f_og(l1_ogrid+2,i,4,:) + &
+                    aB_6(2,4)*f_og(l1_ogrid+3,i,4,:) + &
+                    aB_6(2,5)*f_og(l1_ogrid+4,i,4,:) + &
+                    aB_6(2,6)*f_og(l1_ogrid+5,i,4,:) + &
+                    aB_6(2,7)*f_og(l1_ogrid+6,i,4,:)
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+!
+  endsubroutine boundary_x_6th
+!***********************************************************************
+  subroutine boundary_x_central(bx_bound,f_og,af,i)
+!
+!  Compute the 6th order filter function for the radial boundary near the surface.
+!  Use central differences for points i=3:5 (with i=1 at the boundary) and 
+!  one-sided differences fro points i=2:3 
+!  Weights from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real, save :: a0_8, a1_8, a2_8, a3_8, a4_8
+    real, save :: a0_6, a1_6, a2_6, a3_6
+    real, save :: a0_4, a1_4, a2_4
+    real, save :: a0_2, a1_2
+    logical :: lfirstcall = .true.
+!
+    if(lfirstcall) then
+      a0_8=(93+70*af)/128.
+      a1_8=(7+18*af)/16.
+      a2_8=(-7+14*af)/32.
+      a3_8=1/16.-af/8.
+      a4_8=-1/128.+af/64.
+!
+      a0_6=11./16.+5.*af/8.
+      a1_6=15./32.+17.*af/16.
+      a2_6=-3./16.+3.*af/8.
+      a3_6=1./32.-af/16.
+
+      a0_4=5/8. + 3*af/4.
+      a1_4=1/2. + af
+      a2_4=-1/8. + af/4.
+
+      a0_2=0.5+af
+      a1_2=0.5+af
+      lfirstcall = .false.
+    endif
+
+    bx_bound(5,:) = a0_8*     f_og(l1_ogrid+4,i,4,:) &
+                  + a1_8*0.5*(f_og(l1_ogrid+3,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a2_8*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+6,i,4,:)) &
+                  + a3_8*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+7,i,4,:)) &
+                  + a4_8*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+8,i,4,:)) 
+    bx_bound(4,:) = a0_6*     f_og(l1_ogrid+3,i,4,:) &
+                  + a1_6*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+4,i,4,:)) &
+                  + a2_6*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a3_6*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+6,i,4,:)) 
+    bx_bound(3,:) = a0_4*     f_og(l1_ogrid+2,i,4,:) &
+                  + a1_4*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+3,i,4,:)) &
+                  + a1_4*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+4,i,4,:))
+    bx_bound(2,:) = a0_2*     f_og(l1_ogrid+1,i,4,:) &
+                  + a1_2*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+1,i,4,:))
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+!
+  endsubroutine boundary_x_central
+!***********************************************************************
+  subroutine boundary_x_8_6th(bx_bound,f_og,af,i)
+!
+!  Compute the 8th order filter function for the radial boundary near the surface.
+!  Use central differences point i=5 (with i=1 at the boundary) and 
+!  one-sided differences fro points i=2:4 
+!  Weights from Gaitonde & Visbal (2000)
+!
+!  10-nov-17/Jorgen - Coded
+!
+    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    real, intent(in) :: af
+    integer, intent(in) :: i
+    real, dimension(3:4,9), save :: aB_8
+    real, dimension(7), save :: aB_6
+    real, save :: a0_8, a1_8, a2_8, a3_8, a4_8
+    logical :: lfirstcall = .true.
+    integer :: j
+!
+    if(lfirstcall) then
+      a0_8=(93+70*af)/128.
+      a1_8=(7+18*af)/16.
+      a2_8=(-7+14*af)/32.
+      a3_8=1/16.-af/8.
+      a4_8=-1/128.+af/64.
+      aB_8(4,1)  =  1/256. -   af/128.
+      aB_8(4,2)  = -1/32.  +   af/16.
+      aB_8(4,3)  =  7/64.  +25*af/32.
+      aB_8(4,4)  = 25/32.  + 7*af/16.
+      aB_8(4,5)  = 35/128. +29*af/64.
+      aB_8(4,6)  = -7/32.  + 7*af/16.
+      aB_8(4,7)  =  7/64.  - 7*af/32.
+      aB_8(4,8)  = -1/32.  +   af/16.
+      aB_8(4,9)  =  1/256. -   af/128.
+
+      aB_8(3,1)  = -1/256. +   af/128.
+      aB_8(3,2)  =  1/32.  +15*af/16.
+      aB_8(3,3)  = 57/64.  + 7*af/32.
+      aB_8(3,4)  =  7/32.  + 9*af/16.
+      aB_8(3,5)  = 7*(-5 + 10*af)/128.
+      aB_8(3,6)  =  7/32.  - 7*af/16.
+      aB_8(3,7)  = -7/64.  + 7*af/32.
+      aB_8(3,8)  =  1/32.  -   af/16.
+      aB_8(3,9)  = -1/256. +   af/128.
+
+      aB_6(1)  =  1/64. +31*af/32.
+      aB_6(2)  = 29/32. + 3*af/16.
+      aB_6(3)  = 15/64. +17*af/32.
+      aB_6(4)  = -5/16. + 5*af/8.
+      aB_6(5)  = 15/64. -15*af/32.
+      aB_6(6)  = -3/32. + 3*af/16.
+      aB_6(7)  =  1/64. -   af/32.
+
+      lfirstcall = .false.
+    endif
+
+    bx_bound(5,:) = a0_8*f_og(l1_ogrid+4,i,4,:) &
+                  + a1_8*0.5*(f_og(l1_ogrid+3,i,4,:) + f_og(l1_ogrid+5,i,4,:)) &
+                  + a2_8*0.5*(f_og(l1_ogrid+2,i,4,:) + f_og(l1_ogrid+6,i,4,:)) &
+                  + a3_8*0.5*(f_og(l1_ogrid+1,i,4,:) + f_og(l1_ogrid+7,i,4,:)) &
+                  + a4_8*0.5*(f_og(l1_ogrid  ,i,4,:) + f_og(l1_ogrid+8,i,4,:)) 
+    do j=3,4
+      bx_bound(j,:) = aB_8(j,1)*f_og(l1_ogrid  ,i,4,:) + &
+                      aB_8(j,2)*f_og(l1_ogrid+1,i,4,:) + &
+                      aB_8(j,3)*f_og(l1_ogrid+2,i,4,:) + &
+                      aB_8(j,4)*f_og(l1_ogrid+3,i,4,:) + &
+                      aB_8(j,5)*f_og(l1_ogrid+4,i,4,:) + &
+                      aB_8(j,6)*f_og(l1_ogrid+5,i,4,:) + &
+                      aB_8(j,7)*f_og(l1_ogrid+6,i,4,:) + &
+                      aB_8(j,8)*f_og(l1_ogrid+7,i,4,:) + &
+                      aB_8(j,9)*f_og(l1_ogrid+8,i,4,:)
+    enddo
+    bx_bound(2,:) = aB_6(1)*f_og(l1_ogrid  ,i,4,:) + &
+                    aB_6(2)*f_og(l1_ogrid+1,i,4,:) + &
+                    aB_6(3)*f_og(l1_ogrid+2,i,4,:) + &
+                    aB_6(4)*f_og(l1_ogrid+3,i,4,:) + &
+                    aB_6(5)*f_og(l1_ogrid+4,i,4,:) + &
+                    aB_6(6)*f_og(l1_ogrid+5,i,4,:) + &
+                    aB_6(7)*f_og(l1_ogrid+6,i,4,:)
+    bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
+
+  endsubroutine boundary_x_8_6th
+!***********************************************************************
+subroutine TDMA(fi,b,aE,aW,aP,Istart,Iend)
+!
+  implicit none
+  double precision, dimension(:), intent(in out) :: fi
+  double precision, dimension(:), intent(in) :: b
+  double precision, dimension(:), intent(in) :: aE,aW,aP
+  integer, intent(in) :: Istart,Iend
+  integer :: I
+  double precision, dimension(Iend) :: Ath, Cmth
+  double precision :: Cth
+!
+!---- TDMA from west to east. equation to solve:
+!----
+!---- - aW*fiW + aP*fiP - aE*fiE = b
+!----
+!---- equivalences with variables in eq. 7.1-7.6:
+!---- BETA=aW(I,J)   Def. in eq. 7.2
+!---- D=aP(I,J)      Def. in eq. 7.2 
+!---- ALFA=aE(I,J)   Def. in eq. 7.2
+!---- A=Ath(I)       Def. in eq. 7.6b
+!---- C=Cth          Same as the constant b=Su def. in eq 4.11
+!---- C´=Cmth(I)     Def. in eq. 7.6c
+!
+!
+!---- Solving from east to west
+!
+!---- At the west boundary:
+  Ath(Istart)=0.   
+  Cmth(Istart)=fi(Istart) 
+
+!---- Forward substitution
+  do I=Istart+1,Iend-1 
+    Ath(I)=aE(I)/(aP(I)-aW(I)*Ath(I-1)) !eq. 7.6b
+    Cth=b(I)   
+    Cmth(I)=(aW(I)*Cmth(I-1)+Cth)/(aP(I)-aW(I)*Ath(I-1))
+  end do   
+
+!---- Back substitution  
+  do I=Iend-1,Istart+1,-1 
+    fi(I)=Ath(I)*fi(I+1)+Cmth(I)
+  end do
+
+end subroutine TDMA
+
+end module solid_cells

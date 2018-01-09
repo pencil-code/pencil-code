@@ -59,7 +59,7 @@ contains
 
     endsubroutine biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,itype,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,n_onegap,n_twogap,th_range) result (nok)
 !
 !  Dummy routine.
 !
@@ -68,6 +68,7 @@ contains
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
       integer,                         intent(IN) :: itype
+      integer,               optional, intent(IN) :: n_onegap,n_twogap
       integer, dimension(2), optional, intent(OUT):: th_range
 
       integer :: nok
@@ -100,5 +101,14 @@ contains
       indweights%coeffs=0.
 
     endsubroutine coeffs_to_weights
+!*******************************************************************
+    function in_overlap_mask(indth,indph) result (ok)
+
+      integer, intent(IN) :: indth,indph
+      logical :: ok
+
+      ok=.true.
+
+    endfunction in_overlap_mask
 !*******************************************************************
 endmodule Yinyang

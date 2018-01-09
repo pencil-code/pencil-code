@@ -89,7 +89,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5, mu5_const=0.
+   real :: diffmu5, lambda5, mu5_const=0., gammaf5
    real :: meanmu5
    real, pointer :: eta
    real :: cdtchiral=1.
@@ -105,7 +105,7 @@ module Special
       initspecial, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, cdtchiral
+      diffmu5, lambda5, cdtchiral, gammaf5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -324,7 +324,7 @@ module Special
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5)-p%ugmu5 &
-      +diffmu5*p%del2mu5+lambda5*EB
+      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
       diffus_mu5_1 = lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2)
       diffus_mu5_2 = lambda5*eta*p%b2
       diffus_mu5_3 = diffmu5*dxyz_2

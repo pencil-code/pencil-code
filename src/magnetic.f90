@@ -90,6 +90,7 @@ module Magnetic
   real, dimension (ninit) :: phase_ax=0.0, phase_ay=0.0, phase_az=0.0
   real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
+  real, dimension (ninit) :: phase_aa=0.0
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
   integer :: nzav=0,indzav=0,nzav_start=1, izav_start=1
   character (len=fnlen) :: source_zav=''
@@ -206,7 +207,7 @@ module Magnetic
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
-      coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
+      coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
@@ -1589,6 +1590,8 @@ module Magnetic
 !
 !  Beltrami fields, put k=-k to make sure B=curl(A) has the right phase
 !
+        case ('Beltrami-general')
+               call beltrami_general(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),phase_aa(j))
         case ('Beltrami-x')
                call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
         case ('Beltrami-xy-samehel')
@@ -2007,7 +2010,7 @@ module Magnetic
 !  need uga always for advective gauge.
 !
       if (ladvective_gauge) then
-        if (lfargo_advection) then 
+        if (lfargo_advection) then
           lpenc_requested(i_uuadvec_gaa)=.true.
         else
           lpenc_requested(i_uga)=.true.
@@ -2849,8 +2852,12 @@ module Magnetic
           call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
           p%uuadvec_gaa(:,j)=tmp
         enddo
-        p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
-        p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,2)*p%aa(:,1)
+        if (lcylindrical_coords) then
+          p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
+          p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,2)*p%aa(:,1)
+        elseif (lspherical_coords) then
+          call fatal_error("uuadvec_gaa","not implemented yet for spherical coordinates")
+        endif
       endif
 !
 !  bij, del2a, graddiva
@@ -3904,7 +3911,7 @@ module Magnetic
               if (lfargo_advection) call fatal_error("daadt","fargo advection with external field not tested")
               call cross(p%uu,B_ext,ujiaj)
             else
-              if (lfargo_advection) then 
+              if (lfargo_advection) then
                 ajiuj=0.
               else
                 ujiaj=0.
@@ -3915,7 +3922,7 @@ module Magnetic
 !
             do j=1,3
               do k=1,3
-                if (lfargo_advection) then 
+                if (lfargo_advection) then
                   ajiuj(:,j)=ajiuj(:,j)+p%uu(:,k)*p%aij(:,k,j)
                 else
                   ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
@@ -3932,7 +3939,7 @@ module Magnetic
                 ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
               endif
 !
-            else if (lspherical_coords) then 
+            else if (lspherical_coords) then
               if (lfargo_advection) call fatal_error("daadt",&
                    "curvature terms on ajiuj not added for spherical coordinates yet.")
               ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
@@ -3942,7 +3949,7 @@ module Magnetic
                                          p%uu(:,3)*p%aa(:,3)*cotth(m))*r1_mn
             endif
 !
-            if (.not.lfargo_advection) then 
+            if (.not.lfargo_advection) then
               dAdt = dAdt-p%uga-ujiaj+fres
             else
               ! the gauge above, with -ujiaj is unstable due to the buildup of the irrotational term 

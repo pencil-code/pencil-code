@@ -37,6 +37,7 @@ module Particles_cdata
   real :: gab_width=3.0
 
   real :: remove_particle_at_time=-1.0, remove_particle_criteria_size=0.0
+  real :: remove_particle_criteria_edtog=impossible
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
   integer, dimension (nx) :: kshepherd

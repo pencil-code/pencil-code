@@ -620,7 +620,7 @@ module Shear
       logical :: error
       integer :: istat
       integer :: ic, j, k
-      real :: shift
+      real :: shift, avg
 !
 !  Find the displacement traveled with the advection.
 !
@@ -687,6 +687,8 @@ module Shear
                 ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
               endif newy
 !
+              avg = sum(bt(:,j,k)) / real(nygrid)
+              bt(:,j,k) = bt(:,j,k) - avg
               ymethod: select case (method)
               case ('bspline') ymethod
                 py = bt(:,j,k)
@@ -709,7 +711,7 @@ module Shear
               endselect ymethod
               if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
 !
-              bt(:,j,k) = py
+              bt(:,j,k) = avg + py
             enddo scan_yz
           enddo scan_yx
           call transp_pencil_xy(bt, b1)
@@ -878,7 +880,7 @@ module Shear
       logical :: error
       integer :: istat
       integer :: i, k
-      real :: s
+      real :: s, avg
 !
 !  Find the new y-coordinates after shift.
 !
@@ -905,6 +907,8 @@ module Shear
       call remap_to_pencil_y(a, work)
       scan_z: do k = 1, nz
         scan_x: do i = 1, nghost
+          avg = sum(work(i,:,k)) / real(nygrid)
+          work(i,:,k) = work(i,:,k) - avg
           periodic: if (method == 'poly') then
             worky(nghost+1:mygrid-nghost) = work(i,:,k)
             worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
@@ -928,7 +932,7 @@ module Shear
           endselect dispatch
           if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in interpolation; ' // trim(message))
 !
-          work(i,:,k) = penc
+          work(i,:,k) = avg + penc
         enddo scan_x
       enddo scan_z
       call unmap_from_pencil_y(work, a)
