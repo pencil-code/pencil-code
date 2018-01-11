@@ -147,6 +147,8 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
     cb.set_label(clabel)
     # Loop over each time and update the plot.
     def update(i):
+        print("\rAnimating ({:6.1%})......".format((i+1)/len(t)),
+              end='', flush=True)
         text = ax.set_title(time_template.format(t[i]))
         pc.set_array(c[i].ravel(order='F'))
         if vmin_dynamic and vmax_dynamic:
