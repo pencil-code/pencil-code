@@ -128,7 +128,7 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
     if logscale:
         c = c.clip(min(vmin) if vmin_dynamic else vmin, np.inf)
     # Initialize the plot.
-    fig = plt.figure(dpi=72)
+    fig = plt.figure()
     ax = fig.gca()
     time_template = r"$t = {:#.4G}$"
     pc = ax.pcolormesh(x, y, c[0].transpose(), norm=norm)
