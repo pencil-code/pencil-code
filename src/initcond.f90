@@ -2562,7 +2562,7 @@ module Initcond
               call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
               ss0(n)=tmp
             endif
-            if (lsupersat) ssat0(n)=var3
+            if (lascalar) ssat0(n)=var3
           else
             call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
@@ -2600,7 +2600,7 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
-        if (ltemperature.and.lsupersat) then
+        if (ltemperature.and.lascalar) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))

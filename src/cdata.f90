@@ -243,7 +243,7 @@ module Cdata
   logical :: llast_proc_xyz=.true.
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lpscalar_nolog=.false.
-  !logical :: lsupersat=.false.
+  !logical :: lascalar=.false.
   logical :: lalpm=.false., lalpm_alternate=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
@@ -314,7 +314,7 @@ module Cdata
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
   integer :: issat=0
-  integer :: itausupersat=0
+  integer :: itauascalar=0
   integer :: iaphi=0,ibphi=0,ieth=0
   integer :: idet = 0
   integer :: iinvgrid=0

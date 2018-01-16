@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
-! PENCILS PROVIDED tausupersat
+! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
 !
 !***************************************************************
@@ -139,7 +139,7 @@ module Particles
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltausupersat = .false.
+  logical :: ltauascalar = .false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -177,7 +177,7 @@ module Particles
   real :: compensate_sedimentation=1.
 !
   real :: A3=0., A2=0.
-  logical :: supersat_ngp=.false., supersat_cic=.false.
+  logical :: ascalar_ngp=.false., ascalar_cic=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -278,9 +278,9 @@ module Particles
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       remove_particle_criteria_edtog, &
-      supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
+      ascalar_ngp, ascalar_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltausupersat, &
+      ltauascalar, &
       c1, c2, Rv, rho0
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
@@ -401,8 +401,8 @@ module Particles
       endif
 !
 !  Relaxation time of supersaturation
-      if (lsupersat) &
-        call farray_register_auxiliary('tausupersat', itausupersat)
+      if (lascalar) &
+        call farray_register_auxiliary('tauascalar', itauascalar)
         call farray_register_auxiliary('condensationRate', icondensationRate)
 !
 !  Kill particles that spend enough time in birth ring
@@ -2819,8 +2819,8 @@ module Particles
         lpenc_requested(i_gTT)=.true.
       endif
 !
-      if (lsupersat) &
-         lpenc_requested(i_tausupersat)=.true.
+      if (lascalar) &
+         lpenc_requested(i_tauascalar)=.true.
          lpenc_requested(i_condensationRate)=.true.
 
 !
@@ -2870,8 +2870,8 @@ module Particles
         lpencil_in(i_rho1)=.true.
       endif
 !
-      if (lsupersat) lpencil_in(i_tausupersat)=.true.
-      if (lsupersat) lpencil_in(i_condensationRate)=.true.
+      if (lascalar) lpencil_in(i_tauascalar)=.true.
+      if (lascalar) lpencil_in(i_condensationRate)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -2923,7 +2923,7 @@ module Particles
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
 !
-      if (itausupersat>0) p%tausupersat=f(l1:l2,m,n,itausupersat)
+      if (itauascalar>0) p%tauascalar=f(l1:l2,m,n,itauascalar)
       if (icondensationRate>0) p%condensationRate=f(l1:l2,m,n,icondensationRate)
 !
     endsubroutine calc_pencils_particles
@@ -3712,8 +3712,8 @@ module Particles
 !     
       
 ! supersat
-      if (lsupersat) f(:,m,n,itausupersat) = 0.0
-      if (lsupersat) f(:,m,n,icondensationRate) = 0.0
+      if (lascalar) f(:,m,n,itauascalar) = 0.0
+      if (lascalar) f(:,m,n,icondensationRate) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
       if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
           'ldiffuse_passive needs pscalar_nolog=F')
@@ -3725,7 +3725,7 @@ module Particles
       if (lpenc_requested(i_npuz))     p%npuz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
-      if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
+      if (lpenc_requested(i_tauascalar)) p%tauascalar=0.
       if (lpenc_requested(i_condensationRate)) p%condensationRate=0.
 !
       if (idiag_urel /= 0) urel_sum=0.
@@ -4476,11 +4476,11 @@ module Particles
 !  calculate relaxation time.
 !  14-June-16/Xiang-Yu: coded
 
-              if (lsupersat) then
+              if (lascalar) then
                  inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                 if (supersat_ngp) then
+                 if (ascalar_ngp) then
                    l=ineargrid(k,1)
-                   if (ltausupersat) f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
+                   if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + inversetau
                    if (lcondensation_rate) then
                      es_T=c1*exp(-c2/f(l,m,n,ilnTT))
                      qvs_T=es_T/(Rv*rho0*f(l,m,n,ilnTT))
@@ -4488,7 +4488,7 @@ module Particles
                      !supersaturation=f(l,m,n,issat)/vapor_mixing_ratio_qvs-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*supersaturation*fp(k,iap)
                    endif
-                 elseif (supersat_cic) then
+                 elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
                   if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
@@ -4504,7 +4504,7 @@ module Particles
                     if (nzgrid/=1) weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
                     !call find_grid_volume(ixx,iyy,izz,volume_cell)
                     !f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau/volume_cell
-                    f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau
+                    f(ixx,iyy,izz,itauascalar) = f(ixx,iyy,izz,itauascalar) - weight*inversetau
                   enddo; enddo; enddo
                  endif
               endif

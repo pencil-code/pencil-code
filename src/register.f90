@@ -57,7 +57,7 @@ module Register
       use PointMasses,      only: register_pointmasses
       use Polymer,          only: register_polymer
       use Pscalar,          only: register_pscalar
-      use Supersat,         only: register_supersat
+      use Ascalar,         only: register_ascalar
       use Radiation,        only: register_radiation
       use Selfgravity,      only: register_selfgravity
       use Shear,            only: register_shear
@@ -142,7 +142,7 @@ module Register
       call register_testflow
       call register_radiation
       call register_pscalar
-      call register_supersat
+      call register_ascalar
       call register_chiral
       call register_chemistry
       call register_dustvelocity
@@ -230,7 +230,7 @@ module Register
       use PointMasses,      only: initialize_pointmasses
       use Poisson,          only: initialize_poisson
       use Pscalar,          only: initialize_pscalar
-      use Supersat,         only: initialize_supersat
+      use Ascalar,         only: initialize_ascalar
       use Radiation,        only: initialize_radiation
       use Selfgravity,      only: initialize_selfgravity
       use Shear,            only: initialize_shear
@@ -390,7 +390,7 @@ module Register
       call initialize_testflow(f)
       call initialize_radiation
       call initialize_pscalar(f)
-      call initialize_supersat(f)
+      call initialize_ascalar(f)
       call initialize_chiral(f)
       call initialize_chemistry(f)
       call initialize_dustvelocity(f)
@@ -571,7 +571,7 @@ module Register
       use Gravity,         only: pencil_criteria_gravity
       use Selfgravity,     only: pencil_criteria_selfgravity
       use Pscalar,         only: pencil_criteria_pscalar
-      use Supersat,        only: pencil_criteria_supersat
+      use Ascalar,        only: pencil_criteria_ascalar
       use Chemistry,       only: pencil_criteria_chemistry
       use Dustvelocity,    only: pencil_criteria_dustvelocity
       use Dustdensity,     only: pencil_criteria_dustdensity
@@ -608,7 +608,7 @@ module Register
       call pencil_criteria_gravity
       call pencil_criteria_selfgravity
       call pencil_criteria_pscalar
-      call pencil_criteria_supersat
+      call pencil_criteria_ascalar
       call pencil_criteria_interstellar
       call pencil_criteria_chemistry
       call pencil_criteria_dustvelocity
@@ -664,7 +664,7 @@ module Register
       use Testfield, only: pencil_interdep_testfield
       use Testflow, only: pencil_interdep_testflow
       use Pscalar, only: pencil_interdep_pscalar
-      use Supersat, only: pencil_interdep_supersat
+      use Ascalar, only: pencil_interdep_ascalar
       use Chemistry, only: pencil_interdep_chemistry
       use Dustvelocity, only: pencil_interdep_dustvelocity
       use Dustdensity, only: pencil_interdep_dustdensity
@@ -700,7 +700,7 @@ module Register
       call pencil_interdep_neutralvelocity(lpencil_in)
       call pencil_interdep_neutraldensity(lpencil_in)
       call pencil_interdep_pscalar(lpencil_in)
-      call pencil_interdep_supersat(lpencil_in)
+      call pencil_interdep_ascalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
       call pencil_interdep_lorenz_gauge(lpencil_in)
       call pencil_interdep_polymer(lpencil_in)
@@ -809,7 +809,7 @@ module Register
       use Radiation,       only: rprint_radiation
       use EquationOfState, only: rprint_eos
       use Pscalar,         only: rprint_pscalar
-      use Supersat,        only: rprint_supersat
+      use Ascalar,         only: rprint_ascalar
       use Chiral,          only: rprint_chiral
       use Interstellar,    only: rprint_interstellar
       use Chemistry,       only: rprint_chemistry
@@ -1062,7 +1062,7 @@ module Register
       call rprint_radiation       (lreset,LWRITE=lroot)
       call rprint_eos             (lreset,LWRITE=lroot)
       call rprint_pscalar         (lreset,LWRITE=lroot)
-      call rprint_supersat        (lreset,LWRITE=lroot)
+      call rprint_ascalar        (lreset,LWRITE=lroot)
       call rprint_chiral          (lreset,LWRITE=lroot)
       call rprint_interstellar    (lreset,LWRITE=lroot)
       call rprint_chemistry       (lreset,LWRITE=lroot)

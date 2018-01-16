@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lsupersat = .true.
+! CPARAM logical, parameter :: lascalar = .true.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -15,11 +15,11 @@
 ! PENCILS PROVIDED ssat
 ! PENCILS PROVIDED gssat(3); ugssat
 ! PENCILS PROVIDED del2ssat
-! PENCILS PROVIDED tausupersat
+! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
 !
 !***************************************************************
-module Supersat
+module Ascalar
 !
   use Cdata
   use Cparam
@@ -27,7 +27,7 @@ module Supersat
 !
   implicit none
 !
-  include 'supersat.h'
+  include 'ascalar.h'
 !
 ! Define local variables in this special module, not in "Cdata.f90"
   integer :: icondensationRate=0
@@ -35,19 +35,19 @@ module Supersat
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
   real :: lnTT_const=0.
-  logical :: nosupersat=.false., reinitialize_ssat=.false.
+  logical :: noascalar=.false., reinitialize_ssat=.false.
   character (len=labellen) :: initssat='nothing'
   character (len=labellen) :: initlnTT='nothing'
 !
-  namelist /supersat_init_pars/ &
+  namelist /ascalar_init_pars/ &
            initssat, ssat_const, amplssat, widthssat, &
            initlnTT, lnTT_const
 !
 !  Run parameters.
 !
   real :: thermal_diff=0.0
-  real :: supersat_diff=0.0
-  real :: supersat_sink=0.0
+  real :: ascalar_diff=0.0
+  real :: ascalar_sink=0.0
   real :: vapor_mixing_ratio_qvs=0.0
   real :: updraft=0.0
   real :: A1=0.0
@@ -56,12 +56,12 @@ module Supersat
   real, dimension(3) :: gradlnTT0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rho0
   real, dimension(nx) :: es_T, qvs_T 
-  logical :: lsupersat_sink=.false., Rsupersat_sink=.false.,lupdraft=.false.
+  logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
   logical :: lupw_ssat=.false., lcondensation_rate=.false.
 
-  namelist /supersat_run_pars/ &
-      lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
-      supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
+  namelist /ascalar_run_pars/ &
+      lupw_ssat, lascalar_sink, Rascalar_sink, ascalar_sink, &
+      ascalar_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
       c1, c2, Rv, rho0, &
       thermal_diff, gradlnTT0
@@ -75,14 +75,14 @@ module Supersat
 !
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
-  integer :: idiag_tausupersatrms=0, idiag_tausupersatmax=0, idiag_tausupersatmin=0
+  integer :: idiag_tauascalarrms=0, idiag_tauascalarmax=0, idiag_tauascalarmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
   integer :: idiag_temperaturerms=0, idiag_temperaturemax=0,idiag_temperaturemin=0
-  integer :: idiag_supersaturationrms=0, idiag_supersaturationmax=0,idiag_supersaturationmin=0
+  integer :: idiag_supersaturationrms=0, idiag_supersaturationmax=0, idiag_supersaturationmin=0
 !
   contains
 !***********************************************************************
-    subroutine register_supersat()
+    subroutine register_ascalar()
 !
 !  Initialise the ssat variable and increase nvar accordingly
 !
@@ -102,9 +102,9 @@ module Supersat
       if (lroot) call svn_id( &
           "$Id$")
 !
-    endsubroutine register_supersat
+    endsubroutine register_ascalar
 !***********************************************************************
-    subroutine initialize_supersat(f)
+    subroutine initialize_ascalar(f)
 !
 !  Perform any necessary post-parameter read initialization
 !  Since the passive scalar is often used for diagnostic purposes
@@ -122,7 +122,7 @@ module Supersat
         call init_ssat(f)
       endif
 !
-    endsubroutine initialize_supersat
+    endsubroutine initialize_ascalar
 !
 !***********************************************************************
     subroutine init_ssat(f)
@@ -174,9 +174,9 @@ module Supersat
 !
     endsubroutine init_ssat
 !***********************************************************************
-    subroutine pencil_criteria_supersat()
+    subroutine pencil_criteria_ascalar()
 !
-!  All pencils that the Supersat module depends on are specified here.
+!  All pencils that the Ascalar module depends on are specified here.
 !
       integer :: i
 !
@@ -194,11 +194,11 @@ module Supersat
         if (gradssat0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
 !
-      if (lsupersat_sink) then 
+      if (lascalar_sink) then 
         lpenc_requested(i_ssat)=.true.
-        lpenc_requested(i_tausupersat)=.true.
+        lpenc_requested(i_tauascalar)=.true.
       endif
-      if (supersat_diff/=0.) lpenc_requested(i_del2ssat)=.true.
+      if (ascalar_diff/=0.) lpenc_requested(i_del2ssat)=.true.
  
       lpenc_diagnos(i_ssat)=.true.
 !     
@@ -209,9 +209,9 @@ module Supersat
         if (gradlnTT0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
 !
-    endsubroutine pencil_criteria_supersat
+    endsubroutine pencil_criteria_ascalar
 !***********************************************************************
-    subroutine pencil_interdep_supersat(lpencil_in)
+    subroutine pencil_interdep_ascalar(lpencil_in)
 !  Interdependency among pencils provided by the Pscalar module
 !  is specified here.
       logical, dimension(npencils) :: lpencil_in
@@ -222,13 +222,13 @@ module Supersat
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gssat)=.true.
       endif
-      lpencil_in(i_tausupersat)=.true.
+      lpencil_in(i_tauascalar)=.true.
       lpencil_in(i_condensationRate)=.true.
-    endsubroutine pencil_interdep_supersat
+    endsubroutine pencil_interdep_ascalar
 !**********************************************************************
-    subroutine calc_pencils_supersat(f,p)
+    subroutine calc_pencils_ascalar(f,p)
 !
-!  Calculate supersat Pencils.
+!  Calculate ascalar Pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
       use Sub
@@ -279,7 +279,7 @@ module Supersat
         call del2(f,ilnTT,p%del2lnTT)
       endif
 !
-    endsubroutine calc_pencils_supersat
+    endsubroutine calc_pencils_ascalar
 !***********************************************************************
     subroutine dssat_dt(f,df,p)
 !
@@ -311,7 +311,7 @@ module Supersat
 !
 !  Identify module and boundary conditions.
 !
-      if (nosupersat) then
+      if (noascalar) then
         if (headtt.or.ldebug) print*,'not SOLVED: dssat_dt'
       else
         if (headtt.or.ldebug) print*,'SOLVE dssat_dt'
@@ -325,20 +325,20 @@ module Supersat
 !
       df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-p%uglnTT
-      if (supersat_diff/=0.) &
-          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+supersat_diff*p%del2ssat
+      if (ascalar_diff/=0.) &
+          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+ascalar_diff*p%del2ssat
 !
       if (thermal_diff/=0.) &
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+thermal_diff*p%del2lnTT
 !
       ! 1-June-16/XY coded 
-      if (lsupersat_sink) then
-        if (Rsupersat_sink) then
+      if (lascalar_sink) then
+        if (Rascalar_sink) then
           bump=A1*p%uu(:,3)
         elseif (lupdraft) then
           bump=A1*updraft
         else
-          bump=A1*p%uu(:,3)-f(l1:l2,m,n,issat)*p%tausupersat
+          bump=A1*p%uu(:,3)-f(l1:l2,m,n,issat)*p%tauascalar
         endif
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
       endif
@@ -379,10 +379,10 @@ module Supersat
         if (idiag_uxssatm/=0) call sum_mn_name(p%uu(:,1)*p%ssat,idiag_uxssatm)
         if (idiag_uyssatm/=0) call sum_mn_name(p%uu(:,2)*p%ssat,idiag_uyssatm)
         if (idiag_uzssatm/=0) call sum_mn_name(p%uu(:,3)*p%ssat,idiag_uzssatm)
-        if (idiag_tausupersatrms/=0) &
-            call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
-        if (idiag_tausupersatmax/=0) call max_mn_name(p%tausupersat,idiag_tausupersatmax)
-        if (idiag_tausupersatmin/=0) call max_mn_name(-p%tausupersat,idiag_tausupersatmin,lneg=.true.)
+        if (idiag_tauascalarrms/=0) &
+            call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
+        if (idiag_tauascalarmax/=0) call max_mn_name(p%tauascalar,idiag_tauascalarmax)
+        if (idiag_tauascalarmin/=0) call max_mn_name(-p%tauascalar,idiag_tauascalarmin,lneg=.true.)
         if (idiag_condensationRaterms/=0) &
             call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
@@ -400,44 +400,44 @@ module Supersat
 !
     endsubroutine dssat_dt
 !***********************************************************************
-    subroutine read_supersat_init_pars(iostat)
+    subroutine read_ascalar_init_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=supersat_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=ascalar_init_pars, IOSTAT=iostat)
 !
-    endsubroutine read_supersat_init_pars
+    endsubroutine read_ascalar_init_pars
 !***********************************************************************
-    subroutine write_supersat_init_pars(unit)
+    subroutine write_ascalar_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=supersat_init_pars)
+      write(unit, NML=ascalar_init_pars)
 !
-    endsubroutine write_supersat_init_pars
+    endsubroutine write_ascalar_init_pars
 !***********************************************************************
-    subroutine read_supersat_run_pars(iostat)
+    subroutine read_ascalar_run_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=supersat_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=ascalar_run_pars, IOSTAT=iostat)
 !
-    endsubroutine read_supersat_run_pars
+    endsubroutine read_ascalar_run_pars
 !***********************************************************************
-    subroutine write_supersat_run_pars(unit)
+    subroutine write_ascalar_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=supersat_run_pars)
+      write(unit, NML=ascalar_run_pars)
 !
-    endsubroutine write_supersat_run_pars
+    endsubroutine write_ascalar_run_pars
 !
 !***********************************************************************
-    subroutine rprint_supersat(lreset,lwrite)
+    subroutine rprint_ascalar(lreset,lwrite)
       use Diagnostics
 !
       logical :: lreset
@@ -453,7 +453,7 @@ module Supersat
       if (lreset) then
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
-        idiag_tausupersatrms=0; idiag_tausupersatmax=0; idiag_tausupersatmin=0
+        idiag_tauascalarrms=0; idiag_tauascalarmax=0; idiag_tauascalarmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
         idiag_temperaturerms=0; idiag_temperaturemax=0; idiag_temperaturemin=0
         idiag_supersaturationrms=0; idiag_supersaturationmax=0; idiag_supersaturationmin=0
@@ -467,9 +467,9 @@ module Supersat
         call parse_name(iname,cname(iname),cform(iname),'uxssatm',idiag_uxssatm)
         call parse_name(iname,cname(iname),cform(iname),'uyssatm',idiag_uyssatm)
         call parse_name(iname,cname(iname),cform(iname),'uzssatm',idiag_uzssatm)
-        call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
-        call parse_name(iname,cname(iname),cform(iname),'tausupersatmax',idiag_tausupersatmax)
-        call parse_name(iname,cname(iname),cform(iname),'tausupersatmin',idiag_tausupersatmin)
+        call parse_name(iname,cname(iname),cform(iname),'tauascalarrms',idiag_tauascalarrms)
+        call parse_name(iname,cname(iname),cform(iname),'tauascalarmax',idiag_tauascalarmax)
+        call parse_name(iname,cname(iname),cform(iname),'tauascalarmin',idiag_tauascalarmin)
         call parse_name(iname,cname(iname),cform(iname),'condensationRaterms',idiag_condensationRaterms)
         call parse_name(iname,cname(iname),cform(iname),'condensationRatemax',idiag_condensationRatemax)
         call parse_name(iname,cname(iname),cform(iname),'condensationRatemin',idiag_condensationRatemin)
@@ -485,12 +485,12 @@ module Supersat
 !
       if (lwr) then 
         write(3,*) 'issat = ', issat
-        write(3,*) 'itausupersat=', itausupersat
+        write(3,*) 'itauascalar=', itauascalar
         write(3,*) 'icondensationRate=', icondensationRate
         write(3,*) 'ilnTT=', ilnTT
         write(3,*) 'isupersaturaitonrms=', idiag_supersaturationrms
       endif
 !
-    endsubroutine rprint_supersat 
+    endsubroutine rprint_ascalar 
 !***********************************************************************
-endmodule Supersat
+endmodule Ascalar
