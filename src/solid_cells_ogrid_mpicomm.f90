@@ -14,7 +14,8 @@ module Solid_Cells_Mpicomm
 
   use Cparam
   use Cdata
-  use Mpicomm, only: mpisend_nonblock_real, mpirecv_nonblock_real, mpiwait, mpibarrier
+  use Mpicomm, only: mpisend_nonblock_real, mpirecv_nonblock_real, mpiwait, mpibarrier, &
+                     mpisend_real, mpirecv_real, mpibcast_real
 
   implicit none
 
@@ -53,15 +54,23 @@ module Solid_Cells_Mpicomm
   integer, parameter :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer, parameter :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
 
+  ! Padé Filtering
+  integer, parameter :: filter_Hsize = 10/2-nghost   ! Also set in solid_cells_ogrid.f90
+  real, dimension (:,:,:,:), allocatable :: lbufyi_fi,ubufyi_fi,lbufyo_fi,ubufyo_fi
+  integer :: irecv_rq_fromlowy_fi,isend_rq_tolowy_fi,irecv_rq_fromuppy_fi,isend_rq_touppy_fi
+
   contains 
 
 !***********************************************************************
-    subroutine initialize_mpicomm_ogrid
+    subroutine initialize_mpicomm_ogrid(lfilter_solution)
 !
 !  Initialise MPI communication on the overlapping grids. This is run
 !  after the standard initialize_mpicomm subroutine.
 !
 !  19-apr-17/Jorgen: Adapted and modified, from initialize_mpicomm in mpicomm.f90
+!  29-nov-17/Jorgen: Allocation of filter zones added
+!
+      logical, intent(in) :: lfilter_solution
 !
 !  Announce myself for pc_run to detect.
 !
@@ -110,9 +119,15 @@ module Solid_Cells_Mpicomm
                 uubufi_og(mx_ogrid,nghost,nghost,mcom), &
                 uubufo_og(mx_ogrid,nghost,nghost,mcom)   )
 !
+      if(lfilter_solution) then
+        allocate( lbufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
+                  ubufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
+                  lbufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
+                  ubufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom)  )
+      endif
+!
     endsubroutine initialize_mpicomm_ogrid
 !***********************************************************************
-
     subroutine initiate_isendrcv_bdry_ogrid(f)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
@@ -132,6 +147,7 @@ module Solid_Cells_Mpicomm
 !  Set communication across x-planes.
 !
       if (nprocx>1) call isendrcv_bdry_x_ogrid(f)
+      call mpibarrier
 !
 !  Allocate and send/receive buffers across y-planes
 !
@@ -303,7 +319,7 @@ module Solid_Cells_Mpicomm
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
       integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
       integer :: j
-      integer, dimension(4), parameter ::  nbuf_x=(/ny_ogrid,nz_ogrid,nghost,ivar2-ivar1+1/)
+      integer, dimension(4), parameter ::  nbuf_x=(/nghost,ny_ogrid,nz_ogrid,ivar2-ivar1+1/)
 !
       lbufxo_og(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
       ubufxo_og(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
@@ -351,6 +367,388 @@ module Solid_Cells_Mpicomm
       call mpibarrier
 !
     endsubroutine finalize_isend_init_interpol
+!***********************************************************************
+    subroutine initiate_isendrcv_bdry_filter(f_og,Hsize)
+!
+!  Isend and Irecv boundary filter values, called before filter is used.
+!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
+!
+!  29-nov-17/Jorgen: adapted from initiate_isendrcv_bdry_ogrid
+!
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mvar) ::  f_og
+      integer :: Hsize
+      intent(in) :: f_og,Hsize
+!
+      integer, dimension(4) :: nbuf_y
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
+!
+      if (ivar2==0) return
+!
+!  Allocate and send/receive buffers across y-planes
+!
+!  Internal, periodic exchange y-plane buffers.
+!  No need to allocate new buffers, simply overrite those used for 
+!  ordinary communication of ghost zones
+!
+      nbuf_y=(/nx_ogrid,Hsize,nz_ogrid,ivar2-ivar1+1/)
+      lbufyo_fi(:,:,:,:)= &
+          f_og(l1_ogrid:l2_ogrid,m1i_ogrid+1:m1i_ogrid+Hsize,n1_ogrid:n2_ogrid,ivar1:ivar2)
+      ubufyo_fi(:,:,:,:)= &
+          f_og(l1_ogrid:l2_ogrid,m2i_ogrid-Hsize:m2i_ogrid-1,n1_ogrid:n2_ogrid,ivar1:ivar2)
+      if (nprocy>1) then
+!  Send/recieve lower y-zone
+        call mpirecv_nonblock_real(lbufyi_fi,nbuf_y,ylneigh,touppy,irecv_rq_fromlowy_fi)
+        call mpisend_nonblock_real(lbufyo_fi,nbuf_y,ylneigh,tolowy,isend_rq_tolowy_fi)
+!  Send/recieve upper y-zone
+        call mpirecv_nonblock_real(ubufyi_fi,nbuf_y,yuneigh,tolowy,irecv_rq_fromuppy_fi)
+        call mpisend_nonblock_real(ubufyo_fi,nbuf_y,yuneigh,touppy,isend_rq_touppy_fi)
+      endif
+    endsubroutine initiate_isendrcv_bdry_filter
+!***********************************************************************
+    subroutine finalize_isendrcv_bdry_filter(f_Hlo,f_Hup,Hsize)
+!
+!  Make sure the communications initiated with initiate_isendrcv_bdry_filter
+!  are finished and insert the just received boundary values.
+!
+!  29-nov-17/Jorgen: Adapted from finalize_isendrcv_bdry_ogrid
+!
+      integer, intent(in) :: Hsize
+      real, dimension (mx_ogrid,Hsize,nz_ogrid,mvar) ::  f_Hlo,f_Hup
+      intent(inout) :: f_Hlo,f_Hup
+
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_Hlo,4))
+      integer :: j
+!
+      if (ivar2==0) return
+!
+!  1. wait until data received
+!  2. set filter ghost zones
+!  3. wait until send completed, will be overwritten in next time step
+!
+!  Communication across y(theta)-planes, periodic BC 
+!
+      if (nprocy>1) then
+        call mpiwait(irecv_rq_fromuppy_fi)
+        call mpiwait(irecv_rq_fromlowy_fi)
+        do j=ivar1,ivar2
+          f_Hlo(l1_ogrid:l2_ogrid,:,:,j)=lbufyi_fi(1:nx_ogrid,:,:,j)   ! set lower filter halo
+          f_Hup(l1_ogrid:l2_ogrid,:,:,j)=ubufyi_fi(1:nx_ogrid,:,:,j)   ! set upper filter halo
+        enddo
+        call mpiwait(isend_rq_tolowy_fi)
+        call mpiwait(isend_rq_touppy_fi)
+      else
+        do j=ivar1,ivar2
+          f_Hlo(l1_ogrid:l2_ogrid,:,:,j)=ubufyo_fi(1:nx_ogrid,:,:,j)   ! set lower filter halo
+          f_Hup(l1_ogrid:l2_ogrid,:,:,j)=lbufyo_fi(1:nx_ogrid,:,:,j)   ! set upper filter halo
+        enddo
+      endif
+      call mpibarrier
+!
+    endsubroutine finalize_isendrcv_bdry_filter
+!***********************************************************************
+!     subroutine cyclic_parallel_filter_y(fi,ri,af,ivar1,ivar2)
+! !
+! !  Gather necessary data and solve cyclic tridiagonal matrix system
+! !  on root processor
+! !
+! !  Serial compuations, should be made properly parallel
+! !
+!       integer, intent(in) :: ivar1, ivar2
+!       real, dimension(ny_ogrid,ivar2-ivar1+1), intent(inout) :: fi
+!       real, dimension(ny_ogrid,ivar2-ivar1+1), intent(in) :: ri
+!       real, intent(in) :: af
+! 
+!       real, dimension(nygrid_ogrid,ivar2-ivar1+1) :: fi_tot
+!       real, dimension(nygrid_ogrid,ivar2-ivar1+1) :: ri_tot
+!       real, dimension(ny_ogrid,ivar2-ivar1+1), :: fi_recv
+!       real, dimension(ny_ogrid,ivar2-ivar1+1), :: ri_recv
+!       integer, dimension(2) :: sendrcv_size = (ny_ogrid,ivar2-ivar1+1)
+!       integer :: jy,ido,iup
+! 
+!       if(nprocx>1 .or. nprocz>1) print*, 'ERROR: Cyclic parallel only works for parallel in y-dir'
+!       if (iproc/=root) then
+! !
+! !  All processors send their arrays to root 
+! !
+!         call mpisend_real(fi,sendrcv_size,root,111)
+!         call mpisend_real(ri,sendrcv_size,root,111)
+!       else
+! !
+! !  The root processor, in turn, receives the data from the others
+! !
+!       do jy=0,nprocy-1
+!         !avoid send-to-self
+!         if (jy/=root) then
+!           iproc_recv=jy
+!           call mpirecv_real(fi_recv,sendrcv_size,iproc_recv,111)
+!           call mpirecv_real(ri_recv,sendrcv_size,iproc_recv,112)
+!           ido=jy    *ny_ogrid + 1
+!           iup=(jy+1)*ny_ogrid
+!           fi_tot(ido:iup,:)=yrecv
+!           dy1grid_ogrid(ido:iup)=y1recv
+!           dytgrid_ogrid(ido:iup)=y2recv
+!         else
+!           ygrid_ogrid(1:ny_ogrid)=y_ogrid(m1_ogrid:m2_ogrid)
+!           dy1grid_ogrid(1:ny_ogrid)=dy_1_ogrid(m1_ogrid:m2_ogrid)
+!           dytgrid_ogrid(1:ny_ogrid)=dy_tilde_ogrid(m1_ogrid:m2_ogrid)
+!         endif
+!         else
+!           !the root just copies its value to the serial array
+!           xgrid_ogrid(1:nx_ogrid)=x_ogrid(l1_ogrid:l2_ogrid)
+!           dx1grid_ogrid(1:nx_ogrid)=dx_1_ogrid(l1_ogrid:l2_ogrid)
+!           dxtgrid_ogrid(1:nx_ogrid)=dx_tilde_ogrid(l1_ogrid:l2_ogrid)
+!         endif
+!       enddo
+!     endif
+! 
+! 
+! 
+! 
+! 
+!       integer :: i,n
+!       real, dimension(n) :: a,b,c,r,x,bb,u,z
+!       real    :: alpha,beta,gamma,fact
+!       logical :: err
+!       character(len=255) :: msg
+! !
+!       if (n<=2) stop "cyclic in the general module: n too small"
+!       gamma=-b(1)
+!       bb(1)=b(1)-gamma
+!       bb(n)=b(n)-alpha*beta/gamma
+!       do i=2,n-1
+!         bb(i)=b(i)
+!       enddo
+!       call tridag(a,bb,c,r,x,err,msg)
+!       if (err) print *, 'cyclic: ', trim(msg)
+!       u(1)=gamma
+!       u(n)=alpha
+!       do i=2,n-1
+!         u(i)=0.
+!       enddo
+!       call tridag(a,bb,c,u,z,err,msg)
+!       if (err) print *, 'cyclic: ', trim(msg)
+!       fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
+!       do i=1,n
+!         x(i)=x(i)-fact*z(i)
+!       enddo
+! !
+!       return
+! !
+! 
+! !***********************************************************************
+!     subroutine cyclic_parallel_filter_y(fi,ri,af,ivar1,ivar2)
+! !
+! !  Solve cyclic tridiagonal matrix system on multiple processors, by 
+! !  recieving results from neighbours before forward and backward substitution.
+! !
+! !  Effectivly a serial compuations in y-direction, should be made properly parallel
+! !
+!       integer, intent(in) :: ivar1, ivar2
+!       real, dimension(ny_ogrid,ivar2-ivar1+1), intent(inout) :: fi
+!       real, dimension(ny_ogrid,ivar2-ivar1+1), intent(in) :: ri
+!       real, intent(in) :: af
+! 
+!       integer :: jy,ido,iup
+!       integer, parameter :: n=ny_ogrid
+!       integer :: i
+!       real, dimension(n) :: a,b,c,r,x,bb,u,z
+!       real    :: alpha,beta,gamma,fact
+! 
+!       real :: bet
+!       integer :: left_proc, right_proc
+! 
+!       a = af
+!       b = 1.
+!       c = af
+!       alpha = af
+!       beta = af
+! !  Formula of the serial processor number:
+! !  iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
+! !  Since for the x-row ipy=ipz=0, this reduces
+! !  to iproc_recv=jx.
+! 
+! !
+! !  Start computation on ipy=0 processors
+!       if (ipy==0) then
+! !
+! !  Solve Ax=r
+! !
+!         bb(1)=b(1)-gamma
+!         do i=2,n
+!           bb(i)=b(i)
+!         enddo
+! !  Forward substitution until end of array
+!         bet=b(1)
+!         fi(1)=ri(1)/bet
+!         do j=2,n
+!           gam(j)=c(j-1)/bet
+!           bet=b(j)-a(j)*gam(j)
+!           fi(j)=(r(j)-a(j)*u(j-1))/bet
+!         enddo
+! !  Send information to next processor
+!         right_proc=ipx+nprocx*(ipy+1)+nprocx*nprocy*ipz
+!         call mpisend_real((/gam(n),bet,fi(n)/),3,right_proc,111)
+! !  Recieve data from last processor
+!         left_proc=ipx+nprocx*(nprocy-1)+nprocx*nprocy*ipz
+!         call mpirecv_real((/gam(n),fi(n)/),2,left_proc,112)
+! !  Backward substitution
+!         do j=n-1,1,-1
+!           fi(j)=fi(j)-gam(j+1)*fi(j+1)
+!         enddo
+! !
+! !  Solve Az=u
+! !
+!         u(1)=gamma
+!         do i=2,n
+!           u(i)=0.
+!         enddo
+! 
+! 
+!         !HERE
+! 
+!       u(n)=alpha
+!       do i=2,n-1
+!         u(i)=0.
+!       enddo
+!       call tridag(a,bb,c,u,z,err,msg)
+!       if (err) print *, 'cyclic: ', trim(msg)
+!       fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
+!       do i=1,n
+!         x(i)=x(i)-fact*z(i)
+!       enddo
+! 
+! 
+! 
+!         call tridag(a,bb,c,r,x,err,msg)
+!         u(1)=gamma
+!         u(n)=alpha
+!         do i=2,n-1
+!           u(i)=0.
+!         enddo
+!         call tridag(a,bb,c,u,z,err,msg)
+!         fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
+!         do i=1,n
+!           x(i)=x(i)-fact*z(i)
+!         enddo
+!       elseif(ipy<nprocy-1)
+!         bb = b
+!       else
+!         bb(1:n-1) = b(1:n-1)
+!         bb(n)=b(n)-alpha*beta/gamma
+! !
+!***********************************************************************
+    subroutine cyclic_parallel_y(a,b,c,alpha,beta,r,x,n)
+!
+!  Inversion of a tridiagonal system with periodic BC (alpha and beta
+!  coefficients in the left and right corners). Used in the ADI scheme of the
+!  implicit_physics module.
+!  Note: this subroutine is using twice the tridag one written above by tobi.
+!
+!  | b1 c1 0  ...       beta | | x1   |   | r1   |
+!  | a2 b2 c2 ...            | | x2   |   | r2   |
+!  | 0  a3 b3 c3             | | x3   | = | r3   |
+!  |          ...            | | ...  |   | ...  |
+!  |          an-1 bn-1 cn-1 | | xn-1 |   | rn-1 |
+!  | alpha    0    a_n  b_n  | | xn   |   | rn   |
+!
+!  17.01.18/Jorgen: Adapded from general.f90
+!
+      integer, intent(in) :: n
+      real, dimension(n), intent(in) :: a,b,c,r
+      real, dimension(n), intent(inout) :: x
+      real, intent(in) :: alpha,beta
+
+      real, dimension(n) :: bb,u,z
+      integer :: i
+      real    :: gamma,fact
+      integer :: left_proc,right_proc
+      real, dimension(2) :: recvxNzN
+!
+      bb=b
+      u=0.
+      if(ipy==0) then
+        gamma=-b(1)
+        bb(1)=b(1)-gamma
+        u(1)=gamma
+        left_proc=ipx+nprocx*(nprocy-1)+nprocx*nprocy*ipz
+        call mpisend_real(gamma,left_proc,100)
+      elseif(ipy==nprocy-1) then
+        right_proc=ipx+nprocx*0+nprocx*nprocy*ipz
+        call mpirecv_real(gamma,right_proc,100)
+        bb(n)=b(n)-alpha*beta/gamma
+        u(n)=alpha
+      endif
+      call tridag_parallel_y(a,bb,c,r,x,n)
+      call tridag_parallel_y(a,bb,c,u,z,n)
+      if(ipy==0) then
+        call mpirecv_real(recvxNzN,2,left_proc,119)
+        fact=(x(1)+beta*recvxNzN(1)/gamma)/(1.+z(1)+beta*recvxNzN(2)/gamma)
+      elseif(ipy==nprocy-1) then
+        call mpisend_real((/x(n),z(n)/),2,right_proc,119)
+      endif
+      call mpibcast_real(fact)
+      do i=1,n
+        x(i)=x(i)-fact*z(i)
+      enddo
+!
+    endsubroutine cyclic_parallel_y
+!***********************************************************************
+    subroutine tridag_parallel_y(a,b,c,r,u,n)
+!
+!  Solves a tridiagonal system, where the system is distributed
+!  over many processors.
+!
+!  17.01.18/Jorgen: Adapded from general.f90
+!
+!  | b1 c1 0  ...            | | u1   |   | r1   |
+!  | a2 b2 c2 ...            | | u2   |   | r2   |
+!  | 0  a3 b3 c3             | | u3   | = | r3   |
+!  |          ...            | | ...  |   | ...  |
+!  |          an-1 bn-1 cn-1 | | un-1 |   | rn-1 |
+!  |          0    a_n  b_n  | | un   |   | rn   |
+!
+      integer, intent(in) :: n
+      real, dimension(n), intent(in) :: a,b,c,r
+      real, dimension(n), intent(out) :: u
+
+      real, dimension(n) :: gam
+      integer :: j
+      real :: bet
+      integer :: left_proc,right_proc
+      real, dimension(3) :: recvBuf
+!
+      if(ipy==0) then
+        left_proc=ipx+nprocx*(nprocy-1)+nprocx*nprocy*ipz
+        bet=b(1)
+        u(1)=r(1)/bet
+      else
+        left_proc=ipx+nprocx*(ipy-1)+nprocx*nprocy*ipz
+        call mpirecv_real(recvBuf,3,left_proc,110)
+        gam(1)=recvBuf(3)/recvBuf(1)
+        bet=b(1)-a(1)*gam(1)
+        u(1)=(r(1)-a(1)*recvBuf(2))/bet
+      endif
+
+      do j=2,n
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+      enddo
+      if(ipy<nprocy-1) then
+        right_proc=ipx+nprocx*(ipy+1)+nprocx*nprocy*ipz
+        call mpisend_real((/bet,u(n),c(n)/),3,right_proc,110)
+        call mpirecv_real(recvBuf(1:2),2,right_proc,111)
+        u(n)=u(n)-recvBuf(1)*recvBuf(2)
+      endif
+!
+      do j=n-1,1,-1
+        u(j)=u(j)-gam(j+1)*u(j+1)
+      enddo
+      if(ipy>0) then
+        call mpisend_real((/gam(1),u(1)/),2,left_proc,111)
+      endif
+!
+    endsubroutine tridag_parallel_y
 !***********************************************************************
 
 endmodule Solid_Cells_Mpicomm

@@ -65,4 +65,17 @@ module Solid_Cells_Mpicomm
     subroutine initialize_mpicomm_ogrid
     endsubroutine initialize_mpicomm_ogrid
 !***********************************************************************
+    subroutine cyclic_parallel_y(a,b,c,alpha,beta,r,x,n)
+!
+!  Dummy
+!
+      integer, intent(in) :: n
+      real, dimension(n) :: a,b,c,r
+      real, dimension(n) :: x
+      real :: alpha,beta
+
+      if(ALWAYS_FALSE) print*, a,b,c,alpha,beta,r,x,n
+
+    endsubroutine cyclic_parallel_y
+!***********************************************************************
 end module Solid_Cells_Mpicomm
