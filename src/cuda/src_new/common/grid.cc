@@ -5,15 +5,23 @@
 #include "grid.h"
 
 
+#define GRID_TYPE(type, name) name
+const char* grid_names[] = { GRID_TYPES };
+#undef GRID_TYPE
+
+#define INIT_TYPE(type, name) name
+const char* init_type_names[] = { INIT_TYPES };
+#undef INIT_TYPE
+
 void grid_malloc(Grid* g, CParamConfig *cparams)
 {
     const size_t grid_size = cparams->mx * cparams->my * cparams->mz;
     const size_t grid_size_bytes = sizeof (real) * grid_size;
 
-    for (int i=0; i < NUM_ARRS; ++i) {
+    for (size_t i=0; i < NUM_ARRS; ++i) {
         g->arr[i] = (real*) malloc(grid_size_bytes); 
-        if (g->arr[i] == NULL) CRASH("Malloc fail");
-        for (int j=0; j < grid_size; ++j) 
+        if (g->arr[i] == NULL) { CRASH("Malloc fail"); }
+        for (size_t j=0; j < grid_size; ++j) 
             (g->arr[i])[j] = NAN;
     }
 }
@@ -50,6 +58,10 @@ void init_lnrho_to_const(Grid* grid, CParamConfig* cparams, StartConfig* start_p
     arr_set(grid->arr[LNRHO], start_params->ampl_lnrho, cparams);
 }
 
+//TODO: Copy/pasted from legacy Astaroth, should be reviewed for correctness:
+//Potential issues:
+//  -phi & theta may be used uninitialized (set it temporarily to 0.0 to make
+//  the warning go away)
 void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* start_params)	
 {
     real* uu_x = grid->arr[UUX];
@@ -57,12 +69,7 @@ void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* s
     real* uu_z = grid->arr[UUZ];
 
     const int mx = cparams->mx;
-    const int my = cparams->my;
-    const int mz = cparams->mz; 
-
-    const int nx = cparams->nx;
-    const int ny = cparams->ny;
-    const int nz = cparams->nz;     
+    const int my = cparams->my;   
 
     const int nx_min = cparams->nx_min;
     const int nx_max = cparams->nx_max;
@@ -88,10 +95,10 @@ void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* s
 
 	// Outward explosion with gaussian initial velocity profile. 
    	int idx;
-	real xx, yy, zz, rr2, rr, theta, phi; 
-	real uu_radial, theta_old;
+	real xx, yy, zz, rr2, rr, theta = 0.0, phi = 0.0; 
+	real uu_radial;
 
-	theta_old = 0;
+	//real theta_old = 0.0;
 
 	for (int k=nz_min; k < nz_max; k++) {
 		for (int j=ny_min; j < ny_max; j++) {
@@ -210,11 +217,6 @@ void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* s
 
 void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfig* start_params) 
 {
-    real* lnrho = grid->arr[LNRHO];
-    real* uu_x = grid->arr[UUX];//TODO init all grids
-    real* uu_y = grid->arr[UUY];
-    real* uu_z = grid->arr[UUZ];
-
     const int mx = cparams->mx;
     const int my = cparams->my;
     const int mz = cparams->mz;    
@@ -230,7 +232,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 
 
 	int idx;
-	real rnd;
+	//real rnd;
 	int magic_number = 1000;
 	srand(magic_number);
 	grid_clear(grid, cparams);
@@ -242,7 +244,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
 					    int idx = i + j*mx + k*mx*my;
-                        grid->arr[w][idx] = idx / (long double)(mx*my*mz) + w / (long double) NUM_ARRS;
+                        grid->arr[w][idx] = (real)(idx / (long double)(mx*my*mz) + w / (long double) NUM_ARRS);
 				    }
 			    }
 		    }
@@ -254,7 +256,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
 					    int idx = i + j*mx + k*mx*my;
-                        grid->arr[w][idx] = 1.0l - idx / (long double)(mx*my*mz) + w / (long double) NUM_ARRS;
+                        grid->arr[w][idx] = (real)(1.0l - idx / (long double)(mx*my*mz) + w / (long double) NUM_ARRS);
 				    }
 			    }
 		    }
@@ -326,7 +328,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		for (int j=ny_min; j < ny_max; j++) {
 			for (int i=nx_min+30; i < nx_min+35; i++) {
 				idx = i + j*mx + k*mx*my;
-				lnrho[idx] = ampl_uu*pow((fabs(nx_min+35-i) + fabs(nx_min+30-i)),2.0)/(10.0);
+				grid->arr[LNRHO][idx] = ampl_uu*pow((fabs(nx_min+35-i) + fabs(nx_min+30-i)),2.0)/(10.0);
 			}
 		}
 	}
@@ -350,7 +352,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 			    for (int j=ny_min; j < ny_max; j++) {
 				    for (int i=nx_min; i < nx_max; i++) {
 					    int idx = i + j*mx + k*mx*my;
-                        grid->arr[w][idx] = NUM_ARRS*idx / (long double) (nx_max*ny_max*nz_max);
+                        grid->arr[w][idx] = (real)(NUM_ARRS*idx / (long double) (nx_max*ny_max*nz_max));
 				    }
 			    }
 		    }

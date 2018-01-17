@@ -1,61 +1,78 @@
+/*
+* Declarations for a generic Grid structure. 
+*   See slice.h for more information about the macros used here
+*/
 #pragma once
 #include "datatypes.h"
 #include "config.h"
 
 
-#if LINDUCTION == 1 //TODO Note: remember to change SliceType in slice.h also when modifying this part
-    typedef enum {LNRHO = 0, UUX, UUY, UUZ, AX, AY, AZ, NUM_ARRS, NOT_APPLICABLE} GridType;
+//GridType macros///////////////////////////////////////////////////////////////
+extern const char* grid_names[];
+
+#define GRID_TYPES_HYDRO \
+        GRID_TYPE(LNRHO, "lnrho"), \
+        GRID_TYPE(UUX,   "uu_x"), \
+        GRID_TYPE(UUY,   "uu_y"), \
+        GRID_TYPE(UUZ,   "uu_z"),
+
+#if LINDUCTION == 1
+    #define GRID_TYPES_INDUCTION \
+            GRID_TYPE(AX,    "ax"), \
+            GRID_TYPE(AY,    "ay"), \
+            GRID_TYPE(AZ,    "az"),
 #else
-    typedef enum {LNRHO = 0, UUX, UUY, UUZ, NUM_ARRS, NOT_APPLICABLE} GridType;
+    #define GRID_TYPES_INDUCTION
 #endif
 
-#ifdef INCLUDED_FROM_GRID_NAME_DEFINER
-    //See slice.h for justification why these are defined here
-    const char* grid_names[] = {"lnrho", "uu_x", "uu_y", "uu_z", "a_x", "a_y", "a_z"};
-#else
-    extern const char* grid_names[];
-#endif
+
+#define GRID_TYPES_OTHER \
+        GRID_TYPE(NUM_ARRS,  "num_arrs"), \
+        GRID_TYPE(NOT_APPLICABLE,  "N/A")
+
+#define GRID_TYPES \
+        GRID_TYPES_HYDRO \
+        GRID_TYPES_INDUCTION \
+        GRID_TYPES_OTHER
+
+
+#define GRID_TYPE(type, name) type
+typedef enum { GRID_TYPES } GridType;
+#undef GRID_TYPE
+
 
 typedef struct {
     real* arr[NUM_ARRS];
 } Grid;
+////////////////////////////////////////////////////////////////////////////////
 
-typedef enum { 
-    GRID_INCREASING = 0, 
-    GRID_DECREASING,
-    GRID_RANDOM, 
-    GRID_COMP_DOMAIN_ONLY,
-    GRID_BOUND_ZONES_ONLY,
-    GRID_NO_FLOAT_ARITHMETIC_ERROR,
-    GRID_WAVE,
-    GRID_RAND_WITH_NEG,
-    GRID_ALL_UNIQUE,
-    GRID_ALL_ZERO,
-    GRID_GAUSSIAN_RADIAL_EXPL,
-    GRID_XWAVE,
-    NUM_GRID_TYPES
-} InitType;
 
-#ifdef INCLUDED_FROM_INIT_TYPE_NAME_DEFINER
-    //Names for grid types. TODO note. Possibly error prone, but how else to define these at compile time
-    //without additional init functions or malloc/frees?
-    //See slice.h for justification why these are defined here
-    const char* init_type_names[] = {"GRID_INCREASING", 
-                                    "GRID_DECREASING",
-                                    "GRID_RANDOM", 
-                                    "GRID_COMP_DOMAIN_ONLY",
-                                    "GRID_BOUND_ZONES_ONLY",
-                                    "GRID_NO_FLOAT_ARITHMETIC_ERROR",
-                                    "GRID_WAVE",
-                                    "GRID_RAND_WITH_NEG",
-                                    "GRID_ALL_UNIQUE",
-                                    "GRID_ALL_ZERO",
-                                    "GRID_GAUSSIAN_RADIAL_EXPL",
-                                    "GRID_XWAVE"};
-#else
-    extern const char* init_type_names[];
-#endif
+//InitType macros///////////////////////////////////////////////////////////////
+extern const char* init_type_names[];
 
+#define INIT_TYPES \
+        INIT_TYPE(GRID_INCREASING, "GRID_INCREASING"), \
+        INIT_TYPE(GRID_DECREASING, "GRID_DECREASING"), \
+        INIT_TYPE(GRID_RANDOM, "GRID_RANDOM"), \
+        INIT_TYPE(GRID_COMP_DOMAIN_ONLY, "GRID_COMP_DOMAIN_ONLY"), \
+        INIT_TYPE(GRID_BOUND_ZONES_ONLY, "GRID_BOUND_ZONES_ONLY"), \
+        INIT_TYPE(GRID_NO_FLOAT_ARITHMETIC_ERROR, "GRID_NO_FLOAT_ARITHMETIC_ERROR"), \
+        INIT_TYPE(GRID_WAVE, "GRID_WAVE"), \
+        INIT_TYPE(GRID_RAND_WITH_NEG, "GRID_RAND_WITH_NEG"), \
+        INIT_TYPE(GRID_ALL_UNIQUE, "GRID_ALL_UNIQUE"), \
+        INIT_TYPE(GRID_ALL_ZERO, "GRID_ALL_ZERO"), \
+        INIT_TYPE(GRID_GAUSSIAN_RADIAL_EXPL, "GRID_GAUSSIAN_RADIAL_EXPL"), \
+        INIT_TYPE(GRID_XWAVE, "GRID_XWAVE"), \
+        INIT_TYPE(NUM_INIT_TYPES,  "num_init_types")
+
+        
+#define INIT_TYPE(type, name) type
+typedef enum { INIT_TYPES } InitType;
+#undef INIT_TYPE
+////////////////////////////////////////////////////////////////////////////////
+
+
+//Grid allocator functions//////////////////////////////////////////////////////
 void grid_malloc(Grid* g, CParamConfig *cparams);
 
 void grid_free(Grid* g);
@@ -63,7 +80,7 @@ void grid_free(Grid* g);
 void grid_clear(Grid* g, CParamConfig* cparams);
 
 void grid_init(Grid* g, InitType type, CParamConfig* cparams, StartConfig* start_params);
-
+////////////////////////////////////////////////////////////////////////////////
 
 
 

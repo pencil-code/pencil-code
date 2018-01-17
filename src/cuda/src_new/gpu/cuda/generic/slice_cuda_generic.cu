@@ -73,10 +73,10 @@ void update_slice_cuda_generic(Slice* d_slice, Grid* d_grid, CParamConfig* cpara
 {
     if (run_params->slice_axis != 'z') CRASH("Slice axis other that z not yet supported!");
     //CUDA call
-    const dim3 threads_per_block = {32, 32, 1};
-    const dim3 blocks_per_grid   = {(unsigned int)ceil((double) cparams->mx / threads_per_block.x),
-                                    (unsigned int)ceil((double) cparams->my / threads_per_block.y),
-                                    1};
+    const dim3 threads_per_block(32, 32, 1);
+    const dim3 blocks_per_grid((unsigned int)ceil((float) cparams->mx / threads_per_block.x),
+                                    (unsigned int)ceil((float) cparams->my / threads_per_block.y),
+                                    1);
 
     slice_cuda_generic<'z'><<<blocks_per_grid, threads_per_block>>>(*d_slice, *d_grid);
     CUDA_ERRCHK_KERNEL();

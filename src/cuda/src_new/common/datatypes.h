@@ -5,8 +5,9 @@
 #pragma once
 #include <float.h> // For DBL_MAX and FLT_MAX
 
-#define USE_DOUBLE_PRECISION 0
-#if USE_DOUBLE_PRECISION == 1
+//USE_DOUBLE_PRECISION is defined in CMakeLists.txt
+//(See "add_definitions(-DUSE_DOUBLE_PRECISION)")
+#ifdef USE_DOUBLE_PRECISION
     typedef double real;
     const double REAL_MAX = DBL_MAX;
     const double REAL_MIN = DBL_MIN;

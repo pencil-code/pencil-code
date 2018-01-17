@@ -45,7 +45,7 @@ typedef struct CParamConfig : public Config {
     real dsmin;         //Min spacing
     
     //Implementation for virtual functions
-    virtual void parse(const char* keyword, const char* value) override;
+    virtual void parse(const char* keyword, const char* value); //overrides (c++11-only feature)
 
     void compute_missing_values() {
         mx = nx + 2*BOUND_SIZE;
@@ -61,9 +61,9 @@ typedef struct CParamConfig : public Config {
         nz_max = nz + BOUND_SIZE;
 
         //Spacing in the grid (TODO read from file)
-        dsx = DOMAIN_SIZE_X / nx;
-        dsy = DOMAIN_SIZE_Y / ny;
-        dsz = DOMAIN_SIZE_Z / nz;
+        dsx = (real)(DOMAIN_SIZE_X / nx);
+        dsy = (real)(DOMAIN_SIZE_Y / ny);
+        dsz = (real)(DOMAIN_SIZE_Z / nz);
         dsmin = min(dsx, min(dsy, dsz));
     }
 } CParamConfig;
@@ -74,7 +74,7 @@ typedef struct StartConfig : public Config {
     real ampl_lnrho;
 
     //Implementation for virtual functions
-    virtual void parse(const char* keyword, const char* value) override;
+    virtual void parse(const char* keyword, const char* value); //overrides (c++11-only feature)
 } StartConfig;
 
 
@@ -83,7 +83,7 @@ typedef struct RunConfig : public Config {
     int save_steps;     //The number of steps between outputting slides to a file
     //int diag_steps;     //Then number of steps between ???(TODO)
 
-    char slice_axis = 'z';//TODO read from file
+    char slice_axis;
 
 
     //real max_time;      //Maximum time simulated per run (see also max_steps)
@@ -102,7 +102,7 @@ typedef struct RunConfig : public Config {
     real relhel;        //Helicity of forcing
 
     //Implementation for virtual functions
-    virtual void parse(const char* keyword, const char* value) override;
+    virtual void parse(const char* keyword, const char* value); //overrides (c++11-only feature)
 } RunConfig;
 
 

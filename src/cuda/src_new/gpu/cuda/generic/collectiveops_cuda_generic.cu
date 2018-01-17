@@ -210,22 +210,19 @@ __global__ void reduce_initial(real* d_partial_result, real* d_vec_x, real* d_ve
 template<ReduceFunc reduce_op, ReduceInitFunc reduce_init_op>
 void reduce_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams, real* d_vec_x, real* d_vec_y = NULL, real* d_vec_z = NULL)
 {
-	//-------------------------------------------------
-	dim3 tpb, bpg;
-	tpb.x = COL_THREADS_X;
-	tpb.y = COL_THREADS_Y;
-	tpb.z = 1; // 2D blockdims only 
-	const int SMEM_PER_BLOCK = tpb.x * tpb.y *tpb.z * sizeof(real);
+    const dim3 tpb(COL_THREADS_X, COL_THREADS_Y, 1);
+    const dim3 bpg((unsigned int) ceil((real) cparams->nx / (real)COL_THREADS_X),
+                   (unsigned int) ceil((real) cparams->ny / (real)COL_THREADS_Y),
+                   (unsigned int) ceil((real) cparams->nz / (real)COL_ELEMS_PER_THREAD));
 
-	bpg.x = ceil((real) cparams->nx / (real)COL_THREADS_X);
-	bpg.y = ceil((real) cparams->ny / (real)COL_THREADS_Y);
-	bpg.z = ceil((real) cparams->nz / (real)COL_ELEMS_PER_THREAD);
-	const int BLOCKS_TOTAL = bpg.x * bpg.y * bpg.z;
-	//------------------------------------------------
+    const size_t SMEM_PER_BLOCK = tpb.x * tpb.y *tpb.z * sizeof(real);
+    const int BLOCKS_TOTAL = bpg.x * bpg.y * bpg.z;
+
 
     //Collectiveops works only when BLOCKS_TOTAL is divisible by the thread block size.
     //This is not good and collectiveops should be rewritten to support arbitrary grid dims
-    assert(BLOCKS_TOTAL % (tpb.x * tpb.y * tpb.z) == 0);
+    if (BLOCKS_TOTAL % (tpb.x * tpb.y * tpb.z) != 0)
+        CRASH("Incorrect BLOCKS_TOTAL in reduce_cuda_generic()")
 	
 	switch (tpb.x*tpb.y*tpb.z)
 	{
@@ -253,8 +250,7 @@ void reduce_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams, real
         printf("INCORRECT BLOCKS_TOTAL (= %d) IN collectiveops.cu!\n", BLOCKS_TOTAL);
 				exit(EXIT_FAILURE);
     }
-    cudaDeviceSynchronize();
-	//We're done
+
 	return;
 }
 
@@ -288,9 +284,7 @@ real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParam
         default:
             CRASH("Invalid type!");
     }
-    cudaDeviceSynchronize();
     CUDA_ERRCHK( cudaMemcpy(&res, (real*)reduct_arr->d_vec_res, sizeof(real), cudaMemcpyDeviceToHost) );
-    cudaDeviceSynchronize();
 
     return res;
 }
