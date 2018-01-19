@@ -15,6 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); tcond; sglnTT(3)
+! PENCILS PROVIDED uglnTT
 !
 !***************************************************************
 module Energy
