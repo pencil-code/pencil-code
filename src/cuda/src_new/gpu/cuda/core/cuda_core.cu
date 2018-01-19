@@ -5,50 +5,6 @@
 #include "common/config.h"
 
 
-void print_gpu_config()
-{
-    int n_devices;
-    if (cudaGetDeviceCount(&n_devices) != cudaSuccess) CRASH("No CUDA devices found!");
-    printf("Num CUDA devices found: %u\n", n_devices);
-
-    int initial_device;
-    cudaGetDevice(&initial_device);
-    for (int i = 0; i < n_devices; i++) {
-        cudaSetDevice(i);
-
-        cudaDeviceProp props;
-        cudaGetDeviceProperties(&props, i);
-        printf("--------------------------------------------------\n");
-        printf("Device Number: %d\n", i);
-        printf("  Device name: %s\n", props.name);
-        printf("  Compute capability: %d.%d\n", props.major, props.minor);
-        printf("  Global memory\n");
-        printf("    Memory Clock Rate (MHz): %d\n", props.memoryClockRate / (1000));
-        printf("    Memory Bus Width (bits): %d\n", props.memoryBusWidth);
-        printf("    Peak Memory Bandwidth (GiB/s): %f\n", 2.0*props.memoryClockRate*(props.memoryBusWidth/8)/(1024*1024));
-        printf("    ECC enabled: %d\n", props.ECCEnabled);
-        //Memory usage
-        size_t free_bytes, total_bytes;
-        CUDA_ERRCHK( cudaMemGetInfo(&free_bytes, &total_bytes) );
-        const size_t used_bytes = total_bytes - free_bytes;     
-        printf("    Total global mem: %.2f GiB\n", props.totalGlobalMem / (1024.0*1024*1024));
-        printf("    Gmem used (GiB): %.2f\n", used_bytes / (1024.0*1024*1024));
-        printf("    Gmem memory free (GiB): %.2f\n", free_bytes / (1024.0*1024*1024));
-        printf("    Gmem memory total (GiB): %.2f\n", total_bytes / (1024.0*1024*1024));
-        printf("  Caches\n");
-        printf("    L2 size: %d KiB\n", props.l2CacheSize / (1024));
-        printf("    Total const mem: %ld KiB\n", props.totalConstMem / (1024));
-        printf("    Shared mem per block: %ld KiB\n", props.sharedMemPerBlock / (1024));
-        printf("  Other\n");
-        printf("    Warp size: %d\n", props.warpSize);
-        //printf("    Single to double perf. ratio: %dx\n", props.singleToDoublePrecisionPerfRatio); //Not supported with older CUDA versions
-        printf("    Stream priorities supported: %d\n", props.streamPrioritiesSupported);
-        printf("--------------------------------------------------\n");
-    }
-    cudaSetDevice(initial_device);
-}
-
-
 void load_forcing_dconsts_cuda_core(ForcingParams* forcing_params)
 {
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_ENABLED, &forcing_params->forcing_enabled, sizeof(bool)) );
@@ -141,9 +97,6 @@ void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, 
 
 void init_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst, CParamConfig* cparams)
 {
-    //Print the GPU configuration
-    print_gpu_config();
-
     const size_t grid_size_bytes = sizeof(real) * cparams->mx * cparams->my * cparams->mz; 
 
     //Init device arrays
@@ -169,7 +122,7 @@ void load_grid_cuda_core(Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_i
     const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->mz;
     const size_t slice_size = h_cparams->mx*h_cparams->my;
     for (int w=0; w < NUM_ARRS; ++w) {
-        CUDA_ERRCHK( cudaMemcpyAsync(&(d_grid->arr[w][0]), &(h_grid->arr[w][h_start_idx->z*slice_size]), grid_size_bytes, cudaMemcpyHostToDevice) );//NOTE: if stream not specified, uses the default stream->non-async behaviour
+        CUDA_ERRCHK( cudaMemcpy(&(d_grid->arr[w][0]), &(h_grid->arr[w][h_start_idx->z*slice_size]), grid_size_bytes, cudaMemcpyHostToDevice) );
     }
 }
 
@@ -180,23 +133,21 @@ void store_grid_cuda_core(Grid* h_grid, CParamConfig* h_cparams, Grid* d_grid, C
     const size_t slice_size = h_cparams->mx * h_cparams->my;
     const size_t z_offset = BOUND_SIZE * slice_size;
     for (int w=0; w < NUM_ARRS; ++w) {
-        CUDA_ERRCHK( cudaMemcpyAsync(&(h_grid->arr[w][z_offset + h_start_idx->z*slice_size]), &(d_grid->arr[w][z_offset]), grid_size_bytes, cudaMemcpyDeviceToHost) ); //NOTE: if stream not specified, uses the default stream->non-async behaviour
+        CUDA_ERRCHK( cudaMemcpy(&(h_grid->arr[w][z_offset + h_start_idx->z*slice_size]), &(d_grid->arr[w][z_offset]), grid_size_bytes, cudaMemcpyDeviceToHost) );
     }    
 }
 
 
 void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h_run_params, Slice* d_slice, CParamConfig* d_cparams, vec3i* h_start_idx)
 {
-    if (h_run_params->slice_axis != 'z') CRASH("Slice axis other that z not yet supported!");
+    if (h_run_params->slice_axis != 'z') { CRASH("Slice axis other that z not yet supported!"); }
 
     Slice buffer;
     slice_malloc(&buffer, d_cparams, h_run_params);
 
-    cudaStream_t stream;
-    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
     const size_t slice_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my;
     for (int w=0; w < NUM_SLICES; ++w)
-        CUDA_ERRCHK( cudaMemcpyAsync(buffer.arr[w], d_slice->arr[w], slice_size_bytes, cudaMemcpyDeviceToHost, stream) );
+        CUDA_ERRCHK( cudaMemcpy(buffer.arr[w], d_slice->arr[w], slice_size_bytes, cudaMemcpyDeviceToHost) );
     
     const size_t row_size_bytes = sizeof(real) * d_cparams->nx;
     for (int w=0; w < NUM_SLICES; ++w)
@@ -204,12 +155,11 @@ void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h
             memcpy(&h_slice->arr[w][h_cparams->nx_min + (j+h_start_idx->y)*h_cparams->mx], 
                    &buffer.arr[w][d_cparams->nx_min + j*d_cparams->mx], row_size_bytes);
     
-    cudaStreamDestroy(stream);
     slice_free(&buffer);
 }
 
 
-void init_halo_cuda_core(real* d_halo)
+void init_halo_cuda_core(real* /*d_halo*/)
 {
     printf("init_halo_cuda_core\n");
 /*
@@ -219,7 +169,7 @@ void init_halo_cuda_core(real* d_halo)
 }
 
 
-void destroy_halo_cuda_core(real* d_halo)
+void destroy_halo_cuda_core(real* /*d_halo*/)
 {
     printf("destroy_halo_cuda_core\n");
 /*
@@ -228,8 +178,10 @@ void destroy_halo_cuda_core(real* d_halo)
 */
 }
 
-void load_outer_halo_cuda_core(Grid* d_grid, real* d_halobuffer, CParamConfig* d_cparams,
-                               Grid* h_grid, real* h_halobuffer, CParamConfig* h_cparams, vec3i* h_start_idx)
+void load_outer_halo_cuda_core(Grid* /*d_grid*/, real* /*d_halobuffer*/, 
+                               CParamConfig* /*d_cparams*/,
+                               Grid* /*h_grid*/, real* /*h_halobuffer*/, 
+                               CParamConfig* /*h_cparams*/, vec3i* /*h_start_idx*/)
 {
     printf("load_outer_halo_cuda_core\n");
 /*
@@ -238,13 +190,59 @@ void load_outer_halo_cuda_core(Grid* d_grid, real* d_halobuffer, CParamConfig* d
 */
 }
 
-void store_internal_halo_cuda_core(Grid* h_grid, real* h_halobuffer, CParamConfig* h_cparams, vec3i* h_start_idx, 
-                                   Grid* d_grid, real* d_halobuffer, CParamConfig* d_cparams)
+void store_internal_halo_cuda_core(Grid* /*h_grid*/, real* /*h_halobuffer*/, 
+                                   CParamConfig* /*h_cparams*/, vec3i* /*h_start_idx*/, 
+                                   Grid* /*d_grid*/, real* /*d_halobuffer*/, 
+                                   CParamConfig* /*d_cparams*/)
 {
     printf("store_internal_halo_cuda_core\n");
 /*
     Store internal halos in d_halobuffer to host memory in h_halobuffer/h_grid
 */
+}
+
+
+void print_gpu_config_cuda_core()
+{
+    int n_devices;
+    if (cudaGetDeviceCount(&n_devices) != cudaSuccess) { CRASH("No CUDA devices found!"); }
+    printf("Num CUDA devices found: %u\n", n_devices);
+
+    int initial_device;
+    cudaGetDevice(&initial_device);
+    for (int i = 0; i < n_devices; i++) {
+        cudaSetDevice(i);
+
+        cudaDeviceProp props;
+        cudaGetDeviceProperties(&props, i);
+        printf("--------------------------------------------------\n");
+        printf("Device Number: %d\n", i);
+        printf("  Device name: %s\n", props.name);
+        printf("  Compute capability: %d.%d\n", props.major, props.minor);
+        printf("  Global memory\n");
+        printf("    Memory Clock Rate (MHz): %d\n", props.memoryClockRate / (1000));
+        printf("    Memory Bus Width (bits): %d\n", props.memoryBusWidth);
+        printf("    Peak Memory Bandwidth (GiB/s): %f\n", 2.0*props.memoryClockRate*(props.memoryBusWidth/8)/(1024*1024));
+        printf("    ECC enabled: %d\n", props.ECCEnabled);
+        //Memory usage
+        size_t free_bytes, total_bytes;
+        CUDA_ERRCHK( cudaMemGetInfo(&free_bytes, &total_bytes) );
+        const size_t used_bytes = total_bytes - free_bytes;     
+        printf("    Total global mem: %.2f GiB\n", props.totalGlobalMem / (1024.0*1024*1024));
+        printf("    Gmem used (GiB): %.2f\n", used_bytes / (1024.0*1024*1024));
+        printf("    Gmem memory free (GiB): %.2f\n", free_bytes / (1024.0*1024*1024));
+        printf("    Gmem memory total (GiB): %.2f\n", total_bytes / (1024.0*1024*1024));
+        printf("  Caches\n");
+        printf("    L2 size: %d KiB\n", props.l2CacheSize / (1024));
+        printf("    Total const mem: %ld KiB\n", props.totalConstMem / (1024));
+        printf("    Shared mem per block: %ld KiB\n", props.sharedMemPerBlock / (1024));
+        printf("  Other\n");
+        printf("    Warp size: %d\n", props.warpSize);
+        //printf("    Single to double perf. ratio: %dx\n", props.singleToDoublePrecisionPerfRatio); //Not supported with older CUDA versions
+        printf("    Stream priorities supported: %d\n", props.streamPrioritiesSupported);
+        printf("--------------------------------------------------\n");
+    }
+    cudaSetDevice(initial_device);
 }
 
 

@@ -20,3 +20,10 @@
     printf("%s, %s. Error in file %s line %d.\n", __TIME__, __DATE__, __FILE__, __LINE__);\
     perror(x);\
 }
+
+
+#ifdef NDEBUG 
+    #define DEBUG_PRINT(x); { do {} while (0);  }
+#else
+    #define DEBUG_PRINT(x); { printf x; }
+#endif

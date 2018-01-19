@@ -1363,7 +1363,7 @@ module power_spectrum
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
 !
-    use Fourier, only: fft_xyz_parallel
+    use Fourier, only: fft_xyz_parallel, fourier_transform
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
@@ -1377,12 +1377,13 @@ module power_spectrum
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
- real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
+  real :: sign_switch, kk1, kk2, kk3
 !
 !  identify version
 !
@@ -1436,8 +1437,10 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-  call fft_xyz_parallel(a_re,a_im)
-  call fft_xyz_parallel(b_re,b_im)
+  !call fft_xyz_parallel(a_re,a_im)
+  !call fft_xyz_parallel(b_re,b_im)
+  call fourier_transform(a_re,a_im)
+  call fourier_transform(b_re,b_im)
 !
 !  integration over shells
 !
@@ -1449,6 +1452,28 @@ module power_spectrum
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
 !
+!  Switch sign for the same k vectors for which we also
+!  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
+!
+            kk1=kx(ikx+ipy*ny)
+            kk2=ky(iky+ipz*nz)
+            kk3=kz(ikz+ipx*nx)
+!
+!  possibility of swapping the sign
+!
+            sign_switch=1.
+            if (kk3<0.) then
+              sign_switch=-1.
+            elseif (kk3==0.) then
+              if (kk2<0.) then
+                sign_switch=-1.
+              elseif (kk2==0.) then
+                if (kk1<0.) then
+                  sign_switch=-1.
+                endif
+              endif
+            endif
+!
 !  sum energy and helicity spectra
 !
           spectrum(k+1)=spectrum(k+1) &
@@ -1456,12 +1481,9 @@ module power_spectrum
              +a_im(ikx,iky,ikz)**2 &
              +b_re(ikx,iky,ikz)**2 &
              +b_im(ikx,iky,ikz)**2
-          spectrumhel(k+1)=spectrumhel(k+1)+2.*( &
+          spectrumhel(k+1)=spectrumhel(k+1)+sign_switch*( &
              +a_im(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz)) &
-             *sign(1.,kx(ikx+ipx*nx)) &
-             *sign(1.,ky(iky+ipy*ny)) &
-             *sign(1.,kz(ikz+ipz*nz))
+             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz)) !&
 !
 !  compute krms only once
 !

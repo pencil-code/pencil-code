@@ -52,10 +52,43 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine finalize_isend_init_interpol
 !***********************************************************************
-    subroutine initialize_mpicomm_ogrid
+    subroutine initialize_mpicomm_ogrid(lf)
+      logical, intent(in) :: lf
 !
 !  Dummy
 !
+      if(ALWAYS_FALSE) print*, lf
+!
     endsubroutine initialize_mpicomm_ogrid
+!***********************************************************************
+    subroutine cyclic_parallel_y(a,b,c,alpha,beta,r,x,n)
+!
+!  Dummy
+!
+      integer, intent(in) :: n
+      real, dimension(n) :: a,b,c,r
+      real, dimension(n) :: x
+      real :: alpha,beta
+
+      if(ALWAYS_FALSE) print*, a,b,c,alpha,beta,r,x,n
+
+    endsubroutine cyclic_parallel_y
+!***********************************************************************
+    subroutine initiate_isendrcv_bdry_filter(f_og,Hsize)
+!
+      real, dimension (:,:,:,:) ::  f_og
+      integer :: Hsize
+!
+      if(ALWAYS_FALSE) print*, f_og,Hsize
+
+    endsubroutine initiate_isendrcv_bdry_filter
+!***********************************************************************
+    subroutine finalize_isendrcv_bdry_filter(f_Hlo,f_Hup,Hsize)
+!
+      integer, intent(in) :: Hsize
+      real, dimension (:,:,:,:) ::  f_Hlo,f_Hup
+
+      if(ALWAYS_FALSE) print*, f_Hlo,f_Hup,Hsize
+    endsubroutine finalize_isendrcv_bdry_filter
 !***********************************************************************
 end module Solid_Cells_Mpicomm

@@ -91,7 +91,7 @@ program start
   use Solid_Cells,      only: init_solid_cells
   use Special,          only: init_special, initialize_mult_special
   use Sub
-  use Supersat,         only: init_ssat
+  use Ascalar,         only: init_ssat
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
 !

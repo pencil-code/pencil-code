@@ -1,23 +1,44 @@
 /*
 *   Implementation for the generic cuda solution.
-*   Manages multiple GPUs on a single node.
+*   Manages multiple GPUs on a single node using single-GPU implementations
+*	defined in cuda subdirectories (cuda/core, cuda/generic etc)
 */
 #include "cuda_generic.cuh"
 
 #include "core/cuda_core.cuh"
 #include "core/dconsts_core.cuh"
 #include "core/errorhandler_cuda.cuh"
+#include "core/concur_cuda_core.cuh"
 
 #include "generic/collectiveops_cuda_generic.cuh"
 #include "generic/rk3_cuda_generic.cuh"
 #include "generic/boundcond_cuda_generic.cuh"
 #include "generic/slice_cuda_generic.cuh"
 
-//Host configs
+
+/*
+*	Host configs. 
+*	These contain the information of the whole grid stored in this node.
+* 	(f.ex. the grid dimensions before it has been decomposed for each GPU)
+*/
 static CParamConfig h_cparams;
 static RunConfig h_run_params;
 static bool is_initialized;
 
+/*
+*	Struct for storing the necessary information for running any of the
+*	single-GPU implementations on some specific GPU. 
+*
+*	Contains f.ex. the "local" grid dimensions (d_cparams, dimensions after
+*	decomposing the host grid) and the starting index (start_idx) in the host
+*	grid for mapping from local grid to host grid coordinates.
+*
+*	These contexts are stored in a static global array, gpu_contexts.
+*	If we wanted to integrate on, say, device 1 then we would set the current
+* 	device to (1) and pass the necessary information from gpu_contexts[1] to the
+*	integration kernel.
+*
+*/
 typedef struct {
     vec3i           start_idx;    //The starting coordinates in the host array (node-wide grid)
     CParamConfig    d_cparams;    //Local CParamConfig for the device (GPU-specific grid)
@@ -25,42 +46,125 @@ typedef struct {
     Slice           d_slice;            //Slice arrays
     ReductionArray  d_reduct_arr;       //Reduction arrays
     real*           d_halobuffer;       //Buffer used for multi-node halo transfers
+    ConcurContext   concur_ctx;         //Device-specific streams and events
 } GPUContext;
 
 static GPUContext* gpu_contexts;
 static int num_devices = -1;
 
+
+static inline void swap_ptrs(real** a, real** b)
+{
+	real* temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
+
+static inline void swap_grid_ptrs(Grid* d_grid, Grid* d_grid_dst)
+{
+    for (int i=0; i < NUM_ARRS; ++i) 
+        swap_ptrs(&(d_grid->arr[i]), &(d_grid_dst->arr[i]));
+}
+
+
+static inline cudaStream_t get_stream(const int device_id, const StreamName str)
+{
+    return gpu_contexts[device_id].concur_ctx.streams[str];
+}
+
+
+static inline cudaEvent_t get_event(const int device_id, const EventName ev)
+{
+    return gpu_contexts[device_id].concur_ctx.events[ev];    
+}
+
+
+static void sync_devices() 
+{
+    int curr_device;
+    cudaGetDevice(&curr_device);
+    #pragma omp parallel for num_threads (num_devices)
+    for (int device_id=0; device_id < num_devices; ++device_id) {
+            cudaSetDevice(device_id);
+	        cudaDeviceSynchronize();
+    }
+    cudaSetDevice(curr_device);
+}
+
+
+typedef enum {PEER_FRONT, PEER_BACK, NUM_PEERS} PeerType;
+static int get_peer(PeerType pt, int device_id)
+{
+    switch (pt) {
+        case PEER_FRONT:
+            return (device_id+1) % num_devices;
+        case PEER_BACK:
+            return (num_devices+device_id-1) % num_devices;
+        default:
+            CRASH("Invalid PeerType");
+    }
+}
+
+
+//TODO NOTE: peer access not supported between 4x p100, why?
+//TEMP FIX: Commented out peer access enabling, now runs out-of-the-box
+//on p100. Surprisingly peer access seems to work even without explicitly
+//enabling it also on k80s.
+static void set_peer_access(int device_id, bool enable_access)
+{
+    const int peer_front = get_peer(PEER_FRONT, device_id);
+    const int peer_back  = get_peer(PEER_BACK, device_id);
+    /*
+    if (device_id != peer_front) {
+        if (enable_access)
+            cudaDeviceEnablePeerAccess(peer_front, 0);
+        else
+            cudaDeviceDisablePeerAccess(peer_front);
+    }
+    if (device_id != peer_back && peer_front != peer_back) {
+        if (enable_access)
+            cudaDeviceEnablePeerAccess(peer_back, 0);
+        else
+            cudaDeviceDisablePeerAccess(peer_back);    
+    }*/
+}
+
+
+/*
+*	Handles the allocation and initialization of the memories of all GPUs on
+*	the node (incl. constant memory).
+*/
+__global__ void dummy_kernel() {}
 void init_cuda_generic(CParamConfig* cparamconf, RunConfig* runconf)
 {   
-    if (is_initialized) CRASH("cuda_generic already initialized!");
-    is_initialized = true;
+    if (is_initialized) { CRASH("cuda_generic already initialized!") }
 
     cudaGetDeviceCount(&num_devices);
     gpu_contexts = (GPUContext*) malloc(sizeof(GPUContext)*num_devices);
     printf("Using %d devices\n", num_devices);
+    print_gpu_config_cuda_core();
+
 
     //Copy the structs in case the caller deallocates them prematurely
     h_cparams = *cparamconf;
     h_run_params = *runconf;
 
-    //#pragma unroll
+    //#pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
 
-        //Check p2p availability
-        for (int peer=0; peer < num_devices; ++peer) {
-            if (device_id == peer)
-                continue;
-            int can_access = 0;
-            cudaDeviceCanAccessPeer(&can_access, device_id, peer);
-            printf("%d can access peer %d? %d\n", device_id, peer, can_access);
-        }
-        const int peer_id = (device_id+1) % num_devices;
-        if (device_id != peer_id) {
-            printf("Enabling peer access between %d and %d\n", device_id, peer_id);
-            cudaDeviceEnablePeerAccess(peer_id, 0);//Note: last parameter here is "flags, reserved for future use and must be set to 0"
-        }
+        //printf("%d\n", __CUDA_ARCH__);
+        printf("Trying to run a dummy kernel. If this fails, make sure that your\n"
+                "device supports the CUDA architecture you are compiling for.\n"
+                "Running dummy kernel... "); fflush(stdout);
+        dummy_kernel<<<1, 1>>>();
+        CUDA_ERRCHK_KERNEL_ALWAYS();
+        printf("Success!\n");
+
+        //Enable peer access
+        set_peer_access(device_id, true);
 
         //Decompose the problem
         ctx->d_cparams = h_cparams;
@@ -79,36 +183,57 @@ void init_cuda_generic(CParamConfig* cparamconf, RunConfig* runconf)
         init_slice_cuda_generic(&ctx->d_slice, &ctx->d_cparams, &h_run_params);
         init_reduction_array_cuda_generic(&ctx->d_reduct_arr, &ctx->d_cparams);
         init_halo_cuda_core(ctx->d_halobuffer); //Note: Called even without multi-node
+        init_concur_ctx(&ctx->concur_ctx);
     }
+    is_initialized = true;
 }
 
 
+/*
+*	Deallocates all memory on the GPU
+*/
 void destroy_cuda_generic()
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
-    is_initialized = false;
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!"); }
+    
+    //Sync all previous operations
+    sync_devices();
 
-    //#pragma unroll
+    //Destroy everything
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
-        GPUContext* ctx = &gpu_contexts[device_id];
-    
+        GPUContext* ctx = &gpu_contexts[device_id];    
+
+        //Disable peer access
+        set_peer_access(device_id, false);
+
         destroy_slice_cuda_generic(&ctx->d_slice);
         destroy_reduction_array_cuda_generic(&ctx->d_reduct_arr);
         destroy_grid_cuda_core(&ctx->d_grid, &ctx->d_grid_dst);
         destroy_halo_cuda_core(ctx->d_halobuffer);
-        cudaDeviceSynchronize(); cudaDeviceReset();
+        destroy_concur_ctx(&ctx->concur_ctx);
     }
+
+    //Belt-and-suspenders-destroy-everything
+    #pragma omp parallel for num_threads (num_devices)
+    for (int device_id=0; device_id < num_devices; ++device_id) {
+        cudaSetDevice(device_id);
+        cudaDeviceReset();
+    }
+
     free(gpu_contexts);
+
+    is_initialized = false;
 }
 
 
 void load_grid_cuda_generic(Grid* h_grid)
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!") }
 
     //If we wanted to use another layout, we would do it here instead of using the core interface
-    //#pragma unroll
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
@@ -120,9 +245,9 @@ void load_grid_cuda_generic(Grid* h_grid)
 
 void store_grid_cuda_generic(Grid* h_grid)
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!") }
 
-    //#pragma unroll
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
@@ -132,217 +257,181 @@ void store_grid_cuda_generic(Grid* h_grid)
 }
 
 
-inline void swap_ptrs(real** a, real** b)
-{
-	real* temp = *a;
-	*a = *b;
-	*b = temp;
-}
-
-
-static inline void swap_grid_ptrs(Grid* d_grid, Grid* d_grid_dst)
-{
-    for (int i=0; i < NUM_ARRS; ++i) 
-        swap_ptrs(&(d_grid->arr[i]), &(d_grid_dst->arr[i]));
-}
-
-/*
-#include "cpu/model/model_boundcond.h"
-//Bruteforce the bounds by transferring the whole grid to CPU, 
-//solving the boundaries and then transferring the grid back to GPU
-static void bruteforce_bounds()
-{
-    Grid tmp;
-    grid_malloc(&tmp, &h_cparams);
-    store_grid_cuda_generic(&tmp);
-
-    boundcond(&tmp, &h_cparams);    
-
-    load_grid_cuda_generic(&tmp);   
-    grid_free(&tmp);
-}
-
-static const int top_device_id = num_devices-1;
-static const int bottom_device_id = 0;
-*/
-/*
-*   Terminology for multi-GPU halo transfers (subject to change):
-*   (1) Shared outer halo: Sides, edges and corners on top and bottom of the whole grid 
-*   (2) Local inner halo: Parts of the edges and sides, for which periodic boundary 
-*        conditions can be applied without inter-device communication (i.e. the left and right 
-*        edges/sides of the grid held by device)
-*   (3) Shared inner halo: the overlapping area of the halos of two neighbouring devices.
-*
-*   Dependencies: (2) must be completed before starting (3), (1) can be done whenever. All (1), 
-*   (2) and (3) must be completed before integration.
-*
-*
-*   Cheatsheet for mapping the boundary zone indices:
-    ////Shared outer halo////////////////////////////////////////////
-    i.e side (x and z have 1-to-1 map):
-    BOTTOM:    nymin -> nymax
-    TOP:       ny -> 0
-
-    edge (z has 1-to-1 map):
-    BOTTOM:     nxmin, nymin -> nxmax, nymax
-    BOTTOM:     nx,    nymin -> 0,     nymax    
-    TOP:        nxmin, ny    -> nxmax, 0
-    TOP:        nx,    ny    -> 0,     0
-
-    corner
-    BOTTOM:     nxmin, nymin, nzmin -> nxmax, nymax, nzmax
-    BOTTOM:     nx,    nymin, nzmin -> 0,     nymax, nzmax
-    BOTTOM:     nx,    nymin, nz    -> 0,     nymax, 0
-    BOTTOM:     nxmin, nymin, nz    -> nxmax, nymax, 0
-
-    BOTTOM:     nxmin, ny, nzmin -> nxmax, 0, nzmax
-    BOTTOM:     nx,    ny, nzmin -> 0,     0, nzmax
-    BOTTOM:     nx,    ny, nz    -> 0,     0, 0
-    BOTTOM:     nxmin, ny, nz    -> nxmax, 0, 0
-
-
-    ////Local outer halo////////////////////////////////////////////
-    side (y and z have 1-to-1 map):
-    nxmin -> nxmax
-    nx    -> 0
-
-    edge (y has 1-to-1 map):
-    nxmin, nzmin -> nxmax, nzmax
-    nx,    nzmin -> 0,     nzmax
-    nxmin, nz    -> nxmax, 0
-    nx,    nz    -> 0,     0
-
-
-    ////Shared inner halo////////////////////////////////////////////
-    halo (x and z have 1-to-1 map, mx*mz-wide transfers)"
-    ny -> 0 (lower->upper)
-    nymin -> nymax  (Upper->lower)
-
-    ////////////////////////////////////////////////////////////////
-*/
-
 static void local_boundconds_cuda_generic()
 {
-    //#pragma unroll
-    for (int device_id=0; device_id < num_devices; ++device_id) {
-        cudaSetDevice(device_id);
-        GPUContext* ctx = &gpu_contexts[device_id];
-        periodic_xy_boundconds_cuda_generic(&ctx->d_grid, &ctx->d_cparams);    
-    }    
-}
-
-//Exchange halos between neighbouring blocks 
-static void exchange_halos_cuda_generic()
-{
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
 
-        const int peer_id = (device_id+1) % num_devices;
-
-        const size_t slab_size = ctx->d_cparams.mx * ctx->d_cparams.my;
-        const size_t transfer_size_bytes = BOUND_SIZE * slab_size * sizeof(real);
-
-        const size_t z_src0 = ctx->d_cparams.nz * slab_size;
-        const size_t z_dst0 = 0; 
-        const size_t z_src1 = BOUND_SIZE * slab_size;
-        const size_t z_dst1 = (ctx->d_cparams.nz + BOUND_SIZE) * slab_size;
-        for (int w=0; w < NUM_ARRS; ++w) {
-            CUDA_ERRCHK( cudaMemcpyPeerAsync(&gpu_contexts[peer_id].d_grid.arr[w][z_dst0], peer_id, &ctx->d_grid.arr[w][z_src0], device_id, transfer_size_bytes) );
-            CUDA_ERRCHK( cudaMemcpyPeerAsync(&ctx->d_grid.arr[w][z_dst1], device_id, &gpu_contexts[peer_id].d_grid.arr[w][z_src1], peer_id, transfer_size_bytes) );
-        }
+        //Do local boundaries and signal when done
+        periodic_xy_boundconds_cuda_generic(&ctx->d_grid, &ctx->d_cparams, 0);    
+        const cudaEvent_t local_bc_done = get_event(device_id, EVENT_LOCAL_BC_DONE);
+        cudaEventRecord(local_bc_done, 0);//Implicit synchronization with the default stream        
     }
 }
 
-//Boundary conditions applied on the ghost zone surrounding the 
-//computational domain
-static void boundcond_multigpu_cuda_generic()
-{
 
-    //bruteforce_bounds();
-    local_boundconds_cuda_generic();
-    exchange_halos_cuda_generic();
+static void fetch_halos_cuda_generic(GPUContext* ctx, const int device_id, cudaStream_t stream=0)
+{
+    const int front_id = get_peer(PEER_FRONT, device_id);
+    const int back_id  = get_peer(PEER_BACK,  device_id);
+
+    const size_t slab_size           = ctx->d_cparams.mx * ctx->d_cparams.my;
+    const size_t transfer_size_bytes = BOUND_SIZE * slab_size * sizeof(real);
+
+    const size_t z_src0 = ctx->d_cparams.nz * slab_size;
+    const size_t z_dst0 = 0; 
+    const size_t z_src1 = BOUND_SIZE * slab_size;
+    const size_t z_dst1 = (ctx->d_cparams.nz + BOUND_SIZE) * slab_size;
+    for (int w=0; w < NUM_ARRS; ++w) {
+        CUDA_ERRCHK( cudaMemcpyPeerAsync(&ctx->d_grid.arr[w][z_dst0], device_id, 
+                                         &gpu_contexts[back_id].d_grid.arr[w][z_src0], back_id,
+                                         transfer_size_bytes, stream) ); //Back
+        CUDA_ERRCHK( cudaMemcpyPeerAsync(&ctx->d_grid.arr[w][z_dst1], device_id, 
+                                         &gpu_contexts[front_id].d_grid.arr[w][z_src1], front_id,
+                                         transfer_size_bytes, stream) ); //Front
+    }
+}
+
+
+static void exchange_halos_cuda_generic()
+{
+    #pragma omp parallel for num_threads(num_devices)
+    for (int device_id=0; device_id < num_devices; ++device_id) {
+        cudaSetDevice(device_id);
+        GPUContext* ctx = &gpu_contexts[device_id];
+
+        //Wait until front and back neighbors are done with local boundary conditions
+        const cudaStream_t global_stream = get_stream(device_id, STREAM_GLOBAL);
+        const int peer_front = get_peer(PEER_FRONT, device_id);
+        const int peer_back  = get_peer(PEER_BACK, device_id);
+        cudaStreamWaitEvent(global_stream, get_event(peer_front, EVENT_LOCAL_BC_DONE), 0);
+        cudaStreamWaitEvent(global_stream, get_event(peer_back, EVENT_LOCAL_BC_DONE), 0);
+
+        //Get the updated halos from the front and back neighbor
+        fetch_halos_cuda_generic(ctx, device_id, global_stream);
+    }
 }
 
 
 void boundcond_step_cuda_generic()
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!") }
 
-    if (num_devices > 1) {
-        boundcond_multigpu_cuda_generic();
-    } else {
-       boundcond_cuda_generic(&gpu_contexts[0].d_grid, &gpu_contexts[0].d_cparams);    
-    } 
+    local_boundconds_cuda_generic();
+    exchange_halos_cuda_generic();
 }
 
 
 void integrate_step_cuda_generic(int isubstep, real dt)
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!") }
 
-    //For all GPUs in the node
-    //#pragma unroll
+    //For all GPUs in the node in parallel
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
 
         //Integrate
-        rk3_cuda_generic(&ctx->d_grid, &ctx->d_grid_dst, isubstep, dt, &ctx->d_cparams);
+        rk3_inner_cuda_generic(&ctx->d_grid, &ctx->d_grid_dst, isubstep, dt, 
+                               &ctx->d_cparams, 
+                               ctx->concur_ctx.streams[STREAM_LOCAL_HYDRO], 
+                               ctx->concur_ctx.streams[STREAM_LOCAL_INDUCT]); 
+        //WARNING: boundcond_step must have been called before rk3_outer.
+        //If fetch_halos_cuda_generic() is not already be scheduled for execution
+        //on the GPU, then the execution order will be wrong
+        rk3_outer_cuda_generic(&ctx->d_grid, &ctx->d_grid_dst, isubstep, dt, 
+                               &ctx->d_cparams, 
+                                ctx->concur_ctx.streams[STREAM_GLOBAL]);
 
         //Swap src and dst device array pointers
         swap_grid_ptrs(&ctx->d_grid, &ctx->d_grid_dst);
     }
+
+    //WARNING: this sync is not absolutely necessary but left here for safety:
+    //without sync the host caller is able to execute other (potentially dangerous)
+    //code in parallel with the GPU integration/memory transfers
+    sync_devices(); //WARNING
 }
 
 
 void integrate_cuda_generic(real dt)
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!") }
 
-    cudaSetDevice(0);
-	cudaEvent_t start, stop;
-	float time;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-	cudaEventRecord(start, 0);
+    for (int isubstep=0; isubstep < 3; ++isubstep) {
 
-    //Step 1
-    boundcond_step_cuda_generic();
-    integrate_step_cuda_generic(0, dt);
+        boundcond_step_cuda_generic();
+        integrate_step_cuda_generic(isubstep, dt);
 
-    //Step 2
-    boundcond_step_cuda_generic();
-    integrate_step_cuda_generic(1, dt);   
+        //The original concurrency code, left here since it's easier to read
+        //when boundary conditions and integration are not split up into separate
+        //functions
+        /*
+        //Local boundaries and integration in the inner domain
+        #pragma omp parallel for num_threads (num_devices)
+        for (int device_id=0; device_id < num_devices; ++device_id) {
+            cudaSetDevice(device_id);
+            GPUContext* ctx = &gpu_contexts[device_id];
 
-    //Step 3
-    boundcond_step_cuda_generic();
-    integrate_step_cuda_generic(2, dt);
+            //Do local boundaries and signal when done
+            periodic_xy_boundconds_cuda_generic(&ctx->d_grid, &ctx->d_cparams, 0);    
+            const cudaEvent_t local_bc_done = get_event(device_id, EVENT_LOCAL_BC_DONE);
+            cudaEventRecord(local_bc_done, 0);//Implicit synchronization with the default stream
 
-	//TIME END
-    //#pragma unroll
-    for (int device_id=0; device_id < num_devices; ++device_id) {
-        cudaSetDevice(device_id);
-	    cudaDeviceSynchronize();
+            //Start integrating in the inner computational domain
+            rk3_inner_cuda_generic(&ctx->d_grid, &ctx->d_grid_dst, isubstep, dt, 
+                                   &ctx->d_cparams, 
+                                   ctx->concur_ctx.streams[STREAM_LOCAL_HYDRO], 
+                                   ctx->concur_ctx.streams[STREAM_LOCAL_INDUCT]);            
+        }
+
+        //Communication of the outer halos among devices
+        #pragma omp parallel for num_threads(num_devices)
+        for (int device_id=0; device_id < num_devices; ++device_id) {
+            cudaSetDevice(device_id);
+            GPUContext* ctx = &gpu_contexts[device_id];
+
+            //Wait until front and back neighbors are done with local boundary conditions
+            const cudaStream_t global_stream = get_stream(device_id, STREAM_GLOBAL);
+            const int peer_front = get_peer(PEER_FRONT, device_id);
+            const int peer_back  = get_peer(PEER_BACK, device_id);
+            cudaStreamWaitEvent(global_stream, get_event(peer_front, EVENT_LOCAL_BC_DONE), 0);
+            cudaStreamWaitEvent(global_stream, get_event(peer_back, EVENT_LOCAL_BC_DONE), 0);
+
+            //Get the updated halos from the front and back neighbor
+            fetch_halos_cuda_generic(ctx, device_id, global_stream);
+        }
+
+        //Integrate in the outer computational domain
+        #pragma omp parallel for num_threads(num_devices)
+        for (int device_id=0; device_id < num_devices; ++device_id) {
+            cudaSetDevice(device_id);
+            GPUContext* ctx = &gpu_contexts[device_id];
+
+            //Start integrating the outer domain after the updated halos
+            //have arrived from neighbors
+            rk3_outer_cuda_generic(&ctx->d_grid, &ctx->d_grid_dst, isubstep, dt, 
+                                   &ctx->d_cparams, 
+                                    ctx->concur_ctx.streams[STREAM_GLOBAL]);
+
+            //We're done, swap src and dst device array pointers
+            swap_grid_ptrs(&ctx->d_grid, &ctx->d_grid_dst);
+        }*/
     }
-
-    cudaSetDevice(0);
-	cudaEventRecord(stop, 0);
-	cudaEventSynchronize(stop);
-	cudaEventElapsedTime(&time, start, stop);
-	cudaEventDestroy(start);
-	cudaEventDestroy(stop);
-	printf("Full RK3 time elapsed: \t%f ms\n", time);
 }
+
 
 #include "utils/utils.h" //For max/min/sum
 real reduce_cuda_generic(ReductType t, GridType grid_type)
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!"); }
 
     real* res = (real*) malloc(sizeof(real)*num_devices);
 
-    //#pragma unroll
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
@@ -355,12 +444,13 @@ real reduce_cuda_generic(ReductType t, GridType grid_type)
             res[device_id] = get_reduction_cuda_generic(&ctx->d_reduct_arr, t, &ctx->d_cparams, 
                                               ctx->d_grid.arr[UUX], ctx->d_grid.arr[UUY], ctx->d_grid.arr[UUZ]);
         } else {
-            if (grid_type == NOT_APPLICABLE) CRASH("Invalid GridType in reduce_cuda_generic");
+            if (grid_type == NOT_APPLICABLE) { CRASH("Invalid GridType in reduce_cuda_generic"); }
             res[device_id] = get_reduction_cuda_generic(&ctx->d_reduct_arr, t, &ctx->d_cparams, ctx->d_grid.arr[grid_type]);
         }
     }
 
     //Bruteforce: find max, min or rms from the gpu results
+    ////#pragma omp parallel  target teams distribute parallel for reduction(+:r)//TODO
     for (int i=1; i < num_devices; ++i) {
         if (t == MAX_VEC_UU || t == MAX_SCAL)
             res[0] = max(res[0], res[i]);
@@ -378,35 +468,30 @@ real reduce_cuda_generic(ReductType t, GridType grid_type)
     const real retval = res[0];
     free(res);
 
-    return retval;   
+    return retval; 
 }
 
 
 void get_slice_cuda_generic(Slice* h_slice)
 {
-    if (!is_initialized) CRASH("cuda_generic wasn't initialized!");
+    if (!is_initialized) { CRASH("cuda_generic wasn't initialized!"); }
 
-    //For each GPU in the node
-    //#pragma unroll
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
         update_slice_cuda_generic(&ctx->d_slice, &ctx->d_grid, &ctx->d_cparams, &h_run_params);
-    }
-
-    //For each GPU in the node
-    //#pragma unroll
-    for (int device_id=0; device_id < num_devices; ++device_id) {
-        cudaSetDevice(device_id);
-        GPUContext* ctx = &gpu_contexts[device_id];
+        cudaDeviceSynchronize();
         store_slice_cuda_core(h_slice, &h_cparams, &h_run_params, &ctx->d_slice, &ctx->d_cparams, &ctx->start_idx);
     }
+
+//cd src/build/ && make -j && ac_srun_taito_multigpu 4 && cd ../../ && screen py_animate_data --nslices=100
 }
 
 
 void load_forcing_params_cuda_generic(ForcingParams* forcing_params)
 {
-    //#pragma unroll
+    #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         load_forcing_dconsts_cuda_core(forcing_params);
@@ -416,6 +501,7 @@ void load_forcing_params_cuda_generic(ForcingParams* forcing_params)
 
 void load_outer_halos_cuda_generic(Grid* h_grid, real* h_halobuffer)
 {
+    ////#pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];
@@ -427,6 +513,7 @@ void load_outer_halos_cuda_generic(Grid* h_grid, real* h_halobuffer)
 
 void store_internal_halos_cuda_generic(Grid* h_grid, real* h_halobuffer)
 {
+    ////#pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {
         cudaSetDevice(device_id);
         GPUContext* ctx = &gpu_contexts[device_id];

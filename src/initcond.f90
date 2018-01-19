@@ -1650,7 +1650,10 @@ module Initcond
       integer :: i,j,l,m,n
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx, ky, kz, phase, k, cfunc, sfunc
-      real :: ex=.1, ey=.33, ez=.58
+      !real :: ex=.1, ey=.33, ez=.58
+      !real :: ex=1., ey=.0, ez=1.
+      !real :: ex=1., ey=.0, ez=0.
+      real :: ex=0., ey=.0, ez=1.
       real :: kxe_x, kxe_y, kxe_z, kxkxe_x, kxkxe_y, kxkxe_z
       real :: ampl
 !
@@ -1669,8 +1672,8 @@ module Initcond
       do n=1,mz
       do m=1,my
       do l=1,mx
-        cfunc=ampl*cos(kx*x(l)+ky*y(m)+kz*z(n)+phase)
-        sfunc=ampl*sin(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        cfunc=abs(ampl)*cos(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        sfunc=    ampl *sin(kx*x(l)+ky*y(m)+kz*z(n)+phase)
         j=i  ; f(l,m,n,j)=f(l,m,n,j)+kxkxe_x*cfunc+k*kxe_x*sfunc
         j=i+1; f(l,m,n,j)=f(l,m,n,j)+kxkxe_y*cfunc+k*kxe_y*sfunc
         j=i+2; f(l,m,n,j)=f(l,m,n,j)+kxkxe_z*cfunc+k*kxe_z*sfunc
@@ -2562,7 +2565,7 @@ module Initcond
               call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
               ss0(n)=tmp
             endif
-            if (lsupersat) ssat0(n)=var3
+            if (lascalar) ssat0(n)=var3
           else
             call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
@@ -2600,7 +2603,7 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
-        if (ltemperature.and.lsupersat) then
+        if (ltemperature.and.lascalar) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))

@@ -40,14 +40,14 @@ module Particles_radius
   real :: es_T, qvs_T, c1, c2, Rv, rho0
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
-  logical :: lsupersat_par=.false.
+  logical :: lascalar_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
   logical :: lcondensation_rate=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
-  logical :: ltausupersat = .false.
+  logical :: ltauascalar = .false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -69,11 +69,11 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, TTocean, &
       lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
-      lsupersat_par,lconstant_radius_w_chem, &
+      lascalar_par,lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       G_condensation, lcondensation_rate, vapor_mixing_ratio_qvs, &
       c1, c2, Rv, rho0, &
-      ltausupersat
+      ltauascalar
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -145,8 +145,8 @@ module Particles_radius
       endif
 !
       if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
-          .and. .not. lsupersat_par &
-              .and. .not. lsupersat &
+          .and. .not. lascalar_par &
+              .and. .not. lascalar &
           .and. .not. lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
@@ -499,7 +499,7 @@ module Particles_radius
           lpenc_requested(i_TT1) = .true.
         endif
       endif
-      if (lsupersat .and. lsupersat_par) then
+      if (lascalar .and. lascalar_par) then
         lpenc_requested(i_ssat) = .true.
         lpenc_requested(i_ugssat) = .true.
       endif
@@ -540,8 +540,8 @@ module Particles_radius
       if (lsweepup_par) call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
       if (lcondensation_par) &
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lsupersat_par) &
-          call dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid) !XY
+      if (lascalar_par) &
+          call dap_dt_ascalar_pencil(f,df,fp,dfp,p,ineargrid) !XY
 !
 !
       lfirstcall = .false.
@@ -874,7 +874,7 @@ module Particles_radius
 !
     endsubroutine dap_dt_condensation_pencil
 !***********************************************************************
-    subroutine dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dap_dt_ascalar_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Growth by condesation in a passive scalar field
 !
@@ -903,8 +903,8 @@ module Particles_radius
       do k = k1_imn(imn),k2_imn(imn)
         ix0 = ineargrid(k,1)
         ix = ix0-nghost
-        if (lsupersat) then
-          if (ltausupersat) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+        if (lascalar) then
+          if (ltauascalar) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
           if (lcondensation_rate) then
             es_T=c1*exp(-c2/f(ix,m,n,ilnTT))
             qvs_T=es_T/(Rv*rho0*f(ix,m,n,ilnTT))
@@ -916,7 +916,7 @@ module Particles_radius
         endif
       enddo
 !
-    endsubroutine dap_dt_supersat_pencil
+    endsubroutine dap_dt_ascalar_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !
