@@ -105,7 +105,7 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    diffhh, diffgg, lsame_diffgg_as_hh
+    diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -415,7 +415,7 @@ module Special
 !
 !  15-jan-08/axel: coded
 !
-      use Fourier, only: fourier_transform
+      use Fourier, only: fourier_transform, fft_xyz_parallel
 !
       real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
       real, dimension (:,:,:), allocatable :: one_over_k2, S_T_re, S_T_im, S_X_re, S_X_im
@@ -512,6 +512,7 @@ module Special
 !
       do ij=1,6
         call fourier_transform(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
+!--     call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
       enddo
 !
 !  P11, P22, P33, P12, P23, P31
@@ -596,6 +597,7 @@ module Special
               endif
             endif
 !
+!  Traceless-tansverse projection:
 !  Sij = (Pip*Pjq-.5*Pij*Ppq)*Tpq
 !
             Sij_re=0.
@@ -630,9 +632,8 @@ module Special
             enddo
          
  ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
- 
           !if (k1==0..and.k2==0..and.abs(k3)==2.) then
-          if (abs(k1)==2..and.k2==0..and.abs(k3)==0.) then
+          if (abs(k1)==2..and.abs(k2)==2..and.abs(k3)==0.) then
 !
 !  debug output (perhaps to be removed)
 !
@@ -687,6 +688,8 @@ module Special
 !
       call fourier_transform(S_T_re,S_T_im,linv=.true.)
       call fourier_transform(S_X_re,S_X_im,linv=.true.)
+!--   call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+!--   call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
 !
 !  debug output (perhaps to be removed)
 !
@@ -701,13 +704,15 @@ module Special
 !
       f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
       f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
+      !f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
 !
 !  For the time being, we keep the lswitch_sign_e_X
 !  still as an option. Meaningful results are however
 !  only found foro complex values of S_X.
 !
       if (.not.lswitch_sign_e_X) then
-        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
+        !f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
+        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
       endif
 !
 !  debug output (perhaps to be removed)
@@ -774,6 +779,43 @@ module Special
 !!      endif
 !!
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of Special variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  ggT
+!
+        case ('ggT')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iggT)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iggT)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iggT)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iggT)
+          slices%ready = .true.
+!
+!  ggX
+!
+        case ('ggX')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iggX)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iggX)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iggX)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iggX)
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_special
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
