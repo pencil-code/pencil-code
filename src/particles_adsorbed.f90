@@ -90,8 +90,8 @@ module Particles_adsorbed
 !  check if enough storage was reserved in fp and dfp to store
 !  the adsorbed species surface and gas phase surface concentrations
 !
-      if (nadsspec /= (N_adsorbed_species-1) .and. N_adsorbed_species > 1) then
-        print*,'N_adsorbed_species: ',N_adsorbed_species-1
+      if (nadsspec /= (N_adsorbed_species) .and. N_adsorbed_species > 1) then
+        print*,'N_adsorbed_species: ',N_adsorbed_species
         print*,'nadsspec: ',nadsspec
         call fatal_error('register_particles_ads', &
             'wrong size of storage for adsorbed species allocated.')
@@ -261,6 +261,9 @@ module Particles_adsorbed
             call fatal_error('init_particles_ads','')
           endselect
         enddo
+        do i = 1,mpar_loc
+          fp(i,iads_end) = 1.0 - sum(fp(i,iads:iads_end-1))
+        enddo
       endif
 !
     endsubroutine init_particles_ads
@@ -335,7 +338,7 @@ module Particles_adsorbed
             mod_surf_area = 0.0
             allocate(R_c_hat(k1:k2))
             R_c_hat = 0.0
-            allocate(R_j_hat(k1:k2,1:n_ads))
+            allocate(R_j_hat(k1:k2,1:N_adsorbed_species))
             R_j_hat = 0.0
             call calc_get_mod_surf_area(mod_surf_area,fp)
             call get_adsorbed_chemistry(R_j_hat,R_c_hat)

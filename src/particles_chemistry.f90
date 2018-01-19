@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles_chemistry=.true.
+! MPAUX CONTRIBUTION 1
 !
 !***************************************************************
 !
@@ -1508,10 +1509,10 @@ module Particles_chemistry
               (fp(k1:k2,iap)*fp(k1:k2,iap)*4.*pi)
         enddo
       enddo
-      if (lparticles_adsorbed) then
-        print*, 'ndot(k1:k2,:)',ndot(k1:k2,:)
-        print*, 'RR_hat(k1:k2,l)',RR_hat(k1:k2,:)
-      endif
+      !if (lparticles_adsorbed) then
+        !print*, 'ndot(k1:k2,:)',ndot(k1:k2,:)
+        !print*, 'RR_hat(k1:k2,l)',RR_hat(k1:k2,:)
+      !endif
 !
 ! Find molar reaction rate of adsorbed surface species
 ! if the species is consumed (mu> 1) its contribution to R_j_hat
@@ -2160,7 +2161,7 @@ module Particles_chemistry
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for Rck_max')
 !
-      allocate(R_j_hat(k1:k2,N_adsorbed_species-1),STAT=stat)
+      allocate(R_j_hat(k1:k2,N_adsorbed_species),STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for R_j_hat')
       allocate(Cs(k1:k2,N_adsorbed_species),STAT=stat)

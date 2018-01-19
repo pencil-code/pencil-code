@@ -95,6 +95,8 @@ module Particles_mass
       iapinit = impinit+1
       pvarname(iapinit) = 'iapinit'
       npaux = npaux+1
+
+
 !
       ! Check that the fp and dfp arrays are big enough.
       if (npaux > mpaux) then
