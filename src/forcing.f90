@@ -4881,6 +4881,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  Note: It is not enough to set lforcing_cont = T in input parameters of
 !  forcing one must also set  lforcing_cont_uu = T in hydro for the
 !  continuous-in-time forcing to be added to velocity.
+!  Alternatively, one can set lforcing_cont_bb = T in magnetic.
 !
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
