@@ -81,6 +81,9 @@ module Energy
 !
   real, dimension(nz) :: TTmz, gTTmz 
 !
+  real :: thermal_diff=0.0
+  real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
+!
 !  Init parameters.
 !
   namelist /entropy_init_pars/ &
@@ -97,7 +100,9 @@ module Energy
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
-      cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean
+      cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
+      thermal_diff, gradTT0
+
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -796,9 +801,11 @@ module Energy
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           lpenc_requested(i_ugTT)=.true.
+          lpenc_requested(i_del2TT)=.true.
         else
           lpenc_requested(i_uglnTT)=.true.
         endif
+!        if (thermal_diff/=0.) lpenc_requested(i_del2TT)=.true.
       endif
 !
 !  Diagnostic pencils.
@@ -924,6 +931,14 @@ module Energy
 ! ugTT
       if (lpencil(i_ugTT)) &
           call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+! Compute glnTT
+      if (lpencil(i_gTT)) then
+        call grad(f,iTT,p%gTT)
+        do j=1,3
+          if (gradTT0(j)/=0.) p%gTT(:,j)=p%gTT(:,j)+gradTT0(j)
+        enddo
+      endif
+!
 ! fpres
       if (lpencil(i_fpres)) then
         if (lboussinesq) then
@@ -1029,6 +1044,7 @@ module Energy
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - p%ugTT
+          if (thermal_diff/=0.) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+thermal_diff*p%del2TT
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
         endif
