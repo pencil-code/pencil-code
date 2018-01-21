@@ -24,6 +24,7 @@ module Ascalar
   use Cdata
   use Cparam
   use Messages
+!  use Energy
 !
   implicit none
 !
@@ -34,14 +35,15 @@ module Ascalar
 !  Init parameters.
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
-  real :: lnTT_const=0.
+  real :: lnTT_const=0., TT_const=0.
   logical :: noascalar=.false., reinitialize_ssat=.false.
   character (len=labellen) :: initssat='nothing'
   character (len=labellen) :: initlnTT='nothing'
+  character (len=labellen) :: initTT='nothing'
 !
   namelist /ascalar_init_pars/ &
            initssat, ssat_const, amplssat, widthssat, &
-           initlnTT, lnTT_const
+           initlnTT, lnTT_const, initTT, TT_const
 !
 !  Run parameters.
 !
@@ -54,17 +56,20 @@ module Ascalar
   real :: latent_heat=0.0, cp=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
   real, dimension(3) :: gradlnTT0=(/0.0,0.0,0.0/)
+  real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rho0
-  real, dimension(nx) :: es_T, qvs_T 
+  real, dimension(nx) :: es_T, qvs_T
+  real :: TT
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
-  logical :: lupw_ssat=.false., lcondensation_rate=.false.
+  logical :: lupw_ssat=.false., lcondensation_rate=.false., lltemperature=.false.
 
   namelist /ascalar_run_pars/ &
       lupw_ssat, lascalar_sink, Rascalar_sink, ascalar_sink, &
       ascalar_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
       c1, c2, Rv, rho0, &
-      thermal_diff, gradlnTT0
+      thermal_diff, gradlnTT0, gradTT0,  &
+      lltemperature
 !
 ! Declare index of new variables in f array
 !
@@ -163,6 +168,14 @@ module Ascalar
         case default
           call fatal_error('initlnTT','initlnTT value not recognised')
       endselect
+! Temperature nolog, initial profile
+      select case (initTT)
+        case ('nothing')
+        case ('zero'); f(:,:,:,iTT)=0.0
+        case ('constant'); f(:,:,:,iTT)=TT_const
+        case default
+          call fatal_error('initTT','initTT value not recognised')
+      endselect
 !
 !  modify the density to have lateral pressure equilibrium
 !
@@ -195,7 +208,7 @@ module Ascalar
       enddo
 !
       if (lascalar_sink) then 
-        lpenc_requested(i_ssat)=.true.
+!        lpenc_requested(i_ssat)=.true.
         lpenc_requested(i_tauascalar)=.true.
       endif
       if (ascalar_diff/=0.) lpenc_requested(i_del2ssat)=.true.
@@ -203,12 +216,20 @@ module Ascalar
       lpenc_diagnos(i_ssat)=.true.
 !     
 !  temperature
-      if (ltemperature) lpenc_requested(i_lnTT)=.true.
+!      if (lltemperature) then
+      if (ltemperature) then
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_uglnTT)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_ugTT)=.true.
+      endif
       if (thermal_diff/=0.) lpenc_requested(i_del2lnTT)=.true.
+      if (thermal_diff/=0.) lpenc_requested(i_del2TT)=.true.
       do i=1,3
         if (gradlnTT0(i)/=0.) lpenc_requested(i_uu)=.true.
+        if (gradTT0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
-!
+!!
     endsubroutine pencil_criteria_ascalar
 !***********************************************************************
     subroutine pencil_interdep_ascalar(lpencil_in)
@@ -263,6 +284,7 @@ module Ascalar
 !
 ! temperature
       if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+      if (lpencil(i_TT)) p%TT=f(l1:l2,m,n,iTT)
 ! Compute glnTT
       if (lpencil(i_glnTT)) then
         call grad(f,ilnTT,p%glnTT)
@@ -270,13 +292,25 @@ module Ascalar
           if (gradlnTT0(j)/=0.) p%glnTT(:,j)=p%glnTT(:,j)+gradlnTT0(j)
         enddo
       endif
+      if (lpencil(i_gTT)) then
+        call grad(f,iTT,p%gTT)
+        do j=1,3
+          if (gradTT0(j)/=0.) p%gTT(:,j)=p%gTT(:,j)+gradlnTT0(j)
+        enddo
+      endif
 ! uglnTT
       if (lpencil(i_uglnTT)) then
         call u_dot_grad(f,ilnTT,p%glnTT,p%uu,p%uglnTT)
       endif
+      if (lpencil(i_ugTT)) then
+        call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT)
+      endif
 ! del2lnTT
       if (lpencil(i_del2lnTT)) then
         call del2(f,ilnTT,p%del2lnTT)
+      endif
+      if (lpencil(i_del2TT)) then
+        call del2(f,iTT,p%del2TT)
       endif
 !
     endsubroutine calc_pencils_ascalar
@@ -324,12 +358,16 @@ module Ascalar
 !  Passive scalar equation.
 !
       df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-p%uglnTT
+!      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-p%uglnTT
+      df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)-p%ugTT
+!      df(l1:l2,m,n,ilnTT)=293.
+      TT=293.
       if (ascalar_diff/=0.) &
           df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+ascalar_diff*p%del2ssat
 !
       if (thermal_diff/=0.) &
-          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+thermal_diff*p%del2lnTT
+!          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+thermal_diff*p%del2lnTT
+          df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+thermal_diff*p%del2TT
 !
       ! 1-June-16/XY coded 
       if (lascalar_sink) then
@@ -363,10 +401,14 @@ module Ascalar
       
       if (lcondensation_rate) then
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%condensationRate
-        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
-!           print*,'T=',df(l1:l2,m,n,ilnTT)
-        es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
-        qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
+!        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
+        if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
+         print*,'T',df(l1:l2,m,n,iTT)
+!        if (lltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,issat)+p%condensationRate*latent_heat/cp
+!        es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
+!        qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
+        es_T=c1*exp(-c2/TT)
+        qvs_T=es_T/(Rv*rho0*TT)
         supersaturation=f(l1:l2,m,n,issat)/qvs_T-1.
       endif
 !
@@ -388,12 +430,16 @@ module Ascalar
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
         if (idiag_temperaturerms/=0) &
-            call sum_mn_name(p%lnTT**2,idiag_temperaturerms,lsqrt=.true.)
-        if (idiag_temperaturemax/=0) call max_mn_name(p%lnTT,idiag_temperaturemax)
-        if (idiag_temperaturemin/=0) call max_mn_name(-p%lnTT,idiag_temperaturemin,lneg=.true.)
+            call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
+        if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
+        if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
+        if (idiag_temperaturerms/=0) &
+            call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
+        if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
+        if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
 
         if (idiag_supersaturationrms/=0) &
-            call sum_mn_name(supersaturation**2,idiag_temperaturerms,lsqrt=.true.)
+            call sum_mn_name(supersaturation**2,idiag_supersaturationrms,lsqrt=.true.)
         if (idiag_supersaturationmax/=0) call max_mn_name(supersaturation,idiag_supersaturationmax)
         if (idiag_supersaturationmin/=0) call max_mn_name(-supersaturation,idiag_supersaturationmin,lneg=.true.)
       endif
