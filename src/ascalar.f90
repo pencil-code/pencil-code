@@ -35,7 +35,7 @@ module Ascalar
 !  Init parameters.
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
-  real :: lnTT_const=0., TT_const=0.
+  real :: lnTT_const=0., TT_const=1.
   logical :: noascalar=.false., reinitialize_ssat=.false.
   character (len=labellen) :: initssat='nothing'
   character (len=labellen) :: initlnTT='nothing'
@@ -408,7 +408,7 @@ module Ascalar
       if (lcondensation_rate) then
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%condensationRate
 !        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
-!        if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
+        if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
 !        print*,'T',f(l1:l2,m,n,iTT) 
 !        if (lltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,issat)+p%condensationRate*latent_heat/cp
 !        es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
@@ -435,10 +435,10 @@ module Ascalar
             call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
-!        if (idiag_temperaturerms/=0) &
-!            call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
-!        if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
-!        if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
+        if (idiag_temperaturerms/=0) &
+            call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
+        if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
+        if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
 
         if (idiag_supersaturationrms/=0) &
             call sum_mn_name(supersaturation**2,idiag_supersaturationrms,lsqrt=.true.)
