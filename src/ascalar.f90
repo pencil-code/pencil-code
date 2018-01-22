@@ -362,8 +362,11 @@ module Ascalar
 !      df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)-p%ugTT
 !      df(l1:l2,m,n,ilnTT)=293.
       TT=293.
-      if (ascalar_diff/=0.) &
-          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+ascalar_diff*p%del2ssat
+      if (ascalar_diff/=0.) then
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+ascalar_diff*p%del2ssat
+        if (lfirst.and.ldt) &
+          maxdiffus=max(maxdiffus,ascalar_diff)
+      endif
 !
 !      if (thermal_diff/=0.) &
 !!          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+thermal_diff*p%del2lnTT
