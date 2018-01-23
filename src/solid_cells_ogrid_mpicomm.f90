@@ -57,7 +57,9 @@ module Solid_Cells_Mpicomm
   ! Padé Filtering
   integer, parameter :: filter_Hsize = 10/2-nghost   ! Also set in solid_cells_ogrid.f90
   real, dimension (:,:,:,:), allocatable :: lbufyi_fi,ubufyi_fi,lbufyo_fi,ubufyo_fi
+  real, dimension (:,:,:,:), allocatable :: lbufxi_fi,ubufxi_fi,lbufxo_fi,ubufxo_fi
   integer :: irecv_rq_fromlowy_fi,isend_rq_tolowy_fi,irecv_rq_fromuppy_fi,isend_rq_touppy_fi
+  integer :: irecv_rq_fromlowx_fi,isend_rq_tolowx_fi,irecv_rq_fromuppx_fi,isend_rq_touppx_fi
 
   contains 
 
@@ -124,6 +126,10 @@ module Solid_Cells_Mpicomm
                   ubufyi_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
                   lbufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom), &
                   ubufyo_fi(nx_ogrid,filter_Hsize,nz_ogrid,mcom)  )
+        allocate( lbufxi_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
+                  ubufxi_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
+                  lbufxo_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom), &
+                  ubufxo_fi(filter_Hsize,ny_ogrid,nz_ogrid,mcom)  )
       endif
 !
     endsubroutine initialize_mpicomm_ogrid
@@ -374,23 +380,25 @@ module Solid_Cells_Mpicomm
 !  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
 !
 !  29-nov-17/Jorgen: adapted from initiate_isendrcv_bdry_ogrid
+!  22-jan-18/Jorgen: added filter zone in x-direction 
 !
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mvar) ::  f_og
       integer :: Hsize
       intent(in) :: f_og,Hsize
 !
-      integer, dimension(4) :: nbuf_y
+      integer, dimension(4), save :: nbuf_y, nbuf_x
       integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
+      logical :: firstcall=.true.
 !
       if (ivar2==0) return
+      if(firstcall) then
+        nbuf_y=(/nx_ogrid,Hsize,nz_ogrid,ivar2-ivar1+1/)
+        nbuf_x=(/Hsize,ny_ogrid,nz_ogrid,ivar2-ivar1+1/)
+        firstcall=.false.
+      endif
 !
-!  Allocate and send/receive buffers across y-planes
+!  Send/receive buffers across y-planes
 !
-!  Internal, periodic exchange y-plane buffers.
-!  No need to allocate new buffers, simply overrite those used for 
-!  ordinary communication of ghost zones
-!
-      nbuf_y=(/nx_ogrid,Hsize,nz_ogrid,ivar2-ivar1+1/)
       lbufyo_fi(:,:,:,:)= &
           f_og(l1_ogrid:l2_ogrid,m1i_ogrid+1:m1i_ogrid+Hsize,n1_ogrid:n2_ogrid,ivar1:ivar2)
       ubufyo_fi(:,:,:,:)= &
@@ -403,9 +411,30 @@ module Solid_Cells_Mpicomm
         call mpirecv_nonblock_real(ubufyi_fi,nbuf_y,yuneigh,tolowy,irecv_rq_fromuppy_fi)
         call mpisend_nonblock_real(ubufyo_fi,nbuf_y,yuneigh,touppy,isend_rq_touppy_fi)
       endif
+!
+!  Send/receive buffers across x-planes
+!  Since boundaries are non-periodic, this requires some more if-branching than for
+!  y-direction
+!
+      if (nprocx>1) then
+        if(ipx<nprocx-1) then
+        ubufxo_fi(:,:,:,:)= &
+            f_og(l2i_ogrid-Hsize:l2i_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
+!  Send/recieve upper y-zone
+          call mpirecv_nonblock_real(ubufxi_fi,nbuf_x,xuneigh,tolowx,irecv_rq_fromuppx_fi)
+          call mpisend_nonblock_real(ubufxo_fi,nbuf_x,xuneigh,touppx,isend_rq_touppx_fi)
+        endif
+        if(ipx>0) then
+        lbufxo_fi(:,:,:,:)= &
+            f_og(l1i_ogrid+1:l1i_ogrid+Hsize,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
+!  Send/recieve lower y-zone
+          call mpirecv_nonblock_real(lbufxi_fi,nbuf_x,xlneigh,touppx,irecv_rq_fromlowx_fi)
+          call mpisend_nonblock_real(lbufxo_fi,nbuf_x,xlneigh,tolowx,isend_rq_tolowx_fi)
+        endif
+      endif
     endsubroutine initiate_isendrcv_bdry_filter
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry_filter(f_Hlo,f_Hup,Hsize)
+    subroutine finalize_isendrcv_bdry_filter(f_Hlox,f_Hupx,f_Hloy,f_Hupy,Hsize)
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry_filter
 !  are finished and insert the just received boundary values.
@@ -413,10 +442,11 @@ module Solid_Cells_Mpicomm
 !  29-nov-17/Jorgen: Adapted from finalize_isendrcv_bdry_ogrid
 !
       integer, intent(in) :: Hsize
-      real, dimension (mx_ogrid,Hsize,nz_ogrid,mvar) ::  f_Hlo,f_Hup
-      intent(inout) :: f_Hlo,f_Hup
+      real, dimension (Hsize,my_ogrid,nz_ogrid,mvar) ::  f_Hlox,f_Hupx
+      real, dimension (mx_ogrid,Hsize,nz_ogrid,mvar) ::  f_Hloy,f_Hupy
+      intent(inout) :: f_Hlox,f_Hupx,f_Hloy,f_Hupy
 
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_Hlo,4))
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_Hloy,4))
       integer :: j
 !
       if (ivar2==0) return
@@ -431,16 +461,32 @@ module Solid_Cells_Mpicomm
         call mpiwait(irecv_rq_fromuppy_fi)
         call mpiwait(irecv_rq_fromlowy_fi)
         do j=ivar1,ivar2
-          f_Hlo(l1_ogrid:l2_ogrid,:,:,j)=lbufyi_fi(1:nx_ogrid,:,:,j)   ! set lower filter halo
-          f_Hup(l1_ogrid:l2_ogrid,:,:,j)=ubufyi_fi(1:nx_ogrid,:,:,j)   ! set upper filter halo
+          f_Hloy(l1_ogrid:l2_ogrid,:,:,j)=lbufyi_fi(1:nx_ogrid,:,:,j)   ! set lower filter halo
+          f_Hupy(l1_ogrid:l2_ogrid,:,:,j)=ubufyi_fi(1:nx_ogrid,:,:,j)   ! set upper filter halo
         enddo
         call mpiwait(isend_rq_tolowy_fi)
         call mpiwait(isend_rq_touppy_fi)
       else
         do j=ivar1,ivar2
-          f_Hlo(l1_ogrid:l2_ogrid,:,:,j)=ubufyo_fi(1:nx_ogrid,:,:,j)   ! set lower filter halo
-          f_Hup(l1_ogrid:l2_ogrid,:,:,j)=lbufyo_fi(1:nx_ogrid,:,:,j)   ! set upper filter halo
+          f_Hloy(l1_ogrid:l2_ogrid,:,:,j)=ubufyo_fi(1:nx_ogrid,:,:,j)   ! set lower filter halo
+          f_Hupy(l1_ogrid:l2_ogrid,:,:,j)=lbufyo_fi(1:nx_ogrid,:,:,j)   ! set upper filter halo
         enddo
+      endif
+      if (nprocx>1) then
+        if(ipx<nprocx-1) then
+          call mpiwait(irecv_rq_fromuppx_fi)
+          do j=ivar1,ivar2
+            f_Hupx(:,m1_ogrid:m2_ogrid,:,j)=ubufxi_fi(:,1:ny_ogrid,:,j)   ! set upper filter halo
+          enddo
+        endif
+        if(ipx>0) then
+          call mpiwait(irecv_rq_fromlowx_fi)
+          do j=ivar1,ivar2
+            f_Hlox(:,m1_ogrid:m2_ogrid,:,j)=lbufxi_fi(:,1:ny_ogrid,:,j)   ! set lower filter halo
+          enddo
+        endif
+        if(ipx<nprocx-1) call mpiwait(isend_rq_tolowx_fi)
+        if(ipx>0) call mpiwait(isend_rq_touppx_fi)
       endif
       call mpibarrier
 !
@@ -470,7 +516,6 @@ module Solid_Cells_Mpicomm
       real, dimension(n) :: bb,u,z
       integer :: i
       real    :: gamma,fact
-      integer :: left_proc,right_proc
       real, dimension(2) :: recvxNzN
 !
       bb=b
@@ -479,21 +524,19 @@ module Solid_Cells_Mpicomm
         gamma=-b(1)
         bb(1)=b(1)-gamma
         u(1)=gamma
-        left_proc=ipx+nprocx*(nprocy-1)+nprocx*nprocy*ipz
-        call mpisend_real(gamma,left_proc,100)
+        call mpisend_real(gamma,ylneigh,100)
       elseif(ipy==nprocy-1) then
-        right_proc=ipx+nprocx*0+nprocx*nprocy*ipz
-        call mpirecv_real(gamma,right_proc,100)
+        call mpirecv_real(gamma,yuneigh,100)
         bb(n)=b(n)-alpha*beta/gamma
         u(n)=alpha
       endif
       call tridag_parallel_y(a,bb,c,r,x,n)
       call tridag_parallel_y(a,bb,c,u,z,n)
       if(ipy==0) then
-        call mpirecv_real(recvxNzN,2,left_proc,119)
+        call mpirecv_real(recvxNzN,2,ylneigh,119)
         fact=(x(1)+beta*recvxNzN(1)/gamma)/(1.+z(1)+beta*recvxNzN(2)/gamma)
       elseif(ipy==nprocy-1) then
-        call mpisend_real((/x(n),z(n)/),2,right_proc,119)
+        call mpisend_real((/x(n),z(n)/),2,yuneigh,119)
       endif
       call mpibcast_real(fact)
       do i=1,n
@@ -523,16 +566,13 @@ module Solid_Cells_Mpicomm
       real, dimension(n) :: gam
       integer :: j
       real :: bet
-      integer :: left_proc,right_proc
       real, dimension(3) :: recvBuf
 !
       if(ipy==0) then
-        left_proc=ipx+nprocx*(nprocy-1)+nprocx*nprocy*ipz
         bet=b(1)
         u(1)=r(1)/bet
       else
-        left_proc=ipx+nprocx*(ipy-1)+nprocx*nprocy*ipz
-        call mpirecv_real(recvBuf,3,left_proc,110)
+        call mpirecv_real(recvBuf,3,ylneigh,110)
         gam(1)=recvBuf(3)/recvBuf(1)
         bet=b(1)-a(1)*gam(1)
         u(1)=(r(1)-a(1)*recvBuf(2))/bet
@@ -544,9 +584,8 @@ module Solid_Cells_Mpicomm
         u(j)=(r(j)-a(j)*u(j-1))/bet
       enddo
       if(ipy<nprocy-1) then
-        right_proc=ipx+nprocx*(ipy+1)+nprocx*nprocy*ipz
-        call mpisend_real((/bet,u(n),c(n)/),3,right_proc,110)
-        call mpirecv_real(recvBuf(1:2),2,right_proc,111)
+        call mpisend_real((/bet,u(n),c(n)/),3,yuneigh,110)
+        call mpirecv_real(recvBuf(1:2),2,yuneigh,111)
         u(n)=u(n)-recvBuf(1)*recvBuf(2)
       endif
 !
@@ -554,10 +593,63 @@ module Solid_Cells_Mpicomm
         u(j)=u(j)-gam(j+1)*u(j+1)
       enddo
       if(ipy>0) then
-        call mpisend_real((/gam(1),u(1)/),2,left_proc,111)
+        call mpisend_real((/gam(1),u(1)/),2,ylneigh,111)
       endif
 !
     endsubroutine tridag_parallel_y
+!***********************************************************************
+    subroutine tridag_parallel_x(a,b,c,r,u,n)
+!
+!  Solves a tridiagonal system, where the system is distributed
+!  over many processors.
+!
+!  22.01.18/Jorgen: Adapded from tridag_parallel_y
+!
+!  | b1 c1 0  ...            | | u1   |   | r1   |
+!  | a2 b2 c2 ...            | | u2   |   | r2   |
+!  | 0  a3 b3 c3             | | u3   | = | r3   |
+!  |          ...            | | ...  |   | ...  |
+!  |          an-1 bn-1 cn-1 | | un-1 |   | rn-1 |
+!  |          0    a_n  b_n  | | un   |   | rn   |
+!
+      integer, intent(in) :: n
+      real, dimension(n), intent(in) :: a,b,c,r
+      real, dimension(n), intent(out) :: u
+
+      real, dimension(n) :: gam
+      integer :: j
+      real :: bet
+      real, dimension(3) :: recvBuf
+!
+      if(ipx==0) then
+        bet=b(1)
+        u(1)=r(1)/bet
+      else
+        call mpirecv_real(recvBuf,3,xlneigh,110)
+        gam(1)=recvBuf(3)/recvBuf(1)
+        bet=b(1)-a(1)*gam(1)
+        u(1)=(r(1)-a(1)*recvBuf(2))/bet
+      endif
+
+      do j=2,n
+        gam(j)=c(j-1)/bet
+        bet=b(j)-a(j)*gam(j)
+        u(j)=(r(j)-a(j)*u(j-1))/bet
+      enddo
+      if(ipx<nprocx-1) then
+        call mpisend_real((/bet,u(n),c(n)/),3,xuneigh,110)
+        call mpirecv_real(recvBuf(1:2),2,xuneigh,111)
+        u(n)=u(n)-recvBuf(1)*recvBuf(2)
+      endif
+!
+      do j=n-1,1,-1
+        u(j)=u(j)-gam(j+1)*u(j+1)
+      enddo
+      if(ipx>0) then
+        call mpisend_real((/gam(1),u(1)/),2,xlneigh,111)
+      endif
+!
+    endsubroutine tridag_parallel_x
 !***********************************************************************
 
 endmodule Solid_Cells_Mpicomm

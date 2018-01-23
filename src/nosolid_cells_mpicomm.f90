@@ -83,12 +83,21 @@ module Solid_Cells_Mpicomm
 
     endsubroutine initiate_isendrcv_bdry_filter
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry_filter(f_Hlo,f_Hup,Hsize)
+    subroutine finalize_isendrcv_bdry_filter(f_Hlox,f_Hupx,f_Hloy,f_Hupy,Hsize)
 !
       integer, intent(in) :: Hsize
-      real, dimension (:,:,:,:) ::  f_Hlo,f_Hup
+      real, dimension (:,:,:,:) ::  f_Hlox,f_Hupx,f_Hloy,f_Hupy
 
-      if(ALWAYS_FALSE) print*, f_Hlo,f_Hup,Hsize
+      if(ALWAYS_FALSE) print*, f_Hlox,f_Hupx,f_Hloy,f_Hupy,Hsize
     endsubroutine finalize_isendrcv_bdry_filter
+!***********************************************************************
+    subroutine tridag_parallel_x(a,b,c,r,u,n)
+!
+!
+      integer, intent(in) :: n
+      real, dimension(n) :: a,b,c,r,u
+!
+      if(ALWAYS_FALSE) print*, n,a,b,c,r,u
+    endsubroutine tridag_parallel_x
 !***********************************************************************
 end module Solid_Cells_Mpicomm

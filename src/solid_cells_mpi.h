@@ -9,3 +9,4 @@ public ::  initialize_mpicomm_ogrid
 public ::  initiate_isendrcv_bdry_filter
 public ::  finalize_isendrcv_bdry_filter
 public ::  cyclic_parallel_y
+public ::  tridag_parallel_x
