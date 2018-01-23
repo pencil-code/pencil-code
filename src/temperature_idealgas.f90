@@ -81,7 +81,6 @@ module Energy
 !
   real, dimension(nz) :: TTmz, gTTmz 
 !
-  real :: thermal_diff=0.0
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
 !
 !  Init parameters.
@@ -101,7 +100,7 @@ module Energy
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
-      thermal_diff, gradTT0
+      gradTT0
 
 !
 !  Diagnostic variables for print.in
@@ -805,7 +804,6 @@ module Energy
         else
           lpenc_requested(i_uglnTT)=.true.
         endif
-!        if (thermal_diff/=0.) lpenc_requested(i_del2TT)=.true.
       endif
 !
 !  Diagnostic pencils.
@@ -1044,7 +1042,6 @@ module Energy
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - p%ugTT
-          if (thermal_diff/=0.) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+thermal_diff*p%del2TT
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
         endif

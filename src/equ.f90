@@ -754,7 +754,7 @@ module Equ
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
           advec_cs2=0.0
           maxadvec=0.
-          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
+          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
             advec2=0.
           if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy) &
             advec2_hypermesh=0.0
