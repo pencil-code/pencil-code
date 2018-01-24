@@ -90,7 +90,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
-  real :: es_T, qvs_T, c1, c2, Rv, rho0
+  real :: es_T, qvs_T, c1, c2, Rv, rho0, constTT
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -139,7 +139,7 @@ module Particles
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltauascalar = .false.
+  logical :: ltauascalar = .false., lconstTT=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -281,7 +281,8 @@ module Particles
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, &
-      c1, c2, Rv, rho0
+      c1, c2, Rv, rho0, &
+      lconstTT, constTT
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -4482,11 +4483,15 @@ module Particles
                    l=ineargrid(k,1)
                    if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + inversetau
                    if (lcondensation_rate) then
-                     es_T=c1*exp(-c2/f(l,m,n,ilnTT))
-                     qvs_T=es_T/(Rv*rho0*f(l,m,n,ilnTT))
+                     if (lconstTT) then
+                       es_T=c1*exp(-c2/constTT)
+                       qvs_T=es_T/(Rv*rho0*constTT)
+                     else
+                       es_T=c1*exp(-c2/f(l,m,n,ilnTT))
+                       qvs_T=es_T/(Rv*rho0*f(l,m,n,ilnTT))
+                     endif
                      supersaturation=f(l,m,n,issat)/qvs_T-1.
-                     !supersaturation=f(l,m,n,issat)/vapor_mixing_ratio_qvs-1.
-                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*supersaturation*fp(k,iap)
+                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau
                    endif
                  elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0

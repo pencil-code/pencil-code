@@ -56,11 +56,10 @@ module Ascalar
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
   real, dimension(3) :: gradlnTT0=(/0.0,0.0,0.0/)
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
-  real :: c1, c2, Rv, rho0
+  real :: c1, c2, Rv, rho0, constTT
   real, dimension(nx) :: es_T, qvs_T
-  real :: TT
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
-  logical :: lupw_ssat=.false., lcondensation_rate=.false., lltemperature=.false.
+  logical :: lupw_ssat=.false., lcondensation_rate=.false., lltemperature=.false., lconstTT=.false.
 
   namelist /ascalar_run_pars/ &
       lupw_ssat, lascalar_sink, Rascalar_sink, ascalar_sink, &
@@ -68,7 +67,7 @@ module Ascalar
       lupdraft, updraft, A1, latent_heat, cp, &
       c1, c2, Rv, rho0, &
       thermal_diff, gradlnTT0, gradTT0,  &
-      lltemperature
+      lltemperature, lconstTT, constTT
 !
 ! Declare index of new variables in f array
 !
@@ -360,7 +359,6 @@ module Ascalar
 !      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-p%uglnTT
 !      df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)-p%ugTT
 !      df(l1:l2,m,n,ilnTT)=293.
-      TT=293.
       if (ascalar_diff/=0.) then
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+ascalar_diff*p%del2ssat
         if (lfirst.and.ldt) &
@@ -406,14 +404,14 @@ module Ascalar
       
       if (lcondensation_rate) then
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%condensationRate
-!        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%condensationRate*latent_heat/cp
-        if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
-!        print*,'T',f(l1:l2,m,n,iTT) 
-!        if (lltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,issat)+p%condensationRate*latent_heat/cp
-!        es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
-!        qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
-        es_T=c1*exp(-c2/TT)
-        qvs_T=es_T/(Rv*rho0*TT)
+        if (lconstTT) then
+          es_T=c1*exp(-c2/constTT)
+          qvs_T=es_T/(Rv*rho0*constTT)
+        else
+          if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
+          es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
+          qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
+        endif
         supersaturation=f(l1:l2,m,n,issat)/qvs_T-1.
       endif
 !
@@ -434,10 +432,12 @@ module Ascalar
             call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
-        if (idiag_temperaturerms/=0) &
-            call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
-        if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
-        if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
+        if (.not. lconstTT) then
+          if (idiag_temperaturerms/=0) &
+              call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
+          if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
+          if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
+        endif
 
         if (idiag_supersaturationrms/=0) &
             call sum_mn_name(supersaturation**2,idiag_supersaturationrms,lsqrt=.true.)

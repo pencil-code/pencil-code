@@ -37,7 +37,7 @@ module Particles_radius
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0., G_condensation=0., supersaturation=0., vapor_mixing_ratio_qvs=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  real :: es_T, qvs_T, c1, c2, Rv, rho0
+  real :: es_T, qvs_T, c1, c2, Rv, rho0, constTT
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: lascalar_par=.false.
@@ -47,7 +47,7 @@ module Particles_radius
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
-  logical :: ltauascalar = .false.
+  logical :: ltauascalar = .false., lconstTT=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -73,7 +73,7 @@ module Particles_radius
       reinitialize_ap, initap, &
       G_condensation, lcondensation_rate, vapor_mixing_ratio_qvs, &
       c1, c2, Rv, rho0, &
-      ltauascalar
+      ltauascalar, lconstTT, constTT
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -906,10 +906,14 @@ module Particles_radius
         if (lascalar) then
           if (ltauascalar) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
           if (lcondensation_rate) then
+            if (lconstTT) then     
+              es_T=c1*exp(-c2/constTT)
+              qvs_T=es_T/(Rv*rho0*constTT)
+            else
             es_T=c1*exp(-c2/f(ix,m,n,ilnTT))
             qvs_T=es_T/(Rv*rho0*f(ix,m,n,ilnTT))
+            endif
             supersaturation=f(ix,m,n,issat)/qvs_T-1.
-            !supersaturation=f(ix,m,n,issat)/vapor_mixing_ratio_qvs-1.
             dapdt = G_condensation*supersaturation/fp(k,iap)
           endif
           dfp(k,iap) = dfp(k,iap)+dapdt
