@@ -910,8 +910,8 @@ module Particles_radius
               es_T=c1*exp(-c2/constTT)
               qvs_T=es_T/(Rv*rho0*constTT)
             else
-            es_T=c1*exp(-c2/f(ix,m,n,ilnTT))
-            qvs_T=es_T/(Rv*rho0*f(ix,m,n,ilnTT))
+            es_T=c1*exp(-c2/f(ix,m,n,iTT))
+            qvs_T=es_T/(Rv*rho0*f(ix,m,n,iTT))
             endif
             supersaturation=f(ix,m,n,issat)/qvs_T-1.
             dapdt = G_condensation*supersaturation/fp(k,iap)

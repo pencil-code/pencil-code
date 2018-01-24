@@ -409,8 +409,8 @@ module Ascalar
           qvs_T=es_T/(Rv*rho0*constTT)
         else
           if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
-          es_T=c1*exp(-c2/f(l1:l2,m,n,ilnTT))
-          qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,ilnTT))
+          es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
+          qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
         endif
         supersaturation=f(l1:l2,m,n,issat)/qvs_T-1.
       endif

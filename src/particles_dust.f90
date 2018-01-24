@@ -4487,8 +4487,8 @@ module Particles
                        es_T=c1*exp(-c2/constTT)
                        qvs_T=es_T/(Rv*rho0*constTT)
                      else
-                       es_T=c1*exp(-c2/f(l,m,n,ilnTT))
-                       qvs_T=es_T/(Rv*rho0*f(l,m,n,ilnTT))
+                       es_T=c1*exp(-c2/f(l,m,n,iTT))
+                       qvs_T=es_T/(Rv*rho0*f(l,m,n,iTT))
                      endif
                      supersaturation=f(l,m,n,issat)/qvs_T-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau
