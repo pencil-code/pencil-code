@@ -319,10 +319,11 @@ module File_io
       if (name == 'initial_condition_pars') then
         type = ''
         suffix = ''
+        call find_namelist (trim(name),found)
+      else
+        !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
+        call find_namelist (trim(name)//trim(type)//trim(suffix),found)
       endif
-!
-      !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix),found)
 !
       if (.not. found) then
         if (.not. lparam_nml) lnamelist_error = .true.
