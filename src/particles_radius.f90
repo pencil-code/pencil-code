@@ -541,7 +541,7 @@ module Particles_radius
       if (lcondensation_par) &
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
       if (lascalar_par) &
-          call dap_dt_ascalar_pencil(f,df,fp,dfp,p,ineargrid) !XY
+          call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !
       lfirstcall = .false.
@@ -767,12 +767,27 @@ module Particles_radius
                 dt1_condensation(ix) = max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
+!                    
               if (lcondensation_simplified) then
                 dapdt = GS_condensation/fp(k,iap)
-                !print*,"radius=",fp(k,iap)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
-                    (rhovap(ix)-rhosat(ix))*alpha_cond_par
+                (rhovap(ix)-rhosat(ix))*alpha_cond_par
+              endif
+!            
+              if (lascalar) then
+                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+                if (lcondensation_rate) then
+                  if (lconstTT) then     
+                    es_T=c1*exp(-c2/constTT)
+                    qvs_T=es_T/(Rv*rho0*constTT)
+                  else
+                  es_T=c1*exp(-c2/f(ix,m,n,iTT))
+                  qvs_T=es_T/(Rv*rho0*f(ix,m,n,iTT))
+                  endif
+                  supersaturation=f(ix,m,n,issat)/qvs_T-1.
+                  dapdt = G_condensation*supersaturation/fp(k,iap)
+                endif
               endif
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
@@ -873,54 +888,6 @@ module Particles_radius
       call keep_compiler_quiet(f)
 !
     endsubroutine dap_dt_condensation_pencil
-!***********************************************************************
-    subroutine dap_dt_ascalar_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Growth by condesation in a passive scalar field
-!
-!  28-may-16/Xiang-Yu: coded
-!
-      use Particles_number
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real :: dapdt
-      integer :: k, ix, ix0
-!
-      intent(in) :: f, fp
-      intent(inout) :: dfp
-!
-!AB:  At the moment, dapdt grows only if lsupersat=T.
-!AB:  But we want the previous option should still to work.
-!XY: Note that when "lcondensation_rate" is updated here, "f(ix,m,n,issat)" is the mixing ratio.
-!XY: Since we solve the mixing ratio using the "supersat.f90" model
-!
-      do k = k1_imn(imn),k2_imn(imn)
-        ix0 = ineargrid(k,1)
-        ix = ix0-nghost
-        if (lascalar) then
-          if (ltauascalar) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
-          if (lcondensation_rate) then
-            if (lconstTT) then     
-              es_T=c1*exp(-c2/constTT)
-              qvs_T=es_T/(Rv*rho0*constTT)
-            else
-            es_T=c1*exp(-c2/f(ix,m,n,iTT))
-            qvs_T=es_T/(Rv*rho0*f(ix,m,n,iTT))
-            endif
-            supersaturation=f(ix,m,n,issat)/qvs_T-1.
-            dapdt = G_condensation*supersaturation/fp(k,iap)
-          endif
-          dfp(k,iap) = dfp(k,iap)+dapdt
-        endif
-      enddo
-!
-    endsubroutine dap_dt_ascalar_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !
