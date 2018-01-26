@@ -448,7 +448,8 @@ module Ascalar
         write(3,*) 'issat = ', issat
         write(3,*) 'itauascalar=', itauascalar
         write(3,*) 'icondensationRate=', icondensationRate
-        write(3,*) 'ilnTT=', ilnTT
+!        write(3,*) 'ilnTT=', ilnTT
+        write(3,*) 'iTT=', iTT
         write(3,*) 'isupersaturaitonrms=', idiag_supersaturationrms
       endif
 !
