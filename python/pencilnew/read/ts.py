@@ -136,8 +136,8 @@ class TimeSeries(object):
             setattr(self, self.keys[i], data[:, i])
 
         # Do unique clean up.
-        if unique_clean == True:
-           clean_t, unique_indices = np.unique(self.t, return_index=True)
-           if np.size(clean_t) != np.size(self.t):
-               for key in self.keys:
-                   setattr(self, key, getattr(self, key)[unique_indices])
+        if unique_clean:
+            clean_t, unique_indices = np.unique(self.t, return_index=True)
+            if np.size(clean_t) != np.size(self.t):
+                for key in self.keys:
+                    setattr(self, key, getattr(self, key)[unique_indices])
