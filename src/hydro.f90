@@ -2008,6 +2008,12 @@ module Hydro
         lpenc_requested(i_r_mn)=.true.
       endif
 !
+!  18-01-27/Xiang-Yu added: Buoyancy term due to fluctuations of T and qv    
+      if (ltemperature .and. lascalar) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_ssat)=.true.
+      endif
+!
       if (lfargo_advection) then
         lpenc_requested(i_uu_advec)=.true.
         lpenc_requested(i_uuadvec_guu)=.true.
@@ -2946,6 +2952,12 @@ module Hydro
         else
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
         endif
+      endif
+!
+!  18-01-27/Xiang-Yu added: Buoyancy term due to fluctuations of T and q_v. To add q_l in the buoyancy term as well  
+      if (ltemperature .and. lascalar) then
+!        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+9.8*((f(l1:l2,m,n,iTT)-293.)/f(l1:l2,m,n,iTT)+0.608*(f(l1:l2,m,n,issat)-1.63e-2)/f(l1:l2,m,n,issat)) 
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+9.8*((p%TT-293.)/p%TT+0.608*(p%ssat-1.63e-2)/p%ssat) 
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
