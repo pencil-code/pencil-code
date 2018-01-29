@@ -2956,10 +2956,10 @@ module Hydro
         endif
       endif
 !
-!  18-01-27/Xiang-Yu added: Buoyancy term due to fluctuations of T and q_v. To add q_l in the buoyancy term as well  
+!  18-01-27/Xiang-Yu added: Buoyancy term due to fluctuations of T and q_v. q_l in the buoyancy term was also added.  
       if (ltemperature .and. lascalar) then
 !        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+9.8*((f(l1:l2,m,n,iTT)-293.)/f(l1:l2,m,n,iTT)+0.608*(f(l1:l2,m,n,issat)-1.63e-2)/f(l1:l2,m,n,issat)) 
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%ssat-qv_env)/p%ssat) 
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%ssat-qv_env)/p%ssat-p%waterMixingRatio) 
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.

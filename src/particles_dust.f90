@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 3
+! MAUX CONTRIBUTION 4
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM character (len=20), parameter :: particles_module="dust"
 !
@@ -18,6 +18,7 @@
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
+! PENCILS PROVIDED waterMixingRatio
 !
 !***************************************************************
 module Particles
@@ -159,6 +160,7 @@ module Particles
   integer :: init_repeat=0       !repeat particle initialization for distance statistics
 !
   integer :: icondensationRate=0
+  integer :: iwaterMixingRatio=0
   logical :: lcondensation_rate=.false.
 !
 !  Interactions with special/shell
@@ -405,6 +407,7 @@ module Particles
       if (lascalar) &
         call farray_register_auxiliary('tauascalar', itauascalar)
         call farray_register_auxiliary('condensationRate', icondensationRate)
+        call farray_register_auxiliary('waterMixingRatio', iwaterMixingRatio)
 !
 !  Kill particles that spend enough time in birth ring
       if (lbirthring_depletion) then
@@ -2823,7 +2826,7 @@ module Particles
       if (lascalar) &
          lpenc_requested(i_tauascalar)=.true.
          lpenc_requested(i_condensationRate)=.true.
-
+         lpenc_requested(i_waterMixingRatio)=.true.
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2873,6 +2876,7 @@ module Particles
 !
       if (lascalar) lpencil_in(i_tauascalar)=.true.
       if (lascalar) lpencil_in(i_condensationRate)=.true.
+      if (lascalar) lpencil_in(i_waterMixingRatio)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -2926,6 +2930,8 @@ module Particles
 !
       if (itauascalar>0) p%tauascalar=f(l1:l2,m,n,itauascalar)
       if (icondensationRate>0) p%condensationRate=f(l1:l2,m,n,icondensationRate)
+      if (iwaterMixingRatio>0) p%waterMixingRatio=f(l1:l2,m,n,iwaterMixingRatio)
+
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -3715,6 +3721,7 @@ module Particles
 ! supersat
       if (lascalar) f(:,m,n,itauascalar) = 0.0
       if (lascalar) f(:,m,n,icondensationRate) = 0.0
+      if (lascalar) f(:,m,n,iwaterMixingRatio) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
       if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
           'ldiffuse_passive needs pscalar_nolog=F')
@@ -3728,6 +3735,7 @@ module Particles
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
       if (lpenc_requested(i_tauascalar)) p%tauascalar=0.
       if (lpenc_requested(i_condensationRate)) p%condensationRate=0.
+      if (lpenc_requested(i_waterMixingRatio)) p%waterMixingRatio=0.
 !
       if (idiag_urel /= 0) urel_sum=0.
 !
@@ -4492,6 +4500,7 @@ module Particles
                      endif
                      supersaturation=f(l,m,n,issat)/qvs_T-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau
+                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3.)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
                  elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0

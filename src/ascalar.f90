@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED gssat(3); ugssat
 ! PENCILS PROVIDED del2ssat
 ! PENCILS PROVIDED condensationRate
+! PENCILS PROVIDED waterMixingRatio
 !
 !***************************************************************
 module Ascalar
@@ -31,6 +32,7 @@ module Ascalar
 !
 ! Define local variables in this special module, not in "Cdata.f90"
   integer :: icondensationRate=0
+  integer :: iwaterMixingRatio=0
 !  Init parameters.
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
@@ -75,6 +77,7 @@ module Ascalar
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
   integer :: idiag_tauascalarrms=0, idiag_tauascalarmax=0, idiag_tauascalarmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
+  integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0
   integer :: idiag_temperaturerms=0, idiag_temperaturemax=0,idiag_temperaturemin=0
   integer :: idiag_supersaturationrms=0, idiag_supersaturationmax=0, idiag_supersaturationmin=0
 !
@@ -200,6 +203,7 @@ module Ascalar
       endif
       lpencil_in(i_tauascalar)=.true.
       lpencil_in(i_condensationRate)=.true.
+      lpencil_in(i_waterMixingRatio)=.true.
     endsubroutine pencil_interdep_ascalar
 !**********************************************************************
     subroutine calc_pencils_ascalar(f,p)
@@ -348,6 +352,10 @@ module Ascalar
             call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
+        if (idiag_waterMixingRatiorms/=0) &
+            call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
+        if (idiag_waterMixingRatiomax/=0) call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
+        if (idiag_waterMixingRatiomin/=0) call max_mn_name(-p%waterMixingRatio,idiag_waterMixingRatiomin,lneg=.true.)
         if (idiag_temperaturerms/=0) &
             call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
         if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
@@ -416,6 +424,7 @@ module Ascalar
         idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
         idiag_tauascalarrms=0; idiag_tauascalarmax=0; idiag_tauascalarmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
+        idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0
         idiag_temperaturerms=0; idiag_temperaturemax=0; idiag_temperaturemin=0
         idiag_supersaturationrms=0; idiag_supersaturationmax=0; idiag_supersaturationmin=0
 
@@ -434,10 +443,12 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'condensationRaterms',idiag_condensationRaterms)
         call parse_name(iname,cname(iname),cform(iname),'condensationRatemax',idiag_condensationRatemax)
         call parse_name(iname,cname(iname),cform(iname),'condensationRatemin',idiag_condensationRatemin)
+        call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiorms',idiag_waterMixingRatiorms)
+        call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiomax',idiag_waterMixingRatiomax)
+        call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiomin',idiag_waterMixingRatiomin)
         call parse_name(iname,cname(iname),cform(iname),'temperaturerms',idiag_temperaturerms)
         call parse_name(iname,cname(iname),cform(iname),'temperaturemax',idiag_temperaturemax)
         call parse_name(iname,cname(iname),cform(iname),'temperaturemin',idiag_temperaturemin)
-
         call parse_name(iname,cname(iname),cform(iname),'supersaturationrms',idiag_supersaturationrms)
         call parse_name(iname,cname(iname),cform(iname),'supersaturationmax',idiag_supersaturationmax)
         call parse_name(iname,cname(iname),cform(iname),'supersaturationmin',idiag_supersaturationmin)
@@ -448,6 +459,7 @@ module Ascalar
         write(3,*) 'issat = ', issat
         write(3,*) 'itauascalar=', itauascalar
         write(3,*) 'icondensationRate=', icondensationRate
+        write(3,*) 'iwaterMixingRatio=', iwaterMixingRatio
 !        write(3,*) 'ilnTT=', ilnTT
         write(3,*) 'iTT=', iTT
         write(3,*) 'isupersaturaitonrms=', idiag_supersaturationrms
