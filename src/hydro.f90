@@ -2010,7 +2010,7 @@ module Hydro
         lpenc_requested(i_r_mn)=.true.
       endif
 !
-!  18-01-27/Xiang-Yu added: Buoyancy term due to fluctuations of T and qv    
+!  27-Jan-18/Xiang-Yu added: Buoyancy term due to fluctuations of T and qv    
       if (ltemperature .and. lascalar) then
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_ssat)=.true.
