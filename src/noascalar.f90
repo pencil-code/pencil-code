@@ -13,8 +13,6 @@
 !
 ! PENCILS PROVIDED ssat
 ! PENCILS PROVIDED gssat(3); ugssat
-! PENCILS PROVIDED condensationRate
-! PENCILS PROVIDED waterMixingRatio
 !
 !***************************************************************
 module Ascalar

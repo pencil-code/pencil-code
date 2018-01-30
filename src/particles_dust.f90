@@ -17,6 +17,8 @@
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tauascalar
+! PENCILS PROVIDED condensationRate
+! PENCILS PROVIDED waterMixingRatio
 !
 !***************************************************************
 module Particles

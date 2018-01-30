@@ -10,6 +10,8 @@
 ! CPARAM logical, parameter :: lparticles=.false.
 !
 ! PENCILS PROVIDED rhop;grhop(3);peh
+! PENCILS PROVIDED condensationRate
+! PENCILS PROVIDED waterMixingRatio
 !
 !***************************************************************
 module Particles
