@@ -150,7 +150,6 @@ module Hydro
   real :: PrRa  !preliminary
   real :: amp_factor=0.,kx_uu_perturb=0.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0
-  real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.8
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -168,8 +167,7 @@ module Hydro
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
-      ll_sh, mm_sh, delta_u, &
-      T_env, qv_env
+      ll_sh, mm_sh, delta_u
 !
 !  Run parameters.
 !
@@ -2954,13 +2952,6 @@ module Hydro
         else
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
         endif
-      endif
-!
-!  18-01-27/Xiang-Yu added: Buoyancy term due to fluctuations of T and q_v. q_l in the buoyancy term was also added.  
-      if (ltemperature .and. lascalar) then
-!        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+9.8*((f(l1:l2,m,n,iTT)-293.)/f(l1:l2,m,n,iTT)+0.608*(f(l1:l2,m,n,issat)-1.63e-2)/f(l1:l2,m,n,issat)) 
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-        gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%ssat-qv_env)/p%ssat-p%waterMixingRatio) 
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.

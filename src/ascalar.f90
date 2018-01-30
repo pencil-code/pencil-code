@@ -38,9 +38,11 @@ module Ascalar
   character (len=labellen) :: initssat='nothing'
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
+  real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
 !
   namelist /ascalar_init_pars/ &
-           initssat, ssat_const, amplssat, widthssat
+           initssat, ssat_const, amplssat, widthssat, & 
+           T_env, qv_env
 !
 !  Run parameters.
 !
@@ -326,7 +328,11 @@ module Ascalar
           es_T=c1*exp(-c2/constTT)
           qvs_T=es_T/(Rv*rho0*constTT)
         else
-          if (ltemperature) df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
+          if (ltemperature) then
+            df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+            gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%ssat-qv_env)/p%ssat-p%waterMixingRatio) 
+          endif
           es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
           qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
         endif
