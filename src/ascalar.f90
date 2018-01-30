@@ -39,10 +39,11 @@ module Ascalar
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
   real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
+  logical :: lbuoyancy=.true.
 !
   namelist /ascalar_init_pars/ &
            initssat, ssat_const, amplssat, widthssat, & 
-           T_env, qv_env
+           T_env, qv_env, lbuoyancy
 !
 !  Run parameters.
 !
@@ -330,7 +331,7 @@ module Ascalar
         else
           if (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+            if (lbuoyancy) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
             gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%ssat-qv_env)/p%ssat-p%waterMixingRatio) 
           endif
           es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
