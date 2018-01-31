@@ -912,6 +912,7 @@ module Energy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
+!  31-01-18/MR: made calculation of p%gTT corrrect also for log temperature
 !
       use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad,grad,multmv
@@ -920,6 +921,7 @@ module Energy
       type (pencil_case), intent (inout) :: p
       integer :: j
       real, dimension(nx,3) :: gpp
+      real, dimension(nx) :: temp
 !
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
@@ -931,7 +933,13 @@ module Energy
           call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
 ! Compute glnTT
       if (lpencil(i_gTT)) then
-        call grad(f,iTT,p%gTT)
+        call grad(f,ilnTT,p%gTT)
+        if (.not.ltemperature_nolog) then
+          temp=exp(f(l1:l2,m,n,ilnTT))
+          do j=1,3
+            p%gTT(:,j) = p%gTT(:,j)*temp
+          enddo
+        endif
         do j=1,3
           if (gradTT0(j)/=0.) p%gTT(:,j)=p%gTT(:,j)+gradTT0(j)
         enddo
