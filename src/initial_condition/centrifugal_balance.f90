@@ -81,6 +81,7 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
+  real :: truncation_degree=2.,truncation_scale=1.
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   real :: gravitational_const=0.
@@ -129,16 +130,15 @@ module InitialCondition
   real :: Omega0_spiral=1.0, r0_spiral=1.0
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
-       temperature_power_law,lexponential_smooth,&
-       radial_percent_smooth,rshift,lcorrect_selfgravity,&
-       gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
-       llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
-       rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
-       zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
-       r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
-       lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
-       bump_radius,bump_ampl,bump_width,ipressurebump,imidplane,&
+       truncation_degree,truncation_scale,temperature_power_law,&
+       lexponential_smooth,radial_percent_smooth,rshift,&
+       lcorrect_selfgravity,gravitational_const,xmodes,ymodes,zmodes,&
+       rho_rms,llowk_noise,xmid,lgaussian_distributed_noise,&
+       rborder_int,rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
+       zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const,r0_pot,qgshear,n_pot,&
+       magnetic_power_law,lcorrect_lorentzforce,lcorrect_pressuregradient,&
+       lpolynomial_fit_cs2,ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,&
+       widthbb2,bump_radius,bump_ampl,bump_width,ipressurebump,imidplane,&
        lselfgravity_logspirals,dustdensity_powerlaw,edtog,&
        B0_spiral,etamu0_spiral,Omega0_spiral,r0_spiral
 !
@@ -444,6 +444,7 @@ module InitialCondition
           else 
             call poly_fit(cs2)
           endif  
+
 !
 !  Store cs2 in one of the free slots of the f-array
 !
@@ -525,7 +526,7 @@ module InitialCondition
           lnrhomid=log(rho0) - rr/r_ref
         case ('truncated')
           if (lheader) print*,'Truncated disk'
-          lnrhomid=log(rho0) - density_power_law*log((rr/r_ref)) -(2-density_power_law)*rr/r_ref
+          lnrhomid=log(rho0) - density_power_law*log((rr/r_ref)) - (rr/(truncation_scale*r_ref))**(truncation_degree-density_power_law)
        case default
            if (lroot) print*, 'No such value for imidplane: ', trim(ipressurebump)
            call fatal_error("initial_condition_lnrho","")
