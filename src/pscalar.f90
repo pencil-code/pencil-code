@@ -30,7 +30,7 @@ module Pscalar
   logical :: nopscalar=.false.
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
   real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min, delta_lncc=0
-  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0, 
+  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0
   real :: amplcc, radius_lncc=0.0
   real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
