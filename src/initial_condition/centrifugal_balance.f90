@@ -526,7 +526,8 @@ module InitialCondition
           lnrhomid=log(rho0) - rr/r_ref
         case ('truncated')
           if (lheader) print*,'Truncated disk'
-          lnrhomid=log(rho0) - density_power_law*log((rr/r_ref)) - (rr/(truncation_scale*r_ref))**(truncation_degree-density_power_law)
+          lnrhomid=log(rho0) - density_power_law*log((rr/r_ref)) &
+                   - (rr/(truncation_scale*r_ref))**(truncation_degree-density_power_law)
        case default
            if (lroot) print*, 'No such value for imidplane: ', trim(ipressurebump)
            call fatal_error("initial_condition_lnrho","")
