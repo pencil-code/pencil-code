@@ -1445,10 +1445,13 @@ module power_spectrum
 !  integration over shells
 !
   if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-  do ikz=1,nz
-    do iky=1,ny
-      do ikx=1,nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+! do ikz=1,nz
+!   do iky=1,ny
+!     do ikx=1,nx
+  do iky=1,nz
+    do ikx=1,ny
+      do ikz=1,nx
+        k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
 !
@@ -1459,31 +1462,35 @@ module power_spectrum
             kk2=ky(iky+ipz*nz)
             kk3=kz(ikz+ipx*nx)
 !
+            !kk1=kx(ikx+ipx*nx)
+            !kk2=ky(iky+ipy*ny)
+            !kk3=kz(ikz+ipz*nz)
+!
 !  possibility of swapping the sign
 !
-            sign_switch=1.
-            if (kk3<0.) then
-              sign_switch=-1.
-            elseif (kk3==0.) then
-              if (kk2<0.) then
-                sign_switch=-1.
-              elseif (kk2==0.) then
-                if (kk1<0.) then
-                  sign_switch=-1.
-                endif
-              endif
-            endif
+             sign_switch=1.
+             if (kk3<0.) then
+               sign_switch=-1.
+             elseif (kk3==0.) then
+               if (kk2<0.) then
+                 sign_switch=-1.
+               elseif (kk2==0.) then
+                 if (kk1<0.) then
+                   sign_switch=-1.
+                 endif
+               endif
+             endif
 !
 !  sum energy and helicity spectra
 !
           spectrum(k+1)=spectrum(k+1) &
-             +a_re(ikx,iky,ikz)**2 &
-             +a_im(ikx,iky,ikz)**2 &
-             +b_re(ikx,iky,ikz)**2 &
-             +b_im(ikx,iky,ikz)**2
+             +a_re(ikz,ikx,iky)**2 &
+             +a_im(ikz,ikx,iky)**2 &
+             +b_re(ikz,ikx,iky)**2 &
+             +b_im(ikz,ikx,iky)**2
           spectrumhel(k+1)=spectrumhel(k+1)+sign_switch*( &
-             +a_im(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz)) !&
+             +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
+             -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
 !
 !  compute krms only once
 !
