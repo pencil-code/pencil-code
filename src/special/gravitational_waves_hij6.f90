@@ -92,6 +92,7 @@ module Special
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
   real :: dummy=0., diffhh=0., diffgg=0.
+  real :: diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
@@ -105,7 +106,8 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print
+    diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
+    diffhh_hyper3, diffgg_hyper3
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -117,6 +119,11 @@ module Special
   integer :: idiag_g31pt=0       ! DIAG_DOC: $g_{31}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXpt=0       ! DIAG_DOC: $g_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggT2m=0       ! DIAG_DOC: $\bra{g_T^2}$
+  integer :: idiag_ggX2m=0       ! DIAG_DOC: $\bra{g_X^2}$
+  integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
+  integer :: idiag_ggTm=0        ! DIAG_DOC: $\bra{g_T}$
+  integer :: idiag_ggXm=0        ! DIAG_DOC: $\bra{g_X}$
 !
   contains
 !***********************************************************************
@@ -157,7 +164,10 @@ module Special
 !
 !  Check whether diffgg=diffhh (which  is the default)
 !
-      if (lsame_diffgg_as_hh) diffgg=diffhh
+      if (lsame_diffgg_as_hh) then
+        diffgg=diffhh
+        diffgg_hyper3=diffhh_hyper3
+      endif
 !
 !  set index table
 !
@@ -288,11 +298,12 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
-      use Sub, only: del2
+      use Sub, only: del2, del6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,6) :: del2hij, del2gij
+      real, dimension (nx) :: del6hij, del6gij
       type (pencil_case) :: p
 !
       integer :: ij,jhij,jgij
@@ -310,6 +321,9 @@ module Special
         call del2(f,jhij,del2hij(:,ij))
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
         df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c2*del2hij(:,ij)+p%stress_ij(:,ij)
+!
+!  ordinary diffusivity
+!
         if (diffhh/=0.) then
           call del2(f,jhij,del2hij(:,ij))
           df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+diffhh*del2hij(:,ij)
@@ -318,6 +332,18 @@ module Special
           call del2(f,jgij,del2gij(:,ij))
           df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+diffgg*del2gij(:,ij)
         endif
+!
+!  hyperdiffusivity
+!
+        if (diffhh_hyper3/=0.) then
+          call del6(f,jhij,del6hij)
+          df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+diffhh_hyper3*del6hij
+        endif
+        if (diffgg_hyper3/=0.) then
+          call del6(f,jgij,del6gij)
+          df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+diffgg_hyper3*del6gij
+        endif
+!
       enddo
 !
 !  timestep constraint
@@ -327,6 +353,12 @@ module Special
 !  diagnostics
 !
        if (ldiagnos) then
+         if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
+         if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
+         if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
+         if (idiag_ggTm/=0) call sum_mn_name(f(l1:l2,m,n,iggT),idiag_ggTm)
+         if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
+!
          if (lroot.and.m==mpoint.and.n==npoint) then
            if (idiag_g11pt/=0) call save_name(f(lpoint-nghost,m,n,igij+1-1),idiag_g11pt)
            if (idiag_g22pt/=0) call save_name(f(lpoint-nghost,m,n,igij+2-1),idiag_g22pt)
@@ -334,11 +366,14 @@ module Special
            if (idiag_g12pt/=0) call save_name(f(lpoint-nghost,m,n,igij+4-1),idiag_g12pt)
            if (idiag_g23pt/=0) call save_name(f(lpoint-nghost,m,n,igij+5-1),idiag_g23pt)
            if (idiag_g31pt/=0) call save_name(f(lpoint-nghost,m,n,igij+6-1),idiag_g31pt)
+!print*,'AXEL5: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
            if (idiag_ggTpt/=0) call save_name(f(lpoint-nghost,m,n,iggT),idiag_ggTpt)
            if (idiag_ggXpt/=0) call save_name(f(lpoint-nghost,m,n,iggX),idiag_ggXpt)
          endif
        endif
 !
+!if (m==mpoint.and.n==npoint) print*,'AXEL6: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
+!print*,'AXEL7: t,lpoint,mpoint,npoint=',lpoint,mpoint,npoint
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -403,7 +438,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       logical :: always=.true.
 !
-      if (lspec.and.lfirst) then
+      if ((lspec.and.lfirst).or.lout) then
         call compute_gT_and_gX_from_gij(f)
       endif
 !
@@ -639,34 +674,34 @@ module Special
 !
           if (ldebug_print) then
             print*,'PRINTING RESULTS FOR K = (+/-2, 0, 0)'
-            print*,'AXEL k1,k2,k3=',k1,k2,k3
-            print*,'AXEL e_1=',e1
-            print*,'AXEL e_2=',e2
-            print*,'AXEL e_T=',e_T
-            print*,'AXEL e_X=',e_X
-            print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
-            print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
-            print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
-            print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
-            print*,'AXEL Sij_re=',Sij_re
-            print*,'AXEL Sij_im=',Sij_im
-            print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
-            print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
-            print*,'AXEL Pij=',Pij
+            print*,'Axel k1,k2,k3=',k1,k2,k3
+            print*,'Axel e_1=',e1
+            print*,'Axel e_2=',e2
+            print*,'Axel e_T=',e_T
+            print*,'Axel e_X=',e_X
+            print*,'Axel S_X_re=',S_X_re(ikz,ikx,iky)
+            print*,'Axel S_X_im=',S_X_im(ikz,ikx,iky)
+            print*,'Axel S_T_re=',S_T_re(ikz,ikx,iky)
+            print*,'Axel S_T_im=',S_T_im(ikz,ikx,iky)
+            print*,'Axel Sij_re=',Sij_re
+            print*,'Axel Sij_im=',Sij_im
+            print*,'Axel Tpq_re=',Tpq_re(ikz,ikx,iky,:)
+            print*,'Axel Tpq_im=',Tpq_im(ikz,ikx,iky,:)
+            print*,'Axel Pij=',Pij
             if (k1==0..and.k2==0..and.k3==0.) then
               print*,'PRINTING RESULTS FOR K = (0, 0, 0)'
-              print*,'AXEL k1,k2,k3=',k1,k2,k3
-              print*,'AXEL e_T=',e_T
-              print*,'AXEL e_X=',e_X
-              print*,'AXEL S_X_re=',S_X_re(ikz,ikx,iky)
-              print*,'AXEL S_X_im=',S_X_im(ikz,ikx,iky)
-              print*,'AXEL S_T_re=',S_T_re(ikz,ikx,iky)
-              print*,'AXEL S_T_im=',S_T_im(ikz,ikx,iky)
-              print*,'AXEL Sij_re=',Sij_re
-              print*,'AXEL Sij_im=',Sij_im
-              print*,'AXEL Tpq_re=',Tpq_re(ikz,ikx,iky,:)
-              print*,'AXEL Tpq_im=',Tpq_im(ikz,ikx,iky,:)
-              print*,'AXEL Pij=',Pij
+              print*,'Axel k1,k2,k3=',k1,k2,k3
+              print*,'Axel e_T=',e_T
+              print*,'Axel e_X=',e_X
+              print*,'Axel S_X_re=',S_X_re(ikz,ikx,iky)
+              print*,'Axel S_X_im=',S_X_im(ikz,ikx,iky)
+              print*,'Axel S_T_re=',S_T_re(ikz,ikx,iky)
+              print*,'Axel S_T_im=',S_T_im(ikz,ikx,iky)
+              print*,'Axel Sij_re=',Sij_re
+              print*,'Axel Sij_im=',Sij_im
+              print*,'Axel Tpq_re=',Tpq_re(ikz,ikx,iky,:)
+              print*,'Axel Tpq_im=',Tpq_im(ikz,ikx,iky,:)
+              print*,'Axel Pij=',Pij
             endif
           endif
           endif
@@ -678,10 +713,10 @@ module Special
 !  debug output (perhaps to be removed)
 !
       if (ldebug_print) then
-        print*,'AXEL: k3Re=',S_T_re(1,:,1)
-        print*,'AXEL: k3Im=',S_T_im(1,:,1)
-        print*,'AXEL: k2Re=',S_X_re(1,:,1)
-        print*,'AXEL: k2Im=',S_X_im(1,:,1)
+        print*,'Axel: k3Re=',S_T_re(1,:,1)
+        print*,'Axel: k3Im=',S_T_im(1,:,1)
+        print*,'Axel: k2Re=',S_X_re(1,:,1)
+        print*,'Axel: k2Im=',S_X_im(1,:,1)
       endif
 !
 !  back to real space
@@ -694,10 +729,10 @@ module Special
 !  debug output (perhaps to be removed)
 !
       if (ldebug_print) then
-        print*,'AXEL: x3Re=',S_T_re(:,1,1)
-        print*,'AXEL: x3Im=',S_T_im(:,1,1)
-        print*,'AXEL: x2Re=',S_X_re(:,1,1)
-        print*,'AXEL: x2Im=',S_X_im(:,1,1)
+        print*,'Axel: x3Re=',S_T_re(:,1,1)
+        print*,'Axel: x3Im=',S_T_im(:,1,1)
+        print*,'Axel: x2Re=',S_X_re(:,1,1)
+        print*,'Axel: x2Im=',S_X_im(:,1,1)
       endif
 !
 !  add (or set) corresponding stress
@@ -708,21 +743,23 @@ module Special
 !
 !  For the time being, we keep the lswitch_sign_e_X
 !  still as an option. Meaningful results are however
-!  only found foro complex values of S_X.
+!  only found for complex values of S_X.
 !
       if (.not.lswitch_sign_e_X) then
-        !f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
-        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
+        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
+        !f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
       endif
+!
+!print*,'AXEL3: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
 !
 !  debug output (perhaps to be removed)
 !
       if (ldebug_print) then
         print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
-        print*,'AXEL S_T_re=',S_T_re(:,1,1)
-        print*,'AXEL S_X_re=',S_X_re(:,1,1)
-        print*,'AXEL S_T_im=',S_T_im(:,1,1)
-        print*,'AXEL S_X_im=',S_X_im(:,1,1)
+        print*,'Axel S_T_re=',S_T_re(:,1,1)
+        print*,'Axel S_X_re=',S_X_re(:,1,1)
+        print*,'Axel S_T_im=',S_T_im(:,1,1)
+        print*,'Axel S_X_im=',S_X_im(:,1,1)
       endif
 !
 !  Deallocate arrays.
@@ -760,6 +797,8 @@ module Special
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0
+        idiag_ggTm=0; idiag_ggXm=0
       endif
 !
       do iname=1,nname
@@ -771,6 +810,11 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
         call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
+        call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
+        call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
+        call parse_name(iname,cname(iname),cform(iname),'ggTXm',idiag_ggTXm)
+        call parse_name(iname,cname(iname),cform(iname),'ggTm',idiag_ggTm)
+        call parse_name(iname,cname(iname),cform(iname),'ggXm',idiag_ggXm)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
