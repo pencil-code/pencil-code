@@ -412,6 +412,10 @@ contains
 !
     call multsv(Kspitzer_para*exp(p%lnrho+3.5*p%lnTT),p%glnTT,K1)
 !
+!   JW: I think, you should divid by rho, not multiply.
+!    call multsv(Kspitzer_para*exp(3.5*p%lnTT-p%lnrho),p%glnTT,K1)
+!
+!
     call dot(K1,p%bb,tmp)
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
@@ -435,6 +439,8 @@ contains
     do i=1,3
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
           tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  -  &
+!          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  &
+!  JW: I think, you should use here a plus
           p%qq(:,i)*(p%uglnrho + p%divu)
     enddo
 !
@@ -444,6 +450,11 @@ contains
     call dot(p%qq,p%glnrho,tmp)
 !
     rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
+!
+!    I think, the factor of rho**2 is wrong
+!    and there must be a + in front of tmp
+!    rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
+!
 
     if (ltemperature) then
        if (ltemperature_nolog) then
