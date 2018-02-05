@@ -451,7 +451,7 @@ module Param_IO
       call read_namelist(read_testflow_run_pars       ,'testflow'          ,ltestflow)
       call read_namelist(read_radiation_run_pars      ,'radiation'         ,lradiation)
       call read_namelist(read_pscalar_run_pars        ,'pscalar'           ,lpscalar)
-      call read_namelist(read_ascalar_run_pars       ,'ascalar'          ,lascalar)
+      call read_namelist(read_ascalar_run_pars        ,'ascalar'           ,lascalar)
       call read_namelist(read_chiral_run_pars         ,'chiral'            ,lchiral)
       call read_namelist(read_chemistry_run_pars      ,'chemistry'         ,lchemistry)
       call read_namelist(read_dustvelocity_run_pars   ,'dustvelocity'      ,ldustvelocity)
@@ -644,6 +644,7 @@ module Param_IO
         call write_stub ('neutraldensity', lneutraldensity)
         call write_stub ('cosmicray', lcosmicray)
         call write_stub ('cosmicrayflux', lcosmicrayflux)
+        call write_stub ('heatflux', lheatflux)
         call write_stub ('interstellar', linterstellar)
         call write_stub ('shear', lshear)
         call write_stub ('testperturb', ltestperturb)
@@ -865,6 +866,7 @@ module Param_IO
         call write_neutraldensity_run_pars(unit)
         call write_cosmicray_run_pars(unit)
         call write_cosmicrayflux_run_pars(unit)
+        call write_heatflux_run_pars(unit)
         call write_interstellar_run_pars(unit)
         call write_shear_run_pars(unit)
         call write_testperturb_run_pars(unit)
@@ -1000,6 +1002,7 @@ module Param_IO
       write(unit,'(A,L1,A)') " linterstellar=", linterstellar, ","
       write(unit,'(A,L1,A)') " lcosmicray=", lcosmicray, ","
       write(unit,'(A,L1,A)') " lcosmicrayflux=", lcosmicrayflux, ","
+      write(unit,'(A,L1,A)') " lheatflux=", lheatflux, ","
       write(unit,'(A,L1,A)') " lshear=", lshear, ","
       write(unit,'(A,L1,A)') " lpscalar=", lpscalar, ","
       write(unit,'(A,L1,A)') " lascalar=", lascalar, ","
