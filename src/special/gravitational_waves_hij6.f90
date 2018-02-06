@@ -38,7 +38,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 2
+! MAUX CONTRIBUTION 4
 !
 ! PENCILS PROVIDED stress_ij(6)
 !***************************************************************
@@ -88,11 +88,13 @@ module Special
 !
   character (len=labellen) :: inithij='nothing'
   character (len=labellen) :: initgij='nothing'
+  character (len=labellen) :: ctrace_factor='1/3'
+  character (len=labellen) :: cstress_prefactor='1'
   real :: amplhij=0., amplgij=0.
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
-  real :: dummy=0., diffhh=0., diffgg=0.
-  real :: diffhh_hyper3=0., diffgg_hyper3=0.
+  real :: trace_factor=0., stress_prefactor=1., dummy=0.
+  real :: diffhh=0., diffgg=0., diffhh_hyper3=0., diffgg_hyper3=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
@@ -100,17 +102,22 @@ module Special
 !
 ! input parameters
   namelist /special_init_pars/ &
+    ctrace_factor, cstress_prefactor, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, &
     kx_hij, ky_hij, kz_hij, &
     kx_gij, ky_gij, kz_gij
 !
 ! run parameters
   namelist /special_run_pars/ &
+    ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
     diffhh_hyper3, diffgg_hyper3
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
+  integer :: idiag_h22rms=0      ! DIAG_DOC: $h_{22}^{\rm rms}$
+  integer :: idiag_h33rms=0      ! DIAG_DOC: $h_{33}^{\rm rms}$
+  integer :: idiag_h23rms=0      ! DIAG_DOC: $h_{23}^{\rm rms}$
   integer :: idiag_g11pt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
   integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
   integer :: idiag_g33pt=0       ! DIAG_DOC: $g_{33}(x_1,y_1,z_1,t)$
@@ -131,7 +138,7 @@ module Special
 !
 !  Set up indices for variables in special modules.
 !
-!  6-oct-03/tony: coded
+!   3-aug-17/axel: coded
 !
       use Sub, only: register_report_aux
       use FArrayManager
@@ -142,10 +149,14 @@ module Special
       call farray_register_pde('hij',ihij,vector=6)
       call farray_register_pde('gij',igij,vector=6)
 !
-!  register ggT and ggX as auxiliary arrays
+!  Register ggT and ggX as auxiliary arrays
+!  May want to do this only when Fourier transform is enabled.
 !
       call farray_register_auxiliary('ggT',iggT)
       call farray_register_auxiliary('ggX',iggX)
+!
+      call farray_register_auxiliary('hhT',ihhT)
+      call farray_register_auxiliary('hhX',ihhX)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -180,6 +191,28 @@ module Special
       ij_table(2,1)=4
       ij_table(3,2)=5
       ij_table(1,3)=6
+!
+!  determine trace factor
+!
+      select case (ctrace_factor)
+        case ('0'); trace_factor=.0
+        case ('1/2'); trace_factor=.5
+        case ('1/3'); trace_factor=onethird
+        case default
+          call fatal_error("initialize_special: No such value for ctrace_factor:" &
+              ,trim(ctrace_factor))
+      endselect
+!
+!  determine stress_prefactor
+!
+      select case (cstress_prefactor)
+        case ('1'); stress_prefactor=1.
+        case ('8pi'); stress_prefactor=8.*pi
+        case ('16pi'); stress_prefactor=16.*pi
+        case default
+          call fatal_error("initialize_special: No such value for ctrace_factor:" &
+              ,trim(ctrace_factor))
+      endselect
 !
 !  give a warning if cs0**2=1
 !
@@ -239,8 +272,19 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      if (lhydro)    lpenc_requested(i_uu)=.true.
-      if (lmagnetic) lpenc_requested(i_bb)=.true.
+!  Velocity field needed for Reynolds stress
+!
+      if (lhydro) then
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_u2)=.true.
+      endif
+!
+!  Magnetic field needed for Maxwell stress
+!
+      if (lmagnetic) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -261,7 +305,7 @@ module Special
 !  Calculate Special pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  24-nov-04/tony: coded
+!  24-aug-17/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -270,14 +314,21 @@ module Special
       intent(inout) :: p
       integer :: i, j, ij
 !
-!  Construct stress tensor
+!  Construct stress tensor; notice opposite signs for u and b.
 !
       p%stress_ij=0.0
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
         if (lhydro)    p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
-        if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%bb(:,i)*p%bb(:,j)
+        if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
+!
+!  Remove trace.
+!
+        if (i==j) then
+          if (lhydro)    p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
+          if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
+        endif
       enddo
       enddo
 !
@@ -320,7 +371,8 @@ module Special
         jgij=igij-1+ij
         call del2(f,jhij,del2hij(:,ij))
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c2*del2hij(:,ij)+p%stress_ij(:,ij)
+        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c2*del2hij(:,ij) &
+            +stress_prefactor*p%stress_ij(:,ij)
 !
 !  ordinary diffusivity
 !
@@ -353,6 +405,9 @@ module Special
 !  diagnostics
 !
        if (ldiagnos) then
+         if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
+         if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
+         if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
          if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
          if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
          if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
@@ -360,6 +415,12 @@ module Special
          if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
+           !if (idiag_h11pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+1-1),idiag_h11pt)
+           !if (idiag_h22pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+2-1),idiag_h22pt)
+           !if (idiag_h33pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+3-1),idiag_h33pt)
+           !if (idiag_h12pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+4-1),idiag_h12pt)
+           !if (idiag_h23pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+5-1),idiag_h23pt)
+           !if (idiag_h31pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+6-1),idiag_h31pt)
            if (idiag_g11pt/=0) call save_name(f(lpoint-nghost,m,n,igij+1-1),idiag_g11pt)
            if (idiag_g22pt/=0) call save_name(f(lpoint-nghost,m,n,igij+2-1),idiag_g22pt)
            if (idiag_g33pt/=0) call save_name(f(lpoint-nghost,m,n,igij+3-1),idiag_g33pt)
@@ -433,22 +494,23 @@ module Special
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
 !
-!  06-jul-06/tony: coded
+!  07-aug-17/axel: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical :: always=.true.
 !
-      if ((lspec.and.lfirst).or.lout) then
-        call compute_gT_and_gX_from_gij(f)
+      if (.not.lno_transverse_part .and. &
+          ((lspec.and.lfirst).or.lout)) then
+        call compute_gT_and_gX_from_gij(f,'gg')
+        call compute_gT_and_gX_from_gij(f,'hh')
       endif
 !
     endsubroutine special_after_boundary
 !***********************************************************************
-    subroutine compute_gT_and_gX_from_gij(f)
+    subroutine compute_gT_and_gX_from_gij(f,label)
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
-!  15-jan-08/axel: coded
+!  07-aug-17/axel: coded
 !
       use Fourier, only: fourier_transform, fft_xyz_parallel
 !
@@ -458,10 +520,11 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij,jhij
       logical :: lscale_tobox1=.true.
       real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
+      character (len=2) :: label
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
 !  compute the Fourier transform, so we would skip the rest.
@@ -539,8 +602,13 @@ module Special
       Tpq_re=0.0
       Tpq_im=0.0
       do ij=1,6
-        jgij=igij-1+ij
-        Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jgij)
+        if (label=='hh') then
+          jhij=ihij-1+ij
+          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jhij)
+        else
+          jgij=igij-1+ij
+          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jgij)
+        endif
       enddo
 !
 !  Fourier transform all 6 components
@@ -736,19 +804,21 @@ module Special
       endif
 !
 !  add (or set) corresponding stress
-!
-      f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
-      f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
-      !f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
-!
 !  For the time being, we keep the lswitch_sign_e_X
 !  still as an option. Meaningful results are however
 !  only found for complex values of S_X.
 !
-      if (.not.lswitch_sign_e_X) then
-        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
-        !f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
+      if (label=='hh') then
+        f(l1:l2,m1:m2,n1:n2,ihhT)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,ihhX)=S_X_re
+      else
+        f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
       endif
+!
+      !if (.not.lswitch_sign_e_X) then
+      !  f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
+      !endif
 !
 !print*,'AXEL3: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
 !
@@ -794,6 +864,7 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
+        idiag_h22rms=0; idiag_h33rms=0; idiag_h23rms=0; 
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_ggTpt=0; idiag_ggXpt=0
@@ -802,6 +873,9 @@ module Special
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'h22rms',idiag_h22rms)
+        call parse_name(iname,cname(iname),cform(iname),'h33rms',idiag_h33rms)
+        call parse_name(iname,cname(iname),cform(iname),'h23rms',idiag_h23rms)
         call parse_name(iname,cname(iname),cform(iname),'g11pt',idiag_g11pt)
         call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
         call parse_name(iname,cname(iname),cform(iname),'g33pt',idiag_g33pt)
@@ -833,7 +907,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      integer :: inamev
+      integer :: inamev, jhij
 !
 !  Loop over slices
 !
@@ -857,7 +931,47 @@ module Special
           slices%xy2=f(l1:l2,m1:m2,iz2_loc,iggX)
           slices%ready = .true.
 !
+!  hh22
+!
+        case ('h22')
+          jhij=ihij-1+2
+          slices%yz=f(ix_loc,m1:m2,n1:n2,jhij)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,jhij)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,jhij)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,jhij)
+          slices%ready = .true.
+!
+!  hh33
+!
+        case ('h33')
+          jhij=ihij-1+3
+          slices%yz=f(ix_loc,m1:m2,n1:n2,jhij)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,jhij)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,jhij)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,jhij)
+          slices%ready = .true.
+!
+!  hh23
+!
+        case ('h23')
+          jhij=ihij-1+5
+          slices%yz=f(ix_loc,m1:m2,n1:n2,jhij)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,jhij)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,jhij)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,jhij)
+          slices%ready = .true.
+!
       endselect
+!
+!  The following is just a comment to remind ourselves how
+!  the remaining 3 offdiagonal terms are being accessed.
+!
+      !ij_table(1,2)=4
+      !ij_table(2,3)=5
+      !ij_table(3,1)=6
+      !ij_table(2,1)=4
+      !ij_table(3,2)=5
+      !ij_table(1,3)=6
 !
     endsubroutine get_slices_special
 !***********************************************************************

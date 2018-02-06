@@ -1422,6 +1422,19 @@ module power_spectrum
     endif
     a_im=0.
     b_im=0.
+  elseif (sp=='GWh') then
+    if (ihhX>0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
+    elseif (ihij>0) then
+      call fatal_error('powerGWh','should not come here')
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+3)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij)
+    else
+      call fatal_error('powerGWh','must compile GW module for GWs')
+    endif
+    a_im=0.
+    b_im=0.
   elseif (sp=='Str') then
     if (istressX>0) then
       a_re=f(l1:l2,m1:m2,n1:n2,istressX)
