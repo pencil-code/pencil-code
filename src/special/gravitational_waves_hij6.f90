@@ -95,6 +95,7 @@ module Special
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
   real :: trace_factor=0., stress_prefactor=1., dummy=0.
   real :: diffhh=0., diffgg=0., diffhh_hyper3=0., diffgg_hyper3=0.
+  real :: nscale_factor=0., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
@@ -111,7 +112,7 @@ module Special
   namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
-    diffhh_hyper3, diffgg_hyper3
+    diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -347,6 +348,7 @@ module Special
 !  efficiency.
 !
 !  06-oct-03/tony: coded
+!  07-feb-18/axel: added nscale_factor=0 (no expansion), =.5 (radiation era)
 !
       use Diagnostics
       use Sub, only: del2, del6
@@ -355,6 +357,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,6) :: del2hij, del2gij
       real, dimension (nx) :: del6hij, del6gij
+      real :: nscale_factor_exp, scale_factor, stress_prefactor2, hubble_param2
       type (pencil_case) :: p
 !
       integer :: ij,jhij,jgij
@@ -366,18 +369,36 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
+!  Compute scale factor and Hubble parameter.
+!  Note: to prevent division by zero, it is best to put tstart=1. in start.in.
+!  If that is not done, one can put here tshift=1., for example.
+!  If that is not the case either, we put scale_factor=1 and hubble_param2=0.
+!  At the next timestep, this will no longer be a problem.
+!
+      nscale_factor_exp=nscale_factor/(1.-nscale_factor)
+      if (t+tshift==0.) then
+        scale_factor=1.
+        hubble_param2=0.
+      else
+        scale_factor=((1.-nscale_factor)*(t+tshift))**nscale_factor_exp
+        hubble_param2=2.*nscale_factor_exp/(t+tshift)
+      endif
+      stress_prefactor2=stress_prefactor/scale_factor**2
+!
+!  Assemble rhs of GW equations
+!
       do ij=1,6
         jhij=ihij-1+ij
         jgij=igij-1+ij
         call del2(f,jhij,del2hij(:,ij))
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
         df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c2*del2hij(:,ij) &
-            +stress_prefactor*p%stress_ij(:,ij)
+            -hubble_param2*f(l1:l2,m,n,jgij) &
+            +stress_prefactor2*p%stress_ij(:,ij)
 !
 !  ordinary diffusivity
 !
         if (diffhh/=0.) then
-          call del2(f,jhij,del2hij(:,ij))
           df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+diffhh*del2hij(:,ij)
         endif
         if (diffgg/=0.) then
@@ -498,8 +519,10 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (.not.lno_transverse_part .and. &
-          ((lspec.and.lfirst).or.lout)) then
+      if (.not.lno_transverse_part .and. (&
+          (lvideo.and.lfirst).or. &
+          (lspec.and.lfirst).or. &
+          (lout.and.lfirst) )) then
         call compute_gT_and_gX_from_gij(f,'gg')
         call compute_gT_and_gX_from_gij(f,'hh')
       endif
