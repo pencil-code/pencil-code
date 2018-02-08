@@ -178,7 +178,7 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
-  real :: A3=0., A2=0.
+  real :: A3=0., A2=0., G_condensation=0.
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
 !
   namelist /particles_init_pars/ &
@@ -284,7 +284,8 @@ module Particles
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, &
       c1, c2, Rv, rho0, &
-      lconstTT, constTT
+      lconstTT, constTT, &
+      G_condensation
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -4531,10 +4532,10 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
 
               if (lascalar) then
-                 inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
+                 inversetau=4.*pi*rhopmat*fp(k,iap)*fp(k,inpswarm)
                  if (ascalar_ngp) then
                    l=ineargrid(k,1)
-                   if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + inversetau
+                   if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + A3*A2*inversetau
                    if (lcondensation_rate) then
                      if (lconstTT) then
                        es_T=c1*exp(-c2/constTT)
@@ -4544,7 +4545,7 @@ module Particles
                        qvs_T=es_T/(Rv*rho0*f(l,m,n,iTT))
                      endif
                      supersaturation=f(l,m,n,issat)/qvs_T-1.
-                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau
+                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
                      f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3.)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
                  elseif (ascalar_cic) then
