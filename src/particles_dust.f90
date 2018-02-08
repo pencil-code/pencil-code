@@ -936,9 +936,7 @@ module Particles
 !
 !  if we are using particles_potential:
 !
-			if (lroot) write(*,*)'going into particle potential'
       if (lparticles_potential) call initialize_particles_potential(fp)
-			if (lroot) write(*,*)'comming out of particle potential'
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -3384,10 +3382,7 @@ module Particles
 !
 ! and potential
 !
-			if (lroot) print*,'calling dvvp_dt_potential'
       if (lparticles_potential) call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
-			if (lroot) print*,'came out of  dvvp_dt_potential'
-!
 !
     endsubroutine dvvp_dt
 !***********************************************************************
