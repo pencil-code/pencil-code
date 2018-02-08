@@ -3384,10 +3384,7 @@ module Particles
 !
 ! and potential
 !
-			if (lroot) print*,'calling dvvp_dt_potential'
       if (lparticles_potential) call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
-			if (lroot) print*,'came out of  dvvp_dt_potential'
-!
 !
     endsubroutine dvvp_dt
 !***********************************************************************
