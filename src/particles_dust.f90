@@ -454,6 +454,8 @@ module Particles
       integer :: ierr, jspec
       logical, pointer :: lshearadvection_as_shift
       real, pointer :: reference_state_mass
+      integer :: ik,icnt
+      real :: xxp,yyp,zzp
 !
 !  This module is incompatible with particle block domain decomposition.
 !
@@ -464,6 +466,45 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif
+!
+! Mark particles in a pencil 
+! We make a pencil along the x-direction
+!
+!      ntagged_local = 0
+!      do ik=1,npar_loc
+!        xxp=fp(ik,ixp);yyp=fp(ik,iyp);zzp=fp(ik,izp)
+!        if ((yyp .lt. ypmax) .and.   (yyp .lt. ypmin) ) then
+!          if ((zzp .lt. zpmax) .and.   (zzp .lt. zpmin) ) then
+!           ntagged_local(iproc)=ntagged_local(iproc)+1 
+!          endif
+!        endif
+!      enddo
+!!
+!!   Sum ntagged_local from each processor to get ntagged_global 
+!			call mpiallreduce_sum_int_arr(ntagged_local,ntagged_global,ncpus)
+!			itagged_start = sum(ntagged_global(1:iproc-1))+1
+!! AKS
+!!   Then at each processor, sum over ntagged_global to obtain npar_tagged
+!			npar_tagged = sum(ntagged_global)
+!!   Then allocate the taggedp_list which as dimension npar_tagged
+!			allocate(taggedp_list_local(npar_tagged)); taggedp_list_local = 0 
+!			allocate(taggedp_list_global(npar_tagged)); taggedp_list_global = 0 
+!!   Then fill up the taggedp_list 
+!			icnt = 0
+!      do ik=1,npar_loc
+!        xxp=fp(ik,ixp);yyp=fp(ik,iyp);zzp=fp(ik,izp)
+!        if ((yyp .lt. ypmax) .and. (yyp .lt. ypmin) ) then
+!          if ((zzp .lt. zpmax) .and. (zzp .lt. zpmin) ) then
+!           taggedp_list_local(itagged_start+icnt) = ipar(ik)
+!					 icnt = icnt+1 
+!          endif
+!        endif
+!      enddo
+!!
+!!   Each processor writes on different locations at this array. 
+!!   Then communicate this array over all processors such that they all have it. 
+!			call mpiallreduce_sum_int_arr(taggedp_list_local,taggedp_list_global,npar_tagged)
+!
 !
 !  Hand over Coriolis force and shear acceleration to Particles_drag.
 !
@@ -891,7 +932,9 @@ module Particles
 !
 !  if we are using particles_potential:
 !
+			if (lroot) write(*,*)'going into particle potential'
       if (lparticles_potential) call initialize_particles_potential(fp)
+			if (lroot) write(*,*)'comming out of particle potential'
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -3326,7 +3369,9 @@ module Particles
 !
 ! and potential
 !
+			if (lroot) print*,'calling dvvp_dt_potential'
       if (lparticles_potential) call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
+			if (lroot) print*,'came out of  dvvp_dt_potential'
 !
 !
     endsubroutine dvvp_dt
