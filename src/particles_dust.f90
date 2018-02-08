@@ -13,6 +13,7 @@
 ! CPARAM character (len=20), parameter :: particles_module="dust"
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
+! PENCILS PROVIDED uup(3)
 ! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
@@ -318,6 +319,8 @@ module Particles
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_sigmap=0
+  integer :: idiag_rpvpxmx = 0, idiag_rpvpymx = 0, idiag_rpvpzmx = 0
+  integer :: idiag_rpvpx2mx = 0, idiag_rpvpy2mx = 0, idiag_rpvpz2mx = 0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0, idiag_npmxy=0
@@ -2892,6 +2895,12 @@ module Particles
       if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
       if (idiag_sigmap /= 0) lpenc_diagnos2d(i_rhop) = .true.
 !
+      if (idiag_rpvpxmx /= 0 .or. idiag_rpvpymx /= 0 .or. idiag_rpvpzmx /= 0 .or. &
+          idiag_rpvpx2mx /= 0 .or. idiag_rpvpy2mx /= 0 .or. idiag_rpvpz2mx /= 0) then
+        lpenc_diagnos(i_rhop) = .true.
+        lpenc_diagnos(i_uup) = .true.
+      endif
+!
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
       if (maxval(idiag_npvz2mz) > 0) lpenc_requested(i_npvz2)=.true.
       if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz)=.true.
@@ -2917,6 +2926,9 @@ module Particles
         lpencil_in(i_rhop)=.true.
         lpencil_in(i_rho1)=.true.
       endif
+!
+      if (lpencil_in(i_uup) .and. iuup == 0) &
+        call fatal_error("pencil_interdep_particles", "p%uup is requested but not calculated. ")
 !
       if (lascalar) lpencil_in(i_tauascalar)=.true.
       if (lascalar) lpencil_in(i_condensationRate)=.true.
@@ -2968,6 +2980,8 @@ module Particles
       endif
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
+!
+      if (lpencil(i_uup)) p%uup = f(l1:l2,m,n,iupx:iupz)
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
@@ -4713,6 +4727,13 @@ module Particles
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
 !
+        if (idiag_rpvpxmx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,1), idiag_rpvpxmx)
+        if (idiag_rpvpymx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,2), idiag_rpvpymx)
+        if (idiag_rpvpzmx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,3), idiag_rpvpzmx)
+        if (idiag_rpvpx2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,1)**2, idiag_rpvpx2mx)
+        if (idiag_rpvpy2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,2)**2, idiag_rpvpy2mx)
+        if (idiag_rpvpz2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,3)**2, idiag_rpvpz2mx)
+!
         do k=1,ndustrad
           if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
           if (idiag_npvz2mz(k)/=0) call xysum_mn_name_z(p%npvz2(:,k),idiag_npvz2mz(k))
@@ -6374,6 +6395,8 @@ module Particles
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
         idiag_sigmap = 0
+        idiag_rpvpxmx = 0; idiag_rpvpymx = 0; idiag_rpvpzmx = 0
+        idiag_rpvpx2mx = 0; idiag_rpvpy2mx = 0; idiag_rpvpz2mx = 0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
@@ -6484,6 +6507,12 @@ module Particles
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhop2mx',idiag_rhop2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpxmx', idiag_rpvpxmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpymx', idiag_rpvpymx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpzmx', idiag_rpvpzmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpx2mx', idiag_rpvpx2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpy2mx', idiag_rpvpy2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpz2mx', idiag_rpvpz2mx)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
