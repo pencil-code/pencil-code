@@ -15,18 +15,31 @@
 /
 &density_init_pars
 /
-&magnetic_init_pars
-  !initaa='Beltrami-y', amplaa=-0.01  !(+ve amplaa means now positive helicity)
-  initaa='gaussian-noise', amplaa=1e-4
-  lee_as_aux=T,lbb_as_aux=T
-/
-&pscalar_init_pars
-  initlncc='wave-z', ampllncc=1e-0, 
-/
 &particles_init_pars
-  lnocalc_rhop=T
-  initxxp='random'
-  initvvp='follow-gas'
-  lparticlemesh_cic=T,lcheck_exact_frontier=T
-  tausp=1.
+  initxxp='random-box'
+  initvvp='constant'
+  vpx0=0.
+  vpy0=0.
+  vpz0=0.
+  bcpx='p'
+  bcpy='p'
+  bcpz='p'
+  xp0 =-3.14  
+  yp0 =-3.14  
+  zp0 =-3.14
+  Lx0=6.28
+  Ly0=6.28
+  Lz0=6.28
+  interp_pol_rho='cic'
+  interp_pol_TT='cic'
+  interp_pol_uu='cic'
+  eps_dtog=1.0
 /
+&particles_potential_init_pars
+/
+&particles_radius_init_pars
+  initap='constant'
+  ap0=0.00096759
+  lsweepup_par=F
+  rhopmat=1e3
+/            

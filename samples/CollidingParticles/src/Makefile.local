@@ -19,3 +19,4 @@ PARTICLES_SUB        =   particles_sub
 PARTICLES            =   particles_dust
 PARTICLES_RADIUS     =   particles_radius
 PARTICLES_POTENTIAL  =   particles_potential
+REAL_PRECISION       =   double
