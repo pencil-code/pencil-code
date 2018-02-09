@@ -9,7 +9,8 @@
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=True):
+def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True,
+          verbose=True):
     """Returns the time series of 1D averages.
 
     Keyword Arguments:
@@ -25,9 +26,12 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=Tr
         verbose
             Whether or not to print information.
     """
-    # Chao-Chin Yang, 2015-11-15
+    # Author: Chao-Chin Yang
+    # Created: 2013-10-28
+    # Last Modified: 2018-02-09
     import numpy as np
     from scipy.interpolate import interp1d
+
     # Read the dimensions and check the plane of average.
     dim = dimensions(datadir=datadir)
     if plane == 'xy':
@@ -38,14 +42,17 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=Tr
         nc = dim.nxgrid
     else:
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
+
     # Check the file format.
     mode = 'r'
     if unformatted:
         fmt, dtype, nb = _get_precision(dim)
         mode += 'b'
+
     # Read the names of the variables.
     var = varname(datadir=datadir+'/..', filename=plane.strip()+'aver.in')
     nvar = len(var)
+
     # Open file and define data stream.
     f = open(datadir.strip() + '/' + plane.strip() + 'averages.dat', mode)
     def fetch(nval):
@@ -56,6 +63,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=Tr
         else:
             a = np.fromfile(f, count=nval, sep=' ')
         return a
+
     # Check the data size.
     if verbose:
         print("Checking the data size...")
@@ -66,6 +74,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=Tr
             raise EOFError("incompatible data file")
         nt += 1
     f.seek(0)
+
     # Read the data.
     if verbose:
         print("Reading 1D averages", var, "...")
@@ -76,11 +85,14 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=Tr
         block = fetch(nblock).reshape((nc, nvar), order='F')
         for j, v in enumerate(var):
             avg[v][i,:] = block[:,j]
+
     # Close file.
     f.close()
+
     # Discard duplicate entries.
     t, indices = np.unique(t, return_index=True)
     avg = avg[indices]
+
     # Interpolate the time series if requested.
     if tsize is not None:
         if verbose:
@@ -93,6 +105,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=Tr
             for k in range(nc):
                 avgi[v][:,k] = interp1d(t, avg[v][:,k])(ti)
         t, avg = ti, avgi
+
     return t, avg
 #=======================================================================
 def avg2d(datadir='./data', direction='z'):
