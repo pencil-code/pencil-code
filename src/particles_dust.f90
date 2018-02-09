@@ -2979,7 +2979,7 @@ module Particles
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
-      if (lpencil(i_uup)) p%uup = f(l1:l2,m,n,iupx:iupz)
+      if (lpencil(i_uup) .and. iuup > 0) p%uup = f(l1:l2,m,n,iupx:iupz)
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
