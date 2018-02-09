@@ -4460,7 +4460,7 @@ module Magnetic
 !
 !  Not correct for hyperresistivity:
 !
-        if (idiag_epsM/=0) call sum_mn_name(eta*mu0*p%j2,idiag_epsM)
+        if (idiag_epsM/=0) call sum_mn_name(etatotal*mu0*p%j2,idiag_epsM)
 !
 !  Heating by ion-neutrals friction.
 !
