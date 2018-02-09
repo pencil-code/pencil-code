@@ -30,6 +30,7 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True,
     # Created: 2013-10-28
     # Last Modified: 2018-02-09
     import numpy as np
+    import os.path
     from scipy.interpolate import interp1d
 
     # Read the dimensions and check the plane of average.
@@ -50,7 +51,8 @@ def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True,
         mode += 'b'
 
     # Read the names of the variables.
-    var = varname(datadir=datadir+'/..', filename=plane.strip()+'aver.in')
+    var = varname(datadir=os.path.dirname(datadir),
+                  filename=plane.strip()+'aver.in')
     nvar = len(var)
 
     # Open file and define data stream.
