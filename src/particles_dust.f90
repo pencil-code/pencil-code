@@ -4541,7 +4541,6 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
 
               if (lascalar) then
-!                 inversetau=4.*pi*rhopmat*fp(k,iap)*fp(k,inpswarm)
                  inversetau=4.*pi*rhopmat/rho0*fp(k,iap)/volume_cell
                  if (ascalar_ngp) then
                    l=ineargrid(k,1)
@@ -4556,7 +4555,7 @@ module Particles
                      endif
                      supersaturation=f(l,m,n,issat)/qvs_T-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
-                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3.)*(fp(k,iap))**3*fp(k,inpswarm)
+                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rho0)*(fp(k,iap))**3/volume_cell
                    endif
                  elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
