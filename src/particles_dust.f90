@@ -4541,7 +4541,8 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
 
               if (lascalar) then
-                 inversetau=4.*pi*rhopmat*fp(k,iap)*fp(k,inpswarm)
+!                 inversetau=4.*pi*rhopmat*fp(k,iap)*fp(k,inpswarm)
+                 inversetau=4.*pi*rhopmat/rho0*fp(k,iap)/volume_cell
                  if (ascalar_ngp) then
                    l=ineargrid(k,1)
                    if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + A3*A2*inversetau
