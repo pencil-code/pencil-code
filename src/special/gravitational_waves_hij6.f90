@@ -90,6 +90,7 @@ module Special
   character (len=labellen) :: initgij='nothing'
   character (len=labellen) :: ctrace_factor='1/3'
   character (len=labellen) :: cstress_prefactor='1'
+  character (len=labellen) :: cc_light='1'
   real :: amplhij=0., amplgij=0.
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
@@ -99,7 +100,7 @@ module Special
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
   real, dimension(3,3) :: ij_table
-  real, parameter :: c2=1
+  real :: c_light2=1.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -112,7 +113,7 @@ module Special
   namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
-    diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift
+    diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -127,6 +128,9 @@ module Special
   integer :: idiag_g31pt=0       ! DIAG_DOC: $g_{31}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXpt=0       ! DIAG_DOC: $g_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
+  integer :: idiag_hhX2m=0       ! DIAG_DOC: $\bra{h_X^2}$
+  integer :: idiag_hhTXm=0       ! DIAG_DOC: $\bra{h_T h_X}$
   integer :: idiag_ggT2m=0       ! DIAG_DOC: $\bra{g_T^2}$
   integer :: idiag_ggX2m=0       ! DIAG_DOC: $\bra{g_X^2}$
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
@@ -210,15 +214,28 @@ module Special
         case ('1'); stress_prefactor=1.
         case ('8pi'); stress_prefactor=8.*pi
         case ('16pi'); stress_prefactor=16.*pi
+        case ('16piG/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2
         case default
           call fatal_error("initialize_special: No such value for ctrace_factor:" &
               ,trim(ctrace_factor))
       endselect
+      if (headt) print*,'stress_prefactor=',stress_prefactor
+!
+!  set speed of light
+!
+      select case (cc_light)
+        case ('1'); c_light2=1.
+        case ('cgs'); c_light2=c_light_cgs**2
+        case default
+          call fatal_error("initialize_special: No such value for cc_light:" &
+              ,trim(ctrace_factor))
+      endselect
+      if (headt) print*,'c_light2=',c_light2
 !
 !  give a warning if cs0**2=1
 !
-      if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
-          'cs0 should probably not be unity')
+      !if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
+      !    'cs0 should probably not be unity')
 !
       call keep_compiler_quiet(f)
 !
@@ -392,7 +409,7 @@ module Special
         jgij=igij-1+ij
         call del2(f,jhij,del2hij(:,ij))
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c2*del2hij(:,ij) &
+        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c_light2*del2hij(:,ij) &
             -hubble_param2*f(l1:l2,m,n,jgij) &
             +stress_prefactor2*p%stress_ij(:,ij)
 !
@@ -421,7 +438,7 @@ module Special
 !
 !  timestep constraint
 !
-      if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c2*dxyz_2)
+      if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
 !
 !  diagnostics
 !
@@ -429,6 +446,9 @@ module Special
          if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
          if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
          if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
+         if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
+         if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
+         if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
          if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
          if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
          if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
@@ -891,6 +911,7 @@ module Special
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0
         idiag_ggTm=0; idiag_ggXm=0
       endif
@@ -907,6 +928,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
         call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
+        call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhX2m',idiag_hhX2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhTXm',idiag_hhTXm)
         call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
         call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
         call parse_name(iname,cname(iname),cform(iname),'ggTXm',idiag_ggTXm)
