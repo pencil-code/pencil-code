@@ -334,9 +334,10 @@ module Ascalar
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
             if (lbuoyancy) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
             gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%ssat-qv_env)/p%ssat-p%waterMixingRatio) 
+!
+            es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
+            qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
           endif
-          es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
-          qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
         endif
         supersaturation=f(l1:l2,m,n,issat)/qvs_T-1.
       endif
@@ -362,11 +363,12 @@ module Ascalar
             call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
         if (idiag_waterMixingRatiomax/=0) call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
         if (idiag_waterMixingRatiomin/=0) call max_mn_name(-p%waterMixingRatio,idiag_waterMixingRatiomin,lneg=.true.)
-        if (idiag_temperaturerms/=0) &
+        if (ltemperature) then
+          if (idiag_temperaturerms/=0) &
             call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
-        if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
-        if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
-
+          if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
+          if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
+        endif
         if (idiag_supersaturationrms/=0) &
             call sum_mn_name(supersaturation**2,idiag_supersaturationrms,lsqrt=.true.)
         if (idiag_supersaturationmax/=0) call max_mn_name(supersaturation,idiag_supersaturationmax)
