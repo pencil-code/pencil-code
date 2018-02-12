@@ -154,11 +154,12 @@ module Ascalar
 !
 !  modify the density to have lateral pressure equilibrium
 !
-!print*,'AXEL6', mudry1, muvap1
-       mudry1=1./29.
-       muvap1=1./18.
-       f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-alog((1-f(:,:,:,issat))*mudry1+f(:,:,:,issat)*muvap1)
-!XX
+! XY: These lines cause the short time step, so I commented them out at the moment.
+!!print*,'AXEL6', mudry1, muvap1
+!       mudry1=1./29.
+!       muvap1=1./18.
+!       f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-alog((1-f(:,:,:,issat))*mudry1+f(:,:,:,issat)*muvap1)
+!!XX
 !
     endsubroutine init_ssat
 !***********************************************************************
