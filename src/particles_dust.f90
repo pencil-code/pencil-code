@@ -4541,7 +4541,7 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
 
               if (lascalar) then
-                 inversetau=4.*pi*rhopmat/rho0*fp(k,iap)/volume_cell
+                 inversetau=4.*pi*rhopmat/rho0*fp(k,iap)*fp(k,inpswarm)
                  if (ascalar_ngp) then
                    l=ineargrid(k,1)
                    if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + A3*A2*inversetau
@@ -4555,7 +4555,7 @@ module Particles
                      endif
                      supersaturation=f(l,m,n,issat)/qvs_T-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
-                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rho0)*(fp(k,iap))**3/volume_cell
+                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rho0)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
                  elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -4571,8 +4571,6 @@ module Particles
                     if (nxgrid/=1) weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
                     if (nygrid/=1) weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
                     if (nzgrid/=1) weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-                    !call find_grid_volume(ixx,iyy,izz,volume_cell)
-                    !f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau/volume_cell
                     f(ixx,iyy,izz,itauascalar) = f(ixx,iyy,izz,itauascalar) - weight*inversetau
                   enddo; enddo; enddo
                  endif
