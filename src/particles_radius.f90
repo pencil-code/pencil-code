@@ -501,7 +501,7 @@ module Particles_radius
       endif
       if (lascalar .and. lascalar_par) then
         lpenc_requested(i_acc) = .true.
-        lpenc_requested(i_ugacc) = .true.
+!        lpenc_requested(i_ugacc) = .true.
       endif
 !
     endsubroutine pencil_criteria_par_radius

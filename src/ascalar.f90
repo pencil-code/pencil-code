@@ -10,7 +10,7 @@
 ! CPARAM logical, parameter :: lascalar = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED acc
 ! PENCILS PROVIDED gacc(3); ugacc
@@ -22,7 +22,6 @@ module Ascalar
   use Cdata
   use Cparam
   use Messages
-!  use Energy
 !
   implicit none
 !
@@ -31,6 +30,7 @@ module Ascalar
 ! Define local variables in this special module, not in "Cdata.f90"
   integer :: icondensationRate=0
   integer :: iwaterMixingRatio=0
+  integer :: issat=0
 !  Init parameters.
 !
   real :: acc_const=0., amplacc=0., widthacc=0.
@@ -67,11 +67,6 @@ module Ascalar
       c1, c2, Rv, rho0, &
       lconstTT, constTT
 !
-! Declare index of new variables in f array
-!
-!  integer :: iacc=0
-! XY: type of "iacc" is defined in "cdata.f90"
-!
 !  Diagnostics variables
 !
   integer :: idiag_accrms=0, idiag_accmax=0, idiag_accmin=0
@@ -80,7 +75,7 @@ module Ascalar
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
   integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0
   integer :: idiag_temperaturerms=0, idiag_temperaturemax=0,idiag_temperaturemin=0
-  integer :: idiag_supersaturationrms=0, idiag_supersaturationmax=0, idiag_supersaturationmin=0
+  integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
 !
   contains
 !***********************************************************************
@@ -93,6 +88,8 @@ module Ascalar
       use FArrayManager
 !
       call farray_register_pde('acc', iacc)
+!
+      call farray_register_auxiliary('ssat', issat)
 
 !  Identify version number.
 !
@@ -172,10 +169,7 @@ module Ascalar
 !  acc itself always
 !
       lpenc_requested(i_acc)=.true.
-      if (ldustdensity) then
-!       lpenc_requested(i_nd)=.true.
-!       lpenc_requested(i_ad)=.true.
-      endif
+!      lpenc_requested(i_ssat)=.true.
 !
 !  background gradient 
 !
@@ -254,7 +248,6 @@ module Ascalar
 !   4-sep-16/axel: added more diagnostics
 !
       use Diagnostics
-!      use Dustdensity
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -262,13 +255,13 @@ module Ascalar
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
-      real, dimension (nx) :: radius_sum, condensation_rate_Cd, qv, supersaturation
+      real, dimension (nx) :: radius_sum, condensation_rate_Cd
       real :: acc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer, parameter :: nxy=nxgrid*nygrid
       integer :: k
-!
-      intent(in)  :: f
+! XY: Commented the following out. 
+!      intent(in)  :: f
       intent(out) :: df
 !
       character(len=2) :: id
@@ -284,6 +277,9 @@ module Ascalar
         write(id,'(i0)')
         call identify_bcs('acc'//trim(id),iacc)
       endif
+!
+! Initialize auxiliary variables defined in this module and the corresponding pencils
+      f(:,m,n,issat) = 0.0
 !
 !  Passive scalar equation.
 !
@@ -310,14 +306,9 @@ module Ascalar
 !
 !  compute sum of particle radii
 !
-        qv=f(l1:l2,m,n,iacc)
-        supersaturation=qv/vapor_mixing_ratio_qvs-1.
+        f(l1:l2,m,n,issat)=f(l1:l2,m,n,issat)+f(l1:l2,m,n,iacc)/vapor_mixing_ratio_qvs-1.
         radius_sum=0.
-!       do k=1,ndustspec
-!         radius_sum=radius_sum+p%ad(:,k)*p%nd(:,k)
-!         print*,k,radius_sum(1:5)
-!       enddo
-        condensation_rate_Cd=4.*pi*supersaturation*p%condensationRate
+        condensation_rate_Cd=4.*pi*f(l1:l2,m,n,issat)*p%condensationRate
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-condensation_rate_Cd
         if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
       endif
@@ -339,7 +330,7 @@ module Ascalar
             qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
           endif
         endif
-        supersaturation=f(l1:l2,m,n,iacc)/qvs_T-1.
+        f(l1:l2,m,n,issat)=f(l1:l2,m,n,issat)+f(l1:l2,m,n,iacc)/qvs_T-1.
       endif
 !
 !  Diagnostics
@@ -369,10 +360,10 @@ module Ascalar
           if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
           if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
         endif
-        if (idiag_supersaturationrms/=0) &
-            call sum_mn_name(supersaturation**2,idiag_supersaturationrms,lsqrt=.true.)
-        if (idiag_supersaturationmax/=0) call max_mn_name(supersaturation,idiag_supersaturationmax)
-        if (idiag_supersaturationmin/=0) call max_mn_name(-supersaturation,idiag_supersaturationmin,lneg=.true.)
+        if (idiag_ssatrms/=0) &
+            call sum_mn_name((f(l1:l2,m,n,issat))**2,idiag_ssatrms,lsqrt=.true.)
+        if (idiag_ssatmax/=0) call max_mn_name(f(l1:l2,m,n,issat),idiag_ssatmax)
+        if (idiag_ssatmin/=0) call max_mn_name(-f(l1:l2,m,n,issat),idiag_ssatmin,lneg=.true.)
       endif
 !
     endsubroutine dacc_dt
@@ -434,7 +425,7 @@ module Ascalar
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
         idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0
         idiag_temperaturerms=0; idiag_temperaturemax=0; idiag_temperaturemin=0
-        idiag_supersaturationrms=0; idiag_supersaturationmax=0; idiag_supersaturationmin=0
+        idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
 
       endif
 !
@@ -457,9 +448,9 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'temperaturerms',idiag_temperaturerms)
         call parse_name(iname,cname(iname),cform(iname),'temperaturemax',idiag_temperaturemax)
         call parse_name(iname,cname(iname),cform(iname),'temperaturemin',idiag_temperaturemin)
-        call parse_name(iname,cname(iname),cform(iname),'supersaturationrms',idiag_supersaturationrms)
-        call parse_name(iname,cname(iname),cform(iname),'supersaturationmax',idiag_supersaturationmax)
-        call parse_name(iname,cname(iname),cform(iname),'supersaturationmin',idiag_supersaturationmin)
+        call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
+        call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
+        call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
 
       enddo
 !
@@ -468,9 +459,8 @@ module Ascalar
         write(3,*) 'itauascalar=', itauascalar
         write(3,*) 'icondensationRate=', icondensationRate
         write(3,*) 'iwaterMixingRatio=', iwaterMixingRatio
-!        write(3,*) 'ilnTT=', ilnTT
         write(3,*) 'iTT=', iTT
-        write(3,*) 'isupersaturaitonrms=', idiag_supersaturationrms
+        write(3,*) 'issat=', issat
       endif
 !
     endsubroutine rprint_ascalar 
