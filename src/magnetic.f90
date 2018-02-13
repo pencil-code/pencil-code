@@ -235,8 +235,8 @@ module Magnetic
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
   real :: tau_aa_exterior=0.0
-  real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
-  real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
+  real :: sigma_ratio=1.0, eta_z0=1.0, eta_z1=1.0
+  real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0
   real :: eta_width_shock=0.0, eta_zshock=1.0, eta_jump_shock=1.0
   real :: eta_xwidth0=0.0,eta_xwidth1=0.0, eta_xshock=1.0
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
@@ -311,7 +311,7 @@ module Magnetic
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
-      lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
+      lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, &
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
@@ -1163,9 +1163,6 @@ module Magnetic
         case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
-          ! Backward compatibility: originally, this routine used
-          ! eta_zwidth as eta_width
-          if (eta_zwidth==0.and.eta_width/=0.0) eta_zwidth=eta_width
           call eta_zdep(zdep_profile, mz, z, eta_z, geta_z)
           if (limplicit_resistivity) call eta_zdep(zdep_profile, nzgrid, zgrid, eta_zgrid)
         case ('dust')
@@ -4090,9 +4087,7 @@ module Magnetic
             eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
           enddo
         else
-!         tmp=(z(n)/height_eta)**2
-!         eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
-          eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_width))-eta
+          eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
       endif

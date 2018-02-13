@@ -960,6 +960,24 @@ module Special
 !
       select case (trim(slices%name))
 !
+!  hhT
+!
+        case ('hhT')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,ihhT)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,ihhT)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,ihhT)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ihhT)
+          slices%ready = .true.
+!
+!  hhX
+!
+        case ('hhX')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,ihhX)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,ihhX)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,ihhX)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ihhX)
+          slices%ready = .true.
+!
 !  ggT
 !
         case ('ggT')
