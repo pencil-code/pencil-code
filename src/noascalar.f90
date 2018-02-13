@@ -11,8 +11,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ssat
-! PENCILS PROVIDED gssat(3); ugssat
+! PENCILS PROVIDED acc
+! PENCILS PROVIDED gacc(3); ugacc
 !
 !***************************************************************
 module Ascalar
@@ -31,7 +31,7 @@ module Ascalar
     subroutine register_ascalar
 !
 !  Initialise variables which should know that we solve for passive
-!  scalar: issat; increase nvar accordingly.
+!  scalar: iacc; increase nvar accordingly.
 !
 !  6-jul-02/axel: coded
 !
@@ -92,7 +92,7 @@ module Ascalar
 !
     endsubroutine calc_pencils_ascalar
 !***********************************************************************
-    subroutine init_ssat(f)
+    subroutine init_acc(f)
 !
 !  Initialise energy; called from start.f90.
 !
@@ -100,10 +100,10 @@ module Ascalar
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine init_ssat
+    endsubroutine init_acc
 !***********************************************************************
 
-    subroutine dssat_dt(f,df,p)
+    subroutine dacc_dt(f,df,p)
 !
 !  Passive scalar evolution.
 !
@@ -119,7 +119,7 @@ module Ascalar
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine dssat_dt
+    endsubroutine dacc_dt
 !***********************************************************************
     subroutine read_ascalar_init_pars(iostat)
 !

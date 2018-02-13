@@ -500,8 +500,8 @@ module Particles_radius
         endif
       endif
       if (lascalar .and. lascalar_par) then
-        lpenc_requested(i_ssat) = .true.
-        lpenc_requested(i_ugssat) = .true.
+        lpenc_requested(i_acc) = .true.
+        lpenc_requested(i_ugacc) = .true.
       endif
 !
     endsubroutine pencil_criteria_par_radius
@@ -776,7 +776,7 @@ module Particles_radius
               endif
 !            
               if (lascalar) then
-                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) then
                   if (lconstTT) then     
                     es_T=c1*exp(-c2/constTT)
@@ -785,7 +785,7 @@ module Particles_radius
                   es_T=c1*exp(-c2/f(ix,m,n,iTT))
                   qvs_T=es_T/(Rv*rho0*f(ix,m,n,iTT))
                   endif
-                  supersaturation=f(ix,m,n,issat)/qvs_T-1.
+                  supersaturation=f(ix,m,n,iacc)/qvs_T-1.
                   dapdt = G_condensation*supersaturation/fp(k,iap)
                 endif
               endif

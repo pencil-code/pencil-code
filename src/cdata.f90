@@ -313,7 +313,7 @@ module Cdata
   integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
-  integer :: issat=0
+  integer :: iacc=0
   integer :: itauascalar=0
   integer :: iaphi=0,ibphi=0,ieth=0
   integer :: idet = 0

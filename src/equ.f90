@@ -861,7 +861,7 @@ module Equ
 !
 !  Supersaturation evolution
         
-        if (lascalar) call dssat_dt(f,df,p)
+        if (lascalar) call dacc_dt(f,df,p)
 !
 !  Dust evolution
 !

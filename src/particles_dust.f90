@@ -4553,7 +4553,7 @@ module Particles
                        es_T=c1*exp(-c2/f(l,m,n,iTT))
                        qvs_T=es_T/(Rv*rho0*f(l,m,n,iTT))
                      endif
-                     supersaturation=f(l,m,n,issat)/qvs_T-1.
+                     supersaturation=f(l,m,n,iacc)/qvs_T-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
                      f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rho0)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
