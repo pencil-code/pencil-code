@@ -122,7 +122,7 @@ indices = [ $
   { name:'ie', label:'Radiation scalar', dims:1 }, $
   { name:'icc', label:'Passive scalar', dims:1 }, $
   { name:'ilncc', label:'Log passive scalar', dims:1 }, $
-  { name:'issat', label:'Supersaturation', dims:1 }, $
+  { name:'iacc', label:'Active Scalar', dims:1 }, $
   { name:'iXX_chiral', label:'XX chiral', dims:1 }, $
   { name:'iYY_chiral', label:'YY chiral', dims:1 }, $
   { name:'ispecial', label:'Special', dims:1 }, $
@@ -183,7 +183,11 @@ indices_aux = [ $
   { name:'imdot', label:'Mass accretion rate', dims:1 }, $
   { name:'itmid', label:'Midplane temperature', dims:1 }, $
   { name:'ipotturb', label:'Turbulent potential', dims:1 }, $
-  { name:'iff', label:'Forcing function', dims:3 } $
+  { name:'iff', label:'Forcing function', dims:3 }, $
+  { name:'itauascalar', label:'Relaxation time', dims:1 }, $
+  { name:'issat', label:'Supersaturation', dims:1 }, $
+  { name:'icondensationRate', label:'Condensation rate', dims:1 }, $
+  { name:'iwaterMixingRatio', label:'Water mixing ratio', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 ;
