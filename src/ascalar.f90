@@ -327,13 +327,6 @@ module Ascalar
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
             if (lbuoyancy) then
               buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
-              print*,'buoyancy=',buoyancy
-              print*,'T=',p%TT
-              print*,'T_env=',T_env
-              print*,'dT=',(p%TT-T_env)/p%TT
-              print*,'qv_env=',qv_env
-              print*,'qv=',p%acc
-              print*,'dqv=',(p%acc-qv_env)/p%acc
               df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
             endif
 !
