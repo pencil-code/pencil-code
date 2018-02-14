@@ -55,7 +55,7 @@ module Ascalar
   real :: A1=0.0
   real :: latent_heat=0.0, cp=0.0
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
-  real :: c1, c2, Rv, rho0, constTT
+  real :: c1, c2, Rv, rhoa=1.0, constTT
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
   real, dimension(nz) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
@@ -65,7 +65,7 @@ module Ascalar
       lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
-      c1, c2, Rv, rho0, gravity_acceleration, Rv_over_Rd_minus_one, &
+      c1, c2, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
       lconstTT, constTT
 !
 !  Diagnostics variables
@@ -321,7 +321,7 @@ module Ascalar
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-p%condensationRate
         if (lconstTT) then
           es_T=c1*exp(-c2/constTT)
-          qvs_T=es_T/(Rv*rho0*constTT)
+          qvs_T=es_T/(Rv*rhoa*constTT)
         else
           if (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
@@ -331,7 +331,7 @@ module Ascalar
             endif
 !
             es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
-            qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
+            qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,iTT))
           endif
         endif
         f(l1:l2,m,n,issat)=f(l1:l2,m,n,issat)+f(l1:l2,m,n,iacc)/qvs_T-1.

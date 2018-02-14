@@ -37,7 +37,7 @@ module Particles_radius
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0., G_condensation=0., supersaturation=0., vapor_mixing_ratio_qvs=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  real :: es_T, qvs_T, c1, c2, Rv, rho0, constTT
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: lascalar_par=.false.
@@ -72,7 +72,7 @@ module Particles_radius
       lascalar_par,lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       G_condensation, lcondensation_rate, vapor_mixing_ratio_qvs, &
-      c1, c2, Rv, rho0, &
+      c1, c2, Rv, rhoa, &
       ltauascalar, lconstTT, constTT
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
@@ -780,10 +780,10 @@ module Particles_radius
                 if (lcondensation_rate) then
                   if (lconstTT) then     
                     es_T=c1*exp(-c2/constTT)
-                    qvs_T=es_T/(Rv*rho0*constTT)
+                    qvs_T=es_T/(Rv*rhoa*constTT)
                   else
                   es_T=c1*exp(-c2/f(ix,m,n,iTT))
-                  qvs_T=es_T/(Rv*rho0*f(ix,m,n,iTT))
+                  qvs_T=es_T/(Rv*rhoa*f(ix,m,n,iTT))
                   endif
                   supersaturation=f(ix,m,n,iacc)/qvs_T-1.
                   dapdt = G_condensation*supersaturation/fp(k,iap)

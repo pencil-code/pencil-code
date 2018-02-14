@@ -92,7 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
-  real :: es_T, qvs_T, c1, c2, Rv, rho0, constTT
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -284,7 +284,7 @@ module Particles
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, &
-      c1, c2, Rv, rho0, &
+      c1, c2, Rv, rhoa, &
       lconstTT, constTT, &
       G_condensation
 !
@@ -4541,21 +4541,21 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
 
               if (lascalar) then
-                 inversetau=4.*pi*rhopmat/rho0*fp(k,iap)*fp(k,inpswarm)
+                 inversetau=4.*pi*rhopmat/rhoa*fp(k,iap)*fp(k,inpswarm)
                  if (ascalar_ngp) then
                    l=ineargrid(k,1)
                    if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + A3*A2*inversetau
                    if (lcondensation_rate) then
                      if (lconstTT) then
                        es_T=c1*exp(-c2/constTT)
-                       qvs_T=es_T/(Rv*rho0*constTT)
+                       qvs_T=es_T/(Rv*rhoa*constTT)
                      else
                        es_T=c1*exp(-c2/f(l,m,n,iTT))
-                       qvs_T=es_T/(Rv*rho0*f(l,m,n,iTT))
+                       qvs_T=es_T/(Rv*rhoa*f(l,m,n,iTT))
                      endif
                      supersaturation=f(l,m,n,iacc)/qvs_T-1.
                      f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
-                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rho0)*(fp(k,iap))**3*fp(k,inpswarm)
+                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rhoa)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
                  elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
