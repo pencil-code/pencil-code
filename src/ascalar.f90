@@ -38,7 +38,7 @@ module Ascalar
   character (len=labellen) :: initacc='nothing'
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
-  real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
+  real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.0, gravity_acceleration=0.0
   logical :: lbuoyancy=.true.
 !
   namelist /ascalar_init_pars/ &
@@ -56,7 +56,8 @@ module Ascalar
   real :: latent_heat=0.0, cp=0.0
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rho0, constTT
-  real, dimension(nx) :: es_T, qvs_T
+  real, dimension(nx) :: es_T=0.0, qvs_T=0.0
+  real, dimension(nz) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
   logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false.
 
@@ -64,7 +65,7 @@ module Ascalar
       lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
-      c1, c2, Rv, rho0, &
+      c1, c2, Rv, rho0, gravity_acceleration, Rv_over_Rd_minus_one, &
       lconstTT, constTT
 !
 !  Diagnostics variables
@@ -76,6 +77,7 @@ module Ascalar
   integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0
   integer :: idiag_temperaturerms=0, idiag_temperaturemax=0,idiag_temperaturemin=0
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
+  integer :: idiag_buoyancyrms=0, idiag_buoyancymax=0, idiag_buoyancymin=0
 !
   contains
 !***********************************************************************
@@ -323,8 +325,17 @@ module Ascalar
         else
           if (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
-            if (lbuoyancy) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-            gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio) 
+            if (lbuoyancy) then
+              buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              print*,'buoyancy=',buoyancy
+              print*,'T=',p%TT
+              print*,'T_env=',T_env
+              print*,'dT=',(p%TT-T_env)/p%TT
+              print*,'qv_env=',qv_env
+              print*,'qv=',p%acc
+              print*,'dqv=',(p%acc-qv_env)/p%acc
+              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
+            endif
 !
             es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
             qvs_T=es_T/(Rv*rho0*f(l1:l2,m,n,iTT))
@@ -364,6 +375,12 @@ module Ascalar
             call sum_mn_name((f(l1:l2,m,n,issat))**2,idiag_ssatrms,lsqrt=.true.)
         if (idiag_ssatmax/=0) call max_mn_name(f(l1:l2,m,n,issat),idiag_ssatmax)
         if (idiag_ssatmin/=0) call max_mn_name(-f(l1:l2,m,n,issat),idiag_ssatmin,lneg=.true.)
+        if (lbuoyancy) then
+          if (idiag_buoyancyrms/=0) &
+            call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)
+          if (idiag_buoyancymax/=0) call max_mn_name(buoyancy,idiag_buoyancymax)
+          if (idiag_buoyancymin/=0) call max_mn_name(-buoyancy,idiag_buoyancymin,lneg=.true.)
+        endif
       endif
 !
     endsubroutine dacc_dt
@@ -426,6 +443,7 @@ module Ascalar
         idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0
         idiag_temperaturerms=0; idiag_temperaturemax=0; idiag_temperaturemin=0
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
+        idiag_buoyancyrms=0; idiag_buoyancymax=0; idiag_buoyancymin=0
 
       endif
 !
@@ -451,7 +469,9 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
         call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
         call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
-
+        call parse_name(iname,cname(iname),cform(iname),'buoyancyrms',idiag_buoyancyrms)
+        call parse_name(iname,cname(iname),cform(iname),'buoyancymax',idiag_buoyancymax)
+        call parse_name(iname,cname(iname),cform(iname),'buoyancymin',idiag_buoyancymin)
       enddo
 !
       if (lwr) then 
