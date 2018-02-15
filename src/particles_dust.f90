@@ -408,10 +408,11 @@ module Particles
       endif
 !
 !  Relaxation time of supersaturation
-      if (lascalar) &
-        call farray_register_auxiliary('tauascalar', itauascalar)
+      if (lascalar) then
+        if (ltauascalar) call farray_register_auxiliary('tauascalar', itauascalar)
         call farray_register_auxiliary('condensationRate', icondensationRate)
         call farray_register_auxiliary('waterMixingRatio', iwaterMixingRatio)
+      endif
 !
 !  Kill particles that spend enough time in birth ring
       if (lbirthring_depletion) then
@@ -2868,10 +2869,11 @@ module Particles
         lpenc_requested(i_gTT)=.true.
       endif
 !
-      if (lascalar) &
-         lpenc_requested(i_tauascalar)=.true.
+      if (lascalar) then
+         if (ltauascalar) lpenc_requested(i_tauascalar)=.true.
          lpenc_requested(i_condensationRate)=.true.
          lpenc_requested(i_waterMixingRatio)=.true.
+      endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2928,7 +2930,7 @@ module Particles
       if (lpencil_in(i_uup) .and. iuup == 0) &
         call fatal_error("pencil_interdep_particles", "p%uup is requested but not calculated. ")
 !
-      if (lascalar) lpencil_in(i_tauascalar)=.true.
+      if (lascalar .and. ltauascalar) lpencil_in(i_tauascalar)=.true.
       if (lascalar) lpencil_in(i_condensationRate)=.true.
       if (lascalar) lpencil_in(i_waterMixingRatio)=.true.
 !
@@ -3774,7 +3776,8 @@ module Particles
 !     
       
 ! supersat
-      if (lascalar) f(:,m,n,itauascalar) = 0.0
+!      if (lascalar) f(:,m,n,itauascalar) = 0.0
+      if (lascalar .and. ltauascalar) f(:,m,n,itauascalar) = 0.0
       if (lascalar) f(:,m,n,icondensationRate) = 0.0
       if (lascalar) f(:,m,n,iwaterMixingRatio) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0

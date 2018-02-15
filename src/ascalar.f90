@@ -39,7 +39,7 @@ module Ascalar
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
   real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.0, gravity_acceleration=0.0
-  logical :: lbuoyancy=.true.
+  logical :: lbuoyancy=.true., ltauascalar = .false.
 !
   namelist /ascalar_init_pars/ &
            initacc, acc_const, amplacc, widthacc, & 
@@ -199,7 +199,7 @@ module Ascalar
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gacc)=.true.
       endif
-      lpencil_in(i_tauascalar)=.true.
+      if (ltauascalar) lpencil_in(i_tauascalar)=.true.
       lpencil_in(i_condensationRate)=.true.
       lpencil_in(i_waterMixingRatio)=.true.
     endsubroutine pencil_interdep_ascalar
@@ -346,10 +346,12 @@ module Ascalar
         if (idiag_uxaccm/=0) call sum_mn_name(p%uu(:,1)*p%acc,idiag_uxaccm)
         if (idiag_uyaccm/=0) call sum_mn_name(p%uu(:,2)*p%acc,idiag_uyaccm)
         if (idiag_uzaccm/=0) call sum_mn_name(p%uu(:,3)*p%acc,idiag_uzaccm)
-        if (idiag_tauascalarrms/=0) &
-            call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
-        if (idiag_tauascalarmax/=0) call max_mn_name(p%tauascalar,idiag_tauascalarmax)
-        if (idiag_tauascalarmin/=0) call max_mn_name(-p%tauascalar,idiag_tauascalarmin,lneg=.true.)
+        if (ltauascalar) then
+          if (idiag_tauascalarrms/=0) &
+             call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
+          if (idiag_tauascalarmax/=0) call max_mn_name(p%tauascalar,idiag_tauascalarmax)
+          if (idiag_tauascalarmin/=0) call max_mn_name(-p%tauascalar,idiag_tauascalarmin,lneg=.true.)
+        endif
         if (idiag_condensationRaterms/=0) &
             call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
