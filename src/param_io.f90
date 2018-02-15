@@ -310,7 +310,7 @@ module Param_IO
       call read_namelist(read_testflow_init_pars       ,'testflow'       ,ltestflow)
       call read_namelist(read_radiation_init_pars      ,'radiation'      ,lradiation)
       call read_namelist(read_pscalar_init_pars        ,'pscalar'        ,lpscalar)
-      call read_namelist(read_ascalar_init_pars        ,'ascalar'       ,lascalar)
+      call read_namelist(read_ascalar_init_pars        ,'ascalar'        ,lascalar)
       call read_namelist(read_chiral_init_pars         ,'chiral'         ,lchiral)
       call read_namelist(read_chemistry_init_pars      ,'chemistry'      ,lchemistry)
       call read_namelist(read_signal_init_pars         ,'signal'         ,lsignal)

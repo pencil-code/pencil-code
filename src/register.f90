@@ -938,9 +938,9 @@ module Register
             nname_sound=0
           endif
         endif
+        if (lroot .and. (ip<14)) &
+            print*, 'sound_print_list: nname_sound=', nname_sound
       endif
-      if (lroot .and. (ip<14)) &
-          print*, 'sound_print_list: nname_sound=', nname_sound
 !
 !  Read in the list of variables for xy-averages.
 !
@@ -1062,7 +1062,7 @@ module Register
       call rprint_radiation       (lreset,LWRITE=lroot)
       call rprint_eos             (lreset,LWRITE=lroot)
       call rprint_pscalar         (lreset,LWRITE=lroot)
-      call rprint_ascalar        (lreset,LWRITE=lroot)
+      call rprint_ascalar         (lreset,LWRITE=lroot)
       call rprint_chiral          (lreset,LWRITE=lroot)
       call rprint_interstellar    (lreset,LWRITE=lroot)
       call rprint_chemistry       (lreset,LWRITE=lroot)

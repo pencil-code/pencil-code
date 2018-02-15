@@ -28,8 +28,6 @@ module Ascalar
   include 'ascalar.h'
 !
 ! Define local variables in this special module, not in "Cdata.f90"
-  integer :: icondensationRate=0
-  integer :: iwaterMixingRatio=0
   integer :: issat=0
 !  Init parameters.
 !
@@ -418,6 +416,7 @@ module Ascalar
 !
 !***********************************************************************
     subroutine rprint_ascalar(lreset,lwrite)
+!
       use Diagnostics
 !
       logical :: lreset
@@ -471,10 +470,6 @@ module Ascalar
 !
       if (lwr) then 
         write(3,*) 'iacc = ', iacc
-        write(3,*) 'itauascalar=', itauascalar
-        write(3,*) 'icondensationRate=', icondensationRate
-        write(3,*) 'iwaterMixingRatio=', iwaterMixingRatio
-        write(3,*) 'iTT=', iTT
         write(3,*) 'issat=', issat
       endif
 !

@@ -160,6 +160,7 @@ module Particles
 !
   integer :: init_repeat=0       !repeat particle initialization for distance statistics
 !
+  integer :: itauascalar=0
   integer :: icondensationRate=0
   integer :: iwaterMixingRatio=0
   logical :: lcondensation_rate=.false.
@@ -6359,6 +6360,9 @@ module Particles
         write(3,*) 'ifgx=', ifgx
         write(3,*) 'ifgy=', ifgy
         write(3,*) 'ifgz=', ifgz
+        write(3,*) 'itauascalar=', itauascalar
+        write(3,*) 'icondensationRate=', icondensationRate
+        write(3,*) 'iwaterMixingRatio=', iwaterMixingRatio
       endif
 !
 !  Reset everything in case of reset.
