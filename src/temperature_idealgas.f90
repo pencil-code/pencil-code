@@ -77,6 +77,8 @@ module Energy
   integer :: iglobal_glhc=0
   logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
+  logical, pointer :: lreduced_sound_speed
+!  logical, pointer :: lscale_to_cs2top
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -85,6 +87,7 @@ module Energy
   real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
   logical :: lADI_mixed=.false., lmultilayer=.false.
   real, pointer :: PrRa   ! preliminary
+  real, pointer :: reduce_cs2
   real, target :: mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
 !
   real, dimension(nz) :: TTmz, gTTmz 
@@ -295,7 +298,7 @@ module Energy
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
       use Sub, only: step,der_step
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -550,6 +553,19 @@ module Energy
         emiss_zmask_count = count(zmask_emiss ==  1.0)
         zmask_emiss = zmask_emiss*nz/emiss_zmask_count
       endif
+!
+      
+!  Check if reduced sound speed is used
+!
+      if (ldensity) then
+        call get_shared_variable('lreduced_sound_speed',&
+             lreduced_sound_speed)
+        if (lreduced_sound_speed) then
+          call get_shared_variable('reduce_cs2',reduce_cs2)
+!          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
+        endif
+      endif
+
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -1083,13 +1099,25 @@ module Energy
         endif
       endif
 !
+!  ``cs2/dx^2'' for timestep
+!
+      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
+        advec_cs2=p%cs2*dxyz_2
+      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
+!        if (lscale_to_cs2top) then
+!          advec_cs2=reduce_cs2*cs2top*dxyz_2
+!        else
+          advec_cs2=reduce_cs2*p%cs2*dxyz_2
+!        endif
+      endif
 !  Sound speed squared.
 !
       if (headtt) print*, 'denergy_dt: cs20=', p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+!XY: commented out the following
+!      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Add pressure gradient term in momentum equation.
