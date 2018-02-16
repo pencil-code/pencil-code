@@ -412,7 +412,7 @@ contains
 !
     call multsv(Kspitzer_para*exp(p%lnrho+3.5*p%lnTT),p%glnTT,K1)
 !
-!   JW: I think, you should divid by rho, not multiply.
+!    JW: for pp=qq/rho there you must divide by rho
 !    call multsv(Kspitzer_para*exp(3.5*p%lnTT-p%lnrho),p%glnTT,K1)
 !
 !
@@ -427,6 +427,8 @@ contains
 !
 ! We have to regard he additional factor rho
       qsat = saturation_flux* exp(2.*p%lnrho+1.5*p%lnTT) * Ksaturation
+!      qsat = saturation_flux* exp(1.5*p%lnTT) * Ksaturation
+!      JW: for pp=qq/rho, there is no rho factor
 !
       qsat = 1./(1./qsat +1./qabs)
       where (qabs > sqrt(tini))
@@ -440,7 +442,7 @@ contains
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
           tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  -  &
 !          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  &
-!  JW: I think, you should use here a plus
+!     JW: for pp=qq/rho there must be a '+'
           p%qq(:,i)*(p%uglnrho + p%divu)
     enddo
 !
@@ -451,8 +453,8 @@ contains
 !
     rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
 !
-!    I think, the factor of rho**2 is wrong
-!    and there must be a + in front of tmp
+!    JW: for pp=qq/rho, the factor rho**2 is vanishing
+!    and there must be a '+' in front of tmp
 !    rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
 !
 
