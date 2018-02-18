@@ -32,6 +32,7 @@ module power_spectrum
   include 'power_spectrum.h'
 !
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
+  logical :: lhalf_factor_in_GW=.false.
   integer :: firstout = 0
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -42,7 +43,7 @@ module power_spectrum
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
-      inz, n_segment_x
+      inz, n_segment_x, lhalf_factor_in_GW
 !
   contains
 !***********************************************************************
@@ -1501,7 +1502,7 @@ module power_spectrum
              +a_im(ikz,ikx,iky)**2 &
              +b_re(ikz,ikx,iky)**2 &
              +b_im(ikz,ikx,iky)**2
-          spectrumhel(k+1)=spectrumhel(k+1)+sign_switch*( &
+          spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*( &
              +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
              -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
 !
@@ -1543,7 +1544,15 @@ module power_spectrum
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
-    spectrum_sum=.5*spectrum_sum
+    !  half factor or not?
+    !  By default (lhalf_factor_in_GW=F), we have total(S) = gg2m.
+    !  Otherwise we have total(S) = (1/2) * gg2m.
+    !
+    if (lhalf_factor_in_GW) then
+      spectrum_sum=.5*spectrum_sum
+      spectrumhel=.5*spectrumhel
+    endif
+    !
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     if (lformat) then
       do k = 1, nk
