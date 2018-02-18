@@ -128,6 +128,8 @@ module Special
   integer :: idiag_g31pt=0       ! DIAG_DOC: $g_{31}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXpt=0       ! DIAG_DOC: $g_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_hrms=0        ! DIAG_DOC: $\bra{h_T^2+h_X^2}^{1/2}$
+  integer :: idiag_gg2m=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}$
   integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
   integer :: idiag_hhX2m=0       ! DIAG_DOC: $\bra{h_X^2}$
   integer :: idiag_hhTXm=0       ! DIAG_DOC: $\bra{h_T h_X}$
@@ -446,6 +448,8 @@ module Special
          if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
          if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
          if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
+         if (idiag_hrms/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhX)**2,idiag_hrms,lsqrt=.true.)
+         if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
          if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
          if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
          if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
@@ -911,8 +915,8 @@ module Special
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_ggTpt=0; idiag_ggXpt=0
-        idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0
-        idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0
+        idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
+        idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_ggTm=0; idiag_ggXm=0
       endif
 !
@@ -928,6 +932,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
         call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
+        call parse_name(iname,cname(iname),cform(iname),'hrms',idiag_hrms)
+        call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
         call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
         call parse_name(iname,cname(iname),cform(iname),'hhX2m',idiag_hhX2m)
         call parse_name(iname,cname(iname),cform(iname),'hhTXm',idiag_hhTXm)
