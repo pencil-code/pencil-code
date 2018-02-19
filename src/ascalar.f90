@@ -52,19 +52,20 @@ module Ascalar
   real :: updraft=0.0
   real :: A1=0.0
   real :: latent_heat=0.0, cp=0.0
+  real :: TT_mean=0.0
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rhoa=1.0, constTT
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
   real, dimension(nz) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
-  logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false.
+  logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false.
 
   namelist /ascalar_run_pars/ &
       lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
       c1, c2, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
-      lconstTT, constTT
+      lconstTT, constTT, TT_mean, lTT_mean
 !
 !  Diagnostics variables
 !
@@ -324,12 +325,20 @@ module Ascalar
           if (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
             if (lbuoyancy) then
-              buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+!              buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+!              buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
+                      +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
               df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
             endif
 !
-            es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
-            qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,iTT))
+            if (lTT_mean) then 
+              es_T=c1*exp(-c2/(f(l1:l2,m,n,iTT)+TT_mean))
+              qvs_T=es_T/(Rv*rhoa*(f(l1:l2,m,n,iTT)+TT_mean))
+            else
+              es_T=c1*exp(-c2/f(l1:l2,m,n,iTT))
+              qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,iTT))
+            endif       
           endif
         endif
         f(l1:l2,m,n,issat)=f(l1:l2,m,n,issat)+f(l1:l2,m,n,iacc)/qvs_T-1.

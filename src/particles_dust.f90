@@ -92,7 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
-  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -141,7 +141,7 @@ module Particles
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltauascalar = .false., lconstTT=.false.
+  logical :: ltauascalar = .false., lconstTT=.false., lTT_mean=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -287,7 +287,7 @@ module Particles
       ltauascalar, &
       c1, c2, Rv, rhoa, &
       lconstTT, constTT, &
-      G_condensation
+      G_condensation, TT_mean, lTT_mean
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -4553,6 +4553,9 @@ module Particles
                      if (lconstTT) then
                        es_T=c1*exp(-c2/constTT)
                        qvs_T=es_T/(Rv*rhoa*constTT)
+                     elseif (lTT_mean) then
+                       es_T=c1*exp(-c2/(f(l,m,n,iTT)+TT_mean))
+                       qvs_T=es_T/(Rv*rhoa*(f(l,m,n,iTT)+TT_mean))
                      else
                        es_T=c1*exp(-c2/f(l,m,n,iTT))
                        qvs_T=es_T/(Rv*rhoa*f(l,m,n,iTT))
