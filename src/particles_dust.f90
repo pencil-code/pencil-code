@@ -964,9 +964,10 @@ module Particles
       real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
-      real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
+      real :: dim1, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
       real :: rpar_int, rpar_ext, tausp_par
+      integer :: npar_loc_x, npar_loc_y, npar_loc_z
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -1399,23 +1400,23 @@ module Particles
 !
           if (dimensionality==3) then
 !  3-D
-            npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**dim1
-            npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**dim1
-            npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**dim1
+            npar_loc_x = nint((npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**dim1)
+            npar_loc_y = nint((npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**dim1)
+            npar_loc_z = nint((npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**dim1)
           elseif (dimensionality==2) then
 !  2-D
             if (nxgrid==1) then
-              npar_loc_x=1
-              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(3))**dim1
-              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**dim1
+              npar_loc_x = 1
+              npar_loc_y = nint((npar_loc*Lxyz_loc(2)/Lxyz_loc(3))**dim1)
+              npar_loc_z = nint((npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**dim1)
             elseif (nygrid==1) then
-              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(3))**dim1
-              npar_loc_y=1
-              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(1))**dim1
+              npar_loc_x = nint((npar_loc*Lxyz_loc(1)/Lxyz_loc(3))**dim1)
+              npar_loc_y = 1
+              npar_loc_z = nint((npar_loc*Lxyz_loc(3)/Lxyz_loc(1))**dim1)
             elseif (nzgrid==1) then
-              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(2))**dim1
-              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(1))**dim1
-              npar_loc_z=1
+              npar_loc_x = nint((npar_loc*Lxyz_loc(1)/Lxyz_loc(2))**dim1)
+              npar_loc_y = nint((npar_loc*Lxyz_loc(2)/Lxyz_loc(1))**dim1)
+              npar_loc_z = 1
             endif
           elseif (dimensionality==1) then
 !  1-D
@@ -1446,49 +1447,30 @@ module Particles
           if (dimensionality==3) then
 !  3-D
             do k=2,npar_loc
-              fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
-              fp(k,iyp)=fp(1,iyp)
-              fp(k,izp)=fp(1,izp)
-              if (fp(k,ixp)>xyz1_loc(1)) then
-                fp(k,ixp)=fp(1,ixp)
-                fp(k,iyp)=fp(k,iyp)+dy_par
-              endif
-              if (fp(k,iyp)>xyz1_loc(2)) then
-                fp(k,iyp)=fp(1,iyp)
-                fp(k,izp)=fp(k,izp)+dz_par
-              endif
+              fp(k,ixp) = fp(1,ixp) + mod(k-1, npar_loc_x) * dx_par
+              fp(k,iyp) = fp(1,iyp) + mod((k-1)/npar_loc_x, npar_loc_y) * dy_par
+              fp(k,izp) = fp(1,izp) + (k-1) / (npar_loc_x*npar_loc_y) * dz_par
             enddo
+!
           elseif (dimensionality==2) then
 !  2-D
             if (nxgrid==1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(1,ixp)
-                fp(k,iyp)=fp(1,iyp)+(k-1)*dy_par
-                fp(k,izp)=fp(1,izp)
-                if (fp(k,iyp)>xyz1_loc(2)) then
-                  fp(k,iyp)=fp(1,iyp)
-                  fp(k,izp)=fp(k,izp)+dz_par
-                endif
+                fp(k,ixp) = fp(1,ixp)
+                fp(k,iyp) = fp(1,iyp) + mod(k-1, npar_loc_y) * dy_par
+                fp(k,izp) = fp(1,izp) + (k-1) / npar_loc_y * dz_par
               enddo
             elseif (nygrid==1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
-                fp(k,iyp)=fp(1,iyp)
-                fp(k,izp)=fp(1,izp)
-                if (fp(k,ixp)>xyz1_loc(1)) then
-                  fp(k,ixp)=fp(1,ixp)
-                  fp(k,izp)=fp(k,izp)+dz_par
-                endif
+                fp(k,ixp) = fp(1,ixp) + mod(k-1, npar_loc_x) * dx_par
+                fp(k,iyp) = fp(1,iyp)
+                fp(k,izp) = fp(1,izp) + (k-1) / npar_loc_x * dz_par
               enddo
             elseif (nzgrid==1) then
               do k=2,npar_loc
-                fp(k,ixp)=fp(1,ixp)+(k-1)*dx_par
-                fp(k,iyp)=fp(1,iyp)
-                fp(k,izp)=fp(1,izp)
-                if (fp(k,ixp)>xyz1_loc(1)) then
-                  fp(k,ixp)=fp(1,ixp)
-                  fp(k,iyp)=fp(k,iyp)+dy_par
-                endif
+                fp(k,ixp) = fp(1,ixp) + mod(k-1, npar_loc_x) * dx_par
+                fp(k,iyp) = fp(1,iyp) + (k-1) / npar_loc_x * dy_par
+                fp(k,izp) = fp(1,izp)
               enddo
             endif
           elseif (dimensionality==1) then
