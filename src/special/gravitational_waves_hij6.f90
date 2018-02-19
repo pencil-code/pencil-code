@@ -98,7 +98,7 @@ module Special
   real :: diffhh=0., diffgg=0., diffhh_hyper3=0., diffgg_hyper3=0.
   real :: nscale_factor=0., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
-  logical :: lswitch_sign_e_X=.true., ldebug_print=.false.
+  logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
@@ -113,7 +113,8 @@ module Special
   namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
-    diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light
+    diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
+    lkinGW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -340,13 +341,13 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lhydro)    p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
+        if (lhydro.and.lkinGW) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
-          if (lhydro)    p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
+          if (lhydro.and.lkinGW) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
         endif
       enddo
