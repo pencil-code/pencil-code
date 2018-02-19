@@ -1257,6 +1257,20 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-r8 #(hydra)
 #LIBMPISUFFIX=#(hydra)
 ##
+## Piyali on Nova
+##
+#FC=ifort #(nova)
+#FFLAGS= -O2  #(nova)
+#FC=mpiifort #(nova)
+##FC=mpif90 #(nova)
+#CC=mpiicc #(nova)
+#CFLAGS=-O2 -DFUNDERSC=1 #(nova)
+#LD_MPI= #(nova)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(nova)
+#FFLAGS_DOUBLE=-r8 #(nova)
+#LIBMPISUFFIX=#(nova
+
+##
 ## Axel on LCD
 ##
 #FC=mpif90 #(hydra2*)
