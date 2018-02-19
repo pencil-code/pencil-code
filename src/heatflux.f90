@@ -31,13 +31,13 @@ module Heatflux
   character (len=labellen) :: iheatflux='nothing'
   logical :: lreset_heatflux
   real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
-  real :: Ksaturation_SI = 7e7, Ksaturation=0.
+  real :: Ksaturation_SI = 7e7, Ksaturation=0.,Kc=0.
   real :: Kspitzer_para=0.,hyper3_coeff=0.
 !
   namelist /heatflux_run_pars/ &
       lreset_heatflux,iheatflux,saturation_flux,  &
       tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
-      hyper3_coeff
+      hyper3_coeff,Kc
 !
 !  variables for video slices:
 !
@@ -63,6 +63,7 @@ module Heatflux
   integer :: idiag_qymax=0      ! DIAG_DOC: $\max(|q_y|)$
   integer :: idiag_qzmax=0      ! DIAG_DOC: $\max(|q_z|)$
   integer :: idiag_qrms=0       ! DIAG_DOC: rms of heat flux vector
+  integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
 !
   include 'heatflux.h'
 !
@@ -191,6 +192,25 @@ contains
       lpenc_requested(i_glnrho)=.true.
     endif
 !
+    if (iheatflux == 'noadvection-spitzer') then
+      lpenc_requested(i_qq)=.true.
+      lpenc_requested(i_divq)=.true.
+      lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_bunit)=.true.
+      lpenc_requested(i_b2)=.true.
+      lpenc_requested(i_uglnrho)=.true.
+      lpenc_requested(i_lnTT)=.true.
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_lnrho)=.true.
+      lpenc_requested(i_glnrho)=.true.
+      lpenc_requested(i_rho)=.true.
+      lpenc_requested(i_rho1)=.true.
+      lpenc_requested(i_TT)=.true.
+      lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_gamma)=.true.
+    endif
+!
     if (idiag_qmax/=0 .or. idiag_qrms/=0) then
        lpenc_diagnos(i_q2)=.true.
        lpenc_requested(i_q2)=.true.
@@ -268,6 +288,8 @@ contains
 !
     case ('spitzer')
       call non_fourier_spitzer(df,p)
+    case ('noadvection-spitzer')
+      call noadvection_non_fourier_spitzer(df,p)
     case ('eighth')
       call eighth_moment_approx(df,p)
     endselect
@@ -324,6 +346,7 @@ contains
     if (lreset) then
       idiag_qmax=0
       idiag_qrms=0
+      idiag_dtspitzer = 0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -331,6 +354,7 @@ contains
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
+      call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
     enddo
 !
    if (lwr) then
@@ -338,6 +362,7 @@ contains
       write(3,*) 'iqx=',iqx
       write(3,*) 'iqy=',iqy
       write(3,*) 'iqz=',iqz
+       write (3,*) 'i_dtspitzer=',idiag_dtspitzer
    endif
 !
   endsubroutine rprint_heatflux
@@ -578,5 +603,99 @@ contains
     endif
 !
   endsubroutine eighth_moment_approx
+!***********************************************************************
+  subroutine noadvection_non_fourier_spitzer(df,p)
+!
+!  19-feb-18/piyali: adapted from non-fourier_spitzer for ionisation equation of
+!  state, no advection term and a different free streaming limit
+!
+    use Diagnostics, only: max_mn_name
+    use EquationOfState
+    use Sub
+!
+    real, dimension (mx,my,mz,mvar) :: df
+    type (pencil_case) :: p
+    real, dimension(nx) :: b2_1,tau1_spitzer_penc
+    real, dimension(nx) :: chi_clight,chi_spitzer
+    real, dimension(nx) :: rhs,cosgT_b
+    real, dimension(nx,3) :: K1,unit_glnTT
+    real, dimension(nx,3) :: spitzer_vec
+    real, dimension(nx) :: tmp
+    integer :: i
+!
+! Compute Spizter coefficiant K_0 * T^(5/2) * rho where
+! we introduced an additional factor rho.
+!
+    b2_1=1./(p%b2+tini)
+!
+    chi_spitzer=Kspitzer_para*exp(2.5*p%lnTT)*p%cp1*p%gamma*p%rho1
+!
+!  Limit heat conduction so that the diffusion speed
+!  is smaller than a given fraction of the speed of light (Kc*c_light)
+!
+    if (Kc /= 0.) then
+      chi_clight = Kc * c_light/max(dz_1(n),dx_1(l1:l2))
+      where (chi_spitzer > chi_clight)
+        chi_spitzer = chi_clight
+      endwhere
+      call multsv(chi_spitzer*p%TT*p%rho/p%cp1/p%gamma,p%glnTT,K1)
+      call dot(K1,p%bb,tmp)
+      call multsv(b2_1*tmp,p%bb,spitzer_vec)
+    endif
+    tau1_spitzer_penc=chi_spitzer*p%rho* &
+                      (dt/cdtv)**2*(max(dz_1(n),dx_1(l1:l2)))**2
+!
+    do i=1,3
+      df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+          tau1_spitzer_penc*(p%qq(:,i) + spitzer_vec(:,i))
+    enddo
+!
+! Add to energy equation
+!
+
+    rhs = p%gamma*p%cp1*p%divq*p%TT1*p%rho1
+!
+
+    if (ltemperature) then
+       if (ltemperature_nolog) then
+          call fatal_error('non_fourier_spitzer', &
+               'not implemented for current set of thermodynamic variables')
+       else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+       endif
+    else if (lentropy.and.pretend_lnTT) then
+       call fatal_error('noadvection_non_fourier_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+    else if (lthermal_energy .and. ldensity) then
+       call fatal_error('noadvection_non_fourier_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+    else
+       call fatal_error('noadvection_non_fourier_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+    endif
+!
+
+    if (lfirst.and.ldt) then
+      call unit_vector(p%glnTT,unit_glnTT)
+      call dot(unit_glnTT,p%bunit,cosgT_b)
+      rhs = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+           p%gamma*p%cp1*tau1_spitzer_penc*abs(cosgT_b)
+!
+      if (idiag_dtspitzer/=0) &
+           call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)
+!
+    endif
+!
+    if (lvideo) then
+       rhs = (p%divq - tmp)*exp(-p%lnrho)
+       divq_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
+       if (m == iy_loc)  divq_xz(:,n-n1+1)= rhs
+       if (n == iz_loc)  divq_xy(:,m-m1+1)= rhs
+       if (n == iz2_loc) divq_xy2(:,m-m1+1)= rhs
+       if (n == iz3_loc) divq_xy3(:,m-m1+1)= rhs
+       if (n == iz4_loc) divq_xy4(:,m-m1+1)= rhs
+    endif
+!
+  endsubroutine noadvection_non_fourier_spitzer
 !***********************************************************************
 endmodule Heatflux
