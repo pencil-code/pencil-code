@@ -243,7 +243,7 @@ module Cdata
   logical :: llast_proc_xyz=.true.
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lpscalar_nolog=.false.
-  !logical :: lsupersat=.false.
+  !logical :: lascalar=.false.
   logical :: lalpm=.false., lalpm_alternate=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
@@ -313,8 +313,7 @@ module Cdata
   integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
-  integer :: issat=0
-  integer :: itausupersat=0
+  integer :: iacc=0
   integer :: iaphi=0,ibphi=0,ieth=0
   integer :: idet = 0
   integer :: iinvgrid=0
@@ -510,7 +509,7 @@ module Cdata
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false.
-  logical :: GWs_spec=.false., Str_spec=.false.
+  logical :: GWs_spec=.false., GWh_spec=.false., Str_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.

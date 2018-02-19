@@ -791,7 +791,7 @@ module Particles_surfspec
 !
 !  end of particle on pencil loop
 !
-            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
+!            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
           enddo
 !
 !

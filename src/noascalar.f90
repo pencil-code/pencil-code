@@ -6,16 +6,16 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lsupersat = .false.
+! CPARAM logical, parameter :: lascalar = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ssat
-! PENCILS PROVIDED gssat(3); ugssat
+! PENCILS PROVIDED acc
+! PENCILS PROVIDED gacc(3); ugacc
 !
 !***************************************************************
-module Supersat
+module Ascalar
 !
   use Cparam
   use Cdata
@@ -24,14 +24,14 @@ module Supersat
 !
   implicit none
 !
-  include 'supersat.h'
+  include 'ascalar.h'
 !
   contains
 !***********************************************************************
-    subroutine register_supersat
+    subroutine register_ascalar
 !
 !  Initialise variables which should know that we solve for passive
-!  scalar: issat; increase nvar accordingly.
+!  scalar: iacc; increase nvar accordingly.
 !
 !  6-jul-02/axel: coded
 !
@@ -40,9 +40,9 @@ module Supersat
       if (lroot) call svn_id( &
           "$Id$")
 !
-    endsubroutine register_supersat
+    endsubroutine register_ascalar
 !***********************************************************************
-    subroutine initialize_supersat(f)
+    subroutine initialize_ascalar(f)
 !
 !  Perform any necessary post-parameter read initialization.
 !
@@ -52,17 +52,17 @@ module Supersat
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine initialize_supersat
+    endsubroutine initialize_ascalar
 !***********************************************************************
-    subroutine pencil_criteria_supersat
+    subroutine pencil_criteria_ascalar
 !
 !  All pencils that the Pscalar module depends on are specified here.
 !
 !  20-11-04/anders: coded
 !
-    endsubroutine pencil_criteria_supersat
+    endsubroutine pencil_criteria_ascalar
 !***********************************************************************
-    subroutine pencil_interdep_supersat(lpencil_in)
+    subroutine pencil_interdep_ascalar(lpencil_in)
 !
 !  Interdependency among pencils provided by the Pscalar module
 !  is specified here.
@@ -73,9 +73,9 @@ module Supersat
 !
       call keep_compiler_quiet(lpencil_in)
 !
-    endsubroutine pencil_interdep_supersat
+    endsubroutine pencil_interdep_ascalar
 !***********************************************************************
-    subroutine calc_pencils_supersat(f,p)
+    subroutine calc_pencils_ascalar(f,p)
 !
 !  Calculate Pscalar pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -90,9 +90,9 @@ module Supersat
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_supersat
+    endsubroutine calc_pencils_ascalar
 !***********************************************************************
-    subroutine init_ssat(f)
+    subroutine init_acc(f)
 !
 !  Initialise energy; called from start.f90.
 !
@@ -100,10 +100,10 @@ module Supersat
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine init_ssat
+    endsubroutine init_acc
 !***********************************************************************
 
-    subroutine dssat_dt(f,df,p)
+    subroutine dacc_dt(f,df,p)
 !
 !  Passive scalar evolution.
 !
@@ -119,41 +119,41 @@ module Supersat
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine dssat_dt
+    endsubroutine dacc_dt
 !***********************************************************************
-    subroutine read_supersat_init_pars(iostat)
+    subroutine read_ascalar_init_pars(iostat)
 !
       integer, intent(out) :: iostat
 !
       iostat = 0
 !
-    endsubroutine read_supersat_init_pars
+    endsubroutine read_ascalar_init_pars
 !***********************************************************************
-    subroutine write_supersat_init_pars(unit)
+    subroutine write_ascalar_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_supersat_init_pars
+    endsubroutine write_ascalar_init_pars
 !***********************************************************************
-    subroutine read_supersat_run_pars(iostat)
+    subroutine read_ascalar_run_pars(iostat)
 !
       integer, intent(out) :: iostat
 !
       iostat = 0
 !
-    endsubroutine read_supersat_run_pars
+    endsubroutine read_ascalar_run_pars
 !***********************************************************************
-    subroutine write_supersat_run_pars(unit)
+    subroutine write_ascalar_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_supersat_run_pars
+    endsubroutine write_ascalar_run_pars
 !***********************************************************************
-    subroutine rprint_supersat(lreset,lwrite)
+    subroutine rprint_ascalar(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant for passive scalar.
 !
@@ -164,6 +164,6 @@ module Supersat
 !
       call keep_compiler_quiet(lreset,lwrite)
 !
-    endsubroutine rprint_supersat
+    endsubroutine rprint_ascalar
 !***********************************************************************
-endmodule Supersat
+endmodule Ascalar

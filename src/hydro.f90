@@ -167,7 +167,7 @@ module Hydro
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
-      ll_sh, mm_sh
+      ll_sh, mm_sh, delta_u
 !
 !  Run parameters.
 !
@@ -185,7 +185,7 @@ module Hydro
   real :: ekman_friction=0.0, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
-  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
+  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0., delta_u=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -1220,7 +1220,7 @@ module Hydro
       real, dimension (:,:), allocatable :: yz
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      real :: dis, xold,yold,uprof, factx, factz, sph_har_der
+      real :: dis, xold,yold,uprof, factx, factz, sph_har_der, der
       integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -1404,6 +1404,21 @@ module Hydro
           if (lroot) print*,'init_uu: tangential discontinuity'
           do m=m1,m2
             prof=ampluu(j)*tanh(y(m)/widthuu)
+            do n=n1,n2
+              f(l1:l2,m,n,iux)=prof
+            enddo
+          enddo
+!
+        case ('double_shear_layer')
+!
+!  Double shear layer
+!
+          if (lroot) print*,'init_uu: Double shear layer'
+          do m=m1,m2
+            der=2./delta_u
+            prof=ampluu(j)*(&
+                tanh(der*(y(m)+widthuu))-&
+                tanh(der*(y(m)-widthuu)))/2.
             do n=n1,n2
               f(l1:l2,m,n,iux)=prof
             enddo

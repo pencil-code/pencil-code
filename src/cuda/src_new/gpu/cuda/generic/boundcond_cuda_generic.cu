@@ -136,7 +136,7 @@ __global__ void per_x_sides(Grid d_grid)
 
 //Copy the edges from upper front & back and bottom front & back to
 //the appropriate boundary zones
-//(Requires thread dims of (32, 3, 3) and blockDims of (ceil((real) d_nx / (real)threadsPerBlock.x), 1, 4)
+//(Requires thread dims of (32, 3, 3) and blockDims of (ceil((real) d_nx / (real)tpb.x), 1, 4)
 __global__ void per_yz_edges(Grid d_grid)
 {
 	int ix, iy, iz;
@@ -186,7 +186,7 @@ __global__ void per_yz_edges(Grid d_grid)
 
 //Copy the edges from front left & right and back left & right to
 //the appropriate boundary zones
-//(Requires thread dims of (3, 32, 3) and blockDims of (1, ceil((real) d_ny / (real)threadsPerBlock.y), 4))
+//(Requires thread dims of (3, 32, 3) and blockDims of (1, ceil((real) d_ny / (real)tpb.y), 4))
 __global__ void per_xz_edges(Grid d_grid)
 {
 	int ix, iy, iz;
@@ -237,7 +237,7 @@ __global__ void per_xz_edges(Grid d_grid)
 
 //Copy the edges from upper left & right and bottom left & right to
 //the appropriate boundary zones
-//(Requires thread dims of (3, 3, 32) and blockDims of (1, 4, ceil((real) d_nz / (real)threadsPerBlock.z)))
+//(Requires thread dims of (3, 3, 32) and blockDims of (1, 4, ceil((real) d_nz / (real)tpb.z)))
 __global__ void per_xy_edges(Grid d_grid)
 {
 	int ix, iy, iz;
@@ -371,12 +371,8 @@ __global__ void per_xyz_corners(Grid d_grid)
 #define BOUNDCOND_TYPE_X PERIODIC_BOUNDCONDS
 #define BOUNDCOND_TYPE_Y PERIODIC_BOUNDCONDS
 #define BOUNDCOND_TYPE_Z PERIODIC_BOUNDCONDS
-void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams)
+void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams, cudaStream_t stream)
 {
-	//TODO: Adapt for shearing-periodic case
-
-	static dim3 blocksPerGrid, threadsPerBlock;
-
 	//Quick summary:
 	//The point in a 3D cuboid is copied to a location, where the location index is
 	//offset in 1, 2 or 3 axes
@@ -398,51 +394,45 @@ void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams)
 
 	//--------X BOUNDS---------------
 	switch	(BOUNDCOND_TYPE_X) {
-		case PERIODIC_BOUNDCONDS:
+		case PERIODIC_BOUNDCONDS: {
 			//Copy periodic x sides
-			threadsPerBlock.x = 6;
-			threadsPerBlock.y = 4;
-			threadsPerBlock.z = 1;
-			blocksPerGrid.x = 1;
-			blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
-			blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
-			per_x_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+            const dim3 tpb(6, 4, 1);
+            const dim3 bpg(
+                       1, 
+                       (unsigned int)ceil((real) cparams->ny / (real)tpb.y), 
+                       (unsigned int)ceil((real) cparams->nz / (real)tpb.z));
+			per_x_sides<<<bpg, tpb, 0, stream>>>(*d_grid);
 			CUDA_ERRCHK_KERNEL();
 
 			//Copy periodic xy edges
 			if (BOUNDCOND_TYPE_Y == PERIODIC_BOUNDCONDS) {
-				threadsPerBlock.x = 3;
-				threadsPerBlock.y = 3;
-				threadsPerBlock.z = 32;
-				blocksPerGrid.x = 1;
-				blocksPerGrid.y = 4;
-				blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
-				per_xy_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+                const dim3 tpb(3, 3, 32);
+                const dim3 bpg(
+                           1, 
+                           4, 
+                           (unsigned int)ceil((float) cparams->nz / tpb.z));
+				per_xy_edges<<<bpg, tpb, 0, stream>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 			}
 			//Copy periodic xz edges
 			if (BOUNDCOND_TYPE_Z == PERIODIC_BOUNDCONDS) {
-				threadsPerBlock.x = 3;
-				threadsPerBlock.y = 32;
-				threadsPerBlock.z = 3;
-				blocksPerGrid.x = 1;
-				blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
-				blocksPerGrid.z = 4;
-				per_xz_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+                const dim3 tpb(3, 32, 3);
+                const dim3 bpg(
+                           1, 
+                           (unsigned int)ceil((real) cparams->ny / (real)tpb.y), 
+                           4);
+				per_xz_edges<<<bpg, tpb, 0, stream>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 			}
 			//If fully periodic, copy all corners
 			if ((BOUNDCOND_TYPE_Y == PERIODIC_BOUNDCONDS) && (BOUNDCOND_TYPE_Z == PERIODIC_BOUNDCONDS)) {	
-				threadsPerBlock.x = 3;
-				threadsPerBlock.y = 3;
-				threadsPerBlock.z = 3;
-				blocksPerGrid.x = 1;
-				blocksPerGrid.y = 1;
-				blocksPerGrid.z = 8;
-				per_xyz_corners<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+                const dim3 tpb(3, 3, 3);
+                const dim3 bpg(1, 1, 8);
+				per_xyz_corners<<<bpg, tpb, 0, stream>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 			}
 			break;
+        }
 		default:
 			printf("INVALID X TYPE IN BOUNDCOND_CUDA!\n");
 			exit(EXIT_FAILURE);
@@ -453,29 +443,28 @@ void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams)
 	switch	(BOUNDCOND_TYPE_Y) {
 
 		//Do periodic bounds for y sides
-		case PERIODIC_BOUNDCONDS:
-			threadsPerBlock.x = 32;
-			threadsPerBlock.y = 32;
-			threadsPerBlock.z = 1;
-			blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
-			blocksPerGrid.y = ceil((real) cparams->nz / (real)threadsPerBlock.y);
-			blocksPerGrid.z = 6;
-			per_y_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+		case PERIODIC_BOUNDCONDS: {
+            const dim3 tpb(32, 32, 1);
+            const dim3 bpg(
+                       (unsigned int)ceil((real) cparams->nx / (real)tpb.x),
+                       (unsigned int)ceil((real) cparams->nz / (real)tpb.y),
+                       6);
+			per_y_sides<<<bpg, tpb, 0, stream>>>(*d_grid);
 			CUDA_ERRCHK_KERNEL();
 	
 			//Copy periodic yz edges
 			if (BOUNDCOND_TYPE_Z == PERIODIC_BOUNDCONDS) {
-				threadsPerBlock.x = 32;
-				threadsPerBlock.y = 3;
-				threadsPerBlock.z = 3;
-				blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
-				blocksPerGrid.y = 1;
-				blocksPerGrid.z = 4;
-				per_yz_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+                const dim3 tpb(32, 3, 3);
+                const dim3 bpg(
+                           (unsigned int)ceil((real) cparams->nx / (real)tpb.x),
+                           1,
+                           4);
+				per_yz_edges<<<bpg, tpb, 0, stream>>>(*d_grid);
 				CUDA_ERRCHK_KERNEL();
 
 			}
 			break;
+        }
 		default:
 			printf("INVALID Y TYPE IN BOUNDCOND_CUDA!\n");
 			exit(EXIT_FAILURE);
@@ -483,63 +472,58 @@ void boundcond_cuda_generic(Grid* d_grid, CParamConfig* cparams)
 	//--------------------------------
 
 
-
 	//---------Z BOUNDS----------------
 	switch	(BOUNDCOND_TYPE_Z) {
 
 		//Do periodic bounds for z sides
-		case PERIODIC_BOUNDCONDS:
-			threadsPerBlock.x = 32;
-			threadsPerBlock.y = 32;
-			threadsPerBlock.z = 1;
-			blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
-			blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
-			blocksPerGrid.z = 6;
-			per_z_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
+		case PERIODIC_BOUNDCONDS: {
+            const dim3 tpb(32, 32, 1);
+            const dim3 bpg((unsigned int)ceil((real) cparams->nx / (real)tpb.x),
+                           (unsigned int)ceil((real) cparams->ny / (real)tpb.y),
+                           6);
+			per_z_sides<<<bpg, tpb, 0, stream>>>(*d_grid);
 			CUDA_ERRCHK_KERNEL();
 			break;
+        }
 		default:
 			printf("INVALID Z TYPE IN BOUNDCOND_CUDA!\n");
 			exit(EXIT_FAILURE);
 	}	
 	//--------------------------------
-	
 }
 
 
-void periodic_xy_boundconds_cuda_generic(Grid* d_grid, CParamConfig* cparams)
+void periodic_xy_boundconds_cuda_generic(Grid* d_grid, CParamConfig* cparams, cudaStream_t stream)
 {
-    static dim3 blocksPerGrid, threadsPerBlock;
-
     //Copy periodic x sides
-    threadsPerBlock.x = 6;
-    threadsPerBlock.y = 4;
-    threadsPerBlock.z = 1;
-    blocksPerGrid.x = 1;
-    blocksPerGrid.y = ceil((real) cparams->ny / (real)threadsPerBlock.y);
-    blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
-    per_x_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
-    CUDA_ERRCHK_KERNEL();
+    {
+        const dim3 tpb(6, 4, 1);
+        const dim3 bpg(1,
+                       (unsigned int)ceil((real) cparams->ny / tpb.y),
+                       (unsigned int)ceil((real) cparams->nz / tpb.z));
+        per_x_sides<<<bpg, tpb, 0, stream>>>(*d_grid);
+        CUDA_ERRCHK_KERNEL();
+    }
 
     //Copy periodic xy edges
-	threadsPerBlock.x = 3;
-	threadsPerBlock.y = 3;
-	threadsPerBlock.z = 32;
-	blocksPerGrid.x = 1;
-	blocksPerGrid.y = 4;
-	blocksPerGrid.z = ceil((real) cparams->nz / (real)threadsPerBlock.z);
-	per_xy_edges<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
-	CUDA_ERRCHK_KERNEL();
+    {
+        const dim3 tpb(3, 3, 32);
+        const dim3 bpg(1,
+                       4,
+                       (unsigned int)ceil((real) cparams->nz / tpb.z));
+	    per_xy_edges<<<bpg, tpb, 0, stream>>>(*d_grid);
+	    CUDA_ERRCHK_KERNEL();
+    }
 
     //Copy periodic y sides
-    threadsPerBlock.x = 32;
-    threadsPerBlock.y = 32;
-    threadsPerBlock.z = 1;
-    blocksPerGrid.x = ceil((real) cparams->nx / (real)threadsPerBlock.x);
-    blocksPerGrid.y = ceil((real) cparams->nz / (real)threadsPerBlock.y);
-    blocksPerGrid.z = 6;
-    per_y_sides<<<blocksPerGrid, threadsPerBlock>>>(*d_grid);
-    CUDA_ERRCHK_KERNEL();
+    {
+        const dim3 tpb(32, 32, 1);
+        const dim3 bpg((unsigned int)ceil((real) cparams->nx / tpb.x),
+                       (unsigned int)ceil((real) cparams->nz / tpb.y),
+                       6);
+        per_y_sides<<<bpg, tpb, 0, stream>>>(*d_grid);
+        CUDA_ERRCHK_KERNEL();
+    }
 }
 
 

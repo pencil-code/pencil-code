@@ -1,3 +1,19 @@
+/*
+*   Sets the GPU interface up by pointing the interface functions to the functions
+*	implementing the interface.
+*
+*	For example: only GPUInit() is visible to someone who includes "gpu/gpu.h". 
+*	GPUInit() is set here to point to some actual implementation, for example
+*	init_cuda_generic() defined in "gpu/cuda/cuda_generic.cu". 	
+*
+*	The primary benefit of this approach is that the host code calling these
+*	interface functions do not have to care whether we use, say, cuda, opencl, 
+*	multi-GPU or some alternative boundary condition function. Everything
+*	happens under the hood and the implementation details are hidden to the caller.
+*	Therefore even if we make drastic changes in the GPU code, we don't have to
+*	rewrite the CPU code parts.
+*	
+*/
 #include "gpu.h"
 #include "common/errorhandler.h"
 #include "cuda/cuda_generic.cuh"

@@ -49,6 +49,14 @@ module Energy
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real, dimension(5) :: hole_params
+  real, dimension(nz) :: zmask_temp
+  real, dimension(2) :: temp_zaver_range=(/-max_real,max_real/)
+  real, dimension(nz) :: zmask_emiss
+  real, dimension(2) :: emiss_zaver_range=(/-max_real,max_real/)
+  real :: emiss_logT0=0.0
+  real :: emiss_width=1.0
+  real :: mu=1.0
+  real :: temp_zmask_count, emiss_zmask_count
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   real :: beta_bouss=-1.0
@@ -69,6 +77,8 @@ module Energy
   integer :: iglobal_glhc=0
   logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
+  logical, pointer :: lreduced_sound_speed
+!  logical, pointer :: lscale_to_cs2top
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -77,9 +87,12 @@ module Energy
   real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
   logical :: lADI_mixed=.false., lmultilayer=.false.
   real, pointer :: PrRa   ! preliminary
+  real, pointer :: reduce_cs2
   real, target :: mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
 !
   real, dimension(nz) :: TTmz, gTTmz 
+!
+  real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
 !
 !  Init parameters.
 !
@@ -87,7 +100,8 @@ module Energy
       initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_const, TT_const, &
       center1_x, center1_y, center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, &
       Tbump, Kmin, Kmax, hole_slope, hole_width, ltemperature_nolog, &
-      linitial_log, hcond0, luminosity, wheat, coef_lnTT, kx_lnTT, ky_lnTT, kz_lnTT
+      linitial_log, hcond0, luminosity, wheat, coef_lnTT, kx_lnTT, ky_lnTT, kz_lnTT, &
+      temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width
 !
 !  Run parameters.
 !
@@ -97,7 +111,9 @@ module Energy
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
-      cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean
+      cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
+      temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width, &
+      gradTT0
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -106,6 +122,8 @@ module Energy
   integer :: idiag_gTmax=0        ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0        ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0          ! DIAG_DOC: $\left< T \right>$
+  integer :: idiag_TTzmask=0      ! DIAG_DOC: $\left< T \right>$ for
+                                  ! DIAG_DOC: the temp_zaver_range
   integer :: idiag_TT2m=0         ! DIAG_DOC: $\left< T^2 \right>$
   integer :: idiag_TugTm=0        ! DIAG_DOC: $\left< T\uv\cdot\nabla T \right>$
   integer :: idiag_Trms=0         ! DIAG_DOC: $\sqrt{\left< T^2 \right>}$
@@ -155,6 +173,10 @@ module Energy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_Emzmask=0    ! DIAG_DOC: $\left< n^2 \exp{-(\log{T}-\log{T_0})
+                                ! DIAG_DOC:  ^2/(\delta \log{T})^2}\right>$
+                                ! DIAG_DOC:   the emiss_zaver_range
+!
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
@@ -176,7 +198,7 @@ module Energy
   integer :: idiag_uzTmz=0      ! XYAVG_DOC: $\left<u_z T\right>_{xy}$
   integer :: idiag_fradmz=0     ! XYAVG_DOC: $\left<F_{\rm rad}\right>_{xy}$
   integer :: idiag_fconvmz=0    ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
-!
+! 
 ! xz averaged diagnostics given in xzaver.in
 !
   integer :: idiag_ppmy=0       ! XZAVG_DOC: $\left<p\right>_{xz}$
@@ -197,10 +219,14 @@ module Energy
 ! y averaged diagnostics given in yaver.in
 !
   integer :: idiag_TTmxz=0      ! YAVG_DOC: $\left<T\right>_{y}$
+  integer :: idiag_Emymxz=0     ! YAVG_DOC: $\left< Em_y\right>_{y} $
+                                ! YAVG_DOC: \quad{Emission in y-direction}
 !
 ! z averaged diagnostics given in zaver.in
 !
   integer :: idiag_TTmxy=0      ! ZAVG_DOC: $\left<T\right>_{z}$
+  integer :: idiag_Emzmxy=0     ! ZAVG_DOC: $\left< Em_z\right>_{z} $
+                                ! ZAVG_DOC: \quad{Emission in z-direction}
 !
   real, dimension (nx) :: diffus_chi,diffus_chi3
 !
@@ -272,7 +298,7 @@ module Energy
       use EquationOfState, only : cs2bot, cs2top, gamma, gamma_m1, &
                                   select_eos_variable
       use Sub, only: step,der_step
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -495,6 +521,51 @@ module Energy
            call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
+!
+!  Compute mask for z-averaging where z is in temp_zaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      if (n1 == n2) then
+        zmask_temp = 1.
+      else
+        where (z(n1:n2) >= temp_zaver_range(1) .and. z(n1:n2) <= temp_zaver_range(2))
+          zmask_temp = 1.
+        elsewhere
+          zmask_temp = 0.
+        endwhere
+        temp_zmask_count = count(zmask_temp ==  1.0)
+        zmask_temp = zmask_temp*nz/temp_zmask_count
+      endif
+!
+!  Compute mask for z-averaging where z is in emission_zaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      if (n1 == n2) then
+        zmask_emiss = 1.
+      else
+        where (z(n1:n2) >= emiss_zaver_range(1) .and. z(n1:n2) <= emiss_zaver_range(2))
+          zmask_emiss = 1.
+        elsewhere
+          zmask_emiss = 0.
+        endwhere
+        emiss_zmask_count = count(zmask_emiss ==  1.0)
+        zmask_emiss = zmask_emiss*nz/emiss_zmask_count
+      endif
+!
+      
+!  Check if reduced sound speed is used
+!
+      if (ldensity) then
+        call get_shared_variable('lreduced_sound_speed',&
+             lreduced_sound_speed)
+        if (lreduced_sound_speed) then
+          call get_shared_variable('reduce_cs2',reduce_cs2)
+!          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
+        endif
+      endif
+
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -796,6 +867,7 @@ module Energy
       if (ladvection_temperature) then
         if (ltemperature_nolog) then
           lpenc_requested(i_ugTT)=.true.
+          lpenc_requested(i_del2TT)=.true.
         else
           lpenc_requested(i_uglnTT)=.true.
         endif
@@ -806,7 +878,7 @@ module Energy
       if ( idiag_TTmax/=0.or.idiag_TTmin/=0 .or.idiag_TTm/=0  .or.idiag_TugTm/=0 .or. &
            idiag_Trms/=0 .or.idiag_uxTm/=0  .or.idiag_uyTm/=0 .or.idiag_uzTm/=0  .or. &
            idiag_TT2mz/=0 .or.idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0 .or. &
-           idiag_TT2m/=0) lpenc_diagnos(i_TT)=.true.
+           idiag_TT2m/=0 .or.idiag_TTzmask/=0 .or. idiag_Emzmask/=0) lpenc_diagnos(i_TT)=.true.
 !
       if ( idiag_TugTm/=0 .or. idiag_gT2m/=0 .or. &
            idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_gTT)=.true.
@@ -867,7 +939,8 @@ module Energy
       if (idiag_fpresxmz/=0 .or. idiag_fpresymz/=0 .or. &
           idiag_fpreszmz/=0) lpenc_requested(i_fpres)=.true.
 !
-      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_Emymxz/=0 .or. &
+           idiag_Emzmxy/=0) lpenc_diagnos2d(i_TT)=.true.
 !
     endsubroutine pencil_criteria_energy
 !***********************************************************************
@@ -907,6 +980,7 @@ module Energy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
+!  31-01-18/MR: made calculation of p%gTT corrrect also for log temperature
 !
       use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad,grad,multmv
@@ -915,6 +989,7 @@ module Energy
       type (pencil_case), intent (inout) :: p
       integer :: j
       real, dimension(nx,3) :: gpp
+      real, dimension(nx) :: temp
 !
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
@@ -924,6 +999,20 @@ module Energy
 ! ugTT
       if (lpencil(i_ugTT)) &
           call u_dot_grad(f,ilnTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
+! Compute glnTT
+      if (lpencil(i_gTT)) then
+        call grad(f,ilnTT,p%gTT)
+        if (.not.ltemperature_nolog) then
+          temp=exp(f(l1:l2,m,n,ilnTT))
+          do j=1,3
+            p%gTT(:,j) = p%gTT(:,j)*temp
+          enddo
+        endif
+        do j=1,3
+          if (gradTT0(j)/=0.) p%gTT(:,j)=p%gTT(:,j)+gradTT0(j)
+        enddo
+      endif
+!
 ! fpres
       if (lpencil(i_fpres)) then
         if (lboussinesq) then
@@ -1010,13 +1099,25 @@ module Energy
         endif
       endif
 !
+!  ``cs2/dx^2'' for timestep
+!
+      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
+        advec_cs2=p%cs2*dxyz_2
+      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
+!        if (lscale_to_cs2top) then
+!          advec_cs2=reduce_cs2*cs2top*dxyz_2
+!        else
+          advec_cs2=reduce_cs2*p%cs2*dxyz_2
+!        endif
+      endif
 !  Sound speed squared.
 !
       if (headtt) print*, 'denergy_dt: cs20=', p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+!XY: commented out the following
+!      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Add pressure gradient term in momentum equation.
@@ -1160,6 +1261,13 @@ module Energy
 !
       if (ldiagnos) then
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
+        if (idiag_TTzmask/=0) call sum_mn_name(p%TT*zmask_temp(n-n1+1),idiag_TTzmask)
+!
+!  emiss_logT0 is the temperature of a specific emission line
+!  emiss_width is the width of the temperature distribution of specific emission line
+!
+        if (idiag_Emzmask/=0)   call sum_mn_name((p%rho/mu)**2*exp(-(log(p%TT)-emiss_logT0)**2 &
+                                     /emiss_width**2)*zmask_emiss(n-n1+1),idiag_Emzmask)
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
@@ -1271,6 +1379,10 @@ module Energy
       if (l2davgfirst) then
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
+        if (idiag_Emymxz/=0) call ysum_mn_name_xz((p%rho/mu)**2* & 
+                  exp(-(log(p%TT)-emiss_logT0)**2/(emiss_width)**2),idiag_Emymxz)
+        if (idiag_Emzmxy/=0) call zsum_mn_name_xy((p%rho/mu)**2* &
+                  exp(-(log(p%TT)-emiss_logT0)**2/(emiss_width)**2),idiag_Emzmxy)
       endif
 !
       if (lvideo.and.lfirst) then
@@ -1967,7 +2079,7 @@ module Energy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
+        idiag_TTmax=0; idiag_TTzmask=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
         idiag_TugTm=0; idiag_Trms=0; idiag_fradbot=0
         idiag_uxTm=0; idiag_uyTm=0; idiag_uzTm=0; idiag_gT2m=0
         idiag_guxgTm=0; idiag_guygTm=0; idiag_guzgTm=0
@@ -1981,15 +2093,17 @@ module Energy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
         idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
-        idiag_TTmxy=0; idiag_TTmxz=0
+        idiag_TTmxy=0; idiag_TTmxz=0; idiag_Emymxz=0; idiag_Emzmxy=0
         idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradmz=0
-        idiag_ethtot=0; idiag_fconvmz=0; idiag_TT2m=0
+        idiag_ethtot=0; idiag_fconvmz=0; idiag_TT2m=0; idiag_Emzmask=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
+        call parse_name(iname,cname(iname),cform(iname),'TTzmask',idiag_TTzmask)
+        call parse_name(iname,cname(iname),cform(iname),'Emzmask',idiag_Emzmask)
         call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
@@ -2074,6 +2188,8 @@ module Energy
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy', &
             idiag_TTmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'Emzmxy', &
+           idiag_Emzmxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -2081,6 +2197,8 @@ module Energy
       do inamexz=1,nnamexz
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz', &
             idiag_TTmxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'Emymxz', &
+           idiag_Emymxz)
       enddo
 !
 !  Write column where which variable is stored.

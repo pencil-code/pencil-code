@@ -37,17 +37,17 @@ module Particles_radius
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0., G_condensation=0., supersaturation=0., vapor_mixing_ratio_qvs=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  real :: es_T, qvs_T, c1, c2, Rv, rho0
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
-  logical :: lsupersat_par=.false.
+  logical :: lascalar_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
   logical :: lcondensation_rate=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
-  logical :: ltausupersat = .false.
+  logical :: ltauascalar = .false., lconstTT=.false., lTT_mean=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -69,11 +69,11 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, TTocean, &
       lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
-      lsupersat_par,lconstant_radius_w_chem, &
+      lascalar_par,lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       G_condensation, lcondensation_rate, vapor_mixing_ratio_qvs, &
-      c1, c2, Rv, rho0, &
-      ltausupersat
+      c1, c2, Rv, rhoa, &
+      ltauascalar, lconstTT, constTT, TT_mean, lTT_mean
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -145,8 +145,8 @@ module Particles_radius
       endif
 !
       if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
-          .and. .not. lsupersat_par &
-              .and. .not. lsupersat &
+          .and. .not. lascalar_par &
+              .and. .not. lascalar &
           .and. .not. lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
@@ -499,9 +499,9 @@ module Particles_radius
           lpenc_requested(i_TT1) = .true.
         endif
       endif
-      if (lsupersat .and. lsupersat_par) then
-        lpenc_requested(i_ssat) = .true.
-        lpenc_requested(i_ugssat) = .true.
+      if (lascalar .and. lascalar_par) then
+        lpenc_requested(i_acc) = .true.
+!        lpenc_requested(i_ugacc) = .true.
       endif
 !
     endsubroutine pencil_criteria_par_radius
@@ -540,8 +540,8 @@ module Particles_radius
       if (lsweepup_par) call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
       if (lcondensation_par) &
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lsupersat_par) &
-          call dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid) !XY
+      if (lascalar_par) &
+          call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !
       lfirstcall = .false.
@@ -767,12 +767,30 @@ module Particles_radius
                 dt1_condensation(ix) = max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
+!                    
               if (lcondensation_simplified) then
                 dapdt = GS_condensation/fp(k,iap)
-                !print*,"radius=",fp(k,iap)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
-                    (rhovap(ix)-rhosat(ix))*alpha_cond_par
+                (rhovap(ix)-rhosat(ix))*alpha_cond_par
+              endif
+!            
+              if (lascalar) then
+                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
+                if (lcondensation_rate) then
+                  if (lconstTT) then     
+                    es_T=c1*exp(-c2/constTT)
+                    qvs_T=es_T/(Rv*rhoa*constTT)
+                  elseif(lTT_mean) then
+                    es_T=c1*exp(-c2/(f(ix,m,n,iTT)+TT_mean))
+                    qvs_T=es_T/(Rv*rhoa*(f(ix,m,n,iTT)+TT_mean))
+                  else
+                    es_T=c1*exp(-c2/f(ix,m,n,iTT))
+                    qvs_T=es_T/(Rv*rhoa*f(ix,m,n,iTT))
+                  endif
+                  supersaturation=f(ix,m,n,iacc)/qvs_T-1.
+                  dapdt = G_condensation*supersaturation/fp(k,iap)
+                endif
               endif
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
@@ -873,50 +891,6 @@ module Particles_radius
       call keep_compiler_quiet(f)
 !
     endsubroutine dap_dt_condensation_pencil
-!***********************************************************************
-    subroutine dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Growth by condesation in a passive scalar field
-!
-!  28-may-16/Xiang-Yu: coded
-!
-      use Particles_number
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
-      real, dimension(mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real :: dapdt
-      integer :: k, ix, ix0
-!
-      intent(in) :: f, fp
-      intent(inout) :: dfp
-!
-!AB:  At the moment, dapdt grows only if lsupersat=T.
-!AB:  But we want the previous option should still to work.
-!XY: Note that when "lcondensation_rate" is updated here, "f(ix,m,n,issat)" is the mixing ratio.
-!XY: Since we solve the mixing ratio using the "supersat.f90" model
-!
-      do k = k1_imn(imn),k2_imn(imn)
-        ix0 = ineargrid(k,1)
-        ix = ix0-nghost
-        if (lsupersat) then
-          if (ltausupersat) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
-          if (lcondensation_rate) then
-            es_T=c1*exp(-c2/f(ix,m,n,ilnTT))
-            qvs_T=es_T/(Rv*rho0*f(ix,m,n,ilnTT))
-            supersaturation=f(ix,m,n,issat)/qvs_T-1.
-            !supersaturation=f(ix,m,n,issat)/vapor_mixing_ratio_qvs-1.
-            dapdt = G_condensation*supersaturation/fp(k,iap)
-          endif
-          dfp(k,iap) = dfp(k,iap)+dapdt
-        endif
-      enddo
-!
-    endsubroutine dap_dt_supersat_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !

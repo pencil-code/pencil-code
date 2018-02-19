@@ -235,8 +235,8 @@ module Magnetic
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
   real :: tau_aa_exterior=0.0
-  real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
-  real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
+  real :: sigma_ratio=1.0, eta_z0=1.0, eta_z1=1.0
+  real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0
   real :: eta_width_shock=0.0, eta_zshock=1.0, eta_jump_shock=1.0
   real :: eta_xwidth0=0.0,eta_xwidth1=0.0, eta_xshock=1.0
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
@@ -311,7 +311,7 @@ module Magnetic
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
-      lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
+      lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, &
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
@@ -1163,9 +1163,6 @@ module Magnetic
         case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
-          ! Backward compatibility: originally, this routine used
-          ! eta_zwidth as eta_width
-          if (eta_zwidth==0.and.eta_width/=0.0) eta_zwidth=eta_width
           call eta_zdep(zdep_profile, mz, z, eta_z, geta_z)
           if (limplicit_resistivity) call eta_zdep(zdep_profile, nzgrid, zgrid, eta_zgrid)
         case ('dust')
@@ -1593,23 +1590,23 @@ module Magnetic
         case ('Beltrami-general')
                call beltrami_general(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),phase_aa(j))
         case ('Beltrami-x')
-               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
+               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
         case ('Beltrami-xy-samehel')
-               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
-               call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j))
+               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
+               call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
         case ('Beltrami-xy-diffhel')
-               call beltrami(-amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
-               call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j))
+               call beltrami(-amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
+               call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
         case ('Beltrami-xy-mixed')
-               call beltrami(-amplaa(j)*mix_factor,f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
-               call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j))
+               call beltrami(-amplaa(j)*mix_factor,f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
+               call beltrami(amplaa(j),f,iaa,KY=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
         case ('Beltrami-yy')
-               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j))
-               call beltrami(amplaa(j),f,iaa,KX=2*kx_aa(j),phase=phasex_aa(j))
+               call beltrami(amplaa(j),f,iaa,KX=kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
+               call beltrami(amplaa(j),f,iaa,KX=2*kx_aa(j),phase=phasex_aa(j),sigma=relhel_aa)
         case ('Beltrami-y')
-               call beltrami(amplaa(j),f,iaa,KY=ky_aa(j),phase=phasey_aa(j))
+               call beltrami(amplaa(j),f,iaa,KY=ky_aa(j),phase=phasey_aa(j),sigma=relhel_aa)
         case ('Beltrami-z')
-               call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j))
+               call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j),sigma=relhel_aa)
         case ('bihelical-z')
                call bihelical(amplaa(j),f,iaa,KZ=kz_aa(j),phase=phasez_aa(j))
         case ('bihelical-z-sym')
@@ -4090,9 +4087,7 @@ module Magnetic
             eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
           enddo
         else
-!         tmp=(z(n)/height_eta)**2
-!         eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
-          eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_width))-eta
+          eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
       endif
@@ -4460,7 +4455,7 @@ module Magnetic
 !
 !  Not correct for hyperresistivity:
 !
-        if (idiag_epsM/=0) call sum_mn_name(eta*mu0*p%j2,idiag_epsM)
+        if (idiag_epsM/=0) call sum_mn_name(etatotal*mu0*p%j2,idiag_epsM)
 !
 !  Heating by ion-neutrals friction.
 !
@@ -4814,7 +4809,7 @@ module Magnetic
         if (idiag_uxbzmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%bb(:,3),idiag_uxbzmz)
         if (idiag_uybzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%bb(:,3),idiag_uybzmz)
         if (idiag_uzbzmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
-        if (idiag_epsMmz/=0) call xysum_mn_name_z(eta*mu0*p%j2,idiag_epsMmz)
+        if (idiag_epsMmz/=0) call xysum_mn_name_z(etatotal*mu0*p%j2,idiag_epsMmz)
         call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
         call xysum_mn_name_z(etatotal,idiag_etatotalmz)
 !

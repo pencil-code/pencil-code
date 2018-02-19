@@ -55,4 +55,5 @@
 &particles_chem_run_pars
 lthiele=F
 lreactive_heating=T
+lpreactions=T
 /

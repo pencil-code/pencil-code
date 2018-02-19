@@ -53,7 +53,7 @@ contains
       if (lcosmicrayflux) str=trim(str)//', '//'cosmicrayflux'
       if (lshear) str=trim(str)//', '//'shear'
       if (lpscalar) str=trim(str)//', '//'pscalar'
-      if (lsupersat) str=trim(str)//', '//'supersat'
+      if (lascalar) str=trim(str)//', '//'ascalar'
       if (lradiation) str=trim(str)//', '//'radiation'
       if (leos) str=trim(str)//', '//'eos'
       if (lchemistry) str=trim(str)//', '//'chemistry'

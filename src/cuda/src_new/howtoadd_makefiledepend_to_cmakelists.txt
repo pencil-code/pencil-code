@@ -1,0 +1,51 @@
+/*
+*   This is a temporary file, can be removed when no longer needed.
+*/
+
+
+How to use makefile.depend with cmake.
+
+
+1) Generate headers////////////////////////////////////////////////////////////
+-------------------------------------------------------------------------------
+https://stackoverflow.com/questions/44501921/calling-existing-make-command-in-cmake-file
+
+Add somewhere in src_new/CMakeLists.txt:
+ 
+add_custom_command(OUTPUT <output-file>
+                   COMMAND make.depend run #or something like this
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/<subdir>
+)
+
+Which does:
+
+../../cparam_c.h: ../../cparam.f90 ../../cparam.inc ../../cparam.local ../../scripts/cparam2c
+	@cd ../..; cparam2c
+../../cdata_c.h: ../../cdata.f90 ../../scripts/cdata2c
+	@cd ../..; cdata2c
+../../density_c.h: ../../density.f90 ../../scripts/density2c
+	@cd ../..; density2c
+../../diagnostics_c.h: ../../diagnostics.f90 ../../scripts/diagnostics2c
+	@cd ../..; diagnostics2c
+../../eos_c.h: ../../eos_idealgas.f90 ../../scripts/eos2c
+	@cd ../..; eos2c
+../../forcing_c.h: ../../forcing.f90 ../../scripts/forcing2c
+	@cd ../..; forcing2c
+../../hydro_c.h: ../../hydro.f90 ../../scripts/hydro2c
+	@cd ../..; hydro2c
+../../viscosity_c.h: ../../viscosity.f90 ../../scripts/viscosity2c
+	@cd ../..; viscosity2c
+../../sub_c.h: ../../sub.f90 ../../scripts/sub2c
+	@cd ../..; sub2c
+-------------------------------------------------------------------------------
+
+
+2) Include headers////////////////////////////////////////////////////////////
+-------------------------------------------------------------------------------
+https://stackoverflow.com/questions/13703647/how-to-properly-add-include-directories-with-cmake
+
+Replace CUDA_ADD_LIBRARY command in src_new/CMakeLists.txt near line 204 with:
+
+set(HEADER_FILES ${YOUR_DIRECTORY}/file1.h ${YOUR_DIRECTORY}/file2.h)
+CUDA_ADD_LIBRARY(astaroth_core SHARED gpu ${CUDA_MODULES} common ${HEADER_FILES} OPTIONS --compiler-options "-fpic")
+-------------------------------------------------------------------------------

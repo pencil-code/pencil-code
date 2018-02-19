@@ -697,7 +697,7 @@ module Equ
       use Solid_Cells, only: update_solid_cells_pencil, dsolid_dt
       use Special, only: calc_pencils_special, dspecial_dt
       use Sub, only: sum_mn
-      use Supersat
+      use Ascalar
       use Testfield
       use Testflow
       use Testscalar
@@ -754,7 +754,7 @@ module Equ
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
           advec_cs2=0.0
           maxadvec=0.
-          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
+          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
             advec2=0.
           if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy) &
             advec2_hypermesh=0.0
@@ -792,7 +792,7 @@ module Equ
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
-        if (lsupersat)        call calc_pencils_supersat(f,p)
+        if (lascalar)        call calc_pencils_ascalar(f,p)
                               call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
@@ -861,7 +861,7 @@ module Equ
 !
 !  Supersaturation evolution
         
-        if (lsupersat) call dssat_dt(f,df,p)
+        if (lascalar) call dacc_dt(f,df,p)
 !
 !  Dust evolution
 !

@@ -29,8 +29,9 @@ module Pscalar
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
   logical :: nopscalar=.false.
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
-  real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min
-  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0, radius_lncc=0.0
+  real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min, delta_lncc=0
+  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0
+  real :: amplcc, radius_lncc=0.0
   real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
   logical :: ldustdrift=.false.
@@ -38,7 +39,8 @@ module Pscalar
 !
   namelist /pscalar_init_pars/ &
       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc, ldustdrift
+      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc, &
+      ldustdrift, delta_lncc, amplcc
 !
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
@@ -150,6 +152,7 @@ module Pscalar
       use InitialCondition, only: initial_condition_lncc
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: der, prof
 !
       select case (initlncc)
         case ('zero'); f(:,:,:,ilncc)=0.
@@ -173,6 +176,21 @@ module Pscalar
             f(l1:l2,m,n,ilncc)=-1.0+2*0.5*(1.+tanh(z(n)/widthlncc))
           enddo; enddo
         case ('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,radius_lncc,epsilon_lncc)
+        case ('double_shear_layer')
+!
+!  Double shear layer
+!
+          if (lroot) print*,'init_lncc: Double shear layer'
+          do m=m1,m2
+            der=2./delta_lncc
+            prof=amplcc*(&
+                tanh(der*(y(m)+widthlncc))-&
+                tanh(der*(y(m)-widthlncc)))/2.
+            prof=prof
+            do n=n1,n2
+              f(l1:l2,m,n,ilncc)=1.-log(prof)+amplcc*1e-20
+            enddo
+          enddo
         case default; call fatal_error('init_lncc','bad initlncc='//trim(initlncc))
       endselect
 !

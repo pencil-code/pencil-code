@@ -83,7 +83,7 @@ module Particles_potential
 !  Set up indices for access to the fp and dfp arrays
 !
       if (lroot) call svn_id( &
-           "$Id: particles_potential.f90 dhruba.mitra@gmail.com $")
+           "$Id$")
 
     endsubroutine register_particles_potential
 !***********************************************************************
@@ -111,6 +111,7 @@ module Particles_potential
       if (cell_length.eq.0.) then 
          cell_length=4.*rmax
       endif
+			if (lroot) print*, 'rmax, cell_length',rmax,cell_length
 !
 ! the following line assumes that the domain is roughly size in all three      
 ! directions. If not, we need to code some more
@@ -155,24 +156,24 @@ module Particles_potential
 ! The following are necessary to calculate the moments
 ! of the joint PDF on the fly.
 !
-      mom_max=int((pmom_max-pmom_min)/mom_step)+1
-      allocate(mom_array(mom_max))
-      mom_array=0.
-      imom=2
-      mom_tmp=pmom_min
-      do while (mom_tmp .le. pmom_max)
-        if (mom_tmp .ne. 0) then
-          mom_array(imom) = mom_tmp
-          imom=imom+1
-        endif
-        mom_tmp = mom_tmp+mom_step
-      enddo
-    write(*,*) mom_array
-!
-    allocate(MomJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
-    MomJntPDF=0.
-    allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
-    MomColJntPDF=0.
+!      mom_max=int((pmom_max-pmom_min)/mom_step)+1
+!      allocate(mom_array(mom_max))
+!      mom_array=0.
+!      imom=2
+!      mom_tmp=pmom_min
+!      do while (mom_tmp .le. pmom_max)
+!        if (mom_tmp .ne. 0) then
+!          mom_array(imom) = mom_tmp
+!          imom=imom+1
+!        endif
+!        mom_tmp = mom_tmp+mom_step
+!      enddo
+!    write(*,*) mom_array
+!!
+!    allocate(MomJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+!    MomJntPDF=0.
+!    allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+!    MomColJntPDF=0.
 !
     endsubroutine initialize_particles_potential
 !***********************************************************************
@@ -214,13 +215,29 @@ module Particles_potential
       integer,dimension(3) :: cell_vec
       real,dimension(3) :: xxip,my_origin
 !
+			if (lroot) print*,'plist_min,plist_max',plist_min,plist_max
       do ip=plist_min,plist_max
         xxip=fpwn(ip,ixp:izp)
         my_origin(1)=x(l1); my_origin(2)=y(m1); my_origin(3)=z(n1)
         cell_vec=floor((xxip-my_origin)/cell_length)
+				if ( (cell_vec(1) > mcellx) .or. (cell_vec(2) > mcelly) .or. (cell_vec(3) > mcellz)) then
+					print*,'1 mcellx,mcelly,mcellz,cell_vec',mcellx,mcelly,mcellz,cell_vec
+					print*,'my_origin,xxip',my_origin,xxip
+					print*,'cell_length',cell_length
+				endif
+				if ( (cell_vec(1) < -1) .or. (cell_vec(2) < -1 ) .or. (cell_vec(3) < -1) ) then
+					print*,'2 mcellx,mcelly,mcellz,cell_vec',mcellx,mcelly,mcellz,cell_vec
+					print*,'my_origin,xxip',my_origin,xxip
+					print*,'cell_length',cell_length
+				endif
         link_list(ip)=head(cell_vec(1),cell_vec(2),cell_vec(3))
         head(cell_vec(1),cell_vec(2),cell_vec(3))=ip
       enddo
+			if (lroot) then
+				open(unit=1,file='head.tst',status='unknown')
+				write(1,*) 'head inside construct_link_list',head
+				close(1)
+			endif
 !
     endsubroutine construct_link_list
 !***********************************************************************
@@ -292,15 +309,21 @@ module Particles_potential
 !
 ! Now make the linked list for the local particles         
 ! but set head to zero before you begin
-         head = 0 
+         head = 0
+				 if (lroot) print*,'going into construct_link_list'
          call construct_link_list(1,npar_loc)
+				 if (lroot) print*,'coming out of construct_link_list'
 !
 ! Now load the data from boundaries to buffers (this is
 ! different in the serial and parallel case.          
 !         
+				 if (lroot) print*,'going into particles_neighbour_proc'
          call particles_neighbour_proc()
+				 if (lroot) print*,'coming out of particles_neighbour_proc'
 !
+				 if (lroot) print*,'going into calculate_potential'
          call calculate_potential (dfp,ineargrid)
+				 if (lroot) print*,'coming out of calculate_potential'
 !
       endif
     endsubroutine dvvp_dt_potential
@@ -382,14 +405,45 @@ module Particles_potential
 ! this sequence and the results will go wrong if the order
 ! is changed.
 !
-      if (nprocz > 1) &
+      if (nprocz > 1) then
          call particles_neighbour_proc_dirn(3)
-      if (nprocy > 1) &
+			else
+				 call apply_pbc_head(3)
+			endif
+!
+      if (nprocy > 1) then
          call particles_neighbour_proc_dirn(2)
-      if (nprocx > 1) &
+			else
+				 call apply_pbc_head(2)
+			endif
+!
+      if (nprocx > 1) then
          call particles_neighbour_proc_dirn(1)
-
+			else
+				 call apply_pbc_head(1)
+			endif
     endsubroutine particles_neighbour_proc
+!***********************************************************************
+		subroutine apply_pbc_head(idirn)
+      integer, intent(in) :: idirn
+!
+			select case (idirn)
+! copying along first direction
+! first the faces 
+			case(1)
+				head(-1,-1:mcelly,-1:mcellz) = head(mcellx-1,-1:mcelly,-1:mcellz)
+				head(mcellx,-1:mcelly,-1:mcellz) = head(0,-1:mcelly,-1:mcellz)
+!
+			case(2)
+				head(-1:mcellx,-1,-1:mcellz) = head(-1:mcellx,mcelly-1,-1:mcellz)
+				head(-1:mcellx,mcelly,-1:mcellz) = head(-1:mcellx,0,-1:mcellz)
+!
+			case(3)
+				head(-1:mcellx,-1:mcelly,-1) = head(-1:mcellx,-1:mcelly,mcellz-1)
+				head(-1:mcellx,-1:mcelly,mcellz) = head(-1:mcellx,-1:mcelly,0)
+!
+			endselect
+		end subroutine apply_pbc_head
 !***********************************************************************
     subroutine particles_neighbour_proc_dirn(idirn)
 
@@ -480,7 +534,14 @@ module Particles_potential
 ! check if the link list has been allocated, otherwise abort
       if (.not.lhead_allocated) &
         call fatal_error('dvvp_dt_potential', 'The linked list is not allocated; ABORTING') 
-!    
+!
+			if (lroot) print*,'mcellx,mcelly,mcellz',mcellx,mcelly,mcellz
+			if (lroot) then
+				open(unit=1,file='head2.tst',status='unknown')
+				write(1,*) 'head before mcell loop',head
+				close(1)
+			endif
+			if (lroot) print*,'calculate_potential 1'    
       do iz=0,mcellz-1;do iy=0,mcelly-1;do ix=0,mcellx-1
         ip = head(ix,iy,iz)
 !
@@ -518,6 +579,7 @@ module Particles_potential
         enddo
 !
       enddo; enddo; enddo
+			if (lroot) print*,'calculate_potential 2'    
 !
 ! loop over cells done
 !
@@ -554,32 +616,32 @@ module Particles_potential
        if (jp .le. npar_loc) &
           dfp(jp,ivpx:ivpz) = dfp(jp,ivpx:ivpz)+accnj
       endif
-      if (ldiagnos) then
-        if (RR .lt. Rcutoff) then 
-          Vsqr=vvij(1)*vvij(1)+vvij(2)*vvij(2)+vvij(3)*vvij(3)
-          Vparallel=dot_product(xxij,vvij)/RR
-          iRbin=floor(RR/dRbin)
-          api = fpwn(ip,iap)
-          call get_stbin(api,iStbin)
-          apj = fpwn(jp,iap)
-          call get_stbin(apj,jStbin)
-          call lower_triangular_index(ijSt,iStbin,jStbin)
-          if (idiag_gr) &
-            MomJntPDF(1,iRbin,ijSt) = MomJntPDF(1,iRbin,ijSt)+1.
-          if (idiag_colvel_mom) then
-            if (Vparallel .lt. 0) &
-              MomColJntPDF(1,iRbin,ijSt) = MomColJntPDF(1,iRbin,ijSt)+1.
-          endif
-          do jmom=2,mom_max
-            pmom=mom_array(jmom)
-            if (idiag_abs_mom) &
-              MomJntPDF(jmom,iRbin,ijSt) = MomJntPDF(jmom,iRbin,ijSt)+(abs(Vparallel))**pmom
-            if (Vparallel .lt. 0) then
-              MomColJntPDF(jmom,iRbin,ijSt) = MomColJntPDF(jmom,iRbin,ijSt)+(-Vparallel)**pmom
-            endif
-          enddo
-        endif
-      endif
+!      if (ldiagnos) then
+!        if (RR .lt. Rcutoff) then 
+!          Vsqr=vvij(1)*vvij(1)+vvij(2)*vvij(2)+vvij(3)*vvij(3)
+!          Vparallel=dot_product(xxij,vvij)/RR
+!          iRbin=floor(RR/dRbin)
+!          api = fpwn(ip,iap)
+!          call get_stbin(api,iStbin)
+!          apj = fpwn(jp,iap)
+!          call get_stbin(apj,jStbin)
+!          call lower_triangular_index(ijSt,iStbin,jStbin)
+!          if (idiag_gr) &
+!            MomJntPDF(1,iRbin,ijSt) = MomJntPDF(1,iRbin,ijSt)+1.
+!          if (idiag_colvel_mom) then
+!            if (Vparallel .lt. 0) &
+!              MomColJntPDF(1,iRbin,ijSt) = MomColJntPDF(1,iRbin,ijSt)+1.
+!          endif
+!          do jmom=2,mom_max
+!            pmom=mom_array(jmom)
+!            if (idiag_abs_mom) &
+!              MomJntPDF(jmom,iRbin,ijSt) = MomJntPDF(jmom,iRbin,ijSt)+(abs(Vparallel))**pmom
+!            if (Vparallel .lt. 0) then
+!              MomColJntPDF(jmom,iRbin,ijSt) = MomColJntPDF(jmom,iRbin,ijSt)+(-Vparallel)**pmom
+!            endif
+!          enddo
+!        endif
+!      endif
 !
     endsubroutine two_particle_int
 !***********************************************************************

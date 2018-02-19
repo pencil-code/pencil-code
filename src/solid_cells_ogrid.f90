@@ -56,6 +56,9 @@ module Solid_Cells
   logical :: SBP_optimized=.false.
 !  Filtering
   logical :: lfilter_solution=.false.
+  real, dimension(:,:,:,:), allocatable ::  f_filterH_lowerx,f_filterH_upperx
+  real, dimension(:,:,:,:), allocatable ::  f_filterH_lowery,f_filterH_uppery
+  integer, parameter :: filter_Hsize = 10/2-nghost
 !  Particle interpolation scheme
   integer :: particle_interpolate=1     ! 1: linear, 2: pseudo_quadratic, 3: quadratic
   logical :: lparticle_uradonly=.false.  ! Turn on to have linear inteprolation of all but ur
@@ -648,10 +651,15 @@ module Solid_Cells
       call initialize_interpolate_points
       !call initialize_send_ip_points
       call initialize_send_ip_points_alt
+!
+!  If filterint is used, initialize additional boundary zones (halos) needed for high order filter
+!  Must be done before initialization of mpicomm
+!
+      if(lfilter_solution) call initialize_pade_filter(f_ogrid)
 ! 
 !  Allocate arrays used for communications across processors internally on the curvilinear grid
 !
-      call initialize_mpicomm_ogrid
+      call initialize_mpicomm_ogrid(lfilter_solution)
 !
 !  If particles are used in the simulation, set up 'local' arrays of f_ogrid variables to use
 !  when computing particle velocities (etc.) for particles inside r_ogrid
@@ -4694,6 +4702,7 @@ module Solid_Cells
 !  Filter solution if this option is set
 !
     if(lfilter_solution) then
+      call communicate_filter_zones(f_ogrid,f_filterH_lowerx,f_filterH_upperx,f_filterH_lowery,f_filterH_uppery)
       call pade_filter(f_ogrid)
       call update_ghosts_ogrid(f_ogrid)
     endif
@@ -4703,7 +4712,7 @@ module Solid_Cells
     call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
     !call flow_curvilinear_to_cartesian(f_cartesian)
 
-    !TODO: Should use the partifle flow info in the interpolation point
+    !TODO: Should use the particle flow info in the interpolation point
     !      computation above
     if(lparticles)  call update_ogrid_flow_info(ivar1_part,ivar2_part)
 !
@@ -5161,7 +5170,7 @@ module Solid_Cells
       integer :: m2i_ogrid=my_ogrid-2*nghost+1
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
-      ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
+      ivar1=1; ivar2=min(mcom,size(f_og,4))
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
@@ -5199,6 +5208,36 @@ module Solid_Cells
       enddo
 !
     endsubroutine boundconds_z_ogrid
+!***********************************************************************
+    subroutine boundconds_y_filter(f_og,f_Hloy,f_Hupy,Hsize)
+!
+!  Periodic boundary condition for runs with a single processor in y-direction 
+!  Extended ghosts zones used if filtering is on
+!
+!  29-feb-17/Jorgen: Coded
+!
+      integer :: ivar1, ivar2, j
+      integer :: m1i_ogrid=m1_ogrid+nghost-1
+      integer :: m2i_ogrid=my_ogrid-2*nghost+1
+      integer, intent(in) :: Hsize
+      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) :: f_og
+      real, dimension (mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid) :: f_Hloy,f_Hupy
+      
+      intent(in) :: f_og
+      intent(inout) :: f_Hloy,f_Hupy
+!
+      ivar1=1; ivar2=min(mcom,size(f_og,4))
+!
+!  Boundary conditions in y
+!  Periodic, with y being the theta direction for the cylindrical grid
+!
+      do j=ivar1,ivar2
+!  Bottom boundary
+        f_Hloy(l1_ogrid:l2_ogrid,:,:,j) = f_og(l1_ogrid:l2_ogrid,m2i_ogrid-Hsize:m2i_ogrid-1,n1_ogrid:n2_ogrid,j)
+!  Top boundary
+        f_Hupy(l1_ogrid:l2_ogrid,:,:,j) = f_og(l1_ogrid:l2_ogrid,m1i_ogrid+1:m1i_ogrid+Hsize,n1_ogrid:n2_ogrid,j)
+      enddo
+    endsubroutine boundconds_y_filter
 !***********************************************************************
 ! FROM SUB.f90
 !***********************************************************************
@@ -6951,7 +6990,6 @@ module Solid_Cells
 !  21-feb-17/Jorgen: Adapted from boundcond.f90
 !
       use Solid_Cells_Mpicomm, only: initiate_isendrcv_bdry_ogrid, finalize_isendrcv_bdry_ogrid
-      use Mpicomm, only: mpibarrier
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
       !call boundconds_x_ogrid
@@ -7543,7 +7581,6 @@ module Solid_Cells
 !  13-okt-17/Jorgen: Coded
       real, dimension(l1_ogrid:l1_ogrid+6), intent(in) :: f
       real, dimension(3), intent(out) :: df
-      integer :: i
 
       df(1) = dx_1_ogrid(l1_ogrid)**2*(&
               +4.5111111111111111 *f(l1_ogrid  ) &
@@ -8086,7 +8123,7 @@ module Solid_Cells
       integer, dimension (4) :: inear_glob
 !
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
-      real :: xp0, yp0, zp0, tmp
+      real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: ix0, iy0, iz0, i 
       integer :: ix0_proc, iy0_proc, iz0_proc, proc, ind_proc
@@ -8355,8 +8392,8 @@ module Solid_Cells
       integer :: ix0, iy0, iz0, ix1, iy1, iz1, ix2
       integer :: ix0_proc, iy0_proc, iz0_proc, proc, ind_proc
 
-      real :: dx10_1, dx21_1, dx20_1, dy10_1, dy21_1, dy20_1, dz_1
-      real :: dxx0, dxx1, dxx2, dyy0, dyy1, dyy2, dzz0, dzz1
+      real :: dx10_1, dx21_1, dx20_1, dy10_1, dy21_1, dy20_1!, dz_1
+      real :: dxx0, dxx1, dxx2, dyy0, dyy1, dyy2!, dzz0, dzz1
       !real :: g000,g100,g010,g110,g200,g210,g001,g101,g011,g111,g201,g211
       real, dimension(3,3,2) :: gN
       !real :: f00, f01, f10, f11, h0, h1
@@ -8875,7 +8912,7 @@ module Solid_Cells
     real, dimension(ivar2-ivar1+1), intent(out) :: gp
 
     real, dimension(order) :: xa1,xa2,ya
-    real, dimension(order,order-1) :: up,vp,wp,rhop
+    real, dimension(order,order-1) :: up
     real, dimension(ivar2-ivar1+1,order-1) :: gpp
     integer :: ix0,iy0,ivar,j,jj,ii1,ii2
 
@@ -9615,9 +9652,59 @@ module Solid_Cells
 
   endsubroutine run_tests_ogrid
 !***********************************************************************
-  subroutine pade_filter(f_og)
+  subroutine initialize_pade_filter(f_og)
 !
-!  High order padé filtering of solution array 
+!  Initialization of high order padé filtering of solution array.
+!  10th order filter requires extension of ghost zones in periodic
+!  directions. Extended ghosts zones (halos) allocated here.
+!
+!  29-nov-17/Jorgen - Coded
+!
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
+    
+    if(filter_Hsize==0) then 
+      print*, 'WARNING: No need for filter halos, ghost zone large enough'
+      print*, '         This will not work for parallel runs with current implemtation'
+    elseif(filter_Hsize<0) then
+      call fatal_error('initialize_pade_filter','Negative filter halo size!')
+    elseif(filter_Hsize>nghost) then
+      ! Requres a modification of mpi-buffers, not yet implementer
+      call fatal_error('initialize_pade_filter','Filter halo too large!')
+    endif
+    
+    allocate(f_filterH_lowerx(filter_Hsize,my_ogrid,nz_ogrid,mfarray_ogrid))
+    allocate(f_filterH_upperx(filter_Hsize,my_ogrid,nz_ogrid,mfarray_ogrid))
+    allocate(f_filterH_lowery(mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid))
+    allocate(f_filterH_uppery(mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid))
+  endsubroutine initialize_pade_filter
+!***********************************************************************
+  subroutine communicate_filter_zones(f_og,f_Hlox,f_Hupx,f_Hloy,f_Hupy)
+    use Solid_Cells_Mpicomm, only: initiate_isendrcv_bdry_filter, finalize_isendrcv_bdry_filter
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) ::  f_og
+    real, dimension (filter_Hsize,my_ogrid,nz_ogrid,mfarray_ogrid) ::  f_Hlox,f_Hupx
+    real, dimension (mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid) ::  f_Hloy,f_Hupy
+    
+    intent(in) :: f_og
+    intent(inout) :: f_Hlox,f_Hupx,f_Hloy,f_Hupy
+!
+!  Communicate additional ghost zones needed for 10th order filter.
+!
+!  29-nov-17/Jorgen - Coded
+!
+      if (nprocx*nprocy>1) then
+        call initiate_isendrcv_bdry_filter(f_og,filter_Hsize)
+        call finalize_isendrcv_bdry_filter(f_Hlox,f_Hupx,f_Hloy,f_Hupy,filter_Hsize)
+      else
+        call boundconds_y_filter(f_og,f_Hloy,f_Hupy,filter_Hsize)
+      endif
+  endsubroutine communicate_filter_zones
+!***********************************************************************
+  subroutine pade_filter(f_og)
+    use mpicomm, only: mpibarrier
+    use Solid_cells_Mpicomm, only: cyclic_parallel_y,tridag_parallel_x
+    use General, only: cyclic, tridag
+!
+!  high order padé filtering of solution array 
 !  10th order on interor points, can choose 6th, 8th or 10th order at cylinder
 !  boundary. 
 !
@@ -9629,8 +9716,7 @@ module Solid_Cells
 !
 !  10-nov-17/Jorgen - Coded
 !
-
-    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout)::  f_og
+    real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
 !  Free paramter in filter coefficients:
 !
@@ -9640,11 +9726,11 @@ module Solid_Cells
     real, dimension(nx_ogrid,4) :: bx
     real, dimension(ny_ogrid), save :: aWy, aPy, aEy
     real, dimension(nx_ogrid), save :: aWx, aPx, aEx
-    integer :: i,j,jj
+    integer :: i
+    integer, save :: ii,jj
     real, save :: a0, a1, a2, a3, a4, a5
     real, save :: a0_6, a1_6, a2_6, a3_6
     logical :: lfirstcall = .true.
-
     if(lfirstcall) then
       a0=(193+126*af)/256.
       a1=(105+302*af)/256.
@@ -9657,16 +9743,28 @@ module Solid_Cells
       a2_6=-3./16.+3.*af/8.
       a3_6=1./32.-af/16.
 
-      aWy = -af
-      aPy = 1.
-      aEy = -af
-      aWx = -af
+      aWy=af
+      aPy=1.
+      aEy=af
+
+      aWx = af
       aPx = 1.
-      aEx = -af
-!  Since we do not filter the point at the boundary:
-      aWx(1) = 0.
-      aPx(1) = 1.
-      aEx(1) = 0.
+      aEx = af
+!  Since we do not filter the point at the boundary
+      if(ipx==0) then
+        aWx(1) = 0.
+        aPx(1) = 1.
+        aEx(1) = 0.
+      endif
+!  Also, do not filter values in the interpolation region 
+      if(ipx<nprocx-1) then
+        jj=0
+      else
+        jj=interpol_filter
+        aWx(nx_ogrid-jj) = 0.
+        aPx(nx_ogrid-jj) = 1.
+        aEx(nx_ogrid-jj) = 0.
+      endif
       lfirstcall = .false.
     endif
 ! 
@@ -9683,26 +9781,43 @@ module Solid_Cells
                + a4*0.5*(f_og(i,m1_ogrid-2:m2_ogrid-6,4,:) + f_og(i,m1_ogrid+6:m2_ogrid+2,4,:)) &
                + a5*0.5*(f_og(i,m1_ogrid-3:m2_ogrid-7,4,:) + f_og(i,m1_ogrid+7:m2_ogrid+3,4,:))
 !
-!  Special handling outside of ghost points
+!  Special handling outside of ordinary ghost points
 !
-! Note use of m2_ogrid-3:m2_ogrid-2 etc, on next the last two lines
-      by(1:2,:) = a0*f_og(i,m1_ogrid:m1_ogrid+1,4,:) &
-               + a1*0.5*(f_og(i,m1_ogrid-1:m1_ogrid  ,4,:) + f_og(i,m1_ogrid+1:m1_ogrid+2,4,:)) &
-               + a2*0.5*(f_og(i,m1_ogrid-2:m1_ogrid-1,4,:) + f_og(i,m1_ogrid+2:m1_ogrid+3,4,:)) &
-               + a3*0.5*(f_og(i,m1_ogrid-3:m1_ogrid-2,4,:) + f_og(i,m1_ogrid+3:m1_ogrid+4,4,:)) &
-               + a4*0.5*(f_og(i,m2_ogrid-3:m2_ogrid-2,4,:) + f_og(i,m1_ogrid+4:m1_ogrid+5,4,:)) &
-               + a5*0.5*(f_og(i,m2_ogrid-4:m2_ogrid-3,4,:) + f_og(i,m1_ogrid+5:m1_ogrid+6,4,:))
-! Note use of m1_ogrid+2:m1_ogrid+3 etc, on next two lines
-      by(ny_ogrid-1:ny_ogrid,:) = a0*f_og(i,m2_ogrid-1:m2_ogrid,4,:) &
-               + a1*0.5*(f_og(i,m2_ogrid-2:m2_ogrid-1,4,:) + f_og(i,m2_ogrid  :m2_ogrid+1,4,:)) &
-               + a2*0.5*(f_og(i,m2_ogrid-3:m2_ogrid-2,4,:) + f_og(i,m2_ogrid+1:m2_ogrid+2,4,:)) &
-               + a3*0.5*(f_og(i,m2_ogrid-4:m2_ogrid-3,4,:) + f_og(i,m2_ogrid+2:m2_ogrid+3,4,:)) &
-               + a4*0.5*(f_og(i,m2_ogrid-5:m2_ogrid-4,4,:) + f_og(i,m1_ogrid+2:m1_ogrid+3,4,:)) &
-               + a5*0.5*(f_og(i,m2_ogrid-6:m2_ogrid-5,4,:) + f_og(i,m1_ogrid+3:m1_ogrid+4,4,:))
-      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,1),by(:,1),aEy,aWy,aPy,1,ny_ogrid)
-      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,2),by(:,2),aEy,aWy,aPy,1,ny_ogrid)
-      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,3),by(:,3),aEy,aWy,aPy,1,ny_ogrid)
-      call tdma(f_og(i,m1_ogrid:m2_ogrid,4,4),by(:,4),aEy,aWy,aPy,1,ny_ogrid)
+      by(1,:) = a0*f_og(i,m1_ogrid,4,:) &
+               + a1*0.5*(f_og(i,m1_ogrid-1,4,:)   + f_og(i,m1_ogrid+1,4,:)) &
+               + a2*0.5*(f_og(i,m1_ogrid-2,4,:)   + f_og(i,m1_ogrid+2,4,:)) &
+               + a3*0.5*(f_og(i,m1_ogrid-3,4,:)   + f_og(i,m1_ogrid+3,4,:)) &
+               + a4*0.5*(f_filterH_lowery(i,2,1,:) + f_og(i,m1_ogrid+4,4,:)) &
+               + a5*0.5*(f_filterH_lowery(i,1,1,:) + f_og(i,m1_ogrid+5,4,:))
+      by(2,:) = a0*f_og(i,m1_ogrid+1,4,:) &
+               + a1*0.5*(f_og(i,m1_ogrid  ,4,:)   + f_og(i,m1_ogrid+2,4,:)) &
+               + a2*0.5*(f_og(i,m1_ogrid-1,4,:)   + f_og(i,m1_ogrid+3,4,:)) &
+               + a3*0.5*(f_og(i,m1_ogrid-2,4,:)   + f_og(i,m1_ogrid+4,4,:)) &
+               + a4*0.5*(f_og(i,m1_ogrid-3,4,:)   + f_og(i,m1_ogrid+5,4,:)) &
+               + a5*0.5*(f_filterH_lowery(i,2,1,:) + f_og(i,m1_ogrid+6,4,:))
+      by(ny_ogrid-1,:) = a0*f_og(i,m2_ogrid-1,4,:) &
+               + a1*0.5*(f_og(i,m2_ogrid-2,4,:) + f_og(i,m2_ogrid  ,4,:)) &
+               + a2*0.5*(f_og(i,m2_ogrid-3,4,:) + f_og(i,m2_ogrid+1,4,:)) &
+               + a3*0.5*(f_og(i,m2_ogrid-4,4,:) + f_og(i,m2_ogrid+2,4,:)) &
+               + a4*0.5*(f_og(i,m2_ogrid-5,4,:) + f_og(i,m2_ogrid+3,4,:)) &
+               + a5*0.5*(f_og(i,m2_ogrid-6,4,:) + f_filterH_uppery(i,1,1,:))
+      by(ny_ogrid  ,:) = a0*f_og(i,m2_ogrid,4,:) &
+               + a1*0.5*(f_og(i,m2_ogrid-1,4,:) + f_og(i,m2_ogrid+1,4,:)) &
+               + a2*0.5*(f_og(i,m2_ogrid-2,4,:) + f_og(i,m2_ogrid+2,4,:)) &
+               + a3*0.5*(f_og(i,m2_ogrid-3,4,:) + f_og(i,m2_ogrid+3,4,:)) &
+               + a4*0.5*(f_og(i,m2_ogrid-4,4,:) + f_filterH_uppery(i,1,1,:)) &
+               + a5*0.5*(f_og(i,m2_ogrid-5,4,:) + f_filterH_uppery(i,2,1,:))
+      if(nprocy>1) then
+        call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,1),f_og(i,m1_ogrid:m2_ogrid,4,1),ny_ogrid)
+        call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,2),f_og(i,m1_ogrid:m2_ogrid,4,2),ny_ogrid)
+        call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,3),f_og(i,m1_ogrid:m2_ogrid,4,3),ny_ogrid)
+        call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,4),f_og(i,m1_ogrid:m2_ogrid,4,4),ny_ogrid)
+      else
+        call cyclic(aWy,aPy,aEy,af,af,by(:,1),f_og(i,m1_ogrid:m2_ogrid,4,1),ny_ogrid)
+        call cyclic(aWy,aPy,aEy,af,af,by(:,2),f_og(i,m1_ogrid:m2_ogrid,4,2),ny_ogrid)
+        call cyclic(aWy,aPy,aEy,af,af,by(:,3),f_og(i,m1_ogrid:m2_ogrid,4,3),ny_ogrid)
+        call cyclic(aWy,aPy,aEy,af,af,by(:,4),f_og(i,m1_ogrid:m2_ogrid,4,4),ny_ogrid)
+      endif
     enddo
 ! 
 !  Filtering in radial direction
@@ -9711,28 +9826,80 @@ module Solid_Cells
 !  One-sided filter on cylinder surface can be set to 6th, 8th or 10th order
 !  Surface point is not filtered, and neither are points in the 'filter'-zone between interpolations
 !
-    jj=interpol_filter
     do i=m1_ogrid,m2_ogrid
-      bx(6:nx_ogrid-2,:) = a0*f_og(l1_ogrid+5:l2_ogrid-2,i,4,:) &
-                         + a1*0.5*(f_og(l1_ogrid+4:l2_ogrid-3,i,4,:) + f_og(l1_ogrid+ 6:l2_ogrid-1,i,4,:)) &
-                         + a2*0.5*(f_og(l1_ogrid+3:l2_ogrid-4,i,4,:) + f_og(l1_ogrid+ 7:l2_ogrid  ,i,4,:)) &
-                         + a3*0.5*(f_og(l1_ogrid+2:l2_ogrid-5,i,4,:) + f_og(l1_ogrid+ 8:l2_ogrid+1,i,4,:)) &
-                         + a4*0.5*(f_og(l1_ogrid+1:l2_ogrid-6,i,4,:) + f_og(l1_ogrid+ 9:l2_ogrid+2,i,4,:)) &
-                         + a5*0.5*(f_og(l1_ogrid  :l2_ogrid-7,i,4,:) + f_og(l1_ogrid+10:l2_ogrid+3,i,4,:))
-      bx(nx_ogrid-1:nx_ogrid,:) = a0_6*f_og(l2_ogrid-1:l2_ogrid,i,4,:) &
-                                + a1_6*0.5*(f_og(l2_ogrid-2:l2_ogrid-1,i,4,:) + f_og(l2_ogrid  :l2_ogrid+1,i,4,:)) &
-                                + a2_6*0.5*(f_og(l2_ogrid-3:l2_ogrid-2,i,4,:) + f_og(l2_ogrid+1:l2_ogrid+2,i,4,:)) &
-                                + a3_6*0.5*(f_og(l2_ogrid-4:l2_ogrid-3,i,4,:) + f_og(l2_ogrid+2:l2_ogrid+3,i,4,:)) 
-
-      !call boundary_x_central(bx(1:5,:),f_og,af,i)
-      !call boundary_x_6th(bx(1:5,:),f_og,af,i)
-      !call boundary_x_8th(bx(1:5,:),f_og,af,i)
-      !call boundary_x_10th(bx(1:5,:),f_og,af,i)
-      call boundary_x_8_6th(bx(1:5,:),f_og,af,i)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,1),bx(:,1),aEx,aWx,aPx,1,nx_ogrid-jj)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,2),bx(:,2),aEx,aWx,aPx,1,nx_ogrid-jj)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,3),bx(:,3),aEx,aWx,aPx,1,nx_ogrid-jj)
-      call tdma(f_og(l1_ogrid:l2_ogrid,i,4,4),bx(:,4),aEx,aWx,aPx,1,nx_ogrid-jj)
+      if(ipx==0) then
+!
+!  Special filtering near surface
+!
+        !call boundary_x_central(bx(1:5,:),f_og,af,i)
+        !call boundary_x_6th(bx(1:5,:),f_og,af,i)
+        !call boundary_x_8th(bx(1:5,:),f_og,af,i)
+        !call boundary_x_10th(bx(1:5,:),f_og,af,i)
+        call boundary_x_8_6th(bx(1:5,:),f_og,af,i)
+        bx(6:nx_ogrid-2,:) = a0*f_og(l1_ogrid+5:l2_ogrid-2,i,4,:) &
+                           + a1*0.5*(f_og(l1_ogrid+4:l2_ogrid-3,i,4,:) + f_og(l1_ogrid+ 6:l2_ogrid-1,i,4,:)) &
+                           + a2*0.5*(f_og(l1_ogrid+3:l2_ogrid-4,i,4,:) + f_og(l1_ogrid+ 7:l2_ogrid  ,i,4,:)) &
+                           + a3*0.5*(f_og(l1_ogrid+2:l2_ogrid-5,i,4,:) + f_og(l1_ogrid+ 8:l2_ogrid+1,i,4,:)) &
+                           + a4*0.5*(f_og(l1_ogrid+1:l2_ogrid-6,i,4,:) + f_og(l1_ogrid+ 9:l2_ogrid+2,i,4,:)) &
+                           + a5*0.5*(f_og(l1_ogrid  :l2_ogrid-7,i,4,:) + f_og(l1_ogrid+10:l2_ogrid+3,i,4,:))
+      else
+!
+!  Special handling outside of ordinary ghost points
+!
+        bx(1,:) = a0*f_og(l1_ogrid,i,4,:) &
+                 + a1*0.5*(f_og(l1_ogrid-1,i,4,:)   + f_og(l1_ogrid+1,i,4,:)) &
+                 + a2*0.5*(f_og(l1_ogrid-2,i,4,:)   + f_og(l1_ogrid+2,i,4,:)) &
+                 + a3*0.5*(f_og(l1_ogrid-3,i,4,:)   + f_og(l1_ogrid+3,i,4,:)) &
+                 + a4*0.5*(f_filterH_lowerx(2,i,1,:) + f_og(l1_ogrid+4,i,4,:)) &
+                 + a5*0.5*(f_filterH_lowerx(1,i,1,:) + f_og(l1_ogrid+5,i,4,:))
+        bx(2,:) = a0*f_og(l1_ogrid+1,i,4,:) &
+                 + a1*0.5*(f_og(l1_ogrid  ,i,4,:)    + f_og(l1_ogrid+2,i,4,:)) &
+                 + a2*0.5*(f_og(l1_ogrid-1,i,4,:)    + f_og(l1_ogrid+3,i,4,:)) &
+                 + a3*0.5*(f_og(l1_ogrid-2,i,4,:)    + f_og(l1_ogrid+4,i,4,:)) &
+                 + a4*0.5*(f_og(l1_ogrid-3,i,4,:)    + f_og(l1_ogrid+5,i,4,:)) &
+                 + a5*0.5*(f_filterH_lowerx(2,i,1,:) + f_og(l1_ogrid+6,i,4,:))
+        bx(3:nx_ogrid-2,:) = a0*f_og(l1_ogrid+2:l2_ogrid-2,i,4,:) &
+                 + a1*0.5*(f_og(l1_ogrid+1:l2_ogrid-3,i,4,:) + f_og(l1_ogrid+3:l2_ogrid-1,i,4,:)) &
+                 + a2*0.5*(f_og(l1_ogrid  :l2_ogrid-4,i,4,:) + f_og(l1_ogrid+4:l2_ogrid  ,i,4,:)) &
+                 + a3*0.5*(f_og(l1_ogrid-1:l2_ogrid-5,i,4,:) + f_og(l1_ogrid+5:l2_ogrid+1,i,4,:)) &
+                 + a4*0.5*(f_og(l1_ogrid-2:l2_ogrid-6,i,4,:) + f_og(l1_ogrid+6:l2_ogrid+2,i,4,:)) &
+                 + a5*0.5*(f_og(l1_ogrid-3:l2_ogrid-7,i,4,:) + f_og(l1_ogrid+7:l2_ogrid+3,i,4,:))
+      endif
+      if(ipx<nprocx-1) then
+        bx(nx_ogrid-1,:) = a0*f_og(l2_ogrid-1,i,4,:) &
+                    + a1*0.5*(f_og(l2_ogrid-2,i,4,:) + f_og(l2_ogrid  ,i,4,:)) &
+                    + a2*0.5*(f_og(l2_ogrid-3,i,4,:) + f_og(l2_ogrid+1,i,4,:)) &
+                    + a3*0.5*(f_og(l2_ogrid-4,i,4,:) + f_og(l2_ogrid+2,i,4,:)) &
+                    + a4*0.5*(f_og(l2_ogrid-5,i,4,:) + f_og(l2_ogrid+3,i,4,:)) &
+                    + a5*0.5*(f_og(l2_ogrid-6,i,4,:) + f_filterH_upperx(1,i,1,:))
+        bx(nx_ogrid,:) = a0*f_og(l2_ogrid,i,4,:) &
+                  + a1*0.5*(f_og(l2_ogrid-1,i,4,:) + f_og(l2_ogrid+1,i,4,:)) &
+                  + a2*0.5*(f_og(l2_ogrid-2,i,4,:) + f_og(l2_ogrid+2,i,4,:)) &
+                  + a3*0.5*(f_og(l2_ogrid-3,i,4,:) + f_og(l2_ogrid+3,i,4,:)) &
+                  + a4*0.5*(f_og(l2_ogrid-4,i,4,:) + f_filterH_upperx(1,i,1,:)) &
+                  + a5*0.5*(f_og(l2_ogrid-5,i,4,:) + f_filterH_upperx(2,i,1,:))
+      else
+        bx(nx_ogrid-1:nx_ogrid,:) = a0_6*f_og(l2_ogrid-1:l2_ogrid,i,4,:) &
+                                  + a1_6*0.5*(f_og(l2_ogrid-2:l2_ogrid-1,i,4,:) + f_og(l2_ogrid  :l2_ogrid+1,i,4,:)) &
+                                  + a2_6*0.5*(f_og(l2_ogrid-3:l2_ogrid-2,i,4,:) + f_og(l2_ogrid+1:l2_ogrid+2,i,4,:)) &
+                                  + a3_6*0.5*(f_og(l2_ogrid-4:l2_ogrid-3,i,4,:) + f_og(l2_ogrid+2:l2_ogrid+3,i,4,:)) 
+        bx(nx_ogrid-jj,:) = f_og(l2_ogrid-jj,i,4,:)
+      endif
+      if(nprocx>1) then
+        call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,1), &
+          f_og(l1_ogrid:l2_ogrid-jj,i,4,1), nx_ogrid-jj)
+        call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,2), &
+          f_og(l1_ogrid:l2_ogrid-jj,i,4,2), nx_ogrid-jj)
+        call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,3), &
+          f_og(l1_ogrid:l2_ogrid-jj,i,4,3), nx_ogrid-jj)
+        call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,4), &
+          f_og(l1_ogrid:l2_ogrid-jj,i,4,4), nx_ogrid-jj)
+      else
+        call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,1),f_og(l1_ogrid:l2_ogrid-jj,i,4,1))
+        call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,2),f_og(l1_ogrid:l2_ogrid-jj,i,4,2))
+        call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,3),f_og(l1_ogrid:l2_ogrid-jj,i,4,3))
+        call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,4),f_og(l1_ogrid:l2_ogrid-jj,i,4,4))
+      endif
     enddo
 !
   endsubroutine pade_filter
@@ -10102,48 +10269,4 @@ module Solid_Cells
 
   endsubroutine boundary_x_8_6th
 !***********************************************************************
-subroutine TDMA(fi,b,aE,aW,aP,Istart,Iend)
-!
-  implicit none
-  double precision, dimension(:), intent(in out) :: fi
-  double precision, dimension(:), intent(in) :: b
-  double precision, dimension(:), intent(in) :: aE,aW,aP
-  integer, intent(in) :: Istart,Iend
-  integer :: I
-  double precision, dimension(Iend) :: Ath, Cmth
-  double precision :: Cth
-!
-!---- TDMA from west to east. equation to solve:
-!----
-!---- - aW*fiW + aP*fiP - aE*fiE = b
-!----
-!---- equivalences with variables in eq. 7.1-7.6:
-!---- BETA=aW(I,J)   Def. in eq. 7.2
-!---- D=aP(I,J)      Def. in eq. 7.2 
-!---- ALFA=aE(I,J)   Def. in eq. 7.2
-!---- A=Ath(I)       Def. in eq. 7.6b
-!---- C=Cth          Same as the constant b=Su def. in eq 4.11
-!---- C´=Cmth(I)     Def. in eq. 7.6c
-!
-!
-!---- Solving from east to west
-!
-!---- At the west boundary:
-  Ath(Istart)=0.   
-  Cmth(Istart)=fi(Istart) 
-
-!---- Forward substitution
-  do I=Istart+1,Iend-1 
-    Ath(I)=aE(I)/(aP(I)-aW(I)*Ath(I-1)) !eq. 7.6b
-    Cth=b(I)   
-    Cmth(I)=(aW(I)*Cmth(I-1)+Cth)/(aP(I)-aW(I)*Ath(I-1))
-  end do   
-
-!---- Back substitution  
-  do I=Iend-1,Istart+1,-1 
-    fi(I)=Ath(I)*fi(I+1)+Cmth(I)
-  end do
-
-end subroutine TDMA
-
 end module solid_cells

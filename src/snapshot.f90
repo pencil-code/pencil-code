@@ -551,6 +551,7 @@ module Snapshot
 !         if (jb_spec)   call powerhel(f,'jb')
         if (Lor_spec) call powerLor(f,'Lor')
         if (GWs_spec) call powerGWs(f,'GWs')
+        if (GWh_spec) call powerGWs(f,'GWh')
         if (Str_spec) call powerGWs(f,'Str')
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')

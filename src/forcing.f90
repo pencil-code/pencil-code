@@ -34,7 +34,7 @@ module Forcing
   real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
-  real :: slope_ff=0., work_ff=0., omega_ff=1., n_equator_ff=1.
+  real :: slope_ff=0., work_ff=0., omega_ff=0., n_equator_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
@@ -772,7 +772,7 @@ module Forcing
 !***********************************************************************
     subroutine addforce(f)
 !
-!  add forcing at the end of each time step
+!  Add forcing at the end of each time step.
 !  Since forcing is constant during one time step,
 !  this can be added as an Euler 1st order step
 !
@@ -1524,6 +1524,7 @@ module Forcing
 !                Moved density calculation into mn-loop where it belongs.
 !                Spotted possible bug: for lforcing2_curl=T, calculation of forcing_rhs 
 !                seems not to be meaningful.
+!  12-jan-18/axel: added periodic forcing for omega_ff /= 0.
 !
       use Mpicomm
       use Sub
@@ -1582,8 +1583,11 @@ module Forcing
               if (lactive_dimension(j)) then
 !
 !  Primary forcing function.
+!  Add here possibility of periodic forcing proportional to cos(om*t).
+!  By default, omega_ff=0.
 !
-                forcing_rhs(:,j) = force_ampl*real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)*fda(j)
+                forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
+                    *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
 
                 ! put force into auxiliary variable, if requested
                 if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = forcing_rhs(:,j)
@@ -2828,6 +2832,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real :: cost,sint,cosym,sinym,fsum_tmp,fsum
       integer :: j,jf
       real :: fact
+!
+!  The default for omega_ff is now (12-jan-2018) changed from 1 to 0.
 !
       if (ip<=6) print*,'forcing_GP: t=',t
       cost=cos(omega_ff*t)
@@ -4875,6 +4881,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  Note: It is not enough to set lforcing_cont = T in input parameters of
 !  forcing one must also set  lforcing_cont_uu = T in hydro for the
 !  continuous-in-time forcing to be added to velocity.
+!  Alternatively, one can set lforcing_cont_bb = T in magnetic.
 !
       use Gravity, only: gravz
       use Mpicomm, only: stop_it

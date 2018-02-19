@@ -8,16 +8,18 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 3
+! MAUX CONTRIBUTION 4
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM character (len=20), parameter :: particles_module="dust"
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
+! PENCILS PROVIDED uup(3)
 ! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
-! PENCILS PROVIDED tausupersat
+! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
+! PENCILS PROVIDED waterMixingRatio
 !
 !***************************************************************
 module Particles
@@ -90,7 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
-  real :: es_T, qvs_T, c1, c2, Rv, rho0
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -139,7 +141,7 @@ module Particles
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltausupersat = .false.
+  logical :: ltauascalar = .false., lconstTT=.false., lTT_mean=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -158,7 +160,9 @@ module Particles
 !
   integer :: init_repeat=0       !repeat particle initialization for distance statistics
 !
+  integer :: itauascalar=0
   integer :: icondensationRate=0
+  integer :: iwaterMixingRatio=0
   logical :: lcondensation_rate=.false.
 !
 !  Interactions with special/shell
@@ -176,8 +180,8 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
-  real :: A3=0., A2=0.
-  logical :: supersat_ngp=.false., supersat_cic=.false.
+  real :: A3=0., A2=0., G_condensation=0.
+  logical :: ascalar_ngp=.false., ascalar_cic=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -278,10 +282,12 @@ module Particles
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       remove_particle_criteria_edtog, &
-      supersat_ngp, supersat_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
+      ascalar_ngp, ascalar_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltausupersat, &
-      c1, c2, Rv, rho0
+      ltauascalar, &
+      c1, c2, Rv, rhoa, &
+      lconstTT, constTT, &
+      G_condensation, TT_mean, lTT_mean
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -314,6 +320,8 @@ module Particles
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_sigmap=0
+  integer :: idiag_rpvpxmx = 0, idiag_rpvpymx = 0, idiag_rpvpzmx = 0
+  integer :: idiag_rpvpx2mx = 0, idiag_rpvpy2mx = 0, idiag_rpvpz2mx = 0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0, idiag_npmxy=0
@@ -401,9 +409,11 @@ module Particles
       endif
 !
 !  Relaxation time of supersaturation
-      if (lsupersat) &
-        call farray_register_auxiliary('tausupersat', itausupersat)
+      if (lascalar) then
+        if (ltauascalar) call farray_register_auxiliary('tauascalar', itauascalar)
         call farray_register_auxiliary('condensationRate', icondensationRate)
+        call farray_register_auxiliary('waterMixingRatio', iwaterMixingRatio)
+      endif
 !
 !  Kill particles that spend enough time in birth ring
       if (lbirthring_depletion) then
@@ -450,6 +460,8 @@ module Particles
       integer :: ierr, jspec
       logical, pointer :: lshearadvection_as_shift
       real, pointer :: reference_state_mass
+      integer :: ik,icnt
+      real :: xxp,yyp,zzp
 !
 !  This module is incompatible with particle block domain decomposition.
 !
@@ -460,6 +472,45 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif
+!
+! Mark particles in a pencil 
+! We make a pencil along the x-direction
+!
+!      ntagged_local = 0
+!      do ik=1,npar_loc
+!        xxp=fp(ik,ixp);yyp=fp(ik,iyp);zzp=fp(ik,izp)
+!        if ((yyp .lt. ypmax) .and.   (yyp .lt. ypmin) ) then
+!          if ((zzp .lt. zpmax) .and.   (zzp .lt. zpmin) ) then
+!           ntagged_local(iproc)=ntagged_local(iproc)+1 
+!          endif
+!        endif
+!      enddo
+!!
+!!   Sum ntagged_local from each processor to get ntagged_global 
+!			call mpiallreduce_sum_int_arr(ntagged_local,ntagged_global,ncpus)
+!			itagged_start = sum(ntagged_global(1:iproc-1))+1
+!! AKS
+!!   Then at each processor, sum over ntagged_global to obtain npar_tagged
+!			npar_tagged = sum(ntagged_global)
+!!   Then allocate the taggedp_list which as dimension npar_tagged
+!			allocate(taggedp_list_local(npar_tagged)); taggedp_list_local = 0 
+!			allocate(taggedp_list_global(npar_tagged)); taggedp_list_global = 0 
+!!   Then fill up the taggedp_list 
+!			icnt = 0
+!      do ik=1,npar_loc
+!        xxp=fp(ik,ixp);yyp=fp(ik,iyp);zzp=fp(ik,izp)
+!        if ((yyp .lt. ypmax) .and. (yyp .lt. ypmin) ) then
+!          if ((zzp .lt. zpmax) .and. (zzp .lt. zpmin) ) then
+!           taggedp_list_local(itagged_start+icnt) = ipar(ik)
+!					 icnt = icnt+1 
+!          endif
+!        endif
+!      enddo
+!!
+!!   Each processor writes on different locations at this array. 
+!!   Then communicate this array over all processors such that they all have it. 
+!			call mpiallreduce_sum_int_arr(taggedp_list_local,taggedp_list_global,npar_tagged)
+!
 !
 !  Hand over Coriolis force and shear acceleration to Particles_drag.
 !
@@ -2819,10 +2870,11 @@ module Particles
         lpenc_requested(i_gTT)=.true.
       endif
 !
-      if (lsupersat) &
-         lpenc_requested(i_tausupersat)=.true.
+      if (lascalar) then
+         if (ltauascalar) lpenc_requested(i_tauascalar)=.true.
          lpenc_requested(i_condensationRate)=.true.
-
+         lpenc_requested(i_waterMixingRatio)=.true.
+      endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2843,6 +2895,12 @@ module Particles
           lpenc_diagnos2d(i_rhop)=.true.
       if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
       if (idiag_sigmap /= 0) lpenc_diagnos2d(i_rhop) = .true.
+!
+      if (idiag_rpvpxmx /= 0 .or. idiag_rpvpymx /= 0 .or. idiag_rpvpzmx /= 0 .or. &
+          idiag_rpvpx2mx /= 0 .or. idiag_rpvpy2mx /= 0 .or. idiag_rpvpz2mx /= 0) then
+        lpenc_diagnos(i_rhop) = .true.
+        lpenc_diagnos(i_uup) = .true.
+      endif
 !
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
       if (maxval(idiag_npvz2mz) > 0) lpenc_requested(i_npvz2)=.true.
@@ -2870,8 +2928,12 @@ module Particles
         lpencil_in(i_rho1)=.true.
       endif
 !
-      if (lsupersat) lpencil_in(i_tausupersat)=.true.
-      if (lsupersat) lpencil_in(i_condensationRate)=.true.
+      if (lpencil_in(i_uup) .and. iuup == 0) &
+        call fatal_error("pencil_interdep_particles", "p%uup is requested but not calculated. ")
+!
+      if (lascalar .and. ltauascalar) lpencil_in(i_tauascalar)=.true.
+      if (lascalar) lpencil_in(i_condensationRate)=.true.
+      if (lascalar) lpencil_in(i_waterMixingRatio)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -2920,11 +2982,15 @@ module Particles
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
+      if (lpencil(i_uup) .and. iuup > 0) p%uup = f(l1:l2,m,n,iupx:iupz)
+!
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
 !
-      if (itausupersat>0) p%tausupersat=f(l1:l2,m,n,itausupersat)
+      if (itauascalar>0) p%tauascalar=f(l1:l2,m,n,itauascalar)
       if (icondensationRate>0) p%condensationRate=f(l1:l2,m,n,icondensationRate)
+      if (iwaterMixingRatio>0) p%waterMixingRatio=f(l1:l2,m,n,iwaterMixingRatio)
+
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -3321,7 +3387,6 @@ module Particles
 !
       if (lparticles_potential) call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
 !
-!
     endsubroutine dvvp_dt
 !***********************************************************************
     subroutine particle_gravity(f,df,fp,dfp,ineargrid)
@@ -3712,8 +3777,10 @@ module Particles
 !     
       
 ! supersat
-      if (lsupersat) f(:,m,n,itausupersat) = 0.0
-      if (lsupersat) f(:,m,n,icondensationRate) = 0.0
+!      if (lascalar) f(:,m,n,itauascalar) = 0.0
+      if (lascalar .and. ltauascalar) f(:,m,n,itauascalar) = 0.0
+      if (lascalar) f(:,m,n,icondensationRate) = 0.0
+      if (lascalar) f(:,m,n,iwaterMixingRatio) = 0.0
       if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
       if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
           'ldiffuse_passive needs pscalar_nolog=F')
@@ -3725,8 +3792,9 @@ module Particles
       if (lpenc_requested(i_npuz))     p%npuz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
-      if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
+      if (lpenc_requested(i_tauascalar)) p%tauascalar=0.
       if (lpenc_requested(i_condensationRate)) p%condensationRate=0.
+      if (lpenc_requested(i_waterMixingRatio)) p%waterMixingRatio=0.
 !
       if (idiag_urel /= 0) urel_sum=0.
 !
@@ -4476,19 +4544,27 @@ module Particles
 !  calculate relaxation time.
 !  14-June-16/Xiang-Yu: coded
 
-              if (lsupersat) then
-                 inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                 if (supersat_ngp) then
+              if (lascalar) then
+                 inversetau=4.*pi*rhopmat/rhoa*fp(k,iap)*fp(k,inpswarm)
+                 if (ascalar_ngp) then
                    l=ineargrid(k,1)
-                   if (ltausupersat) f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
+                   if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + A3*A2*inversetau
                    if (lcondensation_rate) then
-                     es_T=c1*exp(-c2/f(l,m,n,ilnTT))
-                     qvs_T=es_T/(Rv*rho0*f(l,m,n,ilnTT))
-                     supersaturation=f(l,m,n,issat)/qvs_T-1.
-                     !supersaturation=f(l,m,n,issat)/vapor_mixing_ratio_qvs-1.
-                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+4.*pi*supersaturation*fp(k,iap)
+                     if (lconstTT) then
+                       es_T=c1*exp(-c2/constTT)
+                       qvs_T=es_T/(Rv*rhoa*constTT)
+                     elseif (lTT_mean) then
+                       es_T=c1*exp(-c2/(f(l,m,n,iTT)+TT_mean))
+                       qvs_T=es_T/(Rv*rhoa*(f(l,m,n,iTT)+TT_mean))
+                     else
+                       es_T=c1*exp(-c2/f(l,m,n,iTT))
+                       qvs_T=es_T/(Rv*rhoa*f(l,m,n,iTT))
+                     endif
+                     supersaturation=f(l,m,n,iacc)/qvs_T-1.
+                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
+                     f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rhoa)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
-                 elseif (supersat_cic) then
+                 elseif (ascalar_cic) then
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
                   if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
@@ -4502,9 +4578,7 @@ module Particles
                     if (nxgrid/=1) weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
                     if (nygrid/=1) weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
                     if (nzgrid/=1) weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-                    !call find_grid_volume(ixx,iyy,izz,volume_cell)
-                    !f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau/volume_cell
-                    f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau
+                    f(ixx,iyy,izz,itauascalar) = f(ixx,iyy,izz,itauascalar) - weight*inversetau
                   enddo; enddo; enddo
                  endif
               endif
@@ -4652,6 +4726,13 @@ module Particles
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
+!
+        if (idiag_rpvpxmx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,1), idiag_rpvpxmx)
+        if (idiag_rpvpymx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,2), idiag_rpvpymx)
+        if (idiag_rpvpzmx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,3), idiag_rpvpzmx)
+        if (idiag_rpvpx2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,1)**2, idiag_rpvpx2mx)
+        if (idiag_rpvpy2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,2)**2, idiag_rpvpy2mx)
+        if (idiag_rpvpz2mx /= 0) call yzsum_mn_name_x(p%rhop * p%uup(:,3)**2, idiag_rpvpz2mx)
 !
         do k=1,ndustrad
           if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
@@ -6282,6 +6363,9 @@ module Particles
         write(3,*) 'ifgx=', ifgx
         write(3,*) 'ifgy=', ifgy
         write(3,*) 'ifgz=', ifgz
+        write(3,*) 'itauascalar=', itauascalar
+        write(3,*) 'icondensationRate=', icondensationRate
+        write(3,*) 'iwaterMixingRatio=', iwaterMixingRatio
       endif
 !
 !  Reset everything in case of reset.
@@ -6314,6 +6398,8 @@ module Particles
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
         idiag_sigmap = 0
+        idiag_rpvpxmx = 0; idiag_rpvpymx = 0; idiag_rpvpzmx = 0
+        idiag_rpvpx2mx = 0; idiag_rpvpy2mx = 0; idiag_rpvpz2mx = 0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
@@ -6424,6 +6510,12 @@ module Particles
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhop2mx',idiag_rhop2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpxmx', idiag_rpvpxmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpymx', idiag_rpvpymx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpzmx', idiag_rpvpzmx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpx2mx', idiag_rpvpx2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpy2mx', idiag_rpvpy2mx)
+        call parse_name(inamex, cnamex(inamex), cformx(inamex), 'rpvpz2mx', idiag_rpvpz2mx)
       enddo
 !
 !  Check for those quantities for which we want y-averages.

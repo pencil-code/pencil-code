@@ -32,6 +32,7 @@ module power_spectrum
   include 'power_spectrum.h'
 !
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
+  logical :: lhalf_factor_in_GW=.false.
   integer :: firstout = 0
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
@@ -42,7 +43,7 @@ module power_spectrum
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
-      inz, n_segment_x
+      inz, n_segment_x, lhalf_factor_in_GW
 !
   contains
 !***********************************************************************
@@ -1363,7 +1364,7 @@ module power_spectrum
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
 !
-    use Fourier, only: fft_xyz_parallel
+    use Fourier, only: fft_xyz_parallel, fourier_transform
     use Mpicomm, only: mpireduce_sum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
@@ -1377,12 +1378,13 @@ module power_spectrum
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
- real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
+  real :: sign_switch, kk1, kk2, kk3
 !
 !  identify version
 !
@@ -1421,6 +1423,19 @@ module power_spectrum
     endif
     a_im=0.
     b_im=0.
+  elseif (sp=='GWh') then
+    if (ihhX>0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
+    elseif (ihij>0) then
+      call fatal_error('powerGWh','should not come here')
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+3)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij)
+    else
+      call fatal_error('powerGWh','must compile GW module for GWs')
+    endif
+    a_im=0.
+    b_im=0.
   elseif (sp=='Str') then
     if (istressX>0) then
       a_re=f(l1:l2,m1:m2,n1:n2,istressX)
@@ -1436,32 +1451,60 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-  call fft_xyz_parallel(a_re,a_im)
-  call fft_xyz_parallel(b_re,b_im)
+  !call fft_xyz_parallel(a_re,a_im)
+  !call fft_xyz_parallel(b_re,b_im)
+  call fourier_transform(a_re,a_im)
+  call fourier_transform(b_re,b_im)
 !
 !  integration over shells
 !
   if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-  do ikz=1,nz
-    do iky=1,ny
-      do ikx=1,nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+! do ikz=1,nz
+!   do iky=1,ny
+!     do ikx=1,nx
+  do iky=1,nz
+    do ikx=1,ny
+      do ikz=1,nx
+        k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
+!
+!  Switch sign for the same k vectors for which we also
+!  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
+!
+            kk1=kx(ikx+ipy*ny)
+            kk2=ky(iky+ipz*nz)
+            kk3=kz(ikz+ipx*nx)
+!
+            !kk1=kx(ikx+ipx*nx)
+            !kk2=ky(iky+ipy*ny)
+            !kk3=kz(ikz+ipz*nz)
+!
+!  possibility of swapping the sign
+!
+             sign_switch=1.
+             if (kk3<0.) then
+               sign_switch=-1.
+             elseif (kk3==0.) then
+               if (kk2<0.) then
+                 sign_switch=-1.
+               elseif (kk2==0.) then
+                 if (kk1<0.) then
+                   sign_switch=-1.
+                 endif
+               endif
+             endif
 !
 !  sum energy and helicity spectra
 !
           spectrum(k+1)=spectrum(k+1) &
-             +a_re(ikx,iky,ikz)**2 &
-             +a_im(ikx,iky,ikz)**2 &
-             +b_re(ikx,iky,ikz)**2 &
-             +b_im(ikx,iky,ikz)**2
-          spectrumhel(k+1)=spectrumhel(k+1)+2.*( &
-             +a_im(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-             -a_re(ikx,iky,ikz)*b_im(ikx,iky,ikz)) &
-             *sign(1.,kx(ikx+ipx*nx)) &
-             *sign(1.,ky(iky+ipy*ny)) &
-             *sign(1.,kz(ikz+ipz*nz))
+             +a_re(ikz,ikx,iky)**2 &
+             +a_im(ikz,ikx,iky)**2 &
+             +b_re(ikz,ikx,iky)**2 &
+             +b_im(ikz,ikx,iky)**2
+          spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*( &
+             +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
+             -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
 !
 !  compute krms only once
 !
@@ -1501,7 +1544,15 @@ module power_spectrum
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
-    spectrum_sum=.5*spectrum_sum
+    !  half factor or not?
+    !  By default (lhalf_factor_in_GW=F), we have total(S) = gg2m.
+    !  Otherwise we have total(S) = (1/2) * gg2m.
+    !
+    if (lhalf_factor_in_GW) then
+      spectrum_sum=.5*spectrum_sum
+      spectrumhel=.5*spectrumhel
+    endif
+    !
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     if (lformat) then
       do k = 1, nk

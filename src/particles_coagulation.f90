@@ -48,6 +48,7 @@ module Particles_coagulation
   logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
   logical :: kernel_output=.false., radius_output=.false.
+  logical :: sphericalKernel=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -83,7 +84,8 @@ module Particles_coagulation
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
       luser_random_number_wrapper, lrelabelling, rdifference, &
       kernel_output, deltad, a0, rbin, &
-      radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff
+      radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
+      sphericalKernel
 !
   contains
 !***********************************************************************
@@ -412,7 +414,11 @@ module Particles_coagulation
 !
 !  Relative particle speed.
 !
-                  deltavjk=sqrt(sum((vpk-vpj)**2))
+                  if (sphericalKernel) then
+                    deltavjk=2*sqrt(sum(((vpk-vpj)*(xpk-xpj))**2))/sqrt(sum((xpk-xpj)**2))
+                  else
+                    deltavjk=sqrt(sum((vpk-vpj)**2))
+                  endif
 !
 ! Check for consistensy
 !

@@ -74,7 +74,7 @@ xz2=0
 if (xy2read) then xy2=fltarr(dim.nx,dim.ny,nt)*one
 if (xyread) then xy =fltarr(dim.nx,dim.ny,nt)*one
 if (xzread) then xz =fltarr(dim.nx,dim.nz,nt)*one
-if (xzread) then yz =fltarr(dim.ny,dim.nz,nt)*one
+if (yzread) then yz =fltarr(dim.ny,dim.nz,nt)*one
 if (xz2read) then xz2=fltarr(dim.nx,dim.nz,nt)*one
 t  =fltarr(nt)*one
 ;

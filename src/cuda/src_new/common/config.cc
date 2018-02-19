@@ -34,6 +34,13 @@ void load_value(const char* value, real* dst)
 }
 
 
+void load_value(const char* value, char* dst)
+{
+    if (sscanf(value, "%c", dst) < 1) 
+        CRASH("Malformed value");
+}
+
+
 void CParamConfig::parse(const char* keyword, const char* value)
 {
     if (strcmp(keyword, "nx") == 0)
@@ -76,6 +83,8 @@ void RunConfig::parse(const char* keyword, const char* value)
         load_value(value, &eta);
     else if (strcmp(keyword, "relhel") == 0)
         load_value(value, &relhel);
+    else if (strcmp(keyword, "slice_axis") == 0)
+        load_value(value, &slice_axis);
     else
         CRASH("Invalid keyword!");    
 }

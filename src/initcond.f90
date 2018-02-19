@@ -1549,7 +1549,7 @@ module Initcond
 !
     endsubroutine beltrami_old
 !***********************************************************************
-    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
+    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma)
 !
 !  Beltrami field (as initial condition)
 !
@@ -1561,8 +1561,8 @@ module Initcond
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
-      real :: ampl,k=1.,ph
+      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma
+      real :: ampl,k=1.,ph,sig
 !
 !  possibility of shifting the Beltrami wave by phase ph
 !
@@ -1571,6 +1571,15 @@ module Initcond
         ph=phase
       else
         ph=0.
+      endif
+!
+!  possibility of a fractional helicity
+!
+      if (present(sigma)) then
+        if (lroot) print*,'Beltrami: sigma=',sigma
+        sig=sigma
+      else
+        sig=1.
       endif
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
@@ -1587,12 +1596,12 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)*sig
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kx,i=',k,i
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)*sig
         endif
       endif
 !
@@ -1609,10 +1618,10 @@ module Initcond
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)*sig
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)*sig
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
         endif
       endif
@@ -1629,12 +1638,12 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)*sig
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kz,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)*sig
         endif
       endif
 !
@@ -1650,7 +1659,10 @@ module Initcond
       integer :: i,j,l,m,n
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx, ky, kz, phase, k, cfunc, sfunc
-      real :: ex=.1, ey=.33, ez=.58
+      !real :: ex=.1, ey=.33, ez=.58
+      !real :: ex=1., ey=.0, ez=1.
+      !real :: ex=1., ey=.0, ez=0.
+      real :: ex=0., ey=.0, ez=1.
       real :: kxe_x, kxe_y, kxe_z, kxkxe_x, kxkxe_y, kxkxe_z
       real :: ampl
 !
@@ -1669,8 +1681,8 @@ module Initcond
       do n=1,mz
       do m=1,my
       do l=1,mx
-        cfunc=ampl*cos(kx*x(l)+ky*y(m)+kz*z(n)+phase)
-        sfunc=ampl*sin(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        cfunc=abs(ampl)*cos(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        sfunc=    ampl *sin(kx*x(l)+ky*y(m)+kz*z(n)+phase)
         j=i  ; f(l,m,n,j)=f(l,m,n,j)+kxkxe_x*cfunc+k*kxe_x*sfunc
         j=i+1; f(l,m,n,j)=f(l,m,n,j)+kxkxe_y*cfunc+k*kxe_y*sfunc
         j=i+2; f(l,m,n,j)=f(l,m,n,j)+kxkxe_z*cfunc+k*kxe_z*sfunc
@@ -2497,7 +2509,7 @@ module Initcond
       use Sub, only: write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,ssat0
+      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,acc0
       real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2,var3
       logical :: exist
@@ -2551,7 +2563,7 @@ module Initcond
           endif
         enddo
 !
-      case ('lnrho_lnTT_ssat')
+      case ('lnrho_lnTT_acc')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2,var3
           if (stat==0) then
@@ -2562,7 +2574,7 @@ module Initcond
               call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
               ss0(n)=tmp
             endif
-            if (lsupersat) ssat0(n)=var3
+            if (lascalar) acc0(n)=var3
           else
             call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
@@ -2600,11 +2612,11 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
-        if (ltemperature.and.lsupersat) then
+        if (ltemperature.and.lascalar) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
-            f(:,:,n,issat)=ssat0(ipz*nz+(n-nghost))
+            f(:,:,n,iacc)=acc0(ipz*nz+(n-nghost))
           enddo
         endif
         if (.not.lentropy.and..not.ltemperature) then
