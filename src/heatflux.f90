@@ -29,7 +29,7 @@ module Heatflux
   implicit none
 !
   character (len=labellen) :: iheatflux='nothing'
-  logical :: lreset_heatflux
+  logical :: lreset_heatflux, lnfs2 
   real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
   real :: Ksaturation_SI = 7e7, Ksaturation=0.
   real :: Kspitzer_para=0.,hyper3_coeff=0.
@@ -37,7 +37,7 @@ module Heatflux
   namelist /heatflux_run_pars/ &
       lreset_heatflux,iheatflux,saturation_flux,  &
       tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
-      hyper3_coeff
+      hyper3_coeff, lnfs2
 !
 !  variables for video slices:
 !
@@ -405,15 +405,17 @@ contains
     real, dimension(nx) :: tmp
     integer :: i
 !
-! Compute Spizter coefficiant K_0 * T^(5/2) * rho where
-! we introduced an additional factor rho.
+! Compute Spizter coefficiant K_0 * T^(5/2)
 !
     b2_1=1./(p%b2+tini)
 !
-    call multsv(Kspitzer_para*exp(p%lnrho+3.5*p%lnTT),p%glnTT,K1)
-!
-!    JW: for pp=qq/rho there you must divide by rho
-!    call multsv(Kspitzer_para*exp(3.5*p%lnTT-p%lnrho),p%glnTT,K1)
+    if (lnfs2) then
+!    for pp=qq/rho there you must divide by rho 
+       call multsv(Kspitzer_para*exp(3.5*p%lnTT-p%lnrho),p%glnTT,K1)
+    else
+!    for pp=qq*rho there you must a factor of rho 
+       call multsv(Kspitzer_para*exp(p%lnrho+3.5*p%lnTT),p%glnTT,K1)
+    endif
 !
 !
     call dot(K1,p%bb,tmp)
@@ -425,10 +427,13 @@ contains
     if (saturation_flux/=0.) then
       call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
 !
-! We have to regard he additional factor rho
-      qsat = saturation_flux* exp(2.*p%lnrho+1.5*p%lnTT) * Ksaturation
-!      qsat = saturation_flux* exp(1.5*p%lnTT) * Ksaturation
-!      JW: for pp=qq/rho, there is no rho factor
+      if (lnfs2) then
+!       for pp=qq/rho, there is no rho factor
+        qsat = saturation_flux* exp(1.5*p%lnTT) * Ksaturation
+      else
+!       for pp=qq*rho, there is an additional rho factor
+        qsat = saturation_flux* exp(2.*p%lnrho+1.5*p%lnTT) * Ksaturation
+      endif
 !
       qsat = 1./(1./qsat +1./qabs)
       where (qabs > sqrt(tini))
@@ -438,26 +443,37 @@ contains
       endwhere
     endif
 !
-    do i=1,3
-      df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  -  &
-!          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  &
-!     JW: for pp=qq/rho there must be a '+'
+    if (lnfs2) then
+!     for pp=qq/rho, it is '+qq*(uglnrho+divu)'
+      do i=1,3
+        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  &
           p%qq(:,i)*(p%uglnrho + p%divu)
-    enddo
+      enddo
+    else
+!     for pp=qq*rho, it is '-qq*(uglnrho+divu)'
+      do i=1,3
+        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  -  &
+          p%qq(:,i)*(p%uglnrho + p%divu)
+      enddo
+    endif
 !
 ! Add to energy equation
 !
-
     call dot(p%qq,p%glnrho,tmp)
 !
-    rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
+    if (lnfs2) then
+!     for pp=qq/rho, the 1/rho factor is vanishing
+!     and there it is '+ tmp'
+      rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)    
+    else
+!     for pp=qq*rho, there is an additional 1/rho factor
+!     and there it is '+ tmp'
+      rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
+    endif
 !
-!    JW: for pp=qq/rho, the factor rho**2 is vanishing
-!    and there must be a '+' in front of tmp
-!    rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
 !
-
     if (ltemperature) then
        if (ltemperature_nolog) then
           call fatal_error('non_fourier_spitzer', &
