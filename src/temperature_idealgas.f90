@@ -56,10 +56,10 @@ module Energy
   real :: emiss_logT0=0.0
   real :: emiss_width=1.0
   real :: mu=1.0
-  real :: temp_zmask_count, emiss_zmask_count
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   real :: beta_bouss=-1.0
+  integer :: temp_zmask_count=1, emiss_zmask_count=1
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
@@ -534,8 +534,8 @@ module Energy
         elsewhere
           zmask_temp = 0.
         endwhere
-        temp_zmask_count = count(zmask_temp ==  1.0)
-        zmask_temp = zmask_temp*nz/temp_zmask_count
+        temp_zmask_count = max(count(zmask_temp ==  1.0),1)
+        zmask_temp = zmask_temp*float(nz)/float(temp_zmask_count)
       endif
 !
 !  Compute mask for z-averaging where z is in emission_zaver_range.
@@ -550,11 +550,18 @@ module Energy
         elsewhere
           zmask_emiss = 0.
         endwhere
-        emiss_zmask_count = count(zmask_emiss ==  1.0)
-        zmask_emiss = zmask_emiss*nz/emiss_zmask_count
+        emiss_zmask_count = max(count(zmask_emiss ==  1.0),1)
+        zmask_emiss = zmask_emiss*float(nz)/float(emiss_zmask_count)
       endif
 !
-      
+!  debug output
+!
+      if (lroot.and.ip<14) then
+        print*,'zmask_temp=' ,zmask_temp
+        print*,'zmask_emiss=',zmask_emiss
+      endif
+!
+!
 !  Check if reduced sound speed is used
 !
       if (ldensity) then
