@@ -128,7 +128,8 @@ module Radiation
   type (radslice), dimension (maxdir), target :: Isurf
 !
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
-  integer :: idiag_Fradzm=0, idiag_Sradm=0, idiag_Fradzmz=0
+  integer :: idiag_Fradzm=0, idiag_Sradm=0
+  integer :: idiag_Fradzmz=0, idiag_kapparhomz=0, idiag_taumz=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
 !
   namelist /radiation_init_pars/ &
@@ -1219,6 +1220,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Debug_IO, only: output
+      use Diagnostics, only: xysum_mn_name_z
 !
 !  Identifier.
 !
@@ -1243,6 +1245,17 @@ module Radiation
 !
       if (lrad_debug) then
         call output(trim(directory_dist)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
+      endif
+!
+!  xy-averages
+!
+      if (l1davgfirst) then
+print*,'AXEL'
+        do n=n1,n2
+        do m=m1,m2
+          call xysum_mn_name_z(tau(l1:l2,m,n),idiag_taumz)
+        enddo
+        enddo
       endif
 !
     endsubroutine Qrevision
@@ -1541,9 +1554,8 @@ module Radiation
       endif
 !
       if (l1davgfirst) then
-        if (idiag_Fradzmz/=0) then
-           call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
-        endif
+        call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ikapparho),idiag_kapparhomz)
       endif
 !
     endsubroutine radiative_pressure
@@ -2214,7 +2226,7 @@ module Radiation
 !
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
-        idiag_Fradzmz=0
+        idiag_Fradzmz=0; idiag_kapparhomz=0; idiag_taumz=0
         idiag_dtchi=0; idiag_dtrad=0
       endif
 !
@@ -2233,6 +2245,8 @@ module Radiation
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Fradzmz',idiag_Fradzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'taumz',idiag_taumz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapparhomz',idiag_kapparhomz)
       enddo
 !
 !  write column where which radiative variable is stored
