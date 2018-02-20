@@ -1250,7 +1250,6 @@ module Radiation
 !  xy-averages
 !
       if (l1davgfirst) then
-print*,'AXEL'
         do n=n1,n2
         do m=m1,m2
           call xysum_mn_name_z(tau(l1:l2,m,n),idiag_taumz)
