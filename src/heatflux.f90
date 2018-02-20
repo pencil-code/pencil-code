@@ -56,6 +56,7 @@ module Heatflux
 ! Diagnostic variables (need to be consistent with reset list below)
 !
   integer :: idiag_dtspitzer=0  ! DIAG_DOC: Spitzer heat conduction time step
+  integer :: idiag_dtq=0        ! DIAG_DOC: heatflux time step
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
   integer :: idiag_qxmin=0      ! DIAG_DOC: $\min(|q_x|)$
   integer :: idiag_qymin=0      ! DIAG_DOC: $\min(|q_y|)$
@@ -326,12 +327,14 @@ contains
       idiag_qmax=0
       idiag_qrms=0
       idiag_dtspitzer=0
+      idiag_dtq=0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
+      call parse_name(iname,cname(iname),cform(iname),'dtq',idiag_dtq)
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
     enddo
@@ -503,6 +506,10 @@ contains
       rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
            gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
       maxadvec = maxadvec + rhs/dxmax_pencil
+!
+      if (ldiagnos.and.idiag_dtq/=0) then
+        call max_mn_name(rhs/dxmax_pencil/cdt,idiag_dtq,l_dt=.true.)
+      endif
 !
 !     put into dtspitzer, how the time_step would be
 !     using the spitzer heatconductivity
