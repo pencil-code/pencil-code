@@ -1547,13 +1547,13 @@ module Radiation
 !  Diagnostics. Here we divide again by kapparho, so we get actual Frad.
 !
       if (ldiagnos) then
-        if (idiag_Fradzm/=0) then
+        if (lradflux) &
           call sum_mn_name(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
-        endif
       endif
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
+        if (lradflux) &
+          call xysum_mn_name_z(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzmz)
         call xysum_mn_name_z(f(l1:l2,m,n,ikapparho),idiag_kapparhomz)
       endif
 !

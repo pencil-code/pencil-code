@@ -77,7 +77,7 @@ module Energy
   integer :: iglobal_glhc=0
   logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
-  logical, pointer :: lreduced_sound_speed
+  logical :: lreduced_sound_speed=.false.
 !  logical, pointer :: lscale_to_cs2top
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -305,6 +305,7 @@ module Energy
       real, dimension (nx) :: hcond, dhcond
       logical :: lnothing
       integer :: i
+      logical, pointer :: lrss
       real :: star_cte
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
@@ -565,8 +566,8 @@ module Energy
 !  Check if reduced sound speed is used
 !
       if (ldensity) then
-        call get_shared_variable('lreduced_sound_speed',&
-             lreduced_sound_speed)
+        call get_shared_variable('lreduced_sound_speed', lrss)
+        lreduced_sound_speed=lrss
         if (lreduced_sound_speed) then
           call get_shared_variable('reduce_cs2',reduce_cs2)
 !          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
