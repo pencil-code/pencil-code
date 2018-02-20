@@ -435,8 +435,8 @@ contains
         qsat = saturation_flux* exp(2.*p%lnrho+1.5*p%lnTT) * Ksaturation
       endif
 !
-      qsat = 1./(1./qsat +1./qabs)
       where (qabs > sqrt(tini))
+        qsat = 1./(1./qsat +1./qabs)
         spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
         spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
         spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
