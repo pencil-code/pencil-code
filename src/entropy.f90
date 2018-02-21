@@ -315,6 +315,7 @@ module Energy
                                 ! XYAVG_DOC: s'\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
+  integer :: idiag_heatmz=0     ! XYAVG_DOC: heating
   integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$
   integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left<\varrho e\right>_{xy}$
 !
@@ -5243,7 +5244,7 @@ module Energy
 !
 !  02-jul-02/wolf: coded
 !
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
       use Debug_IO, only: output_pencil
       use EquationOfState, only: cs0, get_cp1, lnrho0, &
@@ -5417,6 +5418,12 @@ module Energy
 !
       if (ldiagnos) then
         if (idiag_heatm/=0) call sum_mn_name(heat,idiag_heatm)
+      endif
+!
+!  Write divergence of cooling flux.
+!
+      if (l1davgfirst) then
+        call xysum_mn_name_z(heat,idiag_heatmz)
       endif
 !
     endsubroutine calc_heat_cool
@@ -6190,7 +6197,7 @@ module Energy
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
-        idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
+        idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_heatmz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
         idiag_fturbtz=0; idiag_fturbmz=0; idiag_fturbfz=0
         idiag_ssmx=0; idiag_ss2mx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0
@@ -6291,6 +6298,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbfz',idiag_fturbfz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'heatmz',idiag_heatmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_constchi',idiag_fradz_constchi)

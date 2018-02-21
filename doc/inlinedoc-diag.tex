@@ -779,6 +779,9 @@
 \midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves_hij6.f90}} \\
 \midrule
+  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
+  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
+  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
   \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
   \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
   \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
@@ -787,6 +790,16 @@
   \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
   \var{ggTpt}     & $g_{T}(x_1,y_1,z_1,t)$ \\
   \var{ggXpt}     & $g_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
+  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
+  \var{hhT2m}     & $\bra{h_T^2}$ \\
+  \var{hhX2m}     & $\bra{h_X^2}$ \\
+  \var{hhTXm}     & $\bra{h_T h_X}$ \\
+  \var{ggT2m}     & $\bra{g_T^2}$ \\
+  \var{ggX2m}     & $\bra{g_X^2}$ \\
+  \var{ggTXm}     & $\bra{g_T g_X}$ \\
+  \var{ggTm}      & $\bra{g_T}$ \\
+  \var{ggXm}      & $\bra{g_X}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
@@ -800,6 +813,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{heatflux.f90}} \\
 \midrule
+  \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{qmax}      & $\max(|\qv|)$ \\
   \var{qxmin}     & $\min(|q_x|)$ \\
   \var{qymin}     & $\min(|q_y|)$ \\
@@ -1109,6 +1123,8 @@
   \multicolumn{2}{c}{Module \file{particles_dust.f90}} \\
 \midrule
   \var{xpm}       & $x_{part}$ \\
+  \var{xpmin}     & $x_{part}$ \\
+  \var{xpmax}     & $x_{part}$ \\
   \var{xp2m}      & $x^2_{part}$ \\
   \var{vrelpabsm} & $\rm{Absolute value of mean relative velocity}$ \\
   \var{vpxm}      & $u_{part}$ \\
@@ -1192,6 +1208,8 @@
   \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{TTmin}     & $\min (T)$ \\
   \var{TTm}       & $\left< T \right>$ \\
+  \var{TTzmask}   & $\left< T \right>$ for
+                    the temp_zaver_range \\
   \var{TT2m}      & $\left< T^2 \right>$ \\
   \var{TugTm}     & $\left< T\uv\cdot\nabla T \right>$ \\
   \var{Trms}      & $\sqrt{\left< T^2 \right>}$ \\
@@ -1240,6 +1258,9 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
+  \var{Emzmask}   & $\left< n^2 \exp{-(\log{T}-\log{T_0})
+                    ^2/(\delta \log{T})^2}\right>$
+                    the emiss_zaver_range \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_ionization.f90}} \\
 \midrule

@@ -56,7 +56,7 @@ module Ascalar
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rhoa=1.0, constTT
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
-  real, dimension(nz) :: buoyancy=0.0
+  real, dimension(nx) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
   logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false.
 
@@ -74,7 +74,6 @@ module Ascalar
   integer :: idiag_tauascalarrms=0, idiag_tauascalarmax=0, idiag_tauascalarmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
   integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0
-  integer :: idiag_temperaturerms=0, idiag_temperaturemax=0,idiag_temperaturemin=0
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_buoyancyrms=0, idiag_buoyancymax=0, idiag_buoyancymin=0
 !
@@ -325,10 +324,13 @@ module Ascalar
           if (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
             if (lbuoyancy) then
-!              buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
-!              buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/p%TT+Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
-              buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
-                      +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              if (lTT_mean) then 
+                buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
+                        +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              else
+                buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+ &
+                        Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+              endif
               df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
             endif
 !
@@ -367,12 +369,6 @@ module Ascalar
             call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
         if (idiag_waterMixingRatiomax/=0) call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
         if (idiag_waterMixingRatiomin/=0) call max_mn_name(-p%waterMixingRatio,idiag_waterMixingRatiomin,lneg=.true.)
-        if (ltemperature) then
-          if (idiag_temperaturerms/=0) &
-            call sum_mn_name(p%TT**2,idiag_temperaturerms,lsqrt=.true.)
-          if (idiag_temperaturemax/=0) call max_mn_name(p%TT,idiag_temperaturemax)
-          if (idiag_temperaturemin/=0) call max_mn_name(-p%TT,idiag_temperaturemin,lneg=.true.)
-        endif
         if (idiag_ssatrms/=0) &
             call sum_mn_name((f(l1:l2,m,n,issat))**2,idiag_ssatrms,lsqrt=.true.)
         if (idiag_ssatmax/=0) call max_mn_name(f(l1:l2,m,n,issat),idiag_ssatmax)
@@ -444,7 +440,6 @@ module Ascalar
         idiag_tauascalarrms=0; idiag_tauascalarmax=0; idiag_tauascalarmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
         idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0
-        idiag_temperaturerms=0; idiag_temperaturemax=0; idiag_temperaturemin=0
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_buoyancyrms=0; idiag_buoyancymax=0; idiag_buoyancymin=0
 
@@ -466,9 +461,6 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiorms',idiag_waterMixingRatiorms)
         call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiomax',idiag_waterMixingRatiomax)
         call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiomin',idiag_waterMixingRatiomin)
-        call parse_name(iname,cname(iname),cform(iname),'temperaturerms',idiag_temperaturerms)
-        call parse_name(iname,cname(iname),cform(iname),'temperaturemax',idiag_temperaturemax)
-        call parse_name(iname,cname(iname),cform(iname),'temperaturemin',idiag_temperaturemin)
         call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
         call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
         call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)

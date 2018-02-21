@@ -56,6 +56,8 @@ module Heatflux
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
+  integer :: idiag_dtspitzer=0  ! DIAG_DOC: Spitzer heat conduction time step
+  integer :: idiag_dtq=0        ! DIAG_DOC: heatflux time step
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
   integer :: idiag_qxmin=0      ! DIAG_DOC: $\min(|q_x|)$
   integer :: idiag_qymin=0      ! DIAG_DOC: $\min(|q_y|)$
@@ -347,12 +349,15 @@ contains
     if (lreset) then
       idiag_qmax=0
       idiag_qrms=0
-      idiag_dtspitzer = 0
+      idiag_dtspitzer=0
+      idiag_dtq=0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
     do iname=1,nname
+      call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
+      call parse_name(iname,cname(iname),cform(iname),'dtq',idiag_dtq)
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
@@ -419,6 +424,7 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
+    use Diagnostics, only: max_mn_name
     use EquationOfState
     use Sub
 !
@@ -428,7 +434,7 @@ contains
     real, dimension(nx) :: rhs,cosgT_b
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
-    real, dimension(nx) :: tmp
+    real, dimension(nx) :: tmp, diffspitz
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2)
@@ -461,8 +467,8 @@ contains
         qsat = saturation_flux* exp(2.*p%lnrho+1.5*p%lnTT) * Ksaturation
       endif
 !
-      qsat = 1./(1./qsat +1./qabs)
       where (qabs > sqrt(tini))
+        qsat = 1./(1./qsat +1./qabs)
         spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
         spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
         spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
@@ -526,8 +532,18 @@ contains
            gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
       maxadvec = maxadvec + rhs/dxmax_pencil
 !
-!      if (idiag_dtspitzer/=0) &
-!           call max_mn_name(rhs/dxmax_pencil/cdt,idiag_dtspitzer,l_dt=.true.)
+      if (ldiagnos.and.idiag_dtq/=0) then
+        call max_mn_name(rhs/dxmax_pencil/cdt,idiag_dtq,l_dt=.true.)
+      endif
+!
+!     put into dtspitzer, how the time_step would be
+!     using the spitzer heatconductivity
+!
+      if (ldiagnos.and.idiag_dtspitzer/=0) then
+        diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+                   gamma*p%cp1*abs(cosgT_b)
+        call max_mn_name(diffspitz*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
+      endif
 !
       dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
     endif
