@@ -645,7 +645,7 @@ contains
 !
     b2_1=1./(p%b2+tini)
 !
-    chi_spitzer=Kspitzer_para*exp(2.5*p%lnTT)*p%cp1*p%gamma*p%rho1
+    chi_spitzer=Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cp1*p%gamma
 !
 !  Limit heat conduction so that the diffusion speed
 !  is smaller than a given fraction of the speed of light (Kc*c_light)
@@ -659,8 +659,8 @@ contains
       call dot(K1,p%bb,tmp)
       call multsv(b2_1*tmp,p%bb,spitzer_vec)
     endif
-    tau1_spitzer_penc=chi_spitzer*p%rho* &
-                      (dt/cdtv)**2*(max(dz_1(n),dx_1(l1:l2)))**2
+    tau1_spitzer_penc=1./(chi_spitzer* &
+                      (1.0d-06/cdtv)**2*(max(dz_1(n),dx_1(l1:l2)))**2)
 !
     do i=1,3
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
@@ -679,6 +679,9 @@ contains
                'not implemented for current set of thermodynamic variables')
        else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+          if (lfirst.and.ldt) then
+            dt1_max=max(dt1_max,maxval(abs(rhs))/cdts)
+          endif
        endif
     else if (lentropy.and.pretend_lnTT) then
        call fatal_error('noadvection_non_fourier_spitzer', &
@@ -696,7 +699,8 @@ contains
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
       rhs = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-           p%gamma*p%cp1*tau1_spitzer_penc*abs(cosgT_b)
+!           p%gamma*p%cp1*tau1_spitzer_penc*abs(cosgT_b)
+           p%gamma*p%cp1
 !
       if (idiag_dtspitzer/=0) &
            call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)
