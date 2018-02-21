@@ -56,7 +56,7 @@ module Ascalar
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rhoa=1.0, constTT
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
-  real, dimension(nz) :: buoyancy=0.0
+  real, dimension(nx) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
   logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false.
 
