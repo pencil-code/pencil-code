@@ -52,7 +52,7 @@ module Ascalar
   real :: updraft=0.0
   real :: A1=0.0
   real :: latent_heat=0.0, cp=0.0
-  real :: TT_mean=0.0
+  real :: TT_mean=293.25
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real :: c1, c2, Rv, rhoa=1.0, constTT
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0

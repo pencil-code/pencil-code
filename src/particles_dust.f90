@@ -92,7 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
-  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean=293.25
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3

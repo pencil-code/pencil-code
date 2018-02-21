@@ -37,7 +37,7 @@ module Particles_radius
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0., G_condensation=0., supersaturation=0., vapor_mixing_ratio_qvs=0.
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
-  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean
+  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean=293.25
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: lascalar_par=.false.
@@ -781,7 +781,7 @@ module Particles_radius
                   if (lconstTT) then     
                     es_T=c1*exp(-c2/constTT)
                     qvs_T=es_T/(Rv*rhoa*constTT)
-                  elseif(lTT_mean) then
+                  elseif (lTT_mean) then
                     es_T=c1*exp(-c2/(f(ix,m,n,iTT)+TT_mean))
                     qvs_T=es_T/(Rv*rhoa*(f(ix,m,n,iTT)+TT_mean))
                   else
