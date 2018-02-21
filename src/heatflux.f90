@@ -66,7 +66,6 @@ module Heatflux
   integer :: idiag_qymax=0      ! DIAG_DOC: $\max(|q_y|)$
   integer :: idiag_qzmax=0      ! DIAG_DOC: $\max(|q_z|)$
   integer :: idiag_qrms=0       ! DIAG_DOC: rms of heat flux vector
-  integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
 !
   include 'heatflux.h'
 !
@@ -360,7 +359,6 @@ contains
       call parse_name(iname,cname(iname),cform(iname),'dtq',idiag_dtq)
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
-      call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
     enddo
 !
    if (lwr) then

@@ -1259,10 +1259,8 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Piyali on Nova
 ##
-#FC=ifort #(nova)
 #FFLAGS= -O2  #(nova)
 #FC=mpiifort #(nova)
-##FC=mpif90 #(nova)
 #CC=mpiicc #(nova)
 #CFLAGS=-O2 -DFUNDERSC=1 #(nova)
 #LD_MPI= #(nova)
