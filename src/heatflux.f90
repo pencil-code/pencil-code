@@ -58,6 +58,7 @@ module Heatflux
 !
   integer :: idiag_dtspitzer=0  ! DIAG_DOC: Spitzer heat conduction time step
   integer :: idiag_dtq=0        ! DIAG_DOC: heatflux time step
+  integer :: idiag_dtq2=0       ! DIAG_DOC: heatflux time step due to tau
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
   integer :: idiag_qxmin=0      ! DIAG_DOC: $\min(|q_x|)$
   integer :: idiag_qymin=0      ! DIAG_DOC: $\min(|q_y|)$
@@ -350,6 +351,7 @@ contains
       idiag_qrms=0
       idiag_dtspitzer=0
       idiag_dtq=0
+      idiag_dtq2=0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -357,6 +359,7 @@ contains
     do iname=1,nname
       call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
       call parse_name(iname,cname(iname),cform(iname),'dtq',idiag_dtq)
+      call parse_name(iname,cname(iname),cform(iname),'dtq2',idiag_dtq2)
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
     enddo
@@ -366,7 +369,9 @@ contains
       write(3,*) 'iqx=',iqx
       write(3,*) 'iqy=',iqy
       write(3,*) 'iqz=',iqz
-       write (3,*) 'i_dtspitzer=',idiag_dtspitzer
+      write (3,*) 'i_dtspitzer=',idiag_dtspitzer
+      write (3,*) 'i_dtq=',idiag_dtq
+      write (3,*) 'i_dtq2=',idiag_dtq2
    endif
 !
   endsubroutine rprint_heatflux
@@ -422,7 +427,7 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
-    use Diagnostics, only: max_mn_name
+    use Diagnostics, only: max_mn_name, max_name
     use EquationOfState
     use Sub
 !
@@ -432,7 +437,7 @@ contains
     real, dimension(nx) :: rhs,cosgT_b
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
-    real, dimension(nx) :: tmp, diffspitz
+    real, dimension(nx) :: tmp, tmp2, diffspitz
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2)
@@ -526,12 +531,12 @@ contains
     if (lfirst.and.ldt) then
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
-      rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+      tmp2 = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
            gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
-      maxadvec = maxadvec + rhs/dxmax_pencil
+      maxadvec = maxadvec + tmp2/dxmax_pencil
 !
       if (ldiagnos.and.idiag_dtq/=0) then
-        call max_mn_name(rhs/dxmax_pencil/cdt,idiag_dtq,l_dt=.true.)
+        call max_mn_name(tmp2/dxmax_pencil/cdt,idiag_dtq,l_dt=.true.)
       endif
 !
 !     put into dtspitzer, how the time_step would be
@@ -543,7 +548,14 @@ contains
         call max_mn_name(diffspitz*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
       endif
 !
+!     timestep constraints due to tau directly
+!
       dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+!
+      if (ldiagnos.and.idiag_dtq2/=0) then
+        call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
+      endif
+!
     endif
 !
     if (lvideo) then
