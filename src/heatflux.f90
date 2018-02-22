@@ -199,6 +199,7 @@ contains
       lpenc_requested(i_qq)=.true.
       lpenc_requested(i_divq)=.true.
       lpenc_requested(i_cp1)=.true.
+      lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bunit)=.true.
       lpenc_requested(i_b2)=.true.
@@ -671,7 +672,9 @@ contains
 !
     b2_1=1./(p%b2+tini)
 !
-    chi_spitzer=Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cp1*p%gamma
+! Will only work when primary thermodynamic variables are lnrho, lnTT
+!
+    chi_spitzer=Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1
 !
 !  Limit heat conduction so that the diffusion speed
 !  is smaller than a given fraction of the speed of light (Kc*c_light)
@@ -681,12 +684,12 @@ contains
       where (chi_spitzer > chi_clight)
         chi_spitzer = chi_clight
       endwhere
-      call multsv(chi_spitzer*p%TT*p%rho/p%cp1/p%gamma,p%glnTT,K1)
-      call dot(K1,p%bb,tmp)
-      call multsv(b2_1*tmp,p%bb,spitzer_vec)
     endif
-    tau1_spitzer_penc=1./(chi_spitzer* &
-                      (1.0d-06/cdtv)**2*(max(dz_1(n),dx_1(l1:l2)))**2)
+    call multsv(chi_spitzer*p%TT*p%rho/p%cv1,p%glnTT,K1)
+    call dot(K1,p%bb,tmp)
+    call multsv(b2_1*tmp,p%bb,spitzer_vec)
+    tau1_spitzer_penc=cdtv**2/(1.0d-6*max(dz_1(n),dx_1(l1:l2)))**2/ &
+                      chi_spitzer
 !
     do i=1,3
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
@@ -696,7 +699,7 @@ contains
 ! Add to energy equation
 !
 
-    rhs = p%gamma*p%cp1*p%divq*p%TT1*p%rho1
+    rhs = p%cv1*p%divq*p%TT1*p%rho1
 !
 
     if (ltemperature) then
@@ -724,9 +727,7 @@ contains
     if (lfirst.and.ldt) then
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
-      rhs = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-!           p%gamma*p%cp1*tau1_spitzer_penc*abs(cosgT_b)
-           p%gamma*p%cp1
+      rhs = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1
 !
       if (idiag_dtspitzer/=0) &
            call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)

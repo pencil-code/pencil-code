@@ -105,6 +105,7 @@ module Radiation
   logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y
   logical :: lfix_radweight_1d=.true.
   logical :: lcooling=.true., lrad_debug=.false.
+  logical :: lno_rad_heating=.false.
   logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
@@ -163,7 +164,7 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
-      z_cutoff,cool_wid
+      z_cutoff,cool_wid,lno_rad_heating
 !
   contains
 !***********************************************************************
@@ -1457,6 +1458,8 @@ module Radiation
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) call calc_rad_diffusion(f,p)
       cooling=f(l1:l2,m,n,iQrad)
+      if (lno_rad_heating) & 
+         where (cooling > 0.0d0) cooling=0.0d0
 !
 !  Possibility of rescaling the radiative cooling term.
 !
