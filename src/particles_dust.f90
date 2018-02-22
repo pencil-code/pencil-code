@@ -4535,10 +4535,10 @@ module Particles
                      if (lconstTT) then
                        es_T=c1*exp(-c2/constTT)
                        qvs_T=es_T/(Rv*rhoa*constTT)
-                     elseif (lTT_mean) then
+                     elseif (lTT_mean .and. ltemperature) then
                        es_T=c1*exp(-c2/(f(l,m,n,iTT)+TT_mean))
                        qvs_T=es_T/(Rv*rhoa*(f(l,m,n,iTT)+TT_mean))
-                     else
+                     elseif (ltemperature) then
                        es_T=c1*exp(-c2/f(l,m,n,iTT))
                        qvs_T=es_T/(Rv*rhoa*f(l,m,n,iTT))
                      endif
