@@ -67,6 +67,8 @@ module Heatflux
   integer :: idiag_qymax=0      ! DIAG_DOC: $\max(|q_y|)$
   integer :: idiag_qzmax=0      ! DIAG_DOC: $\max(|q_z|)$
   integer :: idiag_qrms=0       ! DIAG_DOC: rms of heat flux vector
+  integer :: idiag_qsatmin=0    ! DIAG_DOC: minimum of qsat/qabs
+  integer :: idiag_qsatrms=0    ! DIAG_DOC: rms of qsat/abs
 !
   include 'heatflux.h'
 !
@@ -353,6 +355,8 @@ contains
       idiag_dtspitzer=0
       idiag_dtq=0
       idiag_dtq2=0
+      idiag_qsatmin=0
+      idiag_qsatrms=0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -363,6 +367,8 @@ contains
       call parse_name(iname,cname(iname),cform(iname),'dtq2',idiag_dtq2)
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
+      call parse_name(iname,cname(iname),cform(iname),'qsatmin',idiag_qsatmin)
+      call parse_name(iname,cname(iname),cform(iname),'qsatrms',idiag_qsatrms)
     enddo
 !
    if (lwr) then
@@ -373,6 +379,8 @@ contains
       write (3,*) 'i_dtspitzer=',idiag_dtspitzer
       write (3,*) 'i_dtq=',idiag_dtq
       write (3,*) 'i_dtq2=',idiag_dtq2
+      write (3,*) 'i_qsatmin=',idiag_qsatmin
+      write (3,*) 'i_qsatrms=',idiag_qsatrms
    endif
 !
   endsubroutine rprint_heatflux
@@ -428,14 +436,14 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
-    use Diagnostics, only: max_mn_name, max_name
+    use Diagnostics, only: max_mn_name,sum_mn_name, max_name
     use EquationOfState
     use Sub
 !
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
     real, dimension(nx) :: b2_1,qsat,qabs
-    real, dimension(nx) :: rhs,cosgT_b
+    real, dimension(nx) :: rhs,cosgT_b, Kspitzer, K_clight
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp, tmp2, diffspitz
@@ -446,14 +454,40 @@ contains
     b2_1=1./(p%b2+tini)
 !
     if (lnfs2) then
+!
 !    for pp=qq/rho there you must divide by rho 
-       call multsv(Kspitzer_para*exp(3.5*p%lnTT-p%lnrho),p%glnTT,K1)
+!
+     Kspitzer=Kspitzer_para*exp(3.5*p%lnTT-p%lnrho)
+!
+!    Limit the heat flux by the speed of light
+!    Kc should be on the order of unity or smaler
+!
+      if (Kc /= 0.) then
+        K_clight = Kc*c_light*dxmin_pencil/(p%cp1*gamma)
+!
+        where (Kspitzer > K_clight)
+          Kspitzer=K_clight
+        endwhere
+      endif
     else
+!
 !    for pp=qq*rho there you must a factor of rho 
-       call multsv(Kspitzer_para*exp(p%lnrho+3.5*p%lnTT),p%glnTT,K1)
+!
+     Kspitzer=Kspitzer_para*exp(p%lnrho+3.5*p%lnTT)
+!
+!    Limit the heat flux by the speed of light
+!    Kc should be on the order of unity or smaler
+!
+      if (Kc /= 0.) then
+        K_clight = Kc*c_light*dxmin_pencil*exp(2*p%lnrho)/(p%cp1*gamma)
+!
+        where (Kspitzer > K_clight)
+          Kspitzer=K_clight
+        endwhere
+      endif
     endif
-!
-!
+
+    call multsv(Kspitzer,p%glnTT,K1)
     call dot(K1,p%bb,tmp)
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
@@ -477,7 +511,12 @@ contains
         spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
         spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
       endwhere
+      if (ldiagnos) then
+        if (idiag_qsatmin/=0) call max_mn_name(-1.*qsat/(qabs+sqrt(tini)),idiag_qsatmin,lneg=.true.)
+        if (idiag_qsatrms/=0) call sum_mn_name(qsat/(qabs+sqrt(tini)),idiag_qsatrms)
+      endif
     endif
+!
 !
     if (lnfs2) then
 !     for pp=qq/rho, it is '+qq*(uglnrho+divu)'
