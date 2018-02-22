@@ -2726,19 +2726,19 @@ module Special
       call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
 !
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
-      rtv_cool = gamma*p%cp1*exp(rtv_cool)
+      rtv_cool = p%cv1*exp(rtv_cool)
 !
       rtv_cool = rtv_cool*cool_RTV
 !     for adjusting by setting cool_RTV in run.in
 !
       select case (cool_RTV_cutoff)
       case(0)
+        rtv_cool = rtv_cool*get_time_fade_fact() &
+          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      case(1)
 !
 ! Do nothing actually!
 !
-      case(1)
-        rtv_cool = rtv_cool*get_time_fade_fact() &
-          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
       case(2)
         call get_shared_variable('z_cutoff',&
              z_cutoff,ierr)
