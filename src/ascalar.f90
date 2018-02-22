@@ -183,6 +183,8 @@ module Ascalar
       if (ascalar_diff/=0.) lpenc_requested(i_del2acc)=.true.
  
       lpenc_diagnos(i_acc)=.true.
+!      
+      if (ltemperature) lpenc_requested(i_TT)=.true.
 !     
     endsubroutine pencil_criteria_ascalar
 !***********************************************************************
