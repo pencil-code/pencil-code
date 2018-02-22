@@ -91,8 +91,7 @@ module Particles
   real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
-  real :: supersaturation=0.0, vapor_mixing_ratio_qvs=0.
-  real :: es_T, qvs_T, c1, c2, Rv, rhoa=1.0, constTT, TT_mean=293.25
+  real :: vapor_mixing_ratio_qvs=0., rhoa=1.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -141,7 +140,7 @@ module Particles
   logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
-  logical :: ltauascalar = .false., lconstTT=.false., lTT_mean=.false.
+  logical :: ltauascalar = .false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -284,10 +283,8 @@ module Particles
       remove_particle_criteria_edtog, &
       ascalar_ngp, ascalar_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltauascalar, &
-      c1, c2, Rv, rhoa, &
-      lconstTT, constTT, &
-      G_condensation, TT_mean, lTT_mean
+      ltauascalar, rhoa, &
+      G_condensation
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -2856,6 +2853,7 @@ module Particles
          if (ltauascalar) lpenc_requested(i_tauascalar)=.true.
          lpenc_requested(i_condensationRate)=.true.
          lpenc_requested(i_waterMixingRatio)=.true.
+         lpenc_requested(i_ssat)=.true.
       endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
@@ -2916,6 +2914,7 @@ module Particles
       if (lascalar .and. ltauascalar) lpencil_in(i_tauascalar)=.true.
       if (lascalar) lpencil_in(i_condensationRate)=.true.
       if (lascalar) lpencil_in(i_waterMixingRatio)=.true.
+      if (lascalar) lpencil_in(i_ssat)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -4532,18 +4531,7 @@ module Particles
                    l=ineargrid(k,1)
                    if (ltauascalar) f(l,m,n,itauascalar) = f(l,m,n,itauascalar) + A3*A2*inversetau
                    if (lcondensation_rate) then
-                     if (lconstTT) then
-                       es_T=c1*exp(-c2/constTT)
-                       qvs_T=es_T/(Rv*rhoa*constTT)
-                     elseif (lTT_mean .and. ltemperature) then
-                       es_T=c1*exp(-c2/(f(l,m,n,iTT)+TT_mean))
-                       qvs_T=es_T/(Rv*rhoa*(f(l,m,n,iTT)+TT_mean))
-                     elseif (ltemperature) then
-                       es_T=c1*exp(-c2/f(l,m,n,iTT))
-                       qvs_T=es_T/(Rv*rhoa*f(l,m,n,iTT))
-                     endif
-                     supersaturation=f(l,m,n,iacc)/qvs_T-1.
-                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+supersaturation*inversetau*G_condensation
+                     f(l,m,n,icondensationRate)=f(l,m,n,icondensationRate)+f(l,m,n,issat)*inversetau*G_condensation
                      f(l,m,n,iwaterMixingRatio)=f(l,m,n,iwaterMixingRatio)+(4.*pi*rhopmat/3./rhoa)*(fp(k,iap))**3*fp(k,inpswarm)
                    endif
                  elseif (ascalar_cic) then

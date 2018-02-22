@@ -11,10 +11,12 @@
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 1
+!!!! COMMUNICATED AUXILIARIES 1
 !
 ! PENCILS PROVIDED acc
 ! PENCILS PROVIDED gacc(3); ugacc
 ! PENCILS PROVIDED del2acc
+! PENCILS PROVIDED ssat
 !
 !***************************************************************
 module Ascalar
@@ -28,7 +30,7 @@ module Ascalar
   include 'ascalar.h'
 !
 ! Define local variables in this special module, not in "Cdata.f90"
-  integer :: issat=0
+!  integer :: issat=0
 !  Init parameters.
 !
   real :: acc_const=0., amplacc=0., widthacc=0.
@@ -89,6 +91,7 @@ module Ascalar
 !
       call farray_register_pde('acc', iacc)
 !
+!      call farray_register_auxiliary('ssat', issat, communicated=.true.)
       call farray_register_auxiliary('ssat', issat)
 
 !  Identify version number.
@@ -169,7 +172,7 @@ module Ascalar
 !  acc itself always
 !
       lpenc_requested(i_acc)=.true.
-!      lpenc_requested(i_ssat)=.true.
+      lpenc_requested(i_ssat)=.true.
 !
 !  background gradient 
 !
@@ -195,6 +198,7 @@ module Ascalar
 !
       lpencil_in(i_acc)=.true.
       lpencil_in(i_ugacc)=.true.
+      lpencil_in(i_ssat)=.true.
       if (lpencil_in(i_ugacc)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gacc)=.true.
@@ -215,11 +219,13 @@ module Ascalar
       type (pencil_case) :: p
       integer :: j
 !
+!XY0
       intent(in) :: f
       intent(inout) :: p
 !
 ! acc
       if (lpencil(i_acc)) p%acc=f(l1:l2,m,n,iacc)
+      if (issat>0) p%ssat=f(l1:l2,m,n,issat)
 !
 !  Compute gacc. Add imposed spatially constant gradient of acc.
 !  (This only makes sense for periodic boundary conditions.)
@@ -262,7 +268,7 @@ module Ascalar
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer, parameter :: nxy=nxgrid*nygrid
       integer :: k
-! XY: Commented the following out. 
+! XY0: Commented the following out. 
 !      intent(in)  :: f
       intent(out) :: df
 !
@@ -359,22 +365,22 @@ module Ascalar
         if (idiag_uzaccm/=0) call sum_mn_name(p%uu(:,3)*p%acc,idiag_uzaccm)
         if (ltauascalar) then
           if (idiag_tauascalarrms/=0) &
-             call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
+            call sum_mn_name(p%tauascalar**2,idiag_tauascalarrms,lsqrt=.true.)
           if (idiag_tauascalarmax/=0) call max_mn_name(p%tauascalar,idiag_tauascalarmax)
           if (idiag_tauascalarmin/=0) call max_mn_name(-p%tauascalar,idiag_tauascalarmin,lneg=.true.)
         endif
         if (idiag_condensationRaterms/=0) &
-            call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
+          call sum_mn_name(p%condensationRate**2,idiag_condensationRaterms,lsqrt=.true.)
         if (idiag_condensationRatemax/=0) call max_mn_name(p%condensationRate,idiag_condensationRatemax)
         if (idiag_condensationRatemin/=0) call max_mn_name(-p%condensationRate,idiag_condensationRatemin,lneg=.true.)
         if (idiag_waterMixingRatiorms/=0) &
-            call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
+          call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
         if (idiag_waterMixingRatiomax/=0) call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
         if (idiag_waterMixingRatiomin/=0) call max_mn_name(-p%waterMixingRatio,idiag_waterMixingRatiomin,lneg=.true.)
         if (idiag_ssatrms/=0) &
-            call sum_mn_name((f(l1:l2,m,n,issat))**2,idiag_ssatrms,lsqrt=.true.)
-        if (idiag_ssatmax/=0) call max_mn_name(f(l1:l2,m,n,issat),idiag_ssatmax)
-        if (idiag_ssatmin/=0) call max_mn_name(-f(l1:l2,m,n,issat),idiag_ssatmin,lneg=.true.)
+          call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
+        if (idiag_ssatmax/=0) call max_mn_name(p%ssat,idiag_ssatmax)
+        if (idiag_ssatmin/=0) call max_mn_name(-p%ssat,idiag_ssatmin,lneg=.true.)
         if (lbuoyancy) then
           if (idiag_buoyancyrms/=0) &
             call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)

@@ -13,6 +13,8 @@
 !
 ! PENCILS PROVIDED acc
 ! PENCILS PROVIDED gacc(3); ugacc
+! PENCILS PROVIDED del2acc
+! PENCILS PROVIDED ssat
 !
 !***************************************************************
 module Ascalar
