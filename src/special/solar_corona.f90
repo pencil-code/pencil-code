@@ -2702,7 +2702,7 @@ module Special
       use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
-      use Sub,             only: cubic_step
+      use Sub,             only: cubic_step,step
       use SharedVariables, only: get_shared_variable
 !
       integer :: ierr
@@ -2728,20 +2728,24 @@ module Special
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-      rtv_cool = rtv_cool*cool_RTV * get_time_fade_fact()
+      rtv_cool = rtv_cool*cool_RTV
 !     for adjusting by setting cool_RTV in run.in
 !
       select case (cool_RTV_cutoff)
       case(0)
-        rtv_cool = rtv_cool &
-          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+!
+! Do nothing actually!
+!
       case(1)
+        rtv_cool = rtv_cool*get_time_fade_fact() &
+          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      case(2)
         call get_shared_variable('z_cutoff',&
              z_cutoff,ierr)
         if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
              'failed to get z_cutoff from radiation_ray')
         rtv_cool = rtv_cool &
-          *cubic_step(z(n),z_cutoff,0.2,1.0)
+          *step(z(n),z_cutoff,0.2)
       case default
         call fatal_error('cool_RTV_cutoff:','wrong value')
       endselect
