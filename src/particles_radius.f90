@@ -40,7 +40,6 @@ module Particles_radius
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
-  logical :: lascalar_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
   logical :: lcondensation_rate=.false.
@@ -69,7 +68,7 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, TTocean, &
       lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
-      lascalar_par,lconstant_radius_w_chem, &
+      lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar
@@ -144,8 +143,7 @@ module Particles_radius
       endif
 !
       if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
-          .and. .not. lascalar_par &
-              .and. .not. lascalar &
+          .and. .not. lascalar &
           .and. .not. lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
@@ -498,13 +496,12 @@ module Particles_radius
         if (ltemperature) then
           lpenc_requested(i_cv1) = .true.
           lpenc_requested(i_TT1) = .true.
+          lpenc_requested(i_TT) = .true.
         endif
-      endif
-      if (lascalar .and. lascalar_par) then
-        lpenc_requested(i_acc) = .true.
-        lpenc_requested(i_ssat) = .true.
-        lpenc_requested(i_np) = .true.
-        if (ltemperature) lpenc_requested(i_TT) = .true.
+        if (lascalar) then
+          lpenc_requested(i_acc) = .true.
+          lpenc_requested(i_ssat) = .true.
+        endif
       endif
 !
     endsubroutine pencil_criteria_par_radius
@@ -542,8 +539,6 @@ module Particles_radius
 !
       if (lsweepup_par) call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
       if (lcondensation_par) &
-          call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lascalar_par) &
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !
@@ -773,17 +768,20 @@ module Particles_radius
 !                    
               if (lcondensation_simplified) then
                 dapdt = GS_condensation/fp(k,iap)
+              elseif (lascalar) then
+                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
+                if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
                 (rhovap(ix)-rhosat(ix))*alpha_cond_par
               endif
 !            
-              if (lascalar) then
-                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
-                if (lcondensation_rate) then
-                  dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
-                endif
-              endif
+!              if (lascalar) then
+!                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
+!                if (lcondensation_rate) then
+!                  dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+!                endif
+!              endif
 !
 !  Damp approach to minimum size. The radius decreases linearly with time in
 !  the limit of small particles; therefore we need to damp the evaporation to
