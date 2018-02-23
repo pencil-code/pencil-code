@@ -35,7 +35,8 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0, qplaw=0.0, GS_condensation=0., G_condensation=0., vapor_mixing_ratio_qvs=0.
+  real :: ap1=1.0, qplaw=0.0,vapor_mixing_ratio_qvs=0., GS_condensation=0.0
+  real, pointer :: G_condensation 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
@@ -70,7 +71,7 @@ module Particles_radius
       lfixed_particles_radius, &
       lascalar_par,lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
-      G_condensation, lcondensation_rate, vapor_mixing_ratio_qvs, &
+      lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
@@ -127,7 +128,7 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -179,6 +180,8 @@ module Particles_radius
       endif
 !
       call keep_compiler_quiet(f)
+!
+      if (lascalar) call get_shared_variable('G_condensation', G_condensation)
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************

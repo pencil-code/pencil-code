@@ -179,7 +179,9 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
-  real :: A3=0., A2=0., G_condensation=0.
+!  real :: A3=0., A2=0., G_condensation=0.
+  real :: A3=0., A2=0.
+  real, target :: G_condensation=0.0
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
 !
   namelist /particles_init_pars/ &
@@ -937,6 +939,8 @@ module Particles
 !
       if (lparticles_potential) call initialize_particles_potential(fp)
 !
+      if (lascalar) call put_shared_variable('G_condensation',G_condensation)
+!       
     endsubroutine initialize_particles
 !***********************************************************************
     subroutine init_particles(f,fp,ineargrid)
