@@ -776,13 +776,6 @@ module Particles_radius
                 (rhovap(ix)-rhosat(ix))*alpha_cond_par
               endif
 !            
-!              if (lascalar) then
-!                if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
-!                if (lcondensation_rate) then
-!                  dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
-!                endif
-!              endif
-!
 !  Damp approach to minimum size. The radius decreases linearly with time in
 !  the limit of small particles; therefore we need to damp the evaporation to
 !  avoid small time-steps.
@@ -801,7 +794,7 @@ module Particles_radius
 !  Vapor monomers are added to the gas or removed from the gas.
 !
             if (lparticles_number) np_swarm = fp(k,inpswarm)
-            if (lcondensation_simplified) then
+            if (lcondensation_simplified .or. lcondensation_rate) then
               drhocdt = 0.
             else
               drhocdt = -dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
