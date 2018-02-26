@@ -188,7 +188,7 @@ module Pscalar
                 tanh(der*(y(m)-widthlncc)))/2.
             prof=prof
             do n=n1,n2
-              f(l1:l2,m,n,ilncc)=1.-log(prof)+amplcc*1e-20
+              f(l1:l2,m,n,ilncc)=log(1.-prof+amplcc*1e-20)
             enddo
           enddo
         case default; call fatal_error('init_lncc','bad initlncc='//trim(initlncc))
