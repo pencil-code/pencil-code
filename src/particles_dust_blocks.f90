@@ -677,7 +677,7 @@ module Particles
             endif
           enddo
 !
-       case ('random-cylindrical','random-cyl')
+       case ('random-cylindrical','random-cyl','random-spherical','random-sph')
           if (lroot) print*, 'init_particles: Random particle '//&
                'cylindrical positions with power-law =',dustdensity_powerlaw
 !
@@ -2437,10 +2437,7 @@ k_loop:   do while (.not. (k>npar_loc))
             elseif (lcylindrical_coords) then
               OO=fp(k,ixp)**(-1.5)
             elseif (lspherical_coords) then
-              call fatal_error("get_frictiontime",&
-                   "variable draglaw not implemented for"//&
-                   "spherical coordinates")
-              OO=0.
+              OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
             else
               call fatal_error("get_frictiontime", &
                    "no valid coord system")
