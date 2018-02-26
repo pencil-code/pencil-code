@@ -49,9 +49,9 @@ module Energy
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real, dimension(5) :: hole_params
-  real, dimension(nz) :: zmask_temp
+  real, dimension(nz) :: zmask_temp, zmask_emiss
+  real, dimension(nzgrid) :: zmask_temp_global, zmask_emiss_global
   real, dimension(2) :: temp_zaver_range=(/-max_real,max_real/)
-  real, dimension(nz) :: zmask_emiss
   real, dimension(2) :: emiss_zaver_range=(/-max_real,max_real/)
   real :: emiss_logT0=0.0
   real :: emiss_width=1.0
@@ -93,6 +93,7 @@ module Energy
   real, dimension(nz) :: TTmz, gTTmz 
 !
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
+!
 !
 !  Init parameters.
 !
@@ -529,14 +530,21 @@ module Energy
 !
       if (n1 == n2) then
         zmask_temp = 1.
+        zmask_temp_global=1.
       else
-        where (z(n1:n2) >= temp_zaver_range(1) .and. z(n1:n2) <= temp_zaver_range(2))
+        where (z(n1:n2) >= temp_zaver_range(1) .and. z(n1:n2)  <= temp_zaver_range(2))
           zmask_temp = 1.
         elsewhere
           zmask_temp = 0.
         endwhere
-        temp_zmask_count = max(count(zmask_temp ==  1.0),1)
-        zmask_temp = zmask_temp*float(nz)/float(temp_zmask_count)
+        where (zglobal(nghost+1:mzgrid-nghost) >= temp_zaver_range(1) .and. &
+               zglobal(nghost+1:mzgrid-nghost) <= temp_zaver_range(2))
+          zmask_temp_global = 1.
+        elsewhere
+          zmask_temp_global = 0.
+        endwhere
+        temp_zmask_count =  max(count(zmask_temp_global ==  1.0),1)
+        zmask_temp = zmask_temp*float(nzgrid)/float(temp_zmask_count)
       endif
 !
 !  Compute mask for z-averaging where z is in emission_zaver_range.
@@ -545,14 +553,21 @@ module Energy
 !
       if (n1 == n2) then
         zmask_emiss = 1.
+        zmask_emiss_global = 1.
       else
         where (z(n1:n2) >= emiss_zaver_range(1) .and. z(n1:n2) <= emiss_zaver_range(2))
           zmask_emiss = 1.
         elsewhere
           zmask_emiss = 0.
         endwhere
-        emiss_zmask_count = max(count(zmask_emiss ==  1.0),1)
-        zmask_emiss = zmask_emiss*float(nz)/float(emiss_zmask_count)
+       where (zglobal(nghost+1:mzgrid-nghost) >= emiss_zaver_range(1) .and. &
+               zglobal(nghost+1:mzgrid-nghost) <= emiss_zaver_range(2))
+          zmask_emiss_global = 1.
+        elsewhere
+          zmask_emiss_global = 0.
+        endwhere
+        emiss_zmask_count = max(count(zmask_emiss_global ==  1.0),1)
+        zmask_emiss = zmask_emiss*float(nzgrid)/float(emiss_zmask_count)
       endif
 !
 !  debug output
