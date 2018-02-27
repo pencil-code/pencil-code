@@ -54,6 +54,7 @@ free_lun, lun
 default, ntestfield, 0
 default, ntestflow, 0
 default, ntestscalar, 0
+default, ntestlnrho, 0
 
 for line = 1, num_lines do begin
   str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
@@ -112,7 +113,8 @@ indices = [ $
   { name:'iuut', label:'Integrated velocity', dims:3 }, $
   { name:'iaatest', label:'Testmethod vector potential', dims:ntestfield }, $
   { name:'iuutest', label:'Testmethod velocity', dims:ntestflow }, $
-  { name:'icctest', label:'Testscalar', dims:ntestscalar }, $
+  { name:'icctest', label:'Testmethod scalar', dims:ntestscalar }, $
+  { name:'ilnrhotest', label:'Testmethod log(rho)', dims:ntestlnrho }, $
 ;  { name:'iuxb', label:'Testfield vector potential', dims:ntestfield }, $  ; is this art or can it be removed?
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $

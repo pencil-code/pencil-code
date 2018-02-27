@@ -9,7 +9,7 @@
 ;;
 ;;  27-nov-02/tony: coded
 ;;   2-oct-14/MR: keyword parameter down added for use with downsampled data
-;;  27-jan-16/MR: added check for FORTRAN consistency og grid data + automatic endian swapping if necessary
+;;  27-jan-16/MR: added check for FORTRAN consistency of grid data + automatic endian swapping if necessary
 ;;
 pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     datadir=datadir, proc=proc, print=print, quiet=quiet, help=help, $

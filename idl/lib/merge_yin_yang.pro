@@ -5,12 +5,12 @@
 ;  for selection of unclipped points.
 ;
     yin2yang_coors, y[m1:m2], z[n1:n2], yzyang
-    inds = where(yzyang(0,*) lt min(y[m1:m2])-dy or yzyang(0,*) gt max(y[m1:m2])+dy or $
-                 yzyang(1,*) lt min(z[n1:n2])-dz or yzyang(1,*) gt max(z[n1:n2])+dz)
+    inds = where(yzyang(0,*) lt min(y[m1:m2])-(.0)*dy or yzyang(0,*) gt max(y[m1:m2])+(.0)*dy or $
+                 yzyang(1,*) lt min(z[n1:n2])-(.0)*dz or yzyang(1,*) gt max(z[n1:n2])+(.0)*dz)
     yzyang=yzyang(*,inds)
 
     ny=m2-m1+1 & nz=n2-n1+1            ;long(n_elements(y)) & nz=n_elements(z)
-    yz=fltarr(2,ny*nz)
+    yz=fltarr(2,ny*nz)*dy              ; *dy to enforce correct numerical precision
 
     ind=0L
     for i=0,ny-1 do begin

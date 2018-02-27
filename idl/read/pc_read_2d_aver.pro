@@ -25,7 +25,7 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write, single=single
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -336,7 +336,12 @@ COMPILE_OPT IDL2,HIDDEN
   if (iplot lt 0) then begin
 ;
     array_local=fltarr(nx,ny,nvar_all)*one
-    array_global=fltarr(nxg,nyg,nret,nvar)*one
+    if keyword_set(single) then $
+      array_global=fltarr(nxg,nyg,nret,nvar) $
+    else $
+      array_global=fltarr(nxg,nyg,nret,nvar)*one
+    type_as_on_disk=not keyword_set(single) or size(one,/type) eq 4
+
     t=zero
     if njump gt 1 then incr=njump*(double(n_elements(array_local))*data_bytes+8L + data_bytes+8L)
 ;
@@ -428,10 +433,13 @@ COMPILE_OPT IDL2,HIDDEN
           if warn then begin
             yn=''
             read, prompt='Do you really want to overwrite the averages (yes/no)?', yn 
+            if yn eq 'yes' and not type_as_on_disk then $
+              read, prompt='Data was read in in single precision, so you loose precision in overwriting. Continue (yes/no)?', yn
           endif else $
             yn='yes'
 
           if yn eq 'yes' then begin
+              
             for ip=0, num_files-1 do begin
               ipx=ipxarray[ip]
               iya=ipyarray[ip]*ny
@@ -439,7 +447,10 @@ COMPILE_OPT IDL2,HIDDEN
               openw, lun, write+'/'+filename[ip], /f77, swap_endian=swap_endian, /get_lun
               for itt=0,nread-1 do begin
                 writeu, lun, tt[itt], tt[itt]
-                writeu, lun, array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,itt,*]
+                if type_as_on_disk then $
+                  writeu, lun, array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,itt,*] $
+                else $
+                  writeu, lun, double(array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,itt,*])
               endfor
               close, lun
               free_lun, lun

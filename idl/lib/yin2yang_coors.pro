@@ -1,6 +1,6 @@
   pro yin2yang_coors, y, z, yz
 
-      yz=fltarr(2,n_elements(y)*n_elements(z))
+      yz=fltarr(2,n_elements(y)*n_elements(z))*y[0]    ; 'y[0] to enforce correct numerical precision
 
       ind=0L
       for i=0,n_elements(y)-1 do begin

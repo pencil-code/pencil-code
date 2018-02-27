@@ -6,14 +6,22 @@
 ;  'rho' can be used for quan even if v contains merely lnrho.
 ;   _extra parameters are handed over to plot.
 ;
+;  title and xtitle of the plot are generated internally unless they are provided as keyword parameters in the call
+;
 ;  6-dec-17/MR: coded
 ;  
       pc_read_dim, obj=d, /quiet
+      if ir lt 0 or ir gt d.nx-1 then begin
+        print, 'Invalid ir: must be in [0,'+strtrim(string(d.nx-1),2)+']!'
+        return
+      endif
 
-      if n_elements(v.y) eq d.my then begin
+      if n_elements(v.y) eq d.my then begin     ; data not trimmed
         m1=d.m1 & m2=d.m2 & n1=d.n1 & n2=d.n2
-      endif else begin
+        ir_full=ir+d.l1
+      endif else begin				; data trimmed
         m1=0 & m2=d.ny-1 & n1=0 & n2=d.nz-1
+        ir_full=ir
       endelse
 
       dy=v.y[m1+1]-v.y[m1]
@@ -60,7 +68,7 @@
           yout=xplt
         endif else begin
           if abs(v.y[m1+1+ilat]-lat) > abs(v.y[m1+ilat]-lat) then ilat-=1
-          cmd1='yplt=[(reform(yindat))[0:d.nz/6-2],reform('+quanv+'[ir,ilat,n1:n2'+comp+',0]'+cbrack+'),(reform(yindat))[d.nz/6-1:*]]'
+          cmd1='yplt=[(reform(yindat))[0:d.nz/6-2],reform('+quanv+'[ir_full,ilat,n1:n2'+comp+',0]'+cbrack+'),(reform(yindat))[d.nz/6-1:*]]'
           yout=[zintu,zinto]
         endelse
         cmd='yindat=griddata(reform(v.yz(0,*)),reform(v.yz(1,*)),reform('+quanv+'_merge[ir,*'+comp+'])'+cbrack+',xout=[lat],yout=yout,triangles=v.triangles,/linear,/grid)'
@@ -81,7 +89,7 @@
           xout=xplt
         endif else begin
           if abs(v.z[n1+1+ilon]-lon) > abs(v.z[n1+ilon]-lon) then ilon-=1
-          cmd1='yplt=[(reform(yindat))[0:d.ny/2-2],reform('+quanv+'[ir,m1:m2,ilon'+comp+',0])'+cbrack+',(reform(yindat))[d.ny/2-1:*]]'
+          cmd1='yplt=[(reform(yindat))[0:d.ny/2-2],reform('+quanv+'[ir_full,m1:m2,ilon'+comp+',0])'+cbrack+',(reform(yindat))[d.ny/2-1:*]]'
           xout=[yintu,yinto]
         endelse
         cmd='yindat=griddata(reform(v.yz(0,*)),reform(v.yz(1,*)),reform('+quanv+'_merge[ir,*'+comp+'])'+cbrack+',yout=[lon],xout=xout,triangles=v.triangles,/linear,/grid)'
@@ -106,17 +114,26 @@
 
       if ok and ok1 then begin
 
+        if n_elements(extra) gt 0 then begin
+          if not has_tag(extra,'title') then $
+            title=quan_+'!D'+qcomp+'!N at'+ $
+             (llat ? ' latitude='+strtrim(string(lat),2) : ' longitude='+strtrim(string(lon),2))$
+          else $
+            title=extra.title
+            
+          if not has_tag(extra,'xtitle') then $
+            xtitle=(llat ? 'longitude' : 'latitude') $
+          else $
+            xtitle=extra.xtitle 
+        endif
         yrange=[min(yplt),max(yplt)]
-        plot, xplt, yplt, title=quan_+'!D'+qcomp+'!N at'+ $
-             (llat ? ' latitude='+strtrim(string(lat),2) : ' longitude='+strtrim(string(lon),2)), $
-             xtitle=(llat ? 'longitude' : 'latitude'), _extra=extra
-
+        plot, xplt, yplt, title=title, xtitle=xtitle, _extra=extra
         if keyword_set(interface) then begin
-          plots, [1./4,1./4]*!pi, yrange, linest=1
+          plots, [1./4,1./4]*!pi, !y.crange, linest=1
           if llat then $
-            plots, [7./4,7./4]*!pi, yrange, linest=1 $
-          endif else $
-            plots, [3./4,3./4]*!pi, yrange, linest=1
+            plots, [7./4,7./4]*!pi, !y.crange, linest=1 $
+          else $
+            plots, [3./4,3./4]*!pi, !y.crange, linest=1
         endif
 
       endif
