@@ -1267,7 +1267,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##FFLAGS_DOUBLE=-fdefault-real-8 #(nova)
 #FFLAGS_DOUBLE=-r8 #(nova)
 #LIBMPISUFFIX=#(nova
-
 ##
 ## Axel on LCD
 ##
