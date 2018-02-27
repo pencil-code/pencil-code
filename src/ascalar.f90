@@ -9,7 +9,7 @@
 !
 ! CPARAM logical, parameter :: lascalar = .true.
 !
-! MVAR CONTRIBUTION 1
+! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 1
 !!!! COMMUNICATED AUXILIARIES 1
 !
@@ -17,6 +17,9 @@
 ! PENCILS PROVIDED gacc(3); ugacc
 ! PENCILS PROVIDED del2acc
 ! PENCILS PROVIDED ssat
+! PENCILS PROVIDED ttc
+! PENCILS PROVIDED gttc(3); ugttc
+! PENCILS PROVIDED del2ttc
 !
 !***************************************************************
 module Ascalar
@@ -34,16 +37,19 @@ module Ascalar
 !  Init parameters.
 !
   real :: acc_const=0., amplacc=0., widthacc=0.
+  real :: ttc_const=0., amplttc=0., widthttc=0.
   logical :: noascalar=.false., reinitialize_acc=.false.
   character (len=labellen) :: initacc='nothing'
+  character (len=labellen) :: initttc='nothing'
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
-  real :: T_env=1., qv_env=1., Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
-  logical :: lbuoyancy=.true., ltauascalar = .false.
+  real :: T_env=293.0, qv_env=1.63e-2, Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
+  logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false.
 !
   namelist /ascalar_init_pars/ &
            initacc, acc_const, amplacc, widthacc, & 
-           T_env, qv_env, lbuoyancy
+           initttc, ttc_const, amplttc, widthttc, & 
+           T_env, qv_env, lbuoyancy, lttc
 !
 !  Run parameters.
 !
@@ -57,21 +63,23 @@ module Ascalar
   real :: Rv=461.5, rhoa=1.06
   real :: TT_mean=293.25, constTT=293.25
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
+  real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
   real, dimension(nx) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
-  logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false.
+  logical :: lupw_acc=.false., lcondensation_rate=.false., lconstTT=.false., lTT_mean=.false., lupw_ttc=.false.
 
   namelist /ascalar_run_pars/ &
       lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
       lupdraft, updraft, A1, latent_heat, cp, &
       const1_qvs, const2_qvs, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
-      lconstTT, constTT, TT_mean, lTT_mean
+      lconstTT, constTT, TT_mean, lTT_mean, thermal_diff, gradTT0
 !
 !  Diagnostics variables
 !
   integer :: idiag_accrms=0, idiag_accmax=0, idiag_accmin=0
+  integer :: idiag_ttcrms=0, idiag_ttcmax=0, idiag_ttcmin=0
   integer :: idiag_uxaccm=0, idiag_uyaccm=0, idiag_uzaccm=0
   integer :: idiag_tauascalarrms=0, idiag_tauascalarmax=0, idiag_tauascalarmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
@@ -91,9 +99,11 @@ module Ascalar
 !
       call farray_register_pde('acc', iacc)
 !
-!      call farray_register_auxiliary('ssat', issat, communicated=.true.)
       call farray_register_auxiliary('ssat', issat)
-
+!
+!      call farray_register_auxiliary('ttc', ittc)
+      call farray_register_pde('ttc', ittc)
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -116,6 +126,7 @@ module Ascalar
 !
       if (reinitialize_acc) then
         f(:,:,:,iacc)=0.
+        f(:,:,:,ittc)=0.
         call init_acc(f)
       endif
 !
@@ -152,6 +163,26 @@ module Ascalar
           call fatal_error('initacc','initacc value not recognised')
       endselect
 !
+!  initialise temperature field
+      select case (initttc)
+        case ('nothing')
+        case ('zero'); f(:,:,:,ittc)=0.0
+        case ('constant'); f(:,:,:,ittc)=ttc_const
+        case ('tanhx')
+          do m=m1,m2;do n=n1,n2
+             f(:,m,n,ittc)=ttc_const+amplttc*tanh(x/widthttc)
+          enddo;enddo
+        case ('tanhz')
+          do l=l1,l2; do m=m1,m2
+             f(l,m,:,ittc)=ttc_const+amplttc*tanh(z/widthttc)
+          enddo;enddo
+!
+!  Catch unknown values.
+!
+        case default
+          call fatal_error('initttc','initttc value not recognised')
+      endselect
+!
 !  modify the density to have lateral pressure equilibrium
 !
 ! XY: These lines cause the short time step, so I commented them out at the moment.
@@ -173,8 +204,11 @@ module Ascalar
 !
       lpenc_requested(i_acc)=.true.
       lpenc_requested(i_ssat)=.true.
+      lpenc_requested(i_ttc)=.true.
 !
 !  background gradient 
+!
+! ascalar
 !
       do i=1,3
         if (gradacc0(i)/=0.) lpenc_requested(i_uu)=.true.
@@ -184,9 +218,22 @@ module Ascalar
         lpenc_requested(i_tauascalar)=.true.
       endif
       if (ascalar_diff/=0.) lpenc_requested(i_del2acc)=.true.
- 
+! 
       lpenc_diagnos(i_acc)=.true.
+!
+! temperaature
+!
+      if (lttc) then
+        do i=1,3
+          if (gradTT0(i)/=0.) lpenc_requested(i_uu)=.true.
+        enddo
+      endif
+!
+      if (thermal_diff/=0.) lpenc_requested(i_del2ttc)=.true.
+!
+      lpenc_diagnos(i_ttc)=.true.
 !      
+! temperature calculated from "temperature_idealgas.f90"
       if (ltemperature) then 
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_cp)=.true.
@@ -201,14 +248,24 @@ module Ascalar
 !
       lpencil_in(i_acc)=.true.
       lpencil_in(i_ugacc)=.true.
-      lpencil_in(i_ssat)=.true.
       if (lpencil_in(i_ugacc)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gacc)=.true.
       endif
+!      
+      lpencil_in(i_ttc)=.true.
+      lpencil_in(i_ugttc)=.true.
+      if (lpencil_in(i_ugttc)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_gttc)=.true.
+      endif
+!      
+      lpencil_in(i_ssat)=.true.
+!
       if (ltauascalar) lpencil_in(i_tauascalar)=.true.
       lpencil_in(i_condensationRate)=.true.
       lpencil_in(i_waterMixingRatio)=.true.
+!      
     endsubroutine pencil_interdep_ascalar
 !**********************************************************************
     subroutine calc_pencils_ascalar(f,p)
@@ -229,6 +286,8 @@ module Ascalar
 ! acc
       if (lpencil(i_acc)) p%acc=f(l1:l2,m,n,iacc)
       if (issat>0) p%ssat=f(l1:l2,m,n,issat)
+!      if (ittc>0) p%ttc=f(l1:l2,m,n,ittc)
+      if (lpencil(i_ttc)) p%ttc=f(l1:l2,m,n,ittc)
 !
 !  Compute gacc. Add imposed spatially constant gradient of acc.
 !  (This only makes sense for periodic boundary conditions.)
@@ -246,6 +305,24 @@ module Ascalar
 ! del2acc
       if (lpencil(i_del2acc)) then
         call del2(f,iacc,p%del2acc)
+      endif
+!
+!  Compute gttc. Add imposed spatially constant gradient of ttc.
+!  (This only makes sense for periodic boundary conditions.)
+!
+      if (lpencil(i_gttc)) then
+        call grad(f,ittc,p%gttc)
+        do j=1,3
+          if (gradTT0(j)/=0.) p%gttc(:,j)=p%gttc(:,j)+gradTT0(j)
+        enddo
+      endif
+! ugttc
+      if (lpencil(i_ugttc)) then
+        call u_dot_grad(f,ittc,p%gttc,p%uu,p%ugttc,UPWIND=lupw_ttc)
+      endif
+! del2ttc
+      if (lpencil(i_del2ttc)) then
+        call del2(f,ittc,p%del2ttc)
       endif
 !
     endsubroutine calc_pencils_ascalar
@@ -293,12 +370,22 @@ module Ascalar
       f(:,m,n,issat) = 0.0
 !
 !  Passive scalar equation.
-!
+! ascalar
       df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)-p%ugacc
       if (ascalar_diff/=0.) then
         df(l1:l2,m,n,iacc)=df(l1:l2,m,n,iacc)+ascalar_diff*p%del2acc
         if (lfirst.and.ldt) &
           maxdiffus=max(maxdiffus,ascalar_diff)
+      endif
+!
+! ttc
+      if (lttc) then
+        df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)-p%ugttc
+        if (thermal_diff/=0.) then
+          df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+thermal_diff*p%del2ttc
+          if (lfirst.and.ldt) &
+            maxdiffus=max(maxdiffus,thermal_diff)
+        endif
       endif
 !
       ! 1-June-16/XY coded 
@@ -331,8 +418,7 @@ module Ascalar
         if (lconstTT) then
           es_T=const1_qvs*exp(-const2_qvs/constTT)
           qvs_T=es_T/(Rv*rhoa*constTT)
-        else
-          if (ltemperature) then
+        elseif (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
             if (lbuoyancy) then
               if (lTT_mean) then
@@ -352,6 +438,15 @@ module Ascalar
               es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,iTT))
               qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,iTT))
             endif       
+!          endif
+        elseif (lttc) then
+          df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+p%condensationRate*latent_heat/cp
+          es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,ittc))
+          qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,ittc))
+          if (lbuoyancy) then
+            buoyancy=gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
+                     Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
           endif
         endif
         f(l1:l2,m,n,issat)=f(l1:l2,m,n,issat)+f(l1:l2,m,n,iacc)/qvs_T-1.
@@ -363,6 +458,11 @@ module Ascalar
         if (idiag_accrms/=0) call sum_mn_name(p%acc**2,idiag_accrms,lsqrt=.true.)
         if (idiag_accmax/=0) call max_mn_name(p%acc,idiag_accmax)
         if (idiag_accmin/=0) call max_mn_name(-p%acc,idiag_accmin,lneg=.true.)
+        if (lttc) then
+          if (idiag_ttcrms/=0) call sum_mn_name(p%ttc**2,idiag_ttcrms,lsqrt=.true.)
+          if (idiag_ttcmax/=0) call max_mn_name(p%ttc,idiag_ttcmax)
+          if (idiag_ttcmin/=0) call max_mn_name(-p%ttc,idiag_ttcmin,lneg=.true.)
+        endif
         if (idiag_uxaccm/=0) call sum_mn_name(p%uu(:,1)*p%acc,idiag_uxaccm)
         if (idiag_uyaccm/=0) call sum_mn_name(p%uu(:,2)*p%acc,idiag_uyaccm)
         if (idiag_uzaccm/=0) call sum_mn_name(p%uu(:,3)*p%acc,idiag_uzaccm)
@@ -447,6 +547,7 @@ module Ascalar
 !      
       if (lreset) then
         idiag_accrms=0; idiag_accmax=0; idiag_accmin=0
+        idiag_ttcrms=0; idiag_ttcmax=0; idiag_ttcmin=0
         idiag_uxaccm=0; idiag_uyaccm=0; idiag_uzaccm=0
         idiag_tauascalarrms=0; idiag_tauascalarmax=0; idiag_tauascalarmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
@@ -460,6 +561,9 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'accrms',idiag_accrms)
         call parse_name(iname,cname(iname),cform(iname),'accmax',idiag_accmax)
         call parse_name(iname,cname(iname),cform(iname),'accmin',idiag_accmin)
+        call parse_name(iname,cname(iname),cform(iname),'ttcrms',idiag_ttcrms)
+        call parse_name(iname,cname(iname),cform(iname),'ttcmax',idiag_ttcmax)
+        call parse_name(iname,cname(iname),cform(iname),'ttcmin',idiag_ttcmin)
         call parse_name(iname,cname(iname),cform(iname),'uxaccm',idiag_uxaccm)
         call parse_name(iname,cname(iname),cform(iname),'uyaccm',idiag_uyaccm)
         call parse_name(iname,cname(iname),cform(iname),'uzaccm',idiag_uzaccm)
@@ -483,6 +587,7 @@ module Ascalar
       if (lwr) then 
         write(3,*) 'iacc = ', iacc
         write(3,*) 'issat=', issat
+        write(3,*) 'ittc=', ittc
       endif
 !
     endsubroutine rprint_ascalar 
