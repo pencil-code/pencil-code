@@ -956,8 +956,8 @@ module Mpicomm
 !  and store them in intcoeffs.
 !
 !  20-dec-15/MR: coded
-!  12-dec-17/MR: adaptations for fixing the gap problem: n_onegap and n_twogap count the points
-!                which lie either in a y or a z gap and those which lie in a "gap crossing", respectively.
+!  12-dec-17/MR: adaptations for fixing the gap problem: ngap counts the points
+!                which lie either in a y or a z gap.
 !
       use General, only: yy_transform_strip, transpose_mn, itoa
 
@@ -965,7 +965,7 @@ module Mpicomm
       real, dimension(:,:,:), allocatable :: thphprime_strip_y, thphprime_strip_z, tmp
 
       integer :: len, len_neigh, lenbuf
-      integer :: nok, noks, noks_all, n_onegap, n_twogap, n_onegap_all, n_twogap_all, nstrip_total
+      integer :: nok, noks, noks_all, ngap, ngap_all, nstrip_total
       logical :: stop_flag
       character(LEN=linelen) :: msg
 !
@@ -975,13 +975,15 @@ module Mpicomm
         iyinyang_intpol_type=BIQUAD
       elseif (cyinyang_intpol_type=='bicubic') then
         iyinyang_intpol_type=BICUB
+      elseif (cyinyang_intpol_type=='biquintic') then
+        iyinyang_intpol_type=BIQUIN
       elseif (cyinyang_intpol_type=='quadspline') then
         iyinyang_intpol_type=QUADSPLINE
       else
         call stop_it('setup_interp_yy: Unknown Yin-Yang interpolation type '//trim(cyinyang_intpol_type))
       endif
 !
-      noks=0; n_onegap=0; n_twogap=0
+      noks=0; ngap=0
 !
       if (lfirst_proc_z.or.llast_proc_z) then                ! executing proc is at z boundary
 !
@@ -1222,7 +1224,7 @@ module Mpicomm
       if (lfirst_proc_y) then
 
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
-        nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+        nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ),iyinyang_intpol_type,ngap); noks=noks+nok
 !  print*, 'proc ,',iproc_world,',  from ', ylneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)   
 !, size(intcoeffs(MIDZ)%inds,1), size(intcoeffs(MIDZ)%inds,2)
 !  print'(3(i3,1x))', intcoeffs(MIDZ)%inds(:,:,1)
@@ -1231,7 +1233,7 @@ module Mpicomm
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         if (llcorn>=0) then
           call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
 !if (iproc_world==6) print*,'ll:', iproc_world,nok
 !,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
@@ -1239,7 +1241,7 @@ module Mpicomm
 
         if (lucorn>=0) then
           call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,ngap); noks=noks+nok
 !if (iproc_world==6) print*,'lu:',iproc_world,nok
 !maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
@@ -1250,14 +1252,14 @@ module Mpicomm
       if (llast_proc_y) then
 !
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
-        nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+        nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ),iyinyang_intpol_type,ngap); noks=noks+nok
 ! print*,'uppy:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds), & 
 ! minval(intcoeffs(MIDZ)%inds)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
 
         if (ulcorn>=0) then
           call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
-          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,ngap); noks=noks+nok
 ! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), & 
 ! minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
@@ -1265,7 +1267,7 @@ module Mpicomm
 
         if (uucorn>=0) then
           call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
 ! print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
 ! minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
@@ -1276,14 +1278,14 @@ module Mpicomm
       if (lfirst_proc_z) then
 !
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-        nok=prep_interp(gridbuf_midy,intcoeffs(MIDY),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+        nok=prep_interp(gridbuf_midy,intcoeffs(MIDY),iyinyang_intpol_type,ngap); noks=noks+nok
 ! print*,'lowz:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDY)%coeffs)),maxval(intcoeffs(MIDY)%inds),&
 !  minval(intcoeffs(MIDY)%inds)
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
 !
         if (llcorn>=0) then
           call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,ngap); noks=noks+nok
 ! print*,'ll:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), & 
 ! minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
@@ -1291,7 +1293,7 @@ module Mpicomm
     
         if (ulcorn>=0) then
           call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
-          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
 ! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
 ! minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
@@ -1302,7 +1304,7 @@ module Mpicomm
       if (llast_proc_z) then
 !
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
-        nok=prep_interp(gridbuf_midy,intcoeffs(MIDY),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+        nok=prep_interp(gridbuf_midy,intcoeffs(MIDY),iyinyang_intpol_type,ngap); noks=noks+nok
 !  print*, 'proc ,',iproc_world,',  from ', zuneigh, size(gridbuf_midy,1), &
 !  size(gridbuf_midy,2), size(gridbuf_midy,3), size(intcoeffs(MIDY)%inds,1), size(intcoeffs(MIDY)%inds,2)
 !  print'(22(f8.5,1x))', gridbuf_midy(1,:,:)
@@ -1313,7 +1315,7 @@ module Mpicomm
 !
         if (lucorn>=0) then
           call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT),iyinyang_intpol_type,ngap); noks=noks+nok
 !  print*,'lu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
 !  minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
@@ -1321,7 +1323,7 @@ module Mpicomm
 
         if (uucorn>=0) then
           call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,n_onegap,n_twogap); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT),iyinyang_intpol_type,ngap); noks=noks+nok
 !  print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), &
 !  minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
@@ -1334,14 +1336,12 @@ module Mpicomm
 !  along boundary of each grid (nstrip_total).
 !
       call mpireduce_sum_int(noks, noks_all,comm=MPI_COMM_YZPLANE)
-      call mpireduce_sum_int(n_onegap, n_onegap_all,comm=MPI_COMM_YZPLANE)
-      call mpireduce_sum_int(n_twogap, n_twogap_all,comm=MPI_COMM_YZPLANE)
-!if (lroot) print*, 'n_gap_all=', n_onegap_all, n_twogap_all
+      call mpireduce_sum_int(ngap, ngap_all,comm=MPI_COMM_YZPLANE)
+
       stop_flag=.false.; msg=''
       if (iproc==root) then
         nstrip_total=2*(nprocz*mz + (nprocy-2)*my + 2*(my-nghost))*nghost
-        noks_all=noks_all - n_onegap_all/2 - 3*n_twogap_all/4
-!if (lroot) print*, 'noks_all,nstrip_total=', noks_all,nstrip_total
+        noks_all=noks_all - ngap_all/2 
         if (noks_all<nstrip_total) then
           msg='setup_interp_yy: '//cyinyang//' grid: number of caught points '// &
                trim(itoa(noks_all))//' smaller than goal '// trim(itoa(nstrip_total)) &
@@ -1351,6 +1351,7 @@ module Mpicomm
       endif
       call stop_it_if_any(stop_flag,msg)
 !call  mpifinalize
+
     endsubroutine setup_interp_yy
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
@@ -1454,8 +1455,6 @@ if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
 ! print*, 'size(ubufyo)=', size(ubufyo,1), size(ubufyo,2), size(ubufyo,3), size(ubufyo,4)
           call interpolate_yy(f,ivar1,ivar2,ubufyo,MIDZ,iyinyang_intpol_type)
 if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
-! if (iproc_world==41) print*, 'ubufyo:', iproc_world, minval(sum(ubufyo(:,:,:,1:3)**2,4)), &
-! maxval(sum(ubufyo(:,:,:,1:3)**2,4))
           comm=MPI_COMM_WORLD; tolowyr=yuneigh; touppys=iproc_world  !tolowyr=MPI_ANY_TAG
         else
           ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
@@ -1643,7 +1642,6 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !  Result in uubufo.
 !
           if (uucorns>=0) call interpolate_yy(f,ivar1,ivar2,uubufo,dir,iyinyang_intpol_type)
-!if (uucorns>=0) print*, 'uubufo:', iproc_world, minval(sum(uubufo(:,:,:,1:3)**2,4)), maxval(sum(uubufo(:,:,:,1:3)**2,4))
           comm=MPI_COMM_WORLD; TOllr=uucornr; TOuus=iproc_world   !TOllr=MPI_ANY_TAG
         elseif (.not.lcommunicate_y) then
           uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
@@ -1704,7 +1702,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
-!   Receive requests do not need to (and on OSF1 cannot) be explicitly
+!  Receive requests do not need to (and on OSF1 cannot) be explicitly
 !  freed, since MPI_Wait takes care of this.
 !
 !  21-may-02/axel: communication of corners added
@@ -1741,12 +1739,8 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 ! communication should happen only under these conditions
             if (lfirst_proc_y.and.lyinyang) then
               f(:,:m1-1,:,j)=lbufyi(:,:,:mz,j)                              ! fill left vertical ghost strip
-!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'("lowy:"/3(e11.4,1x))', lbufyi(10,:,:mz,j)    
-!f(10,:m1-1,:,j)
               if (lfirst_proc_z) then
                 call transpose_mn( lbufyi(:,:,mz+1:,j), f(:,m1:,:n1-1,j))   ! fill lower horizontal ghost strip
-!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'(a,i2/,19(e10.3,1x))', &
-! 'lower horizontal1', iproc_world, f(10,m1:,:n1-1,j)
               elseif (llast_proc_z) then
                 call transpose_mn( lbufyi(:,:,mz+1:,j), f(:,m1:,n2+1:,j))   ! fill upper horizontal ghost strip
               endif
@@ -1759,8 +1753,6 @@ if (notanumber(f(:,:,:,j))) print*, 'lbufyi: iproc,j=', iproc, iproc_world, j
           if (.not. llast_proc_y .or. bcy12(j,2)=='p' .or.lyinyang) then
             if (llast_proc_y.and.lyinyang) then
               f(:,m2+1:,:,j)=ubufyi(:,:,:mz,j)                             ! fill right vertical ghost strip
-!if (ldiagnos.and.lfirst.and.iproc_world==3.and.j==1) print'(a,i2/,6(e10.3,1x))', &
-! 'right vertical1', iproc_world,f(10,m2-2:,:,j)
               if (lfirst_proc_z) then
                 call transpose_mn( ubufyi(:,:,mz+1:,j), f(:,1:m2,:n1-1,j)) ! fill lower horizontal ghost strip
               elseif (llast_proc_z) then
@@ -1806,13 +1798,9 @@ if (notanumber(f(:,:,:,j))) print*, 'ubufyi: iproc,j=', iproc, iproc_world, j
               if (lcorner_yz) then
                 f(:,:,:n1-1,j)=f(:,:,:n1-1,j)+lbufzi(:,:my,:,j)                         
 ! fill lower horizontal ghost strip 
-!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'(a,i2/,22(e10.3,1x))', &
-! 'lower horizontal2', iproc_world, f(10,:,:n1-1,j)
                 if (lfirst_proc_y) then
                   call transpose_mn( lbufzi(:,my+1:,:,j), f(:,:m1-1,n1:,j),ladd=.true.) 
 ! fill left vertical ghost strip       
-!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'(a,i2/,3(e10.3,1x))', 'left vertical2', &
-! iproc_world, f(10,:m1-1,n1:,j)
                 elseif (llast_proc_y) then
                   call transpose_mn( lbufzi(:,my+1:,:,j), f(:,m2+1:,n1:,j),ladd=.true.) 
 ! fill right vertical ghost strip      
@@ -1876,7 +1864,6 @@ if (notanumber(f(:,:,:,j))) print*, 'ubufzi: iproc,j=', iproc, iproc_world, j
                 f(:,1:m1-1,1:n1-1,j)=llbufi(:,:,:,j)               ! fill lower left corner
               elseif (llcornr>=0.and.lyinyang) then
                 if (lfirst_proc_z) then
-!if (iproc_world==1.and.j==1) print'("ll:"/22(e11.4,1x))', llbufi(10,:,:,j)
                   f(:,:,1:n1-1,j)=f(:,:,1:n1-1,j)+llbufi(:,:,:,j)  ! complete lower horizontal strip
                 elseif (lfirst_proc_y) then
                   f(:,1:m1-1,:,j)=f(:,1:m1-1,:,j)+llbufi(:,:,:,j)  ! complete left vertical strip
@@ -1894,11 +1881,9 @@ if (notanumber(f(:,:,:,j))) print*, 'llcorn: iproc,j=', iproc, iproc_world, j
                 f(:,m2+1:,1:n1-1,j)=ulbufi(:,:,:,j)                ! fill lower right corner
               elseif (ulcornr>=0.and.lyinyang) then
                 if (lfirst_proc_z) then
-!if (iproc_world==1.and.j==1) print'("ul:"/22(e11.4,1x))', ulbufi(10,:,:,j)
                   f(:,:,1:n1-1,j)=f(:,:,1:n1-1,j)+ulbufi(:,:,:,j)  ! complete lower horizontal strip
                 elseif (llast_proc_y) then
                   f(:,m2+1:,:,j)=f(:,m2+1:,:,j)+ulbufi(:,:,:,j)    ! complete right vertical strip
-!if (ldiagnos.and.lfirst.and.iproc_world==3.and.j==1) print'(a,i2/,6(e10.3,1x))', 'right vertical2', iproc_world, f(10,m2-2:,:,j)
                 endif
 if (notanumber(f(:,:,:,j))) print*, 'ulcorn: iproc,j=', iproc, iproc_world, j
               endif
@@ -1919,7 +1904,6 @@ if (notanumber(f(:,:,:,j))) print*, 'ulcorn: iproc,j=', iproc, iproc_world, j
                   f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+uubufi(:,:,:,j)   ! complete upper horizontal strip
                 elseif (llast_proc_y) then
                   f(:,m2+1:,:,j)=f(:,m2+1:,:,j)+uubufi(:,:,:,j)   ! complete right vertical strip
-!if (ldiagnos.and.lfirst.and.iproc_world==3.and.j==1) print'(a,i2/,6(e10.3,1x))', 'right vertical3', iproc_world,f(10,m2-2:,:,j)
                 endif
 if (notanumber(f(:,:,:,j))) print*, 'uucorn: iproc,j=', iproc, iproc_world, j
               endif
@@ -1936,7 +1920,6 @@ if (notanumber(f(:,:,:,j))) print*, 'uucorn: iproc,j=', iproc, iproc_world, j
                   f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+lubufi(:,:,:,j)    ! complete upper horizontal strip
                 elseif (lfirst_proc_y) then
                   f(:,1:m1-1,:,j)=f(:,1:m1-1,:,j)+lubufi(:,:,:,j)  ! complete left vertical strip
-!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'("lu:"/3(e11.4,1x))', lubufi(10,:,:,j)   !f(10,1:m1-1,:,j)
                 endif
 if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
               endif
@@ -9344,9 +9327,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           endif
 
         endif
-!if (.not.lyang) then
-  !print'(a,5(i3,1x))', 'iproc,llcorn,lucorn,ulcorn,uucorn=',iproc,llcorn,lucorn,ulcorn,uucorn 
-!endif
+
     endsubroutine set_yy_neighbors
 !***********************************************************************
     subroutine interpolate_yy(f,ivar1,ivar2,buffer,pos,type)
@@ -9390,6 +9371,13 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         else
           ive=iv
         endif
+if (.false..and.(iproc_world==52.or.iproc_world==53).and.ive==-1) then
+  if (intcoeffs(pos)%pcoors(15,1,1)/=0.) then
+  print*, intcoeffs(pos)%pcoors(15,1,:)
+  print*,intcoeffs(pos)%coeffs2(15,1,:,:) 
+  print*,'----'
+  endif
+endif
 
         do i=1,nth; do j=1,nph
 
@@ -9400,10 +9388,11 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           endif
           if (type==BILIN) then
             call bilin_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
-          elseif (type==BIQUAD .or. type==BICUB .or. type==QUADSPLINE) then
+          elseif (type==BIQUAD .or. type==BICUB .or. type==BIQUIN .or. type==QUADSPLINE) then
             call biquad_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
           else
-            call stop_it('interpolate_yy: Only bilinear, biquadratic and bicubic interpolations implemented')
+            call stop_it('interpolate_yy: Only bilinear, biquadratic, bicubic and biquintic '// &
+                         'interpolations implemented')
           endif
 
         enddo; enddo

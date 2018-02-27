@@ -970,6 +970,7 @@ module Grid
 !                lists the indices of the non-degenerate directions in the first 
 !                dimensionality elements of dim_mask 
 !  10-oct-17/MR: avoided communication in calculation of r_int and r_ext
+!  10-jan-17/MR: moved call construct_serial_arrays to beginning
 !
       use Sub, only: remove_zprof
       use Mpicomm
@@ -977,6 +978,11 @@ module Grid
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
+!
+!  Set the the serial grid arrays, that contain the coordinate values
+!  from all processors.
+!
+      call construct_serial_arrays
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
@@ -1337,11 +1343,6 @@ module Grid
 !
       if (lroot.or..not.lcollective_IO) call remove_zprof
       lwrite_prof=.true.
-!
-!  Set the the serial grid arrays, that contain the coordinate values
-!  from all processors.
-!
-      call construct_serial_arrays
 !
     endsubroutine initialize_grid
 !***********************************************************************

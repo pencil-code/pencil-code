@@ -4257,21 +4257,24 @@ module General
 !
 ! 4-dec-2015/MR: coded
 !
-      use Cdata, only: cosph, sinph, costh, sinth
+      use Cdata, only: cosph, sinph, costh, sinth, iproc, lyang
 
       real, dimension(:,:,:,:) :: f
       integer :: ith1, ith2, iph1, iph2, j
 
       real, dimension(size(f,1)) :: tmp12,tmp3
       integer :: ith,iph
+      real, dimension(size(f,1)) :: tmp
 
       do ith=ith1,ith2; do iph=iph1,iph2
-
+!tmp=sum(f(:,ith,iph,j:j+2)**2,2)
         tmp12=cosph(iph)*f(:,ith,iph,j)+sinph(iph)*f(:,ith,iph,j+1)
         tmp3 =f(:,ith,iph,j+2)
         f(:,ith,iph,j+2) = -sinph(iph)*f(:,ith,iph,j)+cosph(iph)*f(:,ith,iph,j+1)
         f(:,ith,iph,j  ) =  sinth(ith)*tmp12 + costh(ith)*tmp3
         f(:,ith,iph,j+1) =  costh(ith)*tmp12 - sinth(ith)*tmp3
+
+!if (any(abs(tmp-sum(f(:,ith,iph,j:j+2)**2,2)) > 1.e-7)) print*, 'iproc,ith,iph=', iproc,ith,iph,maxval(tmp)
 
       enddo; enddo
 
@@ -4287,18 +4290,18 @@ module General
 !
       use Cdata, only: cosph, sinph, costh, sinth
 
-      real, dimension(:,:,:,:) :: f
-      integer :: ith1, ith2, iph1, iph2
-      real, dimension(size(f,1),ith2-ith1+1,iph2-iph1+1,3) :: dest
-      logical, optional :: lyy
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer                 , intent(IN) :: ith1, ith2, iph1, iph2
+      real, dimension(size(f,1),ith2-ith1+1,iph2-iph1+1,3), intent(OUT) :: dest
+      logical, optional, intent(IN) :: lyy
 
       real, dimension(mx) :: tmp12
-      integer :: i,j,itd,ipd
+      integer :: i,j,itd,ipd,ju,jo
 
-      do i=ith1,ith2; do j=iph1,iph2
+      ju=max(n1,iph1); jo=min(n2,iph2)
+      do i=max(m1,ith1),min(m2,ith2); do j=ju,jo
 
         tmp12=sinth(i)*f(:,i,j,1)+costh(i)*f(:,i,j,2)
-
         itd=i-ith1+1; ipd=j-iph1+1
         if (loptest(lyy)) then
           dest(:,itd,ipd,1) = -(cosph(j)*tmp12 - sinph(j)*f(:,i,j,3))
@@ -4309,7 +4312,7 @@ module General
           dest(:,itd,ipd,2) = sinph(j)*tmp12 + cosph(j)*f(:,i,j,3)
           dest(:,itd,ipd,3) = costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,2)
         endif
-
+!if (any(abs(sum(dest(:,itd,ipd,:)**2,2)-sum(f(:,i,j,:)**2,2)) > 2.e-14 )) print*, 'i,j=', i,j,maxval(abs(sum(dest(:,itd,ipd,:)**2,2)-sum(f(:,i,j,:)**2,2)))
       enddo; enddo
 
     endsubroutine transform_spher_cart_yy
@@ -4323,7 +4326,7 @@ module General
 !  4-dec-15/MR: coded
 ! 12-mar-16/MR: entry yy_transform_strip_other added
 !
-      use Cdata, only: y,z,costh,sinth,cosph,sinph
+      use Cdata, only: costh,sinth,cosph,sinph
 
       integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
       real, dimension(:,:,:),intent(OUT):: thphprime
@@ -4459,8 +4462,8 @@ module General
       integer :: i,j,ig,jg
       real :: sisisq,sinth1,a,b
 
-      do i=1,nz
-        do j=1,ny
+      do i=1,size(vec,3)
+        do j=1,size(vec,2)
 
           ig=i+nghost; jg=j+nghost
           sisisq=sqrt(1.-(sinth(jg)*sinph(ig))**2)
@@ -4869,5 +4872,34 @@ module General
       enddo; enddo
       
     endsubroutine newton_arr
+!***********************************************************************
+    integer function ld(ix)
+!
+!  Simple dyadic logarithm for integer argument ix without rounding.
+!  Return value is negative if ix is not a power of 2,
+!  and equal to impossible_int if ix<=0.
+!
+!  10-dec-17/MR: coded
+!
+      integer :: ix
+      real :: q
+
+      if (ix<=0) then
+        ld=impossible_int
+        return
+      endif
+
+      ld=0; q=ix
+      do 
+
+        q=ix/2
+        if (q<1.) exit
+        ld=ld+1
+
+      enddo
+ 
+      if (2**ld /= ix) ld=-ld 
+
+    endfunction ld
 !***********************************************************************
   endmodule General

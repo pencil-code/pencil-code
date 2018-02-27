@@ -1907,6 +1907,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  Update [28-Sep-2004 wd]:
 !    Done here, but not yet in all other routines
 !
+      use Yinyang, only: in_overlap_mask
+
       real, dimension(nx) :: a,a_scaled
       real, dimension(nname) :: fname
 !
@@ -1920,6 +1922,10 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  Only do something if iname is not zero.
 !
       if (iname/=0) then
+!
+!  Only do something if (m,n) is in overlap mask (only relevant for Yin-Yang grid).
+!
+      if (in_overlap_mask(m,n)) then
 !
 !  Set corresponding entry in itype_name.
 !
@@ -1990,6 +1996,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
             endif
           endif
         endif
+      endif
       endif
 !
     endsubroutine sum_mn_name_real
@@ -3389,7 +3396,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
         if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
                             'fnamexy_cap with nycap, nnamexy =', nycap, nnamel
       endif
-
     endsubroutine allocate_zaverages_data
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)

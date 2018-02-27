@@ -39,6 +39,8 @@ module Cosmicray
   logical :: lvariable_tensor_diff = .false.
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
   real, target :: K_perp=impossible, K_para=impossible
+  !real :: cosmicray_diff=0., Kperp=1., Kpara=1.
+  !real, target :: K_perp=1., K_para=1.
 !
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
@@ -63,7 +65,7 @@ module Cosmicray
 !
   contains
 !***********************************************************************
-    subroutine register_cosmicray()
+    subroutine register_cosmicray
 !
 !  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
@@ -106,22 +108,23 @@ module Cosmicray
 !
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
-
 !
 !     Checks whether the obsolescent parameter names are being used
 !
       if (Kpara /= impossible .or. Kperp /= impossible) then
-        call warning('initialize_cosmicray', &
+        if (lroot) call warning('initialize_cosmicray', &
             'using obsolescent parameters Kpara and Kperp!' &
             // ' In the future, please use K_para and K_perp instead.')
         K_para = Kpara
         K_perp = Kperp
         call put_shared_variable('K_perp', impossible)
         call put_shared_variable('K_para', impossible)
-      else
+     else
         call put_shared_variable('K_perp', K_perp)
         call put_shared_variable('K_para', K_para)
      endif
+      !call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+      !call put_shared_variable('K_para', K_para)
 !
     endsubroutine initialize_cosmicray
 !***********************************************************************
@@ -185,7 +188,7 @@ print*,"init_ecr: initecr = ", initecr
 !
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine pencil_criteria_cosmicray()
+    subroutine pencil_criteria_cosmicray
 !
 !  All pencils that the Cosmicray module depends on are specified here.
 !

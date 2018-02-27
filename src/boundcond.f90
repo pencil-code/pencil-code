@@ -64,6 +64,7 @@ module Boundcond
         updated_var_ranges(:,ighosts_updated)=(/1,min(mcom,size(f,4))/)
       endif
 !
+!if (lroot)print*, 'update_ghosts_all'
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
       call finalize_isendrcv_bdry(f)
@@ -115,6 +116,7 @@ module Boundcond
         call boundconds_y(f,ivar1,ivar2)
         call boundconds_z(f,ivar1,ivar2)
       endif
+!if (lroot) print*, 'update_ghosts_range'
 !
     endsubroutine update_ghosts_range
 !***********************************************************************
@@ -453,6 +455,10 @@ module Boundcond
                   if (j==iux) call fatal_error('boundconds_x', &
                              'stress-free BC at r boundary not allowed for uu_r')
                   call bc_set_sfree_x(f,topbot,j)
+                case ('sr1')
+                  ! BCX_DOC: Stress-free bc for spherical coordinate system.
+                  ! BCX_DOC: Implementation with one-sided derivative.
+                  call bc_set_sr1_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
@@ -1259,7 +1265,7 @@ module Boundcond
 !
       integer, intent(in) :: ncell, nghost, ncomp
       real, dimension(1-nghost:ncell+nghost, ncomp), intent(inout) :: penc
-      character(len=*), dimension(ncomp,2), intent(in) :: bc
+      character(len=bclen), dimension(ncomp,2), intent(in) :: bc
       real, dimension(-nghost:nghost), optional :: d2_bound
       real, dimension(2), optional :: bound
 !
@@ -1340,13 +1346,15 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
-!  the local spherical coordinate basis.
+!  Vector quantities need to be transformed from the Cartesian basis to 
+!  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
         if (topbot=='bot') then
           call transform_cart_spher(f,1,nghost,1,mz,j)    ! in-place!
         else
+!if (iproc_world==5) print*, 'vor:j=', j,llast_proc_y
+!if (iproc_world==5) print'(3(e13.6,1x))', f(31,m2+1:my,1:mz,j+2)
           call transform_cart_spher(f,m2+1,my,1,mz,j)     !  ~
         endif
 !
@@ -1444,8 +1452,8 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
-!  the local spherical coordinate basis.
+!  Vector quantities need to be transformed from the Cartesian basis to 
+!  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
 
@@ -2645,9 +2653,20 @@ module Boundcond
         if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2(j)*spread(x**2,2,size(f,2))
         if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4(j)*spread(x**4,2,size(f,2))
         if (relative) then
-          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j);
+            if (.false..and.j==3) then
+!if (i==1) print*, f(4,4:9,n1,j)
+!if (i==1) print*, f(4,4:23,n1-1,j)
+              if (any(f(4:131,4:131,n1-i,j)/=f(4:131,4:131,n1+i,j))) &
+                print'(a,i2,1x,e20.12)','boundcond ghost:i=', i, maxval(abs(f(4:131,4:131,n1-i,j)-f(4:131,4:131,n1+i,j)))
+              if (any(f(4:131,4:131,n1-i,j)/=f(4:131,4:131,n1,j))) &
+                print'(a,i2,1x,e20.12)','boundcond bound-:i=', i, maxval(abs(f(4:131,4:131,n1-i,j)-f(4:131,4:131,n1,j)))
+              if (any(f(4:131,4:131,n1+i,j)/=f(4:131,4:131,n1,j))) &
+                print'(a,i2,1x,e20.12)','boundcond bound+:i=', i, maxval(abs(f(4:131,4:131,n1+i,j)-f(4:131,4:131,n1,j)))
+            endif
+          enddo
         else
-!!!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
+!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
           do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
@@ -2657,9 +2676,9 @@ module Boundcond
         if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2(j)*spread(x**2,2,size(f,2))
         if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4(j)*spread(x**4,2,size(f,2))
         if (relative) then
-          do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+          do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j)+(f(:,:,n2,j)+sgn*f(:,:,n2-i,j));
+          enddo
         else
-          !!if (ldownsampling) print*, 'size,n2,j=',size(f,1),size(f,2),size(f,3),size(f,4),n2,j 
           do i=1,nghost; f(:,:,n2+i,j)=              sgn*f(:,:,n2-i,j); enddo
           if (sgn<0) f(:,:,n2,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
@@ -3024,10 +3043,35 @@ module Boundcond
       real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
 !
-      call bval_from_3rd(f,topbot,j,1,-1./x(l1))
+      if (topbot=='bot') then
+        call bval_from_3rd(f,topbot,j,1,-1./x(l1))
+      else
+        call bval_from_3rd(f,topbot,j,1,-1./x(l2)) 
+      endif
       call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
 !
     endsubroutine bc_set_nr1_x
+!***********************************************************************
+    subroutine bc_set_sr1_x(f,topbot,j)
+!
+!  Stress-free boundary condition for spherical
+!  coordinate system: \partial_r u_(\theta,\phi)|_r_(i,a) = u_(r_(i,a),\theta,\phi)/r_(i,a)
+!  Implementation with one-sided derivative.
+!
+!  4-Sep-2017/MR: coded
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (:,:,:,:), intent (inout) :: f
+      integer, intent (in) :: j
+!
+      if (topbot=='bot') then
+        call bval_from_3rd(f,topbot,j,1,1./x(l1))
+      else
+        call bval_from_3rd(f,topbot,j,1,1./x(l2))
+      endif
+      call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+!
+    endsubroutine bc_set_sr1_x
 ! **********************************************************************
     subroutine bc_set_sa2_x(f,topbot,j)
 !

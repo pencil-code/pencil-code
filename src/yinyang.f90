@@ -20,27 +20,36 @@ module Yinyang
     real, dimension(:,:,:,:), allocatable :: coeffs2
     real, dimension(:,:,:), allocatable :: pcoors
     integer, dimension(:,:,:), allocatable :: icoors
+    integer, dimension(:,:,:), allocatable :: igaps
   end type
 !
   integer, dimension(:), allocatable :: overlap_thrngs, overlap_phrngs
 ! 
   integer :: nasym_th=0,nasym_ph=0
-  integer, parameter :: LGAP=-1, RGAP=1, NOGAP=0
+!
+!  Indicators for situations in which the interpolation stencil overlaps with the
+!  present and the neighboring processor domain: L/R - at left/right domain
+!  bound; GAP - in gap; MARG/MARG2 - one/two cell(s) away from domain bound; 
+!  NEIGH/NEIGH2 - in domain of neighboring processor one/two cell(s) away from domain bound. 
+!                
+  integer, parameter :: LGAP=-3, RGAP=3, NOGAP=0, LNEIGH=-4, RNEIGH=4, LMARG=-2, RMARG=2, &
+                        LMARG2=-1, RMARG2=1, LNEIGH2=-5, RNEIGH2=5
+                        !LMARG2=0, RMARG2=0, LNEIGH2=-5, RNEIGH2=5
 !
   contains
 !
 !**************************************************************************
    subroutine biquad_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
 !
-!  Performs biquadratic interpolation for a pencil at position (ith, iph) of the
+!  Performs biquadratic, bicubic or biquintic interpolation for a pencil at position (ith, iph) of the
 !  original strip from values in f-array using the precalculated weights
 !  in indcoeffs%coeffs. Result is returned in buffer(i2buf,i3buf)=(ith,iph)
 !  or buffer(i2buf,i3buf)=(iph,ith), the latter if transposition is required.
 !
 !  20-dec-15/MR: coded
 ! 
-      use General, only: transform_spher_cart_yy, notanumber
-      use Cdata, only: iproc_world, itsub
+      use General, only: transform_spher_cart_yy, notanumber,transform_cart_spher,transform_thph_yy_other
+      use Cdata, only: iproc_world, itsub, m1, m2, n1, n2, lrun
 
       type(ind_coeffs),         intent(IN) :: indcoeffs
       integer,                  intent(IN) :: ith, iph, i2buf, i3buf
@@ -52,8 +61,9 @@ module Yinyang
       real, dimension(size(buffer,1)) :: fmi, fmx, dist
       logical :: l0
 
-      indthl=indcoeffs%inds(ith,iph,1); indthu=indcoeffs%inds(ith,iph,2)
-      if (indthl==0) return
+      indthl=indcoeffs%inds(ith,iph,1); 
+      if (indthl<-1) return
+      indthu=indcoeffs%inds(ith,iph,2)
 
       indphl=indcoeffs%inds(ith,iph,3); indphu=indcoeffs%inds(ith,iph,4)
       nthrng=indthu-indthl+1; nphrng=indphu-indphl+1
@@ -62,31 +72,51 @@ module Yinyang
 !
 !  Vector field, is transformed to Cartesian basis of *other* grid before being interpolated 
 !
-        allocate (tmp(size(buffer,1),nthrng,nphrng,3))
+        allocate (tmp(size(buffer,1),nthrng,nphrng,3)); tmp=0.
         call transform_spher_cart_yy(f,indthl,indthu,indphl,indphu,tmp,lyy=.true.)
-
+        !call transform_thph_yy_other(f(:,indthl:indthu,indphl:indphu,2:3),tmp(:,:,:,2:3))
+        !tmp(:,:,:,1)=f(:,indthl:indthu,indphl:indphu,1)
+if (.false.) then
+!if (.not.lyang.and.iproc==1.and.ith<3.and.iph<3) then
+  print*, '------'
+  print'(16(e10.3,1x))', f(31,indthl:indthu,indphl:indphu,2)**2+f(31,indthl:indthu,indphl:indphu,3)**2
+  print'(16(e10.3,1x))', tmp(31,:,:,2)**2+tmp(31,:,:,3)**2
+  print*, '------'
+endif
         do igp=1,nphrng; do igt=1,nthrng
+          if (indcoeffs%coeffs2(ith,iph,igt,igp)/=0.) then
           buffer(:,i2buf,i3buf,:) = buffer(:,i2buf,i3buf,:)+indcoeffs%coeffs2(ith,iph,igt,igp)*tmp(:,igt,igp,:)
+!if (notanumber(tmp(:,igt,igp,:))) print*, 'NaNs at', iproc_world, 'igt,igp=', igt,igp 
+          endif
         enddo; enddo
 
-if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indph, i2buf,i3buf=', indthl,indphl, i2buf,i3buf
+if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indphl, i2buf,i3buf=', indthl,indphl, i2buf,i3buf
       else
 !
 !  Scalar field - no transformation.
 !
         l0=.true.
-        do igp=1,nphrng; do igt=1,nthrng
-          buffer(:,i2buf,i3buf,1) = buffer(:,i2buf,i3buf,1) &
-                                   +indcoeffs%coeffs2(ith,iph,igt,igp)*f(:,indthl+igt-1,indphl+igp-1,1)
-          if (l0) then
-            l0=.false.
-            fmx=f(:,indthl+igt-1,indphl+igp-1,1)
-            fmi=fmx
-          else
-            fmx=max(fmx,f(:,indthl+igt-1,indphl+igp-1,1))
-            fmi=min(fmi,f(:,indthl+igt-1,indphl+igp-1,1))
-          endif
-        enddo; enddo
+        do igp=max(indphl,n1),min(indphu,n2)
+          do igt=max(indthl,m1),min(indthu,m2)
+            if (indcoeffs%coeffs2(ith,iph,igt-indthl+1,igp-indphl+1)/=0.) then
+            buffer(:,i2buf,i3buf,1) = buffer(:,i2buf,i3buf,1) &
+                                     +indcoeffs%coeffs2(ith,iph,igt-indthl+1,igp-indphl+1)*f(:,igt,igp,1)
+!if (notanumber(f(:,igt,igp,1))) print*, 'NaNs at', iproc_world,  &
+!'igt,igp=', igt,igp
+            if (l0) then
+              l0=.false.
+              fmx=f(:,igt,igp,1)
+              fmi=fmx
+            else
+              fmx=max(fmx,f(:,igt,igp,1))
+              fmi=min(fmi,f(:,igt,igp,1))
+            endif
+            endif
+          enddo
+        enddo
+!if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
+!  ',indthl,indphl, i2buf,i3buf,fmx=', indthl,indphl,ith,iph,i2buf,i3buf,fmx
+!  ',indthl,indphl, i2buf,i3buf,fmx=', indthl,indphl,ith,iph,i2buf,i3buf,fmx
 
         return  !!!
         outproc=26
@@ -97,7 +127,9 @@ if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indph, i2buf,i3buf=', i
                       f(63,indthl:indthl+nthrng-1,indphl:indphl+nphrng-1,1)
         endif
         return  !!!
-
+!
+! experimental: avoids over- and undershoot
+!
         where (buffer(:,i2buf,i3buf,1)>fmx) buffer(:,i2buf,i3buf,1)=fmx
         where (buffer(:,i2buf,i3buf,1)<fmi) buffer(:,i2buf,i3buf,1)=fmi
         return
@@ -120,11 +152,6 @@ if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indph, i2buf,i3buf=', i
         if (any(buffer(:,i2buf,i3buf,1)<fmi)) then
           if (.not.lyang) print*, 'iproc', iproc, 'undershoot'
         endif
-if (iproc_world==5) then
-!write(23,'(4(i2,1x),30(e13.6,1x))') ith,iph,nthrng,nphrng,y(indthl:indthu),z(indphl:indphu), f(l1+8,indthl:indthu,indphl:indphu,1), buffer(l1+8,i2buf,i3buf,1)
-endif
-if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
-  ',indthl,indph, i2buf,i3buf=', indthl,indphl,ith,iph,i2buf,i3buf
       endif
 
     endsubroutine biquad_interp
@@ -158,14 +185,15 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !
 !  Vector field, is transformed to Cartesian basis of *other* grid before being interpolated 
 !
-        allocate (tmp(size(buffer,1),2,2,3))
+        allocate (tmp(size(buffer,1),2,2,3)); tmp=0.
         call transform_spher_cart_yy(f,indth-1,indth,indph-1,indph,tmp,lyy=.true.)
 
         buffer(:,i2buf,i3buf,:) = indcoeffs%coeffs(ith,iph,1)*tmp(:,1,1,:) &
                                  +indcoeffs%coeffs(ith,iph,2)*tmp(:,1,2,:) &
                                  +indcoeffs%coeffs(ith,iph,3)*tmp(:,2,1,:) &
                                  +indcoeffs%coeffs(ith,iph,4)*tmp(:,2,2,:)
-if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indth,indph, i2buf,i3buf=', indth,indph, i2buf,i3buf
+if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'Vector: NaNs at', iproc_world,  &
+  ',indth,indph,ith,iph,i2buf,i3buf=', indth,indph,ith,iph,i2buf,i3buf
       else
 !
 !  Scalar field - no transformation.
@@ -175,8 +203,8 @@ if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indth,indph, i2buf,i3buf=', in
                                  +indcoeffs%coeffs(ith,iph,3)*f(:,indth  ,indph-1,1) &
                                  +indcoeffs%coeffs(ith,iph,4)*f(:,indth  ,indph  ,1)
 
-if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
-  ',indth,indph, i2buf,i3buf=', indth,indph,ith,iph,i2buf,i3buf
+if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'Scalar: NaNs at', iproc_world,  &
+  ',indth,indph,ith,iph,i2buf,i3buf=', indth,indph,ith,iph,i2buf,i3buf
 
 if (.false..and.lrun.and..not.lyang) then
   write(iproc+60,*) indth, indph
@@ -294,70 +322,240 @@ endif
 
     endsubroutine prep_biquad_interp
 !***********************************************************************
-    subroutine prep_bicub_interp(pprime,indth,indph,indcoeffs,ip,jp,ma,me,na,ne,igapt,igapp)
+    subroutine prep_bicub_interp(pprime,indth,indph,indcoeffs,ip,jp,igapt,igapp)
 !
 !  Establishes data needed for the bicubic interpolation.
 !
 !  12-jan-2016/MR: coded
 !  12-dec-2017/MR: modified for fixing the gap problem
+!  10-jan-2018/MR: now on each side of a processor domain three situations
+!                  considered in which the interpolation stencil overlaps with
+!                  the present and the neighboring processor domain. Then the array
+!                  of interpolation coefficients is only partly filled for both.
+!                  Situations with asymmetric interpolation detected - warning
+!                  launched when present.
 !
-      use Cdata, only: y, z, dy, dz, lroot
+      use Cdata, only: m1, m2, n1, n2, y, z, dy, dz, &
+                       lfirst_proc_y, llast_proc_y, lfirst_proc_z, llast_proc_z
 
       real, dimension(2),intent(IN)   :: pprime
-      integer,           intent(IN)   :: indth,indph,ip,jp,ma,me,na,ne,igapt,igapp
+      integer,           intent(IN)   :: indth,indph,ip,jp,igapt,igapp
       type(ind_coeffs),  intent(INOUT):: indcoeffs
 
-      real, dimension(4) :: qth, qph
-      integer :: i, igt, igp, nthrng, nphrng
-      real, dimension(4) :: gth, gph
+      real, dimension(4) :: qth, qph, gth, gph
+      integer :: i, igt, igp
 
-      nthrng=4
-      if (indth==ma+1.and.igapt==NOGAP) then
-        indcoeffs%inds(ip,jp,1:2)=(/ma,ma+3/); nasym_th=nasym_th+1
-      elseif (indth==me.and.igapt==NOGAP) then
-        indcoeffs%inds(ip,jp,1:2)=(/me-3,me/); nasym_th=nasym_th+1
+      if (indth==m1+1.and.igapt==NOGAP) then
+        indcoeffs%inds(ip,jp,1:2)=(/m1,m1+3/); nasym_th=nasym_th+1
+      elseif (indth==m2.and.igapt==NOGAP) then
+        indcoeffs%inds(ip,jp,1:2)=(/m2-3,m2/); nasym_th=nasym_th+1
       else
         indcoeffs%inds(ip,jp,1:2)=(/indth-2,indth+1/)
       endif
 
-      nphrng=4
-      if (indph==na+1.and.igapp==NOGAP) then
-        indcoeffs%inds(ip,jp,3:4)=(/na,na+3/); nasym_ph=nasym_ph+1
-      elseif (indph==ne.and.igapp==NOGAP) then
-        indcoeffs%inds(ip,jp,3:4)=(/ne-3,ne/); nasym_ph=nasym_ph+1
+      if (indph==n1+1.and.igapp==NOGAP) then
+        indcoeffs%inds(ip,jp,3:4)=(/n1,n1+3/); nasym_ph=nasym_ph+1
+      elseif (indph==n2.and.igapp==NOGAP) then
+        indcoeffs%inds(ip,jp,3:4)=(/n2-3,n2/); nasym_ph=nasym_ph+1
       else
         indcoeffs%inds(ip,jp,3:4)=(/indph-2,indph+1/)
       endif
 
-      do i=1,nthrng
-        qth(i) = (pprime(1)-y(i+indcoeffs%inds(ip,jp,1)-1))/dy   ! requires equidistant grid in y
-      enddo
-
-      do i=1,nphrng
-        qph(i) = (pprime(2)-z(i+indcoeffs%inds(ip,jp,3)-1))/dz   ! requires equidistant grid in z
+      do i=1,4
+        qth(i) = (pprime(1)-y(indcoeffs%inds(ip,jp,1)+i-1))/dy   ! requires equidistant grid in y
+        qph(i) = (pprime(2)-z(indcoeffs%inds(ip,jp,3)+i-1))/dz   ! requires equidistant grid in z
       enddo
 
       gth=0.; gph=0.
-      if (igapt==NOGAP.or.igapt==RGAP) &
-        gth(1:2)=(/-.166666*qth(2)*qth(3)*qth(4),.5*qth(1)*qth(3)*qth(4)/)
+
+      if (igapt>=NOGAP) &
+        gth(1)=-.166666*qth(2)*qth(3)*qth(4)
       
-      if (igapt==NOGAP.or.igapt==LGAP) &
-        gth(3:4)=(/-.5*qth(1)*qth(2)*qth(4),.166666*qth(1)*qth(2)*qth(3)/)
+      if ((igapt>=NOGAP.and.igapt<=RGAP).or.igapt==LMARG) &
+        gth(2)=.5*qth(1)*qth(3)*qth(4)
+      
+      if ((igapt<=NOGAP.and.igapt>=LGAP).or.igapt==RMARG) &
+        gth(3)=-.5*qth(1)*qth(2)*qth(4)
 
-      if (igapp==NOGAP.or.igapp==RGAP) &
-        gph(1:2)=(/-.166666*qph(2)*qph(3)*qph(4),.5*qph(1)*qph(3)*qph(4)/)
+      if (igapt<=NOGAP) &
+        gth(4)=.166666*qth(1)*qth(2)*qth(3)
 
-      if (igapp==NOGAP.or.igapp==LGAP) &
-        gph(3:4)=(/-.5*qph(1)*qph(2)*qph(4),.166666*qph(1)*qph(2)*qph(3)/)
+      if (igapp>=NOGAP) &
+        gph(1)=-.166666*qph(2)*qph(3)*qph(4)
+
+      if ((igapp>=NOGAP.and.igapp<=RGAP).or.igapp==LMARG) &
+        gph(2)=.5*qph(1)*qph(3)*qph(4)
+
+      if ((igapp<=NOGAP.and.igapp>=LGAP).or.igapp==RMARG) &
+        gph(3)=-.5*qph(1)*qph(2)*qph(4)
+
+      if (igapp<=NOGAP) &
+        gph(4)=.166666*qph(1)*qph(2)*qph(3)
 
       do igp=1,4; do igt=1,4
         indcoeffs%coeffs2(ip,jp,igt,igp)=gth(igt)*gph(igp)
       enddo; enddo
-
+      
       indcoeffs%pcoors(ip,jp,:)=pprime
       indcoeffs%icoors(ip,jp,:)=(/indth,indph/)
+      indcoeffs%igaps(ip,jp,:)=(/igapt,igapp/)
+!if (.not.lyang) then
+if (.false.) then
+if (igapt==NOGAP.and.igapp==NOGAP) then
+  if (abs(sum(indcoeffs%coeffs2(ip,jp,1:4,1:4))-1.)>5.e-7) &
+    print*, 'coefficient sum /=1: iproc,ip,jp,residual=', iproc,ip,jp,sum(indcoeffs%coeffs(ip,jp,:))-1.
+endif
+endif
 
     endsubroutine prep_bicub_interp
+!***********************************************************************
+    subroutine prep_biquint_interp(pprime,indth,indph,indcoeffs,ip,jp,igapt,igapp)
+!
+!  Establishes data needed for the biquintic interpolation.
+!
+!  12-jan-2018/MR: coded. 
+!                  On each side of a processor domain there are five situations
+!                  possible in which the interpolation stencil overlaps with the
+!                  present and the neighboring processor domain. Then the array
+!                  of interpolation coefficients is only partly filled for both.
+!
+      use Cdata, only: m1, m2, n1, n2, y, z, dy, dz, ygrid, zgrid, ny, nz, nghost, ipy, ipz
+
+      real, dimension(2),intent(IN)   :: pprime
+      integer,           intent(IN)   :: indth,indph,ip,jp,igapt,igapp
+      type(ind_coeffs),  intent(INOUT):: indcoeffs
+
+      real, dimension(6) :: qth, qph, gth, gph
+      integer :: i, igt, igp, iyu, izu,lun
+      logical, save :: l0=.true.
+      logical :: lnasym_th, lnasym_ph
+
+      lnasym_th=.false.; lnasym_ph=.false.; 
+      if (igapt==NOGAP.and.indth<=m1+2) then
+        indcoeffs%inds(ip,jp,1:2)=(/m1,m1+5/); nasym_th=nasym_th+1; lnasym_th=.true.
+      elseif (igapt==NOGAP.and.indth>=m2-1) then
+        indcoeffs%inds(ip,jp,1:2)=(/m2-5,m2/); nasym_th=nasym_th+1; lnasym_th=.true.
+      else
+        indcoeffs%inds(ip,jp,1:2)=(/indth-3,indth+2/)
+      endif
+
+      if (igapp==NOGAP.and.indph<=n1+2) then
+        indcoeffs%inds(ip,jp,3:4)=(/n1,n1+5/); nasym_ph=nasym_ph+1; lnasym_ph=.true.
+      elseif (igapp==NOGAP.and.indph>=n2-1) then
+        indcoeffs%inds(ip,jp,3:4)=(/n2-5,n2/); nasym_ph=nasym_ph+1; lnasym_ph=.true.
+      else
+        indcoeffs%inds(ip,jp,3:4)=(/indph-3,indph+2/)
+      endif
+
+      iyu=ipy*ny+indcoeffs%inds(ip,jp,1)-nghost
+      izu=ipz*nz+indcoeffs%inds(ip,jp,3)-nghost
+      do i=1,6
+        qth(i) = (pprime(1)-ygrid(iyu+i-1))/dy   ! requires equidistant grid in y
+        qph(i) = (pprime(2)-zgrid(izu+i-1))/dz   ! requires equidistant grid in z
+      enddo
+!if (.not.lnasym_th.and.(any(qth(4:)>0.).or.any(qth(1:3)<0.))) print*, 'qth<0',ip,indth 
+!if (.not.lnasym_ph.and.(any(qph(4:)>0.).or.any(qph(1:3)<0.))) print*, 'qph<0',jp,indph 
+      gth=0.; gph=0.
+!
+! interpolation weights: 1/([-120,24,-12,12,-24,120]*dx^5) = [-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333]*dx^-5
+!
+      if (igapt>=NOGAP) &
+        gth(1)=-0.00833333*qth(2)*qth(3)*qth(4)*qth(5)*qth(6)
+
+      if ((igapt>=NOGAP.and.igapt<=RNEIGH).or.igapt==LMARG2) &
+        gth(2)=0.0416667*qth(1)*qth(3)*qth(4)*qth(5)*qth(6)
+
+      if ((igapt>=NOGAP.and.igapt<=RGAP).or.igapt==LMARG.or.igapt==LMARG2) &
+        gth(3)=-0.0833333*qth(1)*qth(2)*qth(4)*qth(5)*qth(6)
+
+      if ((igapt<=NOGAP.and.igapt>=LGAP).or.igapt==RMARG.or.igapt==RMARG2) &
+        gth(4)=0.0833333*qth(1)*qth(2)*qth(3)*qth(5)*qth(6)
+
+      if ((igapt<=NOGAP.and.igapt>=LNEIGH).or.igapt==RMARG2) &
+        gth(5)=-0.0416667*qth(1)*qth(2)*qth(3)*qth(4)*qth(6)
+
+      if (igapt<=NOGAP) &
+        gth(6)=0.00833333*qth(1)*qth(2)*qth(3)*qth(4)*qth(5)
+
+      if (igapp>=NOGAP) &
+        gph(1)=-0.00833333*qph(2)*qph(3)*qph(4)*qph(5)*qph(6)
+
+      if ((igapp>=NOGAP.and.igapp<=RNEIGH).or.igapp==LMARG2) &
+        gph(2)=0.0416667*qph(1)*qph(3)*qph(4)*qph(5)*qph(6)
+
+      if ((igapp>=NOGAP.and.igapp<=RGAP).or.igapp==LMARG.or.igapp==LMARG2) &
+        gph(3)=-0.0833333*qph(1)*qph(2)*qph(4)*qph(5)*qph(6)
+
+      if ((igapp<=NOGAP.and.igapp>=LGAP).or.igapp==RMARG.or.igapp==RMARG2) &
+        gph(4)=0.0833333*qph(1)*qph(2)*qph(3)*qph(5)*qph(6)
+
+      if ((igapp<=NOGAP.and.igapp>=LNEIGH).or.igapp==RMARG2) &
+        gph(5)=-0.0416667*qph(1)*qph(2)*qph(3)*qph(4)*qph(6)
+
+      if (igapp<=NOGAP) &
+        gph(6)=0.00833333*qph(1)*qph(2)*qph(3)*qph(4)*qph(5)
+
+      do igp=1,6; do igt=1,6
+        indcoeffs%coeffs2(ip,jp,igt,igp)=gth(igt)*gph(igp)
+      enddo; enddo
+
+if (.false.) then
+!if (.not.lyang) then
+!if (iproc==0.and.igapt==1.or.iproc==1.and.igapt==-5) then   !.or.iproc==1) then
+if (iproc==0.and.igapp==1.or.iproc==3.and.igapp==-5) then   !.or.iproc==1) then
+!if (iproc==3.or.iproc==6) then
+  !if (igapt==LMARG.or.igapt==RMARG.or.igapt==LNEIGH.or.igapt==RNEIGH) &
+  !if (igapt==LNEIGH2.or.igapt==RNEIGH2) &
+  !if (igapt==LMARG.or.igapt==LGAP) &
+  !if (igapt==-3.or.igapt==-3) then
+  if (iproc==0) then
+    lun=40
+  else
+    lun=41
+  endif
+  !write(lun,'(a,2i2,1x,2(f7.3,1x))') 'iproc, igapt, pprime=', iproc, igapt, pprime
+  write(lun,'(a,2i2,1x,2(f7.3,1x))') 'iproc, igapp, pprime=', iproc, igapp, pprime
+  !print'(4(i4,","))', indcoeffs%inds(ip,jp,:)
+  !print'(6(e11.4,","))', qth
+  !print'(6(e11.4,","))', gth
+  !print'(6(e11.4,","))', gph
+  write(lun,*) '----'
+  write(lun,'(6(e11.4,","))') indcoeffs%coeffs2(ip,jp,:,:)
+  !endif
+  !print'(a,2i2,1x,2(f7.3,1x))', 'iproc, igapp, pprime=', iproc, igapp, pprime
+  !if (igapp==LMARG.or.igapp==RMARG.or.igapp==LNEIGH.or.igapp==RNEIGH) &
+  !print'(a,2i2,1x,2(f7.3,1x))', 'iproc, igapp, pprime=', iproc, igapp, pprime
+endif
+endif
+if (.false.) then
+!if (.true.) then
+if (.not.lyang) then
+!if (indcoeffs%inds(ip,jp,2)-indcoeffs%inds(ip,jp,1)+1==6.and.indcoeffs%inds(ip,jp,4)-indcoeffs%inds(ip,jp,3)+1==6) then
+!if (igapt==NOGAP.and.igapp==NOGAP) then
+  if (abs(sum(indcoeffs%coeffs2(ip,jp,:,:))-1.)>1.5e-6) &
+    print*, 'coefficient sum /=1: iproc,ip,jp,residual=', iproc,ip,jp,sum(indcoeffs%coeffs2(ip,jp,:,:))-1.
+!endif
+endif
+endif
+      indcoeffs%pcoors(ip,jp,:)=pprime
+      indcoeffs%igaps(ip,jp,:)=(/igapt,igapp/)
+      indcoeffs%icoors(ip,jp,:)=(/indth,indph/)
+
+return
+gth=(/-0.00833333*qth(2)*qth(3)*qth(4)*qth(5)*qth(6), &
+      0.0416667*qth(1)*qth(3)*qth(4)*qth(5)*qth(6), &
+      -0.0833333*qth(1)*qth(2)*qth(4)*qth(5)*qth(6), &
+      0.0833333*qth(1)*qth(2)*qth(3)*qth(5)*qth(6), &
+      -0.0416667*qth(1)*qth(2)*qth(3)*qth(4)*qth(6), &
+      0.00833333*qth(1)*qth(2)*qth(3)*qth(4)*qth(5) /)
+
+gph=(/-0.00833333*qph(2)*qph(3)*qph(4)*qph(5)*qph(6), &
+      0.0416667*qph(1)*qph(3)*qph(4)*qph(5)*qph(6), &
+      -0.0833333*qph(1)*qph(2)*qph(4)*qph(5)*qph(6), &
+      0.0833333*qph(1)*qph(2)*qph(3)*qph(5)*qph(6), &
+      -0.0416667*qph(1)*qph(2)*qph(3)*qph(4)*qph(6), &
+      0.00833333*qph(1)*qph(2)*qph(3)*qph(4)*qph(5) /)
+    endsubroutine prep_biquint_interp
 !***********************************************************************
     subroutine prep_quadspline_interp(pprime,indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
 !
@@ -385,7 +583,6 @@ endif
       else
         indcoeffs%inds(ip,jp,1:2)=(/indth-1,indth+1/)
       endif
-!indcoeffs%inds(ip,jp,1:2)=(/indth-2,indth+1/)
 
       if ( pprime(2)-z(indph-1) < z(indph)-pprime(2) ) indph=indph-1
 
@@ -396,7 +593,6 @@ endif
       else
         indcoeffs%inds(ip,jp,3:4)=(/indph-1,indph+1/)
       endif
-!indcoeffs%inds(ip,jp,3:4)=(/indph-2,indph+1/)
 
       qth = (pprime(1)-y(indcoeffs%inds(ip,jp,1)+1))/dy   ! requires equidistant grid in y
       qph = (pprime(2)-z(indcoeffs%inds(ip,jp,3)+1))/dz   ! requires equidistant grid in z
@@ -415,7 +611,7 @@ if (abs(qth)>1..or.abs(qph)>1.) print*, 'iproc_world, sum=', iproc_world,qth,qph
 if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
     endsubroutine prep_quadspline_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,itype,n_onegap,n_twogap,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,ngap,th_range) result (nok)
 !
 !  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
 !  phprime-extent), arbitrarily positioned in the yz-plane, determine in
@@ -431,26 +627,26 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !  20-dec-15/MR: coded
 !  12-dec-17/MR: modifications for fixing the gap problem. Determination of 
 !                index ranges for overlap regions added.
+!  20-jan-18/MR: biquintic interpolation added: now on each side five situations
+!                exist in which two processors contribute to interpoland.
 !
       use General, only: find_index_range_hill, notanumber
       use Cdata,   only: ny, nz, y, z, dy, dz, lfirst_proc_y, lfirst_proc_z, nghost, &
                          llast_proc_y, llast_proc_z, lroot, iproc, lyang, lstart
-      use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD, BICUB, QUADSPLINE
+      use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD, BICUB, QUADSPLINE, BIQUIN
 
       real, dimension(:,:,:),          intent(IN)   :: thphprime
       type(ind_coeffs),                intent(OUT)  :: indcoeffs
       integer,                         intent(IN)   :: itype
       integer, dimension(2), optional, intent(OUT)  :: th_range
-      integer,               optional, intent(INOUT):: n_onegap,n_twogap
+      integer,               optional, intent(INOUT):: ngap
 
       integer :: nok
 
       integer :: ip, jp, indth, indph, sz1, sz2, ma, na, me, ne, i1, i2, indth_in, indph_in, ind
       real :: dth, dph, dthp, dphp, qth1, qth2, qph1, qph2
-      logical :: okt, okp, l0
+      logical :: okt, okp
       integer :: igapt, igapp
-
-l0=.false.
 
       if (lyang) then
         if (.not.allocated(overlap_thrngs)) then
@@ -468,40 +664,72 @@ l0=.false.
       sz1=size(thphprime,2); sz2=size(thphprime,3)
 
       if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds,indcoeffs%coeffs)
-      if (itype==BIQUAD.or.itype==BICUB.or.itype==QUADSPLINE) then
+      if (itype==BIQUAD.or.itype==BICUB.or.itype==BIQUIN.or.itype==QUADSPLINE) then
         allocate(indcoeffs%inds(sz1,sz2,4))
         allocate(indcoeffs%pcoors(sz1,sz2,2))
         allocate(indcoeffs%icoors(sz1,sz2,2))
+        allocate(indcoeffs%igaps(sz1,sz2,2))
       elseif (itype==BILIN) then
         allocate(indcoeffs%inds(sz1,sz2,2))
       else
         if (lroot) print*, 'prep_interp: Only bilinear, biquadratic and bicubic interpolations implemented'
         stop
       endif
-      indcoeffs%inds=0
+!
+!  Formally, the lower bound of the index range for interpolation can reach -1
+!  (for biquintic interpolation), so -2 indicates "point not caught".
+!
+      indcoeffs%inds=-2
 
       nok=0
-      ma=m1-1; me=m2+1
 !
-!  In order to catch points which lie in gaps between the domains of procs,
-!  the first lower and upper ghost cells in the y and z directions are included, 
-!  with exceptions for the first and last processors in both directions.
+!  In order to catch points which lie in gaps between the domains of procs or in
+!  the domain of a neighboring processor, but with interpolation contributions
+!  yet from the present processor 
+!  the lower and upper cells in either the y or the z directions are included, 
+!  with exceptions for the first and last processors.
 !
-      if (lfirst_proc_y) ma=m1
-      if (llast_proc_y) me=m2
+      ma=m1; me=m2
+
+      if (lfirst_proc_z.or.llast_proc_z) then
+
+        if (itype==BIQUIN) then
+          if (.not.lfirst_proc_y) ma=m1-3
+          if (.not.llast_proc_y) me=m2+3
+        elseif (itype==BICUB) then
+          if (.not.lfirst_proc_y) ma=m1-2
+          if (.not.llast_proc_y) me=m2+2
+        else
+          if (.not.lfirst_proc_y) ma=m1-1
+          if (.not.llast_proc_y) me=m2+1
+        endif
+
+      endif
 !
 !  Likewise for z direction.
 !
-      na=n1-1; ne=n2+1
-      if (lfirst_proc_z) na=n1
-      if (llast_proc_z) ne=n2
+      na=n1; ne=n2
+      if (lfirst_proc_y.or.llast_proc_y) then
+
+        if (itype==BIQUIN) then
+          if (.not.lfirst_proc_z) na=n1-3
+          if (.not.llast_proc_z) ne=n2+3
+        elseif (itype==BICUB) then
+          if (.not.lfirst_proc_z) na=n1-2
+          if (.not.llast_proc_z) ne=n2+2
+        else
+          if (.not.lfirst_proc_z) na=n1-1
+          if (.not.llast_proc_z) ne=n2+1
+        endif
+
+      endif
 
       do ip=1,sz1
         do jp=1,sz2
 !
 !  For all points in strip,
 !
-          okt=.false.; okp=.false.; igapt=0; igapp=0
+          okt=.false.; okp=.false.; igapt=NOGAP; igapp=NOGAP
           if ( y(ma)<=thphprime(1,ip,jp) ) then
 !
 !  detect between which y lines it lies.
@@ -509,10 +737,26 @@ l0=.false.
             do indth=ma+1,me
               if ( y(indth)>=thphprime(1,ip,jp) ) then
                 okt=.true.
-                if (indth==m1) then
+                if (indth==m1-2) then
+                  igapt=LNEIGH2
+                elseif (indth==m1-1) then
+                  igapt=LNEIGH
+                elseif (indth==m1) then
                   igapt=LGAP
+                elseif (indth==m1+1.and..not.lfirst_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
+                  igapt=LMARG
+                elseif (indth==m1+2.and..not.lfirst_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
+                  igapt=LMARG2
+                elseif (indth==m2-1.and..not.llast_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
+                  igapt=RMARG2
+                elseif (indth==m2.and..not.llast_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
+                  igapt=RMARG
                 elseif (indth==m2+1) then
                   igapt=RGAP
+                elseif (indth==m2+2) then
+                  igapt=RNEIGH
+                elseif (indth==m2+3) then
+                  igapt=RNEIGH2
                 endif
                 exit
               endif
@@ -527,17 +771,30 @@ l0=.false.
               do indph=na+1,ne
                 if ( z(indph)>=thphprime(2,ip,jp) ) then
                   indcoeffs%inds(ip,jp,1:2) = (/indth,indph/)
-if (l0 .and. iproc_world==6) then
-  print*, 'sizes=', sz1, sz2
-  l0=.false.
-endif
-!if (iproc_world==6) print*, thphprime(:,ip,jp)
                   okp=.true.
-                  if (indph==n1) then
+                  if (indph==n1-2) then
+                    igapp=LNEIGH2
+                  elseif (indph==n1-1) then
+                    igapp=LNEIGH
+                  elseif (indph==n1) then
                     igapp=LGAP
+                  elseif (indph==n1+1.and..not.lfirst_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
+                    igapp=LMARG
+                  elseif (indph==n1+2.and..not.lfirst_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
+                    igapp=LMARG2
+                  elseif (indph==n2-1.and..not.llast_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
+                    igapp=RMARG2
+                  elseif (indph==n2.and..not.llast_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
+                    igapp=RMARG
                   elseif (indph==n2+1) then
                     igapp=RGAP
+                  elseif (indph==n2+2) then
+                    igapp=RNEIGH
+                  elseif (indph==n2+3) then
+                    igapp=RNEIGH2
                   endif
+!if (.not.lyang.and.(igapt/=0 .or. igapp/=0)) & 
+!  print'(a,3(i3,1x),4(f8.3,1x))', 'iproc,inds,gridcoors,pointcoors=', iproc, indth,indph, y(indth), z(indph), thphprime(:,ip,jp)
                   exit
                 endif
               enddo
@@ -566,9 +823,8 @@ endif
             endif
 
             nok=nok+1
-            if (present(n_onegap)) then
-              if (igapp/=0 .neqv. igapt/=0) n_onegap=n_onegap+1
-              if (igapp/=0 .and. igapt/=0) n_twogap=n_twogap+1
+            if (present(ngap)) then
+              if (igapt/=NOGAP .or. igapp/=NOGAP) ngap=ngap+1
             endif
 !
 !  Calculate interpolation weights.
@@ -585,8 +841,16 @@ endif
               if (itype==BIQUAD) then
                 call prep_biquad_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
               else
-                call prep_bicub_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne,igapt,igapp)
+                call prep_bicub_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,igapt,igapp)
               endif
+
+            elseif (itype==BIQUIN) then
+
+              if (.not.allocated(indcoeffs%coeffs2)) then
+                allocate(indcoeffs%coeffs2(sz1,sz2,6,6))
+                indcoeffs%coeffs2=0.
+              endif
+              call prep_biquint_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,igapt,igapp)
             elseif (itype==QUADSPLINE) then
 
               if (.not.allocated(indcoeffs%coeffs2)) then
@@ -610,8 +874,7 @@ endif
               qph2 = dphp/dz; qph1 = 1.-qph2
 
               indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
-!if (notanumber(indcoeffs%coeffs(ip,jp,:))) print*, 'ip,jp=', ip,jp
-if (abs(sum(indcoeffs%coeffs(ip,jp,:))-1.)>5.e-7) print*, 'coefficient sum /=1: ip,jp,residual=', ip,jp,sum(indcoeffs%coeffs(ip,jp,:))-1. 
+
               if (igapt==LGAP) then
                 indcoeffs%coeffs(ip,jp,1:2) = 0.
               elseif (igapt==RGAP) then
@@ -628,7 +891,15 @@ if (abs(sum(indcoeffs%coeffs(ip,jp,:))-1.)>5.e-7) print*, 'coefficient sum /=1: 
 
         enddo
       enddo
-!if (.not.lyang) print*, 'iproc, nasym_th,nasym_ph=', iproc,nasym_th,nasym_ph
+
+      if (.not.lyang.and.(nasym_th/=0 .or. nasym_ph/=0)) then
+        if (nasym_th/=0) print'(a,i4,a,i4,a)', 'Warning: in processor ',iproc, ', ', nasym_th, &
+                              ' points subject to asymmetric interpolation in theta direction!'
+        if (nasym_ph/=0) print'(a,i4,a,i4,a)', 'Warning: in processor ',iproc, ', ', nasym_ph, &
+                              ' points subject to asymmetric interpolation in phi direction!'
+        print*, '        Consider increasing overlap of grids by making dang (more) negative in start.f90!'
+      endif
+
       if (present(th_range)) then
         if (nok>0) then
 ! 
@@ -707,6 +978,7 @@ if (l0) l0=.false.
 !
       use General, only: pos_in_array, itoa
       use Cparam , only: m1,m2,n1,n2
+      use Cdata, only: lroot
       !use Messages, only: warning
 
       type(ind_coeffs) :: intcoeffs,indweights
@@ -764,10 +1036,10 @@ if (l0) l0=.false.
                    if (ith==nlines_max) then
                      if (.not.ltoo_many_lines) then
                        !call warning(
-                       print*, 'coeffs_to_weights: WARNING -- ', &
-                               'More than '//trim(itoa(nlines_max))// &
-                               ' lines contributed to by point at (m,n)=(', &
-                               trim(itoa(mm)),',',trim(itoa(nn)),') in proc '//trim(itoa(iproc_world))
+                       if (lroot) print*, 'coeffs_to_weights: WARNING -- ', &
+                                          'More than '//trim(itoa(nlines_max))// &
+                                          ' lines contributed to by point at (m,n)=(', &
+                                          trim(itoa(mm)),',',trim(itoa(nn)),') in proc '//trim(itoa(iproc_world))
                        ltoo_many_lines=.true.
                      endif
                    else
@@ -814,7 +1086,6 @@ if (l0) l0=.false.
          enddo
        enddo
 !print*, 'iproc,ithmax=', iproc_world,ithmax
-
     endsubroutine coeffs_to_weights
 !*******************************************************************
 end module

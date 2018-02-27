@@ -13,5 +13,6 @@
   public :: calc_pencils_forcing
   public :: forcing_clean_up
   public :: forcing_cont
+  public :: forcing_coefs_hel
   public :: push2c
   public :: n_forcing_cont  ! should be protected

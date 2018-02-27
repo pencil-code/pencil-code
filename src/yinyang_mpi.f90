@@ -320,7 +320,7 @@ module Yinyang_mpi
 !
             call mpisend_int(rng,2,iproc_yin,iproc_world,MPI_COMM_WORLD)
 
-            if (ifound==3) stop              ! lines from at most 3 Yin procs expected.
+            if (ifound>3) stop               ! lines from at most 3 Yin procs expected.
             yloc=yloc+Lxyz_loc(2)+dy/nprocy  ! shift y coordinates to next z-root proc of Yin grid.
 
           enddo
@@ -472,7 +472,6 @@ module Yinyang_mpi
 
       endif
 
-!print*, 'nach initialize_zaver_yy', iproc_world, lcaproot
       call mpibarrier
 
     endsubroutine initialize_zaver_yy

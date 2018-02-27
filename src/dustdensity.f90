@@ -1558,13 +1558,11 @@ module Dustdensity
 !
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
-          if (dsize(k)>0. .and. dsize(k)/=1.01e-6) then
-          if (.not. ldcore) then
-!
-              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+            if (dsize(k)>0. .and. dsize(k)/=1.01e-6) then
+              if (.not.ldcore) &
+                p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
                             -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
-          endif
-          endif
+            endif
           enddo
         endif
 ! ccondens

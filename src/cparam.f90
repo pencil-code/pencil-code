@@ -156,6 +156,8 @@ module Cparam
   real, parameter :: twopi = 6.2831853071795864769252867665590
   real, parameter :: dtor = pi/180.
 !
+  real, parameter :: lntwo=log(2.)
+!
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0
 !
@@ -229,6 +231,6 @@ module Cparam
 !
 !  Symbolic constants for Yin-Yang grid.
 !
-  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3, QUADSPLINE=4
+  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3, QUADSPLINE=4, BIQUIN=5
 !
 endmodule Cparam

@@ -69,7 +69,7 @@ module Cosmicray
   contains
 !
 !***********************************************************************
-    subroutine register_cosmicray()
+    subroutine register_cosmicray
 !
 !  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
@@ -114,20 +114,16 @@ module Cosmicray
 !     Checks whether the obsolescent parameter names are being used
 !
       if (Kpara /= impossible .or. Kperp /= impossible) then
-        call warning('initialize_cosmicray', &
+        if (lroot) call warning('initialize_cosmicray', &
             'using obsolescent parameters Kpara and Kperp!' &
             // ' In the future, please use K_para and K_perp instead.')
         K_para = Kpara
         K_perp = Kperp
-        call put_shared_variable('K_perp', impossible)
-        call put_shared_variable('K_para', impossible)
-      else
-        call put_shared_variable('K_perp', K_perp)
-        call put_shared_variable('K_para', K_para)
      endif
+     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+     call put_shared_variable('K_para', K_para)
 !
 !     Shares diffusivities allowing the cosmicrayflux module to know them
-!
 !
     endsubroutine initialize_cosmicray
 !***********************************************************************
@@ -185,7 +181,7 @@ module Cosmicray
 !
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine pencil_criteria_cosmicray()
+    subroutine pencil_criteria_cosmicray
 !
 !  The current module's criteria for which pencils are needed
 !

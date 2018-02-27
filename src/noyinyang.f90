@@ -59,7 +59,7 @@ contains
 
     endsubroutine biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,itype,n_onegap,n_twogap,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,ngap,th_range) result (nok)
 !
 !  Dummy routine.
 !
@@ -68,7 +68,7 @@ contains
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
       integer,                         intent(IN) :: itype
-      integer,               optional, intent(IN) :: n_onegap,n_twogap
+      integer,               optional, intent(IN) :: ngap
       integer, dimension(2), optional, intent(OUT):: th_range
 
       integer :: nok
