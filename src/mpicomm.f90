@@ -9371,13 +9371,13 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         else
           ive=iv
         endif
-if (.false..and.(iproc_world==52.or.iproc_world==53).and.ive==-1) then
-  if (intcoeffs(pos)%pcoors(15,1,1)/=0.) then
-  print*, intcoeffs(pos)%pcoors(15,1,:)
-  print*,intcoeffs(pos)%coeffs2(15,1,:,:) 
-  print*,'----'
-  endif
-endif
+!if (.false..and.(iproc_world==52.or.iproc_world==53).and.ive==-1) then
+!  if (intcoeffs(pos)%pcoors(15,1,1)/=0.) then
+!    print*, intcoeffs(pos)%pcoors(15,1,:)
+!    print*,intcoeffs(pos)%coeffs2(15,1,:,:) 
+!    print*,'----'
+!  endif
+!endif
 
         do i=1,nth; do j=1,nph
 
