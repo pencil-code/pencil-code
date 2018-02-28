@@ -255,9 +255,26 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)      
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_special_bfre_bdary
+!***********************************************************************
+    subroutine particles_special_after_dtsub(f, dtsub)
+!
+!  Send fp and dfp to Special for processing in the end of a
+!  sub-time-step.
+!
+!  27-feb-18/ccyang: coded
+!
+      use Special, only: special_particles_after_dtsub
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dtsub
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine particles_special_after_dtsub
 !***********************************************************************
     subroutine particles_pde(f,df,p)
 !

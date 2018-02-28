@@ -679,6 +679,21 @@ module Particles_main
 !
     endsubroutine particles_special_bfre_bdary
 !***********************************************************************
+    subroutine particles_special_after_dtsub(f, dtsub)
+!
+!  Send fp to Special for processing in the end of a sub-time-step.
+!
+!  27-feb-18/ccyang: coded
+!
+      use Special, only: special_particles_after_dtsub
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dtsub
+!
+      call special_particles_after_dtsub(f, dtsub, fp, ineargrid)
+!
+    endsubroutine particles_special_after_dtsub
+!***********************************************************************
     subroutine particles_pencil_criteria()
 !
 !  Request pencils for particles.

@@ -3,7 +3,8 @@
  
   public :: particles_register_modules, particles_rprint_list
   public :: particles_initialize_modules, particles_init
-  public :: particles_boundconds, particles_special_bfre_bdary
+  public :: particles_boundconds
+  public :: particles_special_bfre_bdary, particles_special_after_dtsub
   public :: particles_timestep_first, particles_timestep_second
   public :: split_update_particles
   public :: particles_load_balance

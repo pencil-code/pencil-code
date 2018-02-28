@@ -187,6 +187,7 @@ module Timestep
       use Energy,   only: energy_after_timestep
       use Magnetic, only: magnetic_after_timestep
       use Special,  only: special_after_timestep
+      use Particles_main, only: particles_special_after_dtsub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -203,7 +204,10 @@ module Timestep
       if (lmagnetic) call magnetic_after_timestep(f,df,dtsub)
       if (lenergy)   call energy_after_timestep  (f,df,dtsub)
       if (ldensity)  call density_after_timestep (f,df,dtsub)
-      if (lspecial)  call special_after_timestep (f,df,dtsub)
+      if (lspecial) then
+        call special_after_timestep(f, df, dtsub)
+        if (lparticles) call particles_special_after_dtsub(f, dtsub)
+      endif
 !
 !  Disables checks.
 !
