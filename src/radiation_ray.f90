@@ -1457,9 +1457,9 @@ module Radiation
 !  approximation (if either lrad_cool_diffus=F or lrad_pres_diffus=F).
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) call calc_rad_diffusion(f,p)
-      cooling=f(l1:l2,m,n,iQrad)
       if (lno_rad_heating) & 
-         where (cooling > 0.0d0) cooling=0.0d0
+         where (f(l1:l2,m,n,iQrad) > 0.0d0) f(l1:l2,m,n,iQrad)=0.0d0
+      cooling=f(l1:l2,m,n,iQrad)
 !
 !  Possibility of rescaling the radiative cooling term.
 !
@@ -1500,6 +1500,11 @@ module Radiation
             endif
           enddo
           dt1_max=max(dt1_max,dt1_rad)
+        endif
+      endif
+      if (lfirst.and.ldt) then
+        if (idiag_dtrad/=0) then
+          call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
         endif
       endif
 !

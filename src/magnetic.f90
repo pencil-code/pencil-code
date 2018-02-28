@@ -914,6 +914,7 @@ module Magnetic
 !  21-jan-15/MR: avoided double put_shared_variable for B_ext
 !   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet inoperational
 !  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
+!  28-feb-18/piyali: moved back the calculation of clight2_zdep to calc_pencils to use va2 pencil
 !
       use Sub, only: register_report_aux, write_zprof, step
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -1505,9 +1506,6 @@ module Magnetic
         allocate(aamxy(mx,myl))
       endif
 !
-      if (lboris_correction) &
-        clight2_zdep = ((xyz1(3)/(z(n1:n2)+xyz1(3)))**6 &
-                      *(c_light-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
 
 
       if (idiag_axp2/=0.or.idiag_ayp2/=0.or.idiag_azp2/=0) then
@@ -3165,6 +3163,7 @@ module Magnetic
 ! reduced speed of light pencil
 !
      if (lpenc_loc(i_clight2)) then
+       clight2_zdep(n-n1+1) = c_light**2/(1.+max(z(n),0.0)**8)+25.0*maxval(p%va2)
        p%clight2=clight2_zdep(n-n1+1)
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif

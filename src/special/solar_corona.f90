@@ -73,6 +73,7 @@ module Special
   real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
+  logical :: lheatcond_cutoff=.false.
 !
   ! file location settings
   character(len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -102,7 +103,7 @@ module Special
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special, &
-      lemerg_profx
+      lemerg_profx,lheatcond_cutoff
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -2259,7 +2260,8 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot, dot2
+      use Sub, only: dot, dot2, step
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -2268,7 +2270,9 @@ module Special
       real, dimension(nx,3) :: tmpv, gKp
       real, dimension(nx) :: cos_B_glnTT, gKp_b
       real, dimension(nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
+      real, pointer :: z_cutoff
       integer :: i, j
+      integer :: ierr
 !
       ! heatflux density vector: q = kappa * grad_T [W/m^2]
       ! thermal diffusivity: chi = gamma * kappa / (rho * cp)
@@ -2295,6 +2299,14 @@ module Special
           gKp(:,3) = p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)*glnTT_abs_inv
           chi_spitzer =  chi_sat
         endwhere
+      endif
+      if (lheatcond_cutoff) then 
+        call get_shared_variable('z_cutoff',&
+             z_cutoff,ierr)
+        if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+             'failed to get z_cutoff from radiation_ray')
+        chi_spitzer = chi_spitzer* &
+          step(z(n),z_cutoff,0.2)
       endif
 !
 !  Limit heat conduction so that the diffusion speed
