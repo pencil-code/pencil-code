@@ -78,12 +78,12 @@ module Ascalar
 !
 !  Diagnostics variables
 !
-  integer :: idiag_accrms=0, idiag_accmax=0, idiag_accmin=0
-  integer :: idiag_ttcrms=0, idiag_ttcmax=0, idiag_ttcmin=0
+  integer :: idiag_accrms=0, idiag_accmax=0, idiag_accmin=0, idiag_accm=0
+  integer :: idiag_ttcrms=0, idiag_ttcmax=0, idiag_ttcmin=0, idiag_ttcm=0
   integer :: idiag_uxaccm=0, idiag_uyaccm=0, idiag_uzaccm=0
   integer :: idiag_tauascalarrms=0, idiag_tauascalarmax=0, idiag_tauascalarmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
-  integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0
+  integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0,idiag_waterMixingRatiom=0
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_buoyancyrms=0, idiag_buoyancymax=0, idiag_buoyancymin=0
 !
@@ -458,10 +458,12 @@ module Ascalar
         if (idiag_accrms/=0) call sum_mn_name(p%acc**2,idiag_accrms,lsqrt=.true.)
         if (idiag_accmax/=0) call max_mn_name(p%acc,idiag_accmax)
         if (idiag_accmin/=0) call max_mn_name(-p%acc,idiag_accmin,lneg=.true.)
+        if (idiag_accm/=0) call sum_mn_name(p%acc,idiag_accm)
         if (lttc) then
           if (idiag_ttcrms/=0) call sum_mn_name(p%ttc**2,idiag_ttcrms,lsqrt=.true.)
           if (idiag_ttcmax/=0) call max_mn_name(p%ttc,idiag_ttcmax)
           if (idiag_ttcmin/=0) call max_mn_name(-p%ttc,idiag_ttcmin,lneg=.true.)
+          if (idiag_ttcm/=0) call sum_mn_name(p%ttc,idiag_ttcm)
         endif
         if (idiag_uxaccm/=0) call sum_mn_name(p%uu(:,1)*p%acc,idiag_uxaccm)
         if (idiag_uyaccm/=0) call sum_mn_name(p%uu(:,2)*p%acc,idiag_uyaccm)
@@ -480,6 +482,7 @@ module Ascalar
           call sum_mn_name(p%waterMixingRatio**2,idiag_waterMixingRatiorms,lsqrt=.true.)
         if (idiag_waterMixingRatiomax/=0) call max_mn_name(p%waterMixingRatio,idiag_waterMixingRatiomax)
         if (idiag_waterMixingRatiomin/=0) call max_mn_name(-p%waterMixingRatio,idiag_waterMixingRatiomin,lneg=.true.)
+        if (idiag_waterMixingRatiom/=0) call sum_mn_name(p%waterMixingRatio,idiag_waterMixingRatiom)
         if (idiag_ssatrms/=0) &
           call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
         if (idiag_ssatmax/=0) call max_mn_name(p%ssat,idiag_ssatmax)
@@ -546,12 +549,12 @@ module Ascalar
       if (present(lwrite)) lwr=lwrite
 !      
       if (lreset) then
-        idiag_accrms=0; idiag_accmax=0; idiag_accmin=0
-        idiag_ttcrms=0; idiag_ttcmax=0; idiag_ttcmin=0
+        idiag_accrms=0; idiag_accmax=0; idiag_accmin=0; idiag_accm=0
+        idiag_ttcrms=0; idiag_ttcmax=0; idiag_ttcmin=0; idiag_ttcm=0
         idiag_uxaccm=0; idiag_uyaccm=0; idiag_uzaccm=0
         idiag_tauascalarrms=0; idiag_tauascalarmax=0; idiag_tauascalarmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
-        idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0
+        idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0; idiag_waterMixingRatiom=0
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_buoyancyrms=0; idiag_buoyancymax=0; idiag_buoyancymin=0
 
@@ -561,9 +564,11 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'accrms',idiag_accrms)
         call parse_name(iname,cname(iname),cform(iname),'accmax',idiag_accmax)
         call parse_name(iname,cname(iname),cform(iname),'accmin',idiag_accmin)
+        call parse_name(iname,cname(iname),cform(iname),'accm',idiag_accm)
         call parse_name(iname,cname(iname),cform(iname),'ttcrms',idiag_ttcrms)
         call parse_name(iname,cname(iname),cform(iname),'ttcmax',idiag_ttcmax)
         call parse_name(iname,cname(iname),cform(iname),'ttcmin',idiag_ttcmin)
+        call parse_name(iname,cname(iname),cform(iname),'ttcm',idiag_ttcm)
         call parse_name(iname,cname(iname),cform(iname),'uxaccm',idiag_uxaccm)
         call parse_name(iname,cname(iname),cform(iname),'uyaccm',idiag_uyaccm)
         call parse_name(iname,cname(iname),cform(iname),'uzaccm',idiag_uzaccm)
@@ -576,6 +581,7 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiorms',idiag_waterMixingRatiorms)
         call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiomax',idiag_waterMixingRatiomax)
         call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiomin',idiag_waterMixingRatiomin)
+        call parse_name(iname,cname(iname),cform(iname),'waterMixingRatiom',idiag_waterMixingRatiom)
         call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
         call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
         call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
