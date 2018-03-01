@@ -266,8 +266,6 @@ module Particles_main
 !
 !  27-feb-18/ccyang: coded
 !
-      use Special, only: special_particles_after_dtsub
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, intent(in) :: dtsub
 !
