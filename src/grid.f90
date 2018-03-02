@@ -857,6 +857,26 @@ module Grid
                  'squared not implemented for particles.')
           endif
 !
+        case ('trough')
+          ! Grid distance is almost equidistant at boundaries and then decreases
+          ! at the middle
+          a=0.02
+          b=100
+          c=300
+!
+          call grid_profile(xi3  ,grid_func(3),g3,g3der1,g3der2,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+          call grid_profile(xi3lo,grid_func(3),g3lo,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+          call grid_profile(xi3up,grid_func(3),g3up,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*g3der1/(g3up-g3lo)
+          zprim2=    Lz*g3der2/(g3up-g3lo)
+!
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'trough not implemented for particles.')
+          endif
+
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
@@ -1926,6 +1946,26 @@ module Grid
         g=xi**(1./param)
         if (present(gder1)) gder1=1./param*              xi**(1/param-1)
         if (present(gder2)) gder2=1./param*(1./param-1.)*xi**(1/param-2)
+!
+      case ('trough')
+        ! Grid distance larger and linear near boundaries and smaller and linear in
+        ! middle. Needs xistep(2), delta(2) and param parameters specified in
+        ! start.in. E.g.,for solar atmosphere can use delta=0.4,0.5, xistar=100,300,
+        ! param=0.02 on a grid of mzgrid=646
+        if (.not. present (param)) &
+          call fatal_error ('grid_profile', "'trough' needs its parameter.")
+        g=(-alog(exp(param*(xi-xistep(1)))+exp(-param*(xi-xistep(1))))/param+ &
+            alog(exp(param*(xi-xistep(2)))+exp(-param*(xi-xistep(2))))/param+   &
+            (2.+delta(1))*xi)/(2.+delta(1))
+        if (present(gder1)) then 
+          gder1=(2.+delta(1)-tanh(param*(xi-xistep(1)))+ &
+                tanh(param*(xi-xistep(2))))/(2.+delta(1))
+        endif
+        if (present(gder2)) then 
+          gder2=(-param*(1.-(tanh(param*(xi-xistep(1))))**2)+ &
+                 param*(1.-(tanh(param*(xi-xistep(2))))**2))/ &
+                (2.+delta(1))
+        endif
 !
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
