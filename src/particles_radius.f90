@@ -843,7 +843,9 @@ module Particles_radius
 !
 !  Time-step contribution of condensation.
 !
-          if (lfirst .and. ldt) then
+!          if (lfirst .and. ldt) then
+          if (lfirst .and. ldt .and. .not. lascalar .and. .not. lcondensation_simplified) then
+
             ap_equi = ((p%rhop+(rhovap-rhosat))/ &
                 (4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
             do ix = 1,nx

@@ -84,7 +84,7 @@ module Ascalar
   integer :: idiag_tauascalarrms=0, idiag_tauascalarmax=0, idiag_tauascalarmin=0
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0
   integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0,idiag_waterMixingRatiom=0
-  integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
+  integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0, idiag_ssatm=0
   integer :: idiag_buoyancyrms=0, idiag_buoyancymax=0, idiag_buoyancymin=0
 !
   contains
@@ -487,6 +487,7 @@ module Ascalar
           call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
         if (idiag_ssatmax/=0) call max_mn_name(p%ssat,idiag_ssatmax)
         if (idiag_ssatmin/=0) call max_mn_name(-p%ssat,idiag_ssatmin,lneg=.true.)
+        if (idiag_ssatm/=0) call sum_mn_name(p%ssat,idiag_ssatm)
         if (lbuoyancy) then
           if (idiag_buoyancyrms/=0) &
             call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)
@@ -555,7 +556,7 @@ module Ascalar
         idiag_tauascalarrms=0; idiag_tauascalarmax=0; idiag_tauascalarmin=0
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0
         idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0; idiag_waterMixingRatiom=0
-        idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
+        idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0; idiag_ssatm=0
         idiag_buoyancyrms=0; idiag_buoyancymax=0; idiag_buoyancymin=0
 
       endif
@@ -585,6 +586,7 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
         call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
         call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
+        call parse_name(iname,cname(iname),cform(iname),'ssatm',idiag_ssatm)
         call parse_name(iname,cname(iname),cform(iname),'buoyancyrms',idiag_buoyancyrms)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymax',idiag_buoyancymax)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymin',idiag_buoyancymin)
