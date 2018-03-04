@@ -237,8 +237,8 @@ module Special
 !
 !  give a warning if cs0**2=1
 !
-      !if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
-      !    'cs0 should probably not be unity')
+      if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
+          'cs0 should probably not be unity')
 !
       call keep_compiler_quiet(f)
 !
