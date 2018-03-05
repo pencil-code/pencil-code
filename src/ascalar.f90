@@ -36,8 +36,7 @@ module Ascalar
 !  integer :: issat=0
 !  Init parameters.
 !
-  real :: acc_const=0., amplacc=0., widthacc=0.
-  real :: ttc_const=0., amplttc=0., widthttc=0.
+  real :: acc_const=0., amplacc=0., widthacc=0., ttc_const=0., amplttc=0., widthttc=0.
   logical :: noascalar=.false., reinitialize_acc=.false.
   character (len=labellen) :: initacc='nothing'
   character (len=labellen) :: initttc='nothing'
@@ -59,8 +58,9 @@ module Ascalar
   real :: vapor_mixing_ratio_qvs=0.0
   real :: updraft=0.0
   real :: A1=0.0
-  real :: latent_heat=2.5e6, cp=1005.0, const1_qvs=2.53e11, const2_qvs=5420.0
-  real :: Rv=461.5, rhoa=1.06
+  real :: latent_heat=2.5e6, cp=1005.0
+  real :: Rv=461.5, rhoa=1.06, const1_qvs=2.53e11, const2_qvs=5420.0
+  real, target :: ssat0=0.0
   real :: TT_mean=293.25, constTT=293.25
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
@@ -116,6 +116,8 @@ module Ascalar
 !  Perform any necessary post-parameter read initialization
 !  Since the passive scalar is often used for diagnostic purposes
 !  one may want to reinitialize it to its initial distribution.
+!      
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -128,6 +130,10 @@ module Ascalar
         f(:,:,:,iacc)=0.
         f(:,:,:,ittc)=0.
         call init_acc(f)
+      endif
+!
+      if (lcondensation_rate) then
+        call put_shared_variable('ssat0', ssat0)
       endif
 !
     endsubroutine initialize_ascalar
@@ -418,6 +424,7 @@ module Ascalar
         if (lconstTT) then
           es_T=const1_qvs*exp(-const2_qvs/constTT)
           qvs_T=es_T/(Rv*rhoa*constTT)
+          ssat0=acc_const/qvs_T(1)-1
         elseif (ltemperature) then
             df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
             if (lbuoyancy) then
@@ -443,6 +450,7 @@ module Ascalar
           df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+p%condensationRate*latent_heat/cp
           es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,ittc))
           qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,ittc))
+          ssat0=acc_const/((const1_qvs*exp(-const2_qvs/ttc_const))/(Rv*rhoa*ttc_const))-1
           if (lbuoyancy) then
             buoyancy=gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
                      Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)

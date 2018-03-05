@@ -36,7 +36,8 @@ module Particles_radius
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, apmid=1.5, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0,vapor_mixing_ratio_qvs=0., GS_condensation=0.0
-  real, pointer :: G_condensation 
+  real :: modified_vapor_diffusivity=6.74e-6, n0_mean = 1.e8
+  real, pointer :: G_condensation, ssat0 
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
@@ -71,7 +72,7 @@ module Particles_radius
       lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltauascalar
+      ltauascalar, modified_vapor_diffusivity
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -179,7 +180,10 @@ module Particles_radius
 !
       call keep_compiler_quiet(f)
 !
-      if (lascalar) call get_shared_variable('G_condensation', G_condensation)
+      if (lascalar) then
+        call get_shared_variable('G_condensation', G_condensation)
+        if (lcondensation_rate) call get_shared_variable('ssat0', ssat0)
+      endif
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
@@ -699,6 +703,7 @@ module Particles_radius
       real, dimension(nx) :: ap_equi, vth, dt1_condensation, rhovap
       real, dimension(nx) :: total_surface_area, ppsat
       real, dimension(nx) :: rhocond_tot, rhosat, np_total
+      real, dimension(nx) :: tau_phase1, tau_evaporation
       real :: dapdt, drhocdt, alpha_cond_par
       integer :: k, ix, ix0
 !
@@ -721,6 +726,8 @@ module Particles_radius
             np_total = 0.0
             total_surface_area = 0.0
             dt1_condensation = 0.0
+            tau_phase1 = 0.0
+            tau_evaporation = 0.0
           endif
           do k = k1_imn(imn),k2_imn(imn)
             ix0 = ineargrid(k,1)
@@ -834,10 +841,13 @@ module Particles_radius
                   latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
             endif
 !
-            if (lfirst .and. ldt) then
+!            if (lfirst .and. ldt) then
+            if (lfirst .and. ldt .and. .not. lascalar .and. .not. lcondensation_simplified) then
               total_surface_area(ix) = total_surface_area(ix)+ &
                   4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
               np_total(ix) = np_total(ix)+np_swarm
+            elseif (lascalar .or. lcondensation_simplified) then
+              tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
             endif
           enddo
 !
@@ -853,6 +863,13 @@ module Particles_radius
                 dt1_condensation(ix) = max(total_surface_area(ix)*vth(ix), &
                     pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
               endif
+            enddo
+          elseif (lascalar .or. lcondensation_simplified) then
+            do ix = 1,nx
+              if (lascalar) tau_evaporation(ix) = -ap0(1)**2/(2*G_condensation*ssat0)
+              if (lcondensation_simplified) tau_evaporation(ix) = -ap0(1)**2/(2*GS_condensation)
+
+              dt1_condensation(ix) = max(tau_phase1(ix), 1./tau_evaporation(ix))
             enddo
           endif
         endif
