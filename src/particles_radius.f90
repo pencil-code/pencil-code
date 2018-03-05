@@ -703,7 +703,7 @@ module Particles_radius
       real, dimension(nx) :: ap_equi, vth, dt1_condensation, rhovap
       real, dimension(nx) :: total_surface_area, ppsat
       real, dimension(nx) :: rhocond_tot, rhosat, np_total
-      real, dimension(nx) :: tau_phase1, tau_evaporation
+      real, dimension(nx) :: tau_phase1, tau_evaporation1, tau_evaporation
       real :: dapdt, drhocdt, alpha_cond_par
       integer :: k, ix, ix0
 !
@@ -727,6 +727,7 @@ module Particles_radius
             total_surface_area = 0.0
             dt1_condensation = 0.0
             tau_phase1 = 0.0
+            tau_evaporation1 = 0.0
             tau_evaporation = 0.0
           endif
           do k = k1_imn(imn),k2_imn(imn)
@@ -848,6 +849,7 @@ module Particles_radius
               np_total(ix) = np_total(ix)+np_swarm
             elseif (lascalar .or. lcondensation_simplified) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
+              if (lascalar) tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
             endif
           enddo
 !
@@ -866,10 +868,10 @@ module Particles_radius
             enddo
           elseif (lascalar .or. lcondensation_simplified) then
             do ix = 1,nx
-              if (lascalar) tau_evaporation(ix) = -ap0(1)**2/(2*G_condensation*ssat0)
-              if (lcondensation_simplified) tau_evaporation(ix) = -ap0(1)**2/(2*GS_condensation)
-
-              dt1_condensation(ix) = max(tau_phase1(ix), 1./tau_evaporation(ix))
+!              if (lascalar) tau_evaporation(ix) = -ap0(1)**2/(2*G_condensation*ssat0)
+!              if (lcondensation_simplified) tau_evaporation(ix) = -ap0(1)**2/(2*GS_condensation)
+              if (lcondensation_simplified) tau_evaporation1(ix) = -(2*GS_condensation)/ap0(1)**2
+              dt1_condensation(ix) = max(tau_phase1(ix), tau_evaporation1(ix))
             enddo
           endif
         endif
