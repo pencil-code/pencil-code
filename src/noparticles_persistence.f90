@@ -10,6 +10,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles_persistence=.false.
+! MPAUX CONTRIBUTION 0
 !
 !***************************************************************
 module Particles_persistence
@@ -37,11 +38,6 @@ contains
 !  Dummy.
 !
       use General, only: keep_compiler_quiet
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
     endsubroutine initialize_particles_persist
 !***********************************************************************
     subroutine init_particles_persistence(fp)
@@ -51,12 +47,12 @@ contains
       real, dimension (mpar_loc,mparray), intent (out) :: fp
 !
       call keep_compiler_quiet(fp)
-!      
     endsubroutine init_particles_persistence
 !***********************************************************************
     subroutine dpersist_dt(f,df,fp,dfp,ineargrid)
 !
       use General, only: keep_compiler_quiet
+=======
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -67,7 +63,6 @@ contains
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(fp,dfp)
       call keep_compiler_quiet(ineargrid)
-!
     endsubroutine dpersist_dt
 !***********************************************************************
     subroutine read_ppersist_init_pars(iostat)
@@ -77,7 +72,6 @@ contains
       integer, intent(out) :: iostat
 !
       call keep_compiler_quiet(iostat)
-!
     endsubroutine read_ppersist_init_pars
 !***********************************************************************
     subroutine write_ppersist_init_pars(unit)
@@ -87,7 +81,6 @@ contains
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
-!
     endsubroutine write_ppersist_init_pars
 !***********************************************************************
     subroutine read_ppersist_run_pars(iostat)
@@ -107,12 +100,12 @@ contains
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
-!
     endsubroutine write_ppersist_run_pars
 !***********************************************************************
     subroutine rprint_particles_persist(lreset,lwrite)
 !
       use General, only: keep_compiler_quiet
+=======
 !
       logical :: lreset
       logical, optional :: lwrite
