@@ -803,7 +803,7 @@ module Particles
           .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
           .or. lthermophoretic_forces .or. ldraglaw_purestokes &
-          .or. ldraglaw_stokesschiller
+          .or. ldraglaw_stokesschiller .or. lsolid_ogrid
       interp%lnu=lchemistry
       interp%lpp=lparticles_chemistry
       interp%lspecies=lparticles_surfspec
