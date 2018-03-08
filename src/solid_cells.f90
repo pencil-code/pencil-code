@@ -2599,6 +2599,16 @@ module Solid_Cells
                     endif
                   endif
 !
+                  if (x(i+4) > xval_p .and. x(i+3) < xval_p) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,1) = -4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == 1) ba(i,j,k,1) = -4
+                    endif
+                  endif
+!
                   if (x(i-1) < xval_m) then
                     if (.not. ba_defined(i,j,k)) then
                       ba(i,j,k,1) = 1
@@ -2626,6 +2636,16 @@ module Solid_Cells
                     else
                       call find_closest_wall(i,j,k,iobj,cw)
                       if (cw == -1) ba(i,j,k,1) = 3
+                    endif
+                  endif
+!
+                  if (x(i-4) < xval_m .and. x(i-3) > xval_m) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,1) = 4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == -1) ba(i,j,k,1) = 4
                     endif
                   endif
 !
@@ -2696,6 +2716,16 @@ module Solid_Cells
                     endif
                   endif
 !
+                  if (y(j+4) > yval_p .and. y(j+3) < yval_p) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,2) = -4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == 2) ba(i,j,k,2) = -4
+                    endif
+                  endif
+!
                   if (y(j-1) < yval_m) then
                     if (.not. ba_defined(i,j,k)) then
                       ba(i,j,k,2) = 1
@@ -2723,6 +2753,16 @@ module Solid_Cells
                     else
                       call find_closest_wall(i,j,k,iobj,cw)
                       if (cw == -2) ba(i,j,k,2) = 3
+                    endif
+                  endif
+!
+                  if (y(j-4) < yval_m .and. y(j-3) > yval_m) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,2) = 4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == -2) ba(i,j,k,2) = 4
                     endif
                   endif
 !
@@ -2794,6 +2834,16 @@ module Solid_Cells
                       endif
                     endif
 !
+                    if (z(k+4) > zval_p .and. z(k+3) < zval_p) then
+                      if (.not. ba_defined(i,j,k)) then
+                        ba(i,j,k,3) = -4
+                        ba(i,j,k,4) = iobj
+                      else
+                        call find_closest_wall(i,j,k,iobj,cw)
+                        if (cw == 1) ba(i,j,k,3) = -4
+                      endif
+                    endif
+!
                     if (z(k-1) < zval_m) then
                       if (.not. ba_defined(i,j,k)) then
                         ba(i,j,k,3) = 1
@@ -2821,6 +2871,16 @@ module Solid_Cells
                       else
                         call find_closest_wall(i,j,k,iobj,cw)
                         if (cw == -1) ba(i,j,k,3) = 3
+                      endif
+                    endif
+!
+                    if (z(k-4) < zval_m .and. z(k-3) > zval_m) then
+                      if (.not. ba_defined(i,j,k)) then
+                        ba(i,j,k,3) = 4
+                        ba(i,j,k,4) = iobj
+                      else
+                        call find_closest_wall(i,j,k,iobj,cw)
+                        if (cw == -1) ba(i,j,k,3) = 4
                       endif
                     endif
 !
