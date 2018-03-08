@@ -64,6 +64,7 @@ module Solid_Cells
 !  Particle interpolation scheme
   integer :: particle_interpolate=1     ! 1: linear, 2: pseudo_quadratic, 3: quadratic
   logical :: lparticle_uradonly=.false.  ! Turn on to have linear inteprolation of all but ur
+  logical :: lspecial_rad_int=.false.  ! Turn on to have linear inteprolation of all but ur
 
 !  Time discretization
   logical :: lrk_tvd=.false.
@@ -325,14 +326,16 @@ module Solid_Cells
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
       lrk_tvd, SBP_optimized, &
       particle_interpolate, lparticle_uradonly, &
-      interpol_order_poly, lfilter_solution, af
+      interpol_order_poly, lfilter_solution, af, lspecial_rad_int
 
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
       SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
-      particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af
+      particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
+      lspecial_rad_int
+
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -4599,6 +4602,7 @@ module Solid_Cells
     integer :: tstep_ogrid
     integer :: j
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
+!    integer :: ii,jj,kk
 
   !call  run_tests_ogrid
     if(.not.lrk_tvd) then
@@ -4720,6 +4724,18 @@ module Solid_Cells
 !
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
 !
+!  Set silly values for f_cartesian inside r_int_inner
+!
+! for debugging
+!do ii=l1,l2
+!do jj=m1,m2
+!do kk=n1,n2
+!      if(radius_ogrid(x(ii),y(jj))<(r_int_inner)) then
+!        f_cartesian(ii,jj,:,:)=huge_real
+!      endif
+!enddo
+!enddo
+!enddo
   endsubroutine time_step_ogrid
 !***********************************************************************
     subroutine pde_ogrid(f_og,df)
@@ -8075,6 +8091,7 @@ module Solid_Cells
       intent(out) :: gp
 !
       if(ivar1==iux) then
+        if(ivar2>iuz) call fatal_error('interpolate_particels_ogrid','should not interpolate rho here!')
         if(particle_interpolate==1) then
           call interpolate_linear_ogrid(ivar1,ivar2,xxp,gp(:),inear_glob)
         elseif(particle_interpolate==2) then
@@ -8083,7 +8100,13 @@ module Solid_Cells
             call interpolate_linear_ogrid(ivar1+1,ivar2,xxp,gp(iux+1:),inear_glob)
           else
             call interpolate_pseudoquad(ivar1+1,xxp,gp(iux+1),inear_glob)
+! Only update z-velocity if 3D run
+          endif
+          if(nzgrid_ogrid/=1) then
             call interpolate_linear_ogrid(ivar1+2,ivar2,xxp,gp(iux+2:),inear_glob)
+          else
+            gp(ivar1+2)=0.
+            !call interpolate_linear_ogrid(ivar1+2,ivar2,xxp,gp(iux+2:),inear_glob)
           endif
         elseif(particle_interpolate==3) then
           call interpolate_quad_ogrid(ivar1,xxp,gp(iux),inear_glob)
@@ -8091,14 +8114,33 @@ module Solid_Cells
             call interpolate_linear_ogrid(ivar1+1,ivar2,xxp,gp(iux+1:),inear_glob)
           else
             call interpolate_quad_ogrid(ivar1+1,xxp,gp(iux+1),inear_glob)
-            call interpolate_linear_ogrid(ivar1+2,ivar2,xxp,gp(iux+2:),inear_glob)
+! Only update z-velocity if 3D run
           endif
+          if(nzgrid_ogrid/=1) then
+            call interpolate_linear_ogrid(ivar1+2,ivar2,xxp,gp(iux+2:),inear_glob)
+          else
+            gp(ivar1+2)=0.
+            !call interpolate_linear_ogrid(ivar1+2,ivar2,xxp,gp(iux+2:),inear_glob)
+          endif
+        elseif(particle_interpolate==4) then
+          call interpolate_pseudocubic(ivar1,xxp,gp(iux),inear_glob)
+          call interpolate_pseudocubic(ivar1+1,xxp,gp(iux+1),inear_glob)
+        endif
+!
+! Override interpolation scheme if special handling for particles very close to the surface
+! is activated
+!
+        if(lspecial_rad_int .and. (xglobal_ogrid(inear_glob(1))==xyz0_ogrid(1))) then
+          call interpolate_ogrid_near(iux,iux,xxp,gp(:),inear_glob)
         endif
         tmp=gp(iux)
         gp(iux)=tmp*cos(xxp(2))-gp(iuy)*sin(xxp(2))
         gp(iuy)=tmp*sin(xxp(2))+gp(iuy)*cos(xxp(2))
       else
         call interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+        if(ivar1/=irho) then
+          call fatal_error('interpolate_particels_ogrid','should not interpolate anithing but rho here!')
+        endif
       endif
     
     endsubroutine interpolate_particles_ogrid
@@ -8236,6 +8278,146 @@ module Solid_Cells
       endif
 !
     endsubroutine interpolate_linear_ogrid
+!***********************************************************************
+    subroutine interpolate_ogrid_near(ivar1,ivar2,xxp,gp,inear_glob)
+!
+!  Use information from the overlappint curvilinear grid to interpolate the velocity
+!  of the particle. 
+!  Special handling for particles very close to the surface. 
+!
+!  26-feb-19/Jorgen: Coded
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (4) :: inear_glob
+!
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, f0, f1!g5, g6, g7, g8
+      real :: xp0, yp0, zp0
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      integer :: ix0, iy0, iz0, i 
+      integer :: ix0_proc, iy0_proc, iz0_proc, proc, ind_proc
+!
+      intent(in)  :: ivar1, ivar2, xxp, inear_glob
+      intent(out) :: gp
+!
+      ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
+      ind_proc = ip_proc_pointer(proc+1)
+      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+!
+!  Check if the grid point interval is really correct.
+!
+      if ((xglobal_ogrid(ix0)<=xxp(1) .and. xglobal_ogrid(ix0+1)>=xxp(1) .or. nxgrid_ogrid==1) .and. &
+          (yglobal_ogrid(iy0)<=xxp(2) .and. yglobal_ogrid(iy0+1)>=xxp(2) .or. nygrid_ogrid==1) .and. &
+          (zglobal_ogrid(iz0)<=xxp(3) .and. zglobal_ogrid(iz0+1)>=xxp(3) .or. nzgrid_ogrid==1)) then
+        ! Everything okay
+      else
+        print*, 'interpolate_linear_ogrid: Global interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), xglobal_ogrid(ix0), xglobal_ogrid(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), yglobal_ogrid(iy0), yglobal_ogrid(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), zglobal_ogrid(iz0), zglobal_ogrid(iz0+1)
+        call fatal_error('interpolate_linear_ogrid','point outside of interval for particle interpolation')
+        return
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
+!
+      xp0=0; yp0=0; zp0=0
+      if (nxgrid_ogrid/=1) xp0=xxp(1)-xglobal_ogrid(ix0)
+      if (nygrid_ogrid/=1) yp0=xxp(2)-yglobal_ogrid(iy0)
+      if (nzgrid_ogrid/=1) zp0=xxp(3)-zglobal_ogrid(iz0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!
+      dx1=1./(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
+      dy1=1./(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
+      if(nzgrid_ogrid/=1) then
+        dz1=1./(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
+      else 
+        dz1=1.
+      endif
+!
+      dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+      dxdydz1=dx1*dy1*dz1
+!
+!  Transform global coordinates to coordinates local to the f_ogrid_procs array
+!
+      ix0_proc=ix0-nx_ogrid*ip_proc(ind_proc,1)
+      iy0_proc=iy0-ny_ogrid*ip_proc(ind_proc,2)
+      iz0_proc=iz0-nz_ogrid*ip_proc(ind_proc,3)
+      !TODO TODO : REMOVE THIS
+      if(ivar2>irho) then
+        print*, 'ERROR: Variable not existing on f_ogrid requested'
+      endif
+!
+!  Function values at all corners.
+!
+      g1=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
+      g2=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
+      g3=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      g4=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      ! g5=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
+      ! g6=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
+      ! g7=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
+      ! g8=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
+!
+!  Interpolation formula.
+!  Linear interpolation along theta(y) and z-direction
+!
+      if(nzgrid_ogrid/=1) then
+        call fatal_error('interpolate_ogrid_near','not implemented in 3D')
+      endif
+      
+      f0 = g1 + yp0*dy1*(-g1+g3)
+      f1 = g2 + yp0*dy1*(-g2+g4)
+      
+      if(any(f0/=0.)) then
+        call fatal_error('interpolate_ogrid_near','interpolated value should be zero at the surface')
+      endif
+      
+      gp = f1*xp0*xp0*dx1*dx1
+
+      !gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+      !    xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+      !    yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+      !    xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (lcheck_interpolation) then
+        do i=1,ivar2-ivar1+1
+          if ((gp(i)>max(g1(i),g2(i),g3(i),g4(i))) .or. &
+            (gp(i)<min(g1(i),g2(i),g3(i),g4(i))) .or. &
+            (gp(i)/=gp(i))) then
+            if (gp(i)>max(g1(i),g2(i),g3(i),g4(i))) then
+              print*, 'interpolate_linear_ogrid: interpolated value is LARGER than'
+              print*, 'interpolate_linear_ogrid: a values at the corner points!'
+            elseif (gp(i)<min(g1(i),g2(i),g3(i),g4(i))) then
+              print*, 'interpolate_linear_ogrid: interpolated value is smaller than'
+              print*, 'interpolate_linear_ogrid: a values at the corner points!'
+            elseif (gp(i)/=gp(i)) then
+              print*, 'interpolate_linear_ogrid: interpolated value is NaN'
+            endif
+            print*, 'iproc = ', iproc
+            !print*, 'ipar = ', ipar
+            print*, 'interpolate_linear_ogrid: xxp=', xxp
+            print*, 'interpolate_linear_ogrid: x0, y0, z0=', &
+                xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'interpolate_linear_ogrid: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear_ogrid: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i)
+            print*, '------------------'
+            call fatal_error('interpolate_linear_ogrid','particle velocity interpolation error')
+          endif
+        enddo
+      endif
+!
+    endsubroutine interpolate_ogrid_near
 !***********************************************************************
     subroutine interpolate_pseudoquad(ivar,xxp,gp,inear_glob)
 !
@@ -8377,6 +8559,178 @@ module Solid_Cells
       endif
 !
     endsubroutine interpolate_pseudoquad
+!***********************************************************************
+    subroutine interpolate_pseudocubic(ivar,xxp,gp,inear_glob)
+!
+!  Use information from the overlappint curvilinear grid to interpolate 
+!  flow quantities to the particle, using quadratic inteprolation only
+!  for the radial direction.
+!
+!  31-okt-17/Jorgen: Coded
+!
+      integer :: ivar
+      real, dimension (3) :: xxp
+      real :: gp
+      integer, dimension (4) :: inear_glob
+!
+      integer :: ix0, iy0, iz0, ix1, iy1, iz1, ix2, ix3
+      integer :: ix0_proc, iy0_proc, iz0_proc, proc, ind_proc
+
+      real :: dx10_1, dx21_1, dx20_1, dy_1, dz_1
+      real :: dxx0, dxx1, dxx2, dyy0, dyy1, dzz0, dzz1
+      real :: g000,g100,g010,g110,g200,g210,g001,g101,g011,g111,g201,g211
+      real :: g300,g310,dxx3,dx30_1,dx31_1,dx32_1
+      real :: f00, f01, f10, f02,f03, f11, h0, h1
+
+      intent(in)  :: ivar, xxp, inear_glob
+      intent(out) :: gp
+!
+      ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
+      ind_proc = ip_proc_pointer(proc+1)
+      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+!
+!  Check if the grid point interval is really correct.
+!
+      ix1=ix0+1
+      iy1=iy0+1
+      iz1=iz0+1
+      if ((xglobal_ogrid(ix0)<=xxp(1) .and. xglobal_ogrid(ix1)>=xxp(1) .or. nxgrid_ogrid==1) .and. &
+          (yglobal_ogrid(iy0)<=xxp(2) .and. yglobal_ogrid(iy1)>=xxp(2) .or. nygrid_ogrid==1) .and. &
+          (zglobal_ogrid(iz0)<=xxp(3) .and. zglobal_ogrid(iz1)>=xxp(3) .or. nzgrid_ogrid==1)) then
+        ! Everything okay
+      else
+        print*, 'interpolate_pseudocubic: Global interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), xglobal_ogrid(ix0), xglobal_ogrid(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), yglobal_ogrid(iy0), yglobal_ogrid(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), zglobal_ogrid(iz0), zglobal_ogrid(iz0+1)
+        call fatal_error('interpolate_pseudocubic','point outside of interval for particle interpolation')
+        return
+      endif
+!
+!  Redefine closes grid point in radial direciton, if necessary
+!
+      dxx0=xxp(1)-xglobal_ogrid(ix0)
+      dxx1=xxp(1)-xglobal_ogrid(ix1)
+      if((abs(dxx0)<abs(dxx1)).and.(xglobal_ogrid(ix0)>xyz0_ogrid(1))) then
+        ix1=ix0
+        ix0=ix0-1
+        dxx0=xxp(1)-xglobal_ogrid(ix0)
+        dxx1=xxp(1)-xglobal_ogrid(ix1)
+      endif
+      ix2=ix0+2
+      ix3=ix0+3
+
+      dx10_1=1./(xglobal_ogrid(ix1)-xglobal_ogrid(ix0))
+      dx21_1=1./(xglobal_ogrid(ix2)-xglobal_ogrid(ix1))
+      dx32_1=1./(xglobal_ogrid(ix3)-xglobal_ogrid(ix2))
+
+      dx20_1=1./(xglobal_ogrid(ix2)-xglobal_ogrid(ix0))
+      dx31_1=1./(xglobal_ogrid(ix3)-xglobal_ogrid(ix1))
+
+      dx30_1=1./(xglobal_ogrid(ix3)-xglobal_ogrid(ix0))
+
+      dy_1=  1./(yglobal_ogrid(iy1)-yglobal_ogrid(iy0))
+
+      dxx2=xxp(1)-xglobal_ogrid(ix2)
+      dxx3=xxp(1)-xglobal_ogrid(ix3)
+
+      dyy0=xxp(2)-yglobal_ogrid(iy0)
+      dyy1=xxp(2)-yglobal_ogrid(iy1)
+!
+      ix0_proc=ix0-nx_ogrid*ip_proc(ind_proc,1)
+      iy0_proc=iy0-ny_ogrid*ip_proc(ind_proc,2)
+      iz0_proc=iz0-nz_ogrid*ip_proc(ind_proc,3)
+
+      g000=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc  ,iz0_proc  ,ivar)
+      g100=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc  ,ivar)
+      g010=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc  ,ivar)
+      g110=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc  ,ivar)
+      g200=f_ogrid_procs(ind_proc,ix0_proc+2,iy0_proc  ,iz0_proc  ,ivar)
+      g210=f_ogrid_procs(ind_proc,ix0_proc+2,iy0_proc+1,iz0_proc  ,ivar)
+      g300=f_ogrid_procs(ind_proc,ix0_proc+3,iy0_proc  ,iz0_proc  ,ivar)
+      g310=f_ogrid_procs(ind_proc,ix0_proc+3,iy0_proc+1,iz0_proc  ,ivar)
+!
+!  Simplify if only a 2D-run
+!
+      if(xglobal_ogrid(ix0)<xyz0_ogrid(1)) then
+          call fatal_error('interpolate_pseudocubic',&
+            'illegal inteprolation point, inside cylinder')
+      endif
+      if(nzgrid_ogrid==1) then 
+        f00=g000*dyy1*(-dy_1)+g010*dyy0*dy_1 !x0
+        f01=g100*dyy1*(-dy_1)+g110*dyy0*dy_1 !x1
+        f02=g200*dyy1*(-dy_1)+g210*dyy0*dy_1 !x2
+        f03=g300*dyy1*(-dy_1)+g310*dyy0*dy_1 !x3
+
+        if(xglobal_ogrid(ix0)==xyz0_ogrid(1)) then
+          gp=f00*dxx1*dxx2*(-dx10_1)*(-dx20_1) + &
+             f01*dxx0*dxx2*( dx10_1)*(-dx21_1) + &
+             f02*dxx0*dxx1*( dx20_1)*( dx21_1)
+        else
+          gp=f00*dxx1*dxx2*dxx3*(-dx10_1)*(-dx20_1)*(-dx30_1) + &
+             f01*dxx0*dxx2*dxx3*( dx10_1)*(-dx21_1)*(-dx31_1) + &
+             f02*dxx0*dxx1*dxx3*( dx20_1)*( dx21_1)*(-dx32_1) + &
+             f03*dxx0*dxx1*dxx2*( dx30_1)*( dx31_1)*( dx32_1) 
+        endif
+!         f00=g000*dxx1*dxx2*dx10_1*dx20_1+g100*dxx0*dxx2*dx10_1*(-dx21_1)+g200*dxx0*dxx1*dx20_1*dx21_1
+!         f10=g010*dxx1*dxx2*dx10_1*dx20_1+g110*dxx0*dxx2*dx10_1*(-dx21_1)+g210*dxx0*dxx1*dx20_1*dx21_1
+!         gp=f00*dyy1*(-dy_1)+f10*dyy0*dy_1
+      else
+! NOT IMPLEMENTED IN 3D
+!         dzz0=xxp(3)-zglobal_ogrid(iz0)
+!         dzz1=xxp(3)-zglobal_ogrid(iz1)
+!         dz_1=1./(zglobal_ogrid(iz1)-zglobal_ogrid(iz0))
+! !
+!         g001=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc  ,iz0_proc+1,ivar)
+!         g101=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc+1,ivar)
+!         g011=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc+1,ivar)
+!         g111=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc+1,ivar)
+!         g201=f_ogrid_procs(ind_proc,ix0_proc+2,iy0_proc  ,iz0_proc+1,ivar)
+!         g211=f_ogrid_procs(ind_proc,ix0_proc+2,iy0_proc+1,iz0_proc+1,ivar)
+! !
+!         f00=g000*dxx1*dxx2*dx10_1*dx20_1+g100*dxx0*dxx2*dx10_1*(-dx21_1)+g200*dxx0*dxx1*dx20_1*dx21_1
+!         f10=g010*dxx1*dxx2*dx10_1*dx20_1+g110*dxx0*dxx2*dx10_1*(-dx21_1)+g210*dxx0*dxx1*dx20_1*dx21_1
+!         f01=g001*dxx1*dxx2*dx10_1*dx20_1+g101*dxx0*dxx2*dx10_1*(-dx21_1)+g201*dxx0*dxx1*dx20_1*dx21_1
+!         f11=g011*dxx1*dxx2*dx10_1*dx20_1+g111*dxx0*dxx2*dx10_1*(-dx21_1)+g211*dxx0*dxx1*dx20_1*dx21_1
+! 
+!         h0=f00*dyy1*(-dy_1)+f10*dyy0*dy_1
+!         h1=f01*dyy1*(-dy_1)+f11*dyy0*dy_1
+! 
+!         gp=h0*dzz1*(-dz_1)+h1*dzz0*dz_1
+      endif
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (lcheck_interpolation) then
+        if ((gp>max(g000,g100,g010,g110,g200,g210)) .or. &
+            (gp<min(g000,g100,g010,g110,g200,g210)) .or. &
+            (gp/=gp)) then
+          if (gp>max(g000,g100,g010,g110,g200,g210)) then
+            print*, 'interpolate_pseudocubic: interpolated value is LARGER than'
+            print*, 'interpolate_pseudocubic: a values at the corner points!'
+          elseif (gp<min(g000,g100,g010,g110,g200,g210)) then
+            print*, 'interpolate_pseudocubic: interpolated value is smaller than'
+            print*, 'interpolate_pseudocubic: a values at the corner points!'
+          elseif (gp/=gp) then
+            print*, 'interpolate_pseudocubic: interpolated value is NaN'
+          endif
+          print*, 'iproc = ', iproc
+          !print*, 'ipar = ', ipar
+          print*, 'interpolate_pseudocubic: xxp=', xxp
+          print*, 'interpolate_pseudocubic: x0, y0, z0=', &
+              xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+          print*, 'interpolate_pseudocubic: ivar, gp=', ivar, gp
+          print*, 'interpolate_pseudocubic: g1...g8=', &
+              g000,g100,g010,g110,g200,g210
+          print*, '------------------'
+          call fatal_error('interpolate_pseudocubic','particle velocity interpolation error')
+        endif
+      endif
+!
+    endsubroutine interpolate_pseudocubic
 !***********************************************************************
     subroutine interpolate_quad_ogrid(ivar,xxp,gp,inear_glob)
 !
@@ -8526,8 +8880,14 @@ module Solid_Cells
           print*, 'interpolate_quad_ogrid: xxp=', xxp
           print*, 'interpolate_quad_ogrid: x0, y0, z0=', &
               xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+          print*, 'interpolate_quad_ogrid: x1, y1=', &
+              xglobal_ogrid(ix0+1), yglobal_ogrid(iy0+1)
+          print*, 'interpolate_quad_ogrid: x2, y2=', &
+              xglobal_ogrid(ix0+2), yglobal_ogrid(iy0+2)
           print*, 'interpolate_quad_ogrid: ivar, gp=', ivar, gp
-          print*, 'interpolate_quad_ogrid: g1...g8=', gN(:,:,1)
+          print*, 'g(1,:,1)',gN(1,:,1)
+          print*, 'g(2,:,1)',gN(2,:,1)
+          print*, 'g(3,:,1)',gN(3,:,1)
           print*, '------------------'
           call fatal_error('interpolate_quad_ogrid','particle velocity interpolation error')
         endif
@@ -9089,7 +9449,8 @@ module Solid_Cells
 !  Make sure that no points outside x_ogrid(l2_ogrid) are used
 !
       use mpicomm, only: mpibcast_real
-      real :: dx_outer
+      real :: dx_outer, tmp_rad, min_rad, min_tmp_rad
+      integer :: ii,jj,i3,j3
 
         if(lroot) then
           dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
@@ -9146,6 +9507,7 @@ module Solid_Cells
           r_int_inner_poly=x_ogrid(l1_ogrid+floor(interpol_order_poly*0.5))
           print*, 'Polynomial integration: r_int_outer, r_int_inner, r_int_inner_poly' &
                   , r_int_outer, r_int_inner, r_int_inner_poly
+          print*, 'Polynomial integration: You should no what you are doing...'
         endif
 
 
