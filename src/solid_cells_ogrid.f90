@@ -58,6 +58,8 @@ module Solid_Cells
   logical :: lfilter_solution=.false.
   real, dimension(:,:,:,:), allocatable ::  f_filterH_lowerx,f_filterH_upperx
   real, dimension(:,:,:,:), allocatable ::  f_filterH_lowery,f_filterH_uppery
+!  Free paramter in filter coefficients:
+  real :: af=0.1
   integer, parameter :: filter_Hsize = 10/2-nghost
 !  Particle interpolation scheme
   integer :: particle_interpolate=1     ! 1: linear, 2: pseudo_quadratic, 3: quadratic
@@ -215,6 +217,7 @@ module Solid_Cells
   integer :: max_recv_ip_cart_to_curv                 ! Maximum number of ip recv
   !
   real :: r_int_outer, r_int_inner, r_int_inner_poly
+  logical :: lbidiagonal_derij_ogrid=.false.
 !***************************************************
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 !  Global ogrid
@@ -322,14 +325,14 @@ module Solid_Cells
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
       lrk_tvd, SBP_optimized, &
       particle_interpolate, lparticle_uradonly, &
-      interpol_order_poly, lfilter_solution
+      interpol_order_poly, lfilter_solution, af
 
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
       SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
-      particle_interpolate, lparticle_uradonly, lfilter_solution
+      particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -554,10 +557,8 @@ module Solid_Cells
       if(BDRY5) then 
         if(lroot) print*, 'Cylinder boundary condition: Fifth order boundary closures'
         SBP=.false.
-        lbidiagonal_derij=.false.
       elseif(SBP) then
         if(lroot) print*, 'Cylinder boundary condition: Third order SBP boundary closures'
-        lbidiagonal_derij=.false.
         if(.not. SBP_optimized) then
           D1_SBP(1,:)=(/ -21600./13649.  , 104009./54596.  , 30443./81894.   , & 
                          -33311./27298.  , 16863./27298.   , -15025./163788. , &
@@ -634,6 +635,7 @@ module Solid_Cells
           D2_SBP(2,9) =0.1331275129575954e-4  ; D2_SBP(4,9) =-0.2461732836225921e-3 ; D2_SBP(6,9) = 0.110849963339009e-1
         endif
       else
+        lbidiagonal_derij_ogrid=.true.
         if(lroot) print*, 'WARNING: No cylinder boundary condition set'
       endif
 !
@@ -5911,7 +5913,7 @@ module Solid_Cells
       intent(in) :: f,k,i,j
       intent(out) :: df
 !
-      if (lbidiagonal_derij) then
+      if (lbidiagonal_derij_ogrid) then
         !
         ! Use bidiagonal mixed-derivative operator, i.e.
         ! employ only the three neighbouring points on each of the four
@@ -9124,8 +9126,23 @@ module Solid_Cells
 !
 !  Set limit of the interpolation zone, r_int_inner
 !
-        r_int_inner=xyz0_ogrid(1)
-        if(interpolation_method==5) then
+        if(interpolation_method<5) then
+          min_rad=r_int_outer
+          do ii = l1,l2
+            do jj = m1,m2
+              tmp_rad = radius_ogrid(x(ii),y(jj))
+              if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
+                do i3=-3,3
+                  do j3=-3,3
+                    min_tmp_rad = radius_ogrid(x(ii+i3),y(jj+j3))
+                    if(min_tmp_rad<min_rad) min_rad=min_tmp_rad
+                  enddo
+                enddo
+              endif
+            enddo
+          enddo
+          r_int_inner = min(r_int_outer-dxmax*3,min_rad-0.01*dxmax)
+        else
           r_int_inner_poly=x_ogrid(l1_ogrid+floor(interpol_order_poly*0.5))
           print*, 'Polynomial integration: r_int_outer, r_int_inner, r_int_inner_poly' &
                   , r_int_outer, r_int_inner, r_int_inner_poly
@@ -9424,17 +9441,6 @@ module Solid_Cells
       enddo
     enddo
 !
-!  Set values inside cylinder to something crazy, as these should never
-!  be used in the differentiation
-!
-!    do i=1,l1_ogrid-1
-!      do ivar=1,mfarray_ogrid
-!        f_pflow(i,:,:,ivar) = velocity*10000.
-!      enddo
-!    enddo
-        !lbidiagonal_derij=.true.
-
-!
 !  Compute first order derivatives
 !
     n_ogrid=4
@@ -9718,10 +9724,6 @@ module Solid_Cells
 !
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
-!  Free paramter in filter coefficients:
-!
-    real, parameter :: af=0.1
-!      
     real, dimension(ny_ogrid,4) :: by
     real, dimension(nx_ogrid,4) :: bx
     real, dimension(ny_ogrid), save :: aWy, aPy, aEy
