@@ -485,8 +485,8 @@ module Solid_Cells_Mpicomm
             f_Hlox(:,m1_ogrid:m2_ogrid,:,j)=lbufxi_fi(:,1:ny_ogrid,:,j)   ! set lower filter halo
           enddo
         endif
-        if(ipx<nprocx-1) call mpiwait(isend_rq_tolowx_fi)
-        if(ipx>0) call mpiwait(isend_rq_touppx_fi)
+        if(ipx<nprocx-1) call mpiwait(isend_rq_touppx_fi)
+        if(ipx>0) call mpiwait(isend_rq_tolowx_fi)
       endif
       call mpibarrier
 !
@@ -572,7 +572,7 @@ module Solid_Cells_Mpicomm
         bet=b(1)
         u(1)=r(1)/bet
       else
-        call mpirecv_real(recvBuf,3,ylneigh,110)
+        call mpirecv_real(recvBuf,3,ylneigh,210)
         gam(1)=recvBuf(3)/recvBuf(1)
         bet=b(1)-a(1)*gam(1)
         u(1)=(r(1)-a(1)*recvBuf(2))/bet
@@ -584,8 +584,8 @@ module Solid_Cells_Mpicomm
         u(j)=(r(j)-a(j)*u(j-1))/bet
       enddo
       if(ipy<nprocy-1) then
-        call mpisend_real((/bet,u(n),c(n)/),3,yuneigh,110)
-        call mpirecv_real(recvBuf(1:2),2,yuneigh,111)
+        call mpisend_real((/bet,u(n),c(n)/),3,yuneigh,210)
+        call mpirecv_real(recvBuf(1:2),2,yuneigh,211)
         u(n)=u(n)-recvBuf(1)*recvBuf(2)
       endif
 !
@@ -593,7 +593,7 @@ module Solid_Cells_Mpicomm
         u(j)=u(j)-gam(j+1)*u(j+1)
       enddo
       if(ipy>0) then
-        call mpisend_real((/gam(1),u(1)/),2,ylneigh,111)
+        call mpisend_real((/gam(1),u(1)/),2,ylneigh,211)
       endif
 !
     endsubroutine tridag_parallel_y
