@@ -335,15 +335,18 @@ for tag = 1, num_tags do begin
   if (pos[0] le 0) then continue
   ; Append f-array variable to valid varcontent.
   num_vars += 1
+  ncomps = n_elements(pos)
 
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
     executes = [ exec_str + offsetv ]
     position = [ pos[0] ]
+    components = [ ncomps ]
   end else begin
     selected = [ selected, tag-1 ]
     executes = [ executes, exec_str + offsetv ]
     position = [ position, pos[0] ]
+    components = [ components, ncomps ]
   end
 endfor
 ;
@@ -356,7 +359,7 @@ executes = executes[sort (position)]
 totalvars = 0L
 for var=0,num_vars-1 do begin
   tag = selected[var]
-  totalvars += indices[tag].dims  
+  totalvars += indices[tag].dims*components[var]  
   if totalvars eq mvar+maux then begin
     selected = selected[0:var]
     executes = executes[0:var]
@@ -368,7 +371,7 @@ endfor
 ;  Make an array of structures in which to store their descriptions.
 ;
 varcontent = replicate ({ varcontent_all, variable:'UNKNOWN', idlvar:'dummy', idlinit:'0', $
-    idlvarloc:'dummy_loc', idlinitloc:'0', skip:0 }, totalvars)
+                          idlvarloc:'dummy_loc', idlinitloc:'0', skip:0 }, totalvars)
 ;
 ;  Fill varcontent array.
 ;
@@ -380,7 +383,7 @@ for var = 0, num_vars-1 do begin
   replace = where (inconsistent[*].name eq indices[tag].name)
   name = strmid (indices[tag].name, 1)
   dummy = execute (executes[var])
-  num_components = n_elements (pos)
+  num_components = components[var]
 
   if (strpos (executes[var], 'indgen') ge 0) then begin
     joint += str (num_components)+','
@@ -391,6 +394,7 @@ for var = 0, num_vars-1 do begin
   endelse
 
   for component = 1, num_components do begin
+
     if (pos[component-1] gt 0) then begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
