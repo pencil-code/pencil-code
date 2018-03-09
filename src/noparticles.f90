@@ -10,6 +10,7 @@
 ! CPARAM logical, parameter :: lparticles=.false.
 !
 ! PENCILS PROVIDED rhop;grhop(3);peh
+! PENCILS PROVIDED tauascalar
 ! PENCILS PROVIDED condensationRate
 ! PENCILS PROVIDED waterMixingRatio
 !

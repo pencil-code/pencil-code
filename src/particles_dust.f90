@@ -159,7 +159,6 @@ module Particles
 !
   integer :: init_repeat=0       !repeat particle initialization for distance statistics
 !
-  integer :: itauascalar=0
   integer :: icondensationRate=0
   integer :: iwaterMixingRatio=0
   logical :: lcondensation_rate=.false.
