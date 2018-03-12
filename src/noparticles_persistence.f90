@@ -38,6 +38,7 @@ contains
 !  Dummy.
 !
       use General, only: keep_compiler_quiet
+      real, dimension (mx,my,mz,mfarray) :: f
     endsubroutine initialize_particles_persist
 !***********************************************************************
     subroutine init_particles_persistence(fp)
@@ -52,7 +53,6 @@ contains
     subroutine dpersist_dt(f,df,fp,dfp,ineargrid)
 !
       use General, only: keep_compiler_quiet
-=======
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -105,7 +105,6 @@ contains
     subroutine rprint_particles_persist(lreset,lwrite)
 !
       use General, only: keep_compiler_quiet
-=======
 !
       logical :: lreset
       logical, optional :: lwrite
