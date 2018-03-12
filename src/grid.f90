@@ -861,8 +861,8 @@ module Grid
           ! Grid distance is almost equidistant at boundaries and then decreases
           ! at the middle
           a=0.02
-          b=100
-          c=300
+          b=80
+          c=320
 !
           call grid_profile(xi3  ,grid_func(3),g3,g3der1,g3der2,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
           call grid_profile(xi3lo,grid_func(3),g3lo,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
