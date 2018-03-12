@@ -7320,7 +7320,7 @@ module Magnetic
 !    geta_z: gradient of resistivity at the corresponding z
 !
       use General, only: erfcc
-      use Sub, only: step, der_step, cubic_step, cubic_der_step
+      use Sub, only: step, der_step, cubic_step, cubic_der_step,erfunc
       use EquationOfState, only: cs0
 !
       character(len=labellen), intent(in) :: zdep_profile
@@ -7388,6 +7388,26 @@ module Magnetic
           if (present(geta_z)) then
             geta_z = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_zwidth)
           endif
+!
+! zlayer: eta is peaked within eta_z0 and eta_z1 and decreases outside. 
+! the profile is made exactly the same as the similarly named profile in 
+! the forcing module.
+!
+        case ('zlayer')
+!
+!  Default to spread gradient over ~5 grid cells,
+!
+          if (eta_zwidth == 0.) eta_zwidth = 5.*dz
+          eta_z=eta*eta_jump + (eta-eta*eta_jump)*(.5*(1.+erfunc((z-eta_z0)/eta_zwidth)) &
+                  -.5*(1.+erfunc((z-eta_z1)/eta_zwidth)) )
+!
+! and its gradient
+!
+          if (present(geta_z)) then
+            geta_z=(eta-eta*eta_jump)*(exp(((z-eta_z0)**2)/(eta_zwidth**2)) &
+                                - exp(((z-eta_z1)**2)/(eta_zwidth**2)))/(eta_zwidth*sqrt(pi))
+          endif
+!
 !
 !  Two-step function
 !
