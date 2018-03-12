@@ -599,7 +599,7 @@ module Radiation
             if ((bc_rad1(3)=='R').or.(bc_rad1(3)=='R+F')) then
               if ((ndir==2).and.(idir==1).and.(ipz==ipzstop)) &
                   Irad_refl_xy=Srad(:,:,nnstop)+Qrad(:,:,nnstop)* &
-                  (1.0-f(:,:,nnstop,ikapparho)*dz)
+                  (1.0-f(:,:,nnstop,ikapparho)/dz_1(nnstop))
             endif
 !
 !  enddo from idir.
@@ -709,7 +709,8 @@ module Radiation
       use Debug_IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
+      real,dimension(mz) :: dlength
+      real :: Srad1st,Srad2nd,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
 !
 !  Identifier.
@@ -718,7 +719,12 @@ module Radiation
 !
 !  Line elements.
 !
-      dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+      if (nzgrid/=1) then
+        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz_1)**2)
+      else 
+        dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(nrad/dz)**2)
+      endif
+ 
 !
 !  Set optical depth and intensity initially to zero.
 !
@@ -732,9 +738,10 @@ module Radiation
       do l=llstart,llstop,lsign
 !
         dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
-                    f(l,m,n,ikapparho))*dlength
+                    f(l,m,n,ikapparho))*0.5*(dlength(n-nrad)+dlength(n))
         dtau_p=sqrt(f(l,m,n,ikapparho)* &
-                    f(l+lrad,m+mrad,n+nrad,ikapparho))*dlength
+                    f(l+lrad,m+mrad,n+nrad,ikapparho))* &
+                    0.5*(dlength(n)+dlength(n+nrad))
 !
 !  Avoid divisions by zero when the optical depth is such.
 !
