@@ -264,7 +264,6 @@ endif else $
 ;
 if keyword_set(single) then type='4' else type='type_idl'
 INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
-INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 ;
 ;  For 2-D runs with lwrite_2d=T. Data has been written by the code without
 ;  ghost zones in the missing direction. We add ghost zones here anyway so
@@ -281,7 +280,8 @@ if (keyword_set(run2D)) then begin
     ; 2-D run in (x,y) plane.
     INIT_DATA_LOC = [ 'make_array (mxloc,myloc,', 'type=type_idl)' ]
   endelse
-endif
+endif else $
+  INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 ;
 ;  Parse variables and count total number of variables.
 ;

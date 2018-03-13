@@ -409,9 +409,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   res=''
   content=''
+
   for iv=0L,totalvars-1L do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
-    if (nprocs eq 1 and allprocs ne 2) then begin
+    if (nprocs eq 1 and allprocs ne 2 and not run2D) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
       res=res+','+varcontent[iv].idlvarloc
@@ -491,7 +492,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Setup the coordinates mappings from the processor to the full domain.
 ;
-    if (nprocs gt 1 or allprocs eq 2) then begin
+    if (nprocs gt 1 or run2D or allprocs eq 2) then begin
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
@@ -568,6 +569,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
     close, file
     openr, file, filename, f77=f77, swap_endian=swap_endian
+
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
@@ -581,7 +583,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         idum=0L & readu, file, idum   ; read Fortran record marker as next record is sequentially written
       endif
       readu, file, t, x, y, z, dx, dy, dz
-    endif else if (allprocs ne 2 and nprocs eq 1) then begin
+    endif else if (allprocs ne 2 and nprocs eq 1 and not run2D) then begin
       ; single processor distributed file
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay
@@ -756,9 +758,11 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
     merge_yin_yang, dim.m1, dim.m2, dim.n1, dim.n2, y, z, dy, dz, yz, inds, yghosts=yghosts, zghosts=zghosts
 ;
-    if keyword_set(sphere) then begin
-      triangulate, yz[0,*], yz[1,*], triangles, sphere=sphere_data    ; not operational, IDL bug?
-      sphere_data=''
+    if keyword_set(sphere) then begin    ; not operational
+      ;lon=reform(yz[1,*]) & lat=reform(yz[0,*]) & fval=indgen((size(lon))[1])
+      ;triangulate, lon, lat, triangles, sphere=sphere_data, fval=fval
+      triangulate, yz[0,*], yz[1,*], triangles
+      sphere_data=0 & fval=0
     endif else $
       triangulate, yz[0,*], yz[1,*], triangles
 ;
@@ -813,7 +817,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     tagnames += ",'yz','triangles'" 
     if is_defined(yghosts) then tagnames += ",'yghosts'"
     if is_defined(zghosts) then tagnames += ",'zghosts'"
-    if keyword_set(sphere) then tagnames += ",'sphere_data'"
+    if keyword_set(sphere) then tagnames += ",'sphere_data', 'fval'"
   endif 
   tagnames += arraytostring(tags,QUOTE="'") 
 ;
@@ -829,7 +833,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     makeobject += ",yz,triangles"
     if is_defined(yghosts) then makeobject += ",yghosts"
     if is_defined(zghosts) then makeobject += ",zghosts"
-    if keyword_set(sphere) then makeobject += ",sphere_data"
+    if keyword_set(sphere) then makeobject += ",sphere_data,fval"
     mergevars=arraytostring(variables+'_merge')
   endif
 ;
