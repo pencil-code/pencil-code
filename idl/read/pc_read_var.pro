@@ -440,10 +440,16 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   content = strmid(content,2)
   if (not keyword_set(quiet)) then begin
+    dmx = dim.mx
+    dmy = dim.my
+    dmz = dim.mz
+    if (run2D and (nx eq 1)) then dmx = 1
+    if (run2D and (ny eq 1)) then dmy = 1
+    if (run2D and (nz eq 1)) then dmz = 1
     print, ''
     print, 'The file '+varfile+' contains: ', content
     print, ''
-    print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
+    print, 'The grid dimension is ', dmx, dmy, dmz
     print, ''
   endif
 ;
