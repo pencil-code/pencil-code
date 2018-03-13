@@ -847,9 +847,13 @@ module Particles_radius
               total_surface_area(ix) = total_surface_area(ix)+ &
                   4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
               np_total(ix) = np_total(ix)+np_swarm
-            elseif (lascalar .or. lcondensation_simplified) then
+!            elseif (lascalar .or. lcondensation_simplified) then
+            elseif (lfirst .and. ldt .and. lascalar) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
-              if (lascalar) tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
+!              if (lascalar) tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
+              tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
+            elseif (lfirst .and. ldt .and. lcondensation_simplified) then
+              tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
             endif
           enddo
 !
@@ -866,11 +870,17 @@ module Particles_radius
                     pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
               endif
             enddo
-          elseif (lascalar .or. lcondensation_simplified) then
+!          elseif (lascalar .or. lcondensation_simplified) then
+          elseif (lfirst .and. ldt .and. lascalar) then
             do ix = 1,nx
 !              if (lascalar) tau_evaporation(ix) = -ap0(1)**2/(2*G_condensation*ssat0)
 !              if (lcondensation_simplified) tau_evaporation(ix) = -ap0(1)**2/(2*GS_condensation)
-              if (lcondensation_simplified) tau_evaporation1(ix) = -(2*GS_condensation)/ap0(1)**2
+!              if (lcondensation_simplified) tau_evaporation1(ix) = -(2*GS_condensation)/ap0(1)**2
+              dt1_condensation(ix) = max(tau_phase1(ix), tau_evaporation1(ix))
+            enddo
+          elseif (lfirst .and. ldt .and. lcondensation_simplified) then  
+            do ix = 1,nx
+              tau_evaporation1(ix) = -(2*GS_condensation)/ap0(1)**2
               dt1_condensation(ix) = max(tau_phase1(ix), tau_evaporation1(ix))
             enddo
           endif
