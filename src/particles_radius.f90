@@ -885,7 +885,7 @@ module Particles_radius
               endif
             enddo
           elseif (lfirst .and. ldt .and. ldt_condensation_off) then
-            dt1_condensation = dt1_max*cdtpc
+              dt1_condensation = 0.
           endif
         endif
 !
