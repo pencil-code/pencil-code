@@ -90,7 +90,7 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status, sphere=sphere,single=single
+    exit_status=exit_status, sphere=sphere,single=single,toyang=toyang
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -115,6 +115,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcz, 'none'
   default, validate_variables, 1
   default, single, 0
+  default, toyang, 0
 ;
   if (arg_present(exit_status)) then exit_status=0
   default, reduced, 0
@@ -211,8 +212,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if tag_exists(param,'LYINYANG') then $
     if (param.lyinyang) then yinyang=1
 ;
-  if yinyang then $
+  if yinyang then begin
     print, 'This is a Yin-Yang grid run. Data are retrieved both in separate and in merged arrays.'
+    print, 'Merged data refer to the basis of the '+(toyang ? 'Yang':'Yin')+' grid.'
+  endif
 ;
 ; Set the coordinate system.
 ;
@@ -443,9 +446,11 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     dmx = dim.mx
     dmy = dim.my
     dmz = dim.mz
-    if (run2D and (nx eq 1)) then dmx = 1
-    if (run2D and (ny eq 1)) then dmy = 1
-    if (run2D and (nz eq 1)) then dmz = 1
+    if (run2D) then begin
+      if (nx eq 1) then dmx = 1
+      if (ny eq 1) then dmy = 1
+      if (nz eq 1) then dmz = 1
+    endif
     print, ''
     print, 'The file '+varfile+' contains: ', content
     print, ''
@@ -803,12 +808,12 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Transformation of theta and phi components in Yang grid.
 ;  Merged variables are fully trimmmed.
 ;
-        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1])' )
-        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,0],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
+        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1-toyang])' )
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,toyang],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
                                       '[(reform(transpose(trformed,[0,2,1,3]),nx,ny*nz,3))[*,inds,*]]]' ) 
       endif else $
-        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,0],[0,2,1]),nx,ny*nz)],'+ $ 
-                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1],[0,2,1]),nx,ny*nz))[*,inds]]]' )
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,toyang],[0,2,1]),nx,ny*nz)],'+ $ 
+                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1-toyang],[0,2,1]),nx,ny*nz))[*,inds]]]' )
     endfor
   endif
 ;
