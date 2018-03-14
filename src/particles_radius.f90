@@ -44,6 +44,7 @@ module Particles_radius
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
   logical :: lcondensation_rate=.false., ldt_evaporation=.false.
+  logical :: ldt_condensation=.false., ldt_condensation_off=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
@@ -72,7 +73,8 @@ module Particles_radius
       lconstant_radius_w_chem, &
       reinitialize_ap, initap, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
-      ltauascalar, modified_vapor_diffusivity, ldt_evaporation
+      ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
+      ldt_condensation, ldt_condensation_off
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -847,10 +849,10 @@ module Particles_radius
               total_surface_area(ix) = total_surface_area(ix)+ &
                   4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
               np_total(ix) = np_total(ix)+np_swarm
-            elseif (lfirst .and. ldt .and. lascalar) then
+            elseif (lfirst .and. ldt .and. lascalar .and. ldt_condensation) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
-               if (ldt_evaporation) tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
-            elseif (lfirst .and. ldt .and. lcondensation_simplified) then
+              if (ldt_evaporation) tau_evaporation1(ix) = -(2*G_condensation*f(ix,m,n,issat))/fp(k,iap)**2
+            elseif (lfirst .and. ldt .and. lcondensation_simplified .and. ldt_condensation) then
               tau_phase1(ix) = tau_phase1(ix)+4.0*pi*modified_vapor_diffusivity*fp(k,iap)*fp(k, inpswarm)
             endif
           enddo
@@ -868,12 +870,12 @@ module Particles_radius
                     pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
               endif
             enddo
-          elseif (lfirst .and. ldt .and. lascalar) then
+          elseif (lfirst .and. ldt .and. lascalar .and. ldt_condensation) then
             do ix = 1,nx
               dt1_condensation(ix) = tau_phase1(ix)
               if (ldt_evaporation) dt1_condensation(ix) = max(tau_phase1(ix), tau_evaporation1(ix))
             enddo
-          elseif (lfirst .and. ldt .and. lcondensation_simplified) then  
+          elseif (lfirst .and. ldt .and. lcondensation_simplified .and. ldt_condensation) then  
             do ix = 1,nx
               if (ldt_evaporation) then
                 tau_evaporation1(ix) = -(2*GS_condensation)/ap0(1)**2
@@ -882,6 +884,8 @@ module Particles_radius
                 dt1_condensation(ix) = tau_phase1(ix)
               endif
             enddo
+          elseif (lfirst .and. ldt .and. ldt_condensation_off) then
+            dt1_condensation = dt1_max*cdtpc
           endif
         endif
 !
