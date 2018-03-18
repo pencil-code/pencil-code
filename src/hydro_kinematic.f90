@@ -76,7 +76,7 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
-  real :: rp,gamma_dg11=0.4
+  real :: rp,gamma_dg11=0.4, relhel_uukin=1.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
@@ -85,7 +85,7 @@ module Hydro
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
-      ampl_kinflow, &
+      ampl_kinflow, relhel_uukin, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
@@ -1002,6 +1002,21 @@ module Hydro
           p%uu(:,1)= fac*sin(argx)*cos(argy)*cos(argz)
           p%uu(:,2)= fac*cos(argx)*sin(argy)*cos(argz)
           p%uu(:,3)=fac2*cos(argx)*cos(argy)*sin(argz)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  modified Taylor-Green flow with (y,z,x) -> tilde(z,x,y), i.e., the x direction became z
+!
+      case ('Beltrami-x')
+        if (headtt) print*,'Beltrami-x motion; kx_uukin=',kx_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac=ampl_kinflow
+          argx=kx_uukin*x(l1:l2)+phasex_uukin
+          argy=ky_uukin*y(m)+phasey_uukin
+          p%uu(:,1)= 0.
+          p%uu(:,2)=fac*sin(argx)*relhel_uukin
+          p%uu(:,3)=fac*cos(argx)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
