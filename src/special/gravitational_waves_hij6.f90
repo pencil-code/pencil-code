@@ -237,8 +237,8 @@ module Special
 !
 !  give a warning if cs0**2=1
 !
-      if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
-          'cs0 should probably not be unity')
+!     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
+!         'cs0 should probably not be unity')
 !
       call keep_compiler_quiet(f)
 !
@@ -334,6 +334,12 @@ module Special
       intent(in) :: f
       intent(inout) :: p
       integer :: i, j, ij
+      logical :: lreynolds
+!
+!  Compute Reynolds stress when lhydro or lhydro_kinematic,
+!  provided lkinGW=T
+!
+      lreynolds=(lhydro.or.lhydro_kinematic).and.lkinGW
 !
 !  Construct stress tensor; notice opposite signs for u and b.
 !
@@ -341,13 +347,13 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lhydro.and.lkinGW) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
+        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
-          if (lhydro.and.lkinGW) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
+          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
         endif
       enddo
