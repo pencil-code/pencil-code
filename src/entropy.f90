@@ -79,6 +79,7 @@ module Energy
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
   real :: ss_volaverage=0.
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
+  real :: xbot_chit1=0.0, xtop_chit1=0.0
   real :: zz1=impossible, zz2=impossible
   real :: zz1_fluct=impossible, zz2_fluct=impossible
   real :: rescale_TTmeanxy=1.
@@ -213,7 +214,7 @@ module Energy
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
       Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct, &
-      chi_cspeed
+      chi_cspeed,xbot_chit1, xtop_chit1
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -5774,7 +5775,7 @@ module Energy
 !
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: heat,prof,prof2
+      real, dimension (nx) :: heat,prof,prof2,cs2_tmp
       real, dimension (nx), save :: cs2cool_x
       real :: prof1
 !
@@ -5843,6 +5844,16 @@ module Energy
         else
           heat = heat - cool*prof*(p%cs2-cs2cool_x)
         endif
+!
+!  Cool (and not heat) toward a specified profile stored in a file
+!
+      case ('shell_mean_yz2')
+        if (it == 1) call read_cooling_profile_x(cs2cool_x)
+        if (rcool==0.0) rcool=r_ext
+        prof = step(x(l1:l2),rcool,wcool)
+        cs2_tmp=p%cs2-cs2cool_x
+        where (cs2_tmp < 0.) cs2_tmp=0.
+        heat = heat - cool*prof*(p%cs2-cs2cool_x)
 !
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
 !  of temperature proportional to cos(theta) at each depth. deltaT gives
@@ -6862,13 +6873,13 @@ module Energy
 !
 !  If zz1_fluct and/or zz2_fluct are not set, use z1 and z2 instead.
 !
-      if (zz1 == impossible) then
+      if (zz1_fluct == impossible) then
           zbot=z1
       else
           zbot=zz1_fluct
       endif
 !
-      if (zz2 == impossible) then
+      if (zz2_fluct == impossible) then
           ztop=z2
       else
           ztop=zz2_fluct
@@ -6881,7 +6892,8 @@ module Energy
       endif
 !
       if (lgravx) then
-        chit_prof_fluct = 1.
+        chit_prof_fluct = 1. + (chit_fluct_prof1-1)*step(x(l1:l2),xbot_chit1,-widthss) &
+                             + (chit_fluct_prof2-1)*step(x(l1:l2),xtop_chit1,widthss)
       endif
 !
     endsubroutine chit_profile_fluct
@@ -6919,7 +6931,9 @@ module Energy
       endif
 !
       if (lgravx) then
-        glnchit_prof_fluct(:,1:3) = 0.
+        glnchit_prof_fluct(:,1) = (chit_fluct_prof1-1)*der_step(x(l1:l2),xbot_chit1,-widthss)&
+                                + (chit_fluct_prof2-1)*der_step(x(l1:l2),xtop_chit1,widthss)
+        glnchit_prof_fluct(:,2:3) = 0.
       endif
 !
     endsubroutine gradlogchit_profile_fluct
