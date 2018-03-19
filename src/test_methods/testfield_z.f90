@@ -68,8 +68,8 @@ module Testfield
        ltest_uxb,ltest_jxb, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest,tau_aatest, &  
-!   
+       rescale_aatest,tau_aatest, &
+!
 !                                         the following parameter relevant for artificically introduced 2nd order in time equation for a_test for suppressing
 !                                         unstable eigenmodes of the homogeneous equations
 !
@@ -594,8 +594,8 @@ module Testfield
 !
 !  put diffusion into daatest
 !
-        call calc_diffusive_part(f,iaxtest,daatest)
-        if (lcomplex) call calc_diffusive_part(f,iaxtest2,daatest2)
+        call calc_diffusive_part(f,p,iaxtest,daatest)
+        if (lcomplex) call calc_diffusive_part(f,p,iaxtest2,daatest2)
 !
 !  add u' \times Btest (in iterative procedure only for first problem)
 !
