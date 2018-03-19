@@ -658,7 +658,8 @@ module Special
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lcompute_gran.and.Bavoid>0.0).or.Bz_flux /= 0.) call set_B2(f)
+        if ((lcompute_gran.and.(Bavoid>0.0 .or. quench>0.0)) &
+             .or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
@@ -3426,7 +3427,7 @@ module Special
             +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
       endif
 !
-      b2 = bbx*bbx + bby*bby + bbz*bbz
+      B2 = bbx*bbx + bby*bby + bbz*bbz
       Bzflux = sum(abs(bbz))
 !
     endsubroutine set_B2
@@ -3565,7 +3566,7 @@ module Special
       do i=1,ny
         q(:,i) = cubic_step(log10(beta(:,i)),0.,1.)*(1.-quench)+quench
       enddo
-      !
+!
       Ux = Ux * q
       Uy = Uy * q
 !
