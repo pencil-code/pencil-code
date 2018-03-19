@@ -2668,8 +2668,12 @@ module Special
 ! additional parameters are
 !         Bavoid =0.01 : the magn. field strenght in Tesla at which
 !                        no granule is allowed
-!         nvor = 5.    : the strength by which the vorticity is
-!                        enhanced
+!
+!         increase_vorticity = 15. : the strength by which the vorticity is
+!                                    enhanced
+!
+!         quench = 0.03 : factor by which the granular velocity
+!                         is reduced at low beta
 !
 !  11-may-10/bing: coded
 !
@@ -3545,11 +3549,11 @@ module Special
 !
       if (ltemperature.and..not.ltemperature_nolog) then
         if (ldensity_nolog) then
-          call fatal_error('solar_corona', &
-              'uudriver only implemented for ltemperature=true')
+          call fatal_error('coronae', &
+              'footpoint_quneching not only implemented for ldensity_nolog=true')
         else
           pp =gamma_m1*gamma1/cp1 * &
-              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnrho))
+              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
         endif
       else
         pp=gamma1*cs20*exp(lnrho0)
