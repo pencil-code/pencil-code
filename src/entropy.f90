@@ -1272,8 +1272,7 @@ module Energy
                 center2_x,center2_y,center2_z)
           case ('shock2d')
             if (ldensity_nolog) &
-              call fatal_error('init_energy','shock2d only applicable for
-ogarithmic density')
+              call fatal_error('init_energy','shock2d only applicable for logarithmic density')
             call shock2d(f)
           case ('isobaric')
 !
