@@ -1272,7 +1272,8 @@ module Energy
                 center2_x,center2_y,center2_z)
           case ('shock2d')
             if (ldensity_nolog) &
-              call fatal_error('init_energy','shock2d only applicable for logarithmic density')
+              call fatal_error('init_energy','shock2d only applicable for
+ogarithmic density')
             call shock2d(f)
           case ('isobaric')
 !
@@ -2435,6 +2436,7 @@ module Energy
         lpenc_requested(i_visc_heat)=.true.
         if (pretend_lnTT) lpenc_requested(i_cv1)=.true.
       endif
+      if (lthdiff_Hmax) lpenc_diagnos(i_cv1)=.true.
       if (lcalc_cs2mean) lpenc_requested(i_cv1)=.true.
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1)=.true.
@@ -2961,7 +2963,7 @@ module Energy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
+      real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2,ss0
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
       real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
@@ -3136,8 +3138,12 @@ module Energy
 !  Enforce maximum heating rate timestep constraint
 !
       if (lfirst.and.ldt) then
-        if (lthdiff_Hmax) dt1_max=max(dt1_max,abs(df(l1:l2,m,n,iss)/p%ee/cdts))
-        dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
+        if (lthdiff_Hmax) then 
+          ss0 = abs(df(l1:l2,m,n,iss))
+          dt1_max=max(dt1_max,ss0*p%cv1/cdts)
+        else
+          dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
+        endif
       endif
 !
 !  Calculate entropy related diagnostics.
@@ -3147,10 +3153,21 @@ module Energy
         uT=1. !(AB: for the time being; to keep compatible with auto-test
         if (idiag_dtchi/=0) &
             call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        if (idiag_dtH/=0) call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+        if (idiag_dtH/=0) then 
+          if (lthdiff_Hmax) then
+            call max_mn_name(ss0*p%cv1/cdts,idiag_dtH,l_dt=.true.)
+          else
+            call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+          endif
+        endif
         if (idiag_Hmax/=0)   call max_mn_name(Hmax/p%ee,idiag_Hmax)
-        if (idiag_tauhmin/=0) &
-            call max_mn_name(df(l1:l2,m,n,iss)*p%cv1,idiag_tauhmin,lreciprocal=.true.)
+        if (idiag_tauhmin/=0) then
+          if (lthdiff_Hmax) then
+            call max_mn_name(ss0*p%cv1,idiag_tauhmin,lreciprocal=.true.)
+          else
+            call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
+          endif
+        endif
         if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
