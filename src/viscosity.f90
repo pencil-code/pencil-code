@@ -2159,7 +2159,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: Hmax
+      real, dimension (nx),intent(inout) :: Hmax
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
 !  of the entropy (both with and without pretend_lnTT), or of
