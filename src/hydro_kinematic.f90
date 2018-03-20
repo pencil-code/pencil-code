@@ -1011,7 +1011,7 @@ module Hydro
         if (headtt) print*,'Beltrami-x motion; kx_uukin=',kx_uukin
 ! uu
         if (lpenc_loc(i_uu)) then
-          fac=ampl_kinflow
+          fac=ampl_kinflow*cos(omega_kinflow*t)
           argx=kx_uukin*x(l1:l2)+phasex_uukin
           argy=ky_uukin*y(m)+phasey_uukin
           p%uu(:,1)= 0.
