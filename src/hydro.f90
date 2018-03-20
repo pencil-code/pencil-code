@@ -219,7 +219,7 @@ module Hydro
 !
 !  Option to constrain time for large df.
 !
-  real :: cdt_tauf=1.0, ulev_cgs=1.0, ulev=impossible
+  real :: cdt_tauf=1.0, ulev=1.0
   logical :: lcdt_tauf=.false.
 !
   namelist /hydro_run_pars/ &
@@ -2993,18 +2993,11 @@ module Hydro
 !  Fred: Option to constrain timestep for large forces
 !
       if (lfirst.and.ldt.and.lcdt_tauf) then
-        if (ulev==impossible) ulev=ulev_cgs/unit_velocity
         do j=1,3
           ftot=abs(df(l1:l2,m,n,iux+j-1))
-          uus =abs(p%uu(:,j))
-          where (uus <= ulev) uus = ulev
-          dt1_max=max(dt1_max,ftot/(cdt_tauf*uus))
-          Fmax=max(Fmax,ftot/uus)
+          dt1_max=max(dt1_max,ftot/(cdt_tauf*ulev))
+          Fmax=max(Fmax,ftot/ulev)
         enddo
-       ! call dot2(df(l1:l2,m,n,iux:iuz),ftot,FAST_SQRT=.true.)
-       ! call dot2(p%uu,uus,FAST_SQRT=.true.)
-       ! where (uus <= ulev) uus = ulev
-       ! dt1_max=max(dt1_max,ftot/(cdt_tauf*uus))
       endif
 !
 !  write slices for output in wvid in run.f90
