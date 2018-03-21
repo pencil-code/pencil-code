@@ -468,7 +468,7 @@ module Hydro
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
-      real :: Balpha
+      real :: Balpha, ABC_A1, ABC_B1, ABC_C1
       real :: ro
       real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
@@ -520,9 +520,12 @@ module Hydro
         if (headtt) print*,'ABC flow'
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=ABC_A*sin(kz_uukin*z(n))    +ABC_C*cos(ky_uukin*y(m))
-          p%uu(:,2)=ABC_B*sin(kx_uukin*x(l1:l2))+ABC_A*cos(kz_uukin*z(n))
-          p%uu(:,3)=ABC_C*sin(ky_uukin*y(m))    +ABC_B*cos(kx_uukin*x(l1:l2))
+          ABC_A1=ABC_A*cos(omega_kinflow*t+phasex_uukin)
+          ABC_B1=ABC_B*cos(omega_kinflow*t+phasey_uukin)
+          ABC_C1=ABC_C*cos(omega_kinflow*t+phasez_uukin)
+          p%uu(:,1)=ABC_A1*sin(kz_uukin*z(n))    +ABC_C1*cos(ky_uukin*y(m))
+          p%uu(:,2)=ABC_B1*sin(kx_uukin*x(l1:l2))+ABC_A1*cos(kz_uukin*z(n))
+          p%uu(:,3)=ABC_C1*sin(ky_uukin*y(m))    +ABC_B1*cos(kx_uukin*x(l1:l2))
         endif
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -921,9 +924,10 @@ module Hydro
       case ('TG')
         if (headtt) print*,'Taylor-Green flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
 ! uu
+        fac=2.*cos(omega_kinflow*t)
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=+2.*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-          p%uu(:,2)=-2.*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
           p%uu(:,3)=+0.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -1282,7 +1286,7 @@ module Hydro
       case ('potential')
         if (headtt) print*,'potential; ampl_kinflow=', ampl_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
-        fac=ampl_kinflow
+        fac=ampl_kinflow*cos(omega_kinflow*t)
         cxt=cx_uukin*t
         cyt=cy_uukin*t
         czt=cz_uukin*t
