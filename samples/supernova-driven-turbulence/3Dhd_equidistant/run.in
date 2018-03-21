@@ -6,7 +6,7 @@
   cvsid='$Id$',
 !  nt=645000, it1=250, isave=1000, it1d=5000, itorder=3, tmax=0.5
   nt=10, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.5
-  cdt=0.3, cdtv=0.3, dtmin=1e-13, cdts=0.2
+  cdt=0.2, cdtv=0.2, dtmin=1e-11, cdts=0.1
   dsnap=.0005, dvid=.00025, slice_position='m' 
   !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo? 
   !dsnap=2., dvid=2., slice_position='m' 
@@ -18,36 +18,49 @@
 &eos_run_pars
 /
 &hydro_run_pars
+  lupw_uu=T
   Omega=25.0
-  cdt_tauf=0.2
+  cdt_tauf=1.0
   lcdt_tauf=T
-  ulev = 0.5
+  ulev = 20.0
+/
+&viscosity_run_pars
+  ivisc='nu-shock'
+  nu_shock=2.0
+  !ivisc='nu-shock', 'nu-const'
+  !nu_shock=2.0, nu=1e-6
 /
 &density_run_pars
-  diffrho=6e-4
-  diffrho_shock=1.0
-  lmassdiff_fixkin=T
-  idiff='cspeed','shock'
+  lupw_rho=T
+  idiff='shock'
+  diffrho_shock=2.0
+  !idiff='normal', 'shock'
+  !diffrho_shock=2.0, diffrho=1e-6
+  lmassdiff_fixmom=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-cspeed' ,'shock'
-  chi_cs=6e-4
-  chi_shock=2.0
+  lupw_ss=T
+  iheatcond='shock'
+  chi_shock=0.01
+  !iheatcond='chi-const' ,'shock'
+  !chi_shock=0.01, chi_cs=1e-6
   lthdiff_Hmax=T
 /
 &interstellar_run_pars
   laverage_SN_heating=T
   width_SN = 0.02
   lSN_scale_rad=T
-  N_mass=100.0
-  rho_SN_max=10.
-  frac_kin=0.25
+  N_mass=60.0
+  rfactor_SN=5.
+  rho_SN_max=35.
+  frac_kin=0.0
   frac_ecr=0.0
-  lSN_ecr=F
-  mass_width_ratio=0.9
-  thermal_profile='gaussian'
+  mass_width_ratio=1.0
+  mass_profile='gaussian3'
+  energy_width_ratio=1.0
+  thermal_profile='gaussian3'
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T 
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
@@ -62,14 +75,6 @@
 &shear_run_pars
   Sshear = -25.0
 /
-&viscosity_run_pars
-  ivisc='nu-cspeed','nu-shock'
-  nu=4e-3,nu_shock=2.0
-/
-&shear_run_pars
-  Sshear=-25.0
-/
 &shock_run_pars
-  lshock_first=T
-  lshock_max5=F
+  ishock_max=2
 /
