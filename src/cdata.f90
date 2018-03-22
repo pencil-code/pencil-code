@@ -291,8 +291,7 @@ module Cdata
   integer :: ispx=0,ispy=0,ispz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: ihij,igij
-  integer :: ihhT=0,ihhX=0,iggT=0,iggX=0
-  integer :: istressT,istressX
+  integer :: ihhT=0,ihhX=0,iggT=0,iggX=0,iStressT=0,iStressX=0,iStress_ij=0
   integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
   integer :: iqx=0,iqy=0,iqz=0,iqq=0
