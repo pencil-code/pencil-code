@@ -528,6 +528,11 @@ module Hydro
           p%uu(:,2)=ABC_B1*sin(kx_uukin*x(l1:l2))+ABC_A1*cos(kz_uukin*z(n))
           p%uu(:,3)=ABC_C1*sin(ky_uukin*y(m))    +ABC_B1*cos(kx_uukin*x(l1:l2))
         endif
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=ABC_A1*kz_uukin*sin(kz_uukin*z(n))    +ABC_C1*cos(ky_uukin*y(m))
+          p%oo(:,2)=ABC_B1*kx_uukin*sin(kx_uukin*x(l1:l2))+ABC_A1*kz_uukin*cos(kz_uukin*z(n))
+          p%oo(:,3)=ABC_C1*ky_uukin*sin(ky_uukin*y(m))    +ABC_B1*kx_uukin*cos(kx_uukin*x(l1:l2))
+        endif
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -932,6 +937,11 @@ module Hydro
           p%uu(:,3)=+0.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          p%oo(:,2)=-fac*kz_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          p%oo(:,3)=fac*(kx_uukin+ky_uukin)*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+        endif
 !
 !  modified Taylor-Green flow
 !
@@ -1022,6 +1032,11 @@ module Hydro
           p%uu(:,1)= 0.
           p%uu(:,2)=fac*sin(argx)*relhel_uukin
           p%uu(:,3)=fac*cos(argx)
+        endif
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=0.
+          p%oo(:,2)=fac*kx_uukin*sin(argx)
+          p%oo(:,3)=fac*kx_uukin*cos(argx)*relhel_uukin
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !

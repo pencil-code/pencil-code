@@ -814,6 +814,8 @@
   \multicolumn{2}{c}{Module \file{heatflux.f90}} \\
 \midrule
   \var{dtspitzer} & Spitzer heat conduction time step \\
+  \var{dtq}       & heatflux time step \\
+  \var{dtq2}      & heatflux time step due to tau \\
   \var{qmax}      & $\max(|\qv|)$ \\
   \var{qxmin}     & $\min(|q_x|)$ \\
   \var{qymin}     & $\min(|q_y|)$ \\
@@ -822,6 +824,8 @@
   \var{qymax}     & $\max(|q_y|)$ \\
   \var{qzmax}     & $\max(|q_z|)$ \\
   \var{qrms}      & rms of heat flux vector \\
+  \var{qsatmin}   & minimum of qsat/qabs \\
+  \var{qsatrms}   & rms of qsat/abs \\
 \midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
