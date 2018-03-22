@@ -465,6 +465,7 @@ module Hydro
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx, pom2
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
+      real, dimension(nx) :: random_r, random_p, random_tmp
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
@@ -1384,6 +1385,24 @@ module Hydro
           lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=fac
+!
+!  Random flow that is delta correlated in space and time.
+!
+      case ('delta_correlated')
+        if (headtt) print*,'delta_correlated; ampl_kinflow=',ampl_kinflow
+        if (lpenc_loc(i_uu)) then
+          do ii=1,3
+            if (modulo(ii-1,2)==0) then
+              call random_number_wrapper(random_r)
+              call random_number_wrapper(random_p)
+              random_tmp=sqrt(-2*log(random_r))*sin(2*pi*random_p)
+            else
+              random_tmp=sqrt(-2*log(random_r))*cos(2*pi*random_p)
+            endif
+            p%uu(:,ii)=one_over_sqrt3*ampl_kinflow*random_tmp
+          enddo
+          lupdate_aux=.true.
+        endif
 !
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
