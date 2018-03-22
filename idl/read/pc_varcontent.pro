@@ -102,8 +102,6 @@ indices = [ $
   { name:'ihhX', label:'hhX', dims:1 }, $
   { name:'ihij', label:'hij', dims:6 }, $
   { name:'igij', label:'gij', dims:6 }, $
-  { name:'istressT', label:'stressT', dims:1 }, $
-  { name:'istressX', label:'stressX', dims:1 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
   { name:'ip12', label:'Polymer Tensor 12', dims:1 }, $
   { name:'ip13', label:'Polymer Tensor 13', dims:1 }, $
@@ -180,6 +178,9 @@ indices_aux = [ $
   { name:'ihypres', label:'Hyperresistivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 }, $
+  { name:'iStress_ij', label:'Str', dims:6 }, $
+  { name:'iStressT', label:'StT', dims:1 }, $
+  { name:'iStressX', label:'StX', dims:1 }, $
   { name:'ipsi', label:'Streamfunction', dims:1 }, $
   { name:'isigma', label:'Column density', dims:1 }, $
   { name:'imdot', label:'Mass accretion rate', dims:1 }, $
