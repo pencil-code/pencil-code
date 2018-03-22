@@ -99,13 +99,14 @@ module Special
   real :: nscale_factor=0., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
+  logical :: lStress_as_aux=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
-    inithij, initgij, amplhij, amplgij, &
+    inithij, initgij, amplhij, amplgij, lStress_as_aux, &
     kx_hij, ky_hij, kz_hij, &
     kx_gij, ky_gij, kz_gij
 !
@@ -114,7 +115,7 @@ module Special
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
     diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
-    lkinGW
+    lStress_as_aux, lkinGW
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -165,6 +166,12 @@ module Special
 !
       call farray_register_auxiliary('hhT',ihhT)
       call farray_register_auxiliary('hhX',ihhX)
+!
+      if (lStress_as_aux) then
+        call farray_register_auxiliary('StT',iStressT)
+        call farray_register_auxiliary('StX',iStressX)
+        call farray_register_auxiliary('Str',iStress_ij,vector=6)
+      endif
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -382,14 +389,14 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,6) :: del2hij, del2gij
-      real, dimension (nx) :: del6hij, del6gij
+      real, dimension (nx) :: del6hij, del6gij, GW_rhs
       real :: nscale_factor_exp, scale_factor, stress_prefactor2, hubble_param2
       type (pencil_case) :: p
 !
       integer :: ij,jhij,jgij
 !
-      intent(in) :: f,p
-      intent(inout) :: df
+      intent(in) :: p
+      intent(inout) :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -411,16 +418,23 @@ module Special
       endif
       stress_prefactor2=stress_prefactor/scale_factor**2
 !
-!  Assemble rhs of GW equations
+!  Assemble rhs of GW equations.
 !
       do ij=1,6
         jhij=ihij-1+ij
         jgij=igij-1+ij
         call del2(f,jhij,del2hij(:,ij))
+!
+!  Physical terms on RHS.
+!
+        GW_rhs=c_light2*del2hij(:,ij) &
+              -hubble_param2*f(l1:l2,m,n,jgij) &
+              +stress_prefactor2*p%stress_ij(:,ij)
+!
+!  Update df.
+!
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c_light2*del2hij(:,ij) &
-            -hubble_param2*f(l1:l2,m,n,jgij) &
-            +stress_prefactor2*p%stress_ij(:,ij)
+        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+GW_rhs
 !
 !  ordinary diffusivity
 !
@@ -442,6 +456,13 @@ module Special
           call del6(f,jgij,del6gij)
           df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+diffgg_hyper3*del6gij
         endif
+!
+!  If lStress_as_aux is requested, we write it into the f-array.
+!  For that, one needs to put ! MAUX CONTRIBUTION 11 into src/cparam.local
+!  For test purposes, we can replace it temporarily also with other quantities.
+!
+      !if (lStress_as_aux) f(l1:l2,m,n,iStress_ij+ij-1)=p%stress_ij(:,ij)
+      if (lStress_as_aux) f(l1:l2,m,n,iStress_ij+ij-1)=GW_rhs
 !
       enddo
 !
@@ -479,14 +500,11 @@ module Special
            if (idiag_g12pt/=0) call save_name(f(lpoint-nghost,m,n,igij+4-1),idiag_g12pt)
            if (idiag_g23pt/=0) call save_name(f(lpoint-nghost,m,n,igij+5-1),idiag_g23pt)
            if (idiag_g31pt/=0) call save_name(f(lpoint-nghost,m,n,igij+6-1),idiag_g31pt)
-!print*,'AXEL5: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
            if (idiag_ggTpt/=0) call save_name(f(lpoint-nghost,m,n,iggT),idiag_ggTpt)
            if (idiag_ggXpt/=0) call save_name(f(lpoint-nghost,m,n,iggX),idiag_ggXpt)
          endif
        endif
 !
-!if (m==mpoint.and.n==npoint) print*,'AXEL6: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
-!print*,'AXEL7: t,lpoint,mpoint,npoint=',lpoint,mpoint,npoint
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -556,6 +574,8 @@ module Special
           (lout.and.lfirst) )) then
         call compute_gT_and_gX_from_gij(f,'gg')
         call compute_gT_and_gX_from_gij(f,'hh')
+        call compute_gT_and_gX_from_gij(f,'Str')
+        !call compute_gT_and_gX_from_gij(f,'d2hdt2')
       endif
 !
     endsubroutine special_after_boundary
@@ -574,7 +594,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij,jhij
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij,jhij,jStress_ij
       logical :: lscale_tobox1=.true.
       real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
@@ -659,6 +679,9 @@ module Special
         if (label=='hh') then
           jhij=ihij-1+ij
           Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jhij)
+        elseif (label=='St') then
+          jStress_ij=iStress_ij-1+ij
+          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jStress_ij)
         else
           jgij=igij-1+ij
           Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jgij)
@@ -865,6 +888,9 @@ module Special
       if (label=='hh') then
         f(l1:l2,m1:m2,n1:n2,ihhT)=S_T_re
         f(l1:l2,m1:m2,n1:n2,ihhX)=S_X_re
+      elseif (label=='St') then
+        f(l1:l2,m1:m2,n1:n2,iStressT)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iStressX)=S_X_re
       else
         f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
         f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
@@ -873,8 +899,6 @@ module Special
       !if (.not.lswitch_sign_e_X) then
       !  f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
       !endif
-!
-!print*,'AXEL3: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
 !
 !  debug output (perhaps to be removed)
 !
