@@ -1419,6 +1419,26 @@ module Hydro
           lupdate_aux=.true.
         endif
 !
+!  Random flow that is delta correlated in space, but unchanged in time.
+!
+      case ('deltax_correlated')
+        if (headtt) print*,'delta_correlated_fixed_intime; ampl_kinflow=',ampl_kinflow
+        if (lpenc_loc(i_uu)) then
+          do ii=1,3
+            if (modulo(ii-1,2)==0) then
+              seed(1)=-((seed0-1812+1)*10+iproc_world+ncpus*(m+my*n))
+              call random_seed_wrapper(PUT=seed)
+              call random_number_wrapper(random_r)
+              call random_number_wrapper(random_p)
+              random_tmp=sqrt(-2*log(random_r))*sin(2*pi*random_p)
+            else
+              random_tmp=sqrt(-2*log(random_r))*cos(2*pi*random_p)
+            endif
+            p%uu(:,ii)=one_over_sqrt3*ampl_kinflow*random_tmp
+          enddo
+          lupdate_aux=.true.
+        endif
+!
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
 !
