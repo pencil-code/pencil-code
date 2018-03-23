@@ -91,6 +91,7 @@ module Special
   character (len=labellen) :: ctrace_factor='1/3'
   character (len=labellen) :: cstress_prefactor='1'
   character (len=labellen) :: cc_light='1'
+  character (len=labellen) :: aux_stress='stress'
   real :: amplhij=0., amplgij=0.
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
@@ -115,7 +116,7 @@ module Special
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
     diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
-    lStress_as_aux, lkinGW
+    lStress_as_aux, lkinGW, aux_stress
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -459,10 +460,19 @@ module Special
 !
 !  If lStress_as_aux is requested, we write it into the f-array.
 !  For that, one needs to put ! MAUX CONTRIBUTION 11 into src/cparam.local
-!  For test purposes, we can replace it temporarily also with other quantities.
+!  For aux_stress='d2hdt2', the stress is replaced by GW_rhs.
 !
-      !if (lStress_as_aux) f(l1:l2,m,n,iStress_ij+ij-1)=p%stress_ij(:,ij)
-      if (lStress_as_aux) f(l1:l2,m,n,iStress_ij+ij-1)=GW_rhs
+      if (lStress_as_aux) then
+        select case (aux_stress)
+          case ('d2hdt2'); f(l1:l2,m,n,iStress_ij+ij-1)=GW_rhs
+          case ('stress'); f(l1:l2,m,n,iStress_ij+ij-1)=p%stress_ij(:,ij)
+        case default
+          call fatal_error("dspecial_dt: No such value for aux_stress:" &
+              ,trim(ctrace_factor))
+        endselect
+      endif
+!
+!  enddo from do ij=1,6
 !
       enddo
 !
