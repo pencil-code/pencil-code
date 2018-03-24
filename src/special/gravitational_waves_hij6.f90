@@ -133,6 +133,10 @@ module Special
   integer :: idiag_hhXpt=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_ggTpt=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXpt=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhTp2=0       ! DIAG_DOC: $h_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhXp2=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggTp2=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggXp2=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_hrms=0        ! DIAG_DOC: $\bra{h_T^2+h_X^2}^{1/2}$
   integer :: idiag_gg2m=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}$
   integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
@@ -514,8 +518,15 @@ module Special
            if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
            if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
            if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
-           if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_hhTpt)
+           if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
            if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+         endif
+!
+         if (lroot.and.m==mpoint2.and.n==npoint2) then
+           if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
+           if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
+           if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
+           if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
          endif
        endif
 !
@@ -960,6 +971,7 @@ module Special
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_ggTm=0; idiag_ggXm=0
@@ -979,6 +991,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
         call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
+        call parse_name(iname,cname(iname),cform(iname),'hhTp2',idiag_hhTp2)
+        call parse_name(iname,cname(iname),cform(iname),'hhXp2',idiag_hhXp2)
+        call parse_name(iname,cname(iname),cform(iname),'ggTp2',idiag_ggTp2)
+        call parse_name(iname,cname(iname),cform(iname),'ggXp2',idiag_ggXp2)
         call parse_name(iname,cname(iname),cform(iname),'hrms',idiag_hrms)
         call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
         call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
