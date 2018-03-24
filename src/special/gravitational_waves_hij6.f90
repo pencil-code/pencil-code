@@ -129,8 +129,10 @@ module Special
   integer :: idiag_g12pt=0       ! DIAG_DOC: $g_{12}(x_1,y_1,z_1,t)$
   integer :: idiag_g23pt=0       ! DIAG_DOC: $g_{23}(x_1,y_1,z_1,t)$
   integer :: idiag_g31pt=0       ! DIAG_DOC: $g_{31}(x_1,y_1,z_1,t)$
-  integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{T}(x_1,y_1,z_1,t)$
-  integer :: idiag_ggXpt=0       ! DIAG_DOC: $g_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhTpt=0       ! DIAG_DOC: $h_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhXpt=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggTpt=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggXpt=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_hrms=0        ! DIAG_DOC: $\bra{h_T^2+h_X^2}^{1/2}$
   integer :: idiag_gg2m=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}$
   integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
@@ -498,20 +500,22 @@ module Special
          if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
-           !if (idiag_h11pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+1-1),idiag_h11pt)
-           !if (idiag_h22pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+2-1),idiag_h22pt)
-           !if (idiag_h33pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+3-1),idiag_h33pt)
-           !if (idiag_h12pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+4-1),idiag_h12pt)
-           !if (idiag_h23pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+5-1),idiag_h23pt)
-           !if (idiag_h31pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+6-1),idiag_h31pt)
-           if (idiag_g11pt/=0) call save_name(f(lpoint-nghost,m,n,igij+1-1),idiag_g11pt)
-           if (idiag_g22pt/=0) call save_name(f(lpoint-nghost,m,n,igij+2-1),idiag_g22pt)
-           if (idiag_g33pt/=0) call save_name(f(lpoint-nghost,m,n,igij+3-1),idiag_g33pt)
-           if (idiag_g12pt/=0) call save_name(f(lpoint-nghost,m,n,igij+4-1),idiag_g12pt)
-           if (idiag_g23pt/=0) call save_name(f(lpoint-nghost,m,n,igij+5-1),idiag_g23pt)
-           if (idiag_g31pt/=0) call save_name(f(lpoint-nghost,m,n,igij+6-1),idiag_g31pt)
-           if (idiag_ggTpt/=0) call save_name(f(lpoint-nghost,m,n,iggT),idiag_ggTpt)
-           if (idiag_ggXpt/=0) call save_name(f(lpoint-nghost,m,n,iggX),idiag_ggXpt)
+           !if (idiag_h11pt/=0) call save_name(f(lpoint,m,n,ihij+1-1),idiag_h11pt)
+           !if (idiag_h22pt/=0) call save_name(f(lpoint,m,n,ihij+2-1),idiag_h22pt)
+           !if (idiag_h33pt/=0) call save_name(f(lpoint,m,n,ihij+3-1),idiag_h33pt)
+           !if (idiag_h12pt/=0) call save_name(f(lpoint,m,n,ihij+4-1),idiag_h12pt)
+           !if (idiag_h23pt/=0) call save_name(f(lpoint,m,n,ihij+5-1),idiag_h23pt)
+           !if (idiag_h31pt/=0) call save_name(f(lpoint,m,n,ihij+6-1),idiag_h31pt)
+           if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
+           if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
+           if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
+           if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
+           if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
+           if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
+           if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
+           if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
+           if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_hhTpt)
+           if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
          endif
        endif
 !
@@ -955,7 +959,7 @@ module Special
         idiag_h22rms=0; idiag_h33rms=0; idiag_h23rms=0; 
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
-        idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_ggTm=0; idiag_ggXm=0
@@ -971,6 +975,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g12pt',idiag_g12pt)
         call parse_name(iname,cname(iname),cform(iname),'g23pt',idiag_g23pt)
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
+        call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
+        call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
         call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
         call parse_name(iname,cname(iname),cform(iname),'hrms',idiag_hrms)
