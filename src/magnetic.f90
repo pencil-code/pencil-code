@@ -234,7 +234,7 @@ module Magnetic
           eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
-  real :: tau_aa_exterior=0.0
+  real :: tau_aa_exterior=0.0, tauAD=0.0
   real :: sigma_ratio=1.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0
   real :: eta_width_shock=0.0, eta_zshock=1.0, eta_jump_shock=1.0
@@ -269,6 +269,7 @@ module Magnetic
   logical :: lkinematic=.false.
   logical :: lignore_Bext_in_b2=.false., luse_Bext_in_b2=.true.
   logical :: lmean_friction=.false.,llocal_friction=.false.
+  logical :: lambipolar_strong_coupling=.false.
   logical :: lhalox=.false.
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   logical :: limplicit_resistivity=.false.
@@ -299,7 +300,7 @@ module Magnetic
       B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
-      tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
+      tau_aa_exterior, tauAD, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, epsilonaa, k1x_ff, k1y_ff, k1z_ff, &
@@ -330,7 +331,7 @@ module Magnetic
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
-      rhoref
+      rhoref, lambipolar_strong_coupling
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -348,6 +349,7 @@ module Magnetic
   integer :: idiag_ubbzm=0      ! DIAG_DOC: $\left<(\uv\cdot\Bv)B_z\right>$
   integer :: idiag_b1m=0        ! DIAG_DOC: $\left<|\Bv|\right>$
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
+  integer :: idiag_b4m=0        ! DIAG_DOC: $\left<\Bv^4\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
@@ -432,6 +434,8 @@ module Magnetic
   integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
   integer :: idiag_bfrms=0      ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
+  integer :: idiag_bf2m=0       ! DIAG_DOC: $\left<{\Bv'}^2\right>$
+  integer :: idiag_bf4m=0       ! DIAG_DOC: $\left<{\Bv'}^4\right>$
   integer :: idiag_bmax=0       ! DIAG_DOC: $\max(|\Bv|)$
   integer :: idiag_bxmin=0      ! DIAG_DOC: $\min(|B_x|)$
   integer :: idiag_bymin=0      ! DIAG_DOC: $\min(|B_y|)$
@@ -538,7 +542,7 @@ module Magnetic
   integer :: idiag_bz2m=0       ! DIAG_DOC: $\left< B_z^2 \right>$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
-  integer :: idiag_magfricmax=0    ! DIAG_DOC: Magneto-Frictional velocity $\left<\jv\times\Bv\right>\cdot\Bv^2$
+  integer :: idiag_magfricmax=0 ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv^2$
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
   integer :: idiag_jxbxbm=0     ! DIAG_DOC:
   integer :: idiag_gpxbm=0      ! DIAG_DOC:
@@ -2012,7 +2016,7 @@ module Magnetic
         endif
       endif
 !
-      if (numag/=0.0) then
+      if (numag/=0.0.or.tauAD/=0.0) then
         lpenc_requested(i_jxb)=.true.
         lpenc_requested(i_jxbxb)=.true.
         lpenc_requested(i_b2)=.true.
@@ -2338,13 +2342,15 @@ module Magnetic
       if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0 &
          ) lpenc_diagnos(i_diva)=.true.
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
-          idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
+          idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_b4m/=0 .or. &
+          idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 .or. idiag_b2mx /= 0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
-      if (idiag_bfrms/=0 .or. idiag_bf2mz/=0) lpenc_diagnos(i_bf2)=.true.
+      if (idiag_bfrms/=0 .or.idiag_bf2m/=0 .or.  idiag_bf4m/=0 .or. &
+          idiag_bf2mz/=0) lpenc_diagnos(i_bf2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
       if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
       if (idiag_etaj2max/=0) lpenc_diagnos(i_etaj2)=.true.
@@ -3835,32 +3841,6 @@ module Magnetic
 !
       if (lspecial) call special_calc_magnetic(f,df,p)
 !
-!  Multiply resistivity by Nyquist scale, for resistive time-step.
-!
-      if (lfirst.and.ldt) then
-!
-        diffus_eta =diffus_eta *dxyz_2
-        diffus_eta2=diffus_eta2*dxyz_4
-!
-        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-          diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
-        else
-          diffus_eta3 = diffus_eta3*dxyz_6
-        endif
-        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
-!
-        if (headtt.or.ldebug) then
-          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
-          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
-          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
-        endif
-
-        maxdiffus=max(maxdiffus,diffus_eta)
-        maxdiffus2=max(maxdiffus2,diffus_eta2)
-        maxdiffus3=max(maxdiffus3,diffus_eta3)
-!
-      endif
-!
 !  Add Ohmic heat to entropy or temperature equation.
 !
       if (.not.lkinematic.and.lohmic_heat) then
@@ -4064,7 +4044,16 @@ module Magnetic
             battery_term*maxval(p%fpres)
       endif
 !
-! Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
+!  Add ambipolar diffusion in strong coupling approximation
+!
+      if (lambipolar_strong_coupling.and.(.not.lhydro).and.tauAD/=0.0) then
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+tauAD*p%b2
+        dAdt=dAdt+tauAD*mu01*p%jxbxb
+      endif
+!
+!  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
+!  Note that this is similar to lambipolar_strong_coupling, but here
+!  there is a division by b^2.
 !
       if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
         do ix=1,nx
@@ -4198,6 +4187,32 @@ module Magnetic
 !
       if (lmagn_mf) call daa_dt_meanfield(f,df,p)
 !
+!  Multiply resistivity by Nyquist scale, for resistive time-step.
+!
+      if (lfirst.and.ldt) then
+!
+        diffus_eta =diffus_eta *dxyz_2
+        diffus_eta2=diffus_eta2*dxyz_4
+!
+        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+          diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+        else
+          diffus_eta3 = diffus_eta3*dxyz_6
+        endif
+        if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
+!
+        if (headtt.or.ldebug) then
+          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
+          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
+          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
+        endif
+
+        maxdiffus=max(maxdiffus,diffus_eta)
+        maxdiffus2=max(maxdiffus2,diffus_eta2)
+        maxdiffus3=max(maxdiffus3,diffus_eta3)
+!
+      endif
+!
 !  Calculate diagnostic quantities.
 !
       if (ldiagnos) then
@@ -4244,9 +4259,12 @@ module Magnetic
 !
         if (idiag_b1m/=0) call sum_mn_name(sqrt(p%b2),idiag_b1m)
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
+        if (idiag_b4m/=0) call sum_mn_name(p%b2**2,idiag_b4m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
         if (idiag_bfrms/=0) call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
+        if (idiag_bf2m/=0) call sum_mn_name(p%bf2,idiag_bf2m)
+        if (idiag_bf4m/=0) call sum_mn_name(p%bf2**2,idiag_bf4m)
         if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
         if (idiag_brmsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%b2,idiag_brmsh)
@@ -7777,7 +7795,8 @@ module Magnetic
       if (lreset) then
         idiag_eta_tdep=0
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
-        idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0; idiag_b1m=0; idiag_b2m=0
+        idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0
+        idiag_b1m=0; idiag_b2m=0; idiag_b4m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
@@ -7801,7 +7820,8 @@ module Magnetic
         idiag_Exp2=0; idiag_Eyp2=0; idiag_Ezp2=0
         idiag_axp2=0; idiag_ayp2=0; idiag_azp2=0
         idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
-        idiag_brms=0; idiag_bfrms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
+        idiag_brms=0; idiag_bfrms=0; idiag_bf2m=0; idiag_bf4m=0
+        idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
         idiag_bbxmax=0; idiag_bbymax=0; idiag_bbzmax=0
@@ -7946,6 +7966,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ubbzm',idiag_ubbzm)
         call parse_name(iname,cname(iname),cform(iname),'b1m',idiag_b1m)
         call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'b4m',idiag_b4m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',idiag_jm2)
@@ -7956,6 +7977,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'emag',idiag_emag)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
         call parse_name(iname,cname(iname),cform(iname),'bfrms',idiag_bfrms)
+        call parse_name(iname,cname(iname),cform(iname),'bf2m',idiag_bf2m)
+        call parse_name(iname,cname(iname),cform(iname),'bf4m',idiag_bf4m)
         call parse_name(iname,cname(iname),cform(iname),'brmsn',idiag_brmsn)
         call parse_name(iname,cname(iname),cform(iname),'brmss',idiag_brmss)
         call parse_name(iname,cname(iname),cform(iname),'brmsx',idiag_brmsx)
