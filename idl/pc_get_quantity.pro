@@ -1009,7 +1009,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		B_abs = pc_compute_quantity (vars, index, 'B_abs')
 		j_abs = pc_compute_quantity (vars, index, 'j_abs')
-		return, acos (dot (jj, bb) / sqrt (j_abs * B_abs)) * (180 / !DPi)
+		return, acos (dot (jj, bb) / j_abs * B_abs) * (180 / !DPi)
 	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
