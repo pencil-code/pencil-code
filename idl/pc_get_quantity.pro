@@ -1012,7 +1012,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, acos (dot (jj, bb) / (j_abs * B_abs)) * (180 / !DPi)
 	end
 	if (strcmp (quantity, 'Lorentz_angle_deviation', /fold_case)) then begin
-		; Deviation of the angle (j,B) from 0° or 180° with values in [-90°,90°]
+		; Deviation of the angle (j,B) from 0° or 180° with values in [-90°,90°] where negative is anti-parallel
 		Lorentz_angle = pc_compute_quantity (vars, index, 'Lorentz_angle')
 		return, ((Lorentz_angle + 90) mod 180) - 90
 	end
