@@ -66,3 +66,37 @@ visualization/
              / Sep 15  2016 vsections2.pro
              / Sep 15  2016 vsections.pro
 
+vapor/
+     / Dec 11  2016 pc2vdf.pro
+     / Dec 11  2016 pc_convert_vdf.pro
+     / Dec 11  2016 pc_save_vdf.pro
+     / Sep 15  2016 pc_vapor_create.pro
+     / Dec 11  2016 pc_write_vapor.pro
+     / Dec 11  2016 pc_write_vdf.pro
+     / Dec 11  2016 README
+     / Dec 11  2016 red-temperature.vtf
+
+modules/
+       / Dec 11  2016 chemistry
+       / Sep 15  2016 dust
+       / Sep 15  2016 dynamo
+       / Dec 11  2016 eos
+       / Sep 15  2016 forcing
+       / Sep 15  2016 interstellar
+       / Sep 15  2016 ionization
+       / Sep 15  2016 magnetic
+       / Sep 15  2016 observables
+       / Mar 30 18:37 particles
+       / Dec 11  2016 polar
+       / Dec 11  2016 powerspectra
+       / Sep 15  2016 radiation
+       / Sep 15  2016 shear
+       / Dec 11  2016 solid_objects
+       / Dec 11  2016 structure_functions
+       / Dec 11  2016 testfield
+
+obscure/ #(those can probably all be deleted)
+       / Sep 15  2016 pc_rvector.pro
+       / Sep 15  2016 README
+       / Dec 11  2016 time_series.pro
+
