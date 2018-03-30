@@ -151,3 +151,10 @@ lib/
    / Dec 11  2016 wdundefine.pro
    / Mar 30 18:37 yin2yang_coors.pro
 
+lib_other/
+         / Sep 15  2016 cmslib
+         / Dec 11  2016 coyote
+         / Sep 15  2016 esrg
+         / Sep 15  2016 idlastro
+         / Dec 11  2016 martin_schultz
+
