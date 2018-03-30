@@ -1011,6 +1011,11 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		j_abs = pc_compute_quantity (vars, index, 'j_abs')
 		return, acos (dot (jj, bb) / (j_abs * B_abs)) * (180 / !DPi)
 	end
+	if (strcmp (quantity, 'Lorentz_angle_deviation', /fold_case)) then begin
+		; Deviation of the angle (j,B) from 0° or 180° with values in [-90°,90°]
+		Lorentz_angle = pc_compute_quantity (vars, index, 'Lorentz_angle')
+		return, ((Lorentz_angle + 90) mod 180) - 90
+	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3 * (m/s)^3 / m]
