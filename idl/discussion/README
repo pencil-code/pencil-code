@@ -103,3 +103,9 @@ obscure/ #(those can probably all be deleted)
 initial_conditions/
                   / Sep 15  2016 save_stratification.pro
 
+less_general/
+            / Sep 15  2016 extra_1d.pro
+            / Dec 11  2016 rallxy_zloop.pro
+            / Sep 15  2016 rslice2.pro
+            / Dec 11  2016 testfield
+
