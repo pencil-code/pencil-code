@@ -26,3 +26,43 @@ obsolete/
 
 ----------------------------------------------------------
 We should put this on the agenda for Summer 2018.
+
+
+statistics/
+          / Sep 15  2016 loadhist.pro
+          / Sep 15  2016 pc_accumulate.pro
+          / Sep 15  2016 pc_error_range2.pro
+          / Dec 11  2016 pc_error_range_array.pro
+          / Jun  5  2017 pc_error_range.pro
+          / Dec 11  2016 pc_object_stats.pro
+          / Mar 30 18:37 pc_variable_stats.pro
+
+units/
+          / Sep 15  2016 pc_check_math.pro
+          / Dec 11  2016 pc_units.pro
+
+visualization/
+             / Dec 11  2016 arrow_pc.pro
+             / Sep 15  2016 bbsections.pro
+             / Mar 30 18:37 GUI
+             / Sep 15  2016 hsections.pro
+             / Dec 11  2016 inlegend.pro
+             / Dec 11  2016 pc_save_image.pro
+             / Sep 15  2016 phiavg.pro
+             / Dec 11  2016 pphiavg.pro
+             / Sep 15  2016 pscaleh.pro
+             / Sep 15  2016 psect.pro
+             / Sep 15  2016 pvert.pro
+             / Dec 11  2016 pvv_phiavg.pro
+             / Dec 11  2016 rvid_box.pro
+             / Jun  5  2017 rvid_line.pro
+             / Jun  5  2017 rvid_plane.pro
+             / Dec 11  2016 set_arrows.pro
+             / Sep 15  2016 strati.pro
+             / Dec 11  2016 streamplot.pro
+             / Dec 11  2016 tavg_phiavg.pro
+             / Sep 15  2016 urms-z.pro
+             / Dec 11  2016 vsectanim.pro
+             / Sep 15  2016 vsections2.pro
+             / Sep 15  2016 vsections.pro
+
