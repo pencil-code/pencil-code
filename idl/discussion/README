@@ -100,3 +100,6 @@ obscure/ #(those can probably all be deleted)
        / Sep 15  2016 README
        / Dec 11  2016 time_series.pro
 
+initial_conditions/
+                  / Sep 15  2016 save_stratification.pro
+
