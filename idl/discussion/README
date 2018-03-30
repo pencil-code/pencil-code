@@ -181,3 +181,8 @@ modules/
        / Dec 11  2016 structure_functions
        / Dec 11  2016 testfield
 
+paraview/
+        / Dec 11  2016 pc2vtk_allvar.pro
+        / Dec 11  2016 pc2vtk.pro
+        / Dec 11  2016 pc_write_vtk.pro
+        / Dec 11  2016 write_vtk.pro
