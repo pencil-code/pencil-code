@@ -109,3 +109,45 @@ less_general/
             / Sep 15  2016 rslice2.pro
             / Dec 11  2016 testfield
 
+lib/
+   / Dec 11  2016 check_ftn_consistency.pro
+   / Dec 11  2016 default.pro
+   / Sep 15  2016 defined.pro
+   / Jun  5  2017 derivatives
+   / Sep 15  2016 dx_export.pro
+   / Dec 11  2016 exists.pro
+   / Dec 11  2016 functions
+   / Dec 11  2016 general
+   / Sep 15  2016 glue_array.pro
+   / Dec 11  2016 graphics
+   / Sep 15  2016 grid-data
+   / Dec 11  2016 interpolation
+   / Jun  5  2017 IO
+   / Dec 11  2016 is_defined.pro
+   / Dec 11  2016 is_in.pro
+   / Dec 11  2016 is_str.pro
+   / Dec 11  2016 line_key.pro
+   / Dec 11  2016 logformat.pro
+   / Jun  5  2017 math
+   / Mar 30 18:37 merge_yin_yang.pro
+   / Sep 15  2016 minkowski
+   / Sep 15  2016 minmax.pro
+   / Dec 11  2016 misc
+   / Sep 15  2016 my_rebin.pro
+   / Mar 30 18:37 operators
+   / Dec 11  2016 others
+   / Sep 15  2016 pc_coarsegrain.pro
+   / Sep 15  2016 pc_potentialfield_exterior_z.pro
+   / Mar 30 18:37 plotting
+   / Dec 11  2016 rangegen.pro
+   / Mar 30 18:37 spherical_harmonics
+   / Sep 15  2016 spread.pro
+   / Dec 11  2016 spread_scalar_to_components.pro
+   / Sep 15  2016 str.pro
+   / Dec 11  2016 tag_exists.pro
+   / Mar 30 18:37 transform_thph_yy.pro
+   / Dec 11  2016 undefine.pro
+   / Dec 11  2016 vizit
+   / Dec 11  2016 wdundefine.pro
+   / Mar 30 18:37 yin2yang_coors.pro
+
