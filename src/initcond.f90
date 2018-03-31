@@ -55,7 +55,7 @@ module Initcond
   public :: hawley_etal99a
   public :: robertsflow
   public :: const_lou
-  public :: corona_init,mdi_init,mag_init,file_init,temp_hydrostatic
+  public :: corona_init,mdi_init,mag_init,mag_Az_init,file_init,temp_hydrostatic
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
@@ -5680,6 +5680,64 @@ module Initcond
       endif
 !
     endsubroutine mag_init
+!***********************************************************************
+    subroutine mag_Az_init(f)
+!
+!  Intialize the vector potential A with a potential field extrapolation from the bottom boundary read from a file.
+!
+!  30-Mar-2018/Bourdin.KIS : coded.
+!
+      use Mpicomm, only: stop_it_if_any, distribute_xy
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension (:,:), allocatable :: A_global, A_local
+      integer, parameter :: unit=11
+      logical :: exists
+      integer :: alloc_err, rec_len
+!
+      ! file location settings
+      character (len=*), parameter :: Az_init_dat = 'Az_init.dat'
+!
+!  Allocate memory for arrays.
+!
+      if (lroot) then
+        allocate (A_global(nxgrid,nygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('mag_Az_init', &
+            'Could not allocate memory for A_global', .true.)
+      endif
+      if (lfirst_proc_z) then
+        allocate (A_local(nx,ny), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('mag_Az_init', &
+            'Could not allocate memory for A_local', .true.)
+      endif
+!
+      call mag_init(f)
+!
+      if (lroot) then
+        inquire (file=Az_init_dat, exist=exists)
+        call stop_it_if_any(.not. exists, &
+            'mag_Az_init: file not found: "'//trim(Az_init_dat)//'"')
+        inquire (iolength=rec_len) 1.0d0
+        open (unit, file=Az_init_dat, form='unformatted', recl=rec_len*nxgrid*nygrid, access='direct')
+        ! read A components for each ipz layer
+        read (unit, rec=1) A_global
+        close (unit)
+        ! distribute A component
+        call distribute_xy(A_local, A_global)
+        f(l1:l2,m1:m2,1,3) = A_local
+      elseif (lfirst_proc_z) then
+        call stop_it_if_any(.false.,'')
+        call distribute_xy(A_local)
+        f(l1:l2,m1:m2,1,3) = A_local
+      else
+        call stop_it_if_any(.false.,'')
+      endif
+!
+      if (lroot) deallocate (A_global)
+      if (lfirst_proc_z) deallocate (A_local)
+!
+    endsubroutine mag_Az_init
 !***********************************************************************
     subroutine file_init(f)
 !
