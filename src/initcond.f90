@@ -55,7 +55,7 @@ module Initcond
   public :: hawley_etal99a
   public :: robertsflow
   public :: const_lou
-  public :: corona_init,mdi_init,mag_init,temp_hydrostatic
+  public :: corona_init,mdi_init,mag_init,file_init,temp_hydrostatic
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
@@ -5680,6 +5680,64 @@ module Initcond
       endif
 !
     endsubroutine mag_init
+!***********************************************************************
+    subroutine file_init(f)
+!
+!  Intialize the vector potential with a vector potential A from a file.
+!
+!  30-Mar-2018/Bourdin.KIS : coded.
+!
+      use Mpicomm, only: stop_it_if_any, distribute_xy
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension (:,:,:), allocatable :: A_global, A_local
+      integer, parameter :: unit=11
+      logical :: exists
+      integer :: pz, comp, alloc_err, rec_len
+!
+      ! file location settings
+      character (len=*), parameter :: A_init_dat = 'Axyz_init.dat'
+!
+!  Allocate memory for arrays.
+!
+      if (lroot) then
+        allocate (A_global(nxgrid,nygrid,nz), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('mag_init', &
+            'Could not allocate memory for A_global', .true.)
+      endif
+      allocate (A_local(nx,ny,nz), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error('mag_init', &
+          'Could not allocate memory for A_local', .true.)
+!
+      if (lroot) then
+        inquire (file=A_init_dat, exist=exists)
+        call stop_it_if_any(.not. exists, &
+            'file_init: file not found: "'//trim(A_init_dat)//'"')
+        inquire (iolength=rec_len) 1.0d0
+        open (unit, file=A_init_dat, form='unformatted', recl=rec_len*nxgrid*nygrid*nz, access='direct')
+        ! read A components for each ipz layer
+        do comp = 0, 2
+          do pz = 0, nprocz-1
+            read (unit, rec=pz+nprocz*comp) A_global
+            ! distribute A component
+            call distribute_xy(A_local, A_global)
+            if (pz == ipz) f(l1:l2,m1:m2,:,comp) = A_local
+          enddo
+        enddo
+        close (unit)
+      else
+        call stop_it_if_any(.false.,'')
+        do comp = 0, 2
+          call distribute_xy(A_local)
+          f(l1:l2,m1:m2,:,comp) = A_local
+        enddo
+      endif
+!
+      if (lroot) deallocate (A_global)
+      deallocate (A_local)
+!
+    endsubroutine file_init
 !***********************************************************************
     subroutine temp_hydrostatic(f,rho0)
 !

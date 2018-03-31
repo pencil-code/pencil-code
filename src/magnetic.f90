@@ -1673,6 +1673,7 @@ module Magnetic
         case ('x3cosycosz'); call x3_cosy_cosz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case ('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case ('magnetogram'); call mag_init(f)
+        case ('Axyz_file'); call file_init(f)
         case ('Bz-floor'); call mdi_init(f,.true.,z0aa)
         case ('magnetogram_nonperiodic'); call mdi_init(f,.false.,z0aa)
         case ('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
