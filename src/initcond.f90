@@ -5717,9 +5717,9 @@ module Initcond
         inquire (iolength=rec_len) 1.0d0
         open (unit, file=A_init_dat, form='unformatted', recl=rec_len*nxgrid*nygrid*nz, access='direct')
         ! read A components for each ipz layer
-        do comp = 0, 2
+        do comp = 1, 3
           do pz = 0, nprocz-1
-            read (unit, rec=pz+nprocz*comp) A_global
+            read (unit, rec=pz+nprocz*(comp-1)) A_global
             ! distribute A component
             call distribute_xy(A_local, A_global)
             if (pz == ipz) f(l1:l2,m1:m2,:,comp) = A_local
@@ -5728,7 +5728,7 @@ module Initcond
         close (unit)
       else
         call stop_it_if_any(.false.,'')
-        do comp = 0, 2
+        do comp = 1, 3
           call distribute_xy(A_local)
           f(l1:l2,m1:m2,:,comp) = A_local
         enddo
