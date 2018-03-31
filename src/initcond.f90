@@ -5687,21 +5687,22 @@ module Initcond
 !
 !  30-Mar-2018/Bourdin.KIS : coded.
 !
-      use Mpicomm, only: stop_it_if_any, distribute_xy
+      use Mpicomm, only: stop_it_if_any, distribute_xy, mpisend_real, mpirecv_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension (:,:,:), allocatable :: A_global, A_local
       integer, parameter :: unit=11
+      integer, parameter :: tag_z=133
       logical :: exists
-      integer :: pz, comp, alloc_err, rec_len
+      integer :: partner, pz, comp, alloc_err, rec_len
 !
       ! file location settings
       character (len=*), parameter :: A_init_dat = 'Axyz_init.dat'
 !
 !  Allocate memory for arrays.
 !
-      if (lroot) then
+      if (lfirst_proc_xy) then
         allocate (A_global(nxgrid,nygrid,nz), stat=alloc_err)
         if (alloc_err > 0) call fatal_error('file_init', &
             'Could not allocate memory for A_global', .true.)
@@ -5721,20 +5722,31 @@ module Initcond
           do pz = 0, nprocz-1
             read (unit, rec=pz+nprocz*(comp-1)) A_global
             ! distribute A component
-            call distribute_xy(A_local, A_global)
-            if (pz == ipz) f(l1:l2,m1:m2,:,comp) = A_local
+            if (pz == ipz) then
+              call distribute_xy(A_local, A_global)
+              f(l1:l2,m1:m2,:,comp) = A_local
+            else
+              partner = ipx + ipy*nprocx + pz*nprocxy
+              call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
+            endif
           enddo
         enddo
         close (unit)
       else
         call stop_it_if_any(.false.,'')
         do comp = 1, 3
-          call distribute_xy(A_local)
+          if (lfirst_proc_xy) then
+            partner = ipx + ipy*nprocx
+            call mpirecv_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
+            call distribute_xy(A_global, A_local)
+          else
+            call distribute_xy(A_local)
+          endif
           f(l1:l2,m1:m2,:,comp) = A_local
         enddo
       endif
 !
-      if (lroot) deallocate (A_global)
+      if (lfirst_proc_xy) deallocate (A_global)
       deallocate (A_local)
 !
     endsubroutine file_init
