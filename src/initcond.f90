@@ -5703,11 +5703,11 @@ module Initcond
 !
       if (lroot) then
         allocate (A_global(nxgrid,nygrid,nz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error('mag_init', &
+        if (alloc_err > 0) call fatal_error('file_init', &
             'Could not allocate memory for A_global', .true.)
       endif
       allocate (A_local(nx,ny,nz), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error('mag_init', &
+      if (alloc_err > 0) call fatal_error('file_init', &
           'Could not allocate memory for A_local', .true.)
 !
       if (lroot) then
