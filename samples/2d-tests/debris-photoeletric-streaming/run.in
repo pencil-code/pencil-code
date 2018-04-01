@@ -39,15 +39,15 @@
 /
 &density_run_pars
   borderlnrho='initial-condition'
-  idiff='hyper3-cyl' ,'shock'
-  diffrho_hyper3=1e-4 ,diffrho_shock=10.
+  idiff='hyper3-mesh' ,'shock'
+  diffrho_hyper3_mesh=5 ,diffrho_shock=10.
   density_floor=1e-3
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-cyl' ,'nu-shock','simplified'
-  nu_hyper3=1e-4 ,nu_shock=10.,nu=1e-4
+  ivisc='hyper3-mesh' ,'nu-shock','simplified'
+  nu_hyper3_mesh=5 ,nu_shock=10.,nu=1e-4
 /
 &special_run_pars
   ldust_pressureforce=T
