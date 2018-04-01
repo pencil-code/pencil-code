@@ -2040,7 +2040,7 @@ module Dustdensity
             fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp1*dline_1(:,j)**2
           enddo
           if (lfirst.and.ldt) &
-               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmax_pencil**4
+               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmin_pencil**4
         endif
 !
       if (ldiffd_hyper3_mesh) then

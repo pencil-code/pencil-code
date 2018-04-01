@@ -1265,7 +1265,7 @@ module Dustvelocity
                      nud_hyper3(k)*pi4_1*tmp3*dline_1(:,i)**2
               enddo
               if (lfirst.and.ldt) &
-                   diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmax_pencil**4
+                   diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
             enddo
           endif
 !

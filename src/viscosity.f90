@@ -1626,7 +1626,7 @@ module Viscosity
           endif
         endif
         if (lfirst .and. ldt) &
-             p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmax_pencil**4
+             p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmin_pencil**4
       endif
 !
 ! Following Axel's hyper3_mesh for density
