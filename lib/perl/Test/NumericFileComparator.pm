@@ -238,7 +238,10 @@ sub compare {
         my @column_act = @{$actual{$var}};
         if (@column_act < @column_ref) {
             push @{$problems{$var}},
-                sprintf("Expected %d values, got %d", );
+                sprintf(
+                    "Expected %d values, got %d",
+                    (scalar @column_ref), (scalar @column_act)
+                );
             next VAR;
         }
 
