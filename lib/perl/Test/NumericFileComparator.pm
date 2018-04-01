@@ -234,8 +234,18 @@ sub compare {
     my %reference = %{$self->{VALUES}};
     my %actual = %$val_ref;
     VAR: foreach my $var (@{$self->{VARS}}) {
-        my @column_ref = @{$reference{$var}};
-        my @column_act = @{$actual{$var}};
+        my $ref = $reference{$var};
+        my $act = $actual{$var};
+        if (! defined $act) {
+            push @{$problems{$var}}, "Column $var not found in $file\n";
+            next;
+        }
+        if (! defined $ref) {
+            die "Column $var not found in reference data file\n";
+            next;
+        }
+        my @column_ref = @{$ref};
+        my @column_act = @{$act};
         if (@column_act < @column_ref) {
             push @{$problems{$var}},
                 sprintf(
