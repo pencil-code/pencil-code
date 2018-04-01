@@ -36,15 +36,15 @@
   borderuu='initial-condition'
 /
 &density_run_pars
-  idiff='hyper3-cyl','shock'
-  diffrho_hyper3=1e-2,diffrho_shock=1.
+  idiff='hyper3-mesh','shock'
+  diffrho_hyper3_mesh=5,diffrho_shock=1.
   borderlnrho='initial-condition'
 /
 &grav_run_pars
 /
 &magnetic_run_pars
-  iresistivity='hyper3-cyl','shock','xdep'
-  eta_hyper3=1e-2,eta_shock=1
+  iresistivity='hyper3-mesh','shock','xdep'
+  eta_hyper3_mesh=5,eta_shock=1
   borderaa='initial-condition'
 !
 ! Dead zone parameters
@@ -53,14 +53,13 @@
   eta=1.6e-3
   eta_jump=0.
   eta_x0=1.2
-  ! No longer exists [should this be eta_zwidth=1e-2, or eta_xwidth=1e-2 ?]:
-  ! eta_width=1e-2
+  eta_xwidth=1e-2
 /
 &entropy_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-cyl','nu-shock'
-  nu_hyper3=1e-2,nu_shock=1.
+  ivisc='hyper3-mesh','nu-shock'
+  nu_hyper3_mesh=5,nu_shock=1.
 /
 &shock_run_pars
 /
