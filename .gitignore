@@ -16,6 +16,7 @@ revision.txt
 # left-over files from auto-test and samples
 .pc_build_history
 .run_directories.log
+pc_build_tmp_*
 #
 # first directory level
 samples/*/src/*
@@ -59,7 +60,7 @@ samples/*/*/*/runtime
 samples/*/*/*/fort.*
 samples/*/*/*/data
 #
-# exceptions for indivudual samples
+# exceptions for individual samples
 samples/corona/driver
 !samples/backwards-compatible/data/param.nml
 !samples/backwards-compatible/data/proc0/var.dat
