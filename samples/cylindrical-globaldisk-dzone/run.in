@@ -53,7 +53,8 @@
   eta=1.6e-3
   eta_jump=0.
   eta_x0=1.2
-  eta_width=1e-2
+  ! No longer exists [should this be eta_zwidth=1e-2, or eta_xwidth=1e-2 ?]:
+  ! eta_width=1e-2
 /
 &entropy_run_pars
 /
