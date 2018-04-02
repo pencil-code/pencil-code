@@ -100,7 +100,7 @@ module Special
   real :: nscale_factor=0., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
-  logical :: lStress_as_aux=.false.
+  logical :: lStress_as_aux=.false., lreynolds=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
@@ -249,6 +249,12 @@ module Special
       endselect
       if (headt) print*,'c_light2=',c_light2
 !
+!  Determine whether Reynolds stress needs to be computed:
+!  Compute Reynolds stress when lhydro or lhydro_kinematic,
+!  provided lkinGW=T
+!
+      lreynolds=(lhydro.or.lhydro_kinematic).and.lkinGW
+!
 !  give a warning if cs0**2=1
 !
 !     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
@@ -305,20 +311,20 @@ module Special
 !
 !  All pencils that this special module depends on are specified here.
 !
-!  18-07-06/tony: coded
+!   1-apr-06/axel: coded
 !
 !  Velocity field needed for Reynolds stress
 !
-      if (lhydro) then
+      if (lreynolds) then
         lpenc_requested(i_uu)=.true.
-        lpenc_requested(i_u2)=.true.
+        if (trace_factor/=0.) lpenc_requested(i_u2)=.true.
       endif
 !
 !  Magnetic field needed for Maxwell stress
 !
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_b2)=.true.
+        if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -327,7 +333,7 @@ module Special
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
-!  18-07-06/tony: coded
+!  18-jul-06/tony: coded
 !
       logical, dimension(npencils), intent(inout) :: lpencil_in
 !
@@ -348,12 +354,6 @@ module Special
       intent(in) :: f
       intent(inout) :: p
       integer :: i, j, ij
-      logical :: lreynolds
-!
-!  Compute Reynolds stress when lhydro or lhydro_kinematic,
-!  provided lkinGW=T
-!
-      lreynolds=(lhydro.or.lhydro_kinematic).and.lkinGW
 !
 !  Construct stress tensor; notice opposite signs for u and b.
 !
