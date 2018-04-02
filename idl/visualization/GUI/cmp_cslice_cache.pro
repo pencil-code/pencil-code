@@ -690,6 +690,11 @@ pro cslice_load_ct, id
 
 	device, decomposed=(id eq 0)
 	if (id eq 1) then begin
+		; Inverse: white-black (negative-positive)
+		num_colors = !D.table_size
+		wedge = bytscl (-findgen (num_colors))
+		tvlct, wedge, wedge, wedge
+	end else if (id eq 2) then begin
 		; Doppler velocities: red-white-blue (negative-zero-positive)
 		num_colors = !D.table_size
 		mid = round (num_colors / 2)
@@ -702,7 +707,7 @@ pro cslice_load_ct, id
 		b[0:mid-1] = wedge         &  b[mid:*] = num_colors-1
 		tvlct, r, g, b
 	end else begin
-		loadct, (id - 2) > 0, /silent
+		loadct, (id - 3) > 0, /silent
 	end
 end
 
@@ -1620,7 +1625,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	bsubcol	= WIDGET_BASE (bcot, /col)
 	loadct, get_names=table_names
-	table_names = [ 'original', 'red-white-blue', table_names ]
+	table_names = [ 'original', 'inverse', 'red-white-blue', table_names ]
 	tmp	= WIDGET_LABEL (bsubcol, value='color table:', frame=0)
 	coltab	= WIDGET_DROPLIST (bsubcol, value=table_names, uvalue='COLTAB', EVENT_PRO=cslice_event)
 
