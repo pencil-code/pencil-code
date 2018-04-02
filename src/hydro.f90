@@ -1045,12 +1045,6 @@ module Hydro
         uumxy=0.0
       endif
 !
-      if (idiag_uxp2/=0.or.idiag_uyp2/=0.or.idiag_uzp2/=0) then
-        print*,'hydro: pointwise diagnostics at'
-        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
-        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
-      endif
-!
       call keep_compiler_quiet(f)
 !
       endsubroutine initialize_hydro
