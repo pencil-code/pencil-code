@@ -91,6 +91,7 @@ module Special
   character (len=labellen) :: ctrace_factor='1/3'
   character (len=labellen) :: cstress_prefactor='1'
   character (len=labellen) :: cc_light='1'
+  character (len=labellen) :: aux_stress='stress'
   real :: amplhij=0., amplgij=0.
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
@@ -99,13 +100,14 @@ module Special
   real :: nscale_factor=0., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
+  logical :: lStress_as_aux=.false., lreynolds=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
-    inithij, initgij, amplhij, amplgij, &
+    inithij, initgij, amplhij, amplgij, lStress_as_aux, &
     kx_hij, ky_hij, kz_hij, &
     kx_gij, ky_gij, kz_gij
 !
@@ -114,7 +116,7 @@ module Special
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
     diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
-    lkinGW
+    lStress_as_aux, lkinGW, aux_stress
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -127,8 +129,14 @@ module Special
   integer :: idiag_g12pt=0       ! DIAG_DOC: $g_{12}(x_1,y_1,z_1,t)$
   integer :: idiag_g23pt=0       ! DIAG_DOC: $g_{23}(x_1,y_1,z_1,t)$
   integer :: idiag_g31pt=0       ! DIAG_DOC: $g_{31}(x_1,y_1,z_1,t)$
-  integer :: idiag_ggTpt=0       ! DIAG_DOC: $g_{T}(x_1,y_1,z_1,t)$
-  integer :: idiag_ggXpt=0       ! DIAG_DOC: $g_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhTpt=0       ! DIAG_DOC: $h_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhXpt=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggTpt=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggXpt=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhTp2=0       ! DIAG_DOC: $h_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_hhXp2=0       ! DIAG_DOC: $h_{X}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggTp2=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggXp2=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_hrms=0        ! DIAG_DOC: $\bra{h_T^2+h_X^2}^{1/2}$
   integer :: idiag_gg2m=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}$
   integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
@@ -165,6 +173,12 @@ module Special
 !
       call farray_register_auxiliary('hhT',ihhT)
       call farray_register_auxiliary('hhX',ihhX)
+!
+      if (lStress_as_aux) then
+        call farray_register_auxiliary('StT',iStressT)
+        call farray_register_auxiliary('StX',iStressX)
+        call farray_register_auxiliary('Str',iStress_ij,vector=6)
+      endif
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -235,10 +249,16 @@ module Special
       endselect
       if (headt) print*,'c_light2=',c_light2
 !
+!  Determine whether Reynolds stress needs to be computed:
+!  Compute Reynolds stress when lhydro or lhydro_kinematic,
+!  provided lkinGW=T
+!
+      lreynolds=(lhydro.or.lhydro_kinematic).and.lkinGW
+!
 !  give a warning if cs0**2=1
 !
-      if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
-          'cs0 should probably not be unity')
+!     if (cs0==1.) call fatal_error('gravitational_waves_hij6', &
+!         'cs0 should probably not be unity')
 !
       call keep_compiler_quiet(f)
 !
@@ -291,20 +311,20 @@ module Special
 !
 !  All pencils that this special module depends on are specified here.
 !
-!  18-07-06/tony: coded
+!   1-apr-06/axel: coded
 !
 !  Velocity field needed for Reynolds stress
 !
-      if (lhydro) then
+      if (lreynolds) then
         lpenc_requested(i_uu)=.true.
-        lpenc_requested(i_u2)=.true.
+        if (trace_factor/=0.) lpenc_requested(i_u2)=.true.
       endif
 !
 !  Magnetic field needed for Maxwell stress
 !
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_b2)=.true.
+        if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -313,7 +333,7 @@ module Special
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
-!  18-07-06/tony: coded
+!  18-jul-06/tony: coded
 !
       logical, dimension(npencils), intent(inout) :: lpencil_in
 !
@@ -341,13 +361,13 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lhydro.and.lkinGW) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
+        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
-          if (lhydro.and.lkinGW) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
+          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
         endif
       enddo
@@ -376,14 +396,14 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,6) :: del2hij, del2gij
-      real, dimension (nx) :: del6hij, del6gij
+      real, dimension (nx) :: del6hij, del6gij, GW_rhs
       real :: nscale_factor_exp, scale_factor, stress_prefactor2, hubble_param2
       type (pencil_case) :: p
 !
       integer :: ij,jhij,jgij
 !
-      intent(in) :: f,p
-      intent(inout) :: df
+      intent(in) :: p
+      intent(inout) :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -405,16 +425,23 @@ module Special
       endif
       stress_prefactor2=stress_prefactor/scale_factor**2
 !
-!  Assemble rhs of GW equations
+!  Assemble rhs of GW equations.
 !
       do ij=1,6
         jhij=ihij-1+ij
         jgij=igij-1+ij
         call del2(f,jhij,del2hij(:,ij))
+!
+!  Physical terms on RHS.
+!
+        GW_rhs=c_light2*del2hij(:,ij) &
+              -hubble_param2*f(l1:l2,m,n,jgij) &
+              +stress_prefactor2*p%stress_ij(:,ij)
+!
+!  Update df.
+!
         df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+c_light2*del2hij(:,ij) &
-            -hubble_param2*f(l1:l2,m,n,jgij) &
-            +stress_prefactor2*p%stress_ij(:,ij)
+        df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+GW_rhs
 !
 !  ordinary diffusivity
 !
@@ -436,6 +463,22 @@ module Special
           call del6(f,jgij,del6gij)
           df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+diffgg_hyper3*del6gij
         endif
+!
+!  If lStress_as_aux is requested, we write it into the f-array.
+!  For that, one needs to put ! MAUX CONTRIBUTION 11 into src/cparam.local
+!  For aux_stress='d2hdt2', the stress is replaced by GW_rhs.
+!
+      if (lStress_as_aux) then
+        select case (aux_stress)
+          case ('d2hdt2'); f(l1:l2,m,n,iStress_ij+ij-1)=GW_rhs
+          case ('stress'); f(l1:l2,m,n,iStress_ij+ij-1)=p%stress_ij(:,ij)
+        case default
+          call fatal_error("dspecial_dt: No such value for aux_stress:" &
+              ,trim(ctrace_factor))
+        endselect
+      endif
+!
+!  enddo from do ij=1,6
 !
       enddo
 !
@@ -461,26 +504,32 @@ module Special
          if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
-           !if (idiag_h11pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+1-1),idiag_h11pt)
-           !if (idiag_h22pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+2-1),idiag_h22pt)
-           !if (idiag_h33pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+3-1),idiag_h33pt)
-           !if (idiag_h12pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+4-1),idiag_h12pt)
-           !if (idiag_h23pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+5-1),idiag_h23pt)
-           !if (idiag_h31pt/=0) call save_name(f(lpoint-nghost,m,n,ihij+6-1),idiag_h31pt)
-           if (idiag_g11pt/=0) call save_name(f(lpoint-nghost,m,n,igij+1-1),idiag_g11pt)
-           if (idiag_g22pt/=0) call save_name(f(lpoint-nghost,m,n,igij+2-1),idiag_g22pt)
-           if (idiag_g33pt/=0) call save_name(f(lpoint-nghost,m,n,igij+3-1),idiag_g33pt)
-           if (idiag_g12pt/=0) call save_name(f(lpoint-nghost,m,n,igij+4-1),idiag_g12pt)
-           if (idiag_g23pt/=0) call save_name(f(lpoint-nghost,m,n,igij+5-1),idiag_g23pt)
-           if (idiag_g31pt/=0) call save_name(f(lpoint-nghost,m,n,igij+6-1),idiag_g31pt)
-!print*,'AXEL5: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
-           if (idiag_ggTpt/=0) call save_name(f(lpoint-nghost,m,n,iggT),idiag_ggTpt)
-           if (idiag_ggXpt/=0) call save_name(f(lpoint-nghost,m,n,iggX),idiag_ggXpt)
+           !if (idiag_h11pt/=0) call save_name(f(lpoint,m,n,ihij+1-1),idiag_h11pt)
+           !if (idiag_h22pt/=0) call save_name(f(lpoint,m,n,ihij+2-1),idiag_h22pt)
+           !if (idiag_h33pt/=0) call save_name(f(lpoint,m,n,ihij+3-1),idiag_h33pt)
+           !if (idiag_h12pt/=0) call save_name(f(lpoint,m,n,ihij+4-1),idiag_h12pt)
+           !if (idiag_h23pt/=0) call save_name(f(lpoint,m,n,ihij+5-1),idiag_h23pt)
+           !if (idiag_h31pt/=0) call save_name(f(lpoint,m,n,ihij+6-1),idiag_h31pt)
+           if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
+           if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
+           if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
+           if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
+           if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
+           if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
+           if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
+           if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
+           if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
+           if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+         endif
+!
+         if (lroot.and.m==mpoint2.and.n==npoint2) then
+           if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
+           if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
+           if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
+           if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
          endif
        endif
 !
-!if (m==mpoint.and.n==npoint) print*,'AXEL6: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
-!print*,'AXEL7: t,lpoint,mpoint,npoint=',lpoint,mpoint,npoint
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -550,6 +599,8 @@ module Special
           (lout.and.lfirst) )) then
         call compute_gT_and_gX_from_gij(f,'gg')
         call compute_gT_and_gX_from_gij(f,'hh')
+        call compute_gT_and_gX_from_gij(f,'Str')
+        !call compute_gT_and_gX_from_gij(f,'d2hdt2')
       endif
 !
     endsubroutine special_after_boundary
@@ -568,7 +619,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij,jhij
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij,jhij,jStress_ij
       logical :: lscale_tobox1=.true.
       real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
@@ -653,6 +704,9 @@ module Special
         if (label=='hh') then
           jhij=ihij-1+ij
           Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jhij)
+        elseif (label=='St') then
+          jStress_ij=iStress_ij-1+ij
+          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jStress_ij)
         else
           jgij=igij-1+ij
           Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jgij)
@@ -859,6 +913,9 @@ module Special
       if (label=='hh') then
         f(l1:l2,m1:m2,n1:n2,ihhT)=S_T_re
         f(l1:l2,m1:m2,n1:n2,ihhX)=S_X_re
+      elseif (label=='St') then
+        f(l1:l2,m1:m2,n1:n2,iStressT)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iStressX)=S_X_re
       else
         f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
         f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
@@ -867,8 +924,6 @@ module Special
       !if (.not.lswitch_sign_e_X) then
       !  f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
       !endif
-!
-!print*,'AXEL3: t,f(lpoint,mpoint,npoint,iggT)=',t,f(lpoint,mpoint,npoint,iggT)
 !
 !  debug output (perhaps to be removed)
 !
@@ -915,7 +970,8 @@ module Special
         idiag_h22rms=0; idiag_h33rms=0; idiag_h23rms=0; 
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
-        idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
+        idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_ggTm=0; idiag_ggXm=0
@@ -931,8 +987,14 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g12pt',idiag_g12pt)
         call parse_name(iname,cname(iname),cform(iname),'g23pt',idiag_g23pt)
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
+        call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
+        call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
         call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
         call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
+        call parse_name(iname,cname(iname),cform(iname),'hhTp2',idiag_hhTp2)
+        call parse_name(iname,cname(iname),cform(iname),'hhXp2',idiag_hhXp2)
+        call parse_name(iname,cname(iname),cform(iname),'ggTp2',idiag_ggTp2)
+        call parse_name(iname,cname(iname),cform(iname),'ggXp2',idiag_ggXp2)
         call parse_name(iname,cname(iname),cform(iname),'hrms',idiag_hrms)
         call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
         call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)

@@ -22,15 +22,15 @@
   borderuu='initial-condition'
 /
 &density_run_pars
-  idiff='hyper3-sph' !,'shock'
-  diffrho_hyper3=5e-3 !,diffrho_shock=5e-2
+  idiff='hyper3-mesh' !,'shock'
+  diffrho_hyper3_mesh=5 !,diffrho_shock=5e-2
   borderlnrho='initial-condition'
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-sph' ,'nu-shock'
-  nu_hyper3=5e-3,nu_shock=1.
+  ivisc='hyper3-mesh' ,'nu-shock'
+  nu_hyper3_mesh=5,nu_shock=1.
 /
 &particles_run_pars
   ldragforce_dust_par=F

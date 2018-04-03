@@ -658,7 +658,8 @@ module Special
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lcompute_gran.and.Bavoid>0.0).or.Bz_flux /= 0.) call set_B2(f)
+        if ((lcompute_gran.and.(Bavoid>0.0 .or. quench>0.0)) &
+             .or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
@@ -2668,8 +2669,12 @@ module Special
 ! additional parameters are
 !         Bavoid =0.01 : the magn. field strenght in Tesla at which
 !                        no granule is allowed
-!         nvor = 5.    : the strength by which the vorticity is
-!                        enhanced
+!
+!         increase_vorticity = 15. : the strength by which the vorticity is
+!                                    enhanced
+!
+!         quench = 0.03 : factor by which the granular velocity
+!                         is reduced at low beta
 !
 !  11-may-10/bing: coded
 !
@@ -3422,7 +3427,7 @@ module Special
             +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
       endif
 !
-      b2 = bbx*bbx + bby*bby + bbz*bbz
+      B2 = bbx*bbx + bby*bby + bbz*bbz
       Bzflux = sum(abs(bbz))
 !
     endsubroutine set_B2
@@ -3545,11 +3550,11 @@ module Special
 !
       if (ltemperature.and..not.ltemperature_nolog) then
         if (ldensity_nolog) then
-          call fatal_error('solar_corona', &
-              'uudriver only implemented for ltemperature=true')
+          call fatal_error('coronae', &
+              'footpoint_quneching not only implemented for ldensity_nolog=true')
         else
           pp =gamma_m1*gamma1/cp1 * &
-              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnrho))
+              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
         endif
       else
         pp=gamma1*cs20*exp(lnrho0)
@@ -3561,7 +3566,7 @@ module Special
       do i=1,ny
         q(:,i) = cubic_step(log10(beta(:,i)),0.,1.)*(1.-quench)+quench
       enddo
-      !
+!
       Ux = Ux * q
       Uy = Uy * q
 !

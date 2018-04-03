@@ -103,7 +103,6 @@ module Interstellar
   real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
   real :: t_interval_SNI=impossible, t_interval_SNII=impossible
   real :: zdisk !varying location of centre of mass of the disk
-  real :: lim_zdisk_cgs=1.543E+22, lim_zdisk=impossible !limit location of centre of mass of the disk
   logical :: lfirst_zdisk
 !
 !
@@ -119,21 +118,31 @@ module Interstellar
 !  3-D  was 3.71213666 but replaced with Maple result....
 !
   real, parameter, dimension(3) :: &
-             cnorm_gaussian_SN = (/ 0.8862269255, 3.141592654, 5.568327998 /)
+             cnorm_gaussian_SN  =  (/ 0.8862269254527579, 3.141592653589793, 5.568327996831708  /)
   real, parameter, dimension(3) :: &
-             cnorm_gaussian2_SN = (/ 0.9064024771, 2.784163999, 3.849760109 /)
+             cnorm_gaussian2_SN =  (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
   real, parameter, dimension(3) :: &
-             cnorm_SN = (/ 1.855438667 , 2.805377875 , 3.712218666 /)
+             cnorm_SN           =  (/ 0.9277193336300392, 2.805377873352155, 3.712218664554472  /)
   real, parameter, dimension(3) :: &
-             cnorm_para_SN = (/  1.33333333,  1.5707963, 1.6755161 /)
+             cnorm_para_SN =       (/  1.33333333,        1.570796326794897, 1.6755161          /)
   real, parameter, dimension(3) :: &
-             cnorm_quar_SN = (/  0.,  2.0943951, 0. /)
+             cnorm_quar_SN =       (/  0.,                2.0943951,         0.                 /)
   ! kinetic energy with lmass_SN=F
   real, parameter, dimension(3) :: &
-             vnorm_SN = (/ 0.826505 , 1.1176980765438025 , 1.3124674954768478 /)
+             vnorm_gaussian_SN =   (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
   ! kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-             vnorm2_SN = (/ 0.77859090429667066 , 0.97639920514136669 , 1.0716252226356628 /)
+             vnorm2_gaussian_SN =  (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
+  real, parameter, dimension(3) :: &
+             vnorm_gaussian2_SN =  (/ 0.6887169476297503, 1.607437833953458, 1.6888564123130090 /)
+  ! kinetic energy addition lmass_SN=T
+  real, parameter, dimension(3) :: &
+             vnorm2_gaussian2_SN = (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
+  real, parameter, dimension(3) :: &
+             vnorm_SN =            (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
+  ! kinetic energy addition lmass_SN=T
+  real, parameter, dimension(3) :: &
+             vnorm2_SN =           (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
 !
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -411,7 +420,7 @@ module Interstellar
       l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
       l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
-      lreset_ism_seed, SN_rho_ratio, eps_mass, eps_radius, lim_zdisk,&
+      lreset_ism_seed, SN_rho_ratio, eps_mass, eps_radius, &
       lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx
 !
   contains
@@ -540,7 +549,6 @@ module Interstellar
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
             SN_clustering_time=SN_clustering_time_cgs / unit_time
-        if (lim_zdisk==impossible) lim_zdisk=lim_zdisk_cgs/unit_length
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -2317,12 +2325,10 @@ module Interstellar
 !
     if (lfirst_zdisk) then
       rhosum=0.0
-      if (minval(abs(z))<lim_zdisk) then
-        if (ldensity_nolog) then
-          rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))
-        else
-          rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
-        endif
+      if (ldensity_nolog) then
+        rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))
+      else
+        rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
       endif
 !
       do icpu=1,ncpus
@@ -2362,7 +2368,6 @@ module Interstellar
         rhomax=maxrho
         if (rhotmp(i-nghost) == rhomax) zdisk = z(i)
       enddo
-      if (abs(zdisk)>2*lim_zdisk) zdisk=sign(2*lim_zdisk,zdisk) 
       mpiz=zdisk
       call mpibcast_real(mpiz,xyproc(1))
       zdisk = mpiz
@@ -2965,8 +2970,8 @@ module Interstellar
 !  26-aug-10/fred:
 !  E_k=int(0.5*rho*vel^2)=approx 2pi*rhom*V0^2*int(r^2*v(r)dr).
 !  Total energy =  kinetic (kampl_SN) + thermal (eampl_SN).
-!  21-apr-16/fred:
-!  Only fully implemented for gaussian3 - normalisation only correct for
+!  30-jan-18/fred:
+!  Normalisation only correct for
 !  constant ambient density and zero ambient velocity. Additional term 
 !  implemented for mass of ejecta mass_SN (vnorm2)   
 !
@@ -2975,18 +2980,26 @@ module Interstellar
         if (velocity_profile=="gaussian3") then
           cvelocity_SN= &
               sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
-                  vnorm_SN(dimensionality)*width_velocity**dimensionality+&
+                 vnorm2_SN(dimensionality)*width_velocity**dimensionality+&
                             cmass_SN/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm2_SN(dimensionality)*width_velocity**dimensionality)&
+                 vnorm_SN(dimensionality)*width_velocity**dimensionality)&
                                      /(SNR%feat%rhom+cmass_SN) )
 !
         elseif (velocity_profile=="gaussian2") then
           cvelocity_SN= &
-              sqrt(kampl_SN/SNR%feat%rhom/0.3643185655*pi_1/width_velocity**dimensionality)
+              sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
+                 vnorm2_gaussian2_SN(dimensionality)*width_velocity**dimensionality+&
+                            cmass_SN/(SNR%feat%rhom+cmass_SN)*&
+                 vnorm_gaussian2_SN(dimensionality)*width_velocity**dimensionality)&
+                                     /(SNR%feat%rhom+cmass_SN) )
 !
         elseif (velocity_profile=="gaussian") then
           cvelocity_SN= &
-              sqrt(kampl_SN/SNR%feat%rhom/0.313328534*pi_1/width_velocity**dimensionality)
+              sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
+                 vnorm2_gaussian_SN(dimensionality)*width_velocity**dimensionality+&
+                            cmass_SN/(SNR%feat%rhom+cmass_SN)*&
+                 vnorm_gaussian_SN(dimensionality)*width_velocity**dimensionality)&
+                                     /(SNR%feat%rhom+cmass_SN) )
 !
         endif
         if (lroot) print*, &
@@ -3048,7 +3061,7 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN > SNR%feat%radius**2.0) lnTT=-10.0
+          where (dr2_SN > 4*SNR%feat%radius**2.0) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
           call mpibcast_real(maxlnTT,SNR%indx%iproc)
@@ -3289,7 +3302,7 @@ module Interstellar
         if (lSN_scale_rad) then
           maxmask=0
           minmask=999999
-          where (dr2_SN(1:nx) <= radius2)
+          where (dr2_SN(1:nx) <= 4*radius2)
             maxmask(1:nx)=1
             minmask(1:nx)=1
           endwhere
@@ -3305,7 +3318,7 @@ module Interstellar
         call dot2(uu,u2)
         tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask(1:nx)=1
-        where (dr2_SN(1:nx) > radius2)
+        where (dr2_SN(1:nx) > 4*radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
         endwhere
@@ -3323,7 +3336,7 @@ module Interstellar
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
+        rhom=tmp2(1)*0.75*pi_1/(2*remnant%feat%radius)**3
       endif
 !
 !  Determine the density rarification ratio in order to avoid excessive spikes
@@ -3396,7 +3409,7 @@ module Interstellar
         call dot2(uu,u2)
         tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask=1
-        where (dr2_SN(1:nx) > radius2)
+        where (dr2_SN(1:nx) > 4*radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
         endwhere
@@ -3415,7 +3428,7 @@ module Interstellar
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
+        rhom=tmp2(1)*0.75*pi_1/(2*remnant%feat%radius)**3
       endif
 !
     endsubroutine get_props_check

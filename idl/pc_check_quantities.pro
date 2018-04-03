@@ -131,6 +131,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_Lorentz_abs:'Lorentz force', $
 		W_Lorentz:'Lorentz work', $
 		Lorentz_angle:'Lorentz angle', $
+		Lorentz_angle_deviation:'Lorentz angle deviation', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_ohm_particle:'Ohmic heating rate / particle', $
 		HR_viscous:'viscous heating rate', $
@@ -323,6 +324,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_Lorentz_abs:'F_Lorentz', $
 		W_Lorentz:['u', 'F_Lorentz'], $
 		Lorentz_angle:['j', 'B'], $
+		Lorentz_angle_deviation:'Lorentz_angle', $
 		HR_ohm:'j', $
 		HR_ohm_particle:['HR_ohm', 'n_rho'], $
 		HR_viscous:['u', 'rho'], $

@@ -28,14 +28,14 @@
 /
 &density_run_pars
   borderlnrho='initial-condition'
-  idiff='hyper3-cyl' 
-  diffrho_hyper3=5e-3
+  idiff='hyper3-mesh' 
+  diffrho_hyper3_mesh=5
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-cyl'
-  nu_hyper3=5e-3 
+  ivisc='hyper3-mesh'
+  nu_hyper3_mesh=5
 /
 &special_run_pars
   lcap_modes_at_m6=F
@@ -48,6 +48,6 @@
   tau_cool=1
   ltau_cool_variable=T
   borderss='initial-condition'
-  iheatcond='hyper3-cyl'
-  chi_hyper3=5e-3
+  iheatcond='hyper3-mesh'
+  chi_hyper3_mesh=5
 /

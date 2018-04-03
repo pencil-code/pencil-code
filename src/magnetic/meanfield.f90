@@ -96,6 +96,7 @@ module Magnetic_meanfield
   logical :: ldelta_profile=.false., lalpha_tensor=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
+  logical :: lNEMPI_correction_qp_profile=.true.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -119,7 +120,7 @@ module Magnetic_meanfield
       lturb_temp_diff, lignore_gradB2_inchiB, &
       meanfield_qs, meanfield_qp, meanfield_qe, meanfield_qa, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_Ba, &
-      lqpcurrent,mf_qJ2, lNEMPI_correction, &
+      lqpcurrent,mf_qJ2, lNEMPI_correction, lNEMPI_correction_qp_profile, &
       alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -794,7 +795,9 @@ module Magnetic_meanfield
 !
 !  Allow for qp profile
 !
-            p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*mu01*qp_profder(n)*meanfield_qp_func*p%b2
+            if (lNEMPI_correction_qp_profile) then
+              p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*mu01*qp_profder(n)*meanfield_qp_func*p%b2
+            endif
           endif
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.

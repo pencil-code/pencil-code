@@ -251,6 +251,7 @@ module power_spectrum
   do ivec=1,3
      !
      if (trim(sp)=='u') then
+        if (iuu==0) call fatal_error('power','iuu=0')
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
      elseif (trim(sp)=='r2u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
@@ -949,6 +950,7 @@ module power_spectrum
     !  For "mag", calculate spectra of <bk^2> and <ak.bk>
     !
     if (sp=='kin') then
+      if (iuu==0) call fatal_error('powerhel','iuu=0')
       do n=n1,n2
         do m=m1,m2
           call curli(f,iuu,bbi,ivec)
@@ -964,6 +966,7 @@ module power_spectrum
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
+      if (iaa==0) call fatal_error('powerhel','iaa=0')
       if (lmagnetic) then
         do n=n1,n2
           do m=m1,m2
@@ -983,6 +986,7 @@ module power_spectrum
 !  spectrum of u.b
 !
     elseif (sp=='u.b') then
+      if (iuu==0.or.iaa==0) call fatal_error('powerhel','iuu or iaa=0')
       do n=n1,n2
         do m=m1,m2
           call curli(f,iaa,bbi,ivec)
@@ -1437,9 +1441,9 @@ module power_spectrum
     a_im=0.
     b_im=0.
   elseif (sp=='Str') then
-    if (istressX>0) then
-      a_re=f(l1:l2,m1:m2,n1:n2,istressX)
-      b_re=f(l1:l2,m1:m2,n1:n2,istressT)
+    if (iStressX>0) then
+      a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
+      b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
     else
       call fatal_error('powerGWs','must compile GW module for Str')
     endif

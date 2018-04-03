@@ -414,6 +414,7 @@ module Register
 !  print summary of variable names
 !
       call write_varname
+      call write_pt_positions
 !
     endsubroutine initialize_modules
 !***********************************************************************
@@ -1216,5 +1217,37 @@ module Register
       endif root
 !
     endsubroutine write_varname
+!***********************************************************************
+    subroutine write_pt_positions
+!
+!  Writes positions where pt and p2 variables are written
+!
+!   2-apr-18/axel: coded.
+!
+!  Note: this would need to be reworked if one later makes
+!  the output positions processor-dependent. At the moment,
+!  those positions are in that part of the mesh that is on
+!  the root processor.
+!
+      integer, parameter :: unit = 3
+!
+      root: if (lroot) then
+        open(unit, file=trim(datadir)//'/pt_positions.dat', status='replace')
+        10 format (3g13.5,2x,3i6)
+        11 format (a)
+        write(unit,11)'Positions where pt and p2 variables are written:'
+        write(unit,11)''
+        write(unit,11)'x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint='
+        write(unit,10) x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint
+        write(unit,11)''
+        write(unit,11)'x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2='
+        write(unit,10) x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2
+        write(unit,11)''
+        write(unit,11)'x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)='
+        write(unit,10) x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)
+        close(unit)
+      endif root
+!
+    endsubroutine write_pt_positions
 !***********************************************************************
 endmodule Register

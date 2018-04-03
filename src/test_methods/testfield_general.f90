@@ -36,6 +36,7 @@ module Testfield_general
   real,                     dimension(ninit):: amplaatest=0.,                            &
                                                kx_aatest=0.,ky_aatest=0.,kz_aatest=0.,   &
                                                phasex_aatest=0.,phasey_aatest=0.,phasez_aatest=0.
+  real :: ampl_eta_uz=0.
 !
   logical                                   :: luxb_as_aux=.false.,ljxb_as_aux=.false.
 
@@ -46,7 +47,8 @@ module Testfield_general
            initaatest,                              &          !        .
            amplaatest,                              &          !        .
            kx_aatest,ky_aatest,kz_aatest,           &          !        .
-           phasex_aatest,phasey_aatest,phasez_aatest           !        .
+           phasex_aatest,phasey_aatest,phasez_aatest, &        !        .
+           ampl_eta_uz
 !
 ! run parameters
 !
@@ -58,6 +60,7 @@ module Testfield_general
             ltestfield_taver=.false.,         &
             ltestfield_artifric=.false.,      &
             lresitest_eta_const=.false.,      &
+            lresitest_eta_proptouz=.false.,   &
             lresitest_hyper3=.false.,         &
             leta_rank2=.true.,                &   
             lforcing_cont_aatest=.false.
@@ -148,6 +151,9 @@ module Testfield_general
         case ('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresitest_hyper3=.true.
+        case ('proptouz')
+          if (lroot) print*, 'resistivity: proportional to uz'
+          lresitest_eta_proptouz=.true.
         case ('none')
           ! do nothing
         case default
@@ -473,7 +479,7 @@ module Testfield_general
 
     endsubroutine calc_uxb
 !***********************************************************************
-    subroutine calc_diffusive_part(f,iaxt,daatest)
+    subroutine calc_diffusive_part(f,p,iaxt,daatest)
 !
 !   6-jun-13/MR: outsourced from daatest_dt
 !   6-sep-13/MR: extended to spherical coordinates,
@@ -483,6 +489,7 @@ module Testfield_general
       use Sub, only: del2v, gij, gij_etc, div_mn, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
+      type (pencil_case),               intent(IN) :: p
       integer,                          intent(IN)   :: iaxt
       real, dimension(nx,3),            intent(INOUT):: daatest
 
@@ -490,6 +497,7 @@ module Testfield_general
       real, dimension(nx,3)  :: del2Atest
       real, dimension(nx,3,3):: aijtest
       real, dimension(nx) :: diffus_eta, diffus_eta3
+      integer :: i
 
       if (lcartesian_coords) then
         call del2v(f,iaxt,del2Atest)
@@ -522,6 +530,10 @@ module Testfield_general
 !  better cumulative with profiles?
 !
         if (lresitest_eta_const) daatest=etatest*del2Atest
+!
+        if (lresitest_eta_proptouz) then
+           do i=1,3 ; daatest(:,i)=etatest*(1.+ampl_eta_uz*p%uu(:,3))*del2Atest(:,i) ; enddo
+        endif
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
@@ -995,7 +1007,7 @@ module Testfield_general
 !
 !  calculate diffusive part
 !
-        call calc_diffusive_part(f,iaxtest,daatest)      
+        call calc_diffusive_part(f,p,iaxtest,daatest)
 !
 !  calculate testfield
 !

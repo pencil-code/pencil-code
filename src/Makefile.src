@@ -2131,10 +2131,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Petri's work laptop (MacBook Pro)
 ##
-#FC=mpif90 #(lm3-huckleberry|dhcp-eduroam-hy*)
-#FFLAGS= -O3 #(lm3-huckleberry|dhcp-eduroam-hy*)
-#CFLAGS=-DFUNDERSC=1 #(lm3-huckleberry|dhcp-eduroam-hy*)
-#FFLAGS_DOUBLE=-fdefault-real-8  #(lm3-huckleberry|dhcp-eduroam-hy*)
+#FC=mpif90 #(mbp4)
+#FFLAGS= -O3 #(mbp4)
+#CFLAGS=-DFUNDERSC=1 #(mbp4)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(mbp4)
 ##
 ##
 ## Piyali's work laptop at UiO(MacBook Pro)

@@ -76,7 +76,7 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
-  real :: rp,gamma_dg11=0.4
+  real :: rp,gamma_dg11=0.4, relhel_uukin=1.
   real :: lambda_kinflow=1., zinfty_kinflow=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
@@ -85,7 +85,7 @@ module Hydro
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
       circ_rmax,circ_step_width,circ_amp, ABC_A,ABC_B,ABC_C, &
-      ampl_kinflow, &
+      ampl_kinflow, relhel_uukin, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
@@ -465,10 +465,11 @@ module Hydro
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx, pom2
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
+      real, dimension(nx) :: random_r, random_p, random_tmp
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
-      real :: Balpha
+      real :: Balpha, ABC_A1, ABC_B1, ABC_C1
       real :: ro
       real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
@@ -520,9 +521,17 @@ module Hydro
         if (headtt) print*,'ABC flow'
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=ABC_A*sin(kz_uukin*z(n))    +ABC_C*cos(ky_uukin*y(m))
-          p%uu(:,2)=ABC_B*sin(kx_uukin*x(l1:l2))+ABC_A*cos(kz_uukin*z(n))
-          p%uu(:,3)=ABC_C*sin(ky_uukin*y(m))    +ABC_B*cos(kx_uukin*x(l1:l2))
+          ABC_A1=ABC_A*cos(omega_kinflow*t+phasex_uukin)
+          ABC_B1=ABC_B*cos(omega_kinflow*t+phasey_uukin)
+          ABC_C1=ABC_C*cos(omega_kinflow*t+phasez_uukin)
+          p%uu(:,1)=ABC_A1*sin(kz_uukin*z(n))    +ABC_C1*cos(ky_uukin*y(m))
+          p%uu(:,2)=ABC_B1*sin(kx_uukin*x(l1:l2))+ABC_A1*cos(kz_uukin*z(n))
+          p%uu(:,3)=ABC_C1*sin(ky_uukin*y(m))    +ABC_B1*cos(kx_uukin*x(l1:l2))
+        endif
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=ABC_A1*kz_uukin*sin(kz_uukin*z(n))    +ABC_C1*cos(ky_uukin*y(m))
+          p%oo(:,2)=ABC_B1*kx_uukin*sin(kx_uukin*x(l1:l2))+ABC_A1*kz_uukin*cos(kz_uukin*z(n))
+          p%oo(:,3)=ABC_C1*ky_uukin*sin(ky_uukin*y(m))    +ABC_B1*kx_uukin*cos(kx_uukin*x(l1:l2))
         endif
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -921,12 +930,18 @@ module Hydro
       case ('TG')
         if (headtt) print*,'Taylor-Green flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
 ! uu
+        fac=2.*cos(omega_kinflow*t)
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=+2.*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-          p%uu(:,2)=-2.*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
           p%uu(:,3)=+0.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=-fac*kz_uukin*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          p%oo(:,2)=-fac*kz_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          p%oo(:,3)=fac*(kx_uukin+ky_uukin)*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+        endif
 !
 !  modified Taylor-Green flow
 !
@@ -1002,6 +1017,26 @@ module Hydro
           p%uu(:,1)= fac*sin(argx)*cos(argy)*cos(argz)
           p%uu(:,2)= fac*cos(argx)*sin(argy)*cos(argz)
           p%uu(:,3)=fac2*cos(argx)*cos(argy)*sin(argz)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  modified Taylor-Green flow with (y,z,x) -> tilde(z,x,y), i.e., the x direction became z
+!
+      case ('Beltrami-x')
+        if (headtt) print*,'Beltrami-x motion; kx_uukin=',kx_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac=ampl_kinflow*cos(omega_kinflow*t)
+          argx=kx_uukin*x(l1:l2)+phasex_uukin
+          argy=ky_uukin*y(m)+phasey_uukin
+          p%uu(:,1)= 0.
+          p%uu(:,2)=fac*sin(argx)*relhel_uukin
+          p%uu(:,3)=fac*cos(argx)
+        endif
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=0.
+          p%oo(:,2)=fac*kx_uukin*sin(argx)
+          p%oo(:,3)=fac*kx_uukin*cos(argx)*relhel_uukin
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1267,7 +1302,7 @@ module Hydro
       case ('potential')
         if (headtt) print*,'potential; ampl_kinflow=', ampl_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
-        fac=ampl_kinflow
+        fac=ampl_kinflow*cos(omega_kinflow*t)
         cxt=cx_uukin*t
         cyt=cy_uukin*t
         czt=cz_uukin*t
@@ -1365,6 +1400,44 @@ module Hydro
           lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=fac
+!
+!  Random flow that is delta correlated in space and time.
+!
+      case ('delta_correlated')
+        if (headtt) print*,'delta_correlated; ampl_kinflow=',ampl_kinflow
+        if (lpenc_loc(i_uu)) then
+          do ii=1,3
+            if (modulo(ii-1,2)==0) then
+              call random_number_wrapper(random_r)
+              call random_number_wrapper(random_p)
+              random_tmp=sqrt(-2*log(random_r))*sin(2*pi*random_p)
+            else
+              random_tmp=sqrt(-2*log(random_r))*cos(2*pi*random_p)
+            endif
+            p%uu(:,ii)=one_over_sqrt3*ampl_kinflow*random_tmp
+          enddo
+          lupdate_aux=.true.
+        endif
+!
+!  Random flow that is delta correlated in space, but unchanged in time.
+!
+      case ('deltax_correlated')
+        if (headtt) print*,'delta_correlated_fixed_intime; ampl_kinflow=',ampl_kinflow
+        if (lpenc_loc(i_uu)) then
+          do ii=1,3
+            if (modulo(ii-1,2)==0) then
+              seed(1)=-((seed0-1812+1)*10+iproc_world+ncpus*(m+my*n))
+              call random_seed_wrapper(PUT=seed)
+              call random_number_wrapper(random_r)
+              call random_number_wrapper(random_p)
+              random_tmp=sqrt(-2*log(random_r))*sin(2*pi*random_p)
+            else
+              random_tmp=sqrt(-2*log(random_r))*cos(2*pi*random_p)
+            endif
+            p%uu(:,ii)=one_over_sqrt3*ampl_kinflow*random_tmp
+          enddo
+          lupdate_aux=.true.
+        endif
 !
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)

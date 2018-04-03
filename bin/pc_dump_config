@@ -143,22 +143,38 @@ sub usage {
 # Extract description and usage information from this file's header.
     my $thisfile = __FILE__;
     local $/ = '';              # Read paragraphs
-    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
-    while (<FILE>) {
+    open my $fh, '<', $thisfile or die "Cannot open $thisfile\n";
+    while (<$fh>) {
         # Paragraph _must_ contain `Description:' or `Usage:'
-        next unless /^\s*\#\s*(Description|Usage):/m;
+        next unless /^
+                     \s* \# \s*
+                     ( Description | Usage )
+                     :
+                    /mx;
         # Drop `Author:', etc. (anything before `Description:' or `Usage:')
-        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        s/^
+          (?: .*? \n) ??
+          (
+              \s* \# \s*
+              (?: Description | Usage )
+              :
+              \s*
+              \n
+              .*
+          )
+         / $1
+         /sx;
         # Don't print comment sign:
         s/^\s*# ?//mg;
         last;                        # ignore body
     }
-    return $_ or "<No usage information found>\n";
+    close $fh;
+    return $_ || "<No usage information found>\n";
 }
 # ---------------------------------------------------------------------- #
 sub version {
-# Return CVS data and version info.
-    my $doll='\$';              # Need this to trick CVS
+# Return SVN/CVS data and version info.
+    my $doll='\$';              # Need this to trick SVN/CVS
     my $cmdname = (split('/', $0))[-1];
     my $rev = '$Revision: 1.12 $';
     my $date = '$Date: 2008/07/07 21:37:16 $';
@@ -168,5 +184,3 @@ sub version {
     return "$cmdname version $rev ($date)\n";
 }
 # ---------------------------------------------------------------------- #
-
-# End of file build

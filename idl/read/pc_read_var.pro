@@ -90,7 +90,7 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status, sphere=sphere,single=single
+    exit_status=exit_status, sphere=sphere,single=single,toyang=toyang
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -115,6 +115,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcz, 'none'
   default, validate_variables, 1
   default, single, 0
+  default, toyang, 0
 ;
   if (arg_present(exit_status)) then exit_status=0
   default, reduced, 0
@@ -211,8 +212,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if tag_exists(param,'LYINYANG') then $
     if (param.lyinyang) then yinyang=1
 ;
-  if yinyang then $
+  if yinyang then begin
     print, 'This is a Yin-Yang grid run. Data are retrieved both in separate and in merged arrays.'
+    print, 'Merged data refer to the basis of the '+(toyang ? 'Yang':'Yin')+' grid.'
+  endif
 ;
 ; Set the coordinate system.
 ;
@@ -409,9 +412,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   res=''
   content=''
+
   for iv=0L,totalvars-1L do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
-    if (nprocs eq 1 and allprocs ne 2) then begin
+    if (nprocs eq 1 and allprocs ne 2 and not run2D) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
       res=res+','+varcontent[iv].idlvarloc
@@ -439,10 +443,18 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   content = strmid(content,2)
   if (not keyword_set(quiet)) then begin
+    dmx = dim.mx
+    dmy = dim.my
+    dmz = dim.mz
+    if (run2D) then begin
+      if (nx eq 1) then dmx = 1
+      if (ny eq 1) then dmy = 1
+      if (nz eq 1) then dmz = 1
+    endif
     print, ''
     print, 'The file '+varfile+' contains: ', content
     print, ''
-    print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
+    print, 'The grid dimension is ', dmx, dmy, dmz
     print, ''
   endif
 ;
@@ -491,7 +503,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Setup the coordinates mappings from the processor to the full domain.
 ;
-    if (nprocs gt 1 or allprocs eq 2) then begin
+    if (nprocs gt 1 or run2D or allprocs eq 2) then begin
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
@@ -568,6 +580,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
     close, file
     openr, file, filename, f77=f77, swap_endian=swap_endian
+
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
@@ -581,7 +594,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         idum=0L & readu, file, idum   ; read Fortran record marker as next record is sequentially written
       endif
       readu, file, t, x, y, z, dx, dy, dz
-    endif else if (allprocs ne 2 and nprocs eq 1) then begin
+    endif else if (allprocs ne 2 and nprocs eq 1 and not run2D) then begin
       ; single processor distributed file
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay
@@ -756,9 +769,11 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
     merge_yin_yang, dim.m1, dim.m2, dim.n1, dim.n2, y, z, dy, dz, yz, inds, yghosts=yghosts, zghosts=zghosts
 ;
-    if keyword_set(sphere) then begin
-      triangulate, yz[0,*], yz[1,*], triangles, sphere=sphere_data    ; not operational, IDL bug?
-      sphere_data=''
+    if keyword_set(sphere) then begin    ; not operational
+      ;lon=reform(yz[1,*]) & lat=reform(yz[0,*]) & fval=indgen((size(lon))[1])
+      ;triangulate, lon, lat, triangles, sphere=sphere_data, fval=fval
+      triangulate, yz[0,*], yz[1,*], triangles
+      sphere_data=0 & fval=0
     endif else $
       triangulate, yz[0,*], yz[1,*], triangles
 ;
@@ -793,12 +808,12 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Transformation of theta and phi components in Yang grid.
 ;  Merged variables are fully trimmmed.
 ;
-        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1])' )
-        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,0],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
+        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1-toyang])' )
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,toyang],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
                                       '[(reform(transpose(trformed,[0,2,1,3]),nx,ny*nz,3))[*,inds,*]]]' ) 
       endif else $
-        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,0],[0,2,1]),nx,ny*nz)],'+ $ 
-                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1],[0,2,1]),nx,ny*nz))[*,inds]]]' )
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,toyang],[0,2,1]),nx,ny*nz)],'+ $ 
+                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1-toyang],[0,2,1]),nx,ny*nz))[*,inds]]]' )
     endfor
   endif
 ;
@@ -813,7 +828,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     tagnames += ",'yz','triangles'" 
     if is_defined(yghosts) then tagnames += ",'yghosts'"
     if is_defined(zghosts) then tagnames += ",'zghosts'"
-    if keyword_set(sphere) then tagnames += ",'sphere_data'"
+    if keyword_set(sphere) then tagnames += ",'sphere_data', 'fval'"
   endif 
   tagnames += arraytostring(tags,QUOTE="'") 
 ;
@@ -829,7 +844,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     makeobject += ",yz,triangles"
     if is_defined(yghosts) then makeobject += ",yghosts"
     if is_defined(zghosts) then makeobject += ",zghosts"
-    if keyword_set(sphere) then makeobject += ",sphere_data"
+    if keyword_set(sphere) then makeobject += ",sphere_data,fval"
     mergevars=arraytostring(variables+'_merge')
   endif
 ;

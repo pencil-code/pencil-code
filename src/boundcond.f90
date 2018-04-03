@@ -7081,8 +7081,10 @@ module Boundcond
 !
 !  Potential field extrapolation in z-direction for the ghost cells.
 !  To have a smooth transition at the boundary from non-force-free to a
-!  force-free field, the Az component is also extrapolated, so that it goes
-!  to zero smoothly. This reduces strong currents at the physical boundary.
+!  force-free field, the Az component is also extrapolated in the same way.
+!  This reduces strong currents at the top boundary.
+!  At the bottom boundary the extrapolation increases contrasts in A.
+!  This mimicks flux tubes that become narrower below the photosphere.
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !

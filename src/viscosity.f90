@@ -1626,7 +1626,7 @@ module Viscosity
           endif
         endif
         if (lfirst .and. ldt) &
-             p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmax_pencil**4
+             p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmin_pencil**4
       endif
 !
 ! Following Axel's hyper3_mesh for density
@@ -2159,7 +2159,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: Hmax
+      real, dimension (nx),intent(inout) :: Hmax
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
 !  of the entropy (both with and without pretend_lnTT), or of
