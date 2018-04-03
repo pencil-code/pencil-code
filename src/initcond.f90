@@ -6354,6 +6354,12 @@ module Initcond
         if (lbin) then
           call input_snap(datafile,apot,3,0)
           call input_snap_finalize()
+!          apot(:,:,:,1)=0.0
+!          apot(:,:,:,2)=spread(spread(0.1*(alog(exp((x+2)/0.2)+exp(-(x+2)/0.2))-&
+!                       alog(exp((x+1)/0.2)+exp(-(x+1)/0.2))),2,my),3,mz)-&
+!                       spread(spread(0.1*(alog(exp((x-1)/0.2)+exp(-(x-1)/0.2))-&
+!                       alog(exp((x-2)/0.2)+exp(-(x-2)/0.2))),2,my),3,mz)
+!          apot(:,:,:,3)=0.0
           f(:,:,:,i  ) = f(:,:,:,i  )+scale_aa*apot(:,:,:,1)
           f(:,:,:,i+1) = f(:,:,:,i+1)+scale_aa*apot(:,:,:,2)
           f(:,:,:,i+2) = f(:,:,:,i+2)+scale_aa*apot(:,:,:,3)

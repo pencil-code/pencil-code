@@ -54,6 +54,7 @@ module Special
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
+  real :: nwave,freq
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   integer :: nlf=4
@@ -103,7 +104,7 @@ module Special
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special, &
-      lemerg_profx,lheatcond_cutoff
+      lemerg_profx,lheatcond_cutoff,nwave,freq
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1208,14 +1209,17 @@ module Special
 !
       use Deriv, only: der
       use Mpicomm, only: mpibcast_real
+      use SharedVariables, only: get_shared_variable
       use Sub, only: cross,gij,curl_mn
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(mx,my,mz):: rho_tmp
       real, intent(in) :: dt_
       real, dimension(nx,3) :: uu,bb,uxb
+      real, dimension(nx) :: va
       real, dimension(2) :: gn
-      integer :: ig
+      real, pointer, dimension(:) :: B_ext
+      integer :: ig,ierr
 !
 ! Flux emergence by driving an EMF at bottom boundary
 ! Presently only emf from constant field and constant velocity
@@ -1228,8 +1232,19 @@ module Special
           case ('uniform')
             do ig=0,nghost
               do m=m1, m2
-                uu(:,1)=uu_emerg(1)
-                uu(:,2)=uu_emerg(2)
+                call get_shared_variable('B_ext', B_ext,ierr)
+                if (ierr/=0) call fatal_error('special_after_timestep:',&
+                'failed to get B_ext from magnetic')
+                bb(:,1)=bb_emerg(1)+B_ext(1)
+                bb(:,2)=bb_emerg(2)+B_ext(2)
+                bb(:,3)=bb_emerg(3)+B_ext(3)
+                if (iglobal_bx_ext/=0) bb(:,1)=bb(:,1)+f(l1:l2,m,n1-ig,iglobal_bx_ext)
+                if (iglobal_by_ext/=0) bb(:,2)=bb(:,2)+f(l1:l2,m,n1-ig,iglobal_by_ext)
+                if (iglobal_bz_ext/=0) bb(:,3)=bb(:,3)+f(l1:l2,m,n1-ig,iglobal_bz_ext)
+                va=sqrt(mu01*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2))/exp(0.5*f(l1:l2,m,n1-ig,ilnrho))
+                uu(:,1)=uu_emerg(1)*sin(nwave*x(l1:l2)/Lxyz(1)-freq*t)
+                uu(:,2)=uu_emerg(2)*cos(2*va*nwave*t/Lxyz(1))
+                bb(:,2)=bb(:,2)-bb_emerg(2)*cos(2*va*nwave*t/Lxyz(1))
                 if (lemerg_profx) then
 !
 ! Hard coding the emerging velocity x-profile for testing
@@ -1240,13 +1255,14 @@ module Special
                           (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
                           (1+tanh((x(l1:l2)-4+0.5)/0.4))))
                 else
-                  uu(:,3)=uu_emerg(3)
+                  uu(:,3)=uu_emerg(3)*cos(nwave*x(l1:l2)/Lxyz(1)-freq*t)
                 endif
+                f(l1:l2,m,n1-ig,iux) = uu(:,1)
+                f(l1:l2,m,n1-ig,iuy) = uu(:,2)
                 f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
-                bb(:,1)=bb_emerg(1)
-                bb(:,2)=bb_emerg(2)
-                bb(:,3)=bb_emerg(3)
+!
+!
                 call cross(uu,bb,uxb)
                 f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
                 f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_

@@ -1092,6 +1092,10 @@ module Boundcond
                 ! BCZ_DOC: allow outflow, but no inflow
                 ! BCZ_DOC: forces ghost cells and boundary to not point inwards
                 call bc_outflow_z(f,topbot,j,.true.)
+              case ('crk')
+                ! BCY_DOC: no-inflow: copy value of last physical point
+                ! BCY_DOC: to all ghost cells, but suppressing any inflow
+                call bc_copy_z_noinflow(f,topbot,j)
               case ('in0')
                 ! BCZ_DOC: allow inflow, but no outflow
                 ! BCZ_DOC: forces ghost cells and boundary to not point outwards
@@ -6924,6 +6928,60 @@ module Boundcond
       endselect
 !
     endsubroutine bc_copy_z
+!***********************************************************************
+    subroutine bc_copy_z_noinflow(f,topbot,j)
+!
+!  Copy value in last grid point to all ghost cells. Set to zero if
+!  the sign is wrong. This bc is different from outflow (cop). Outflow
+!  just copies the last point to the ghost cells, thus permitting both
+!  outflow (uy pointing out of the box) and inflow (uy pointing back to
+!  the box). 'crk' is a no-inflow, purely outflow boundary. It sets the
+!  velocity to zero if that was pointing back to the box. The 'k' means
+!  "kill". "copy amd reduce if outflow, kill if inflow". Additionally the velocity
+!  in the ghost zones are reduced by a factor 
+!  2i, where i is the i-th ghost zone
+!
+!  22-mar-2018/piyali: copied from bc_copy_z_noinflow
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real :: value
+      integer :: j,l,n
+!
+      integer :: i
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do l=1,size(f,1); do m=1,size(f,2)
+          value=0.
+          if (f(l,m,n1,j)<0) value=f(l,m,n1,j)
+          do i=1,nghost
+            f(l,m,n1-i,j)=value/(1.0*i)
+          enddo
+        enddo;enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do l=1,size(f,1); do m=1,size(f,2)
+          do i=1,nghost
+            value=0.
+            if (f(l,m,n2,j) > 0) value=f(l,m,n2-i,j)
+            f(l,m,n2+i,j)=value/(1.0*i)
+          enddo
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_copy_z_noinflow: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_copy_z_noinflow
 !***********************************************************************
     subroutine bc_frozen_in_bb(topbot,j)
 !

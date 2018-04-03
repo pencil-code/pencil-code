@@ -303,6 +303,8 @@ contains
     if (hyper3_coeff /= 0.) then
        call del6(f,iqx,hc,IGNOREDX=.true.)
        df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff*hc
+       call del6(f,iqz,hc,IGNOREDX=.true.)
+       df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) + hyper3_coeff*hc
     endif
 !
     if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
@@ -729,10 +731,12 @@ contains
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
     tau1_spitzer_penc=cdtv**2/(1.0d-6*max(dz_1(n),dx_1(l1:l2)))**2/ &
                       chi_spitzer
+!PC
+    tau1_spitzer_penc=1./(10*1.0e-6)
 !
     do i=1,3
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau1_spitzer_penc*(p%qq(:,i) + spitzer_vec(:,i))
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))
     enddo
 !
 ! Add to energy equation
@@ -774,7 +778,7 @@ contains
     endif
 !
     if (lvideo) then
-       rhs = (p%divq - tmp)*exp(-p%lnrho)
+       rhs = p%divq
        divq_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
        if (m == iy_loc)  divq_xz(:,n-n1+1)= rhs
        if (n == iz_loc)  divq_xy(:,m-m1+1)= rhs
