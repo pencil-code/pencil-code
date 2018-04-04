@@ -79,7 +79,7 @@ COMPILE_OPT IDL2,HIDDEN
                energy:density*velocity^2*length^3, $
                specific_energy:velocity^2, $
                magnetic_field:magnetic, $
-               current_density:velocity*sqrt(param.mu0*0.25/double(!Pi)*1.e7*density)/length }
+               current_density:velocity*sqrt(density/(param.mu0*4*!DPi*1.e-7))/length }
     pc_check_math,location='pc_units - SI unit calculation'
     tex=texsyms()
     symbols = { temperature:'K', $

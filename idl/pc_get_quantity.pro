@@ -905,8 +905,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin
 		; Current density [A / m^2]
-		mu0 = pc_get_parameter ('mu0', label=quantity)
-		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / mu0 * unit.current_density
+		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] * unit.current_density
 		return, jj
 	end
 	if (strcmp (quantity, 'j_abs', /fold_case)) then begin
