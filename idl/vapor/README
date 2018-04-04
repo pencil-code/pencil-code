@@ -1,3 +1,35 @@
+1) add Vapor libraries to the IDL DLM path:
+$ export IDL_DLM_PATH="+/path/to/Vapor/lib/:$IDL_DLM_PATH"
+$ export LD_LIBRARY_PATH="/path/to/Vapor/lib/"
+$ idl
+
+2)
+option A) load full volume:
+IDL> pc_read_var_raw, obj=var, tags=tags, varfile='var.dat', dim=dim, grid=grid
+option B) load a subvolume of the inner 256*256 pixels:
+IDL> pc_read_subvol_raw, obj=var, tags=tags, varfile='var.dat', sub_dim=dim, sub_grid=grid, /allprocs, xs=128, xe=128*3-1, ys=128, ye=128*3-1, /addghosts
+
+3) get a quantity (here B_z) and save it as VDF:
+IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid)
+IDL> x = pc_get_quantity ('x', var, tags, dim=dim, grid=grid)    
+IDL> y = pc_get_quantity ('y', var, tags, dim=dim, grid=grid)
+IDL> z = pc_get_quantity ('z', var, tags, dim=dim, grid=grid)
+IDL> size_x = pc_get_quantity ('size_x', var, tags, dim=dim, grid=grid)
+IDL> size_y = pc_get_quantity ('size_y', var, tags, dim=dim, grid=grid)
+IDL> size_z = pc_get_quantity ('size_z', var, tags, dim=dim, grid=grid)    
+IDL> size = [size_x, size_y, size_z]
+IDL> origin_x = pc_get_quantity ('origin_x', var, tags, dim=dim, grid=grid) 
+IDL> origin_y = pc_get_quantity ('origin_y', var, tags, dim=dim, grid=grid)
+IDL> origin_z = pc_get_quantity ('origin_z', var, tags, dim=dim, grid=grid)
+IDL> origin = [origin_x, origin_y, origin_z]
+IDL> time = 3780
+IDL> periodic = byte ([1, 1, 0])
+IDL> equidist = periodic
+IDL> pc_save_vdf, 'B_z.vdf', 'B_z', B_z, x, y, z, size, origin, periodic, equidist, time
+
+=========================================================================
+Possibly outdated information:
+
 This directory contains idl routines that can be used with VAPOR.
 See http://www.vapor.ucar.edu/ for VAPOR documentation.
 
