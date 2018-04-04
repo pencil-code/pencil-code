@@ -34,7 +34,7 @@ module Special
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
-  real :: Bz_flux=0.,quench=0.,quench0=1.,quench_width=1., b_tau=0.
+  real :: Bz_flux=0.,quench=0.,quench0=0.,quench_width=1., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: init_time2=0.
   real :: limiter_tensordiff=3
