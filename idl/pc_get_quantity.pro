@@ -958,9 +958,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 	if (strcmp (quantity, 'H_j', /fold_case)) then begin
 		; Electric current helicity [A * T * m]
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		return, dot (jj, bb)
+		return, mu0_SI * dot (jj, bb)
 	end
 	if (strcmp (quantity, 'dH_mag_dt', /fold_case)) then begin
 		; Change rate of magnetic field helicity density [T^2 * m / s =?= A * T / s]
