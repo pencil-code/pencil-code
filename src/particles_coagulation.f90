@@ -36,6 +36,8 @@ module Particles_coagulation
   real :: critical_mass_ratio_sticking=1.0
   real :: minimum_particle_mass=0.0, minimum_particle_radius=0.0
   real, pointer :: rhs_poisson_const
+  real :: tstart_droplet_coagulation=impossible
+  logical :: ldroplet_coagulation_runtime=.false.
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
@@ -44,7 +46,7 @@ module Particles_coagulation
   logical :: lzsomdullemond=.false.     ! use Zsom and Dullemond method
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
-  logical :: ldroplet_coagulation=.false.
+  logical :: ldroplet_coagulation=.false., normal_coagulation=.false.
   logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
   logical :: kernel_output=.false., radius_output=.false.
@@ -85,7 +87,7 @@ module Particles_coagulation
       luser_random_number_wrapper, lrelabelling, rdifference, &
       kernel_output, deltad, a0, rbin, &
       radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
-      sphericalKernel
+      sphericalKernel, normal_coagulation, tstart_droplet_coagulation
 !
   contains
 !***********************************************************************
@@ -161,6 +163,7 @@ module Particles_coagulation
         allocate(cum_func_sec_ik(mpar_loc,mpar_loc))
       end if
 !
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_coag
@@ -318,6 +321,9 @@ module Particles_coagulation
               k30_30, k30_20, k30_10, &
               k20_20, k20_10, &
               k10_10
+!
+! a flag to start collision on the fly
+      if (t >= tstart_droplet_coagulation) ldroplet_coagulation=.true. 
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
@@ -482,9 +488,11 @@ module Particles_coagulation
                             droplet_coagulation_model=='shima') then
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                           max(npswarmj,npswarmk)
-                    else
+                    elseif (normal_coagulation) then 
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                           min(npswarmj,npswarmk)
+                    else
+                      tau_coll1=0     
                       if (lgravitational_cross_section) then
                         tau_coll1=tau_coll1*(1.0+2*GNewton* &
                             four_pi_rhopmat_over_three* &
@@ -875,6 +883,7 @@ module Particles_coagulation
       real :: coeff_restitution, deltav_recoil, escape_speed
       real :: apj,mpj,npj,apk,mpk,npk
       logical :: lswap
+!
 !
       if (lparticles_number) then
 !
