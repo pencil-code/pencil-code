@@ -3327,23 +3327,23 @@ module Magnetic
             if (lboris_correction) then
 !
 !  Following Eq. 34 of Gombosi et al. 2002 for Boris correction. Can work with
-!  const gravity only at present
+!  only const gravity at present
 !
                 df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gamma_A2*p%jxbr(:,1)+&
-                                  (p%ugu(:,1)+p%rho1gpp(:,1)+p%gg(:,1))*(1-p%gamma_A2)-&
-                                  0.5*mu01*(p%gamma_A2**2*p%rho1/p%clight2)* &
+                                  (p%ugu(:,1)+p%rho1gpp(:,1)-p%gg(:,1))*(1-p%gamma_A2)-&
+                                  mu01*(p%gamma_A2**2*p%rho1/p%clight2)* &
                                   (p%bb(:,1)**2*(p%ugu(:,1)+p%rho1gpp(:,1)-p%gg(:,1))+&
                                   p%bb(:,1)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2)-p%gg(:,2))+&
                                   p%bb(:,1)*p%bb(:,3)*(p%ugu(:,3)+p%rho1gpp(:,3)-p%gg(:,3)))
                 df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gamma_A2*p%jxbr(:,2)+&
-                                  (p%ugu(:,2)+p%rho1gpp(:,2)+p%gg(:,2))*(1-p%gamma_A2)-&
-                                  0.5*mu01*(p%gamma_A2**2*p%rho1/p%clight2)* &
+                                  (p%ugu(:,2)+p%rho1gpp(:,2)-p%gg(:,2))*(1-p%gamma_A2)-&
+                                  mu01*(p%gamma_A2**2*p%rho1/p%clight2)* &
                                   (p%bb(:,2)**2*(p%ugu(:,2)+p%rho1gpp(:,2)-p%gg(:,2))+&
                                   p%bb(:,2)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1)-p%gg(:,1))+&
                                   p%bb(:,2)*p%bb(:,3)*(p%ugu(:,3)+p%rho1gpp(:,3)-p%gg(:,3)))
                 df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gamma_A2*p%jxbr(:,3)+&
-                                  (p%ugu(:,3)+p%rho1gpp(:,3)+p%gg(:,3))*(1-p%gamma_A2)-&
-                                  0.5*mu01*(p%gamma_A2**2*p%rho1/p%clight2)* &
+                                  (p%ugu(:,3)+p%rho1gpp(:,3)-p%gg(:,3))*(1-p%gamma_A2)-&
+                                  mu01*(p%gamma_A2**2*p%rho1/p%clight2)* &
                                   (p%bb(:,3)**2*(p%ugu(:,3)+p%rho1gpp(:,3)-p%gg(:,3))+&
                                   p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1)-p%gg(:,1))+&
                                   p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2)-p%gg(:,2)))

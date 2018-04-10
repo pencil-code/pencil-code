@@ -43,7 +43,7 @@ module Special
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
   logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
-             lemerg_profx=.false.
+             lemerg_profx=.false.,lset_boundary_emf=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -104,7 +104,7 @@ module Special
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special, &
-      lemerg_profx,lheatcond_cutoff,nwave,freq
+      lemerg_profx,lheatcond_cutoff,nwave,freq,lset_boundary_emf
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1226,8 +1226,8 @@ module Special
 !
       call mpibcast_real(uu_emerg,3)
       call mpibcast_real(bb_emerg,3)
-      if (lflux_emerg_bottom) then
-        if (lfirst_proc_z.and.lcartesian_coords) then
+      if (lfirst_proc_z.and.lcartesian_coords) then
+        if (lflux_emerg_bottom) then
           select case (flux_type)
           case ('uniform')
             do ig=0,nghost
@@ -1243,8 +1243,7 @@ module Special
                 if (iglobal_bz_ext/=0) bb(:,3)=bb(:,3)+f(l1:l2,m,n1-ig,iglobal_bz_ext)
                 va=sqrt(mu01*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2))/exp(0.5*f(l1:l2,m,n1-ig,ilnrho))
                 uu(:,1)=uu_emerg(1)*sin(nwave*x(l1:l2)/Lxyz(1)-freq*t)
-                uu(:,2)=uu_emerg(2)*cos(2*va*nwave*t/Lxyz(1))
-                bb(:,2)=bb(:,2)-bb_emerg(2)*cos(2*va*nwave*t/Lxyz(1))
+                uu(:,2)=uu_emerg(2)*cos(nwave*x(l1:l2)/Lxyz(1)-2*va*nwave*t/Lxyz(1))
                 if (lemerg_profx) then
 !
 ! Hard coding the emerging velocity x-profile for testing
@@ -1304,6 +1303,29 @@ module Special
           endselect
         endif
       endif
+      if (lset_boundary_emf) then
+        do m=m1,m2
+          call bc_emf_z(f,df,dt_,'top',iax)
+          call bc_emf_z(f,df,dt_,'top',iay)
+          call bc_emf_z(f,df,dt_,'top',iaz)
+        enddo
+      endif
+!      if (lflux_emerg_bottom) then
+!        do m=m1, m2
+!          do n=n1,n2
+!            if (abs(z(n)) .lt. 0.5) then
+!               va=sqrt(mu01*(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,ibz)**2))/exp(0.5*f(l1:l2,m,n,ilnrho))
+!               uu(:,2)=0.01*uu_emerg(2)*cos(nwave*x(l1:l2)/Lxyz(1)+nwave*z(n)/Lxyz(3)-2*va*nwave*t/Lxyz(1))
+!               uu(:,1)=0.01*uu_emerg(3)*sin(nwave*x(l1:l2)/Lxyz(1)+nwave*z(n)/Lxyz(3)-2*va*nwave*t/Lxyz(1))/0.0111803
+!               uu(:,3)=-0.005*uu_emerg(3)*sin(nwave*x(l1:l2)/Lxyz(1)+nwave*z(n)/Lxyz(3)-2*va*nwave*t/Lxyz(1))/0.0111803
+!               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+lnrho_min_tau*(-f(l1:l2,m,n,iux)+uu(:,1))*dt_
+!               f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+lnrho_min_tau*(-f(l1:l2,m,n,iuy)+uu(:,2))*dt_
+!               f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+lnrho_min_tau*(-f(l1:l2,m,n,iuz)+uu(:,3))*dt_
+!            endif
+!          enddo
+!        enddo
+!      endif
+!
 !      if (.not.ldensity_nolog .and. lslope_limited_special) then
 !        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
 !        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
@@ -4185,6 +4207,32 @@ module Special
 !
     endsubroutine enhance_vorticity
 !***********************************************************************
+    subroutine bc_emf_z(f,df,dt_,topbot,j)
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      real, intent(in) :: dt_
+      integer, intent (in) :: j
+      integer :: i
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        print*, "bc_emf_z: ", topbot, " should be 'top'"
+      case ('top')               ! top boundary
+        if (llast_proc_z) then
+          do i=1,nghost
+            f(l1:l2,m,n2+i,j)=f(l1:l2,m,n2+i,j)+df(l1:l2,m,n2,j)*dt_
+          enddo
+        endif
+
+      case default
+        print*, "bc_emf_z: ", topbot, " should be 'top'"
+      endselect
+!
+    endsubroutine bc_emf_z
+!***********************************************************************
+
     subroutine generate_halfgrid(x12,y12,z12)
 !
 ! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
