@@ -138,7 +138,7 @@ def shocktube(x, t, parl=[], parr=[], gamma=1.4,
         p[reg4] = p4
         rho[reg4] = rho4
 
-    if right[0] >= 0: 
+    if right[0] >= 0:
         u[right] = ur
         p[right] = pr
         rho[right] = rhor
