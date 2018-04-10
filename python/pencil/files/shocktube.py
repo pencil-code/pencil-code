@@ -1,14 +1,14 @@
 """
-   shocktube.py   
+   shocktube.py
 
 
    Author: fg (fred.gent.ncl@gmail.com)
    Date:   10-Apr-2018
-  
+
    Description
    Adapted from IDL script shocktube.pro
    Analytical solution of the shocktube problem
-  
+
    Initial state (pressure jump)
 
    ------------------+------------------
@@ -27,7 +27,7 @@
    Velocity
                          *************
                        *
-                     *                      
+                     *
                    *
    -**************--------------------***---
 
@@ -49,7 +49,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def shocktube(x, t, parl=[], parr=[], gamma=1.4, 
+def shocktube(x, t, parl=[], parr=[], gamma=1.4,
               DEBUG=False, lplot=False
              ):
     """
@@ -60,7 +60,7 @@ def shocktube(x, t, parl=[], parr=[], gamma=1.4,
       p, u, rho     : pressure and density at positions X
       PARL, PARR : parameters [u,p,rho] to left and right of membrane
       GAMMA      : adiabatic index
-    
+
      Default parameters are for Sod's reference problem
     """
     if len(parl) <= 0:
@@ -97,52 +97,52 @@ def shocktube(x, t, parl=[], parr=[], gamma=1.4,
 
     rho3 = rhol*(p3/pl)**(1./gamma)
     cs3  = np.sqrt(gamma*p3/rho3)
-  
+
     p4 = p3
     u4 = u3
     us = ur + (pr-p4)/(ur-u4)/rhor  # velocity of shock front
     rho4 = -(pr-p4)/(ur-u4)/(u4-us)
     cs4 = np.sqrt(gamma*p4/rho4)
-  
+
     ##   positions of separating faces
     x1 = (ul-csl)*t
     x2 = (u3-cs3)*t
     x3 = u4*t
     x4 = us*t
-  
+
     ##   calculate profiles
     left  = np.where(x <= x1)[0]
     reg2  = np.where(x[left[-1]+1:] < x2)[0]+left[-1]+1 # expansion region
     reg3  = np.where(x[reg2[-1]+1:] < x3)[0]+reg2[-1]+1
     reg4  = np.where(x[reg3[-1]+1:] < x4)[0]+reg3[-1]+1
     right = np.where(x > x4)
-  
+
     if left[0] >= 0:
         u[left] = ul
         p[left] = pl
         rho[left] = rhol
-  
+
     if reg2[0] >= 0:                                    # expansion region
         u[reg2]   = 2/(gamma+1)*(csl+x[reg2]/t+gamm1/2*ur)
         p[reg2]   = pl*(1-gamm1/2*u[reg2]/csl)**(2*gamma/gamm1)
         rho[reg2] = rhol*(1-gamm1/2*u[reg2]/csl)**(2/gamm1)
-  
+
     if reg3[0] >= 0:
         u[reg3] = u3
         p[reg3] = p3
         rho[reg3] = rho3
     endif
-  
+
     if reg4[0] >= 0:                            # expansion region
         u[reg4] = u4
         p[reg4] = p4
         rho[reg4] = rho4
-  
+
     if right[0] >= 0: 
         u[right] = ur
         p[right] = pr
         rho[right] = rhor
-  
+
     if lplot:
         plt.figure()
         plt.subplot(1,3,0)
@@ -165,6 +165,6 @@ def shocktube(x, t, parl=[], parr=[], gamma=1.4,
         print( 'V2 ={}'.format( u4-cs3))
         print( 'V3 ={}'.format( u4))
         print( 'V4 ={}'.format( us))
-  
+
     return p, u, rho
     ## End of file shocktube.py
