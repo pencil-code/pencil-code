@@ -878,7 +878,8 @@ module Special
 !
 !  due to ignoredx hyper3_chi has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/cdtv3)
       endif
 !
       if (R_hyperchi /= 0.) then
@@ -896,7 +897,8 @@ module Special
 !
 !  due to ignoredx tmp has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
       if (lfirst.and.ldt) then
@@ -929,19 +931,21 @@ module Special
 !
 !  due to ignoredx hyper3_nu has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/cdtv3)
       endif
 !
       if (R_hypernu /= 0.) then
         tmp = sqrt(p%u2)/dxmax_pencil/R_hypernu
         do i=0,2
           call del6(f,iux+i,hc,IGNOREDX=.true.)
-          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_nu*hc
+          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + tmp*hc
         enddo
 !
 !  due to ignoredx tmp has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
       if (lchen .and. mach_chen /= 0.) then
@@ -1005,7 +1009,8 @@ module Special
 !
 !  due to ignoredx hyper3_diffrho has [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/cdtv3)
       endif
 !
       if (R_hyperdiffrho /= 0.) then
@@ -1018,7 +1023,8 @@ module Special
 !
 !  due to ignoredx tmp has the units [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
     endsubroutine special_calc_density
@@ -1056,7 +1062,8 @@ module Special
 !
 !  due to ignoredx hyper3_heat has the unit [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_heat/0.01)
+!          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_heat/0.01)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_nu/cdtv3)
       endif
 !
       if (R_hypereta /= 0.) then
@@ -1075,7 +1082,8 @@ module Special
 !
 !  due to ignoredx tmp has the unit [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
     endsubroutine special_calc_magnetic
