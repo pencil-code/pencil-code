@@ -28,20 +28,19 @@ def var(*args, **kwargs):
 
     call signature:
 
-    var(var_file='', datadir='data/', proc=-1, ivar=-1,
-        quiet=True, trimall=False,
-        magic=None, sim=None, precision='f')
+    var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
+        trimall=False, magic=None, sim=None, precision='f')
 
     Keyword arguments:
         var_file:   Name of the VAR file.
-        sim:        Simulation sim object.
-        magic:      Values to be computed from the data, e.g. B = curl(A).
-        trimall:    Trim the data cube to exclude ghost zones.
-        quiet:      Flag for switching off output.
-
         datadir:    Directory where the data is stored.
         proc:       Processor to be read. If -1 read all and assemble to one array.
         ivar:       Index of the VAR file, if var_file is not specified.
+        quiet:      Flag for switching off output.
+        trimall:    Trim the data cube to exclude ghost zones.
+        magic:      Values to be computed from the data, e.g. B = curl(A).
+        sim:        Simulation sim object.
+        precision:  Float (f) or double (d).
     """
 
     from ..sim import __Simulation__
@@ -49,21 +48,26 @@ def var(*args, **kwargs):
     started = None
 
     for a in args:
-        if type(a) == __Simulation__:
+        if isinstance(a, __Simulation__):
             started = a.started()
             break
 
+    if 'sim' in kwargs.keys():
+        started = kwargs['sim'].started()
+    elif 'datadir' in kwargs.keys():
+        from os.path import join, exists
+        if exists(join(kwargs['datadir'], 'time_series.dat')):
+            started = True
     else:
-        if 'sim' in kwargs.keys():
-            started = kwargs['sim'].started()
-        elif 'datadir' in kwargs.keys():
-            from os.path import join, exists
-            if exists(join(kwargs['datadir'], 'time_series.dat')): started = True
+        from os.path import join, exists
+        if exists(join('data', 'time_series.dat')):
+            started = True
+
         #else:
         #    print('!! ERROR: No simulation of path specified..')
 
-    if started == False:
-        print('!! ERROR: Simulation has not jet started. There are not var files.')
+    if not started:
+        print('ERROR: Simulation has not jet started. There are no var files.')
         return False
 
     var_tmp = DataCube()
@@ -87,12 +91,11 @@ class DataCube(object):
         self.dz = 1.
 
 
-    def read(self, var_file='', sim=None, datadir='data', proc=-1, ivar=-1,
-             quiet=True, trim_all=True, trimall=True,
-             magic=None, varfile=''):
+    def read(self, var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
+             trimall=True, magic=None, sim=None, precision='f'):
         """
-        Read VAR files from pencil code. If proc < 0, then load all data
-        and assemble. otherwise, load VAR file from specified processor.
+        Read VAR files from Pencil Code. If proc < 0, then load all data
+        and assemble, otherwise load VAR file from specified processor.
 
         The file format written by output() (and used, e.g. in var.dat)
         consists of the followinig Fortran records:
@@ -104,40 +107,33 @@ class DataCube(object):
 
         call signature:
 
-        read(var_file='', datadir='data/', proc=-1, ivar=-1,
-            quiet=True, trimall=False,
-            magic=None, sim=None)
+        var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
+            trimall=False, magic=None, sim=None, precision='f')
 
         Keyword arguments:
-            var_file/varfile:
-                        Name of the VAR file.
-            sim:        Simulation sim object.
-            magic:      Values to be computed from the data, e.g. B = curl(A).
-            trimall:    Trim the data cube to exclude ghost zones.
-            quiet:      Flag for switching off output.
-
+            var_file:   Name of the VAR file.
             datadir:    Directory where the data is stored.
             proc:       Processor to be read. If -1 read all and assemble to one array.
             ivar:       Index of the VAR file, if var_file is not specified.
+            quiet:      Flag for switching off output.
+            trimall:    Trim the data cube to exclude ghost zones.
+            magic:      Values to be computed from the data, e.g. B = curl(A).
+            sim:        Simulation sim object.
+            precision:  Float (f) or double (d).
         """
 
         import numpy as np
         import os
         from scipy.io import FortranFile
-        from pencilnew.math.derivatives import curl, curl2
-        from pencilnew import read
+        from ..math.derivatives import curl, curl2
+        from .. import read
         from ..sim import __Simulation__
 
-        dim = None; param = None; index = None
+        dim = None
+        param = None
+        index = None
 
-        if varfile != '' and var_file == '':
-            var_file = varfile
-
-        if type(var_file) == __Simulation__:
-            sim = var_file
-            var_file = 'var.dat'
-
-        if sim is not None:
+        if isinstance(sim, __Simulation__):
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
             param = read.param(datadir=sim.datadir, quiet=True)
@@ -145,7 +141,7 @@ class DataCube(object):
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
-                if(var_file[0:2].lower() == 'og'):
+                if var_file[0:2].lower() == 'og':
                     dim = read.ogdim(datadir, proc)
                 else:
                     dim = read.dim(datadir, proc)
@@ -178,8 +174,6 @@ class DataCube(object):
         else:
             proc_dirs = ['proc' + str(proc)]
 
-        if trimall != False: trim_all = trimall
-
         # Set up the global array.
         if not run2D:
             f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
@@ -196,7 +190,7 @@ class DataCube(object):
 
         for directory in proc_dirs:
             proc = int(directory[4:])
-            if(var_file[0:2].lower() == 'og'):
+            if var_file[0:2].lower() == 'og':
                 procdim = read.ogdim(datadir, proc)
             else:
                 procdim = read.dim(datadir, proc)
@@ -293,10 +287,10 @@ class DataCube(object):
                 else:
                     if dim.ny == 1:
                         f[:, i0z:i1z, i0x:i1x] = \
-                              f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                            f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
                     else:
                         f[:, i0y:i1y, i0x:i1x] = \
-                              f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
+                            f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
             else:
                 f = f_loc
                 x = x_loc
@@ -305,24 +299,27 @@ class DataCube(object):
 
         if magic is not None:
             if 'bb' in magic:
-                # Compute the magnetic field before doing trim_all.
+                # Compute the magnetic field before doing trimall.
                 aa = f[index.ax-1:index.az, ...]
+                # TODO: Specify coordinate system.
                 self.bb = curl(aa, dx, dy, dz, run2D=run2D)
-                if trim_all:
+                if trimall:
                     self.bb = self.bb[:, dim.n1:dim.n2+1,
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if 'jj' in magic:
-                # Compute the electric current field before doing trim_all.
+                # Compute the electric current field before doing trimall.
                 aa = f[index.ax-1:index.az, ...]
+                # TODO: Specify coordinate system.
                 self.jj = curl2(aa, dx, dy, dz)
-                if trim_all:
+                if trimall:
                     self.jj = self.jj[:, dim.n1:dim.n2+1,
                                       dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if 'vort' in magic:
-                # Compute the vorticity field before doing trim_all.
+                # Compute the vorticity field before doing trimall.
                 uu = f[index.ux-1:index.uz, ...]
+                # TODO: Specify coordinate system.
                 self.vort = curl(uu, dx, dy, dz, run2D=run2D)
-                if trim_all:
+                if trimall:
                     if run2D:
                         if dim.nz == 1:
                             self.vort = self.vort[:, dim.m1:dim.m2+1,
@@ -336,7 +333,7 @@ class DataCube(object):
                                               dim.l1:dim.l2+1]
 
         # Trim the ghost zones of the global f-array if asked.
-        if trim_all:
+        if trimall:
             self.x = x[dim.l1:dim.l2+1]
             self.y = y[dim.m1:dim.m2+1]
             self.z = z[dim.n1:dim.n2+1]
@@ -378,7 +375,7 @@ class DataCube(object):
         if param.lshear:
             self.deltay = deltay
 
-        # Do the rest of magic after the trim_all (i.e. no additional curl...).
+        # Do the rest of magic after the trimall (i.e. no additional curl...).
         self.magic = magic
         if self.magic is not None:
             self.magic_attributes(param)
