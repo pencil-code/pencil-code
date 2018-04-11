@@ -106,6 +106,7 @@ module Dustdensity
   real    :: supsatratio_omega=0., self_collision_factor=1.
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
+  real :: tstart_droplet_coagulation=impossible
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -136,7 +137,8 @@ module Dustdensity
       self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
-      lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac
+      lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
+      tstart_droplet_coagulation
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -2658,6 +2660,10 @@ module Dustdensity
       real, dimension(ndustspec) :: radius 
       integer :: i,j,l,k
       integer :: row,col
+!
+!
+! a flag to start collision on the fly
+      if (t >= tstart_droplet_coagulation) lcalcdkern=.true. 
 !
       if (ldustcoagulation) then
 !
