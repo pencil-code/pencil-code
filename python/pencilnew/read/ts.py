@@ -36,7 +36,8 @@ def ts(*args, **kwargs):
       Simulation object from which to take the datadir.
 
     *unique_clean*
-      Set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs.
+      Set True, np.unique is used to clean up the ts, e.g. remove errors
+      at the end of crashed runs.
     """
 
     ts_tmp = TimeSeries()
@@ -54,6 +55,7 @@ class TimeSeries(object):
         Fill members with default values.
         """
 
+        self.t = []
         self.keys = []
 
 
@@ -85,16 +87,18 @@ class TimeSeries(object):
           Simulation object from which to take the datadir.
 
         *unique_clean*
-          Set True, np.unique is used to clean up the ts, e.g. remove errors at the end of crashed runs.
+          Set True, np.unique is used to clean up the ts, e.g. remove errors
+          at the end of crashed runs.
         """
 
         import numpy as np
         import os.path
         import re
 
-        # TODO: Change from string to class.
         if sim:
-            if str(sim.__class__) == "<class 'pencilnew.sim.simulation.__Simulation__'>":
+            from ..sim import __Simulation__
+
+            if isinstance(sim, __Simulation__):
                 datadir = sim.datadir
 
         datadir = os.path.expanduser(datadir)
@@ -102,15 +106,13 @@ class TimeSeries(object):
         lines = infile.readlines()
         infile.close()
 
-        # Need to handle cases where restart AND print.in changes,
-        # but not right away.
         nlines_init = len(lines)
         data = np.zeros((nlines_init, len(self.keys)))
         nlines = 0
         for line in lines:
             if re.search("^%s--" % comment_char, line):
                 # Read header and create keys for dictionary.
-                line = line.strip("%s-\n" % comment_char)
+                line = line.strip("{0}-\n".format(comment_char))
                 keys_new = re.split("-+", line)
                 if keys_new != self.keys:
                     n_newrows = abs(len(keys_new) - len(self.keys))
@@ -138,6 +140,7 @@ class TimeSeries(object):
         # Do unique clean up.
         if unique_clean:
             clean_t, unique_indices = np.unique(self.t, return_index=True)
+
             if np.size(clean_t) != np.size(self.t):
                 for key in self.keys:
                     setattr(self, key, getattr(self, key)[unique_indices])
