@@ -112,48 +112,63 @@ def shocktube(x, t, parl=[], parr=[], gamma=1.4,
 
     ##   calculate profiles
     left  = np.where(x <= x1)[0]
-    reg2  = np.where(x[left[-1]+1:] < x2)[0]+left[-1]+1 # expansion region
-    reg3  = np.where(x[reg2[-1]+1:] < x3)[0]+reg2[-1]+1
-    reg4  = np.where(x[reg3[-1]+1:] < x4)[0]+reg3[-1]+1
+    if len(left)>0:
+        reg2  = np.where(x[left[-1]+1:] < x2)[0]+left[-1]+1 # expansion region
+    else:
+        reg2  = np.where(x < x2)[0]
+    if len(reg2)>0:
+        reg3  = np.where(x[reg2[-1]+1:] < x3)[0]+reg2[-1]+1
+    else:
+        if len(left)>0:
+            reg3  = np.where(x[left[-1]+1:] < x3)[0]+left[-1]+1 # expansion region
+        else:
+            reg3  = np.where(x < x3)[0]
+    if len(reg3)>0:
+        reg4  = np.where(x[reg3[-1]+1:] < x4)[0]+reg3[-1]+1
+    else:
+        if len(reg2)>0:
+            reg4  = np.where(x[reg2[-1]+1:] < x4)[0]+reg2[-1]+1
+        else:
+            if len(left)>0:
+                reg4  = np.where(x[left[-1]+1:] < x4)[0]+left[-1]+1 # expansion region
+            else:
+                reg4  = np.where(x < x4)[0]
     right = np.where(x > x4)
 
-    if left[0] >= 0:
+    if len(left)>0:
         u[left] = ul
         p[left] = pl
         rho[left] = rhol
 
-    if reg2[0] >= 0:                                    # expansion region
+    if len(reg2)>0:                                    # expansion region
         u[reg2]   = 2/(gamma+1)*(csl+x[reg2]/t+gamm1/2*ur)
         p[reg2]   = pl*(1-gamm1/2*u[reg2]/csl)**(2*gamma/gamm1)
         rho[reg2] = rhol*(1-gamm1/2*u[reg2]/csl)**(2/gamm1)
 
-    if reg3[0] >= 0:
+    if len(reg3)>0:
         u[reg3] = u3
         p[reg3] = p3
         rho[reg3] = rho3
-    endif
 
-    if reg4[0] >= 0:                            # expansion region
+    if len(reg4)>0:                            # expansion region
         u[reg4] = u4
         p[reg4] = p4
         rho[reg4] = rho4
 
-    if right[0] >= 0:
+    if len(right)>0:
         u[right] = ur
         p[right] = pr
         rho[right] = rhor
 
     if lplot:
         plt.figure()
-        plt.subplot(1,3,0)
-        plt.semilogy( x, p)
-        plt.ytitle(r'$p$')
-        plt.subplot(1,3,1)
-        plt.semilogy( x, rho)
-        plt.ytitle(r'$\rho$')
-        plt.subplot(1,3,2)
-        plt.plot( x, u)
-        plt.ytitle(r'$u$')
+        fig,(ax1,ax2,ax3) = plt.subplots(3,1,sharex=True)
+        ax1.semilogy( x, p)
+        ax1.set(ylabel=r'$p$')
+        ax2.semilogy( x, rho)
+        ax2.set(ylabel=r'$\rho$')
+        ax3.plot( x, u)
+        ax3.set(ylabel=r'$u$')
         plt.show()
 
     if DEBUG:
