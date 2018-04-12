@@ -107,6 +107,7 @@ module Dustdensity
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
   real :: tstart_droplet_coagulation=impossible
+  real :: nd0_luck=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -121,7 +122,7 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
       lzero_upper_kern, rotat_position, dt_substep, &
-      r_lucky, r_collected, f_lucky
+      r_lucky, r_collected, f_lucky, nd0_luck
  
 !
   namelist /dustdensity_run_pars/ &
@@ -676,6 +677,11 @@ module Dustdensity
           do k=1,2
             f(:,:,:,ind(k)) = nd0/2
           enddo
+        case ('lucky')
+          print*, 'init_nd: only 1 particle with radius 12.6'
+          f(:,:,:,ind) = 0.
+          f(:,:,:,ind(1)) = nd0
+          f(:,:,:,ind(2)) = nd0_luck
         case ('replicate_bins')
           if (headtt) then
             print*, 'init_nd: replicate particles from first to other bins.'
