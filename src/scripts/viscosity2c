@@ -1,8 +1,4 @@
-rm -rf viscosity_c.h
+rm -f viscosity_c.h
 echo '# pragma once' > viscosity_c.h
 echo '# include "headers_c.h"' >> viscosity_c.h
-echo 'const int n_pars_visc=1;' >> viscosity_c.h
-echo 'EXTERN float *p_pars_visc[n_pars_visc];' >> viscosity_c.h
-echo '#define nu (*p_pars_visc[0])' >> viscosity_c.h
 
-echo 'extern "C" void *'$MODULE_PREFIX'viscosity'$MODULE_INFIX'push2c'$MODULE_SUFFIX'(float *(&p_pars)[n_pars_visc]);' >> viscosity_c.h
