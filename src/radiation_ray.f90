@@ -129,7 +129,7 @@ module Radiation
   type (radslice), dimension (maxdir), target :: Isurf
 !
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
-  integer :: idiag_Fradzm=0, idiag_Sradm=0
+  integer :: idiag_Fradzm=0, idiag_kapparhom=0, idiag_Sradm=0
   integer :: idiag_Fradzmz=0, idiag_kapparhomz=0, idiag_taumz=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
 !
@@ -1564,6 +1564,7 @@ module Radiation
       if (ldiagnos) then
         if (lradflux) &
           call sum_mn_name(f(l1:l2,m,n,iKR_Fradz)/f(l1:l2,m,n,ikapparho),idiag_Fradzm)
+        call sum_mn_name(f(l1:l2,m,n,ikapparho),idiag_kapparhom)
       endif
 !
       if (l1davgfirst) then
@@ -2239,7 +2240,7 @@ module Radiation
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
+        idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_kapparhom=0; idiag_Sradm=0
         idiag_Fradzmz=0; idiag_kapparhomz=0; idiag_taumz=0
         idiag_dtchi=0; idiag_dtrad=0
       endif
@@ -2250,6 +2251,7 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'Qradrms',idiag_Qradrms)
         call parse_name(iname,cname(iname),cform(iname),'Qradmax',idiag_Qradmax)
         call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
+        call parse_name(iname,cname(iname),cform(iname),'kapparhom',idiag_kapparhom)
         call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
