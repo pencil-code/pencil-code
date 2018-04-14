@@ -2358,7 +2358,7 @@ module EquationOfState
     subroutine pushpars2c(p_par)
 
     integer, parameter :: n_pars=1
-    integer(KIND=ikind8), dimension(npars) :: p_par
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr_c(cs20,p_par(1))
 
