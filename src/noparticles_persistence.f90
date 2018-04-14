@@ -33,12 +33,16 @@ contains
 !
     endsubroutine register_particles_persistence
 !***********************************************************************
-    subroutine initialize_particles_persist(f)
+    subroutine initialize_particles_persist(fp)
 !
 !  Dummy.
 !
       use General, only: keep_compiler_quiet
-      real, dimension (mx,my,mz,mfarray) :: f
+
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+!
+      call keep_compiler_quiet(fp)
+
     endsubroutine initialize_particles_persist
 !***********************************************************************
     subroutine init_particles_persistence(fp)
@@ -48,6 +52,7 @@ contains
       real, dimension (mpar_loc,mparray), intent (out) :: fp
 !
       call keep_compiler_quiet(fp)
+
     endsubroutine init_particles_persistence
 !***********************************************************************
     subroutine dpersist_dt(f,df,fp,dfp,ineargrid)

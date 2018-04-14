@@ -27,6 +27,7 @@ module Viscosity
   include 'viscosity.h'
 !
   logical :: lvisc_first=.false.
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************
@@ -203,14 +204,5 @@ module Viscosity
       call keep_compiler_quiet(f)
 !
     endsubroutine split_update_viscosity
-!***********************************************************************
-    subroutine push2c(p_par)
-
-      integer, parameter :: npars=1
-      integer(KIND=ikind8), dimension(npars) :: p_par
-
-      call keep_compiler_quiet(p_par)
-
-    endsubroutine push2c
 !***********************************************************************
 endmodule Viscosity
