@@ -181,6 +181,8 @@ program run
 !  luse_oldgrid=T can be useful if nghost_read_fewer > 0,
 !  i.e. if one is changing the order of spatial derivatives.
 !  Also write dim.dat (important when reading smaller meshes, for example)
+!  luse_oldgrid=.true. by default, and the values written at the end of
+!  each var.dat file are ignored anyway and only used for postprocessing.
 !
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
