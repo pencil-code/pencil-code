@@ -15,18 +15,7 @@ Do better reading routines:
 
 
 Use simulation objects to:
-* copy simulations (copy-constructor for simulation objects producing new simulations in a new dir)
-* manipulate Simulation files: *.in and *.local from python
-* compile simulations
-* start simulation/submit
-* add "resume simulation as new simulation from a certain VARXYZ or var.dat"
-* allow execution of bash commands (pc_build, submit, llsubmit, ....) in simulation folder
 * mkdatadir via bash command?
-
-
-Put simulations in dictionary to:
-* sort them 
-* group them
 
 
 Make more efficient:
@@ -38,3 +27,16 @@ Do better visualizations:
 * interactive visualization
 * plot routines via typical style files (paper style, ApJ style, Simon style, ...)
 
+############### DONE #############
+Use simulation objects to:
+* copy simulations (copy-constructor for simulation objects producing new simulations in a new dir)
+* manipulate Simulation files: *.in and *.local from python
+* compile simulations
+* start simulation/submit
+* add "resume simulation as new simulation from a certain VARXYZ or var.dat"
+* allow execution of bash commands (pc_build, submit, llsubmit, ....) in simulation folder
+
+
+Put simulations in dictionary to:
+* sort them 
+* group them
