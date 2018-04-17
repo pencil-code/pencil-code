@@ -6971,6 +6971,7 @@ module Solid_Cells
             print*, 'yglobal(iy0),yglobal(iy0+1)',yglobal_ogrid(ineargrid(2)),yglobal_ogrid(ineargrid(2)+1)
             print*, 'zglobal(iz0),zglobal(iz0+1)',zglobal_ogrid(ineargrid(3)),zglobal_ogrid(ineargrid(3)+1)
             call fatal_error_local('find_near_ind_global_curvilinear','')
+            call fatal_error('find_near_ind_global_curv','nearest grid point error')
           endif
         endif
       endif
