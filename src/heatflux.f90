@@ -694,7 +694,7 @@ contains
 !  19-feb-18/piyali: adapted from non-fourier_spitzer for ionisation equation of
 !  state, no advection term and a different free streaming limit
 !
-    use Diagnostics, only: max_mn_name
+    use Diagnostics, only: max_mn_name,max_name
     use EquationOfState
     use Sub
 !
@@ -775,6 +775,14 @@ contains
       if (idiag_dtspitzer/=0) &
            call max_mn_name(rhs/cdtv,idiag_dtspitzer,l_dt=.true.)
 !
+!
+!     timestep constraints due to tau directly
+!
+      dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+!
+      if (ldiagnos.and.idiag_dtq2/=0) then
+        call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
+      endif
     endif
 !
     if (lvideo) then

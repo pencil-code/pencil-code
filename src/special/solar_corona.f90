@@ -54,7 +54,7 @@ module Special
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
-  real :: nwave,freq
+  real, dimension(2) :: nwave,w_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   integer :: nlf=4
@@ -71,7 +71,7 @@ module Special
 !
   character(len=labellen) :: prof_type='nothing'
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
-  real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0
+  real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0, uu_drive=0.0
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
   logical :: lheatcond_cutoff=.false.
@@ -103,8 +103,8 @@ module Special
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
-      lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special, &
-      lemerg_profx,lheatcond_cutoff,nwave,freq,lset_boundary_emf
+      lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
+      lemerg_profx,lheatcond_cutoff,nwave,w_ff,lset_boundary_emf
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1224,8 +1224,6 @@ module Special
 ! Flux emergence by driving an EMF at bottom boundary
 ! Presently only emf from constant field and constant velocity
 !
-      call mpibcast_real(uu_emerg,3)
-      call mpibcast_real(bb_emerg,3)
       if (lfirst_proc_z.and.lcartesian_coords) then
         if (lflux_emerg_bottom) then
           select case (flux_type)
@@ -1241,9 +1239,8 @@ module Special
                 if (iglobal_bx_ext/=0) bb(:,1)=bb(:,1)+f(l1:l2,m,n1-ig,iglobal_bx_ext)
                 if (iglobal_by_ext/=0) bb(:,2)=bb(:,2)+f(l1:l2,m,n1-ig,iglobal_by_ext)
                 if (iglobal_bz_ext/=0) bb(:,3)=bb(:,3)+f(l1:l2,m,n1-ig,iglobal_bz_ext)
-                va=sqrt(mu01*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2))/exp(0.5*f(l1:l2,m,n1-ig,ilnrho))
-                uu(:,1)=uu_emerg(1)*sin(nwave*x(l1:l2)/Lxyz(1)-freq*t)
-                uu(:,2)=uu_emerg(2)*cos(nwave*x(l1:l2)/Lxyz(1)-2*va*nwave*t/Lxyz(1))
+                uu(:,1)=uu_emerg(1)*sin(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
+                uu(:,2)=uu_emerg(2)*cos(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
                 if (lemerg_profx) then
 !
 ! Hard coding the emerging velocity x-profile for testing
@@ -1254,7 +1251,7 @@ module Special
                           (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
                           (1+tanh((x(l1:l2)-4+0.5)/0.4))))
                 else
-                  uu(:,3)=uu_emerg(3)*cos(nwave*x(l1:l2)/Lxyz(1)-freq*t)
+                  uu(:,3)=uu_emerg(3)*cos(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
                 endif
                 f(l1:l2,m,n1-ig,iux) = uu(:,1)
                 f(l1:l2,m,n1-ig,iuy) = uu(:,2)
@@ -1310,21 +1307,20 @@ module Special
           call bc_emf_z(f,df,dt_,'top',iaz)
         enddo
       endif
-!      if (lflux_emerg_bottom) then
-!        do m=m1, m2
-!          do n=n1,n2
-!            if (abs(z(n)) .lt. 0.5) then
-!               va=sqrt(mu01*(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,ibz)**2))/exp(0.5*f(l1:l2,m,n,ilnrho))
-!               uu(:,2)=0.01*uu_emerg(2)*cos(nwave*x(l1:l2)/Lxyz(1)+nwave*z(n)/Lxyz(3)-2*va*nwave*t/Lxyz(1))
-!               uu(:,1)=0.01*uu_emerg(3)*sin(nwave*x(l1:l2)/Lxyz(1)+nwave*z(n)/Lxyz(3)-2*va*nwave*t/Lxyz(1))/0.0111803
-!               uu(:,3)=-0.005*uu_emerg(3)*sin(nwave*x(l1:l2)/Lxyz(1)+nwave*z(n)/Lxyz(3)-2*va*nwave*t/Lxyz(1))/0.0111803
-!               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+lnrho_min_tau*(-f(l1:l2,m,n,iux)+uu(:,1))*dt_
-!               f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+lnrho_min_tau*(-f(l1:l2,m,n,iuy)+uu(:,2))*dt_
-!               f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+lnrho_min_tau*(-f(l1:l2,m,n,iuz)+uu(:,3))*dt_
-!            endif
-!          enddo
-!        enddo
-!      endif
+      if (any(uu_drive) /= 0.0) then
+        do m=m1, m2
+          do n=n1,n2
+            if ((z(n) .lt. 1.01) .and. (z(n) .gt. 0.6)) then
+               uu(:,2)=1.11803*uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+2*nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
+!               uu(:,1)=uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
+!               uu(:,3)=-0.5*uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
+!               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*dt_
+               f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*dt_
+!               f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*dt_
+            endif
+          enddo
+        enddo
+     endif
 !
 !      if (.not.ldensity_nolog .and. lslope_limited_special) then
 !        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_

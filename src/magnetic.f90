@@ -1524,6 +1524,7 @@ module Magnetic
 !
       use EquationOfState
       use FArrayManager
+      use IO, only: input_snap, input_snap_finalize
       use Gravity, only: gravz, z1, z2
       use Initcond
       use Boundcond
@@ -1540,6 +1541,8 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real, dimension (nx) :: beq2_pencil, prof, tmpx
+      real, dimension(3) :: b_ext
+      real, dimension (:,:,:,:), allocatable :: ap
       real, dimension (:,:), allocatable :: yz
 
       real :: beq2,RFPradB12,RFPradJ12
@@ -1872,6 +1875,23 @@ module Magnetic
             f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)))/x(l1:l2)**3
             f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)))                      /x(l1:l2)**3
           enddo;enddo
+        case ('B_ext_from_file')
+          allocate(ap(mx,my,mz,3))
+          call input_snap('ap.dat',ap,3,0)
+          call input_snap_finalize()
+!
+! Here we use only first component of b_ext to scale the initial vector
+! potential. b_ext is a slowly varying function of time.
+!
+          call get_bext(b_ext)
+          ap=b_ext(1)*ap
+          do n=n1,n2; do m=m1,m2
+            call curl_other(ap,bb)
+            f(l1:l2,m,n,iglobal_bx_ext) = bb(:,1)
+            f(l1:l2,m,n,iglobal_by_ext) = bb(:,2)
+            f(l1:l2,m,n,iglobal_bz_ext) = bb(:,3)
+          enddo;enddo
+          if (allocated(ap)) deallocate(ap)
 !
         case('spher-harm-poloidal')
           if (.not.lspherical_coords) call fatal_error("init_uu", &
