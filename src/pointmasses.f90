@@ -852,17 +852,26 @@ module PointMasses
         diagnos: if (ldiagnos) then
           pointmasses2: do ks=1,nqpar
 !
+            if (idiag_totenergy/=0.or.&
+                idiag_torqext(ks)/=0.or.&
+                idiag_torqint(ks)/=0) &
+                call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
+                   E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
+!
 !  Total energy
 !
             if (idiag_totenergy/=0) then 
               pot_energy=0.0
-              call get_radial_distance(rp_mn(:,ks),rpcyl_mn(:,ks),&
-                   E1_=fq(ks,ixq),E2_=fq(ks,iyq),E3_=fq(ks,izq))
               !potential energy
               pot_energy = pot_energy - &
                    GNewton*pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
-              if (ks==nqpar) &
-                   call sum_lim_mn_name(.5*p%rho*p%u2 + pot_energy,idiag_totenergy,p)
+              if (ks==nqpar) then
+                if (lcartesian_coords) then 
+                  call sum_lim_mn_name(.5*p%rho*p%u2 + pot_energy,idiag_totenergy,p)
+                else
+                  call integrate_mn_name(.5*p%rho*p%u2 + pot_energy,idiag_totenergy)
+                endif
+              endif
             endif
 !
 !  Calculate torques for output, if needed

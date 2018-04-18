@@ -2439,10 +2439,7 @@ module Solid_Cells
       integer :: i
 !
       do i = l1,l2
-        if ( &
-            (ba(i,m,n,1) /= 0).or. &
-            (ba(i,m,n,2) /= 0).or. &
-            (ba(i,m,n,3) /= 0)) then
+        if (any(ba(i,m,n,1:3)/= 0)) then
 !
 !  If this is a fluid point that has to be interpolated because it is very
 !  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the

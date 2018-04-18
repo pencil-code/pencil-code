@@ -186,7 +186,6 @@ module Cosmicrayflux
       ! 12-jan-15/luiz: diffusion/advection contribution to the timestep
       ! 22-jun-17/luiz: subgrid prescription for the cosmic ray diffusion
       use Sub
-      use Slices
       use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
       use General, only: notanumber

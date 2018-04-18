@@ -15,7 +15,7 @@ def slices(*args, **kwargs):
     call signature:
 
     read(self. field='uu1', extension='xz', datadir='data', proc=-1,
-         old_file=False, precision='f')
+         old_file=False, precision='f', verbose=False)
 
     Keyword arguments:
 
@@ -69,7 +69,7 @@ class SliceSeries(object):
         call signature:
 
         read(self. field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f')
+             old_file=False, precision='f', verbose=False)
 
         Keyword arguments:
 
@@ -98,7 +98,7 @@ class SliceSeries(object):
         import os
         import numpy as np
         from scipy.io import FortranFile
-        from pencilnew import read
+        from .. import read
 
         # Define the directory that contains the slice files.
         if proc < 0:
@@ -141,13 +141,13 @@ class SliceSeries(object):
 
         for extension in extension_list:
             if verbose:
-                print('Extension: '+str(extension))
+                print('Extension: ' + str(extension))
             # This one will store the data.
             ext_object = Foo()
 
             for field in field_list:
                 if verbose:
-                    print('  -> Field: '+str(field))
+                    print('  -> Field: ' + str(field))
                 # Compose the file name according to field and extension.
                 datadir = os.path.expanduser(datadir)
                 if proc < 0:
@@ -203,10 +203,9 @@ class SliceSeries(object):
                 # Reshape and remove first entry.
                 if verbose:
                     print('Reshaping array')
-                self.t = np.array(self.t[1:], dtype=precision)
+                self.t = np.array(self.t[1:], dtype=precision)[:, 0]
                 slice_series = np.array(slice_series, dtype=precision)
                 slice_series = slice_series[1:].reshape(islice, vsize, hsize)
                 setattr(ext_object, field, slice_series)
 
             setattr(self, extension, ext_object)
-

@@ -20,7 +20,7 @@ s/^ *module .*$/  # pragma once \n  # include <algorithm> \n  # include <limits>
 /end *module / d
 s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
 s/integer *, *parameter *::/const FINT /
-s/logical *, *parameter *::/const bool /
+s/logical *, *parameter *::/const int /
 s/real *, *parameter *::/const REAL /
 s/double  *precision *, *parameter *::/const double /
 /,kind=ikind8/ d

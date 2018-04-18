@@ -1,20 +1,3 @@
 rm -f hydro_c.h
 echo '# pragma once' > hydro_c.h
 echo '# include "headers_c.h"' >> hydro_c.h
-echo '# define idiag_urms (*p_diags_hydro[0])' >> hydro_c.h
-echo '# define idiag_uxrms (*p_diags_hydro[1])' >> hydro_c.h
-echo '# define idiag_uyrms (*p_diags_hydro[2])' >> hydro_c.h
-echo '# define idiag_uzrms (*p_diags_hydro[3])' >> hydro_c.h
-echo '# define idiag_umax (*p_diags_hydro[4])' >> hydro_c.h
-echo '# define idiag_umin (*p_diags_hydro[5])' >> hydro_c.h
-echo '# define idiag_uxmin (*p_diags_hydro[6])' >> hydro_c.h
-echo '# define idiag_uymin (*p_diags_hydro[7])' >> hydro_c.h
-echo '# define idiag_uzmin (*p_diags_hydro[8])' >> hydro_c.h
-echo '# define idiag_uxmax (*p_diags_hydro[9])' >> hydro_c.h
-echo '# define idiag_uymax (*p_diags_hydro[10])' >> hydro_c.h
-echo '# define idiag_uzmax (*p_diags_hydro[11])' >> hydro_c.h
-echo 'const int n_diags_hydro=12;' >> hydro_c.h
-echo 'EXTERN int *p_diags_hydro[n_diags_hydro];' >> hydro_c.h
-
-echo 'extern "C" void *'$MODULE_PREFIX'hydro'$MODULE_INFIX'push2c'$MODULE_SUFFIX'(int *(&p_diags)[n_diags_hydro]);' >> hydro_c.h
-

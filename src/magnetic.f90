@@ -119,7 +119,7 @@ module Magnetic
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
   real :: eta_shock=0.0
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., etaj20=0.
-  real :: rhomin_jxb=0.0, va2max_jxb=0.0
+  real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5,inclaa=0.0
@@ -216,7 +216,7 @@ module Magnetic
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
-      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
+      fluxtube_border_width, va2max_jxb, va2max_boris, va2power_jxb, eta_jump, &
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
@@ -308,7 +308,7 @@ module Magnetic
       lmean_friction, llocal_friction, LLambda_aa, bthresh, bthresh_per_brms, &
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
-      eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
+      eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, va2max_boris, &
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
@@ -3185,8 +3185,12 @@ module Magnetic
 ! reduced speed of light pencil
 !
      if (lpenc_loc(i_clight2)) then
-       clight2_zdep(n-n1+1) = c_light**2/(1.+max(z(n),0.0)**8)+max(9.0*maxval(p%u2),maxval(p%cs2))
-       p%clight2=clight2_zdep(n-n1+1)
+       if (va2max_boris > 0) then
+         p%clight2=spread(va2max_boris,1,nx)
+       else
+         clight2_zdep(n-n1+1) = c_light**2/(1.+max(z(n),0.0)**8)+max(9.0*maxval(p%u2),maxval(p%cs2))
+         p%clight2=clight2_zdep(n-n1+1)
+       endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
 !
@@ -4133,6 +4137,10 @@ module Magnetic
             if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+          endif
+          if (lboris_correction .and. va2max_boris>0) then
+            rho1_jxb = rho1_jxb &
+                     * (1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
           endif
           if (lspherical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &

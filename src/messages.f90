@@ -247,15 +247,21 @@ module Messages
 !  Print out colored warning.
 !
 !  30-jun-05/tony: coded
+!   2-apr-17/MR: optional parameter ip = processor number added
 !
+      use General, only: ioptest
+
       character (len=*), optional :: location
       character (len=*)           :: message
       integer, optional :: ip
 !
+      integer :: ipl
+!
       if (present(location)) scaller=location
+      ipl=ioptest(ip,0)
 
       if (.not.llife_support) then
-        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
+        if ((iproc_world==ipl .or. ncpus<=16) .and. (message/='')) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING: "
           call terminal_defaultcolor()

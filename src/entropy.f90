@@ -2999,15 +2999,12 @@ module Energy
 !
       if (lhydro) then
         if (lpressuregradient_gas) then
-          do j=1,3
-            ju=j+iuu-1
-            df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + p%fpres(:,j)
-          enddo
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
 !
 !  If reference state is used, -grad(p')/rho is needed in momentum equation, hence fpres -> fpres + grad(p0)/rho.
 !
-            if (lreference_state) &
-              df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + reference_state(:,iref_gp)*p%rho1
+          if (lreference_state) &
+            df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + reference_state(:,iref_gp)*p%rho1
         endif
 !
 !  Add pressure force from global density gradient.
@@ -7721,5 +7718,23 @@ module Energy
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(chi,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Energy

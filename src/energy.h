@@ -15,4 +15,5 @@
   public :: expand_shands_energy
   public :: update_char_vel_energy
   public :: energy_after_timestep
+  public :: pushpars2c, pushdiags2c
 

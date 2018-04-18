@@ -786,10 +786,12 @@ module Forcing
 !  for turbulent decay experiments.
 !
       call timing('addforce','entered')
+!
       if ( (t>tforce_stop) .or. (t<tforce_start) ) then
-        if ( (t>tforce_stop) .and. llastforce .and. lroot) &
-            print*, 'addforce: t>tforce_stop; no forcing'
-        if (t>tforce_stop) llastforce=.false.
+        if ( (t>tforce_stop) .and. llastforce) then
+          if (iforce/='zero' .and. lroot) print*, 'addforce: t>tforce_stop; no forcing'
+          llastforce=.false.
+        endif
       else
         if ( iforce/='zero' .and. lfirstforce .and. lroot ) &
 !--         print*, 'addforce: addforce started'
@@ -5379,20 +5381,28 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine forcing_clean_up
 !***********************************************************************
-    subroutine push2c(p_par)
+    subroutine pushdiags2c(p_diag)
 
-    integer, parameter :: npars=8
-    integer(KIND=ikind8), dimension(npars) :: p_par
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
 
-    call copy_addr_c(force,p_par(1))
-    call copy_addr_c(tforce_stop,p_par(2))
-    call copy_addr_c(profx_ampl,p_par(3))
-    call copy_addr_c(profy_ampl,p_par(4))
-    call copy_addr_c(profz_ampl,p_par(5))
-    call copy_addr_c(profx_hel,p_par(6))
-    call copy_addr_c(profy_hel,p_par(7))
-    call copy_addr_c(profz_hel,p_par(8))
+    call keep_compiler_quiet(p_diag)
 
-    endsubroutine push2c
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=7
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(tforce_stop,p_par(1))
+    call copy_addr_c(profx_ampl,p_par(2))  ! nx
+    call copy_addr_c(profy_ampl,p_par(3))  ! my
+    call copy_addr_c(profz_ampl,p_par(4))  ! mz
+    call copy_addr_c(profx_hel,p_par(5))   ! nx
+    call copy_addr_c(profy_hel,p_par(6))   ! my
+    call copy_addr_c(profz_hel,p_par(7))   ! mz
+
+    endsubroutine pushpars2c
 !*******************************************************************
 endmodule Forcing

@@ -29,6 +29,7 @@ module Forcing
   include 'forcing.h'
 !
   integer :: n_forcing_cont=n_forcing_cont_max
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************
@@ -188,14 +189,5 @@ module Forcing
 !   dummy routine.
 !
     endsubroutine forcing_clean_up
-!***********************************************************************
-    subroutine push2c(p_par)
-
-      integer, parameter :: npars=1
-      integer(KIND=ikind8), dimension(npars) :: p_par
-
-      call keep_compiler_quiet(p_par)
-
-    endsubroutine push2c
 !***********************************************************************
 endmodule Forcing

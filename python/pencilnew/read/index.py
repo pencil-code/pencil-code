@@ -54,7 +54,7 @@ class Index(object):
 
         call signature:
 
-        read(self, datadir='data/', param=None, dim=None)
+        read(self, datadir='data', param=None, dim=None)
 
         Keyword arguments:
 
@@ -69,7 +69,7 @@ class Index(object):
         """
 
         import os
-        import pencilnew.read as read
+        from .. import read
 
         if param is None:
             param = read.param(datadir=datadir, quiet=True)

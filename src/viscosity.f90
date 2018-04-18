@@ -795,8 +795,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
-        call parse_name(iname,cname(iname),cform(iname),'visc_heatm', &
-            idiag_visc_heatm)
+        call parse_name(iname,cname(iname),cform(iname),'visc_heatm',idiag_visc_heatm)
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
@@ -991,8 +990,10 @@ module Viscosity
       endif
 !
       if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
-      if (idiag_visc_heatm/=0) lpenc_diagnos(i_visc_heat)=.true.
-      if (idiag_visc_heatm/=0) lpenc_diagnos(i_sij2)=.true.
+      if (idiag_visc_heatm/=0) then
+        lpenc_diagnos(i_visc_heat)=.true.
+        lpenc_diagnos(i_sij2)=.true.
+      endif
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
@@ -2520,13 +2521,22 @@ module Viscosity
 !
     endsubroutine calc_lambda
 !***********************************************************************
-    subroutine push2c(p_par)
+    subroutine pushdiags2c(p_diag)
 
-    integer, parameter :: npars=1
-    integer(KIND=ikind8), dimension(npars) :: p_par
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr_c(nu,p_par(1))
 
-    endsubroutine push2c
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity

@@ -86,7 +86,7 @@ module Cparam
 !  nscbc_len      ?
 !
   integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=25,linelen=256
-  integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24
+  integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24,fmtlen=30
 !
 !  Significant length of random number generator state.
 !  Different compilers have different lengths:
