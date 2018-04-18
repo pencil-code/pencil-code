@@ -1307,7 +1307,7 @@ module Special
           call bc_emf_z(f,df,dt_,'top',iaz)
         enddo
       endif
-      if (any(uu_drive) /= 0.0) then
+      if (any(uu_drive /= 0.0)) then
         do m=m1, m2
           do n=n1,n2
             if ((z(n) .lt. 1.01) .and. (z(n) .gt. 0.6)) then
