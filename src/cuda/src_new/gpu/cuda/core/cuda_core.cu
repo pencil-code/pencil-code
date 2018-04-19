@@ -1,14 +1,32 @@
 #include "cuda_core.cuh"
+#ifdef GPU_ASTAROTH
+  #include "common/PC_moduleflags.h"
+  #define EXTERN
+  #include "common/PC_module_parfuncs.h"
+#endif
 #define INCLUDED_FROM_DCONST_DEFINER
 #include "dconsts_core.cuh"
 #include "errorhandler_cuda.cuh"
-#include "common/config.h"
+#include "copyHalosConcur.cuh"
 
-
+#ifdef FORCING
+    //Copy forcing coefficients to the device's constant memory
+#ifdef GPU_ASTAROTH
+void update_forcing_coefs_cuda_PC(ForcingParams* fp, CParamConfig* cparams, int start_idx)
+{
+    int comSize=3*sizeof(real);
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_COEF1, fp->coef1, comSize ));
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_COEF2, fp->coef2, comSize ));
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_COEF3, fp->coef3, comSize ));
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_FDA, fp->fda, comSize ));
+    comSize=2*sizeof(real);  // fx, fy, fz are semantically complex !
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_FX, fp->fx, comSize*cparams->mx ));
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_FY, fp->fy, comSize*cparams->my ));
+    CUDA_ERRCHK( cudaMemcpyToSymbol( d_FORCING_FZ, fp->fz+2*start_idx, comSize*cparams->mz ));
+}
+#else
 void load_forcing_dconsts_cuda_core(ForcingParams* forcing_params)
 {
-    CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_ENABLED, &forcing_params->forcing_enabled, sizeof(bool)) );
-    //Copy forcing coefficients to the device's constant memory
     const size_t k_idx = forcing_params->k_idx;
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_KK_VEC_X, &forcing_params->kk_x[k_idx], sizeof(real)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_KK_VEC_Y, &forcing_params->kk_y[k_idx], sizeof(real)) );
@@ -18,7 +36,8 @@ void load_forcing_dconsts_cuda_core(ForcingParams* forcing_params)
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_FORCING_KK_PART_Z, &forcing_params->kk_part_z, sizeof(real)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_PHI, &forcing_params->phi, sizeof(real)) );
 }
-
+#endif
+#endif
 
 void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, const vec3i start_idx)
 { 
@@ -30,6 +49,7 @@ void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, 
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_mx, &(cparams->mx), sizeof(int)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_my, &(cparams->my), sizeof(int)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_mz, &(cparams->mz), sizeof(int)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_mxy, &(cparams->mxy), sizeof(int)) );
 
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_nx_min, &(cparams->nx_min), sizeof(int)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_nx_max, &(cparams->nx_max), sizeof(int)) );
@@ -55,10 +75,9 @@ void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, 
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_XORIG, &xorig, sizeof(real)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_YORIG, &yorig, sizeof(real)) );
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_ZORIG, &zorig, sizeof(real)) );    
-    
 
     //Diff constants
-    const real diff1_dx = 1.0/(60.0*cparams->dsx);
+        const real diff1_dx = 1.0/(60.0*cparams->dsx);
 	const real diff1_dy = 1.0/(60.0*cparams->dsy);
 	const real diff1_dz = 1.0/(60.0*cparams->dsz);
 
@@ -69,7 +88,7 @@ void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, 
 	const real diffmn_dxdy = (1.0/720.0)*(1.0/cparams->dsx)*(1.0/cparams->dsy); 
 	const real diffmn_dydz = (1.0/720.0)*(1.0/cparams->dsy)*(1.0/cparams->dsz);
 	const real diffmn_dxdz = (1.0/720.0)*(1.0/cparams->dsz)*(1.0/cparams->dsx);
-
+//printf("diff1_dx, diff1_dy, diff1_dz= %f %f %f \n",diff1_dx, diff1_dy, diff1_dz);
 	CUDA_ERRCHK( cudaMemcpyToSymbol(d_DIFF1_DX_DIV, &diff1_dx, sizeof(real)) );
 	CUDA_ERRCHK( cudaMemcpyToSymbol(d_DIFF1_DY_DIV, &diff1_dy, sizeof(real)) );
 	CUDA_ERRCHK( cudaMemcpyToSymbol(d_DIFF1_DZ_DIV, &diff1_dz, sizeof(real)) );
@@ -82,36 +101,43 @@ void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, 
 	CUDA_ERRCHK( cudaMemcpyToSymbol(d_DIFFMN_DYDZ_DIV, &diffmn_dydz, sizeof(real)) );
 	CUDA_ERRCHK( cudaMemcpyToSymbol(d_DIFFMN_DXDZ_DIV, &diffmn_dxdz, sizeof(real)) );
 
-
+#ifdef GPU_ASTAROTH
+  #include "common/PC_modulepars.h"
+#else
+  #ifdef VISCOSITY
     //Viscosity
-    CUDA_ERRCHK( cudaMemcpyToSymbol(d_NU_VISC, &(run_params->nu_visc), sizeof(real)) );
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_NU, &(run_params->nu_visc), sizeof(real)) );
+  #endif
 
+  #ifdef HYDRO
     //Speed of sound
-    const real cs2_sound = pow(run_params->cs_sound, 2.0);
-	CUDA_ERRCHK( cudaMemcpyToSymbol(d_CS2_SOUND, &cs2_sound, sizeof(real)) );	
+    real cs2=pow(run_params->cs_sound);
+    CUDA_ERRCHK( cudaMemcpyToSymbol(d_CS20, &cs2, sizeof(real)) );	
+  #endif
 
-    //Induction
+  #ifdef MAGNETIC
+    //Diffusivity
     CUDA_ERRCHK( cudaMemcpyToSymbol(d_ETA, &(run_params->eta), sizeof(real)) );
+  #endif
+#endif
 }
-
 
 void init_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst, CParamConfig* cparams)
 {
-    const size_t grid_size_bytes = sizeof(real) * cparams->mx * cparams->my * cparams->mz; 
+    const size_t grid_size_bytes = sizeof(real) * cparams->mw;
 
     //Init device arrays
-    for (int i=0; i < NUM_ARRS; ++i) {
+    for (int i=0; i < d_grid->NUM_ARRS; ++i) {
         CUDA_ERRCHK( cudaMalloc(&(d_grid->arr[i]), grid_size_bytes) );
-        CUDA_ERRCHK( cudaMemset(d_grid->arr[i], INT_MAX, grid_size_bytes) );
+        CUDA_ERRCHK( cudaMemset(d_grid->arr[i], INT_MAX, grid_size_bytes) );  //MR: What is INT_MAX?
         CUDA_ERRCHK( cudaMalloc(&(d_grid_dst->arr[i]), grid_size_bytes) );
         CUDA_ERRCHK( cudaMemset(d_grid_dst->arr[i], INT_MAX, grid_size_bytes) );
     }
 }
 
-
 void destroy_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst)
 {
-    for (int i=0; i < NUM_ARRS; ++i) {
+    for (int i=0; i < d_grid->NUM_ARRS; ++i) {
         CUDA_ERRCHK( cudaFree(d_grid->arr[i]) );
         CUDA_ERRCHK( cudaFree(d_grid_dst->arr[i]) );
     }
@@ -119,24 +145,36 @@ void destroy_grid_cuda_core(Grid* d_grid, Grid* d_grid_dst)
 
 void load_grid_cuda_core(Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx, Grid* h_grid, CParamConfig* h_cparams)
 {
-    const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->mz;
-    const size_t slice_size = h_cparams->mx*h_cparams->my;
-    for (int w=0; w < NUM_ARRS; ++w) {
+    // Loads full data cubes to device(s) with decomposition
+    const size_t grid_size_bytes = sizeof(real)* d_cparams->mw;
+    const size_t slice_size = h_cparams->mxy;
+    for (int w=0; w < d_grid->NUM_ARRS; ++w) {
         CUDA_ERRCHK( cudaMemcpy(&(d_grid->arr[w][0]), &(h_grid->arr[w][h_start_idx->z*slice_size]), grid_size_bytes, cudaMemcpyHostToDevice) );
     }
 }
 
-
 void store_grid_cuda_core(Grid* h_grid, CParamConfig* h_cparams, Grid* d_grid, CParamConfig* d_cparams, vec3i* h_start_idx)
 {
-    const size_t grid_size_bytes = sizeof(real)* d_cparams->mx * d_cparams->my * d_cparams->nz;
-    const size_t slice_size = h_cparams->mx * h_cparams->my;
+    // Stores full data cubes from device(s) with decomposition to host
+    const size_t grid_size_bytes = sizeof(real)* d_cparams->mxy * d_cparams->nz;
+    const size_t slice_size = h_cparams->mxy;
     const size_t z_offset = BOUND_SIZE * slice_size;
-    for (int w=0; w < NUM_ARRS; ++w) {
+    for (int w=0; w < d_grid->NUM_ARRS; ++w) {
+//printf("w,z_offset,h_start_idx->z*slice_size= %d %d %d \n",w,z_offset,h_start_idx->z*slice_size);
+//printf("w,&(h_grid->arr[w][z_offset + h_start_idx->z*slice_size]), &(d_grid->arr[w][z_offset])= %d %d %d \n",w,&(h_grid->arr[w][z_offset + h_start_idx->z*slice_size]), &(d_grid->arr[w][z_offset]));
         CUDA_ERRCHK( cudaMemcpy(&(h_grid->arr[w][z_offset + h_start_idx->z*slice_size]), &(d_grid->arr[w][z_offset]), grid_size_bytes, cudaMemcpyDeviceToHost) );
+        /*printf("w= %d \n",w);int indx=0;
+        for (int iz=0;iz<38;iz++){
+          for (int iy=0;iy<38;iy++){
+            for (int ix=0;ix<38;ix++){
+              printf("%f ",h_grid->arr[w][indx]); indx++;
+            }
+            printf("\n");
+          }
+        }
+        printf("-----------------\n",w);*/
     }    
 }
-
 
 void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h_run_params, Slice* d_slice, CParamConfig* d_cparams, vec3i* h_start_idx)
 {
@@ -145,7 +183,7 @@ void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h
     Slice buffer;
     slice_malloc(&buffer, d_cparams, h_run_params);
 
-    const size_t slice_size_bytes = sizeof(real) * d_cparams->mx * d_cparams->my;
+    const size_t slice_size_bytes = sizeof(real) * d_cparams->mxy;
     for (int w=0; w < NUM_SLICES; ++w)
         CUDA_ERRCHK( cudaMemcpy(buffer.arr[w], d_slice->arr[w], slice_size_bytes, cudaMemcpyDeviceToHost) );
     
@@ -158,56 +196,75 @@ void store_slice_cuda_core(Slice* h_slice, CParamConfig* h_cparams, RunConfig* h
     slice_free(&buffer);
 }
 
-
-void init_halo_cuda_core(real* /*d_halo*/)
+void init_halo_cuda_core(GPUContext & ctx, bool lfirstGPU, bool llastGPU)
 {
-    printf("init_halo_cuda_core\n");
-/*
-* Allocate memory for d_halo here
-*   CUDA_ERRCHK( cudaMalloc(....));
-*/
+    //printf("init_halo_cuda_core\n");
+// Allocate memory for d_halo here
+    initHaloConcur(ctx, lfirstGPU, llastGPU);
 }
 
-
-void destroy_halo_cuda_core(real* /*d_halo*/)
+void destroy_halo_cuda_core(GPUContext & ctx)
 {
-    printf("destroy_halo_cuda_core\n");
-/*
-*   Free d_halo here
-*  CUDA_ERRCHK( cudaFree(d_halo) );
-*/
+    //printf("destroy_halo_cuda_core\n");
+    CUDA_ERRCHK( cudaFree(ctx.d_halobuffer) );
+
+    for (int i=0; i<NUM_COPY_STREAMS; i++) {
+      CUDA_ERRCHK(cudaStreamDestroy(ctx.d_copy_streams[i]));
+    }
 }
 
-void load_outer_halo_cuda_core(Grid* /*d_grid*/, real* /*d_halobuffer*/, 
-                               CParamConfig* /*d_cparams*/,
-                               Grid* /*h_grid*/, real* /*h_halobuffer*/, 
-                               CParamConfig* /*h_cparams*/, vec3i* /*h_start_idx*/)
+void load_outer_halo_cuda_core(const GPUContext & ctx, Grid* h_grid, real* h_halobuffer, bool lfirstGPU, bool llastGPU)
 {
-    printf("load_outer_halo_cuda_core\n");
-/*
-    Load outer halo from h_halobuffer to d_halobuffer (copyouterhalostodevice())
-    and update the halo of the device (fillhalos)
-*/
+    //printf("load_outer_halo_cuda_core\n");
+
+    // lock buffer for left & right plates
+    lockHostMemyz();
+
+    //Update the outer halos of the device  by copying from host.
+    for (int w=0; w < h_grid->NUM_ARRS; ++w){ 
+        copyOxyPlates(ctx,w,h_grid->arr[w],lfirstGPU,llastGPU);
+        copyOxzPlates(ctx,w,h_grid->arr[w],lfirstGPU,llastGPU);
+        copyOyzPlates(ctx,w,h_grid->arr[w],lfirstGPU,llastGPU);
+    }
+    //CUDA_ERRCHK_KERNEL();
+    synchronizeStreams(ctx,lfirstGPU,llastGPU);
+ 
+    // unlock buffer for left & right plates
+    unlockHostMemyz();
+
+    //!!!for (int w=0; w < h_grid->NUM_ARRS; ++w)   // time-critical!
+        //!!!unlockHostMemOuter(ctx,h_grid->arr[w],lfirstGPU,llastGPU);
 }
 
-void store_internal_halo_cuda_core(Grid* /*h_grid*/, real* /*h_halobuffer*/, 
-                                   CParamConfig* /*h_cparams*/, vec3i* /*h_start_idx*/, 
-                                   Grid* /*d_grid*/, real* /*d_halobuffer*/, 
-                                   CParamConfig* /*d_cparams*/)
+void store_internal_halo_cuda_core(const GPUContext & ctx, Grid* h_grid, real* h_halobuffer, bool lfirstGPU, bool llastGPU)
 {
-    printf("store_internal_halo_cuda_core\n");
-/*
-    Store internal halos in d_halobuffer to host memory in h_halobuffer/h_grid
-*/
-}
+    //printf("store_internal_halo_cuda_core\n");
+    //Store internal halos in d_halobuffer to host memory in h_halobuffer/h_grid
 
+    // lock buffer for left & right plates
+    lockHostMemyz();
+
+    //Update the outer halos of the device  by copying from host.
+    for (int w=0; w < h_grid->NUM_ARRS; ++w){
+        copyIxyPlates(ctx,w,h_grid->arr[w],lfirstGPU,llastGPU);
+        copyIxzPlates(ctx,w,h_grid->arr[w],lfirstGPU,llastGPU);
+        copyIyzPlates(ctx,w,h_grid->arr[w],lfirstGPU,llastGPU);
+    }
+    synchronizeStreams(ctx,lfirstGPU,llastGPU);
+
+    // unlock buffer for left & right plates
+    unlockHostMemyz();
+
+    // unlock all other locked memory
+    //!!!for (int w=0; w < h_grid->NUM_ARRS; ++w)
+        //!!!unlockHostMemInner(ctx,h_grid->arr[w],lfirstGPU,llastGPU);
+}
 
 void print_gpu_config_cuda_core()
 {
     int n_devices;
     if (cudaGetDeviceCount(&n_devices) != cudaSuccess) { CRASH("No CUDA devices found!"); }
     printf("Num CUDA devices found: %u\n", n_devices);
-
     int initial_device;
     cudaGetDevice(&initial_device);
     for (int i = 0; i < n_devices; i++) {
@@ -227,7 +284,7 @@ void print_gpu_config_cuda_core()
         //Memory usage
         size_t free_bytes, total_bytes;
         CUDA_ERRCHK( cudaMemGetInfo(&free_bytes, &total_bytes) );
-        const size_t used_bytes = total_bytes - free_bytes;     
+        const size_t used_bytes = total_bytes - free_bytes;
         printf("    Total global mem: %.2f GiB\n", props.totalGlobalMem / (1024.0*1024*1024));
         printf("    Gmem used (GiB): %.2f\n", used_bytes / (1024.0*1024*1024));
         printf("    Gmem memory free (GiB): %.2f\n", free_bytes / (1024.0*1024*1024));
@@ -244,97 +301,4 @@ void print_gpu_config_cuda_core()
     }
     cudaSetDevice(initial_device);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

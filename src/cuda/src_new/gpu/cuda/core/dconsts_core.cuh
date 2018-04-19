@@ -5,6 +5,7 @@
 *   which does the actual definition.
 */
 #pragma once
+//#include <thrust/complex.h>
 #include "common/datatypes.h"
 
 #ifdef INCLUDED_FROM_DCONST_DEFINER
@@ -14,7 +15,7 @@
 #endif
 
 //Dimensions
-DCONST_EXTERN __constant__ int d_mx, d_my, d_mz; // Grid dims including the boundaries
+DCONST_EXTERN __constant__ int d_mx, d_my, d_mz, d_mxy; // Grid dims including the boundaries
 DCONST_EXTERN __constant__ int d_nx, d_ny, d_nz; // Dimensions of the computational domain
 DCONST_EXTERN __constant__ int d_nx_min, d_ny_min, d_nz_min; // Starting indices of the computational domain
 DCONST_EXTERN __constant__ int d_nx_max, d_ny_max, d_nz_max; // Ending indices (exclusive) of the computational domain
@@ -34,59 +35,41 @@ DCONST_EXTERN __constant__ real d_DIFF1_DX_DIV, d_DIFF1_DY_DIV, d_DIFF1_DZ_DIV; 
 DCONST_EXTERN __constant__ real d_DIFF2_DX_DIV, d_DIFF2_DY_DIV, d_DIFF2_DZ_DIV;
 DCONST_EXTERN __constant__ real d_DIFFMN_DXDY_DIV, d_DIFFMN_DYDZ_DIV, d_DIFFMN_DXDZ_DIV; 
 
-//Viscosity and the speed of sound
-DCONST_EXTERN __constant__ real d_NU_VISC; //Viscosity
-DCONST_EXTERN __constant__ real d_CS2_SOUND; //Speed of sound
+//Effective halo sizes for copying
+DCONST_EXTERN __device__ __constant__ int d_halo_widths_x[3], d_halo_widths_y[3], d_halo_widths_z[3];
 
+#ifdef GPU_ASTAROTH
+  #include "common/PC_moduleflags.h"
+  #include "cparam_c.h"
+  #include "common/PC_modulepardecs.h"
+  #ifdef FORCING
+    DCONST_EXTERN __constant__ real d_FORCING_COEF1[3], d_FORCING_COEF2[3], d_FORCING_COEF3[3], d_FORCING_FDA[3];
+    //DCONST_EXTERN __constant__ thrust::complex<real> d_FORCING_FX[mx], d_FORCING_FY[my], d_FORCING_FZ[mz];
+    DCONST_EXTERN __constant__ real d_FORCING_FX[mx][2], d_FORCING_FY[my][2], d_FORCING_FZ[mz][2];
+  #endif
+#else
+  //Viscosity 
+  #ifdef VISCOSITY
+    DCONST_EXTERN __constant__ real d_NU; //Viscosity
+  #endif
 
-//Forcing related 
-DCONST_EXTERN __constant__ int d_FORCING_ENABLED;
-DCONST_EXTERN __constant__ real d_PHI;
-DCONST_EXTERN __constant__ real d_KK_VEC_X;
-DCONST_EXTERN __constant__ real d_KK_VEC_Y;
-DCONST_EXTERN __constant__ real d_KK_VEC_Z;
-DCONST_EXTERN __constant__ real d_FORCING_KK_PART_X;
-DCONST_EXTERN __constant__ real d_FORCING_KK_PART_Y;
-DCONST_EXTERN __constant__ real d_FORCING_KK_PART_Z;
+  //Speed of sound
+  DCONST_EXTERN __constant__ real d_CS20; //Speed of sound
 
-//Induction
-DCONST_EXTERN __constant__ real d_ETA; //Magnetic diffusivity
+  //Forcing related 
+  #ifdef FORCING
+    DCONST_EXTERN __constant__ real d_PHI;
+    DCONST_EXTERN __constant__ real d_KK_VEC_X;
+    DCONST_EXTERN __constant__ real d_KK_VEC_Y;
+    DCONST_EXTERN __constant__ real d_KK_VEC_Z;
+    DCONST_EXTERN __constant__ real d_FORCING_KK_PART_X;
+    DCONST_EXTERN __constant__ real d_FORCING_KK_PART_Y;
+    DCONST_EXTERN __constant__ real d_FORCING_KK_PART_Z;
+  #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  //Induction
+  #ifdef MAGNETIC
+    DCONST_EXTERN __constant__ real d_ETA; //Magnetic diffusivity
+  #endif
+#endif
 
