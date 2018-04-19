@@ -784,6 +784,22 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if (($hn =~ s*) && ($USER =~ pr*)) then
+  echo "MareNostrum - BSC, Barcelona, Spain"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = " "
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+#----------------------------------------------
 else if ($hn =~ daint*) then
   echo "Piz Daint - CSCS, Zurich, Switzerland"
   if ($?SLURM_JOBID) then
