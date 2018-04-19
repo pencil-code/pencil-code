@@ -54,7 +54,7 @@ module Special
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
-  real, dimension(2) :: nwave,w_ff
+  real, dimension(2) :: nwave,w_ff,z_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   integer :: nlf=4
@@ -104,7 +104,7 @@ module Special
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
-      lemerg_profx,lheatcond_cutoff,nwave,w_ff,lset_boundary_emf
+      lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1310,7 +1310,7 @@ module Special
       if (any(uu_drive /= 0.0)) then
         do m=m1, m2
           do n=n1,n2
-            if ((z(n) .lt. 1.01) .and. (z(n) .gt. 0.6)) then
+            if ((z(n) .lt. z_ff(2)) .and. (z(n) .gt. z_ff(1))) then
                uu(:,2)=1.11803*uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+2*nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
 !               uu(:,1)=uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
 !               uu(:,3)=-0.5*uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
