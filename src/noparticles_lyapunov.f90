@@ -46,7 +46,6 @@ module Particles_lyapunov
 !
 !  May-16/dhruba+nishant+akshay: coded
 !
-      use General, only: keep_compiler_quiet
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -122,6 +121,7 @@ module Particles_lyapunov
     subroutine write_plyapunov_init_pars(unit)
 !
       integer, intent(in) :: unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_plyapunov_init_pars
 !***********************************************************************
@@ -138,6 +138,7 @@ module Particles_lyapunov
     subroutine write_plyapunov_run_pars(unit)
 !
       integer, intent(in) :: unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_plyapunov_run_pars
 !***********************************************************************

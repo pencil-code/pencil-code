@@ -379,7 +379,7 @@ module BorderProfiles
                 (y(m)>=theta_upper_border-2*wborder_theta_upper))     ! upper stripe
 !
         if (lradial.or.lmeridional) then
-          call get_drive_time(p,inverse_drive_time,i)
+          call get_drive_time(inverse_drive_time,i)
           call get_border(p,pborder,i)
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
                - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
@@ -427,7 +427,7 @@ module BorderProfiles
 !
     endsubroutine get_border
 !***********************************************************************
-    subroutine get_drive_time(p,inverse_drive_time,i)
+    subroutine get_drive_time(inverse_drive_time,i)
 !
 !  This is problem-dependent, since the driving should occur in the
 !  typical time-scale of the problem. tborder can be specified as input.
@@ -438,7 +438,6 @@ module BorderProfiles
 !
       real, intent(out) :: inverse_drive_time
       real :: inverse_period
-      type (pencil_case) :: p
       integer :: i
 !
 !  calculate orbital time

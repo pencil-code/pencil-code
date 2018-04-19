@@ -402,6 +402,7 @@ module Fourier
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
       call keep_compiler_quiet(present(linv))
+      call keep_compiler_quiet(present(lneed_im))
       call keep_compiler_quiet(present(shift_z))
 !
     endsubroutine fft_z_parallel_2D

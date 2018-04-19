@@ -57,16 +57,13 @@ module Particles_caustics
 !***********************************************************************
     subroutine init_particles_caustics(f,fp,ineargrid)
 !
-!      use Sub, only: kronecker_delta
-!      use General, only: keep_compiler_quiet,random_number_wrapper
-!      use Mpicomm, only: mpiallreduce_sum
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
-      real, dimension(nx,3:3) :: uij 
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine init_particles_caustics
 !***********************************************************************
@@ -103,12 +100,12 @@ module Particles_caustics
       intent (inout) :: df, dfp,ineargrid
       intent (in) :: k,taup1
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(fp,dfp)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)     
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(taup1)
 !
     endsubroutine dcaustics_dt_pencil
 !***********************************************************************
@@ -125,6 +122,7 @@ module Particles_caustics
     subroutine write_pcaustics_init_pars(unit)
 !
       integer, intent(in) :: unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_pcaustics_init_pars
 !***********************************************************************
@@ -141,6 +139,7 @@ module Particles_caustics
     subroutine write_pcaustics_run_pars(unit)
 !
       integer, intent(in) :: unit
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_pcaustics_run_pars
 !***********************************************************************

@@ -57,6 +57,7 @@ module General
   public :: meshgrid
   public :: linspace
   public :: linear_interpolate_2d
+  public :: chk_time
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -2422,8 +2423,8 @@ module General
       real, parameter :: eps=1.e-5
       real :: g1, g2, g3, g4
       real :: xp0, yp0
-      real, save :: dxdy1, dx1, dy1
-      integer :: i, ix0, iy0
+      real, save :: dx1, dy1
+      integer :: ix0, iy0
       logical :: lcheck
 !
       intent(in) :: f, xx, yy, xxp, lcheck
@@ -4257,14 +4258,14 @@ module General
 !
 ! 4-dec-2015/MR: coded
 !
-      use Cdata, only: cosph, sinph, costh, sinth, iproc, lyang
+      use Cdata, only: cosph, sinph, costh, sinth    !, iproc, lyang
 
       real, dimension(:,:,:,:) :: f
       integer :: ith1, ith2, iph1, iph2, j
 
       real, dimension(size(f,1)) :: tmp12,tmp3
       integer :: ith,iph
-      real, dimension(size(f,1)) :: tmp
+!      real, dimension(size(f,1)) :: tmp
 
       do ith=ith1,ith2; do iph=iph1,iph2
 !tmp=sum(f(:,ith,iph,j:j+2)**2,2)

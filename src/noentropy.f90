@@ -484,6 +484,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
+
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_energy
 !***********************************************************************

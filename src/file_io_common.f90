@@ -33,7 +33,7 @@ module File_io
 !
 !  20-Feb-2012/PABourdin: coded
 !
-      use General, only: itoa
+      use General, only: itoa, keep_compiler_quiet
       use Messages, only: fatal_error
 !
       integer, intent(in) :: unit
@@ -66,6 +66,7 @@ module File_io
       if (num >= 2) then
         do i = 2, num
           !!!call fseek (unit, rec_len, 1)
+          call keep_compiler_quiet(reference)
         enddo
       endif
 !

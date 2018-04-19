@@ -20,6 +20,7 @@ module WENO_transport
 !  29-dec-09/evghenii+anders: dummy
 !
       use Cparam, only: impossible
+      use General, only: keep_compiler_quiet
 !
       real, dimension(:,:,:,:), intent(in ) :: fq
       integer, intent(in) :: m, n
@@ -30,17 +31,11 @@ module WENO_transport
 !
       dq = impossible
 !
-      if (.false.) print*, fq
-      if (.false.) print*, m
-      if (.false.) print*, n
-      if (.false.) print*, iq
-      if (.false.) print*, iq1
-      if (.false.) print*, iux
-      if (.false.) print*, iuy
-      if (.false.) print*, iuz
-      if (.false.) print*, dx_1
-      if (.false.) print*, dy_1
-      if (.false.) print*, dz_1
+      call keep_compiler_quiet(fq)
+      call keep_compiler_quiet(m,n,iq,iq1)
+      call keep_compiler_quiet(iux,iuy,iuz)
+      call keep_compiler_quiet(dx_1,dy_1,dz_1)
+      call keep_compiler_quiet(dq,ref,ref1)
 !
     endsubroutine weno_transp
 !***********************************************************************

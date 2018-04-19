@@ -170,7 +170,7 @@ module Particles_mpicomm
 !
     endsubroutine input_blocks
 !***********************************************************************
-    subroutine sort_blocks()
+    subroutine sort_blocks
 !
 !  Sort the blocks by parent processor and by parent brick index.
 !
@@ -224,7 +224,7 @@ module Particles_mpicomm
 !
     endsubroutine get_brick_index
 !***********************************************************************
-    subroutine particles_neighbour_proc()
+    subroutine particles_neighbour_proc
 !
 ! There is no neighbouring processors    
 !      
@@ -233,7 +233,10 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine communicate_fpbuf(to_neigh,from_neigh,her_npbuf,my_npbuf)
 ! dummy
-    integer :: to_neigh,from_neigh,her_npbuf,my_npbuf
+
+      integer :: to_neigh,from_neigh,her_npbuf,my_npbuf
+      call keep_compiler_quiet(to_neigh,from_neigh,her_npbuf,my_npbuf)
+!
     endsubroutine communicate_fpbuf
 !***********************************************************************
 endmodule Particles_mpicomm

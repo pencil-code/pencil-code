@@ -18,6 +18,7 @@ module Messages
   public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
   public :: outlog, set_caller
+  public :: terminal_setfgbrightcolor, terminal_setfgcolor
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
   integer, public, parameter :: iterm_BRIGHT    = 1

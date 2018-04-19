@@ -30,16 +30,6 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine finalize_isendrcv_bdry_ogrid
 !***********************************************************************
-    subroutine isendrcv_bdry_x_ogrid(f)
-!
-!  Dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (ALWAYS_FALSE) print *, f
-!
-    endsubroutine isendrcv_bdry_x_ogrid
-!***********************************************************************
     subroutine finalize_isend_init_interpol(ireq1D,ireq2D,nreq1D,nreq2D)
 !
 !  Dummy

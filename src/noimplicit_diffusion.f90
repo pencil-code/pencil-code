@@ -48,6 +48,7 @@ module ImplicitDiffusion
       integer, intent(in), optional :: ivar2
 !
       call fatal_error('integrate_diffusion', 'ImplicitDiffusion module is not plugged in. ')
+      call get_diffus_coeff
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1,ivar2)
 !

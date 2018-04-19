@@ -184,6 +184,7 @@ module Particles_grad
         write(3,*) 'isigmap32=', isigmap32
         write(3,*) 'isigmap33=', isigmap33
       endif
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_grad
 !***********************************************************************

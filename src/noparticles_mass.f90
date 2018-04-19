@@ -107,8 +107,8 @@ module Particles_mass
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(fp,dfp)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !

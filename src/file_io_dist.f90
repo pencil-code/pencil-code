@@ -22,6 +22,7 @@ module File_io
 !  18-mar-10/Bourdin.KIS: implemented
 !
       use Messages, only: fatal_error
+      use Cparam, only: ALWAYS_FALSE
 !
       character(len=*)          , intent(in) :: file
       character(len=*), optional, intent(in) :: form
@@ -33,6 +34,7 @@ module File_io
 !  Test if file exists.
 !
       if (present(nitems)) nitems=0
+      if (ALWAYS_FALSE) print*, present(remove_comments)
 !
       inquire(file=file,exist=exists)
       if (.not. exists) call fatal_error('parallel_open', 'file "'//trim(file)//'" not found')

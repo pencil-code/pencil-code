@@ -97,8 +97,7 @@ module PointMasses
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine pointmasses_pde_pencil
@@ -108,8 +107,7 @@ module PointMasses
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine  pointmasses_pde
 !***********************************************************************
@@ -146,12 +144,14 @@ module PointMasses
     subroutine get_totalmass(tmass)
 !
       real :: tmass
+      call keep_compiler_quiet(tmass)
 !
     endsubroutine get_totalmass
 !***********************************************************************
     subroutine pointmasses_read_snapshot(filename)
 !
       character (len=*) :: filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine pointmasses_read_snapshot
 !***********************************************************************
@@ -161,13 +161,15 @@ module PointMasses
       logical :: enum
       optional :: flist
 !
-      call keep_compiler_quiet(flist)
+      call keep_compiler_quiet(snapbase,flist)
+      call keep_compiler_quiet(enum)
 !
     endsubroutine pointmasses_write_snapshot
 !***********************************************************************
     subroutine pointmasses_write_qdim(filename)
 !
       character (len=*) :: filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine pointmasses_write_qdim
 !***********************************************************************
@@ -187,12 +189,14 @@ module PointMasses
     subroutine pointmasses_timestep_first(f)
 !    
       real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
 !
    endsubroutine pointmasses_timestep_first
 !***********************************************************************
     subroutine pointmasses_timestep_second(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
 !
     endsubroutine pointmasses_timestep_second
 !***********************************************************************
