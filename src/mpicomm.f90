@@ -1341,7 +1341,7 @@ module Mpicomm
       stop_flag=.false.; msg=''
       if (iproc==root) then
         nstrip_total=2*(nprocz*mz + (nprocy-2)*my + 2*(my-nghost))*nghost
-        noks_all=noks_all - ngap_all/2 
+        noks_all=noks_all - ngap_all/4 
         if (noks_all<nstrip_total) then
           msg='setup_interp_yy: '//cyinyang//' grid: number of caught points '// &
                trim(itoa(noks_all))//' smaller than goal '// trim(itoa(nstrip_total)) &
@@ -4505,13 +4505,17 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine end_serialize
 !***********************************************************************
-    subroutine mpibarrier
+    subroutine mpibarrier(comm)
 !
 !  Synchronize nodes.
 !
 !  23-jul-2002/wolf: coded
 !
-      call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+      use General, only: ioptest
+!
+      integer, optional, intent(IN) :: comm
+!
+      call MPI_BARRIER(ioptest(comm,MPI_COMM_WORLD), mpierr)
 !
     endsubroutine mpibarrier
 !***********************************************************************
