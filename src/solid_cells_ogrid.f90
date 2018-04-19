@@ -6446,21 +6446,42 @@ module Solid_Cells
 !
     endsubroutine gaunoise_ogrid
 !***********************************************************************
-    subroutine find_proc_cartesian(xyz,from_proc)
+    subroutine find_proc_cartesian(xyz,from_proc,incl_gp)
 !
 !  Find the processor that stores the grid points, and return the processor
 !  id and the grid index of the bottom neighbouring point on a global grid.
 !  Necessary for interpolation between grids on parallel systems
 !
 !  13-apr-17/Jorgen: Coded
+!  19-apr-18/Jorgen: Added possibility to use ghost points
 !
       real, dimension(3), intent(in) :: xyz
       integer, intent(out) :: from_proc
-      integer :: i
+      integer :: i,ishift
       logical :: found_proc
+      logical, optional :: incl_gp
       real, parameter :: fDP=1.e-15
 !
-      found_proc=.false.
+      found_proc=.false. 
+!
+!  If ghost points are included, check first current processor for the point
+!
+      if (present(incl_gp)) then
+        if(interpolation_method==1) then
+          ishift=0
+        else
+          ishift=1
+        endif
+        if(incl_gp) then
+          if( ((xyz(1)>(x(1+ishift))).and.(xyz(1)<(x(mx-ishift)))) .and. &
+              ((xyz(2)>(y(1+ishift))).and.(xyz(2)<(y(my-ishift)))) .and. &
+              ((xyz(3)>(z(1+ishift))).and.(xyz(3)<(z(mz-ishift)))) )  then
+              from_proc=iproc
+              found_proc=.true.
+              return
+          endif
+        endif
+      endif
       do i=1,ncpus
         if( ((xyz(1)>=(xyz0_loc_all(i,1)-fDP)).and.(xyz(1)<=(xyz1_loc_all(i,1)+fDP))) .and. &
             ((xyz(2)>=(xyz0_loc_all(i,2)-fDP)).and.(xyz(2)<=(xyz1_loc_all(i,2)+fDP))) .and. &
