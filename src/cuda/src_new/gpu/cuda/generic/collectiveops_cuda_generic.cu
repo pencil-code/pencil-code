@@ -6,9 +6,9 @@
 #include "collectiveops_cuda_generic.cuh"
 #include "gpu/cuda/core/dconsts_core.cuh"
 #include "gpu/cuda/core/errorhandler_cuda.cuh"
-#include "utils/utils.h"//For templated max/min/sum
+#include "utils/utils.h"         //For templated max/min/sum
 
-#define COL_THREADS_X (32) //TODO read from config
+#define COL_THREADS_X (32)       //TODO read from config
 #define COL_THREADS_Y (4)
 #define COL_ELEMS_PER_THREAD (1) //TODO ifndef, define here, else get from the compile flag
 
@@ -33,6 +33,12 @@ __device__ T dsqrsum(const T a, const T b, const T c) { return a*a + b*b + c*c; 
 
 template<class T>
 __device__ T dexpsqrscal(const T a, const T b, const T c) { return exp(a)*exp(a); }
+
+template<class T>
+__device__ T dexpscal(const T a, const T b, const T c) { return exp(a); }
+
+template<class T>
+__device__ T dsqrscal(const T a, const T b, const T c) { return a*a; }
 
 template<class T>
 __device__ T dscal(const T a, const T b, const T c) { return a; }
@@ -84,7 +90,7 @@ __global__ void reduce(real* dest, real* src, int problem_size)
 	extern __shared__ real shared[];
 	shared[tid] = src[tid];
 	
-	//Add sequantially all blocks above block size
+	//Add sequentially all blocks above block size
 	while (i < problem_size) {
 		shared[tid] = reduce_op(shared[tid], src[i]);
 		i += blockDim.x;
@@ -132,9 +138,9 @@ __global__ void reduce_initial(real* d_partial_result, real* d_vec_x, real* d_ve
 
     const int tx = threadIdx.x + blockIdx.x*blockDim.x + d_nx_min;
     const int ty = threadIdx.y + blockIdx.y*blockDim.y + d_ny_min;
-    const int tz = blockIdx.z*COL_ELEMS_PER_THREAD 	   + d_nz_min;
+    const int tz = blockIdx.z*COL_ELEMS_PER_THREAD     + d_nz_min;
 
-	const int base_idx = tx + ty*d_mx + tz*d_mx*d_my;
+	const int base_idx = tx + ty*d_mx + tz*d_mxy;
 
     assert(tx >= d_nx_min);
 	assert(tx < d_nx_max);
@@ -155,7 +161,7 @@ __global__ void reduce_initial(real* d_partial_result, real* d_vec_x, real* d_ve
 
 	for (int i=1; i < COL_ELEMS_PER_THREAD && tz+i < d_nz_max; i++)
 	{	
-		const int grid_idx = base_idx + i*d_mx*d_my;
+		const int grid_idx = base_idx + i*d_mxy;
         assert(tz+i < d_nz_max);
         
         if (REDUCE_VEC)
@@ -254,19 +260,18 @@ void reduce_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams, real
 	return;
 }
 
-
 //template<ReductType t>
 real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParamConfig* cparams, real* d_a, real* d_b, real* d_c)
 {
     real res;
     switch (t) {
-        case MAX_VEC_UU:
+        case MAX_VEC:
             reduce_cuda_generic<dmax, ddist>(reduct_arr, cparams, d_a, d_b, d_c);
             break;
-        case MIN_VEC_UU:
+        case MIN_VEC:
             reduce_cuda_generic<dmin, ddist>(reduct_arr, cparams, d_a, d_b, d_c);
             break;
-        case RMS_VEC_UU:
+        case RMS_VEC:
             reduce_cuda_generic<dsum, dsqrsum>(reduct_arr, cparams, d_a, d_b, d_c);
             break;
         case MAX_SCAL:
@@ -276,10 +281,16 @@ real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParam
             reduce_cuda_generic<dmin, dscal>(reduct_arr, cparams, d_a);
             break;
         case RMS_SCAL:
-            reduce_cuda_generic<dsum, dsqrsum>(reduct_arr, cparams, d_a);
+            reduce_cuda_generic<dsum, dsqrscal>(reduct_arr, cparams, d_a);
             break;
         case RMS_EXP:
             reduce_cuda_generic<dsum, dexpsqrscal>(reduct_arr, cparams, d_a);
+            break;
+        case SUM_SCAL:
+            reduce_cuda_generic<dsum, dscal>(reduct_arr, cparams, d_a);
+            break;
+        case SUM_EXP:
+            reduce_cuda_generic<dsum, dexpscal>(reduct_arr, cparams, d_a);
             break;
         default:
             CRASH("Invalid type!");
@@ -288,110 +299,3 @@ real get_reduction_cuda_generic(ReductionArray* reduct_arr, ReductType t, CParam
 
     return res;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

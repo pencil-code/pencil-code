@@ -1,7 +1,11 @@
+#include <thrust/complex.h>
 #include "rk3_cuda_generic.cuh"
 #include "diff_cuda_generic.cuh"
 
 #include "gpu/cuda/core/errorhandler_cuda.cuh"
+#ifdef GPU_ASTAROTH
+#include "common/PC_moduleflags.h"
+#endif
 
 typedef struct {
     real *s_lnrho, *s_uux, *s_uuy, *s_uuz;
@@ -13,8 +17,7 @@ typedef struct {
     real *r_Ax, *r_Ay, *r_Az;
 } InductionStencil;
 
-
-static __device__ __inline__ void load_halos(int smem_idx_base, int grid_idx_base, real __restrict__ s_scal[], const real* __restrict__ d_scal)
+static __device__ __inline__ void load_halos(int smem_idx_base, int grid_idx_base, real* __restrict__ s_scal, const real* __restrict__ d_scal)
 {
     if (threadIdx.x < BOUND_SIZE) {
         //Load left        
@@ -77,7 +80,15 @@ static __device__ __inline__ void load_halos(int smem_idx_base, int grid_idx_bas
     }
 }
 
+static __device__ __inline__ real laplace(const int smem_idx, real* s_scal, real* r_scal)
+{
+    const real d2x_scal = der2_scalx(smem_idx, s_scal);
+    const real d2y_scal = der2_scaly(smem_idx, s_scal);
+    const real d2z_scal = der2_scalz(r_scal);
+    return d2x_scal + d2y_scal + d2z_scal;
+}
 
+#ifdef HYDRO
 static __device__ real continuity(const int smem_idx, HydroStencil& stncl)
 {
     const real ddx_lnrho = der_scalx(smem_idx, stncl.s_lnrho);
@@ -96,16 +107,6 @@ static __device__ real continuity(const int smem_idx, HydroStencil& stncl)
 		             - ddx_uux - ddy_uuy - ddz_uuz;
     return res;
 }
-
-
-static __device__ __inline__ real laplace(const int smem_idx, real* s_scal, real* r_scal)
-{
-    const real d2x_scal = der2_scalx(smem_idx, s_scal);
-    const real d2y_scal = der2_scaly(smem_idx, s_scal);
-    const real d2z_scal = der2_scalz(r_scal);    
-    return d2x_scal + d2y_scal + d2z_scal;
-}
-
 
 typedef enum {X_AXIS, Y_AXIS, Z_AXIS} AXIS;
 template <AXIS axis>
@@ -143,10 +144,10 @@ static __device__ real momentum(const int smem_idx, HydroStencil& stncl)
         const real res =   - stncl.r_uux[3] * ddx_uux //vec_dot_nabla_scal
                            - stncl.r_uuy[3] * ddy_uux
                            - stncl.r_uuz[3] * ddz_uux
-                           - d_CS2_SOUND*ddx_lnrho //ddx part of grad lnrho
-                           + d_NU_VISC * nu_const_uux //nu_const
-                           + 2.0*d_NU_VISC*(Sxx*ddx_lnrho + Sxy*ddy_lnrho + Sxz*ddz_lnrho)
-                           + d_NU_VISC*(1.0/3.0)*(d2x_uux + d2xy_uuy); //S_grad_lnrho
+                           - d_CS20*ddx_lnrho //ddx part of grad lnrho
+                           + d_NU * nu_const_uux //nu_const
+                           + 2.0*d_NU*(Sxx*ddx_lnrho + Sxy*ddy_lnrho + Sxz*ddz_lnrho)
+                           + d_NU*(1.0/3.0)*(d2x_uux + d2xy_uuy); //S_grad_lnrho
         return res;
     } else if (axis == Y_AXIS) {
         const real d2y_uuy = der2_scaly(smem_idx, stncl.s_uuy);
@@ -157,10 +158,10 @@ static __device__ real momentum(const int smem_idx, HydroStencil& stncl)
         const real res =   - stncl.r_uux[3] * ddx_uuy //vec_dot_nabla_scal
                            - stncl.r_uuy[3] * ddy_uuy
                            - stncl.r_uuz[3] * ddz_uuy
-                           - d_CS2_SOUND*ddy_lnrho //ddx part of grad lnrho
-                           + d_NU_VISC * nu_const_uuy //nu_const
-                           + 2.0*d_NU_VISC*(Sxy*ddx_lnrho + Syy*ddy_lnrho + Syz*ddz_lnrho)
-                           + d_NU_VISC*(1.0/3.0)*(d2xy_uux + d2y_uuy); //S_grad_lnrho
+                           - d_CS20*ddy_lnrho //ddx part of grad lnrho
+                           + d_NU * nu_const_uuy //nu_const
+                           + 2.0*d_NU*(Sxy*ddx_lnrho + Syy*ddy_lnrho + Syz*ddz_lnrho)
+                           + d_NU*(1.0/3.0)*(d2xy_uux + d2y_uuy); //S_grad_lnrho
         return res;
     } else {
         const real d2z_uuz = der2_scalz(stncl.r_uuz);
@@ -169,15 +170,16 @@ static __device__ real momentum(const int smem_idx, HydroStencil& stncl)
         const real res =   - stncl.r_uux[3] * ddx_uuz //vec_dot_nabla_scal
                            - stncl.r_uuy[3] * ddy_uuz
                            - stncl.r_uuz[3] * ddz_uuz
-                           - d_CS2_SOUND*ddz_lnrho //ddx part of grad lnrho
-                           + d_NU_VISC * nu_const_uuz //nu_const
-                           + 2.0*d_NU_VISC*(Sxz*ddx_lnrho + Syz*ddy_lnrho + Szz*ddz_lnrho)
-                           + d_NU_VISC*(1.0/3.0)*(d2z_uuz);
+                           - d_CS20*ddz_lnrho //ddx part of grad lnrho
+                           + d_NU * nu_const_uuz //nu_const
+                           + 2.0*d_NU*(Sxz*ddx_lnrho + Syz*ddy_lnrho + Szz*ddz_lnrho)
+                           + d_NU*(1.0/3.0)*(d2z_uuz);
         return res;
     }
 }
+#endif
 
-
+#ifdef MAGNETIC
 template <AXIS axis>
 static __device__ real induction(const int smem_idx, InductionStencil& stncl, const real uux, const real uuy, const real uuz)
 {
@@ -218,9 +220,42 @@ static __device__ real induction(const int smem_idx, InductionStencil& stncl, co
         return res;
     }
 }
-
+#endif
 
 //Nonhelical forcing adapted from astaroth_legacy
+#ifdef FORCING
+#ifdef GPU_ASTAROTH
+template <AXIS axis>
+static __device__ __inline__ real forcing(const int tx, const int ty, const int tz)
+{
+	vec3r profyz_hel_coef2;
+        profyz_hel_coef2.x = d_PROFY_HEL[ty]*d_PROFZ_HEL[tz]*d_FORCING_COEF2[0];
+        profyz_hel_coef2.y = d_PROFY_HEL[ty]*d_PROFZ_HEL[tz]*d_FORCING_COEF2[1];
+        profyz_hel_coef2.z = d_PROFY_HEL[ty]*d_PROFZ_HEL[tz]*d_FORCING_COEF2[2];
+
+	thrust::complex<REAL> fxyz = thrust::complex<REAL>(d_FORCING_FX[tx][0],d_FORCING_FX[tx][1])
+                                    *thrust::complex<REAL>(d_FORCING_FY[ty][0],d_FORCING_FY[ty][1])
+                                    *thrust::complex<REAL>(d_FORCING_FZ[tz][0],d_FORCING_FZ[tz][1]), tmp;
+	REAL force_ampl=d_PROFX_AMPL[tx]*d_PROFY_AMPL[ty]*d_PROFZ_AMPL[tz];
+
+#undef real //!!!
+    if (axis == X_AXIS){
+        tmp=thrust::complex<REAL>(d_FORCING_COEF1[0],d_PROFX_HEL[tx]*profyz_hel_coef2.x)*fxyz;
+        return force_ampl*tmp.real()*d_FORCING_FDA[0];
+    }
+    else if (axis == Y_AXIS){
+        tmp=thrust::complex<REAL>(d_FORCING_COEF1[1],d_PROFX_HEL[tx]*profyz_hel_coef2.y)*fxyz;
+        return force_ampl*tmp.real()*d_FORCING_FDA[1];
+    }
+    else if (axis == Z_AXIS){
+        tmp=thrust::complex<REAL>(d_FORCING_COEF1[2],d_PROFX_HEL[tx]*profyz_hel_coef2.z)*fxyz;
+        return force_ampl*tmp.real()*d_FORCING_FDA[2];
+    }
+    else
+      return 0.;
+#define real REAL
+}
+#else
 template <AXIS axis>
 static __device__ __inline__ real forcing(const int tx, const int ty, const int tz)
 {
@@ -236,20 +271,21 @@ static __device__ __inline__ real forcing(const int tx, const int ty, const int 
     else
         return d_FORCING_KK_PART_Z*waves;
 }
-
-
+#endif
+#endif
 // Front: the outer computational domain at z=ZBOUND_SIZE...(ZBOUND_SIZE+BOUND_SIZE)
 // Mid: segment at z=(ZBOUND_SIZE+BOUND_SIZE)...(ZBOUND_SIZE + d_nz - BOUND_SIZE)
 // Back: segment at z=(ZBOUND_SIZE + d_nz - BOUND_SIZE)...(ZBOUND_SIZE + d_nz)
 typedef enum {SEGMENT_FRONT=0, SEGMENT_MID, SEGMENT_BACK, SEGMENT_FULL, NUM_SEGMENTS} SegmentType;
 
+#ifdef HYDRO
 template <int step_number>
 __launch_bounds__(RK_THREADS_PER_BLOCK, 1)
 static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
                         const real* __restrict__ d_uux, 
                         const real* __restrict__ d_uuy, 
                         const real* __restrict__ d_uuz, 
-                  		real* __restrict__ d_lnrho_dst,     //DESTINATION
+                        real* __restrict__ d_lnrho_dst,              //DESTINATION
                         real* __restrict__ d_uux_dst, 
                         real* __restrict__ d_uuy_dst, 
                         real* __restrict__ d_uuz_dst, 
@@ -275,9 +311,7 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
             zstart = d_nz_min;
             zmax = d_nz_max + BOUND_SIZE;
             break;
-        
     }
-
     const real alphas[] = {0.0, -0.53125, -1.1851851851851851};
     const real betas[]  = {0.25, 0.88888888888888884, 0.75, 0.0};
     const real ALPHA = alphas[step_number];
@@ -287,7 +321,7 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
     const int tx = threadIdx.x + blockIdx.x*blockDim.x + XBOUND_SIZE;//Start within comp domain
     const int ty = threadIdx.y + blockIdx.y*blockDim.y + YBOUND_SIZE;//Start within comp domain
     const int tz = threadIdx.z + blockIdx.z*blockDim.z*RK_ELEMS_PER_THREAD + (zstart-BOUND_SIZE);//Start from bound zone
-    const int grid_idx = tx + ty*d_mx + tz*d_mx*d_my;
+    const int grid_idx = tx + ty*d_mx + tz*d_mxy;
 
     //Registers/////////////////////////////////////////////////////////////////
     //Z pencil
@@ -323,12 +357,11 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
         r_uuz [k] = d_uuz[curr_idx];       
     }
 
-
     for (int k=0; k < RK_ELEMS_PER_THREAD + 2*ZBOUND_SIZE; ++k) {
         if (tz + k >= zmax)
             break;//Continue or break, depends on whether we want to unroll this or not
 
-        const int curr_idx = grid_idx + k*d_mx*d_my;
+        const int curr_idx = grid_idx + k*d_mxy;
 
         //Update the current smem slab
         __syncthreads();
@@ -342,15 +375,15 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
         if (k >= ZBOUND_SIZE && k < ZBOUND_SIZE+RK_ELEMS_PER_THREAD)
             preloaded_lnrho_dst = d_lnrho_dst[curr_idx];
         if (k >= 2*ZBOUND_SIZE) {   
-            preloaded_uux_dst = d_uux_dst[curr_idx - BOUND_SIZE*d_mx*d_my];
-            preloaded_uuy_dst = d_uuy_dst[curr_idx - BOUND_SIZE*d_mx*d_my];
-            preloaded_uuz_dst = d_uuz_dst[curr_idx - BOUND_SIZE*d_mx*d_my];
+            preloaded_uux_dst = d_uux_dst[curr_idx - BOUND_SIZE*d_mxy];
+            preloaded_uuy_dst = d_uuy_dst[curr_idx - BOUND_SIZE*d_mxy];
+            preloaded_uuz_dst = d_uuz_dst[curr_idx - BOUND_SIZE*d_mxy];
         }
 
         //Update the leading slab in registers
         if (k+BOUND_SIZE < RK_ELEMS_PER_THREAD + 2*ZBOUND_SIZE && tz + k + BOUND_SIZE < zmax) {
-            const int next_idx = curr_idx + BOUND_SIZE*d_mx*d_my; 
-            assert(next_idx < d_mx*d_my*d_mz);
+            const int next_idx = curr_idx + BOUND_SIZE*d_mxy; 
+            assert(next_idx < d_mxy*d_mz);
             r_lnrho[6] = d_lnrho[next_idx];
             r_uux  [6] = d_uux[next_idx];
             r_uuy  [6] = d_uuy[next_idx];
@@ -360,26 +393,27 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
         HydroStencil stncl = {s_lnrho, s_uux, s_uuy, s_uuz, r_lnrho, r_uux, r_uuy, r_uuz};
 
         //Solve partial divergence
-        mom_x[0] -= d_NU_VISC*(1.0/3.0)*der2_scalxz<3>(smem_idx, s_uuz);
-        mom_x[1] -= d_NU_VISC*(1.0/3.0)*der2_scalxz<2>(smem_idx, s_uuz);
-        mom_x[2] -= d_NU_VISC*(1.0/3.0)*der2_scalxz<1>(smem_idx, s_uuz);
-        mom_x[4] += d_NU_VISC*(1.0/3.0)*der2_scalxz<1>(smem_idx, s_uuz);
-        mom_x[5] += d_NU_VISC*(1.0/3.0)*der2_scalxz<2>(smem_idx, s_uuz);
-        mom_x[6]  = d_NU_VISC*(1.0/3.0)*der2_scalxz<3>(smem_idx, s_uuz);
+        
+        mom_x[0] -= d_NU*(1.0/3.0)*der2_scalxz<3>(smem_idx, s_uuz);
+        mom_x[1] -= d_NU*(1.0/3.0)*der2_scalxz<2>(smem_idx, s_uuz);
+        mom_x[2] -= d_NU*(1.0/3.0)*der2_scalxz<1>(smem_idx, s_uuz);
+        mom_x[4] += d_NU*(1.0/3.0)*der2_scalxz<1>(smem_idx, s_uuz);
+        mom_x[5] += d_NU*(1.0/3.0)*der2_scalxz<2>(smem_idx, s_uuz);
+        mom_x[6]  = d_NU*(1.0/3.0)*der2_scalxz<3>(smem_idx, s_uuz);
 
-        mom_y[0] -= d_NU_VISC*(1.0/3.0)*der2_scalyz<3>(smem_idx, s_uuz);
-        mom_y[1] -= d_NU_VISC*(1.0/3.0)*der2_scalyz<2>(smem_idx, s_uuz);
-        mom_y[2] -= d_NU_VISC*(1.0/3.0)*der2_scalyz<1>(smem_idx, s_uuz);
-        mom_y[4] += d_NU_VISC*(1.0/3.0)*der2_scalyz<1>(smem_idx, s_uuz);
-        mom_y[5] += d_NU_VISC*(1.0/3.0)*der2_scalyz<2>(smem_idx, s_uuz);
-        mom_y[6]  = d_NU_VISC*(1.0/3.0)*der2_scalyz<3>(smem_idx, s_uuz);
+        mom_y[0] -= d_NU*(1.0/3.0)*der2_scalyz<3>(smem_idx, s_uuz);
+        mom_y[1] -= d_NU*(1.0/3.0)*der2_scalyz<2>(smem_idx, s_uuz);
+        mom_y[2] -= d_NU*(1.0/3.0)*der2_scalyz<1>(smem_idx, s_uuz);
+        mom_y[4] += d_NU*(1.0/3.0)*der2_scalyz<1>(smem_idx, s_uuz);
+        mom_y[5] += d_NU*(1.0/3.0)*der2_scalyz<2>(smem_idx, s_uuz);
+        mom_y[6]  = d_NU*(1.0/3.0)*der2_scalyz<3>(smem_idx, s_uuz);
 
-        mom_z[0] -= d_NU_VISC*(1.0/3.0)*(der2_scalxz<3>(smem_idx, s_uux) + der2_scalyz<3>(smem_idx, s_uuy));
-        mom_z[1] -= d_NU_VISC*(1.0/3.0)*(der2_scalxz<2>(smem_idx, s_uux) + der2_scalyz<2>(smem_idx, s_uuy));
-        mom_z[2] -= d_NU_VISC*(1.0/3.0)*(der2_scalxz<1>(smem_idx, s_uux) + der2_scalyz<1>(smem_idx, s_uuy));
-        mom_z[4] += d_NU_VISC*(1.0/3.0)*(der2_scalxz<1>(smem_idx, s_uux) + der2_scalyz<1>(smem_idx, s_uuy));
-        mom_z[5] += d_NU_VISC*(1.0/3.0)*(der2_scalxz<2>(smem_idx, s_uux) + der2_scalyz<2>(smem_idx, s_uuy));
-        mom_z[6]  = d_NU_VISC*(1.0/3.0)*(der2_scalxz<3>(smem_idx, s_uux) + der2_scalyz<3>(smem_idx, s_uuy));
+        mom_z[0] -= d_NU*(1.0/3.0)*(der2_scalxz<3>(smem_idx, s_uux) + der2_scalyz<3>(smem_idx, s_uuy));
+        mom_z[1] -= d_NU*(1.0/3.0)*(der2_scalxz<2>(smem_idx, s_uux) + der2_scalyz<2>(smem_idx, s_uuy));
+        mom_z[2] -= d_NU*(1.0/3.0)*(der2_scalxz<1>(smem_idx, s_uux) + der2_scalyz<1>(smem_idx, s_uuy));
+        mom_z[4] += d_NU*(1.0/3.0)*(der2_scalxz<1>(smem_idx, s_uux) + der2_scalyz<1>(smem_idx, s_uuy));
+        mom_z[5] += d_NU*(1.0/3.0)*(der2_scalxz<2>(smem_idx, s_uux) + der2_scalyz<2>(smem_idx, s_uuy));
+        mom_z[6]  = d_NU*(1.0/3.0)*(der2_scalxz<3>(smem_idx, s_uux) + der2_scalyz<3>(smem_idx, s_uuy));
 
 
         if (k >= ZBOUND_SIZE && k < ZBOUND_SIZE+RK_ELEMS_PER_THREAD && tz + k < zmax - BOUND_SIZE) {
@@ -391,13 +425,12 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
             else
                 d_lnrho_dst[curr_idx] = r_lnrho[3] + BETA*(ALPHA*(r_lnrho[3] - preloaded_lnrho_dst) * INVBETAPREV + dt*cont_res);
 
-
             mom_x[3] += momentum<X_AXIS>(smem_idx, stncl);
             mom_y[3] += momentum<Y_AXIS>(smem_idx, stncl);
             mom_z[3] += momentum<Z_AXIS>(smem_idx, stncl);
         }
         if (k >= 2*ZBOUND_SIZE && tz + k < zmax) {
-            const int write_idx = curr_idx - BOUND_SIZE*d_mx*d_my;
+            const int write_idx = curr_idx - BOUND_SIZE*d_mxy;
             if (!step_number) {
                 d_uux_dst[write_idx] = r_uux[0] + BETA*dt*mom_x[0];
                 d_uuy_dst[write_idx] = r_uuy[0] + BETA*dt*mom_y[0];
@@ -410,8 +443,8 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
                 real uuz_res = r_uuz[0] + BETA*(dt*mom_z[0] 
                                                 + ALPHA*(r_uuz[0] - preloaded_uuz_dst) * INVBETAPREV);
 
-                #if LFORCING
-                if (step_number == 2 && d_FORCING_ENABLED) {
+                #ifdef FORCING
+                if (step_number == 2) {
                     const int tz_offset = tz + k - ZBOUND_SIZE;
                     uux_res += forcing<X_AXIS>(tx, ty, tz_offset);
                     uuy_res += forcing<Y_AXIS>(tx, ty, tz_offset);
@@ -441,8 +474,9 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
         }
     }
 }
+#endif
 
-
+#ifdef MAGNETIC
 template <int step_number>
 __launch_bounds__(RK_THREADS_PER_BLOCK, 1)
 static __global__ void induction_step(  const real* __restrict__ d_Ax, 
@@ -488,7 +522,7 @@ static __global__ void induction_step(  const real* __restrict__ d_Ax,
     const int tx = threadIdx.x + blockIdx.x*blockDim.x + XBOUND_SIZE;//Start within comp domain
     const int ty = threadIdx.y + blockIdx.y*blockDim.y + YBOUND_SIZE;//Start within comp domain
     const int tz = threadIdx.z + blockIdx.z*blockDim.z*RK_ELEMS_PER_THREAD + (zstart-BOUND_SIZE);//Start from bound zone
-    const int grid_idx = tx + ty*d_mx + tz*d_mx*d_my;
+    const int grid_idx = tx + ty*d_mx + tz*d_mxy;
 
 
     //Registers/////////////////////////////////////////////////////////////////
@@ -527,7 +561,7 @@ static __global__ void induction_step(  const real* __restrict__ d_Ax,
         if (tz + k >= zmax)
             break;//Continue or break, depends on whether we want to unroll this or not
 
-        const int curr_idx = grid_idx + k*d_mx*d_my;
+        const int curr_idx = grid_idx + k*d_mxy;
 
         //Update the current smem slab
         __syncthreads();
@@ -544,8 +578,8 @@ static __global__ void induction_step(  const real* __restrict__ d_Ax,
 
         //Update the leading slab in registers
         if (k+BOUND_SIZE < RK_ELEMS_PER_THREAD + 2*ZBOUND_SIZE && tz + k + BOUND_SIZE < zmax) {
-            const int next_idx = curr_idx + BOUND_SIZE*d_mx*d_my; 
-            assert(next_idx < d_mx*d_my*d_mz);
+            const int next_idx = curr_idx + BOUND_SIZE*d_mxy; 
+            assert(next_idx < d_mxy*d_mz);
             r_Ax  [6] = d_Ax[next_idx];
             r_Ay  [6] = d_Ay[next_idx];
             r_Az  [6] = d_Az[next_idx];
@@ -580,7 +614,7 @@ static __global__ void induction_step(  const real* __restrict__ d_Ax,
 
 
         if (k >= 2*ZBOUND_SIZE && tz + k < zmax) {
-            const int write_idx = curr_idx - BOUND_SIZE*d_mx*d_my;
+            const int write_idx = curr_idx - BOUND_SIZE*d_mxy;
             if (!step_number) {
                 d_Ax_dst[write_idx] = r_Ax[0] + BETA*dt*part_Ax[0];
                 d_Ay_dst[write_idx] = r_Ay[0] + BETA*dt*part_Ay[0];
@@ -610,126 +644,49 @@ static __global__ void induction_step(  const real* __restrict__ d_Ax,
         }
     }
 }
-
-
-template<int step_number>
-static void rk3_step_cuda_generic(Grid* d_grid, Grid* d_grid_dst, const real dt, CParamConfig* cparams, cudaStream_t stream)
-{
-    const dim3 tpb((unsigned int)min(RK_THREADS_X, cparams->nx), RK_THREADS_Y, RK_THREADS_Z);
-    const dim3 bpg((unsigned int) ceil(cparams->nx / (real)(tpb.x)),
-                        (unsigned int) ceil(cparams->ny / (real)(tpb.y)),
-                        (unsigned int) ceil((cparams->nz - 2*BOUND_SIZE) / (real)(tpb.z*RK_ELEMS_PER_THREAD)));
-
-    const dim3 tpb_fb((unsigned int)min(RK_THREADS_X, cparams->nx), RK_THREADS_Y, RK_THREADS_Z);
-    const dim3 bpg_fb((unsigned int) ceil(cparams->nx / (real)(tpb.x)),
-                        (unsigned int) ceil(cparams->ny / (real)(tpb.y)),
-                        (unsigned int) ceil(BOUND_SIZE / (real)(tpb.z*RK_ELEMS_PER_THREAD)));
-
-    //cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
-    //cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-
-    //INTEGRATE
-    hydro_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[LNRHO], 
-                                          d_grid->arr[UUX], 
-                                          d_grid->arr[UUY], 
-                                          d_grid->arr[UUZ],
-                                          d_grid_dst->arr[LNRHO], 
-                                          d_grid_dst->arr[UUX], 
-                                          d_grid_dst->arr[UUY], 
-                                          d_grid_dst->arr[UUZ],  
-                                          dt, SEGMENT_FRONT); 
-    hydro_step<step_number><<<bpg, tpb, 0, stream>>>(d_grid->arr[LNRHO], 
-                                          d_grid->arr[UUX], 
-                                          d_grid->arr[UUY], 
-                                          d_grid->arr[UUZ],
-                                          d_grid_dst->arr[LNRHO], 
-                                          d_grid_dst->arr[UUX], 
-                                          d_grid_dst->arr[UUY], 
-                                          d_grid_dst->arr[UUZ],  
-                                          dt, SEGMENT_MID); 
-    hydro_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[LNRHO], 
-                                          d_grid->arr[UUX], 
-                                          d_grid->arr[UUY], 
-                                          d_grid->arr[UUZ],
-                                          d_grid_dst->arr[LNRHO], 
-                                          d_grid_dst->arr[UUX], 
-                                          d_grid_dst->arr[UUY], 
-                                          d_grid_dst->arr[UUZ],  
-                                          dt, SEGMENT_BACK);
-    CUDA_ERRCHK_KERNEL();
-
-    #if LINDUCTION
-        induction_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[AX], 
-                                                                   d_grid->arr[AY], 
-                                                                   d_grid->arr[AZ], 
-                                                                   d_grid->arr[UUX], 
-                                                                   d_grid->arr[UUY], 
-                                                                   d_grid->arr[UUZ], 
-                                                                   d_grid_dst->arr[AX], 
-                                                                   d_grid_dst->arr[AY], 
-                                                                   d_grid_dst->arr[AZ], dt, 
-                                                                   SEGMENT_FRONT);
-        induction_step<step_number><<<bpg, tpb, 0, stream>>>(d_grid->arr[AX], 
-                                                             d_grid->arr[AY], 
-                                                             d_grid->arr[AZ], 
-                                                             d_grid->arr[UUX], 
-                                                             d_grid->arr[UUY], 
-                                                             d_grid->arr[UUZ], 
-                                                             d_grid_dst->arr[AX], 
-                                                             d_grid_dst->arr[AY], 
-                                                             d_grid_dst->arr[AZ], dt, 
-                                                             SEGMENT_MID);
-        induction_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[AX], 
-                                                                   d_grid->arr[AY], 
-                                                                   d_grid->arr[AZ], 
-                                                                   d_grid->arr[UUX], 
-                                                                   d_grid->arr[UUY], 
-                                                                   d_grid->arr[UUZ], 
-                                                                   d_grid_dst->arr[AX], 
-                                                                   d_grid_dst->arr[AY], 
-                                                                   d_grid_dst->arr[AZ], dt, 
-                                                                   SEGMENT_BACK);
-        CUDA_ERRCHK_KERNEL();
-    #endif
-}
+#endif
 
 template<int step_number>
 static void rk3_inner_step_cuda_generic(Grid* d_grid, Grid* d_grid_dst, const real dt, CParamConfig* cparams, cudaStream_t hydro_stream, cudaStream_t induct_stream)
+//printf("addresses %d %d %d %d\n",d_grid->arr[d_grid->LNRHO], d_grid->arr[d_grid->UUX], d_grid->arr[d_grid->UUY], d_grid->arr[d_grid->UUZ]);
 {
-    const dim3 tpb((unsigned int)min(RK_THREADS_X, cparams->nx), RK_THREADS_Y, RK_THREADS_Z);
+//printf("indices %d %d %d %d\n",d_grid->LNRHO, d_grid->UUX, d_grid->UUY, d_grid->UUZ);
+    const dim3 tpb((unsigned int) min(RK_THREADS_X, cparams->nx), RK_THREADS_Y, RK_THREADS_Z);
     const dim3 bpg((unsigned int) ceil(cparams->nx / (real)(tpb.x)),
-                        (unsigned int) ceil(cparams->ny / (real)(tpb.y)),
-                        (unsigned int) ceil((cparams->nz - 2*BOUND_SIZE) / (real)(tpb.z*RK_ELEMS_PER_THREAD)));
-
+                   (unsigned int) ceil(cparams->ny / (real)(tpb.y)),
+                   (unsigned int) ceil((cparams->nz - 2*BOUND_SIZE) / (real)(tpb.z*RK_ELEMS_PER_THREAD)));
     //cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
     //cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
+//printf("tpb= %d %d %d, bpg= %d %d %d %d \n", tpb.x,tpb.y,tpb.z, bpg.x,bpg.y,bpg.z,cparams->nz - 2*BOUND_SIZE);
     //INTEGRATE
-    hydro_step<step_number><<<bpg, tpb, 0, hydro_stream>>>(d_grid->arr[LNRHO], 
-                                          d_grid->arr[UUX], 
-                                          d_grid->arr[UUY], 
-                                          d_grid->arr[UUZ],
-                                          d_grid_dst->arr[LNRHO], 
-                                          d_grid_dst->arr[UUX], 
-                                          d_grid_dst->arr[UUY], 
-                                          d_grid_dst->arr[UUZ],  
-                                          dt, SEGMENT_MID); 
+    #ifdef HYDRO
+    hydro_step<step_number><<<bpg, tpb, 0, hydro_stream>>>(d_grid->arr[d_grid->LNRHO], 
+                                                           d_grid->arr[d_grid->UUX], 
+                                                           d_grid->arr[d_grid->UUY], 
+                                                           d_grid->arr[d_grid->UUZ],
+                                                           d_grid_dst->arr[d_grid_dst->LNRHO], 
+                                                           d_grid_dst->arr[d_grid_dst->UUX], 
+                                                           d_grid_dst->arr[d_grid_dst->UUY], 
+                                                           d_grid_dst->arr[d_grid_dst->UUZ],  
+                                                           dt, SEGMENT_MID); 
     CUDA_ERRCHK_KERNEL();
+    #endif
 
-    #if LINDUCTION
-        induction_step<step_number><<<bpg, tpb, 0, induct_stream>>>(d_grid->arr[AX], 
-                                                             d_grid->arr[AY], 
-                                                             d_grid->arr[AZ], 
-                                                             d_grid->arr[UUX], 
-                                                             d_grid->arr[UUY], 
-                                                             d_grid->arr[UUZ], 
-                                                             d_grid_dst->arr[AX], 
-                                                             d_grid_dst->arr[AY], 
-                                                             d_grid_dst->arr[AZ], dt, 
-                                                             SEGMENT_MID);
+    #ifdef MAGNETIC
+        induction_step<step_number><<<bpg, tpb, 0, induct_stream>>>(d_grid->arr[d_grid->AAX], 
+                                                                    d_grid->arr[d_grid->AAY], 
+                                                                    d_grid->arr[d_grid->AAZ], 
+                                                                    d_grid->arr[d_grid->UUX], 
+                                                                    d_grid->arr[d_grid->UUY], 
+                                                                    d_grid->arr[d_grid->UUZ], 
+                                                                    d_grid_dst->arr[d_grid_dst->AAX], 
+                                                                    d_grid_dst->arr[d_grid_dst->AAY], 
+                                                                    d_grid_dst->arr[d_grid_dst->AAZ],
+                                                                    dt, SEGMENT_MID);
         CUDA_ERRCHK_KERNEL();
     #else
-        (void) induct_stream;//Suppress warning about unused parameter
+        (void) induct_stream;      //Suppress warning about unused parameter
     #endif
 }
 
@@ -738,58 +695,62 @@ static void rk3_outer_step_cuda_generic(Grid* d_grid, Grid* d_grid_dst, const re
 {
     const dim3 tpb_fb((unsigned int)min(RK_THREADS_X, cparams->nx), RK_THREADS_Y, RK_THREADS_Z);
     const dim3 bpg_fb((unsigned int) ceil(cparams->nx / (real)(tpb_fb.x)),
-                        (unsigned int) ceil(cparams->ny / (real)(tpb_fb.y)),
-                        (unsigned int) ceil(BOUND_SIZE / (real)(tpb_fb.z*RK_ELEMS_PER_THREAD)));
+                      (unsigned int) ceil(cparams->ny / (real)(tpb_fb.y)),
+                      (unsigned int) ceil(BOUND_SIZE / (real)(tpb_fb.z*RK_ELEMS_PER_THREAD)));
 
     //cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
     //cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
     //INTEGRATE
-    hydro_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[LNRHO], 
-                                          d_grid->arr[UUX], 
-                                          d_grid->arr[UUY], 
-                                          d_grid->arr[UUZ],
-                                          d_grid_dst->arr[LNRHO], 
-                                          d_grid_dst->arr[UUX], 
-                                          d_grid_dst->arr[UUY], 
-                                          d_grid_dst->arr[UUZ],  
-                                          dt, SEGMENT_FRONT); 
-    hydro_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[LNRHO], 
-                                          d_grid->arr[UUX], 
-                                          d_grid->arr[UUY], 
-                                          d_grid->arr[UUZ],
-                                          d_grid_dst->arr[LNRHO], 
-                                          d_grid_dst->arr[UUX], 
-                                          d_grid_dst->arr[UUY], 
-                                          d_grid_dst->arr[UUZ],  
-                                          dt, SEGMENT_BACK);
-    CUDA_ERRCHK_KERNEL();
 
-    #if LINDUCTION
-        induction_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[AX], 
-                                                                   d_grid->arr[AY], 
-                                                                   d_grid->arr[AZ], 
-                                                                   d_grid->arr[UUX], 
-                                                                   d_grid->arr[UUY], 
-                                                                   d_grid->arr[UUZ], 
-                                                                   d_grid_dst->arr[AX], 
-                                                                   d_grid_dst->arr[AY], 
-                                                                   d_grid_dst->arr[AZ], dt, 
-                                                                   SEGMENT_FRONT);
-        induction_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[AX], 
-                                                                   d_grid->arr[AY], 
-                                                                   d_grid->arr[AZ], 
-                                                                   d_grid->arr[UUX], 
-                                                                   d_grid->arr[UUY], 
-                                                                   d_grid->arr[UUZ], 
-                                                                   d_grid_dst->arr[AX], 
-                                                                   d_grid_dst->arr[AY], 
-                                                                   d_grid_dst->arr[AZ], dt, 
-                                                                   SEGMENT_BACK);
+    #ifdef HYDRO
+    hydro_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[d_grid->LNRHO], 
+                                                           d_grid->arr[d_grid->UUX], 
+                                                           d_grid->arr[d_grid->UUY], 
+                                                           d_grid->arr[d_grid->UUZ],
+                                                           d_grid_dst->arr[d_grid_dst->LNRHO], 
+                                                           d_grid_dst->arr[d_grid_dst->UUX], 
+                                                           d_grid_dst->arr[d_grid_dst->UUY], 
+                                                           d_grid_dst->arr[d_grid_dst->UUZ],  
+                                                           dt, SEGMENT_FRONT); 
+    hydro_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[d_grid->LNRHO], 
+                                                           d_grid->arr[d_grid->UUX], 
+                                                           d_grid->arr[d_grid->UUY], 
+                                                           d_grid->arr[d_grid->UUZ],
+                                                           d_grid_dst->arr[d_grid_dst->LNRHO], 
+                                                           d_grid_dst->arr[d_grid_dst->UUX], 
+                                                           d_grid_dst->arr[d_grid_dst->UUY], 
+                                                           d_grid_dst->arr[d_grid_dst->UUZ],  
+                                                           dt, SEGMENT_BACK);
+    CUDA_ERRCHK_KERNEL();
+    #endif
+
+    #ifdef MAGNETIC
+        induction_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[d_grid->AAX], 
+                                                                   d_grid->arr[d_grid->AAY], 
+                                                                   d_grid->arr[d_grid->AAZ], 
+                                                                   d_grid->arr[d_grid->UUX], 
+                                                                   d_grid->arr[d_grid->UUY], 
+                                                                   d_grid->arr[d_grid->UUZ], 
+                                                                   d_grid_dst->arr[AAX], 
+                                                                   d_grid_dst->arr[AAY], 
+                                                                   d_grid_dst->arr[AAZ],
+                                                                   dt, SEGMENT_FRONT);
+        induction_step<step_number><<<bpg_fb, tpb_fb, 0, stream>>>(d_grid->arr[d_grid->AAX], 
+                                                                   d_grid->arr[d_grid->AAY], 
+                                                                   d_grid->arr[d_grid->AAZ], 
+                                                                   d_grid->arr[d_grid->UUX], 
+                                                                   d_grid->arr[d_grid->UUY], 
+                                                                   d_grid->arr[d_grid->UUZ], 
+                                                                   d_grid_dst->arr[d_grid_dst->AAX], 
+                                                                   d_grid_dst->arr[d_grid_dst->AAY], 
+                                                                   d_grid_dst->arr[d_grid_dst->AAZ],
+                                                                   dt, SEGMENT_BACK);
         CUDA_ERRCHK_KERNEL();
     #endif
 }
 
+/* MR: not needed
 //This is just here s.t. we can pass step_number as parameter 
 //(easier to interface with Pencil Code without templates)
 void rk3_cuda_generic(Grid* d_grid, Grid* d_grid_dst, 
@@ -810,7 +771,7 @@ void rk3_cuda_generic(Grid* d_grid, Grid* d_grid_dst,
             CRASH("Invalid step number in rk3_cuda_generic");
     }
 }
-
+*/
 
 void rk3_inner_cuda_generic(Grid* d_grid, Grid* d_grid_dst, 
                       const int step_number, const real dt, CParamConfig* cparams, 
@@ -849,71 +810,3 @@ void rk3_outer_cuda_generic(Grid* d_grid, Grid* d_grid_dst,
             CRASH("Invalid step number in rk3_cuda_generic");
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

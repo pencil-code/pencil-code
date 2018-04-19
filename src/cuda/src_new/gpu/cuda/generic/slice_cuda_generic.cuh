@@ -3,7 +3,6 @@
 #include "common/grid.h"
 #include "common/slice.h"
 
-
 void init_slice_cuda_generic(Slice* d_slice, CParamConfig* cparamconf, RunConfig* run_params);
 
 void destroy_slice_cuda_generic(Slice* d_slice);

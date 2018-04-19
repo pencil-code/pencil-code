@@ -1,10 +1,10 @@
 #pragma once
 #include "common/config.h"
 
-typedef struct {
+struct ReductionArray{
     real* d_vec_res;
     real* d_partial_result;
-} ReductionArray;
+};
 
 void init_reduction_array_cuda_generic(ReductionArray* reduct_arr, CParamConfig* cparams);
 void destroy_reduction_array_cuda_generic(ReductionArray* reduct_arr);
