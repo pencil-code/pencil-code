@@ -3,10 +3,11 @@
 *   See slice.h for more information about the macros used here
 */
 #pragma once
+
 #include "datatypes.h"
 #include "config.h"
 
-
+/*
 //GridType macros///////////////////////////////////////////////////////////////
 extern const char* grid_names[];
 
@@ -25,7 +26,6 @@ extern const char* grid_names[];
     #define GRID_TYPES_INDUCTION
 #endif
 
-
 #define GRID_TYPES_OTHER \
         GRID_TYPE(NUM_ARRS,  "num_arrs"), \
         GRID_TYPE(NOT_APPLICABLE,  "N/A")
@@ -35,18 +35,27 @@ extern const char* grid_names[];
         GRID_TYPES_INDUCTION \
         GRID_TYPES_OTHER
 
-
 #define GRID_TYPE(type, name) type
 typedef enum { GRID_TYPES } GridType;
 #undef GRID_TYPE
+*/
+typedef int GridType;
 
-
-typedef struct {
-    real* arr[NUM_ARRS];
-} Grid;
 ////////////////////////////////////////////////////////////////////////////////
 
+struct Grid {
+public:
+    //real* arr[NUM_ARRS];
+    real** arr=NULL;
+    int UUX=-1, UUY=-1, UUZ=-1, RHO=-1, LNRHO=-1, AAX=-1, AAY=-1, AAZ=-1, NUM_ARRS=0;
+    const char* names[7] = {"uu_x", "uu_y", "uu_z", "lnrho", "aa_x", "aa_y", "aa_z"};
 
+    Grid();
+    Grid & operator=(const Grid &);
+    void Setup(real*);
+};
+
+/*
 //InitType macros///////////////////////////////////////////////////////////////
 extern const char* init_type_names[];
 
@@ -65,12 +74,13 @@ extern const char* init_type_names[];
         INIT_TYPE(GRID_XWAVE, "GRID_XWAVE"), \
         INIT_TYPE(NUM_INIT_TYPES,  "num_init_types")
 
-        
 #define INIT_TYPE(type, name) type
 typedef enum { INIT_TYPES } InitType;
 #undef INIT_TYPE
 ////////////////////////////////////////////////////////////////////////////////
 
+void grid_init(Grid* g, InitType type, CParamConfig* cparams, StartConfig* start_params);
+*/
 
 //Grid allocator functions//////////////////////////////////////////////////////
 void grid_malloc(Grid* g, CParamConfig *cparams);
@@ -78,25 +88,4 @@ void grid_malloc(Grid* g, CParamConfig *cparams);
 void grid_free(Grid* g);
 
 void grid_clear(Grid* g, CParamConfig* cparams);
-
-void grid_init(Grid* g, InitType type, CParamConfig* cparams, StartConfig* start_params);
 ////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,10 +1,9 @@
 #include "errorhandler.h"
-#include "math.h"
-#define INCLUDED_FROM_GRID_NAME_DEFINER
-#define INCLUDED_FROM_INIT_TYPE_NAME_DEFINER
+#include "utils/utils.h"
+#include "cparam_c.h"
 #include "grid.h"
 
-
+/*
 #define GRID_TYPE(type, name) name
 const char* grid_names[] = { GRID_TYPES };
 #undef GRID_TYPE
@@ -12,13 +11,13 @@ const char* grid_names[] = { GRID_TYPES };
 #define INIT_TYPE(type, name) name
 const char* init_type_names[] = { INIT_TYPES };
 #undef INIT_TYPE
+*/
 
 void grid_malloc(Grid* g, CParamConfig *cparams)
 {
-    const size_t grid_size = cparams->mx * cparams->my * cparams->mz;
-    const size_t grid_size_bytes = sizeof (real) * grid_size;
-
-    for (size_t i=0; i < NUM_ARRS; ++i) {
+    const size_t grid_size = cparams->mw;
+    const size_t grid_size_bytes = sizeof(real)*grid_size;
+    for (size_t i=0; i < g->NUM_ARRS; ++i) {
         g->arr[i] = (real*) malloc(grid_size_bytes); 
         if (g->arr[i] == NULL) { CRASH("Malloc fail"); }
         for (size_t j=0; j < grid_size; ++j) 
@@ -26,36 +25,83 @@ void grid_malloc(Grid* g, CParamConfig *cparams)
     }
 }
 
+Grid::Grid()
+{}
 
-void grid_free(Grid* g)
+Grid & Grid::operator=(const Grid & grid)
 {
-    for (int i=0; i < NUM_ARRS; ++i) {
-        free(g->arr[i]); g->arr[i] = NULL; 
-    } 
-}
+    if (this==&grid) return *this;
 
+    UUX=grid.UUX; UUY=grid.UUY; UUZ=grid.UUZ; LNRHO=grid.LNRHO; RHO=grid.RHO;
+    AAX=grid.AAX; AAY=grid.AAY; AAZ=grid.AAZ; NUM_ARRS=grid.NUM_ARRS;
+    arr = (real**) malloc(NUM_ARRS*sizeof(real*));
+
+    return *this;
+}
+void Grid::Setup(real* farray){
+
+        UUX = iux-1;
+        UUY = iuy-1;
+        UUZ = iuz-1;
+        LNRHO = ilnrho-1;
+        RHO = irho-1;
+RHO=LNRHO; //!!!
+        AAX = iax-1;
+        AAY = iay-1;
+        AAZ = iaz-1;
+        NUM_ARRS = mvar;
+
+    arr = (real**) malloc(NUM_ARRS*sizeof(real*));
+
+    long long offset=0;
+
+    if (lhydro){
+        arr[UUX] = farray; offset+=mw;
+        arr[UUY] = farray + offset; offset+=mw;
+        arr[UUZ] = farray + offset; offset+=mw;
+    }
+     if (ldensity){
+        if (ldensity_nolog){ 
+          arr[RHO] = farray + offset; offset+=mw;
+        }else{
+          arr[LNRHO] = farray + offset; offset+=mw;
+        }
+    }
+    if (lmagnetic){
+        arr[AAX] = farray + offset; offset+=mw;
+        arr[AAY] = farray + offset; offset+=mw;
+        arr[AAZ] = farray + offset;
+    }
+}
 
 static void arr_set(real* arr, real val, CParamConfig* cparams)
 {
-    const size_t arr_size = cparams->mx*cparams->my*cparams->mz; 
+    const size_t arr_size = cparams->mw;
     for (size_t i=0; i < arr_size; ++i) {
         arr[i] = val;
-    }    
+    }
 }
 
 //Initialize all grid values into 0.0 to avoid weird errors
 void grid_clear(Grid* g, CParamConfig* cparams)
 {
-	//Note: initialises also the pad zone and boundaries
-    for (int w=0; w < NUM_ARRS; ++w) {
+// Note: initialises also the pad zone and boundaries
+    for (int w=0; w < g->NUM_ARRS; ++w) {
         arr_set(g->arr[w], 0.0, cparams);
     }
 }
 
+void grid_free(Grid* g)
+{
+    for (int i=0; i < g->NUM_ARRS; ++i) {
+        free(g->arr[i]); g->arr[i] = NULL; 
+    } 
+}
 
+/*
 void init_lnrho_to_const(Grid* grid, CParamConfig* cparams, StartConfig* start_params)
 {
-    arr_set(grid->arr[LNRHO], start_params->ampl_lnrho, cparams);
+    arr_set(grid->arr[grid->LNRHO], start_params->ampl_lnrho, cparams);
 }
 
 //TODO: Copy/pasted from legacy Astaroth, should be reviewed for correctness:
@@ -64,9 +110,9 @@ void init_lnrho_to_const(Grid* grid, CParamConfig* cparams, StartConfig* start_p
 //  the warning go away)
 void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* start_params)	
 {
-    real* uu_x = grid->arr[UUX];
-    real* uu_y = grid->arr[UUY];
-    real* uu_z = grid->arr[UUZ];
+    real* uu_x = grid->arr[grid->UUX];
+    real* uu_y = grid->arr[grid->UUY];
+    real* uu_z = grid->arr[grid->UUZ];
 
     const int mx = cparams->mx;
     const int my = cparams->my;   
@@ -202,20 +248,18 @@ void gaussian_radial_explosion(Grid* grid, CParamConfig* cparams, StartConfig* s
 				//Temporary diagnosticv output (TODO: Remove after not needed)
 				//if (theta > theta_old) {
 				//if (theta > M_PI || theta < 0.0 || phi < 0.0 || phi > 2*M_PI) {
-				/*	printf("Explosion: xx = %.3f, yy = %.3f, zz = %.3f, rr = %.3f, phi = %.3e/PI, theta = %.3e/PI\n, M_PI = %.3e",
-						xx, yy, zz, rr, phi/M_PI, theta/M_PI, M_PI);
-					printf("           uu_radial = %.3e, uu_x[%i] = %.3e, uu_y[%i] = %.3e, uu_z[%i] = %.3e \n", 
-						uu_radial, idx, uu_x[idx], idx, uu_y[idx], idx, uu_z[idx]);
-					theta_old = theta;
-				*/
+				//	printf("Explosion: xx = %.3f, yy = %.3f, zz = %.3f, rr = %.3f, phi = %.3e/PI, theta = %.3e/PI\n, M_PI = %.3e",
+				//		xx, yy, zz, rr, phi/M_PI, theta/M_PI, M_PI);
+				//	printf("           uu_radial = %.3e, uu_x[%i] = %.3e, uu_y[%i] = %.3e, uu_z[%i] = %.3e \n", 
+				//		uu_radial, idx, uu_x[idx], idx, uu_y[idx], idx, uu_z[idx]);
+				//	theta_old = theta;
 
 			}
 		}
 	}
 }
 
-
-void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfig* start_params) 
+void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfig* start_params)    //MR: Why recursive?
 {
     const int mx = cparams->mx;
     const int my = cparams->my;
@@ -239,24 +283,24 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 
 	switch (init_type){
 	case GRID_INCREASING:
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=0; k < mz; k++) {
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
 					    int idx = i + j*mx + k*mx*my;
-                        grid->arr[w][idx] = (real)(idx / (long double)(mx*my*mz) + w / (long double) NUM_ARRS);
+                        grid->arr[w][idx] = (real)(idx / (long double)(mx*my*mz) + w / (long double) grid->NUM_ARRS);
 				    }
 			    }
 		    }
         }
 		break;
 	case GRID_DECREASING:
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=0; k < mz; k++) {
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
 					    int idx = i + j*mx + k*mx*my;
-                        grid->arr[w][idx] = (real)(1.0l - idx / (long double)(mx*my*mz) + w / (long double) NUM_ARRS);
+                        grid->arr[w][idx] = (real)(1.0l - idx / (long double)(mx*my*mz) + w / (long double) grid->NUM_ARRS);
 				    }
 			    }
 		    }
@@ -264,7 +308,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		break;
 
 	case GRID_RANDOM: //Limit the range to 0...1 so that we do not compute with wildly different values (so that we do not lose too much fp precision)
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=0; k < mz; k++) {
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
@@ -277,7 +321,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		break;
 
 	case GRID_COMP_DOMAIN_ONLY:
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=0; k < mz; k++) {
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
@@ -299,7 +343,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 
 	case GRID_BOUND_ZONES_ONLY:
 		grid_init(grid, GRID_INCREASING, cparams, start_params);
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=nz_min; k < nz_max; k++) {
 			    for (int j=ny_min; j < ny_max; j++) {
 				    for (int i=nx_min; i < nx_max; i++) {
@@ -312,7 +356,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		break;
 
 	case GRID_NO_FLOAT_ARITHMETIC_ERROR:
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=0; k < mz; k++) {
 			    for (int j=0; j < my; j++) {
 				    for (int i=0; i < mx; i++) {
@@ -328,13 +372,13 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		for (int j=ny_min; j < ny_max; j++) {
 			for (int i=nx_min+30; i < nx_min+35; i++) {
 				idx = i + j*mx + k*mx*my;
-				grid->arr[LNRHO][idx] = ampl_uu*pow((fabs(nx_min+35-i) + fabs(nx_min+30-i)),2.0)/(10.0);
+				grid->arr[grid->LNRHO][idx] = ampl_uu*pow((fabs(nx_min+35-i) + fabs(nx_min+30-i)),2.0)/(10.0);
 			}
 		}
 	}
 		break;
 	case GRID_RAND_WITH_NEG:
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=nz_min; k < nz_max; k++) {
 			    for (int j=ny_min; j < ny_max; j++) {
 				    for (int i=nx_min; i < nx_max; i++) {
@@ -347,12 +391,12 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		break;
 
 	case GRID_ALL_UNIQUE:
-        for (int w=0; w < NUM_ARRS; ++w) {
+        for (int w=0; w < grid->NUM_ARRS; ++w) {
 		    for (int k=nz_min; k < nz_max; k++) {
 			    for (int j=ny_min; j < ny_max; j++) {
 				    for (int i=nx_min; i < nx_max; i++) {
 					    int idx = i + j*mx + k*mx*my;
-                        grid->arr[w][idx] = (real)(NUM_ARRS*idx / (long double) (nx_max*ny_max*nz_max));
+                        grid->arr[w][idx] = (real)(grid->NUM_ARRS*idx / (long double) (nx_max*ny_max*nz_max));
 				    }
 			    }
 		    }
@@ -375,7 +419,7 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		    for (int j=0; j < my; j++) {
 			    for (int i=0; i < mx; i++) {
 				    int idx = i + j*mx + k*mx*my;
-                    grid->arr[UUX][idx] = sin(j*M_PI / mx);
+                    grid->arr[grid->UUX][idx] = sin(j*M_PI / mx);
 			    }
 		    }
 	    }
@@ -385,49 +429,4 @@ void grid_init(Grid* grid, InitType init_type, CParamConfig* cparams, StartConfi
 		printf("Invalid init_type in init_grid!\n");
 		exit(-1);
 	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}*/

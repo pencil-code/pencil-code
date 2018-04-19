@@ -1,11 +1,9 @@
 #include "errorhandler.h"
 #include "slice.h"
 
-
 #define SLICE_TYPE(type, name) name
 const char* slice_names[] = { SLICE_TYPES };
 #undef SLICE_TYPE
-
 
 void slice_malloc(Slice* s, CParamConfig *cparams, RunConfig *run_params)
 {
@@ -23,7 +21,6 @@ void slice_malloc(Slice* s, CParamConfig *cparams, RunConfig *run_params)
         if (s->arr[i] == NULL) { CRASH("Malloc fail"); }
     }
 }
-
 
 void slice_free(Slice* s)
 {

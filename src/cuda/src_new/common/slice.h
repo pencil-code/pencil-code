@@ -1,7 +1,9 @@
 #pragma once
 #include "datatypes.h"
 #include "config.h"
-
+#ifdef GPU_ASTAROTH
+  #include "common/PC_moduleflags.h"
+#endif
 
 //Here we use preprocessor magic to define arrays held by the Slice struct in
 //a modular fashion. IMPORTANT NOTE: NUM_SLICES must be defined after the 
@@ -34,18 +36,22 @@
 //GridType (grid.h) and also possibly InitType()
 extern const char* slice_names[];
 
-#define SLICE_TYPES_HYDRO \
-        SLICE_TYPE(SLICE_LNRHO, "lnrho"), \
-        SLICE_TYPE(SLICE_UUX,   "uu_x"), \
-        SLICE_TYPE(SLICE_UUY,   "uu_y"), \
-        SLICE_TYPE(SLICE_UUZ,   "uu_z"), \
-        SLICE_TYPE(SLICE_UU,    "uu"),
+#ifdef HYDRO
+    #define SLICE_TYPES_HYDRO \
+            SLICE_TYPE(SLICE_LNRHO, "lnrho"), \
+            SLICE_TYPE(SLICE_UUX,   "uu_x"), \
+            SLICE_TYPE(SLICE_UUY,   "uu_y"), \
+            SLICE_TYPE(SLICE_UUZ,   "uu_z"), \
+            SLICE_TYPE(SLICE_UU,    "uu"),
+#else
+    #define SLICE_TYPES_HYDRO
+#endif
 
-#if LINDUCTION == 1
+#ifdef MAGNETIC
     #define SLICE_TYPES_INDUCTION \
-            SLICE_TYPE(SLICE_AX,    "ax"), \
-            SLICE_TYPE(SLICE_AY,    "ay"), \
-            SLICE_TYPE(SLICE_AZ,    "az"),
+            SLICE_TYPE(SLICE_AAX,    "aa_x"), \
+            SLICE_TYPE(SLICE_AAY,    "aa_y"), \
+            SLICE_TYPE(SLICE_AAZ,    "aa_z"),
 #else
     #define SLICE_TYPES_INDUCTION
 #endif
@@ -60,7 +66,6 @@ extern const char* slice_names[];
 typedef enum { SLICE_TYPES } SliceType;
 #undef SLICE_TYPE
 
-
 typedef struct {
     real* arr[NUM_SLICES];
 } Slice;
@@ -68,35 +73,3 @@ typedef struct {
 void slice_malloc(Slice* s, CParamConfig *cparams, RunConfig *run_params);
 
 void slice_free(Slice* s);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
