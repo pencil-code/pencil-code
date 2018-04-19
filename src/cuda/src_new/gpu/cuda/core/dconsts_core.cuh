@@ -40,7 +40,6 @@ DCONST_EXTERN __device__ __constant__ int d_halo_widths_x[3], d_halo_widths_y[3]
 
 #ifdef GPU_ASTAROTH
   #include "common/PC_moduleflags.h"
-  #include "cparam_c.h"
   #include "common/PC_modulepardecs.h"
   #ifdef FORCING
     DCONST_EXTERN __constant__ real d_FORCING_COEF1[3], d_FORCING_COEF2[3], d_FORCING_COEF3[3], d_FORCING_FDA[3];

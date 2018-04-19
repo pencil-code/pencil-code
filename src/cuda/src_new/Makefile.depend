@@ -1,23 +1,45 @@
-CHEADERS = ../../cparam_c.h ../../cparam.inc_c.h ../../cparam.local_c.h ../../cdata_c.h ../../density_c.h ../../diagnostics_c.h ../../eos_c.h ../../forcing_c.h ../../hydro_c.h ../../viscosity_c.h ../../sub_c.h
+COMMON_HEADERS = common/datatypes.h common/defines.h common/errorhandler.h common/config.h common/grid.h utils/utils.h
+CHEADERS = ../../cparam_c.h ../../cdata_c.h ../../sub_c.h  ../../headers_c.h ../../forcing_c.h
+PC_HEADERS = common/PC_module_parfuncs.h common/PC_modulepars.h common/PC_modulepardecs.h diagnostics/PC_module_diagfuncs.h diagnostics/PC_modulediags.h diagnostics/PC_modulediags_init.h
 
+gpu_astaroth.o: gpu_astaroth.cc $(COMMON_HEADERS) common/PC_moduleflags.h common/PC_module_parfuncs.h common/forcing.h gpu/gpu.h gpu/cuda/cuda_generic.cuh diagnostics/diagnostics.h $(CHEADERS)
+#
+config.o: config.cc $(COMMON_HEADERS)
+#
+grid.o: grid.cc $(COMMON_HEADERS)
+#
+slice.o: slice.cc errorhandler.h slice.h
+#
+gpu.o: gpu.cc gpu.h common/errorhandler.h cuda/cuda_generic.cuh core/concur_cuda_core.cuh generic/collectiveops_cuda_generic.cuh common/datatypes.h common/config.h common/grid.h common/slice.h common/forcing.h 
+#
+cuda_generic.o: cuda_generic.cu cuda_generic.cuh common/utils.h core/cuda_core.cuh core/dconsts_core.cuh core/errorhandler_cuda.cuh core/concur_cuda_core.cuh core/copyHalosConcur.cuh generic/rk3_cuda_generic.cuh generic/boundcond_cuda_generic.cuh generic/slice_cuda_generic.cuh generic/collectiveops_cuda_generic.cuh common/datatypes.h common/config.h common/grid.h common/slice.h common/forcing.h 
+#
 copyHalosConcur.o: copyHalosConcur.cu ../../cparam_c.h ../../cdata_c.h
-gpu_astaroth.o: gpu_astaroth.cu $(CHEADERS)
-
-../../cparam_c.h: ../../cparam.f90 ../../cparam.inc ../../cparam.local ../../scripts/cparam2c
+#
+timeseries_diagnostics.o: timeseries_diagnostics.cc common/grid.h common/qualify.h utils/utils.h gpu/cuda/cuda_generic.cuh ../../cparam_c.h ../../cdata_c.h ../../diagnostics_c.h diagnostics/PC_module_diagfuncs.h diagnostics/PC_modulediags_init.h diagnostics/PC_modulediags.h
+#
+boundcond_cuda_generic.o: boundcond_cuda_generic.cu boundcond_cuda_generic.cuh gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh common/config.h common/grid.h common/errorhandler.h
+#
+collectiveops_cuda_generic.o: collectiveops_cuda_generic.cu collectiveops_cuda_generic.cuh gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh utils/utils.h common/errorhandler.h common/config.h
+#
+rk3_cuda_generic.o: rk3_cuda_generic.cu rk3_cuda_generic.cuh diff_cuda_generic.cuh gpu/cuda/core/errorhandler_cuda.cuh common/datatypes.h common/defines.h common/errorhandler.h common/config.h common/grid.h common/PC_moduleflags.h
+#
+slice_cuda_generic.o: slice_cuda_generic.cu slice_cuda_generic.cuh common/config.h common/grid.h common/errorhandler.h common/slice.h gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh common/PC_moduleflags.h
+#
+concur_cuda_core.o: concur_cuda_core.cu concur_cuda_core.cuh
+#
+copyHalosConcur.o: copyHalosConcur.cu copyHalosConcur.cuh gpu/cuda/cuda_generic.cuh common/PC_moduleflags.h common/PC_modulepardecs.h common/datatypes.h common/errorhandler.h dconsts_core.cuh ../../cdata_c.h
+#
+cuda_core.o: cuda_core.cu cuda_core.cuh gpu/cuda/cuda_generic.cuh common/datatypes.h common/errorhandler.h dconsts_core.cuh errorhandler_cuda.cuh copyHalosConcur.cuh common/PC_moduleflags.h common/PC_modulepardecs.h common/config.h common/grid.h common/slice.h forcing.h common/PC_moduleflags.h common/PC_modulepars.h common/PC_module_parfuncs.h
+#
+../../cparam_c.h: ../../cparam.f90 ../../cparam.inc ../../cparam.local ../../scripts/cparam2c ../../scripts/cparam.sed
 	@cd ../..; cparam2c
-../../cdata_c.h: ../../cdata.f90 ../../scripts/cdata2c
+../../cdata_c.h: ../../cdata.f90 ../../scripts/cdata2c ../../scripts/cdata.sed
 	@cd ../..; cdata2c
-../../density_c.h: ../../density.f90 ../../scripts/density2c
-	@cd ../..; density2c
-../../diagnostics_c.h: ../../diagnostics.f90 ../../scripts/diagnostics2c
+../../diagnostics_c.h: ../../diagnostics.f90 ../../scripts/diagnostics2c ../../scripts/diags.sed
 	@cd ../..; diagnostics2c
-../../eos_c.h: ../../eos_idealgas.f90 ../../scripts/eos2c
-	@cd ../..; eos2c
 ../../forcing_c.h: ../../forcing.f90 ../../scripts/forcing2c
 	@cd ../..; forcing2c
-../../hydro_c.h: ../../hydro.f90 ../../scripts/hydro2c
-	@cd ../..; hydro2c
-../../viscosity_c.h: ../../viscosity.f90 ../../scripts/viscosity2c
-	@cd ../..; viscosity2c
 ../../sub_c.h: ../../sub.f90 ../../scripts/sub2c
 	@cd ../..; sub2c
+

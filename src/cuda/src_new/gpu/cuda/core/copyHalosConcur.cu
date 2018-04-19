@@ -13,8 +13,6 @@
 
 #include "common/errorhandler.h"
 
-#include "cparam_c.h"
-#define EXTERN extern
 #include "dconsts_core.cuh"
 #include "copyHalosConcur.cuh"
 #include "errorhandler_cuda.cuh"
