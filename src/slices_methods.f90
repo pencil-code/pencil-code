@@ -87,7 +87,8 @@ module Slices_methods
 !***********************************************************************
     subroutine assign_slices_f_scal(slices,f,ind)
 !
-!  Assignment of slice pointers into f-array according to slice selection switches.
+!  Copying of scalar data from f-array to arrays assigned to the slice pointers 
+!  according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
 !
@@ -116,8 +117,8 @@ module Slices_methods
 !***********************************************************************
     subroutine assign_slices_f_vec(slices,f,ind,ncomp)
 !
-!  Assignment of slice pointers into f-array according to slice selection
-!  switches.
+!  Copying of multi-component data from f-array to arrays assigned to the slice pointers 
+!  according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
 !
@@ -178,7 +179,7 @@ module Slices_methods
 !***********************************************************************
     subroutine store_slices_scal(pencil,xy,xz,yz,xy2,xy3,xy4,xz2)
 !
-!  Stores data from pencil in auxiliary arrays when needed.
+!  Stores scalar data from pencil in auxiliary arrays when needed.
 !
 !  12-apr-17/MR: coded 
 !
@@ -197,7 +198,7 @@ module Slices_methods
 !***********************************************************************
     subroutine store_slices_vec(pencil,xy,xz,yz,xy2,xy3,xy4,xz2,ncomp)
 !
-!  Stores data from pencil in auxiliary arrays when needed.
+!  Stores multi-component data from pencil in auxiliary arrays when needed.
 !
 !  12-apr-17/MR: coded 
 !
@@ -210,12 +211,12 @@ module Slices_methods
       integer :: nc
       real, dimension(1,3) :: tmp
       
-      nc=ioptest(ncomp,3)
+      !nc=ioptest(ncomp,3)
 !
 !  Note: i[xyz][234]*_loc is the index with respect to array with ghost zones.
 !
       if (lwrite_slice_yz) then
-        if (lyang.and.nc==3) then
+        if (lyang.and..not.present(ncomp).and.size(pencil,2)==3) then
 !
 !  On Yang grid: transform theta and phi components of oo to Yin-grid basis.
 !
@@ -237,26 +238,54 @@ module Slices_methods
 !***********************************************************************
     subroutine alloc_slice_buffers_scal(xy,xz,yz,xy2,xy3,xy4,xz2)
 !
-!  Allocation of auxiliary arrays for slices according to slice selection
+!  Allocation/deallocation of auxiliary arrays for slices according to slice selection
 !  switches.
 !
 !  12-apr-17/MR: coded 
 !
       real,dimension(:,:),allocatable,intent(INOUT):: xy,xy2,xy3,xy4,xz,xz2,yz
 
-      if (lwrite_slice_yz .and..not.allocated(yz)) allocate(yz(ny,nz))
-      if (lwrite_slice_xz .and..not.allocated(xz)) allocate(xz(nx,nz))
-      if (lwrite_slice_xy .and..not.allocated(xy)) allocate(xy(nx,ny))
-      if (lwrite_slice_xy2.and..not.allocated(xy2)) allocate(xy2(nx,ny))
-      if (lwrite_slice_xy3.and..not.allocated(xy3)) allocate(xy3(nx,ny))
-      if (lwrite_slice_xy4.and..not.allocated(xy4)) allocate(xy4(nx,ny))
-      if (lwrite_slice_xz2.and..not.allocated(xz2)) allocate(xz2(nx,nz))
+      if (lwrite_slice_yz) then
+        if (.not.allocated(yz)) allocate(yz(ny,nz))
+      else
+        if (allocated(yz)) deallocate(yz)
+      endif
+      if (lwrite_slice_xz) then
+        if (.not.allocated(xz)) allocate(xz(nx,nz))
+      else
+        if (allocated(xz)) deallocate(xz)
+      endif
+      if (lwrite_slice_xy) then
+        if (.not.allocated(xy)) allocate(xy(nx,ny))
+      else
+        if (allocated(xy)) deallocate(xy)
+      endif
+      if (lwrite_slice_xy2) then
+        if(.not.allocated(xy2)) allocate(xy2(nx,ny))
+      else
+        if (allocated(xy2)) deallocate(xy2)
+      endif
+      if (lwrite_slice_xy3) then
+        if (.not.allocated(xy3)) allocate(xy3(nx,ny))
+      else
+        if (allocated(xy3)) deallocate(xy3)
+      endif
+      if (lwrite_slice_xy4) then
+        if (.not.allocated(xy4)) allocate(xy4(nx,ny))
+      else
+        if (allocated(xy4)) deallocate(xy4)
+      endif
+      if (lwrite_slice_xz2) then
+        if (.not.allocated(xz2)) allocate(xz2(nx,nz))
+      else
+        if (allocated(xz2)) deallocate(xz2)
+      endif
 
     endsubroutine alloc_slice_buffers_scal
 !***********************************************************************
     subroutine alloc_slice_buffers_vec(xy,xz,yz,xy2,xy3,xy4,xz2,ncomp)
 !
-!  Allocation of auxiliary arrays for slices according to slice selection
+!  Allocation/deallocation of auxiliary arrays for slices according to slice selection
 !  switches.
 !
 !  12-apr-17/MR: coded 
@@ -270,56 +299,95 @@ module Slices_methods
 
       nc=ioptest(ncomp,3)
 
-      if (lwrite_slice_yz .and..not.allocated(yz)) allocate(yz(ny,nz,nc))
-      if (lwrite_slice_xz .and..not.allocated(xz)) allocate(xz(nx,nz,nc))
-      if (lwrite_slice_xy .and..not.allocated(xy)) allocate(xy(nx,ny,nc))
-      if (lwrite_slice_xy2.and..not.allocated(xy2)) allocate(xy2(nx,ny,nc))            
-      if (lwrite_slice_xy3.and..not.allocated(xy3)) allocate(xy3(nx,ny,nc))      
-      if (lwrite_slice_xy4.and..not.allocated(xy4)) allocate(xy4(nx,ny,nc))
-      if (lwrite_slice_xz2.and..not.allocated(xz2)) allocate(xz2(nx,nz,nc))
+      if (lwrite_slice_yz) then
+        if (.not.allocated(yz)) allocate(yz(ny,nz,nc))
+      else
+        if (allocated(yz)) deallocate(yz)
+      endif
+      if (lwrite_slice_xz) then
+        if (.not.allocated(xz)) allocate(xz(nx,nz,nc))
+      else
+        if (allocated(xz)) deallocate(xz)
+      endif
+      if (lwrite_slice_xy) then
+        if (.not.allocated(xy)) allocate(xy(nx,ny,nc))
+      else
+        if (allocated(xy)) deallocate(xy)
+      endif
+      if (lwrite_slice_xy2) then
+        if (.not.allocated(xy2)) allocate(xy2(nx,ny,nc))
+      else
+        if (allocated(xy2)) deallocate(xy2)
+      endif
+      if (lwrite_slice_xy3) then
+        if (.not.allocated(xy3)) allocate(xy3(nx,ny,nc))
+      else
+        if (allocated(xy3)) deallocate(xy3)
+      endif
+      if (lwrite_slice_xy4) then
+        if (.not.allocated(xy4)) allocate(xy4(nx,ny,nc))
+      else
+        if (allocated(xy4)) deallocate(xy4)
+      endif
+      if (lwrite_slice_xz2) then
+        if (.not.allocated(xz2)) allocate(xz2(nx,nz,nc))
+      else
+        if (allocated(xz2)) deallocate(xz2)
+      endif
 
     endsubroutine alloc_slice_buffers_vec
 !***********************************************************************
-    subroutine process_slices(slices,func)
+    subroutine process_slices(slices,func,fac)
 !
-!  Assignment of slice pointers according to slice selection switches.
+!  Operations on already assigned slices according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
 !
-      type(slice_data), intent(INOUT):: slices
-      character(LEN=40),intent(IN)   :: func
+      type(slice_data),          intent(INOUT):: slices
+      character(LEN=40),optional,intent(IN)   :: func
+      real             ,optional,intent(IN)   :: fac
 
-      if (trim(func)=='exp') then
-        if (lwrite_slice_yz ) slices%yz =exp(slices%yz)
-        if (lwrite_slice_xz ) slices%xz =exp(slices%xz)
-        if (lwrite_slice_xy ) slices%xy =exp(slices%xy)
-        if (lwrite_slice_xy2) slices%xy2=exp(slices%xy2)
-        if (lwrite_slice_xy3) slices%xy3=exp(slices%xy3)
-        if (lwrite_slice_xy4) slices%xy4=exp(slices%xy4)
-        if (lwrite_slice_xz2) slices%xz2=exp(slices%xz2)
-      elseif (trim(func)=='alog') then
-        if (lwrite_slice_yz ) slices%yz =alog(slices%yz)
-        if (lwrite_slice_xz ) slices%xz =alog(slices%xz)
-        if (lwrite_slice_xy ) slices%xy =alog(slices%xy)
-        if (lwrite_slice_xy2) slices%xy2=alog(slices%xy2)
-        if (lwrite_slice_xy3) slices%xy3=alog(slices%xy3)
-        if (lwrite_slice_xy4) slices%xy4=alog(slices%xy4)
-        if (lwrite_slice_xz2) slices%xz2=alog(slices%xz2)
-      elseif (trim(func)=='abs') then
-        if (lwrite_slice_yz ) slices%yz =abs(slices%yz)
-        if (lwrite_slice_xz ) slices%xz =abs(slices%xz)
-        if (lwrite_slice_xy ) slices%xy =abs(slices%xy)
-        if (lwrite_slice_xy2) slices%xy2=abs(slices%xy2)
-        if (lwrite_slice_xy3) slices%xy3=abs(slices%xy3)
-        if (lwrite_slice_xy4) slices%xy4=abs(slices%xy4)
-        if (lwrite_slice_xz2) slices%xz2=abs(slices%xz2)
+      if (present(func)) then
+        if (trim(func)=='exp') then
+          if (lwrite_slice_yz ) slices%yz =exp(slices%yz)
+          if (lwrite_slice_xz ) slices%xz =exp(slices%xz)
+          if (lwrite_slice_xy ) slices%xy =exp(slices%xy)
+          if (lwrite_slice_xy2) slices%xy2=exp(slices%xy2)
+          if (lwrite_slice_xy3) slices%xy3=exp(slices%xy3)
+          if (lwrite_slice_xy4) slices%xy4=exp(slices%xy4)
+          if (lwrite_slice_xz2) slices%xz2=exp(slices%xz2)
+        elseif (trim(func)=='alog') then
+          if (lwrite_slice_yz ) slices%yz =alog(slices%yz)
+          if (lwrite_slice_xz ) slices%xz =alog(slices%xz)
+          if (lwrite_slice_xy ) slices%xy =alog(slices%xy)
+          if (lwrite_slice_xy2) slices%xy2=alog(slices%xy2)
+          if (lwrite_slice_xy3) slices%xy3=alog(slices%xy3)
+          if (lwrite_slice_xy4) slices%xy4=alog(slices%xy4)
+          if (lwrite_slice_xz2) slices%xz2=alog(slices%xz2)
+        elseif (trim(func)=='abs') then
+          if (lwrite_slice_yz ) slices%yz =abs(slices%yz)
+          if (lwrite_slice_xz ) slices%xz =abs(slices%xz)
+          if (lwrite_slice_xy ) slices%xy =abs(slices%xy)
+          if (lwrite_slice_xy2) slices%xy2=abs(slices%xy2)
+          if (lwrite_slice_xy3) slices%xy3=abs(slices%xy3)
+          if (lwrite_slice_xy4) slices%xy4=abs(slices%xy4)
+          if (lwrite_slice_xz2) slices%xz2=abs(slices%xz2)
+        endif
+      elseif (present(fac)) then
+        if (lwrite_slice_yz ) slices%yz =fac*slices%yz
+        if (lwrite_slice_xz ) slices%xz =fac*slices%xz
+        if (lwrite_slice_xy ) slices%xy =fac*slices%xy
+        if (lwrite_slice_xy2) slices%xy2=fac*slices%xy2
+        if (lwrite_slice_xy3) slices%xy3=fac*slices%xy3
+        if (lwrite_slice_xy4) slices%xy4=fac*slices%xy4
+        if (lwrite_slice_xz2) slices%xz2=fac*slices%xz2
       endif
 
     endsubroutine process_slices
 !***********************************************************************
     subroutine addto_slices(slices,pencil)
 !
-!  Adds pencil data to slices according to slice selection switches.
+!  Adds pencil data to scalar slices according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
 !
@@ -349,5 +417,23 @@ module Slices_methods
       endif
 
     endsubroutine addto_slices
+!***********************************************************************
+    subroutine nullify_slice_pointers(slices)
+!
+!  Nullifies all pointers in slices struc.
+!
+!  12-apr-17/MR: coded 
+!
+      type (slice_data), intent(OUT):: slices
+
+      nullify(slices%yz)
+      nullify(slices%xz)
+      nullify(slices%xy)
+      nullify(slices%xy2)
+      nullify(slices%xy3)
+      nullify(slices%xy4)
+      nullify(slices%xz2)
+
+    endsubroutine nullify_slice_pointers
 !***********************************************************************
 endmodule Slices_methods
