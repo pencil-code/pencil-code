@@ -2,6 +2,30 @@
 /^ *#/ b end
 /^ *[A-Z0-9_]* *= *-/ b end
 /io_/ b end
+/BORDER_PROFILES/ b end
+/DEBUG/ b end
+/DERIV/ b end
+/FOURIER/ b end
+/GHOSTFOLD/ b end
+/GSL/ b end
+/INITIAL_CONDITION/ b end
+/FIXED_POINT/ b end
+/LSODE/ b end
+/MPICOMM/ b end
+/NSCBC/ b end
+/POWER/ b end
+/SIGNAL/ b end
+/SLICES/ b end
+/SOLID_CELLS/ b end
+/STRUCT_FUNC/ b end
+/SYSCALLS/ b end
+/TESTPERTURB/ b end
+/TIMEAVG/ b end
+/WENO_TRANSPORT/ b end
+/STREAMLINES/ b end
+/YINYANG/ b end
+/PARTICLES/ b end
+/IMPLICIT_DIFFUSION/ b end
 s/^ *[A-Z0-9_]* *= *noviscosity *$/#undef VISCOSITY/ 
 t prin
 b cont0

@@ -356,6 +356,7 @@ ifeq ($(OPACITY),noopacity)
 else
   OPACITY_SRC = $(OPACITY).f
 endif
+SLICES_METHODS = slices_methods
 ifeq ($(MPICOMM),nompicomm)
   YINYANG = noyinyang
 endif
@@ -386,9 +387,11 @@ special_message:
   endif
 endif
 LIBGPU =
+GPU_DEPS =
 ifeq ($(GPU),gpu_astaroth)
   LDFLAGS_MAIN += -dynamic
-  GPU_INTERFACE=gpu_astaroth_ansi.o
+  GPU_INTERFACE = gpu_astaroth_ansi.o
+  GPU_DEPS = gpu_preps
   ifeq ($(REAL_PRECISION),double)
     LIBGPU = astaroth_dbl.so
   else
@@ -754,6 +757,9 @@ SIGNAL_HANDLING_SRC=$(SIGNAL_HANDLING).f90
 #
 SLICES_OBJ=$(SLICES).o
 SLICES_SRC=$(SLICES).f90
+#
+SLICES_METHODS_OBJ=$(SLICES_METHODS).o
+SLICES_METHODS_SRC=$(SLICES_METHODS).f90
 #
 SOLID_CELLS_OBJ=$(SOLID_CELLS).o
 SOLID_CELLS_SRC=$(SOLID_CELLS).f90
@@ -1963,8 +1969,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FSTD_95=-std95 #(taito*)
 #F90=$(FC) #(taito*)
 #CC=mpicc #(taito*)
+##FFLAGS=-O1 -fbacktrace #(taito*)
 #FFLAGS=-O3 -implicitnone #(taito*)
 #FFLAGS_DOUBLE=-r8 #(taito*)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(taito*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(taito*)
 ##
 ## Triton.aalto.fi: FGI cluster at Aalto
@@ -2364,7 +2372,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GPU_OBJ) $(GPU_INTERFACE) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a
+technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GPU_OBJ) $(GPU_INTERFACE) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -2377,12 +2385,13 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
 start.o: $(start) Makefile.local
-start.x: start.o | $(SPECIAL_DEPS)
+start.x: start.o | $(SPECIAL_DEPS) $(GPU_DEPS)
 	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(LIBGPU) -o start.x $(LDFLAGS) $(LDFLAGS_MAIN)
 #
 run.o: $(run) Makefile.local
-run.x: run.o | $(SPECIAL_DEPS)
+run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
 	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) $(LIBGPU) -o run.x $(LDFLAGS) $(LDFLAGS_MAIN)
+#
 special_preps:
 ifneq ($(SPECIAL_MULT),1)
 	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > special.tmp
@@ -2396,6 +2405,28 @@ else
 endif
 special.dll: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.dll
+#
+# writes moduleflags in cuda/src_new/common/PC_moduleflags.h, list of needed physics module source files in cuda/src_new/PC_modulesources
+# 
+gpu_preps: cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources
+#
+cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources: .sentinel
+#
+.sentinel: Makefile.local
+	@touch .sentinel
+	@rm -f cuda/src_new/common/PC_moduleflags.h
+	@echo '#pragma once' > cuda/src_new/common/PC_moduleflags.h
+	@sed -f gpu.sed < Makefile.local >> cuda/src_new/common/PC_moduleflags.h
+ifeq ($(VISCOSITY),viscosity)
+	@echo '#define VISCOSITY // ../../viscosity.f90' >> cuda/src_new/common/PC_moduleflags.h
+	@echo '../../viscosity.f90 \' >> cuda/src_new/PC_modulesources
+endif
+ifeq ($(EOS),noeos)
+	@echo '../../noeos.f90' >> cuda/src_new/PC_modulesources
+else
+	@echo '' >> cuda/src_new/PC_modulesources
+endif
+#	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < cuda/src_new/common/PC_moduleflags.h >> cuda/src_new/PC_modulesources
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -2417,7 +2448,7 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
-technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
+technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
@@ -2716,6 +2747,7 @@ clean:  slender
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
+	rm -f .sentinel cuda/src_new/PC_modulesources cuda/src_new/common/PC_moduleflags.h  # for GPU
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
