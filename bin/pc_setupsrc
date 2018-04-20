@@ -60,9 +60,9 @@ link_src_files()
   n=0
   to_link=
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
-              $srcdir/Makefile.src $srcdir/Makefile.depend \
+              $srcdir/Makefile.src $srcdir/Makefile.depend $srcdir/gpu.sed\
               $srcdir/Makefile.library $srcdir/Makefile.machine \
-              $srcdir/*.h $srcdir/scripts $srcdir/.cvsignore
+              $srcdir/*.h $srcdir/scripts $srcdir/*.sed $srcdir/.cvsignore
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
@@ -402,26 +402,39 @@ link_initial_condition_files()
 #
 make_cuda_dir()
 {
-## src subdirectory
+## cuda subdirectory
   [ -h $src/cuda ] && rm $src/cuda
-  if [ ! -d $src/cuda ]; then
-    echo "No cuda directory found: creating new one (`pwd`/src/cuda)."
-    mkdir $src/cuda
-    #mkdir $src/cuda/verification
+  adddir $src/cuda
+## cuda/src_new subdirectory
+  [ -h $src/cuda/src_new ] && rm $src/cuda/src_new
+  adddir $src/cuda/src_new
+## subdirectories of src_new
+  adddir $src/cuda/src_new/utils
+  adddir $src/cuda/src_new/common
+  adddir $src/cuda/src_new/gpu
+  adddir $src/cuda/src_new/diagnostics
+  adddir $src/cuda/src_new/gpu/cuda
+  adddir $src/cuda/src_new/gpu/cuda/core
+  adddir $src/cuda/src_new/gpu/cuda/generic
+}
+function adddir {
+  if [ ! -d $1 ]; then
+    echo "No ${1##*/} directory found: creating new one (`pwd`/$1)."
+    mkdir $1
   fi
 }
 #
 link_cuda_files()
 {
 #
-#  LINK all *.* to local src directory
+#  LINK all *.* to local src/cuda directory
 #
   echo "Linking files in '$src/cuda'."
   old_dir="`pwd`"
   cd $src/cuda
   n=0
   to_link=
-  for file in $srcdir/cuda/src/*.cu $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf
+  for file in $srcdir/cuda/src/*.cu $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf 
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
@@ -441,7 +454,37 @@ link_cuda_files()
     fi
   done
   [ "$to_link" ] && ln -s $to_link .
+
+  echo "Linking files in '$src/cuda/src_new'."
+  cd $src/cuda/src_new
+  to_link=
+  len=`expr match "$srcdir/cuda/src_new/" '.*src_new/'`
+  for file in $srcdir/cuda/src_new/*.cc $srcdir/cuda/src_new/*.txt $srcdir/cuda/src_new/Makefile* $srcdir/cuda/src_new/utils/*.h $srcdir/cuda/src_new/common/*.cc $srcdir/cuda/src_new/common/*.txt $srcdir/cuda/src_new/common/*.h $srcdir/cuda/src_new/gpu/*.cc $srcdir/cuda/src_new/gpu/*.txt $srcdir/cuda/src_new/gpu/*.h $srcdir/cuda/src_new/diagnostics/*.h $srcdir/cuda/src_new/diagnostics/*.cc $srcdir/cuda/src_new/gpu/cuda/*.cu* $srcdir/cuda/src_new/gpu/cuda/core/*.cu* $srcdir/cuda/src_new/gpu/cuda/generic/*.cu*
+  do
+    file_for_link $file
+  done
+  for file in $to_link
+  do 
+    ln -s $file ${file:$len}
+#echo links $file to ${file:$len}
+  done
+
   cd $old_dir
+}
+#
+function file_for_link {
+    if [ -f $1 ] || [ -d $1 ]; then
+      relname=${1:$len}
+      if [ -h $relname ]; then
+        rm -f $relname
+        to_link="$to_link $1"
+      elif [ ! -f $relname ] \
+        && [ ! -d $relname ]; then
+        to_link="$to_link $1"
+      fi
+    else
+      echo "No such file: $1"
+    fi
 }
 #
 create_Makefile_inc()
@@ -593,8 +636,12 @@ make_experimental_dir
 link_experimental_files
 make_initial_condition_dir
 link_initial_condition_files
-make_cuda_dir
-link_cuda_files
+if [ "$src/Makefile.local" ]; then
+  if [[ `grep '^[^#]*= *gpu' $src/Makefile.local` != '' ]]; then
+    make_cuda_dir
+    link_cuda_files
+  fi
+fi
 create_Makefile_inc
 #copy_local_files
 print_status
