@@ -1,0 +1,55 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2013/08/16 17:29:10 richert Exp $',
+  ip=10,
+  nt=100000000, it1=50, isave=5000, itorder=3, 
+  cdt=0.4 
+  cdtv=0.4 
+  dtmin=1e-6
+  dsnap=6.283185
+  !dvid=.31415927
+  !tmax=1256.64
+  tmax=628.32
+  !slice_position='m'
+  wborder_int=.075
+  wborder_ext=.1
+  lpencil_check=F
+  lpencil_check_small=F
+  max_walltime=86100
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+/
+&density_run_pars
+  borderlnrho='initial-condition'
+  idiff='hyper3-cyl','shock'
+  diffrho_hyper3=2e-3,diffrho_shock=2e-2
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-cyl','shock'
+  nu_hyper3=2e-3,nu_shock=1.5
+/
+&pointmasses_run_pars
+  lfollow_particle=T,T
+  lnogravz_star=T
+/
+&shock_run_pars
+/
+&entropy_run_pars
+  lfreeze_sint=T
+  borderss='initial-condition'
+  iheatcond='hyper3-cyl','shock'
+  chi_hyper3=2e-3,chi_shock=1.5
+  TTref_cool = 6.25e-3     ! Temperature at reference radius
+  TT_powerlaw = 1.         ! Power law of temperature
+  ltau_cool_variable = T   ! Tell code to use the power law in cooling
+                           !  (the default is only TTref_cool as const)
+  tau_cool = .6283         ! Cooling time
+/
