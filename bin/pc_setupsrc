@@ -417,7 +417,9 @@ make_cuda_dir()
   adddir $src/cuda/src_new/gpu/cuda/core
   adddir $src/cuda/src_new/gpu/cuda/generic
 }
-function adddir {
+#
+adddir()
+{
   if [ ! -d $1 ]; then
     echo "No ${1##*/} directory found: creating new one (`pwd`/$1)."
     mkdir $1
@@ -472,7 +474,8 @@ link_cuda_files()
   cd $old_dir
 }
 #
-function file_for_link {
+file_for_link()
+{
     if [ -f $1 ] || [ -d $1 ]; then
       relname=${1:$len}
       if [ -h $relname ]; then
@@ -636,8 +639,8 @@ make_experimental_dir
 link_experimental_files
 make_initial_condition_dir
 link_initial_condition_files
-if [ "$src/Makefile.local" ]; then
-  if [[ `grep '^[^#]*= *gpu' $src/Makefile.local` != '' ]]; then
+if [ -f "$src/Makefile.local" ]; then
+  if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
     make_cuda_dir
     link_cuda_files
   fi
