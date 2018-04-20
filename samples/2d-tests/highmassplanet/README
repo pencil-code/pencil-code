@@ -12,7 +12,7 @@ Comments:
     quite short cooling time (a tenth of an orbit), so it looks close to the
     locally isothermal case. To change to the locally iosthermal case, change
     'entropy' to 'noentropy' in cparam.local, set 'llocal_iso=T' in start.in under
-    'init_pars', and change 'gamma' from 1 to 1.4 in start.in under
-    'eos_init_pars'.
+    'init_pars', remove the entropy boundary condition in 'init_pars' ('bcx'), and
+    change 'gamma' from 1 to 1.4 in start.in under 'eos_init_pars'.
 References:
     Richert et al. (2015): http://adsabs.harvard.edu/abs/2015ApJ...804...95R
