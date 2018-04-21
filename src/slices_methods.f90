@@ -18,11 +18,6 @@ module Slices_methods
     module procedure assign_slices_sep_vec
   endinterface
 
-  interface alloc_slice_buffers
-    module procedure alloc_slice_buffers_scal
-    module procedure alloc_slice_buffers_vec
-  endinterface
-
   interface store_slices
     module procedure store_slices_scal
     module procedure store_slices_vec
@@ -236,116 +231,15 @@ module Slices_methods
 
     endsubroutine store_slices_vec
 !***********************************************************************
-    subroutine alloc_slice_buffers_scal(xy,xz,yz,xy2,xy3,xy4,xz2)
-!
-!  Allocation/deallocation of auxiliary arrays for slices according to slice selection
-!  switches.
-!
-!  12-apr-17/MR: coded 
-!
-      real,dimension(:,:),allocatable,intent(INOUT):: xy,xy2,xy3,xy4,xz,xz2,yz
-
-      if (lwrite_slice_yz) then
-        if (.not.allocated(yz)) allocate(yz(ny,nz))
-      else
-        if (allocated(yz)) deallocate(yz)
-      endif
-      if (lwrite_slice_xz) then
-        if (.not.allocated(xz)) allocate(xz(nx,nz))
-      else
-        if (allocated(xz)) deallocate(xz)
-      endif
-      if (lwrite_slice_xy) then
-        if (.not.allocated(xy)) allocate(xy(nx,ny))
-      else
-        if (allocated(xy)) deallocate(xy)
-      endif
-      if (lwrite_slice_xy2) then
-        if(.not.allocated(xy2)) allocate(xy2(nx,ny))
-      else
-        if (allocated(xy2)) deallocate(xy2)
-      endif
-      if (lwrite_slice_xy3) then
-        if (.not.allocated(xy3)) allocate(xy3(nx,ny))
-      else
-        if (allocated(xy3)) deallocate(xy3)
-      endif
-      if (lwrite_slice_xy4) then
-        if (.not.allocated(xy4)) allocate(xy4(nx,ny))
-      else
-        if (allocated(xy4)) deallocate(xy4)
-      endif
-      if (lwrite_slice_xz2) then
-        if (.not.allocated(xz2)) allocate(xz2(nx,nz))
-      else
-        if (allocated(xz2)) deallocate(xz2)
-      endif
-
-    endsubroutine alloc_slice_buffers_scal
-!***********************************************************************
-    subroutine alloc_slice_buffers_vec(xy,xz,yz,xy2,xy3,xy4,xz2,ncomp)
-!
-!  Allocation/deallocation of auxiliary arrays for slices according to slice selection
-!  switches.
-!
-!  12-apr-17/MR: coded 
-!
-      use General, only: ioptest
-!
-      real,dimension(:,:,:),allocatable,intent(INOUT):: xy,xy2,xy3,xy4,xz,xz2,yz
-      integer, optional,                intent(IN)   :: ncomp
-
-      integer :: nc
-
-      nc=ioptest(ncomp,3)
-
-      if (lwrite_slice_yz) then
-        if (.not.allocated(yz)) allocate(yz(ny,nz,nc))
-      else
-        if (allocated(yz)) deallocate(yz)
-      endif
-      if (lwrite_slice_xz) then
-        if (.not.allocated(xz)) allocate(xz(nx,nz,nc))
-      else
-        if (allocated(xz)) deallocate(xz)
-      endif
-      if (lwrite_slice_xy) then
-        if (.not.allocated(xy)) allocate(xy(nx,ny,nc))
-      else
-        if (allocated(xy)) deallocate(xy)
-      endif
-      if (lwrite_slice_xy2) then
-        if (.not.allocated(xy2)) allocate(xy2(nx,ny,nc))
-      else
-        if (allocated(xy2)) deallocate(xy2)
-      endif
-      if (lwrite_slice_xy3) then
-        if (.not.allocated(xy3)) allocate(xy3(nx,ny,nc))
-      else
-        if (allocated(xy3)) deallocate(xy3)
-      endif
-      if (lwrite_slice_xy4) then
-        if (.not.allocated(xy4)) allocate(xy4(nx,ny,nc))
-      else
-        if (allocated(xy4)) deallocate(xy4)
-      endif
-      if (lwrite_slice_xz2) then
-        if (.not.allocated(xz2)) allocate(xz2(nx,nz,nc))
-      else
-        if (allocated(xz2)) deallocate(xz2)
-      endif
-
-    endsubroutine alloc_slice_buffers_vec
-!***********************************************************************
     subroutine process_slices(slices,func,fac)
 !
 !  Operations on already assigned slices according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
 !
-      type(slice_data),          intent(INOUT):: slices
-      character(LEN=40),optional,intent(IN)   :: func
-      real             ,optional,intent(IN)   :: fac
+      type(slice_data),         intent(INOUT):: slices
+      character(LEN=*),optional,intent(IN)   :: func
+      real            ,optional,intent(IN)   :: fac
 
       if (present(func)) then
         if (trim(func)=='exp') then
