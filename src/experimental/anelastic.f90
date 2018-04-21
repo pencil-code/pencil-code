@@ -37,6 +37,7 @@ module Density
   implicit none
 !
   include '../density.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0

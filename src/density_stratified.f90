@@ -36,6 +36,7 @@ module Density
   implicit none
 !
   include 'density.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   character(len=labellen), dimension(ninit) :: initrho = 'nothing'
   real, dimension(ninit) :: amplrho = 0.0
@@ -734,27 +735,22 @@ module Density
 !
 !  27-feb-13/ccyang: coded.
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
 !
       var: select case (trim(slices%name))
 !
-      case ('drho') var
-        slices%yz = f(ix_loc, m1:m2, n1:n2, irho)
-        slices%xz = f(l1:l2, iy_loc, n1:n2, irho)
-        slices%xy = f(l1:l2, m1:m2, iz_loc, irho)
-        slices%xy2 = f(l1:l2, m1:m2, iz2_loc, irho)
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2, m1:m2, iz3_loc, irho)
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2, m1:m2, iz4_loc, irho)
-        slices%ready = .true.
+      case ('drho');  call assign_slices_scal(slices,f,irho)
 !
       case ('rho') var
-        slices%yz = (1.0 + f(ix_loc, m1:m2, n1:n2, irho)) * spread(rho0z(n1:n2), 1, ny)
-        slices%xz = (1.0 + f(l1:l2, iy_loc, n1:n2, irho)) * spread(rho0z(n1:n2), 1, nx)
-        slices%xy = (1.0 + f(l1:l2, m1:m2, iz_loc, irho)) * rho0z(iz_loc)
-        slices%xy2 = (1.0 + f(l1:l2, m1:m2, iz2_loc, irho)) * rho0z(iz2_loc)
-        if (lwrite_slice_xy3) slices%xy3 = (1.0 + f(l1:l2, m1:m2, iz3_loc, irho)) * rho0z(iz3_loc)
-        if (lwrite_slice_xy4) slices%xy4 = (1.0 + f(l1:l2, m1:m2, iz4_loc, irho)) * rho0z(iz4_loc)
+        if (lwrite_slice_yz)  slices%yz  = (1.+f(ix_loc,m1:m2, n1:n2,  irho))*spread(rho0z(n1:n2),1,ny)
+        if (lwrite_slice_xz)  slices%xz  = (1.+f(l1:l2, iy_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
+        if (lwrite_slice_xy)  slices%xy  = (1.+f(l1:l2, m1:m2, iz_loc, irho))*rho0z(iz_loc)
+        if (lwrite_slice_xy2) slices%xy2 = (1.+f(l1:l2, m1:m2, iz2_loc,irho))*rho0z(iz2_loc)
+        if (lwrite_slice_xy3) slices%xy3 = (1.+f(l1:l2, m1:m2, iz3_loc,irho))*rho0z(iz3_loc)
+        if (lwrite_slice_xy4) slices%xy4 = (1.+f(l1:l2, m1:m2, iz4_loc,irho))*rho0z(iz4_loc)
         slices%ready = .true.
 !
       endselect var
@@ -930,19 +926,5 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine impose_density_ceiling
-!***********************************************************************
-    subroutine push2c(p_idiag)
-
-    integer, parameter :: ndiags=4
-    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
-
-    integer :: idiag_rhom=0
-
-    call copy_addr_c(idiag_rhom,p_idiag(1))
-    call copy_addr_c(idiag_rhomin,p_idiag(2))
-    call copy_addr_c(idiag_rhomax,p_idiag(3))
-    call copy_addr_c(idiag_mass,p_idiag(4))
-
-    endsubroutine push2c
 !***********************************************************************
 endmodule Density

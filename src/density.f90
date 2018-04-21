@@ -3435,6 +3435,8 @@ module Density
 !  26-jul-06/tony: coded
 !  10-feb-15/MR: adaptations for reference state
 !
+      use Slices_methods, only: assign_slices_scal, addto_slices, process_slices
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       character(LEN=labellen) :: name
@@ -3445,91 +3447,32 @@ module Density
       name=trim(slices%name)
       if (name=='rho' .or. name=='lnrho') then
 !
-        slices%yz =f(ix_loc,m1:m2,n1:n2,ilnrho) 
-        slices%xz =f(l1:l2,iy_loc,n1:n2,ilnrho) 
-        slices%xy =f(l1:l2,m1:m2,iz_loc,ilnrho) 
-        slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
-        if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnrho)
-        if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnrho)
-        if (lwrite_slice_xz2) slices%xz2=f(l1:l2,iy2_loc,n1:n2,ilnrho)
+        call assign_slices_scal(slices,f,ilnrho)
 
-        if (lfullvar_in_slices) then
-
-          slices%yz = slices%yz + reference_state(ix_loc-l1+1,iref_rho)
-          do n=1,nz
-            slices%xz(:,n) = slices%xz(:,n) + reference_state(:,iref_rho)
-          enddo
-          do m=1,ny
-            slices%xy(:,m) = slices%xy(:,m) + reference_state(:,iref_rho)
-          enddo
-          do m=1,ny
-            slices%xy2(:,m)= slices%xy2(:,m)+ reference_state(:,iref_rho)
-          enddo
-
-          if (lwrite_slice_xy3) then
-            do m=1,ny
-              slices%xy3(:,m)=slices%xy3(:,m)+reference_state(:,iref_rho)
-            enddo
-          endif
-          if (lwrite_slice_xy4) then
-            do m=1,ny
-              slices%xy4(:,m)=slices%xy4(:,m)+reference_state(:,iref_rho)
-            enddo
-          endif
-          if (lwrite_slice_xz2) then
-            do n=1,nz
-              slices%xz2(:,n)=slices%xz2(:,n)+reference_state(:,iref_rho)
-            enddo
-          endif
-        endif
+        if (lfullvar_in_slices) &      ! implies ldensity_nolog=T
+          call addto_slices(slices,reference_state(:,iref_rho))
 !
-        slices%ready=.true.
-!
-      else
-        return
-      endif
-
-      select case (name)
+        select case (trim(slices%name))
 !
 !  Density.
 !
-        case ('rho')
-          if (.not.ldensity_nolog) then
-            slices%yz =exp(slices%yz)
-            slices%xz =exp(slices%xz)
-            slices%xy =exp(slices%xy)
-            slices%xy2=exp(slices%xy2)
-            if (lwrite_slice_xy3) slices%xy3=exp(slices%xy3)
-            if (lwrite_slice_xy4) slices%xy4=exp(slices%xy4)
-            if (lwrite_slice_xz2) slices%xz2=exp(slices%xz2)
-          endif
+          case ('rho')
+            if (.not.ldensity_nolog) call process_slices(slices,'exp')
 !
 !  Logarithmic density.
 !
-        case ('lnrho')
+          case ('lnrho')
+            if (ldensity_nolog) then
 !
-          if (ldensity_nolog) then
-            if (lreference_state.and..not.lfullvar_in_slices) then
-              slices%yz = abs(slices%yz)
-              slices%xz = abs(slices%xz)
-              slices%xy = abs(slices%xy)
-              slices%xy2= abs(slices%xy2)
-              if (lwrite_slice_xy3) slices%xy3=abs(slices%xy3)
-              if (lwrite_slice_xy4) slices%xy4=abs(slices%xy4)
-              if (lwrite_slice_xz2) slices%xz2=abs(slices%xz2)
+              if (lreference_state.and..not.lfullvar_in_slices) &
+                call process_slices(slices,'abs')
+              call process_slices(slices,'alog')
+!
             endif
+        endselect
+!
+      endif
 
-            slices%yz =alog(slices%yz)
-            slices%xz =alog(slices%xz)
-            slices%xy =alog(slices%xy)
-            slices%xy2=alog(slices%xy2)
-            if (lwrite_slice_xy3) slices%xy3=alog(slices%xy3)
-            if (lwrite_slice_xy4) slices%xy4=alog(slices%xy4)
-            if (lwrite_slice_xz2) slices%xz2=alog(slices%xz2)
-          endif
-!
-      endselect
-!
     endsubroutine get_slices_density
 !***********************************************************************
     subroutine get_slices_pressure(f,slices)
@@ -3720,24 +3663,33 @@ module Density
 
     endsubroutine impose_density_ceiling
 !***********************************************************************
-    subroutine push2c(p_idiag)
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call keep_compiler_quiet(p_par)
+
+    endsubroutine pushpars2c
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
 
     use Diagnostics, only: set_type
 
-    integer, parameter :: ndiags=5
-    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+    integer, parameter :: n_diags=5
+    integer(KIND=ikind8), dimension(n_diags) :: p_diag
 
-    call copy_addr_c(idiag_rhom,p_idiag(1))
+    call copy_addr_c(idiag_rhom,p_diag(1))
     call set_type(idiag_rhom,lsum=.true.)
-    call copy_addr_c(idiag_rhomin,p_idiag(2))
+    call copy_addr_c(idiag_rhomin,p_diag(2))
     call set_type(idiag_rhomin,lmin=.true.)
-    call copy_addr_c(idiag_rhomax,p_idiag(3))
+    call copy_addr_c(idiag_rhomax,p_diag(3))
     call set_type(idiag_rhomax,lmax=.true.)
-    call copy_addr_c(idiag_mass,p_idiag(4))
+    call copy_addr_c(idiag_mass,p_diag(4))
     call set_type(idiag_mass,lint=.true.)
-    call copy_addr_c(idiag_rhorms,p_idiag(5))
+    call copy_addr_c(idiag_rhorms,p_diag(5))
     call set_type(idiag_rhorms,lsqrt=.true.)
 
-    endsubroutine push2c
+    endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Density
