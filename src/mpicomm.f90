@@ -89,6 +89,7 @@ module Mpicomm
     module procedure mpisend_real_arr2
     module procedure mpisend_real_arr3
     module procedure mpisend_real_arr4
+    module procedure mpisend_real_arr5
   endinterface
 !
   interface mpisend_cmplx
@@ -2988,6 +2989,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                     tag_id, MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpisend_real_arr4
+!***********************************************************************
+    subroutine mpisend_real_arr5(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send real array(:,:,:,:) to other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_rec, tag_id, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                    tag_id, MPI_COMM_GRID,mpierr)
+!
+    endsubroutine mpisend_real_arr5
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,proc_dest,sendtag, &
                                     recv_array,proc_src,recvtag)
