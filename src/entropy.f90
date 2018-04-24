@@ -56,6 +56,7 @@ module Energy
   real :: thermal_background=0.0, thermal_peak=0.0, thermal_scaling=1.0
   real :: cool_fac=1.0, chiB=0.0
   real, dimension(3) :: chi_hyper3_aniso=0.0
+  real, dimension(3) :: gradS0_imposed=(/0.0,0.0,0.0/)
   real, target :: hcond0=impossible, hcond1=impossible
   real, target :: hcondxbot=impossible, hcondxtop=impossible
   real, target :: hcondzbot=impossible, hcondztop=impossible
@@ -187,7 +188,7 @@ module Energy
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
-      lcooling_general, lcooling_ss_mz, &
+      lcooling_general, lcooling_ss_mz, gradS0_imposed, &
       ss_const, chi_t, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
@@ -2411,6 +2412,8 @@ module Energy
 !
 !  20-nov-04/anders: coded
 !
+      integer :: i
+!
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0 .or. &
           lheatc_sqrtrhochiconst) lpenc_requested(i_cp1)=.true.
@@ -2418,6 +2421,9 @@ module Energy
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_ee)=.true.
       endif
+      do i=1,3
+        if (gradS0_imposed(i)/=0.) lpenc_requested(i_uu)=.true.
+      enddo
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) then
         if (lweno_transport) then
@@ -3052,6 +3058,14 @@ module Energy
           endif
         endif
       endif
+!
+!  Add advection term from an imposed spatially constant gradient of S.
+!  This makes sense really only for periodic boundary conditions.
+!
+        do j=1,3
+          if (gradS0_imposed(j)/=0.) &
+            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
+        enddo
 !
 !  Calculate viscous contribution to entropy.
 !
