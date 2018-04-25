@@ -10385,8 +10385,8 @@ module Solid_Cells
 !
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
-    real, dimension(ny_ogrid,4) :: by
-    real, dimension(nx_ogrid,4) :: bx
+    real, dimension(ny_ogrid,mfarray_ogrid) :: by
+    real, dimension(nx_ogrid,mfarray_ogrid) :: bx
     real, dimension(ny_ogrid), save :: aWy, aPy, aEy
     real, dimension(nx_ogrid), save :: aWx, aPx, aEx
     integer :: i
@@ -10582,7 +10582,7 @@ module Solid_Cells
 !
 !  10-nov-17/Jorgen - Coded
 !
-    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension(5,mfarray_ogrid), intent(out) :: bx_bound
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     real, intent(in) :: af
     integer, intent(in) :: i
@@ -10668,7 +10668,7 @@ module Solid_Cells
 !
 !  10-nov-17/Jorgen - Coded
 !
-    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension(5,mfarray_ogrid), intent(out) :: bx_bound
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     real, intent(in) :: af
     integer, intent(in) :: i
@@ -10745,7 +10745,7 @@ module Solid_Cells
 !
 !  10-nov-17/Jorgen - Coded
 !
-    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension(5,mfarray_ogrid), intent(out) :: bx_bound
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     real, intent(in) :: af
     integer, intent(in) :: i
@@ -10808,7 +10808,7 @@ module Solid_Cells
 !
 !  10-nov-17/Jorgen - Coded
 !
-    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension(5,mfarray_ogrid), intent(out) :: bx_bound
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     real, intent(in) :: af
     integer, intent(in) :: i
@@ -10866,7 +10866,7 @@ module Solid_Cells
 !
 !  10-nov-17/Jorgen - Coded
 !
-    real, dimension(5,4), intent(out) :: bx_bound
+    real, dimension(5,mfarray_ogrid), intent(out) :: bx_bound
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(in)::  f_og
     real, intent(in) :: af
     integer, intent(in) :: i
