@@ -7,15 +7,17 @@ else
   modname=$3
 fi
 modheader=../../$modname'_'$1's_c.h'
-modecs=../../$modname'_'$1'_decs_c.h'
 if [[ $1 == par ]]; then
-  ptype=real
+  ptype=void
   headerdir=common
   modinit=$modheader
+  modecs=../../$modname'_par_decs_c.h'
+  rm $modecs
 else
   ptype=int
   headerdir=diagnostics
-  modinit=../../$modname'_'$1's_init_c.h'
+  modinit=../../$modname'_diags_init_c.h'
+  modecs=/dev/null
   rm -f $modinit
 fi
 #
@@ -45,7 +47,7 @@ sed -n '
 #
 # writes declarations of n_$1s_<modname>, p_$1_<modname> and call of push$1s2c into $modname_$1s_c.h
 #
-rm -f $modheader $modecs tmp1
+rm -f $modheader tmp1
 sed -n '
   /parameter/ {
      h
@@ -63,9 +65,13 @@ sed -n '
 if [[ $1 == 'par' ]]; then
   sed -n '
           /copy_addr_c/ {
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\),p_'$1'(\([0-9]*\))) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(real)) );  \/\/ \1/w tmp1
+            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(real)) );  \/\/ \1 real/w tmp1
             t cont
-            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\),p_'$1'(\([0-9]*\))) *! *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \3*sizeof(real)) );  \/\/ \1(\3)/w tmp1
+            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *\([a-zA-Z][a-zA-Z]*\) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], sizeof(\3)) );  \/\/ \1 \3/w tmp1
+            t cont
+            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \3*sizeof(real)) );  \/\/ \1 real(\3)/w tmp1
+            t cont
+            s/call  *copy_addr_c(\([a-zA-Z0-9_]*\) *, *p_'$1'(\([0-9]*\))) *! *\([a-zA-Z]*\) *( *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *) *$/CUDA_ERRCHK( cudaMemcpyToSymbol(d_\U\1\L, p_'$1'_'$modname'[\2-1], \4*sizeof(\3)) );  \/\/ \1 \3(\4)/w tmp1
             : cont
             p
           }
@@ -92,7 +98,7 @@ else
              p
              : cont1
              g
-             s/( *idiag_\([a-zA-Z0-9_]*\) *, *p_'$1' *( *\([0-9]*\)).*$/p_'$1'_'$modname'[\2-1] \/\/ idiag_\1/ w tmp1
+             s/( *idiag_\([a-zA-Z0-9_]*\) *, *p_'$1' *( *\([0-9]*\)).*$/p_'$1'_'$modname'[\2-1] \/\/ idiag_\1 int/ w tmp1
          }
   ' < tmp >> $modheader
 fi
@@ -103,21 +109,21 @@ rm -f tmp
 if [ -f tmp1 ]; then
   sed -n '
          /p_/ {
-          s/^.*\(p_'$1'_'$modname' *\[ *[1-9][0-9]*-1 *\]\).*\/\/ *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *$/#define \2 (*\1) \/\/ from '$modname'/
+          s/^.*\(p_'$1'_'$modname' *\[ *[1-9][0-9]*-1 *\]\).*\/\/ *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *\([a-zA-Z][a-zA-Z]*\) *$/#define \2 (*((\3 *) \1)) \/\/ \3 from '$modname'/
           t cont
-          b other
+          b dimen
           : cont
           p
-          s/^#define  *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) .*$/DCONST_EXTERN __constant__ real d_\U\1;/
+          s/^#define  *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) .*\/\/ *\([a-zA-Z][a-zA-Z]*\) .*$/DCONST_EXTERN __constant__ \2 d_\U\1;/
           H
           b end
-          : other
-          s/^.*\(p_'$1'_'$modname' *\[ *[1-9][0-9]*-1 *\]\).*\/\/ *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *\(([a-zA-Z0-9_][a-zA-Z0-9_]*)\) *$/#define \2 \1 \/\/ \3 from '$modname'/
+          : dimen
+          s/^.*\(p_'$1'_'$modname' *\[ *[1-9][0-9]*-1 *\]\).*\/\/ *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) *\([a-zA-Z0-9_][a-zA-Z0-9_]*\)\(([a-zA-Z0-9_][a-zA-Z0-9_]*)\) *$/#define \2 ((\3 *)\1) \/\/ \3\4 from '$modname'/
           t cont1
           b end
           : cont1
           p
-          s/^#define  *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) .*(\([a-zA-Z0-9_][a-zA-Z0-9_]*\)).*$/DCONST_EXTERN __constant__ real d_\U\1[\L\2];/
+          s/^#define  *\([a-zA-Z0-9_][a-zA-Z0-9_]*\) .*\/\/ *\([a-zA-Z][a-zA-Z]*\)(\([a-zA-Z0-9_][a-zA-Z0-9_]*\)).*$/DCONST_EXTERN __constant__ \2 d_\U\1[\L\3];/
           H
           : end
          }
