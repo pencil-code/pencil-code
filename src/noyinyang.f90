@@ -37,6 +37,9 @@ contains
       stop
 
       buffer=0.
+      call keep_compiler_quiet(ith, iph, i2buf, i3buf)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(indcoeffs%inds)
 
     endsubroutine bilin_interp
 !**************************************************************************
@@ -56,6 +59,9 @@ contains
       stop
 
       buffer=0.
+      call keep_compiler_quiet(ith, iph, i2buf, i3buf)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(indcoeffs%inds)
 
     endsubroutine biquad_interp
 !***********************************************************************
@@ -80,7 +86,10 @@ contains
 
       indcoeffs%inds=0
       indcoeffs%coeffs=0.
-      if (present(th_range)) th_range=0
+      call keep_compiler_quiet(thphprime)
+      call keep_compiler_quiet(itype,ngap)
+      call keep_compiler_quiet(th_range)
+      call keep_compiler_quiet(indcoeffs%inds)
 !
     endfunction prep_interp
 !**************************************************************************
@@ -97,8 +106,7 @@ contains
         print*, 'coeffs_to_weights: not implemented in Fortran 95'
       stop
 
-      indweights%inds=0
-      indweights%coeffs=0.
+      call keep_compiler_quiet(intcoeffs%inds,indweights%inds)
 
     endsubroutine coeffs_to_weights
 !*******************************************************************
@@ -108,6 +116,7 @@ contains
       logical :: ok
 
       ok=.true.
+      call keep_compiler_quiet(indth,indph)
 
     endfunction in_overlap_mask
 !*******************************************************************

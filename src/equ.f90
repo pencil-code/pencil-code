@@ -361,8 +361,10 @@ module Equ
 !
 !  Change df and dfp according to the chosen particle modules.
 !
-      if (lparticles) call particles_pde_blocks(f,df)
-      if (lparticles) call particles_pde(f,df,p)
+      if (lparticles) then
+        call particles_pde_blocks(f,df)
+        call particles_pde(f,df,p)
+      endif
 !
       if (lpointmasses) call pointmasses_pde(f,df)
 !
