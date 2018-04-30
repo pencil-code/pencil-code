@@ -22,8 +22,15 @@ module Slices_methods
     module procedure store_slices_scal
     module procedure store_slices_vec
   endinterface
-!
+
+!  interface alloc_slice_buffers
+!    module procedure alloc_slice_buffers_scal
+!    module procedure alloc_slice_buffers_vec
+!  endinterface
+
   contains
+!***********************************************************************
+!  include 'slice_methods.f90.removed'
 !***********************************************************************
     subroutine assign_slices_sep_scal(slices,xy,xz,yz,xy2,xy3,xy4,xz2)
 !
@@ -67,9 +74,9 @@ module Slices_methods
     else
       slices%index=slices%index+1
 
-      if (lwrite_slice_yz ) slices%yz =>yz(:,:,slices%index)
-      if (lwrite_slice_xz ) slices%xz =>xz(:,:,slices%index)
-      if (lwrite_slice_xy ) slices%xy =>xy(:,:,slices%index)
+      if (lwrite_slice_yz ) slices%yz => yz(:,:,slices%index)
+      if (lwrite_slice_xz ) slices%xz => xz(:,:,slices%index)
+      if (lwrite_slice_xy ) slices%xy => xy(:,:,slices%index)
       if (lwrite_slice_xy2) slices%xy2=>xy2(:,:,slices%index)
       if (lwrite_slice_xy3) slices%xy3=>xy3(:,:,slices%index)
       if (lwrite_slice_xy4) slices%xy4=>xy4(:,:,slices%index)
@@ -91,20 +98,13 @@ module Slices_methods
       real, dimension(mx,my,mz,*), intent(IN) :: f
       integer                    , intent(IN) :: ind
 
-      if (lwrite_slice_yz) &
-        slices%yz=f(ix_loc,m1:m2  ,n1:n2  ,ind)
-      if (lwrite_slice_xz) &
-        slices%xz =f(l1:l2,iy_loc ,n1:n2  ,ind)
-      if (lwrite_slice_xy) &
-        slices%xy =f(l1:l2,m1:m2  ,iz_loc ,ind)
-      if (lwrite_slice_xy2) &
-        slices%xy2=f(l1:l2,m1:m2  ,iz2_loc,ind)
-      if (lwrite_slice_xy3) &
-        slices%xy3=f(l1:l2,m1:m2  ,iz3_loc,ind)
-      if (lwrite_slice_xy4) &
-        slices%xy4=f(l1:l2,m1:m2  ,iz4_loc,ind)
-      if (lwrite_slice_xz2) &
-        slices%xz2=f(l1:l2,iy2_loc,n1:n2  ,ind)
+      if (lwrite_slice_yz)  slices%yz =f(ix_loc,m1:m2  ,n1:n2  ,ind)
+      if (lwrite_slice_xz)  slices%xz =f(l1:l2 ,iy_loc ,n1:n2  ,ind)
+      if (lwrite_slice_xy)  slices%xy =f(l1:l2 ,m1:m2  ,iz_loc ,ind)
+      if (lwrite_slice_xy2) slices%xy2=f(l1:l2 ,m1:m2  ,iz2_loc,ind) 
+      if (lwrite_slice_xy3) slices%xy3=f(l1:l2 ,m1:m2  ,iz3_loc,ind)
+      if (lwrite_slice_xy4) slices%xy4=f(l1:l2 ,m1:m2  ,iz4_loc,ind)
+      if (lwrite_slice_xz2) slices%xz2=f(l1:l2 ,iy2_loc,n1:n2  ,ind) 
 
       slices%ready=.true.
 
@@ -113,7 +113,10 @@ module Slices_methods
     subroutine assign_slices_f_vec(slices,f,ind,ncomp)
 !
 !  Copying of multi-component data from f-array to arrays assigned to the slice pointers 
-!  according to slice selection switches.
+!  according to slice selection switches. If ncomp is not present the quantity
+!  in f(:,:,:,ind:ind+2) is considered a proper vector (to be transformed in
+!  Yin-Yang context), otherwise a general multi-component quantity (not to be
+!  transformed).
 !
 !  12-apr-17/MR: coded 
 !
@@ -135,7 +138,7 @@ module Slices_methods
       slices%index=slices%index+1
 
       if (lwrite_slice_yz) then
-        if (lyang.and.slices%index>=2) then
+        if (lyang.and..not.present(ncomp).and.slices%index>=2) then
 !
 !  On Yang grid: transform theta and phi components of vector to Yin-grid basis.
 !  (phi component is saved in transformed for use in next call.
