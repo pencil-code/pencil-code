@@ -230,7 +230,7 @@ module Register
       use PointMasses,      only: initialize_pointmasses
       use Poisson,          only: initialize_poisson
       use Pscalar,          only: initialize_pscalar
-      use Ascalar,         only: initialize_ascalar
+      use Ascalar,          only: initialize_ascalar
       use Radiation,        only: initialize_radiation
       use Selfgravity,      only: initialize_selfgravity
       use Shear,            only: initialize_shear

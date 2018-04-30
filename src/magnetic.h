@@ -1,6 +1,4 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-  private
-
   public :: register_magnetic, initialize_magnetic
   public :: read_magnetic_init_pars, write_magnetic_init_pars
   public :: read_magnetic_run_pars,  write_magnetic_run_pars
@@ -17,7 +15,7 @@
   public :: get_bext
 
   public :: calc_mfield, idiag_bcosphz, idiag_bsinphz
-  public :: lcalc_aameanz, aamz, bbmz, jjmz
+  public :: lcalc_aameanz, lcalc_aamean, aamz, bbmz, jjmz
   public :: rescaling_magnetic
   public :: B_ext_inv
   public :: bb_unitvec_shock
@@ -29,8 +27,11 @@
   public :: expand_shands_magnetic
   public :: update_char_vel_magnetic
   public :: magnetic_after_timestep
+  public :: pushpars2c, pushdiags2c
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
   public :: lresi_dep
   public :: lcovariant_magnetic
+
+  private

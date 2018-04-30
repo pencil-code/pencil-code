@@ -32,6 +32,7 @@ module Magnetic
   logical :: lcalc_aameanz=.false., lcalc_aamean=.false.
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcovariant_magnetic=.false.
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   integer :: idiag_axmz=0,idiag_aymz=0
   integer :: idiag_bxmz=0,idiag_bymz=0
