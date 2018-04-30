@@ -179,7 +179,7 @@ if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indphl, i2buf,i3buf=', 
       indth=indcoeffs%inds(ith,iph,1)
       indph=indcoeffs%inds(ith,iph,2)
 
-      if (indth==0 .or. indph==0) return
+      if (indth<-1 .or. indph<-1) return    ! point at (ith,iph) not caught by calling proc.
 
       if (size(buffer,4)==3) then
 !
@@ -611,6 +611,90 @@ if (abs(qth)>1..or.abs(qph)>1.) print*, 'iproc_world, sum=', iproc_world,qth,qph
 if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
     endsubroutine prep_quadspline_interp
 !***********************************************************************
+    function qualify_position_biquin(ind,nl,nu,lrestr_par_low,lrestr_par_up,lrestr_perp) result (qual)
+!
+! Qualifies the position of a point w.r.t the neighboring processors for quintic
+! interpolation (six-points-stencil).
+! If the calling proc is the first (lrestr_par_low=T) or last (lrestr_par_up)
+! proc in the considered direction, a position near the margin of its domain is
+! not special, likewise not if it is not the first or last in the perpendicular
+! direction (lrestr_perp=F).
+!
+      integer, intent(IN) :: ind, nl, nu
+      logical, intent(IN) :: lrestr_par_low,lrestr_par_up,lrestr_perp
+      integer :: qual
+
+      if (ind==nl-2) then       ! in penultimate grid cell of left neighbor's domain
+        qual=LNEIGH2
+      elseif (ind==nl-1) then   ! in last grid cell of left neighbor's domain
+        qual=LNEIGH
+      elseif (ind==nl) then     ! in gap to left neighbor's domain
+        qual=LGAP
+      elseif (ind==nl+1.and..not.lrestr_par_low.and.lrestr_perp) then  ! in first grid cell of calling proc
+        qual=LMARG
+      elseif (ind==nl+2.and..not.lrestr_par_low.and.lrestr_perp) then  ! in second grid cell of calling proc 
+        qual=LMARG2
+      elseif (ind==nu-1.and..not.lrestr_par_up.and.lrestr_perp) then   ! in penultimate grid cell of calling proc
+        qual=RMARG2
+      elseif (ind==nu.and..not.lrestr_par_up.and.lrestr_perp) then     ! in last grid cell of calling proc
+        qual=RMARG
+      elseif (ind==nu+1) then   ! in gap to right neighbor's domain
+        qual=RGAP
+      elseif (ind==nu+2) then   ! in first grid cell of right neighbor's domain
+        qual=RNEIGH
+      elseif (ind==nu+3) then   ! in second grid cell of right neighbor's domain
+        qual=RNEIGH2
+      else
+        qual=NOGAP
+      endif
+
+    endfunction qualify_position_biquin
+!***********************************************************************
+    function qualify_position_bicub(ind,nl,nu,lrestr_par_low,lrestr_par_up,lrestr_perp) result (qual)
+!
+! Qualifies the position of a point w.r.t the neighboring processors for
+! cubic interpolation (four-points-stencil).
+!
+      integer, intent(IN) :: ind, nl, nu
+      logical, intent(IN) :: lrestr_par_low,lrestr_par_up,lrestr_perp
+      integer :: qual
+
+      if (ind==nl-1) then
+        qual=LNEIGH
+      elseif (ind==nl) then
+        qual=LGAP 
+      elseif (ind==nl+1.and..not.lrestr_par_low.and.lrestr_perp) then
+        qual=LMARG
+      elseif (ind==nu.and..not.lrestr_par_up.and.lrestr_perp) then
+        qual=RMARG
+      elseif (ind==nu+1) then
+        qual=RGAP 
+      elseif (ind==nu+2) then
+        qual=RNEIGH
+      else
+        qual=NOGAP
+      endif     
+
+    endfunction qualify_position_bicub
+!***********************************************************************
+    function qualify_position_bilin(ind,nl,nu) result (qual)
+!
+! Qualifies the position of a point w.r.t the neighboring processors for
+! cubic interpolation (two-points-stencil).
+!
+      integer, intent(IN) :: ind, nl, nu
+      integer :: qual
+
+      if (ind==nl) then
+        qual=LGAP
+      elseif (ind==nu+1) then
+        qual=RGAP
+      else
+        qual=NOGAP
+      endif
+
+    endfunction qualify_position_bilin
+!***********************************************************************
     function prep_interp(thphprime,indcoeffs,itype,ngap,th_range) result (nok)
 !
 !  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
@@ -663,8 +747,11 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 
       sz1=size(thphprime,2); sz2=size(thphprime,3)
 
-      if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds,indcoeffs%coeffs)
+      if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds)
+      if (allocated(indcoeffs%coeffs)) deallocate(indcoeffs%coeffs)
+
       if (itype==BIQUAD.or.itype==BICUB.or.itype==BIQUIN.or.itype==QUADSPLINE) then
+        if (allocated(indcoeffs%pcoors)) deallocate(indcoeffs%pcoors,indcoeffs%icoors,indcoeffs%igaps)
         allocate(indcoeffs%inds(sz1,sz2,4))
         allocate(indcoeffs%pcoors(sz1,sz2,2))
         allocate(indcoeffs%icoors(sz1,sz2,2))
@@ -672,7 +759,8 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
       elseif (itype==BILIN) then
         allocate(indcoeffs%inds(sz1,sz2,2))
       else
-        if (lroot) print*, 'prep_interp: Only bilinear, biquadratic and bicubic interpolations implemented'
+        if (lroot) print*, &
+          'prep_interp: Only bilinear, biquadratic, bicubic, biquintic and quadratic spline interpolations implemented!'
         stop
       endif
 !
@@ -689,39 +777,46 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !  the lower and upper cells in either the y or the z directions are included, 
 !  with exceptions for the first and last processors.
 !
-      ma=m1; me=m2
+      if (present(th_range)) then        ! this for preparation of z averages (only valid for BILIN interpol)
+        ma=m1-1; me=m2+1
+      else
+        ma=m1; me=m2
+        if (lfirst_proc_z.or.llast_proc_z) then
 
-      if (lfirst_proc_z.or.llast_proc_z) then
+          if (itype==BIQUIN) then
+            if (.not.lfirst_proc_y) ma=m1-3
+            if (.not.llast_proc_y) me=m2+3
+          elseif (itype==BICUB.or.itype==BIQUAD) then
+            if (.not.lfirst_proc_y) ma=m1-2
+            if (.not.llast_proc_y) me=m2+2
+          else     ! bilinear interpolation; quadsplines?
+            if (.not.lfirst_proc_y) ma=m1-1
+            if (.not.llast_proc_y) me=m2+1
+          endif
 
-        if (itype==BIQUIN) then
-          if (.not.lfirst_proc_y) ma=m1-3
-          if (.not.llast_proc_y) me=m2+3
-        elseif (itype==BICUB) then
-          if (.not.lfirst_proc_y) ma=m1-2
-          if (.not.llast_proc_y) me=m2+2
-        else
-          if (.not.lfirst_proc_y) ma=m1-1
-          if (.not.llast_proc_y) me=m2+1
         endif
-
       endif
 !
 !  Likewise for z direction.
 !
-      na=n1; ne=n2
-      if (lfirst_proc_y.or.llast_proc_y) then
+      if (present(th_range)) then        ! this for preparation of z averages (only valid for BILIN interpol)
+        na=n1-1; ne=n2+1
+      else
+        na=n1; ne=n2
+        if (lfirst_proc_y.or.llast_proc_y) then
 
-        if (itype==BIQUIN) then
-          if (.not.lfirst_proc_z) na=n1-3
-          if (.not.llast_proc_z) ne=n2+3
-        elseif (itype==BICUB) then
-          if (.not.lfirst_proc_z) na=n1-2
-          if (.not.llast_proc_z) ne=n2+2
-        else
-          if (.not.lfirst_proc_z) na=n1-1
-          if (.not.llast_proc_z) ne=n2+1
+          if (itype==BIQUIN) then
+            if (.not.lfirst_proc_z) na=n1-3
+            if (.not.llast_proc_z) ne=n2+3
+          elseif (itype==BICUB.or.itype==BIQUAD) then
+            if (.not.lfirst_proc_z) na=n1-2
+            if (.not.llast_proc_z) ne=n2+2
+          else
+            if (.not.lfirst_proc_z) na=n1-1
+            if (.not.llast_proc_z) ne=n2+1
+          endif
+
         endif
-
       endif
 
       do ip=1,sz1
@@ -729,7 +824,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !
 !  For all points in strip,
 !
-          okt=.false.; okp=.false.; igapt=NOGAP; igapp=NOGAP
+          okt=.false.; okp=.false.
           if ( y(ma)<=thphprime(1,ip,jp) ) then
 !
 !  detect between which y lines it lies.
@@ -737,26 +832,12 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
             do indth=ma+1,me
               if ( y(indth)>=thphprime(1,ip,jp) ) then
                 okt=.true.
-                if (indth==m1-2) then
-                  igapt=LNEIGH2
-                elseif (indth==m1-1) then
-                  igapt=LNEIGH
-                elseif (indth==m1) then
-                  igapt=LGAP
-                elseif (indth==m1+1.and..not.lfirst_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
-                  igapt=LMARG
-                elseif (indth==m1+2.and..not.lfirst_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
-                  igapt=LMARG2
-                elseif (indth==m2-1.and..not.llast_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
-                  igapt=RMARG2
-                elseif (indth==m2.and..not.llast_proc_y.and.(lfirst_proc_z.or.llast_proc_z)) then
-                  igapt=RMARG
-                elseif (indth==m2+1) then
-                  igapt=RGAP
-                elseif (indth==m2+2) then
-                  igapt=RNEIGH
-                elseif (indth==m2+3) then
-                  igapt=RNEIGH2
+                if (itype==BIQUIN) then
+                  igapt=qualify_position_biquin(indth,m1,m2,lfirst_proc_y,llast_proc_y,lfirst_proc_z.or.llast_proc_z) 
+                elseif (itype==BICUB.or.itype==BIQUAD) then
+                  igapt=qualify_position_bicub(indth,m1,m2,lfirst_proc_y,llast_proc_y,lfirst_proc_z.or.llast_proc_z) 
+                else
+                  igapt=qualify_position_bilin(indth,m1,m2)
                 endif
                 exit
               endif
@@ -770,28 +851,14 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !
               do indph=na+1,ne
                 if ( z(indph)>=thphprime(2,ip,jp) ) then
-                  indcoeffs%inds(ip,jp,1:2) = (/indth,indph/)
                   okp=.true.
-                  if (indph==n1-2) then
-                    igapp=LNEIGH2
-                  elseif (indph==n1-1) then
-                    igapp=LNEIGH
-                  elseif (indph==n1) then
-                    igapp=LGAP
-                  elseif (indph==n1+1.and..not.lfirst_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
-                    igapp=LMARG
-                  elseif (indph==n1+2.and..not.lfirst_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
-                    igapp=LMARG2
-                  elseif (indph==n2-1.and..not.llast_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
-                    igapp=RMARG2
-                  elseif (indph==n2.and..not.llast_proc_z.and.(lfirst_proc_y.or.llast_proc_y)) then
-                    igapp=RMARG
-                  elseif (indph==n2+1) then
-                    igapp=RGAP
-                  elseif (indph==n2+2) then
-                    igapp=RNEIGH
-                  elseif (indph==n2+3) then
-                    igapp=RNEIGH2
+                  indcoeffs%inds(ip,jp,1:2) = (/indth,indph/)
+                  if (itype==BIQUIN) then
+                    igapp=qualify_position_biquin(indph,n1,n2,lfirst_proc_z,llast_proc_z,lfirst_proc_y.or.llast_proc_y)
+                  elseif (itype==BICUB.or.itype==BIQUAD) then
+                    igapp=qualify_position_bicub(indph,n1,n2,lfirst_proc_z,llast_proc_z,lfirst_proc_y.or.llast_proc_y)
+                  else
+                    igapp=qualify_position_bilin(indph,n1,n2)
                   endif
 !if (.not.lyang.and.(igapt/=0 .or. igapp/=0)) & 
 !  print'(a,3(i3,1x),4(f8.3,1x))', 'iproc,inds,gridcoors,pointcoors=', iproc, indth,indph, y(indth), z(indph), thphprime(:,ip,jp)
@@ -824,7 +891,21 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 
             nok=nok+1
             if (present(ngap)) then
-              if (igapt/=NOGAP .or. igapp/=NOGAP) ngap=ngap+1
+              if (igapt/=NOGAP .neqv. igapp/=NOGAP) then
+!
+! If the position of the point is special w.r.t. exatcly one direction, it is
+! detected by two processors (finally a division by four is performed by the
+! caller!).
+!
+                ngap=ngap+2
+              elseif (igapt/=NOGAP .and. igapp/=NOGAP) then
+!
+! If the position of the point is special w.r.t. both directions, it would be
+! detected by four processors, but this can only happen if in the theta direction
+! there are only two processors.
+!
+                ngap=ngap+1
+              endif
             endif
 !
 !  Calculate interpolation weights.
@@ -851,6 +932,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
                 indcoeffs%coeffs2=0.
               endif
               call prep_biquint_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,igapt,igapp)
+
             elseif (itype==QUADSPLINE) then
 
               if (.not.allocated(indcoeffs%coeffs2)) then
@@ -860,7 +942,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 
               call prep_quadspline_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
 
-            else
+            else      ! bilinear interpolation
 
               if (.not.allocated(indcoeffs%coeffs)) then
                 allocate(indcoeffs%coeffs(sz1,sz2,4))
@@ -875,6 +957,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 
               indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
 
+!if (igapt/=0 .and. igapp/=0) print*, 'ip,jp, igapt, igapp, thphprime=', ip,jp, igapt, igapp, thphprime(:,ip,jp)
               if (igapt==LGAP) then
                 indcoeffs%coeffs(ip,jp,1:2) = 0.
               elseif (igapt==RGAP) then
@@ -981,7 +1064,8 @@ if (l0) l0=.false.
       use Cdata, only: lroot
       !use Messages, only: warning
 
-      type(ind_coeffs) :: intcoeffs,indweights
+      type(ind_coeffs), intent(IN) :: intcoeffs
+      type(ind_coeffs), intent(OUT):: indweights
 
       integer :: mm, nn, i, j, indth, indph, dindth, dindph, sz1, sz2, thpos, ith, ithmax
       real :: coeff
@@ -1007,7 +1091,7 @@ if (l0) l0=.false.
              do j=1,sz2
 
                indth=intcoeffs%inds(i,j,1); indph=intcoeffs%inds(i,j,2)
-               if (indth==0) cycle
+               if (indth<-1) cycle
 !
 !  Iterate over all points (i,j) of the strip for which interpolation is (potentially) performed as
 !  they lie within the local grid. (indth,indph) refers to the grid point which
@@ -1062,17 +1146,9 @@ if (l0) l0=.false.
 !  coefficient = weight.
 !              
                  if (dindth==1) then
-                   if (dindph==1) then
-                     coeff=intcoeffs%coeffs(i,j,1)
-                   else
-                     coeff=intcoeffs%coeffs(i,j,2)
-                   endif
+                   coeff=intcoeffs%coeffs(i,j,2-dindph)
                  else
-                   if (dindph==1) then
-                     coeff=intcoeffs%coeffs(i,j,3)
-                   else
-                     coeff=intcoeffs%coeffs(i,j,4)
-                   endif
+                   coeff=intcoeffs%coeffs(i,j,4-dindph)
                  endif
 !
 !  Accumulate weights.
@@ -1082,7 +1158,7 @@ if (l0) l0=.false.
                endif
              enddo
            enddo
-           ithmax=max(ith,ithmax)
+           ithmax=max(ith,ithmax)    ! not needed
          enddo
        enddo
 !print*, 'iproc,ithmax=', iproc_world,ithmax
