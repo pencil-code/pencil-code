@@ -1878,7 +1878,7 @@ module Magnetic
         case ('B_ext_from_file')
           allocate(ap(mx,my,mz,3))
           call input_snap('ap.dat',ap,3,0)
-          call input_snap_finalize()
+          call input_snap_finalize
 !
 ! Here we use only first component of b_ext to scale the initial vector
 ! potential. b_ext is a slowly varying function of time.
@@ -8525,6 +8525,8 @@ module Magnetic
         if (lremove_volume_average) call remove_volume_average(f)
       endif
 !
+      call keep_compiler_quiet(dtsub)
+
     endsubroutine magnetic_after_timestep
 !***********************************************************************
     subroutine keplerian_gauge(f)
@@ -8770,5 +8772,40 @@ module Magnetic
       endif gentle
 !
     endsubroutine get_bext
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(eta,p_par(1))
+
+    endsubroutine pushpars2c
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    use Diagnostics, only: set_type
+
+    integer, parameter :: n_diags=8
+    integer(KIND=ikind8), dimension(n_diags) :: p_diag
+
+    call copy_addr_c(idiag_brms,p_diag(1))
+    call set_type(idiag_brms,lsqrt=.true.)
+    call copy_addr_c(idiag_bmax,p_diag(2))
+    call set_type(idiag_bmax,lmax=.true.)
+    call copy_addr_c(idiag_bxmin,p_diag(3))
+    call set_type(idiag_bxmin,lmin=.true.)
+    call copy_addr_c(idiag_bymin,p_diag(4))
+    call set_type(idiag_bymin,lmin=.true.)
+    call copy_addr_c(idiag_bzmin,p_diag(5))
+    call set_type(idiag_bzmin,lmin=.true.)
+    call copy_addr_c(idiag_bxmax,p_diag(6))
+    call set_type(idiag_bxmax,lmax=.true.)
+    call copy_addr_c(idiag_bymax,p_diag(7))
+    call set_type(idiag_bymax,lmax=.true.)
+    call copy_addr_c(idiag_bzmax,p_diag(8))
+    call set_type(idiag_bzmax,lmax=.true.)
+
+    endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Magnetic
