@@ -36,6 +36,7 @@ module Magnetic
   implicit none
 !
   include 'magnetic.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
 !  Initialization parameters
 !
