@@ -47,8 +47,8 @@ if (! $?_sourceme) then		# called for the fist time?
     if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"
     set path = ( $path $PENCIL_HOME/bin \
                        $PENCIL_HOME/utils \
-                       $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel \
+                       $PENCIL_HOME/src/scripts \
 		       $PENCIL_HOME/remesh/bin)
 
 		       #  Set path for DX macros
