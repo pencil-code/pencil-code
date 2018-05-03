@@ -468,7 +468,7 @@ link_cuda_files()
   for file in $to_link
   do 
 #    ln -s $file ${file:$len}
-    file=`echo $file | sed -r 's/^.*src_new\///'`
+    ln -s $file `echo $file | sed -r 's/^.*src_new\///'`
   done
 
   cd $old_dir
