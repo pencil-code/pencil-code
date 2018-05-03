@@ -60,7 +60,7 @@ link_src_files()
   n=0
   to_link=
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
-              $srcdir/Makefile.src $srcdir/Makefile.depend $srcdir/gpu.sed\
+              $srcdir/Makefile.src $srcdir/Makefile.depend \
               $srcdir/Makefile.library $srcdir/Makefile.machine \
               $srcdir/*.h $srcdir/scripts $srcdir/*.sed $srcdir/.cvsignore
   do
@@ -468,7 +468,6 @@ link_cuda_files()
   for file in $to_link
   do 
     ln -s $file ${file:$len}
-#echo links $file to ${file:$len}
   done
 
   cd $old_dir
@@ -477,7 +476,8 @@ link_cuda_files()
 file_for_link()
 {
     if [ -f $1 ] || [ -d $1 ]; then
-      relname=${1:$len}
+#      relname=${1:$len}
+      relname=`echo $file | sed -r 's/^.*src_new\///'`
       if [ -h $relname ]; then
         rm -f $relname
         to_link="$to_link $1"
