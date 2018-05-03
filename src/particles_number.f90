@@ -25,7 +25,7 @@ module Particles_number
 !
   include 'particles_number.h'
 !
-  real :: np_swarm0=1.0, rhop_swarm0=1.0
+  real :: np_swarm0=1.0, rhop_swarm0=1.0, np_swarm0_luck=1.0
   real :: vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   real :: birthring_inner=0.0, birthring_outer=huge1
@@ -42,7 +42,8 @@ module Particles_number
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
-      deltavp22_floor, lfragmentation_par, tstart_fragmentation_par, cdtpf
+      deltavp22_floor, lfragmentation_par, tstart_fragmentation_par, cdtpf, &
+      np_swarm0_luck
 !
   namelist /particles_number_run_pars/ &
       initnpswarm, vthresh_coagulation, deltavp22_floor, &
@@ -155,6 +156,19 @@ module Particles_number
           endif
           fp(npar_low:npar_high,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
               (four_pi_rhopmat_over_three*fp(npar_low:npar_high,iap)**3)
+        case ('constant_luck')
+          if (lroot.and.initial) then
+            print*, 'init_particles_number: constant internal number, luck'
+            print*, 'init_particles_number: np_swarm0=', np_swarm0
+            print*, 'init_particles_number: np_swarm0_luck=', np_swarm0_luck
+          endif
+          do k = npar_low,npar_high
+            if (ipar(k) == 1) then
+              fp(k,inpswarm) = np_swarm0_luck
+            else
+              fp(k,inpswarm) = np_swarm0
+            endif
+          enddo
         endselect
       enddo
 !
