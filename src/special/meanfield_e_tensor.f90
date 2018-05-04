@@ -233,7 +233,7 @@ module Special
 !!      iqp=npvar+1
 !!      npvar=npvar+1
 !
-    endsubroutine register_particles_special
+    endsubroutine register_particles_special 
 !***********************************************************************
     subroutine initialize_special(f)
 !
@@ -1155,57 +1155,59 @@ module Special
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
-!
-! Calculate advec_special
-!
-        if (lalpha) then
-          tmppencil=0
-          call dot_mn_vm(dline_1, p%alpha_coefs, tmppencil)
-          advec_special=advec_special+&
-                            tmppencil(:,1)+& 
-                            tmppencil(:,2)+& 
-                            tmppencil(:,3)
-        end if
-        if (lgamma) then
-          tmppencil=0
-          call dot_mn(dline_1, p%gamma_coefs, tmpline)
-          advec_special=advec_special+tmpline
-        end if
-        if (lutensor) then
-          tmppencil=0
-          call dot_mn(dline_1, p%utensor_coefs, tmpline)
-          advec_special=advec_special+tmpline
-        end if
-!
-! Calculate diffus_special
-!
-        if (lbeta) then
-          tmppencil=0
-          tmpline=0
-          call dot_mn_vm(dline_1,p%beta_coefs, tmppencil)
-          call dot_mn(dline_1, tmppencil, tmpline)
-          diffus_special=diffus_special+tmpline
-        end if
-        
-        if (ldelta) then
-          tmppencil=0
-          tmpline=0
-          call cross_mn(dline_1,p%delta_coefs, tmppencil)
-          call dot_mn(dline_1,tmppencil,tmpline)
-          diffus_special=diffus_special+tmpline
-        end if
-        
-        if (lkappa) then
-          tmppencil=0
-          tmpline=0
-          tmptensor=0
-          call vec_dot_3tensor(dline_1, p%kappa_coefs, tmptensor)
-          call dot_mn_vm(dline_1,tmptensor, tmppencil)
-          diffus_special=diffus_special+&
-                            tmppencil(:,1)+& 
-                            tmppencil(:,2)+& 
-                            tmppencil(:,3)
-        end if
+! Commenting this as advec_special seems to be have been removed from equ.f90
+!!
+!! Calculate advec_special
+!!
+!        if (lalpha) then
+!          tmppencil=0
+!          call dot_mn_vm(dline_1, p%alpha_coefs, tmppencil)
+!          advec_special=advec_special+&
+!                            tmppencil(:,1)+& 
+!                            tmppencil(:,2)+& 
+!                            tmppencil(:,3)
+!        end if
+!        if (lgamma) then
+!          tmppencil=0
+!          call dot_mn(dline_1, p%gamma_coefs, tmpline)
+!          advec_special=advec_special+tmpline
+!        end if
+!        if (lutensor) then
+!          tmppencil=0
+!          call dot_mn(dline_1, p%utensor_coefs, tmpline)
+!          advec_special=advec_special+tmpline
+!        end if
+! Commenting this as diffus_special seems to have been removed from equ.f90
+!!
+!! Calculate diffus_special
+!!
+!        if (lbeta) then
+!          tmppencil=0
+!          tmpline=0
+!          call dot_mn_vm(dline_1,p%beta_coefs, tmppencil)
+!          call dot_mn(dline_1, tmppencil, tmpline)
+!          diffus_special=diffus_special+tmpline
+!        end if
+!        
+!        if (ldelta) then
+!          tmppencil=0
+!          tmpline=0
+!          call cross_mn(dline_1,p%delta_coefs, tmppencil)
+!          call dot_mn(dline_1,tmppencil,tmpline)
+!          diffus_special=diffus_special+tmpline
+!        end if
+!        
+!        if (lkappa) then
+!          tmppencil=0
+!          tmpline=0
+!          tmptensor=0
+!          call vec_dot_3tensor(dline_1, p%kappa_coefs, tmptensor)
+!          call dot_mn_vm(dline_1,tmptensor, tmppencil)
+!          diffus_special=diffus_special+&
+!                            tmppencil(:,1)+& 
+!                            tmppencil(:,2)+& 
+!                            tmppencil(:,3)
+!        end if
       end if 
     endsubroutine special_calc_magnetic
 !***********************************************************************
@@ -1305,6 +1307,19 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_after_boundary
+!***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !
 !  Possibility to modify the f and df after df is updated.
@@ -1312,16 +1327,35 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
 !
-      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
 !
-    endsubroutine  special_after_timestep
+    endsubroutine special_after_timestep
 !***********************************************************************
-subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
+    subroutine special_particles_after_dtsub(f, dtsub, fp, ineargrid)
+!
+!  Possibility to modify fp in the end of a sub-time-step.
+!
+!  27-feb-18/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dtsub
+      real, dimension(:,:), intent(in) :: fp
+      integer, dimension(:,:), intent(in) :: ineargrid
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(dtsub)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine special_particles_after_dtsub
+!***********************************************************************
+    subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
@@ -1397,8 +1431,8 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-        call fatal_error('openDataset','Error creating memory mapping & 
-                          for /emftensor/'//trim(datagroup)//'/'//trim(dataname))
+        call fatal_error('openDataset','Error creating memory mapping '// & 
+                          'for /emftensor/'//trim(datagroup)//'/'//trim(dataname))
       end if
 
     end subroutine openDataset
