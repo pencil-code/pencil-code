@@ -375,7 +375,7 @@ module Particles_drag
 !  Calculates the velocity change of each particle under the gas drag
 !  and rotation.
 !
-!  11-dec-15/ccyang: coded.
+!  05-may-18/ccyang: coded.
 !
 !  Input Arguments:
 !      vx       x-component of the initial velocities of the particles.
@@ -391,29 +391,38 @@ module Particles_drag
       real, intent(in) :: ux, uy, dt
       real, dimension(:), intent(out) :: dvx, dvy
 !
-      real, dimension(size(vx)) :: vx0, vy0
-      real :: x, y, z
-!
-!  Find the velocity deviations of the particles from the terminal
-!  velocity.
-!
-      vx0 = vx - oneplustaus2inv * (ux + twotaus * uy)
-      vy0 = vy - oneplustaus2inv * (uy - twominusqtaus * ux)
-!
-!  Find the decay factor.
-!
-      z = exp(-dt / tdrag)
+      real :: cosot, sinot1, sinot2
+      real :: x, y, vxe, vye, vx0, vy0
 !
 !  Find the epicycle.
 !
-      y = epicycle_freq * dt
-      x = 1.0 - z * cos(y)
-      y = z * sin(y)
+      x = epicycle_freq * dt
+      cosot = cos(x)
+      y = sin(x)
+      sinot1 = epicycle_ratio * y
+      sinot2 = y / epicycle_ratio
 !
-!  Find the velocity change of the particle.
+!  Find the decay factor.
 !
-      dvx = -x * vx0 + y * epicycle_ratio * vy0
-      dvy = -x * vy0 - y / epicycle_ratio * vx0
+      y = exp(-dt / tdrag)
+      x = 1.0 - y
+!
+!  Find the terminal velocity.
+!
+      vye = -oneplustaus2inv * dv_gas
+      vxe = twotaus * vye
+!
+      vx0 = vxe + (x * ux - y * vxe) * cosot + (x * (uy + dv_gas) - y * vye) * sinot1
+      vy0 = vye + (x * (uy + dv_gas) - y * vye) * cosot - (x * ux - y * vxe) * sinot2
+!
+!  Find the velocity changes of the particles.
+!
+      x = 1.0 - y * cosot
+      sinot1 = y * sinot1
+      sinot2 = y * sinot2
+!
+      dvx = vx0 - (x * vx - vy * sinot1)
+      dvy = vy0 - (x * vy + vx * sinot2)
 !
     endsubroutine drag_particle_omega
 !***********************************************************************
