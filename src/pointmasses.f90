@@ -1630,7 +1630,7 @@ module PointMasses
 !
       intent(out) :: accg
 !
-      if (lfirstcall) &
+      if (lfirstcall.and.lroot) &
           print*,'Adding gas+dust gravity to the massive particles'
 !
 !  Sanity check
