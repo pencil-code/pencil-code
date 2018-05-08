@@ -1,7 +1,7 @@
-#
-# The __init__ file is used not only to import the sub-modules, but also to
-# set everything up properly.
-#
+'''
+The __init__ file is used not only to import the sub-modules, but also to
+set everything up properly.
+'''
 
 # Load sub-modules.
 from . import io           # input und output functions, like save data or call IDL scripts
@@ -41,12 +41,15 @@ def check_dependencies():
     import importlib
     from itertools import compress
 
-    dependencies = ['vtk' ,'tqdm']
+    dependencies = ['vtk', 'tqdm']
 
     not_found = [importlib.util.find_spec(dep) is None for dep in dependencies]
     missing_dependencies = list(compress(dependencies, not_found))
 
-    print('? WARNING: The following python modules have not been found. Full functionallity may not be granted!')
+    print('WARNING: The following python modules have not been found. \
+          Full functionallity may not be granted!')
 
-    if 'vtk' in missing_dependencies: print('? Try to install the python-vtk module. But this is outdated anyway, check out pyevtk, its much better anyway!')
-    if 'tqdm' in missing_dependencies: print('? Check out https://github.com/tqdm/tqdm')
+    if 'vtk' in missing_dependencies:
+        print('Warning: vtk missing. Try to install the python-vtk or pyevtk module.')
+    if 'tqdm' in missing_dependencies:
+        print('Warning: tqdm missing. Check out https://github.com/tqdm/tqdm')
