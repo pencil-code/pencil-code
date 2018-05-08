@@ -1,8 +1,6 @@
-################
-##
-##	math
-##
-################
+'''
+Basic mathematical operators, including derivatives.
+'''
 
 from .vector_multiplication import dot
 from .vector_multiplication import dot2
