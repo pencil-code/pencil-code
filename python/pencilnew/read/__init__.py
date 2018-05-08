@@ -1,8 +1,6 @@
-################
-##
-##	read
-##
-################
+'''
+Reading routines for the pencil code data.
+'''
 
 from .dim import dim
 from .pdim import pdim, __Pdim__
