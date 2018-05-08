@@ -14,16 +14,20 @@ def aver(*args, **kwargs):
 
     call signature:
 
-    read(self, plane_list=['xy', 'xz', 'yz'], datadir='data'):
+    read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1):
 
     Keyword arguments:
 
     *plane_list*:
-      A list of the planes over which the averages were taken.
-      Takes 'xy', 'xz', 'yz', 'y', 'z'
+      A list of the 2d/1d planes over which the averages were taken.
+      Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
     *datadir*:
       Directory where the data is stored.
+
+    *proc*:
+      Processor to be read. If -1 read all and assemble to one array.
+      Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
     """
 
     averages_tmp = Averages()
@@ -52,13 +56,13 @@ class Averages(object):
 
         call signature:
 
-        read(self, plane_list=['xy', 'xz', 'yz'], datadir='data'):
+        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1):
 
         Keyword arguments:
 
         *plane_list*:
-          A list of the planes over which the averages were taken.
-          Takes 'xy', 'xz', 'yz', 'y', 'z'
+          A list of the 2d/1d planes over which the averages were taken.
+          Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
         *datadir*:
           Directory where the data is stored.
@@ -134,6 +138,8 @@ class Averages(object):
         del(raw_data)
         del(ext_object)
 
+        return 0
+
 
     def __equal_newline(self, line):
         """
@@ -152,7 +158,7 @@ class Averages(object):
         import os
         import numpy as np
         from scipy.io import FortranFile
-        from pencilnew import read
+        from .. import read
 
         if proc < 0:
             proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
@@ -161,14 +167,13 @@ class Averages(object):
             proc_dirs = ['proc' + str(proc)]
 
         dim = read.dim(datadir, proc)
-        if dim.precision=='S':
+        if dim.precision == 'S':
             dtype = np.float32
-        if dim.precision=='D':
+        if dim.precision == 'D':
             dtype = np.float64
 
         # Prepare the raw data.
         # This will be reformatted at the end.
-
         raw_data = []
         for directory in proc_dirs:
             proc = int(directory[4:])
@@ -177,7 +182,11 @@ class Averages(object):
             # Read the data.
             t = []
             proc_data = []
-            file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
+            try:
+                file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
+            except:
+                # Not all proc dirs have a [yz]averages.dat.
+                break
             while True:
                 try:
                     t.append(file_id.read_record(dtype=dtype)[0])
@@ -195,7 +204,6 @@ class Averages(object):
                 pnu = proc_dim.nx
                 pnv = proc_dim.ny
             proc_data = np.array(proc_data)
-            print(proc_data.shape, len(t), n_vars, pnv, pnu)
             proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
             # Add the proc_data (one proc) to the raw_data (all procs)
