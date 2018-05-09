@@ -91,11 +91,12 @@ module InitialCondition
 !  Initialize logarithmic density. init_lnrho will take care of
 !  converting it to linear density if you use ldensity_nolog.
 !
-!  20-nov-13/ccyang: coded
+!  09-may-18/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      call shocktube(f, ilnrho, log(rho_left), log(rho_right))
+      call shocktube(f, ilnrho, 1.0 / rho_left, 1.0 / rho_right)
+      f(:,:,:,ilnrho) = -log(f(:,:,:,ilnrho))
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
