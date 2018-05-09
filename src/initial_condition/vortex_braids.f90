@@ -97,7 +97,7 @@ module InitialCondition
         enddo
     enddo
 
-    f(:,:,:,iux:iuz) = uu
+    f(:,:,:,iux:iuz) = ampl*uu
 !
 !     if (n_blobs > 0) then
 !       do j=1,n_blobs
