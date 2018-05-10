@@ -983,6 +983,16 @@ module power_spectrum
         if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
       endif
 !
+!  Gravitational wave power spectra (breathing mode; diagonal components of gij)
+!  Also compute production of hij, i.e., hij*gij^*
+!
+    elseif (sp=='GWd') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hij)
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gij)
+      a_im=0.
+      b_im=0.
+!
 !  spectrum of u.b
 !
     elseif (sp=='u.b') then
@@ -1407,7 +1417,7 @@ module power_spectrum
   spectrumhel=0.
   spectrumhel_sum=0.
 !
-!  Gravitational wave tensor (spectra of L*L^*)
+!  Gravitational wave tensor (spectra of g*g^* for gT and gX, where g=hdot)
 !
   if (sp=='GWs') then
     if (iggX>0) then
@@ -1422,6 +1432,9 @@ module power_spectrum
     endif
     a_im=0.
     b_im=0.
+!
+!  Gravitational wave tensor (spectra of h*h^* for hT and hX)
+!
   elseif (sp=='GWh') then
     if (ihhX>0) then
       a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
@@ -1435,6 +1448,10 @@ module power_spectrum
     endif
     a_im=0.
     b_im=0.
+!
+!  Gravitational wave stress tensor (only if lStress_as_aux is requested)
+!  Note: for aux_stress='d2hdt2', the stress is replaced by GW_rhs.
+!
   elseif (sp=='Str') then
     if (iStressX>0) then
       a_re=f(l1:l2,m1:m2,n1:n2,iStressX)

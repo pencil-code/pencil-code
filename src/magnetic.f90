@@ -1541,6 +1541,7 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real, dimension (nx) :: beq2_pencil, prof, tmpx
+      real, dimension (nx,ny) :: ax, ay
       real, dimension(3) :: b_ext
       real, dimension (:,:,:,:), allocatable :: ap
       real, dimension (:,:), allocatable :: yz
@@ -1875,6 +1876,12 @@ module Magnetic
             f(l1:l2,m,n,iglobal_by_ext) = dipole_moment *   (c*sinth(m) - s*costh(m)*cos(z(n)))/x(l1:l2)**3
             f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)))                      /x(l1:l2)**3
           enddo;enddo
+        case ('Axy_from_file') !(prelim version to set Ax,Ay on one proc)
+          open(1,file='Axy.dat',form='unformatted')
+          read(1) ax,ay
+          close(1)
+          f(l1:l2,m1:m2,n1,iax)=ax
+          f(l1:l2,m1:m2,n1,iay)=ay
         case ('B_ext_from_file')
           allocate(ap(mx,my,mz,3))
           call input_snap('ap.dat',ap,3,0)
