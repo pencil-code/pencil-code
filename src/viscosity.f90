@@ -2154,7 +2154,7 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(df,p,Hmax)
 !
-!  Calculate viscous heating term for right hand side of entropy equation.
+!  Add viscous heating term to the right hand side of entropy equation.
 !
 !  20-nov-02/tony: coded
 !
