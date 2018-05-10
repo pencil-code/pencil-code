@@ -14,6 +14,7 @@
 %%   anelastic.f90
 %%   bfield.f90
 %%   chemistry.f90
+%%   chemistry_simple.f90
 %%   chiral_fluids.f90
 %%   chiral_fluids_gradtheta.f90
 %%   chiral_mhd.f90
@@ -43,6 +44,7 @@
 %%   shock.f90
 %%   shock_highorder.f90
 %%   solar_corona.f90
+%%   solid_cells_CGEO.f90
 %%   solid_cells_reactive.f90
 %%   temperature_idealgas.f90
 %%   temperature_ionization.f90
@@ -674,6 +676,10 @@
 \midrule
   \var{dtchem}    & $dt_{chem}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{chemistry_simple.f90}} \\
+\midrule
+  \var{dtchem}    & $dt_{chem}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{chiral_fluids.f90}} \\
 \midrule
   \var{mu5m}      & $\left<\mu_5\right>$ \\
@@ -699,7 +705,16 @@
 \midrule
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
-  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$F \\
+  \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{gmu5mx}    & $\left<\nabla\mu_5\right>_x$ \\
+  \var{gmu5my}    & $\left<\nabla\mu_5\right>_y$ \\
+  \var{gmu5mz}    & $\left<\nabla\mu_5\right>_z$ \\
+  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{dt_mu5_1}  & $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ \\
+  \var{dt_mu5_2}  & $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ \\
+  \var{dt_mu5_3}  & $\delta x^2/D_5$ \\
+  \var{dt_bb_1}   & $\delta x /(\eta \mathrm{max}(\mu_5))$ \\
+  \var{dt_chiral} & total time-step contribution from chiral MHD \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -1211,6 +1226,9 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{mag_flux}  & Total vertical magnetic flux at \\
+\midrule
+  \multicolumn{2}{c}{Module \file{solid_cells_CGEO.f90}} \\
+\midrule
 \midrule
   \multicolumn{2}{c}{Module \file{solid_cells_reactive.f90}} \\
 \midrule

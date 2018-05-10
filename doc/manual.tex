@@ -74,7 +74,7 @@
 %\usepackage{ae}                 % To get good PDF with the T1 encoding
 \usepackage{newcent,helvet}
 \renewcommand{\ttdefault}{cmtt} % Courier is too broad
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,bm}
 
 \usepackage[it,footnotesize]{caption2}
 \setlength{\abovecaptionskip}{5pt} % Space before caption
@@ -319,6 +319,7 @@
 \newcommand{\jv}            {\vec{j}}
 \newcommand{\kv}            {\vec{k}}
 \newcommand{\uv}            {\vec{u}}
+\newcommand{\vv}            {\vec{v}}
 \newcommand{\qv}            {\vec{q}}
 \newcommand{\bv}            {\vec{b}}
 \newcommand{\xv}            {\vec{x}}
@@ -5623,6 +5624,202 @@ This is a rapidly evolving field and we refer the interested reader to
 recent papers in this field, e.g.\ by Sur et al.\ (2008) or
 Brandenburg et al.\ (2008).
 For technical details, see also Sect.~\ref{RestartingFromLessPhysics}.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Gravitational wave equations}
+\index{Gravitational Waves}
+
+\def\SX{S_\times}
+\def\ST{S_+}
+\def\hX{h_\times}
+\def\hT{h_+}
+\def\hX{h_\times}
+\def\thT{\tilde{h}_+}
+\def\thX{\tilde{h}_\times}
+\def\dhT{\dot{h}_+}
+\def\dhX{\dot{h}_\times}
+\def\dthT{\dot{\tilde{h}}_+}
+\def\dthX{\dot{\tilde{h}}_\times}
+\def\hrms{h_{\rm rms}}
+\def\dhrms{\dot{h}_{\rm rms}}
+\def\kGW{k_{\rm GW}}
+\def\Sh{S_{h}}
+\def\Ah{A_{h}}
+\def\Shdot{S_{\dot{h}}}
+\def\Ahdot{A_{\dot{h}}}
+\def\EEGW{{\cal E}_{\rm GW}}
+\def\EGW{E_{\rm GW}}
+\def\HGW{H_{\rm GW}}
+\def\Imag{\mbox{\rm Im}}
+\def\DD{\rm D}
+\def\ii{\rm i}
+\newcommand{\SSSS}{\mbox{\boldmath ${\sf S}$} {}}
+\def\onethird{{\textstyle{1\over3}}}
+\def\half{{\textstyle{1\over2}}}
+
+The expansion of the universe with time is described by the scale
+factor $a(\tau)$, where $\tau$ is the physical time.
+Using conformal time, $t(\tau)=\int_0^\tau\dd\tau'/a(\tau')$, and
+dependent variables that are appropriately scaled with powers of $a$,
+the hydromagnetic equations can be expressed completely without scale
+factor \cite{BEO96,Dur08}.
+This is not true, however, for the gravitational wave (GW) equations,
+where a dependence on $a$ remains \cite{Dur08}.
+The time dependence of $a$ can be modeled as a power law,
+$a\propto\tau^n$, where $n=1/2$ applies to the radiation-dominated era;
+see Table~\ref{ScaleFactor} the general relationship.
+To compare with cases where the expansion is ignored, we put $n=0$.
+
+\begin{table}[t!]\caption{
+Scale factor and conformal Hubble parameter for different values of $n$.
+}\vspace{12pt}\centerline{\begin{tabular}{cccc}
+$n$ & $a$ & ${\cal H}$ & $H$ \\
+\hline
+$0$   & $1$        & $0$      & $0$ \\
+$1/2$ & $\eta/2$   & $1/\eta$ & $1/\eta$ \\
+$2/3$ & $\eta^2/3$ & $2/\eta$ & $6/\eta^2$ \\
+\label{ScaleFactor}\end{tabular}}\end{table}
+
+In the transverse traceless (TT) gauge, the six components of the
+spatial part of the symmetric tensor characterizing the linearized
+evolution of the metric perturbations $h_{ij}$,
+reduce to two components which, in the linear polarization
+basis, are the $+$ and $\times$ polarizations.
+However, the projection onto that basis is computationally intensive,
+because it requires nonlocal operations involving Fourier transformations.
+It is therefore advantageous to evolve instead the perturbation of the metric
+tensor, $h_{ij}$, in an arbitrary gauge, compute then $h_{ij}^{\rm TT}$ in
+the TT gauge, and perform then the decomposition into the linear polarization
+basis whenever we compute diagnostic quantities such as averages or spectra.
+Thus, we solve the linearized GW equation in the form \cite{Dur08}
+\begin{equation}
+{\partial^2h_{ij}\over\partial t^2}
+=-2{\cal H}{\partial h_{ij}\over\partial t}
++c^2\nabla^2h_{ij}+{16\pi G\over a^2 c^2} T_{ij}
+\label{d2hdt}
+\end{equation}
+for the six components $1\leq i\leq j\leq3$, where $t$ is comoving time,
+$a$ is the scale factor, ${\cal H}=\dot{a}/a$ is the comoving Hubble
+parameter, $T_{ij}$ is the source term, $c$ is the speed of light,
+and $G$ is Newton's constant.
+For $n=0$, when the cosmic expansion is ignored, we have $a=1$ and
+${\cal H}=0$.
+We use the {\sc Pencil Code}; for the numerical treatment of \Eq{d2hdt}
+and equations~(\ref{dlnrhodt})--(\ref{mhd3}).
+For most of the simulations, we use $1152^3$ meshpoints on $1152$ cores
+of a Cray XC40 system with 2.3 GHz processors.
+
+The source term is chosen to be the traceless part of the stress tensor,
+\begin{equation}
+T_{ij}(\xv,t)=\rho u_i u_j - B_i B_j
+- \onethird\delta_{ij}(\rho\uv^2-\Bv^2).
+\end{equation}
+The removal of the trace is in principle not necessary, but it helps
+preventing a continuous build-up of a large trace, which would be
+numerically disadvantageous.
+We have ignored here the viscous stress, which is usually small.
+
+We compute $T_{ij}$ by solving the energy, momentum, and induction
+equations for an ultrarelativistic gas in the
+form \cite{BEO96,BKMRPTV17}
+\begin{equation}
+{\partial\ln\rho\over\partial t}=
+-\frac{4}{3}\left(\nab\cdot\uv+\uv\cdot\nab\ln\rho\right)
++{1\over\rho}\left[\uv\cdot(\Jv\times\Bv)+\eta\Jv^2\right],
+\label{dlnrhodt}
+\end{equation}
+\vspace{-6mm}
+\begin{eqnarray}
+{\DD\uv\over\DD t}\!\!&=&\!\!
+{\uv\over3}\left(\nab\cdot\uv+\uv\cdot\nab\ln\rho\right)
+-{\uv\over\rho}\left[\uv\cdot(\Jv\times\Bv)+\eta\Jv^2\right]
+\nonumber
+\\
+&&-{1\over4}\nab\ln\rho
++{3\over4\rho}\Jv\times\Bv+{2\over\rho}\nab\cdot\left(\rho\nu\SSSS\right)+\fv,
+\label{dudt}
+\end{eqnarray}
+\vspace{-6mm}
+\begin{equation}
+{\partial\Bv\over\partial t}=\nabla\times(\uv\times\Bv-\eta\Jv),
+\label{mhd3}
+\end{equation}
+where ${\bm B}=\nabla \times {\bm A}$ is the magnetic field expressed
+in terms of the magnetic vector potential to ensure that $\nab\cdot\Bv=0$,
+$\bm{J}=\bm{\nabla}\times\bm{B}$ is the current density,
+$\DD/\DD t=\partial/\partial t +\bm{u}\cdot\bm{\nabla}$
+is the advective derivative,
+${\sf S}_{ij}=\frac{1}{2}(u_{i,j}+u_{j,i})-\frac{1}{3}\delta_{ij}u_{k,k}$
+is the trace-free rate of strain tensor, and $p=\rho\cs^2$ is the pressure,
+where $\cs=c/\sqrt{3}$ is the sound speed for an ultra-relativistic gas.
+Lorentz-Heaviside units for the magnetic field are used.
+
+We are interested in the rms value of the metric tensor perturbations
+and the GW energy density in the linear polarization basis.
+To compute $h_{ij}^{\rm TT}$ from $h_{ij}$, we Fourier transform the
+six components of $h_{ij}$ and $\dot{h}_{ij}$,
+\begin{equation}
+\tilde{h}_{ij}(\kv,t)=\int h_{ij}(\xv,t)\,e^{-\ii\kv\cdot\vv} d^3x
+\quad\mbox{for $1\leq i\leq j\leq3$}
+\end{equation}
+and compute the components in the TT gauge as
+\begin{equation}
+\tilde{h}_{ij}^{\rm TT}(\kv,t)=(P_{il}P_{jm}-\half P_{ij}P_{lm})\,
+\tilde{h}_{lm}(\kv,t),
+\end{equation}
+where $P_{ij}=\delta_{ij}-\hat k_i\hat k_j$ is the projection operator,
+and $\hat{\kv}=\kv/k$ is the unit vector of $\kv$, with
+$k=|\kv|$ being the modulus.
+Next, we compute the linear polarization bases
+\begin{eqnarray}
+e^+_{ij}=e_i^1 e_j^1 - e_i^2 e_j^2,\quad
+e^\times_{ij}=e_i^1 e_j^2 + e_i^2 e_j^1,
+\end{eqnarray}
+where $e^1$ and $e^2$ are unit vectors perpendicular to $\kv$.
+Thus
+\begin{eqnarray}
+\tilde{h}_+(\kv,t) \!\!&=&\!\! \half e^+_{ij}(\kv) \, \tilde{h}_{ij}(\kv,t),\\
+\tilde\hX(\kv,t) \!\!&=&\!\! \half e^\times_{ij}(\kv) \, \tilde{h}_{ij}(\kv,t).
+\end{eqnarray}
+We then return into real space and compute
+\begin{equation}
+h_{+/\times}(\xv,t)=\int \tilde{h}_{+/\times}(\kv,t)\,e^{\ii\kv\cdot\xv}
+\, d^3k/(2\pi)^3.
+\end{equation}
+Analogous calculations are performed for $\dot{h}_{+/\times}(\xv,t)$,
+which are used to compute the GW energy via
+\begin{equation}
+\EEGW(t)={c^2\over32\pi G}\left(\bra{\dhT^2}+\bra{\dhX^2}\right),
+\label{EEGWdef}
+\end{equation}
+where angle brackets denote volume averages.
+
+Analogously to kinetic and magnetic energy and helicity spectra, it is
+convenient to compute the GW energy and polarization spectra integrated
+over concentric shells of surface $\int_{4\pi}k^2\dd\Omega_{\kv}$ in $\kv$
+space, defined by
+\begin{eqnarray}
+\Shdot(k)\!\!&=&\!\!\int_{4\pi}\left(|\dthT|^2+|\dthX|^2\right)\,k^2\dd\Omega_{\kv},\\
+\Ahdot(k)\!\!&=&\!\!\int_{4\pi}2\,\Imag\left(\dthT{{\dthX}}^\ast\right)\,k^2\dd\Omega_{\kv},
+\end{eqnarray}
+and normalized such that $\int_0^\infty\Shdot(k)\,\dd k=\bra{\dhT^2}+\bra{\dhX^2}$
+is proportional to the energy density and $\int_0^\infty \Ahdot(k)\,\dd k$
+is proportional to the polarized energy density.
+The $\Ahdot(k)$ spectra are not to be confused with the magnetic vector
+potential $\Av(\xv,t)$.
+The corresponding GW energy spectra are noted by
+\begin{eqnarray}
+\EGW(k)\!\!&=&\!\!(c^2/32\pi G)\,\Shdot(k),\\
+\HGW(k)\!\!&=&\!\!(c^2/32\pi G)\,\Ahdot(k).
+\end{eqnarray}
+We also define spectra for the metric tensor perturbation,
+\begin{eqnarray}
+\Sh(k)\!\!&=&\!\!\int_{4\pi}\left(|\tilde\hT|^2+|\tilde\hX|^2\right)\,k^2\dd\Omega_{\kv},\\
+\Ah(k)\!\!&=&\!\!\int_{4\pi}2\,\Imag\left(\tilde\hT\tilde\hX^\ast\right)\,k^2\dd\Omega_{\kv},
+\end{eqnarray}
+which are normalized such that $\int_0^\infty\Sh(k)\,\dd k=\hrms^2$ is the
+mean squared metric tensor perturbation.
 
 % ====================================================================== %
 
@@ -12633,10 +12830,21 @@ initial condition.
   \emph{Astron. Nachr.} \textbf{323}, 99--122 (2002)
   ``Magnetic helicity in stellar dynamos: new numerical experiments''
 
+\bibitem{BEO96}
+Brandenburg, A., Enqvist, K., \& Olesen, P.,
+  \emph{Phys. Rev. D} \textbf{54}, 1291--1300 (1996)
+  ``Large-scale magnetic fields from hydromagnetic turbulence
+in the very early universe''
+
 \bibitem{BJNRST96} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
   Rieutord, M., Stein, R. F., \& Tuominen, I.,
   \emph{J. Fluid Mech.} \textbf{306}, 325--352 (1996)
   ``Magnetic structures in a dynamo simulation''
+
+\bibitem{BKMRPTV17}
+A. Brandenburg, T. Kahniashvili, S. Mandal, A. Roper Pol, A. G. Tevzadze, and T. Vachaspati, 
+  \emph{Phys. Rev. D} \textbf{96}, 123528 (2017)
+  ``Evolution of hydromagnetic turbulence from the electroweak phase transition''
 
 \bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.,
   \emph{MNRAS} \textbf{276}, 651--662 (1995)
@@ -12655,6 +12863,10 @@ initial condition.
 \bibitem{Dobler06}
   Dobler, W., Stix, M., \& Brandenburg, A.\yapj{2006}{638}{336}
   {347}{Convection and magnetic field generation in fully convective spheres}
+
+\bibitem{Dur08}
+Durrer, R., ``The Cosmic Microwave Background,''
+Cambridge University Press (2008)
 
 \bibitem{Gammie2001}Gammie, C.~F.,
   \emph{Astrophys. J.} \textbf{553}, 174--183 (2001)
