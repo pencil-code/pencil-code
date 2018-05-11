@@ -1954,7 +1954,7 @@ module Particles_map
             interp%pol_TT)
         elseif (ltemperature) then
           call interp_field_pencil_wrap(f,ilnTT,ilnTT,fp,ineargrid,interp_TT, &
-            interp%pol_TT)
+               interp%pol_TT)
         endif
 !
         if ( (lentropy.and.pretend_lnTT)   .or. &
@@ -1977,9 +1977,15 @@ module Particles_map
           call fatal_error('interpolate_quantities','')
         endif
 !
-        do k=k1,k2
-          interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
-        enddo
+        if (npar_imn(imn) /= 0) then
+           do k=k1,k2
+              interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
+           enddo
+           if (lsolid_ogrid) then
+                 call interp_field_pencil_wrap(f,iTT+1,iTT+mogaux,&
+                      fp,ineargrid,interp_gradTT,interp%pol_TT)
+           endif
+        endif
       endif
 !
 !  Density:
@@ -2109,7 +2115,7 @@ module Particles_map
       if(lsolid_ogrid) then
         call interp_field_pencil_ogrid(f,i1,i2,fp,ineargrid,ubound(vec,2),vec)
       else
-        call interp_field_pencil(f,i1,i2,fp,ineargrid,ubound(vec,2),vec,policy)
+         call interp_field_pencil(f,i1,i2,fp,ineargrid,ubound(vec,2),vec,policy)
       endif
 !
     endsubroutine interp_field_pencil_1
@@ -2192,15 +2198,18 @@ module Particles_map
         rp2 = (fp(k1_imn(imn):k2_imn(imn),ixp)-xorigo_ogrid(1))**2 &
              +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2
         do k=k1_imn(imn),k2_imn(imn)
-          if(rp2(k)>r2_ogrid) then
-            call interpolate_linear( &
-                f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
-          else
-            call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
-            call interpolate_particles_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
-          endif
+           if(rp2(k)>r2_ogrid) then
+              if(i1<=iTT) then
+                 call interpolate_linear( &
+                      f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
+              endif
+           else
+              call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
+              call interpolate_particles_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
+           endif
+         
         enddo
-      endif
+     endif
 !
     endsubroutine interp_field_pencil_ogrid
 !***********************************************************************
