@@ -242,7 +242,8 @@ module Solid_Cells
   integer, dimension(:), allocatable :: send_part_data_to
   integer :: n_procs_recv_part_data 
   integer :: n_procs_send_part_data 
-  integer :: ivar1_part,ivar2_part
+  integer :: ivar1_part=1
+  integer :: ivar2_part=4
   !public :: xgrid_ogrid, ygrid_ogrid, zgrid_ogrid, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
   !public :: f_ogrid_procs
   !public :: r_ogrid, xorigo_ogrid
@@ -293,7 +294,7 @@ module Solid_Cells
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
   save p_ogrid
-  integer, parameter :: mfarray_ogrid=mvar
+  integer, parameter :: mfarray_ogrid=mvar+mogaux
   real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), save ::  f_ogrid=0.
   real, dimension(:,:,:,:), allocatable ::  f_tmp ! Array allocated if lrk_tvd=.true.
 
@@ -312,12 +313,21 @@ module Solid_Cells
   integer :: idiag_c_dragy=0
   integer :: idiag_Nusselt=0
 
+  ! Index for auxiliary gradient of temperature on ogrid, as
+  ! well as additional variables for thermophoresis cases
+  integer :: iogTTx=0, iogTTy=0, iogTTz=0
+  logical :: lstore_ogTT = .false.
+  logical, pointer :: lthermophoretic_forces
+  real, dimension(:,:), allocatable ::  curv_cart_transform
+  
 !  Zero-gradiant boundary condition for rho
   logical :: lexpl_rho = .true.
 !  For equation of state
   logical :: leos_isothermal
   logical :: leos_isentropic
 !  Read start.in file
+
+  
   namelist /solid_cells_init_pars/ &
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth_solid, &
@@ -329,7 +339,8 @@ module Solid_Cells
       lrk_tvd, SBP_optimized, &
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af,lspecial_rad_int, &
-      lfilter_rhoonly, lspecial_rad_int_mom
+      lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
+      lstore_ogTT
 
 
 !  Read run.in file
@@ -337,7 +348,9 @@ module Solid_Cells
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
       SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
-      lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom
+      lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
+      ivar1_part,ivar2_part, &
+      lstore_ogTT
     
   interface dot2_ogrid
     module procedure dot2_mn_ogrid
@@ -383,7 +396,7 @@ module Solid_Cells
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer :: i
+      integer :: i, ndims
 !
       call keep_compiler_quiet(f)
       if (cylinder_radius <= 0) then
@@ -408,6 +421,8 @@ module Solid_Cells
       xorigo_ogrid(1) = cylinder_xpos
       xorigo_ogrid(2) = cylinder_ypos
       xorigo_ogrid(3) = cylinder_zpos
+
+      call check_cyl_pos(xorigo_ogrid,xyz0,xyz1)
 !
 !  Currently only implemented for single cylinder 
 !
@@ -673,9 +688,7 @@ module Solid_Cells
 !  If particles are used in the simulation, set up 'local' arrays of f_ogrid variables to use
 !  when computing particle velocities (etc.) for particles inside r_ogrid
 !
-      if(lparticles) then 
-        ivar1_part=iux
-        ivar2_part=irho
+      if(lparticles) then
         call initialize_particles_ogrid(ivar1_part,ivar2_part)
       endif
 
@@ -742,6 +755,23 @@ module Solid_Cells
 !
       if(lrk_tvd) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
 
+!
+!  For particles with thermophoretic effects, the gradient of the temperature has
+!  to be saved in as an auxiliary so that it can then be interpolated over
+!  at the particles position      
+!
+      if (lstore_ogTT) then
+         iogTTx = iTT + 1
+         iogTTy = iogTTx + 1
+         iogTTz = iogTTy + 1
+         if (mogaux .ne. 3) then
+            call fatal_error('solid_cells_ogrid','mogaux .ne. ndims. Mogaux increased?')
+         endif
+         allocate(curv_cart_transform(my_ogrid,2))
+         call create_curv_cart_transform(curv_cart_transform)
+      endif   
+      
+!
     end subroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -2657,8 +2687,8 @@ module Solid_Cells
 !***********************************************************************
   subroutine interp_point_curv_to_cart_alt(xyz_ip,inear_glob,ivar1,ivar2,farr,f_ip)
 !
-!  Use linear interpolation routine to interpolate the values on the cartesian 
-!  grid to the interpolation point on the curvilinear grid
+!  Use linear interpolation routine to interpolate the values on the curvilinear 
+!  grid to the interpolation point on the cartesian grid
 !
     real, dimension(3), intent(in) :: xyz_ip
     integer, dimension(3), intent(in) :: inear_glob
@@ -4339,7 +4369,7 @@ module Solid_Cells
 !  Most basic pencils should come first, as others may depend on them.
 !
 !   31-jan-17/Jorgen: Adapted from calc_pencils_grid in grid.f90
-!                     Only cylindrical coodrinats included
+!                     Only cylindrical coordinates included
 !
     if (lpencil_ogrid(i_og_x_mn))     &
         p_ogrid%x_mn    = x_ogrid(l1_ogrid:l2_ogrid)*cos(y_ogrid(m_ogrid))
@@ -5389,6 +5419,8 @@ module Solid_Cells
     subroutine grad_ogrid(f,k,g)
 !
 !  Calculate gradient of a scalar, get vector.
+!  f is the ogrid, k the index of the field to be differentiated      
+!  and g the pencil (x direction) of the gradient of the scalar field k
 !
 !  07-feb-17/Jorgen: Adapted from sub.f90
 !
@@ -5396,12 +5428,24 @@ module Solid_Cells
       real, dimension (nx_ogrid,3) :: g
       integer :: k
 !
-      intent(in) :: f,k
+      intent(in) :: k
       intent(out) :: g
-!
+      intent(inout) :: f
+!     
       call der_ogrid(f,k,g(:,1),1)
       call der_ogrid(f,k,g(:,2),2)
       call der_ogrid(f,k,g(:,3),3)
+
+      if (lstore_ogTT .and. k == iTT) then
+         f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTx) = g(:,1)*curv_cart_transform(m_ogrid,2) - &
+              g(:,2)*curv_cart_transform(m_ogrid,1)
+         f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTy) = g(:,1)*curv_cart_transform(m_ogrid,1) + &
+              g(:,2)*curv_cart_transform(m_ogrid,2)
+         if (nz_ogrid>1) then
+            f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTz) = g(:,3)
+         endif
+      endif
+      
 !
     endsubroutine grad_ogrid
 !***********************************************************************
@@ -7108,7 +7152,11 @@ module Solid_Cells
         if (lsnap) then
           call update_ghosts_ogrid(f_ogrid)
           call safe_character_assign(file,trim(chsnap)//ch)
-          call output_snap_ogrid(f_ogrid,file=file)
+          if (lstore_ogTT) then
+             call output_snap_ogrid(f_ogrid(:,:,:,1:mfarray_ogrid-mogaux),file=file)
+          else
+             call output_snap_ogrid(f_ogrid,file=file)
+          endif
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
         endif
@@ -7119,7 +7167,11 @@ module Solid_Cells
 !
         call update_ghosts_ogrid(f_ogrid)
         call safe_character_assign(file,trim(chsnap))
-        call output_snap_ogrid(f_ogrid,file=file)
+        if (lstore_ogTT) then
+           call output_snap_ogrid(f_ogrid(:,:,:,1:mfarray_ogrid-mogaux),file=file)
+        else
+           call output_snap_ogrid(f_ogrid,file=file)
+        endif
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
@@ -7142,8 +7194,8 @@ module Solid_Cells
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
       !call boundconds_x_ogrid
-      call initiate_isendrcv_bdry_ogrid(f_og   )
-      call finalize_isendrcv_bdry_ogrid(f_og   )
+      call initiate_isendrcv_bdry_ogrid(f_og)
+      call finalize_isendrcv_bdry_ogrid(f_og)
       if (nprocy==1)                  call boundconds_y_ogrid(f_og)
       if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid(f_og)
 
@@ -7252,7 +7304,11 @@ module Solid_Cells
         mode=1
       endif
 !
-      call input_snap_ogrid(chsnap,f_ogrid,mfarray_ogrid,mode)
+      if (lstore_ogTT) then
+         call input_snap_ogrid(chsnap,f_ogrid(:,:,:,1:mfarray_ogrid-mogaux),mfarray_ogrid-mogaux,mode)
+      else
+         call input_snap_ogrid(chsnap,f_ogrid,mfarray_ogrid,mode)
+      endif
       close (lun_input)
       if (lserial_io) call end_serialize
 !
@@ -8083,9 +8139,12 @@ module Solid_Cells
 !  Procs_pointer is used to point to correct place in ip_proc and f_ogrid_procs array
 !  when using point from specific processor
 !
+!  JONAS: The mogaux in the allocation of f_ogrid_procs is cruuuude, need to implement
+!  it more elegantly      
+!
       procs_needed = count(linside_proc)
       if(procs_needed>0) then
-        allocate(f_ogrid_procs(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1))
+        allocate(f_ogrid_procs(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1+mogaux))
         allocate(ip_proc(procs_needed,3))
         allocate(recv_part_data_from(procs_needed))
         allocate(ip_proc_pointer(ncpus))
@@ -8212,7 +8271,7 @@ module Solid_Cells
 !***********************************************************************
     subroutine interpolate_particles_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
 !
-!  Use information from the overlappint curvilinear grid to interpolate the velocity
+!  Use information from the overlapping curvilinear grid to interpolate the velocity
 !  of the particle. Must transform to cartesian velocity after interpolation.
 !
 !  Use linear interpolation for all flow variables, except the 
@@ -8232,63 +8291,63 @@ module Solid_Cells
       intent(out) :: gp
 !
       if(ivar1==iux) then
-        if(ivar2/=iuz) call fatal_error('interpolate_particels_ogrid','should not interpolate rho here!')
-        if(particle_interpolate==1) then
-          call interpolate_linear_ogrid(ivar1,ivar1+1,xxp,gp(:),inear_glob)
-        elseif(particle_interpolate==2) then
-          call interpolate_pseudoquad(ivar1,xxp,gp(iux),inear_glob)
-          if(lparticle_uradonly) then
-            call interpolate_linear_ogrid(ivar1+1,ivar1+1,xxp,gp(iux+1),inear_glob)
-          else
-            call interpolate_pseudoquad(ivar1+1,xxp,gp(iux+1),inear_glob)
-          endif
-        elseif(particle_interpolate==3) then
-          call interpolate_quad_ogrid(ivar1,xxp,gp(iux),inear_glob)
-          if(lparticle_uradonly) then
-            call interpolate_linear_ogrid(ivar1+1,ivar1+1,xxp,gp(iux+1),inear_glob)
-          else
-            call interpolate_quad_ogrid(ivar1+1,xxp,gp(iux+1),inear_glob)
-          endif
-        elseif(particle_interpolate==4) then
-          call interpolate_pseudocubic(ivar1,xxp,gp(iux),inear_glob)
-          call interpolate_pseudocubic(ivar1+1,xxp,gp(iux+1),inear_glob)
-        endif
+         if(ivar2/=iuz) call fatal_error('interpolate_particels_ogrid','should not interpolate rho here!')
+         if(particle_interpolate==1) then
+            call interpolate_linear_ogrid(ivar1,ivar1+1,xxp,gp(:),inear_glob)
+         elseif(particle_interpolate==2) then
+            call interpolate_pseudoquad(ivar1,xxp,gp(iux),inear_glob)
+            if(lparticle_uradonly) then
+               call interpolate_linear_ogrid(ivar1+1,ivar1+1,xxp,gp(iux+1),inear_glob)
+            else
+               call interpolate_pseudoquad(ivar1+1,xxp,gp(iux+1),inear_glob)
+            endif
+         elseif(particle_interpolate==3) then
+            call interpolate_quad_ogrid(ivar1,xxp,gp(iux),inear_glob)
+            if(lparticle_uradonly) then
+               call interpolate_linear_ogrid(ivar1+1,ivar1+1,xxp,gp(iux+1),inear_glob)
+            else
+               call interpolate_quad_ogrid(ivar1+1,xxp,gp(iux+1),inear_glob)
+            endif
+         elseif(particle_interpolate==4) then
+            call interpolate_pseudocubic(ivar1,xxp,gp(iux),inear_glob)
+            call interpolate_pseudocubic(ivar1+1,xxp,gp(iux+1),inear_glob)
+         endif
 !
 ! Only update z-velocity if 3D run
 !
-        if(nzgrid_ogrid/=1) then
-          call interpolate_linear_ogrid(ivar2,ivar2,xxp,gp(iuz),inear_glob)
-        else
-          gp(iuz)=0.
-        endif
+         if(nzgrid_ogrid/=1) then
+            call interpolate_linear_ogrid(ivar2,ivar2,xxp,gp(iuz),inear_glob)
+         else
+            gp(iuz)=0.
+         endif
 !
 ! Override interpolation scheme if special handling for particles very close to the surface
 ! is activated
 !
-        if(lspecial_rad_int) then
-          if((xglobal_ogrid(inear_glob(1))==xyz0_ogrid(1))) then
-            call interpolate_ogrid_near(iux,iux,xxp,gp(iux),inear_glob)
-          endif
-        elseif(lspecial_rad_int_mom) then
-          if((xglobal_ogrid(inear_glob(1))<delta_momentum)) then
-            call interpolate_ogrid_near_mom(iux,iux,xxp,gp(iux),inear_glob)
-          endif
-        endif
-        tmp=gp(iux)
-        gp(iux)=tmp*cos(xxp(2))-gp(iuy)*sin(xxp(2))
-        gp(iuy)=tmp*sin(xxp(2))+gp(iuy)*cos(xxp(2))
+         if(lspecial_rad_int) then
+            if((xglobal_ogrid(inear_glob(1))==xyz0_ogrid(1))) then
+               call interpolate_ogrid_near(iux,iux,xxp,gp(iux),inear_glob)
+            endif
+         elseif(lspecial_rad_int_mom) then
+            if((xglobal_ogrid(inear_glob(1))<delta_momentum)) then
+               call interpolate_ogrid_near_mom(iux,iux,xxp,gp(iux),inear_glob)
+            endif
+         endif
+         tmp=gp(iux)
+         gp(iux)=tmp*cos(xxp(2))-gp(iuy)*sin(xxp(2))
+         gp(iuy)=tmp*sin(xxp(2))+gp(iuy)*cos(xxp(2))
       else
-        call interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
-        if(ivar1/=irho) then
-          call fatal_error('interpolate_particels_ogrid','should not interpolate anithing but rho here!')
-        endif
+         call interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+         if(ivar1<irho) then
+            call fatal_error('interpolate_particels_ogrid','should not interpolate anything but rho here!')
+         endif
       endif
 !   
     endsubroutine interpolate_particles_ogrid
 !***********************************************************************
   subroutine interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
 !
-!  Use information from the overlappint curvilinear grid to interpolate the velocity
+!  Use information from the overlapping curvilinear grid to interpolate the velocity
 !  of the particle. Must transform to cartesian velocity after interpolation.
 !  Interpolate the value of f to arbitrary (xp, yp, zp) curvilinear coordinate
 !  using the linear interpolation formula.
@@ -8338,7 +8397,7 @@ module Solid_Cells
         print*, 'zp, zp0, zp1 = ', xxp(3), zglobal_ogrid(iz0), zglobal_ogrid(iz0+1)
         call fatal_error('interpolate_linear_ogrid','point outside of interval for particle interpolation')
         return
-      endif
+     endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
 !  Set it equal to 0 for dimensions having 1 grid points; this will make sure
@@ -8372,9 +8431,10 @@ module Solid_Cells
       iy0_proc=iy0-ny_ogrid*ip_proc(ind_proc,2)
       iz0_proc=iz0-nz_ogrid*ip_proc(ind_proc,3)
       !TODO TODO : REMOVE THIS
-      if(ivar2>irho) then
-        print*, 'ERROR: Variable not existing on f_ogrid requested'
-      endif
+      !if(ivar2>irho) then
+        !print*, 'Debug', shape(f_ogrid_procs), 'ivars',ivar1,ivar2,irho,iTT
+        !print*, 'ERROR: Variable not existing on f_ogrid requested'
+      !endif
 !
 !  Function values at all corners.
 !
@@ -8382,6 +8442,7 @@ module Solid_Cells
       g2=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
       g3=f_ogrid_procs(ind_proc,ix0_proc  ,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
       g4=f_ogrid_procs(ind_proc,ix0_proc+1,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      !print*, 'ogriddebug', g1,g2,g3,g4
 
       f0=g1*dxx1*(-dx1)+g2*dxx0*dx1
       f1=g3*dxx1*(-dx1)+g4*dxx0*dx1
@@ -10939,5 +11000,30 @@ module Solid_Cells
     bx_bound(1,:)=f_og(l1_ogrid,i,4,:)
 
   endsubroutine boundary_x_8_6th
-!***********************************************************************
+  !***********************************************************************
+  subroutine check_cyl_pos(cyl_pos,domstart,domend)
+!
+! Check if the cylinder is positioned inside the domain
+!
+    real, dimension(3) :: cyl_pos, domstart, domend
+
+    if ((domstart(1) < cyl_pos(1) .and. cyl_pos(1) < domend(1)) .and. &
+         (domstart(2) < cyl_pos(2) .and. cyl_pos(2) < domend(2)) .and. & 
+         (domstart(3) < cyl_pos(3) .and. cyl_pos(3) < domend(3))) then
+       continue
+    else
+       call fatal_error('init_solid_cells','Cylinder placed outside domain')
+    endif
+    
+  endsubroutine check_cyl_pos
+  !***********************************************************************
+  subroutine create_curv_cart_transform(trans_mat)
+
+    real, dimension(my_ogrid,2), intent(out) :: trans_mat
+
+    trans_mat(:,1) = sin(y_ogrid(:))
+    trans_mat(:,2) = cos(y_ogrid(:))
+    
+  endsubroutine create_curv_cart_transform
+  !***********************************************************************
 end module solid_cells
