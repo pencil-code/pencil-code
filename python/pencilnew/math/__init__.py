@@ -2,23 +2,12 @@
 Basic mathematical operators, including derivatives.
 '''
 
-from .vector_multiplication import dot
-from .vector_multiplication import dot2
-from .vector_multiplication import cross
+from .vector_multiplication import dot, dot2, cross
+from .general import is_number, is_int, is_float, is_iterable
+from .general import log_range, round_next_magnitude, natural_sort
+
+# old. TODO: update
 from . import derivatives
-
-# type checks
-from .is_int import *
-from .is_float import *
-from .is_number import *
-from .is_iterable import *
-
-# sorting
-from .natural_sort import natural_sort
-
-# helper
-from .logrange import logrange
-from .round_next_magnitude import round_next_magnitude
 
 # coordinate transformation
 from .transform import *
