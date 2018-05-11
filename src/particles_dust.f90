@@ -126,7 +126,7 @@ module Particles
   logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
   logical :: lpscalar_sink=.false.
-  logical :: lsherwood_const=.false.
+  logical :: lsherwood_const=.false. ! RUN_DOC: Constant quiescent (2) Sherwood number
   logical :: lbubble=.false.
   logical :: linsert_as_many_as_possible=.false.
   logical :: lwithhold_init_particles=.false.
@@ -939,7 +939,7 @@ module Particles
       if (lparticles_potential) call initialize_particles_potential(fp)
 !
       if (lascalar) call put_shared_variable('G_condensation',G_condensation)
-!       
+!
     endsubroutine initialize_particles
 !***********************************************************************
     subroutine init_particles(f,fp,ineargrid)
@@ -4636,9 +4636,9 @@ module Particles
 !
       if (lthermophoretic_forces) then
         if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            call calc_thermophoretic_force(fp,k,ineargrid(k,:),thermforce)
-            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+thermforce
+           do k=k1_imn(imn),k2_imn(imn)
+              call calc_thermophoretic_force(fp,k,ineargrid(k,:),thermforce)
+              dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+thermforce
           enddo
         endif
       endif
@@ -6167,6 +6167,8 @@ module Particles
       integer, intent(in) :: k
       integer, dimension(3) :: ineark
       real, dimension(3), intent(out) :: force
+      integer :: i
+      real :: Inf=1e14
 !
       real, dimension(3) :: temp_grad
       real TT,mu,nu_,Kn,phi_therm,mass_p
@@ -6202,12 +6204,17 @@ module Particles
       endif
       Cint=0.5
       if (interp%lgradTT) then
-        temp_grad=interp_gradTT(k,:)
+         temp_grad=interp_gradTT(k,:)
+         !if (modulo(it,100)==0) then
+         !   print*, 'debuggtt_dust', temp_grad
+         !endif
       else
         temp_grad=temp_grad0
      endif
 !
-      Kn=mean_free_path_gas/fp(k,iap)
+     Kn=mean_free_path_gas/fp(k,iap)
+!
+     if (cond_ratio==0.0) call fatal_error('particles_dust','Cond ratio=0 with thermophoretic force')
 !
       mass_p=(4.0*pi/3.0)*rhopmat*fp(k,iap)**3
       if (thermophoretic_eq=='near_continuum') then
@@ -6220,8 +6227,17 @@ module Particles
       else
         call fatal_error('calc_pencil_rep','No thermoporetic range chosen')
       endif
-!
+ !
+         
       force=(fp(k,iap)*temp_grad*mu**2*phi_therm)/(TT*interp_rho(k)*mass_p)
+      do i=1,3
+         if (force(i)<-Inf .or. force(i)>Inf) then
+            print*, 'Force xyz:', force, 'Temp_grad xyz:',temp_grad
+            print*, 'Thermophoretic term ', phi_therm, 'Mu ',mu, 'TT',TT
+            print*, 'Rho_gas', interp_rho(k), 'M_p',mass_p
+            call fatal_error('calc_pencil_rep','infs in thermophoretic')
+         endif
+      enddo
 !
     endsubroutine calc_thermophoretic_force
 !***********************************************************************
