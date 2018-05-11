@@ -54,7 +54,6 @@ module Testfield
   real, dimension (ninit) :: amplaatest=0.,ampluutest=0.,amplhhtest=0.
   integer :: iuxtest=0,iuytest=0,iuztest=0,iuztestpq=0
   integer :: iu0xtest=0,iu0ztest=0,ihxtest=0,ihhtest=0
-  integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
 
   ! input parameters
@@ -62,7 +61,7 @@ module Testfield
   real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
-  logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
+  logical :: zextent=.true.,lsoca=.false.,lset_bbtest2=.false.
   logical :: luxb_as_aux=.true.,ljxb_as_aux=.true.
   logical :: lugu_as_aux=.true.,lugh_as_aux=.true.
   logical :: linit_aatest=.false.
@@ -95,7 +94,7 @@ module Testfield
 
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
-       Btest_ext,zextent,lsoca,lsoca_jxb, &
+       Btest_ext,zextent,lsoca, &
        lset_bbtest2,itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
@@ -107,7 +106,7 @@ module Testfield
        lforcing_cont_aatest,ampl_fcont_aatest, &
        lforcing_cont_uutest,ampl_fcont_uutest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest,rescale_uutest, rho0test
+       rescale_aatest,rescale_uutest, rescale_hhtest, rho0test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alp11=0      ! DIAG_DOC: $\alpha_{11}$
@@ -250,8 +249,8 @@ module Testfield
       iaatest=nvar+1
       iaztestpq=iaatest+3*njtest-1
 !
-!  Allocate mtestfield slots; the first half is used for aatest
-!  and the second for uutest.
+!  Allocate mtestfield slots; the first three are used for aatest
+!  and the next three for uutest.
 !
       iuutest=nvar+1+3*njtest
       iuztestpq=iuutest+3*njtest-1
@@ -313,9 +312,9 @@ module Testfield
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: ztestfield, c, s
+      real, dimension(mz) :: ztestfield
       real :: ktestfield_effective
-      integer :: jtest
+      integer :: jtest, nscal
 !
 !  Precalculate etatest if 1/etatest (==etatest1) is given instead
 !
@@ -335,7 +334,12 @@ module Testfield
 !
 !  inverse of reference density
 !
-      rho0test1=1./rho0test
+      if (rho0test==0.) then
+        rho0test1=1.
+        call warning('initialize_testfield','rho0test=0, set to 1')
+      else
+        rho0test1=1./rho0test
+      endif
 !
 !  set cosine and sine function for setting test fields and analysis
 !  Choice of using rescaled z-array or original z-array
@@ -360,11 +364,9 @@ module Testfield
 !  and modify the following calculations in testfield_after_boundary.
 !  They should also be with respect to k*z, not just z.
 !
-      c=cz
-      s=sz
-      c2z=c**2
-      s2z=s**2
-      csz=c*s
+      c2z=cz**2
+      s2z=sz**2
+      csz=cz*sz
 !
 !  debug output
 !
@@ -373,7 +375,7 @@ module Testfield
         print*,'sz=',sz
       endif
 !
-!  Also calculate its inverse, but only if different from zero
+!  Also inverse of ktestfield_effective, but only if different from zero
 !
       if (ktestfield==0) then
         ktestfield1=1.
@@ -403,20 +405,22 @@ module Testfield
 !
 !  Override iE0 if njtest is big enough.
 !  This method of identifying the location of the reference field is not very elegant.
-!  Don't rescale the reference field, so put rescale_aatest=rescale_uutest=1.
 !
-      if (njtest==5) then
-        iE0=5
-        rescale_aatest(iE0)=1.
-        rescale_uutest(iE0)=1.
-        rescale_hhtest(iE0)=1.
-      endif
+      if (njtest==5) iE0=5
 !
 !  rescale the testfield
 !  (in future, could call something like init_aa_simple)
 !
       if (reinitialize_aatest) then
-        do jtest=1,njtest
+!
+!  Don't rescale the reference field, so if existent rescale only to njtest-1
+!
+        if (iE0==5) then
+          nscal=4
+        else
+          nscal=njtest
+        endif
+        do jtest=1,nscal
           iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
           iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
           ihxtest=ihhtest+  (jtest-1)
@@ -454,8 +458,7 @@ module Testfield
         endif
       endif
 !
-!  possibility of using jxb as auxiliary array (is intended to be
-!  used in connection with testflow method)
+!  possibility of using jxb as auxiliary array
 !
       if (ljxb_as_aux) then
         if (ijxb==0) then
@@ -505,7 +508,6 @@ module Testfield
         open(1,file=trim(datadir)//'/testfield_info.dat',STATUS='unknown')
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
-        write(1,'(a,i1)') 'lsoca_jxb='  ,merge(1,0,lsoca_jxb)
         write(1,'(3a)') "itestfield='",trim(itestfield)//"'"
         write(1,'(3a)') "itestfield_method='",trim(itestfield_method)//"'"
         write(1,'(a,f5.2)') 'ktestfield=',ktestfield
@@ -1378,7 +1380,7 @@ module Testfield
     subroutine testfield_after_boundary(f)
 !
 !  Calculate <uxb^T> + <u^Txb>, which is needed when lsoca=.false.
-!  Also calculate <jxb^T> + <j^Txb>, which is needed when lsoca_jxb=.false.
+!  Also calculate <jxb^T> + <j^Txb>, which is needed when 
 !
 !  30-nov-09/axel: adapted from testfield_z.f90
 !  25-sep-13/MR  : removed parameter p, restricted calculation of pencil case
@@ -1520,10 +1522,10 @@ module Testfield
 !
             select case (itestfield_method)
             case ('ju', '(i)')
-              call cross_mn(jjfluct,bbtest,jxbtest1)
-              call cross_mn(jjtest,b0ref,jxbtest2)
-              call cross_mn(uufluct,bbtest,uxbtest1)
-              call cross_mn(uutest,b0ref,uxbtest2)
+              call cross_mn(jjfluct,bbtest,jxbtest1)    ! j x btest
+              call cross_mn(jjtest,b0ref,jxbtest2)      ! + jtest x b0
+              call cross_mn(uufluct,bbtest,uxbtest1)    ! u x btest
+              call cross_mn(uutest,b0ref,uxbtest2)      ! + utest x b0
             case ('bb', '(ii)')
               call cross_mn(j0ref,bbtest,jxbtest1)
               call cross_mn(jjtest,bbfluct,jxbtest2)
@@ -1545,7 +1547,7 @@ module Testfield
             uxbtest=uxbtest1+uxbtest2
             jxbtest=jxbtest1+jxbtest2
 !
-!  Only one of the two possibilities for ugu and ugh implemented here.
+!  Only one of the two possibilities for ugu and ugh, respectively, implemented here.
 !
             call u_dot_grad(f,iuxtest,uijtest,uufluct,ugutest,UPWIND=.false.)              ! (u.grad)(utest)   tbc
             call u_dot_grad(f,iuutest,uij0ref,uutest,ugutest,UPWIND=.false.,LADD=.true.)   ! (utest.grad)(u0)  tbc
@@ -1556,14 +1558,22 @@ module Testfield
 !
 !  Put uxb, jxb, ugu and ugh into f-array
 !
-          juxb=iuxb+3*(jtest-1)
-          jjxb=ijxb+3*(jtest-1)
-          jugu=iugu+3*(jtest-1)
-          jugh=iugh+  (jtest-1)
-          if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
-          if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
-          if (iugu/=0) f(l1:l2,m,n,jugu:jugu+2)=ugutest
-          if (iugh/=0) f(l1:l2,m,n,jugh       )=ughtest
+          if (iuxb/=0) then
+            juxb=iuxb+3*(jtest-1)
+            f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+          endif
+          if (ijxb/=0) then
+            jjxb=ijxb+3*(jtest-1)
+            f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+          endif
+          if (iugu/=0) then 
+            jugu=iugu+3*(jtest-1)
+            f(l1:l2,m,n,jugu:jugu+2)=ugutest
+          endif
+          if (iugh/=0) then 
+            jugh=iugh+  (jtest-1)
+            f(l1:l2,m,n,jugh       )=ughtest
+          endif
 !
 !  Add corresponding contribution into averaged arrays, uxbtestmz, jxbtestmz.
 !  Do the same for ugutestmz and ughtestmz.
@@ -1632,8 +1642,8 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: uumz,lcalc_uumeanz
-      use Density, only: lnrhomz
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz
+      use Density, only: lnrhomz,lcalc_lnrhomean
+      use Magnetic, only: aamz,lcalc_aameanz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
@@ -1646,6 +1656,7 @@ module Testfield
 !  reinitialize aatest periodically if requested
 !
       if (linit_aatest) then
+
         file=trim(datadir)//'/tinit_aatest.dat'
         if (ifirst==0) then
           call read_snaptime(trim(file),taainit,naainit,daainit,t)
@@ -1654,10 +1665,6 @@ module Testfield
           endif
           ifirst=1
         endif
-!
-!  Do only one xy plane at a time (for cache efficiency)
-!  Also: reset nuxb=0, which is used for time-averaged testfields
-!  Do this for the full nuxb array.
 !
         if (t >= taainit) then
           do jtest=1,njtest
@@ -1671,8 +1678,8 @@ module Testfield
 !
 !  Reinitialize reference fields with fluctuations of main run.
 !
-          if (reinitialize_from_mainrun) then
-            if (lcalc_aameanz.and.lcalc_uumeanz) then
+          if (reinitialize_from_mainrun.and.iE0/=0) then
+            if (lcalc_aameanz.and.lcalc_uumeanz.and.lcalc_lnrhomean) then
               jtest=iE0
               iaxtest=iaatest+3*(jtest-1)
               iuxtest=iuutest+3*(jtest-1)
@@ -1684,11 +1691,11 @@ module Testfield
                   f(l1:l2,m1:m2,n,jaatest)=f(l1:l2,m1:m2,n,jaa)-aamz(n,j)
                   f(l1:l2,m1:m2,n,juutest)=f(l1:l2,m1:m2,n,juu)-uumz(n,j)
                 enddo
-                f(l1:l2,m1:m2,n,ihxtest)=f(l1:l2,m1:m2,n,ihxtest)-lnrhomz(n)
+                f(l1:l2,m1:m2,n,ihxtest)=f(l1:l2,m1:m2,n,ihxtest)-lnrhomz(n-n1+1)
               enddo
             else
               call fatal_error('rescaling_testfield', &
-                  'need lcalc_aameanz.and.lcalc_uumeanz')
+                               'reinitialize_from_mainrun needs lcalc_aameanz.and.lcalc_uumeanz.and.lcalc_lnrhomean')
             endif
           endif
 !
@@ -1718,7 +1725,7 @@ module Testfield
 !
       select case (jtest)
       case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_Beltrami
@@ -1742,7 +1749,7 @@ module Testfield
       select case (jtest)
       case (1); B0test(:,1)=bamp*cz(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B21
@@ -1766,7 +1773,7 @@ module Testfield
       select case (jtest)
       case (1); J0test(:,1)=0.; J0test(:,2)=-bamp*ktestfield*sz(n); J0test(:,3)=0.
       case (2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
-      case default; J0test(:,:)=0.
+      case default; J0test=0.
       endselect
 !
     endsubroutine set_J0test_B11_B21
@@ -1792,7 +1799,7 @@ module Testfield
       case (2); J0test(:,1)=0.; J0test(:,2)=+bamp*ktestfield*cz(n); J0test(:,3)=0.
       case (3); J0test(:,1)=+bamp*ktestfield*sz(n); J0test(:,2)=0.; J0test(:,3)=0.
       case (4); J0test(:,1)=-bamp*ktestfield*cz(n); J0test(:,2)=0.; J0test(:,3)=0.
-      case default; J0test(:,:)=0.
+      case default; J0test=0.
       endselect
 !
     endsubroutine set_J0test_B11_B22
@@ -1818,7 +1825,7 @@ module Testfield
       case (2); B0test(:,1)=bamp*sz(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp*cz(n); B0test(:,3)=0.
       case (4); B0test(:,1)=0.; B0test(:,2)=bamp*sz(n); B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B22
@@ -1844,7 +1851,7 @@ module Testfield
       case (2); B0test(:,1)=bamp*z(n); B0test(:,2)=0.; B0test(:,3)=0.
       case (3); B0test(:,1)=0.; B0test(:,2)=bamp     ; B0test(:,3)=0.
       case (4); B0test(:,1)=0.; B0test(:,2)=bamp*z(n); B0test(:,3)=0.
-      case default; B0test(:,:)=0.
+      case default; B0test=0.
       endselect
 !
     endsubroutine set_bbtest_B11_B22_lin
@@ -2022,6 +2029,7 @@ module Testfield
       if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iuutest=',iuutest
+        write(3,*) 'ilnrhotest=',ihhtest
         write(3,*) 'ntestfield=',(ntestfield-njtest)/2
         write(3,*) 'ntestflow=',(ntestfield-njtest)/2
         write(3,*) 'ntestlnrho=',njtest
