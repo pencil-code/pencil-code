@@ -930,12 +930,6 @@ module Particles_coagulation
               fp(k,inpswarm)=npnew
               fp(j,ivpx:ivpz)=vpnew
               fp(k,ivpx:ivpz)=vpnew
-!             if (lcollision_output) then
-!               open(99,POSITION='append', &
-!                 FILE=trim(directory_dist)//'/collisions.dat')
-!               write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-!               close(99)
-!             endif
             else if (droplet_coagulation_model=='shima') then
               mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
               npj = fp(j,inpswarm)
@@ -1105,6 +1099,12 @@ module Particles_coagulation
             mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
             npk = fp(k,inpswarm)
             if (droplet_coagulation_model=='standard') then
+              if (lcollision_output) then
+                open(99,POSITION='append', &
+                  FILE=trim(directory_dist)//'/collisions.dat')
+                write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                close(99)
+              endif
               mpnew=mpj+mpk
               apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
 !            npnew=(mpj*npk+mpk*npk)/(2.*mpnew)
@@ -1124,12 +1124,6 @@ module Particles_coagulation
                 swarm_index1=j
                 swarm_index2=k
               endif
-!             if (lcollision_output) then
-!               open(99,POSITION='append', &
-!                 FILE=trim(directory_dist)//'/collisions.dat')
-!               write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-!               close(99)
-!             endif
 !
 !  Check if we have the special case where the particle number 
 !  densities are equal. This will typically be the case in the beginning of 
