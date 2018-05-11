@@ -96,8 +96,7 @@ module InitialCondition
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      call shocktube(f, ilnrho, 1.0 / rho_left, 1.0 / rho_right)
-      f(:,:,:,ilnrho) = -log(f(:,:,:,ilnrho))
+      call shocktube(f, ilnrho, log(rho_left), log(rho_right))
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
