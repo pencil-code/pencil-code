@@ -134,7 +134,7 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine initialize_mpicomm_ogrid
 !***********************************************************************
-    subroutine initiate_isendrcv_bdry_ogrid(f)
+    subroutine initiate_isendrcv_bdry_ogrid(f_og)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
 !  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
@@ -142,17 +142,17 @@ module Solid_Cells_Mpicomm
 !
 !  apr-17/Jorgen: adapted from mpicomm.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: f_og
 !
       integer, dimension(4) :: nbuf_y, nbuf_z, nbuf_yz
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
       integer, parameter :: sendvar=ivar2-ivar1+1
 !
       if (ivar2==0) return
 !
 !  Set communication across x-planes.
 !
-      if (nprocx>1) call isendrcv_bdry_x_ogrid(f)
+      if (nprocx>1) call isendrcv_bdry_x_ogrid(f_og)
       call mpibarrier
 !
 !  Allocate and send/receive buffers across y-planes
@@ -161,12 +161,12 @@ module Solid_Cells_Mpicomm
 !
 !  Internal, periodic exchange y-plane buffers.
 !
-        lbufyo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)         !(lower y-zone)
+        lbufyo_og(:,:,:,ivar1:ivar2)=f_og(:,m1_ogrid:m1i_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)         !(lower y-zone)
         nbuf_y=(/mx_ogrid,nghost,bufsizes_yz_og(INYL,IRCV),sendvar/)
         call mpirecv_nonblock_real(lbufyi_og(:,:,:,ivar1:ivar2),nbuf_y,ylneigh,touppy,irecv_rq_fromlowy)
         call mpisend_nonblock_real(lbufyo_og(:,:,:,ivar1:ivar2),nbuf_y,ylneigh,tolowy,isend_rq_tolowy)
 
-        ubufyo_og(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper y-zone)
+        ubufyo_og(:,:,:,ivar1:ivar2)=f_og(:,m2i_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper y-zone)
         nbuf_y=(/mx_ogrid,nghost,bufsizes_yz_og(INYU,IRCV),sendvar/)
         call mpirecv_nonblock_real(ubufyi_og(:,:,:,ivar1:ivar2),nbuf_y,yuneigh,tolowy,irecv_rq_fromuppy)
         call mpisend_nonblock_real(ubufyo_og(:,:,:,ivar1:ivar2),nbuf_y,yuneigh,touppy,isend_rq_touppy)
@@ -176,12 +176,12 @@ module Solid_Cells_Mpicomm
 !
       if (nprocz>1) then
 !        
-        lbufzo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2) !lower z-planes
+        lbufzo_og(:,:,:,ivar1:ivar2)=f_og(:,m1_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2) !lower z-planes
         nbuf_z=(/mx_ogrid,bufsizes_yz_og(INZL,IRCV),nghost,sendvar/)
         call mpirecv_nonblock_real(lbufzi_og(:,:,:,ivar1:ivar2),nbuf_z,zlneigh,touppz,irecv_rq_fromlowz)
         call mpisend_nonblock_real(lbufzo_og(:,:,:,ivar1:ivar2),nbuf_z,zlneigh,tolowz,isend_rq_tolowz)
 !
-        ubufzo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2) !upper z-planes
+        ubufzo_og(:,:,:,ivar1:ivar2)=f_og(:,m1_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2) !upper z-planes
         nbuf_z=(/mx_ogrid,bufsizes_yz_og(INZU,IRCV),nghost,sendvar/)
         call mpirecv_nonblock_real(ubufzi_og(:,:,:,ivar1:ivar2),nbuf_z,zuneigh,tolowz,irecv_rq_fromuppz)
         call mpisend_nonblock_real(ubufzo_og(:,:,:,ivar1:ivar2),nbuf_z,zuneigh,touppz,isend_rq_touppz)
@@ -197,7 +197,7 @@ module Solid_Cells_Mpicomm
 !
 !  Lower y, lower z.
 !
-        llbufo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
+        llbufo_og(:,:,:,ivar1:ivar2)=f_og(:,m1_ogrid:m1i_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
         if (llcorn>=0) then
           call mpirecv_nonblock_real(llbufi_og(:,:,:,ivar1:ivar2),nbuf_yz,llcorn,TOuu,irecv_rq_FRll)
           call mpisend_nonblock_real(llbufo_og(:,:,:,ivar1:ivar2),nbuf_yz,llcorn,TOll,isend_rq_TOll)
@@ -205,7 +205,7 @@ module Solid_Cells_Mpicomm
 !
 !  Upper y, lower z.
 !
-        ulbufo_og(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
+        ulbufo_og(:,:,:,ivar1:ivar2)=f_og(:,m2i_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
         if (ulcorn>=0) then
           call mpirecv_nonblock_real(ulbufi_og(:,:,:,ivar1:ivar2),nbuf_yz,ulcorn,TOlu,irecv_rq_FRul)
           call mpisend_nonblock_real(ulbufo_og(:,:,:,ivar1:ivar2),nbuf_yz,ulcorn,TOul,isend_rq_TOul)
@@ -213,7 +213,7 @@ module Solid_Cells_Mpicomm
 !
 !  Upper y, upper z.
 !
-        uubufo_og(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
+        uubufo_og(:,:,:,ivar1:ivar2)=f_og(:,m2i_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
         if (uucorn>=0) then
           call mpirecv_nonblock_real(uubufi_og(:,:,:,ivar1:ivar2),nbuf_yz,uucorn,TOll,irecv_rq_FRuu)
           call mpisend_nonblock_real(uubufo_og(:,:,:,ivar1:ivar2),nbuf_yz,uucorn,TOuu,isend_rq_TOuu)
@@ -221,7 +221,7 @@ module Solid_Cells_Mpicomm
 !
 !  Lower y, upper z.
 !
-        lubufo_og(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
+        lubufo_og(:,:,:,ivar1:ivar2)=f_og(:,m1_ogrid:m1i_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
         if (lucorn>=0) then
           call mpirecv_nonblock_real(lubufi_og(:,:,:,ivar1:ivar2),nbuf_yz,lucorn,TOul,irecv_rq_FRlu)
           call mpisend_nonblock_real(lubufo_og(:,:,:,ivar1:ivar2),nbuf_yz,lucorn,TOlu,isend_rq_TOlu)
@@ -231,7 +231,7 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine initiate_isendrcv_bdry_ogrid
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry_ogrid(f)
+    subroutine finalize_isendrcv_bdry_ogrid(f_og)
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
@@ -240,8 +240,8 @@ module Solid_Cells_Mpicomm
 !
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f_og
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
       integer :: j
 !
       if (ivar2==0) return
@@ -257,8 +257,8 @@ module Solid_Cells_Mpicomm
         call mpiwait(irecv_rq_fromuppy)
         call mpiwait(irecv_rq_fromlowy)
         do j=ivar1,ivar2
-          f(:,1:m1_ogrid-1,n1_ogrid:n2_ogrid,j)=lbufyi_og(:,:,:,j)       ! set lower buffer
-          f(:,m2_ogrid+1:,n1_ogrid:n2_ogrid,j)=ubufyi_og(:,:,:,j)        ! set upper buffer
+          f_og(:,1:m1_ogrid-1,n1_ogrid:n2_ogrid,j)=lbufyi_og(:,:,:,j)       ! set lower buffer
+          f_og(:,m2_ogrid+1:,n1_ogrid:n2_ogrid,j)=ubufyi_og(:,:,:,j)        ! set upper buffer
         enddo
         call mpiwait(isend_rq_tolowy)
         call mpiwait(isend_rq_touppy)
@@ -272,12 +272,12 @@ module Solid_Cells_Mpicomm
         call mpiwait(irecv_rq_fromlowz)
         if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then            
           do j=ivar1,ivar2
-            f(:,m1_ogrid:m2_ogrid,1:n1_ogrid-1,j)=lbufzi_og(:,:,:,j)       ! set lower buffer
+            f_og(:,m1_ogrid:m2_ogrid,1:n1_ogrid-1,j)=lbufzi_og(:,:,:,j)       ! set lower buffer
           enddo
         endif
         if (.not. llast_proc_z .or. bcz12(j,2)=='p') then 
           do j=ivar1,ivar2
-            f(:,m1_ogrid:m2_ogrid,n2_ogrid+1:,j)=ubufzi_og(:,:,:,j)        ! set upper buffer
+            f_og(:,m1_ogrid:m2_ogrid,n2_ogrid+1:,j)=ubufzi_og(:,:,:,j)        ! set upper buffer
           enddo
         endif
         call mpiwait(isend_rq_tolowz)
@@ -293,12 +293,12 @@ module Solid_Cells_Mpicomm
         if (ulcorn>=0) call mpiwait(irecv_rq_FRul)
         do j=ivar1,ivar2
           if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            f(:,1:m1_ogrid-1,1:n1_ogrid-1,j)=llbufi_og(:,:,:,j)               ! fill lower left corner (ll)
-            f(:,m2_ogrid+1:,1:n1_ogrid-1,j)=ulbufi_og(:,:,:,j)                ! fill lower right corner (ul)
+            f_og(:,1:m1_ogrid-1,1:n1_ogrid-1,j)=llbufi_og(:,:,:,j)               ! fill lower left corner (ll)
+            f_og(:,m2_ogrid+1:,1:n1_ogrid-1,j)=ulbufi_og(:,:,:,j)                ! fill lower right corner (ul)
           endif
           if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
-            f(:,m2+1:,n2+1:,j)=uubufi_og(:,:,:,j)                             ! fill upper right corner (uu)
-            f(:,1:m1-1,n2+1:,j)=lubufi_og(:,:,:,j)                            ! fill upper left corner (lu)
+            f_og(:,m2+1:,n2+1:,j)=uubufi_og(:,:,:,j)                             ! fill upper right corner (uu)
+            f_og(:,1:m1-1,n2+1:,j)=lubufi_og(:,:,:,j)                            ! fill upper left corner (lu)
           endif
         enddo
         if (llcorn>=0) call mpiwait(isend_rq_TOll)
@@ -314,7 +314,7 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine finalize_isendrcv_bdry_ogrid
 !***********************************************************************
-    subroutine isendrcv_bdry_x_ogrid(f)
+    subroutine isendrcv_bdry_x_ogrid(f_og)
 !
 !  Isend and Irecv boundary values for x-direction. Sends and receives
 !  before continuing to y and z boundaries, as this allows the edges
@@ -322,13 +322,13 @@ module Solid_Cells_Mpicomm
 !
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f,4))
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f_og
+      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
       integer :: j
       integer, dimension(4), parameter ::  nbuf_x=(/nghost,ny_ogrid,nz_ogrid,ivar2-ivar1+1/)
 !
-      lbufxo_og(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
-      ubufxo_og(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
+      lbufxo_og(:,:,:,ivar1:ivar2)=f_og(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
+      ubufxo_og(:,:,:,ivar1:ivar2)=f_og(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
       call mpirecv_nonblock_real(ubufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,tolowx,irecv_rq_fromuppx)
       call mpirecv_nonblock_real(lbufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,touppx,irecv_rq_fromlowx)
       call mpisend_nonblock_real(lbufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,tolowx,isend_rq_tolowx)
@@ -341,12 +341,12 @@ module Solid_Cells_Mpicomm
 !
       if (.not. lfirst_proc_x) then
         do j=ivar1,ivar2
-          f( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi_og(:,:,:,j)  !!(set lower buffer)
+          f_og( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi_og(:,:,:,j)  !!(set lower buffer)
         enddo
       endif
       if (.not. llast_proc_x) then
         do j=ivar1,ivar2
-          f(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi_og(:,:,:,j)  !!(set upper buffer)
+          f_og(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi_og(:,:,:,j)  !!(set upper buffer)
         enddo
       endif
       call mpiwait(isend_rq_tolowx)
