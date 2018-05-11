@@ -1,6 +1,7 @@
 !$Id: particles_surfspec.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
 !
-!  This module takes care of everything related to reactive particles.
+!  MOUDLE_DOC: This module takes care the gas phase species in the
+!  MODULE_DOC: immediate vicinity of reactive particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -34,15 +35,15 @@ module Particles_surfspec
 !
   character(len=labellen), dimension(ninit) :: init_surf='nothing'
   character(len=10), dimension(:), allocatable :: solid_species
-  real, dimension(10) :: init_surf_mol_frac
+  real, dimension(10) :: init_surf_mol_frac ! INIT_DOC: Initial surface fraction
   real, dimension(:,:), allocatable :: nu_power
   integer, dimension(nchemspec) :: ispecaux=0
   integer :: ispecenth
-  integer :: ndiffsteps=3
+  integer :: ndiffsteps=3 ! RUN_DOC: Number of mass transfer diffusion steps
   integer :: Ysurf
-  logical :: lspecies_transfer=.true.
-  logical :: linfinite_diffusion=.true.
-  logical :: lboundary_explicit=.true.
+  logical :: lspecies_transfer=.true. ! RUN_DOC: species transfer between particle and gas
+  logical :: linfinite_diffusion=.true. ! RUN_DOC: infinitely fast diffusion between particle and gas
+  logical :: lboundary_explicit=.true. ! RUN_DOC: explicit evolution of particle surface species
   logical :: lpchem_cdtc=.false.
   logical :: lpchem_mass_enth=.true.
   logical :: lpfilter =.true.

@@ -1,6 +1,6 @@
 ! $Id: Particles_chemistry.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
 !
-!  This module takes care of everything related to reactive particles.
+!  MODULE_DOC: This module implements reactive particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -83,11 +83,11 @@ module Particles_chemistry
   real :: diffusivity = 0.0
   real, target :: total_carbon_sites=1.08e-8 ! [mol/cm^2]
   real :: chemplaceholder=0.0
-  real :: tortuosity=3.
+  real :: tortuosity=3. ! INIT_DOC: Particle pore tortuosity
   real, target :: true_density_carbon=1.800 ! g/cm^3
 ! The value of 8 is from 'A comprehensive model for char particle conversion in environments'
   real :: structural_parameter=8. ! [-] can be 8, seems not right
-  real :: startup_time=0.
+  real :: startup_time=0. ! INIT_DOC: Length of startup time for reactions
   real :: startup_quench
   real :: pre_energy=1.0
   real, dimension(:), allocatable :: Tp_pencil
@@ -95,11 +95,11 @@ module Particles_chemistry
   logical :: lpreactions=.true.
   logical :: first_pchem=.true.
   logical :: lpchem_debug = .false.
-  logical :: lthiele=.false.
-  logical :: lreactive_heating=.false.
-  logical :: lsurface_nopores=.false.
-  logical :: lbaum_and_street=.false.
-  logical :: lsherwood_const=.false.
+  logical :: lthiele=.false. ! RUN_DOC: internal porosity with thiele modulus
+  logical :: lreactive_heating=.false. ! RUN_DOC: reactive heating of the particle
+  logical :: lsurface_nopores=.false. ! RUN_DOC: reactive surface just surface of sphere
+  logical :: lbaum_and_street=.false. ! RUN_DOC: Analytical calculation of surface gas fraction
+  logical :: lsherwood_const=.false. ! RUN_DOC: constant sherwood number (2 for quiescent flow)
   logical :: lwrite=.true.
   logical :: reverse_reactions_present=.false.
   logical :: lheat_per_pencil=.false.

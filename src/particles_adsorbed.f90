@@ -1,6 +1,7 @@
 ! $Id: particles_adsorbed.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
 !
-!  This module takes care of everything related to reactive particles.
+!  MODULE_DOC: This module takes care of the evolution of adsorbed
+!  MODULE_DOC: species on the particle surface for reactive particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !

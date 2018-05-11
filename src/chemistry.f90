@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  This modules addes chemical species and reactions.
-!  The units used in the chem.in files are cm3,mole,sec,kcal and K
+!  MODULE_DOC: This modules adds chemical species and reactions.
+!  MODULE_DOC: The units used in the chem.in files are cm3,mole,sec,kcal and K
 !  This was found out by comparing the mechanism found in 
 !  samples/0D/chemistry_H2_ignition_delay
 !  with Flow Reactor Studies and Kinetic Modeling of the ReactionH/O22
