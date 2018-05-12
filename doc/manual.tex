@@ -2889,7 +2889,7 @@ Here is a list of the more important ones.
 
 \begin{description}
 \item[adapt-mkfile] Activate the settings in a \file{Makefile} that apply
-  to the given computer, see \S\ref{adapt-mkfile}.
+  to the given computer, see \S~\ref{adapt-mkfile}.
 \item[auto-test] Verify that the code compiles and runs in a set of run
   directories and compare the results to the reference output.
   These tests are carried out routinely to ensure that the \name{svn}
@@ -3274,7 +3274,7 @@ ionization energies), the corresponding routines in the code need to know
 the units you are using.
 This information is specified in \file{start.in} or \file{run.in} through
 the parameters \var{unit_system},
-\var{unit_length},  \var{unit_velocity},  \var{unit_density} and
+\var{unit_length},  \var{unit_velocity}, \var{unit_density} and
 \var{unit_temperature}\footnote{
   Note: the parameter \var{unit_temperature} is currently only used in
   connection with \name{ionization.f90}.
@@ -3676,7 +3676,7 @@ So the first call after starting \name{GDL} should be
 There are mainly two possibilities for visualization: using a simple GUI
 or loading the data with \code{pc_read} and work with it interactively.
 Please note that the GUI was written and tested only with IDL, see
-\S\ref{S-IDL-visualization}.
+\S~\ref{S-IDL-visualization}.
 
 Here, the \code{pc_read} family of IDL routines to read the data is described.
 Try
@@ -4347,7 +4347,7 @@ often seem to work fine at single precision).
 %AB: /wkspace/brandenb/pencil-google/postproc/src/realtodouble.f90
 To continue working in double precision, you just say
 \code{lread_from_other_prec=T} in \code{run_pars}; see
-Section~\ref{After-changing-REALPRECISION}.
+Sect.~\ref{After-changing-REALPRECISION}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4790,21 +4790,58 @@ the module \code{particles_coag_run_pars} in \code{run.in}.
 % ---------------------------------------------------------------------- %
 
 \subsection{Non-cartesian coordinate systems}
+\index{Coordinate systems}
+\label{Coordinate-systems}
 
-Since the spring of 2007 spherical and cylindrical polar coordinates
-have been implemented, although this development is not yet completed.
 Spherical coordinates are invoked by adding the following line
 in the file \file{start.in}
 \begin{verbatim}
 &init_pars
   coord_system='spherical_coords'
 \end{verbatim}
-Another possibility is to put \code{cylindrical_coords} instead.
+One can also invoke cylindrical coordinates by saying
+\code{cylindrical_coords} instead.
 In practice, the names $(x,y,z)$ are still used, but they refer then
 to $(r,\theta,\phi)$ or $(r,\phi,z)$ instead.
 
-Bug reports, corrections, and improvements on these are appreciated.
-
+When working with curvilinear coordinates it is convenient to use
+differential operators in the non-coordinate basis, so the derivatives
+are taken with respect to length, and not in a mixed fashion
+with respect to length for $\partial/\partial r$ and with respect
+to angle for $\partial/\partial\theta$ and $\partial/\partial\phi$.
+The components in the non-coordinate basis are denoted by hats, see, e.g.,
+\cite{MTW}, p.~213.
+For spherical polar coordinates the only nonvanishing Christoffel
+symbols (or connection coefficients) are
+\begin{eqnarray}
+{\Gamma^{\hat\theta}}_{{\hat r}{\hat\theta}}
+={\Gamma^{\hat\phi}}_{{\hat r}{\hat\phi}}
+=-{\Gamma^{\hat r}}_{{\hat\theta}{\hat\theta}}
+=-{\Gamma^{\hat r}}_{{\hat\phi}{\hat\phi}}
+=1/r,
+\end{eqnarray}
+\begin{eqnarray}
+{\Gamma^{\hat\phi}}_{{\hat\theta}{\hat\phi}}
+=-{\Gamma^{\hat\theta}}_{{\hat\phi}{\hat\phi}}
+=\cot\theta/r.
+\end{eqnarray}
+The Christoffel symbols enter as correction terms for the various
+differential operators in addition to a term calculated straightforwardly
+in the non-coordinate basis.
+The derivatives of some relevant Christoffel symbols are
+\begin{equation}
+{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat\theta}
+={\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat\phi}
+={\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\phi}=0
+\end{equation}
+\begin{equation}
+{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat r}
+={\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat r}=-r^{-2}
+\end{equation}
+\begin{equation}
+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\theta}=-r^{-2}\sin^{-2}\!\theta
+\end{equation}
+Further details are given in Appendix~\ref{Curvilinear-coordinates}.
 
 % ====================================================================== %
 
@@ -5623,7 +5660,7 @@ for magnetohydrodynamics.
 This is a rapidly evolving field and we refer the interested reader to
 recent papers in this field, e.g.\ by Sur et al.\ (2008) or
 Brandenburg et al.\ (2008).
-For technical details, see also Sect.~\ref{RestartingFromLessPhysics}.
+For technical details; see also Sect.~\ref{RestartingFromLessPhysics}.
 
 % ---------------------------------------------------------------------- %
 
@@ -7717,8 +7754,9 @@ For a complete list of options, run \cmd{pc_auto-test --help} and/or
 
 
 %%%
-\subsection{How to set up periodic tests}
+\subsection{How to set up periodic tests (auto-tests)}
 \label{S-nightly-tests}
+\index{Auto-tests}
 
 To set up a nightly test of the \textsc{Pencil Code}, carry out the
 following steps.
@@ -11163,8 +11201,7 @@ $\sqrt{4\pi}Y_l^m(\theta_i,\phi_i)$ over special sets of directions
 $(\theta_i,\phi_i)$.
 Using these numbers and requiring that angular integration is exact for
 $l\le l_{\rm max}$, we find the following weights $w_i$ for different sets
-of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
-
+of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65).\footnote{
 \begin{enumerate}
 \item \emph{Axes}
 
@@ -11249,12 +11286,965 @@ of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
   $l_{\rm max} = 5$
 
 \end{enumerate}
+}
 
+Cooling times have been determined numerically in \cite{BB14}.
+Comparing with analytic expressions obtained in the Eddington
+approximation, the proposed suitable switches in 1-D and 2-D problems.
 
 % ====================================================================== %
 
+\section{Curvilinear coordinates}
+\index{Curvilinear coordinates}
+\label{Curvilinear-coordinates}
+
+The use and implementation of non-cartesian coordinate systems
+is briefly explained in Section~\ref{Coordinate-systems}.
+All differential operators look like their cartesian counterparts,
+except that all derivatives are now replaced by covariant derivatives.
+Here some details.
+
+\subsection{Covariant derivatives}
+\index{Covariant derivatives}
+\label{Covariant-derivatives}
+
+\begin{equation}
+A_{\hat\alpha;\hat\beta}=A_{\hat\alpha,\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,A_{\hat\sigma},
+\end{equation}
+\begin{equation}
+A_{\hat\alpha\hat\beta;\hat\gamma}=A_{\hat\alpha\hat\beta,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,A_{\hat\alpha\hat\sigma}.
+\end{equation}
+Second derivative tensor
+\begin{eqnarray}
+A_{\hat\alpha;\hat\beta\hat\gamma}
+&=&A_{\hat\alpha;\hat\beta,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma;\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,A_{\hat\alpha;\hat\sigma}
+\cr
+&=&A_{\hat\alpha,\hat\beta\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,A_{\hat\sigma,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta,\hat\gamma}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma,\hat\beta}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\beta}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}.
+\nonumber
+\end{eqnarray}
+Elements of the first derivative tensor
+\begin{equation}
+A_{\hat r;\hat r}=A_{\hat r,\hat r},
+\quad\quad
+A_{\hat\theta;\hat\theta}=A_{\hat\theta,\hat\theta}
++r^{-1}\,A_{\hat r},
+\quad\quad
+A_{\hat\phi;\hat\phi}=A_{\hat\phi,\hat\phi}
++r^{-1}\,A_{\hat r}
++r^{-1}\!\cot\!\theta\,A_{\hat\theta}.
+\label{DiagonalElements}
+\end{equation}
+\begin{eqnarray}
+\begin{array}{lll}
+A_{\hat\phi;\hat\theta}=A_{\hat\phi,\hat\theta}
+\quad&
+A_{\hat\theta;\hat\phi}=A_{\hat\theta,\hat\phi}
+-r^{-1}\!\cot\!\theta\,A_{\hat\phi}
+\\
+A_{\hat r;\hat\phi}=A_{\hat r,\hat\phi}
+-r^{-1}\,A_{\hat\phi}
+\quad&
+A_{\hat\phi;\hat r}=A_{\hat\phi,\hat r}
+\\
+A_{\hat\theta;\hat r}=A_{\hat\theta,\hat r}
+\quad&
+A_{\hat r;\hat\theta}=A_{\hat r,\hat\theta}
+-r^{-1}\,A_{\hat\theta}
+\end{array}
+\label{OffDiagonalElements}
+\end{eqnarray}
+
+\subsection{Differential operators}
+
+All differential operators look like their cartesian counterparts,
+except that all derivatives are now replaced by covariant derivatives.
+
+\subsubsection{Gradient}
+\newcommand{\rrrr}{r}
+\newcommand{\zzzz}{z}
+\newcommand{\ddr}{\partial_{\hat r}}
+\newcommand{\ddt}{\partial_{\hat\theta}}
+\newcommand{\ddp}{\partial_{\hat\phi}}
+\newcommand{\DDr}{{\rm D}_r {}}
+\newcommand{\DDDr}{{\cal D}_r {}}
+\newcommand{\DDDDr}{{\rm D}^{-1}_r {}}
+\newcommand{\DDt}{{\rm D}_\theta {}}
+\newcommand{\Ddt}{{\rm D}_\theta^2 {}}
+\newcommand{\DDDDt}{{\rm D}^{-1}_\theta {}}
+\newcommand{\dDt}{{\cal D}_\theta^2 {}}
+\newcommand{\drr}{{\rm d}_r^2 {}}
+\newcommand{\dtt}{{\rm d}_\theta^2 {}}
+\newcommand{\dpp}{{\rm d}_\phi^2 {}}
+\newcommand{\Drr}{{\rm D}_r^2 {}}
+\newcommand{\DDrr}{{\cal D}_r^2 {}}
+
+For the gradient operator the covariant and partial derivatives are
+the same, i.e.\
+\begin{equation}
+\nab\Psi={\Psi}_{;{\hat\alpha}}={\Psi}_{,{\hat\alpha}}=
+\begin{pmatrix}
+\ddr\Psi\cr\ddt\Psi\cr\ddp\Psi
+\end{pmatrix}
+\end{equation}
+where
+\begin{eqnarray}
+\ddr&=&\partial_r\\
+\ddt&=&r^{-1}\partial_\theta\\
+\ddp&=&\varpi^{-1}\partial_\phi
+\end{eqnarray}
+and $\varpi=r\sin\theta$ is the cylindrical radius.
+Thus,
+\begin{equation}
+\nab\Psi=\left(\nab\Psi\right)^{(0)},
+\end{equation}
+where the superscript $(0)$ indicated the straightforward
+calculation in the non-coordinate basis.
+The coordinate and non-coordinate bases are related to each other via
+\begin{equation}
+\left(\nab\Psi\right)^{0}
+\equiv
+\begin{pmatrix}
+\Psi_{,\hat r}\cr\Psi_{,\hat\theta}\cr\Psi_{,\hat\phi}
+\end{pmatrix}
+\begin{pmatrix}
+1 & 0 & 0\cr 0 & r^{-1} & 0 \cr 0 & 0 & \varpi^{-1}
+\end{pmatrix}
+\left(\nab\Psi\right)^{(\rm coord)}.
+\end{equation}
+Here, the result in the coordinate basis is just what one would
+get by computing as if one had cartesian coordinates.
+In the {\sc Pencil Code} the output or the subroutine {\sf der} is
+now in this non-coordinate basis.
+
+\subsubsection{Divergence}
+
+For the divergence operator we have a `correction term', i.e.\
+\begin{eqnarray}
+\nab\cdot\Av&=&{A^{\hat\alpha}}_{;{\hat\alpha}}
+\\
+             &=&{A^{\hat\alpha}}_{,{\hat\alpha}}
++{\Gamma^{\hat\alpha}}_{{\hat\beta}{\hat\alpha}}A^{\hat\beta},
+\end{eqnarray}
+where the only non-vanishing contributions to
+the last term are
+\begin{eqnarray}
+{\Gamma^{\hat\alpha}}_{{\hat\beta}{\hat\alpha}}A^{\hat\beta}
+&=&{\Gamma^{\hat\theta}}_{{\hat r}{\hat\theta}}A^{\hat r}
++{\Gamma^{\hat\phi}}_{{\hat r}{\hat\phi}}A^{\hat r}
++{\Gamma^{\hat\phi}}_{{\hat\theta}{\hat\phi}}A^{\hat\theta}
+\\
+&=&2r^{-1}A^{\hat r}+r^{-1}\!\cot\!\theta\; A^{\hat\theta}.
+\end{eqnarray}
+Thus,
+\begin{equation}
+\nab\cdot\Av=\left(\nab\cdot\Av\right)^{(0)}
++M^{\rm(div)}_{\hat\alpha}A_{\hat\alpha},
+\end{equation}
+where
+\begin{equation}
+M^{\rm(div)}_{\hat\alpha}=
+\begin{pmatrix}
+2r^{-1}\cr r^{-1}\!\cot\!\theta\cr 0\cr
+\end{pmatrix}
+\end{equation}
+represents the correction term.
+
+Alternatively:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha}&=&A_{\hat\alpha,\hat\alpha}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma}
+\\
+&=&A_{\hat\alpha,\hat\alpha}
++2r^{-1}A_{\hat r}+r^{-1}\!\cot\!\theta\; A_{\hat\theta}.
+\end{eqnarray}
+
+\subsubsection{Curl}
+
+The curl operator is given by
+\begin{equation}
+(\nab\times\Bv)^{\hat\alpha}
+=\epsilon^{\hat\alpha\hat\beta\hat\gamma}B_{\hat\gamma,\hat\beta}.
+\end{equation}
+So
+\begin{equation}
+\nab\times\Av=
+\begin{pmatrix}
+A_{\hat\phi;\hat\theta}-A_{\hat\theta;\hat\phi}\cr
+A_{\hat r;\hat\phi}-A_{\hat\phi;\hat r}\cr
+A_{\hat\theta;\hat r}-A_{\hat r;\hat\theta}
+\end{pmatrix}
+\end{equation}
+\begin{equation}
+\nab\times\Av=
+\begin{pmatrix}
+A_{\hat\phi,\hat\theta}-A_{\hat\theta,\hat\phi}
+  +{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi}\cr
+A_{\hat r,\hat\phi}-A_{\hat\phi,\hat r}
+  -{\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi}\cr
+A_{\hat\theta,\hat r}-A_{\hat r,\hat\theta}
+  +{\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta}
+\end{pmatrix}
+\end{equation}
+Thus,
+\begin{equation}
+\nab\times\Av=\left(\nab\times\Av\right)^{(0)}
++M^{\rm(curl)}_{\hat\alpha\hat\beta}A_{\hat\beta},
+\end{equation}
+where
+\begin{equation}
+M^{\rm(curl)}_{\hat\alpha\hat\beta}=
+\begin{pmatrix}
+0 & 0 & r^{-1}\!\cot\!\theta\cr 0 & 0 & -r^{-1}\cr 0 & r^{-1} & 0\cr
+\end{pmatrix}
+\end{equation}
+is the correction term.
+In the {\sc Pencil Code} we use the subroutine {\sf curl\_mn(aij,bb,aa)},
+which uses {\sf aij}$=A_{\hat\alpha,\hat\beta}$ and {\sf aa}$=A_{\hat\alpha}$
+as input pencils and produces {\sf bb}$=B_{\hat\alpha}$ as output.
+
+%\subsubsection{$\uv\cdot\nab\uv$ operator} XX
+\subsubsection{Advection operator}
+
+[The usage of roman indices here is insignificant.]
+
+\begin{equation}
+\uv\cdot\nab\uv=\omv\times\uv+\half\nab\uv^2=-\uv\times\omv+\half\nab\uv^2
+\end{equation}
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_i
+&=&-\epsilon_{ijk}\epsilon_{klm}u_ju_{m;l}+u_ju_{j,i}
+\cr
+&=&(-\delta_{il}\delta_{jm}+\delta_{im}\delta_{jl})u_ju_{m;l}+u_ju_{j,i}
+\cr
+&=&-u_ju_{j;i}+u_ju_{i;j}+u_ju_{j,i}
+\cr
+&=&u_ju_{i;j}+{\Gamma^k}_{ji}u_ju_{k}
+\cr
+&=&u_ju_{i,j}+(-{\Gamma^k}_{ij}+{\Gamma^k}_{ji})u_ju_{k}
+\end{eqnarray}
+Note that the terms with
+${\Gamma^{\hat r}}_{{\hat\theta}{\hat\theta}}$,
+${\Gamma^{\hat r}}_{{\hat\phi}{\hat\phi}}$, and
+${\Gamma^{\hat\theta}}_{{\hat\phi}{\hat\phi}}$ drop out.
+Thus, we have
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_{\hat r}
+&=&u_ju_{\hat r,j}+(-{\Gamma^k}_{\hat rj}+{\Gamma^k}_{j\hat r})\,u_ju_{k}
+\cr
+&=&u_ju_{\hat r,j}-{\Gamma^{\hat\theta}}_{\hat r\hat\theta}\,u_{\hat\theta}^2-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}\,u_{\hat\phi}^2
+\cr
+&=&u_ju_{\hat r,j}-r^{-1}(u_{\hat\theta}^2+u_{\hat\phi}^2)
+\end{eqnarray}
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_{\hat\theta}
+&=&u_ju_{\hat\theta,j}+(-{\Gamma^k}_{\hat\theta j}+{\Gamma^k}_{j\hat\theta})\,u_ju_{k}
+\cr
+&=&u_ju_{\hat\theta,j}-{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,u_{\hat\phi}^2+{\Gamma^{\hat\theta}}_{\hat r\hat\theta}\,u_{\hat r}u_{\hat\theta}
+\cr
+&=&u_ju_{\hat\theta,j}-r^{-1}\cot\!\theta\,u_{\hat\phi}^2+r^{-1}u_{\hat r}u_{\hat\theta}
+\end{eqnarray}
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_{\hat\phi}
+&=&u_ju_{\hat\phi,j}+(-{\Gamma^k}_{\hat\phi j}+{\Gamma^k}_{j\hat\phi})\,u_ju_{k}
+\cr
+&=&u_ju_{\hat\phi,j}+{\Gamma^{\hat\phi}}_{\hat r\hat\phi}\,u_{\hat r}u_{\hat\phi}+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,u_{\hat\theta}u_{\hat\phi}
+\cr
+&=&u_ju_{\hat\phi,j}+r^{-1}u_{\hat r}u_{\hat\phi}+r^{-1}\cot\!\theta\,u_{\hat\theta}u_{\hat\phi}
+\end{eqnarray}
+
+Note that the formulation above is slightly misleading, because
+\begin{equation}
+{\Gamma^k}_{j\hat\theta}\,u_ju_{k}
+={\Gamma^{\hat r}}_{\hat\theta\hat\theta}\,u_{\hat\theta}u_{\hat r}
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta}\,u_{\hat r}u_{\hat\theta}
+=0
+\end{equation}
+\begin{equation}
+{\Gamma^k}_{j\hat\phi}\,u_ju_{k}
+={\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,u_{\hat\phi}u_{\hat r}
++{\Gamma^{\hat\phi}}_{\hat r\hat\phi}\,u_{\hat r}u_{\hat\phi}
++{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,u_{\hat\phi}u_{\hat\theta}
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,u_{\hat\theta}u_{\hat\phi}
+=0
+\end{equation}
+
+%\subsubsection{$\uv\times\Bv$ term} XX
+\subsubsection{Mixed advection operator}
+
+\begin{equation}
+\uv\times\Bv=\uv\times\nab\Bv
+=u_j\epsilon_{ijk}\epsilon_{klm}A_{m;l}
+=u_j(\delta_{il}\delta_{jm}-\delta_{im}\delta_{jl})A_{m;l}
+=u_jA_{j;i}-u_jA_{i;j}
+\end{equation}
+
+%\subsubsection{Shear term, $u_jA_{j;i}$} XX
+\subsubsection{Shear term}
+
+\begin{equation}
+u_jA_{j;i}
+=(u_jA_j)_{;i}-u_{j;i}A_j
+=(u_jA_j)_{,i}-u_{j;i}A_j
+\end{equation}
+\begin{equation}
+u_{j;i}A_j=u_{j,i}A_j-\Gamma^k_{ji}u_kA_j
+\end{equation}
+So
+\begin{equation}
+u_{\hat\phi;\hat r}A_{\hat\phi}
+=u_{\hat\phi,\hat r}A_{\hat\phi}
+-\Gamma^k_{\hat\phi\hat r}u_kA_{\hat\phi}
+=u_{\hat\phi,\hat r}A_{\hat\phi}
+\end{equation}
+\begin{equation}
+u_{\hat r;\hat\phi}A_{\hat r}
+=u_{\hat r,\hat\phi}A_{\hat r}
+-\Gamma^{\hat\phi}_{\hat r\hat\phi}u_{\hat\phi}A_{\hat r}
+\end{equation}
+
+%\subsubsection{$\uv\cdot\nab\Av$ operator} XX
+\subsubsection{Another mixed advection operator}
+
+\begin{equation}
+u_{\hat\beta} A_{\hat\alpha;\hat\beta}=u_{\hat\beta} A_{\hat\alpha,\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,u_{\hat\beta} A_{\hat\sigma},
+\end{equation}
+Write out
+\begin{eqnarray}
+(\uv\cdot\nab\Av)_{\hat r}=
+u_{\hat r}A_{\hat r;\hat r}
++u_{\hat\theta}A_{\hat r;\hat\theta}
++u_{\hat\phi}A_{\hat r;\hat\phi}
+&=&u_{\hat r}A_{\hat r,\hat r},
++u_{\hat\theta}A_{\hat r,\hat\theta}-r^{-1}\,u_{\hat\theta}A_{\hat\theta}
++u_{\hat\phi}A_{\hat r,\hat\phi}-r^{-1}\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\theta}=
+u_{\hat r}A_{\hat\theta;\hat r}
++u_{\hat\theta}A_{\hat\theta;\hat\theta}
++u_{\hat\phi}A_{\hat\theta;\hat\phi}
+&=&u_{\hat r}A_{\hat\theta,\hat r}
++u_{\hat\theta}A_{\hat\theta,\hat\theta}+r^{-1}\,u_{\hat\theta}A_{\hat r},
++u_{\hat\phi}A_{\hat\theta,\hat\phi}-r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\phi}=
+u_{\hat r}A_{\hat\phi;\hat r}
++u_{\hat\theta}A_{\hat\phi;\hat\theta}
++u_{\hat\phi}A_{\hat\phi;\hat\phi}
+&=&u_{\hat r}A_{\hat\phi,\hat r}
++u_{\hat\theta}A_{\hat\phi,\hat\theta}
++u_{\hat\phi}A_{\hat\phi,\hat\phi}+r^{-1}\,u_{\hat\phi}A_{\hat r}+r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\theta}.
+\nonumber
+\end{eqnarray}
+Reorder
+\begin{eqnarray}
+(\uv\cdot\nab\Av)_{\hat r}
+&=&u_{\hat r}A_{\hat r,\hat r}+u_{\hat\theta}A_{\hat r,\hat\theta}+u_{\hat\phi}A_{\hat r,\hat\phi}
+-r^{-1}\,u_{\hat\theta}A_{\hat\theta}-r^{-1}\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\theta}
+&=&u_{\hat r}A_{\hat\theta,\hat r}+u_{\hat\theta}A_{\hat\theta,\hat\theta}+u_{\hat\phi}A_{\hat\theta,\hat\phi}
++r^{-1}\,u_{\hat\theta}A_{\hat r}-r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\phi}
+&=&u_{\hat r}A_{\hat\phi,\hat r}+u_{\hat\theta}A_{\hat\phi,\hat\theta}+u_{\hat\phi}A_{\hat\phi,\hat\phi}
++r^{-1}\,u_{\hat\phi}A_{\hat r}+r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\theta}.
+\end{eqnarray}
+
+\subsubsection{Strain Matrix}
+
+The strain matrix takes the form
+$2{\sf s}_{\hat\alpha\hat\beta}=
+u_{\hat\alpha;\hat\beta}+u_{\hat\beta;\hat\alpha}$.
+The components of the covariant derivative tensor were given in
+Eqs.~(\ref{DiagonalElements}) and (\ref{OffDiagonalElements}),
+so the final result reads
+\begin{equation}
+2{\sf s}
+\equiv
+\begin{pmatrix}
+2u_{\hat r,\hat r}&
+  u_{\hat r,\hat\theta}+u_{\hat\theta,\hat r}-u_{\hat\theta}/r&
+    u_{\hat r,\hat\phi}+u_{\hat\phi,\hat r}-u_{\hat\phi}/r\cr
+u_{\hat r,\hat\theta}+u_{\hat\theta,\hat r}-u_{\hat\theta}/r&
+  2u_{\hat\theta,\hat\theta}+2u_{\hat r}/r&
+    u_{\hat\theta,\hat\phi}+u_{\hat\phi,\hat\theta}-
+                              u_{\hat\phi}\frac{\cot\!\theta}{r}\cr
+u_{\hat r,\hat\phi}+u_{\hat\phi,\hat r}-u_{\hat\phi}/r&
+  u_{\hat\theta,\hat\phi}+u_{\hat\phi,\hat\theta}-
+                              u_{\hat\phi}\frac{\cot\!\theta}{r}&
+    2u_{\hat\phi,\hat\phi}+2u_{\hat r}/r+
+                               2u_{\hat\theta}\frac{\cot\!\theta}{r}
+\end{pmatrix}
+\end{equation}
+The trace-less rate of strain matrix is given by
+\begin{equation}
+{\sf S}_{ij}={\sf s}_{ij}-\onethird\delta_{ij}\nab\cdot\uv.
+\end{equation}
+
+\subsubsection{Lambda effect}
+
+\begin{equation}
+Q_{ij}=
+\begin{pmatrix}
+0 & 0 & \Lambda_V\Omega \cr
+0 & 0 & \Lambda_H\Omega \cr
+\Lambda_V\Omega & \Lambda_H\Omega & 0
+\end{pmatrix}
+\end{equation}
+where $\Omega=u_{\hat\phi}/r\sin\theta$.
+Next, compute $Q_{ij;j}$.
+\begin{eqnarray}
+Q_{\hat\alpha\hat\beta;\hat\gamma}
+&=&Q_{\hat\alpha\hat\beta,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,Q_{\hat\sigma\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,Q_{\hat\alpha\hat\sigma}.
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\theta\hat\rrrr;\hat\rrrr}
+&=&Q_{\hat\theta\hat\rrrr,\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\rrrr}\,Q_{\hat\sigma\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\theta\hat\sigma}.
+\cr
+&=&0
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\theta\hat\theta;\hat\theta}
+&=&Q_{\hat\theta\hat\theta,\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\sigma\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\sigma}.
+\cr
+&=&
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\theta}
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\phi}.
+\cr
+&=&0
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\theta\hat\phi;\hat\phi}
+&=&Q_{\hat\theta\hat\phi,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\phi}\,Q_{\hat\sigma\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\sigma}.
+\cr
+&=&Q_{\hat\theta\hat\phi,\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,Q_{\hat\phi\hat\phi}
+-{\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat r}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\theta}.
+\cr
+&=&0
+\end{eqnarray}
+%--------------------------------------------------------------------
+$\phi$ terms
+\begin{eqnarray}
+Q_{\hat\phi\hat\rrrr;\hat\rrrr}
+&=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\rrrr}\,Q_{\hat\sigma\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\phi\hat\sigma}.
+\cr
+&=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\phi\hat\theta;\hat\theta}
+&=&Q_{\hat\phi\hat\theta,\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\theta}\,Q_{\hat\sigma\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\sigma}
+\cr
+&=&Q_{\hat\phi\hat\theta,\hat\theta}
+-{\Gamma^{\hat\rrrr}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\rrrr}
+\cr
+&=&Q_{\hat\phi\hat\theta,\hat\theta}
++r^{-1}\,Q_{\hat\phi\hat\rrrr}
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\phi\hat\phi;\hat\phi}
+&=&Q_{\hat\phi\hat\phi,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\sigma\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\sigma}
+\cr
+&=&
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\sigma\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\sigma}
+\cr
+\cr
+&=&
+-{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,Q_{\hat\rrrr\hat\phi}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\phi}
+-{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\rrrr}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\theta}
+\cr
+&=&
++r^{-1}\,Q_{\hat\rrrr\hat\phi}
++\cot\theta\,r^{-1}\,Q_{\hat\theta\hat\phi}
++r^{-1}\,Q_{\hat\phi\hat\rrrr}
++\cot\theta\,r^{-1}\,Q_{\hat\phi\hat\theta}
+\cr
+&=&
++2r^{-1}\,\Lambda_{\rm V}\Omega
++2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega
+\end{eqnarray}
+So, the $\phi$ component of the divergence of the Lambda tensor is then
+\begin{equation}
+Q_{\hat\phi\hat\sigma;\hat\sigma}=
+Q_{\hat\phi\hat\rrrr,\hat\rrrr}
++Q_{\hat\phi\hat\theta,\hat\theta}
++3r^{-1}\,\Lambda_{\rm V}\Omega
++2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega
+\end{equation}
+
+\subsubsection{Laplacian of a scalar}
+Let
+$E_{\hat \alpha}\equiv (\nab\Psi)_{\hat\alpha} = \partial_{\hat\alpha}\Psi$
+Then
+\begin{equation}
+\Delta\Psi = E_{\hat\beta;\hat\beta}
+= (\partial_{\hat\beta}\Psi)_{,\hat\beta} +
+  \frac{2}{r}\Psi_{,\hat r} + \frac{\cot\!\theta}{r}\Psi_{,\hat\theta}
+\end{equation}
+
+\subsubsection{Hessian of a scalar}
+
+\begin{equation}
+s_{;\hat\alpha}=s_{,\hat\alpha}
+\end{equation}
+\begin{equation}
+s_{;\hat\rrrr\hat\rrrr}
+=s_{,\hat\rrrr\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,s_{,\hat\sigma},
+=s_{,\hat\rrrr\hat\rrrr}
+\end{equation}
+\begin{equation}
+s_{;\hat\theta\hat\theta}
+=s_{,\hat\theta\hat\theta}
+-{\Gamma^{\hat\rrrr}}_{\hat\theta\hat\theta}\,s_{,\hat\rrrr},
+=s_{,\hat\theta\hat\theta}
++r^{-1}\,s_{,\hat\rrrr},
+\end{equation}
+\begin{equation}
+s_{;\hat\phi\hat\phi}
+=s_{,\hat\phi\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,s_{,\hat\sigma},
+=s_{,\hat\phi\hat\phi}
+-{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,s_{,\hat\rrrr},
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,s_{,\hat\theta},
+=s_{,\hat\phi\hat\phi}
++r^{-1}\,s_{,\hat\rrrr},
++r^{-1}\cot\theta\,s_{,\hat\theta},
+\end{equation}
+\begin{equation}
+s_{;\hat\rrrr\hat\theta}
+=s_{,\hat\rrrr\hat\theta}
+-{\Gamma^{\hat\theta}}_{\hat\rrrr\hat\theta}\,s_{,\hat\theta},
+=s_{,\hat\rrrr\hat\theta}
+-r^{-1}\,s_{,\hat\theta},
+\end{equation}
+\begin{equation}
+s_{;\hat\rrrr\hat\phi}
+=s_{,\hat\rrrr\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat\rrrr\hat\phi}\,s_{,\hat\phi},
+=s_{,\hat\rrrr\hat\phi}-r^{-1}\,s_{,\hat\phi}
+\end{equation}
+\begin{equation}
+s_{;\hat\theta\hat\rrrr}
+=s_{,\hat\theta\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\rrrr}\,s_{,\hat\sigma},
+=s_{,\hat\theta\hat\rrrr}
+\end{equation}
+\begin{equation}
+s_{;\hat\phi\hat\rrrr}
+=s_{,\hat\phi\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\rrrr}\,s_{,\hat\sigma},
+=s_{,\hat\phi\hat\rrrr}
+\end{equation}
+\begin{equation}
+s_{;\hat\theta\hat\phi}
+=s_{,\hat\theta\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,s_{,\hat\phi},
+=s_{,\hat\theta\hat\phi}
+-r^{-1}\cot\theta\,s_{,\hat\phi}
+\end{equation}
+\begin{equation}
+s_{;\hat\phi\hat\theta}
+=s_{,\hat\phi\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\theta}\,s_{,\hat\sigma},
+=s_{,\hat\phi\hat\theta}
+\end{equation}
+So,
+\begin{equation}
+s_{;\hat\alpha\hat\beta}=s_{,\hat\alpha\hat\beta}+
+\begin{pmatrix}
+0 & -r^{-1}\,s_{,\hat\theta} & -r^{-1}\,s_{,\hat\phi} \cr
+0 & +r^{-1}\,s_{,\hat\rrrr}  & -r^{-1}\cot\theta\,s_{,\hat\phi} \cr
+0 & 0 & -{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,s_{,\hat\rrrr}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,s_{,\hat\theta}
+\end{pmatrix}
+\end{equation}
+
+\subsubsection{Double curl}
+
+For the calculation of $\Jv=\nab\times\Bv$ we use the same
+curl routine, but with different arguments,
+{\sf bij}$=B_{\hat\alpha,\hat\beta}$ and {\sf bb}$=B_{\hat\alpha}$
+as input pencils and {\sf jj}$=J_{\hat\alpha}$ as output,
+i.e.\ {\sf curl\_mn(bij,jj,bb)}, so that
+\begin{equation}
+\Jv=
+\begin{pmatrix}
+B_{\hat\phi,\hat\theta}-B_{\hat\theta,\hat\phi}
+  +{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}B^{\hat\phi}\cr
+B_{\hat r,\hat\phi}-B_{\hat\phi,\hat r}
+  -{\Gamma^{\hat\phi}}_{\hat r\hat\phi}B^{\hat\phi}\cr
+B_{\hat\theta,\hat r}-B_{\hat r,\hat\theta}
+  +{\Gamma^{\hat\theta}}_{\hat r\hat\theta}B^{\hat\theta}
+\end{pmatrix}
+=\left(\nab\times\Bv\right)^{(0)}
++M^{\rm(curl)}_{\hat\alpha\hat\beta}B_{\hat\beta},
+\end{equation}
+where
+\begin{equation}
+(\nab\times\Bv)^{(0) \hat\alpha}
+=\epsilon^{\hat\alpha\hat\beta\hat\gamma}B_{\hat\gamma,\hat\beta}.
+\end{equation}
+Expressing the components of $\left(\nab\times\Bv\right)^{(0)}$ in terms
+of $A_{\hat\alpha}$ we have
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=
+(A_{\hat\theta,\hat r}-A_{\hat r,\hat\theta}+{\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=
+(A_{\hat r,\hat\phi}-A_{\hat\phi,\hat r}-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\\
+B_{\hat r,\hat\phi}=
+(A_{\hat\phi,\hat\theta}-A_{\hat\theta,\hat\phi}+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=
+(A_{\hat\theta,\hat r}-A_{\hat r,\hat\theta}+{\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat r}
+\\
+B_{\hat\theta,\hat r}=
+(A_{\hat r,\hat\phi}-A_{\hat\phi,\hat r}-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat r}
+\quad&
+B_{\hat r,\hat\theta}=
+(A_{\hat\phi,\hat\theta}-A_{\hat\theta,\hat\phi}+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\theta}
+\end{array}
+\end{eqnarray}
+or
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=
+A_{\hat\theta,\hat r\hat\theta}-A_{\hat r,\hat\theta\hat\theta}+({\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=
+A_{\hat r,\hat\phi\hat\phi}-A_{\hat\phi,\hat r\hat\phi}-({\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\\
+B_{\hat r,\hat\phi}=
+A_{\hat\phi,\hat\theta\hat\phi}-A_{\hat\theta,\hat\phi\hat\phi}+({\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=
+A_{\hat\theta,\hat r\hat r}-A_{\hat r,\hat\theta\hat r}+({\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat r}
+\\
+B_{\hat\theta,\hat r}=
+A_{\hat r,\hat\phi\hat r}-A_{\hat\phi,\hat r\hat r}-({\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat r}
+\quad&
+B_{\hat r,\hat\theta}=
+A_{\hat\phi,\hat\theta\hat\theta}-A_{\hat\theta,\hat\phi\hat\theta}+({\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\theta}
+\end{array}
+\end{eqnarray}
+Thus,
+\begin{equation}
+B_{\hat\alpha,\hat\beta}
+=(B_{\hat\alpha,\hat\beta})^{(0)}
++M^{\rm(2curl2)}_{\hat\alpha\hat\beta\hat\gamma\hat\delta}
+A_{\hat\gamma,\hat\delta}
++M^{\rm(1curl2)}_{\hat\alpha\hat\beta\hat\gamma}A_{\hat\gamma},
+\end{equation}
+where
+\begin{equation}
+(B_{\hat\alpha,\hat\delta})^{(0)}
+=\epsilon_{\hat\alpha\hat\beta\hat\gamma}A_{\hat\gamma,\hat\beta\hat\delta}
+\end{equation}
+with
+\begin{eqnarray}
+\Psi_{,\hat r\hat r}&=&\Psi_{,rr}
+\\
+\Psi_{,\hat\theta\hat\theta}&=&\Psi_{,\theta\theta}\;r^{-2}
+\\
+\Psi_{,\hat\phi\hat\phi}&=&\Psi_{,\phi\phi}\;r^{-2}\sin^{-2}\!\theta
+\\
+\Psi_{,\hat r\hat\theta}&=&\Psi_{,r\theta}\;r^{-1}
+\\
+\Psi_{,\hat\theta\hat r}&=&\Psi_{,\theta r}\;r^{-1}
+-\Psi_{,\hat\theta}\;r^{-1}
+\\
+\Psi_{,\hat r\hat\phi}&=&\Psi_{,r\phi}\;r^{-1}\sin^{-1}\!\theta
+\\
+\Psi_{,\hat\phi\hat r}&=&\Psi_{,\phi r}\;r^{-1}\sin^{-1}\!\theta
+-\Psi_{,\hat\phi}\;r^{-1}
+\\
+\Psi_{,\hat\theta\hat\phi}&=&\Psi_{,\theta\phi}\;r^{-2}\sin^{-1}\!\theta
+\end{eqnarray}
+and
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=...
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta}{A^{\hat\theta}}_{,\hat\theta}
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat\theta}A^{\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=...
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}{A^{\hat\phi}}_{,\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat\phi}A^{\hat\phi}
+\\
+B_{\hat r,\hat\phi}=...
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}{A^{\hat\phi}}_{,\hat\phi}
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\phi}A^{\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=...
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta}{A^{\hat\theta}}_{,\hat r}
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat r}A^{\hat\theta}
+\\
+B_{\hat\theta,\hat r}=...
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}{A^{\hat\phi}}_{,\hat r}
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat r}A^{\hat\phi}
+\quad&
+B_{\hat r,\hat\theta}=...
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}{A^{\hat\phi}}_{,\hat\theta}
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\theta}A^{\hat\phi}
+\end{array}
+\end{eqnarray}
+Note that some derivatives of Christoffel symbols vanish, so
+we are left with
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=...
++r^{-1}{A^{\hat\theta}}_{,\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=...
+-r^{-1}{A^{\hat\phi}}_{,\hat\phi}
+\\
+B_{\hat r,\hat\phi}=...
++r^{-1} \cot\!\theta {A^{\hat\phi}}_{,\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=...
++r^{-1}{A^{\hat\theta}}_{,\hat r}
+-r^{-2}A^{\hat\theta}
+\\
+B_{\hat\theta,\hat r}=...
+-r^{-1}{A^{\hat\phi}}_{,\hat r}
++r^{-2}A^{\hat\phi}
+\quad&
+B_{\hat r,\hat\theta}=...
++r^{-1} \cot\!\theta\, {A^{\hat\phi}}_{,\hat\theta}
+-r^{-2}\sin^{-2}\!\theta\, A^{\hat\phi}
+\end{array}
+\end{eqnarray}
+
+%\subsubsection{The $\grad\dive$ operator} XX
+\subsubsection{Gradient of a divergence}
+
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat\gamma}
+&=&A_{\hat\alpha,\hat\alpha\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\gamma}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}.
+\nonumber
+\end{eqnarray}
+$\hat r$ component:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat r}
+&=&A_{\hat\alpha,\hat\alpha\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat r}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat r}\,A_{\hat\sigma}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat r}
++2r^{-1}\,A_{\hat r,\hat r}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat r}
+-2r^{-2}\,A_{\hat r}
+-r^{-2}\cot\!\theta A_{\hat\theta}
+\end{eqnarray}
+$\hat\theta$ component:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat\theta}
+&=&A_{\hat\alpha,\hat\alpha\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\theta}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\theta}
++2r^{-1}\,A_{\hat r,\hat\theta}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\theta}
+-r^{-2}\sin\!^{-2}\theta A_{\hat\theta}
+\end{eqnarray}
+Note that the last four terms in the above expression canceled, because
+\begin{eqnarray}
+&&-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&
+-r^{-1}\,A_{\hat\theta,\hat r}
++r^{-1}\,A_{\hat r,\hat\theta}
+-r^{-2}\,A_{\hat\theta}
+-r^{-1}\,A_{\hat r,\hat\theta}
++r^{-1}\,A_{\hat\theta,\hat r}
++r^{-2}\,A_{\hat\theta}
+=0
+\end{eqnarray}
+$\hat\phi$ component:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat\phi}
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\phi}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}.
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\phi}\,A_{\hat\sigma}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\phi}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat r}}_{\hat\theta\hat\theta}\,A_{\hat r,\hat\phi}
+-{\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,A_{\hat r,\hat\phi}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,A_{\hat\theta,\hat\phi}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
++r^{-1}A_{\hat r,\hat\phi}
++r^{-1}A_{\hat r,\hat\phi}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\phi}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
++2r^{-1}A_{\hat r,\hat\phi}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\phi}
+\end{eqnarray}
+In the first line of the expression above, the last four terms vanish\footnote{
+The following four terms vanish because
+\begin{eqnarray}
+&&-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}(
+-A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu})
+\cr
+&=&{\Gamma^{\hat\phi}}_{\hat r\hat\phi}(
+-A_{\hat\phi,\hat r}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu}
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat r}}_{\hat\phi\hat\phi}(
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat r}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}(
+-A_{\hat\phi,\hat\theta}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu}
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}(
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat\theta}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu})
+\cr
+&=&{\Gamma^{\hat\phi}}_{\hat r\hat\phi}(
+-A_{\hat\phi,\hat r}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu}
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat r}}_{\hat\phi\hat\phi}(
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat r}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu})
+)
+\cr
+&+&{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}(
+-A_{\hat\phi,\hat\theta}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu}
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}(
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat\theta}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu})
+)
+\cr
+&=&r^{-1}(
+-A_{\hat\phi,\hat r}
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu})
+\cr
+&-&r^{-1}(
+-A_{\hat r,\hat\phi}
+-A_{\hat\phi,\hat r}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu}
+)
+\cr
+&+&r^{-1}\cot\!\theta(
+-A_{\hat\phi,\hat\theta}
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu})
+\cr
+&-&r^{-1}\cot\!\theta(
+-A_{\hat\theta,\hat\phi}
+-A_{\hat\phi,\hat\theta}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu}
+)=0
+\end{eqnarray}
+} and the $\phi$ derivative of any Christoffel symbol (term before that)
+also vanishes.
+
+%====================================================================== %
+
 \section{Switchable modules}
   \label{Tab-modules}
+
+The material in this section is being assembled from the file
+\file{inlinedoc-modules.tex}, which is automatically assembled.
+However, it is currently incomplete and contains only a small
+number of the available modules.
 
 \input{inlinedoc-modules.tex}
 
@@ -11360,7 +12350,7 @@ of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
 
 
 
-% % ====================================================================== %
+% ====================================================================== %
 
 \section{Startup and run-time parameters}
 \label{S-all-parameters}
@@ -12803,6 +13793,10 @@ initial condition.
   \emph{Pocketbook of Mathematical Functions\/},
   Harri Deutsch, Frankfurt (1984)
 
+\bibitem{BB14} Barekat, A., \& Brandenburg, A.,
+  \emph{Astron. Astrophys.} \textbf{571}, A68 (2014)
+  ``Near-polytropic stellar simulations with a radiative surface''
+
 \bibitem{Ref-2} Brandenburg, A.,
   \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
   ``The inverse cascade and nonlinear alpha-effect in simulations
@@ -12904,6 +13898,10 @@ Cambridge University Press (2008)
 \bibitem{Lele92}Lele, S. K.,
   \emph{J. Comp. Phys.} \textbf{103}, 16--42 (1992)
   ``Compact finite difference schemes with spectral-like resolution''
+
+\bibitem{MTW} Misner, C. W., Thorne, K. S. \& Wheeler, J. A.
+  \emph{Gravitation},
+  San Francisco: W.H. Freeman and Co. (1973), p.~213.
 
 \bibitem{NG95} Nordlund, \AA., \& Galsgaard, K.,
 {\it A 3D MHD code for Parallel Computers},
