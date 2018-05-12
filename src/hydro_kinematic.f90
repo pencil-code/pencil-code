@@ -1020,7 +1020,7 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
-!  modified Taylor-Green flow with (y,z,x) -> tilde(z,x,y), i.e., the x direction became z
+!  Beltrami-x flow
 !
       case ('Beltrami-x')
         if (headtt) print*,'Beltrami-x motion; kx_uukin=',kx_uukin
@@ -1028,8 +1028,7 @@ module Hydro
         if (lpenc_loc(i_uu)) then
           fac=ampl_kinflow*cos(omega_kinflow*t)
           argx=kx_uukin*x(l1:l2)+phasex_uukin
-          argy=ky_uukin*y(m)+phasey_uukin
-          p%uu(:,1)= 0.
+          p%uu(:,1)=0.
           p%uu(:,2)=fac*sin(argx)*relhel_uukin
           p%uu(:,3)=fac*cos(argx)
         endif
@@ -1037,6 +1036,44 @@ module Hydro
           p%oo(:,1)=0.
           p%oo(:,2)=fac*kx_uukin*sin(argx)
           p%oo(:,3)=fac*kx_uukin*cos(argx)*relhel_uukin
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Beltrami-y flow
+!
+      case ('Beltrami-y')
+        if (headtt) print*,'Beltrami-y motion; ky_uukin=',ky_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac=ampl_kinflow*cos(omega_kinflow*t)
+          argy=ky_uukin*y(m)+phasey_uukin
+          p%uu(:,1)=fac*cos(argy)
+          p%uu(:,2)=0.
+          p%uu(:,3)=fac*sin(argy)*relhel_uukin
+        endif
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=fac*ky_uukin*cos(argy)*relhel_uukin
+          p%oo(:,2)=0.
+          p%oo(:,3)=fac*ky_uukin*sin(argy)
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
+!  Beltrami-z flow
+!
+      case ('Beltrami-z')
+        if (headtt) print*,'Beltrami-z motion; kz_uukin=',kz_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          fac=ampl_kinflow*cos(omega_kinflow*t)
+          argz=kz_uukin*z(n)+phasez_uukin
+          p%uu(:,1)=fac*sin(argz)*relhel_uukin
+          p%uu(:,2)=fac*cos(argz)
+          p%uu(:,3)=0.
+        endif
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=fac*kz_uukin*sin(argz)
+          p%oo(:,2)=fac*kz_uukin*cos(argz)*relhel_uukin
+          p%oo(:,3)=0.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
