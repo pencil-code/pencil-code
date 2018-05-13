@@ -509,7 +509,9 @@ module Cdata
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false.
-  logical :: GWs_spec=.false., GWh_spec=.false., GWd_spec=.false., Str_spec=.false.
+  logical :: GWs_spec=.false., GWh_spec=.false., Str_spec=.false.
+  logical :: GWd_spec=.false., GWe_spec=.false.
+  logical :: GWf_spec=.false., GWg_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.

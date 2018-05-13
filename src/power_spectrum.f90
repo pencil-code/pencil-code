@@ -984,12 +984,42 @@ module power_spectrum
       endif
 !
 !  Gravitational wave power spectra (breathing mode; diagonal components of gij)
-!  Also compute production of hij, i.e., hij*gij^*
+!  Also compute production of |hij|^2, i.e., hij*gij^*
 !
     elseif (sp=='GWd') then
       if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
-      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hij)
-      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gij)
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hii)
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gii)
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave power spectra (off-diagonal components of gij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWe') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','igij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  !(corresponds to hij)
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  !(corresponds to gij)
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave power spectra (breathing mode; diagonal components of hij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWf') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gii)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hii)
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave power spectra (off-diagonal components of hij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWg') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','igij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  !(corresponds to gij)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  !(corresponds to hij)
       a_im=0.
       b_im=0.
 !
