@@ -90,7 +90,9 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
    real :: diffmu5, lambda5, mu5_const=0., gammaf5
-   real :: meanmu5
+   real :: meanmu5=0.
+   real, dimension (nx,3) :: aatest, bbtest
+   real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
    real :: cdtchiral=1.
    real, dimension (nx) :: diffus_mu5_1, diffus_mu5_2, diffus_mu5_3
@@ -116,10 +118,10 @@ module Special
   integer :: idiag_gmu5my=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_y$       
   integer :: idiag_gmu5mz=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_z$   
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ 
-  integer :: idiag_uxbjm=0
-  integer :: idiag_mu5bjm=0
-  integer :: idiag_uxbjrms=0
-  integer :: idiag_mu5bjrms=0
+  integer :: idiag_uxbjm=0     
+  integer :: idiag_mu5bjm=0    
+  integer :: idiag_uxbjrms=0   
+  integer :: idiag_mu5bjrms=0 
   integer :: idiag_dt_mu5_1=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
   integer :: idiag_dt_mu5_2=0  ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
   integer :: idiag_dt_mu5_3=0  ! DIAG_DOC: $\delta x^2/D_5$   
@@ -300,7 +302,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot
+      use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
       use Diagnostics, only: sum_mn_name, max_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -335,7 +337,7 @@ module Special
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz)+eta*(mu5bb)
+         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz)+eta*mu5bb
       endif
       diffus_bb_1 = eta*p%mu5*sqrt(dxyz_2)
 !
@@ -345,11 +347,20 @@ module Special
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)
       endif  
 !
+!  Additions to the test-field equations
+      if (ltestfield) then
+        aatest=f(l1:l2,m,n,iaxtest:iaztest)
+        call gij(f,iaxtest,aijtest,1)
+        call curl_mn(aijtest,bbtest,aatest)
+        df(l1:l2,m,n,iaxtest:iaztest) = df(l1:l2,m,n,iaxtest:iaztest) &
+                                        + eta*meanmu5*bbtest
+      endif  
+!
 !  Contribution to the time-step
 !
       if (lfirst.and.ldt) then
-        diffus_special = cdtchiral*max(diffus_mu5_1, diffus_mu5_2, diffus_mu5_3, &
-        diffus_bb_1)
+        diffus_special = cdtchiral*max(diffus_mu5_1, diffus_mu5_2, &
+                         diffus_mu5_3, diffus_bb_1)
       endif
 !
 !  diagnostics
@@ -481,8 +492,7 @@ module Special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
-!  Calculate meanmu5, which should be subtracted from mu5 in eqn for
-!  gtheta5
+!  Calculate meanmu5
 !
 !  11-oct-15/jenny: coded
 !
