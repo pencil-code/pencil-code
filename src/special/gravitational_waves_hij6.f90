@@ -101,6 +101,7 @@ module Special
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
   logical :: lStress_as_aux=.false., lreynolds=.false.
+  logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
@@ -108,6 +109,7 @@ module Special
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, &
+    lggTX_as_aux, lhhTX_as_aux, &
     kx_hij, ky_hij, kz_hij, &
     kx_gij, ky_gij, kz_gij
 !
@@ -116,7 +118,8 @@ module Special
     ctrace_factor, cstress_prefactor, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
     diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
-    lStress_as_aux, lkinGW, aux_stress
+    lStress_as_aux, lkinGW, aux_stress, &
+    lggTX_as_aux, lhhTX_as_aux
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -168,11 +171,15 @@ module Special
 !  Register ggT and ggX as auxiliary arrays
 !  May want to do this only when Fourier transform is enabled.
 !
-      call farray_register_auxiliary('ggT',iggT)
-      call farray_register_auxiliary('ggX',iggX)
+      if (lggTX_as_aux) then
+        call farray_register_auxiliary('ggT',iggT)
+        call farray_register_auxiliary('ggX',iggX)
+      endif
 !
-      call farray_register_auxiliary('hhT',ihhT)
-      call farray_register_auxiliary('hhX',ihhX)
+      if (lhhTX_as_aux) then
+        call farray_register_auxiliary('hhT',ihhT)
+        call farray_register_auxiliary('hhX',ihhX)
+      endif
 !
       if (lStress_as_aux) then
         call farray_register_auxiliary('StT',iStressT)
@@ -492,16 +499,20 @@ module Special
          if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
          if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
          if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
-         if (idiag_hrms/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhX)**2,idiag_hrms,lsqrt=.true.)
-         if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
-         if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
-         if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
-         if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
-         if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
-         if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
-         if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
-         if (idiag_ggTm/=0) call sum_mn_name(f(l1:l2,m,n,iggT),idiag_ggTm)
-         if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
+         if (lggTX_as_aux) then
+           if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
+           if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
+           if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
+           if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
+           if (idiag_ggTm/=0) call sum_mn_name(f(l1:l2,m,n,iggT),idiag_ggTm)
+           if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
+         endif
+         if (lhhTX_as_aux) then
+           if (idiag_hrms/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhX)**2,idiag_hrms,lsqrt=.true.)
+           if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
+           if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
+           if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
+         endif
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
            !if (idiag_h11pt/=0) call save_name(f(lpoint,m,n,ihij+1-1),idiag_h11pt)
@@ -516,17 +527,25 @@ module Special
            if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
            if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
            if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
-           if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
-           if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
-           if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
-           if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+           if (lhhTX_as_aux) then
+             if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
+             if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
+           endif
+           if (lggTX_as_aux) then
+             if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
+             if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+           endif
          endif
 !
          if (lroot.and.m==mpoint2.and.n==npoint2) then
-           if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
-           if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
-           if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
-           if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
+           if (lhhTX_as_aux) then
+             if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
+             if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
+           endif
+           if (lggTX_as_aux) then
+             if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
+             if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
+           endif
          endif
        endif
 !
@@ -597,9 +616,9 @@ module Special
           (lvideo.and.lfirst).or. &
           (lspec.and.lfirst).or. &
           (lout.and.lfirst) )) then
-        call compute_gT_and_gX_from_gij(f,'gg')
-        call compute_gT_and_gX_from_gij(f,'hh')
-        call compute_gT_and_gX_from_gij(f,'Str')
+        if (lggTX_as_aux) call compute_gT_and_gX_from_gij(f,'gg')
+        if (lhhTX_as_aux) call compute_gT_and_gX_from_gij(f,'hh')
+        if (lStress_as_aux) call compute_gT_and_gX_from_gij(f,'Str')
         !call compute_gT_and_gX_from_gij(f,'d2hdt2')
       endif
 !
@@ -624,6 +643,12 @@ module Special
       real :: scale_factor, fact, k1, k2, k3
       intent(inout) :: f
       character (len=2) :: label
+!
+!  Check that the relevant arrays are registered
+!
+      if (.not.lhhTX_as_aux.and.label=='hh') call fatal_error('compute_gT_and_gX_from_gij','lhhTX_as_aux must be true')
+      if (.not.lggTX_as_aux.and.label=='gg') call fatal_error('compute_gT_and_gX_from_gij','lggTX_as_aux must be true')
+      if (.not.lStress_as_aux.and.label=='St') call fatal_error('compute_gT_and_gX_from_gij','lStress_as_aux must be true')
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
 !  compute the Fourier transform, so we would skip the rest.
@@ -913,12 +938,14 @@ module Special
       if (label=='hh') then
         f(l1:l2,m1:m2,n1:n2,ihhT)=S_T_re
         f(l1:l2,m1:m2,n1:n2,ihhX)=S_X_re
+      elseif (label=='gg') then
+        f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
       elseif (label=='St') then
         f(l1:l2,m1:m2,n1:n2,iStressT)=S_T_re
         f(l1:l2,m1:m2,n1:n2,iStressX)=S_X_re
       else
-        f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
+        call fatal_error('compute_gT_and_gX_from_gij','wrong label')
       endif
 !
       !if (.not.lswitch_sign_e_X) then
@@ -987,24 +1014,28 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'g12pt',idiag_g12pt)
         call parse_name(iname,cname(iname),cform(iname),'g23pt',idiag_g23pt)
         call parse_name(iname,cname(iname),cform(iname),'g31pt',idiag_g31pt)
-        call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
-        call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
-        call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
-        call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
-        call parse_name(iname,cname(iname),cform(iname),'hhTp2',idiag_hhTp2)
-        call parse_name(iname,cname(iname),cform(iname),'hhXp2',idiag_hhXp2)
-        call parse_name(iname,cname(iname),cform(iname),'ggTp2',idiag_ggTp2)
-        call parse_name(iname,cname(iname),cform(iname),'ggXp2',idiag_ggXp2)
-        call parse_name(iname,cname(iname),cform(iname),'hrms',idiag_hrms)
-        call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
-        call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
-        call parse_name(iname,cname(iname),cform(iname),'hhX2m',idiag_hhX2m)
-        call parse_name(iname,cname(iname),cform(iname),'hhTXm',idiag_hhTXm)
-        call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
-        call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
-        call parse_name(iname,cname(iname),cform(iname),'ggTXm',idiag_ggTXm)
-        call parse_name(iname,cname(iname),cform(iname),'ggTm',idiag_ggTm)
-        call parse_name(iname,cname(iname),cform(iname),'ggXm',idiag_ggXm)
+        if (lhhTX_as_aux) then
+          call parse_name(iname,cname(iname),cform(iname),'hhTpt',idiag_hhTpt)
+          call parse_name(iname,cname(iname),cform(iname),'hhXpt',idiag_hhXpt)
+          call parse_name(iname,cname(iname),cform(iname),'hhTp2',idiag_hhTp2)
+          call parse_name(iname,cname(iname),cform(iname),'hhXp2',idiag_hhXp2)
+          call parse_name(iname,cname(iname),cform(iname),'hrms',idiag_hrms)
+          call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
+          call parse_name(iname,cname(iname),cform(iname),'hhX2m',idiag_hhX2m)
+          call parse_name(iname,cname(iname),cform(iname),'hhTXm',idiag_hhTXm)
+        endif
+        if (lggTX_as_aux) then
+          call parse_name(iname,cname(iname),cform(iname),'ggTpt',idiag_ggTpt)
+          call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
+          call parse_name(iname,cname(iname),cform(iname),'ggTp2',idiag_ggTp2)
+          call parse_name(iname,cname(iname),cform(iname),'ggXp2',idiag_ggXp2)
+          call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
+          call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
+          call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
+          call parse_name(iname,cname(iname),cform(iname),'ggTXm',idiag_ggTXm)
+          call parse_name(iname,cname(iname),cform(iname),'ggTm',idiag_ggTm)
+          call parse_name(iname,cname(iname),cform(iname),'ggXm',idiag_ggXm)
+        endif
       enddo
 !!
 !!!  write column where which magnetic variable is stored
