@@ -1450,15 +1450,11 @@ module power_spectrum
 !  Gravitational wave tensor (spectra of g*g^* for gT and gX, where g=hdot)
 !
   if (sp=='GWs') then
-    if (iggX>0) then
+    if (iggX>0.and.iggT>0) then
       a_re=f(l1:l2,m1:m2,n1:n2,iggX)
       b_re=f(l1:l2,m1:m2,n1:n2,iggT)
-    elseif (igij>0) then
-      call fatal_error('powerGWs','should not come here')
-      a_re=f(l1:l2,m1:m2,n1:n2,igij+3)
-      b_re=f(l1:l2,m1:m2,n1:n2,igij)
     else
-      call fatal_error('powerGWs','must compile GW module for GWs')
+      call fatal_error('powerGWs','must have lggTX_as_aux=T')
     endif
     a_im=0.
     b_im=0.
@@ -1469,12 +1465,8 @@ module power_spectrum
     if (ihhX>0) then
       a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
       b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
-    elseif (ihij>0) then
-      call fatal_error('powerGWh','should not come here')
-      a_re=f(l1:l2,m1:m2,n1:n2,ihij+3)
-      b_re=f(l1:l2,m1:m2,n1:n2,ihij)
     else
-      call fatal_error('powerGWh','must compile GW module for GWs')
+      call fatal_error('powerGWs','must have lhhTX_as_aux=T')
     endif
     a_im=0.
     b_im=0.
@@ -1487,12 +1479,12 @@ module power_spectrum
       a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
       b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
     else
-      call fatal_error('powerGWs','must compile GW module for Str')
+      call fatal_error('powerGWs','must have lStress_as_aux=T')
     endif
     a_im=0.
     b_im=0.
   else
-    call fatal_error('powerGWs','must be called with GWs')
+    call fatal_error('powerGWs','no valid spectrum (=sp) chosen')
   endif
 !
 !  Doing the Fourier transform
