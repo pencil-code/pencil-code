@@ -2678,6 +2678,7 @@ module Hydro
         call remove_mean_momenta(f,iux)
       else
         if (lremove_mean_flow) call remove_mean_flow(f,iux)
+        !if (lremove_mean_flow) call remove_mean_value(f,iux,iuz)  !(could use this one)
         if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
       endif
 !

@@ -109,6 +109,8 @@ module Sub
   public :: traceless_strain,calc_sij2
   public :: calc_del6_for_upwind
 !
+  public :: remove_mean_value
+!
   interface poly                ! Overload the `poly' function
     module procedure poly_0
     module procedure poly_1
@@ -7401,5 +7403,63 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     endif
 !
     endsubroutine traceless_strain
+!***********************************************************************
+    subroutine remove_mean_value(f,ind1,ind2)
+!
+!  Substract mean x-flow from the x-velocity field.
+!  Useful to avoid unphysical winds in shearing box simulations.
+!  Note: this is possibly not useful when there is rotation, because
+!  then epicyclic motions don't usually grow catastrophically.
+!
+!  22-may-07/axel: adapted from remove_mean_momenta
+!  15-dec-10/MR  : added parameters indux to make applicable to other ...
+!  13-may-18/axel: moved to general, renamed, added end index
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer,                            intent (in)    :: ind1,ind2
+!
+      real, dimension (nx) :: uu
+      real, dimension (ind1:ind2) :: um, um_tmp
+      integer :: m,n,j
+      real    :: fac
+!
+!  initialize um and compute normalization factor fac
+!
+        um = 0.0
+        fac = 1.0/nwgrid
+!
+!  Go through all pencils.
+!
+        do n = n1,n2
+        do m = m1,m2
+!
+!  Compute mean flow in each of the 3 directions.
+!
+          do j=ind1,ind2
+            uu = f(l1:l2,m,n,j)
+            um(j) = um(j) + fac*sum(uu)
+          enddo
+        enddo
+        enddo
+!
+!  Compute total sum for all processors
+!
+        call mpiallreduce_sum(um,um_tmp,ind2-ind1+1)
+        um = um_tmp
+!
+!  Go through all pencils and subtract out the mean value
+!  separately for each direction.
+!
+        do n = n1,n2
+        do m = m1,m2
+          do j=ind1,ind2
+            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - um(j)
+          enddo
+        enddo
+        enddo
+!
+    endsubroutine remove_mean_value
 !***********************************************************************
 endmodule Sub

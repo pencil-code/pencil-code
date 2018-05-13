@@ -102,6 +102,7 @@ module Special
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
   logical :: lStress_as_aux=.false., lreynolds=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
+  logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
@@ -119,7 +120,7 @@ module Special
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
     diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
     lStress_as_aux, lkinGW, aux_stress, &
-    lggTX_as_aux, lhhTX_as_aux
+    lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -595,11 +596,16 @@ module Special
 !  Some precalculated pencils of data are passed in for efficiency
 !  others may be calculated directly from the f array
 !
-!  30-mar-17/axel: moved stuff from special_after_boundary to here
+!  13-may-18/axel: added remove_mean_value for hij and gij
 !
-      !use Boundcond, only: zero_ghosts, update_ghosts
+      use Sub, only: remove_mean_value
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+!  Remove mean hij or gij if desired.
+!
+      if (lremove_mean_hij) call remove_mean_value(f,ihij,ihij+5)
+      if (lremove_mean_gij) call remove_mean_value(f,igij,igij+5)
 !
     endsubroutine special_before_boundary
 !***********************************************************************

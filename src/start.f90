@@ -234,7 +234,7 @@ program start
           Lxyz(i)=2.*pi    ! default value
         endif
       else
-        if (lpole(i)) then ! overwirte xyz0 and xyz1 to 0:pi 
+        if (lpole(i)) then ! overwrite xyz0 and xyz1 to 0:pi 
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
           if (.not. lspherical_coords) call fatal_error('start',&

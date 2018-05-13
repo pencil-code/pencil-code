@@ -673,7 +673,6 @@ module Grid
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
 ! are estimated) are removed.
 !
-
         if (lpole(2)) then                       !apply grid symmetry across the poles 
           if (lfirst_proc_y) then
             y(     1:nghost) = -y(     m1i:m1:-1)
