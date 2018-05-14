@@ -56,7 +56,7 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ
-      use Mpicomm, mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
       use Particles_main
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
