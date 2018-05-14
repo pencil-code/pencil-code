@@ -539,8 +539,7 @@ program run
 !  see idiag_timeperstep).
 !
   if (lroot) then
-    !time1=mpiwtime()
-    time1=0
+    time1=mpiwtime()
     time_last_diagnostic=time1
     icount=0
     it_last_diagnostic=icount
