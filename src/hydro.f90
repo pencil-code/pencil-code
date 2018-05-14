@@ -6640,8 +6640,8 @@ module Hydro
 
     use Diagnostics, only: set_type
 
-    integer, parameter :: ndiags=12
-    integer(KIND=ikind8), dimension(ndiags) :: p_diag
+    integer, parameter :: n_diags=12
+    integer(KIND=ikind8), dimension(n_diags) :: p_diag
 
     call copy_addr_c(idiag_urms,p_diag(1))
     call set_type(idiag_urms,lsqrt=.true.)
