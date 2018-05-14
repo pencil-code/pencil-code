@@ -20,12 +20,12 @@
   public :: calc_means_hydro
   public :: update_char_vel_hydro
   public :: hydro_after_timestep
-  public :: push2c
   public :: calc_gradu
+  public :: pushpars2c, pushdiags2c
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
   public :: uumx,        lcalc_uumeanx
   public :: uumz, guumz, lcalc_uumeanz, lupw_uu
-  public :: uumxy, uumxz, lcalc_uumeanxy, lcalc_uumeanxz
+  public :: uumxy, uumxz,lcalc_uumeanxy, lcalc_uumeanxz
   public :: ampl_fcont_uu
