@@ -146,7 +146,7 @@ def log_range(a, b, include_ab=False, finer_factor=1):
 
 def round_next_magnitude(num):
     """
-    Rounds a number up to its next magnitude, e.g. 4.56 will be rounded to 10.
+    Rounds a number up to the next multiple of 10, e.g. 4.56 will be rounded to 10.
 
     call signature:
 
