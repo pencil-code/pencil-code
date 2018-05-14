@@ -10,7 +10,7 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   ! Parameters for adaptive time stepping
   integer, parameter :: maxtry = 40
@@ -64,6 +64,9 @@ module Timestep
 !
   contains
 !
+!***********************************************************************
+    subroutine initialize_timestep
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -343,5 +346,16 @@ module Timestep
       call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine stiff
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Messages, only: fatal_error
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call fatal_error('timestep_stiff','alpha_ts, beta_ts not defined')
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep

@@ -12,9 +12,29 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   contains
+!***********************************************************************
+    subroutine initialize_timestep
+! 
+!  Coefficients for up to order 3.
+!     
+      use Messages, only: fatal_error
+      use General, only: itoa
+!
+      if (itorder==3) then
+!
+!  Coefficients for order 3.  (use coefficients of Williamson (1980))
+!
+        alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
+        beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
+      else
+        call fatal_error('initialize_timestep','Not implemented: itorder= '// &
+                         trim(itoa(itorder)))
+      endif
+      
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -24,7 +44,7 @@ module Timestep
       use Boundcond
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
-      use Mpicomm
+      use Mpicomm, only: mpiallreduce_max
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
       use Shear, only: advance_shear
@@ -46,10 +66,6 @@ module Timestep
       real :: dt1_energy_local,dt1_energy,dt_energy,dt_RKL,dt_sub_RKL
 !
       ienergy = ilnTT
-!
-!  Coefficients for order 3.  (use coefficients of Williamson (1980))
-      alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
-      beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !
@@ -239,7 +255,6 @@ module Timestep
       use Hydro
       use Lorenz_gauge
       use Magnetic
-      use Mpicomm
       use Special
       use Sub
 !
@@ -449,5 +464,15 @@ module Timestep
     call gij_etc(f,iaa,p%aa,p%aij,p%bij)
 !
     endsubroutine calc_pencils_sub_cycle
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=2
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(alpha_ts,p_par(1))  ! (3)
+    call copy_addr_c(beta_ts ,p_par(2))  ! (3)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep

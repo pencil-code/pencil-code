@@ -9,7 +9,7 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   ! Parameters for adaptive time stepping
   real, parameter :: safety           = 0.9
@@ -20,13 +20,15 @@ module Timestep
   contains
 !
 !***********************************************************************
+    subroutine initialize_timestep
+    endsubroutine initialize_timestep
+!***********************************************************************
     subroutine time_step(f,df,p)
 !
 !  Runge-Kutta-Fehlberg accurate to 5th order
 !
 !  22-jun-06/tony: coded
 !
-      use Mpicomm
       use Cdata
       use Messages
 !!      use Particles_main
@@ -282,5 +284,16 @@ module Timestep
       call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine rkck
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+        
+    use Messages, only: fatal_error
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call fatal_error('timestep_rkf_1d','alpha_ts, beta_ts not defined')
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep

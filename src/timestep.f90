@@ -12,35 +12,16 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   contains
 !***********************************************************************
-    subroutine time_step(f,df,p)
-!
-!   2-apr-01/axel: coded
-!  14-sep-01/axel: moved itorder to cdata
-!
-      use Boundcond, only: update_ghosts
-      use BorderProfiles, only: border_quenching
-      use Equ, only: pde, impose_floors_ceilings
-      use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
-      use Particles_main, only: particles_timestep_first, &
-          particles_timestep_second
-      use PointMasses, only: pointmasses_timestep_first, &
-          pointmasses_timestep_second
-      use Solid_Cells, only: solid_cells_timestep_first, &
-          solid_cells_timestep_second
-      use Shear, only: advance_shear
-      use Sub, only: set_dt, shift_dt
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real :: ds, dtsub
-      real :: dt1, dt1_local, dt1_last=0.0
+    subroutine initialize_timestep
 !
 !  Coefficients for up to order 3.
+
+      use Messages, only: fatal_error
+      use General, only: itoa
 !
       if (itorder==1) then
         alpha_ts=(/ 0.0, 0.0, 0.0 /)
@@ -55,9 +36,35 @@ module Timestep
         alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
         beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
       else
-        if (lroot) print*,'Not implemented: itorder=',itorder
-        call mpifinalize
+        call fatal_error('initialize_timestep','Not implemented: itorder= '// &
+                         trim(itoa(itorder)))
       endif
+
+    endsubroutine initialize_timestep
+!***********************************************************************
+    subroutine time_step(f,df,p)
+!
+!   2-apr-01/axel: coded
+!  14-sep-01/axel: moved itorder to cdata
+!
+      use Boundcond, only: update_ghosts
+      use BorderProfiles, only: border_quenching
+      use Equ, only: pde, impose_floors_ceilings
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+      use Particles_main, only: particles_timestep_first, &
+          particles_timestep_second
+      use PointMasses, only: pointmasses_timestep_first, &
+          pointmasses_timestep_second
+      use Solid_Cells, only: solid_cells_timestep_first, &
+          solid_cells_timestep_second
+      use Shear, only: advance_shear
+      use Sub, only: set_dt, shift_dt
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real :: ds, dtsub
+      real :: dt1, dt1_local, dt1_last=0.0
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !
@@ -214,5 +221,15 @@ module Timestep
       ighosts_updated=-1
 !
     endsubroutine update_after_timestep
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=2
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(alpha_ts,p_par(1))  ! (3)
+    call copy_addr_c(beta_ts ,p_par(2))  ! (3)
+
+    endsubroutine pushpars2c
 !***********************************************************************      
 endmodule Timestep

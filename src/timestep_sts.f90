@@ -17,9 +17,12 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   contains
+!***********************************************************************
+    subroutine initialize_timestep
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -130,6 +133,17 @@ module Timestep
       enddo
 !
     endsubroutine substeps
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Messages, only: fatal_error
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call fatal_error('timestep_sts','alpha_ts, beta_ts not defined')
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep
 

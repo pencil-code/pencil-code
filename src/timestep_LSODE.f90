@@ -16,9 +16,35 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   contains
+!***********************************************************************
+    subroutine initialize_timestep
+! 
+!  Coefficients for up to order 3.
+!    
+      use Messages, only: fatal_error
+      use General, only: itoa
+!
+      if (itorder==1) then
+        alpha_ts=(/ 0., 0., 0. /)
+        beta_ts =(/ 1., 0., 0. /)
+      elseif (itorder==2) then
+        alpha_ts=(/ 0., -1./2., 0. /)
+        beta_ts=(/ 1./2.,  1.,  0. /)
+      elseif (itorder==3) then
+        !alpha_ts=(/0., -2./3., -1./)
+        !beta_ts=(/1./3., 1., 1./2./)
+        !  use coefficients of Williamson (1980)
+        alpha_ts=(/  0. ,  -5./9., -153./128. /)
+        beta_ts=(/ 1./3., 15./16.,    8./15.  /)
+      else
+        call fatal_error('initialize_timestep','Not implemented: itorder= '// &
+                         trim(itoa(itorder)))
+      endif
+
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -30,7 +56,7 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ
-      use Mpicomm
+      use Mpicomm, mpiallreduce_max
       use Particles_main
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
@@ -58,25 +84,6 @@ module Timestep
 !
         call lsode_fc(t0,t1,f,df)
 !
-      endif
-!
-!  Coefficients for up to order 3.
-!
-      if (itorder==1) then
-        alpha_ts=(/ 0., 0., 0. /)
-        beta_ts =(/ 1., 0., 0. /)
-      elseif (itorder==2) then
-        alpha_ts=(/ 0., -1./2., 0. /)
-        beta_ts=(/ 1./2.,  1.,  0. /)
-      elseif (itorder==3) then
-        !alpha_ts=(/0., -2./3., -1./)
-        !beta_ts=(/1./3., 1., 1./2./)
-        !  use coefficients of Williamson (1980)
-        alpha_ts=(/  0. ,  -5./9., -153./128. /)
-        beta_ts=(/ 1./3., 15./16.,    8./15.  /)
-      else
-        if (lroot) print*,'Not implemented: itorder=',itorder
-        call mpifinalize
       endif
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -171,5 +178,15 @@ module Timestep
       endif
 !
     endsubroutine time_step
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=2
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(alpha_ts,p_par(1))  ! (3)
+    call copy_addr_c(beta_ts ,p_par(2))  ! (3)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep
