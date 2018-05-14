@@ -408,7 +408,7 @@ class __Simulation__(object):
         return self.compile(cleanall=cleanall, fast=fast, verbose=verbose)
 
     def bash(self, command, verbose='last100', logfile=False):
-        """Executes command in simulation diredctory.
+        """Executes command in simulation directory.
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
 
