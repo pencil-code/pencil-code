@@ -17,6 +17,10 @@ Since April 2015, the web pages of the Pencil Code are on
 
   svn checkout https://github.com/pencil-code/website
 
+In practice, we tend to keep it in a neighboring directry,
+e.g. ../www/doc, so after updating manual.tex, we have to compile it
+and copy the pdf file to ../www/doc, where we then check it in.
+
 -------------------------------------------------------------------------------
 make faq
 can lead to problems. As root, edit the file texmf.cnf as follows:
