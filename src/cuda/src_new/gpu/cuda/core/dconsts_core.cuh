@@ -39,6 +39,8 @@ DCONST_EXTERN __constant__ real d_DIFFMN_DXDY_DIV, d_DIFFMN_DYDZ_DIV, d_DIFFMN_D
 DCONST_EXTERN __device__ __constant__ int d_halo_widths_x[3], d_halo_widths_y[3], d_halo_widths_z[3];
 
 #ifdef GPU_ASTAROTH
+  #include "utils/utils.h"
+  #include "../../cparam_c.h"
   #include "common/PC_moduleflags.h"
   #include "common/PC_modulepardecs.h"
   #ifdef FORCING

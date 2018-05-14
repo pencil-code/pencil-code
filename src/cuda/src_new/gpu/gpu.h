@@ -7,6 +7,9 @@
 #include "common/slice.h"
 #include "common/forcing.h"
 #include "diagnostics/diagnostics.h"
+#ifdef GPU_ASTAROTH
+  #include "common/PC_moduleflags.h"
+#endif
 
 
 typedef enum {
@@ -102,7 +105,9 @@ extern GPUInitializeFunc         GPUInitialize;
 extern GPUDestroyFunc            GPUDestroy;
 extern GPULoadFunc               GPULoad;             //Load from host to device
 extern GPUStoreFunc              GPUStore;            //Store from device to host
+#ifndef GPU_ASTAROTH
 extern GPULoadForcingParamsFunc  GPULoadForcingParams;
+#endif
 extern GPUUpdateForcingCoefsFunc GPUUpdateForcingCoefs;
 extern GPULoadOuterHalosFunc     GPULoadOuterHalos;
 extern GPUStoreInternalHalosFunc GPUStoreInternalHalos;

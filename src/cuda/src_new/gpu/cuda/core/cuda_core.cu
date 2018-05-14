@@ -103,6 +103,15 @@ void load_hydro_dconsts_cuda_core(CParamConfig* cparams, RunConfig* run_params, 
 
 #ifdef GPU_ASTAROTH
   #include "common/PC_modulepars.h"
+printf("lpg= %d \n",lpressuregradient_gas);
+//printf("lpg= %d \n",*((int *)p_par_hydro[0]));
+printf("nu= %f\n",nu); 
+//printf("p_par_viscosity[1-1]= %f\n",*(p_par_viscosity[1-1])); 
+printf("cs20= %f\n",cs20); 
+//printf("alpha_ts= %f %f %f \n",p_par_timestep[0][0],p_par_timestep[0][1],p_par_timestep[0][2]); 
+//printf("beta_ts= %f %f %f \n",p_par_timestep[1][0],p_par_timestep[1][1],p_par_timestep[1][2]); 
+printf("alpha_ts= %f %f %f \n",alpha_ts[0],alpha_ts[1],alpha_ts[2]); 
+printf("beta_ts= %f %f %f \n",beta_ts[0],beta_ts[1],beta_ts[2]); 
 #else
   #ifdef VISCOSITY
     //Viscosity

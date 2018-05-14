@@ -18,7 +18,6 @@
 #include "common/errorhandler.h"
 #include "cuda/cuda_generic.cuh"
 
-
 //Memory management interface
 GPUInitFunc               GPUInit               = &init_cuda_generic;
 GPUInitializeFunc         GPUInitialize         = &initialize_cuda_generic;
@@ -77,9 +76,11 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
             GPUDestroy              = &destroy_cuda_generic;
             GPULoad                 = &load_grid_cuda_generic;  //Load from host to device
             GPUStore                = &store_grid_cuda_generic; //Store from device to host
+#ifndef GPU_ASTAROTH
             #ifdef FORCING
             GPULoadForcingParams    = &load_forcing_params_cuda_generic;
             #endif
+#endif
             GPULoadOuterHalos       = &load_outer_halos_cuda_generic;
             GPUStoreInternalHalos   = &store_internal_halos_cuda_generic;
 
@@ -148,7 +149,9 @@ const char* impl_type_names[] = {"CUDA_GENERIC",
             GPULoad              = &load_grid_cuda_generic;
             GPUStore             = &store_grid_cuda_generic;
 #ifdef FORCING
-            GPULoadForcingParams = &load_forcing_params_cuda_generic;
+#ifndef GPU_ASTAROTH
+            GPULoadForcingParams = NULL;
+#endif
             GPUUpdateForcingCoefs= &update_forcing_coefs_cuda_generic;
 #endif
             GPULoadOuterHalos    = &load_outer_halos_cuda_generic;

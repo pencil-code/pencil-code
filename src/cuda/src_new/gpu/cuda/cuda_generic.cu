@@ -329,7 +329,6 @@ void boundcond_step_cuda_generic()
 void integrate_step_cuda_generic(int isubstep, real dt)
 {
     if (!is_initialized) { CRASH("cuda_generic wasn't initialized!") }
-
     //For all GPUs in the node in parallel
     #pragma omp parallel for num_threads (num_devices)
     for (int device_id=0; device_id < num_devices; ++device_id) {

@@ -128,12 +128,16 @@ static __device__ real momentum(const int smem_idx, HydroStencil& stncl)
     const real ddz_uuz   = der_scalz(stncl.r_uuz); 
 
     //S_grad_lnrho  //Eq(.9)
-    const real Sxx = (2.0/3.0)*ddx_uux - (1.0/3.0)*(ddy_uuy + ddz_uuz);
+    const real divu3 = (1.0/3.0)*(ddx_uux + ddy_uuy + ddz_uuz);
+    //const real Sxx = (2.0/3.0)*ddx_uux - (1.0/3.0)*(ddy_uuy + ddz_uuz);
+    const real Sxx = ddx_uux - divu3;
     const real Sxy = 0.5*(ddy_uux + ddx_uuy);
     const real Sxz = 0.5*(ddz_uux + ddx_uuz);
-    const real Syy = (2.0/3.0)*ddy_uuy - (1.0/3.0)*(ddx_uux + ddz_uuz);
+    //const real Syy = (2.0/3.0)*ddy_uuy - (1.0/3.0)*(ddx_uux + ddz_uuz);
+    const real Syy = ddy_uuy - divu3;
     const real Syz = 0.5*(ddz_uuy + ddy_uuz);
-    const real Szz = (2.0/3.0)*ddz_uuz - (1.0/3.0)*(ddx_uux + ddy_uuy);
+    //const real Szz = (2.0/3.0)*ddz_uuz - (1.0/3.0)*(ddx_uux + ddy_uuy);
+    const real Szz = ddz_uuz - divu3;
 
     if (axis == X_AXIS) {
         const real d2x_uux = der2_scalx(smem_idx, stncl.s_uux);
@@ -161,7 +165,7 @@ static __device__ real momentum(const int smem_idx, HydroStencil& stncl)
                            - d_CS20*ddy_lnrho //ddx part of grad lnrho
                            + d_NU * nu_const_uuy //nu_const
                            + 2.0*d_NU*(Sxy*ddx_lnrho + Syy*ddy_lnrho + Syz*ddz_lnrho)
-                           + d_NU*(1.0/3.0)*(d2xy_uux + d2y_uuy); //S_grad_lnrho
+                           + d_NU*(1.0/3.0)*(d2xy_uux + d2y_uuy); //S_grad_lnrho 
         return res;
     } else {
         const real d2z_uuz = der2_scalz(stncl.r_uuz);
@@ -312,11 +316,25 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
             zmax = d_nz_max + BOUND_SIZE;
             break;
     }
-    const real alphas[] = {0.0, -0.53125, -1.1851851851851851};
-    const real betas[]  = {0.25, 0.88888888888888884, 0.75, 0.0};
+#ifdef GPU_ASTAROTH
+    #define alphas d_ALPHA_TS
+    #define betas d_BETA_TS
+    //if (threadIdx.x==0 && threadIdx.y && threadIdx.z==0 &&
+    //    blockIdx.x==0 && blockIdx.y==0 && blockIdx.z==0) printf("d_CS20= %f \n",d_CS20);
+    /*if (threadIdx.x==0 && threadIdx.y && threadIdx.z==0 &&
+        blockIdx.x==0 && blockIdx.y==0 && blockIdx.z==0) printf("d_NU= %f \n",d_NU);
+    if (threadIdx.x==0 && threadIdx.y && threadIdx.z==0 &&
+        blockIdx.x==0 && blockIdx.y==0 && blockIdx.z==0) printf("step_number,ALPHA,BETA= %d %f %f \n",step_number,ALPHA,BETA);*/
+#else
+    //const real alphas[] = {0.0, -0.53125, -1.1851851851851851};
+    //const real betas[]  = {0.25, 0.88888888888888884, 0.75, 0.0};
+    // from Williamson (1980)
+    const real alphas[] = {0.0 ,  -5/9., -153/128. };
+    const real betas[]  = {1/3., 15/16.,     8/15. };
+#endif    
     const real ALPHA = alphas[step_number];
     const real BETA = betas[step_number];
-    const real INVBETAPREV = 1.0 / betas[(4+step_number-1) % 4];
+    const real INVBETAPREV = step_number==0 ? 0. : 1./betas[step_number-1];      //1.0 / betas[(4+step_number-1) % 4];
 
     const int tx = threadIdx.x + blockIdx.x*blockDim.x + XBOUND_SIZE;//Start within comp domain
     const int ty = threadIdx.y + blockIdx.y*blockDim.y + YBOUND_SIZE;//Start within comp domain
@@ -415,7 +433,6 @@ static __global__ void hydro_step(const real* __restrict__ d_lnrho,  //SOURCE
         mom_z[5] += d_NU*(1.0/3.0)*(der2_scalxz<2>(smem_idx, s_uux) + der2_scalyz<2>(smem_idx, s_uuy));
         mom_z[6]  = d_NU*(1.0/3.0)*(der2_scalxz<3>(smem_idx, s_uux) + der2_scalyz<3>(smem_idx, s_uuy));
 
-
         if (k >= ZBOUND_SIZE && k < ZBOUND_SIZE+RK_ELEMS_PER_THREAD && tz + k < zmax - BOUND_SIZE) {
             //if (threadIdx.x == threadIdx.y && threadIdx.x == 0 && blockIdx.x == blockIdx.y && blockIdx.y == 0)
                 //printf("Solving cont at %d (seg %d). Comp domain at (%d, %d)\n", tz + k, (int)segtype, d_nz_min, d_nz_max);
@@ -512,12 +529,18 @@ static __global__ void induction_step(  const real* __restrict__ d_Ax,
             break;
         
     }
-
-    const real alphas[] = {0.0, -0.53125, -1.1851851851851851};
-    const real betas[]  = {0.25, 0.88888888888888884, 0.75, 0.0};
+#ifdef GPU_ASTAROTH
+    #define alphas d_ALPHA_TS
+    #define betas d_BETA_TS
+#else
+    //const real alphas[] = {0.0, -0.53125, -1.1851851851851851};
+    //const real betas[]  = {0.25, 0.88888888888888884, 0.75, 0.0};
+    const real alphas[] = {0.0 ,  -5/9., -153/128. };
+    const real betas[]  = {1/3., 15/16.,     8/15. };
+#endif
     const real ALPHA = alphas[step_number];
     const real BETA = betas[step_number];
-    const real INVBETAPREV = 1.0 / betas[(4+step_number-1) % 4];
+    const real INVBETAPREV = step_number==0 ? 0. : 1./betas[step_number-1];      //1.0 / betas[(4+step_number-1) % 4];
 
     const int tx = threadIdx.x + blockIdx.x*blockDim.x + XBOUND_SIZE;//Start within comp domain
     const int ty = threadIdx.y + blockIdx.y*blockDim.y + YBOUND_SIZE;//Start within comp domain
