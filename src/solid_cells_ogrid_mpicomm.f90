@@ -418,15 +418,15 @@ module Solid_Cells_Mpicomm
 !
       if (nprocx>1) then
         if(ipx<nprocx-1) then
-        ubufxo_fi(:,:,:,:)= &
-            f_og(l2i_ogrid-Hsize:l2i_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
+          ubufxo_fi(:,:,:,:)= &
+             f_og(l2i_ogrid-Hsize:l2i_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
 !  Send/recieve upper y-zone
           call mpirecv_nonblock_real(ubufxi_fi,nbuf_x,xuneigh,tolowx,irecv_rq_fromuppx_fi)
           call mpisend_nonblock_real(ubufxo_fi,nbuf_x,xuneigh,touppx,isend_rq_touppx_fi)
         endif
         if(ipx>0) then
-        lbufxo_fi(:,:,:,:)= &
-            f_og(l1i_ogrid+1:l1i_ogrid+Hsize,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
+          lbufxo_fi(:,:,:,:)= &
+             f_og(l1i_ogrid+1:l1i_ogrid+Hsize,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)
 !  Send/recieve lower y-zone
           call mpirecv_nonblock_real(lbufxi_fi,nbuf_x,xlneigh,touppx,irecv_rq_fromlowx_fi)
           call mpisend_nonblock_real(lbufxo_fi,nbuf_x,xlneigh,tolowx,isend_rq_tolowx_fi)
@@ -651,5 +651,4 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine tridag_parallel_x
 !***********************************************************************
-
 endmodule Solid_Cells_Mpicomm

@@ -5860,27 +5860,28 @@ module Solid_Cells
 !  del2_i = A_i,jj and graddiv_i = A_j,ji .
 !
       if (present(bij)) then
-!
-        bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
-        bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
-        bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
-!  Corrections for cylindrical coordinates.
-          bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*rcyl_mn1_ogrid
-!          !bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
-!  FAG:Partial correction to -d2A(:,2,1,1) already applied above +aij(:,i,2)*rcyl_mn1
-!
-          bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*rcyl_mn1_ogrid-aa(:,2)*rcyl_mn2_ogrid
-          if (loptest(lcovariant_derivative)) then
-            !bij(:,1,1)=bij(:,1,1)
-            bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*rcyl_mn1_ogrid
-            !bij(:,1,3)=bij(:,1,3)
-            !bij(:,2,1)=bij(:,2,1)
-            bij(:,2,2)=bij(:,2,2)+(aij(:,3,2)-aij(:,2,3))*rcyl_mn1_ogrid
-            !bij(:,2,3)=bij(:,2,3)
-            !bij(:,3,1)=bij(:,3,1)
-            !bij(:,3,2)=bij(:,3,2)
-            bij(:,3,3)=bij(:,3,3)+aij(:,2,3)*rcyl_mn1_ogrid
-          endif
+        call fatal_error('gij_etc_ogrid','Vorticity calculation not yet implemented on ogrid')
+! !
+!         bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
+!         bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
+!         bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
+! !  Corrections for cylindrical coordinates.
+!           bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*rcyl_mn1_ogrid
+! !          !bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+! !  FAG:Partial correction to -d2A(:,2,1,1) already applied above +aij(:,i,2)*rcyl_mn1
+! !
+!           bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*rcyl_mn1_ogrid-aa(:,2)*rcyl_mn2_ogrid
+!           if (loptest(lcovariant_derivative)) then
+!             !bij(:,1,1)=bij(:,1,1)
+!             bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*rcyl_mn1_ogrid
+!             !bij(:,1,3)=bij(:,1,3)
+!             !bij(:,2,1)=bij(:,2,1)
+!             bij(:,2,2)=bij(:,2,2)+(aij(:,3,2)-aij(:,2,3))*rcyl_mn1_ogrid
+!             !bij(:,2,3)=bij(:,2,3)
+!             !bij(:,3,1)=bij(:,3,1)
+!             !bij(:,3,2)=bij(:,3,2)
+!             bij(:,3,3)=bij(:,3,3)+aij(:,2,3)*rcyl_mn1_ogrid
+!           endif
       endif
 !
 !  Calculate del2 and graddiv, if requested.
@@ -5897,7 +5898,7 @@ module Solid_Cells
         del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
 !  Since we have cylindrical coordinates
         del2(:,1)= del2(:,1) + rcyl_mn1_ogrid*(aij(:,1,1)-2*aij(:,2,2)) - rcyl_mn2_ogrid*aa(:,1)
-        del2(:,2)= del2(:,2) + rcyl_mn1_ogrid*(aij(:,2,1)-2*aij(:,1,2)) - rcyl_mn2_ogrid*aa(:,2)
+        del2(:,2)= del2(:,2) + rcyl_mn1_ogrid*(aij(:,2,1)+2*aij(:,1,2)) - rcyl_mn2_ogrid*aa(:,2)
       endif
 !
     endsubroutine gij_etc_ogrid
@@ -10626,11 +10627,15 @@ module Solid_Cells
           f_og(l1_ogrid:l2_ogrid-jj,i,4,4), nx_ogrid-jj)
       else
         if(.not. lfilter_rhoonly) then
-          call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,1),f_og(l1_ogrid:l2_ogrid-jj,i,4,1))
-          call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,2),f_og(l1_ogrid:l2_ogrid-jj,i,4,2))
-          call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,3),f_og(l1_ogrid:l2_ogrid-jj,i,4,3))
+          call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
+            bx(1:nx_ogrid-jj,1),f_og(l1_ogrid:l2_ogrid-jj,i,4,1))
+          call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
+            bx(1:nx_ogrid-jj,2),f_og(l1_ogrid:l2_ogrid-jj,i,4,2))
+          call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
+            bx(1:nx_ogrid-jj,3),f_og(l1_ogrid:l2_ogrid-jj,i,4,3))
         endif
-        call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,4),f_og(l1_ogrid:l2_ogrid-jj,i,4,4))
+        call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), &
+          bx(1:nx_ogrid-jj,4),f_og(l1_ogrid:l2_ogrid-jj,i,4,4))
       endif
     enddo
 !
