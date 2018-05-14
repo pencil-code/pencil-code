@@ -18,7 +18,7 @@ module Timestep
 !***********************************************************************
     subroutine initialize_timestep
 ! 
-!  Coefficients for up to order 3.
+!  Coefficients for order 3.
 !     
       use Messages, only: fatal_error
       use General, only: itoa

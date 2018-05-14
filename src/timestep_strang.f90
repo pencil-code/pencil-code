@@ -14,8 +14,6 @@ module Timestep
 !
   include 'timestep.h'
 !
-  public :: time_step
-!
   real :: dt_major = 0.0
 !
   contains
