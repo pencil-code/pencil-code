@@ -93,7 +93,8 @@ program run
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
-  use Timestep,        only: time_step
+  use Timestep,        only: time_step, initialize_timestep
+
 !
   implicit none
 !
@@ -468,6 +469,7 @@ program run
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call initialize_timestep
   call initialize_modules(f)
 !
   if (it1d==impossible_int) then
@@ -537,7 +539,8 @@ program run
 !  see idiag_timeperstep).
 !
   if (lroot) then
-    time1=mpiwtime()
+    !time1=mpiwtime()
+    time1=0
     time_last_diagnostic=time1
     icount=0
     it_last_diagnostic=icount
@@ -612,6 +615,7 @@ program run
         if (lhydro_kinematic)    call hydro_clean_up
         if (lsolid_cells)        call solid_cells_clean_up
         call rprint_list(LRESET=.true.) !(Re-read output list)
+        call initialize_timestep
         call initialize_modules(f)
         if (lparticles) then
           call particles_rprint_list(.false.)

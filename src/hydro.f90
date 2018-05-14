@@ -6636,38 +6636,38 @@ module Hydro
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine push2c(p_idiag)
+    subroutine pushdiags2c(p_diag)
 
     use Diagnostics, only: set_type
 
     integer, parameter :: ndiags=12
-    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+    integer(KIND=ikind8), dimension(ndiags) :: p_diag
 
-    call copy_addr_c(idiag_urms,p_idiag(1))
+    call copy_addr_c(idiag_urms,p_diag(1))
     call set_type(idiag_urms,lsqrt=.true.)
-    call copy_addr_c(idiag_uxrms,p_idiag(2))
+    call copy_addr_c(idiag_uxrms,p_diag(2))
     call set_type(idiag_uxrms,lsqrt=.true.)
-    call copy_addr_c(idiag_uyrms,p_idiag(3))
+    call copy_addr_c(idiag_uyrms,p_diag(3))
     call set_type(idiag_uyrms,lsqrt=.true.)
-    call copy_addr_c(idiag_uzrms,p_idiag(4))
+    call copy_addr_c(idiag_uzrms,p_diag(4))
     call set_type(idiag_uzrms,lsqrt=.true.)
-    call copy_addr_c(idiag_umax,p_idiag(5))
+    call copy_addr_c(idiag_umax,p_diag(5))
     call set_type(idiag_umax,lmax=.true.)
-    call copy_addr_c(idiag_umin,p_idiag(6))
+    call copy_addr_c(idiag_umin,p_diag(6))
     call set_type(idiag_umin,lmin=.true.)
-    call copy_addr_c(idiag_uxmin,p_idiag(7))
+    call copy_addr_c(idiag_uxmin,p_diag(7))
     call set_type(idiag_uxmin,lmin=.true.)
-    call copy_addr_c(idiag_uymin,p_idiag(8))
+    call copy_addr_c(idiag_uymin,p_diag(8))
     call set_type(idiag_uymin,lmin=.true.)
-    call copy_addr_c(idiag_uzmin,p_idiag(9))
+    call copy_addr_c(idiag_uzmin,p_diag(9))
     call set_type(idiag_uzmin,lmin=.true.)
-    call copy_addr_c(idiag_uxmax,p_idiag(10))
+    call copy_addr_c(idiag_uxmax,p_diag(10))
     call set_type(idiag_uxmax,lmax=.true.)
-    call copy_addr_c(idiag_uymax,p_idiag(11))
+    call copy_addr_c(idiag_uymax,p_diag(11))
     call set_type(idiag_uymax,lmax=.true.)
-    call copy_addr_c(idiag_uzmax,p_idiag(12))
+    call copy_addr_c(idiag_uzmax,p_diag(12))
     call set_type(idiag_uzmax,lmax=.true.)
 
-    endsubroutine push2c
+    endsubroutine pushdiags2c
 !***********************************************************************
 endmodule Hydro
