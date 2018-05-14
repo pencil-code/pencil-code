@@ -4790,6 +4790,7 @@ the module \code{particles_coag_run_pars} in \code{run.in}.
 % ---------------------------------------------------------------------- %
 
 \subsection{Non-cartesian coordinate systems}
+\index{Curvilinear coordinates}
 \index{Coordinate systems}
 \label{Coordinate-systems}
 
@@ -4810,7 +4811,7 @@ are taken with respect to length, and not in a mixed fashion
 with respect to length for $\partial/\partial r$ and with respect
 to angle for $\partial/\partial\theta$ and $\partial/\partial\phi$.
 The components in the non-coordinate basis are denoted by hats, see, e.g.,
-\cite{MTW}, p.~213.
+\cite{MTW}, p.~213; see also Appendix~B of \cite{MTBM09}.
 For spherical polar coordinates the only nonvanishing Christoffel
 symbols (or connection coefficients) are
 \begin{eqnarray}
@@ -11302,6 +11303,8 @@ The use and implementation of non-cartesian coordinate systems
 is briefly explained in Section~\ref{Coordinate-systems}.
 All differential operators look like their cartesian counterparts,
 except that all derivatives are now replaced by covariant derivatives.
+The relevant reference for the {\sc Pencil Code} is \cite{MTBM09};
+see their Appendix~B.
 Here some details.
 
 \subsection{Covariant derivatives}
@@ -13902,6 +13905,9 @@ Cambridge University Press (2008)
 \bibitem{MTW} Misner, C. W., Thorne, K. S. \& Wheeler, J. A.
   \emph{Gravitation},
   San Francisco: W.H. Freeman and Co. (1973), p.~213.
+
+\bibitem{MTBM09} Mitra, D., Tavakol, R., Brandenburg, A., \& Moss, D.\yapj{2009}{697}{923}
+{933}{Turbulent dynamos in spherical shell segments of varying geometrical extent} (\arXiv{0812.3106})
 
 \bibitem{NG95} Nordlund, \AA., \& Galsgaard, K.,
 {\it A 3D MHD code for Parallel Computers},
