@@ -34,6 +34,7 @@ module Grid
   public :: real_to_index, inverse_grid
   public :: grid_bound_data
   public :: set_coorsys_dimmask
+  public :: construct_serial_arrays
 !
   public :: find_star
   public :: calc_bound_coeffs
@@ -75,6 +76,7 @@ module Grid
 !   3-mar-15/MR: calculation of d[xyz]2_bound added: contain twice the distances of
 !                three neighbouring points from the boundary point
 !   9-mar-17/MR: removed unneeded use of optional parameters in calls to grid_profile
+!   6-mar-18/MR: moved call construct_serial_arrays here from initialize_grid
 !
       use Cdata, only: xprim, yprim, zprim, dx_1, dx_tilde, dy_1, dy_tilde, dz_1, dz_tilde
 
@@ -925,6 +927,11 @@ module Grid
         call fatal_error("construct_grid","")
       endif
 !
+!  Set the serial grid arrays, that contain the coordinate values
+!  from all processors.
+!
+      call construct_serial_arrays
+!
     endsubroutine construct_grid
 !***********************************************************************
     subroutine set_coorsys_dimmask
@@ -997,11 +1004,6 @@ module Grid
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
-!
-!  Set the the serial grid arrays, that contain the coordinate values
-!  from all processors.
-!
-      call construct_serial_arrays
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
