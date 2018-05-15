@@ -7,7 +7,7 @@ OBJECTS = $(CUSOURCES:.cu=.o) $(CCSOURCES:.cc=.o)
 
 # Settings for taito-gpu
 CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
-OPTFLAGS = -O3 
+OPTFLAGS = -O1 
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
 CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -g -G
@@ -41,16 +41,16 @@ include Makefile.depend
 
 $(PC_HEADERS): .sentinel
 
-.sentinel: ../../scripts/phys_modules2c $(MODULESOURCES)
+.sentinel: ../../scripts/phys_modules2c PC_modulesources $(MODULESOURCES)
 	@rm -f common/PC_modulepars.h common/PC_modulepardecs.h diagnostics/PC_modulediags.h
 	@echo '// automatically generated; do not edit!' > common/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > common/PC_modulepardecs.h
 	@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
-	for file in $(MODULESOURCES); do echo file=$$file; if [[ $$file =~ eos[_.] ]]; \
-	then echo $$file; ../../scripts/phys_modules2c par $$file equationofstate; ../../scripts/phys_modules2c diag $$file equationofstate;\
+	@for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
+	then ../../scripts/phys_modules2c par $$file equationofstate; ../../scripts/phys_modules2c diag $$file equationofstate;\
         else ../../scripts/phys_modules2c par $$file; ../../scripts/phys_modules2c diag $$file; fi; done
-	rm -f diagnostics/PC_modulediags_init.h
-	sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
+	@rm -f diagnostics/PC_modulediags_init.h
+	@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
 	@touch .sentinel
 
 clean:
