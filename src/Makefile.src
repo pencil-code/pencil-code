@@ -1879,6 +1879,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-s real64 #(sisu*)
 ##FFLAGS=-O1 #(sisu*)
 ##FFLAGS_DOUBLE=-r8 #(sisu*)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Piz Daint - CrayXC30 - (ETH Zurich)
@@ -1963,17 +1964,25 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(vuori)
 #FFLAGS_DOUBLE=-r8 #(vuori)
 ##
-## Taito - HP Supercluster - (Kajaani)
+## Taito: HP Supercluster - (Kajaani)
 ##
-#FC=mpif90 #(taito*)
-#FSTD_95=-std95 #(taito*)
-#F90=$(FC) #(taito*)
-#CC=mpicc #(taito*)
-##FFLAGS=-O1 -fbacktrace #(taito*)
-#FFLAGS=-O3 -implicitnone #(taito*)
-#FFLAGS_DOUBLE=-r8 #(taito*)
-##FFLAGS_DOUBLE=-fdefault-real-8 #(taito*)
-#CFLAGS=-DFUNDERSC=1 -O3 #(taito*)
+#FC=mpif90 #(taito-[^g]|taito[^-])
+#FSTD_95=-std95 #(taito-[^g]|taito[^-])
+#F90=$(FC) #(taito-[^g]|taito[^-])
+#CC=mpicc #(taito-[^g]|taito[^-])
+#FFLAGS=-O3 -implicitnone #(taito-[^g]|taito[^-])
+#FFLAGS_DOUBLE=-r8 #(taito-[^g]|taito[^-])
+#CFLAGS=-DFUNDERSC=1 -O3 #(taito-[^g]|taito[^-])
+##
+## Taito-gpu: with GPUs - (Kajaani)
+##
+#FC=mpif90 #(taito-gpu)
+#FSTD_95=-std95 #(taito-gpu)
+#F90=$(FC) #(taito-gpu)
+#CC=mpicc #(taito-gpu)
+#FFLAGS=-O1 -fbacktrace #(taito-gpu)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(taito-gpu)
+#CFLAGS=-DFUNDERSC=1 -O3 #(taito-gpu)
 ##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
@@ -2372,21 +2381,21 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GPU_OBJ) $(GPU_INTERFACE) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a
+technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
-start=$(physics) $(technical)
+start=$(physics) $(technical) nogpu.o
 #
 #  Short hand notation for run.o dependencies.
 #
-run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
+run=$(physics) $(technical) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pencil_check.o
 #
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
 start.o: $(start) Makefile.local
-start.x: start.o | $(SPECIAL_DEPS) $(GPU_DEPS)
-	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(LIBGPU) -o start.x $(LDFLAGS) $(LDFLAGS_MAIN)
+start.x: start.o | $(SPECIAL_DEPS)
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x $(LDFLAGS) $(LDFLAGS_MAIN)
 #
 run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
@@ -2420,6 +2429,9 @@ cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources: .sentinel
 ifeq ($(VISCOSITY),viscosity)
 	@echo '#define VISCOSITY // ../../viscosity.f90' >> cuda/src_new/common/PC_moduleflags.h
 	@echo '../../viscosity.f90 \' >> cuda/src_new/PC_modulesources
+endif
+ifeq ($(TIMESTEP),timestep)
+	@echo '../../timestep.f90 \' >> cuda/src_new/PC_modulesources
 endif
 ifeq ($(EOS),noeos)
 	@echo '../../noeos.f90' >> cuda/src_new/PC_modulesources
