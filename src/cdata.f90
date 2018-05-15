@@ -401,12 +401,12 @@ module Cdata
   integer, dimension (:,:), allocatable :: sound_coords_list
   real, dimension (nz,nprocz) :: z_allprocs
   equivalence (zgrid,z_allprocs)
-  character (len=fmtlen), allocatable :: cform(:),cform_sound(:), &
-                                     cformxy(:),cformxz(:),cformrz(:), &
-                                     cformz(:),cformy(:),cformx(:),cformr(:)
-  character (len=30), allocatable :: cname(:),cnamev(:),cname_sound(:), &
-                                     cnamexy(:),cnamexz(:),cnamerz(:), &
-                                     cnamez(:),cnamey(:),cnamex(:),cnamer(:)
+  character (len=fmtlen), allocatable :: cform(:),cformv(:),cform_sound(:), &
+                                         cformxy(:),cformxz(:),cformrz(:), &
+                                         cformz(:),cformy(:),cformx(:),cformr(:)
+  character (len=fmtlen), allocatable :: cname(:),cnamev(:),cname_sound(:), &
+                                         cnamexy(:),cnamexz(:),cnamerz(:), &
+                                         cnamez(:),cnamey(:),cnamex(:),cnamer(:)
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt=.true.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
