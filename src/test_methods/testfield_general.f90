@@ -496,6 +496,7 @@ module Testfield_general
       real, dimension(nx)    :: divatest
       real, dimension(nx,3)  :: del2Atest
       real, dimension(nx,3,3):: aijtest
+      real, dimension(nx,3,3):: uijtest
       real, dimension(nx) :: diffus_eta, diffus_eta3
       integer :: i
 
@@ -532,7 +533,10 @@ module Testfield_general
         if (lresitest_eta_const) daatest=etatest*del2Atest
 !
         if (lresitest_eta_proptouz) then
-           do i=1,3 ; daatest(:,i)=etatest*(1.+ampl_eta_uz*p%uu(:,3))*del2Atest(:,i) ; enddo
+           if (.not.lspherical_coords) call gij(f,iaxt,aijtest,1)
+           call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
+           call gij(f,iuu,uijtest,1)
+           do i=1,3 ; daatest(:,i)=etatest*((1.+ampl_eta_uz*p%uu(:,3))*del2Atest(:,i)+ampl_eta_uz*uijtest(:,3,i)*divatest) ; enddo
         endif
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
