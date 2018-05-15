@@ -486,7 +486,7 @@ module Testfield_general
 !                generalized handling of eta profiles to all possible cases.
 !
       use Cdata
-      use Sub, only: del2v, gij, gij_etc, div_mn, del6v
+      use Sub, only: del2v, gij, gij_etc, div_other, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
       type (pencil_case),               intent(IN) :: p
@@ -509,11 +509,10 @@ module Testfield_general
         call gij_etc(f,iaxt,f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
       endif
 
+      if (any(lresitest_prof).or.lresitest_eta_proptouz) call div_other(f(:,:,:,iaxt:iaxt+2),divatest)
+!
       if (any(lresitest_prof)) then
 !
-        if (.not.lspherical_coords) call gij(f,iaxt,aijtest,1)
-        call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
-
         if (lresitest_prof(iny).or.lresitest_prof(inz)) then
           call calc_diffusive_part_prof_0d(del2Atest,divatest,eta1d(mnprof),(/geta1d(mnprof)/),(/jgprof/),daatest)
         elseif (lresitest_prof(inx)) then
@@ -533,8 +532,6 @@ module Testfield_general
         if (lresitest_eta_const) daatest=etatest*del2Atest
 !
         if (lresitest_eta_proptouz) then
-           if (.not.lspherical_coords) call gij(f,iaxt,aijtest,1)
-           call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
            call gij(f,iuu,uijtest,1)
            do i=1,3 ; daatest(:,i)=etatest*((1.+ampl_eta_uz*p%uu(:,3))*del2Atest(:,i)+ampl_eta_uz*uijtest(:,3,i)*divatest) ; enddo
         endif
@@ -582,6 +579,7 @@ module Testfield_general
       do j=1,size(jg)
         daatest(:,jg(j))=daatest(:,jg(j))+geta(j)*divatest
       enddo
+!
     endsubroutine calc_diffusive_part_prof_0d
 !***********************************************************************
     subroutine calc_diffusive_part_prof_1d(del2Atest,divatest,eta,geta,jg,daatest)
