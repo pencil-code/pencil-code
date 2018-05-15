@@ -3343,6 +3343,12 @@ module Density
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='rho'.or.cnamev=='lnrho') cformv='DEFINED'
+      endif
+!
 !  Write column where which density variable is stored.
 !
       if (lwr) then
@@ -3466,13 +3472,13 @@ module Density
 !
               if (lreference_state.and..not.lfullvar_in_slices) &
                 call process_slices(slices,'abs')
-              call process_slices(slices,'alog')
+              call process_slices(slices,'log')
 !
             endif
         endselect
 !
       endif
-
+!
     endsubroutine get_slices_density
 !***********************************************************************
     subroutine get_slices_pressure(f,slices)

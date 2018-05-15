@@ -253,7 +253,7 @@ module Slices_methods
           if (lwrite_slice_xy3) slices%xy3=exp(slices%xy3)
           if (lwrite_slice_xy4) slices%xy4=exp(slices%xy4)
           if (lwrite_slice_xz2) slices%xz2=exp(slices%xz2)
-        elseif (trim(func)=='alog') then
+        elseif (trim(func)=='log') then
           if (lwrite_slice_yz ) slices%yz =alog(slices%yz)
           if (lwrite_slice_xz ) slices%xz =alog(slices%xz)
           if (lwrite_slice_xy ) slices%xy =alog(slices%xy)
