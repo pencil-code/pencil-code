@@ -338,18 +338,16 @@ module Energy
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
       if (lhydro.and.lpressuregradient_gas) then
-        do j=1,3
-          ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
-        enddo
+
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 !
 !  Add pressure force from global density gradient.
 !
         if (any(beta_glnrho_global /= 0.)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
           do j=1,3
-            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                - p%cs2*beta_glnrho_scaled(j)
+            df(l1:l2,m,n,(iux-1)+j) =  df(l1:l2,m,n,(iux-1)+j) &
+                                     - p%cs2*beta_glnrho_scaled(j)
           enddo
         endif
      endif
