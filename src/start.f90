@@ -63,7 +63,6 @@ program start
   use Filter
   use Gravity,          only: init_gg
   use Grid
-  use Gpu,              only: gpu_init, register_gpu
   use Hydro,            only: init_uu
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
@@ -91,7 +90,7 @@ program start
   use Solid_Cells,      only: init_solid_cells
   use Special,          only: init_special, initialize_mult_special
   use Sub
-  use Ascalar,         only: init_acc
+  use Ascalar,          only: init_acc
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
 !
@@ -107,10 +106,6 @@ program start
 !  Check processor layout, get processor numbers and define whether we are root.
 !
   call mpicomm_init
-!
-!  Initialize GPU use.
-!
-  call gpu_init
 !
 !  Identify version.
 !
@@ -164,15 +159,6 @@ program start
 !
   call register_modules
   if (lparticles) call particles_register_modules
-!
-  call register_gpu(f)
-!
-!  Call rprint_list to initialize diagnostics and write indices to file.
-!
-  call rprint_list(.false.)
-  if (lparticles) call particles_rprint_list(.false.)
-!
-  call report_undefined_diagnostics
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
@@ -267,7 +253,8 @@ program start
 !
     !dang=.99*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
     !dang=-.4*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
-    dang=-1.1*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
+    !dang=-1.1*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
+    dang=-1.4*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
     xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
     Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
@@ -288,10 +275,6 @@ program start
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-!  Set up limits of averaging if needed.
-!
-  if (lav_smallx) call init_xaver
-!
 !  Check consistency.
 !
   if (.not.lperi(1).and.nxgrid<2) &
@@ -309,6 +292,17 @@ program start
 !  Generate grid and initialize specific grid variables.
 !
   call construct_grid(x,y,z,dx,dy,dz)
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(.false.)
+  if (lparticles) call particles_rprint_list(.false.)
+!
+  call report_undefined_diagnostics
+!
+!  Set up limits of averaging if needed.
+!
+  if (lav_smallx) call init_xaver
 !
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
