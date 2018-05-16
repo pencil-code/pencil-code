@@ -3122,6 +3122,15 @@ if (ios/=0) print*, 'ios, i=', ios, i
       endif
       cnamev=''
 !
+      if (.not.allocated(cformv)) then
+        allocate(cformv(nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_vnames', &
+            'Could not allocate memory for cformv')
+        if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
+            'cformv   with nname   =', nnamel
+      endif
+      cformv=''
+!
     endsubroutine allocate_vnames
 !***********************************************************************
     subroutine allocate_xyaverages(nnamel)
