@@ -486,7 +486,7 @@ module Testfield_general
 !                generalized handling of eta profiles to all possible cases.
 !
       use Cdata
-      use Sub, only: del2v, gij, gij_etc, div_other, del6v
+      use Sub, only: del2v, gij, gij_etc, div_other, div_mn, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
       type (pencil_case),               intent(IN)   :: p
@@ -510,7 +510,6 @@ module Testfield_general
           call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
         call gij_etc(f,iaxt,AA=f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
       endif
-
 !
       if (any(lresitest_prof)) then
 !
