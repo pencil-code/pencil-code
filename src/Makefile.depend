@@ -88,20 +88,6 @@ else ifeq ($(shell grep 'Use Particles_cdata' $(INITIAL_CONDITION_OBJ)),)
 else
   $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ)
 endif
-
-ifeq ($(SPECIAL_OBJ),nospecial.o)
-  $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS) 
-else ifeq ($(filter-out pressure_bump,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ)
-else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ)
-else ifeq ($(shell grep 'Use Particles_cdata' $(SPECIAL_SRC)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(PARTICLES_CDATA_OBJ) $(GRID_OBJ)
-else
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(VISCOSITY_OBJ) $(GRID_OBJ)
-endif
-
-
 #
 $(TIMESTEP_OBJ): $(TIMESTEP_SRC) $(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(EQU_OBJ) $(FORCING_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(SOLID_CELLS_OBJ)
 #
@@ -217,12 +203,14 @@ $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OB
 #
 ifeq ($(SPECIAL_OBJ),nospecial.o)
   $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
+else ifeq ($(filter-out pressure_bump,$(SPECIAL_OBJ)),)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ) $(SLICES_METHODS_OBJ)
 else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(VISCOSITY_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(VISCOSITY_OBJ) $(SLICES_METHODS_OBJ)
 else ifeq ($(shell grep 'Use Particles_cdata' $(SPECIAL_SRC)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ)
 else
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(VISCOSITY_OBJ) $(SLICES_METHODS_OBJ)
 endif
 #
 $(PARTICLES_CDATA_OBJ): $(PARTICLES_CDATA_SRC) $(CDATA_OBJ)
