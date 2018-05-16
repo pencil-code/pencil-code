@@ -82,25 +82,25 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     grad_value = np.empty((3,) + f.shape)
 
     if coordinate_system == 'cartesian':
-        grad_value[0, ...] = xder(f, dx)
-        grad_value[1, ...] = yder(f, dy)
-        grad_value[2, ...] = zder(f, dz)
+        grad_value[0] = xder(f, dx)
+        grad_value[1] = yder(f, dy)
+        grad_value[2] = zder(f, dz)
 
     if coordinate_system == 'cylindrical':
         if not x:
             print('ERROR: need to specify x (radius) for cylindrical coordinates.')
             raise ValueError
-        grad_value[0, ...] = xder(f, dx)
-        grad_value[1, ...] = yder(f, dy)/x
-        grad_value[2, ...] = zder(f, dz)
+        grad_value[0] = xder(f, dx)
+        grad_value[1] = yder(f, dy)/x
+        grad_value[2] = zder(f, dz)
 
     if coordinate_system == 'spherical':
         if not x or not y:
             print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
             raise ValueError
-        grad_value[0, ...] = xder(f, dx)
-        grad_value[1, ...] = yder(f, dy)/x
-        grad_value[2, ...] = zder(f, dz)/(x*np.sin(y))
+        grad_value[0] = xder(f, dx)
+        grad_value[1] = yder(f, dy)/x
+        grad_value[2] = zder(f, dz)/(x*np.sin(y))
 
     return grad_value
 
@@ -141,29 +141,29 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
     if (dy != 0. and dz != 0.):
         # 3-D case
         if coordinate_system == 'cartesian':
-            curl_value[0, ...] = yder(f[2], dy) - zder(f[1], dz)
-            curl_value[1, ...] = zder(f[0], dz) - xder(f[2], dx)
-            curl_value[2, ...] = xder(f[1], dx) - yder(f[0], dy)
+            curl_value[0] = yder(f[2], dy) - zder(f[1], dz)
+            curl_value[1] = zder(f[0], dz) - xder(f[2], dx)
+            curl_value[2] = xder(f[1], dx) - yder(f[0], dy)
         if coordinate_system == 'cylindrical':
             if not x:
                 print('ERROR: need to specify x (radius) for cylindrical coordinates.')
                 raise ValueError
-            curl_value[0, ...] = (1/x)*yder(f[2], dy) - zder(f[1], dz)
-            curl_value[1, ...] = zder(f[0], dz) - xder(f[2], dx)
-            curl_value[2, ...] = (1/x)*xder(x*f[1], dx) - (1/x)*yder(f[0], dy)
+            curl_value[0] = (1/x)*yder(f[2], dy) - zder(f[1], dz)
+            curl_value[1] = zder(f[0], dz) - xder(f[2], dx)
+            curl_value[2] = (1/x)*xder(x*f[1], dx) - (1/x)*yder(f[0], dy)
         if coordinate_system == 'spherical':
             if not x or not y:
                 print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
                 raise ValueError
-            curl_value[0, ...] = (yder(np.sin(y)*f[2], dy) - zder(f[1], dz))/(x*np.sin(y))
-            curl_value[1, ...] = (zder(f[0], dz)/np.sin(y) - xder(x*f[2], dx))/x
-            curl_value[2, ...] = (xder(x*f[1], dx) - yder(f[0], dy))/x
+            curl_value[0] = (yder(np.sin(y)*f[2], dy) - zder(f[1], dz))/(x*np.sin(y))
+            curl_value[1] = (zder(f[0], dz)/np.sin(y) - xder(x*f[2], dx))/x
+            curl_value[2] = (xder(x*f[1], dx) - yder(f[0], dy))/x
     elif dy == 0.:
         # 2-D case in the xz-plane
-        curl_value[0, ...] = zder(f, dz, run2D)[0, ...] - xder(f, dx)[2, ...]
+        curl_value[0] = zder(f, dz, run2D)[0] - xder(f, dx)[2]
     else:
         # 2-D case in the xy-plane
-        curl_value[0, ...] = xder(f, dx)[1, ...] - yder(f, dy)[0, ...]
+        curl_value[0] = xder(f, dx)[1] - yder(f, dy)[0]
 
     return curl_value
 
@@ -182,14 +182,15 @@ def curl2(f, dx, dy, dz):
         raise ValueError
 
     curl2_value = np.empty(f.shape)
-    curl2_value[0, ...] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
+    
+    curl2_value[0] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
                           -yder2(f[0], dy) - zder2(f[0], dz)
-    curl2_value[1, ...] = yder(xder(f[0], dx) + zder(f[2], dz), dy) \
+    curl2_value[1] = yder(xder(f[0], dx) + zder(f[2], dz), dy) \
                           -xder2(f[1], dx) - zder2(f[1], dz)
-    curl2_value[2, ...] = zder(xder(f[0], dx) + yder(f[1], dy), dz) \
+    curl2_value[2] = zder(xder(f[0], dx) + yder(f[1], dy), dz) \
                           -xder2(f[2], dx) - yder2(f[2], dy)
 
-    return curl2
+    return curl2_value
 
 
 def del2(f, dx, dy, dz):
