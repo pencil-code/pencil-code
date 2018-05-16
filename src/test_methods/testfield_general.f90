@@ -489,7 +489,7 @@ module Testfield_general
       use Sub, only: del2v, gij, gij_etc, div_other, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
-      type (pencil_case),               intent(IN) :: p
+      type (pencil_case),               intent(IN)   :: p
       integer,                          intent(IN)   :: iaxt
       real, dimension(nx,3),            intent(INOUT):: daatest
 
@@ -502,14 +502,15 @@ module Testfield_general
 
       if (lcartesian_coords) then
         call del2v(f,iaxt,del2Atest)
-      elseif (lcylindrical_coords) then
-        !TBDone ?
-      elseif (lspherical_coords) then
+        if (any(lresitest_prof).or.lresitest_eta_proptouz) & 
+          call div_other(f(:,:,:,iaxt:iaxt+2),divatest)
+      else
         call gij(f,iaxt,aijtest,1)
-        call gij_etc(f,iaxt,f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
+        if (any(lresitest_prof).or.lresitest_eta_proptouz) &
+          call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
+        call gij_etc(f,iaxt,AA=f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
       endif
 
-      if (any(lresitest_prof).or.lresitest_eta_proptouz) call div_other(f(:,:,:,iaxt:iaxt+2),divatest)
 !
       if (any(lresitest_prof)) then
 !
