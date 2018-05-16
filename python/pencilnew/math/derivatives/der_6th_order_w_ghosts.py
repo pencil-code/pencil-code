@@ -12,6 +12,10 @@
 def xder_6th(f, dx):
     """
     Compute the 1st order derivative in x.
+
+    call signature:
+
+    xder_6th(f, dx)
     """
 
     import numpy as np
@@ -24,6 +28,7 @@ def xder_6th(f, dx):
     dfdx = np.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1] - 3
+
     if (l2 > l1):
         dfdx[..., l1:l2] = dx2*(45.*(f[..., l1+1:l2+1] - f[..., l1-1:l2-1])
                                 -9.*(f[..., l1+2:l2+2] - f[..., l1-2:l2-2])
@@ -37,6 +42,10 @@ def xder_6th(f, dx):
 def yder_6th(f, dy):
     """
     Compute the 1st order derivative in y.
+
+    call signature:
+
+    yder_6th(f, dy)
     """
 
     import numpy as np
@@ -63,6 +72,10 @@ def yder_6th(f, dy):
 def zder_6th(f, dz, run2D=False):
     """
     Compute the 1st order derivative in z.
+
+    call signature:
+
+    zder_6th(f, dz, run2D=False)
     """
 
     import numpy as np
@@ -74,6 +87,7 @@ def zder_6th(f, dz, run2D=False):
     dz2 = 1./(60.*dz)
     dfdz = np.zeros_like(f)
     n1 = 3
+
     if run2D:
         n2 = f.shape[1] - 3
     else:
@@ -103,6 +117,10 @@ def zder_6th(f, dz, run2D=False):
 def xder2_6th(f, dx):
     """
     Compute the 2nd order derivative in x.
+
+    call signature:
+
+    xder2_6th(f, dx)
     """
 
     import numpy as np
@@ -115,6 +133,7 @@ def xder2_6th(f, dx):
     dfdx = np.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1] - 3
+
     if (l2 > l1):
         dfdx[..., l1:l2] = dx2*(-490.*f[..., l1:l2]
                                 +270.*(f[..., l1-1:l2-1]+f[..., l1+1:l2+1])
@@ -129,6 +148,10 @@ def xder2_6th(f, dx):
 def yder2_6th(f, dy):
     """
     Compute the 2nd order derivative in y.
+
+    call signature:
+
+    yder2_6th(f, dy)
     """
 
     import numpy as np
@@ -141,6 +164,7 @@ def yder2_6th(f, dy):
     dfdy = np.zeros_like(f)
     m1 = 3
     m2 = f.shape[-2] - 3
+
     if (m2 > m1):
         dfdy[..., m1:m2, :] = dy2*(-490.*f[..., m1:m2, :]
                                    +270.*(f[..., m1-1:m2-1, :] + f[..., m1+1:m2+1, :])
@@ -155,6 +179,10 @@ def yder2_6th(f, dy):
 def zder2_6th(f, dz):
     """
     Compute the 2nd order derivative in z.
+
+    call signature:
+
+    zder2_6th(f, dz)
     """
 
     import numpy as np
@@ -181,6 +209,10 @@ def zder2_6th(f, dz):
 def xder6_6th(f, dx):
     """
     Compute the 6th order derivative in x.
+
+    call signature:
+
+    xder6_6th(f, dx)
     """
 
     import numpy as np
@@ -193,6 +225,7 @@ def xder6_6th(f, dx):
     d6fdx = np.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1] - 3
+
     if (l2 > l1):
         d6fdx[..., l1:l2] = fac*(-20.0* f[..., l1:l2]
                                  +15.0*(f[..., l1+1:l2+1] + f[..., l1-1:l2-1])
@@ -205,6 +238,10 @@ def xder6_6th(f, dx):
 def yder6_6th(f, dy):
     """
     Compute the 6th order derivative in y.
+
+    call signature:
+
+    yder6_6th(f, dy)
     """
 
     import numpy as np
@@ -230,6 +267,10 @@ def yder6_6th(f, dy):
 def zder6_6th(f, dz):
     """
     Compute the 6th order derivative in z.
+
+    call signature:
+
+    zder6_6th(f, dz)
     """
 
     import numpy as np
