@@ -930,7 +930,7 @@ module Grid
 !  Set the serial grid arrays, that contain the coordinate values
 !  from all processors.
 !
-      call construct_serial_arrays
+!!!      call construct_serial_arrays  !!! creates trouble
 !
     endsubroutine construct_grid
 !***********************************************************************
@@ -1004,6 +1004,8 @@ module Grid
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
+!
+      call construct_serial_arrays
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
