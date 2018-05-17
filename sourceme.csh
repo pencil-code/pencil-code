@@ -44,7 +44,7 @@ if (! $?_sourceme) then		# called for the fist time?
   if (-d $PENCIL_HOME/bin) then
 
     #  Set shell path
-    if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"
+    if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel},scripts} to PATH"
     set path = ( $path $PENCIL_HOME/bin \
                        $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel \
@@ -72,6 +72,8 @@ if (! $?_sourceme) then		# called for the fist time?
     else
       setenv PYTHONPATH "${PENCIL_HOME}/python:${PWD}/python"
     endif
+    #  Set library path for linker
+    setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src"
 
 #    #  Set Perl module path [no longer needed]
 #    set _perl5lib = "${PENCIL_HOME}/lib/perl"
