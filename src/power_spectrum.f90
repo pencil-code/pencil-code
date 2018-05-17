@@ -1056,6 +1056,11 @@ module power_spectrum
         a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
         a_im=0.
         b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
       endif
 !
 !  spectrum of uzs and s^2
@@ -1064,6 +1069,11 @@ module power_spectrum
       if (ivec==3) then
         a_re=f(l1:l2,m1:m2,n1:n2,iuz)  !(this corresponds to uz)
         b_re=f(l1:l2,m1:m2,n1:n2,iss)  !(this corresponds to ss)
+        a_im=0.
+        b_im=0.
+      else
+        a_re=0.
+        b_re=0.
         a_im=0.
         b_im=0.
       endif
