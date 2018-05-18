@@ -32,12 +32,13 @@ module Particles_selfgravity
   real :: cdtpg=0.2
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
+  logical :: lnopartingrav=.false.
 !
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles
+      lselfgravity_particles,lnopartingrav
 !
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles
+      lselfgravity_particles,lnopartingrav
 !
   integer :: idiag_gpotenp=0, idiag_potselfpm=0
 !
@@ -137,11 +138,15 @@ module Particles_selfgravity
 !
       if (t>=tstart_selfgrav) then
 !
-        if (lselfgravity_particles) then
-          if (lcontinued) then  ! Potential has already been zeroed by the gas.
-            rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhop)
-          else                  ! Must zero potential from last time-step.
-            rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)
+! DM what is this ugly hack that uses lselfgravity_particles ? 
+        if (lnopartingrav) then
+        else
+          if (lselfgravity_particles) then
+            if (lcontinued) then  ! Potential has already been zeroed by the gas.
+              rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhop)
+            else                  ! Must zero potential from last time-step.
+              rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)
+            endif
           endif
         endif
 !
