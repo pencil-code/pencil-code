@@ -40,12 +40,17 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         if x is None:
             print('ERROR: need to specify x (radius) for cylindrical coordinates.')
             raise ValueError
+        # Make sure x has compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
         return xder(x*f[0], dx)/x + yder(f[1], dy)/x + zder(f[2], dz)
 
     if coordinate_system == 'spherical':
         if (x is None) or (y is None):
             print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
             raise ValueError
+        # Make sure x and y have compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
         return xder(x**2*f[0], dx)/x**2 + yder(np.sin(y)*f[1], dy)/(x*np.sin(y)) + zder(f[2], dz)/(x*np.sin(y))
 
     print('ERROR: could not recognize coordinate system {0}'.format(coordinate_system))
@@ -90,6 +95,8 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         if x is None:
             print('ERROR: need to specify x (radius) for cylindrical coordinates.')
             raise ValueError
+        # Make sure x has compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
         grad_value[0] = xder(f, dx)
         grad_value[1] = yder(f, dy)/x
         grad_value[2] = zder(f, dz)
@@ -98,6 +105,9 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         if (x is None) or (y is None):
             print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
             raise ValueError
+        # Make sure x and y have compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
         grad_value[0] = xder(f, dx)
         grad_value[1] = yder(f, dy)/x
         grad_value[2] = zder(f, dz)/(x*np.sin(y))
@@ -157,6 +167,9 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
             if (x is None) or (y is None):
                 print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
                 raise ValueError
+            # Make sure x and y have compatible dimensions.
+            x = x[np.newaxis, np.newaxis, :]
+            y = y[np.newaxis, :, np.newaxis]
             curl_value[0] = (yder(np.sin(y)*f[2], dy) - zder(f[1], dz))/(x*np.sin(y))
             curl_value[1] = (zder(f[0], dz)/np.sin(y) - xder(x*f[2], dx))/x
             curl_value[2] = (xder(x*f[1], dx) - yder(f[0], dy))/x
