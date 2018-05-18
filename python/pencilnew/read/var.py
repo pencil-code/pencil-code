@@ -92,7 +92,7 @@ class DataCube(object):
 
 
     def read(self, var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-             trimall=True, magic=None, sim=None, precision='f'):
+             trimall=False, magic=None, sim=None, precision='f'):
         """
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
