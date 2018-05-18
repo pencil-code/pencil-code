@@ -19,7 +19,7 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
       Grid spacing in the three dimensions.
 
     *x, y*:
-      Radial (x) and polar (y) coordinates.
+      Radial (x) and polar (y) coordinates, 1d arrays.
 
     *coordinate_system*:
       Coordinate system under which to take the divergence.
@@ -65,7 +65,7 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
       Grid spacing in the three dimensions.
 
     *x, y*:
-      Radial (x) and polar (y) coordinates.
+      Radial (x) and polar (y) coordinates, 1d arrays.
 
     *coordinate_system*:
       Coordinate system under which to take the divergence.
@@ -118,7 +118,7 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
       Grid spacing in the three dimensions.
 
     *x, y*:
-      Radial (x) and polar (y) coordinates.
+      Radial (x) and polar (y) coordinates, 1d arrays.
 
     *run2D*:
       Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
@@ -148,6 +148,8 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
             if x is None:
                 print('ERROR: need to specify x (radius) for cylindrical coordinates.')
                 raise ValueError
+            # Make sure x has compatible dimensions.
+            x = x[:, np.newaxis, np.newaxis]
             curl_value[0] = (1/x)*yder(f[2], dy) - zder(f[1], dz)
             curl_value[1] = zder(f[0], dz) - xder(f[2], dx)
             curl_value[2] = (1/x)*xder(x*f[1], dx) - (1/x)*yder(f[0], dy)
