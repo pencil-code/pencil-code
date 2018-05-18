@@ -51,6 +51,8 @@ module Special
   real :: mach_chen=0.,maxvA=0., dA=1.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.,hyper_heating=.false.
+  logical :: linject_maghel=.false.
+  real :: maghel_ampl=0., Bz2xym=1.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -81,7 +83,8 @@ module Special
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
       sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
-      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating
+      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating, &
+      linject_maghel, maghel_ampl
 !
 ! variables for print.in
 !
@@ -191,6 +194,13 @@ module Special
 !  Get the external magnetic field if exists.
       if (lmagnetic) &
         call get_shared_variable('B_ext', B_ext, caller='calc_hcond_timestep')
+!
+!     magnetic helicity density set in units of G2 Mm
+!     renormalize to average magnetic helicity density in PC units
+!
+      if (linject_maghel) &
+      maghel_ampl = maghel_ampl/1e8/unit_magnetic**2/unit_length*1e6
+!
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -2322,16 +2332,17 @@ module Special
       real, save :: tl=0.,tr=0.,delta_t=0.
       integer :: ierr,lend,i,idx2,idy2,stat
 !
-      real, dimension (nxgrid,nygrid) :: Bz0l, Bz0r
-      real, dimension (:,:), allocatable :: Bz0_i
+      real, dimension (:,:), allocatable :: Bz0_i,Bz0l,Bz0r
       real, dimension (:,:), allocatable :: A_i,A_r
       real, dimension (:,:), allocatable :: kx,ky,k2
-      real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr
+      real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr,Azl,Azr
 !
-      real :: time_SI, Bz_fluxm, Bzfluxm
+      real :: time_SI
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
+!
+!
 !
       ierr = 0
       stat = 0
@@ -2351,8 +2362,8 @@ module Special
 !
       if (tr+delta_t <= time_SI) then
 !
-!        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-!        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
         allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
         allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
         allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
@@ -2402,6 +2413,16 @@ module Special
 !
 ! first point in time
 !
+!
+!       Inject magnetic helicity desnity A*B:
+!       maghel_ampl is the horizontal averaged magnetic helcity density.
+!       We set Az = maghel/<Bz2>_h Bz.
+!
+        if (linject_maghel) then
+          Bz2xym=sum(Bz0l**2.)/nxgrid/nygrid
+          Azl = maghel_ampl/Bz2xym * Bz0l(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
+!
         Bz0_i = 0.
         call fourier_transform_other(Bz0l,Bz0_i)
 !
@@ -2427,7 +2448,18 @@ module Special
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
+!
 ! second point in time
+!
+!
+!       Inject magnetic helicity desnity A*B:
+!       maghel_ampl is the horizontal averaged magnetic helcity density.
+!       We set Az = maghel/<Bz2>_h Bz.
+!
+        if (linject_maghel) then
+          Bz2xym=sum(Bz0r**2.)/nxgrid/nygrid
+          Azr = maghel_ampl/Bz2xym * Bz0r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
 !
         Bz0_i = 0.
         call fourier_transform_other(Bz0r,Bz0_i)
@@ -2469,10 +2501,21 @@ module Special
                                 ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)*dt*b_tau
         f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)*dt*b_tau
+!
+        if (linject_maghel) then
+          f(l1:l2,m1:m2,n1,iaz) = f(l1:l2,m1:m2,n1,iaz)*(1.0-dt*b_tau) + &
+                                ((time_SI - (tl+delta_t)) * (Azr - Azl) / (tr - tl) + Azl)*dt*b_tau
+        endif
+
       else
         f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
         f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+!
+        if (linject_maghel) then
+          f(l1:l2,m1:m2,n1,iaz) = (time_SI - (tl+delta_t)) * (Azr - Azl) / (tr - tl) + Azl
+        endif
       endif
+!
 !
     endsubroutine mag_time_bound
 !***********************************************************************
@@ -2698,8 +2741,9 @@ module Special
 !
         if (increase_vorticity /= 0.) call enhance_vorticity()
         if (quench /= 0.) call footpoint_quenching(f)
-
+!
 ! restore global seed and save seed list of the granulation
+!
         call random_seed_wrapper(GET=points_rstate)
         call random_seed_wrapper(PUT=global_rstate)
       endif
