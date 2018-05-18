@@ -27,7 +27,7 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from der import xder, yder, zder
+    from .der import xder, yder, zder
 
     if f.ndim != 4:
         print("div: must have vector 4-D array f[mvar, mz, my, mx] for divergence.")
@@ -37,13 +37,13 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         return xder(f[0], dx) + yder(f[1], dy) + zder(f[2], dz)
 
     if coordinate_system == 'cylindrical':
-        if not x:
+        if x is None:
             print('ERROR: need to specify x (radius) for cylindrical coordinates.')
             raise ValueError
         return xder(x*f[0], dx)/x + yder(f[1], dy)/x + zder(f[2], dz)
 
     if coordinate_system == 'spherical':
-        if not x or not y:
+        if (x is None) or (y is None):
             print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
             raise ValueError
         return xder(x**2*f[0], dx)/x**2 + yder(np.sin(y)*f[1], dy)/(x*np.sin(y)) + zder(f[2], dz)/(x*np.sin(y))
@@ -73,7 +73,7 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
 
     import numpy as np
-    from der import xder, yder, zder
+    from .der import xder, yder, zder
 
     if f.ndim != 3:
         print("grad: must have scalar 3-D array f[mz, my, mx] for gradient.")
@@ -87,7 +87,7 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         grad_value[2] = zder(f, dz)
 
     if coordinate_system == 'cylindrical':
-        if not x:
+        if x is None:
             print('ERROR: need to specify x (radius) for cylindrical coordinates.')
             raise ValueError
         grad_value[0] = xder(f, dx)
@@ -95,7 +95,7 @@ def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         grad_value[2] = zder(f, dz)
 
     if coordinate_system == 'spherical':
-        if not x or not y:
+        if (x is None) or (y is None):
             print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
             raise ValueError
         grad_value[0] = xder(f, dx)
@@ -131,7 +131,7 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
     """
 
     import numpy as np
-    from der import xder, yder, zder
+    from .der import xder, yder, zder
 
     if f.shape[0] != 3:
         print("curl: must have vector 4-D array f[3, mz, my, mx] for curl.")
@@ -145,14 +145,14 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
             curl_value[1] = zder(f[0], dz) - xder(f[2], dx)
             curl_value[2] = xder(f[1], dx) - yder(f[0], dy)
         if coordinate_system == 'cylindrical':
-            if not x:
+            if x is None:
                 print('ERROR: need to specify x (radius) for cylindrical coordinates.')
                 raise ValueError
             curl_value[0] = (1/x)*yder(f[2], dy) - zder(f[1], dz)
             curl_value[1] = zder(f[0], dz) - xder(f[2], dx)
             curl_value[2] = (1/x)*xder(x*f[1], dx) - (1/x)*yder(f[0], dy)
         if coordinate_system == 'spherical':
-            if not x or not y:
+            if (x is None) or (y is None):
                 print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
                 raise ValueError
             curl_value[0] = (yder(np.sin(y)*f[2], dy) - zder(f[1], dz))/(x*np.sin(y))
@@ -175,7 +175,7 @@ def curl2(f, dx, dy, dz):
     """
 
     import numpy as np
-    from der import xder, yder, zder, xder2, yder2, zder2
+    from .der import xder, yder, zder, xder2, yder2, zder2
 
     if (f.ndim != 4 or f.shape[0] != 3):
         print("curl2: must have vector 4-D array f[3, mz, my, mx] for curl2.")
@@ -198,7 +198,7 @@ def del2(f, dx, dy, dz):
     Calculate del2.
     """
 
-    from der import xder2, yder2, zder2
+    from .der import xder2, yder2, zder2
 
     return xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
 
@@ -209,6 +209,6 @@ def del6(f, dx, dy, dz):
     than del2^3) of a scalar f for hyperdiffusion.
     """
 
-    from der import xder6, yder6, zder6
+    from .der import xder6, yder6, zder6
 
     return xder6(f, dx) + yder6(f, dy) + zder6(f, dz)
