@@ -23,7 +23,7 @@ module Slices
 !
   real, public :: tvid
   integer, public :: nvid
-  real :: tslice
+  real :: tslice=0.
 !
   contains
 !***********************************************************************
