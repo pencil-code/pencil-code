@@ -2453,8 +2453,8 @@ module Special
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-!        if (allocated(Bz0l)) deallocate(Bz0l)
-!        if (allocated(Bz0r)) deallocate(Bz0r)
+        if (allocated(Bz0l)) deallocate(Bz0l)
+        if (allocated(Bz0r)) deallocate(Bz0r)
         if (allocated(Bz0_i)) deallocate(Bz0_i)
         if (allocated(A_r)) deallocate(A_r)
         if (allocated(A_i)) deallocate(A_i)
@@ -2464,8 +2464,6 @@ module Special
 !
       endif
 !
-!      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
-!      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
       if (b_tau > 0.0) then
         f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)*dt*b_tau
@@ -2475,18 +2473,6 @@ module Special
         f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
         f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
       endif
-!
-!      Bz_fluxm=sum((time_SI - (tl+delta_t)) * (abs(Bz0r) - abs(Bz0l)) / (tr - tl) + abs(Bz0l))
-!      Bzfluxm =sum(abs((time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l))
-!!print*,Bz_fluxm/Bzfluxm
-!
-!      f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * Bz_fluxm/Bzfluxm
-!
-!      f(l1:l2,m1:m2,n1,iax) = 0.9*f(l1:l2,m1:m2,n1,iax) &
-!                            + 0.1* ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)
-!      f(l1:l2,m1:m2,n1,iay) = 0.9*f(l1:l2,m1:m2,n1,iay) &
-!                            + 0.1*((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)
-
 !
     endsubroutine mag_time_bound
 !***********************************************************************
@@ -2712,7 +2698,7 @@ module Special
 !
         if (increase_vorticity /= 0.) call enhance_vorticity()
         if (quench /= 0.) call footpoint_quenching(f)
-!
+
 ! restore global seed and save seed list of the granulation
         call random_seed_wrapper(GET=points_rstate)
         call random_seed_wrapper(PUT=global_rstate)
@@ -3531,7 +3517,7 @@ module Special
         vx=Ux
         vy=Uy
 !
-! Calculating and enhancing rotational part by factor 5
+! Calculating and enhancing rotational part by a factor
         call helmholtz(wx,wy)
         vx=(vx+increase_vorticity*wx )
         vy=(vy+increase_vorticity*wy)
