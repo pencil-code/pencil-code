@@ -149,7 +149,7 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
                 print('ERROR: need to specify x (radius) for cylindrical coordinates.')
                 raise ValueError
             # Make sure x has compatible dimensions.
-            x = x[:, np.newaxis, np.newaxis]
+            x = x[np.newaxis, np.newaxis, :]
             curl_value[0] = (1/x)*yder(f[2], dy) - zder(f[1], dz)
             curl_value[1] = zder(f[0], dz) - xder(f[2], dx)
             curl_value[2] = (1/x)*xder(x*f[1], dx) - (1/x)*yder(f[0], dy)
