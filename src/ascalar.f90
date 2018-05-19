@@ -85,7 +85,7 @@ module Ascalar
   integer :: idiag_condensationRaterms=0, idiag_condensationRatemax=0,idiag_condensationRatemin=0,idiag_condensationRatem=0
   integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0,idiag_waterMixingRatiom=0
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0, idiag_ssatm=0
-  integer :: idiag_buoyancyrms=0, idiag_buoyancymax=0, idiag_buoyancymin=0
+  integer :: idiag_buoyancyrms=0, idiag_buoyancym=0, idiag_buoyancymax=0, idiag_buoyancymin=0
 !
   contains
 !***********************************************************************
@@ -132,9 +132,9 @@ module Ascalar
         call init_acc(f)
       endif
 !
-      if (lcondensation_rate) then
+!      if (lcondensation_rate) then
         call put_shared_variable('ssat0', ssat0)
-      endif
+!      endif
 !
     endsubroutine initialize_ascalar
 !
@@ -220,7 +220,8 @@ module Ascalar
         if (gradacc0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
 !
-      if (lascalar_sink) then 
+!      if (lascalar_sink) then 
+      if (lparticles .and. lascalar_sink) then 
         lpenc_requested(i_tauascalar)=.true.
       endif
       if (ascalar_diff/=0.) lpenc_requested(i_del2acc)=.true.
@@ -500,6 +501,8 @@ module Ascalar
         if (lbuoyancy) then
           if (idiag_buoyancyrms/=0) &
             call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)
+          if (idiag_buoyancym/=0) &
+            call sum_mn_name(buoyancy,idiag_buoyancym)
           if (idiag_buoyancymax/=0) call max_mn_name(buoyancy,idiag_buoyancymax)
           if (idiag_buoyancymin/=0) call max_mn_name(-buoyancy,idiag_buoyancymin,lneg=.true.)
         endif
@@ -566,7 +569,7 @@ module Ascalar
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0; idiag_condensationRatem=0
         idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0; idiag_waterMixingRatiom=0
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0; idiag_ssatm=0
-        idiag_buoyancyrms=0; idiag_buoyancymax=0; idiag_buoyancymin=0
+        idiag_buoyancyrms=0; idiag_buoyancym=0; idiag_buoyancymax=0; idiag_buoyancymin=0
 
       endif
 !
@@ -598,6 +601,7 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
         call parse_name(iname,cname(iname),cform(iname),'ssatm',idiag_ssatm)
         call parse_name(iname,cname(iname),cform(iname),'buoyancyrms',idiag_buoyancyrms)
+        call parse_name(iname,cname(iname),cform(iname),'buoyancym',idiag_buoyancym)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymax',idiag_buoyancymax)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymin',idiag_buoyancymin)
       enddo
