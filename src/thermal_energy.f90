@@ -369,7 +369,7 @@ module Energy
 !
 !  Diagnostic pencils.
 !
-      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0 .or. idiag_ethtot) lpenc_diagnos(i_eth)=.true.
+      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0 .or. idiag_ethtot/=0) lpenc_diagnos(i_eth)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       etot: if (idiag_etot /= 0) then
         lpenc_diagnos(i_eth) = .true.
