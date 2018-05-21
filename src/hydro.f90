@@ -3088,9 +3088,10 @@ module Hydro
           itype_name(idiag_urmss)=ilabel_sum_sqrt
         else
         endif
-        if (idiag_urmsx/=0)   call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
-        if (idiag_urmsz/=0)   call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
-        if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        if (idiag_urmsx/=0) call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
+        if (idiag_urmsz/=0) call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
+        if (idiag_umax /=0) call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        if (idiag_umin /=0) call max_mn_name(-sqrt(p%u2),idiag_umin,lneg=.true.)
         if (idiag_uxrms/=0) &
             call sum_mn_name(p%uu(:,1)**2,idiag_uxrms,lsqrt=.true.)
         if (idiag_uzrms/=0) &
@@ -4545,6 +4546,7 @@ module Hydro
         idiag_urmsx=0
         idiag_urmsz=0
         idiag_umax=0
+        idiag_umin=0
         idiag_uxrms=0
         idiag_uzrms=0
         idiag_uzrmaxs=0
@@ -4862,6 +4864,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'urmsn',idiag_urmsn)
         call parse_name(iname,cname(iname),cform(iname),'urmss',idiag_urmss)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
+        call parse_name(iname,cname(iname),cform(iname),'umin',idiag_umin)
         call parse_name(iname,cname(iname),cform(iname),'uxmin',idiag_uxmin)
         call parse_name(iname,cname(iname),cform(iname),'uymin',idiag_uymin)
         call parse_name(iname,cname(iname),cform(iname),'uzmin',idiag_uzmin)
