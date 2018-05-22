@@ -58,7 +58,7 @@ module Ascalar
   real :: vapor_mixing_ratio_qvs=0.0
   real :: updraft=0.0
   real :: A1=0.0
-  real :: latent_heat=2.5e6, cp=1005.0
+  real :: latent_heat=2.5e6, cp_constant=1005.0
   real :: Rv=461.5, rhoa=1.06, const1_qvs=2.53e11, const2_qvs=5420.0
   real, target :: ssat0=0.0
   real :: TT_mean=293.25, constTT=293.25
@@ -72,7 +72,7 @@ module Ascalar
   namelist /ascalar_run_pars/ &
       lupw_acc, lascalar_sink, Rascalar_sink, ascalar_sink, &
       ascalar_diff, gradacc0, lcondensation_rate, vapor_mixing_ratio_qvs, &
-      lupdraft, updraft, A1, latent_heat, cp, &
+      lupdraft, updraft, A1, latent_heat, cp_constant, &
       const1_qvs, const2_qvs, Rv, rhoa, gravity_acceleration, Rv_over_Rd_minus_one, &
       lconstTT, constTT, TT_mean, lTT_mean, thermal_diff, gradTT0
 !
@@ -427,7 +427,7 @@ module Ascalar
           qvs_T=es_T/(Rv*rhoa*constTT)
           ssat0=acc_const/qvs_T(1)-1
         elseif (ltemperature) then
-            df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp
+            df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp_constant
             if (lbuoyancy) then
               if (lTT_mean) then
                 buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
@@ -448,7 +448,7 @@ module Ascalar
             endif       
 !          endif
         elseif (lttc) then
-          df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+p%condensationRate*latent_heat/cp
+          df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+p%condensationRate*latent_heat/cp_constant
           es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,ittc))
           qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,ittc))
           ssat0=acc_const/((const1_qvs*exp(-const2_qvs/ttc_const))/(Rv*rhoa*ttc_const))-1
