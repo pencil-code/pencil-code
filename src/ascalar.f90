@@ -86,6 +86,8 @@ module Ascalar
   integer :: idiag_waterMixingRatiorms=0, idiag_waterMixingRatiomax=0,idiag_waterMixingRatiomin=0,idiag_waterMixingRatiom=0
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0, idiag_ssatm=0
   integer :: idiag_buoyancyrms=0, idiag_buoyancym=0, idiag_buoyancymax=0, idiag_buoyancymin=0
+  integer :: idiag_esrms=0, idiag_esm=0, idiag_esmax=0, idiag_esmin=0
+  integer :: idiag_qvsrms=0, idiag_qvsm=0, idiag_qvsmax=0, idiag_qvsmin=0
 !
   contains
 !***********************************************************************
@@ -498,6 +500,16 @@ module Ascalar
         if (idiag_ssatmax/=0) call max_mn_name(p%ssat,idiag_ssatmax)
         if (idiag_ssatmin/=0) call max_mn_name(-p%ssat,idiag_ssatmin,lneg=.true.)
         if (idiag_ssatm/=0) call sum_mn_name(p%ssat,idiag_ssatm)
+        if (idiag_esmax/=0) call max_mn_name(es_T,idiag_esmax)
+        if (idiag_esmin/=0) call max_mn_name(-es_T,idiag_esmin,lneg=.true.)
+        if (idiag_esm/=0) call sum_mn_name(es_T,idiag_esm)
+        if (idiag_esrms/=0) &
+          call sum_mn_name(es_T**2,idiag_esrms,lsqrt=.true.)
+        if (idiag_qvsmax/=0) call max_mn_name(qvs_T,idiag_qvsmax)
+        if (idiag_qvsmin/=0) call max_mn_name(-qvs_T,idiag_qvsmin,lneg=.true.)
+        if (idiag_qvsm/=0) call sum_mn_name(qvs_T,idiag_qvsm)
+        if (idiag_qvsrms/=0) &
+          call sum_mn_name(qvs_T**2,idiag_qvsrms,lsqrt=.true.)
         if (lbuoyancy) then
           if (idiag_buoyancyrms/=0) &
             call sum_mn_name(buoyancy**2,idiag_buoyancyrms,lsqrt=.true.)
@@ -569,6 +581,8 @@ module Ascalar
         idiag_condensationRaterms=0; idiag_condensationRatemax=0; idiag_condensationRatemin=0; idiag_condensationRatem=0
         idiag_waterMixingRatiorms=0; idiag_waterMixingRatiomax=0; idiag_waterMixingRatiomin=0; idiag_waterMixingRatiom=0
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0; idiag_ssatm=0
+        idiag_esrms=0; idiag_esm=0; idiag_esmax=0; idiag_esmin=0
+        idiag_qvsrms=0; idiag_qvsm=0; idiag_qvsmax=0; idiag_qvsmin=0
         idiag_buoyancyrms=0; idiag_buoyancym=0; idiag_buoyancymax=0; idiag_buoyancymin=0
 
       endif
@@ -600,6 +614,14 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
         call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
         call parse_name(iname,cname(iname),cform(iname),'ssatm',idiag_ssatm)
+        call parse_name(iname,cname(iname),cform(iname),'esrms',idiag_esrms)
+        call parse_name(iname,cname(iname),cform(iname),'esmax',idiag_esmax)
+        call parse_name(iname,cname(iname),cform(iname),'esmin',idiag_esmin)
+        call parse_name(iname,cname(iname),cform(iname),'esm',idiag_esm)
+        call parse_name(iname,cname(iname),cform(iname),'qvsrms',idiag_qvsrms)
+        call parse_name(iname,cname(iname),cform(iname),'qvsmax',idiag_qvsmax)
+        call parse_name(iname,cname(iname),cform(iname),'qvsmin',idiag_qvsmin)
+        call parse_name(iname,cname(iname),cform(iname),'qvsm',idiag_qvsm)
         call parse_name(iname,cname(iname),cform(iname),'buoyancyrms',idiag_buoyancyrms)
         call parse_name(iname,cname(iname),cform(iname),'buoyancym',idiag_buoyancym)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymax',idiag_buoyancymax)
