@@ -59,7 +59,7 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist, rpbeta0, &
+      sigma_initdist, a0_initdist, rpbeta0, lparticles_radius_rpbeta, &
       lfixed_particles_radius
 !
   namelist /particles_radius_run_pars/ &
@@ -112,6 +112,12 @@ module Particles_radius
         ieffp = mpvar+npaux+1
         pvarname(ieffp) = 'ieffp'
         npaux = npaux+1
+      endif
+!
+      if (lparticles_radius_rpbeta) then
+        irpbeta=npvar+1
+        pvarname(npvar+1)='irpbeta'
+        npvar=npvar+1
       endif
 !
 ! Check that the fp and dfp arrays are big enough.
@@ -473,6 +479,9 @@ module Particles_radius
           endselect
         enddo
       endif
+!
+      if (lparticles_radius_rpbeta) &
+        fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
 !
       call keep_compiler_quiet(f)
 !
