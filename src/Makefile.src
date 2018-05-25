@@ -1876,11 +1876,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #F90=$(FC) #(sisu*)
 #CC=cc #(sisu*)
 #FFLAGS=-O1 -ffree -e m -J . -p . #(sisu*)
+##FFLAGS+= -I/opt/cray/hdf5-parallel/1.10.0.1/lib/CRAY/8.3/include  #(sisu*)
 #FFLAGS_DOUBLE=-s real64 #(sisu*)
 ##FFLAGS=-O1 #(sisu*)
 ##FFLAGS_DOUBLE=-r8 #(sisu*)
 ##FFLAGS_DOUBLE=-fdefault-real-8 #(sisu*)
+##LDFLAGS+= -L/opt/cray/hdf5-parallel/1.10.0.1/lib/CRAY/8.3/lib #(sisu*)
+##FFLAGS+= -I/opt/cray/hdf5-parallel/1.10.0.1/lib/INTEL/15.0/include #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
+##LDFLAGS+= -L/opt/cray/hdf5-parallel/1.10.0.1/lib/INTEL/15.0/lib #(sisu*)
 ##
 ## Piz Daint - CrayXC30 - (ETH Zurich)
 ##
