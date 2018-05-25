@@ -271,16 +271,9 @@ INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
 ;  that the array can be treated exactly like 3-D data.
 ;
 if (keyword_set(run2D)) then begin
-  if (dim.nx eq 1) then begin
-    ; 2-D run in (y,z) plane.
-    INIT_DATA_LOC = [ 'make_array (myloc,mzloc,', 'type=type_idl)' ]
-  endif else if (dim.ny eq 1) then begin
-    ; 2-D run in (x,z) plane.
-    INIT_DATA_LOC = [ 'make_array (mxloc,mzloc,', 'type=type_idl)' ]
-  endif else begin
-    ; 2-D run in (x,y) plane.
-    INIT_DATA_LOC = [ 'make_array (mxloc,myloc,', 'type=type_idl)' ]
-  endelse
+  INIT_DATA_LOC = [ $
+    'reform(make_array (dim.nx eq 1 ? 1 : mxloc,dim.ny eq 1 ? 1 : myloc,dim.nz eq 1 ? 1 : mzloc,', $ 
+                   'type=type_idl))' ]
 endif else $
   INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 ;
@@ -351,8 +344,12 @@ for tag = 1, num_tags do begin
   end
 endfor
 ;
-selected = selected[sort (position)]
-executes = executes[sort (position)]
+; Reorder to be ascending w.r.t. position.
+;
+inds=sort(position)
+selected = selected[inds]
+executes = executes[inds]
+components = components[inds]
 ;
 ; in the *ordered* list of hits
 ; only the first mvar+maux entries matter

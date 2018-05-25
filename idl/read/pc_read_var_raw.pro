@@ -253,13 +253,12 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
     end
   end
 
-  glob_mx=dim.mx & glob_my=dim.my & glob_mz=dim.mz
   proc_mx=procdim.mx & proc_my=procdim.my & proc_mz=procdim.mz
 
   if (run2D) then begin
-    if (dim.nxgrid eq 1) then begin glob_mx = 1 & proc_mx = 1 & endif
-    if (dim.nygrid eq 1) then begin glob_my = 1 & proc_my = 1 & endif
-    if (dim.nzgrid eq 1) then begin glob_mz = 1 & proc_mz = 1 & endif
+    if (dim.nxgrid eq 1) then proc_mx = 1 
+    if (dim.nygrid eq 1) then proc_my = 1
+    if (dim.nzgrid eq 1) then proc_mz = 1
   endif
 
   read_content = strmid (read_content, 2)
@@ -268,15 +267,18 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
     print, 'The file '+varfile+' contains: ', content
     if (strlen (read_content) lt strlen (content)) then print, 'Will read only: ', read_content
     print, ''
-    print, 'The grid dimension is ', glob_mx, glob_my, glob_mz
+    print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
     print, ''
   end
   if (not any (indices ge 0)) then message, 'Error: nothing to read!'
   indices = indices[where (indices ge 0)]
 ;
+; Initialise target object: contains ghost zones irrespective of whether they are stored or not.
+;
+  object = make_array (dim.mx, dim.my, dim.mz, num_read, type=type_idl)
+;
 ; Initialise read buffers.
 ;
-  object = make_array (glob_mx, glob_my, glob_mz, num_read, type=type_idl)
   buffer = make_array (proc_mx, proc_my, proc_mz, type=type_idl)
   if (f77 eq 0) then markers = 0 else markers = 1
 ;
@@ -286,20 +288,27 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   for ipz = ipz_start, ipz_end do begin
     for ipy = ipy_start, ipy_end do begin
       for ipx = ipx_start, ipx_end do begin
+;
         iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
+;
         x_off = (ipx-ipx_start) * procdim.nx
         y_off = (ipy-ipy_start) * procdim.ny
         z_off = (ipz-ipz_start) * procdim.nz
-        x_end = x_off + proc_mx-1
-        y_end = y_off + proc_my-1
-        z_end = z_off + proc_mz-1
 ;
 ; Setup the coordinates mappings from the processor to the full domain.
 ; (Don't overwrite ghost zones of the lower processor.)
 ;
-        x_add = nghostx * (ipx ne ipx_start and proc_mx ne 1)
-        y_add = nghosty * (ipy ne ipy_start and proc_my ne 1)
-        z_add = nghostz * (ipz ne ipz_start and proc_mz ne 1)
+        x_add_glob = nghostx * (ipx ne ipx_start or proc_mx eq 1)
+        y_add_glob = nghosty * (ipy ne ipy_start or proc_my eq 1)
+        z_add_glob = nghostz * (ipz ne ipz_start or proc_mz eq 1)
+;
+        x_add_proc = proc_mx eq 1 ? 0 : x_add_glob
+        y_add_proc = proc_my eq 1 ? 0 : y_add_glob
+        z_add_proc = proc_mz eq 1 ? 0 : z_add_glob
+;
+        x_end = x_off + proc_mx-1 + x_add_glob - x_add_proc
+        y_end = y_off + proc_my-1 + y_add_glob - y_add_proc
+        z_end = z_off + proc_mz-1 + z_add_glob - z_add_proc
 ;
 ; Build the full path and filename.
 ;
@@ -333,7 +342,8 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
           pa = indices[pos]
           point_lun, lun, data_bytes * pa*mxyz + long64 (markers*4)
           readu, lun, buffer
-          object[x_off+x_add:x_end,y_off+y_add:y_end,z_off+z_add:z_end,pos] = buffer[x_add:*,y_add:*,z_add:*]
+          object[x_off+x_add_glob:x_end,y_off+y_add_glob:y_end,z_off+z_add_glob:z_end,pos] = $
+          buffer[x_add_proc:*,y_add_proc:*,z_add_proc:*]
         end
         close, lun
 ;
@@ -386,8 +396,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Remove ghost zones if requested.
 ;
-  dim.mx=glob_mx & dim.my=glob_my & dim.mz=glob_mz
-  if (keyword_set (trimall)) then object = pc_noghost (object, dim=dim, run2D=run2D)
+  if (keyword_set (trimall)) then object = pc_noghost (object, dim=dim)
 ;
   if (not keyword_set (quiet)) then begin
     print, ' t = ', t
