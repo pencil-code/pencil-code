@@ -106,7 +106,7 @@ module Density
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
-  logical :: lmassdiff_fixmom = .false., lmassdiff_fixkin = .false.
+  logical :: lmassdiff_fix = .false.,lmassdiff_fixmom = .false.,lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
@@ -140,7 +140,7 @@ module Density
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
-      lmassdiff_fixmom, lmassdiff_fixkin, &
+      lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,  &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
@@ -160,7 +160,8 @@ module Density
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
       lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
-      ldiffusion_nolog, lcheck_negative_density, lmassdiff_fixmom, lmassdiff_fixkin, &
+      ldiffusion_nolog, lcheck_negative_density, &
+      lmassdiff_fix, lmassdiff_fixmom, lmassdiff_fixkin,&
       lcalc_lnrhomean, lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, &
@@ -303,6 +304,7 @@ module Density
 !  10-feb-15/MR: added getting reference state from initial condition.
 !                upwind switch according to log/nolog (with warning).
 !  15-nov-16/fred: option to apply z-profile to reinitialize_*
+!  25-may-18/fred: definitive test of mass diffusion correction implemented
 !
       use EquationOfState, only: select_eos_variable
       use BorderProfiles, only: request_border_driving
@@ -594,6 +596,16 @@ module Density
         if (ldiff_shock .and. diffrho_shock==0.0) &
             call fatal_error('initialize_density', &
             'diffusion coefficient diffrho_shock is zero!')
+        if (ldiff_normal.or.ldiff_cspeed.or.ldiff_shock) then
+          lmassdiff_fix=.true.
+          call warning('initialize_density', &
+            'Diffusion now requires enegy/momentum fix by default!')
+        endif
+        if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
+          lmassdiff_fix=.true.
+          call warning('initialize_density', &
+              'Depricated: lmassdiff_fix now the default!')
+        endif
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
 !
@@ -603,11 +615,6 @@ module Density
         endif
 !
       endif
-!
-!  lmassdiff_fixmom and lmassdiff_fixkin cannot be both set.
-!
-      if (lmassdiff_fixmom .and. lmassdiff_fixkin) &
-          call fatal_error('initialize_density', 'lmassdiff_fixmom and lmassdiff_fixkin cannot be both set')
 !
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
       if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
@@ -1974,11 +1981,11 @@ module Density
         if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
       endif
 !
-      if (lmassdiff_fixmom .or. lmassdiff_fixkin) then
+      if (lmassdiff_fix) then
         if ((lhydro.or.lentropy.or.ltemperature).and.ldensity_nolog) &
             lpenc_requested(i_rho1)=.true.
         if (lhydro) lpenc_requested(i_uu)=.true.
-        if (lentropy) lpenc_requested(i_cp)=.true.
+        if (lentropy) lpenc_requested(i_cv)=.true.
         if (ltemperature.and.ltemperature_nolog) lpenc_requested(i_TT)=.true.
         if (lthermal_energy) lpenc_requested(i_u2) = .true.
       endif
@@ -2319,6 +2326,9 @@ module Density
 !   7-jun-02/axel: incoporated from subroutine pde
 !  21-oct-15/MR: changes for slope-limited diffusion
 !   4-aug-17/axel: implemented terms for ultrarelativistic EoS
+!  25-may-18/fred: updated mass diffusion correction and set default
+!                  not default for hyperdiff, but correction applies
+!                  to all fdiff if lmassdiff_fix=T
 !
       use Deriv, only: der6
       use Diagnostics
@@ -2629,27 +2639,21 @@ module Density
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
       endif
 !
-!  Improve energy and momentum conservation by compensating
-!  for mass diffusion
+!  Improve energy and momentum conservation by compensating for mass diffusion
 !
-      massdiff: if (lmassdiff_fixmom .or. lmassdiff_fixkin) then
-
+      if (lmassdiff_fix) then
         if (ldensity_nolog) then
           tmp = fdiff*p%rho1
         else
           tmp = fdiff
         endif
 
-        hydro: if (lhydro) then
-          if (lmassdiff_fixmom) then
-            forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
-          else
-            forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - 0.5 * p%uu(:,j-iuu+1) * tmp
-          endif
-        endif hydro
+        if (lhydro) then
+          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+        endif
 
         if (lentropy.and.(.not.pretend_lnTT)) then
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tmp*p%cp
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
         elseif (lentropy.and.pretend_lnTT) then
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
         elseif (ltemperature.and.(.not. ltemperature_nolog)) then
@@ -2659,8 +2663,7 @@ module Density
         elseif (lthermal_energy) then
           df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
         endif
-
-      endif massdiff
+      endif
 !
 !  Multiply diffusion coefficient by Nyquist scale.
 !
