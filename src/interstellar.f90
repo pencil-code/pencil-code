@@ -660,7 +660,7 @@ module Interstellar
                         tiny(0E0),   &
                         tiny(0E0),   &
                         tiny(0E0) /)
-        coolH_cgs = (/  2.2380D-32,  &
+        coolH_cgs = (/  2.238751968D-32,  &
                         1.0012D-30,  &
                         4.6240D-36,  &
                         1.7800D-18,  &
@@ -1058,6 +1058,14 @@ module Interstellar
           done = .true.
       endselect
 !
+      if (lOB_cluster) then
+        if (lroot) then
+          print *,'input_persistent_interstellar: ','t_cluster', t_cluster
+          print *,'input_persistent_interstellar: ','x_cluster', x_cluster
+          print *,'input_persistent_interstellar: ','y_cluster', y_cluster
+          print *,'input_persistent_interstellar: ','z_cluster', z_cluster
+        endif
+      endif
       if (lroot) &
         print *,'input_persistent_interstellar: ','lSNI', lSNI, 't_next_SNI', t_next_SNI
       if (lroot) &
@@ -3213,6 +3221,15 @@ module Interstellar
       else
         call set_next_SNII(f,t_interval_SN)
         SNrate = t_interval_SNII
+      endif
+!
+      if (lOB_cluster) then
+        if (lroot) then
+          print *,'input_persistent_interstellar: ','t_cluster', t_cluster
+          print *,'input_persistent_interstellar: ','x_cluster', x_cluster
+          print *,'input_persistent_interstellar: ','y_cluster', y_cluster
+          print *,'input_persistent_interstellar: ','z_cluster', z_cluster
+        endif
       endif
 !
       if (lroot) then
