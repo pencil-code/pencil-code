@@ -2181,14 +2181,13 @@ module Particles
               rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
               if ((lcartesian_coords) .or. (lcylindrical_coords .and. nygrid/=1) .or. (lspherical_coords .and. nzgrid/=1)) then
                 call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
-                az_tmp(npar_loc_old+1:npar_loc) = -pi + 2.0*pi*az_tmp(npar_loc_old+1:npar_loc)
               endif
               if ((lcartesian_coords) .or. (lcylindrical_coords .and. nzgrid/=1) .or. (lspherical_coords .and. nygrid/=1)) then
                 call random_number_wrapper(fp(npar_loc_old+1:npar_loc,izp))
               endif
 
               if (lcartesian_coords) then
-                fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
+                fp(npar_loc_old+1:npar_loc,iyp) = -pi+az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
                 if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc) &
                   *cos(az_tmp(npar_loc_old+1:npar_loc))
                 if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc) &
