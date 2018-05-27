@@ -500,7 +500,11 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=.5*(1.+erfunc((z-zff_ampl)/wff_ampl)) &
                   -.5*(1.+erfunc((z-zff2_ampl)/wff2_ampl))
-        profz_hel=1.
+!        profz_hel=1.
+        do n=1,mz
+          profz_hel(n)=z(n)/max(-xyz0(3),xyz1(3))
+        enddo
+
 !
 ! turn on forcing in the bulk of the convection zone
 !
