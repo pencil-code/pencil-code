@@ -7,6 +7,12 @@
 ;; PURPOSE:
 ;;     Read video slices and put in structure
 ;;
+;; PARAMETERS:
+;;     Field needs to be the name as it appears in the name of the data file
+;;     to be read: i.e. for scalar quantities file name is slice_<field>.*,
+;;     but for vector quantities slice_<variable>[1-3].* where variable is
+;;     uu, aa, bb etc. Then field has to be <variable>[1-3].
+;;
 ;; MODIFICATION HISTORY:
 ;;     Written by: Anders Johansen (johansen@mpia.de) on 28.06.2007
 ;;
@@ -36,13 +42,19 @@ default, print, 1
 fields=rstringlist('video.in')
 if fields[0] eq '' then return
 
+
 if is_defined(field) then begin
 
   if field ne '' then begin
-    if (where(field eq fields))[0] eq -1 then begin
-      print, 'Field "'+strtrim(field,2)+'" not in video.in!!!'
+
+    pos=stregex(field,'[1-9][0-9]*')
+    field_base = pos ge 0 ? strtrim(strmid(field,0,pos)) : field
+
+    if (where(field_base eq fields))[0] eq -1 then begin
+      print, 'Field "'+strtrim(field_base,2)+'" not in video.in!!!'
       return
     endif
+ 
   endif else $
     field=fields[0]
 
@@ -55,6 +67,10 @@ if (proc eq -1) then begin
   readdir=datadir
 endif else begin
   readdir=datadir+'/proc'+strtrim(proc,2)
+  if not file_test(readdir,/directory) then begin
+    print, '"'+readdir+'" does not exist or is not a directory!!!'
+    return
+  endif
 endelse
 ;
 ; Read slice switches
@@ -62,13 +78,14 @@ endelse
 cdum=''
 on_ioerror, noposition
 openr, lun_1, readdir+'/slice_position.dat', /get_lun
-readf, lun_1, cdum & xyread  = strtrim(cdum,2) eq 'T' ? 1 : 0
-readf, lun_1, cdum & xy2read = strtrim(cdum,2) eq 'T' ? 1 : 0
-readf, lun_1, cdum & xy3read = strtrim(cdum,2) eq 'T' ? 1 : 0
-readf, lun_1, cdum & xy4read = strtrim(cdum,2) eq 'T' ? 1 : 0
-readf, lun_1, cdum & xzread  = strtrim(cdum,2) eq 'T' ? 1 : 0
-readf, lun_1, cdum & xz2read = strtrim(cdum,2) eq 'T' ? 1 : 0
-readf, lun_1, cdum & yzread  = strtrim(cdum,2) eq 'T' ? 1 : 0
+on_ioerror, NULL
+readf, lun_1, cdum & xyread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+readf, lun_1, cdum & xy2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+readf, lun_1, cdum & xy3read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+readf, lun_1, cdum & xy4read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+readf, lun_1, cdum & xzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+readf, lun_1, cdum & xz2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
+readf, lun_1, cdum & yzread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
 close, 1
 free_lun, lun_1
 ;
@@ -91,48 +108,57 @@ pc_read_dim, obj=dim, datadir=readdir, /quiet
 ;
 ; Define filenames of slices, declare arrays for reading and storing, open slice files.
 ;
+on_ioerror, data_file_missing
 if (xyread) then begin
+  tag='xy'
   file_slice1=readdir+'/slice_'+field+'.xy'
   xy_tmp =fltarr(dim.nx,dim.ny)*one
   xy =fltarr(dim.nx,dim.ny,nt)*one
   openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xy2read) then begin
+  tag='xy2'
   file_slice2=readdir+'/slice_'+field+'.xy2'
   xy2_tmp=fltarr(dim.nx,dim.ny)*one
   xy2=fltarr(dim.nx,dim.ny,nt)*one
   openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xy3read) then begin
+  tag='xy3'
   file_slice3=readdir+'/slice_'+field+'.xy3'
   xy3_tmp=fltarr(dim.nx,dim.ny)*one
   xy3=fltarr(dim.nx,dim.ny,nt)*one
   openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xy4read) then begin
+  tag='xy4'
   file_slice4=readdir+'/slice_'+field+'.xy4'
   xy4_tmp=fltarr(dim.nx,dim.ny)*one
   xy4=fltarr(dim.nx,dim.ny,nt)*one
   openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xzread) then begin
+  tag='xz'
   file_slice5=readdir+'/slice_'+field+'.xz'
   xz_tmp =fltarr(dim.nx,dim.nz)*one
   xz =fltarr(dim.nx,dim.nz,nt)*one
   openr, lun_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xz2read) then begin
+  tag='xz2'
   file_slice6=readdir+'/slice_'+field+'.xz2'
   xz2_tmp=fltarr(dim.nx,dim.nz)*one
   xz2=fltarr(dim.nx,dim.nz,nt)*one
   openr, lun_6, file_slice6, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (yzread) then begin
+  tag='yz'
   file_slice7=readdir+'/slice_'+field+'.yz'
   yz_tmp =fltarr(dim.ny,dim.nz)*one
   yz =fltarr(dim.ny,dim.nz,nt)*one
   openr, lun_7, file_slice7, /f77, /get_lun, swap_endian=swap_endian
 endif
+on_ioerror, NULL
 ;
 t_tmp=one & t=fltarr(nt)*one
 ;
@@ -142,30 +168,37 @@ if (njump gt 0) then begin
   dummy=zero
   for ijump=0,njump-1 do begin
     if (xyread)  then begin 
+      tag='xy'
       readu, lun_1, dummy1
       if (eof(lun_1)) then goto, jumpfail
     endif
     if (xy2read) then begin 
+      tag='xy2'
       readu, lun_2, dummy1
       if (eof(lun_2)) then goto, jumpfail
     endif
     if (xy3read) then begin 
+      tag='xy3'
       readu, lun_3, dummy1
       if (eof(lun_3)) then goto, jumpfail
     endif
     if (xy4read) then begin 
+      tag='xy4'
       readu, lun_4, dummy1
       if (eof(lun_4)) then goto, jumpfail
     endif
     if (xzread)  then begin 
+      tag='xz'
       readu, lun_5, dummy1
       if (eof(lun_5)) then goto, jumpfail
     endif
     if (xz2read) then begin 
+      tag='xz2'
       readu, lun_6, dummy1
       if (eof(lun_6)) then goto, jumpfail
     endif
     if (yzread)  then begin 
+      tag='yz'
       readu, lun_7, dummy1
       if (eof(lun_7)) then goto, jumpfail
     endif
@@ -291,13 +324,18 @@ if keyword_set(fail) then fail=0
 return
 ;
 jumpfail:
-print, 'Not enough data for requested jump over ',strtrim(string(njump),2),' first times!!!'
+print, 'Not enough data for requested jump over ',strtrim(string(njump),2),' first times'
+print, 'in slice_"'+field+'.'+tag+'"!!!' 
 if keyword_set(fail) then fail=1
 return
 ;
 noposition:
-print, 'No slice_position.dat found in "'+readdir+'" !!!'
+print, 'No slice_position.dat found in "'+readdir+'"!!!'
 if keyword_set(fail) then fail=1
 return
-
+;
+data_file_missing:
+print, 'No data file slice_"'+field+'.'+tag+'" found in "'+readdir+'"!!!'
+if keyword_set(fail) then fail=1
+;
 end
