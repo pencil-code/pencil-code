@@ -10303,6 +10303,47 @@ This is done by setting linit\_aatest=T. Note that daainit=100 sets the
 reset interval to 100.
 
 % ====================================================================== %
+\subsection{Restarting with particles from a run without them}
+\label{RestartingWithParticles}
+\index{Restarting}
+\index{Particles}
+
+If you want to restart from a run without particles to a run with
+them, you need to 
+
+\noindent (1) Compile a run with particles, 
+
+\code{RunWithParticles\$ pc\_build}
+
+\noindent (2) Copy a VARN
+or var.dat into this new run directory. Say the old run is at the
+directory OldRun and you want to copy the var.dat of that run and
+restart with particles. You do 
+
+\code{RunWithParticles\$ pc\_copyvar v v ../OldRun . -e }
+
+\noindent (3) In the start.in init\_pars of the new run, add the lines 
+
+\code{lread\_oldsnap = T}\\
+\code{ireset\_tstart = 0}
+
+\noindent (4) Remove all calls to initial conditions (make all
+initlnrho, inituu, initss, initaa, etc `nothing'), and  
+
+\noindent 5) Run \code{pc\_start}. 
+
+The variable \code{lread\_oldsnap} makes the code on start time read
+from the f-array of the snapshop, instead of the default, which is to
+initialize it with zeros. The necessity in step (4) to remove all calls to
+initial conditions is because otherwise the code would rewrite the
+content of the f-array with these initial conditions, or add them on
+top of the existing values of the snapshot. 
+
+The variable \code{ireset\_tstart} when set to zero makes it read the timestamp of
+the old snapshot and restart from that time. The default is 2, which
+sets the timestamp back to zero. 
+
+% ====================================================================== %
 
 \section{Runs and reference data}
 \label{S-ref-data}
