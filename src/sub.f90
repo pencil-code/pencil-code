@@ -6420,6 +6420,7 @@ nameloop: do
 !  ind_loc and flag are not altered if ind <= 0.
 !
 !  21-apr-15/MR: coded
+!  27-may-18/MR: added ind_loc=-1 when ind outside proc range
 !
       integer, intent(in) :: ind,ip,ngrid
       integer, intent(out):: ind_loc
@@ -6432,6 +6433,7 @@ nameloop: do
           ind_loc=ind_loc+nghost
         else
           flag=.false.
+          ind_loc=-1
         endif
       endif
 
