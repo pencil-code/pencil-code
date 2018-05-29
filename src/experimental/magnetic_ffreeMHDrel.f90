@@ -45,6 +45,16 @@ module Magnetic
   real :: bthresh=0.
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
+!
+! Slice precalculation buffers
+!
+  real, target, dimension (:,:,:), allocatable :: bb_xy
+  real, target, dimension (:,:,:), allocatable :: bb_xy2
+  real, target, dimension (:,:,:), allocatable :: bb_xy3
+  real, target, dimension (:,:,:), allocatable :: bb_xy4
+  real, target, dimension (:,:,:), allocatable :: bb_xz
+  real, target, dimension (:,:,:), allocatable :: bb_yz
+  real, target, dimension (:,:,:), allocatable :: bb_xz2
 
   namelist /magnetic_init_pars/ &
        eta,A0,B_ext,k_aa, &
@@ -76,6 +86,7 @@ module Magnetic
   integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0
   integer :: idiag_bmy=0,idiag_bmz=0,idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
   integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_uxDxuxbm=0
+  integer :: ivid_bb=0
 
   contains
 
@@ -117,6 +128,17 @@ module Magnetic
 !
 !  24-nov-2002/tony: dummy routine - nothing to do at present
       mu01=1./mu0
+
+      if (ivid_bb/=0) then
+        !call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+        if (lwrite_slice_xy .and..not.allocated(bb_xy) ) allocate(bb_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb_xz) ) allocate(bb_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb_yz) ) allocate(bb_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb_xy2)) allocate(bb_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb_xy3)) allocate(bb_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb_xy4)) allocate(bb_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb_xz2)) allocate(bb_xz2(nx,nz,3))
+      endif
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -219,7 +241,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       use Diagnostics
       use IO
-      use Slices_methods
+      use Slices_methods, only: store_slices
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -387,13 +409,8 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-        if (lvideo.and.lfirst) then
-          do j=1,3
-            bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
-            if (m==iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
-            if (n==iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
-            if (n==iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
-          enddo
+        if (lvideo.and.lfirst.and.ivid_bb) then
+          call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
           call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh,nbthresh)
         endif
 !
@@ -590,6 +607,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
         idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_uxDxuxbm=0.
+        ivid_bb=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -649,6 +667,12 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',idiag_b2mphi)
+      enddo
+!
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'bb',ivid_bb)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -792,6 +816,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
       endif
 !
       first = .false.
+!
     endsubroutine calc_mfield
 !***********************************************************************
     subroutine bc_frozen_in_bb_z(topbot)
