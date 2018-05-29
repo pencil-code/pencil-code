@@ -58,6 +58,7 @@ module General
   public :: linspace
   public :: linear_interpolate_2d
   public :: chk_time
+  public :: get_species_nr
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -4902,5 +4903,45 @@ module General
       if (2**ld /= ix) ld=-ld 
 
     endfunction ld
+!****************************************************************************** 
+    function get_species_nr(name,stem,maxnr,caller) result (ispec)
+!
+! Extracts species number of a multi-species quantity from name if base name of quantity is
+! stem and maximum legal number is maxnr. caller is the calling routine.
+! If no number conatined, 1 is returned.
+!
+! 10-may-18/MR: coded
+!
+    use Cdata, only: lroot
+
+    character (LEN=*) name, stem, caller
+    integer :: maxnr
+    integer :: ispec
+
+    integer :: lenstem, ios
+
+    lenstem=len(stem)
+
+    if (name(lenstem+1:)==' ') then
+      ispec=1
+    else
+      ispec=0
+      read(name(lenstem+1:),'(i3)',iostat=ios) ispec
+      if (ios/=0) then
+        if (lroot) &
+          print*, trim(caller)//': Warning - unreadable species number in slice name "'// &                        
+                  trim(name)//'"'
+        return
+      endif
+    endif
+
+    if (ispec>maxnr) then
+      if (lroot) &
+        print*, trim(caller)//': Warning - species number in slice name "'// &
+                trim(name)//'" bigger than maximum '//trim(itoa(maxnr))
+      ispec=0
+    endif
+
+    endfunction get_species_nr
 !***********************************************************************
   endmodule General

@@ -91,7 +91,7 @@ module InitialCondition
   real, dimension(3) :: axisr3=(/1,0,0/), dispr3=(/0.0,-0.5,0.0/)
   integer :: nrings=2
   character (len=labellen) :: fring_profile='tanh'
-  real, dimension(ninit) :: amplaa
+  real, dimension(ninit) :: amplaa=0.
   character (len=labellen), dimension(ninit) :: initring='nothing'
 !
   namelist /initial_condition_pars/  fring1, Iring1, Rring1, wr1, &

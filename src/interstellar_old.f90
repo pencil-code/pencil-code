@@ -1058,6 +1058,12 @@ module Interstellar
         call parse_name(iname,cname(iname),cform(iname),'Gamm',idiag_Gamm)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='ism_cool'.or.cnamev=='ism_cool2') cformv='DEFINED'
+      endif
+!
 !  Write column in which each interstellar variable is stored
 !
       if (lwr) then
@@ -1073,6 +1079,8 @@ module Interstellar
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -1083,17 +1091,9 @@ module Interstellar
 !  Shock profile
 !
         case ('ism_cool')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,icooling)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,icooling)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
-          slices%ready = .true.
+          call assign_slices_scal(slices,f,icooling)
         case ('ism_cool2')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetheat)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetheat)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetheat)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetheat)
-          slices%ready = .true.
+          call assign_slices_scal(slices,f,inetheat)
 !
       endselect
 !

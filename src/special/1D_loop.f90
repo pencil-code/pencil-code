@@ -70,16 +70,14 @@ module Special
 !
 ! variables for video.in
 !
-  real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2
-  real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
-  real, target, dimension (nx,nz) :: spitzer_xz
-  real, target, dimension (ny,nz) :: spitzer_yz
-  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension (nx,nz) :: rtv_xz
-  real, target, dimension (ny,nz) :: rtv_yz
-  real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
-  real, target, dimension (nx,nz) :: logQ_xz
-  real, target, dimension (ny,nz) :: logQ_yz
+  integer :: ivid_logQ=0; ivid_rtv=0; ivid_spitzer=0
+
+  real, target, dimension(:,:), allocatable :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
+  real, target, dimension(:,:), allocatable :: rtv_xz, rtv_yz, rtv_xz2
+  real, target, dimension(:,:), allocatable :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
+  real, target, dimension(:,:), allocatable :: logQ_xz, logQ_xz2, logQ_yz
+  real, target, dimension(:,:), allocatable :: spitzer_xy, spitzer_xy2, spitzer_xy3, spitzer_xy4
+  real, target, dimension(:,:), allocatable :: spitzer_xz, spitzer_xz2, spitzer_yz
 !
 !  miscellaneous variables
 !
@@ -139,6 +137,37 @@ module Special
         call fatal_error('initialize_initial_condition','Wrong loop_frac')
         Ltot = 0.
       endselect
+!
+      if (ivid_rtv/=0) then
+        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
+      endif
+      if (ivid_logQ/=0) then
+        !call alloc_slice_buffers(logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+        if (lwrite_slice_xy .and..not.allocated(logQ_xy) ) allocate(logQ_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(logQ_xz) ) allocate(logQ_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(logQ_yz) ) allocate(logQ_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(logQ_xy2)) allocate(logQ_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(logQ_xy3)) allocate(logQ_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(logQ_xy4)) allocate(logQ_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(logQ_xz2)) allocate(logQ_xz2(nx,nz))
+      endif
+      if (ivid_spitzer/=0) then
+        !call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+        if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(spitzer_xy2)) allocate(spitzer_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(spitzer_xy3)) allocate(spitzer_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(spitzer_xy4)) allocate(spitzer_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(spitzer_xz2)) allocate(spitzer_xz2(nx,nz))
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -284,6 +313,7 @@ module Special
         idiag_dtspitzer=0
         idiag_qmax=0
         idiag_qrms=0
+        ivid_logQ=0; ivid_rtv=0; ivid_spitzer=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -296,6 +326,14 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
         call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
         call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
+      enddo
+!
+!  check for those quantities for which we want video slices
+!
+      do iname = 1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'logQ',ivid_logQ)
+        call parse_name(iname,cnamev(iname),cformv(iname),'rtv',ivid_rtv)
+        call parse_name(iname,cnamev(iname),cformv(iname),'spitzer',ivid_spitzer)
       enddo
 !
 !  write column where which variable is stored
@@ -363,6 +401,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -370,33 +410,15 @@ module Special
 !
       select case (trim(slices%name))
 !
+      case ('rtv'); call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
+                                            rtv_xy3,rtv_xy4,rtv_xz2)
+!
+      case ('logQ'); call assign_slices_scal(slices,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
+                                             logQ_xy3,logQ_xy4,logQ_xz2)
+!
       case ('spitzer')
-        slices%yz => spitzer_yz
-        slices%xz => spitzer_xz
-        slices%xy => spitzer_xy
-        slices%xy2=> spitzer_xy2
-        if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
-        if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
-        slices%ready=.true.
-!
-      case ('rtv')
-        slices%yz =>rtv_yz
-        slices%xz =>rtv_xz
-        slices%xy =>rtv_xy
-        slices%xy2=>rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3=>rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
-        slices%ready=.true.
-!
-      case ('logQ')
-        slices%yz =>logQ_yz
-        slices%xz =>logQ_xz
-        slices%xy =>logQ_xy
-        slices%xy2=>logQ_xy2
-        if (lwrite_slice_xy3) slices%xy3=>logQ_xy3
-        if (lwrite_slice_xy4) slices%xy4=>logQ_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2, &
+                                spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endselect
 !
       call keep_compiler_quiet(f)

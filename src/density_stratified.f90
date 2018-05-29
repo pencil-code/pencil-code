@@ -720,6 +720,12 @@ module Density
         call parse_name(iname, cnamexy(iname), cformxy(iname), 'sigma', idiag_sigma)
       enddo zaver
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='rho'.or.cnamev=='drho') cformv='DEFINED'
+      endif
+!
 !  Write column where which density variable is stored.
 !
       indices: if (lwr) then
@@ -747,6 +753,7 @@ module Density
       case ('rho') var
         if (lwrite_slice_yz)  slices%yz  = (1.+f(ix_loc,m1:m2, n1:n2,  irho))*spread(rho0z(n1:n2),1,ny)
         if (lwrite_slice_xz)  slices%xz  = (1.+f(l1:l2, iy_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
+        if (lwrite_slice_xz2) slices%xz2 = (1.+f(l1:l2, iy2_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
         if (lwrite_slice_xy)  slices%xy  = (1.+f(l1:l2, m1:m2, iz_loc, irho))*rho0z(iz_loc)
         if (lwrite_slice_xy2) slices%xy2 = (1.+f(l1:l2, m1:m2, iz2_loc,irho))*rho0z(iz2_loc)
         if (lwrite_slice_xy3) slices%xy3 = (1.+f(l1:l2, m1:m2, iz3_loc,irho))*rho0z(iz3_loc)

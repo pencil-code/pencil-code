@@ -1027,7 +1027,7 @@ module Equ
 !
 !  Timestep constraint from source terms.
 !
-          dt1_src    = maxsrc / cdtsrc
+          dt1_src    = maxsrc/cdtsrc
 !
 !  Timestep combination from advection and diffusion (and "source"). 
 !

@@ -5400,12 +5400,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr_c(tforce_stop,p_par(1))
-    call copy_addr_c(profx_ampl,p_par(2))  ! nx
-    call copy_addr_c(profy_ampl,p_par(3))  ! my
-    call copy_addr_c(profz_ampl,p_par(4))  ! mz
-    call copy_addr_c(profx_hel,p_par(5))   ! nx
-    call copy_addr_c(profy_hel,p_par(6))   ! my
-    call copy_addr_c(profz_hel,p_par(7))   ! mz
+    call copy_addr_c(profx_ampl,p_par(2))  ! (nx)
+    call copy_addr_c(profy_ampl,p_par(3))  ! (my)
+    call copy_addr_c(profz_ampl,p_par(4))  ! (mz)
+    call copy_addr_c(profx_hel,p_par(5))   ! (nx)
+    call copy_addr_c(profy_hel,p_par(6))   ! (my)
+    call copy_addr_c(profz_hel,p_par(7))   ! (mz)
 
     endsubroutine pushpars2c
 !*******************************************************************

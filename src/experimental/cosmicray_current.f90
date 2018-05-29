@@ -193,7 +193,6 @@ module Cosmicrayflux
 !  08-mar-05/snod: adapted from daa_dt
 !
       use Sub
-      use Slices
       use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
       use Diagnostics, only: sum_mn_name

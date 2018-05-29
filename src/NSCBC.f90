@@ -979,6 +979,7 @@ module NSCBC
       real :: radius_mean, smooth, rad, vel
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
+      logical :: lprint
 !
 !  Allocate allocatables
 !
@@ -992,24 +993,25 @@ module NSCBC
 ! Define velocity profile at inlet
 !
         u_in=0
+        lprint=lroot .and. it==1 .and. lfirst .and. .not. lpencil_check_at_work
         do j=1,ninit
           select case (inlet_profile(j))
 !
           case ('nothing')
-            if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+            if (lprint .and. j==1) &
                 print*,'inlet_profile: nothing'
             non_zero_transveral_velo=.false.
             u_profile=1.
 !
           case ('uniform')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: uniform'
             non_zero_transveral_velo=.false.
             u_in(:,:,dir)=u_in(:,:,dir)+u_t
             u_profile=1.
 !
           case ('coaxial_jet')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: coaxial_jet'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1080,7 +1082,7 @@ module NSCBC
             enddo
 !
           case ('single_jet')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: single_jet'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1114,7 +1116,7 @@ module NSCBC
             enddo
 !
           case ('single_jet_no_coflow')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: single_jet'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1155,7 +1157,7 @@ module NSCBC
             print*,'1:u_in(*,1,1)=',u_in(:,1,1)
 !
          case ('single_jet_no_coflow2')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                  print*,'inlet_profile: single_jet_no_coflow2'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1252,29 +1254,31 @@ module NSCBC
       integer :: i_CH4=0, i_O2=0, i_N2=0
       integer :: ichem_CH4=0, ichem_O2=0, ichem_N2=0
       integer :: i,jj,k
-      logical :: lO2, lN2, lCH4
+      logical :: lO2, lN2, lCH4, lprint
 !
 ! Define composition profile at inlet
 !
       call keep_compiler_quiet(jmin)
       call keep_compiler_quiet(jmax)
 !
+      lprint=lroot .and. it==1 .and. lfirst .and. .not. lpencil_check_at_work
+
         do jj=1,ninit
           select case (zz_profile(jj))
 !
           case ('nothing')
-            if (lroot .and. it==1 .and. jj == 1 .and. lfirst) &
+            if (lprint .and. jj==1) &
                 print*,'inlet_YY_profile: nothing'
 !
           case ('uniform')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_YY_profile: uniform,'
             do k = 1, nchemspec
               YYi_full(:,:,k)=YYi(k)
             enddo
 !
           case ('triple_flame')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_YY_profile: triple flame, constant gradient'
             zz1=inlet_zz1
             zz2=inlet_zz2

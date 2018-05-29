@@ -4859,13 +4859,12 @@ module EquationOfState
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=4
+    integer, parameter :: n_pars=3
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr_c(cs20,p_par(1))
-    call copy_addr_c(gamma1,p_par(2))
-    call copy_addr_c(gamma_m1,p_par(3))
-    call copy_addr_c(cv1,p_par(4))
+    call copy_addr_c(gamma,p_par(2))
+    call copy_addr_c(cv1,p_par(3))
 
     endsubroutine pushpars2c
 !***********************************************************************

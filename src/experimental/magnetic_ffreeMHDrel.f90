@@ -219,7 +219,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       use Diagnostics
       use IO
-      use Slices
+      use Slices_methods
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

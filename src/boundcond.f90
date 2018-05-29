@@ -293,7 +293,7 @@ module Boundcond
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
-               case ('a2v')
+                case ('a2v')
                   ! BCX_DOC: set boundary value and antisymmetry relative to it
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
