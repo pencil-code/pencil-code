@@ -931,52 +931,27 @@ module Pscalar
 !  26-jul-06/tony: coded
 !  31-jan-11/ccyang: generalized to multiple scalars
 !
+      use Slices_methods, only: assign_slices_vec, process_slices
+
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
-!
-      integer :: icc1
+      character(LEN=labellen) :: sname
 !
 !  Loop over slices.
 !
-      select case (trim(slices%name))
+      sname=trim(slices%name)
 !
-!  Passive scalar.
+!  Passive scalar or logarithm of it..
 !
-        case ('cc')
-          if (0 <= slices%index .and. slices%index < npscalar) then
-            icc1 = icc + slices%index
-            slices%index = slices%index + 1
-            slices%yz = f(ix_loc,m1:m2 ,n1:n2  ,icc1)
-            slices%xz = f(l1:l2 ,iy_loc,n1:n2  ,icc1)
-            slices%xy = f(l1:l2 ,m1:m2 ,iz_loc ,icc1)
-            slices%xy2= f(l1:l2 ,m1:m2 ,iz2_loc,icc1)
-            if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,icc1)
-            if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,icc1)
-            if (lwrite_slice_xz2) slices%xz2 = f(l1:l2,iy2_loc,n1:n2,icc1)
-            slices%ready = .true.
-          else
-            slices%ready = .false.
-          endif
+      if (sname=='cc'.or.sname='lncc') then
+
+        call assign_slices_vec(slices,f,icc,npscalar)
 !
 !  Logarithmic passive scalar.
 !
-        case ('lncc')
-          if (0 <= slices%index .and. slices%index < npscalar) then
-            icc1 = icc + slices%index
-            slices%index = slices%index + 1
-            slices%yz = alog(f(ix_loc,m1:m2 ,n1:n2  ,icc1))
-            slices%xz = alog(f(l1:l2 ,iy_loc,n1:n2  ,icc1))
-            slices%xy = alog(f(l1:l2 ,m1:m2 ,iz_loc ,icc1))
-            slices%xy2= alog(f(l1:l2 ,m1:m2 ,iz2_loc,icc1))
-            if (lwrite_slice_xy3) slices%xy3 = alog(f(l1:l2,m1:m2,iz3_loc,icc1))
-            if (lwrite_slice_xy4) slices%xy4 = alog(f(l1:l2,m1:m2,iz4_loc,icc1))
-            if (lwrite_slice_xz2) slices%xz2 = alog(f(l1:l2,iy2_loc,n1:n2,icc1))
-            slices%ready = .true.
-          else
-            slices%ready = .false.
-          endif
+        if (sname=='lncc') call process_slices(slices,'log')       
 !
-      endselect
+      endif
 !
     endsubroutine get_slices_pscalar
 !***********************************************************************
