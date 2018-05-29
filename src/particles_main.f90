@@ -117,6 +117,12 @@ module Particles_main
       call rprint_particles_diagnos_state(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='rhop'.or.cnamev=='np'.or.cnamev=='vvp') cformv='DEFINED'
+      endif
+!
     endsubroutine particles_rprint_list
 !***********************************************************************
         subroutine particles_initialize_modules(f)
@@ -1174,6 +1180,8 @@ module Particles_main
 !
 !  Write slices for animation of Particle variables.
 !
+      use Slices_methods, only: assign_slices_vec, process_slices
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       integer :: l
@@ -1184,41 +1192,20 @@ module Particles_main
 !
 !  Particle number density
 !
-        case ('np')
-          slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,inp)
-          slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,inp)
-          slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,inp)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,inp)
-          slices%ready = .true.
+        case ('np'); call assign_slices_vec(slices,f,inp)
 !
 !  Particle mass density
 !
         case ('rhop')
           if (irhop/=0) then
-            slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,irhop)
-            slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,irhop)
-            slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,irhop)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,irhop)
-            slices%ready = .true.
+            call assign_slices_vec(slices,f,irhop)
           else
+            call assign_slices_vec(slices,f,inp)
             if (lcartesian_coords.and.(all(lequidist))) then
-              slices%yz= rhop_swarm*f(ix_loc,m1:m2 ,n1:n2   ,inp)
-              slices%xz= rhop_swarm*f(l1:l2 ,iy_loc,n1:n2  ,inp)
-              slices%xy= rhop_swarm*f(l1:l2 ,m1:m2 ,iz_loc ,inp)
-              slices%xy2=rhop_swarm*f(l1:l2 ,m1:m2 ,iz2_loc,inp)
-            else
-              do m=m1,m2 ; do n=n1,n2
-                slices%yz(m,n) = rhop_swarm*f(ix_loc,m,n,inp)
-              enddo;enddo
-              do l=l1,l2 ; do n=n1,n2
-                slices%xz(l,n) = rhop_swarm*f(l,iy_loc,n,inp)
-              enddo;enddo
-              do l=l1,l2 ; do m=m1,m2
-                slices%xy(l,m) = rhop_swarm*f(l,m,iz_loc,inp)
-                slices%xy2(l,m) = rhop_swarm*f(l,m,iz2_loc,inp)
-              enddo;enddo
+              call process_slices(slices,fac=rhop_swarm)
+            else    !MR: both implementations identical!!!
+              call process_slices(slices,fac=rhop_swarm)
             endif
-            slices%ready = .true.
           endif
 !
 !  Particle velocity field
@@ -1228,17 +1215,7 @@ module Particles_main
 ! MAUX CONTRIBUTION 3
 ! COMMUNICATED AUXILIARIES 3
 !
-        case ('vvp')
-          if (slices%index>=3) then
-              slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz = f(ix_loc, m1:m2,  n1:n2,   iupx-1+slices%index)
-            slices%xz = f(l1:l2 , iy_loc, n1:n2,   iupx-1+slices%index)
-            slices%xy = f(l1:l2 , m1:m2,  iz_loc,  iupx-1+slices%index)
-            slices%xy2= f(l1:l2 , m1:m2,  iz2_loc, iupx-1+slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+        case ('vvp'); call assign_slices_vec(slices,f,iupx)
 !
       endselect
 !

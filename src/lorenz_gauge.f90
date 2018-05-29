@@ -319,6 +319,12 @@ module Lorenz_gauge
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'phibzmz',idiag_phibzmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='phi') cformv='DEFINED'
+      endif
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
@@ -333,10 +339,10 @@ module Lorenz_gauge
 !
 !  26-feb-07/axel: adapted from gross_pitaevskii
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -344,12 +350,7 @@ module Lorenz_gauge
 !
 !  phi
 !
-        case ('phi')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iphi)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iphi)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iphi)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iphi)
-          slices%ready = .true.
+        case ('phi'); call assign_slices_scal(slices,f,iphi)
 !
       endselect
 !

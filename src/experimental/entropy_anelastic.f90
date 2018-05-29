@@ -2695,6 +2695,7 @@ module Energy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0
+        cformv=''
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2778,6 +2779,12 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
       enddo
+!       
+!  check for those quantities for which we want video slices
+!       
+      if (lwrite_slices) then
+        where(cnamev=='ss') cformv='DEFINED'
+      endif
 !
 !  write column where which magnetic variable is stored
 !
@@ -2837,6 +2844,7 @@ module Energy
 !  26-jul-06/tony: coded
 !
       use EquationOfState, only: eoscalc, ilnrho_ss
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -2850,16 +2858,8 @@ module Energy
 !
 !  Entropy.
 !
-        case ('ss')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iss)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iss)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iss)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iss)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iss)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iss)
-          slices%ready=.true.
-!
-!
+        case ('ss'); call assign_slices_scal(slices,f,iss)
+
       endselect
 !
     endsubroutine get_slices_energy

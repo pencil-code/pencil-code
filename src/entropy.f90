@@ -6408,6 +6408,12 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='pp'.or.cnamev=='ss'.or.cnamev=='TT'.or.cnamev=='lnTT') cformv='DEFINED'
+      endif
+!
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
@@ -6426,72 +6432,60 @@ module Energy
 !  12-feb-15/MR  : changes for use of reference state.
 !
       use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
+      use Slices_methods, only: assign_slices_scal, addto_slices, process_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      real :: tmpval, ssadd
+      character(LEN=labellen) :: sname
+      real :: ssadd
       integer :: l,n,m
 !
-      if (slices%name=='pp'.or.slices%name=='TT'.or.slices%name=='lnTT') then
-!
-        if (lreference_state) then
-          ssadd=reference_state(ix_loc-l1+1,iref_s)
-       else
-          ssadd=0.
-        endif
-      endif
+      ssadd=0.
+      sname=trim(slices%name)
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+      select case (sname)
 !
 !  Entropy.
 !
         case ('ss')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iss)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iss)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iss)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iss)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iss)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iss)
-!
-          if (lfullvar_in_slices) then
-            slices%yz = slices%yz+ssadd
-            do n=1,nz
-              slices%xz(:,n) = slices%xz(:,n)+reference_state(:,iref_s)
-            enddo
-            do m=1,ny
-              slices%xy (:,m) = slices%xy (:,m)+reference_state(:,iref_s)
-              slices%xy2(:,m) = slices%xy2(:,m)+reference_state(:,iref_s)             
-              if (lwrite_slice_xy3) slices%xy3(:,m)=slices%xy3(:,m)+reference_state(:,iref_s)
-              if (lwrite_slice_xy4) slices%xy4(:,m)=slices%xy4(:,m)+reference_state(:,iref_s)
-            enddo
-          endif
-          slices%ready=.true.
+          call assign_slices_scal(slices,f,iss)
+          if (lfullvar_in_slices) call addto_slices(slices,reference_state(:,iref_s))
 !
 !  Pressure.
 !
         case ('pp')
 !
-          do m=m1,m2; do n=n1,n2
-            call eoscalc(irho_ss,getrho_s(f(ix_loc,m,n,ilnrho),ix_loc), &
-                         f(ix_loc,m,n,iss)+ssadd,pp=slices%yz(m-m1+1,n-n1+1))
-          enddo; enddo
+          if (lwrite_slice_yz) then
+            if (lreference_state) ssadd=reference_state(ix_loc-l1+1,iref_s)
+            do m=m1,m2; do n=n1,n2
+              call eoscalc(irho_ss,getrho_s(f(ix_loc,m,n,ilnrho),ix_loc), &
+                           f(ix_loc,m,n,iss)+ssadd,pp=slices%yz(m-m1+1,n-n1+1))
+            enddo; enddo
+          endif
 
-          do l=l1,l2; 
+          do l=l1,l2 
 !
             if (lreference_state) ssadd=reference_state(l-l1+1,iref_s)
 
             do n=n1,n2
-              call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l),f(l,iy_loc,n,iss)+ssadd,pp=slices%xz(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz) &
+                call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
+                             f(l,iy_loc,n,iss)+ssadd,pp=slices%xz(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz2) &
+                call eoscalc(irho_ss,getrho_s(f(l,iy2_loc,n,ilnrho),l), &
+                             f(l,iy2_loc,n,iss)+ssadd,pp=slices%xz2(l-l1+1,n-n1+1))
             enddo
 
             do m=m1,m2
-              call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
-                           f(l,m,iz_loc, iss)+ssadd,pp=slices%xy(l-l1+1,m-m1+1))
-              call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
-                           f(l,m,iz2_loc,iss)+ssadd,pp=slices%xy2(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy) &
+                call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
+                             f(l,m,iz_loc, iss)+ssadd,pp=slices%xy(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy2) &
+                call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
+                             f(l,m,iz2_loc,iss)+ssadd,pp=slices%xy2(l-l1+1,m-m1+1))
               if (lwrite_slice_xy3) &
                 call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l), &
                              f(l,m,iz3_loc,iss)+ssadd,pp=slices%xy3(l-l1+1,m-m1+1))
@@ -6504,59 +6498,36 @@ module Energy
 !
 ! Temperature
 !
-        case ('TT')
+        case ('TT','lnTT')
 !
-          do m=m1,m2; do n=n1,n2
-            call eoscalc(irho_ss,getrho_s(f(ix_loc,m,n,ilnrho),ix_loc),f(ix_loc,m,n,iss)+ssadd,lnTT=tmpval)
-            slices%yz(m-m1+1,n-n1+1)=exp(tmpval)
-          enddo; enddo
+          if (lwrite_slice_yz) then
+            if (lreference_state) ssadd=reference_state(ix_loc-l1+1,iref_s)
+            do m=m1,m2; do n=n1,n2
+              call eoscalc(irho_ss,getrho_s(f(ix_loc,m,n,ilnrho),ix_loc), &
+                           f(ix_loc,m,n,iss)+ssadd,lnTT=slices%yz(m-m1+1,n-n1+1))
+            enddo; enddo
+          endif
 
-          do l=l1,l2
-
-            if (lreference_state) ssadd =reference_state(l-l1+1,iref_s)
-
-            do n=n1,n2
-              call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l),f(l,iy_loc,n,iss)+ssadd,lnTT=tmpval)
-              slices%xz(l-l1+1,n-n1+1)=exp(tmpval)
-            enddo
-            do m=m1,m2
-              call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l),f(l,m,iz_loc,iss)+ssadd,lnTT=tmpval)
-              slices%xy(l-l1+1,m-m1+1)=exp(tmpval)
-              call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l),f(l,m,iz2_loc,iss)+ssadd,lnTT=tmpval)
-              slices%xy2(l-l1+1,m-m1+1)=exp(tmpval)
-              if (lwrite_slice_xy3) then
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l),f(l,m,iz3_loc,iss)+ssadd,lnTT=tmpval)
-                slices%xy3(l-l1+1,m-m1+1)=exp(tmpval)
-              endif
-              if (lwrite_slice_xy4) then
-                call eoscalc(irho_ss,getrho_s(f(l,m,iz4_loc,ilnrho),l),f(l,m,iz4_loc,iss)+ssadd,lnTT=tmpval)
-                slices%xy4(l-l1+1,m-m1+1)=exp(tmpval)
-              endif
-            enddo
-          enddo
-          slices%ready=.true.
-!
-        case ('lnTT')
-!
-          do m=m1,m2; do n=n1,n2
-            call eoscalc(irho_ss,getrho_s(f(ix_loc,m,n,ilnrho),ix_loc), &
-                         f(ix_loc,m,n,iss)+ssadd,lnTT=slices%yz(m-m1+1,n-n1+1))
-          enddo; enddo
-!
           do l=l1,l2
 
             if (lreference_state) ssadd=reference_state(l-l1+1,iref_s)
 
             do n=n1,n2
-              call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
-                           f(l,iy_loc,n,iss)+ssadd,lnTT=slices%xz(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz) &
+                call eoscalc(irho_ss,getrho_s(f(l,iy_loc,n,ilnrho),l), &
+                             f(l,iy_loc,n,iss)+ssadd,lnTT=slices%xz(l-l1+1,n-n1+1))
+              if (lwrite_slice_xz2) &
+                call eoscalc(irho_ss,getrho_s(f(l,iy2_loc,n,ilnrho),l), &
+                             f(l,iy2_loc,n,iss)+ssadd,lnTT=slices%xz2(l-l1+1,n-n1+1))
             enddo
-!
+
             do m=m1,m2
-              call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
-                           f(l,m,iz_loc,iss)+ssadd,lnTT=slices%xy (l-l1+1,m-m1+1))
-              call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
-                           f(l,m,iz2_loc,iss)+ssadd,lnTT=slices%xy2(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy) &
+                call eoscalc(irho_ss,getrho_s(f(l,m,iz_loc,ilnrho),l), &
+                             f(l,m,iz_loc,iss)+ssadd,lnTT=slices%xy(l-l1+1,m-m1+1))
+              if (lwrite_slice_xy2) &
+                call eoscalc(irho_ss,getrho_s(f(l,m,iz2_loc,ilnrho),l), &
+                             f(l,m,iz2_loc,iss)+ssadd,lnTT=slices%xy2(l-l1+1,m-m1+1))
               if (lwrite_slice_xy3) &
                 call eoscalc(irho_ss,getrho_s(f(l,m,iz3_loc,ilnrho),l), &
                              f(l,m,iz3_loc,iss)+ssadd,lnTT=slices%xy3(l-l1+1,m-m1+1))
@@ -6565,6 +6536,8 @@ module Energy
                              f(l,m,iz4_loc,iss)+ssadd,lnTT=slices%xy4(l-l1+1,m-m1+1))
             enddo
           enddo
+!
+          if (sname=='TT') call process_slices(slices,'exp')
           slices%ready=.true.
 !
       endselect

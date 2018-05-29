@@ -102,6 +102,7 @@ module Cosmicray
 !
       use SharedVariables, only: put_shared_variable
       use Messages, only: warning
+
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  initialize gammacr1
@@ -117,14 +118,13 @@ module Cosmicray
             // ' In the future, please use K_para and K_perp instead.')
         K_para = Kpara
         K_perp = Kperp
-        call put_shared_variable('K_perp', impossible)
+        call put_shared_variable('K_perp', impossible,caller='initialize_cosmicray')
         call put_shared_variable('K_para', impossible)
      else
-        call put_shared_variable('K_perp', K_perp)
+        call put_shared_variable('K_perp', K_perp,caller='initialize_cosmicray')
         call put_shared_variable('K_para', K_para)
      endif
-      !call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
-      !call put_shared_variable('K_para', K_para)
+     call keep_compiler_quiet(f)
 !
     endsubroutine initialize_cosmicray
 !***********************************************************************
@@ -418,6 +418,12 @@ print*,"init_ecr: initecr = ", initecr
 !        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='ecr') cformv='DEFINED'
+      endif
+!
 !  write column where which cosmic ray variable is stored
 !
       if (lwr) then
@@ -432,6 +438,8 @@ print*,"init_ecr: initecr = ", initecr
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -441,14 +449,7 @@ print*,"init_ecr: initecr = ", initecr
 !
 !  Cosmic ray energy density.
 !
-        case ('ecr')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iecr)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iecr)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iecr)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iecr)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iecr)
-          slices%ready=.true.
+        case ('ecr'); call assign_slices_scal(slices,f,iecr)
 !
       endselect
 !

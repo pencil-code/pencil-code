@@ -1232,6 +1232,7 @@ module Special
         idiag_TTmax_cline=0; idiag_TTmin_cline=0
         idiag_devsigzz1=0; idiag_devsigzz2=0; idiag_devsigzz3=0; idiag_devsigzz4=0
         idiag_icount=0; idiag_residual=0
+        cformv=''
       endif
 !
       do iname=1,nname
@@ -1282,6 +1283,12 @@ module Special
         !    idiag_sigmamx)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='psi') cformv='DEFINED'
+      endif
+!
       if (lwr) then
         write(3,*) 'uqxmin=',idiag_uqxmin
         write(3,*) 'uqxmax=',idiag_uqxmax
@@ -1331,9 +1338,10 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-!
 !
 !  Loop over slices
 !
@@ -1341,13 +1349,9 @@ module Special
 !
 !  Streamfunction
 !
-        case('psi')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi)
-          slices%ready = .true.
-        endselect
+        case('psi'); call assign_slices_scal(slices,f,ipsi)
+
+      endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************

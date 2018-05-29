@@ -112,9 +112,8 @@ module Energy
 !
 ! variables for slices given in video.in
 !
-  real, dimension(nx,nz) :: pp_xz
-  real, dimension(ny,nz) :: pp_yz
-  real, dimension(nx,ny) :: pp_xy,pp_xy2,pp_xy3,pp_xy4
+  integer :: ivid_pp=0
+  real, dimension(:,:), allocatable :: pp_xz,pp_yz,pp_xy,pp_xy2,pp_xy3,pp_xy4
 !
 ! General variables for operator split terms.
 !
@@ -177,6 +176,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  03-oct-11/ccyang: add initialization for KI02
 !
+      !use Slice_methods, only: alloc_slice_buffers
       use EquationOfState, only: select_eos_variable, get_stratz, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
       use SharedVariables
 !
@@ -252,6 +252,17 @@ module Energy
           'llocal_iso switches on the local isothermal approximation. ' // &
           'Use ENERGY=noenergy in src/Makefile.local')
 !
+      if (ivid_pp/=0) then
+        !call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4)
+        if (lwrite_slice_xy .and..not.allocated(pp_xy) ) allocate(pp_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(pp_xz) ) allocate(pp_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(pp_yz) ) allocate(pp_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(pp_xy2)) allocate(pp_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(pp_xy3)) allocate(pp_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(pp_xy4)) allocate(pp_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(pp_xz2)) allocate(pp_xz2(nx,nz))
+      endif
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_energy
@@ -473,6 +484,7 @@ module Energy
       use Sub, only: identify_bcs, u_dot_grad, del2
       use Viscosity, only: calc_viscous_heat
       use Deriv, only: der6
+      use Slices_methods, only: store_slices
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -609,12 +621,7 @@ module Energy
       endif
 !
       if (lvideo.and.lfirst) then
-        pp_yz(m-m1+1,n-n1+1)=p%pp(ix_loc-l1+1)
-        if (m==iy_loc)  pp_xz(:,n-n1+1)=p%pp
-        if (n==iz_loc)  pp_xy(:,m-m1+1)=p%pp
-        if (n==iz2_loc) pp_xy2(:,m-m1+1)=p%pp
-        if (n==iz3_loc) pp_xy3(:,m-m1+1)=p%pp
-        if (n==iz4_loc) pp_xy4(:,m-m1+1)=p%pp
+        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
       endif
 !
     endsubroutine denergy_dt
@@ -708,6 +715,7 @@ module Energy
         idiag_ethm=0; idiag_ethmin=0; idiag_ethmax=0; idiag_eem=0
         idiag_etot = 0; idiag_ethtot=0
         idiag_pdivum=0; idiag_ppm=0
+        ivid_pp=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -761,21 +769,30 @@ module Energy
             idiag_TTmxz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='TT'.or.cnamev=='lnTT') cformv='DEFINED'
+      endif
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'pp',ivid_pp)
+      enddo
+!
     endsubroutine rprint_energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
 !  04-nov-10/anders+evghenii: adapted
 !
+      use Slices_methods, only: assign_slices_scal, process_slices
       use EquationOfState, only: eoscalc, irho_eth, ilnrho_eth
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       real, dimension(nx) :: penc
-      integer :: ieosvars, idensity
+      integer :: ieosvars
       integer :: m, n
-      real :: a
 !
 !  Loop over slices
 !
@@ -784,56 +801,46 @@ module Energy
 !  Pressure
 !
         case ('pp') slice_name
-          slices%yz =pp_yz
-          slices%xz =pp_xz
-          slices%xy =pp_xy
-          slices%xy2=pp_xy2
-          if (lwrite_slice_xy3) slices%xy3=pp_xy3
-          if (lwrite_slice_xy4) slices%xy4=pp_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
 !
 !  Temperature
 !
         case ('TT', 'lnTT') slice_name
           density: if (ldensity_nolog) then
             ieosvars = irho_eth
-            idensity = irho
           else density
             ieosvars = ilnrho_eth
-            idensity = ilnrho
           endif density
 !
-          xy: do m = m1, m2
-            call eoscalc(ieosvars, f(l1:l2,m,iz_loc,idensity), f(l1:l2,m,iz_loc,ieth), iz=iz_loc, lnTT=penc)
-            slices%xy(:,m-nghost) = penc
-            call eoscalc(ieosvars, f(l1:l2,m,iz2_loc,idensity), f(l1:l2,m,iz2_loc,ieth), iz=iz2_loc, lnTT=penc)
-            slices%xy2(:,m-nghost) = penc
-            call eoscalc(ieosvars, f(l1:l2,m,iz3_loc,idensity), f(l1:l2,m,iz3_loc,ieth), iz=iz3_loc, lnTT=penc)
-            slices%xy3(:,m-nghost) = penc
-            call eoscalc(ieosvars, f(l1:l2,m,iz4_loc,idensity), f(l1:l2,m,iz4_loc,ieth), iz=iz4_loc, lnTT=penc)
-            slices%xy4(:,m-nghost) = penc
-          enddo xy
+          do m = m1, m2
+            if (lwrite_slice_xy) &
+              call eoscalc(ieosvars, f(l1:l2,m,iz_loc,ilnrho), f(l1:l2,m,iz_loc,ieth), iz=iz_loc, lnTT=slices%xy(:,m-nghost))
+            if (lwrite_slice_xy2) &
+              call eoscalc(ieosvars, f(l1:l2,m,iz2_loc,ilnrho), f(l1:l2,m,iz2_loc,ieth), iz=iz2_loc, lnTT=slices%xy(:,m-nghost))
+            if (lwrite_slice_xy3) &
+              call eoscalc(ieosvars, f(l1:l2,m,iz3_loc,ilnrho), f(l1:l2,m,iz3_loc,ieth), iz=iz3_loc, lnTT=slices%xy(:,m-nghost))
+            if (lwrite_slice_xy4) &
+              call eoscalc(ieosvars, f(l1:l2,m,iz4_loc,ilnrho), f(l1:l2,m,iz4_loc,ieth), iz=iz4_loc, lnTT=slices%xy(:,m-nghost))
+          enddo
 !
-          xz: do n = n1, n2
-            call eoscalc(ieosvars, f(l1:l2,iy_loc,n,idensity), f(l1:l2,iy_loc,n,ieth), iz=n, lnTT=penc)
-            slices%xz(:,n-nghost) = penc
-          enddo xz
+          if (lwrite_slice_xz.or.lwrite_slice_xz2) then
+            do n = n1, n2
+              if (lwrite_slice_xz) &
+                call eoscalc(ieosvars, f(l1:l2,iy_loc,n,ilnrho), f(l1:l2,iy_loc,n,ieth), iz=n, lnTT=slices%xz(:,n-nghost))
+              if (lwrite_slice_xz2) &
+                call eoscalc(ieosvars, f(l1:l2,iy2_loc,n,ilnrho), f(l1:l2,iy2_loc,n,ieth), iz=n, lnTT=slices%xz2(:,n-nghost))
+            enddo
+          endif
 !
-          yz_z: do n = n1, n2
-            yz_y: do m = m1, m2
-              call eoscalc(ieosvars, f(ix_loc,m,n,idensity), f(ix_loc,m,n,ieth), iz=n, lnTT=a)
-              slices%yz(m-nghost,n-nghost) = a
-            enddo yz_y
-          enddo yz_z
+          if (lwrite_slice_yz) then
+            do n = n1, n2
+              do m = m1, m2
+                call eoscalc(ieosvars, f(ix_loc,m,n,idensity), f(ix_loc,m,n,ieth), iz=n, lnTT=slices%yz(m-nghost,n-nghost)
+              enddo
+            enddo
+          endif
 !
-          nolog: if (trim(slices%name) == 'TT') then
-            slices%xy = exp(slices%xy)
-            slices%xy2 = exp(slices%xy2)
-            slices%xy3 = exp(slices%xy3)
-            slices%xy4 = exp(slices%xy4)
-            slices%xz = exp(slices%xz)
-            slices%yz = exp(slices%yz)
-          endif nolog
+          if (trim(slices%name) == 'TT') call process_slices(slices,'exp')
 !
           slices%ready = .true.
 !

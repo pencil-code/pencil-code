@@ -9,8 +9,6 @@
 !  energy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
 !  has way more options and features than temperature_idealgas.f90.
 !
-!  At a later point we may want to rename the module Energy into Energy
-!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -213,9 +211,7 @@ module Energy
 !
 ! variables for slices given in video.in
 !
-  real, dimension(nx,nz) :: pp_xz
-  real, dimension(ny,nz) :: pp_yz
-  real, dimension(nx,ny) :: pp_xy,pp_xy2,pp_xy3,pp_xy4
+  real, dimension(:,:), allocatable :: pp_xz,pp_yz,pp_xy,pp_xy2,pp_xy3,pp_xy4,pp_xz2
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -228,6 +224,8 @@ module Energy
   integer :: idiag_TTmxy=0      ! ZAVG_DOC: $\left<T\right>_{z}$
   integer :: idiag_Emzmxy=0     ! ZAVG_DOC: $\left< Em_z\right>_{z} $
                                 ! ZAVG_DOC: \quad{Emission in z-direction}
+!
+  integer :: ivid_pp=0
 !
   real, dimension (nx) :: diffus_chi,diffus_chi3
 !
@@ -301,6 +299,7 @@ module Energy
       use Sub, only: step,der_step
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Mpicomm, only: stop_it
+      !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hcond, dhcond
@@ -588,7 +587,17 @@ module Energy
 !          call get_shared_variable('lscale_to_cs2top',lscale_to_cs2top)
         endif
       endif
-
+!
+      if (ivid_pp/=0) then
+        !call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
+        if (lwrite_slice_xy .and..not.allocated(pp_xy) ) allocate(pp_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(pp_xz) ) allocate(pp_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(pp_yz) ) allocate(pp_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(pp_xy2)) allocate(pp_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(pp_xy3)) allocate(pp_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(pp_xy4)) allocate(pp_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(pp_xz2)) allocate(pp_xz2(nx,nz))
+      endif
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -763,7 +772,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      if (dvid/=0.0) lpenc_video(i_pp)=.true.
+      if (lwrite_slices.and.ivid_pp/=0) lpenc_video(i_pp)=.true.
 !
 !  cs2 affects time step only if the continuity equation is being solved,
 !  i.e. not for boussinesq or anelastic.
@@ -1092,6 +1101,7 @@ module Energy
       use Special, only: special_calc_energy
       use Sub, only: dot2,identify_bcs, dot, dot_mn
       use Viscosity, only: calc_viscous_heat
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1409,12 +1419,7 @@ module Energy
       endif
 !
       if (lvideo.and.lfirst) then
-        pp_yz(m-m1+1,n-n1+1)=p%pp(ix_loc-l1+1)
-        if (m==iy_loc)  pp_xz(:,n-n1+1)=p%pp
-        if (n==iz_loc)  pp_xy(:,m-m1+1)=p%pp
-        if (n==iz2_loc) pp_xy2(:,m-m1+1)=p%pp
-        if (n==iz3_loc) pp_xy3(:,m-m1+1)=p%pp
-        if (n==iz4_loc) pp_xy4(:,m-m1+1)=p%pp
+        if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
       endif
 !
     endsubroutine denergy_dt
@@ -2119,6 +2124,7 @@ module Energy
         idiag_TTmxy=0; idiag_TTmxz=0; idiag_Emymxz=0; idiag_Emzmxy=0
         idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradmz=0
         idiag_ethtot=0; idiag_fconvmz=0; idiag_TT2m=0; idiag_Emzmask=0
+        ivid_pp=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2224,6 +2230,15 @@ module Energy
            idiag_Emymxz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!     
+      if (lwrite_slices) then 
+        where(cnamev=='TT'.or.cnamev=='lnTT') cformv='DEFINED'
+      endif
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'pp',ivid_pp)
+      enddo
+!
 !  Write column where which variable is stored.
 !
       if (lwr) then
@@ -2242,6 +2257,8 @@ module Energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
+      use Slices_methods, only: assign_slices_scal, process_slices
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -2253,39 +2270,18 @@ module Energy
 !
         case ('TT')
           if (iTT>0) then
-            slices%yz =f(ix_loc,m1:m2,n1:n2,iTT)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,iTT)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,iTT)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,iTT)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iTT)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iTT)
+            call assign_slices_scal(slices,f,iTT)
           else
-            slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnTT))
-            slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnTT))
-            slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnTT))
-            slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnTT))
-            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnTT))
-            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT))
+            call assign_slices_scal(slices,f,ilnTT)
+            call process_slices(slices,'exp')
           endif
-          slices%ready=.true.
 !  lnTT
         case ('lnTT')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
-          slices%ready=.true.
+          call assign_slices_scal(slices,f,ilnTT)
+          if (iTT>0) call process_slices(slices,'log')
 !  Pressure
         case ('pp')
-          slices%yz =pp_yz
-          slices%xz =pp_xz
-          slices%xy =pp_xy
-          slices%xy2=pp_xy2
-          if (lwrite_slice_xy3) slices%xy3=pp_xy3
-          if (lwrite_slice_xy4) slices%xy4=pp_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
 !
       endselect
 !

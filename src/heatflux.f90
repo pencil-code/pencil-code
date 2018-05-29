@@ -39,20 +39,13 @@ module Heatflux
       tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
       hyper3_coeff, lnfs2, &
       Kc
-!
-!  variables for video slices:
-!
-  real, target, dimension (nx,ny) :: hflux_xy,hflux_xy2
-  real, target, dimension (nx,ny) :: hflux_xy3,hflux_xy4
-  real, target, dimension (nx,nz) :: hflux_xz
-  real, target, dimension (ny,nz) :: hflux_yz
-!
   real, dimension(:), pointer :: B_ext
   real :: nu_ee, e_m
 !
-  real, target, dimension (nx,ny) :: divq_xy,divq_xy2,divq_xy3,divq_xy4
-  real, target, dimension (nx,nz) :: divq_xz
-  real, target, dimension (ny,nz) :: divq_yz
+!  variables for video slices:
+!
+  real, target, dimension (:,:), allocatable :: divq_xy,divq_xy2,divq_xy3,divq_xy4
+  real, target, dimension (:,:), allocatable :: divq_xz,divq_xz2,divq_yz
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -69,6 +62,7 @@ module Heatflux
   integer :: idiag_qrms=0       ! DIAG_DOC: rms of heat flux vector
   integer :: idiag_qsatmin=0    ! DIAG_DOC: minimum of qsat/qabs
   integer :: idiag_qsatrms=0    ! DIAG_DOC: rms of qsat/abs
+  integer :: ivid_divq
 !
   include 'heatflux.h'
 !
@@ -108,6 +102,7 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
+    !use Slices_methods, only: alloc_slice_buffers
     use SharedVariables, only: get_shared_variable
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -135,6 +130,17 @@ contains
 !
     if (lreset_heatflux) f(:,:,:,iqx:iqz)=0.
 !
+    if (ivid_divq/=0) then
+      !call alloc_slice_buffers(divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
+      if (lwrite_slice_xy .and..not.allocated(divq_xy) ) allocate(divq_xy (nx,ny))
+      if (lwrite_slice_xz .and..not.allocated(divq_xz) ) allocate(divq_xz (nx,nz))
+      if (lwrite_slice_yz .and..not.allocated(divq_yz) ) allocate(divq_yz (ny,nz))
+      if (lwrite_slice_xy2.and..not.allocated(divq_xy2)) allocate(divq_xy2(nx,ny))
+      if (lwrite_slice_xy3.and..not.allocated(divq_xy3)) allocate(divq_xy3(nx,ny))
+      if (lwrite_slice_xy4.and..not.allocated(divq_xy4)) allocate(divq_xy4(nx,ny))
+      if (lwrite_slice_xz2.and..not.allocated(divq_xz2)) allocate(divq_xz2(nx,nz))
+    endif
+
   endsubroutine initialize_heatflux
 !***********************************************************************
   subroutine finalize_heatflux(f)
@@ -359,6 +365,7 @@ contains
       idiag_dtq2=0
       idiag_qsatmin=0
       idiag_qsatrms=0
+      ivid_divq=0
     endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -373,6 +380,15 @@ contains
       call parse_name(iname,cname(iname),cform(iname),'qsatrms',idiag_qsatrms)
     enddo
 !
+!  check for those quantities for which we want video slices
+!
+    if (lwrite_slices) then 
+      where(cnamev=='hflux') cformv='DEFINED'
+    endif
+    do iname=1,nnamev
+      call parse_name(iname,cnamev(iname),cformv(iname),'divq',ivid_divq)
+    enddo
+
    if (lwr) then
       write(3,*) 'iqq=',iqq
       write(3,*) 'iqx=',iqx
@@ -393,6 +409,8 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
+    use Slices_methods, only: assign_slices_scal
+
     real, dimension (mx,my,mz,mfarray) :: f
     type (slice_data) :: slices
 !
@@ -405,31 +423,33 @@ contains
         slices%ready=.false.
       else
         slices%index=slices%index+1
-        slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index) * &
-             exp(-f(ix_loc,m1:m2 ,n1:n2  ,ilnrho-1+slices%index))
-        slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index) * &
-             exp(-f(l1:l2 ,iy_loc,n1:n2  ,ilnrho-1+slices%index))
-        slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index) * &
-             exp(-f(l1:l2 ,m1:m2 ,iz_loc ,ilnrho-1+slices%index))
-        slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index) * &
-             exp(-f(l1:l2 ,m1:m2 ,iz2_loc,ilnrho-1+slices%index))
+        if (lwrite_slice_yz) &
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2,iqx-1+slices%index) * &
+                    exp(-f(ix_loc,m1:m2 ,n1:n2  ,ilnrho))
+        if (lwrite_slice_xz) &
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2,iqx-1+slices%index) * &
+                    exp(-f(l1:l2,iy_loc,n1:n2  ,ilnrho))
+        if (lwrite_slice_xy) &
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc,iqx-1+slices%index) * &
+                    exp(-f(l1:l2,m1:m2 ,iz_loc ,ilnrho))
+        if (lwrite_slice_xy2) &
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index) * &
+                     exp(-f(l1:l2,m1:m2 ,iz2_loc,ilnrho))
         if (lwrite_slice_xy3) &
-            slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index) * &
-            exp(-f(l1:l2,m1:m2,iz3_loc,ilnrho-1+slices%index))
+          slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index) * &
+                       exp(-f(l1:l2,m1:m2,iz3_loc,ilnrho))
         if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index) * &
-              exp(-f(l1:l2,m1:m2,iz4_loc,ilnrho-1+slices%index))
+          slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index) * &
+                       exp(-f(l1:l2,m1:m2,iz4_loc,ilnrho))
+        if (lwrite_slice_xz2) &
+          slices%xz2=f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index) * &
+                     exp(-f(l1:l2,iy2_loc,n1:n2,ilnrho))
         if (slices%index<=3) slices%ready=.true.
       endif
 !
-      case ('divq')
-        slices%yz => divq_yz
-        slices%xz => divq_xz
-        slices%xy => divq_xy
-        slices%xy2=> divq_xy2
-        if (lwrite_slice_xy3) slices%xy3=> divq_xy3
-        if (lwrite_slice_xy4) slices%xy4=> divq_xy4
-        slices%ready=.true.
+    case ('divq')
+      call assign_slices_scal(slices,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
+
     endselect
 !
   endsubroutine get_slices_heatflux
@@ -438,6 +458,7 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
+    use Slices_methods, only: store_slices
     use Diagnostics, only: max_mn_name,sum_mn_name, max_name
     use EquationOfState
     use Sub
@@ -571,6 +592,7 @@ contains
 !
 
     if (lfirst.and.ldt) then
+
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
       tmp2 = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
@@ -600,14 +622,9 @@ contains
 !
     endif
 !
-    if (lvideo) then
-       rhs = (p%divq - tmp)*exp(-p%lnrho)
-       divq_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-       if (m == iy_loc)  divq_xz(:,n-n1+1)= rhs
-       if (n == iz_loc)  divq_xy(:,m-m1+1)= rhs
-       if (n == iz2_loc) divq_xy2(:,m-m1+1)= rhs
-       if (n == iz3_loc) divq_xy3(:,m-m1+1)= rhs
-       if (n == iz4_loc) divq_xy4(:,m-m1+1)= rhs
+    if (lvideo.and.lfirst) then
+      if (ivid_divq/=0) call store_slices((p%divq - tmp)*exp(-p%lnrho), &
+        divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
     endif
 !
   endsubroutine non_fourier_spitzer
@@ -618,6 +635,7 @@ contains
 !
 !  07-sept-17/bingert: updated
 !
+    use Slices_methods, only: store_slices
     use EquationOfState, only: gamma
     use Sub
 !
@@ -668,13 +686,8 @@ contains
 !
    df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
 
-   if (lvideo) then
-     divq_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-     if (m == iy_loc)  divq_xz(:,n-n1+1)= rhs
-     if (n == iz_loc)  divq_xy(:,m-m1+1)= rhs
-     if (n == iz2_loc) divq_xy2(:,m-m1+1)= rhs
-     if (n == iz3_loc) divq_xy3(:,m-m1+1)= rhs
-     if (n == iz4_loc) divq_xy4(:,m-m1+1)= rhs
+   if (lvideo.and.lfirst) then
+     if (ivid_divq/=0) call store_slices(rhs,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
    endif
 !
     if (lfirst.and.ldt) then
@@ -694,6 +707,7 @@ contains
 !  19-feb-18/piyali: adapted from non-fourier_spitzer for ionisation equation of
 !  state, no advection term and a different free streaming limit
 !
+    use Slices_methods, only: store_slices
     use Diagnostics, only: max_mn_name,max_name
     use EquationOfState
     use Sub
@@ -785,14 +799,8 @@ contains
       endif
     endif
 !
-    if (lvideo) then
-       rhs = p%divq
-       divq_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-       if (m == iy_loc)  divq_xz(:,n-n1+1)= rhs
-       if (n == iz_loc)  divq_xy(:,m-m1+1)= rhs
-       if (n == iz2_loc) divq_xy2(:,m-m1+1)= rhs
-       if (n == iz3_loc) divq_xy3(:,m-m1+1)= rhs
-       if (n == iz4_loc) divq_xy4(:,m-m1+1)= rhs
+    if (lvideo.and.lfirst) then
+      if (ivid_divq/=0) call store_slices(p%divq,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
     endif
 !
   endsubroutine noadvection_non_fourier_spitzer

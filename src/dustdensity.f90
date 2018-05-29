@@ -3145,13 +3145,14 @@ module Dustdensity
 !   3-may-02/axel: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: itoa, loptest
+      use General, only: itoa, loptest, get_species_nr
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamex, inamexy, k
       character (len=intlen) :: sdust
+      character (len=fmtlen) :: sname
 !
 !  Write information to index.pro that should not be repeated for all species.
 !
@@ -3237,6 +3238,19 @@ module Dustdensity
 !
       enddo
 !
+!  Check for those quantities for which we want video slices.
+!
+      do iname=1,nnamev
+        sname=trim(cnamev(iname))
+        if (sname(1:2)=='nd') then
+          if (sname(3:5)=='max') then
+            cformv(iname)='DEFINED'
+          elseif (get_species_nr(sname,'nd',ndustspec,'rprint_dustdensity')>0) then
+            cformv(iname)='DEFINED'
+          endif
+        endif
+      enddo   
+!
 !  Non-species-dependent diagnostics.
 !
       do iname=1,nname
@@ -3267,241 +3281,39 @@ module Dustdensity
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: f_tmpx
-      real, dimension (mx,mz) :: f_tmpy
-      real, dimension (mx,my) :: f_tmpz
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9, i10=10
-      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16
-      integer :: i17=17,i18=18,i19=19,i20=20
-      integer :: ii,jj
+      integer :: ispec
       type (slice_data) :: slices
+      character(LEN=fmtlen) :: sname
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+      sname=trim(slices%name)
+      if (sname=='ndmax') then
+
+          if (lwrite_slice_yz) slices%yz =maxval(f(ix_loc,m1:m2  ,n1:n2  ,ind),dim=3)
+          if (lwrite_slice_xz) slices%xz =maxval(f(l1:l2 ,iy_loc ,n1:n2  ,ind),dim=3)
+          if (lwrite_slice_xy) slices%xy =maxval(f(l1:l2 ,m1:m2  ,iz_loc ,ind),dim=3)
+          if (lwrite_slice_xy2)slices%xy2=maxval(f(l1:l2 ,m1:m2  ,iz2_loc,ind),dim=3)
+          if (lwrite_slice_xy3)slices%xy3=maxval(f(l1:l2 ,m1:m2  ,iz3_loc,ind),dim=3)
+          if (lwrite_slice_xy4)slices%xy4=maxval(f(l1:l2 ,m1:m2  ,iz4_loc,ind),dim=3)
+          if (lwrite_slice_xz2)slices%xz2=maxval(f(l1:l2 ,iy2_loc,n1:n2  ,ind),dim=3)
+
+          slices%ready=.true.
+          return
 !
 !  Dustdensity.
 !
-        case ('nd')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i1))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i1))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i1))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i1))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i1))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i1))
-          slices%ready=.true.
-        case ('nd2')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i2))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i2))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i2))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i2))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i2))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i2))
-          slices%ready=.true.
-        case ('nd3')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i3))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i3))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i3))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i3))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i3))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i3))
-          slices%ready=.true.
-        case ('nd4')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i4))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i4))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i4))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i4))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i4))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i4))
-          slices%ready=.true.
-        case ('nd5')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i5))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i5))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i5))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i5))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i5))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i5))
-          slices%ready=.true.
-        case ('nd6')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i6))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i6))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i6))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i6))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i6))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i6))
-          slices%ready=.true.
-        case ('nd7')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i7))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i7))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i7))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i7))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i7))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i7))
-          slices%ready=.true.
-        case ('nd8')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i8))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i8))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i8))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i8))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i8))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i8))
-          slices%ready=.true.
-        case ('nd9')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i9))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i9))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i9))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i9))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i9))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i9))
-          slices%ready=.true.
-        case ('nd10')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i10))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i10))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i10))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i10))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i10))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i10))
-          slices%ready=.true.
-        case ('nd11')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i11))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i11))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i11))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i11))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i11))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i11))
-          slices%ready=.true.
-        case ('nd12')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i12))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i12))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i12))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i12))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i12))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i12))
-          slices%ready=.true.
-        case ('nd13')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i13))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i13))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i13))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i13))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i13))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i13))
-          slices%ready=.true.
-        case ('nd14')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i14))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i14))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i14))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i14))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i14))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i14))
-          slices%ready=.true.
-        case ('nd15')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i15))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i15))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i15))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i15))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i15))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i15))
-          slices%ready=.true.
-        case ('nd16')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i16))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i16))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i16))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i16))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i16))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i16))
-          slices%ready=.true.
-        case ('nd17')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i17))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i17))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i17))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i17))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i17))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i17))
-          slices%ready=.true.
-        case ('nd18')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i18))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i18))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i18))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i18))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i18))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i18))
-          slices%ready=.true.
-        case ('nd19')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i19))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i19))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i19))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i19))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i19))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i19))
-          slices%ready=.true.
-        case ('nd20')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i20))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i20))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i20))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i20))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i20))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i20))
-          slices%ready=.true.
-        case ('ndmax')
-          do ii=m1,m2; do jj=n1,n2
-            f_tmpx(ii,jj)=maxval(f(ix_loc,ii ,jj,ind(:)))
-          enddo; enddo
-          do ii=l1,l2; do jj=n1,n2
-            f_tmpy(ii,jj)=maxval(f(ii,iy_loc,jj,ind(:)))
-          enddo; enddo
-          do ii=l1,l2; do jj=m1,m2
-            f_tmpz(ii,jj)=maxval(f(ii,jj,iz_loc,ind(:)))
-          enddo; enddo
-          slices%yz =f_tmpx
-          slices%xz =f_tmpy
-          slices%xy =f_tmpz
-          do ii=l1,l2; do jj=m1,m2
-            f_tmpz(ii,jj)=maxval(f(ii,jj,iz2_loc,ind(:)))
-          enddo; enddo
-          slices%xy2=f_tmpz
-          slices%ready=.true.
-      endselect
+      elseif (sname(1:2)=='nd') then
+        if (sname(3:)=='') then
+          ispec=1
+        else                 ! slice name is "nd" followed by a number for the species 
+          read(slices%name(3:),'(i3)') ispec
+        endif
+        call assign_slices_scal(slices,f,ind(ispec))
+      endif
 !
     endsubroutine get_slices_dustdensity
 !***********************************************************************

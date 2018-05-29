@@ -900,6 +900,12 @@ module Magnetic
         call parse_name(iname, cnamex(iname), cformx(iname), 'beta2mx', idiag_beta2mx)
       enddo yzavg
 !
+!  check for those quantities for which we want video slices
+!       
+      if (lwrite_slices) then 
+        where(cnamev=='bb'.or.cnamev=='b2'.or.cnamev=='db2') cformv='DEFINED'
+      endif
+!       
 !  Write variable indices for IDL.
 !
       option: if (present(lwrite)) then
@@ -927,6 +933,8 @@ module Magnetic
 !
 !  26-jun-13/ccyang: coded.
 !
+      use Slices_methods, only: assign_slices_vec
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
 !
@@ -937,48 +945,36 @@ module Magnetic
 !
       if (lbext) call get_bext(b_ext)
 !
-      slice: select case (trim(slices%name))
+      select case (trim(slices%name))
 !
 !  Magnetic field
 !
       case ('bb') slice
-        bcomp: if (slices%index >= 3) then
-          slices%ready=.false.
-        else bcomp
-          ivar = ibb + slices%index
-          slices%index = slices%index + 1
-          slices%yz = f(ix_loc,m1:m2,n1:n2,ivar)
-          slices%xz = f(l1:l2,iy_loc,n1:n2,ivar)
-          slices%xy = f(l1:l2,m1:m2,iz_loc,ivar)
-          slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ivar)
-          if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ivar)
-          if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ivar)
-          if (slices%index <= 3) slices%ready = .true.
-        endif bcomp
+        call assign_slices_vec(slices,f,ibb)
 !
-!  Magnetic energy
+!  Magnetic energy or fluctuating part of the magnetic energy
 !
-      case ('b2') slice
-        slices%yz = sum((f(ix_loc,m1:m2,n1:n2,ibx:ibz) + spread(spread(b_ext,1,ny),2,nz))**2, dim=3)
-        slices%xz = sum((f(l1:l2,iy_loc,n1:n2,ibx:ibz) + spread(spread(b_ext,1,nx),2,nz))**2, dim=3)
-        slices%xy = sum((f(l1:l2,m1:m2,iz_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        slices%xy2 = sum((f(l1:l2,m1:m2,iz2_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        if (lwrite_slice_xy3) slices%xy3 = sum((f(l1:l2,m1:m2,iz3_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        if (lwrite_slice_xy4) slices%xy4 = sum((f(l1:l2,m1:m2,iz4_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+      case ('b2','db2') slice
+        if (trim(slices%name)=='b2'.and.any(b_ext /= 0.0)) then
+          if (lwrite_slice_yz)  slices%yz = sum((f(ix_loc,m1:m2,n1:n2,ibx:ibz) + spread(spread(b_ext,1,ny),2,nz))**2, dim=3)
+          if (lwrite_slice_xz)  slices%xz = sum((f(l1:l2,iy_loc,n1:n2,ibx:ibz) + spread(spread(b_ext,1,nx),2,nz))**2, dim=3)
+          if (lwrite_slice_xz2) slices%xz2 = sum((f(l1:l2,iy2_loc,n1:n2,ibx:ibz) + spread(spread(b_ext,1,nx),2,nz))**2, dim=3)
+          if (lwrite_slice_xy)  slices%xy = sum((f(l1:l2,m1:m2,iz_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+          if (lwrite_slice_xy2) slices%xy2 = sum((f(l1:l2,m1:m2,iz2_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+          if (lwrite_slice_xy3) slices%xy3 = sum((f(l1:l2,m1:m2,iz3_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+          if (lwrite_slice_xy4) slices%xy4 = sum((f(l1:l2,m1:m2,iz4_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+        else
+          if (lwrite_slice_yz)  slices%yz = sum(f(ix_loc,m1:m2,n1:n2,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xz)  slices%xz = sum(f(l1:l2,iy_loc,n1:n2,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xz2) slices%xz2 = sum(f(l1:l2,iy2_loc,n1:n2,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy)  slices%xy = sum(f(l1:l2,m1:m2,iz_loc,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy2) slices%xy2 = sum(f(l1:l2,m1:m2,iz2_loc,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy3) slices%xy3 = sum(f(l1:l2,m1:m2,iz3_loc,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy4) slices%xy4 = sum(f(l1:l2,m1:m2,iz4_loc,ibx:ibz)**2, dim=3)
+        endif
         slices%ready = .true.
 !
-!  Fluctuating part of the magnetic energy
-!
-      case ('db2') slice
-        slices%yz = sum(f(ix_loc,m1:m2,n1:n2,ibx:ibz)**2, dim=3)
-        slices%xz = sum(f(l1:l2,iy_loc,n1:n2,ibx:ibz)**2, dim=3)
-        slices%xy = sum(f(l1:l2,m1:m2,iz_loc,ibx:ibz)**2, dim=3)
-        slices%xy2 = sum(f(l1:l2,m1:m2,iz2_loc,ibx:ibz)**2, dim=3)
-        if (lwrite_slice_xy3) slices%xy3 = sum(f(l1:l2,m1:m2,iz3_loc,ibx:ibz)**2, dim=3)
-        if (lwrite_slice_xy4) slices%xy4 = sum(f(l1:l2,m1:m2,iz4_loc,ibx:ibz)**2, dim=3)
-        slices%ready = .true.
-!
-      endselect slice
+      endselect
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************

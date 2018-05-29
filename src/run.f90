@@ -65,7 +65,7 @@ program run
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
   use General,         only: random_seed_wrapper, touch_file, itoa
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays
   use Gpu,             only: gpu_init, register_gpu
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
@@ -94,7 +94,6 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step, initialize_timestep
-
 !
   implicit none
 !
@@ -145,8 +144,6 @@ program run
 !
   call read_all_run_pars
 !
-  call set_coorsys_dimmask
-!
 !  Initialise MPI communication.
 !
   call initialize_mpicomm
@@ -168,12 +165,6 @@ program run
                        //trim(itoa(iproc))//' for downsampling')
   endif
 !
-!  Derived parameters (that may still be overwritten).
-!  [might better be put into another routine, possibly in 'read_all_run_pars']
-!
-  x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
-  Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
-!
 !  Set up directory names.
 !
   call directory_names
@@ -185,14 +176,22 @@ program run
 !  luse_oldgrid=.true. by default, and the values written at the end of
 !  each var.dat file are ignored anyway and only used for postprocessing.
 !
+  call set_coorsys_dimmask
+!
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
+    call construct_serial_arrays
     call grid_bound_data
   else
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
   endif
+!
+!  Shorthands (global).
+!
+  x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
+  Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !  
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
@@ -285,12 +284,6 @@ program run
 !  Inform about verbose level.
 !
   if (lroot) print*, 'The verbose level is ip=', ip, ' (ldebug=', ldebug, ')'
-!
-!  Call rprint_list to initialize diagnostics and write indices to file.
-!
-  call rprint_list(LRESET=.false.)
-  if (lparticles) call particles_rprint_list(.false.)
-  call report_undefined_diagnostics
 !
 !  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
 !
@@ -412,7 +405,13 @@ program run
   f=0.
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
 !
-  if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)
+  if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz) !MR: already called
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(LRESET=.false.)
+  if (lparticles) call particles_rprint_list(.false.)
+  call report_undefined_diagnostics
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
   if (lpointmasses) call pointmasses_read_snapshot(trim(directory_snap)//'/qvar.dat')
@@ -478,11 +477,6 @@ program run
     if (it1d<it1) call stop_it_if_any(lroot,'run: it1d smaller than it1')
   endif
 !
-!  Write parameters to log file (done after reading var.dat, since we
-!  want to output time t.
-!
-  call write_all_run_pars
-!
 !  Initialize ionization array.
 !
   if (leos_ionization) call ioninit(f)
@@ -491,13 +485,18 @@ program run
 !  Prepare particles.
 !
   if (lparticles) then
-    call particles_rprint_list(.false.)
+    !!!call particles_rprint_list(.false.) ! already done
     call particles_initialize_modules(f)
   endif
 !
 !  Write data to file for IDL.
 !
   call write_all_run_pars('IDL')
+!
+!  Write parameters to log file (done after reading var.dat, since we
+!  want to output time t.
+!
+  call write_all_run_pars
 !
 !  Possible debug output (can only be done after "directory" is set).
 !  Check whether mn array is correct.
@@ -559,6 +558,7 @@ program run
 !
 !  Do loop in time.
 !
+
   Time_loop: do while (it<=nt)
 !
     lout   = mod(it-1,it1) ==0
@@ -613,16 +613,18 @@ program run
         if (lforcing)            call forcing_clean_up
         if (lhydro_kinematic)    call hydro_clean_up
         if (lsolid_cells)        call solid_cells_clean_up
+
         call rprint_list(LRESET=.true.) !(Re-read output list)
+        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?                                    
+        call report_undefined_diagnostics
+
         call initialize_timestep
         call initialize_modules(f)
-        if (lparticles) then
-          call particles_rprint_list(.false.)
-          call particles_initialize_modules(f)
-        endif
-        call report_undefined_diagnostics
+        if (lparticles) call particles_initialize_modules(f)
+
         call choose_pencils
-        call write_all_run_pars('IDL')
+        call write_all_run_pars('IDL')       ! data to param2.nml
+        call write_all_run_pars              ! diff data to params.log
 !
         lreload_file=control_file_exists('RELOAD', DELETE=.true.)
         lreload_file        = .false.
@@ -659,10 +661,8 @@ program run
       if (t == 0.0 .and. lwrite_ic) lvideo = .true.
     endif
 !
-    if (lwrite_2daverages) then
-      call write_2daverages_prepare
-      if (t == 0.0 .and. lwrite_ic) l2davg = .true.
-    endif
+    if (lwrite_2daverages) &
+      call write_2daverages_prepare(t == 0.0 .and. lwrite_ic)
 !
 !  Exit do loop if maximum simulation time is reached; allow one extra
 !  step if any diagnostic output needs to be produced.
@@ -684,6 +684,7 @@ program run
 !  Find out which pencils to calculate at current time-step.
 !
     lpencil = lpenc_requested
+!  MR: the following should only be done in the first substep, shouldn't it?
     if (lout)   lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video

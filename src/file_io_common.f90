@@ -229,6 +229,26 @@ module File_io
 !
     endfunction count_lines
 !***********************************************************************
+    function list_files(name,options,only_number) result (num)
+! 
+! Wrapper for UNIX command ls. At present returns only number of found files.
+!
+! 20-may-18/MR: coded
+!
+      use General, only: coptest
+
+      integer :: num
+      
+      character(LEN=*),           intent(IN) :: name
+      character(LEN=*), optional, intent(IN) :: options 
+      logical,          optional, intent(IN) :: only_number
+    
+      call system('ls '//coptest(options)//name//' > tmplsout 2> /dev/null')
+      num=count_lines('tmplsout')
+      call delete_file('tmplsout')
+    
+    endfunction list_files
+!***********************************************************************
     function parallel_count_lines(file,ignore_comments)
 !
 !  Determines in parallel the number of lines in a file.

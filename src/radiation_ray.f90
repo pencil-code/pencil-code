@@ -57,12 +57,15 @@ module Radiation
   real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
   real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
-  real, target, dimension (nx,ny,mnu) :: Jrad_xy
-  real, target, dimension (nx,ny,mnu) :: Jrad_xy2
-  real, target, dimension (nx,ny,mnu) :: Jrad_xy3
-  real, target, dimension (nx,ny,mnu) :: Jrad_xy4
-  real, target, dimension (nx,nz,mnu) :: Jrad_xz
-  real, target, dimension (ny,nz,mnu) :: Jrad_yz
+  real, target, dimension (:,:,:), allocatable :: Jrad_xy
+  real, target, dimension (:,:,:), allocatable :: Jrad_xy2
+  real, target, dimension (:,:,:), allocatable :: Jrad_xy3
+  real, target, dimension (:,:,:), allocatable :: Jrad_xy4
+  real, target, dimension (:,:,:), allocatable :: Jrad_xz
+  real, target, dimension (:,:,:), allocatable :: Jrad_yz
+  real, target, dimension (:,:,:), allocatable :: Jrad_xz2
+  type (radslice), dimension (maxdir), target :: Isurf
+
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
   real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0
@@ -126,12 +129,12 @@ module Radiation
   type (Qpoint), dimension (my,mz) :: Qpt_yz
   type (Qpoint), dimension (mx,mz) :: Qpt_zx
   type (Qpoint), dimension (mx,my) :: Qpt_xy
-  type (radslice), dimension (maxdir), target :: Isurf
 !
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
   integer :: idiag_Fradzm=0, idiag_kapparhom=0, idiag_Sradm=0
   integer :: idiag_Fradzmz=0, idiag_kapparhomz=0, idiag_taumz=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
+  integer :: ivid_Jrad=0, ivid_Isurf=0
 !
   namelist /radiation_init_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -233,6 +236,7 @@ module Radiation
 !  19-feb-14/axel: read tabulated source function
 !
       use Sub, only: parse_bc_rad
+      !use Slices_methods, only: alloc_slice_buffers
 !
       integer :: itable
       real :: radlength,arad_normal
@@ -398,6 +402,17 @@ module Radiation
         dlnTT_table=(nlnTT_table-1)/(lnTT_table(nlnTT_table)-lnTT_table(1))
       endif
 !
+      if (ivid_Jrad/=0) then
+        !call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,nnu)
+        if (lwrite_slice_xy .and..not.allocated(Jrad_xy) ) allocate(Jrad_xy (nx,ny,nnu))
+        if (lwrite_slice_xz .and..not.allocated(Jrad_xz) ) allocate(Jrad_xz (nx,nz,nnu))
+        if (lwrite_slice_yz .and..not.allocated(Jrad_yz) ) allocate(Jrad_yz (ny,nz,nnu))
+        if (lwrite_slice_xy2.and..not.allocated(Jrad_xy2)) allocate(Jrad_xy2(nx,ny,nnu))
+        if (lwrite_slice_xy3.and..not.allocated(Jrad_xy3)) allocate(Jrad_xy3(nx,ny,nnu))
+        if (lwrite_slice_xy4.and..not.allocated(Jrad_xy4)) allocate(Jrad_xy4(nx,ny,nnu))
+        if (lwrite_slice_xz2.and..not.allocated(Jrad_xz2)) allocate(Jrad_xz2(nx,nz,nnu))
+      endif
+
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine calc_angle_weights
@@ -612,13 +627,21 @@ module Radiation
 !
 !  Calculate slices of J=S+Q/(4pi).
 !
-        if (lvideo.and.lfirst) then
-          Jrad_yz(:,:,inu)= Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
-          Jrad_xz(:,:,inu)= Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
-          Jrad_xy(:,:,inu)= Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
-          Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
-          Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
-          Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
+        if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
+          if (lwrite_slice_yz) &
+            Jrad_yz(:,:,inu)= Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
+          if (lwrite_slice_xz) &
+            Jrad_xz(:,:,inu)= Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
+          if (lwrite_slice_xz2) &
+            Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
+          if (lwrite_slice_xy) &
+            Jrad_xy(:,:,inu)= Qrad(l1:l2,m1:m2,iz_loc) +Srad(l1:l2,m1:m2,iz_loc)
+          if (lwrite_slice_xy2) &
+            Jrad_xy2(:,:,inu)=Qrad(l1:l2,m1:m2,iz2_loc)+Srad(l1:l2,m1:m2,iz2_loc)
+          if (lwrite_slice_xy3) &
+            Jrad_xy3(:,:,inu)=Qrad(l1:l2,m1:m2,iz3_loc)+Srad(l1:l2,m1:m2,iz3_loc)
+          if (lwrite_slice_xy4) &
+            Jrad_xy4(:,:,inu)=Qrad(l1:l2,m1:m2,iz4_loc)+Srad(l1:l2,m1:m2,iz4_loc)
         endif
 !
 !  End of frequency loop (inu).
@@ -1247,13 +1270,13 @@ module Radiation
 !
 !  Calculate surface intensity for upward rays.
 !
-      if (nrad>0) then
-        Isurf(idir)%xy2=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
+      if (lvideo.and.lfirst.and.ivid_Isurf/=0) then
+        if (lwrite_slice_xy2 .and. nrad>0) &
+          Isurf(idir)%xy2=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
       endif
 !
-      if (lrad_debug) then
+      if (lrad_debug) &
         call output(trim(directory_dist)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
-      endif
 !
 !  xy-averages
 !
@@ -1510,9 +1533,8 @@ module Radiation
         endif
       endif
       if (lfirst.and.ldt) then
-        if (idiag_dtrad/=0) then
+        if (idiag_dtrad/=0) &
           call max_mn_name(dt1_rad,idiag_dtrad,l_dt=.true.)
-        endif
       endif
 !
 !  Diagnostics.
@@ -2243,6 +2265,7 @@ module Radiation
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_kapparhom=0; idiag_Sradm=0
         idiag_Fradzmz=0; idiag_kapparhomz=0; idiag_taumz=0
         idiag_dtchi=0; idiag_dtrad=0
+        ivid_Jrad=0; ivid_Isurf=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -2264,6 +2287,17 @@ module Radiation
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'taumz',idiag_taumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapparhomz',idiag_kapparhomz)
       enddo
+!       
+!  check for those quantities for which we want video slices
+!       
+      if (lwrite_slices) then
+        where(cnamev=='Qrad'.or.cnamev=='Frad'.or. &
+              cnamev=='Srad'.or.cnamev=='kapparho') cformv='DEFINED'
+      endif
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'Isurf',ivid_Isurf)
+        call parse_name(iname,cnamev(iname),cformv(iname),'Jrad',ivid_Jrad)
+      enddo
 !
 !  write column where which radiative variable is stored
 !
@@ -2284,6 +2318,9 @@ module Radiation
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal, assign_slices_vec, &
+                                assign_slices_f_scal, nullify_slice_pointers
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -2299,34 +2336,29 @@ module Radiation
 !  Count which one is which by putting ip<14 and look at output.
 !
         case ('Isurf')
-          if (slices%index>=nIsurf) then
-            slices%ready=.false.
-          else
-            if (slices%index==0) idir_last=0
-            nullify(slices%yz)
-            nullify(slices%xz)
-            nullify(slices%xy)
-            do idir=idir_last+1,ndir
-              nrad=dir(idir,3)
-              if ((nIsurf>1.and.nrad>0).or. &
-                  (nIsurf==1.and.lrad==0.and.mrad==0.and.nrad==1)) then
-                slices%xy2=>Isurf(idir)%xy2
-                slices%index=slices%index+1
-                if (slices%index<=nIsurf) slices%ready=.true.
-                idir_last=idir
-                exit
-              endif
-            enddo
+          call nullify_slice_pointers(slices)
+          if (lwrite_slice_xy2) then
+            if (slices%index>=nIsurf) then
+              slices%ready=.false.
+            else
+              if (slices%index==0) idir_last=0
+              do idir=idir_last+1,ndir
+                nrad=dir(idir,3)
+                if ((nIsurf>1.and.nrad>0).or. &
+                    (nIsurf==1.and.lrad==0.and.mrad==0.and.nrad==1)) then
+                  slices%xy2=>Isurf(idir)%xy2
+                  slices%index=slices%index+1
+                  if (slices%index<=nIsurf) slices%ready=.true.
+                  idir_last=idir
+                  exit
+                endif
+              enddo
+            endif
           endif
 !
 !  Heating rate
 !
-        case ('Qrad')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iQrad)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iQrad)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iQrad)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iQrad)
-          slices%ready=.true.
+        case ('Qrad'); call assign_slices_scal(slices,f,iQrad)
 !
 !  Mean intensity
 !
@@ -2336,52 +2368,20 @@ module Radiation
           !slices%xz=.25*pi_1*f(l1:l2,iy_loc,n1:n2,iQrad)+Srad(l1:l2,iy_loc,n1:n2)
           !slices%xy=.25*pi_1*f(l1:l2,m1:m2,iz_loc,iQrad)+Srad(l1:l2,m1:m2,iz_loc)
           !slices%xy2=.25*pi_1*f(l1:l2,m1:m2,iz2_loc,iQrad)+Srad(l1:l2,m1:m2,iz2_loc)
-          !slices%ready = .true.
 !
-          if (slices%index>=nnu) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz=>Jrad_yz(:,:,slices%index)
-            slices%xz=>Jrad_xz(:,:,slices%index)
-            slices%xy=>Jrad_xy(:,:,slices%index)
-            slices%xy2=>Jrad_xy2(:,:,slices%index)
-            slices%xy3=>Jrad_xy3(:,:,slices%index)
-            slices%xy4=>Jrad_xy4(:,:,slices%index)
-            if (slices%index<=nnu) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,nnu) 
 !
 ! Source function
 !
-        case ('Srad')
-          slices%yz =Srad(ix_loc,m1:m2 ,n1:n2)
-          slices%xz =Srad(l1:l2 ,iy_loc,n1:n2)
-          slices%xy =Srad(l1:l2 ,m1:m2 ,iz_loc)
-          slices%xy2=Srad(l1:l2 ,m1:m2 ,iz2_loc)
-          slices%ready=.true.
+        case ('Srad'); call assign_slices_f_scal(slices,Srad,1)
 !
 !  Opacity
 !
-        case ('kapparho')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2,  ikapparho)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ikapparho)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ikapparho)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ikapparho)
-          slices%ready=.true.
+        case ('kapparho'); call assign_slices_scal(slices,f,ikapparho)
 !
 !  Radiative Flux
 !
-        case ('Frad')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iKR_Fradx-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iKR_Fradx-1+slices%index)
-            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iKR_Fradx-1+slices%index)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iKR_Fradx-1+slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+        case ('Frad'); call assign_slices_vec(slices,f,iKR_Fradx)
 !
       endselect
 !

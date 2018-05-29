@@ -1008,6 +1008,7 @@ module Special
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
         idiag_ggTm=0; idiag_ggXm=0
+        cformv=''
       endif
 !
       do iname=1,nname
@@ -1043,7 +1044,14 @@ module Special
           call parse_name(iname,cname(iname),cform(iname),'ggXm',idiag_ggXm)
         endif
       enddo
-!!
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='hhT'.or.cnamev=='hhX'.or.cnamev=='ggT'.or.cnamev=='ggX' &
+              cnamev=='h22'.or.cnamev=='h33'.or.cnamev=='h23') cformv='DEFINED'
+      endif
+!
 !!!  write column where which magnetic variable is stored
 !!      if (lwr) then
 !!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
@@ -1057,10 +1065,10 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev, jhij
 !
 !  Loop over slices
 !
@@ -1068,69 +1076,31 @@ module Special
 !
 !  hhT
 !
-        case ('hhT')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,ihhT)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,ihhT)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,ihhT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ihhT)
-          slices%ready = .true.
+        case ('hhT'); call assign_slices_scal(slices,f,ihhT)
 !
 !  hhX
 !
-        case ('hhX')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,ihhX)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,ihhX)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,ihhX)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ihhX)
-          slices%ready = .true.
+        case ('hhX'); call assign_slices_scal(slices,f,ihhX)
 !
 !  ggT
 !
-        case ('ggT')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iggT)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iggT)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iggT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iggT)
-          slices%ready = .true.
+        case ('ggT'); call assign_slices_scal(slices,f,iggT)
 !
 !  ggX
 !
-        case ('ggX')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iggX)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iggX)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iggX)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iggX)
-          slices%ready = .true.
+        case ('ggX'); call assign_slices_scal(slices,f,iggX)
 !
 !  hh22
 !
-        case ('h22')
-          jhij=ihij-1+2
-          slices%yz=f(ix_loc,m1:m2,n1:n2,jhij)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,jhij)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,jhij)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,jhij)
-          slices%ready = .true.
+        case ('h22'); call assign_slices_scal(slices,f,ihij-1+2)
 !
 !  hh33
 !
-        case ('h33')
-          jhij=ihij-1+3
-          slices%yz=f(ix_loc,m1:m2,n1:n2,jhij)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,jhij)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,jhij)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,jhij)
-          slices%ready = .true.
+        case ('h33'); call assign_slices_scal(slices,f,ihij-1+3)
 !
 !  hh23
 !
-        case ('h23')
-          jhij=ihij-1+5
-          slices%yz=f(ix_loc,m1:m2,n1:n2,jhij)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,jhij)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,jhij)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,jhij)
-          slices%ready = .true.
+        case ('h23'); call assign_slices_scal(slices,f,ihij-1+5)
 !
       endselect
 !

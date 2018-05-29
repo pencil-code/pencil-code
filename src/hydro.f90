@@ -40,21 +40,21 @@ module Hydro
 !
 !  Slice precalculation buffers.
 !
-  real, target, dimension (nx,ny,3) :: oo_xy,oo_xy2,oo_xy3,oo_xy4
-  real, target, dimension (nx,nz,3) :: oo_xz
-  real, target, dimension (ny,nz,3) :: oo_yz
-  real, target, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy,mach_xy
-  real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
-  real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
-  real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
+  real, target, dimension (:,:,:), allocatable :: oo_xy,oo_xy2,oo_xy3,oo_xy4
+  real, target, dimension (:,:,:), allocatable :: oo_xz, oo_yz, oo_xz2
+  real, target, dimension (:,:), allocatable :: divu_xy,u2_xy,o2_xy,mach_xy
+  real, target, dimension (:,:), allocatable :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
+  real, target, dimension (:,:), allocatable :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
+  real, target, dimension (:,:), allocatable :: o2_xy3,o2_xy4,mach_xy3
+  real, target, dimension (:,:), allocatable :: divu_xz,u2_xz,o2_xz,mach_xz
+  real, target, dimension (:,:), allocatable :: divu_xz2,u2_xz2,o2_xz2,mach_xz2
+  real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
 
   real, dimension (mz,3) :: uumz
   real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (:,:,:), allocatable :: uumxy
   real, dimension (mx,mz,3) :: uumxz=0.0
-  real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
-  real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
 !  phi-averaged arrays for orbital advection
 !
@@ -150,7 +150,7 @@ module Hydro
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
   real :: amp_factor=0.,kx_uu_perturb=0.
-  integer, dimension(ninit) :: ll_sh=0, mm_sh=0
+  integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -168,7 +168,7 @@ module Hydro
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
-      ll_sh, mm_sh, delta_u
+      ll_sh, mm_sh, delta_u, n_xprof
 !
 !  Run parameters.
 !
@@ -651,6 +651,10 @@ module Hydro
                                 ! ZAVG_DOC: u_y\right>_{z}$
   integer :: idiag_nshift=0
 !
+!  Video data.
+!
+  integer :: ivid_oo=0, ivid_o2=0, ivid_divu=0, ivid_u2=0, ivid_Ma2=0
+!
 !  Auxiliary variables
 !
   real, dimension(:,:), pointer :: reference_state
@@ -696,8 +700,8 @@ module Hydro
 !  For Helmholtz decomposition of uu the potential of the curl-free part is registered  as an auxiliary.
 !
       if (lhelmholtz_decomp) then
-        call farray_register_auxiliary('phiuu',iphiuu)
         if (dsnap_down==0.) call fatal_error('register_hydro','Helmholtz decomposition requires dsnap_down>0')
+        call farray_register_auxiliary('phiuu',iphiuu)
       endif
 !
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
@@ -756,6 +760,7 @@ module Hydro
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: step, erfunc, register_report_aux
+      !use Slices_methods, only: alloc_slice_buffers
       use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1040,10 +1045,61 @@ module Hydro
         myl=my
         if (lyinyang) then
           call fatal_error('initialize_hydro','Calculation of z average not implmented for Yin-Yang')
-          call initialize_zaver_yy(myl,nycap)
+          !call initialize_zaver_yy(myl,nycap)
         endif
         allocate(uumxy(mx,myl,3))
         uumxy=0.0
+      endif
+!
+      if (ivid_oo/=0) then
+        !call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
+        if (lwrite_slice_xy .and..not.allocated(oo_xy) ) allocate(oo_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(oo_xz) ) allocate(oo_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(oo_yz) ) allocate(oo_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(oo_xy2)) allocate(oo_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(oo_xy3)) allocate(oo_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(oo_xy4)) allocate(oo_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(oo_xz2)) allocate(oo_xz2(nx,nz,3))
+      endif
+      if (ivid_o2/=0) then
+        !call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+        if (lwrite_slice_xy .and..not.allocated(o2_xy) ) allocate(o2_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(o2_xz) ) allocate(o2_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(o2_yz) ) allocate(o2_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(o2_xy2)) allocate(o2_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(o2_xy3)) allocate(o2_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(o2_xy4)) allocate(o2_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(o2_xz2)) allocate(o2_xz2(nx,nz))
+      endif
+      if (ivid_u2/=0) then
+        !call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
+        if (lwrite_slice_xy .and..not.allocated(u2_xy) ) allocate(u2_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(u2_xz) ) allocate(u2_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(u2_yz) ) allocate(u2_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(u2_xy2)) allocate(u2_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(u2_xy3)) allocate(u2_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(u2_xy4)) allocate(u2_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(u2_xz2)) allocate(u2_xz2(nx,nz))
+      endif
+      if (ivid_divu/=0) then
+        !call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
+        if (lwrite_slice_xy .and..not.allocated(divu_xy) ) allocate(divu_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(divu_xz) ) allocate(divu_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(divu_yz) ) allocate(divu_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(divu_xy2)) allocate(divu_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(divu_xy3)) allocate(divu_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(divu_xy4)) allocate(divu_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(divu_xz2)) allocate(divu_xz2(nx,nz))
+      endif
+      if (ivid_Ma2 /=0) then
+        !call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
+        if (lwrite_slice_xy .and..not.allocated(mach_xy) ) allocate(mach_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(mach_xz) ) allocate(mach_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(mach_yz) ) allocate(mach_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(mach_xy2)) allocate(mach_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(mach_xy3)) allocate(mach_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(mach_xy4)) allocate(mach_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(mach_xz2)) allocate(mach_xz2(nx,nz))
       endif
 !
       call keep_compiler_quiet(f)
@@ -1196,7 +1252,7 @@ module Hydro
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only:update_ghosts
-      use Density, only: calc_pencils_density, beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
       use EquationOfState, only: cs20
       use General
@@ -1215,7 +1271,7 @@ module Hydro
       real, dimension (:,:), allocatable :: yz
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      real :: dis, xold,yold,uprof, factx, factz, sph_har_der, der
+      real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
       integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -1376,9 +1432,10 @@ module Hydro
           if (headtt) print*,'ABC flow'
 ! uu
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iux)=ampluu(j)*(ABC_A*sin(kz_uu*z(n))    +ABC_C*cos(ky_uu*y(m)))
-            f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*cos(kz_uu*z(n)))
-            f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
+!!!            f(l1:l2,m,n,iux)=ampluu(j)*(ABC_A*sin(kz_uu*z(n)) +ABC_C*cos(ky_uu*y(m))&
+            f(l1:l2,m,n,iux)=ampluu(j)*ABC_B*sin(kx_uu*x(l1:l2))*cos(kz_uu*z(n)) 
+!!!            f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*cos(kz_uu*z(n)))
+!!!            f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
           enddo; enddo
 !
         case ('shock-tube', '13')
@@ -1821,6 +1878,7 @@ module Hydro
             f(l1:l2,m,n,iux)=ampl_ux(j)*sin(x(l1:l2))*cos(z(n))
             f(l1:l2,m,n,iuz)=-ampl_ux(j)*cos(x(l1:l2))*sin(z(n))
           enddo; enddo
+          f(:,:,:,iuz)=0.   !!!
 !
         case ('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)
@@ -1870,22 +1928,34 @@ module Hydro
         case('Gressel-hs')
           call information('init_uu', &
               'Gressel hydrostatic equilibrium setup done in interstellar')
+!
         case('spher-harm-poloidal')
+!
+!  Poloidal flow, defined by spherical harmonic ll_sh(j), mm_sh(j) 
+!  and radial profile of the generating scalar tmp, depending on n_xprof(j) (see below)
+!
           if (.not.lspherical_coords) call fatal_error("init_uu", &
-              "spher-harm-poloidal only meaningful for spherical coordinates"//trim(inituu(j)))
-          tmp=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))
-          prof=tmp/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))
+              "spher-harm-poloidal only meaningful for spherical coordinates")
+
+          if (n_xprof(j)==-1) then
+            tmp=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))                 ! parabola, vanishing at top and bottom
+            prof=tmp/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))         ! f/r + d f/dr
+          else
+            tmp=sin((2.*pi/(Lxyz(1))*n_xprof(j))*(x(l1:l2)-xyz0(1)))  ! sine with wavenumber n_xprof(j)
+            prof=tmp/x(l1:l2) + (2.*pi/(Lxyz(1))*n_xprof(j))*cos((2.*pi/(Lxyz(1))*n_xprof(j))*(x(l1:l2)-xyz0(1)))
+          endif
+
           if (lyang) then
             allocate(yz(2,ny*nz))
             call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
             iyz=1
             do m=m1,m2
               do n=n1,n2
-!if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
-                tmp_nx3(:,1)=ampluu(j)*2.*tmp*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
+                sph=ampluu(j)*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
+                tmp_nx3(:,1)=2.*tmp*sph
                 tmp_nx3(:,2)=ampluu(j)*prof*sph_har_der
                 if (mm_sh(j)/=0) then
-                  tmp_nx3(:,3) = -ampluu(j)*prof*mm_sh(j)/sin(yz(1,iyz))*sin(yz(2,iyz))/cos(yz(2,iyz))
+                  tmp_nx3(:,3) = -sph*prof*mm_sh(j)/sin(yz(1,iyz))*sin(mm_sh(j)*yz(2,iyz))/cos(mm_sh(j)*yz(2,iyz))
                 else
                   tmp_nx3(:,3) = 0.
                 endif
@@ -1896,10 +1966,11 @@ module Hydro
           else
             do n=n1,n2
               do m=m1,m2
-                f(l1:l2,m,n,iux) = ampluu(j)*2.*tmp*ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                sph=ampluu(j)*ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                f(l1:l2,m,n,iux) = 2.*tmp*sph
                 f(l1:l2,m,n,iuy) = ampluu(j)*prof*sph_har_der
                 if (mm_sh(j)/=0) &      ! tb improved!
-                  f(l1:l2,m,n,iuz) = -ampluu(j)*prof*mm_sh(j)/sinth(m)*sinph(n)/cosph(n)
+                  f(l1:l2,m,n,iuz) = -prof*sph*mm_sh(j)/sinth(m)*sin(mm_sh(j)*z(n))/cos(mm_sh(j)*z(n))
               enddo
             enddo
           endif
@@ -2019,12 +2090,12 @@ module Hydro
 !
 !  video pencils
 !
-      if (dvid/=0.0) then
-        lpenc_video(i_oo)=.true.
-        lpenc_video(i_o2)=.true.
-        lpenc_video(i_divu)=.true.
-        lpenc_video(i_u2)=.true.
-        lpenc_video(i_Ma2)=.true.
+      if (lwrite_slices) then
+        if (ivid_oo  /=0) lpenc_video(i_oo)=.true.
+        if (ivid_o2  /=0) lpenc_video(i_o2)=.true.
+        if (ivid_divu/=0) lpenc_video(i_divu)=.true.
+        if (ivid_u2  /=0) lpenc_video(i_u2)=.true.
+        if (ivid_Ma2 /=0) lpenc_video(i_Ma2)=.true.
       endif
 !
 !  diagnostic pencils
@@ -2316,7 +2387,7 @@ module Hydro
 !
 !  if gradu is to be stored as auxiliary the we store it now
 !
-      if(lgradu_as_aux) then
+      if (lgradu_as_aux) then
         ij=igradu-1
         do i=1,3
           do j=1,3
@@ -2497,8 +2568,7 @@ module Hydro
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
-          call h_dot_grad(p%uu_advec,p%uij(:,j,:),tmp)
-          p%uuadvec_guu(:,j)=tmp
+          call h_dot_grad(p%uu_advec,p%uij(:,j,:),p%uuadvec_guu(:,j))
         enddo
         if (lcylindrical_coords) then
           p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
@@ -2781,6 +2851,7 @@ module Hydro
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
       use General, only: transform_thph_yy, notanumber
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2793,7 +2864,6 @@ module Hydro
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx) :: uus,ftot,Fmax,advec_uu
-      real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
       integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
@@ -3005,55 +3075,18 @@ module Hydro
         enddo
       endif
 !
-!  write slices for output in wvid in run.f90
+!  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
-!  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst) then
-        divu_yz(m-m1+1,n-n1+1)=p%divu(ix_loc-l1+1)
-        if (m==iy_loc)  divu_xz(:,n-n1+1)=p%divu
-        if (n==iz_loc)  divu_xy(:,m-m1+1)=p%divu
-        if (n==iz2_loc) divu_xy2(:,m-m1+1)=p%divu
-        if (n==iz3_loc) divu_xy3(:,m-m1+1)=p%divu
-        if (n==iz4_loc) divu_xy4(:,m-m1+1)=p%divu
-!
-        do j=1,3
-          if (.not.lyang) &
-            oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
-          if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
-          if (n==iz_loc)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
-          if (n==iz2_loc) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
-          if (n==iz3_loc) oo_xy3(:,m-m1+1,j)=p%oo(:,j)
-          if (n==iz4_loc) oo_xy4(:,m-m1+1,j)=p%oo(:,j)
-        enddo
-!
-!  On Yang grid: transform theta and phi components of oo to Yin-grid basis.
-!
-        if (lyang) then
-          call transform_thph_yy(p%oo(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmp)
-          oo_yz(m-m1+1,n-n1+1,:)=tmp(1,:)
-        endif
-
-        u2_yz(m-m1+1,n-n1+1)=p%u2(ix_loc-l1+1)
-        if (m==iy_loc)  u2_xz(:,n-n1+1)=p%u2
-        if (n==iz_loc)  u2_xy(:,m-m1+1)=p%u2
-        if (n==iz2_loc) u2_xy2(:,m-m1+1)=p%u2
-        if (n==iz3_loc) u2_xy3(:,m-m1+1)=p%u2
-        if (n==iz4_loc) u2_xy4(:,m-m1+1)=p%u2
-        o2_yz(m-m1+1,n-n1+1)=p%o2(ix_loc-l1+1)
-        if (m==iy_loc)  o2_xz(:,n-n1+1)=p%o2
-        if (n==iz_loc)  o2_xy(:,m-m1+1)=p%o2
-        if (n==iz2_loc) o2_xy2(:,m-m1+1)=p%o2
-        if (n==iz3_loc) o2_xy3(:,m-m1+1)=p%o2
-        if (n==iz4_loc) o2_xy4(:,m-m1+1)=p%o2
-        if (othresh_per_orms/=0) call calc_othresh
-        if (m==iy_loc)  mach_xz(:,n-n1+1)=p%Ma2
-        if (n==iz_loc)  mach_xy(:,m-m1+1)=p%Ma2
-        if (n==iz2_loc) mach_xy2(:,m-m1+1)=p%Ma2
-        if (n==iz3_loc) mach_xy3(:,m-m1+1)=p%Ma2
-        if (n==iz4_loc) mach_xy4(:,m-m1+1)=p%Ma2
-        mach_yz(m-m1+1,n-n1+1)=p%Ma2(ix_loc-l1+1)
+        if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
+        if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
+
+        if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
+        if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
+        if (othresh_per_orms/=0) call calc_othresh
+        if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
       endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -4518,7 +4551,7 @@ module Hydro
 !
       integer :: k
       character (len=intlen) :: smode
-      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half
+      integer :: iname,inamez,inamey,inamex,ixy,ixz,irz,inamer,iname_half,inamev,idum
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -4835,6 +4868,7 @@ module Hydro
         idiag_taufmin=0
         idiag_dtF=0
         idiag_nshift=0
+        ivid_oo=0; ivid_o2=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -5268,6 +5302,18 @@ module Hydro
         call parse_name(inamer,cnamer(inamer),cformr(inamer),'u2mr',  idiag_u2mr)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      idum=0
+      do inamev=1,nnamev
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'uu',  idum)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'oo',  ivid_oo)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'o2',  ivid_o2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'divu',ivid_divu)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'u2',  ivid_u2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ma2', ivid_Ma2)
+      enddo
+!
 !  write column where which hydro variable is stored
 !
       if (lwr) then
@@ -5288,11 +5334,10 @@ module Hydro
 !  12-apr-16/MR: modifications for Yin-Yang grid
 !
       use General, only: transform_thph_yy_other
+      use Slices_methods, only: assign_slices_scal, assign_slices_vec
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-
-      real, dimension(:,:,:,:), allocatable, save :: transformed
 !
 !  Loop over slices
 !
@@ -5300,96 +5345,32 @@ module Hydro
 !
 !  Velocity field.
 !
-        case ('uu')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            if (lyang.and.slices%index>=2) then
-!
-!  On Yang grid: transform theta and phi components of uu to Yin-grid basis.
-!  (phi component is saved in transformed for use in next call.
-!
-              if (slices%index==2) then
-                if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
-                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iuy:iuz),transformed)
-              endif
-!
-!  theta component is used immediately.
-!
-              slices%yz=transformed(1,:,:,slices%index-1)
-            else
-              slices%yz=f(ix_loc,m1:m2,n1:n2,iux-1+slices%index)
-            endif
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2,iux-1+slices%index)
-            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iux-1+slices%index)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iux-1+slices%index)
-            if (lwrite_slice_xy3) &
-                 slices%xy3=f(l1:l2,m1:m2,iz3_loc,iux-1+slices%index)
-            if (lwrite_slice_xy4) &
-                 slices%xy4=f(l1:l2,m1:m2,iz4_loc,iux-1+slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+        case ('uu'); call assign_slices_vec(slices,f,iuu)
 !
 !  Divergence of velocity.
 !
         case ('divu')
-          slices%yz =>divu_yz
-          slices%xz =>divu_xz
-          slices%xy =>divu_xy
-          slices%xy2=>divu_xy2
-          if (lwrite_slice_xy3) slices%xy3=>divu_xy3
-          if (lwrite_slice_xy4) slices%xy4=>divu_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2)
 !
 !  Velocity squared.
 !
         case ('u2')
-          slices%yz =>u2_yz
-          slices%xz =>u2_xz
-          slices%xy =>u2_xy
-          slices%xy2=>u2_xy2
-          if (lwrite_slice_xy3) slices%xy3=>u2_xy3
-          if (lwrite_slice_xy4) slices%xy4=>u2_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2)
 !
 !  Vorticity.
 !
         case ('oo')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =>oo_yz(:,:,slices%index)
-            slices%xz =>oo_xz(:,:,slices%index)
-            slices%xy =>oo_xy(:,:,slices%index)
-            slices%xy2=>oo_xy2(:,:,slices%index)
-            if (lwrite_slice_xy3) slices%xy3=>oo_xy3(:,:,slices%index)
-            if (lwrite_slice_xy4) slices%xy4=>oo_xy4(:,:,slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2)
 !
 !  Vorticity squared.
 !
         case ('o2')
-          slices%yz =>o2_yz
-          slices%xz =>o2_xz
-          slices%xy =>o2_xy
-          slices%xy2=>o2_xy2
-          if (lwrite_slice_xy3) slices%xy3=>o2_xy3
-          if (lwrite_slice_xy4) slices%xy4=>o2_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2)
 !
 !  Mach number squared.
 !
         case ('mach')
-          slices%yz =>mach_yz
-          slices%xz =>mach_xz
-          slices%xy =>mach_xy
-          slices%xy2=>mach_xy2
-          if (lwrite_slice_xy3) slices%xy3=>mach_xy3
-          if (lwrite_slice_xy4) slices%xy4=>mach_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2)
 !
       endselect
 !
@@ -5430,14 +5411,14 @@ module Hydro
 !
       use Boundcond, only: update_ghosts
       use Sub, only: div
-      use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z
+      use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z    !, inverse_laplacian_z_2nd_neumann
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_sub
 !
       logical :: lwrite_debug=.false.
-      integer :: iorder_z=4
+      integer :: iorder_z=2
 !
       fargo: if (lfargo_advection) then
 !
@@ -5470,20 +5451,20 @@ module Hydro
 
         if (decomp_prepare()) then
 !
-!  Find the divergence of uu
+!  Find the divergence of uu and put it into the f-slot which is later used for the flow potential.
 !
           do n=n1,n2; do m=m1,m2
             call div(f,iuu,f(l1:l2,m,n,iphiuu))
           enddo; enddo
 !
-!print*, 'minmaxi(div)=', minval(f(l1:l2,m1:m2,n1:n2,iphiuu)),maxval(f(l1:l2,m1:m2,n1:n2,iphiuu))
-          if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,iphiuu)
+!print*, 'minmax(div)=', minval(f(l1:l2,m1:m2,n1:n2,iphiuu)),maxval(f(l1:l2,m1:m2,n1:n2,iphiuu))
+!          if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,iphiuu)
 !
           if (lperi(3)) then
             call inverse_laplacian(f(l1:l2,m1:m2,n1:n2,iphiuu))
           else
             if (iorder_z==2) then
-              !call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,iphiuu))
+              !call inverse_laplacian_z_2nd_neumann(f)
             else
               ! call inverse_laplacian_fft_z(f(l1:l2,m1:m2,n1:n2,iphiuu))
               ! call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,iphiuu),(/'n1s','n1s'/),f(:,:,n1,iuz),f(:,:,n2,iuz))

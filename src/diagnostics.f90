@@ -303,7 +303,7 @@ module Diagnostics
 !
 !  12-jan-17/MR: coded
 !
-      character(len=30), dimension(:), intent(IN) :: cname,cform
+      character(len=*), dimension(:), intent(IN) :: cname,cform
       integer,                         intent(IN) :: len
       character(len=*),                intent(IN) :: file
 
@@ -337,6 +337,7 @@ module Diagnostics
         call report_undefined(cnamexy,cformxy,nnamexy,'zaver.in')
         call report_undefined(cnamexz,cformxz,nnamexz,'yaver.in')
         call report_undefined(cnamerz,cformrz,nnamerz,'phiaver.in')
+        call report_undefined(cnamev,cformv,nnamev,'video.in')
       endif
 
     endsubroutine report_undefined_diagnostics
@@ -907,7 +908,7 @@ module Diagnostics
 
         call reduce_zsum(fnamexy,fsumxy)
 
-        fac=1./nzgrid_eff   ! nzgrid_eff=4/3*nzgrid for Yin-Yang
+        fac=1./nzgrid_eff   ! nzgrid_eff approx =4/3*nzgrid for Yin-Yang
 
         if (.not.lyang) then
           if (lfirst_proc_z) fnamexy=fac*fsumxy
@@ -961,7 +962,7 @@ module Diagnostics
 !
     endsubroutine write_1daverages
 !***********************************************************************
-    subroutine write_2daverages_prepare
+    subroutine write_2daverages_prepare(lwrite)
 !
 !  Prepare l2davg for writing 2D averages.
 !  This needs to be done in the beginning of each time step, so
@@ -971,10 +972,12 @@ module Diagnostics
 !
       use Sub, only: update_snaptime, read_snaptime
 !
+      logical, intent(IN) :: lwrite
       real, save :: t2davg
       integer, save :: n2davg
       logical, save :: lfirst=.true.
       character (len=fnlen) :: file
+      logical :: lwrite_
 !
       file=trim(datadir)//'/t2davg.dat'
       if (lfirst) then
@@ -983,8 +986,10 @@ module Diagnostics
       endif
 !
 !  This routine sets l2davg=T whenever its time to write 2D averages
-!
-      call update_snaptime(file,t2davg,n2davg,d2davg,t,l2davg,ch2davg)
+!    
+      lwrite_=lwrite
+      call update_snaptime(file,t2davg,n2davg,d2davg,t,lwrite_,ch2davg)
+      l2davg=lwrite_
 !
     endsubroutine write_2daverages_prepare
 !***********************************************************************
@@ -1260,8 +1265,10 @@ if (ios/=0) print*, 'ios, i=', ios, i
           write(1) t2davgfirst
           if (lcaproot) then
             write(1) (fnamexy_cap(i,:,:),i=1,nnamexy)       ! from cap root (Yang)
+print*, 'iproc_cap:', iproc, size(fnamexy_cap,2),size(fnamexy_cap,3)
           else
             write(1) (fnamexy(i,:,:),i=1,nnamexy)           ! from z beam root (Yin)
+print*, 'iproc:', iproc, size(fnamexy,2),size(fnamexy,3)
           endif
           close(1)
         endif
@@ -1334,7 +1341,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
     endsubroutine write_phiaverages
 !***********************************************************************
-    integer function fparse_name(iname,cname,cform,ctest,itest)
+    integer function fparse_name(iname,cname,ctest,itest,cform)
 !
 !  Parse name and format of scalar print variable
 !  On output, ITEST is set to INAME if CNAME matches CTEST
@@ -1359,7 +1366,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       use General, only: safe_character_assign, itoa
 !
-      character (len=*) :: cname,cform
+      character (len=*) :: cname, cform
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
 !
@@ -1367,7 +1374,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
       intent(inout) :: itest
       intent(out)   :: cform
 
-      character(len=len(cform)) :: tmp
+      character(len=fmtlen) :: tmp
 !
 !  Check whether format is given.
 !
@@ -1402,7 +1409,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 
         if (scan(cform(1:1), 'eEdDgG')==1) then
 !
-!  Increase d in [ED]w.d if insufficient to hold a sign.
+!Increase d in [ED]w.d if insufficient to hold a sign.
 !
           if (scan(cform(1:1), "eEdD")==1) then
 
@@ -1418,13 +1425,13 @@ if (ios/=0) print*, 'ios, i=', ios, i
             endif
           endif
 !
-!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
+!Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
 !
           call safe_character_assign(cform, '1p'//trim(cform)//',0p')
 
         endif
 !
-!  Integer formats are turned into floating point numbers.
+!Integer formats are turned into floating point numbers.
 !
         index_i=scan(cform,'iI',.true.)
 
@@ -1445,7 +1452,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 !   26-nov-09/MR: coded
 !
-      character (len=*) :: cname,cform
+      character (len=*) :: cname, cform
       character (len=*) :: ctest
       integer :: iname,itest
 !
@@ -1455,7 +1462,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: iret
 !
-      iret = fparse_name(iname,cname,cform,ctest,itest)
+      iret = fparse_name(iname,cname,ctest,itest,cform)
 !
     endsubroutine parse_name_s
 !***********************************************************************
@@ -1475,7 +1482,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: iret
 !
-      iret = fparse_name(iname,cname(iname),cform(iname),ctest,itest)
+      iret = fparse_name(iname,cname(iname),ctest,itest,cform(iname))
 !
     endsubroutine parse_name_sa
 !***********************************************************************
@@ -1499,7 +1506,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       do i=1,size(cname)
         do j=1,size(cdiag)
-          if ( fparse_name(i,cname(i),cform(i),cdiag(j),idiag(j)) /= 0 ) exit
+          if ( fparse_name(i,cname(i),cdiag(j),idiag(j),cform(i)) /= 0 ) exit
         enddo
       enddo
 !
@@ -2956,9 +2963,10 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  such as computing mean field energies in calc_bmz, for example,
 !
       mcoords_sound = parallel_count_lines(sound_coord_file)
+
       allocate(sound_inds(mcoords_sound,3),stat=ierr)
       if (ierr>0) call fatal_error('allocate_sound', &
-            'Could not allocate memory for sound_inds')
+                                   'Could not allocate memory for sound_inds')
 !
       ncoords_sound = 0; nitems = 0
 !
@@ -2993,37 +3001,31 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 ! cname_sound is allocated also for ncoords_sound=0 as needed in read_name_format.
 !
-      if (.not. allocated(cname_sound)) then
-        allocate(cname_sound(nnamel),stat=ierr)
-        if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for cname_sound')
-      endif
+      if (allocated(cname_sound)) &
+        deallocate(cname_sound,sound_coords_list,fname_sound,cform_sound)
+      allocate(cname_sound(nnamel),stat=ierr)
+      if (ierr>0) call fatal_error('allocate_sound', &
+                                   'Could not allocate memory for cname_sound')
 !
       lwrite_sound = ncoords_sound>0
       if (lwrite_sound) then
 !
-        if (.not. allocated(sound_coords_list)) then
-          allocate(sound_coords_list(ncoords_sound,3),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for sound_coords_list')
-        endif
+        allocate(sound_coords_list(ncoords_sound,3),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+                                     'Could not allocate memory for sound_coords_list')
         sound_coords_list = sound_inds(1:ncoords_sound,:)
 !
-        if (.not. allocated(fname_sound)) then
-          allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for fname_sound')
-          if (ldebug) print*, 'allocate_sound: allocated memory for '// &
-              'fname_sound  with nname_sound  =', nnamel
+        allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+                                     'Could not allocate memory for fname_sound')
+        if (ldebug) print*, 'allocate_sound: allocated memory for '// &
+                            'fname_sound  with nname_sound  =', nnamel
 !
-        endif
         fname_sound = 0.0
 !
-        if (.not. allocated(cform_sound)) then
-          allocate(cform_sound(nnamel),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for cform_sound')
-        endif
+        allocate(cform_sound(nnamel),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+                                     'Could not allocate memory for cform_sound')
         cform_sound = ' '
 !
       endif
@@ -3060,44 +3062,37 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cname)) then
-        allocate(cname(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for cname')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'cname   with nname   =', nnamel
-      endif
+      if (allocated(cname)) deallocate(cname,fname,fname_keep,cform,itype_name)
+      allocate(cname(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for cname')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'cname   with nname   =', nnamel
       cname=''
 !
-      if (.not.allocated(fname)) then
-        allocate(fname(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for fname')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'fname   with nname   =', nnamel
-        allocate(fname_keep(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for fname_keep')
-      endif
+      allocate(fname(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for fname')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'fname   with nname   =', nnamel
+      allocate(fname_keep(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for fname_keep')
       fname=0.0
       fname_keep=0.0
 !
-      if (.not.allocated(cform)) then
-        allocate(cform(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for cform')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'cform   with nname   =', nnamel
-      endif
+      allocate(cform(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for cform')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'cform   with nname   =', nnamel
       cform=''
 !
-      if (.not.allocated(itype_name)) then
-        allocate(itype_name(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for itype_name')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'itype_name with nname   =', nnamel
-      endif
+      allocate(itype_name(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for itype_name')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'itype_name with nname   =', nnamel
       itype_name=ilabel_save
 
     endsubroutine allocate_fnames
@@ -3113,22 +3108,19 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cnamev)) then
-        allocate(cnamev(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_vnames', &
-            'Could not allocate memory for cnamev')
-        if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
-            'cnamev  with nnamev  =', nnamel
-      endif
+      if (allocated(cnamev)) deallocate(cnamev,cformv)
+      allocate(cnamev(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_vnames', &
+          'Could not allocate memory for cnamev')
+      if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
+          'cnamev  with nnamev  =', nnamel
       cnamev=''
 !
-      if (.not.allocated(cformv)) then
-        allocate(cformv(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_vnames', &
-            'Could not allocate memory for cformv')
-        if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
-            'cformv   with nname   =', nnamel
-      endif
+      allocate(cformv(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_vnames', &
+          'Could not allocate memory for cformv')
+      if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
+          'cformv   with nname   =', nnamel
       cformv=''
 !
     endsubroutine allocate_vnames
@@ -3149,31 +3141,26 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  averages, and only evaluates its output for special purposes
 !  such as computing mean field energies in calc_bmz, for example,
 !
-      if (.not.allocated(cnamez)) then
-        allocate(cnamez(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for cnamez')
-        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
-            'cnamez  with nnamez  =', nnamel
-      endif
+      if (allocated(cnamez)) deallocate(cnamez,fnamez,cformz)
+      allocate(cnamez(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for cnamez')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'cnamez  with nnamez  =', nnamel
       cnamez=''
 !
-      if (.not.allocated(fnamez)) then
-        allocate(fnamez(nz,nprocz,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for fnamez')
-        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
-            'fnamez  with nnamez  =', nnamel
-      endif
+      allocate(fnamez(nz,nprocz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for fnamez')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'fnamez  with nnamez  =', nnamel
       fnamez=0.0
 !
-      if (.not.allocated(cformz)) then
-        allocate(cformz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for cformz')
-        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
-            'cformz  with nnamez  =', nnamel
-      endif
+      allocate(cformz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for cformz')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'cformz  with nnamez  =', nnamel
       cformz=''
 !
     endsubroutine allocate_xyaverages
@@ -3189,31 +3176,26 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cnamey)) then
-        allocate(cnamey(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for cnamey')
-        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
-            'cnamey  with nnamey  =', nnamel
-      endif
+      if (allocated(cnamey)) deallocate(cnamey,fnamey,cformy)
+      allocate(cnamey(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xzaverages', &
+                                   'Could not allocate memory for cnamey')
+      if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
+                          'cnamey  with nnamey  =', nnamel
       cnamey=''
 !
-      if (.not.allocated(fnamey)) then
-        allocate(fnamey(ny,nprocy,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for fnamey', .true.)
-        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
-            'fnamey  with nnamey  =', nnamel
-      endif
+      allocate(fnamey(ny,nprocy,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xzaverages', &
+                                   'Could not allocate memory for fnamey', .true.)
+      if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
+                          'fnamey  with nnamey  =', nnamel
       fnamey=0.0
 !
-      if (.not.allocated(cformy)) then
-        allocate(cformy(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for cformy', .true.)
-        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
-            'cformy  with nnamey  =', nnamel
-      endif
+      allocate(cformy(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xzaverages', &
+                                   'Could not allocate memory for cformy', .true.)
+      if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
+                          'cformy  with nnamey  =', nnamel
       cformy=''
 !
     endsubroutine allocate_xzaverages
@@ -3229,31 +3211,26 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cnamex)) then
-        allocate(cnamex(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for cnamex')
-        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
-            'cnamex  with nnamex  =', nnamel
-      endif
+      if (allocated(cnamex)) deallocate(cnamex,fnamex,cformx)
+      allocate(cnamex(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yzaverages', &
+                                   'Could not allocate memory for cnamex')
+      if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
+                          'cnamex  with nnamex  =', nnamel
       cnamex=''
 !
-      if (.not.allocated(fnamex)) then
-        allocate(fnamex(nx,nprocx,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for fnamex')
-        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
-            'fnamex  with nnamex  =', nnamel
-      endif
+      allocate(fnamex(nx,nprocx,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yzaverages', &
+                                   'Could not allocate memory for fnamex')
+      if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
+                          'fnamex  with nnamex  =', nnamel
       fnamex=0.0
 !
-      if (.not.allocated(cformx)) then
-        allocate(cformx(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for cformx')
-        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
-            'cformx  with nnamex  =', nnamel
-      endif
+      allocate(cformx(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yzaverages', &
+                                   'Could not allocate memory for cformx')
+      if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
+                          'cformx  with nnamex  =', nnamel
       cformx=''
 !
     endsubroutine allocate_yzaverages
@@ -3269,32 +3246,27 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not. allocated(cnamer)) then
-        allocate(cnamer(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for cnamer')
-        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-            'cnamer  with nnamel =', nnamel
-      endif
+      if ( allocated(cnamer)) deallocate(cnamer,fnamer,cformr)
+      allocate(cnamer(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phizaverages', &
+                                   'Could not allocate memory for cnamer')
+      if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
+                          'cnamer  with nnamel =', nnamel
       cnamer=''
 !
       mnamer=nnamel+1
-      if (.not.allocated(fnamer)) then
-        allocate(fnamer(nrcyl,mnamer),stat=stat)
-        if (stat>0) call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for fnamer')
-        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-            'fnamer  with nnamer+1 =', mnamer
-      endif
+      allocate(fnamer(nrcyl,mnamer),stat=stat)
+      if (stat>0) call fatal_error('allocate_phizaverages', &
+                                   'Could not allocate memory for fnamer')
+      if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
+                          'fnamer  with nnamer+1 =', mnamer
       fnamer=0.0
 !
-      if (.not.allocated(cformr)) then
-        allocate(cformr(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for cformr')
-        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-            'cformr  with nnamel =', nnamel
-      endif
+      allocate(cformr(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phizaverages', &
+                                   'Could not allocate memory for cformr')
+      if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
+                          'cformr  with nnamel =', nnamel
       cformr=''
 !
     endsubroutine allocate_phizaverages
@@ -3310,31 +3282,26 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cnamexz)) then
-        allocate(cnamexz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for cnamexz')
-        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
-            'cnamexz with nnamexz =', nnamel
-      endif
+      if (allocated(cnamexz)) deallocate(cnamexz,fnamexz,cformxz)
+      allocate(cnamexz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yaverages', &
+                                   'Could not allocate memory for cnamexz')
+      if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
+                          'cnamexz with nnamexz =', nnamel
       cnamexz=''
 !
-      if (.not.allocated(fnamexz)) then
-        allocate(fnamexz(nx,nz,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for fnamexz')
-        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
-            'fnamexz with nnamexz =', nnamel
-      endif
+      allocate(fnamexz(nx,nz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yaverages', &
+                                   'Could not allocate memory for fnamexz')
+      if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
+                          'fnamexz with nnamexz =', nnamel
       fnamexz=0.0
 !
-      if (.not.allocated(cformxz)) then
-        allocate(cformxz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for cformxz')
-        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
-            'cformxz with nnamexz =', nnamel
-      endif
+      allocate(cformxz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yaverages', &
+                                   'Could not allocate memory for cformxz')
+      if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
+                          'cformxz with nnamexz =', nnamel
       cformxz=''
 !
     endsubroutine allocate_yaverages
@@ -3351,23 +3318,20 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cnamexy)) then
-        allocate(cnamexy(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for cnamexy')
-        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'cnamexy with nnamexy =', nnamel
-      endif
+      if (allocated(cnamexy)) deallocate(cnamexy,cformxy)
+      allocate(cnamexy(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_zaverages', &
+                                   'Could not allocate memory for cnamexy')
+      if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
+                          'cnamexy with nnamexy =', nnamel
       cnamexy=''
 !
-      if (.not.allocated(cformxy)) then
-        allocate(cformxy(nnamel),stat=stat)
-        if (stat>0) &
-          call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for cformxy')
-        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'cformxy with nnamel =', nnamel
-      endif
+      allocate(cformxy(nnamel),stat=stat)
+      if (stat>0) &
+        call fatal_error('allocate_zaverages', &
+                         'Could not allocate memory for cformxy')
+      if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
+                          'cformxy with nnamel =', nnamel
       cformxy=''
 
     endsubroutine allocate_zaverages
@@ -3388,23 +3352,23 @@ if (ios/=0) print*, 'ios, i=', ios, i
       nyl=ny
       if (lyinyang) call initialize_zaver_yy(nyl,nycap)
 !
-      if (.not.allocated(fnamexy)) then
-        allocate(fnamexy(nnamel,nx,nyl),stat=stat)
-        if (stat>0) call fatal_error('allocate_zaverages_data', &
-                                     'Could not allocate memory for fnamexy')
-        if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
-                            'fnamexy with nnamexy =', nnamel
-      endif
-
+      if (allocated(fnamexy)) deallocate(fnamexy)
+      allocate(fnamexy(nnamel,nx,nyl),stat=stat)
+      if (stat>0) call fatal_error('allocate_zaverages_data', &
+                                   'Could not allocate memory for fnamexy')
+      if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
+                          'fnamexy with nnamexy =', nnamel
       fnamexy=0.
 
-      if (lcaproot.and..not.allocated(fnamexy_cap)) then
+      if (lcaproot) then
+        if (allocated(fnamexy_cap)) deallocate(fnamexy_cap)
         allocate(fnamexy_cap(nnamel,nx,nycap),stat=stat)
         if (stat>0) call fatal_error('allocate_zaverages_data', &
                                      'Could not allocate memory for fnamexy_cap')
         if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
                             'fnamexy_cap with nycap, nnamexy =', nycap, nnamel
       endif
+!
     endsubroutine allocate_zaverages_data
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)
@@ -3418,31 +3382,26 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (.not.allocated(cnamerz)) then
-        allocate(cnamerz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for cnamerz')
-        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
-            'cnamerz with nnamerz =', nnamel
-      endif
+      if (allocated(cnamerz)) deallocate(cnamerz,fnamerz,cformrz)
+      allocate(cnamerz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phiaverages', &
+                                   'Could not allocate memory for cnamerz')
+      if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
+                          'cnamerz with nnamerz =', nnamel
       cnamerz=''
 !
-      if (.not.allocated(fnamerz)) then
-        allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for fnamerz')
-        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
-            'fnamerz with nnamerz =', nnamel
-      endif
+      allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phiaverages', &
+                                   'Could not allocate memory for fnamerz')
+      if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
+                          'fnamerz with nnamerz =', nnamel
       fnamerz=0.0
 !
-      if (.not.allocated(cformrz)) then
-        allocate(cformrz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for cformrz')
-        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
-            'cformrz with nnamerz =', nnamel
-      endif
+      allocate(cformrz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phiaverages', &
+                                   'Could not allocate memory for cformrz')
+      if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
+                          'cformrz with nnamerz =', nnamel
       cformrz=''
 !
     endsubroutine allocate_phiaverages

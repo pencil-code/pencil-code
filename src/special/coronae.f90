@@ -96,22 +96,18 @@ module Special
   integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
   integer :: idiag_dtrad=0    ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtnewt=0
+  integer :: ivid_newton=0, ivid_spitzer=0, ivid_rtv=0, ivid_hgrad=0
 !
 !  variables for video slices:
 !
-  real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2
-  real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
-  real, target, dimension (nx,nz) :: spitzer_xz
-  real, target, dimension (ny,nz) :: spitzer_yz
-  real, target, dimension (nx,ny) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
-  real, target, dimension (nx,nz) :: newton_xz
-  real, target, dimension (ny,nz) :: newton_yz
-  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension (nx,nz) :: rtv_xz
-  real, target, dimension (ny,nz) :: rtv_yz
-  real, target, dimension (nx,ny) :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
-  real, target, dimension (nx,nz) :: hgrad_xz
-  real, target, dimension (ny,nz) :: hgrad_yz
+  real, target, dimension (:,:) :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
+  real, target, dimension (:,:) :: spitzer_xz,spitzer_yz,spitzer_xz2
+  real, target, dimension (:,:) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
+  real, target, dimension (:,:) :: newton_xz,newton_yz,newton_xz2
+  real, target, dimension (:,:) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+  real, target, dimension (:,:) :: rtv_xz,rtv_yz,rtv_xz
+  real, target, dimension (:,:) :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
+  real, target, dimension (:,:) :: hgrad_xz,hgrad_yz,hgrad_xz2
 !
 !  variables for granulation driver
 !
@@ -293,7 +289,6 @@ module Special
         print*,'Loaded loop length data for heattype: ',iheattype
       endif
 !
-!
       if (lrun .and. lgranulation .and. (ipz == 0)) then
         if (lhydro) then
           call set_driver_params()
@@ -301,6 +296,50 @@ module Special
           call fatal_error &
               ('initialize_special','granulation only works for lhydro=T')
         endif
+      endif
+!
+      if (ivid_rtv/=0) then
+        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
+      endif
+!
+      if (ivid_spitzer/=0) then
+        !call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+        if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(spitzer_xy2)) allocate(spitzer_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(spitzer_xy3)) allocate(spitzer_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(spitzer_xy4)) allocate(spitzer_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(spitzer_xz2)) allocate(spitzer_xz2(nx,nz))
+      endif
+!
+      if (ivid_newton/=0) then
+        !call alloc_slice_buffers(newton_xy,newton_xz,newton_yz,newton_xy2,newton_xy3,newton_xy4,newton_xz2)
+        if (lwrite_slice_xy .and..not.allocated(newton_xy) ) allocate(newton_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(newton_xz) ) allocate(newton_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(newton_yz) ) allocate(newton_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(newton_xy2)) allocate(newton_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(newton_xy3)) allocate(newton_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(newton_xy4)) allocate(newton_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(newton_xz2)) allocate(newton_xz2(nx,nz))
+      endif
+!
+      if (ivid_hgrad/=0) then
+        !call alloc_slice_buffers(hgrad_xy,hgrad_xz,hgrad_yz,hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
+        if (lwrite_slice_xy .and..not.allocated(hgrad_xy) ) allocate(hgrad_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(hgrad_xz) ) allocate(hgrad_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(hgrad_yz) ) allocate(hgrad_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(hgrad_xy2)) allocate(hgrad_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(hgrad_xy3)) allocate(hgrad_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(hgrad_xy4)) allocate(hgrad_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(hgrad_xz2)) allocate(hgrad_xz2(nx,nz))
       endif
 !
     endsubroutine initialize_special
@@ -516,6 +555,7 @@ module Special
         idiag_dtchi2=0
         idiag_dtrad=0
         idiag_dtnewt=0
+        ivid_newton=0; ivid_spitzer=0; ivid_rtv=0; ivid_hgrad=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -525,6 +565,15 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
+      enddo
+!
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'newton', ivid_newton)
+        call parse_name(iname,cnamev(iname),cformv(iname),'spitzer',ivid_spitzer)
+        call parse_name(iname,cnamev(iname),cformv(iname),'rtv',    ivid_rtv)
+        call parse_name(iname,cnamev(iname),cformv(iname),'hgrad',  ivid_hgrad)
       enddo
 !
 !  write column where which variable is stored
@@ -584,6 +633,8 @@ module Special
 !
 !  204-sep-10/bing: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data), intent(inout) :: slices
 !
@@ -594,41 +645,17 @@ module Special
       select case (trim(slices%name))
 !
       case ('newton')
-        slices%yz => newton_yz
-        slices%xz => newton_xz
-        slices%xy => newton_xy
-        slices%xy2=> newton_xy2
-        if (lwrite_slice_xy3) slices%xy3=> newton_xy3
-        if (lwrite_slice_xy4) slices%xy4=> newton_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,newton_xy,newton_xz,newton_yz, &
+                                newton_xy2,newton_xy3,newton_xy4,newton_xz2)
       case ('spitzer')
-        slices%yz => spitzer_yz
-        slices%xz => spitzer_xz
-        slices%xy => spitzer_xy
-        slices%xy2=> spitzer_xy2
-        if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
-        if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,spitzer_xy,spitzer_xz,spitzer_yz, &
+                                spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       case ('rtv')
-        slices%yz => rtv_yz
-        slices%xz => rtv_xz
-        slices%xy => rtv_xy
-        slices%xy2=> rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3=> rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4=> rtv_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz, &
+                                rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
       case ('hgrad')
-        slices%yz => hgrad_yz
-        slices%xz => hgrad_xz
-        slices%xy => hgrad_xy
-        slices%xy2=> hgrad_xy2
-        if (lwrite_slice_xy3) slices%xy3=> hgrad_xy3
-        if (lwrite_slice_xy4) slices%xy4=> hgrad_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,hgrad_xy,hgrad_xz,hgrad_yz, &
+                                hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endselect
 !
     endsubroutine get_slices_special
@@ -2188,7 +2215,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: newton,tau_inv_tmp
-      real, dimension (nx) :: rho0_rho,TT0_TT
+      real, dimension (nx) :: rho0_rho,TT0_TT,dumpenc
 !
       if (headtt) print*,'special_calc_energy: newton cooling',tau_inv_newton
 !
@@ -2243,15 +2270,23 @@ module Special
 !         tau_inv_tmp=max(tau_inv_tmp,tau_inv_top)
 !       endif
 !
-      if (lvideo) then
+      if (lvideo.and.lfirst) then
 !
-! slices
-        newton_yz(m-m1+1,n-n1+1)= -1 ! this is undefined: newton(ix_loc-l1+1)
-        if (m == iy_loc)  newton_xz(:,n-n1+1)= -1 ! this is undefined: newton
-        if (n == iz_loc)  newton_xy(:,m-m1+1)= -1 ! this is undefined: newton
-        if (n == iz2_loc) newton_xy2(:,m-m1+1)= -1 ! this is undefined: newton
-        if (n == iz3_loc) newton_xy3(:,m-m1+1)= -1 ! this is undefined: newton
-        if (n == iz4_loc) newton_xy4(:,m-m1+1)= -1 ! this is undefined: newton
+! slices (all undefined so far)
+!
+        dumpenc=-1.
+        if (ivid_newton) &
+          call store_slices(dumpenc,newton_xy,newton_xz,newton_yz, &
+                            newton_xy2,newton_xy3,newton_xy4,newton_xz2)
+        if (ivid_spitzer) &
+          call store_slices(dumpenc,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+        if (ivid_rtv) & 
+          call store_slices(dumpenc,rtv_xy,rtv_xz,rtv_yz, &
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (ivid_hgrad) &
+          call store_slices(dumpenc,hgrad_xy,hgrad_xz,hgrad_yz, &
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
 !
       if (lfirst.and.ldt) then

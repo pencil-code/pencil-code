@@ -119,13 +119,13 @@ module Special
   integer :: idiag_mag_flux=0  ! DIAG_DOC: Total vertical magnetic flux at
                                ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
+  integer :: ivid_logQ=0, ivid_rtv=0
+!
   ! video slices
-  real, target, dimension(nx,ny) :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
-  real, target, dimension(nx,nz) :: rtv_xz
-  real, target, dimension(ny,nz) :: rtv_yz
-  real, target, dimension(nx,ny) :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
-  real, target, dimension(nx,nz) :: logQ_xz
-  real, target, dimension(ny,nz) :: logQ_yz
+  real, target, dimension(:,:), allocatable :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
+  real, target, dimension(:,:), allocatable :: rtv_xz, rtv_yz, rtv_xz2
+  real, target, dimension(:,:), allocatable :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
+  real, target, dimension(:,:), allocatable :: logQ_xz, logQ_xz2, logQ_yz
 !
   ! Granule midpoint:
   type point
@@ -188,6 +188,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use File_io, only: parallel_file_exists
+      !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -256,6 +257,27 @@ module Special
         call generate_halfgrid(x12,y12,z12)
       endif
 !
+      if (ivid_rtv/=0) then
+        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
+      endif
+      if (ivid_logQ/=0) then
+        !call alloc_slice_buffers(logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+        if (lwrite_slice_xy .and..not.allocated(logQ_xy) ) allocate(logQ_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(logQ_xz) ) allocate(logQ_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(logQ_yz) ) allocate(logQ_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(logQ_xy2)) allocate(logQ_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(logQ_xy3)) allocate(logQ_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(logQ_xy4)) allocate(logQ_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(logQ_xz2)) allocate(logQ_xz2(nx,nz))
+      endif
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -844,6 +866,8 @@ module Special
         idiag_dtradloss = 0
         idiag_dtspitzer = 0
         idiag_mag_flux = 0
+        ivid_logQ=0
+        ivid_rtv=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -855,6 +879,13 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtradloss',idiag_dtradloss)
         call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
         call parse_name(iname,cname(iname),cform(iname),'mag_flux',idiag_mag_flux)
+      enddo
+!
+!  check for those quantities for which we want video slices
+!
+      do iname = 1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'logQ',ivid_logQ)
+        call parse_name(iname,cnamev(iname),cformv(iname),'rtv',ivid_rtv)
       enddo
 !
 !  write column where which variable is stored
@@ -875,7 +906,9 @@ module Special
 !  Write slices for animation of special variables.
 !
 !  26-jun-06/tony: dummy
-!
+! 
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension(mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -883,24 +916,11 @@ module Special
 !
       select case (trim(slices%name))
 !
-      case ('rtv')
-        slices%yz =>rtv_yz
-        slices%xz =>rtv_xz
-        slices%xy =>rtv_xy
-        slices%xy2 =>rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3 =>rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4 =>rtv_xy4
-        slices%ready = .true.
+      case ('rtv'); call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
+                                            rtv_xy3,rtv_xy4,rtv_xz2)
 !
-      case ('logQ')
-        slices%yz =>logQ_yz
-        slices%xz =>logQ_xz
-        slices%xy =>logQ_xy
-        slices%xy2 =>logQ_xy2
-        if (lwrite_slice_xy3) slices%xy3 =>logQ_xy3
-        if (lwrite_slice_xy4) slices%xy4 =>logQ_xy4
-        slices%ready = .true.
-!
+      case ('logQ'); call assign_slices_scal(slices,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
+                                             logQ_xy3,logQ_xy4,logQ_xz2)
       endselect
 !
       call keep_compiler_quiet(f)
@@ -2750,6 +2770,7 @@ module Special
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step,step
       use SharedVariables, only: get_shared_variable
+      use Slices_methods,  only: store_slices
 !
       integer :: ierr
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -2795,15 +2816,12 @@ module Special
       case default
         call fatal_error('cool_RTV_cutoff:','wrong value')
       endselect
-       
 !
 ! slices
-      rtv_yz(m-m1+1,n-n1+1) = rtv_cool(ix_loc-l1+1)
-      if (m == iy_loc)  rtv_xz(:,n-n1+1) = rtv_cool
-      if (n == iz_loc)  rtv_xy(:,m-m1+1) = rtv_cool
-      if (n == iz2_loc) rtv_xy2(:,m-m1+1) = rtv_cool
-      if (n == iz3_loc) rtv_xy3(:,m-m1+1) = rtv_cool
-      if (n == iz4_loc) rtv_xy4(:,m-m1+1) = rtv_cool
+!
+      if (ivid_rtv/=0) &
+        call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
+                                   rtv_xy3,rtv_xy4,rtv_xz2)
 !
 !     add to temperature equation
 !
@@ -2823,12 +2841,9 @@ module Special
         dt1_max = max(dt1_max,tmp)
       endif
 !
-      logQ_yz(m-m1+1,n-n1+1) = lnQ(ix_loc-l1+1)*0.43429448
-      if (m == iy_loc)  logQ_xz(:,n-n1+1) = lnQ*0.43429448
-      if (n == iz_loc)  logQ_xy(:,m-m1+1) = lnQ*0.43429448
-      if (n == iz2_loc) logQ_xy2(:,m-m1+1) = lnQ*0.43429448
-      if (n == iz3_loc) logQ_xy3(:,m-m1+1) = lnQ*0.43429448
-      if (n == iz4_loc) logQ_xy4(:,m-m1+1) = lnQ*0.43429448
+      if (ivid_logQ/=0) &
+        call store_slices(lnQ*0.43429448,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
+                                         logQ_xy3,logQ_xy4,logQ_xz2)
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************

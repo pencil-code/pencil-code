@@ -344,6 +344,7 @@ module Special
       if (lreset) then
         idiag_bmx2m=0; idiag_bmy2m=0
         idiag_bmxpt=0; idiag_bmypt=0; idiag_bmxp2=0; idiag_bmyp2=0
+        cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -356,6 +357,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'bmxp2',idiag_bmxp2)
         call parse_name(iname,cname(iname),cform(iname),'bmyp2',idiag_bmyp2)
       enddo
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='phi') cformv='DEFINED'
+      endif
 !
 !  write column where which magnetic variable is stored
 !
@@ -378,6 +385,7 @@ module Special
 !  26-feb-07/axel: adapted from gross_pitaevskii
 !
       use Cdata
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
@@ -390,12 +398,7 @@ module Special
 !
 !  phi
 !
-        case ('phi')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iam)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iam)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iam)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iam)
-          slices%ready = .true.
+        case ('phi'); call assign_slices_scal(slices,f,iam)
 !
       endselect
 !

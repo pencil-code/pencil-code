@@ -879,6 +879,7 @@ module Density
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
         idiag_rhomxz=0; idiag_divrhoum=0; idiag_divrhourms=0; idiag_divrhoumax=0
+        cformv=''
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -952,6 +953,12 @@ module Density
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='rho'.or.cnamev=='pp') cformv='DEFINED'
+      endif
+!
 !  write column where which density variable is stored
 !
       if (lwr) then
@@ -1012,29 +1019,25 @@ module Density
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       if (.not. lanelastic_lin) then
+!
 !  Loop over slices
-      
+!      
         select case (trim(slices%name))
 
 !  Density.
 
-          case ('rho')
-              slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
-              slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
-              slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
-              slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
-              if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
-              if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
-              slices%ready=.true.
+          case ('rho'); call assign_slices_scal(slices,f,irho)
 !
-!  Logarithmic density.
+!  Logarithmic density (not implemented).
 !
-          case ('lnrho')
-            call fatal_error('get_slices_density','Not working with lnrho anymore')
+          !case ('lnrho')
+
         endselect
       endif
 !
@@ -1046,6 +1049,8 @@ module Density
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -1055,14 +1060,7 @@ module Density
 !
 !  Pressure.
 !
-        case ('pp')
-            slices%yz =f(ix_loc,m1:m2,n1:n2,ipp)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,ipp)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,ipp)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipp)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ipp)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ipp)
-            slices%ready=.true.
+        case ('pp'); call assign_slices_scal(slices,f,ipp)
 !
       endselect
 !

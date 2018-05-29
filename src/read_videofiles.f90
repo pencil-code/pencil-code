@@ -41,6 +41,7 @@ program read_videofiles
 
   integer, dimension(:), allocatable :: inds
   real, dimension(:,:), allocatable :: yz,yzyang
+  character, dimension(-1:0) :: trufal=['F','T'] 
 !
 !  read name of the field (must coincide with file extension)
 !
@@ -53,6 +54,7 @@ program read_videofiles
   isep2=len(cfield)
   field=cfield(1:isep1)
   if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) n_every
+
   if (n_every <= 0) then
     print *, 'Invalid value for stride!'
     stop
@@ -63,7 +65,6 @@ program read_videofiles
   open (lun,file=trim(datadir)//'/tvid.dat',form='formatted',STATUS='old')
   read (lun,*) t, num_slices
   close (lun)
-  num_slices = num_slices - 1
   num_frames = 0
   do it = 1, num_slices
     if (mod(it, n_every) == 0) num_frames = num_frames + 1
@@ -76,7 +77,7 @@ program read_videofiles
 !  Loop over all processors to find the positions of the slices.
 !  iyy-loop: try to read from 2*ncpus procs as run could also be a Yin-Yang one.
 !
-  do iyy=0,ncpus,ncpus
+  do iyy=0,0   !ncpus,ncpus
     do ipx=0,nprocx-1
       do ipy=0,nprocy-1
         do ipz=0,nprocz-1
@@ -102,19 +103,19 @@ program read_videofiles
             endif
           endif
           open(lun,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! xy
           if (lread_slice) ipz1=ipz
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! xy2
           if (lread_slice) ipz2=ipz
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! xy3
           if (lread_slice) ipz3=ipz
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! xy4
           if (lread_slice) ipz4=ipz
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! xz
           if (lread_slice) ipy1=ipy
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! xz2
           if (lread_slice) ipy2=ipy
-          read(lun,*) lread_slice
+          read(lun,*) lread_slice          ! yz
           if (lread_slice) ipx1=ipx
           close(lun)
         enddo
@@ -163,6 +164,17 @@ program read_videofiles
 !  Print summary.
 !
   if (lwritten_something) then
+
+    open (lun,file=trim(datadir)//'/slice_position.dat',form='formatted',STATUS='replace')
+    write(lun,*) trufal(min(ipz1,0))
+    write(lun,*) trufal(min(ipz2,0))
+    write(lun,*) trufal(min(ipz3,0))
+    write(lun,*) trufal(min(ipz4,0))
+    write(lun,*) trufal(min(ipy1,0))
+    write(lun,*) trufal(min(ipy2,0))
+    write(lun,*) trufal(min(ipx1,0))
+    close(lun)
+
     print *,'last file read: ',trim(fullname)
     print *,'-------------------------------------------------'
     print *,'minimum and maximum values:'

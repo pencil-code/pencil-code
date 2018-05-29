@@ -419,6 +419,7 @@ module Special
         idiag_jxaprms=0; idiag_divapbrms=0
         idiag_jxgLamrms=0; idiag_d2Lambrms=0
         idiag_gLamrms=0; idiag_d2Lamrms=0
+        cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -445,6 +446,12 @@ module Special
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Lambzmz',idiag_Lambzmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='Lam') cformv='DEFINED'
+      endif
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
@@ -467,6 +474,8 @@ module Special
 !
 !  26-feb-07/axel: adapted from gross_pitaevskii
 !
+      use Slice_methods, only: assign_slices_vec
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
 !
@@ -478,12 +487,7 @@ module Special
 !
 !  Lam
 !
-        case ('Lam')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iLam)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iLam)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iLam)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iLam)
-          slices%ready = .true.
+        case ('Lam'); call assign_slices_vec(slices,f,iLam)
 !
       endselect
 !

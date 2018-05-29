@@ -229,6 +229,7 @@ module Shock
         ldivu_perp=.false.
         lgauss_integral=.false.
         lgauss_integral_comm_uu=.false.
+        cformv=''
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -238,6 +239,12 @@ module Shock
         call parse_name(iname,cname(iname),cform(iname),&
             'shockmax',idiag_shockmax)
       enddo
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='shock'.or.cnamev=='shock_perp') cformv='DEFINED'
+      endif
 !
 !  write column where which ionization variable is stored
 !
@@ -259,10 +266,10 @@ module Shock
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -271,18 +278,10 @@ module Shock
 !  Shock profile
 !
         case ('shock')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ishock)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ishock)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ishock)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock)
-          slices%ready=.true.
+          call assign_slices_scal(slices,f,ishock)
 !
         case ('shock_perp')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ishock_perp)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ishock_perp)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ishock_perp)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock_perp)
-          slices%ready=.true.
+          call assign_slices_scal(slices,f,ishock_perp)
 !
       endselect
 !
