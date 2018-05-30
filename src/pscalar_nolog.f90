@@ -943,7 +943,7 @@ module Pscalar
 !
 !  Passive scalar or logarithm of it..
 !
-      if (sname=='cc'.or.sname='lncc') then
+      if (sname=='cc'.or.sname=='lncc') then
 
         call assign_slices_vec(slices,f,icc,npscalar)
 !
