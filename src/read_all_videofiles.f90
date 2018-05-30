@@ -44,7 +44,7 @@ program rvid_box
       character (len=20) :: field='lnrho',field2=''
 !
       logical :: exists,lfirst_slice=.true.
-      character, dimension(-1:0) :: trufal=['F','T']
+      character, dimension(-1:0) :: trufal=(/'F','T'/)
 !
 !  Read name of the field from a file containing the field to be read.
 !  Use videoread.in as default. If that does not exist, use video.in
