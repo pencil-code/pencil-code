@@ -193,9 +193,9 @@ contains
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
       character (len=*)           , intent(IN) :: filename
-      real, dimension(ndim1,ndim2), intent(IN) :: a
       real                        , intent(IN) :: pos
       integer                     , intent(IN) :: ndim1,ndim2
+      real, dimension(ndim1,ndim2), intent(IN) :: a
 
       integer :: iostat
 !
