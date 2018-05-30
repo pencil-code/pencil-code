@@ -236,6 +236,7 @@ module File_io
 ! 20-may-18/MR: coded
 !
       use General, only: coptest
+      use Syscalls, only: system_cmd
 
       integer :: num
       
@@ -243,7 +244,7 @@ module File_io
       character(LEN=*), optional, intent(IN) :: options 
       logical,          optional, intent(IN) :: only_number
     
-      call system('ls '//coptest(options)//name//' > tmplsout 2> /dev/null')
+      call system_cmd('ls '//coptest(options)//name//' > tmplsout 2> /dev/null')
       num=count_lines('tmplsout')
       call delete_file('tmplsout')
     
