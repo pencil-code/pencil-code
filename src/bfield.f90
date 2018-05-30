@@ -945,7 +945,7 @@ module Magnetic
 !
       if (lbext) call get_bext(b_ext)
 !
-      select case (trim(slices%name))
+      slice: select case (trim(slices%name))
 !
 !  Magnetic field
 !
@@ -974,7 +974,7 @@ module Magnetic
         endif
         slices%ready = .true.
 !
-      endselect
+      endselect slice
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************
