@@ -41,7 +41,7 @@ program read_videofiles
 
   integer, dimension(:), allocatable :: inds
   real, dimension(:,:), allocatable :: yz,yzyang
-  character, dimension(-1:0) :: trufal=['F','T'] 
+  character, dimension(-1:0) :: trufal=(/'F','T' /)
 !
 !  read name of the field (must coincide with file extension)
 !
