@@ -18,7 +18,8 @@ module Deriv
   private
 !
   public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j,der3i3j,der3i2j1k,der4i1j1k
+  public :: der, der2, der3, der4, der5, der6, derij
+  public :: der5i1j, der3i3j, der3i2j1k, der4i1j1k, der2i2j2k, der4i2j
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
   public :: der_upwind1st, der_z, der2_z, der_x, der2_x
@@ -1570,6 +1571,8 @@ module Deriv
 !
 !  02-apr-17/wlyra: coded
 !
+    use General, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx) :: fac
       integer,intent(in) :: k
@@ -1581,6 +1584,8 @@ module Deriv
     endsubroutine der2i2j2k
 !***********************************************************************
     subroutine der3i3j(f,k,df,i,j)
+!
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx), intent(out) :: df
@@ -1594,6 +1599,8 @@ module Deriv
 !***********************************************************************          
     subroutine der3i2j1k(f,ik,df,i,j,k)
 !
+      use General, only: keep_compiler_quiet
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx), intent(out) :: df
       real, dimension (nx) :: fac
@@ -1605,6 +1612,8 @@ module Deriv
     endsubroutine der3i2j1k
 !***********************************************************************
     subroutine der4i1j1k(f,ik,df,i,j,k)
+!
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx), intent(out) :: df
