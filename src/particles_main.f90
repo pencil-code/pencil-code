@@ -1203,9 +1203,9 @@ module Particles_main
           else
             call assign_slices_scal(slices,f,inp)
             if (lcartesian_coords.and.(all(lequidist))) then
-              call process_slices(slices,rhop_swarm)        ! multiply with rhop_swarm
+              call process_slices(slices,fac=rhop_swarm)        ! multiply with rhop_swarm
             else    !MR: both implementations identical!!!
-              call process_slices(slices,rhop_swarm)
+              call process_slices(slices,fac=rhop_swarm)
             endif
           endif
 !
