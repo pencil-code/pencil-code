@@ -4,43 +4,47 @@
 !
 &run_pars
   cvsid='$Id$',
-!  nt=5000000, it1=2000, isave=50000, itorder=3, tmax=5.0
+  nt=5000000, it1=5000, isave=50000, itorder=3, tmax=5.0
   nt=200, it1=20, isave=50000, itorder=3, tmax=5.0
-  cdt=0.1, cdtv=0.1, dtmin=1e-9, cdts=0.1
+  cdt=0.3, cdtv=0.3, dtmin=1e-10, cdts=0.3
   dsnap=0.2, dvid=20., 
   ip=20
   lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  lproper_averages=T
 /
 &eos_run_pars
 /
 &hydro_run_pars
+  lupw_uu=T
+  cdt_tauf=1.0
+  lcdt_tauf=T
+  ulev = 20.0
 /
 &density_run_pars
-  diffrho=4e-3
-  diffrho_shock=1.2
-  lmassdiff_fixkin=T
-  idiff='normal','shock'
+  lupw_rho=T
+  diffrho_shock=1.0
+  lmassdiff_fix=T
+  idiff='shock'
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-cspeed','shock'
-  chi_cs=4e-4,chi_shock=10.0
+  lupw_ss=T
+  iheatcond='chi-const','shock'
+  chi=5e1,chi_shock=5.0
+  lthdiff_Hmax=T
 /
 &interstellar_run_pars
   laverage_SN_heating=T
   heatingfunction_scalefactor=0.25
-  heatcool_shock_cutoff_rate=0.1
-  cdt_tauc=0.1
   lSNII=F
   lSNI=F
 /
 &viscosity_run_pars
-  ivisc='nu-cspeed','nu-shock'
-  nu=4e-3,nu_shock=10.0
+  ivisc='nu-const','nu-shock'
+  nu=5e-1,nu_shock=5.0
 /
 &shock_run_pars
-  lshock_first=T
-  lshock_max5=F
+  ishock_max=2
 /

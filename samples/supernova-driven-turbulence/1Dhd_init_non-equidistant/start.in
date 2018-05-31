@@ -5,7 +5,7 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1e-24, unit_temperature=1, unit_magnetic=1e-6
+  unit_density=1e-24, unit_magnetic=1e-6
   xyz0=-0.002,-0.002,-2.0
   xyz1=+0.002,+0.002,+2.0
   lperi=T,T,F
@@ -16,10 +16,12 @@
   xi_step_width = 0.0,0.0,10., 0.0,0.0,10. 
   bcz = 's','s','s','ism','ism','s','s'
   lwrite_aux=T
+  lfix_unit_std=T
+  lproper_averages=T
 /
 &initial_condition_pars
   !amplaa=0.0
-  T_init = 2e5
+  T_init = 4.85e3
 /
 &eos_init_pars
   mu=0.531
