@@ -14,6 +14,7 @@
   ip=30
   lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  lproper_averages=T
 /
 &eos_run_pars
 /
@@ -26,35 +27,33 @@
 /
 &viscosity_run_pars
   ivisc='nu-shock', 'nu-const'
-  nu_shock=2.5, nu=1e-6
+  nu_shock=4.0, nu=1e-4
 /
 &density_run_pars
   lupw_rho=T
-  idiff='normal', 'shock'
-  diffrho_shock=2.5, diffrho=1e-6
-  lmassdiff_fixmom=T
+  idiff='shock'
+  diffrho_shock=1.0
+  lmassdiff_fix=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
   lupw_ss=T
-  iheatcond='chi-const' ,'shock'
-  chi_shock=0.01, chi_cs=1e-6
+  iheatcond='shock'
+  chi_shock=4.0
   lthdiff_Hmax=T
 /
 &interstellar_run_pars
   laverage_SN_heating=T
-  width_SN = 0.02
   lSN_scale_rad=T
-  N_mass=60.0
-  rfactor_SN=5.
-  rho_SN_max=35.
+  N_mass=25.0
+  rfactor_SN=4.5
   frac_kin=0.0
   frac_ecr=0.0
-  mass_width_ratio=1.0
+  mass_width_ratio=1.75
   mass_profile='gaussian3'
   energy_width_ratio=1.0
-  thermal_profile='gaussian3'
+  thermal_profile='gaussian2'
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T 
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
