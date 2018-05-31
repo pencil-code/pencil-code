@@ -32,7 +32,7 @@
 &entropy_run_pars
   lupw_ss=T
   iheatcond='chi-const','shock'
-  chi=5e1,chi_shock=5.0
+  chi=5e-1,chi_shock=5.0
   lthdiff_Hmax=T
 /
 &interstellar_run_pars
