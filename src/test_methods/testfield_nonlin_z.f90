@@ -36,10 +36,8 @@ module Testfield
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb11_xy
-  real, target, dimension (nx,ny,3) :: bb11_xy2
-  real, target, dimension (nx,nz,3) :: bb11_xz
-  real, target, dimension (ny,nz,3) :: bb11_yz
+  real, target, dimension (:,:,:), allocatable :: bb11_xy, bb11_xy2, bb11_xy3, bb11_xy4
+  real, target, dimension (:,:,:), allocatable :: bb11_xz, bb11_xz2, bb11_yz
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -201,6 +199,7 @@ module Testfield
   integer :: idiag_M11z=0       ! DIAG_DOC: $\left<{\cal M}_{11}\right>_{xy}$
   integer :: idiag_M22z=0       ! DIAG_DOC: $\left<{\cal M}_{22}\right>_{xy}$
   integer :: idiag_M33z=0       ! DIAG_DOC: $\left<{\cal M}_{33}\right>_{xy}$
+  integer :: ivid_bb11=0
 !
 !  arrays for horizontally averaged uxb and jxb
 !
@@ -430,15 +429,25 @@ module Testfield
 !  used in connection with testflow method)
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
+        if (ijxb==0) &
           call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
-        endif
+        
         if (ijxb/=0.and.lroot) then
           print*, 'initialize_magnetic: ijxb = ', ijxb
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'ijxb=',ijxb
           close(3)
         endif
+      endif
+
+      if (ivid_bb11/=0) then
+        if (lwrite_slice_xy .and..not.allocated(bb11_xy) ) allocate(bb11_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb11_xz) ) allocate(bb11_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb11_yz) ) allocate(bb11_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb11_xy2)) allocate(bb11_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb11_xy3)) allocate(bb11_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb11_xy4)) allocate(bb11_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb11_xz2)) allocate(bb11_xz2(nx,nz,3))
       endif
 !
 !  write testfield information to a file (for convenient post-processing)
@@ -523,11 +532,12 @@ module Testfield
       lpenc_requested(i_bbb)=.true.
       lpenc_requested(i_jj)=.true.
       lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_oo)=.true.
+!
       lpenc_diagnos(i_bbb)=.true.
       lpenc_diagnos(i_jj)=.true.
       lpenc_diagnos(i_uu)=.true.
       lpenc_diagnos(i_oo)=.true.
+
       if (lforcing_cont_aatest) lpenc_requested(i_fcont)=.true.
 !
     endsubroutine pencil_criteria_testfield
@@ -607,6 +617,7 @@ module Testfield
       use Magnetic, only: bbmz,jjmz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1150,14 +1161,8 @@ module Testfield
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-      if (lvideo.and.lfirst) then
-        do j=1,3
-          bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
-          if (m==iy_loc)  bb11_xz(:,n-n1+1,j)=bpq(:,j,1)
-          if (n==iz_loc)  bb11_xy(:,m-m1+1,j)=bpq(:,j,1)
-          if (n==iz2_loc) bb11_xy2(:,m-m1+1,j)=bpq(:,j,1)
-        enddo
-      endif
+      if (lvideo.and.lfirst.and.ivid_bb11/=0) &
+        call store_slices(bpq(:,:,1),bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -1168,6 +1173,7 @@ module Testfield
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 !
       use General, only: keep_compiler_quiet
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -1179,16 +1185,8 @@ module Testfield
 !  Magnetic field
 !
         case ('bb11')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =>bb11_yz(:,:,slices%index)
-            slices%xz =>bb11_xz(:,:,slices%index)
-            slices%xy =>bb11_xy(:,:,slices%index)
-            slices%xy2=>bb11_xy2(:,:,slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
+
       endselect
 !
       call keep_compiler_quiet(f)
@@ -1671,6 +1669,7 @@ module Testfield
         idiag_by0pt=0; idiag_by11pt=0; idiag_by21pt=0; idiag_by12pt=0; idiag_by22pt=0
         idiag_Ex0pt=0; idiag_Ex11pt=0; idiag_Ex21pt=0; idiag_Ex12pt=0; idiag_Ex22pt=0
         idiag_Ey0pt=0; idiag_Ey11pt=0; idiag_Ey21pt=0; idiag_Ey12pt=0; idiag_Ey22pt=0
+        ivid_bb11=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1790,6 +1789,14 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'M22z',idiag_M22z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'M33z',idiag_M33z)
       enddo
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        do iname=1,nnamev
+          call parse_name(iname,cnamev(iname),cformv(iname),'bb11',ivid_bb11)
+        enddo
+      endif
 !
       if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
