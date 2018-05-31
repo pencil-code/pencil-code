@@ -953,6 +953,7 @@ program run
 !  Write success file, if the requested simulation is complete.
 !
   if ((it > nt) .or. (t > tmax)) call touch_file('COMPLETED')
+  if (t > tmax) call touch_file('ENDTIME')
 !
 !  Stop MPI.
 !
