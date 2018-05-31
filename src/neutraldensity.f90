@@ -47,7 +47,6 @@ module NeutralDensity
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
   character (len=labellen) :: borderlnrhon='nothing'
   character (len=intlen) :: iinit_str
-  integer :: iglobal_gg=0
   integer :: iglobal_rhon=0
 !
   namelist /neutraldensity_init_pars/ &
@@ -254,8 +253,6 @@ module NeutralDensity
 !  28-feb-07/wlad: adapted
 !
       use General, only: itoa,complex_phase
-      use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
-                          lnumerical_equilibrium
       use Initcond
       use InitialCondition, only: initial_condition_lnrhon
       use General, only: notanumber

@@ -136,7 +136,7 @@ module Dustdensity
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
       call keep_compiler_quiet(lreset,lwrite)

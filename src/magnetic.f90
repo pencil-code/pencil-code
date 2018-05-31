@@ -93,7 +93,7 @@ module Magnetic
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
   real, dimension (ninit) :: phase_aa=0.0
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
-  integer :: nzav=0,indzav=0,nzav_start=1, izav_start=1
+  integer :: nzav=0,indzav=0,izav_start=1
   character (len=fnlen) :: source_zav=''
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen), dimension(3) :: borderaa='nothing'
@@ -2652,6 +2652,7 @@ module Magnetic
 !
       if (lpencil_in(i_bb) .and. .not. lbb_as_comaux) then
         if (.not.lcartesian_coords) lpencil_in(i_aa)=.true.
+        lpencil_in(i_aij)=.true.     !MR: needed?
       endif
 !
       if (lpencil_in(i_djuidjbi)) then
@@ -2848,7 +2849,7 @@ module Magnetic
       type (pencil_case),                 intent(out)  :: p
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
-      real, dimension (nx,3) :: bb_ext_pot, tmp3
+      real, dimension (nx,3) :: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp
       real, dimension(3) :: B_ext
       real :: c,s
@@ -3421,7 +3422,6 @@ module Magnetic
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa,advec_va2
       real, dimension(3) :: B_ext
-      real, dimension(1,3) :: tmpvec
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix

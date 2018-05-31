@@ -64,7 +64,6 @@ module Timestep
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: ds, dtsub
-      real :: dt1, dt1_local, dt1_last=0.0
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !

@@ -87,7 +87,7 @@ module Equ
       logical :: early_finalize
       real, dimension(nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)  :: mass_per_proc
-      integer :: iv,nyz
+      integer :: iv
       logical, dimension(npencils) :: lpenc_loc
 !
 !  Print statements when they are first executed.

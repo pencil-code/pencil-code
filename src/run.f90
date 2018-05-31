@@ -102,8 +102,8 @@ program run
   type (pencil_case) :: p
   double precision :: time1, time2
   double precision :: time_last_diagnostic, time_this_diagnostic
-  real :: wall_clock_time=0.0, time_per_step=0.0, tdummy
-  integer :: icount, i, mvar_in, isave_shift=0, ndummy
+  real :: wall_clock_time=0.0, time_per_step=0.0
+  integer :: icount, i, mvar_in, isave_shift=0
   integer :: it_last_diagnostic, it_this_diagnostic
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.

@@ -320,8 +320,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension(nx) :: ufpres, uduu
-      integer :: j,ju
-      integer :: i
+      integer :: j,i
 !
       intent(in) :: f,p
       intent(inout) :: df

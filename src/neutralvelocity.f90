@@ -81,7 +81,6 @@ module NeutralVelocity
   integer :: idiag_unmz=0,idiag_unxmxy=0,idiag_unymxy=0,idiag_unzmxy=0
   integer :: idiag_unxmx=0,idiag_unymx=0,idiag_unzmx=0
   integer :: idiag_unrmphi=0,idiag_unpmphi=0,idiag_unzmphi=0,idiag_un2mphi=0
-  integer :: idiag_unr2m=0,idiag_unp2m=0,idiag_unzz2m=0
   integer :: idiag_neutralangmom=0
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
@@ -214,8 +213,6 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use EquationOfState, only: cs20, gamma
-      use Gravity, only: z1
       use Initcond
       use InitialCondition, only: initial_condition_uun
       use Mpicomm, only: stop_it
