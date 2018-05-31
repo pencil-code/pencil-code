@@ -161,8 +161,8 @@ module EquationOfState
       endif
 !
       if (unit_temperature==impossible) then
-        if (lfix_unit_std) then
-          Rgas=Rgas_unit_sys/unit_velocity**2
+        if (lfix_unit_std) then !Fred: sets optimal unit temperature lnTT0=0
+          Rgas=mu*gamma1
           if (cp==impossible) then
             if (gamma_m1==0.0) then
               cp=Rgas/mu
