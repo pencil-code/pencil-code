@@ -4,9 +4,9 @@
 !
 &run_pars
   cvsid='$Id$',
-!  nt=5000000, it1=5000, isave=50000, itorder=3, tmax=5.0
+  nt=5000000, it1=5000, isave=50000, itorder=3, tmax=5.0
   nt=200, it1=20, isave=50000, itorder=3, tmax=5.0
-  cdt=0.6, cdtv=0.6, dtmin=1e-15, cdts=0.6
+  cdt=0.6, cdtv=0.6, dtmin=1e-9, cdts=0.6
   dsnap=0.2, dvid=20., 
   ip=20
   lpencil_check=T
@@ -30,8 +30,9 @@
 /
 &entropy_run_pars
   lupw_ss=T
-  iheatcond='chi-shock'
-  chi_shock=4.0
+  iheatcond='chi-const','shock'
+  chi=5e-1,chi_shock=5.0
+  lthdiff_Hmax=T
 /
 &interstellar_run_pars
   laverage_SN_heating=T
@@ -41,7 +42,7 @@
 /
 &viscosity_run_pars
   ivisc='nu-const','nu-shock'
-  nu=5e-1,nu_shock=4.0
+  nu=5e-1,nu_shock=5.0
 /
 &shock_run_pars
   ishock_max=2
