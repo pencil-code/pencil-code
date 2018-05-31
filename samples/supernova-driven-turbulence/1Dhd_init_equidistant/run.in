@@ -16,36 +16,33 @@
 /
 &hydro_run_pars
   lupw_uu=T
-  cdt_tauf=0.6
+  cdt_tauf=1.0
   lcdt_tauf=T
-  ulev = 0.1
+  ulev = 20.0
 /
 &density_run_pars
   lupw_rho=T
-  diffrho=5e-3
   diffrho_shock=1.0
-  lmassdiff_fixkin=T
-  idiff='normal','shock'
+  lmassdiff_fix=T
+  idiff='shock'
 /
 &grav_run_pars
 /
 &entropy_run_pars
   lupw_ss=T
-  iheatcond='chi-cspeed','shock'
-  chi_cs=5e-3,chi_shock=5.0
+  iheatcond='chi-shock'
+  chi_shock=4.0
 /
 &interstellar_run_pars
   laverage_SN_heating=T
   heatingfunction_scalefactor=0.25
-  cdt_tauc=0.6
   lSNII=F
   lSNI=F
 /
 &viscosity_run_pars
-  ivisc='nu-cspeed','nu-shock'
-  nu=5e-3,nu_shock=10.0
+  ivisc='nu-const','nu-shock'
+  nu=5e-1,nu_shock=4.0
 /
 &shock_run_pars
-  ishock_max=3
-  lfix_Re_mesh=T
+  ishock_max=2
 /
