@@ -1180,7 +1180,7 @@ module Particles_main
 !
 !  Write slices for animation of Particle variables.
 !
-      use Slices_methods, only: assign_slices_vec, process_slices
+      use Slices_methods, only: assign_slices_vec, assign_slices_scal, process_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -1197,14 +1197,15 @@ module Particles_main
 !  Particle mass density
 !
         case ('rhop')
+
           if (irhop/=0) then
-            call assign_slices_vec(slices,f,irhop)
+            call assign_slices_scal(slices,f,irhop)
           else
-            call assign_slices_vec(slices,f,inp)
+            call assign_slices_scal(slices,f,inp)
             if (lcartesian_coords.and.(all(lequidist))) then
-              call process_slices(slices,fac=rhop_swarm)
+              call process_slices(slices,rhop_swarm)        ! multiply with rhop_swarm
             else    !MR: both implementations identical!!!
-              call process_slices(slices,fac=rhop_swarm)
+              call process_slices(slices,rhop_swarm)
             endif
           endif
 !
