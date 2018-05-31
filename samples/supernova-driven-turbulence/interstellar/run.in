@@ -26,7 +26,7 @@
 /
 &entropy_run_pars
   iheatcond='chi-cspeed','shock'
-  chi_cs=0.2,chi_shock=1.0
+  chi=0.2,chi_shock=1.0
 /
 &magnetic_run_pars
 !  llorentzforce=F
