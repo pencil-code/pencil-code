@@ -32,6 +32,7 @@ POWER              = nopower_spectrum
 SOLID_CELLS        = nosolid_cells
 SOLID_CELLS_MPICOMM= nosolid_cells_mpicomm
 SLICES             =   slices
+SLICES_METHODS     =   slices_methods
 SIGNAL_HANDLING    = nosignal_handling
 STRUCT_FUNC        = nostruct_func
 TIMEAVG            = notimeavg
@@ -356,7 +357,6 @@ ifeq ($(OPACITY),noopacity)
 else
   OPACITY_SRC = $(OPACITY).f
 endif
-SLICES_METHODS = slices_methods
 ifeq ($(MPICOMM),nompicomm)
   YINYANG = noyinyang
 endif
