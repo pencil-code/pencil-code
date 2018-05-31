@@ -5,13 +5,14 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1.6728e-24, unit_temperature=36.637181156923013
+  unit_density=1.6728e-24
   unit_magnetic=1e-6
   xyz0=-0.032,-0.032,-1.998
   xyz1=+0.032,+0.032,+1.998
   lperi=T,T,F
   bcz = 's','s','ubs','ism','ism','s','s'
   lwrite_aux=T
+  lfix_unit_std=T
 /
 &initial_condition_pars
   !amplaa=0.0
@@ -39,15 +40,14 @@
   lSNII=T
   lSNI=T
   lSN_scale_rad=T
-  N_mass=60.0
-  rfactor_SN=5.
-  rho_SN_max=35.
+  N_mass=25.0
+  rfactor_SN=4.5
   frac_kin=0.0
   frac_ecr=0.0
-  mass_width_ratio=1.0
+  mass_width_ratio=1.75
   mass_profile='gaussian3'
   energy_width_ratio=1.0
-  thermal_profile='gaussian3'
+  thermal_profile='gaussian2'
 /
 &shear_init_pars
   Sshear=-25.0
