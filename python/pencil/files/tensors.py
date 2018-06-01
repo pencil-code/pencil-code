@@ -29,6 +29,8 @@ def calc_tensors(
                  first_alpha=9,
                  l_correction=False,
                  t_correction=0.,
+                 fskip=2,
+                 mskip=1,
                  yindex=[] 
                 ):
     nt=None
@@ -114,15 +116,47 @@ def calc_tensors(
     
 
     #exclude zeros and next point if resetting of test fields is used
+    #trim reset data and neighbours as required fskip after zeros and mskip before zeros.
     if lskip_zeros:
-        izer0=np.where(av[:,first_alpha,av.shape[2]/2,av.shape[3]/2]==0)[0]
-        izer1=np.where(av[:,first_alpha,av.shape[2]/2,av.shape[3]/2]==0)[0]+1
-        if izer0.size>0:
-            imask=np.delete(np.where(time[:nt]),[izer0,izer1])
+        if l_mpi:
+            if rank==0:
+                izer0=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]
+                for ii in range(1,fskip):
+                    izer1=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]+ii
+                    izer0=np.append(izer0,izer1)
+                for ii in range(1,mskip):
+                    izer1=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]-ii
+                    izer0=np.append(izer0,izer1)
+                if izer0.size>0:
+                    imask=np.delete(np.where(time),[izer0])
+                else:
+                    imask=np.where(time)[0]
+            else:
+                imask=None
+            imask=comm.bcast(imask, root=0)
         else:
-            imask=np.where(time[:nt])[0]
+            izer0=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]
+            for ii in range(1,fskip):
+                izer1=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]+ii
+                izer0=np.append(izer0,izer1)
+            for ii in range(1,mskip):
+                izer1=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]-ii
+                izer0=np.append(izer0,izer1)
+            if izer0.size>0:
+                imask=np.delete(np.where(time),[izer0])
+            else:
+                imask=np.where(time)[0]
     else:
-        imask=np.arange(time[:nt].size)
+        imask=np.arange(time.size)
+    #if lskip_zeros:
+    #    izer0=np.where(av[:,first_alpha,av.shape[2]/2,av.shape[3]/2]==0)[0]
+    #    izer1=np.where(av[:,first_alpha,av.shape[2]/2,av.shape[3]/2]==0)[0]+1
+    #    if izer0.size>0:
+    #        imask=np.delete(np.where(time[:nt]),[izer0,izer1])
+    #    else:
+    #        imask=np.where(time[:nt])[0]
+    #else:
+    #    imask=np.arange(time[:nt].size)
     if rank==0:
         print('rank {}: calculating alp'.format(rank))
     alp=np.zeros([3,3,imask.size,av.shape[2],av.shape[3]])
