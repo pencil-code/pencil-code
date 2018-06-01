@@ -392,7 +392,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('netcool',inetcool,communicated=.true.)
+      call farray_register_auxiliary('netcool',inetheat,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -430,7 +430,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
 !
       f(:,:,:,icooling)=0.0
-      f(:,:,:,inetcool)=0.0
+      f(:,:,:,inetheat)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -1036,7 +1036,7 @@ module Interstellar
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
-        write(3,*) 'inetcool=',inetcool
+        write(3,*) 'inetheat=',inetheat
       endif
 !
     endsubroutine rprint_interstellar
@@ -1062,7 +1062,7 @@ module Interstellar
           call assign_slices_scal(slices,f,icooling)
 
         case ('ism_netcool')
-          call assign_slices_scal(slices,f,inetcool)
+          call assign_slices_scal(slices,f,inetheat)
 !
       endselect
 !
@@ -1411,7 +1411,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,inetcool)=heatcool
+      f(l1:l2,m,n,inetheat)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
