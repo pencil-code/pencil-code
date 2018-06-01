@@ -482,8 +482,22 @@ module Register
 !
 !  Set unit_magnetic=3.5449077018110318=sqrt(4*pi), unless it was set already.
 !  Note that unit_magnetic determines the value of mu_0 in the rest of the code.
+!  Fred: lfix_unit_std ensures mu0=1 and avoids very small or large coefficient
+!        in Ohmic heating and Lorentz forces 
 !
-      if (unit_magnetic == impossible) unit_magnetic=3.5449077018110318
+      if (unit_magnetic == impossible) then
+        if (lfix_unit_std) then
+          if (unit_system=='cgs') then
+            unit_magnetic=3.5449077018110318* &
+                sqrt(unit_density)*unit_velocity
+          elseif (unit_system=='SI') then
+            unit_magnetic=3.5449077018110318* &
+                sqrt(1e-7*unit_density)*unit_velocity
+          endif
+        else
+          unit_magnetic=3.5449077018110318
+        endif
+      endif
 !
 !  Check that everything is OK.
 !
