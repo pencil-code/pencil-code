@@ -1192,7 +1192,7 @@ module Particles_main
 !
 !  Particle number density
 !
-        case ('np'); call assign_slices_vec(slices,f,inp)
+        case ('np'); call assign_slices_scal(slices,f,inp)
 !
 !  Particle mass density
 !
