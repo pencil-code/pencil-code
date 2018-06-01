@@ -46,6 +46,7 @@
 /
 &interstellar_init_pars
   lSN_eth=.false.
+  lSNI=.false.
 /
 &shear_init_pars
   qshear=1.0
