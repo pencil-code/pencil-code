@@ -105,7 +105,13 @@ module EquationOfState
 !
 !  24-jun-06/tobi: coded
 !
-      if (unit_temperature==impossible) unit_temperature=1.
+      if (unit_temperature==impossible) then
+        if (lfix_unit_std) then
+          unit_temperature=unit_density*unit_velocity**2/k_B_cgs
+        else
+          unit_temperature=1.
+        endif
+      endif
 !
     endsubroutine units_eos
 !***********************************************************************
