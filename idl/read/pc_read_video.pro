@@ -30,13 +30,13 @@ default, proc, -1
 default, nt, 100
 default, njump, 0
 default, swap_endian, 0
-default, xyread, 0
-default, xy2read, 0
-default, xy3read, 0
-default, xy4read, 0
-default, xzread, 0
-default, xz2read, 0
-default, yzread, 0
+default, xyread, 1
+default, xy2read, 1
+default, xy3read, 1
+default, xy4read, 1
+default, xzread, 1
+default, xz2read, 1
+default, yzread, 1
 default, print, 1
 ;
 ; Read either from global data directory or from single processor directory.
@@ -55,7 +55,7 @@ ret=check_slices_par(field, readdir, s)
 if keyword_set(fail) then fail = not ret
 if not ret then return
 ;
-; Combine with switch reselection
+; Combine with switch preselection
 ;
 s.xyread = s.xyread and xyread 
 s.xy2read = s.xy2read and xy2read 

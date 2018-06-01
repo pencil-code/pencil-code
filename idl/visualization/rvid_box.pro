@@ -106,6 +106,8 @@ default,norm,1.0
 default,swap_endian,0
 default,quiet_skip,1
 default,yinyang,0
+slice_names=['xy','xy2','xy3','xy4','xz','xz2','yz']
+
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
@@ -133,6 +135,16 @@ endif else begin
   datadir=datatopdir+'/'+proc
 endelse
 ;
+if not check_slices_par(field, datadir, s) then return
+;
+if not (s.xyread and s.xy2read and s.xzread and s.yzread) then begin
+  if not s.xyread then print, 'Slice xy missing!!!' 
+  if not s.xy2read then print, 'Slice xy2 missing!!!' 
+  if not s.xzread then print, 'Slice xz missing!!!' 
+  if not s.yzread then print, 'Slice yz missing!!!' 
+  return
+endif
+;
 ;  Swap z slices?
 ;
 if (keyword_set(swapz)) then begin
@@ -144,6 +156,15 @@ endif else begin
 endelse
 file_slice3=datadir+'/slice_'+field+'.xz'
 file_slice4=datadir+'/slice_'+field+'.yz'
+;
+if not file_test(file_slice1) then begin
+  print, 'Slice file "'+file_slice1+'" etc. does not exist!!!'
+  pos=strpos(file_slice3,'.xz')
+  compfile=strmid(file_slice1,0,pos)+'1'+'.xz'
+  if file_test(compfile) then $
+    print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
+  return
+endif
 ;
 ;  Read the dimensions from dim.dat
 ;
@@ -241,6 +262,7 @@ if (keyword_set(global_scaling)) then begin
 ;
   first=1L
 ;
+  print, 'Reading "'+file_slice1+'" etc.'
   openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
   openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
   openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
@@ -303,7 +325,8 @@ if (keyword_set(logarithmic)) then begin
 endif
 ;
 ;  Open slice files for reading.
-;
+; 
+print, 'Reading "'+file_slice1+'" etc.'
 openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
 openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
 openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian

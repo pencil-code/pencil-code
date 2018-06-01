@@ -61,13 +61,26 @@ if (not keyword_set(png)) then begin
   endif
 endif
 ;
+if not check_slices_par(field, proc ge 0 ? datadir+'/proc'+str(proc) : datadir, s) then return
+;
+cmd='if not s.'+strtrim(extension,2)+'read then begin print, "Slice '+extension+' missing!!!" & return & endif'
+ret=execute(cmd)
+;
 if (proc ge 0) then begin
   procstr=str(proc)
   file_slice=datadir+'/proc'+procstr+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
 endelse
-print, file_slice
+;
+if not file_test(file_slice) then begin
+  print, 'Slice file "'+file_slice+'" does not exist!!!'
+  pos=strpos(file_slice,'.'+extension)
+  compfile=strmid(file_slice,0,pos)+'1'+'.'+extension
+  if file_test(compfile) then $
+    print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
+  return
+endif
 ;;
 ;;  Read the dimensions and precision (single or double) from dim.dat
 ;;
@@ -93,6 +106,7 @@ endif else if (extension eq 'yz') then begin
 endif
 if (keyword_set(global_scaling)) then begin
   first=1L
+  print, 'Reading "'+file_slice+'".'
   openr, lun, file_slice, /f77, /get_lun
   while (not eof(lun)) do begin
     if (keyword_set(OLDFILE)) then begin ; For files without position
@@ -144,7 +158,6 @@ if (keyword_set(global_scaling)) then begin
 endif
 ;
 ;
-;
 pc_read_grid, object=grid, dim=dim, datadir=datadir, /trim
 ;
 if (xgrid) then begin
@@ -183,6 +196,7 @@ endif
 istride=stride ;(make sure the first one is written)
 ;
 it=0
+print, 'Reading "'+file_slice+'".'
 openr, lun, file_slice, /f77, /get_lun
 while (not eof(lun)) do begin
   if (extension eq 'xy') then begin
