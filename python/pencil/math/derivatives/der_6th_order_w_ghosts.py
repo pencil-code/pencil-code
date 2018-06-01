@@ -27,6 +27,9 @@ def xder_6th(f,dx,x=[],y=[],z=[],param=[],dim=[]):
         param=read_param(quiet=True)
     if not dim:
         dim=read_dim()
+    if len(x) < 1:
+        gd  = read_grid(quiet=True)
+        x = gd.x
     dx=N.gradient(x)
     if (dim.nx!=1):
         dx2 = 1./(60.*dx)
@@ -53,6 +56,9 @@ def yder_6th(f,dy,x=[],y=[],z=[],param=[],dim=[]):
     if not dim:
         dim=read_dim()
 
+    if len(y) < 1:
+        gd  = read_grid(quiet=True)
+        y = gd.y
     dy=N.gradient(y)
     if (dim.ny!=1):
         dy2 = 1./(60.*dy)
@@ -86,6 +92,9 @@ def zder_6th(f,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     if not dim:
         dim=read_dim()
 
+    if len(z) < 1:
+        gd  = read_grid(quiet=True)
+        z = gd.z
     dz=N.gradient(z)
     if (dim.nz!=1):
         dz2 = 1./(60.*dz)
