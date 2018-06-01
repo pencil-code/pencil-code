@@ -47,11 +47,11 @@
 &interstellar_init_pars
   lSNII=T
   lSNI=T
-  rho0ts=3.5
-  T_init=15.8421
+  !rho0ts=3.5
+  !T_init=15.8421
   cooling_select='RBNr'
   heating_select='thermal-hs'
-  lthermal_hse=T
+  !lthermal_hse=T
 /
 &shear_init_pars
   qshear=1.0
