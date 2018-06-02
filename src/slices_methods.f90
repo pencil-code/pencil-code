@@ -23,6 +23,11 @@ module Slices_methods
     module procedure store_slices_vec
   endinterface
 
+  interface process_slices
+    module procedure process_slices_func
+    module procedure process_slices_fac
+  endinterface
+
 !  interface alloc_slice_buffers
 !    module procedure alloc_slice_buffers_scal
 !    module procedure alloc_slice_buffers_vec
@@ -206,7 +211,6 @@ module Slices_methods
       real, dimension(:,:,:), intent(OUT):: xy,xz,yz,xy2,xy3,xy4,xz2
       integer, optional     , intent(IN) :: ncomp
 
-      integer :: nc
       real, dimension(1,3) :: tmp
       
       !nc=ioptest(ncomp,3)
@@ -234,53 +238,68 @@ module Slices_methods
 
     endsubroutine store_slices_vec
 !***********************************************************************
-    subroutine process_slices(slices,func,fac)
-!
-!  Operations on already assigned slices according to slice selection switches.
-!
-!  12-apr-17/MR: coded 
-!
-      type(slice_data),         intent(INOUT):: slices
-      character(LEN=*),optional,intent(IN)   :: func
-      real            ,optional,intent(IN)   :: fac
+    function exp2d(arr) result(res)
 
-      if (present(func)) then
-        if (trim(func)=='exp') then
-          if (lwrite_slice_yz ) slices%yz =exp(slices%yz)
-          if (lwrite_slice_xz ) slices%xz =exp(slices%xz)
-          if (lwrite_slice_xy ) slices%xy =exp(slices%xy)
-          if (lwrite_slice_xy2) slices%xy2=exp(slices%xy2)
-          if (lwrite_slice_xy3) slices%xy3=exp(slices%xy3)
-          if (lwrite_slice_xy4) slices%xy4=exp(slices%xy4)
-          if (lwrite_slice_xz2) slices%xz2=exp(slices%xz2)
-        elseif (trim(func)=='log') then
-          if (lwrite_slice_yz ) slices%yz =alog(slices%yz)
-          if (lwrite_slice_xz ) slices%xz =alog(slices%xz)
-          if (lwrite_slice_xy ) slices%xy =alog(slices%xy)
-          if (lwrite_slice_xy2) slices%xy2=alog(slices%xy2)
-          if (lwrite_slice_xy3) slices%xy3=alog(slices%xy3)
-          if (lwrite_slice_xy4) slices%xy4=alog(slices%xy4)
-          if (lwrite_slice_xz2) slices%xz2=alog(slices%xz2)
-        elseif (trim(func)=='abs') then
-          if (lwrite_slice_yz ) slices%yz =abs(slices%yz)
-          if (lwrite_slice_xz ) slices%xz =abs(slices%xz)
-          if (lwrite_slice_xy ) slices%xy =abs(slices%xy)
-          if (lwrite_slice_xy2) slices%xy2=abs(slices%xy2)
-          if (lwrite_slice_xy3) slices%xy3=abs(slices%xy3)
-          if (lwrite_slice_xy4) slices%xy4=abs(slices%xy4)
-          if (lwrite_slice_xz2) slices%xz2=abs(slices%xz2)
-        endif
-      elseif (present(fac)) then
-        if (lwrite_slice_yz ) slices%yz =fac*slices%yz
-        if (lwrite_slice_xz ) slices%xz =fac*slices%xz
-        if (lwrite_slice_xy ) slices%xy =fac*slices%xy
-        if (lwrite_slice_xy2) slices%xy2=fac*slices%xy2
-        if (lwrite_slice_xy3) slices%xy3=fac*slices%xy3
-        if (lwrite_slice_xy4) slices%xy4=fac*slices%xy4
-        if (lwrite_slice_xz2) slices%xz2=fac*slices%xz2
-      endif
+    real, dimension(:,:) :: arr
+    real, dimension(size(arr,1),size(arr,2)) :: res
 
-    endsubroutine process_slices
+    res=exp(arr)
+    
+    endfunction exp2d
+!***********************************************************************
+    function log2d(arr) result(res)
+
+    real, dimension(:,:) :: arr
+    real, dimension(size(arr,1),size(arr,2)) :: res
+
+    res=alog(arr)
+
+    endfunction log2d
+!***********************************************************************
+    function abs2d(arr) result(res)
+
+    real, dimension(:,:) :: arr
+    real, dimension(size(arr,1),size(arr,2)) :: res
+
+    res=abs(arr)
+
+    endfunction abs2d
+!***********************************************************************
+    subroutine process_slices_func(slices,func)
+
+      type(slice_data), intent(INOUT):: slices
+
+      interface 
+        function func(arr) result(res)
+        real, dimension(:,:) :: arr
+        real, dimension(size(arr,1),size(arr,2)) :: res
+        end function func
+      endinterface
+
+      if (lwrite_slice_yz ) slices%yz =func(slices%yz)
+      if (lwrite_slice_xz ) slices%xz =func(slices%xz)
+      if (lwrite_slice_xy ) slices%xy =func(slices%xy)
+      if (lwrite_slice_xy2) slices%xy2=func(slices%xy2)
+      if (lwrite_slice_xy3) slices%xy3=func(slices%xy3)
+      if (lwrite_slice_xy4) slices%xy4=func(slices%xy4)
+      if (lwrite_slice_xz2) slices%xz2=func(slices%xz2)
+
+    endsubroutine process_slices_func
+!***********************************************************************
+    subroutine process_slices_fac(slices,fac)
+
+      type(slice_data), intent(INOUT):: slices
+      real,             intent(IN)   :: fac
+
+      if (lwrite_slice_yz ) slices%yz =fac*slices%yz
+      if (lwrite_slice_xz ) slices%xz =fac*slices%xz
+      if (lwrite_slice_xy ) slices%xy =fac*slices%xy
+      if (lwrite_slice_xy2) slices%xy2=fac*slices%xy2
+      if (lwrite_slice_xy3) slices%xy3=fac*slices%xy3
+      if (lwrite_slice_xy4) slices%xy4=fac*slices%xy4
+      if (lwrite_slice_xz2) slices%xz2=fac*slices%xz2
+
+    endsubroutine process_slices_fac
 !***********************************************************************
     subroutine addto_slices(slices,pencil)
 !
