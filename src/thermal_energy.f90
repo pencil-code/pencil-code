@@ -784,7 +784,7 @@ module Energy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
-      use Slices_methods, only: assign_slices_scal, process_slices
+      use Slices_methods, only: assign_slices_scal, process_slices, exp2d
       use EquationOfState, only: eoscalc, irho_eth, ilnrho_eth
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -840,7 +840,7 @@ module Energy
             enddo
           endif
 !
-          if (trim(slices%name) == 'TT') call process_slices(slices,'exp')
+          if (trim(slices%name) == 'TT') call process_slices(slices,exp2d)
 !
           slices%ready = .true.
 !

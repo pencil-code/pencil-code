@@ -532,7 +532,7 @@ module Pscalar
 !
 !  26-jul-06/tony: coded
 !
-      use Slices_methods, only: assign_slices_scal,process_slices
+      use Slices_methods, only: assign_slices_scal,process_slices,exp2d
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -550,7 +550,7 @@ module Pscalar
 !
 !  Linear passive scalar.
 !
-        if (sname=='cc') call process_slices(slices,'exp')
+        if (sname=='cc') call process_slices(slices,exp2d)
 !
       endif
 !

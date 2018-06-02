@@ -2257,7 +2257,7 @@ module Energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
-      use Slices_methods, only: assign_slices_scal, process_slices
+      use Slices_methods, only: assign_slices_scal, process_slices, log2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -2278,7 +2278,7 @@ module Energy
 !  lnTT
         case ('lnTT')
           call assign_slices_scal(slices,f,ilnTT)
-          if (iTT>0) call process_slices(slices,'log')
+          if (iTT>0) call process_slices(slices,log2d)
 !  Pressure
         case ('pp')
           call assign_slices_scal(slices,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)

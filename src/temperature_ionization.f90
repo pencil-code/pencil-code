@@ -946,7 +946,7 @@ module Energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
-      use Slices_methods, only: assign_slices_scal, process_slices
+      use Slices_methods, only: assign_slices_scal, process_slices, exp2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -959,7 +959,7 @@ module Energy
 !
 !  Temperature.
 !
-        if (trim(slices%name)=='TT') call process_slices(slices,'exp')
+        if (trim(slices%name)=='TT') call process_slices(slices,exp2d)
 !
       endif
 !

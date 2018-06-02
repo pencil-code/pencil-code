@@ -1861,7 +1861,7 @@ module Energy
       use EquationOfState, only: gamma_m1, rho0, lnrho0, &
                                  cs20, cs2top, eoscalc, ilnrho_lnTT
       use General, only: safe_character_assign
-      use Gravity, only: z1, z2
+      use Gravity, only: z1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: tempm,lnrhom
@@ -2972,8 +2972,7 @@ module Energy
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
       real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
-      integer :: j,ju
-      integer :: i
+      integer :: j,i
 !
       intent(inout)  :: f,p
       intent(inout) :: df
@@ -3082,7 +3081,7 @@ module Energy
 !
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
-      if (lheatc_sfluct)   call calc_heatcond_sfluct(f,df,p)
+      if (lheatc_sfluct)   call calc_heatcond_sfluct(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
@@ -4554,7 +4553,7 @@ module Energy
 !
       real, dimension(nx) :: Krho1, chit_prof, del2ss1
       real, dimension(nx,3) :: glnchit_prof, gss1
-      integer :: j,l
+      integer :: j
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
@@ -5082,7 +5081,7 @@ module Energy
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heatcond_sfluct(f,df,p)
+    subroutine calc_heatcond_sfluct(df,p)
 !
 !  In this routine general heat conduction profiles are being provided.
 !
@@ -5090,7 +5089,6 @@ module Energy
 !
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gss1
@@ -5273,7 +5271,6 @@ module Energy
 !  02-jul-02/wolf: coded
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
-      use Gravity, only: z2
       use Debug_IO, only: output_pencil
       use EquationOfState, only: cs0, get_cp1, lnrho0, &
                                  gamma,gamma_m1
@@ -6432,7 +6429,7 @@ module Energy
 !  12-feb-15/MR  : changes for use of reference state.
 !
       use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
-      use Slices_methods, only: assign_slices_scal, addto_slices, process_slices
+      use Slices_methods, only: assign_slices_scal, addto_slices, process_slices, exp2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -6537,7 +6534,7 @@ module Energy
             enddo
           enddo
 !
-          if (sname=='TT') call process_slices(slices,'exp')
+          if (sname=='TT') call process_slices(slices,exp2d)
           slices%ready=.true.
 !
       endselect

@@ -920,7 +920,7 @@ module Density
       real, pointer :: gravx, rhs_poisson_const,fac_cs,cs2cool
       integer, pointer :: isothmid, isothtop
       complex :: omega_jeans
-      integer :: j, ierr,ix,iy
+      integer :: j,ix,iy
       logical :: lnothing
 !
       intent(inout) :: f
@@ -2342,7 +2342,7 @@ module Density
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: fdiff,gshockglnrho, gshockgrho, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx) :: fdiff, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
       real, dimension (nx) :: tmp                                       !GPU := p%aux
       real, dimension (nx,3) :: tmpv
       real, dimension (nx), parameter :: unitpencil=1.
@@ -3450,12 +3450,11 @@ module Density
 !  26-jul-06/tony: coded
 !  10-feb-15/MR: adaptations for reference state
 !
-      use Slices_methods, only: assign_slices_scal, addto_slices, process_slices
-
+      use Slices_methods
+ 
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       character(LEN=labellen) :: name
-      integer :: n,m
 !
 !  Loop over slices
 !
@@ -3472,7 +3471,7 @@ module Density
 !  Density.
 !
           case ('rho')
-            if (.not.ldensity_nolog) call process_slices(slices,'exp')
+            if (.not.ldensity_nolog) call process_slices(slices,exp2d)
 !
 !  Logarithmic density.
 !
@@ -3480,8 +3479,8 @@ module Density
             if (ldensity_nolog) then
 !
               if (lreference_state.and..not.lfullvar_in_slices) &
-                call process_slices(slices,'abs')
-              call process_slices(slices,'log')
+                call process_slices(slices,abs2d)
+              call process_slices(slices,log2d)
 !
             endif
         endselect
