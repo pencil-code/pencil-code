@@ -2257,7 +2257,7 @@ module Energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
-      use Slices_methods, only: assign_slices_scal, process_slices, log2d
+      use Slices_methods, only: assign_slices_scal, process_slices, log2d, exp2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -2273,7 +2273,7 @@ module Energy
             call assign_slices_scal(slices,f,iTT)
           else
             call assign_slices_scal(slices,f,ilnTT)
-            call process_slices(slices,'exp')
+            call process_slices(slices,exp2d)
           endif
 !  lnTT
         case ('lnTT')
