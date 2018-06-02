@@ -931,7 +931,7 @@ module Pscalar
 !  26-jul-06/tony: coded
 !  31-jan-11/ccyang: generalized to multiple scalars
 !
-      use Slices_methods, only: assign_slices_vec, process_slices
+      use Slices_methods, only: assign_slices_vec, process_slices, log2d
 
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
@@ -949,7 +949,7 @@ module Pscalar
 !
 !  Logarithmic passive scalar.
 !
-        if (sname=='lncc') call process_slices(slices,'log')       
+        if (sname=='lncc') call process_slices(slices,log2d)       
 !
       endif
 !
