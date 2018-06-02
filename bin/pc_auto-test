@@ -595,7 +595,7 @@ sub get_sampdirs {
         my $upper = $2;
         $level = $1;
         if ($2 < $1) { $level = $2; $upper = $1; }
-	if ($upper > $level) {
+        if ($upper > $level) {
             for (my $pos = $level + 1; $pos <= $upper; $pos++) {
                 $level .= ','.$pos;
             }
@@ -1726,6 +1726,13 @@ END {
 
     # Tell user we are done
     Pencil::Util::notify('with auto test') if $notify;
+
+    # Exit with appropriate status
+    if ($failed || %failed) {
+        exit 1;
+    } else {
+        exit 0;
+    }
 }
 
 # End of file pc_auto-test
