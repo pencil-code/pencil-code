@@ -3219,6 +3219,8 @@ module Chemistry
         enddo
       enddo
 !
+!  check for those quantities for which we want video slices
+!
       do iname=1,nnamev
         sname=trim(cnamev(iname))
         if (sname(1:8)=='chemspec') then

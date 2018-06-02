@@ -72,9 +72,14 @@ program rvid_box
         open(lun_stride,file='stride.in')
         read(lun_stride,'(i3)') stride
         close(lun_stride)
-        print*,'Read stride.in. Will skip every ',stride,' slices'
+        if (stride==0) then
+          print*,'Read stride.in. No skipping.'
+        else
+          print*,'Read stride.in. Will skip every ',stride,' slices'
+        endif
       else
         stride = 0
+        print*,'No stride.in hence no skipping.'
       endif
 !
 ! Loop over all processors to find the positions of the slices.
