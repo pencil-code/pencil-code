@@ -73,8 +73,11 @@ if (! $?_sourceme) then		# called for the fist time?
       setenv PYTHONPATH "${PENCIL_HOME}/python:${PWD}/python"
     endif
     #  Set library path for linker
-    setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src"
-
+    if ($?LD_LIBRARY_PATH) then
+      setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src"
+    else
+      setenv LD_LIBRARY_PATH "./src"
+    endif
 #    #  Set Perl module path [no longer needed]
 #    set _perl5lib = "${PENCIL_HOME}/lib/perl"
 #    if ($?PERL5LIB) then

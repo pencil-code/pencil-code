@@ -65,7 +65,11 @@ if [ -z $_sourceme ]; then	# called for the first time?
        PYTHONPATH="$PYTHONPATH:$PENCIL_HOME/python:$PWD/python"
     fi
     #  Set library path for linker
-    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src"
+    if [ -z $LD_LIBRARY_PATH ]; then
+      LD_LIBRARY_PATH="./src"
+    else
+      LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src"
+    fi
 
     # Remember that sourceme has been successfully run
     _sourceme="set"
