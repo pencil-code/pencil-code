@@ -1048,7 +1048,7 @@ module Special
 !  check for those quantities for which we want video slices
 !
       if (lwrite_slices) then
-        where(cnamev=='hhT'.or.cnamev=='hhX'.or.cnamev=='ggT'.or.cnamev=='ggX' &
+        where(cnamev=='hhT'.or.cnamev=='hhX'.or.cnamev=='ggT'.or.cnamev=='ggX'.or. &
               cnamev=='h22'.or.cnamev=='h33'.or.cnamev=='h23') cformv='DEFINED'
       endif
 !
