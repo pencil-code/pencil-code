@@ -1925,10 +1925,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Summit - Cray XC40 - (Boulder)
 ##
-#FC=mpif90 #(shas013*)
+#FC=mpiifort #(shas013*)
 #F90=$(FC) #(shas013*)
+#CC=mpicc #(shas013*)
 #CC=cc #(shas013*)
-#FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(shas013*)
+#FFLAGS=-O3 #(shas013*)
+#FFLAGS=-O3 -xCORE-AVX2 -align array64byte -ipo #(shas013*)
+##FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(shas013*)
+#FFLAGS_DOUBLE=-r8 #(shas013*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(shas013*)
 ##
 ## Beskow - Cray XC40 - (Stockholm)
