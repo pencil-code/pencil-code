@@ -764,12 +764,12 @@ module Testscalar
 !***********************************************************************
     subroutine get_slices_testscalar(f,slices)
 ! 
-!  Write slices for animation of magnetic variables.
+!  Write slices for animation.
 ! 
 !  26-nov-08/axel: adapted from testfield_z.f90
 ! 
-      use Cdata, only: icctest, lwrite_slice_xy3, lwrite_slice_xy4, &
-                       ix_loc, iy_loc, iz_loc, iz2_loc, iz3_loc, iz4_loc
+      use Cdata, only: icctest
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -781,20 +781,8 @@ module Testscalar
 !  Testfield slice
 !
         case ('cctest')
-          if (slices%index>=6) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,icctest-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,icctest-1+slices%index)
-            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,icctest-1+slices%index)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,icctest-1+slices%index)
-            if (lwrite_slice_xy3) &
-                 slices%xy3=f(l1:l2,m1:m2,iz3_loc,icctest-1+slices%index)
-            if (lwrite_slice_xy4) &
-                 slices%xy4=f(l1:l2,m1:m2,iz4_loc,icctest-1+slices%index)
-            if (slices%index<=6) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,f,icctest,6)
+
       endselect
 !
     endsubroutine get_slices_testscalar
@@ -1163,6 +1151,10 @@ module Testscalar
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam23z',idiag_gam23z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam33z',idiag_gam33z)
       enddo
+!
+!  check for those quantities for which we want video slices
+!
+      where(cnamev=='cctest') cformv='DEFINED'
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
