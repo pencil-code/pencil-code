@@ -2210,6 +2210,7 @@ module Special
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
       use Sub, only: cubic_step
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
