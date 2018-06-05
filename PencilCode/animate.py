@@ -62,18 +62,27 @@ def slices(field, datadir='./data', **kwarg):
         **kwarg
             Keyword arguments passed to _get_range().
     """
-    # Chao-Chin Yang, 2015-05-04
+    # Author: Chao-Chin Yang
+    # Created: 2015-04-22
+    # Last Modified: 2018-06-05
     from . import read
+
     # Read the slices.
     t, s = read.slices(field, datadir=datadir)
-    # Get the dimensions, parameters, and grid.
+
+    # Get the dimensions.
     dim = read.dimensions(datadir=datadir)
-    par = read.parameters(datadir=datadir)
-    grid = read.grid(datadir=datadir, interface=True, par=par)
-    # Dispatch.
     ndim = (dim.nxgrid > 1) + (dim.nygrid > 1) + (dim.nzgrid > 1)
+
+    # Get the parameters.
+    par = read.parameters(datadir=datadir)
+
+    # Get the grid.
+    grid = read.grid(datadir=datadir, interface = ndim > 1, par=par)
+
+    # Dispatch.
     if ndim == 1:
-        raise NotImplementedError("1D run")
+        _slices1d(field, t, s, dim, par, grid, **kwarg)
     elif ndim == 2:
         _slices2d(field, t, s, dim, par, grid, **kwarg)
     elif ndim == 3:
@@ -271,6 +280,80 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
         else:
             vmin, vmax = get_centered_range(vmin, vmax)
     return vmin, vmax
+#=======================================================================
+def _slices1d(field, t, slices, dim, par, grid, **kwarg):
+    """Animates video slices from a 1D model.
+
+    Positional Arguments:
+        field
+            Field name.
+        t
+            Array of time points.
+        slices
+            Record array of video slices supplied by read.slices().
+        dim
+            Dimensions supplied by read.dimensions().
+        par
+            Parameters supplied by read.parameters().
+        grid
+            Grid coordinates supplied by read.grid(interface=False).
+
+    Keyword Arguments:
+        **kwarg
+            Keyword arguments passed to matplotlib.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2018-06-05
+    # Last Modified: 2018-06-05
+    from matplotlib.animation import FuncAnimation
+    import matplotlib.pyplot as plt
+
+    # Determine the slice line.
+    if dim.nxgrid > 1:
+        s = slices.xy[:,:,0]
+        idir = 0
+    elif dim.nygrid > 1:
+        s = slices.xy[:,0,:]
+        idir = 1
+    else:
+        s = slices.xz[:,0,:]
+        idir = 2
+
+    # Name the direction.
+    direction = "xyz"[idir]
+
+    # Replace the labels if in **kwarg.
+    xlabel = kwarg.pop("xlabel", direction)
+    ylabel = kwarg.pop("ylabel", field)
+
+    # Replace the y limits if in **kwarg.
+    ylim = kwarg.pop("ylim", (s.min(), s.max()))
+
+    # Get the x coordinates.
+    x = getattr(grid, direction)
+
+    # Generate the first frame.
+    fig = plt.figure(**kwarg)
+    ax = fig.gca()
+    line, = ax.plot(x, s[0], "o:")
+    ax.set_xlim(par.xyz0[idir], par.xyz1[idir])
+    ax.set_ylim(ylim)
+    ax.minorticks_on()
+    ax.grid()
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    time_template = r"$t = {:#.4G}$"
+    time = ax.set_title(time_template.format(t[0]))
+
+    # Define the update function for animation.
+    def update(i):
+        time.set_text(time_template.format(t[i]))
+        line.set_ydata(s[i])
+
+    # Define the animator.
+    anim = FuncAnimation(fig, update, frames=len(s), interval=40, repeat=False)
+
+    plt.show()
 #=======================================================================
 def _slices2d(field, t, slices, dim, par, grid, **kwarg):
     """Animates video slices from a 2D model.
