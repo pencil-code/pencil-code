@@ -133,27 +133,45 @@ module InitialCondition
       integer :: i
 !
       bfield: if (lbfield) then
+!
+!  B-formulation
+!
         comp: do i = 1, 3
           call shocktube(f, ibb+i-1, bb_left(i), bb_right(i))
         enddo comp
+!
       else bfield
+!
+!  A-formulation
+!
         if (bb_left(1) /= bb_right(1)) call fatal_error('initial_condition_aa', 'discontinuity in bx is not allowed. ')
         call get_shared_variable('B_ext', B_ext, caller='initial_condition_aa')
         B_ext(1) = bb_left(1)
         B_ext(2:3) = 0.0
         f(l1:l2,m1:m2,n1:n2,iax) = 0.0
+!
         where (x < 0.0)
           penc = x * bb_left(3)
         elsewhere
           penc = x * bb_right(3)
         endwhere
-        f(l1:l2,m1:m2,n1:n2,iay) = spread(spread(smooth(penc),2,ny),3,nz)
+!
+        do i = 1, nsmooth
+          penc(l1:l2) = smooth(penc)
+        enddo
+        f(l1:l2,m1:m2,n1:n2,iay) = spread(spread(penc(l1:l2),2,ny),3,nz)
+!
         where (x < 0.0)
           penc = -x * bb_left(2)
         elsewhere
           penc = -x * bb_right(2)
         endwhere
-        f(l1:l2,m1:m2,n1:n2,iaz) = spread(spread(smooth(penc),2,ny),3,nz)
+!
+        do i = 1, nsmooth
+          penc(l1:l2) = smooth(penc)
+        enddo
+        f(l1:l2,m1:m2,n1:n2,iaz) = spread(spread(penc(l1:l2),2,ny),3,nz)
+!
       endif bfield
 !
     endsubroutine initial_condition_aa
