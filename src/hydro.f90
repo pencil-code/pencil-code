@@ -431,6 +431,7 @@ module Hydro
   integer :: idiag_fextm=0      ! DIAG_DOC:
   integer :: idiag_duxdzma=0    ! DIAG_DOC:
   integer :: idiag_duydzma=0    ! DIAG_DOC:
+  integer :: idiag_EEK=0        ! DIAG_DOC: $\left<\varrho\uv^2\right>/2$
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_totangmom=0  ! DIAG_DOC:
@@ -2175,7 +2176,7 @@ module Hydro
         lpenc_diagnos(i_phix)=.true.
         lpenc_diagnos(i_phiy)=.true.
       endif
-      if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
+      if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
@@ -3191,6 +3192,7 @@ module Hydro
         if (idiag_rux2m/=0)   call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0)   call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0)   call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
+        if (idiag_EEK/=0)     call sum_mn_name(p%ekin,idiag_EEK)
         if (idiag_ekin/=0)    call sum_mn_name(p%ekin,idiag_ekin)
         if (idiag_ekintot/=0) call integrate_mn_name(p%ekin,idiag_ekintot)
         if (idiag_totangmom/=0) &
@@ -4806,6 +4808,7 @@ module Hydro
         idiag_uzyrms=0
         idiag_duxdzma=0
         idiag_duydzma=0
+        idiag_EEK=0
         idiag_ekin=0
         idiag_totangmom=0
         idiag_ekintot=0
@@ -4875,6 +4878,7 @@ module Hydro
 !
       if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'EEK',idiag_EEK)
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)

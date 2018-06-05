@@ -350,6 +350,7 @@ module Magnetic
   integer :: idiag_ubbzm=0      ! DIAG_DOC: $\left<(\uv\cdot\Bv)B_z\right>$
   integer :: idiag_b1m=0        ! DIAG_DOC: $\left<|\Bv|\right>$
   integer :: idiag_b2m=0        ! DIAG_DOC: $\left<\Bv^2\right>$
+  integer :: idiag_EEM=0        ! DIAG_DOC: $\left<\Bv^2\right>/2$
   integer :: idiag_b4m=0        ! DIAG_DOC: $\left<\Bv^4\right>$
   integer :: idiag_bm2=0        ! DIAG_DOC: $\max(\Bv^2)$
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
@@ -2458,7 +2459,7 @@ module Magnetic
          ) lpenc_diagnos(i_diva)=.true.
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_b4m/=0 .or. &
-          idiag_bm2/=0 .or. &
+          idiag_bm2/=0 .or. idiag_EEM/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brmsx/=0 .or. idiag_brmsz/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
@@ -4387,6 +4388,7 @@ module Magnetic
 !
         if (idiag_b1m/=0) call sum_mn_name(sqrt(p%b2),idiag_b1m)
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
+        if (idiag_EEM/=0) call sum_mn_name(.5*p%b2,idiag_EEM)
         if (idiag_b4m/=0) call sum_mn_name(p%b2**2,idiag_b4m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
@@ -7787,7 +7789,7 @@ module Magnetic
         idiag_eta_tdep=0
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
         idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0
-        idiag_b1m=0; idiag_b2m=0; idiag_b4m=0
+        idiag_b1m=0; idiag_b2m=0; idiag_EEM=0; idiag_b4m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_abmh=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
@@ -7959,6 +7961,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'ubbzm',idiag_ubbzm)
         call parse_name(iname,cname(iname),cform(iname),'b1m',idiag_b1m)
         call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'EEM',idiag_EEM)
         call parse_name(iname,cname(iname),cform(iname),'b4m',idiag_b4m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)

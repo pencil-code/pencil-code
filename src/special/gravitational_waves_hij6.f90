@@ -89,13 +89,13 @@ module Special
   character (len=labellen) :: inithij='nothing'
   character (len=labellen) :: initgij='nothing'
   character (len=labellen) :: ctrace_factor='1/3'
-  character (len=labellen) :: cstress_prefactor='1'
+  character (len=labellen) :: cstress_prefactor='16pi'
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress'
-  real :: amplhij=0., amplgij=0.
+  real :: amplhij=0., amplgij=0., dummy=0.
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
-  real :: trace_factor=0., stress_prefactor=1., dummy=0.
+  real :: trace_factor=0., stress_prefactor, EGWpref
   real :: diffhh=0., diffgg=0., diffhh_hyper3=0., diffgg_hyper3=0.
   real :: nscale_factor=0., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
@@ -142,6 +142,7 @@ module Special
   integer :: idiag_ggTp2=0       ! DIAG_DOC: $\dot{h}_{T}(x_1,y_1,z_1,t)$
   integer :: idiag_ggXp2=0       ! DIAG_DOC: $\dot{h}_{X}(x_1,y_1,z_1,t)$
   integer :: idiag_hrms=0        ! DIAG_DOC: $\bra{h_T^2+h_X^2}^{1/2}$
+  integer :: idiag_EEGW=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}\,c^2/(32\pi G)$
   integer :: idiag_gg2m=0        ! DIAG_DOC: $\bra{g_T^2+g_X^2}$
   integer :: idiag_hhT2m=0       ! DIAG_DOC: $\bra{h_T^2}$
   integer :: idiag_hhX2m=0       ! DIAG_DOC: $\bra{h_X^2}$
@@ -233,18 +234,20 @@ module Special
               ,trim(ctrace_factor))
       endselect
 !
-!  determine stress_prefactor
+!  determine stress_prefactor and GW energy prefactor,
+!  which is EGWpref=.5*16.*pi/stress_prefactor**2
 !
       select case (cstress_prefactor)
-        case ('1'); stress_prefactor=1.
-        case ('8pi'); stress_prefactor=8.*pi
-        case ('16pi'); stress_prefactor=16.*pi
-        case ('16piG/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2
+        case ('1'); stress_prefactor=1.; EGWpref=8.*pi
+        case ('16pi'); stress_prefactor=16.*pi; EGWpref=1./(32.*pi)
+        case ('16piG/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2;
+          EGWpref=c_light_cgs**2/(32.*pi*G_Newton_cgs)
         case default
           call fatal_error("initialize_special: No such value for ctrace_factor:" &
               ,trim(ctrace_factor))
       endselect
       if (headt) print*,'stress_prefactor=',stress_prefactor
+      if (headt) print*,'EGWpref=',EGWpref
 !
 !  set speed of light
 !
@@ -501,6 +504,7 @@ module Special
          if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
          if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
          if (lggTX_as_aux) then
+           if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2)*EGWpref,idiag_EEGW)
            if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
            if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
            if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
@@ -1007,7 +1011,7 @@ module Special
         idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
-        idiag_ggTm=0; idiag_ggXm=0
+        idiag_ggTm=0; idiag_ggXm=0; idiag_EEGW=0
         cformv=''
       endif
 !
@@ -1036,6 +1040,7 @@ module Special
           call parse_name(iname,cname(iname),cform(iname),'ggXpt',idiag_ggXpt)
           call parse_name(iname,cname(iname),cform(iname),'ggTp2',idiag_ggTp2)
           call parse_name(iname,cname(iname),cform(iname),'ggXp2',idiag_ggXp2)
+          call parse_name(iname,cname(iname),cform(iname),'EEGW',idiag_EEGW)
           call parse_name(iname,cname(iname),cform(iname),'gg2m',idiag_gg2m)
           call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
           call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
