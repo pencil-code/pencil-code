@@ -337,7 +337,7 @@ def _slices1d(field, t, slices, dim, par, grid, **kwarg):
     ax = fig.gca()
     line, = ax.plot(x, s[0], "o:")
     ax.set_xlim(par.xyz0[idir], par.xyz1[idir])
-    ax.set_ylim(ylim)
+    if ylim[0] < ylim[1]: ax.set_ylim(ylim)
     ax.minorticks_on()
     ax.grid()
     ax.set_xlabel(xlabel)
