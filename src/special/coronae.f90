@@ -100,14 +100,14 @@ module Special
 !
 !  variables for video slices:
 !
-  real, target, dimension (:,:) :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
-  real, target, dimension (:,:) :: spitzer_xz,spitzer_yz,spitzer_xz2
-  real, target, dimension (:,:) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
-  real, target, dimension (:,:) :: newton_xz,newton_yz,newton_xz2
-  real, target, dimension (:,:) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension (:,:) :: rtv_xz,rtv_yz,rtv_xz
-  real, target, dimension (:,:) :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
-  real, target, dimension (:,:) :: hgrad_xz,hgrad_yz,hgrad_xz2
+  real, target, dimension (:,:), allocatable :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
+  real, target, dimension (:,:), allocatable :: spitzer_xz,spitzer_yz,spitzer_xz2
+  real, target, dimension (:,:), allocatable :: newton_xy,newton_xy2,newton_xy3,newton_xy4
+  real, target, dimension (:,:), allocatable :: newton_xz,newton_yz,newton_xz2
+  real, target, dimension (:,:), allocatable :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+  real, target, dimension (:,:), allocatable :: rtv_xz,rtv_yz,rtv_xz2
+  real, target, dimension (:,:), allocatable :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
+  real, target, dimension (:,:), allocatable :: hgrad_xz,hgrad_yz,hgrad_xz2
 !
 !  variables for granulation driver
 !
@@ -2275,16 +2275,16 @@ module Special
 ! slices (all undefined so far)
 !
         dumpenc=-1.
-        if (ivid_newton) &
+        if (ivid_newton/=0) &
           call store_slices(dumpenc,newton_xy,newton_xz,newton_yz, &
                             newton_xy2,newton_xy3,newton_xy4,newton_xz2)
-        if (ivid_spitzer) &
+        if (ivid_spitzer/=0) &
           call store_slices(dumpenc,spitzer_xy,spitzer_xz,spitzer_yz, &
                             spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
-        if (ivid_rtv) & 
+        if (ivid_rtv/=0) & 
           call store_slices(dumpenc,rtv_xy,rtv_xz,rtv_yz, &
                             rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
-        if (ivid_hgrad) &
+        if (ivid_hgrad/=0) &
           call store_slices(dumpenc,hgrad_xy,hgrad_xz,hgrad_yz, &
                             hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
