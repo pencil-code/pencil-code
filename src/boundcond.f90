@@ -438,6 +438,9 @@ module Boundcond
                 case ('e3')
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
+                case ('el')
+                  ! BCX_DOC: linear extrapolation from last two active cells
+                  call bcx_extrap_linear(f, topbot, j)
                 case ('hat')
                   ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
@@ -4394,6 +4397,42 @@ module Boundcond
       endselect
 !
     endsubroutine bcx_extrap_2_3
+!***********************************************************************
+    subroutine bcx_extrap_linear(f, topbot, j)
+!
+!  Applies linear extrapolation to the ghost cells.
+!
+!  05-jun-18/ccyang: coded.
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      character(len=bclen), intent(in) :: topbot
+      integer, intent(in) :: j
+!
+      integer :: i
+      real :: dx1
+!
+      select case (topbot)
+!
+      case ('bot')
+        ! bottom (left end of the domain)
+        dx1 = 1.0 / (x(l1+1) - x(l1))
+        do i = 1, nghost
+          f(l1-i,:,:,j) = (dx1 * (x(l1+1) - x(l1-i))) * f(l1,:,:,j) + (dx1 * (x(l1-i) - x(l1))) * f(l1+1,:,:,j)
+        enddo
+!
+      case ('top')
+        ! top (right end of the domain)
+        dx1 = 1.0 / (x(l2) - x(l2-1))
+        do i = 1, nghost
+          f(l2+i,:,:,j) = (dx1 * (x(l2) - x(l2+i))) * f(l2-1,:,:,j) + (dx1 * (x(l2+i) - x(l2-1))) * f(l2,:,:,j)
+        enddo
+!
+      case default
+        call fatal_error('bcx_extrap_linear', 'invalid argument', lfirst_proc_xy)
+!
+      endselect
+!
+    endsubroutine bcx_extrap_linear
 !***********************************************************************
     subroutine bcz_extrapol(f,topbot,j)
 !
