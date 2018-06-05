@@ -32,10 +32,10 @@ endif else $
 ; Read slice switches
 ;
 cdum=''
+switches=create_struct('xyread',0,'xzread',0,'yzread',0,'xy2read',0,'xy3read',0,'xy4read',0,'xz2read',0)
 on_ioerror, noposition
 openr, lun_1, readdir+'/slice_position.dat', /get_lun
 on_ioerror, NULL
-switches=create_struct('xyread',0,'xzread',0,'yzread',0,'xy2read',0,'xy3read',0,'xy4read',0,'xz2read',0)
 readf, lun_1, cdum & switches.xyread  = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
 readf, lun_1, cdum & switches.xy2read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
 readf, lun_1, cdum & switches.xy3read = strmid(strtrim(cdum,2),0,1) eq 'T' ? 1 : 0
@@ -49,6 +49,16 @@ return, 1
 ;
 noposition:
 print, 'No slice_position.dat found in "'+readdir+'"!!!'
-return, 0
+print, 'For backwards compatibility it is assumed that XY, XY2, XZ and YZ slices do exist.'
+
+switches.xyread = 1
+switches.xy2read = 1
+switches.xy3read = 0
+switches.xy4read = 0
+switches.xzread = 1
+switches.xz2read = 0
+switches.yzread = 1
+
+return, 1
 ;
 end
