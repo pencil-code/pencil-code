@@ -43,12 +43,12 @@ module Ascalar
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
   real :: T_env=293.0, qv_env=1.63e-2, Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
-  logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false.
+  logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
 !
   namelist /ascalar_init_pars/ &
            initacc, acc_const, amplacc, widthacc, & 
            initttc, ttc_const, amplttc, widthttc, & 
-           T_env, qv_env, lbuoyancy, lttc
+           T_env, qv_env, lbuoyancy, lttc, lttc_mean
 !
 !  Run parameters.
 !
@@ -64,6 +64,7 @@ module Ascalar
   real :: TT_mean=293.25, constTT=293.25
   real, dimension(3) :: gradacc0=(/0.0,0.0,0.0/)
   real, dimension(3) :: gradTT0=(/0.0,0.0,0.0/)
+  real, dimension(nx,ny,nz) :: ttcm_volume, accm_volume 
   real, dimension(nx) :: es_T=0.0, qvs_T=0.0
   real, dimension(nx) :: buoyancy=0.0
   logical :: lascalar_sink=.false., Rascalar_sink=.false.,lupdraft=.false.
@@ -288,14 +289,12 @@ module Ascalar
       type (pencil_case) :: p
       integer :: j
 !
-!XY0
       intent(in) :: f
       intent(inout) :: p
 !
 ! acc
       if (lpencil(i_acc)) p%acc=f(l1:l2,m,n,iacc)
       if (issat>0) p%ssat=f(l1:l2,m,n,issat)
-!      if (ittc>0) p%ttc=f(l1:l2,m,n,ittc)
       if (lpencil(i_ttc)) p%ttc=f(l1:l2,m,n,ittc)
 !
 !  Compute gacc. Add imposed spatially constant gradient of acc.
@@ -355,6 +354,7 @@ module Ascalar
       real, dimension (nx) :: radius_sum, condensation_rate_Cd
       real :: acc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
+      real :: ttc_mean=293.0, acc_mean=1.e-2
       integer, parameter :: nxy=nxgrid*nygrid
       integer :: k
 ! XY0: Commented the following out. 
@@ -429,34 +429,42 @@ module Ascalar
           qvs_T=es_T/(Rv*rhoa*constTT)
           ssat0=acc_const/qvs_T(1)-1
         elseif (ltemperature) then
-            df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp_constant
-            if (lbuoyancy) then
-              if (lTT_mean) then
-                buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
-                        +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
-              else
-                buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+ &
-                        Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
-              endif
-              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
-            endif
-!
-            if (lTT_mean) then 
-              es_T=const1_qvs*exp(-const2_qvs/(f(l1:l2,m,n,iTT)+TT_mean))
-              qvs_T=es_T/(Rv*rhoa*(f(l1:l2,m,n,iTT)+TT_mean))
+          df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+p%condensationRate*latent_heat/cp_constant
+          if (lbuoyancy) then
+            if (lTT_mean) then
+              buoyancy=gravity_acceleration*((p%TT+TT_mean-T_env)/(p%TT+TT_mean) &
+                      +Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
             else
-              es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,iTT))
-              qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,iTT))
-            endif       
-!          endif
+              buoyancy=gravity_acceleration*((p%TT-T_env)/p%TT+ &
+                      Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+            endif
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
+          endif
+!
+          if (lTT_mean) then 
+            es_T=const1_qvs*exp(-const2_qvs/(f(l1:l2,m,n,iTT)+TT_mean))
+            qvs_T=es_T/(Rv*rhoa*(f(l1:l2,m,n,iTT)+TT_mean))
+          else
+            es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,iTT))
+            qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,iTT))
+          endif       
         elseif (lttc) then
           df(l1:l2,m,n,ittc)=df(l1:l2,m,n,ittc)+p%condensationRate*latent_heat/cp_constant
           es_T=const1_qvs*exp(-const2_qvs/f(l1:l2,m,n,ittc))
           qvs_T=es_T/(Rv*rhoa*f(l1:l2,m,n,ittc))
           ssat0=acc_const/((const1_qvs*exp(-const2_qvs/ttc_const))/(Rv*rhoa*ttc_const))-1
           if (lbuoyancy) then
-            buoyancy=gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
+            if (lttc_mean) then
+              call calc_ttcmean(f)
+              ttc_mean=sum(ttcm_volume)/size(ttcm_volume)
+              call calc_accmean(f)
+              acc_mean=sum(accm_volume)/size(accm_volume)
+              buoyancy=gravity_acceleration*((p%ttc-ttc_mean)/p%ttc+ &
+                     Rv_over_Rd_minus_one*(p%acc-acc_mean)/p%acc-p%waterMixingRatio)
+            else
+              buoyancy=gravity_acceleration*((p%ttc-T_env)/p%ttc+ &
                      Rv_over_Rd_minus_one*(p%acc-qv_env)/p%acc-p%waterMixingRatio)
+            endif
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+buoyancy
           endif
         endif
@@ -521,6 +529,54 @@ module Ascalar
       endif
 !
     endsubroutine dacc_dt
+!***********************************************************************
+    subroutine calc_ttcmean(f)
+!
+!  Calculation of volume averaged mean temperature and water vapor mixing ratio.
+!
+!  06-June-18/Xiang-Yu.Li: coded
+!
+      use Sub, only: finalize_aver
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+      real :: fact
+      real, dimension (nx)  :: temp
+!
+!  Calculate mean of temperature.
+!
+      if (lttc_mean) then
+        fact=1./(nxgrid*nygrid*nzgrid)
+        ttcm_volume=sum(f(l1:l2,m1:m2,n1:n2,ittc))
+        call finalize_aver(nprocx*nprocy*nprocz,123,ttcm_volume)
+        ttcm_volume  = fact*ttcm_volume
+      endif
+!      
+    endsubroutine calc_ttcmean
+!***********************************************************************
+    subroutine calc_accmean(f)
+!
+!  Calculation of volume averaged water vapor mixing ratio.
+!
+!  06-June-18/Xiang-Yu.Li: coded
+!
+      use Sub, only: finalize_aver
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+      real :: fact
+      real, dimension (nx)  :: temp
+!
+!  Calculate mean of temperature.
+!
+      if (lttc_mean) then
+        fact=1./(nxgrid*nygrid*nzgrid)
+        accm_volume=sum(f(l1:l2,m1:m2,n1:n2,iacc))
+        call finalize_aver(nprocx*nprocy*nprocz,123,accm_volume)
+        accm_volume  = fact*accm_volume
+      endif
+!      
+    endsubroutine calc_accmean
 !***********************************************************************
     subroutine read_ascalar_init_pars(iostat)
 !
