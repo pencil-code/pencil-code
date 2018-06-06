@@ -1531,6 +1531,15 @@ else if ($hn =~ dra[0-9]*) then
   set mpirun = srun
   set mpirunops2="-c $ncpus"
 #---------------------------------------------------
+else if ($hn =~ co[0-9]*) then
+  echo "Cobra system at Rechenzentrum Garching"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  set mpirun = srun
+#---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
   module load impi
