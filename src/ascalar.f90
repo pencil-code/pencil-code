@@ -43,6 +43,7 @@ module Ascalar
   character (len=labellen) :: initlnTT='nothing'
   character (len=labellen) :: initTT='nothing'
   real :: T_env=293.0, qv_env=1.63e-2, Rv_over_Rd_minus_one=0.608, gravity_acceleration=9.81
+  real :: ttc_mean=293.0, acc_mean=1.e-2
   logical :: lbuoyancy=.false., ltauascalar=.false., lttc=.false., lttc_mean=.false.
 !
   namelist /ascalar_init_pars/ &
@@ -89,6 +90,7 @@ module Ascalar
   integer :: idiag_buoyancyrms=0, idiag_buoyancym=0, idiag_buoyancymax=0, idiag_buoyancymin=0
   integer :: idiag_esrms=0, idiag_esm=0, idiag_esmax=0, idiag_esmin=0
   integer :: idiag_qvsrms=0, idiag_qvsm=0, idiag_qvsmax=0, idiag_qvsmin=0
+  integer :: idiag_ttc_mean=0
 !
   contains
 !***********************************************************************
@@ -354,7 +356,6 @@ module Ascalar
       real, dimension (nx) :: radius_sum, condensation_rate_Cd
       real :: acc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
-      real :: ttc_mean=293.0, acc_mean=1.e-2
       integer, parameter :: nxy=nxgrid*nygrid
       integer :: k
 ! XY0: Commented the following out. 
@@ -537,6 +538,7 @@ module Ascalar
 !  06-June-18/Xiang-Yu.Li: coded
 !
       use Sub, only: finalize_aver
+      use Diagnostics, only: save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -551,7 +553,14 @@ module Ascalar
         call finalize_aver(nprocx*nprocy*nprocz,123,ttcm_volume)
         ttcm_volume  = fact*ttcm_volume
       endif
-!      
+!
+      if (ldiagnos) then
+        if (lttc_mean) then
+          if (idiag_ttc_mean/=0) &
+            call save_name(ttc_mean,idiag_ttc_mean)
+        endif
+      endif
+!
     endsubroutine calc_ttcmean
 !***********************************************************************
     subroutine calc_accmean(f)
@@ -640,7 +649,7 @@ module Ascalar
         idiag_esrms=0; idiag_esm=0; idiag_esmax=0; idiag_esmin=0
         idiag_qvsrms=0; idiag_qvsm=0; idiag_qvsmax=0; idiag_qvsmin=0
         idiag_buoyancyrms=0; idiag_buoyancym=0; idiag_buoyancymax=0; idiag_buoyancymin=0
-
+        idiag_ttc_mean=0
       endif
 !
       do iname=1,nname
@@ -682,6 +691,7 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'buoyancym',idiag_buoyancym)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymax',idiag_buoyancymax)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymin',idiag_buoyancymin)
+        call parse_name(iname,cname(iname),cform(iname),'ttc_mean',idiag_ttc_mean)
       enddo
 !
       if (lwr) then 
