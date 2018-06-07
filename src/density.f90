@@ -597,9 +597,9 @@ module Density
             call fatal_error('initialize_density', &
             'diffusion coefficient diffrho_shock is zero!')
         if (ldiff_normal.or.ldiff_cspeed.or.ldiff_shock) then
-          lmassdiff_fix=.true.
+          !lmassdiff_fix=.true.
           call warning('initialize_density', &
-            'Diffusion now requires enegy/momentum fix by default!')
+            'For diffusion energy/momentum correction should use lmassdiff_fix!')
         endif
         if (lmassdiff_fixkin.or.lmassdiff_fixmom) then
           lmassdiff_fix=.true.
