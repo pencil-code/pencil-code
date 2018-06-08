@@ -328,6 +328,7 @@ module Special
 !
       if (lreynolds) then
         lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_rho)=.true.
         if (trace_factor/=0.) lpenc_requested(i_u2)=.true.
       endif
 !
@@ -357,7 +358,8 @@ module Special
 !  Calculate Special pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  24-aug-17/tony: coded
+!  24-aug-17/axel: coded
+!   7-jun-18/axel: included 4/3*rho factor
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -372,13 +374,13 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)
+        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*fourthird*p%rho
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
-          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2
+          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*fourthird*p%rho
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
         endif
       enddo
