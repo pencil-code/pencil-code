@@ -766,7 +766,7 @@ else if ($hn =~ clogin*) then
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
-  set remote_top     = 1
+  set remote_top     = 0
   set local_binary = 0
 else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
   echo "sisu - CSC, Kajaani, Finland"
@@ -781,7 +781,7 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
-  set remote_top     = 1
+  set remote_top     = 0
   set local_binary = 0
 #----------------------------------------------
 else if (($hn =~ s*) && ($USER =~ pr*)) then
@@ -1538,6 +1538,7 @@ else if ($hn =~ co[0-9]*) then
     setenv SLURM_WORKDIR `pwd`
     touch $SLURM_WORKDIR/data/jobid.dat
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
   set mpirun = srun
 #---------------------------------------------------
 else if ($hn =~ aims* ) then
@@ -1933,7 +1934,6 @@ endif
 ## ------------------------------
 ## End of machine specific settings
 ## ------------------------------
-
 
 ## MPI specific setup
 if ($mpi) then
