@@ -190,7 +190,9 @@ indices_aux = [ $
   { name:'itauascalar', label:'Relaxation time', dims:1 }, $
   { name:'issat', label:'Supersaturation', dims:1 }, $
   { name:'icondensationRate', label:'Condensation rate', dims:1 }, $
-  { name:'iwaterMixingRatio', label:'Water mixing ratio', dims:1 } $
+  { name:'iwaterMixingRatio', label:'Water mixing ratio', dims:1 }, $
+  { name:'inusmag', label:'Smagorinsky viscosity', dims:1 }, $
+  { name:'ietasmag', label:'Smagorinsky diffusivity', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 ;
