@@ -390,7 +390,6 @@ module Diagnostics
                   endif
                 endif
               endif
-
               if (cform(iname)/='') tform = comma//trim(cform(iname))
 
             endif
@@ -1368,8 +1367,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
 !
-      intent(in)    :: iname,cname,ctest
-      intent(inout) :: itest
+      intent(in)    :: iname,ctest
+      intent(inout) :: cname,itest
       intent(out)   :: cform
 
       character(len=fmtlen) :: tmp
@@ -1418,8 +1417,13 @@ if (ios/=0) print*, 'ios, i=', ios, i
               tmp=cform(index_i+1:)
               read(tmp,*) idecs
               idiff=iwidth-idecs-7
-              if (idiff<0) &
+              if (idiff<0) then
                 cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
+!
+!Put changed format back into cname.
+!
+                if (iform1>0) cname(iform1:)='('//trim(cform)//')'
+              endif
             endif
           endif
 !
@@ -1454,9 +1458,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
       character (len=*) :: ctest
       integer :: iname,itest
 !
-      intent(in)  :: iname,cname,ctest
+      intent(in)  :: iname,ctest
       intent(out) :: cform
-      intent(inout) :: itest
+      intent(inout) :: cname,itest
 !
       integer :: iret
 !
@@ -1474,9 +1478,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
       character (len=*) :: ctest
       integer :: iname,itest
 !
-      intent(in)  :: iname,cname,ctest
+      intent(in)  :: iname,ctest
       intent(out) :: cform
-      intent(inout) :: itest
+      intent(inout) :: cname,itest
 !
       integer :: iret
 !
@@ -1497,8 +1501,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
       character (len=*), dimension(:) :: cdiag
       integer,           dimension(:) :: idiag
 !
-      intent(in)  :: cname,cdiag
-      intent(out) :: cform,idiag
+      intent(in)   :: cdiag
+      intent(inout):: cname
+      intent(out)  :: cform,idiag
 !
       integer :: i,j
 !
