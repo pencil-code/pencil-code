@@ -2651,11 +2651,6 @@ module Magnetic
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
 !
-      if (lpencil_in(i_bb) .and. .not. lbb_as_comaux) then
-        if (.not.lcartesian_coords) lpencil_in(i_aa)=.true.
-        lpencil_in(i_aij)=.true.     !MR: needed?
-      endif
-!
       if (lpencil_in(i_djuidjbi)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_bij)=.true.
@@ -2739,6 +2734,12 @@ module Magnetic
         lpencil_in(i_va2)=.true.
         lpencil_in(i_clight2)=.true.
       endif
+!
+! The dependence of diva or bb on aa relies on if aij is requested above.
+!
+      if ((lpencil_in(i_diva) .or. (lpencil_in(i_bb) .and. .not. lbb_as_comaux)) .and. &
+          (.not. lcartesian_coords .and. lpencil_in(i_aij))) &
+          lpencil_in(i_aa) = .true.
 !
 !  check for pencil_interdep_magn_mf
 !
@@ -2863,7 +2864,7 @@ module Magnetic
       if (lpenc_loc(i_aij)) call gij(f,iaa,p%aij,1)
 ! diva
       if (lpenc_loc(i_diva)) then
-        if (lpenc_loc(i_aij)) then
+        if (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
           call div_mn(p%aij,p%diva,p%aa)
         else
           call div_other(f(:,:,:,iax:iaz),p%diva)
@@ -2873,7 +2874,7 @@ module Magnetic
       if (lpenc_loc(i_bb)) then
         if (lbb_as_comaux) then
           p%bb = f(l1:l2,m,n,ibx:ibz)
-        elseif (lpenc_loc(i_aij)) then
+        elseif (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
           call curl_mn(p%aij,p%bb,A=p%aa)
         else
           call curl_other(f(:,:,:,iax:iaz),p%bb)
