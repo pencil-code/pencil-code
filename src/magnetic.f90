@@ -149,6 +149,7 @@ module Magnetic
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
+  real :: Pm_smag1=1.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
   integer :: N_modes_aa=1, naareset
@@ -180,6 +181,7 @@ module Magnetic
   logical :: lresi_etajrho=.false.
   logical :: lresi_shell=.false.
   logical :: lresi_smagorinsky=.false.
+  logical :: lresi_smagorinsky_nusmag=.false.
   logical :: lresi_smagorinsky_cross=.false.
   logical :: lresi_anomalous=.false.
   logical :: lresi_spitzer=.false.
@@ -195,6 +197,7 @@ module Magnetic
   logical :: lEE_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
+  logical :: letasmag_as_aux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
@@ -332,7 +335,7 @@ module Magnetic
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
-      rhoref, lambipolar_strong_coupling
+      rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -899,6 +902,16 @@ module Magnetic
         if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
       endif
 !
+!  Register nusmag as auxilliary variable
+!
+      if (letasmag_as_aux.and.any(iresistivity=='smagorinsky')) then
+        call farray_register_auxiliary('etasmag',ietasmag,communicated=.true.)
+        if (lroot) write(15,*) 'etasmag = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',etasmag'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
 !  Check if we are solving the relativistic eos equations.
 !  In that case we'd need to get lrelativistic_eos from density.
 !
@@ -1126,6 +1139,7 @@ module Magnetic
       lresi_etaj2=.false.
       lresi_etajrho=.false.
       lresi_smagorinsky=.false.
+      lresi_smagorinsky_nusmag=.false.
       lresi_smagorinsky_cross=.false.
       lresi_anomalous=.false.
       lresi_spitzer=.false.
@@ -1226,6 +1240,9 @@ module Magnetic
         case ('smagorinsky')
           if (lroot) print*, 'resistivity: smagorinsky'
           lresi_smagorinsky=.true.
+        case ('smagorinsky-nusmag','smagorinsky_nusmag')
+          if (lroot) print*, 'resistivity: smagorinsky_nusmag'
+          lresi_smagorinsky_nusmag=.true.
         case ('smagorinsky-cross')
           if (lroot) print*, 'resistivity: smagorinsky_cross'
           lresi_smagorinsky_cross=.true.
@@ -2165,7 +2182,7 @@ module Magnetic
         lpenc_requested(i_glnrho)=.true.
       endif
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
-          lresi_eta_shock.or.lresi_smagorinsky.or. &
+          lresi_eta_shock.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag.or. &
           lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_eta_shock_profz.or.lresi_eta_shock_profr.or. &
           lresi_smagorinsky_cross.or.lresi_spitzer.or.lresi_cspeed)) &
@@ -2245,8 +2262,13 @@ module Magnetic
         lpenc_requested(i_aij)=.true.
         lpenc_requested(i_uij)=.true.
       endif
-      if (lresi_shell.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep) &
+      if (lresi_shell.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
+          lresi_smagorinsky.or.lresi_smagorinsky_nusmag) then
            lpenc_requested(i_diva)=.true.
+      endif
+      if (lresi_smagorinsky_nusmag) then
+         lpenc_requested(i_nu_smag)=.true.
+      endif
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
@@ -3807,10 +3829,40 @@ module Magnetic
       endif
 !
       if (lresi_smagorinsky) then
-        eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
-        call multsv(eta_smag+eta,p%del2a,fres)
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
-        etatotal=etatotal+eta_smag+eta
+        if (letasmag_as_aux) then
+           eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+           call multsv(eta_smag+eta,p%del2a,fres)
+           call grad(f,ietasmag,geta)
+!
+           do j=1,3 
+             fres(:,j)=fres(:,j)+geta(:,j)*p%diva
+           enddo
+!
+           if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
+           etatotal=etatotal+eta_smag+eta
+        else  
+!
+!  Term grad(eta_smag) divA not implemented with pencils!
+!
+           eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+           call multsv(eta_smag+eta,p%del2a,fres)
+!
+           if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
+           etatotal=etatotal+eta_smag+eta
+        endif
+      endif
+!
+      if (lresi_smagorinsky_nusmag) then
+         eta_smag=Pm_smag1*p%nu_smag
+         call multsv(eta_smag+eta,p%del2a,fres)
+!
+         call grad(f,inusmag,geta)
+         do j=1,3 
+           fres(:,j)=fres(:,j)+Pm_smag1*geta(:,j)*p%diva
+         enddo
+!
+         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
+         etatotal=etatotal+eta_smag+eta
       endif
 !
       if (lresi_smagorinsky_cross) then
@@ -5272,8 +5324,9 @@ module Magnetic
 !   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet incomplete
 !
       use Deriv, only: der_z,der2_z
-      use Sub, only: finalize_aver, div, calc_all_diff_fluxes
+      use Sub, only: finalize_aver, div, calc_all_diff_fluxes, dot2_mn
       use Yinyang_mpi, only: zsum_yy
+      use Boundcond, only: update_ghosts
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
@@ -5281,6 +5334,7 @@ module Magnetic
       integer :: n,j,ml,nl
       real, dimension(nz,3) :: gaamz,d2aamz
       real, dimension(:,:,:), allocatable :: buffer
+      real, dimension(nx) :: tmp
 !
 !  Compute mean field (xy verage) for each component. Include the ghost zones,
 !  because they have just been set.
@@ -5387,6 +5441,22 @@ module Magnetic
 
         enddo
 
+      endif
+!
+!  Compute eta_smag and put into auxilliary variable
+!
+      if (letasmag_as_aux) then
+        if (ljj_as_aux) then
+          do n=n1,n2; do m=m1,m2
+!
+            call dot2_mn(f(l1:l2,m,n,ijx:ijz),tmp)
+            f(l1:l2,m,n,ietasmag)=(D_smag*dxmax)**2.*sqrt(tmp)
+!
+          enddo; enddo
+!
+          call update_ghosts(f,ietasmag)
+!
+        endif
       endif
 !
 !     if (lmagn_mf) call magnetic_after_boundary
