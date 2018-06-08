@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
-! PENCILS PROVIDED visc_heat; nu; gradnu(3)
+! PENCILS PROVIDED visc_heat; nu; gradnu(3); nu_smag
 !
 !***************************************************************
 module Viscosity
