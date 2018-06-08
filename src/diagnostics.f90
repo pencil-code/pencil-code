@@ -1265,10 +1265,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
           write(1) t2davgfirst
           if (lcaproot) then
             write(1) (fnamexy_cap(i,:,:),i=1,nnamexy)       ! from cap root (Yang)
-print*, 'iproc_cap:', iproc, size(fnamexy_cap,2),size(fnamexy_cap,3)
           else
             write(1) (fnamexy(i,:,:),i=1,nnamexy)           ! from z beam root (Yin)
-print*, 'iproc:', iproc, size(fnamexy,2),size(fnamexy,3)
           endif
           close(1)
         endif
