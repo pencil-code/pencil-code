@@ -90,7 +90,7 @@ module Ascalar
   integer :: idiag_buoyancyrms=0, idiag_buoyancym=0, idiag_buoyancymax=0, idiag_buoyancymin=0
   integer :: idiag_esrms=0, idiag_esm=0, idiag_esmax=0, idiag_esmin=0
   integer :: idiag_qvsrms=0, idiag_qvsm=0, idiag_qvsmax=0, idiag_qvsmin=0
-  integer :: idiag_ttc_mean=0
+  integer :: idiag_ttc_mean=0, idiag_acc_mean=0
 !
   contains
 !***********************************************************************
@@ -570,6 +570,7 @@ module Ascalar
 !  06-June-18/Xiang-Yu.Li: coded
 !
       use Sub, only: finalize_aver
+      use Diagnostics, only: save_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
@@ -583,6 +584,13 @@ module Ascalar
         accm_volume=sum(f(l1:l2,m1:m2,n1:n2,iacc))
         call finalize_aver(nprocx*nprocy*nprocz,123,accm_volume)
         accm_volume  = fact*accm_volume
+      endif
+!
+      if (ldiagnos) then
+        if (lttc_mean) then
+          if (idiag_acc_mean/=0) &
+            call save_name(acc_mean,idiag_acc_mean)
+        endif
       endif
 !      
     endsubroutine calc_accmean
@@ -649,7 +657,7 @@ module Ascalar
         idiag_esrms=0; idiag_esm=0; idiag_esmax=0; idiag_esmin=0
         idiag_qvsrms=0; idiag_qvsm=0; idiag_qvsmax=0; idiag_qvsmin=0
         idiag_buoyancyrms=0; idiag_buoyancym=0; idiag_buoyancymax=0; idiag_buoyancymin=0
-        idiag_ttc_mean=0
+        idiag_ttc_mean=0; idiag_acc_mean=0
       endif
 !
       do iname=1,nname
@@ -692,6 +700,7 @@ module Ascalar
         call parse_name(iname,cname(iname),cform(iname),'buoyancymax',idiag_buoyancymax)
         call parse_name(iname,cname(iname),cform(iname),'buoyancymin',idiag_buoyancymin)
         call parse_name(iname,cname(iname),cform(iname),'ttc_mean',idiag_ttc_mean)
+        call parse_name(iname,cname(iname),cform(iname),'acc_mean',idiag_acc_mean)
       enddo
 !
       if (lwr) then 
