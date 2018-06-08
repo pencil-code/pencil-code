@@ -2864,6 +2864,8 @@ module Magnetic
       if (lpenc_loc(i_aij)) call gij(f,iaa,p%aij,1)
 ! diva
       if (lpenc_loc(i_diva)) then
+!     ccyang: Note that the following two methods do not give exactly
+!             the same results.
         if (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
           call div_mn(p%aij,p%diva,p%aa)
         else
@@ -2874,6 +2876,8 @@ module Magnetic
       if (lpenc_loc(i_bb)) then
         if (lbb_as_comaux) then
           p%bb = f(l1:l2,m,n,ibx:ibz)
+!     ccyang: Note that the following two methods do not give exactly
+!             the same results.
         elseif (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
           call curl_mn(p%aij,p%bb,A=p%aa)
         else
