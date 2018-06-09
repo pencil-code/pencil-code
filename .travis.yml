@@ -12,4 +12,4 @@ before_install:
 
 script:
   - source sourceme.sh
-  - pc_auto-test --host-id travis-ci -t --max-level 1
+  - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python
