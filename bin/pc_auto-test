@@ -898,8 +898,6 @@ sub test_timelimited_perl_cmd {
 # The first argument is a ref to a function that returns its status as
 # ($error_count, $message).
 # Return error message.
-#
-# Due to the
     my $cmd   = shift;
     my $time_limit   = shift;
     my $dir   = (shift || "<Unknown directory>");
@@ -941,7 +939,7 @@ sub call_sub_catch_output {
 # Return the return value of &$cmd() and a string containing the output.
     my $cmd = shift;
 
-    # We need to explicitly mark the end of conversation pver the pipe, or
+    # We need to explicitly mark the end of conversation over the pipe, or
     # else the reader hangs (why does it not realize that the pipe is
     # closed?).
     my $end_marker = '## DONE ##';
@@ -1716,7 +1714,6 @@ END {
             system(@pc_dump_config);
             printf "Perl version v%vd\n", $^V;
         }
-
     }
 
     # Clean up generated directories
