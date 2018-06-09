@@ -70,11 +70,11 @@ use IPC::Open2;
 # that the slowest tests are run last.
 my $default_level = 2;
 my %tests = (
-             2 => [qw(
+             0 => [qw(
                          no-modules
                          most-modules
                      )],
-             2 => [qw(
+             1 => [qw(
                          backwards-compatible
                          1d-tests/implicit_diffusion
                          2d-tests/chemistry_GrayScott
@@ -85,9 +85,6 @@ my %tests = (
                          dust-vortex
                          damped_alfven_waves
                          2d-tests/streaming_instability
-                         helical-MHDturb
-                     )],
-             1 => [qw(
                          helical-MHDturb
                      )],
              2 => [qw(
