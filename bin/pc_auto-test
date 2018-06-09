@@ -454,6 +454,10 @@ my %time_summary;               # hash to accumulate timing summary
 
 ## Debugging output:
 if ($debug) {
+    my $dummy = $Test::ScriptTester::DEBUG;  # suppress 'used only once'
+                                             # warning
+    $Test::ScriptTester::DEBUG = 1;
+
     eval { use Data::Dumper };   # Need eval here to calm down compiler
     print STDERR Dumper(\%opts);
     print STDERR
@@ -830,7 +834,7 @@ sub test_shell_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning `$nice $cmd`" if ($debug);
+    print STDERR "\nRunning `$nice $cmd`\n" if ($debug);
     $! = 0;                     # reset
     my $res = `$nice $cmd 2>&1`;
     my ($cmdstatus, $cmdmesg) = ($?, $!);
@@ -876,7 +880,7 @@ sub test_perl_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning Perl command" if ($debug);
+    print STDERR "\nRunning Perl command\n" if ($debug);
     my ($error_count, $mesg) = &$cmd();
     $res = $error_count ? "[$mesg]" : '';
 
@@ -902,7 +906,7 @@ sub test_timelimited_perl_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning Perl command" if ($debug);
+    print STDERR "\nRunning Perl command\n" if ($debug);
 
     my ($error_count, $res) = (0, '');
     eval {
@@ -949,6 +953,7 @@ sub call_sub_catch_output {
 
     my $child_id = open($comm, '-|') or die "can't fork: $!";
     if ($child_id) { # parent --> read output from child
+        print STDERR "Parent here\n" if $debug;
         while (<$comm>) {
             $output .= $_;
         }
@@ -960,6 +965,7 @@ sub call_sub_catch_output {
         }
         close $read_retval_handle;
     } else {                    # child --> run &$cmd
+        print STDERR "Child here\n" if $debug;
         $skip_end_block = 1;    # don't remove lock, etc. yet
         open(STDERR, ">& STDOUT"); # also redirect STDERR to $comm
         @retval = &$cmd();
@@ -1186,7 +1192,7 @@ sub test_scripts {
         $tester->run_tests(@tests);
     };
     if ($time_limit) {
-        print "\nRunning Perl cmd with time limit $time_limit" if $debug;
+        print "\nRunning Perl cmd with time limit $time_limit\n" if $debug;
         test_timelimited_perl_cmd(
             $test_cmd,
             $time_limit,
@@ -1194,7 +1200,7 @@ sub test_scripts {
             NOQUIET, $t_ref
             );
     } else {
-        print "\nRunning Perl cmd" if $debug;
+        print "\nRunning Perl cmd\n" if $debug;
         test_perl_cmd(
             $test_cmd,
             $dir, "running script tests",

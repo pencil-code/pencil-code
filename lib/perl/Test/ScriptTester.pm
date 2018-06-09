@@ -20,12 +20,13 @@ use File::Basename;
 use File::Copy 'move';
 use File::Find;
 use Test::NumericFileComparator;
-use vars qw($VERSION);
+use vars qw($VERSION $DEBUG);
 
 ##use critic
 
 $VERSION = '0.1';
 
+$DEBUG = 0;
 
 =head1 NAME
 
@@ -156,8 +157,6 @@ sub new {
 
     $self->{SUFFIXES} = [ keys %{$self->{TYPE_MAP}} ];
 
-    $self->{DEBUG} = 1;  # @@@
-
     bless $self, $class;
     return $self;
 }
@@ -271,10 +270,10 @@ sub _run_test {
 sub debug {
     my ($self, @args) = @_;
 
-    if ($self->{DEBUG}) {
+    if ($DEBUG) {
         my $string = join(' ', @args);
         chomp($string);
-        print "$string\n";
+        print STDERR "$string\n";
     }
 }
 
