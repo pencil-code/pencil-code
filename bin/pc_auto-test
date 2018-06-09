@@ -974,7 +974,7 @@ sub call_sub_catch_output {
             print $write_retval_handle "$value\n";
         }
         print $write_retval_handle "$end_marker\n";
-        # close $write_retval_handle;
+        close $write_retval_handle;
         exit;
     }
 
