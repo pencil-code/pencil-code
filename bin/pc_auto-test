@@ -85,6 +85,7 @@ my %tests = (
                          dust-vortex
                          damped_alfven_waves
                          2d-tests/streaming_instability
+                         helical-MHDturb
                      )],
              2 => [qw(
                          0d-tests/heating_noionize
@@ -93,7 +94,6 @@ my %tests = (
                          cosmicray
                          1d-tests/sod_10
                          1d-tests/ambipolar_diffusion
-                         helical-MHDturb
                          polymer/forced_3dturbulence
                          testfield_z
                          random_uu_particles
