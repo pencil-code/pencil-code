@@ -29,6 +29,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Remove directory from /tmp when encountering Ctl-c
 # - Treat `svn update' as separate stage that can be `OK' or not
 
+use strict;
+
 BEGIN {
     # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
     if (-d "$ENV{PENCIL_HOME}/lib/perl") {
@@ -45,7 +47,6 @@ Pencil::Util::use_pencil_perl_modules(
     'Test::ScriptTester',
     ) or die;
 
-use strict;
 use constant NOQUIET     => 0;
 use constant QUIET       => 1;
 use constant LOCK_FAILED => 128; # return status if we can't get lock
