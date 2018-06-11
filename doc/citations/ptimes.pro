@@ -6,6 +6,7 @@ end
 ;
 ;  mv idl.ps fig/ptimes.ps
 ;  convert fig/ptimes.ps /D/Print/PCUserMeeting2017/ptimes.png
+;  convert fig/ptimes.ps /D/Print/PC18/ptimes.png
 ;
 !p.charsize=1.7
 !x.margin=[6.1,.5]
@@ -21,7 +22,7 @@ o=a(3,*)
 print,n
 print
 print,total(n)
-plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2017.5]
+plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2018.7]
 oplot,y,c,ps=10,col=122
 oplot,y,o,ps=10,col=55
 print,'total(n)=',fix(total(n))
