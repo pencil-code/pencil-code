@@ -116,7 +116,7 @@ module Forcing
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
+       iforce,force,relhelXX,crosshel,height_ff,r_ff,r_ff_hel, &
        rcyl_ff,width_ff,nexp_ff,lff_as_aux,Bconst,Bslope, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
