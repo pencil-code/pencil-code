@@ -22,10 +22,8 @@ module Testfield
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb1_xy
-  real, target, dimension (nx,ny,3) :: bb1_xy2
-  real, target, dimension (nx,nz,3) :: bb1_xz
-  real, target, dimension (ny,nz,3) :: bb1_yz
+  real, target, dimension (:,:,:), allocatable :: bb1_xy,bb1_xy2,bb1_xy3,bb1_xy4
+  real, target, dimension (:,:,:), allocatable :: bb1_xz,bb1_xz2,bb1_yz
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -119,6 +117,7 @@ module Testfield
   integer :: idiag_b1rms=0      ! DIAG_DOC: $\left<b_{1}^2\right>^{1/2}$
   integer :: idiag_b2rms=0      ! DIAG_DOC: $\left<b_{2}^2\right>^{1/2}$
   integer :: idiag_b3rms=0      ! DIAG_DOC: $\left<b_{3}^2\right>^{1/2}$
+  integer :: ivid_bb1=0
 !
   logical :: lcalc_zdep_coeffs=.false.
 !
@@ -398,6 +397,16 @@ module Testfield
                                 idiag_muz, idiag_betPERPz, idiag_delz,      &
                                 idiag_kapPERPz, idiag_betPARAz, idiag_kapPARAz /).gt.0)
 !
+      if (ivid_bb1/=0) then
+        if (lwrite_slice_xy .and..not.allocated(bb1_xy) ) allocate(bb1_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb1_xz) ) allocate(bb1_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb1_yz) ) allocate(bb1_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb1_xy2)) allocate(bb1_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb1_xy3)) allocate(bb1_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb1_xy4)) allocate(bb1_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb1_xz2)) allocate(bb1_xz2(nx,nz,3))
+      endif
+!
 !  write testfield information to a file (for convenient post-processing)
 !
       if (lroot) then
@@ -553,6 +562,7 @@ module Testfield
       use Diagnostics
       use Mpicomm, only: stop_it
       use Sub
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -925,14 +935,8 @@ module Testfield
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 ! 
-      if (lvideo.and.lfirst) then
-        do j=1,3
-          bb1_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
-          if (m==iy_loc)  bb1_xz(:,n-n1+1,j)=bpq(:,j,1)
-          if (n==iz_loc)  bb1_xy(:,m-m1+1,j)=bpq(:,j,1)
-          if (n==iz2_loc) bb1_xy2(:,m-m1+1,j)=bpq(:,j,1)
-        enddo
-      endif
+      if (lvideo.and.lfirst.and.ivid_bb1/=0) &
+        call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -1003,6 +1007,7 @@ module Testfield
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 ! 
       use General, only: keep_compiler_quiet
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -1014,16 +1019,8 @@ module Testfield
 !  Magnetic field
 !
       case ('bb1')
-        if (slices%index>=3) then
-          slices%ready=.false.
-        else
-          slices%index=slices%index+1
-          slices%yz =>bb1_yz(:,:,slices%index)
-          slices%xz =>bb1_xz(:,:,slices%index)
-          slices%xy =>bb1_xy(:,:,slices%index)
-          slices%xy2=>bb1_xy2(:,:,slices%index)
-          if (slices%index<=3) slices%ready=.true.
-        endif
+        call assign_slices_vec(slices,bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
+!
       endselect
 !
       call keep_compiler_quiet(f)
@@ -1444,6 +1441,7 @@ module Testfield
         idiag_kapPERPz=0; idiag_kapPARAz=0; idiag_muz=0
         idiag_b1rms=0; idiag_b2rms=0; idiag_b3rms=0
         idiag_bx1pt=0; idiag_bx2pt=0; idiag_bx3pt=0
+        ivid_bb1=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1483,6 +1481,14 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapPARAz',idiag_kapPARAz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'muz',idiag_muz)
       enddo
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        do iname=1,nnamev
+          call parse_name(iname,cnamev(iname),cformv(iname),'bb1',ivid_bb1)
+        enddo
+      endif
 !
       if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
