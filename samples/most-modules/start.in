@@ -2,7 +2,9 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1.0e-24
+  unit_density=1.6728e-24
+  xyz0=-0.064,-0.064,-0.064
+  xyz1=+0.064,+0.064,+0.064
   lfix_unit_std=T
   r_int=0.5, r_ext=1.0
 /
