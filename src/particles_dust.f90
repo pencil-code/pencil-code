@@ -307,7 +307,7 @@ module Particles
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0 ! DIAG_DOC: $\rm{mean particle number density}$
   integer :: idiag_dtdragp=0
-  integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
+  integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0, idiag_npar_found=0
   integer :: idiag_nparsum=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
@@ -3356,6 +3356,10 @@ module Particles
           call count_particles(ipar,npar_found)
           call save_name(float(npar-npar_found),idiag_npargone)
         endif
+        if (idiag_npar_found/=0) then
+          call count_particles(ipar,npar_found)
+          call save_name(float(npar_found),idiag_npar_found)
+        endif
         if (idiag_deshearbcsm/=0) then
           call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
         endif
@@ -6393,7 +6397,7 @@ module Particles
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
-        idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
+        idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0; idiag_npar_found=0
         idiag_npmxy=0; idiag_vprms=0
         idiag_npvzmz=0; idiag_npvz2mz=0; idiag_nptz=0; idiag_Shm=0
         idiag_npuzmz=0
@@ -6486,6 +6490,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'decollp',idiag_decollp)
         call parse_name(iname,cname(iname),cform(iname),'epotpm',idiag_epotpm)
         call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname),'npar_found',idiag_npar_found)
         call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
