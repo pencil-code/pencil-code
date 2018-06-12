@@ -94,6 +94,7 @@ my %tests = (
                          cosmicray
                          1d-tests/sod_10
                          1d-tests/ambipolar_diffusion
+                         GravitationalWaves
                          polymer/forced_3dturbulence
                          testfield_z
                          random_uu_particles
@@ -101,7 +102,6 @@ my %tests = (
                          kin-dynamo
                          meissner
                          conv-slab-noequi
-                         conv-slab
                          corona
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
@@ -141,6 +141,7 @@ my %tests = (
                          2d-tests/bubble
                          2d-tests/conv-slab-MLT
                          2d-tests/2d_methane_flame
+                         conv-slab
                          interstellar
                          interlocked-fluxrings
                          conv-slab-flat
