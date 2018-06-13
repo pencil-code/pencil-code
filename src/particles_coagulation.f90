@@ -51,6 +51,7 @@ module Particles_coagulation
   logical :: lrelabelling=.false.
   logical :: kernel_output=.false., radius_output=.false.
   logical :: sphericalKernel=.false.
+  logical :: lremove_particle=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -87,7 +88,8 @@ module Particles_coagulation
       luser_random_number_wrapper, lrelabelling, rdifference, &
       kernel_output, deltad, a0, rbin, &
       radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
-      sphericalKernel, normal_coagulation, tstart_droplet_coagulation
+      sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
+      lremove_particle
 !
   contains
 !***********************************************************************
@@ -935,6 +937,8 @@ module Particles_coagulation
               npj = fp(j,inpswarm)
               mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
               npk = fp(k,inpswarm)
+!              if (npj*dx*dy*dz<1) print*,'npj*dx*dy*dz=',npj*dx*dy*dz
+!              if (npk*dx*dy*dz<1) print*,'npk*dx*dy*dz=',npk*dx*dy*dz
 !
 !  Identify the swarm with the highest particle number density
 !
@@ -959,16 +963,38 @@ module Particles_coagulation
 !  a simulation.
 !
               if (npk == npj) then
-                fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
-                fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
-                mpnew=mpj+mpk
-                fp(swarm_index1,iap)&
-                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-                fp(swarm_index2,iap)&
-                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
-                fp(swarm_index1,ivpx:ivpz)=vpnew
-                fp(swarm_index2,ivpx:ivpz)=vpnew
+! 13-June-18/Xiang-Yu: coded
+                if (lremove_particle) then   
+                  if (npk*dx*dy*dz<1.0) then
+                    if (fp(swarm_index1,iap)>=fp(swarm_index2,iap)) then
+                      fp(swarm_index1,ivpx:ivpz)=(rhopbig*fp(swarm_index1,ivpx:ivpz) + &
+                          rhopsma*fp(swarm_index2,ivpx:ivpz))/(rhopsma+rhopbig)
+                      fp(swarm_index1,inpswarm)=1.0/(dx*dy*dz)
+                      fp(swarm_index1,iap)=((rhopsma+rhopbig)/fp(swarm_index1,inpswarm)/ &
+                          four_pi_rhopmat_over_three)**(1.0/3.0)
+                      fp(swarm_index2,iap)=-fp(swarm_index2,iap)
+                    else
+                      fp(swarm_index2,ivpx:ivpz)=(rhopbig*fp(swarm_index2,ivpx:ivpz) + &
+                          rhopsma*fp(swarm_index1,ivpx:ivpz))/(rhopsma+rhopbig)
+                      fp(swarm_index2,inpswarm)=1.0/(dx*dy*dz)
+                      fp(swarm_index2,iap)=((rhopsma+rhopbig)/fp(swarm_index2,inpswarm)/ &
+                          four_pi_rhopmat_over_three)**(1.0/3.0)
+                      fp(swarm_index1,iap)=-fp(swarm_index1,iap)
+                    endif
+                  endif
+                else
+! 13-June-18/Xiang-Yu.
+                  fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                  fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                  mpnew=mpj+mpk
+                  fp(swarm_index1,iap)&
+                      =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                  fp(swarm_index2,iap)&
+                      =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                  vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                  fp(swarm_index1,ivpx:ivpz)=vpnew
+                  fp(swarm_index2,ivpx:ivpz)=vpnew
+                endif
               else
 !
 !  Set particle radius. The radius of the swarm with the highes particle 
@@ -990,6 +1016,36 @@ module Particles_coagulation
                 fp(swarm_index1,ivpx:ivpz)=vpnew
               endif
 !
+!!05-June-18/Xiang-Yu coded
+!!  The new radius is defined from the new particle mass, while the new
+!!  particle number in each superparticle comes from total mass conservation.
+!!
+!              if (lremove_particle) then 
+!                if (npk*dx*dy*dz<1.0 .and. npj*dx*dy*dz>=1.0) then
+!                  fp(j,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
+!                      rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+!                  fp(j,inpswarm)=abs(npj-npk)
+!!                  fp(j,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
+!!                      four_pi_rhopmat_over_three)**(1.0/3.0)
+!                  fp(j,iap)=((rhopsma+rhopbig)/fp(j,inpswarm)/ &
+!                      four_pi_rhopmat_over_three)**(1.0/3.0)
+!                  fp(k,iap)=-fp(k,iap)
+!                elseif (npj*dx*dy*dz<1.0 .and. npk*dx*dy*dz>=1.0) then
+!                  fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
+!                      rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+!                  fp(k,inpswarm)=abs(npj-npk)
+!!                  fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
+!!                      four_pi_rhopmat_over_three)**(1.0/3.0)
+!                  fp(k,iap)=((rhopsma+rhopbig)/fp(k,inpswarm)/ &
+!                      four_pi_rhopmat_over_three)**(1.0/3.0)
+!                  fp(j,iap)=-fp(j,iap)
+!                elseif (npj*dx*dy*dz<1.0 .and. npk*dx*dy*dz<1.0) then
+!                  fp(j,iap)=-fp(j,iap)
+!                  fp(k,iap)=-fp(k,iap)
+!                endif
+!              endif
+!!05-June-18/Xiang-Yu.
+!
 !  swap names ipar to follow lucky droplets
 !
               if (lrelabelling) then
@@ -1003,6 +1059,7 @@ module Particles_coagulation
                   iswap=0
                 endif
               endif
+
 !
               if (lcollision_output) then
                 open(99,POSITION='append', &
@@ -1098,6 +1155,8 @@ module Particles_coagulation
             apk = fp(k,iap)
             mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
             npk = fp(k,inpswarm)
+!            if (npj*dx*dy*dz<1) print*,'standard:npj*dx*dy*dz=',npj*dx*dy*dz
+!            if (npk*dx*dy*dz<1) print*,'standard:npk*dx*dy*dz=',npk*dx*dy*dz
             if (droplet_coagulation_model=='standard') then
               if (lcollision_output) then
                 open(99,POSITION='append', &
