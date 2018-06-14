@@ -710,6 +710,7 @@ contains
     use Slices_methods, only: store_slices
     use Diagnostics, only: max_mn_name,max_name
     use EquationOfState
+    use SharedVariables, only: get_shared_variable
     use Sub
 !
     real, dimension (mx,my,mz,mvar) :: df
@@ -720,6 +721,8 @@ contains
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp
+    real, pointer :: z_cutoff, cool_wid
+    integer :: ierr
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2) * rho where
@@ -745,12 +748,19 @@ contains
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
     tau1_spitzer_penc=cdtv**2/(1.0d-6*max(dz_1(n),dx_1(l1:l2)))**2/ &
                       chi_spitzer
-!PC
-    tau1_spitzer_penc=1./(10*1.0e-6)
 !
+    call get_shared_variable('z_cutoff',&
+             z_cutoff,ierr)
+    if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+             'failed to get z_cutoff from radiation_ray')
+    call get_shared_variable('cool_wid',&
+             cool_wid,ierr)
+    if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+             'failed to get cool_wid from radiation_ray')
     do i=1,3
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))
+          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))* &
+          step(z(n),z_cutoff,cool_wid)
     enddo
 !
 ! Add to energy equation
