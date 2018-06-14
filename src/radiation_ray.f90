@@ -1523,6 +1523,8 @@ module Radiation
             if (f(l1-1+l,m,n,ikapparho)**2>dxyz_2(l)) then
               dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
                   dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
+              if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+              dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
             else
               dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
               if (z_cutoff/=impossible .and. cool_wid/=impossible) &
@@ -1615,7 +1617,7 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
-      real, dimension(mx) :: lnTT
+      real, dimension(mx) :: lnTT,z_cutoff1
       integer :: lun_input = 1
       integer :: inu
       integer :: ierr
@@ -1625,22 +1627,42 @@ module Radiation
 !  usual Planck function, S=sigmaSB*TT^4
 !
       case ('LTE')
-        do n=n1-radz,n2+radz
-        do m=m1-rady,m2+rady
-          call eoscalc(f,mx,lnTT=lnTT)
-          if (lcutoff_opticallythin) then
-            if (z_cutoff==impossible .or. cool_wid==impossible) &
-            call fatal_error("source_function:","z_cutoff or cool_wid is not set")
-            call put_shared_variable('z_cutoff',z_cutoff,ierr)
-            if (ierr/=0) call stop_it("source_function: "//&
-              "there was a problem when putting z_cutoff")
-               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)* &
-                         0.5*(1.-tanh((z(n)-z_cutoff)/cool_wid))
-          else
+        if (lcutoff_opticallythin) then
+          if (z_cutoff==impossible .or. cool_wid==impossible) &
+          call fatal_error("source_function:","z_cutoff or cool_wid is not set")
+          call put_shared_variable('z_cutoff',z_cutoff,ierr)
+          if (ierr/=0) call stop_it("source_function: "//&
+            "there was a problem when putting z_cutoff")
+          call put_shared_variable('cool_wid',cool_wid,ierr)
+          if (ierr/=0) call stop_it("source_function: "//&
+            "there was a problem when putting cool_wid")
+          z_cutoff1=z_cutoff
+          do l=1,nx
+          do n=n1-radz,n2+radz
+          do m=m1-rady,m2+rady
+            if (abs(f(l1-1+l,m,n,ikapparho)**2-1.0e-6*dxyz_2(l)) .lt. 1.0e-8) then
+                z_cutoff1(l1-1+l)=z(n)
+            endif
+          enddo
+          enddo
+          enddo
+          do n=n1-radz,n2+radz
+          do m=m1-rady,m2+rady
+            call eoscalc(f,mx,lnTT=lnTT)
+            do l=l1-radx,l2+radx
+              Srad(l,m,n)=arad*exp(4*lnTT(l))*scalefactor_Srad(inu)* &
+                        0.5*(1.-tanh((z(n)-z_cutoff1(l))/cool_wid))
+            enddo
+          enddo
+          enddo
+        else
+          do n=n1-radz,n2+radz
+          do m=m1-rady,m2+rady
+            call eoscalc(f,mx,lnTT=lnTT)
             Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
-          endif
-        enddo
-        enddo
+          enddo
+          enddo
+        endif
 !
 !  read tabulated 2-colored source function for inu=1 and 2.
 !
