@@ -587,8 +587,6 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
     endif
   endif
 ;
-;stop
-plot, plane2
   if (keyword_set(debug)) then begin
     print, t, min([plane2,xy,xz,yz]), max([plane2,xy,xz,yz])
   endif else begin
