@@ -292,7 +292,7 @@ module power_spectrum
      do ikz=1,nz
         do iky=1,ny
            do ikx=1,nx
-              k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+              k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
               if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                    +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
            enddo
