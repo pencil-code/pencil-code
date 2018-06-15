@@ -238,6 +238,7 @@ module Energy
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
+  integer :: idiag_cgam=0       ! DIAG_DOC: $\left<c_{\gamma}\right>$
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\cdot\uv\right>$
   integer :: idiag_heatm=0      ! DIAG_DOC:
   integer :: idiag_ugradpm=0    ! DIAG_DOC:
@@ -2704,6 +2705,11 @@ module Energy
       if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_tauhmin/=0) lpenc_diagnos(i_cv1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_cgam/=0) then
+        lpenc_diagnos(i_TT)=.true.
+        lpenc_diagnos(i_cp1)=.true.
+        lpenc_diagnos(i_rho1)=.true.
+      endif
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
@@ -3202,6 +3208,7 @@ module Energy
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_cgam/=0) call sum_mn_name(16.*sigmaSB*p%TT**3*p%cp1*p%rho1,idiag_cgam)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_fconvm/=0) &
@@ -6226,7 +6233,7 @@ module Energy
       if (lreset) then
         idiag_dtc=0; idiag_ethm=0; idiag_ethdivum=0
         idiag_ssruzm=0; idiag_ssuzm=0; idiag_ssm=0; idiag_ss2m=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_pdivum=0; idiag_heatm=0
+        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_cgam=0; idiag_pdivum=0; idiag_heatm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
@@ -6275,6 +6282,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'heatm',idiag_heatm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
+        call parse_name(iname,cname(iname),cform(iname),'cgam',idiag_cgam)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'fradbot',idiag_fradbot)
         call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
