@@ -254,7 +254,7 @@ module Radiation
 !
 !  Empirically we have found that cdtrad>0.1 is unsafe.
 !  But in Perri & Brandenburg, for example, cdtrad=0.5 was still ok.
-!  It may be useful to define 2 different cdtrad the the cases below.
+!  It may be useful to define 2 different cdtrad for the cases below.
 !
       !if (ldt.and.cdtrad>0.1) then
       !  call fatal_error('initialize_radiation', &
@@ -1515,8 +1515,9 @@ module Radiation
 !  This is currently not correct in the non-gray case!
 !  Instead of a factor 4, one should have a factor of 16; see BB14, Eq.(A.2).
 !  kapparho^2 > dxyz_2 means short mean-free path, so optically thick.
-!  Then, 4*kappa*sigmaSB*T^3/(cv*dx^2*kapparho^2*cdtrad), so
-!  dt_min = cgam*ell/(4*dx^2); otherwise, dt_min = cgam*ell/(4*ell).
+!  Then, dt1_min = 4*kappa*sigmaSB*T^3/(cv*dx^2*kapparho^2*cdtrad), so
+!  dt1_min = cgam*ell/(4*dx^2); otherwise, dt_min = cgam*ell/(4*ell).
+!  In the optically thin regime: no constraint for z > z_cutoff.
 !
           kappa=f(l1:l2,m,n,ikapparho)*p%rho1
           do l=1,nx
