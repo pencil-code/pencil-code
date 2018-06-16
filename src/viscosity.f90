@@ -1988,6 +1988,7 @@ module Viscosity
 !  19-dec-16/MR: fixed bug: m,n must be from Cdata. Added precalculation of nu_smag in f array.
 !                Rewritten viscous heating from slope-limited diffusion.  
 !  18-may-17/MR: corrected wrong order of loops for viscous heating by slope-limited diffusion.
+!  16-jun-18/axel: reverted "severe bug..." of r74487; see "!AB_REM:" and "!AB_ADD" 
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2
       use General, only: reduce_grad_dim,notanumber
@@ -2045,11 +2046,11 @@ module Viscosity
 !
         do j=1,3
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
-        enddo
+        !AB_REM:enddo
 !
         do n=n1,n2; do m=m1,m2
 !
-          do j=1,3
+          !AB_REM:do j=1,3
 !
 !  Divergence of flux = force.
 !
@@ -2083,8 +2084,9 @@ module Viscosity
               !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
             endif
  
-          enddo
+          !AB_REM:enddo
         enddo; enddo
+          enddo!AB_ADD
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
 !if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
