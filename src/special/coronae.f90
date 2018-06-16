@@ -18,6 +18,7 @@ module Special
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages, only: fatal_error, warning, svn_id
+  use Slices_methods, only: assign_slices_scal, store_slices
 !
   implicit none
 !
@@ -633,8 +634,6 @@ module Special
 !
 !  204-sep-10/bing: coded
 !
-      use Slices_methods, only: assign_slices_scal
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data), intent(inout) :: slices
 !
@@ -1237,12 +1236,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
-        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
-        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
-        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
-        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
-        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
+!
+        if (ivid_spitzer/=0) &
+          call store_slices(thdiff,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1326,12 +1323,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
-        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
-        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
-        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
-        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
-        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
+!
+        if (ivid_spitzer/=0) &
+          call store_slices(thdiff,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1699,12 +1694,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        hgrad_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-        if (m == iy_loc)  hgrad_xz(:,n-n1+1)= rhs
-        if (n == iz_loc)  hgrad_xy(:,m-m1+1)= rhs
-        if (n == iz2_loc) hgrad_xy2(:,m-m1+1)= rhs
-        if (n == iz3_loc) hgrad_xy3(:,m-m1+1)= rhs
-        if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
+!        
+        if (ivid_hgrad/=0) &
+          call store_slices(rhs,hgrad_xy,hgrad_xz,hgrad_yz, &
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
 !
 !  for timestep extension multiply with the
@@ -1788,12 +1781,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        hgrad_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-        if (m == iy_loc)  hgrad_xz(:,n-n1+1)= rhs
-        if (n == iz_loc)  hgrad_xy(:,m-m1+1)= rhs
-        if (n == iz2_loc) hgrad_xy2(:,m-m1+1)= rhs
-        if (n == iz3_loc) hgrad_xy3(:,m-m1+1)= rhs
-        if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
+!
+        if (ivid_hgrad/=0) &
+          call store_slices(rhs,hgrad_xy,hgrad_xz,hgrad_yz, &
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1890,12 +1881,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
-        if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
-        if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
-        if (n == iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
-        if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
-        if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
+!
+        if (ivid_rtv/=0) &
+          call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz, &
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -2210,7 +2199,6 @@ module Special
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
       use Sub, only: cubic_step
-      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
