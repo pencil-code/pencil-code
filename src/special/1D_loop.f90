@@ -159,7 +159,6 @@ module Special
         if (lwrite_slice_xz2.and..not.allocated(logQ_xz2)) allocate(logQ_xz2(nx,nz))
       endif
       if (ivid_spitzer/=0) then
-        !call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
         if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
         if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
         if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
@@ -617,6 +616,7 @@ module Special
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot2,dot,cubic_step
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -710,12 +710,9 @@ module Special
       if (lvideo) then
 !
 ! slices
-        spitzer_yz(m-m1+1,n-n1+1)=1./chi(ix_loc-l1+1)
-        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= 1./chi
-        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= 1./chi
-        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= 1./chi
-        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= 1./chi
-        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= 1./chi
+!
+        if (ivid_spitzer/=0) &
+          call store_slices(1./chi,spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endif
 !
     endsubroutine calc_heatcond_spitzer
@@ -788,6 +785,7 @@ module Special
     use Diagnostics,     only: max_mn_name
     use Messages, only: warning
     use Sub, only: cubic_step
+    use Slices_methods, only: store_slices
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -855,12 +853,12 @@ module Special
 !
 ! fill video slices
 !
-      logQ_yz(m-m1+1,n-n1+1)=lnQ(ix_loc-l1+1)*0.43429448
-      if (m==iy_loc)  logQ_xz(:,n-n1+1)= lnQ*0.43429448
-      if (n==iz_loc)  logQ_xy(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz2_loc) logQ_xy2(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz3_loc) logQ_xy3(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz4_loc) logQ_xy4(:,m-m1+1)= lnQ*0.43429448
+    if (lvideo) then
+      if (ivid_rtv/=0) &
+        call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+      if (ivid_logQ/=0) &
+        call store_slices(lnQ*0.43429448,logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+    endif
 !
   endsubroutine calc_heat_cool_RTV
 !***********************************************************************
