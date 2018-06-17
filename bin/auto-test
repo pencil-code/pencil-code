@@ -123,6 +123,7 @@ my %tests = (
                           interlocked-fluxrings
                           conv-slab-flat
                           corona
+                          coronae_heatflux_boris
                           spherical-convection
                           testfield
                           testfield_xz

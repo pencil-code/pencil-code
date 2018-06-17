@@ -1,0 +1,50 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for corona 
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2018/06/17 13:33:10 joern Exp $'
+  xyz0 = 0., 0., 0.
+  Lxyz = 50e3, 50e3 ,50e3
+  !
+  unit_system  ='SI'
+  unit_length  =1e3
+  unit_velocity=1e3
+  unit_density =1e-4
+  unit_temperature=1e4
+  !
+  lperi = T,    T,   F
+  !
+  bcz = 'a','a','a','nil','nil','nil','nil','a','a','a'
+/
+&initial_condition_pars
+  lnTT_init='tanh'
+  
+  lnrho_init='hydrostatic'
+  z0_tanh = 9e6
+  width_tanh=2e6
+  T0 = 6000.
+!
+  rho_init=3.
+/
+&eos_init_pars
+  cs0   = 11.2    ! cs0 =  sqrt((gamma-1)T/c_p)
+  rho0  = 3.      ! rho0*unit_density = 3e-4 kg/m^3
+  mu    = 0.667
+/
+&hydro_init_pars
+/
+&density_init_pars         
+  rho_const = 3.
+/
+&grav_init_pars
+  gravz_profile='const'
+  zref = 0
+  gravz=-274e-3 ! gravz * unit_velocity^2 / unit_length = 274 m/s
+/
+&entropy_init_pars
+/
+&magnetic_init_pars
+  initaa='magnetogram'
+/
+&special_init_pars         
+/

@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/coronae_heatflux_boris
+SVN Id:
+    $Id$
+Maintainer:
+    Sven Bingert <mail/bingert[dot]com>
+    Jörn Warnecke <joern[dot]warnecke/gmail[dot]de>
+    Matthias Rheinhardt <mreinhardt/nordita[dot]org>
+Added:
+    12-Oct-2006
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+References:
+    Gudiksen, B. V., and Nordlund, Å.: 2005, ``An Ab Initio Approach
+    to the Solar Coronal Heating Problem,'' Astrophys. J. 618, 1020-1030
