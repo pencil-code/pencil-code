@@ -281,7 +281,7 @@ def _get_range(t, data, center=False, drange='full', logscale=False, tmin=None):
             vmin, vmax = get_centered_range(vmin, vmax)
     return vmin, vmax
 #=======================================================================
-def _slices1d(field, t, slices, dim, par, grid, **kwarg):
+def _slices1d(field, t, slices, dim, par, grid, ylog=False, **kwarg):
     """Animates video slices from a 1D model.
 
     Positional Arguments:
@@ -297,6 +297,8 @@ def _slices1d(field, t, slices, dim, par, grid, **kwarg):
             Parameters supplied by read.parameters().
         grid
             Grid coordinates supplied by read.grid(interface=False).
+        ylog
+            If True, y-axis is plotted logarithmically.
 
     Keyword Arguments:
         **kwarg
@@ -304,7 +306,7 @@ def _slices1d(field, t, slices, dim, par, grid, **kwarg):
     """
     # Author: Chao-Chin Yang
     # Created: 2018-06-05
-    # Last Modified: 2018-06-05
+    # Last Modified: 2018-06-17
     from matplotlib.animation import FuncAnimation
     import matplotlib.pyplot as plt
 
@@ -335,7 +337,10 @@ def _slices1d(field, t, slices, dim, par, grid, **kwarg):
     # Generate the first frame.
     fig = plt.figure(**kwarg)
     ax = fig.gca()
-    line, = ax.plot(x, s[0], "o:")
+    if ylog:
+        line, = ax.semilogy(x, s[0], "o:")
+    else:
+        line, = ax.plot(x, s[0], "o:")
     ax.set_xlim(par.xyz0[idir], par.xyz1[idir])
     if ylim[0] < ylim[1]: ax.set_ylim(ylim)
     ax.minorticks_on()
