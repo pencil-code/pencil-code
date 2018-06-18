@@ -117,6 +117,8 @@ module Shock
 !
       f(:,:,:,ishock)=0.0
       if (ldivu_perp) then
+        if (.not. lmagnetic) call fatal_error('initialize_shock', &
+                    'ldivu_perp requires magnetic field module for B_perp')
         f(:,:,:,ishock_perp)=0.0
       endif
 !
