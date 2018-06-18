@@ -165,6 +165,7 @@ module Cdata
   logical :: lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false.
+  logical :: ldivu_perp=.false.
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
