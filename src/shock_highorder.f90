@@ -68,6 +68,10 @@ module Shock
 !
   real, dimension (-3:3,-3:3,-3:3) :: smooth_factor
 !
+  interface shock_divu_perp
+    module procedure shock_divu_perp_pencil
+  endinterface
+!
   contains
 !***********************************************************************
     subroutine register_shock()
@@ -77,8 +81,12 @@ module Shock
 !
       use FArrayManager
       use Messages, only: svn_id
+      use Sub, only: register_report_aux
 !
       call farray_register_auxiliary('shock',ishock,communicated=.true.)
+      if (ldivu_perp) then
+        call register_report_aux('shock_perp',ishock_perp,communicated=.true.)
+      endif
 !
 !  Identify version number.
 !
@@ -108,6 +116,9 @@ module Shock
 !  Initialize shock profile to zero
 !
       f(:,:,:,ishock)=0.0
+      if (ldivu_perp) then
+        f(:,:,:,ishock_perp)=0.0
+      endif
 !
 !  Calculate the smoothing factors
 !
@@ -302,6 +313,7 @@ module Shock
 !  Shock profile
 !
         case ('shock'); call assign_slices_scal(slices,f,ishock)
+        case ('shock_perp'); call assign_slices_scal(slices,f,ishock_perp)
 !
       endselect
 !
@@ -353,6 +365,12 @@ module Shock
       if (lpencil(i_shock)) p%shock=f(l1:l2,m,n,ishock)
 ! gshock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
+      if (ldivu_perp) then
+! shock_perp
+        if (lpencil(i_shock_perp)) p%shock_perp=f(l1:l2,m,n,ishock_perp)
+! gshock_perp
+        if (lpencil(i_gshock_perp)) call grad(f,ishock_perp,p%gshock_perp)
+      endif
 !
       if (ldiagnos) then
         if (idiag_shockm/=0)   call sum_mn_name( p%shock,idiag_shockm)
@@ -380,12 +398,15 @@ module Shock
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry, &
                          mpiallreduce_max, MPI_COMM_WORLD
+      use Magnetic, only: bb_unitvec_shock
       use Sub, only: div
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       real, dimension (mx,my,mz) :: tmp
       real, dimension (nx) :: penc, penc1
+      real, dimension (mx) :: penc_perp, mxpenc
+      real, dimension (mx,3) :: bb_hat
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
@@ -571,7 +592,124 @@ module Shock
         endif
       endif fix_Re
 !
+      if (ldivu_perp) then
+        call boundconds_x(f,ishock_perp,ishock_perp)
+        call initiate_isendrcv_bdry(f,ishock_perp,ishock_perp)
+!
+        do imn=1,ny*nz
+!
+          n = nn(imn)
+          m = mm(imn)
+!
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
+            call boundconds_y(f,ishock_perp,ishock_perp)
+            call boundconds_z(f,ishock_perp,ishock_perp)
+          endif
+!
+          mxpenc=f(:,m,n,ishock)
+          call bb_unitvec_shock(f,bb_hat)
+          call shock_divu_perp(f,bb_hat,mxpenc,penc_perp)
+          f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp(l1:l2))
+!
+        enddo
+        tmp = f(:,:,:,ishock_perp) * dxmin**2
+        if (.not.lrewrite_shock_boundary) then
+          f(l1:l2,m1:m2,n1:n2,ishock_perp) = tmp(l1:l2,m1:m2,n1:n2)
+        else
+          f(:,:,:,ishock_perp) = tmp
+        endif
+      endif
+!
     endsubroutine calc_shock_profile
+!***********************************************************************
+    subroutine shock_divu_perp_pencil(f,bb_hat,divu,divu_perp)
+!
+!  Calculate `perpendicular divergence' of u.
+!  nabla_perp.uu = nabla.uu - (1/b2)*bb.(bb.nabla)*uu
+!
+!  16-aug-06/tobi: coded
+!  07-jun-18/fred: revised to include higher order gradient u
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,3), intent (in) :: bb_hat
+      real, dimension (mx), intent (in) :: divu
+      real, dimension (mx), intent (out) :: divu_perp
+!
+      real, dimension (mx) :: fac
+!
+      divu_perp = divu
+!
+      if (nxgrid/=1) then
+         fac=bb_hat(:,1)/(60*dx)
+         divu_perp(:) = divu_perp(:)                          &
+           - fac(l1:l2)*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,iux)   &
+                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,iux)   &
+                                         - f(l1-1:l2-1,m  ,n  ,iux))  &
+                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,iux)   &
+                                         - f(l1-2:l2-2,m  ,n  ,iux))  &
+                                         - f(l1-3:l2-3,m  ,n  ,iux) ) &
+                       + bb_hat(l1:l2,2)*( f(l1+3:l2+3,m  ,n  ,iuy)   &
+                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,iuy)   &
+                                         - f(l1-1:l2-1,m  ,n  ,iuy))  &
+                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,iuy)   &
+                                         - f(l1-2:l2-2,m  ,n  ,iuy))  &
+                                         - f(l1-3:l2-3,m  ,n  ,iuy) ) &
+                       + bb_hat(l1:l2,3)*( f(l1+3:l2+3,m  ,n  ,iuz)   &
+                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,iuz)   &
+                                         - f(l1-1:l2-1,m  ,n  ,iuz))  &
+                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,iuz)   &
+                                         - f(l1-2:l2-2,m  ,n  ,iuz))  &
+                                         - f(l1-3:l2-3,m  ,n  ,iuz) ) )
+      endif
+!
+      if (nygrid/=1) then
+         fac=bb_hat(:,2)/(60*dy)
+         divu_perp(:) = divu_perp(:)                          &
+           - fac(l1:l2)*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,iux)   &
+                                   + 45.0*(f(  l1:l2  ,m+1,n  ,iux)   &
+                                         - f(  l1:l2  ,m-1,n  ,iux))  &
+                                   -  9.0*(f(  l1:l2  ,m+2,n  ,iux)   &
+                                         - f(  l1:l2  ,m-2,n  ,iux))  &
+                                         - f(  l1:l2  ,m-3,n  ,iux) ) &
+                       + bb_hat(l1:l2,2)*( f(  l1:l2  ,m+3,n  ,iuy)   &
+                                   + 45.0*(f(  l1:l2  ,m+1,n  ,iuy)   &
+                                         - f(  l1:l2  ,m-1,n  ,iuy))  &
+                                   -  9.0*(f(  l1:l2  ,m+2,n  ,iuy)   &
+                                         - f(  l1:l2  ,m-2,n  ,iuy))  &
+                                         - f(  l1:l2  ,m-3,n  ,iuy) ) &
+                       + bb_hat(l1:l2,3)*( f(  l1:l2  ,m+3,n  ,iuz)   &
+                                   + 45.0*(f(  l1:l2  ,m+1,n  ,iuz)   &
+                                         - f(  l1:l2  ,m-1,n  ,iuz))  &
+                                   -  9.0*(f(  l1:l2  ,m+2,n  ,iuz)   &
+                                         - f(  l1:l2  ,m-2,n  ,iuz))  &
+                                         - f(  l1:l2  ,m-3,n  ,iuz) ) )
+      endif
+!
+      if (nzgrid/=1) then
+         fac=bb_hat(:,3)/(60*dz)
+         divu_perp(:) = divu_perp(:)                          &
+           - fac(l1:l2)*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,iux)   &
+                                   + 45.0*(f(  l1:l2  ,m,  n+1,iux)   &
+                                         - f(  l1:l2  ,m,  n-1,iux))  &
+                                   -  9.0*(f(  l1:l2  ,m,  n+2,iux)   &
+                                         - f(  l1:l2  ,m,  n-2,iux))  &
+                                         - f(  l1:l2  ,m  ,n-3,iux) ) &
+                       + bb_hat(l1:l2,2)*( f(  l1:l2  ,m  ,n+3,iuy)   &
+                                   + 45.0*(f(  l1:l2  ,m,  n+1,iuy)   &
+                                         - f(  l1:l2  ,m,  n-1,iuy))  &
+                                   -  9.0*(f(  l1:l2  ,m,  n+2,iuy)   &
+                                         - f(  l1:l2  ,m,  n-2,iuy))  &
+                                         - f(  l1:l2  ,m  ,n-3,iuy) ) &
+                       + bb_hat(l1:l2,3)*( f(  l1:l2  ,m  ,n+3,iuz)   &
+                                   + 45.0*(f(  l1:l2  ,m,  n+1,iuz)   &
+                                         - f(  l1:l2  ,m,  n-1,iuz))  &
+                                   -  9.0*(f(  l1:l2  ,m,  n+2,iuz)   &
+                                         - f(  l1:l2  ,m,  n-2,iuz))  &
+                                         - f(  l1:l2  ,m  ,n-3,iuz) ) )
+      endif
+!
+    endsubroutine shock_divu_perp_pencil
 !***********************************************************************
     subroutine calc_shock_profile_simple(f)
 !
