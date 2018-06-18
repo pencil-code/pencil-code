@@ -82,7 +82,7 @@ module Param_IO
       coord_system, lpole, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
-      lmodify,modify_filename, dvid, &
+      lmodify,modify_filename, dvid, ldivu_perp, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
@@ -111,7 +111,7 @@ module Param_IO
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
-      d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
+      d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, ldivu_perp, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
@@ -131,7 +131,7 @@ module Param_IO
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
-      lwrite_dim_again,&
+      lwrite_dim_again, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &
