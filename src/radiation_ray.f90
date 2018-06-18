@@ -90,7 +90,8 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
-  real :: z_cutoff=impossible,cool_wid=impossible
+  real :: z_cutoff=impossible,cool_wid=impossible, qrad_max=0.0,  &
+          zclip_dwn=-max_real,zclip_up=max_real
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -167,7 +168,8 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
-      z_cutoff,cool_wid,lno_rad_heating
+      z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
+      zclip_up
 !
   contains
 !***********************************************************************
@@ -1487,8 +1489,15 @@ module Radiation
 !  approximation (if either lrad_cool_diffus=F or lrad_pres_diffus=F).
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) call calc_rad_diffusion(f,p)
-      if (lno_rad_heating) & 
-         where (f(l1:l2,m,n,iQrad) > 0.0d0) f(l1:l2,m,n,iQrad)=0.0d0
+      if (lno_rad_heating .and. (qrad_max > 0)) then
+!
+! Upper limit radiative heating by qrad_max
+!
+        do l=l1-radx, l2+radx
+          if (f(l,m,n,iqrad) .gt. qrad_max) &
+                  f(l,m,n,iQrad)=qrad_max
+        enddo
+      endif
       cooling=f(l1:l2,m,n,iQrad)
 !
 !  Possibility of rescaling the radiative cooling term.
@@ -1629,6 +1638,9 @@ module Radiation
 !
       case ('LTE')
         if (lcutoff_opticallythin) then
+!
+! This works for stratification in the z-direction
+!
           if (z_cutoff==impossible .or. cool_wid==impossible) &
           call fatal_error("source_function:","z_cutoff or cool_wid is not set")
           call put_shared_variable('z_cutoff',z_cutoff,ierr)
@@ -1638,11 +1650,15 @@ module Radiation
           if (ierr/=0) call stop_it("source_function: "//&
             "there was a problem when putting cool_wid")
           z_cutoff1=z_cutoff
-          do l=1,nx
+          do l=l1-radx,l2+radx
           do n=n1-radz,n2+radz
           do m=m1-rady,m2+rady
-            if (abs(f(l1-1+l,m,n,ikapparho)**2-1.0e-6*dxyz_2(l)) .lt. 1.0e-8) then
-                z_cutoff1(l1-1+l)=z(n)
+!
+! Put Srad smoothly to zero for z above which the
+! photon mean free path kappa*rho > 1/(1000*dz) 
+!
+            if (abs(f(l,m,n,ikapparho)-1.0e-3*dz_1(n)) .lt. epsi) then
+                z_cutoff1(l)=min(max(z(n),zclip_dwn),zclip_up)
             endif
           enddo
           enddo
@@ -1798,6 +1814,9 @@ module Radiation
           kappa_cond=2.6d-7*unit_length*unit_temperature**2*exp(2*lnTT)*exp(-lnrho)
           kappa_rad=kapparho_floor+1./(1./(kappa1+kappae)+1./kappa2)
           kappa_tot=1./(1./kappa_rad+1./kappa_cond)
+          if (lcutoff_opticallythin) & 
+            kappa_tot=0.5*(1.-tanh((z(n)-2*z_cutoff)/cool_wid))/ &
+                      (1./kappa_rad+1./kappa_cond)
           f(:,m,n,ikapparho)=exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
         enddo
         enddo
