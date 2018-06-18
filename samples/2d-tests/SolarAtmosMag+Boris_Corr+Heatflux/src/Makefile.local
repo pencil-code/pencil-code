@@ -1,0 +1,19 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+IO        =   io_collect
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   temperature_ionization
+MAGNETIC  =   magnetic
+RADIATION =   radiation_ray
+EOS       =   eos_temperature_ionization
+SHOCK     =   shock
+GRAVITY   =   gravity_simple
+FOURIER   =   fourier_fftpack
+HEATFLUX  =   heatflux
+SPECIAL   =   special/solar_corona
+REAL_PRECISION = double

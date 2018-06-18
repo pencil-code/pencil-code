@@ -1627,7 +1627,8 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
-      real, dimension(mx) :: lnTT,z_cutoff1
+      real, dimension(mx,my) :: z_cutoff1
+      real, dimension(mx) :: lnTT
       integer :: lun_input = 1
       integer :: inu
       integer :: ierr
@@ -1651,14 +1652,15 @@ module Radiation
             "there was a problem when putting cool_wid")
           z_cutoff1=z_cutoff
           do l=l1-radx,l2+radx
-          do n=n1-radz,n2+radz
           do m=m1-rady,m2+rady
+          do n=n1-radz,n2+radz
 !
 ! Put Srad smoothly to zero for z above which the
 ! photon mean free path kappa*rho > 1/(1000*dz) 
 !
             if (abs(f(l,m,n,ikapparho)-1.0e-3*dz_1(n)) .lt. epsi) then
-                z_cutoff1(l)=min(max(z(n),zclip_dwn),zclip_up)
+                z_cutoff1(l,m)=min(max(z(n),zclip_dwn),zclip_up)
+                exit
             endif
           enddo
           enddo
@@ -1668,7 +1670,7 @@ module Radiation
             call eoscalc(f,mx,lnTT=lnTT)
             do l=l1-radx,l2+radx
               Srad(l,m,n)=arad*exp(4*lnTT(l))*scalefactor_Srad(inu)* &
-                        0.5*(1.-tanh((z(n)-z_cutoff1(l))/cool_wid))
+                        0.5*(1.-tanh((z(n)-z_cutoff1(l,m))/cool_wid))
             enddo
           enddo
           enddo
