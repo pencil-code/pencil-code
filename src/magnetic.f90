@@ -1219,11 +1219,14 @@ module Magnetic
               call fatal_error('initialize_magnetic', &
               'shock resistivity, but module setting SHOCK=noshock')
         case ('shock-perp')
-          if (lroot) print*, 'resistivity: shock_perp'
+          if (lroot) print*, 'resistivity: shock perpendicular to B'
           lresi_eta_shock_perp=.true.
           if (.not. lshock) &
               call fatal_error('initialize_magnetic', &
-              'shock resistivity, but module setting SHOCK=noshock')
+              'shock-perp resistivity, but module setting SHOCK=noshock')
+          if (.not. ldivu_perp) &
+              call fatal_error('initialize_magnetic', &
+              'shock-perp resistivity, but not ldivu_perp=.true.')
         case ('eta_va')
           if (lroot) print*, 'resistivity: eta_va'
           lresi_etava=.true.
