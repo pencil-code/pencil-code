@@ -40,7 +40,7 @@ module Shock
   logical :: lfix_Re_mesh=.false.
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
-  logical :: lrewrite_shock_boundary=.true.
+  logical :: lrewrite_shock_boundary=.false.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
