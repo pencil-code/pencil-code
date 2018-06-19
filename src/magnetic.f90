@@ -7723,6 +7723,9 @@ module Magnetic
 !  If anybody knows a more accurate way of doing this, please modify.
 !
 !  16-aug-06/tobi: coded
+!  19-jun-18/fred: added high order option with lbb_as_aux
+!
+      use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
@@ -7739,53 +7742,77 @@ module Magnetic
 !
       bb=0.
 !
-      if (nxgrid/=1) then
-        fac = 1/(2*dx)
-        bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) + fac*( f(l1-1:l2+3,m  ,n  ,iay)   &
-                                                - f(l1-3:l2+1,m  ,n  ,iay) )
-        bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) - fac*( f(l1-1:l2+3,m  ,n  ,iaz)   &
-                                                - f(l1-3:l2+1,m  ,n  ,iaz) )
-      endif
+      if (.not. lbb_as_aux) then
 !
-      if (nygrid/=1) then
-        fac = 1/(2*dy)
-        bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) + fac*( f(l1-2:l2+2,m+1,n  ,iaz)   &
-                                                - f(l1-2:l2+2,m-1,n  ,iaz) )
-        bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) - fac*( f(l1-2:l2+2,m+1,n  ,iax)   &
-                                                - f(l1-2:l2+2,m-1,n  ,iax) )
-      endif
+        if (nxgrid/=1) then
+          fac = 1/(2*dx)
+          bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) + fac*( f(l1-1:l2+3,m  ,n  ,iay)   &
+                                                  - f(l1-3:l2+1,m  ,n  ,iay) )
+          bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) - fac*( f(l1-1:l2+3,m  ,n  ,iaz)   &
+                                                  - f(l1-3:l2+1,m  ,n  ,iaz) )
+        endif
 !
-      if (nzgrid/=1) then
-        fac = 1/(2*dz)
-        bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) + fac*( f(l1-2:l2+2,m  ,n+1,iax)   &
-                                                - f(l1-2:l2+2,m  ,n-1,iax) )
-        bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) - fac*( f(l1-2:l2+2,m  ,n+1,iay)   &
-                                                - f(l1-2:l2+2,m  ,n-1,iay) )
-      endif
+        if (nygrid/=1) then
+          fac = 1/(2*dy)
+          bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) + fac*( f(l1-2:l2+2,m+1,n  ,iaz)   &
+                                                  - f(l1-2:l2+2,m-1,n  ,iaz) )
+          bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) - fac*( f(l1-2:l2+2,m+1,n  ,iax)   &
+                                                  - f(l1-2:l2+2,m-1,n  ,iax) )
+        endif
+!
+        if (nzgrid/=1) then
+          fac = 1/(2*dz)
+          bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) + fac*( f(l1-2:l2+2,m  ,n+1,iax)   &
+                                                  - f(l1-2:l2+2,m  ,n-1,iax) )
+          bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) - fac*( f(l1-2:l2+2,m  ,n+1,iay)   &
+                                                  - f(l1-2:l2+2,m  ,n-1,iay) )
+        endif
 !
 !  Add external magnetic field.
 !
-      do j=1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo
+        do j=1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo
 !
 !  Truncate small components to zero.
 !
-      bb2 = bb**2
+        bb2 = bb**2
 !
-      aerr2 = tol**2 * max(sum(bb2,2),1.)
+        aerr2 = tol**2 * max(sum(bb2,2),1.)
 !
-      do j=1,3
-        where (bb2(:,j) < aerr2)
-          bb_hat(:,j) = 0.
-        elsewhere
-          bb_hat(:,j) = bb(:,j)
-        endwhere
-      enddo
+        do j=1,3
+          where (bb2(:,j) < aerr2)
+            bb_hat(:,j) = 0.
+          elsewhere
+            bb_hat(:,j) = bb(:,j)
+          endwhere
+        enddo
 !
 !  Get unit vector.
 !
-      bb_len = sqrt(sum(bb_hat**2,2))
+        bb_len = sqrt(sum(bb_hat**2,2))
 !
-      do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
+        do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
+!
+! else if lbb_as_aux
+!
+      else
+        bb(l1:12,:) = f(l1:l2,m,n,ibx:ibz)
+        call dot2(bb(l1:l2,:),bb_len(l1:l2),PRECISE_SQRT=.true.)
+!
+!  Truncate small components to zero.
+!
+        do j=1,3
+          where (bb_len(l1:l2) <= 2*tini)
+            bb_hat(l1:l2,j) = 0.
+          elsewhere
+            bb_hat(l1:l2,j) = bb(l1:l2,j)
+          endwhere
+        enddo
+!
+!  Get unit vector.
+!
+        do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
+!
+      endif
 !
     endsubroutine bb_unitvec_shock
 !***********************************************************************
