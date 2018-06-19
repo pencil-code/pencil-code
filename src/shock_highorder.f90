@@ -609,7 +609,7 @@ module Shock
             call boundconds_z(f,ishock_perp,ishock_perp)
           endif
 !
-          mxpenc=f(:,m,n,ishock)
+          call div(f,iuu,mxpenc(l1:l2))
           call bb_unitvec_shock(f,bb_hat)
           call shock_divu_perp(f,bb_hat,mxpenc,penc_perp)
           f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp(l1:l2))
