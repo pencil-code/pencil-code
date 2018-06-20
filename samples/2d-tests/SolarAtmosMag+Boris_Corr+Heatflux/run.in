@@ -52,7 +52,7 @@
   zdep_profile='step',eta_jump=40001.0,eta_z0=1.0,eta_zwidth=-0.2
   eta_hyper3=1e-7
   eta_shock=5.
-  lboris_correction=T,cmin=0.3
+  lboris_correction=T,cmin=30.0
 /
 &radiation_run_pars
   cdtrad=5.0e-4
