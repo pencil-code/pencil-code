@@ -5001,7 +5001,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,i2d2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
           force(:,i2d3)= 0.
         case ('RobertsFlow_exact')
-          kx=k1_ff; ky=k1_ff
+          kx=kf_fcont(i); ky=kf_fcont(i)
           kf=sqrt(kx*kx+ky*ky)
           call getnu(nu_input=nu)
           fact=ampl_ff(i)*kf*kf*nu
@@ -5011,7 +5011,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
           force(:,1)=-fact*ky*cosx(l1:l2,i)*siny(m,i) - fact2*ky*sinx(l1:l2,i)*cosx(l1:l2,i)
           force(:,2)=+fact*kx*sinx(l1:l2,i)*cosy(m,i) - fact2*kx*siny(m,i)*cosy(m,i)
-          force(:,3)=+fact*kf*cosx(l1:l2,i)*cosy(m,i)
+          force(:,3)=+fact*relhel*kf*cosx(l1:l2,i)*cosy(m,i)
 !
           if ( Omega/=0. .and. theta==0. ) then              ! Obs, only implemented for rotation axis in z direction.
             fact = 2.*ampl_ff(i)*Omega
