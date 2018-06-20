@@ -915,10 +915,9 @@ module Magnetic
 !  Check if we are solving the relativistic eos equations.
 !  In that case we'd need to get lrelativistic_eos from density.
 !
-      if (ldensity) then
+      if (ldensity) &
         call get_shared_variable('lrelativistic_eos', &
-            lrelativistic_eos, caller='register_energy')
-      endif
+            lrelativistic_eos, caller='register_magnetic')
 !
 !  register the mean-field module
 !
@@ -3322,7 +3321,7 @@ module Magnetic
        if (va2max_boris > 0) then
          p%clight2=spread(va2max_boris,1,nx)
        else
-         clight2_zdep(n-n1+1) = max(cmin**2,c_light**2/(1.+max(z(n),0.0)**8)+max(9.0*maxval(p%u2),maxval(p%cs2)))
+         clight2_zdep(n-n1+1) = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(9.0*maxval(p%u2),maxval(p%cs2)))
          p%clight2=clight2_zdep(n-n1+1)
        endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
