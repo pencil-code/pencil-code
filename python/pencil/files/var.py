@@ -292,20 +292,23 @@ class DataCube(object):
 
         if (magic is not None):
             if ('bb' in magic):
-                # Compute the magnetic field before doing trimall.
-                aa = f[index['ax']-1:index['az'],...]
-                self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param,dim=dim)
-                if (trimall):
-                    if (param.lwrite_2d):
-                        if (dim.nz == 1):
-                            self.bb=self.bb[:, dim.m1:dim.m2+1,
-                            dim.l1:dim.l2+1]
+                if 'bb' in index.keys():
+                    pass
+                else:
+                    # Compute the magnetic field before doing trimall.
+                    aa = f[index['ax']-1:index['az'],...]
+                    self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param,dim=dim)
+                    if (trimall):
+                        if (param.lwrite_2d):
+                            if (dim.nz == 1):
+                                self.bb=self.bb[:, dim.m1:dim.m2+1,
+                                dim.l1:dim.l2+1]
+                            else:
+                                self.bb=self.bb[:, dim.n1:dim.n2+1,
+                                dim.l1:dim.l2+1]
                         else:
                             self.bb=self.bb[:, dim.n1:dim.n2+1,
-                            dim.l1:dim.l2+1]
-                    else:
-                        self.bb=self.bb[:, dim.n1:dim.n2+1,
-                        dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                            dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
                 # Compute the electric current field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
@@ -363,6 +366,8 @@ class DataCube(object):
             self.uu = self.f[index['ux']-1:index['uz'],...]
         if 'aa' in index.keys():
             self.aa = self.f[index['ax']-1:index['az'],...]
+        if 'bb' in index.keys():
+            self.bb = self.f[index['bx']-1:index['bz'],...]
         # Also treat Fcr (from cosmicrayflux) as a vector.
         if 'fcr' in index.keys():
             self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
