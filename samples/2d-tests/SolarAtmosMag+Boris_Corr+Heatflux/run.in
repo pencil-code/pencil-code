@@ -63,8 +63,8 @@
   rady=0
   radz=1
   rad2max=1
-  lcutoff_opticallythin=T
-  z_cutoff=1.0
+  lcutoff_opticallythin=T,lcutoff_zconst=T
+  z_cutoff=1.5
   opacity_type='total_Rosseland_mean'
   scalefactor_cooling=1.,scalefactor_srad=1.0
   cool_wid=0.25
