@@ -114,7 +114,7 @@ module Radiation
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false., lread_source_function=.false.
-  logical :: lcutoff_opticallythin=.false.
+  logical :: lcutoff_opticallythin=.false.,lcutoff_zconst=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -150,7 +150,7 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
-      z_cutoff,cool_wid
+      lcutoff_zconst,z_cutoff,cool_wid
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -168,7 +168,7 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
-      z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
+      lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
       zclip_up
 !
   contains
@@ -1651,20 +1651,22 @@ module Radiation
           if (ierr/=0) call stop_it("source_function: "//&
             "there was a problem when putting cool_wid")
           z_cutoff1=z_cutoff
-          do l=l1-radx,l2+radx
-          do m=m1-rady,m2+rady
-          do n=n1-radz,n2+radz
+          if (.not. lcutoff_zconst) then
+            do l=l1-radx,l2+radx 
+            do m=m1-rady,m2+rady
+            do n=n1-radz,n2+radz
 !
 ! Put Srad smoothly to zero for z above which the
 ! photon mean free path kappa*rho > 1/(1000*dz) 
 !
-            if (abs(f(l,m,n,ikapparho)-1.0e-3*dz_1(n)) .lt. epsi) then
-                z_cutoff1(l,m)=min(max(z(n),zclip_dwn),zclip_up)
-                exit
-            endif
-          enddo
-          enddo
-          enddo
+              if (abs(f(l,m,n,ikapparho)-1.0e-3*dz_1(n)) .lt. epsi) then
+                  z_cutoff1(l,m)=min(max(z(n),zclip_dwn),zclip_up)
+                  exit
+              endif
+            enddo
+            enddo
+            enddo
+          endif
           do n=n1-radz,n2+radz
           do m=m1-rady,m2+rady
             call eoscalc(f,mx,lnTT=lnTT)
