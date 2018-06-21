@@ -140,6 +140,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
+		div_A:'divergence of magnetic vector potential', $
 		B_abs:'magnetic field strength', $
 		B_2:'magnetic field squared', $
 		B_x:'magnetic field x', $
@@ -333,6 +334,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A_x:'A', $
 		A_y:'A', $
 		A_z:'A', $
+		div_A:'A', $
 		B_abs:'B', $
 		B_2:'B', $
 		B_x:'B', $

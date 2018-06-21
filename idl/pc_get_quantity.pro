@@ -670,6 +670,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		; Magnetic vector potential z-component
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.az] * (unit.magnetic_field*unit.length)
 	end
+	if (strcmp (quantity, 'div_A', /fold_case)) then begin
+		; Divergence of the magnetic vector potential [T]
+		return, (div (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2] * unit.magnetic_field
+	end
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
 		; Magnetic field vector [Tesla]
