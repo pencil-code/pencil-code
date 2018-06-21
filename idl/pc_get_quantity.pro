@@ -734,8 +734,8 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, dB_dz
 	end
 	if (strcmp (quantity, 'grad_B', /fold_case)) then begin
-		; Magnetic field gradient
-		if (n_elements (grad_B) eq 0) then grad_B = (gradcurl (pc_compute_quantity (vars, index, 'A', /ghost)))[l1:l2,m1:m2,n1:n2,*]
+		; Magnetic field gradient [T / m]
+		if (n_elements (grad_B) eq 0) then grad_B = (gradcurl (pc_compute_quantity (vars, index, 'A', /ghost)))[l1:l2,m1:m2,n1:n2,*] / unit.length^2
 		return, grad_B
 	end
 	if (strcmp (quantity, 'grad_B_abs', /fold_case)) then begin
