@@ -86,6 +86,7 @@ function pc_generate_parameter_abbreviation, param, label=label
 		gravx_profile = pc_get_parameter ('gravx_profile', label=label)
 		gravy_profile = pc_get_parameter ('gravy_profile', label=label)
 		gravz_profile = pc_get_parameter ('gravz_profile', label=label)
+		if (size (gravx_profile, /type) ne 7) then return, !Values.D_NaN
 		g_total = dblarr (nx,ny,nz,3)
 		if (strcmp (gravx_profile, 'const', /fold_case)) then begin
 			g_ref = pc_get_parameter ('gravx', label=label)
