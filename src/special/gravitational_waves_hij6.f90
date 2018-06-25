@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 12
 ! MAUX CONTRIBUTION 4
 !
-! PENCILS PROVIDED stress_ij(6)
+! PENCILS PROVIDED stress_ij(6), hijij, gijij
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -152,6 +152,8 @@ module Special
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
   integer :: idiag_ggTm=0        ! DIAG_DOC: $\bra{g_T}$
   integer :: idiag_ggXm=0        ! DIAG_DOC: $\bra{g_X}$
+  integer :: idiag_hijij2m=0     ! DIAG_DOC: $\bra{h_{ij,ij}^2}$
+  integer :: idiag_gijij2m=0     ! DIAG_DOC: $\bra{g_{ij,ij}^2}$
 !
   contains
 !***********************************************************************
@@ -339,6 +341,11 @@ module Special
         if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
 !
+!  diagnostics pencils
+!
+      if (idiag_hijij2m/=0) lpenc_diagnos(i_hijij)=.true.
+      if (idiag_gijij2m/=0) lpenc_diagnos(i_gijij)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -361,7 +368,10 @@ module Special
 !  24-aug-17/axel: coded
 !   7-jun-18/axel: included 4/3*rho factor
 !
+      use Deriv, only: derij
+!
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: tmp
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -385,6 +395,40 @@ module Special
         endif
       enddo
       enddo
+!
+!  Compute Hessian of hij
+!
+      if (lpencil(i_hijij)) then
+        p%hijij=0.
+        do j=1,3
+        do i=1,j
+          ij=ij_table(i,j)
+          call derij(f,ihij-1+ij,tmp,i,j)
+          if (i==j) then
+            p%hijij=p%hijij+tmp
+          else
+            p%hijij=p%hijij+2.*tmp
+          endif
+        enddo
+        enddo
+      endif
+!
+!  Compute Hessian of gij
+!
+      if (lpencil(i_gijij)) then
+        p%gijij=0.
+        do j=1,3
+        do i=1,j
+          ij=ij_table(i,j)
+          call derij(f,igij-1+ij,tmp,i,j)
+          if (i==j) then
+            p%gijij=p%gijij+tmp
+          else
+            p%gijij=p%gijij+2.*tmp
+          endif
+        enddo
+        enddo
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -502,6 +546,8 @@ module Special
 !  diagnostics
 !
        if (ldiagnos) then
+         if (idiag_hijij2m/=0) call sum_mn_name(p%hijij**2,idiag_hijij2m)
+         if (idiag_gijij2m/=0) call sum_mn_name(p%gijij**2,idiag_gijij2m)
          if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
          if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
          if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
@@ -1006,6 +1052,7 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
+        idiag_hijij2m=0; idiag_gijij2m=0
         idiag_h22rms=0; idiag_h33rms=0; idiag_h23rms=0; 
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
@@ -1018,6 +1065,8 @@ module Special
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'hijij2m',idiag_hijij2m)
+        call parse_name(iname,cname(iname),cform(iname),'gijij2m',idiag_gijij2m)
         call parse_name(iname,cname(iname),cform(iname),'h22rms',idiag_h22rms)
         call parse_name(iname,cname(iname),cform(iname),'h33rms',idiag_h33rms)
         call parse_name(iname,cname(iname),cform(iname),'h23rms',idiag_h23rms)
