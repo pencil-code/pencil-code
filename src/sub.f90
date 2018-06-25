@@ -1408,7 +1408,8 @@ module Sub
       if (loptest(ldiff_fluxes)) then
         g=0.
         do i=1,dimensionality
-          call der_4th_stag(f,k1+i,tmp,dim_mask(i))
+!          call der_4th_stag(f,k1+i,tmp,dim_mask(i))
+          call der_2nd_stag(f,k1+i,tmp,dim_mask(i))
           g=g+tmp
         enddo
 
@@ -1517,6 +1518,47 @@ module Sub
       endif
 
     endsubroutine der_4th_stag
+!***********************************************************************
+    subroutine der_2nd_stag(f,k,df,j)
+!
+!  Calculates 1st order derivative by a 2nd order difference scheme from
+!  data given on a grid shifted by half a grid step w.r.t. the point looked at.
+!  Only valid for equidistant grids!
+!
+!  23-jun-18/JW: Adapted from der_4ht_stag
+!
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=( f(l1:l2,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k))/(2*dy)
+          if (lspherical_coords  ) df = df * r1_mn
+          if (lcylindrical_coords) df = df * rcyl_mn1
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+          if (lspherical_coords) df = df * r1_mn * sin1th(m)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in z-direction'
+        endif
+      endif
+
+    endsubroutine der_2nd_stag
 !***********************************************************************
     subroutine div_other(f,g)
 !
