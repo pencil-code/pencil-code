@@ -1989,8 +1989,8 @@ module Magnetic
           open(1,file='Axy.dat',form='unformatted')
           read(1) ax,ay
           close(1)
-          f(l1:l2,m1:m2,n1,iax)=ax
-          f(l1:l2,m1:m2,n1,iay)=ay
+          f(l1:l2,m1:m2,n1,iax)=ax*amplaa(1)
+          f(l1:l2,m1:m2,n1,iay)=ay*amplaa(1)
         case ('B_ext_from_file')
           allocate(ap(mx,my,mz,3))
           call input_snap('ap.dat',ap,3,0)
@@ -4576,7 +4576,8 @@ module Magnetic
           call sum_mn_name(uj,idiag_ujm)
         endif
 !
-!  mean field <B_i>, and mean components of the correlation matrix <B_i B_j>.
+!  Mean field <B_i>, and mean components of the correlation matrix <B_i B_j>.
+!  Note that this quantity does not include any imposed field!
 !
         if (idiag_bxm/=0) call sum_mn_name(p%bbb(:,1),idiag_bxm)
         if (idiag_bym/=0) call sum_mn_name(p%bbb(:,2),idiag_bym)
