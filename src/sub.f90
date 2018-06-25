@@ -2062,7 +2062,6 @@ module Sub
 !
 !  Calculate \partial^2f/\partial x_j\partial x_k of a vector, get a 9 dimensional object
 !
-!
       use Deriv, only: der2,derij
 !
       intent(in) :: f,k
