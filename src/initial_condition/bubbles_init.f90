@@ -33,10 +33,9 @@ module InitialCondition
   ! [xyz]_b = position of the bubble
   ! rho_b = density of the bubble
   ! T_b = temperature of the bubble
-  ! rho_m_0 = density of the medium at z = z_0
-  ! z_0 > 0
-  ! T_0 = temperature of the medium at z = z_0
-  ! gamma = adiabatic index
+  ! rho_m_0 = density of the medium at z = 0
+  ! z_0 > 0 (see comment below)
+  ! T_0 = temperature of the medium at z = 0
   ! passive_scalar = determines if a passive scalar at the bubble should be set
   ! n_smooth = exponent of the smoothing function for the vector potential
   ! k_aa = wave vector of the initial magnetic vector potential in terms of the bubble radius
@@ -46,7 +45,7 @@ module InitialCondition
   real :: x_b = 0, y_b = 0, z_b = 0
   real :: rho_b = 0.1, T_b = 5.0
   real :: rho_m_0 = 1.0, T_0 = 1.0
-  real :: z_0
+  real :: z_0 = 1.0  ! Note that R/mu = 0.4 in some cases. Consider this with z_0 = R/(mu g) T_0.
   integer :: passive_scalar = 0, n_smooth = 2
   real :: k_aa = 1., ampl = 1., asym_factor = 1., sigma_b = 1.
   
@@ -113,8 +112,7 @@ module InitialCondition
     log_T_b = log(T_b)
     log_rho_m_0 = log(rho_m_0)
     log_T_0 = log(T_0)
-    
-    write(*,*) 'init_bubble: k_aa = ', k_aa
+
     do n = n1, n2, 1
       do m = m1, m2, 1
         do l = l1, l2, 1
