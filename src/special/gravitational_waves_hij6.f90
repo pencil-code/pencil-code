@@ -480,7 +480,8 @@ module Special
         scale_factor=((1.-nscale_factor)*(t+tshift))**nscale_factor_exp
         hubble_param2=2.*nscale_factor_exp/(t+tshift)
       endif
-      stress_prefactor2=stress_prefactor/scale_factor**2
+!OLD  stress_prefactor2=stress_prefactor/scale_factor**2
+      stress_prefactor2=stress_prefactor/scale_factor**3
 !
 !  Assemble rhs of GW equations.
 !
@@ -492,7 +493,7 @@ module Special
 !  Physical terms on RHS.
 !
         GW_rhs=c_light2*del2hij(:,ij) &
-              -hubble_param2*f(l1:l2,m,n,jgij) &
+!OLD          -hubble_param2*f(l1:l2,m,n,jgij) &
               +stress_prefactor2*p%stress_ij(:,ij)
 !
 !  Update df.
