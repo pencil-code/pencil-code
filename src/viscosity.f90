@@ -1276,7 +1276,7 @@ module Viscosity
           fac=nu
           if (damp_sound/=0.) fac = fac+damp_sound*abs(p%divu)
           do j=1,3
-            p%fvisc(:,j) = p%fvisc(:,j) + fac*(2*p%sglnrho(:,j)+p%del2u(:,j) + 1./3.*p%graddivu(:,j))
+            p%fvisc(:,j) = p%fvisc(:,j) + fac*(p%del2u(:,j) + 2.*p%sglnrho(:,j) + 1./3.*p%graddivu(:,j))
           enddo
           ! Tobi: This is not quite the full story in the presence of linear
           ! shear. In this case the rate-of-strain tensor S has xy and yx
@@ -2045,14 +2045,12 @@ module Viscosity
         if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
 !
         do j=1,3
+!
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
-        !AB_REM:enddo
 !
-        do n=n1,n2; do m=m1,m2
+          do n=n1,n2; do m=m1,m2
 !
-          !AB_REM:do j=1,3
-!
-!  Divergence of flux = force.
+!  Divergence of flux = force/mass = acceleration.
 !
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
 !
@@ -2060,15 +2058,13 @@ module Viscosity
 !
             if (lviscosity_heat) then
         
-              if (j==1) then                                     ! as rho does not depend on j
-                call grad(f,ilnrho,gr)                           ! grad(rho) or grad(lnrho)    ? reference state?
-                call reduce_grad_dim(gr)                         ! compactify the non-zero components in the first dimensionality elements of gr
-                if (ldensity_nolog) then
-                  call getrho(f(:,m,n,irho),rho)
-                  do k=1,dimensionality
-                    gr(:,k)=gr(:,k)/rho                          ! now grad(ln(rho))
-                  enddo
-                endif
+              call grad(f,ilnrho,gr)                           ! grad(rho) or grad(lnrho)    (reference state?)
+              call reduce_grad_dim(gr)                         ! compactify the non-zero components in the first dimensionality elements of gr
+              if (ldensity_nolog) then
+                call getrho(f(:,m,n,irho),rho)
+                do k=1,dimensionality
+                  gr(:,k)=gr(:,k)/rho                          ! now grad(ln(rho))
+                enddo
               endif
 
               call grad(f,iuu+j-1,guj)                           ! grad(u_j)
@@ -2079,14 +2075,13 @@ module Viscosity
               enddo
 
               call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &    ! loop inside has length dimensionality 
-! \partial_k(rho*u_j) f_jk (summation over j by loop)
+                                                                 ! \partial_k(rho*u_j) f_jk/rho = energy/time/mass (summation over j by loop)
                           f(l1:l2,m,n,iFF_heat),ladd=.true.)
               !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
             endif
  
-          !AB_REM:enddo
-        enddo; enddo
-          enddo!AB_ADD
+          enddo; enddo
+        enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
 !if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
