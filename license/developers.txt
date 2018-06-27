@@ -11,11 +11,11 @@ In such cases that person must expect phone calls even outside office hours.
 
 Name,                 email,                         svn-name,             office,            mobile/home/alternative,  skype-name,  institution
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Omer Anjum,           oanjum@illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & llinois, USA
+Omer Anjum,           oanjum@illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & Illinois, USA
 Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
-Philippe Bourdin,     bourdin/mps.mpg.de,            PABourdin,            +43 316 4120 592,  +43 720 513 493,          angiebecker.ch, Institut für Weltraumforschung
+Philippe Bourdin,     bourdin/mps.mpg.de,            PABourdin,            +43 316 4120 592,  +43 720 513 493,          angiebecker.ch, Austrian Academy of Sciences
 Axel Brandenburg,     brandenb/nordita.org,          AxelBrandenburg,      +1 303 735-7738,   +1 720 401 7355,	        axelbrandenburg, University of Colorado Boulder
 Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 746 003 7611,  ,                         iomsn1,      University of Dundee
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
@@ -36,7 +36,7 @@ Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8
 Jonas Kruger,         jnskrueger/gmail.com,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
 Maarit Käpylä,        kapyla/mps.mpg.de,             ,                     +49 551 3849 79402,+49 151 158 76515,        maramiral,   MPS Göttingen, Aalto University
 Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Leibniz-Institut für Astrophysik Potsdam, Aalto University
-Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                                     ,  +46 73 613 71 11,         ,            Lund Observatory
+Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                     ,                  +46 73 613 71 11,         ,            Lund Observatory
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            NORDITA
 Wladimir Lyra,        wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  Cal State University Northridge
 Tony Mee,             eemynotna/gmail.com,           ,                     +44 207 7739436,   +44 782 540 3751,         ,            
@@ -56,7 +56,7 @@ Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 
 Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
 Chao-Chin Yang,       ccyang/unlv.edu,               ccyang/unlv.edu,      +1 702 895 0961,   ,                         ,            University of Nevada, Las Vegas
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
-Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,            ,                     ,                  +46 73 627 2556,          ,            NORDITA
+Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
 Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
