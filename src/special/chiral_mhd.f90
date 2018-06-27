@@ -90,15 +90,14 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
    real :: diffmu5, lambda5, mu5_const=0., gammaf5
-   real :: meanmu5=0.
+   real :: meanmu5=0., flucmu5=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
    real :: cdtchiral=1.
    real, dimension (nx) :: diffus_mu5_1, diffus_mu5_2, diffus_mu5_3
    real, dimension (nx) :: diffus_bb_1, diffus_special
-   real, dimension (nx) :: uxbjrms, mu5bjrms
-   real, dimension (nx) :: uxbj, mu5bj
+   real, dimension (nx) :: uxbj
    integer :: imu5
 !
   character (len=labellen) :: initspecial='nothing'
@@ -118,10 +117,8 @@ module Special
   integer :: idiag_gmu5my=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_y$       
   integer :: idiag_gmu5mz=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_z$   
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ 
-  integer :: idiag_uxbjm=0     
-  integer :: idiag_mu5bjm=0    
-  integer :: idiag_uxbjrms=0   
-  integer :: idiag_mu5bjrms=0 
+  integer :: idiag_mu5bjm=0    ! DIAG_DOC: $\left<\mu_5 ((\nabla\times\Bv)\cdot\Bv) \right>$
+  integer :: idiag_mu5bjrms=0  ! DIAG_DOC: $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$
   integer :: idiag_dt_mu5_1=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
   integer :: idiag_dt_mu5_2=0  ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
   integer :: idiag_dt_mu5_3=0  ! DIAG_DOC: $\delta x^2/D_5$   
@@ -327,8 +324,8 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5)-p%ugmu5 &
-      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
+      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5)  !make-p%ugmu5 &
+!      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
       diffus_mu5_1 = lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2)
       diffus_mu5_2 = lambda5*eta*p%b2
       diffus_mu5_3 = diffmu5*dxyz_2
@@ -337,7 +334,7 @@ module Special
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz)+eta*mu5bb
+         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) +eta*mu5bb
       endif
       diffus_bb_1 = eta*p%mu5*sqrt(dxyz_2)
 !
@@ -368,7 +365,6 @@ module Special
       if (ldiagnos) then
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
-        endif
         if (idiag_gmu5rms/=0) then
           call dot2_mn(p%gmu5,gmu52)
           call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
@@ -380,15 +376,20 @@ module Special
           call dot_mn(p%bb,p%gmu5,bgmu5)
           call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
         endif
-        if (idiag_uxbjm/=0) call sum_mn_name(uxbj,idiag_uxbjm)
-        if (idiag_mu5bjm/=0) call sum_mn_name(mu5bj,idiag_mu5bjm)
-        if (idiag_uxbjrms/=0) call sum_mn_name(uxbj**2,idiag_uxbjrms,lsqrt=.true.)
-        if (idiag_mu5bjrms/=0) call sum_mn_name(mu5bj**2,idiag_mu5bjrms,lsqrt=.true.)
+        if (idiag_mu5bjm/=0) then
+          call dot_mn(p%bb,p%jj,bbjj)
+          call sum_mn_name(p%mu5*bbjj,idiag_mu5bjm)
+        endif
+        if (idiag_mu5bjrms/=0) then
+          call dot_mn(p%bb,p%jj,bbjj)
+          call sum_mn_name((p%mu5*bbjj)**2,idiag_mu5bjrms,lsqrt=.true.)
+        endif
         if (idiag_dt_mu5_1/=0) call max_mn_name(1/diffus_mu5_1,idiag_dt_mu5_1,lreciprocal=.true.)
         if (idiag_dt_mu5_2/=0) call max_mn_name(1/diffus_mu5_2,idiag_dt_mu5_2,lreciprocal=.true.)
         if (idiag_dt_mu5_3/=0) call max_mn_name(1/diffus_mu5_3,idiag_dt_mu5_3,lreciprocal=.true.)
         if (idiag_dt_bb_1/=0) call max_mn_name(1/diffus_bb_1,idiag_dt_bb_1,lreciprocal=.true.)
         if (idiag_dt_chiral/=0) call max_mn_name(1/(diffus_special),idiag_dt_chiral,lreciprocal=.true.)
+     endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -448,10 +449,9 @@ module Special
 !
       if (lreset) then
         idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; 
-        idiag_uxbjm=0; idiag_gmu5rms=0;
-        idiag_mu5bjm=0; idiag_uxbjrms=0;
+        idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
-        idiag_mu5bjrms=0; idiag_dt_chiral=0; idiag_dt_bb_1=0;
+        idiag_dt_chiral=0; idiag_dt_bb_1=0;
         idiag_dt_mu5_1=0; idiag_dt_mu5_2=0; idiag_dt_mu5_3=0
       endif
 !
@@ -463,9 +463,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'gmu5my',idiag_gmu5my)
         call parse_name(iname,cname(iname),cform(iname),'gmu5mz',idiag_gmu5mz)
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
-        call parse_name(iname,cname(iname),cform(iname),'uxbjm',idiag_uxbjm)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjm',idiag_mu5bjm)
-        call parse_name(iname,cname(iname),cform(iname),'uxbjrms',idiag_uxbjrms)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjrms',idiag_mu5bjrms)
         call parse_name(iname,cname(iname),cform(iname),'dt_mu5_1',idiag_dt_mu5_1)
         call parse_name(iname,cname(iname),cform(iname),'dt_mu5_2',idiag_dt_mu5_2)
@@ -516,6 +514,7 @@ module Special
       call mpiallreduce_sum(meanmu5,meanmu5_tmp,1)
       fact=1./(nw*ncpus)
       meanmu5=fact*meanmu5_tmp
+!      flucmu5=p%mu5-meanmu5
 !
     endsubroutine special_after_boundary
 !***********************************************************************
