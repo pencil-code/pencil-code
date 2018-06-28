@@ -6713,7 +6713,7 @@ nameloop: do
           del6f(:,j) = 0.
         else
 !
-          if (lequidist(j)) then
+          if (lequidist(j) .or. lignore_nonequi) then
             call der6(f,k,del6f(1,j),j,UPWIND=.true.)
           else
             where(hh(:,j)>=0)

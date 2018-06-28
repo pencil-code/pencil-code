@@ -884,7 +884,7 @@ module Deriv
       endif
 !
       if (present(upwind)) then
-        if (.not. lequidist(j)) then
+        if (.not. lequidist(j).and..not.lignore_nonequi) then
           call fatal_error('der6','upwind cannot be used with '//&
               'non-equidistant grid.')
         endif
