@@ -1103,6 +1103,13 @@ module Hydro
         if (lwrite_slice_xz2.and..not.allocated(mach_xz2)) allocate(mach_xz2(nx,nz))
       endif
 !
+!  give warning if orms is not set in prints.in
+!
+      if (othresh_per_orms/=0..and.idiag_orms==0) then
+        if (lroot) &
+          print*,'calc_othresh: need to set orms in print.in to get othresh.'
+      endif
+!
       call keep_compiler_quiet(f)
 !
       endsubroutine initialize_hydro
@@ -3913,14 +3920,6 @@ module Hydro
 !  calculate othresh from orms, give warnings if there are problems
 !
 !  24-nov-03/axel: adapted from calc_bthresh
-!
-!  give warning if orms is not set in prints.in
-!
-      if (idiag_orms==0) then
-        if (lroot.and.lfirstpoint) then
-          print*,'calc_othresh: need to set orms in print.in to get othresh'
-        endif
-      endif
 !
 !  if nvec exceeds novecmax (=1/4) of points per processor, then begin to
 !  increase scaling factor on othresh. These settings will stay in place

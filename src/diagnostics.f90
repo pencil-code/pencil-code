@@ -3004,8 +3004,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 ! cname_sound is allocated also for ncoords_sound=0 as needed in read_name_format.
 !
-      if (allocated(cname_sound)) &
-        deallocate(cname_sound,sound_coords_list,fname_sound,cform_sound)
       allocate(cname_sound(nnamel),stat=ierr)
       if (ierr>0) call fatal_error('allocate_sound', &
                                    'Could not allocate memory for cname_sound')
@@ -3065,7 +3063,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cname)) deallocate(cname,fname,fname_keep,cform,itype_name)
       allocate(cname(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_fnames', &
                                    'Could not allocate memory for cname')
@@ -3111,7 +3108,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cnamev)) deallocate(cnamev,cformv)
       allocate(cnamev(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_vnames', &
           'Could not allocate memory for cnamev')
@@ -3144,7 +3140,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  averages, and only evaluates its output for special purposes
 !  such as computing mean field energies in calc_bmz, for example,
 !
-      if (allocated(cnamez)) deallocate(cnamez,fnamez,cformz)
       allocate(cnamez(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_xyaverages', &
                                    'Could not allocate memory for cnamez')
@@ -3179,7 +3174,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cnamey)) deallocate(cnamey,fnamey,cformy)
       allocate(cnamey(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_xzaverages', &
                                    'Could not allocate memory for cnamey')
@@ -3214,7 +3208,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cnamex)) deallocate(cnamex,fnamex,cformx)
       allocate(cnamex(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_yzaverages', &
                                    'Could not allocate memory for cnamex')
@@ -3249,7 +3242,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if ( allocated(cnamer)) deallocate(cnamer,fnamer,cformr)
       allocate(cnamer(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phizaverages', &
                                    'Could not allocate memory for cnamer')
@@ -3285,7 +3277,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cnamexz)) deallocate(cnamexz,fnamexz,cformxz)
       allocate(cnamexz(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_yaverages', &
                                    'Could not allocate memory for cnamexz')
@@ -3321,7 +3312,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cnamexy)) deallocate(cnamexy,cformxy)
       allocate(cnamexy(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_zaverages', &
                                    'Could not allocate memory for cnamexy')
@@ -3355,7 +3345,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
       nyl=ny
       if (lyinyang) call initialize_zaver_yy(nyl,nycap)
 !
-      if (allocated(fnamexy)) deallocate(fnamexy)
       allocate(fnamexy(nnamel,nx,nyl),stat=stat)
       if (stat>0) call fatal_error('allocate_zaverages_data', &
                                    'Could not allocate memory for fnamexy')
@@ -3364,7 +3353,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
       fnamexy=0.
 
       if (lcaproot) then
-        if (allocated(fnamexy_cap)) deallocate(fnamexy_cap)
         allocate(fnamexy_cap(nnamel,nx,nycap),stat=stat)
         if (stat>0) call fatal_error('allocate_zaverages_data', &
                                      'Could not allocate memory for fnamexy_cap')
@@ -3385,7 +3373,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       integer :: stat
 !
-      if (allocated(cnamerz)) deallocate(cnamerz,fnamerz,cformrz)
       allocate(cnamerz(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_phiaverages', &
                                    'Could not allocate memory for cnamerz')
@@ -3492,7 +3479,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 !   20-apr-10/Bourdin.KIS: copied from xyaverages_clean_up
 !
-      if (allocated(cnamev)) deallocate(cnamev)
+      if (allocated(cnamev)) deallocate(cnamev,cformv)
 !
     endsubroutine vnames_clean_up
 !***********************************************************************
