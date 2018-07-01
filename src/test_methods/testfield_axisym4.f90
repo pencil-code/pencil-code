@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
-! CPARAM logical, parameter :: ltestfield_z = .true.
+! CPARAM logical, parameter :: ltestfield_z = .false.
 ! CPARAM logical, parameter :: ltestfield_xy = .false.
 ! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
