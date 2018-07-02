@@ -29,7 +29,7 @@ module Heatflux
   implicit none
 !
   character (len=labellen) :: iheatflux='nothing'
-  logical :: lreset_heatflux, lnfs2 
+  logical :: lreset_heatflux=.false., lnfs2=.false., ltau_spitzer_va=.false.
   real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
   real :: Ksaturation_SI = 7e7, Ksaturation=0.,Kc=0.
   real :: Kspitzer_para=0.,hyper3_coeff=0.
@@ -37,7 +37,7 @@ module Heatflux
   namelist /heatflux_run_pars/ &
       lreset_heatflux,iheatflux,saturation_flux,  &
       tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
-      hyper3_coeff, lnfs2, &
+      hyper3_coeff, lnfs2, ltau_spitzer_va, &
       Kc
   real, dimension(:), pointer :: B_ext
   real :: nu_ee, e_m
@@ -201,6 +201,7 @@ contains
       lpenc_requested(i_glnTT)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_glnrho)=.true.
+      if (ltau_spitzer_va) lpenc_requested(i_va2)=.true.
     endif
 !
     if (iheatflux == 'noadvection-spitzer') then
@@ -465,11 +466,11 @@ contains
 !
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
-    real, dimension(nx) :: b2_1,qsat,qabs
+    real, dimension(nx) :: b2_1,qsat,qabs, dt_inv_va
     real, dimension(nx) :: rhs,cosgT_b, Kspitzer, K_clight
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
-    real, dimension(nx) :: tmp, tmp2, diffspitz
+    real, dimension(nx) :: tmp, tmp2, diffspitz, tau_inv_va
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2)
@@ -541,12 +542,42 @@ contains
     endif
 !
 !
+!
+    if (ltau_spitzer_va) then
+!
+!   adjust tau_spitzer to fullfill: propagation speed sqrt(diffspitz/tau)=2*va
+!   use tau_inv_spitzer as lower limit for tau_inv -> upper limit for tau
+!   use 1.5 x alfven timestep as upper limit for tau_inv -> lower limit for tau
+!
+      call unit_vector(p%glnTT,unit_glnTT)
+      call dot(unit_glnTT,p%bunit,cosgT_b)
+!
+     diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+                 gamma*p%cp1*abs(cosgT_b)
+!
+      tau_inv_va = 4.*p%va2/(diffspitz+sqrt(tini))
+      dt_inv_va=sqrt(p%va2)/dxmax_pencil
+!
+      where (tau_inv_va > 1.5*dt_inv_va)
+        tau_inv_va=1.5*dt_inv_va
+      endwhere
+      where (tau_inv_va < tau_inv_spitzer)
+        tau_inv_va=tau_inv_spitzer
+      endwhere
+    endif
+!
     if (lnfs2) then
 !     for pp=qq/rho, it is '+qq*(uglnrho+divu)'
       do i=1,3
-        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+        if (ltau_spitzer_va) then
+          df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
+          tau_inv_va*(p%qq(:,i) + spitzer_vec(:,i))  +  &
+          p%qq(:,i)*(p%uglnrho + p%divu)
+        else
+          df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
           tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  &
           p%qq(:,i)*(p%uglnrho + p%divu)
+        endif
       enddo
     else
 !     for pp=qq*rho, it is '-qq*(uglnrho+divu)'
@@ -590,13 +621,16 @@ contains
             'not implemented for current set of thermodynamic variables')
     endif
 !
-
     if (lfirst.and.ldt) then
-
-      call unit_vector(p%glnTT,unit_glnTT)
-      call dot(unit_glnTT,p%bunit,cosgT_b)
-      tmp2 = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-           gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
+      if (ltau_spitzer_va) then
+        tmp2 = sqrt(diffspitz*tau_inv_va)
+      else
+        call unit_vector(p%glnTT,unit_glnTT)
+        call dot(unit_glnTT,p%bunit,cosgT_b)
+        diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+                   gamma*p%cp1*abs(cosgT_b)
+        tmp2 = sqrt(diffspitz*tau_inv_spitzer)
+      endif
       maxadvec = maxadvec + tmp2/dxmax_pencil
 !
       if (ldiagnos.and.idiag_dtq/=0) then
@@ -607,17 +641,23 @@ contains
 !     using the spitzer heatconductivity
 !
       if (ldiagnos.and.idiag_dtspitzer/=0) then
-        diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
-                   gamma*p%cp1*abs(cosgT_b)
         call max_mn_name(diffspitz*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
       endif
 !
 !     timestep constraints due to tau directly
 !
-      dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+      if (ltau_spitzer_va) then
+        dt1_max=max(dt1_max,maxval(tau_inv_va)/cdts)
+      else
+        dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+      endif
 !
       if (ldiagnos.and.idiag_dtq2/=0) then
-        call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
+        if (ltau_spitzer_va) then
+          call max_mn_name(tau_inv_va/cdts,idiag_dtq2,l_dt=.true.)
+        else
+          call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
+        endif
       endif
 !
     endif
