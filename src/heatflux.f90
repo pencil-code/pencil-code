@@ -32,13 +32,13 @@ module Heatflux
   logical :: lreset_heatflux=.false., lnfs2=.false., ltau_spitzer_va=.false.
   real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
   real :: Ksaturation_SI = 7e7, Ksaturation=0.,Kc=0.
-  real :: Kspitzer_para=0.,hyper3_coeff=0.
+  real :: Kspitzer_para=0.,hyper3_coeff=0., va2max_tau_boris=0.
 !
   namelist /heatflux_run_pars/ &
       lreset_heatflux,iheatflux,saturation_flux,  &
       tau1_eighthm,Kspitzer_para,tau_inv_spitzer, &
       hyper3_coeff, lnfs2, ltau_spitzer_va, &
-      Kc
+      Kc, va2max_tau_boris
   real, dimension(:), pointer :: B_ext
   real :: nu_ee, e_m
 !
@@ -466,7 +466,7 @@ contains
 !
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
-    real, dimension(nx) :: b2_1,qsat,qabs, dt_inv_va
+    real, dimension(nx) :: b2_1,qsat,qabs, dt1_va
     real, dimension(nx) :: rhs,cosgT_b, Kspitzer, K_clight
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
@@ -552,14 +552,24 @@ contains
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
 !
-     diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+      diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
                  gamma*p%cp1*abs(cosgT_b)
 !
-      tau_inv_va = 4.*p%va2/(diffspitz+sqrt(tini))
-      dt_inv_va=sqrt(p%va2)/dxmax_pencil
+      if (va2max_tau_boris /= 0) then
 !
-      where (tau_inv_va > 1.5*dt_inv_va)
-        tau_inv_va=1.5*dt_inv_va
+!   va2max_tau_boris musst be set to the same value as va2max_boris
+!   in magnetic_run_pars
+!
+        tmp = (1+(p%va2/va2max_tau_boris)**2.)**(-1.0/2.0)
+        tau_inv_va = 2.*p%va2*tmp/(diffspitz+sqrt(tini))
+        dt1_va=sqrt(p%va2*tmp)/dxmax_pencil
+      else
+        tau_inv_va = 2.*p%va2/(diffspitz+sqrt(tini))
+        dt1_va=sqrt(p%va2)/dxmax_pencil
+      endif
+!
+      where (tau_inv_va > 1.5*max(dt1_va,maxadvec))
+        tau_inv_va=1.5*max(dt1_va,maxadvec)
       endwhere
       where (tau_inv_va < tau_inv_spitzer)
         tau_inv_va=tau_inv_spitzer
