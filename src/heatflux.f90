@@ -568,9 +568,10 @@ contains
         dt1_va=sqrt(p%va2)/dxmax_pencil
       endif
 !
-      where (tau_inv_va > 1.5*max(dt1_va,maxadvec))
-        tau_inv_va=1.5*max(dt1_va,maxadvec)
+      where (tau_inv_va > max(dt1_va,maxadvec,diffspitz*dxyz_2))
+        tau_inv_va=max(dt1_va,maxadvec,diffspitz*dxyz_2)
       endwhere
+!
       where (tau_inv_va < tau_inv_spitzer)
         tau_inv_va=tau_inv_spitzer
       endwhere
