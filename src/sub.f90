@@ -1408,8 +1408,8 @@ module Sub
       if (loptest(ldiff_fluxes)) then
         g=0.
         do i=1,dimensionality
-!          call der_4th_stag(f,k1+i,tmp,dim_mask(i))
-          call der_2nd_stag(f,k1+i,tmp,dim_mask(i))
+          call der_4th_stag(f,k1+i,tmp,dim_mask(i))
+!          call der_2nd_stag(f,k1+i,tmp,dim_mask(i))
           g=g+tmp
         enddo
 
