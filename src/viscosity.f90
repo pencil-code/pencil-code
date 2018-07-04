@@ -2057,27 +2057,59 @@ module Viscosity
 !  Heating term.
 !
             if (lviscosity_heat) then
-        
-              call grad(f,ilnrho,gr)                           ! grad(rho) or grad(lnrho)    (reference state?)
-              call reduce_grad_dim(gr)                         ! compactify the non-zero components in the first dimensionality elements of gr
+!
+! grad(rho) or grad(lnrho)    (reference state?)
+!
+              call grad(f,ilnrho,gr)
+!
+! compactify the non-zero components in the first dimensionality elements of gr
+!
+              call reduce_grad_dim(gr)
               if (ldensity_nolog) then
                 call getrho(f(:,m,n,irho),rho)
                 do k=1,dimensionality
-                  gr(:,k)=gr(:,k)/rho                          ! now grad(ln(rho))
+!
+! now grad(ln(rho))
+!
+                  gr(:,k)=gr(:,k)/rho
                 enddo
               endif
-
-              call grad(f,iuu+j-1,guj)                           ! grad(u_j)
-              call reduce_grad_dim(guj)                          ! compactify the non-zero components in the first dimensionality elements of guj
-
+!
+! grad(u_j)
+!
+              call grad(f,iuu+j-1,guj)
+!
+! compactify the non-zero components in the first dimensionality elements of guj
+!
+              call reduce_grad_dim(guj)
+!
+!  grad(ln(rho))*u_j+grad(u_j)=grad(rho*u_j)/rho
+!
               do k=1,dimensionality
-                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)   ! grad(ln(rho))*u_j+grad(u_j)=grad(rho*u_j)/rho
+                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)
               enddo
-
-              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &    ! loop inside has length dimensionality 
-                                                                 ! \partial_k(rho*u_j) f_jk/rho = energy/time/mass (summation over j by loop)
-                          f(l1:l2,m,n,iFF_heat),ladd=.true.)
-              !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
+!
+! loop inside has length dimensionality
+! \partial_k(rho*u_j) f_jk/rho = energy/time/mass (summation over j by loop)
+!
+!
+              do k=1,dimensionality
+                if (dim_mask(k) == 1) &
+                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
+                if (dim_mask(k) == 2) &
+                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
+                if (dim_mask(k) == 3) &
+                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
+              enddo
+!              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &
+!                          f(l1:l2,m,n,iFF_heat),ladd=.true.)
+!
+! no cooling admitted (Why?)
+!
+              !!! f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
             endif
  
           enddo; enddo
