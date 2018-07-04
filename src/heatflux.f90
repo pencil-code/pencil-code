@@ -569,7 +569,7 @@ contains
         dt1_va=sqrt(p%va2*dxyz_2)
       endif
 !
-      uplim=2.*max(maxval(dt1_va),maxval(maxadvec))
+      uplim=max(maxval(dt1_va),maxval(maxadvec))
       where (tau_inv_va > uplim)
         tau_inv_va=uplim
       endwhere
