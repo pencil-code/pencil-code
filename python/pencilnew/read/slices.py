@@ -173,7 +173,10 @@ class SliceSeries(object):
                     hsize = dim.ny
                     vsize = dim.nz
 
-                infile = FortranFile(file_name)
+                try:
+                    infile = FortranFile(file_name)
+                except:
+                    continue
 
                 islice = 0
                 self.t = np.zeros(1, dtype=precision)
