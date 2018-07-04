@@ -471,6 +471,7 @@ contains
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp, tmp2, diffspitz, tau_inv_va
+    real :: uplim
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2)
@@ -545,9 +546,9 @@ contains
 !
     if (ltau_spitzer_va) then
 !
-!   adjust tau_spitzer to fullfill: propagation speed sqrt(diffspitz/tau)=2*va
+!   adjust tau_spitzer to fullfill: propagation speed sqrt(diffspitz/tau)=sqrt(2)*va
 !   use tau_inv_spitzer as lower limit for tau_inv -> upper limit for tau
-!   use 1.5 x alfven timestep as upper limit for tau_inv -> lower limit for tau
+!   use 2 times alfven and advective as upper limit for tau_inv -> lower limit for tau
 !
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
@@ -562,14 +563,15 @@ contains
 !
         tmp = (1+(p%va2/va2max_tau_boris)**2.)**(-1.0/2.0)
         tau_inv_va = 2.*p%va2*tmp/(diffspitz+sqrt(tini))
-        dt1_va=sqrt(p%va2*tmp)/dxmax_pencil
+        dt1_va=sqrt(p%va2*tmp*dxyz_2)
       else
         tau_inv_va = 2.*p%va2/(diffspitz+sqrt(tini))
-        dt1_va=sqrt(p%va2)/dxmax_pencil
+        dt1_va=sqrt(p%va2*dxyz_2)
       endif
 !
-      where (tau_inv_va > max(dt1_va,maxadvec,diffspitz*dxyz_2))
-        tau_inv_va=max(dt1_va,maxadvec,diffspitz*dxyz_2)
+      uplim=2.*max(maxval(dt1_va),maxval(maxadvec))
+      where (tau_inv_va > uplim)
+        tau_inv_va=uplim
       endwhere
 !
       where (tau_inv_va < tau_inv_spitzer)
