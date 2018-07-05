@@ -158,6 +158,7 @@ module Magnetic
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
+  logical :: ladd_global_field=.false. 
   logical :: lresi_eta_const=.false.
   logical :: lresi_eta_tdep=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
@@ -217,7 +218,7 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,& 
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -280,7 +281,6 @@ module Magnetic
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   logical :: lpropagate_borderaa=.true.
   logical :: lremove_meanaz=.false., lremove_meanaxy=.false.
-  logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
   logical :: lboris_correction=.false.
@@ -1992,21 +1992,13 @@ module Magnetic
           f(l1:l2,m1:m2,n1,iax)=ax*amplaa(1)
           f(l1:l2,m1:m2,n1,iay)=ay*amplaa(1)
         case ('B_ext_from_file')
-          allocate(ap(mx,my,mz,3))
-          call input_snap('ap.dat',ap,3,0)
+          allocate(ap(mx,my,mz,6))
+          call input_snap('ap.dat',ap,6,0)
           call input_snap_finalize
 !
-! Here we use only first component of b_ext to scale the initial vector
-! potential. b_ext is a slowly varying function of time.
-!
-          call get_bext(b_ext)
-          ap=b_ext(1)*ap
-          do n=n1,n2; do m=m1,m2
-            call curl_other(ap,bb)
-            f(l1:l2,m,n,iglobal_bx_ext) = bb(:,1)
-            f(l1:l2,m,n,iglobal_by_ext) = bb(:,2)
-            f(l1:l2,m,n,iglobal_bz_ext) = bb(:,3)
-          enddo;enddo
+          f(:,:,:,iglobal_bx_ext) = ap(:,:,:,4)
+          f(:,:,:,iglobal_by_ext) = ap(:,:,:,5)
+          f(:,:,:,iglobal_bz_ext) = ap(:,:,:,6)
           if (allocated(ap)) deallocate(ap)
 !
         case('spher-harm-poloidal')
@@ -2916,10 +2908,13 @@ module Magnetic
 !
 !  Add a uniform background field, optionally precessing. 
 !
-        addBext: if (.not. (lbb_as_comaux .and. lB_ext_in_comaux)) then
+        addBext: if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. &
+                 (.not. ladd_global_field)) then
           call get_bext(B_ext)
           forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
           if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
+          if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
+                      (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
         endif addBext
 !
 !  Add a precessing dipole not in the Bext field
@@ -2943,9 +2938,11 @@ module Magnetic
 !  Add external B-field.
 !
         if (ladd_global_field) then
-          if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+f(l1:l2,m,n,iglobal_bx_ext)
-          if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+f(l1:l2,m,n,iglobal_by_ext)
-          if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
+          call get_bext(B_ext)
+! Only need the first component to scale the global field
+          if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+B_ext(1)*f(l1:l2,m,n,iglobal_bx_ext)
+          if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+B_ext(1)*f(l1:l2,m,n,iglobal_by_ext)
+          if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+B_ext(1)*f(l1:l2,m,n,iglobal_bz_ext)
         endif
       endif
 !
@@ -3321,7 +3318,7 @@ module Magnetic
        if (va2max_boris > 0) then
          p%clight2=spread(va2max_boris,1,nx)
        else
-         clight2_zdep(n-n1+1) = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(9.0*maxval(p%u2),maxval(p%cs2)))
+         clight2_zdep(n-n1+1) = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2)))
          p%clight2=clight2_zdep(n-n1+1)
        endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
