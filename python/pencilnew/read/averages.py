@@ -163,8 +163,10 @@ class Averages(object):
         if proc < 0:
             proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
                                                    os.listdir(datadir)))
+            allprocs=True
         else:
             proc_dirs = ['proc' + str(proc)]
+            allprocs=False
 
         dim = read.dim(datadir, proc)
         if dim.precision == 'S':
@@ -211,16 +213,22 @@ class Averages(object):
                 nu = dim.nx
                 nv = dim.nz
                 idx_u = proc_dim.ipx*proc_dim.nx
-                idx_v = proc_dim.ipz*proc_dim.nz
+                if allprocs:
+                    idx_v = proc_dim.ipz*proc_dim.nz
+                else:
+                    idx_v = 0
             if plane == 'z':
                 nu = dim.nx
                 nv = dim.ny
                 idx_u = proc_dim.ipx*proc_dim.nx
-                idx_v = proc_dim.ipy*proc_dim.ny
+                if allprocs:
+                    idx_v = proc_dim.ipy*proc_dim.ny
+                else:
+                    idx_v = 0
             if not isinstance(raw_data, np.ndarray):
                 # Initialize the raw_data array with the right dimensions.
                 raw_data = np.zeros([len(t), n_vars, nv, nu])
-            raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = proc_data.copy()
+            raw_data[:, :, idx_v:idx_v+nv, idx_u:idx_u+nu] = proc_data.copy()
 
         t = np.array(t)
         raw_data = np.swapaxes(raw_data, 2, 3)
