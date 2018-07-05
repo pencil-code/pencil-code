@@ -31,13 +31,13 @@ module Special
   real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.,R_hyper3=0.0
   real :: R_hyperchi=0.,R_hypereta=0.,R_hypernu=0.,R_hyperdiffrho=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
-  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
+  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
   real :: Bz_flux=0.,quench=0.,quench0=0.,quench_width=1., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
-  real :: init_time2=0.
+  real :: init_time2=0., density_min=0.
   real :: limiter_tensordiff=3
   real :: u_amplifier=1.
   integer :: twisttype=0,irefz=nghost+1
@@ -45,7 +45,7 @@ module Special
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.
   logical :: mark=.false.,lchen=.false.,ldensity_floor_c=.false.
-  logical :: lwrite_granules=.false.
+  logical :: lwrite_granules=.false.,ldensity_floor=.false.
   real :: hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.
@@ -79,13 +79,13 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,quench0,quench_width,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,irefz,tau_inv_spitzer,maxvA, b_tau,&
+      heat_par_b2,irefz,maxvA, b_tau,&
       mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,R_hyper3, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
       sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
       R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating, &
-      linject_maghel, maghel_ampl
+      linject_maghel, maghel_ampl, ldensity_floor, density_min
 !
 ! variables for print.in
 !
@@ -198,6 +198,10 @@ module Special
       if (linject_maghel) &
       maghel_ampl = maghel_ampl/1e8/unit_magnetic**2/unit_length*1e6
 !
+!  transform density_min from SI to code units and lnrho
+!
+
+      if (ldensity_floor) density_min=alog(real(density_min)/unit_density)
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -1034,6 +1038,15 @@ module Special
         where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
           f(l1:l2,m,n,ilnrho) = lnrho_floor
         endwhere
+      endif
+!
+!     density can only have a miminum value
+!     density_min is now alog(density_min) !!!
+!
+      if (ldensity_floor) then
+        tmp=density_min - f(l1:l2,m,n,ilnrho)
+        where (tmp < 0.0) tmp=0.0
+        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + tmp
       endif
 !
       if (hyper3_diffrho /= 0.) then
