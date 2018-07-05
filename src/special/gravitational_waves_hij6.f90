@@ -90,14 +90,15 @@ module Special
   character (len=labellen) :: initgij='nothing'
   character (len=labellen) :: ctrace_factor='1/3'
   character (len=labellen) :: cstress_prefactor='16pi'
+  character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress'
   real :: amplhij=0., amplgij=0., dummy=0.
   real :: kx_hij=0., ky_hij=0., kz_hij=0.
   real :: kx_gij=0., ky_gij=0., kz_gij=0.
-  real :: trace_factor=0., stress_prefactor, EGWpref
+  real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: diffhh=0., diffgg=0., diffhh_hyper3=0., diffgg_hyper3=0.
-  real :: nscale_factor=0., tshift=0.
+  real :: nscale_factor_conformal=1., tshift=0.
   logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
   logical :: lStress_as_aux=.false., lreynolds=.false.
@@ -108,7 +109,7 @@ module Special
 !
 ! input parameters
   namelist /special_init_pars/ &
-    ctrace_factor, cstress_prefactor, lno_transverse_part, &
+    ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, &
     lggTX_as_aux, lhhTX_as_aux, &
     kx_hij, ky_hij, kz_hij, &
@@ -116,9 +117,9 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    ctrace_factor, cstress_prefactor, lno_transverse_part, &
+    ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
-    diffhh_hyper3, diffgg_hyper3, nscale_factor, tshift, cc_light, &
+    diffhh_hyper3, diffgg_hyper3, nscale_factor_conformal, tshift, cc_light, &
     lStress_as_aux, lkinGW, aux_stress, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
@@ -234,6 +235,18 @@ module Special
         case default
           call fatal_error("initialize_special: No such value for ctrace_factor:" &
               ,trim(ctrace_factor))
+      endselect
+!
+!  Determine fourthird_in_stress. This factor is normally 4/3, but it can be
+!  set to unity in case we want to pretend that the kinematic Beltrami field
+!  has the same prefactor as a magnetic one.
+!
+      select case (fourthird_in_stress)
+        case ('1'); fourthird_factor=1.
+        case ('4/3'); fourthird_factor=fourthird
+        case default
+          call fatal_error("initialize_special: No such value for fourthird_in_stress:" &
+              ,trim(fourthird_in_stress))
       endselect
 !
 !  determine stress_prefactor and GW energy prefactor,
@@ -384,13 +397,13 @@ module Special
       do j=1,3
       do i=1,j
         ij=ij_table(i,j)
-        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*fourthird*p%rho
+        if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*fourthird_factor*p%rho
         if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
 !
 !  Remove trace.
 !
         if (i==j) then
-          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*fourthird*p%rho
+          if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*fourthird_factor*p%rho
           if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
         endif
       enddo
@@ -454,7 +467,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,6) :: del2hij, del2gij
       real, dimension (nx) :: del6hij, del6gij, GW_rhs
-      real :: nscale_factor_exp, scale_factor, stress_prefactor2, hubble_param2
+      real :: scale_factor, stress_prefactor2
       type (pencil_case) :: p
 !
       integer :: ij,jhij,jgij
@@ -466,21 +479,17 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
-!  Compute scale factor and Hubble parameter.
+!  Compute scale factor.
 !  Note: to prevent division by zero, it is best to put tstart=1. in start.in.
 !  If that is not done, one can put here tshift=1., for example.
-!  If that is not the case either, we put scale_factor=1 and hubble_param2=0.
+!  If that is not the case either, we put scale_factor=1.
 !  At the next timestep, this will no longer be a problem.
 !
-      nscale_factor_exp=nscale_factor/(1.-nscale_factor)
       if (t+tshift==0.) then
         scale_factor=1.
-        hubble_param2=0.
       else
-        scale_factor=((1.-nscale_factor)*(t+tshift))**nscale_factor_exp
-        hubble_param2=2.*nscale_factor_exp/(t+tshift)
+        scale_factor=(t+tshift)**nscale_factor_conformal
       endif
-!OLD  stress_prefactor2=stress_prefactor/scale_factor**2
       stress_prefactor2=stress_prefactor/scale_factor**3
 !
 !  Assemble rhs of GW equations.
@@ -493,7 +502,6 @@ module Special
 !  Physical terms on RHS.
 !
         GW_rhs=c_light2*del2hij(:,ij) &
-!OLD          -hubble_param2*f(l1:l2,m,n,jgij) &
               +stress_prefactor2*p%stress_ij(:,ij)
 !
 !  Update df.
