@@ -31,6 +31,8 @@ def calc_tensors(
                  t_correction=0.,
                  fskip=2,
                  mskip=1,
+                 trange=(0,None),
+                 tindex=(0,None,1),
                  yindex=[] 
                 ):
     nt=None
@@ -50,6 +52,8 @@ def calc_tensors(
                    rank,    proc.size,     dim.nprocz))
             yproc=proc[0]/dim.nprocz
             aav, time = pc.read_zaver(datadir, 
+                                      trange=trange,
+                                      tindex=tindex,
                                       proc=yproc
                                      )
             tmp=time.size
@@ -59,6 +63,8 @@ def calc_tensors(
             for iproc in range(0,proc.size,dim.nprocz):
                 if iproc ==0:
                     aav, time = pc.read_zaver(datadir, 
+                                              trange=trange,
+                                              tindex=tindex,
                                           proc=proc[iproc]/dim.nprocz
                                          )
                     tmp=time.size
@@ -68,7 +74,10 @@ def calc_tensors(
                                          )
                     tmp=min(time.size,tmp)
     else:
-        av, time = pc.read_zaver(datadir)
+        av, time = pc.read_zaver(datadir,
+                                 trange=trange,
+                                 tindex=tindex
+                                )
     gc.garbage
     if l_mpi:
         print('rank {}: tmp {}'.format(rank, tmp))
