@@ -29,7 +29,8 @@ import pencil as pc
 from scipy.io import FortranFile as ftn
 
 def interp_var(
-                var='var.dat', 
+                oldvar='var.dat',
+                newvar='var.dat',
                 source='old_run', target='new_run', 
                 source_path=None, target_path=None,
                 xlim=None, ylim=None, zlim=None,
@@ -38,6 +39,7 @@ def interp_var(
                 zrepeat=1,
                 time=None,
                 deltay=None,
+                arrs=None,
                 nghosts=3
               ):
     """ load var file to be interpolated from old simulation and var file from
@@ -53,35 +55,36 @@ def interp_var(
             return 
         os.chdir(localdir+source)
         print('loading data from '+localdir+source)
-        fold=pc.read_var(var,quiet=True)
+        fold=pc.read_var(oldvar,quiet=True)
     else:
         if not os.path.exists(source_path):
             print('error: source_path does not exist')
             return 
         os.chdir(source_path)
         print('loading data from '+source_path)
-        fold=pc.read_var(var,quiet=True)
+        fold=pc.read_var(oldvar,quiet=True)
     if target_path==None:
         if not os.path.exists(localdir+target):
             print('error: target_path must be specified as string')
             return 
         os.chdir(localdir+target)
         print('loading data from '+localdir+target)
-        fnew=pc.read_var(var,quiet=True)
+        fnew=pc.read_var(newvar,quiet=True)
     else:
         if not os.path.exists(target_path):
             print('error: target_path does not exist')
             return 
         os.chdir(target_path)
         print('loading data from '+target_path)
-        fnew=pc.read_var(var,quiet=True)
+        fnew=pc.read_var(newvar,quiet=True)
     if xlim==None:
         xlim=[fold.x.min(),fold.x.max()]
     if ylim==None:
         ylim=[fold.y.min(),fold.y.max()]
     if zlim==None:
         zlim=[fold.z.min(),fold.z.max()]
-    arrs=['uu','rho','lnrho','ss','aa','shock','netheat','cooling']
+    if arrs==None:
+        arrs=['uu','rho','lnrho','ss','aa','shock','netheat','cooling']
     iarr=0
     x=np.linspace(xlim[0],xlim[1],fnew.x.size)
     y=np.linspace(ylim[0],ylim[1],fnew.y.size)
