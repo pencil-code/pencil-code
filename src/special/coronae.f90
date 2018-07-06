@@ -147,12 +147,12 @@ module Special
 !  miscellaneous variables
 !
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
-  real :: Bzflux
+  real :: Bzflux=0., lnrho_min=0.
   real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
   real :: Kspitzer_perp_SI = 3e12, Kspitzer_perp=0.
   real :: Ksaturation_SI = 7e7,Ksaturation=0.
 !
-  real :: nu_ee,ln_unit_TT
+  real :: nu_ee=0.,ln_unit_TT=0.
 !
   real, dimension(nx) :: diffus_chi
 !
@@ -201,7 +201,7 @@ module Special
 !  transform density_min from SI to code units and lnrho
 !
 
-      if (ldensity_floor) density_min=alog(real(density_min)/unit_density)
+      if (ldensity_floor) lnrho_min=alog(real(density_min)/unit_density)
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -1041,10 +1041,9 @@ module Special
       endif
 !
 !     density can only have a miminum value
-!     density_min is now alog(density_min) !!!
 !
       if (ldensity_floor) then
-        tmp=density_min - f(l1:l2,m,n,ilnrho)
+        tmp=lnrho_min - f(l1:l2,m,n,ilnrho)
         where (tmp < 0.0) tmp=0.0
         f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + tmp
       endif
