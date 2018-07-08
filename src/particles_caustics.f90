@@ -1,7 +1,10 @@
 ! $Id$
 !
-!  This module writes information about the local state of the gas at
-!  the positions of a selected number of particles.
+! This modules solves for the gradient matrix of flow velocities. 
+! The gradient matrix Sigma obeys the equation:
+!  (d/dt) Sigma = (1/(taup))*(S - Sigma) + Sigma^2
+! where A is the flow gradient matrix at the position of the 
+! particle; and taup is the Stokes time. 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -10,10 +13,10 @@
 !
 ! CPARAM logical, parameter :: lparticles_caustics=.true.
 !
-! MAUX CONTRIBUTION 9
+! MAUX CONTRIBUTION  9
 ! COMMUNICATED AUXILIARIES 9
-! MPVAR CONTRIBUTION 7
-! MPAUX CONTRIBUTION 3 
+! MPVAR CONTRIBUTION 9
+! MPAUX CONTRIBUTION 4
 !
 !***************************************************************
 module Particles_caustics
@@ -28,13 +31,14 @@ module Particles_caustics
 !
   include 'particles_caustics.h'
 !
-  real :: fake_eta=0., epsilondX=1e-4
+  integer :: dummy
+  real :: TrSigma_Cutoff=1e10
 !
   namelist /particles_caustics_init_pars/ &
-    epsilondX
+  dummy
 !
   namelist /particles_caustics_run_pars/ &
-  fake_eta
+  TrSigma_Cutoff
 !
   contains
 !***********************************************************************
@@ -50,33 +54,38 @@ module Particles_caustics
 !
 !  Indices for \deltaX and \deltaV at particle positions
 !
-      idXp1=npvar+1
-      pvarname(npvar+1)='idXp1'
-      idXp2=npvar+2
-      pvarname(npvar+2)='idXp2'
-      idXp3=npvar+3
-      pvarname(npvar+3)='idXp3'
-      idVp1=npvar+4
-      pvarname(npvar+4)='idVp1'
-      idVp2=npvar+5
-      pvarname(npvar+5)='idVp2'
-      idVp3=npvar+6
-      pvarname(npvar+6)='idVp3'
-      icaustics=npvar+7
-      pvarname(icaustics)='icaustics'
+      iSigmap11=npvar+1
+      pvarname(npvar+1)='iSigmap11'
+      isigmap12=npvar+2
+      pvarname(npvar+2)='isigmap12'
+      isigmap13=npvar+3
+      pvarname(npvar+3)='isigmap13'
+      isigmap21=npvar+4
+      pvarname(npvar+4)='isigmap21'
+      isigmap22=npvar+5
+      pvarname(npvar+5)='isigmap22'
+      isigmap23=npvar+6
+      pvarname(npvar+6)='isigmap23'
+      isigmap31=npvar+7
+      pvarname(npvar+7)='isigmap31'
+      isigmap32=npvar+8
+      pvarname(npvar+8)='isigmap32'
+      isigmap33=npvar+9
+      pvarname(npvar+9)='isigmap33'
 !
 !  Increase npvar accordingly.
 !
-      npvar=npvar+7
+      npvar=npvar+9
 !
 ! Now register the particle auxiliaries
 !
-      idXpo1=mpvar+npaux+1
-      pvarname(idXpo1)='idXpo1'
-      idXpo2=idXpo1+1
-      pvarname(idXpo2)='idXpo2'
-      idXpo3=idXpo1+2
-      pvarname(idXpo3)='idXpo3'
+      iPPp=mpvar+npaux+1
+      pvarname(iPPp)='iPPp'
+      iQQp=iPPp+1
+      pvarname(iQQp)='iQQp'
+      iRRp=iPPp+2
+      pvarname(iRRp)='iRRp' 
+      pvarname(iblowup) = 'iblowup'
 !
 !  Set indices for velocity gradient matrix at grid points
 !
@@ -89,14 +98,14 @@ module Particles_caustics
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles','npvar > mpvar')
+        call fatal_error('register_particles_caustics','npvar > mpvar')
       endif
 !
 ! Check the same for particle auxiliaries too. 
 !
       if (npaux > mpaux) then
         if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
-        call fatal_error('register_particles_mass: npaux > mpaux','')
+        call fatal_error('register_particles_caustics: npaux > mpaux','')
       endif
 !
     endsubroutine register_particles_caustics
@@ -141,45 +150,15 @@ module Particles_caustics
 !
      if (lroot) print*, 'init_particles_caustics: setting init. cond.'
 !
-! We set the gradient of the particle velocity field as that of the fluid velocity
-! field. To do that we need to calculate the calculate the gradient of velocity 
-! on a grid. This is stored as an auxiliary array within f (:,:,:,igu11:igu33) 
+! We set the gradient of the particle velocity field as zero. 
 !
-      call calc_gradu(f) 
       do ip=1,npar_loc
-!
-! Initially number of caustics in each particle is zero, and the separation
-! at earlier time is also zero
-!
-        fp(ip,icaustics) = 0.
-        fp(ip,idXpo1:idXpo3) = 0.
-!
-! Initialize the deltaX by a small random vector. 
-! It is a factor epsilondX of grid spacing (we ignore non-uniform grids)
-! Remember; dx_1 is 1/dx available from cdata.f90
-!
-        Xp = fp(ip,ixp:izp)
-        do ii=1,3 
-          call random_number_wrapper(rno01)
-          fp(ip,idXp1+ii-1)=epsilondX*(2*rno01-1)*dx
-        enddo
-        dXp = fp(ip,idXp1:idXp3)
-!
-!  interpolate the gradu matrix to particle positions
-!
-        call interpolate_linear(f,igu11,igu33,fp(ip,ixp:izp),Sij_lin,ineargrid(ip,:), &
-              0,ipar(ip))
-        call linarray2matrix(Sij_lin,Sijp)
-        do ii=1,3
-          fp(ip,idVp1+ii-1) =  dot_product(Sijp(ii,:),dXp) 
-        enddo
-! loop over ip ends below
-     enddo
+        fp(ip,isigmap11:isigmap33) = 0.
+      enddo
 !
     endsubroutine init_particles_caustics
 !***********************************************************************
     subroutine dcaustics_dt(f,df,fp,dfp,ineargrid)
-!
 !
       use Diagnostics
       use Particles_sub, only: sum_par_name
@@ -201,24 +180,9 @@ module Particles_caustics
         print*,'dcaustics_dt: Calculate dcaustics_dt'
       endif
 !
-! Below we do two things. First we check if any component of dXp has gone
-! through a zero crossing from the previous time step (a flip of sign) 
-! and if indeed a zero-crossing has happened we note it down in the slot
-! f(ip,icaustics) . Second we note the present value of dX to dXold (dXo)
-! to be used in the next time step.  
 !
-      do ip = 1,npar_loc
-        dXp = fp(ip,idXp1:idXp3)
-        dXpo = fp(ip,idXpo1:idXpo3)
-        flip = 0
-        do j=1,3
-          flip=sign(1.,dXpo(j))- sign(1.,dXp(j))
-          if (flip .ne. 0) then
-            fp(ip,icaustics) = fp(ip,icaustics) + 1.
-            exit
-          endif 
-        enddo
-        fp(ip,idXpo1:idXpo3) = dXp
+!
+
         if (ldiagnos) then
 !
 ! No diagnostic is coded yet, but would be.
@@ -228,7 +192,6 @@ module Particles_caustics
 !            if (idiag_npcaustics(k)/=0) call xysum_mn_name_z(ncaustics(k),idiag_npcaustics(k))
 !          enddo
         endif
-     enddo
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -248,10 +211,8 @@ module Particles_caustics
       real :: taup1
       intent (inout) :: df, dfp,ineargrid
       intent (in) :: k,taup1
-      real, dimension(3) :: dXp,dVp 
-      real, dimension(9) :: Sij_lin
-      real, dimension(3,3) :: Sijp
-      integer :: ii 
+      real, dimension(9) :: Sij_lin,Sigma_lin,dSigmap_lin
+      real, dimension(3,3) :: Sijp,Sigmap,dSigmap
 !
 !  Identify module.
 !
@@ -264,12 +225,8 @@ module Particles_caustics
 !  Loop over all particles in current pencil.
 !
 !
-      dXp = fp(k,idXp1:idXp3)
-      dVp = fp(k,idVp1:idVp3)
-!
-! solve (d/dt) \deltaX_k = \deltaV_k 
-!
-      dfp(k,idXp1:idXp3)= dVp 
+      Sigma_lin = fp(k,isigmap11:isigmap33)
+      call linarray2matrix(Sigma_lin,Sigmap)
 !
 !  interpolate the gradu matrix to particle positions
 !
@@ -277,20 +234,12 @@ module Particles_caustics
             0,ipar(k))
       call linarray2matrix(Sij_lin,Sijp)
 !
-! solve (d/dt) \deltaV_k = (1/\taup)S_kj \deltaV_j 
+! solve dynamical equation
 !
-      do ii=1,3
-        dfp(k,idVp1+ii-1)= taup1*(dot_product(Sijp(ii,:),dXp) - dVp(ii)) 
-      enddo
+      dSigmap = taup1*(Sijp-Sigmap)+matmul(Sigmap,Sigmap)
+      call matrix2linarray(dSigmap,dSigmap_lin)
+      dfp(k,isigmap11:isigmap33) = dSigmap_lin
 !
-!  
-!
-      write(*,*)'DM,Sij_lin',Sij_lin
-      write(*,*)'DM,Sijp',Sijp
-!
-! set the RHS of the caustics sum to zero
-!
-      dfp(k,icaustics)= 0.
 ! 
     endsubroutine dcaustics_dt_pencil
 !***********************************************************************
@@ -353,16 +302,7 @@ module Particles_caustics
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'idXp1=',idXp1
-        write(3,*) 'idXp2=',idXp2
-        write(3,*) 'idXp3=',idXp3
-        write(3,*) 'idVp1=',idVp1
-        write(3,*) 'idVp2=',idVp2
-        write(3,*) 'idVp3=',idVp3
-!        write(3,*) 'idXpo1=',idXpo1
-!        write(3,*) 'idXpo2=',idXpo2
-!        write(3,*) 'idXpo3=',idXpo3
-        write(3,*) 'icaustics=',icaustics
+!nothing to write at the moment
       endif
 !
 !  Reset everything in case of reset.
