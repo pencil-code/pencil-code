@@ -32,15 +32,19 @@ module Particles_caustics
   include 'particles_caustics.h'
 !
   integer :: dummy
-  real :: TrSigma_Cutoff=1e10
+  real :: TrSigma_Cutoff=-1e10
 !
   namelist /particles_caustics_init_pars/ &
   dummy
 !
   namelist /particles_caustics_run_pars/ &
-  TrSigma_Cutoff
+       TrSigma_Cutoff
 !
-  contains
+! Diagnostic variables
+!
+  integer :: idiag_TrSigmapm=0      ! DIAG_DOC: $\langle{\rm Tr}\left[\sigma\right]\rangle$
+  integer :: idiag_blowupm=0        ! DIAG_DOC: Mean no. of times $\sigma$ falls below cutoff
+contains
 !***********************************************************************
     subroutine register_particles_caustics()
 !
@@ -162,6 +166,7 @@ module Particles_caustics
 !
       use Diagnostics
       use Particles_sub, only: sum_par_name
+      use Sub, only : linarray2matrix,Inv2_3X3mat,det3X3mat
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -169,9 +174,10 @@ module Particles_caustics
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
       logical :: lheader, lfirstcall=.true.
-      real, dimension(3) :: dXp,dXpo
-      real :: flip
-      integer :: ip,j
+      real, dimension(3,3) :: Sigmap
+      real, dimension(9) :: Sigma_lin
+      real :: TrSigma,QSigma,detSigma
+      integer :: ip
 !
 !  Print out header information in first time step.
 !
@@ -180,13 +186,29 @@ module Particles_caustics
         print*,'dcaustics_dt: Calculate dcaustics_dt'
       endif
 !
+! Calculates the three invariants of the matrix sigma and stores them as auxiliary
+! variable. 
 !
-!
-
+      do ip=1,npar_loc
+         Sigma_lin=fp(ip,isigmap11:isigmap33)
+         call linarray2matrix(Sigma_lin,Sigmap)
+         TrSigma=Sigmap(1,1)+Sigmap(2,2)+Sigmap(3,3)
+         fp(ip,iPPp) = TrSigma
+         call Inv2_3X3mat(Sigmap,QSigma)
+         fp(ip,iQQp) = QSigma
+         call det3X3mat(Sigmap,detSigma)
+         fp(ip,iRRp) = detSigma
+      enddo
+      
         if (ldiagnos) then
 !
 ! No diagnostic is coded yet, but would be.
-!
+           if (idiag_TrSigmapm/=0) &
+                call sum_par_name(fp(1:npar_loc,iPPp),idiag_TrSigmapm)
+           if (idiag_blowupm/=0) &
+                call sum_par_name(fp(1:npar_loc,iblowup),idiag_blowupm)
+           
+           !
 !          do k=1,ndustrad
 !            if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
 !            if (idiag_npcaustics(k)/=0) call xysum_mn_name_z(ncaustics(k),idiag_npcaustics(k))
@@ -308,14 +330,31 @@ module Particles_caustics
 !  Reset everything in case of reset.
 !
       if (lreset) then
+         idiag_TrSigmapm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
-      enddo
+        call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_TrSigmapm)
+     enddo
 !
     endsubroutine rprint_particles_caustics
+!***********************************************************************
+    subroutine reset_caustics(fp)
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer :: ip
+      real :: TrSigma, QSigma, RSigma
+      real, dimension(9) :: Sigma_lin
+      real, dimension(3,3) :: Sigmap
+
+      do ip=1,npar_loc
+         if (fp(ip,iPPp).lt.TrSigma_Cutoff) then
+            fp(ip,iblowup)=fp(ip,iblowup)+1.
+            fp(ip,isigmap11:isigmap33) = 0.
+         endif
+      enddo
+    endsubroutine reset_caustics
 !***********************************************************************
 endmodule Particles_caustics

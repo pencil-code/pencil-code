@@ -656,6 +656,7 @@ module Particles_main
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
     subroutine particles_before_boundary(f)
+      use particles_caustics, only: reset_caustics
 !
 !  Calculate particle-related properties before boundary conditions are
 !  set.
@@ -668,6 +669,7 @@ module Particles_main
         call particles_dragforce_stiff(f,fp,ineargrid)
         call periodic_boundcond_on_aux(f)
       endif
+      if (lparticles_caustics) call reset_caustics(fp)
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
