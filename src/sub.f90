@@ -57,6 +57,7 @@ module Sub
   public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
+  public :: det3X3mat,Inv2_3X3mat
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
@@ -683,6 +684,38 @@ module Sub
       enddo
 !
     endsubroutine linarray2matrix
+!***********************************************************************
+    subroutine Inv2_3X3mat(A,QQ)
+!
+! calcualates the second invariant of a 3X3 matrix directly
+!
+      real,dimension(3,3), intent(in) :: A
+      real, intent(out) :: QQ
+!
+      QQ =   A(1,1)*A(2,2)  &
+            + A(2,2)*A(3,3)  &
+            + A(1,1)*A(3,2)  &
+            - A(1,2)*A(2,1)  &
+            - A(2,3)*A(3,2)  &
+            - A(1,3)*A(3,1)
+      
+    endsubroutine Inv2_3X3mat
+!***********************************************************************
+    subroutine det3X3mat(A,det)
+!
+! calcualates determinant of a 3X3 matrix directly
+!
+      real,dimension(3,3), intent(in) :: A
+      real, intent(out) :: det
+
+      det =   A(1,1)*A(2,2)*A(3,3)  &
+            - A(1,1)*A(2,3)*A(3,2)  &
+            - A(1,2)*A(2,1)*A(3,3)  &
+            + A(1,2)*A(2,3)*A(3,1)  &
+            + A(1,3)*A(2,1)*A(3,2)  &
+            - A(1,3)*A(2,2)*A(3,1)
+
+    endsubroutine det3X3mat
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
