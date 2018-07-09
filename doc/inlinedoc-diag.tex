@@ -224,6 +224,7 @@
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
@@ -714,6 +715,8 @@
   \var{gmu5my}    & $\left<\nabla\mu_5\right>_y$ \\
   \var{gmu5mz}    & $\left<\nabla\mu_5\right>_z$ \\
   \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{mu5bjm}    & $\left<\mu_5 ((\nabla\times\Bv)\cdot\Bv) \right>$ \\
+  \var{mu5bjrms}  & $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$ \\
   \var{dt_mu5_1}  & $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ \\
   \var{dt_mu5_2}  & $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ \\
   \var{dt_mu5_3}  & $\delta x^2/D_5$ \\
@@ -829,6 +832,8 @@
   \var{ggTXm}     & $\bra{g_T g_X}$ \\
   \var{ggTm}      & $\bra{g_T}$ \\
   \var{ggXm}      & $\bra{g_X}$ \\
+  \var{hijij2m}   & $\bra{h_{ij,ij}^2}$ \\
+  \var{gijij2m}   & $\bra{g_{ij,ij}^2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{gravity_simple.f90}} \\
 \midrule
