@@ -1521,7 +1521,7 @@ module EquationOfState
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
-        if (present(cs2)) call fatal_error('eoscalc_farray', 'cs2 is not implemented. ')
+        if (present(cs2)) cs2=cp*exp(lnTT_)*gamma_m1
 !
 ! Log rho or rho and T
 !

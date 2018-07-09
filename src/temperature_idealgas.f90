@@ -112,7 +112,7 @@ module Energy
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
       temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width, &
-      gradTT0
+      gradTT0, w_sldchar_ent
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -2601,16 +2601,32 @@ module Energy
 !***********************************************************************
     subroutine update_char_vel_energy(f)
 !
-! TB implemented.
+!  Updates characteristic veelocity for slope-limited diffusion.
 !
-!   25-sep-15/MR+joern: coded
+!  9-jul-18/joern: adapted from update_char_vel_energy in entropy.f90
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-
-      call keep_compiler_quiet(f)
-      call warning('update_char_vel_energy', &
-           'characteristic velocity not yet implemented for temperature_idealgas')
-
+      use EquationOfState, only: eoscalc
+!      use General, only: staggered_mean_scal
+      use General, only: staggered_max_scal
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      real, dimension(mx) :: cs2
+!
+      if (lslope_limit_diff) then
+!
+!  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
+!
+        do n=1,mz; do m=1,my
+          call eoscalc(f,mx,cs2=cs2)
+          f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
+        enddo; enddo
+!
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
+        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
+!
+      endif
+!
     endsubroutine update_char_vel_energy
 !***********************************************************************
     subroutine pushdiags2c(p_diag)

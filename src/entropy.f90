@@ -3632,8 +3632,8 @@ module Energy
 !  29-dec-15/joern: changed to staggered_max_scale
 !
       use EquationOfState, only: eoscalc
-      use General, only: staggered_mean_scal
-!      use General, only: staggered_max_scal
+!      use General, only: staggered_mean_scal
+      use General, only: staggered_max_scal
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
@@ -3648,8 +3648,8 @@ module Energy
           f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
         enddo; enddo
 !
-        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
-!        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
+        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
 !
       endif
 !
