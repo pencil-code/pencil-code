@@ -2,7 +2,7 @@
 !
 ! This modules solves for the gradient matrix of flow velocities. 
 ! The gradient matrix Sigma obeys the equation:
-!  (d/dt) Sigma = (1/(taup))*(S - Sigma) + Sigma^2
+!  (d/dt) Sigma = (1/(taup))*(S - Sigma) - Sigma^2
 ! where A is the flow gradient matrix at the position of the 
 ! particle; and taup is the Stokes time. 
 !
@@ -258,7 +258,7 @@ contains
 !
 ! solve dynamical equation
 !
-      dSigmap = taup1*(Sijp-Sigmap)+matmul(Sigmap,Sigmap)
+      dSigmap = taup1*(Sijp-Sigmap) - matmul(Sigmap,Sigmap)
       call matrix2linarray(dSigmap,dSigmap_lin)
       dfp(k,isigmap11:isigmap33) = dSigmap_lin
 !
@@ -324,7 +324,19 @@ contains
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-!nothing to write at the moment
+        write(3,*) 'isigmap11=', isigmap11
+        write(3,*) 'isigmap12=', isigmap13
+        write(3,*) 'isigmap13=', isigmap13
+        write(3,*) 'isigmap21=', isigmap21
+        write(3,*) 'isigmap22=', isigmap22
+        write(3,*) 'isigmap23=', isigmap23
+        write(3,*) 'isigmap31=', isigmap31
+        write(3,*) 'isigmap32=', isigmap32
+        write(3,*) 'isigmap33=', isigmap33
+        write(3,*) 'iPPp=', iPPp
+        write(3,*) 'iQQp=', iQQp
+        write(3,*) 'iRRp=', iRRp
+        write(3,*) 'iblowup=', iblowup
       endif
 !
 !  Reset everything in case of reset.
