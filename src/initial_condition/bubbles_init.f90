@@ -165,18 +165,17 @@ module InitialCondition
       integer :: l, m, n
       real :: log_T_b, log_T_0
 !
-    write(*,*) 'ini_bubble: aa'
-    ! initialize the temperature of the medium and the bubble
+    ! initialize the magnetic field inside the bubble
     do n = n1, n2, 1
       do m = m1, m2, 1
         do l = l1, l2, 1
           ! check if this point lies in the bubble
           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-            f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa/r_b) + sin((z(n)-z_b)*k_aa/r_b))
-            f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa/r_b) + sin((x(l)-x_b)*k_aa/r_b))
-            f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa/r_b) + sin((y(m)-y_b)*k_aa/r_b))
+            f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa) + sin((z(n)-z_b)*k_aa))
+            f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa) + sin((x(l)-x_b)*k_aa))
+            f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa) + sin((y(m)-y_b)*k_aa))
             f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-                (1-((x(l)-x_b)**n_smooth+(y(m)-y_b)**n_smooth+(z(n)-z_b)**n_smooth)/r_b**n_smooth)
+                (1-(sqrt((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b)**n_smooth)
           endif
         enddo
       enddo
