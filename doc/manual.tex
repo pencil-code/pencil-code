@@ -1148,7 +1148,7 @@ NOTE: The functionality of the head of the trunk should be preserved
 at all times. However, accidents do happen. For the benefit of all
 other developers, any errors should be corrected within 1-2 hours.
 This is the reason why the code comes with a file
-\file{pencil-code/license/developers.txt},
+\file[developers.txt]{pencil-code/license/developers.txt},
 which should contain contact details of all developers.
 The \cmd{pc_svnup -val} option allows all other people to stay away
 from any trouble.
@@ -1860,15 +1860,17 @@ You may compile with a default compiler-specific configuration:
 \end{alltt}
 \end{enumerate}
 Many compilers are supported already, please refer to the available config
-files in \file{\$PENCIL_HOME/config/compilers/*.conf}, e.g. \file{Intel.conf} and \file{Intel_MPI.conf}.
+files in \file[compilers]{\$PENCIL_HOME/config/compilers/*.conf}, e.g.
+\file{Intel.conf} and \file{Intel_MPI.conf}.
 
 If you have to set up some compiler options specific to a certain host system you work on,
 or if you like to create a host-specific configuration file so that you can
 simply execute \code{pc_build} without any options,
 you can clone an existing host-file, just include an existing
 compiler configuration, and simply only add the options you need.
-A good example of a host-file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
-You may save a clone under \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
+A good example of a host-file is
+\file[hosts]{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
+You may save a clone under \file[hosts]{\$PENCIL_HOME/config/hosts/<ID>.conf},
 where \file{<ID>} is to be replaced by the output of \code{pc_build -i}.
 This will be the new default for \code{pc_build}.
 
@@ -1893,11 +1895,11 @@ Commands like \cmd{pc_build} and \cmd{pc_run} use the Perl module
 and \file{Pencil::ConfigParser} to read and interpret it.
 When you use \file{ConfigFinder} on a given computer, it constructs a
 \emph{host ID} for the system it is running on, and looks for a file
-\file{host_ID.conf} in any subdirectory of \file{\$PENCIL_HOME/config/hosts}.
+\file{host_ID.conf} in any subdirectory of \file[hosts]{\$PENCIL_HOME/config/hosts}.
 
 E.g., if the host ID is ``workhorse.pencil.org'', \file{ConfigFinder} would
 consider the file
-\file{\$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf}.
+\file[hosts]{\$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf}.
 
 \subparagraph{Note 1:}
 The location in the tree under \file{hosts/} is irrelevant, which allows
@@ -1906,10 +1908,10 @@ you to group related hosts by institution, owner, hardware, etc.
 \subparagraph{Note 2:}
 \file{ConfigFinder} actually uses the following search path:
 \begin{enumerate}
-\item \file{./config}
-\item \file{\$PENCIL_HOME/config-local}
-\item \file{\$HOME/.pencil/config-local}
-\item \file{\$PENCIL_HOME/config}
+\item \file[config]{./config}
+\item \file[config-local]{\$PENCIL_HOME/config-local}
+\item \file[config-local]{\$HOME/.pencil/config-local}
+\item \file[config]{\$PENCIL_HOME/config}
 \end{enumerate}
 This allows you to override part of the \file{config/} tree globally on
 the given file system, or locally for a particular run directory, or for
@@ -1929,9 +1931,9 @@ The algorithm is as follows:
 \item If the environment variable \var{PENCIL_HOST_ID} is set, its value
   is used.
 \item If any of the files
-  \file{./host-ID},
-  \file{\$PENCIL_HOME/host-ID},
-  \file{\$HOME/.pencil/host-ID},
+  \file[host-ID]{./host-ID},
+  \file[host-ID]{\$PENCIL_HOME/host-ID},
+  \file[host-ID]{\$HOME/.pencil/host-ID},
   exists, its first line is used.
 \item If \file{ConfigFinder} can get hold of a \name{fully qualified host
     name}, that is used as host ID.
@@ -2026,7 +2028,7 @@ The \file{.conf} files consist of the following elements:
   %include os/Unix
 \end{verbatim}
    will include the file \file{os/Unix.conf} in the search path listed
-   above (typically from \file{\$PENCIL_HOME/config}).
+   above (typically from \file[config]{\$PENCIL_HOME/config}).
    However, if the included path starts with a dot, it is a relative path,
    so
 \begin{verbatim}
@@ -2374,7 +2376,7 @@ gives practically identical results.
 \subparagraph{Example:}
 To apply the \code{sinh} profile, you can set the following in
 \file{start.in} (this example is from
-\file[sound-spherical-noequi]{samples/sound-spherical-noequi}):
+\file[sound-spherical-noequi/]{samples/sound-spherical-noequi}):
 \begin{Verbatim}
   &init_pars
     [...]
@@ -2464,8 +2466,8 @@ I/O, in particular for large jobs; too low a frequency makes it
 difficult to follow the evolution interactively during test runs.
 There is also the \var{ialive} parameter.
 Setting this to 1 or 10 gives an updated timestep in the files
-\file{data/proc*/alive.info}.
-You can put \var{ialive=0} to turn this off to limit the I/O
+\file[alive.info]{data/proc*/alive.info}.
+You can put \var[ialive]{ialive=0} to turn this off to limit the I/O
 on your machine.
 
 The \emph{permanent snapshots} \file[VAR$N$]{data/proc*/VAR$N$} are
@@ -2552,7 +2554,7 @@ This is done by running \file{src/read_videofiles.x}, which will prompt
 for the variable name, read the individual sub-slices and write global
 slices to \file{data/}
 Once all global slices have been assembled you may want to remove the
-local slices \file[]{data/proc*/slice*}.
+local slices \file[slize*]{data/proc*/slice*}.
 
 To read all sub-slices demanded in \file{video.in} at once use
 \file{src/read_all_videofiles.x}. This program doesn't expect any
@@ -2897,7 +2899,7 @@ Here is a list of the more important ones.
 \item[cleanf95] Can be use to clean up the output from the Intel x86 Fortran
   95 compiler (ifc).
 \item[copy-proc-to-proc] Used for restarting in a different directory.
-  Example \cmd{copy-proc-to-proc seed.dat ../hydro256e}.
+  Example \cmd[copy-proc-to-proc]{copy-proc-to-proc seed.dat ../hydro256e}.
 \item[copy-snapshots] Copy snapshots from a processor-local directory to
   the global directory.
   To be started in the background before \file{run.x} is invoked.
@@ -3114,7 +3116,7 @@ Before starting a simulation run, you may want to execute the command \code{pc_c
 in order to test the correctness of your changes to these configuration files.
 
 As an example, we give here the start parameters for
-\file[helical-MHDturb]{samples/helical-MHDturb}
+\file[helical-MHDturb/]{samples/helical-MHDturb}
 \begin{alltt}
   &init_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
@@ -3144,7 +3146,7 @@ The magnetic vector potential is initialized with uncorrelated, normally
 distributed random noise of amplitude $10^{-4}$.
 
 
-The run parameters for \file[helical-MHDturb]{samples/helical-MHDturb} are
+The run parameters for \file[helical-MHDturb/]{samples/helical-MHDturb} are
 \begin{alltt}
   &run_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
@@ -3429,8 +3431,9 @@ In order to make this work, you need to compile with
 TIMESTEP  =   timestep_rkf
 \end{verbatim}
 in \file{src/Makefile.local}.
-In addition, you must put \cmd{itorder=5} in \file{run.in}.
-An example application is \file{samples/1d-tests/H2_flamespeed}.
+In addition, you must put \var[itorder]{itorder=5} in \file{run.in}.
+An example application is
+\file[H2_flamespeed/]{samples/1d-tests/H2_flamespeed}.
 This procedure is still experimental.
 
 % ---------------------------------------------------------------------- %
@@ -3535,7 +3538,7 @@ sheet boundary conditions and have stress-free instead).
 
 When a run stops at the end of a simulation, you can just resubmit
 the job again, and it will start from the latest snapshot saved in
-\file{data/proc*/var.dat}. The value of the latest time is saved in a
+\file[var.dat]{data/proc*/var.dat}. The value of the latest time is saved in a
 separate file, \file[time.dat]{data/proc*/time.dat}.
 On parallel machines it is possible that some (or just one) of the
 \file{var.dat} are corrupt; for example after a system crash.
@@ -3930,26 +3933,26 @@ One can access the individual variables by typing \cmd{ff.varname}, e.g.
   <Expression>    FLOAT     = Array[32, 32, 32, 3]
 \end{alltt}
 There are a number of files that read different data into structures. They are
-placed in the directory \cmd{\$PENCIL_HOME/idl/files}. Here is a list of files
-(including suggested options to call them with)
+placed in the directory \path{\$PENCIL_HOME/idl/files}.
+Here is a list of files (including suggested options to call them with)
 \begin{itemize}
-  \item \cmd{pc_read_var_raw, obj=var, tags=tags} \\
+  \item \cmd[pc_read_var_raw]{pc_read_var_raw, obj=var, tags=tags} \\
       Efficiently read a snapshot into an array.
-  \item \cmd{pc_read_var, obj=ff, /trimall} \\
+  \item \cmd[pc_read_var]{pc_read_var, obj=ff, /trimall} \\
       Read a snapshot into a structure.
-  \item \cmd{pc_read_ts, obj=ts} \\
+  \item \cmd[pc_read_t]{pc_read_ts, obj=ts} \\
       Read the time series into a structure.
-  \item \cmd{pc_read_xyaver, obj=xya} \\
-      \cmd{pc_read_xzaver, obj=xza} \\
-      \cmd{pc_read_yzaver, obj=yza} \\
+  \item \cmd[pc_read_xyaver]{pc_read_xyaver, obj=xya} \\
+      \cmd[pc_read_xzaver]{pc_read_xzaver, obj=xza} \\
+      \cmd[pc_read_yzaver]{pc_read_yzaver, obj=yza} \\
       Read 1-D time series into a structure.
-  \item \cmd{pc_read_const, obj=cst} \\
+  \item \cmd[pc_read_const]{pc_read_const, obj=cst} \\
       Read code constants into a structure.
-  \item \cmd{pc_read_pvar, obj=fp} \\
+  \item \cmd[pc_read_pvar]{pc_read_pvar, obj=fp} \\
       Read particle data into a structure.
-  \item \cmd{pc_read_param, obj=par} \\
+  \item \cmd[pc_read_param]{pc_read_param, obj=par} \\
       Read startup parameters into a structure.
-  \item \cmd{pc_read_param, obj=par2, /param2} \\
+  \item \cmd[pc_read_param]{pc_read_param, obj=par2, /param2} \\
       Read runtime parameters into a structure.
 \end{itemize}
 Other options are documented in the source code of the files.
@@ -4633,7 +4636,7 @@ The logical \code{ldragforce_gas_par} determines whether the dust particles
 influence the gas with a drag force. \code{cdtp} tells the code how many
 friction times should be resolved in a minimum time-step.
 
-The sample run \file{samples/sedimentation/} contains the latest setup for dust
+The sample run \file[sedimentation/]{samples/sedimentation/} contains the latest setup for dust
 particles.
 
 \subsubsection{Particles in parallel}
@@ -5327,9 +5330,9 @@ is the optical depth ($s$ is the geometrical coordinate along the ray).
 
 Note that radiative transfer is called also in \file{start.csh},
 and again each time a snapshot is being written, provided the output
-of auxiliary variables is being requested \cmd{lwrite_aux=T}.
+of auxiliary variables is being requested \var[lwrite_aux]{lwrite_aux=T}.
 (Also, of course, the pencil check runs radiative transfer 7 times,
-unless you put \cmd{pencil_check_small=F}.)
+unless you put \cmd[pencil_check_small]{pencil_check_small=F}.)
 
 % ---------------------------------------------------------------------- %
 
@@ -5534,7 +5537,7 @@ and a second order spline interpolation scheme (set
 \code{lquadratic_interpolation=T} in \code{\&particles_init_pars}) to
 calculate the gas velocity at the position of a tracer particle.
 
-The sample run \file{samples/dust-vortex} contains the latest setup for
+The sample run \file[dust-vortex/]{samples/dust-vortex} contains the latest setup for
 tracer particles.
 
 \subsubsection{Dust particles}
@@ -6106,8 +6109,9 @@ What is the problem?
   This problem can also occur if you added a new
   module (and have an empty space after the module
   name in \file[Makefile.src]{src/Makefile.src}, i.e.\
-  \cmd{CHIRAL=nochiral\textvisiblespace}), in which case the compiler
-  will talk about ``circular dependence'' for the file \file{nochiral}.
+  \var[CHIRAL]{CHIRAL=nochiral\textvisiblespace}), in which case the
+  compiler will talk about ``circular dependence'' for the file
+  \file{nochiral}.
 
 \end{enumerate}
 
@@ -6294,12 +6298,12 @@ When I say \cmd{locate mpif.h} I only get things like
 \begin{Verbatim}
    /scratch/ntest/1.2.7p1-intel/include/mpif.h
 \end{Verbatim}
-But since I use \cmd{FC=mpif90} I thought I don't need to worry.
+But since I use \var[FC]{FC=mpif90} I thought I don't need to worry.
 
 \medskip
 
-{\bf A}: Since you use \cmd{FC=mpif90} there must definitely be something
-wrong with their setup.
+{\bf A}: Since you use \var[FC]{FC=mpif90} there must definitely be
+something wrong with their setup.
 Try \cmd{mpif90 -showme} or \cmd{mpif90 -show}; the `-I' option
 should say where it looks for 'mpif.h'.
 If those directories don't exist, it's no wonder that it doesn't work,
@@ -6502,8 +6506,8 @@ tree.
 {\bf A}:
 You are running on a RedHat 8 or 9 system, right?
 
-Set \cmd{LANG=POSIX} in your shell's startup script and life will be much
-better.
+Set \var[LANG]{LANG=POSIX} in your shell's startup script and life will be
+much better.
 
 \subsubsection{Can I restart with a different number of cpus?}
 
@@ -6968,7 +6972,7 @@ It would be a good idea to add this useful information in the manual, no?
 \medskip
 
 {\bf A}: When you have added new stuff to the code, don't forget to mention
-this in the \file{pencil-code/doc/manual.tex} file.
+this in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
 Again, the answer is yes; just go to:
 \begin{Verbatim}
@@ -6986,8 +6990,9 @@ Again, the answer is yes; just go to:
 \index{h-index}
 
 All developers are supposed to have an up-to-date entry in the file
-\file{pencil-code/license/developers.txt} so that they can be contacted in
-case a code change breaks an auto-test or other code functionality.
+\file[developers.txt]{pencil-code/license/developers.txt} so that they can
+be contacted in case a code change breaks an auto-test or other code
+functionality.
 
 Several {\sc Pencil Code} committers have done several hundred check-ins,
 but many of the currently 68 registered people on the repository have
@@ -7455,9 +7460,9 @@ integer, parameter :: nxgrid=16,nygrid=nxgrid,nzgrid=nxgrid
 This way such a change does not affect the memory usage for other
 applications where this addition to \file{cparam.local} is not made.
 In order to output this part of the f-array, one must write
-\code{lwrite_aux=T} in the \code{init_pars} of \file{start.in}.
-(Technically, \code{lwrite_aux=T} can also be invoked in \code{run_pars}
-of \file{run.in}, but this does not work at the moment.)
+\var[lwrite_aux]{lwrite_aux=T} in the \code{init_pars} of \file{start.in}.
+(Technically, \code[lwrite_aux]{lwrite_aux=T} can also be invoked in
+\code{run_pars} of \file{run.in}, but this does not work at the moment.)
 
 \subsection{The df-array}
 \label{df-array}
@@ -7668,7 +7673,7 @@ You are encouraged to submit/commit your special modules to the Pencil Code
 source.
 \index{Manual}
 When you have added new stuff to the code, don't forget to mention this
-in the \file{pencil-code/doc/manual.tex} file.
+in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
 \subsection{Adding switchable modules}
 
@@ -7790,7 +7795,7 @@ following steps.
   give explicit example]
 
   Remember that you can set up a custom host ID file for your auto-test
-  tree under \file{\$\{PENCIL_HOME\}/config-local/hosts/}.
+  tree under \file[hosts]{\$\{PENCIL_HOME\}/config-local/hosts/}.
 
 \item On the scheduling host, use \cmd{crontab -e} to set up a \name
   {cron} job similar to the following:
@@ -7815,35 +7820,35 @@ following steps.
   You will have to adapt some parameters listed here and may want to
   modify a few more:
   \begin{description}
-  \item[\option{-D \textsl{<dir>}}:]
+  \item[\protect{\option[-D]{-D \textsl{<dir>}}}:]
     Sets the directory (on the work host) to run in.
-  \item[\option{-T \textsl{<file>}}:]
+  \item[\protect{\option[-T]{-T \textsl{<file>}}}:]
     If this option is given, append a timing statistics line for each test
     to the given \emph{file}.
   \item[\option{--use-pc}:]
     You want this option (and at some point, it will be the default).
-  \item[\option{-t 15m}:]
+  \item[\protect{\option[-t]{-t 15m}}:]
     Limit the time for \file{start.x} and \file{run.x} to 15 minutes.
-  \item[\option{-N 15}:]
+  \item[\protect{\option[-N]{-N 15}}:]
     Run the tests at nice level 15 (may not have an effect for MPI tests).
   \item[\option{-Uc}:]
     Do \cmd{svn update} and \cmd{pc_build --cleanall} before compiling.
-  \item[\option{-m \textsl{<email-list>}}:]
+  \item[\protect{\option[-m]{-m \textsl{<email-list>}}}:]
     If this option is given, send e-mails to everybody in the
     (comma-separated) list of e-mail addresses if any test fails.
     As soon as this option is set, the maintainers (as specified in the
     \file{README} file) of failed tests will also receive an e-mail.
-  \item[\option{work-host.inter.net|-l}:]
+  \item[\code{work-host.inter.net|-l}:]
     Replace this with the remote host that is to run the tests.
     If you want to run locally, write \code{-l} instead.
   \item[\option{-H}:]
     Output HTML.
-  \item[\option{> \$HOME/public_html/pencil-code/tests/nightly-tests.html}:]
+  \item[\code{> \$HOME/public_html/pencil-code/tests/nightly-tests.html}:]
     Write output to the given file.
   \end{description}
 
   If you want to run fewer or more tests, you can use the
-  \option{-Wa,--max-level} option:
+  \option[--max-level]{-Wa,--max-level} option:
 \begin{alltt}
       -Wa,--max-level=3
 \end{alltt}
@@ -8901,7 +8906,7 @@ Before doing such changes it is therefore useful to contact the people
 who have contributed to the latest developments on that module.
 If it is not functional or otherwise in bad shape, it should be
 moved to \file{experimental}, i.e.\ one says
-\cmd{svn mv file.f90 experimental/file.f90}.
+\code{svn mv file.f90 experimental/file.f90}.
 However, any such directory change constitutes a major change in
 itself and should be performed in agreement with those involved in
 the development.
@@ -8963,25 +8968,29 @@ By default it is $0$, which means it is nonhelical.
 
 The spectral indices \var{initpower} and \var{initpower2} refer to
 energy spectral indices.
-By default, \var{initpower2=-5/3}, corresponding to a Kolmogorov spectrum.
-For a delta-correlated spectrum, we have to put \var{initpower=2},
+By default, \var[initpower2]{initpower2=-5/3}, corresponding to a
+Kolmogorov spectrum.
+For a delta-correlated spectrum, we have to put
+\var[initpower]{initpower=2},
 corresponding to a $k^2$ energy spectrum for kinetic energy.
 This would be suitable for the subinertial range from $k=1$ to
 $k=k_{\rm p}$ (corresponding to the variable \var{kpeak}).
 
-If \var{cutoff=0}, no cutoff will be imposed.
+If \var[cutoff]{cutoff=0}, no cutoff will be imposed.
 Otherwise, the spectrum will be multiplied by an exponential
 function with $\exp(-k^{2n})$, where $n=\mbox{'ncutoff=1'}$
 by default.
 
-Example, for \var{ampluu=1e-1}, \var{initpower=4.}, and \var{kpeak=3.},
-we get \var{urms=3.981E-01} when \var{relhel_uu=1} and
-\var{urms=3.981E-01} when \var{relhel_uu=0} and
-\var{urms=5.560E-01} when \var{relhel_uu=1}.
+Example, for \var[initpower]{ampluu=1e-1}, \var[initpower]{initpower=4.},
+and \var[kpeak]{kpeak=3.},
+we get \var[urms]{urms=3.981E-01} when \var[relhel_uu]{relhel_uu=1} and
+\var[urms]{urms=3.981E-01} when \var[relhel_uu]{relhel_uu=0} and
+\var[urms]{urms=5.560E-01} when \var[relhel_uu]{relhel_uu=1}.
 The \var{urms} values scale linearly with \var{ampluu} and for
-\var{initpower=2} also approximately linearly with \var{kpeak}.
+\var[initpower]{initpower=2} also approximately linearly with \var{kpeak}.
 For the magnetic field, we initialize the magnetic vector potential,
-so to get a $k^4$ spectrum, we have to put \var{initpower_aa=2.}
+so to get a $k^4$ spectrum, we have to put
+\var[initpower]{initpower_aa=2.}
 Everything else is analogous; see, e.g.,
 \begin{verbatim}
 &hydro_init_pars
@@ -8993,7 +9002,7 @@ Everything else is analogous; see, e.g.,
   relhel_aa=0., cutoff_aa=30.
 /
 \end{verbatim}
-for which we get \var{urms=3.981E-01} and \var{brms=3.871E-01}.
+for which we get \var[urms]{urms=3.981E-01} and \var[brms]{brms=3.871E-01}.
 
 % ---------------------------------------------------------------------- %
 
@@ -9966,12 +9975,12 @@ viscosity by a factor of about $2^5=32$ (Haugen \& Brandenburg 2004).
 This shows that hyperviscosity can allow
 a dramatic increase of the Reynolds number based on the scale of the box.
 
-By choosing \cmd{idiff='hyper3_mesh'} in \code{density_run_pars}
+By choosing \var[idiff]{idiff='hyper3_mesh'} in \code{density_run_pars}
 the hyperdiffusion for density is being set automatically in a
 mesh-independent way.
 A hyper-mesh Reynolds number of 30 corresponds to a coefficient
-\cmd{diffrho_hyper3_mesh=2} if \var{maxadvec} is about 1, but in
-practice we need a bit more (5 is currently the default).
+\var[diffrho_hyper3_mesh]{diffrho_hyper3_mesh=2} if \var{maxadvec} is
+about 1, but in practice we need a bit more (5 is currently the default).
 
 \subsubsection{Turbulence with hyperviscosity}
 \index{Hyperviscosity}
@@ -10081,7 +10090,7 @@ of the velocity or magnetic potential), we can write
   \includegraphics%
     [width=0.8\textwidth,keepaspectratio]%
     {BurgersShock}
-  \caption{Left: Burgers shock from \cmd{teach/PencilCode/material/BurgersShock}
+  \caption{Left: Burgers shock from \code{teach/PencilCode/material/BurgersShock}
   (in the teaching material) with $-20\leq x\leq 20$, $n_x=64$ mesh points,
   $u_x=\mp1$ on the two ends, $\nu=0.4$ and either $\nu_3=0$ (solid line)
   or $\nu_3=0.05$ (dashed line).
