@@ -120,7 +120,7 @@
 \frenchspacing
 \sloppy
 
-%%% Multiple, three-column indexes
+%%% Multiple indexes
 \makeindex
 \newindex{var}{vidx}{vind}{Variable Index}
 \newindex{file}{fidx}{find}{File Index}
@@ -143,31 +143,6 @@
       \fi
     }%
   }{}
-\makeatother
-%% Redefine index to be in three columns (adapted from `index.sty'):
-\makeatletter
-\renewenvironment{theindex}{%
-  \edef\indexname{\the\@nameuse{idxtitle@\@indextype}}%
-  \if@twocolumn\@restonecolfalse
-  \else\@restonecoltrue
-  \fi
-  \columnseprule \z@
-  \columnsep 35\p@
-  \begin{multicols}{3}[\section*{\indexname}%
-    \ifx\index@prologue\@empty%
-    \else\index@prologue\bigskip
-    \fi
-  ]%
-  \@mkboth{\MakeUppercase\indexname}%
-          {\MakeUppercase\indexname}%
-  \thispagestyle{plain}%
-  \parindent\z@
-  \parskip\z@ \@plus .3\p@\relax
-  \let\item\@idxitem
-}
-{ \end{multicols}
-  \if@restonecol\onecolumn\else\clearpage\fi
-}
 \makeatother
 
 
