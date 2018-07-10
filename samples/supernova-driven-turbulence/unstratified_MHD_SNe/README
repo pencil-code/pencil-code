@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/supernova-driven-turbulence/unstratified_MHD_SNe/
+SVN Id:
+    $Id: README 13067 2018-07-10 19:08:53Z f.a.gent@ncl.ac.uk $
+Maintainer:
+    Frederick Gent <fred.gent.ncl/gmail[dot]com>
+Added:
+    10-Jul-2018
+Status:
+    has been working in this form since 10-Jul-2018
+Recommended resolution:
+    at least 240x240x240 (resolution < 1pc) 
+    for 1 atom per cc a box width >= 200pc is required
+Comments:
+    designed to test magnetic field ampplification for SSD with SN 
+    turbulence, no shear, rotation or stratification in a monotomic ISM. 
+    injection of 10^51 ergs => 0% kinetic and 100% thermal energy.
