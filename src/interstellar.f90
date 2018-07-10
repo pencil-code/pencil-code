@@ -308,7 +308,7 @@ module Interstellar
 !  rather than cooling timestep or shock instability, so this device no longer
 !  recommended. 
 !
-  logical :: lheatcool_shock_cutoff = .false.
+  logical :: lheatcool_shock_cutoff = .false., lcooling_revert=.false.
 !
 !  SN type flags
 !
@@ -411,7 +411,7 @@ module Interstellar
       heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
-      heatcool_shock_cutoff_rate, ladd_massflux, &
+      heatcool_shock_cutoff_rate, ladd_massflux, lcooling_revert, &
       N_mass, addrate, add_scale, T_init, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
       p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
@@ -639,7 +639,15 @@ module Interstellar
       character (len=labellen), intent(IN) :: cooling_select  
       real, dimension (:), intent(OUT)  :: lncoolT, coolB
       double precision, dimension (:), intent(OUT)  :: lncoolH
-      
+      real :: lnmu2
+!
+!  Scale rho^2 to gas number density^2 with mu^2
+!
+      if (.not. lcooling_revert) then
+        lnmu2 = 2*log(mu)
+      else
+        lnmu2 = 0.
+      endif
 !
 !  Mara: Initialize cooling parameters according to selection
 !  Default selection 'RBN' Rosen & Bregman (1993)
@@ -937,6 +945,7 @@ module Interstellar
 ! END TEMPORARY
       lncoolH(1:ncool) = real(log(coolH_cgs(1:ncool)) - log(unit_Lambda) &
                               + log(unit_temperature**coolB(1:ncool)) &
+                              - lnmu2 &
                               + log(coolingfunction_scalefactor))
       lncoolT(1:ncool+1) = real(log(coolT_cgs(1:ncool+1) / unit_temperature))
 !
