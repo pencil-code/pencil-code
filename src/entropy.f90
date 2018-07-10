@@ -42,6 +42,7 @@ module Energy
   real, target :: chi=0.0, cs2cool=0., mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, pointer :: mpoly
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_cspeed=0.5
+  real :: chi_shock2=0.0, dt1s=1.0 !typically set dt1s=1/shockmax
   real :: chi_t0=0.0, chi_t1=0.0
   real :: chi_hyper3_mesh=5.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
@@ -107,7 +108,7 @@ module Energy
   logical, target :: lheatc_kramers=.false.
   logical :: lheatc_smagorinsky=.false., lheatc_chit=.false.
   logical :: lheatc_corona=.false.,lheatc_chi_cspeed=.false.
-  logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
+  logical :: lheatc_shock=.false., lheatc_shock2=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
   logical :: lcooling_general=.false., lcooling_ss_mz=.false.
@@ -190,7 +191,7 @@ module Energy
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
       lcooling_general, lcooling_ss_mz, gradS0_imposed, &
       ss_const, chi_t, chi_rho, chit_prof1, zcool2, &
-      chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
+      chit_prof2, chi_shock, chi_shock2, dt1s, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
       heat_gaussianz, heat_gaussianz_sigma, cs2top_ini, dcs2top_ini, &
@@ -825,6 +826,7 @@ module Energy
       lheatc_kramers=.false.
       lheatc_corona=.false.
       lheatc_shock=.false.
+      lheatc_shock2=.false.
       lheatc_shock_profr=.false.
       lheatc_hyper3ss=.false.
       lheatc_hyper3ss_polar=.false.
@@ -878,6 +880,12 @@ module Energy
           if (lroot) print*, 'heat conduction: corona'
         case ('shock')
           lheatc_shock=.true.
+          if (lroot) print*, 'heat conduction: shock'
+          if (.not. lshock) &
+            call stop_it('initialize_energy: shock diffusity'// &
+                           ' but module setting SHOCK=noshock')
+        case ('shock2')
+          lheatc_shock2=.true.
           if (lroot) print*, 'heat conduction: shock'
           if (.not. lshock) &
             call stop_it('initialize_energy: shock diffusity'// &
@@ -962,6 +970,9 @@ module Energy
            call warning('initialize_energy','chi_hyper3_mesh is zero!')
       if (lheatc_shock .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
+      endif
+      if (lheatc_shock2 .and. chi_shock2==0.0) then
+        call warning('initialize_energy','chi_shock2 is zero!')
       endif
       if (lheatc_shock_profr .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
@@ -2619,7 +2630,7 @@ module Energy
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_cp)=.true.
       endif
-      if (lheatc_shock) then
+      if (lheatc_shock.or.lheatc_shock2) then
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -3091,7 +3102,7 @@ module Energy
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
-      if (lheatc_shock)    call calc_heatcond_shock(df,p)
+      if (lheatc_shock.or.lheatc_shock2)    call calc_heatcond_shock(df,p)
       if (lheatc_shock_profr)    call calc_heatcond_shock_profr(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
@@ -4179,16 +4190,32 @@ module Energy
 !  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
 !
       if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
-      if (pretend_lnTT) then
-        thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
-      else
-        if (lchi_shock_density_dep) then
-          call dot(p%gshock,p%gss,gshockgss)
-          call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
-          thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
-                 (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
+      if (lheatc_shock) then
+        if (pretend_lnTT) then
+          thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
         else
-          thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+          if (lchi_shock_density_dep) then
+            call dot(p%gshock,p%gss,gshockgss)
+            call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
+            thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
+                   (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
+          else
+            thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+          endif
+        endif
+      endif
+      if (lheatc_shock2) then
+        if (pretend_lnTT) then
+          thdiff=gamma*chi_shock2*dt1s*(p%shock**2*(p%del2lnrho+g2)+gshockglnTT)
+        else
+          if (lchi_shock_density_dep) then
+            call dot(p%gshock,p%gss,gshockgss)
+            call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
+            thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock2*dt1s* &
+                   (p%shock**2*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+2*p%shock*gshockgss)
+          else
+            thdiff=chi_shock2*dt1s*(p%shock**2*(p%del2lnTT+g2)+2*p%shock*gshockglnTT)
+          endif
         endif
       endif
 !
@@ -4204,12 +4231,21 @@ module Energy
       if (lfirst.and.ldt) then
         if (leos_idealgas) then
           if (lchi_shock_density_dep) then
-            diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
+            if (lheatc_shock) &
+                diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
+            if (lheatc_shock2) &
+                diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock2*dt1s*p%shock**2*p%cp1*dxyz_2
           else
-            diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
+            if (lheatc_shock) &
+                diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
+            if (lheatc_shock2) &
+                diffus_chi=diffus_chi+(gamma*chi_shock2*dt1s*p%shock**2)*dxyz_2
           endif
         else
-          diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
+          if (lheatc_shock) &
+              diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
+          if (lheatc_shock2) &
+              diffus_chi=diffus_chi+(chi_shock2*dt1s*p%shock**2)*dxyz_2
         endif
 !        if (ldiagnos.and.idiag_dtchi/=0) then
 !          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
