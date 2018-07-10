@@ -118,7 +118,7 @@ module Magnetic
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
-  real :: eta_shock=0.0
+  real :: eta_shock=0.0, eta_shock2=0.0
   real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., etaj20=0.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
@@ -173,6 +173,7 @@ module Magnetic
   logical :: lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
+  logical :: lresi_eta_shock2=.false.
   logical :: lresi_eta_shock_profz=.false.
   logical :: lresi_eta_shock_profr=.false.
   logical :: lresi_eta_shock_perp=.false.
@@ -322,7 +323,7 @@ module Magnetic
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
-      lneutralion_heat, lreset_aa, daareset, &
+      lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
@@ -1130,6 +1131,7 @@ module Magnetic
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
+      lresi_eta_shock2=.false.
       lresi_eta_shock_profz=.false.
       lresi_eta_shock_profr=.false.
       lresi_eta_shock_perp=.false.
@@ -1202,6 +1204,12 @@ module Magnetic
         case ('shock','eta-shock')
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock=.true.
+          if (.not. lshock) &
+              call fatal_error('initialize_magnetic', &
+              'shock resistivity, but module setting SHOCK=noshock')
+        case ('eta-shock2')
+          if (lroot) print*, 'resistivity: shock'
+          lresi_eta_shock2=.true.
           if (.not. lshock) &
               call fatal_error('initialize_magnetic', &
               'shock resistivity, but module setting SHOCK=noshock')
@@ -1319,6 +1327,9 @@ module Magnetic
         if (lresi_eta_shock.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
+        if (lresi_eta_shock2.and.eta_shock2==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_shock is zero!')
         if (lresi_eta_shock_profz.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
@@ -1360,34 +1371,34 @@ module Magnetic
 !
 !  precalculating fixed (on timescales larger than tau) vectorpotential
 !
-  if (tau_relprof/=0.0) then
+      if (tau_relprof/=0.0) then
 
-    if (lyinyang) then
-      if (A_relaxprofile/='') &
-        call fatal_error('initialize_magnetic', &
-        'z dependent relaxation profiles for A not implemented on Yin-Yang grid.')
-    endif
+        if (lyinyang) then
+          if (A_relaxprofile/='') &
+            call fatal_error('initialize_magnetic', &
+            'z dependent relaxation profiles for A not implemented on Yin-Yang grid.')
+        endif
 
-    tau_relprof1=1./tau_relprof
-    select case (A_relaxprofile)
-    case('0,coskz,0')
-      A_relprof(:,:,:,1)=0.
-      do i=1,nx
-        do j=1,ny
-          A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
-        enddo
-      enddo
-      A_relprof(:,:,:,3)=0.
-    case('sinkz,coskz,0')
-      do i=1,nx
-        do j=1,ny
-          A_relprof(i,j,:,1)=amp_relprof*sin(k_relprof*z(n1:n2))
-          A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
-        enddo
-      enddo
-      A_relprof(:,:,:,3)=0.
-    endselect
-  endif
+        tau_relprof1=1./tau_relprof
+        select case (A_relaxprofile)
+        case('0,coskz,0')
+          A_relprof(:,:,:,1)=0.
+          do i=1,nx
+            do j=1,ny
+              A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
+            enddo
+          enddo
+          A_relprof(:,:,:,3)=0.
+        case('sinkz,coskz,0')
+          do i=1,nx
+            do j=1,ny
+              A_relprof(i,j,:,1)=amp_relprof*sin(k_relprof*z(n1:n2))
+              A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
+            enddo
+          enddo
+          A_relprof(:,:,:,3)=0.
+        endselect
+      endif
 !
 !
 !  write profile (uncomment for debugging)
@@ -2177,7 +2188,7 @@ module Magnetic
       endif
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag.or. &
-          lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
+          lresi_eta_shock2.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_eta_shock_profz.or.lresi_eta_shock_profr.or. &
           lresi_smagorinsky_cross.or.lresi_spitzer.or.lresi_cspeed)) &
           lpenc_requested(i_del2a)=.true.
@@ -2187,7 +2198,7 @@ module Magnetic
         if (.not.lweyl_gauge) lpenc_requested(i_del2a)=.true.
       endif
       if (lresi_eta_shock.or.lresi_eta_shock_profz.or. &
-          lresi_eta_shock_profr) then
+          lresi_eta_shock2.or.lresi_eta_shock_profr) then
         lpenc_requested(i_shock)=.true.
         if (.not.lweyl_gauge) then
           lpenc_requested(i_gshock)=.true.
@@ -3736,6 +3747,21 @@ module Magnetic
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock*p%shock
         etatotal=etatotal+eta_shock*p%shock
+      endif
+!
+      if (lresi_eta_shock2) then
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i)=fres(:,i)-eta_shock2*p%shock**2*mu0*p%jj(:,i)
+          enddo
+        else
+          do i=1,3
+            fres(:,i)=fres(:,i)+ &
+                eta_shock2*(p%shock**2*p%del2a(:,i)+2*p%shock*p%diva*p%gshock(:,i))
+          enddo
+        endif
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_shock2*p%shock**2
+        etatotal=etatotal+eta_shock2*p%shock**2
       endif
 !
 ! diffusivity: eta-shock with vertical profile
@@ -7799,13 +7825,14 @@ module Magnetic
 ! else if lbb_as_aux
 !
       else
-        bb(l1:12,:) = f(l1:l2,m,n,ibx:ibz)
+        bb(l1:l2,:) = f(l1:l2,m,n,ibx:ibz)
         call dot2(bb(l1:l2,:),bb_len(l1:l2),PRECISE_SQRT=.true.)
+        aerr2 = tol * max(bb_len,1.)
 !
 !  Truncate small components to zero.
 !
         do j=1,3
-          where (bb_len(l1:l2) <= 2*tini)
+          where (bb_len(l1:l2) <= aerr2(l1:l2))
             bb_hat(l1:l2,j) = 0.
           elsewhere
             bb_hat(l1:l2,j) = bb(l1:l2,j)
@@ -7814,7 +7841,7 @@ module Magnetic
 !
 !  Get unit vector.
 !
-        do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
+        do j=1,3; bb_hat(l1:l2,j) = bb_hat(l1:l2,j)/(bb_len(l1:l2)+tini); enddo
 !
       endif
 !
