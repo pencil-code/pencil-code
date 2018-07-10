@@ -2811,12 +2811,14 @@ module Magnetic
 !
 !   25-sep-15/MR+joern: coded
 !
-      use General, only: staggered_mean_vec, staggered_max_vec
+!      use General, only: staggered_mean_vec
+      use General, only: staggered_max_vec
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       type(pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc=.false.
+      real, dimension(nx) :: tmp
 !
       lpenc_loc(i_va2) = lslope_limit_diff
 !
@@ -2826,7 +2828,12 @@ module Magnetic
 !
         do n=n1,n2; do m=m1,m2
           call calc_pencils_magnetic(f,p,lpenc_loc)
-          f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
+          if (lboris_correction .and. va2max_boris>0) then
+            tmp=(1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
+            f(l1:l2,m,n,iFF_diff) = sqrt(p%va2*tmp)
+          else
+            f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
+          endif
         enddo; enddo
 !
         !call staggered_mean_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
