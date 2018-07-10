@@ -81,12 +81,8 @@ module Shock
 !
       use FArrayManager
       use Messages, only: svn_id
-      use Sub, only: register_report_aux
 !
       call farray_register_auxiliary('shock',ishock,communicated=.true.)
-      if (ldivu_perp) then
-        call register_report_aux('shock_perp',ishock_perp,communicated=.true.)
-      endif
 !
 !  Identify version number.
 !
@@ -107,6 +103,7 @@ module Shock
 !  20-nov-02/tony: coded
 !
       use Messages, only: fatal_error
+      use Sub, only: register_report_aux
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -117,6 +114,7 @@ module Shock
 !
       f(:,:,:,ishock)=0.0
       if (ldivu_perp) then
+        call register_report_aux('shock_perp',ishock_perp,communicated=.true.)
         if (.not. lmagnetic) call fatal_error('initialize_shock', &
                     'ldivu_perp requires magnetic field module for B_perp')
         f(:,:,:,ishock_perp)=0.0
@@ -293,6 +291,7 @@ module Shock
 !
       if (present(lwrite)) then
         if (lwrite) write(3,*) 'ishock=',ishock
+        if (lwrite) write(3,*) 'ishock_perp=',ishock_perp
       endif
 !
     endsubroutine rprint_shock
@@ -315,7 +314,6 @@ module Shock
 !  Shock profile
 !
         case ('shock'); call assign_slices_scal(slices,f,ishock)
-        case ('shock_perp'); call assign_slices_scal(slices,f,ishock_perp)
 !
       endselect
 !
@@ -406,8 +404,7 @@ module Shock
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
       real, dimension (mx,my,mz) :: tmp
-      real, dimension (nx) :: penc, penc1
-      real, dimension (mx) :: penc_perp, mxpenc
+      real, dimension (nx) :: penc, penc1, penc_perp
       real, dimension (mx,3) :: bb_hat
       integer :: imn
       integer :: i,j,k
@@ -609,18 +606,43 @@ module Shock
             call boundconds_z(f,ishock_perp,ishock_perp)
           endif
 !
-          call div(f,iuu,mxpenc(l1:l2))
+          call div(f,iuu,penc)
           call bb_unitvec_shock(f,bb_hat)
-          call shock_divu_perp(f,bb_hat,mxpenc,penc_perp)
-          f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp(l1:l2))
+          call shock_divu_perp(f,bb_hat,penc,penc_perp)
+          f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp)
 !
         enddo
-        tmp = f(:,:,:,ishock_perp) * dxmin**2
+        tmp = 0.0
+        do imn=1,ny*nz
+!
+          n = nn(imn)
+          m = mm(imn)
+!
+          if (necessary(imn)) then
+            call finalize_isendrcv_bdry(f,ishock_perp,ishock_perp)
+            call boundconds_y(f,ishock_perp,ishock_perp)
+            call boundconds_z(f,ishock_perp,ishock_perp)
+          endif
+!
+          penc = 0.0
+!
+          do k=-nk,nk
+          do j=-nj,nj
+          do i=-ni,ni
+            penc = penc + smooth_factor(i,j,k)*f(l1+i:l2+i,m+j,n+k,ishock_perp)
+          enddo
+          enddo
+          enddo
+!
+          tmp(l1:l2,m,n) = penc
+!
+        enddo
         if (.not.lrewrite_shock_boundary) then
-          f(l1:l2,m1:m2,n1:n2,ishock_perp) = tmp(l1:l2,m1:m2,n1:n2)
+          f(l1:l2,m1:m2,n1:n2,ishock_perp) = tmp(l1:l2,m1:m2,n1:n2) * dxmin**2
         else
-          f(:,:,:,ishock_perp) = tmp
+          f(:,:,:,ishock_perp) = tmp * dxmin**2
         endif
+!
       endif
 !
     endsubroutine calc_shock_profile
@@ -635,17 +657,17 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (in) :: bb_hat
-      real, dimension (mx), intent (in) :: divu
-      real, dimension (mx), intent (out) :: divu_perp
+      real, dimension (nx), intent (in) :: divu
+      real, dimension (nx), intent (out) :: divu_perp
 !
-      real, dimension (mx) :: fac
+      real, dimension (nx) :: fac
 !
       divu_perp = divu
 !
       if (nxgrid/=1) then
-         fac=bb_hat(:,1)/(60*dx)
+         fac=bb_hat(l1:l2,1)/(60*dx)
          divu_perp(:) = divu_perp(:)                          &
-           - fac(l1:l2)*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,iux)   &
+           - fac*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,iux)   &
                                    + 45.0*(f(l1+1:l2+1,m  ,n  ,iux)   &
                                          - f(l1-1:l2-1,m  ,n  ,iux))  &
                                    -  9.0*(f(l1+2:l2+2,m  ,n  ,iux)   &
@@ -666,9 +688,9 @@ module Shock
       endif
 !
       if (nygrid/=1) then
-         fac=bb_hat(:,2)/(60*dy)
+         fac=bb_hat(l1:l2,2)/(60*dy)
          divu_perp(:) = divu_perp(:)                          &
-           - fac(l1:l2)*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,iux)   &
+           - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,iux)   &
                                    + 45.0*(f(  l1:l2  ,m+1,n  ,iux)   &
                                          - f(  l1:l2  ,m-1,n  ,iux))  &
                                    -  9.0*(f(  l1:l2  ,m+2,n  ,iux)   &
@@ -689,9 +711,9 @@ module Shock
       endif
 !
       if (nzgrid/=1) then
-         fac=bb_hat(:,3)/(60*dz)
+         fac=bb_hat(l1:l2,3)/(60*dz)
          divu_perp(:) = divu_perp(:)                          &
-           - fac(l1:l2)*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,iux)   &
+           - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,iux)   &
                                    + 45.0*(f(  l1:l2  ,m,  n+1,iux)   &
                                          - f(  l1:l2  ,m,  n-1,iux))  &
                                    -  9.0*(f(  l1:l2  ,m,  n+2,iux)   &
