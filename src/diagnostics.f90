@@ -3115,6 +3115,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
           'cnamev  with nnamev  =', nnamel
       cnamev=''
 !
+      if (allocated(cformv)) deallocate(cformv)
       allocate(cformv(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_vnames', &
           'Could not allocate memory for cformv')
