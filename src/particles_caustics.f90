@@ -33,6 +33,7 @@ module Particles_caustics
 !
   integer :: dummy
   real :: TrSigma_Cutoff=-1e10
+  real, dimension(ndustrad) :: blowup_Stdep
 !
   namelist /particles_caustics_init_pars/ &
   dummy
@@ -136,29 +137,18 @@ contains
 !***********************************************************************
     subroutine init_particles_caustics(f,fp,ineargrid)
 !
-      use Sub, only: kronecker_delta,linarray2matrix,matrix2linarray
       use General, only: keep_compiler_quiet,random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
       use Hydro, only: calc_gradu
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
-      integer, dimension(3) :: iXpdX
-      real, dimension(3) :: uup1, uup2, Xp,dXp, XpdX
-      real, dimension(nx,3:3) :: uij 
-      real, dimension(9) :: Sij_lin
-      real, dimension(3,3) :: Sijp
-      real :: rno01 
-      integer :: ipzero,ik,ii,jj,ij
 !
 !
-     if (lroot) print*, 'init_particles_caustics: setting init. cond.'
-!
-! We set the gradient of the particle velocity field as zero. 
-!
-      do ip=1,npar_loc
-        fp(ip,isigmap11:isigmap33) = 0.
-      enddo
+      if (lroot) then
+         print*, 'init_particles_caustics: setting init. cond.'
+      endif
+      call reinitialize_caustics(fp)
 !
     endsubroutine init_particles_caustics
 !***********************************************************************
@@ -360,16 +350,41 @@ contains
 !
     endsubroutine rprint_particles_caustics
 !***********************************************************************
-    subroutine reset_caustics(fp)
+    subroutine reinitialize_caustics(fp)
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer :: ip
-      real :: TrSigma, QSigma, RSigma
+      if (lroot) then
+         print*, 'The sigmap matrix always starts from zero,'
+         print*, 'even when we restart from earlier runs.'
+      endif
+!
+! We set the gradient of the particle velocity field as zero. 
+!
+      do ip=1,npar_loc
+         fp(ip,isigmap11:isigmap33) = 0.
+         fp(ip,iPPp) = 0.
+         fp(ip,iQQp) = 0.
+         fp(ip,iRRp) = 0.
+         fp(ip,iblowup) = 0.
+     enddo
+     blowup_Stdep=0.
+
+   endsubroutine reinitialize_caustics
+!***********************************************************************
+    subroutine reset_caustics(fp)
+      use Particles_radius, only: get_stbin
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer :: ip, iStbin
+      real :: TrSigma, QSigma, RSigma, prad
       real, dimension(9) :: Sigma_lin
       real, dimension(3,3) :: Sigmap
 
       do ip=1,npar_loc
          if (fp(ip,iPPp).lt.TrSigma_Cutoff) then
             fp(ip,iblowup)=fp(ip,iblowup)+1.
+            prad=fp(ip,iap)
+            call get_stbin(prad,iStbin)
+            blowup_Stdep(iStbin) = blowup_Stdep(iStbin) + 1
             fp(ip,isigmap11:isigmap33) = 0.
          endif
       enddo
