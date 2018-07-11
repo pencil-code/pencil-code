@@ -9,7 +9,7 @@
 !  dsnap=50, dvid=1.0,  !(for longer run)
   dsnap=50, dvid=0.2,  !(for sample run)
   random_gen='nr_f90'  !(Use machine-indep numerical receipes random numbers)
-  lpencil_check=T      !(checks for redundany of pencils)
+!  lpencil_check=T      !(checks for redundany of pencils)
 /
 &eos_run_pars
 /
@@ -32,4 +32,5 @@
   cdtp=0.9
 /
 &particles_radius_run_pars
+lfixed_particles_radius=T
 /

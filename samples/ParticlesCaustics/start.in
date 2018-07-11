@@ -40,4 +40,5 @@
   ap0=4.e-4,6.e-4,8.e-4,10.e-4,12.e-4
   lsweepup_par=F
   rhopmat=1e3
+  lfixed_particles_radius=T
 /
