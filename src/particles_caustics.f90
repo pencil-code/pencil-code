@@ -343,6 +343,7 @@ contains
 !
       if (lreset) then
          idiag_TrSigmapm=0
+         idiag_blowupm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -350,6 +351,7 @@ contains
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_TrSigmapm)
+        call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_blowupm)
      enddo
 !
     endsubroutine rprint_particles_caustics
