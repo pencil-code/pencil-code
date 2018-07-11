@@ -21,7 +21,7 @@
 &density_run_pars
 /
 &special_run_pars
-  nscale_factor=.0
+  nscale_factor_conformal=.0
   !ldebug_print=F, lkinGW=T
   diffhh=0e-12
 /
