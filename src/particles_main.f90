@@ -34,6 +34,7 @@ module Particles_main
   use Particles_surfspec
   use Particles_temperature
   use Particles_lyapunov
+  use Particles_caustics
 !
   implicit none
 !
@@ -292,6 +293,7 @@ module Particles_main
 !
       call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
       if (lparticles_lyapunov)      call init_particles_lyapunov(fp)
+      if (lparticles_caustics)      call reinitialize_caustics(fp)
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
@@ -656,7 +658,6 @@ module Particles_main
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
     subroutine particles_before_boundary(f)
-      use particles_caustics, only: reset_caustics
 !
 !  Calculate particle-related properties before boundary conditions are
 !  set.
