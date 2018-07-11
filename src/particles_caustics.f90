@@ -33,7 +33,6 @@ module Particles_caustics
 !
   integer :: dummy
   real :: TrSigma_Cutoff=-1e10
-  real, dimension(ndustrad) :: blowup_Stdep
 !
   namelist /particles_caustics_init_pars/ &
   dummy
@@ -45,6 +44,7 @@ module Particles_caustics
 !
   integer :: idiag_TrSigmapm=0      ! DIAG_DOC: $\langle{\rm Tr}\left[\sigma\right]\rangle$
   integer :: idiag_blowupm=0        ! DIAG_DOC: Mean no. of times $\sigma$ falls below cutoff
+  integer, dimension(ndustrad)  :: idiag_ncaustics=0
 contains
 !***********************************************************************
     subroutine register_particles_caustics()
@@ -154,6 +154,7 @@ contains
 !***********************************************************************
     subroutine dcaustics_dt(f,df,fp,dfp,ineargrid)
 !
+      use Particles_radius, only: get_stbin
       use Diagnostics
       use Particles_sub, only: sum_par_name
       use Sub, only : linarray2matrix,Inv2_3X3mat,det3X3mat
@@ -167,7 +168,9 @@ contains
       real, dimension(3,3) :: Sigmap
       real, dimension(9) :: Sigma_lin
       real :: TrSigma,QSigma,detSigma
-      integer :: ip
+      integer :: ip,iStbin,k
+      real :: prad
+      real,dimension(ndustrad) :: blowup_Stdep,np_Stdep
 !
 !  Print out header information in first time step.
 !
@@ -180,6 +183,8 @@ contains
 ! Calculates the three invariants of the matrix sigma and stores them as auxiliary
 ! variable. 
 !
+      blowup_Stdep=0.
+      np_Stdep=0.
       do ip=1,npar_loc
          Sigma_lin=fp(ip,isigmap11:isigmap33)
          call linarray2matrix(Sigma_lin,Sigmap)
@@ -189,8 +194,12 @@ contains
          fp(ip,iQQp) = QSigma
          call det3X3mat(Sigmap,detSigma)
          fp(ip,iRRp) = detSigma
+         prad=fp(ip,iap)
+         call get_stbin(prad,iStbin)
+         blowup_Stdep(iStbin) = blowup_Stdep(iStbin)+fp(ip,iblowup)
+         np_Stdep(iStbin) = np_Stdep(iStbin)+1
       enddo
-      
+!      
         if (ldiagnos) then
 !
 ! No diagnostic is coded yet, but would be.
@@ -198,12 +207,10 @@ contains
                 call sum_par_name(fp(1:npar_loc,iPPp),idiag_TrSigmapm)
            if (idiag_blowupm/=0) &
                 call sum_par_name(fp(1:npar_loc,iblowup),idiag_blowupm)
-           
-           !
-!          do k=1,ndustrad
-!            if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
-!            if (idiag_npcaustics(k)/=0) call xysum_mn_name_z(ncaustics(k),idiag_npcaustics(k))
-!          enddo
+           do k=1,ndustrad
+              if (idiag_ncaustics(k)/=0) &
+                   fname(idiag_ncaustics(k))=blowup_Stdep(k)/np_Stdep(k)
+           enddo
         endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -307,7 +314,7 @@ contains
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
+      integer :: iname
       integer :: k
       logical :: lwr
       character (len=intlen) :: srad
@@ -338,6 +345,7 @@ contains
       if (lreset) then
          idiag_TrSigmapm=0
          idiag_blowupm=0
+         idiag_ncaustics=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -346,6 +354,11 @@ contains
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_TrSigmapm)
         call parse_name(iname,cname(iname),cform(iname),'blowupm',idiag_blowupm)
+        do k=1,ndustrad
+           srad=itoa(k)
+           call parse_name(iname,cname(iname),cform(iname), &
+                'ncaustics'//trim(srad),idiag_ncaustics(k))
+        enddo
      enddo
 !
     endsubroutine rprint_particles_caustics
@@ -367,24 +380,19 @@ contains
          fp(ip,iRRp) = 0.
          fp(ip,iblowup) = 0.
      enddo
-     blowup_Stdep=0.
 
    endsubroutine reinitialize_caustics
 !***********************************************************************
     subroutine reset_caustics(fp)
-      use Particles_radius, only: get_stbin
       real, dimension (mpar_loc,mparray), intent (out) :: fp
-      integer :: ip, iStbin
-      real :: TrSigma, QSigma, RSigma, prad
+      integer :: ip
+      real :: TrSigma, QSigma, RSigma
       real, dimension(9) :: Sigma_lin
       real, dimension(3,3) :: Sigmap
 
       do ip=1,npar_loc
          if (fp(ip,iPPp).lt.TrSigma_Cutoff) then
             fp(ip,iblowup)=fp(ip,iblowup)+1.
-            prad=fp(ip,iap)
-            call get_stbin(prad,iStbin)
-            blowup_Stdep(iStbin) = blowup_Stdep(iStbin) + 1
             fp(ip,isigmap11:isigmap33) = 0.
          endif
       enddo
