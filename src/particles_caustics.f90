@@ -184,6 +184,7 @@ contains
       lheader=lfirstcall .and. lroot
       if (lheader) then
         print*,'dcaustics_dt: Calculate dcaustics_dt'
+        lfirstcall=.false.
       endif
 !
 ! Calculates the three invariants of the matrix sigma and stores them as auxiliary
@@ -231,6 +232,7 @@ contains
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
       real :: taup1
+      logical :: lheader,lfirstcall=.true.
       intent (inout) :: df, dfp,ineargrid
       intent (in) :: k,taup1
       real, dimension(9) :: Sij_lin,Sigma_lin,dSigmap_lin
@@ -238,9 +240,11 @@ contains
 !
 !  Identify module.
 !
-      if (headtt.and.lfirstpoint) then
-        if (lroot) print*,'dcaustics_dt_pencil: calculate dcaustics_dt_pencil'
-        if (lroot) print*,'called from dvvp_dt_pencil in the particles_dust module'
+      lheader=lfirstcall .and. lroot
+      if (lheader) then
+        print*,'dcaustics_dt_pencil: Calculate dcaustics_dt_pencil'
+        print*,'called from dvvp_dt_pencil in the particles_dust module'
+        lfirstcall=.false.
       endif
 !
 !
@@ -351,7 +355,7 @@ contains
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_TrSigmapm)
-        call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_blowupm)
+        call parse_name(iname,cname(iname),cform(iname),'blowupm',idiag_blowupm)
      enddo
 !
     endsubroutine rprint_particles_caustics

@@ -1,0 +1,17 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM  =   mpicomm
+EOS      =   eos_idealgas
+HYDRO    =   hydro
+DENSITY  =   density
+FORCING  =   forcing
+
+PARTICLES_MAIN  =   particles_main
+PARTICLES_SUB   =   particles_sub
+PARTICLES       =   particles_dust
+PARTICLES_RADIUS=   particles_radius
+PARTICLES_CAUSTICS=   particles_caustics
+REAL_PRECISION = double
