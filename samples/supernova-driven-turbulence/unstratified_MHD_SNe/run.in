@@ -35,7 +35,6 @@
 &entropy_run_pars
   lupw_ss=T
   lthdiff_Hmax=T
-  dt1s=1.0
   iheatcond='shock','shock2'
   chi_shock=1.0, chi_shock2=5.0
 /
@@ -52,7 +51,7 @@
 &interstellar_run_pars
   lSN_scale_rad=T
   N_mass=25.0
-  rfactor_SN=7.5
+  rfactor_SN=4.5 !depending on resolution min radius 18 parsec 
   mass_profile='gaussian3'
   thermal_profile='gaussian2'
   mass_width_ratio=1.75
