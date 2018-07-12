@@ -161,4 +161,10 @@ module Particles_caustics
       call keep_compiler_quiet(fp)
     endsubroutine reset_caustics
 !***********************************************************************
+    subroutine reinitialize_caustics(fp)
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
+      call keep_compiler_quiet(fp)
+
+   endsubroutine reinitialize_caustics
+!***********************************************************************
   endmodule Particles_caustics
