@@ -90,6 +90,7 @@ contains
       pvarname(iQQp)='iQQp'
       iRRp=iPPp+2
       pvarname(iRRp)='iRRp' 
+      iblowup=iPPp+3
       pvarname(iblowup) = 'iblowup'
 !
 !  Set indices for velocity gradient matrix at grid points
