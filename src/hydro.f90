@@ -6387,6 +6387,20 @@ module Hydro
              -tau_diffrot1*(uumz(n,3)-ampl_wind*z(n)/(2.*pi))
       endif
 !
+!  uz with respect to z (slow wind) like 'breeze' case but ampl_wind a function
+!  of z
+!
+      case ('slow_wind')
+      zbot=rdampext
+      if (.not.lcalc_uumean) then
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl_wind*(1+tanh((z(n)-zbot)/wdamp)))
+      else
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -tau_diffrot1*(uumz(n,3)-ampl_wind*(1+tanh((z(n)-zbot)/wdamp)))
+      endif
+
+!
 !  Radial shear profile
 !
       case ('radial_shear')
