@@ -207,7 +207,7 @@ module Energy
       chit_fluct_prof1, chit_fluct_prof2, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, nsmooth_kramers, &
-      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ent, &
+      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
@@ -239,6 +239,7 @@ module Energy
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
+  integer :: idiag_csmax=0      ! DIAG_DOC: $\max (c_{\rm s})$
   integer :: idiag_cgam=0       ! DIAG_DOC: $\left<c_{\gamma}\right>$
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\cdot\uv\right>$
   integer :: idiag_heatm=0      ! DIAG_DOC:
@@ -2721,7 +2722,7 @@ module Energy
         lpenc_diagnos(i_cp1)=.true.
         lpenc_diagnos(i_rho1)=.true.
       endif
-      if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_csm/=0 .or. idiag_csmax/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0) then
@@ -3219,6 +3220,7 @@ module Energy
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_csmax/=0) call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_cgam/=0) call sum_mn_name(16.*real(sigmaSB)*p%TT**3*p%cp1*p%rho1,idiag_cgam)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
@@ -3659,8 +3661,8 @@ module Energy
           f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
         enddo; enddo
 !
-!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
-        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
+        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
 !
       endif
 !
@@ -6273,7 +6275,7 @@ module Energy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
-        idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0
+        idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0; idiag_csmax=0
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_heatmz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
@@ -6318,6 +6320,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'heatm',idiag_heatm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
+        call parse_name(iname,cname(iname),cform(iname),'csmax',idiag_csmax)
         call parse_name(iname,cname(iname),cform(iname),'cgam',idiag_cgam)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'fradbot',idiag_fradbot)

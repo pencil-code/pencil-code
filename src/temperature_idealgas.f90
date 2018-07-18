@@ -112,7 +112,7 @@ module Energy
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
       temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width, &
-      gradTT0, w_sldchar_ent
+      gradTT0, w_sldchar_ene
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -161,7 +161,8 @@ module Energy
   integer :: idiag_ssm=0      ! DIAG_DOC: $\overline{S}$
   integer :: idiag_thcool=0   ! DIAG_DOC: $\tau_{\rm cool}$
   integer :: idiag_ppm=0      ! DIAG_DOC: $\overline{P}$
-  integer :: idiag_csm=0        ! DIAG_DOC: $\overline{c}_{\rm s}$
+  integer :: idiag_csm=0      ! DIAG_DOC: $\overline{c}_{\rm s}$
+  integer :: idiag_csmax=0    ! DIAG_DOC: $\max (c_{\rm s})$
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to
@@ -957,7 +958,7 @@ module Energy
         lpenc_diagnos(i_uu) =.true.
       if (idiag_ssm/=0)    lpenc_diagnos(i_ss)  =.true.
       if (idiag_dtchi/=0)  lpenc_diagnos(i_cs2)=.true.
-      if (idiag_csm/=0)    lpenc_diagnos(i_cs2)=.true.
+      if (idiag_csm/=0 .or. idiag_csmax/=0)   lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0)    lpenc_diagnos(i_ee) =.true.
       if (idiag_ppm/=0 .or. idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. &
           idiag_ppmz/=0 .or. idiag_ppuzmz/=0) lpenc_diagnos(i_pp) =.true.
@@ -1309,6 +1310,7 @@ module Energy
         if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_csmax/=0) call max_mn_name(p%cs2,idiag_csmax,lsqrt=.true.)
         if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
         if (idiag_TT2m/=0)  call sum_mn_name(p%TT**2,idiag_TT2m)
@@ -2116,7 +2118,7 @@ module Energy
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0; idiag_gTmax=0
         idiag_ethm=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0
+        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_csmax=0
         idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0; idiag_ppuzmz=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
         idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
@@ -2161,7 +2163,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
-        call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
+        call parse_name(iname,cname(iname),cform(iname),'csmax',idiag_csmax)
         call parse_name(iname,cname(iname),cform(iname),'thcool',idiag_thcool)
       enddo
 !
@@ -2622,8 +2624,8 @@ module Energy
           f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
         enddo; enddo
 !
-!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
-        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
+        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
 !
       endif
 !
