@@ -1,10 +1,9 @@
-################
-##
-##	io
-##
-################
+'''
+Visualization routine.
+'''
 
-## animations
+from .animate_interactive import animate_interactive
+
 from .animate_multislices import *
 from .animate_slices_compareruns import *
 from .animate_slices_maketomovie import *
