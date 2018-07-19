@@ -162,7 +162,7 @@ module Energy
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
       if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
-                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + w_sldchar_ene*sqrt(cs20)
+                            =max(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c), w_sldchar_ene*sqrt(cs20))
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************
