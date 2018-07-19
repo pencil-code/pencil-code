@@ -14,6 +14,7 @@
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
 ! PENCILS PROVIDED visc_heat; nu; gradnu(3), nu_smag, gnu_smag(3)
+! PENCILS PROVIDED char_speed_slope
 !
 !***************************************************************
 module Viscosity
@@ -143,6 +144,8 @@ module Viscosity
   integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
+  integer :: idiag_slope_c_max=0! DIAG_DOC: Max value of characteric speed
+                                ! DIAG_DOC: of slope limited diffusion
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to
@@ -212,12 +215,13 @@ module Viscosity
           iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
         endif
         call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
-        iFF_char_c=iFF_div_uu+2
-        if (iFF_div_aa >0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-        if (iFF_div_ss >0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
-        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
+!        iFF_char_c=iFF_div_uu+2
+!        if (iFF_div_aa >0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+!        if (iFF_div_ss >0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+!        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
 
         call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
+        call farray_register_auxiliary('Flux_diff_char_speed',iFF_char_c)
       endif
 !
 !  Register nusmag as auxilliary variable
@@ -775,7 +779,7 @@ module Viscosity
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
-        idiag_fviscmax=0; idiag_fviscmin=0
+        idiag_fviscmax=0; idiag_fviscmin=0; idiag_slope_c_max=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -799,6 +803,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
+        call parse_name(iname,cname(iname),cform(iname),'slope_c_max',idiag_slope_c_max)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
         call parse_name(iname,cname(iname),cform(iname),'Reshock',idiag_Reshock)
       enddo
@@ -1941,8 +1946,11 @@ module Viscosity
 !
       if (lvisc_slope_limited) then
 !
+!
         if (lfirst) then
-          p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+           p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)
+!        if (ldiagnos) print*, 'max(char_c)=', maxval(f(l1:l2,m,n,iFF_char_c))
+           p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
 !!print*,'div flux', f(501:506,m,n,iFF_div_uu)
 !!print*, 'velo', f(501:506,m,n,iuu)
 
@@ -2233,7 +2241,7 @@ module Viscosity
           yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name
       use Sub, only: cross, dot2
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar) :: f, df
       real, dimension (nx) :: Reshock,fvisc2
       real, dimension (nx,3) :: nuD2uxb,fluxv
       type (pencil_case) :: p
@@ -2302,6 +2310,10 @@ module Viscosity
         if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_Sij2m/=0) call sum_mn_name(p%sij2,idiag_Sij2m)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
+!
+        if (lslope_limit_diff) then
+          if (idiag_slope_c_max/=0) call max_mn_name(p%char_speed_slope,idiag_slope_c_max)
+        endif
 !
 !  Viscous heating for Smagorinsky viscosity.
 !
