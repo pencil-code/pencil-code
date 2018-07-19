@@ -2615,8 +2615,6 @@ module Energy
 !
       real, dimension(mx) :: cs2
 !
-      if (lslope_limit_diff) then
-!
 !  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
 !
         do n=1,mz; do m=1,my
@@ -2626,8 +2624,6 @@ module Energy
 !
 !        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
         call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ene)
-!
-      endif
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************
