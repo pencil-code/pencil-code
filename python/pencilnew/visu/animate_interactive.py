@@ -368,9 +368,9 @@ def animate_interactive(data, t=None, dim_order=(0, 1, 2),
     if plot_arrows:
         # Prepare the mesh grid where the arrows will be drawn.
         arrow_grid = np.meshgrid(np.arange(extent[0], extent[1],
-                                           float(extent[1]-extent[0])*arrows_res/data.shape[1]),
+                                           float(extent[1]-extent[0])*arrows_res/(data.shape[2]-1)),
                                  np.arange(extent[2], extent[3],
-                                           float(extent[3]-extent[2])*arrows_res/data.shape[2]))
+                                           float(extent[3]-extent[2])*arrows_res/(data.shape[1]-1)))
         arrows = axes.quiver(arrow_grid[0], arrow_grid[1],
                              arrowsX[0, ::arrows_res, ::arrows_res],
                              arrowsY[0, ::arrows_res, ::arrows_res],
