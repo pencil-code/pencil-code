@@ -2835,8 +2835,8 @@ module Hydro
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call staggered_mean_vec(f,iux,iFF_char_c,w_sldchar_hyd)
-!      call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
+!      call staggered_mean_vec(f,iux,iFF_char_c,w_sldchar_hyd)
+      call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
