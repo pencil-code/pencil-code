@@ -4049,60 +4049,60 @@ module General
       if (dimensionality==3) then
 !    
         do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm+1,nn,  k:k+2))) &
-                     ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2))))
+                     ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2)))))
         enddo; enddo; enddo
 
       elseif (dimensionality==1) then
         if (nxgrid/=1) then
           do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll+1,mm,nn,k:k+2)))))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
           do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll,mm+1,nn,k:k+2))))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll,mm+1,nn,k:k+2)))))
           enddo; enddo; enddo
         else
           do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll,mm,nn+1,k:k+2))))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll,mm,nn+1,k:k+2)))))
           enddo; enddo; enddo      
         endif
       elseif (nzgrid==1) then   !  x-y
         do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
-                     ,maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
+                     ,maxval(abs(f(ll+1,mm+1,nn,k:k+2)))))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
          do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
-                     ,maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
+                     ,maxval(abs(f(ll+1,mm,nn+1,k:k+2)))))
         enddo; enddo; enddo
       else                      !  y-z
         do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+           weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                 
-                     ,maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
+                     ,maxval(abs(f(ll,mm+1,nn+1,k:k+2)))))
         enddo; enddo; enddo
       endif
 
@@ -4122,60 +4122,60 @@ module General
       if (dimensionality==3) then
 !    
         do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,      k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,      k)) &
                      ,abs(f(ll,mm,nn+1,    k)) &
                      ,abs(f(ll,mm+1,nn,    k)) &
                      ,abs(f(ll,mm+1,nn+1,  k)) &
                      ,abs(f(ll+1,mm,nn,    k)) &
                      ,abs(f(ll+1,mm,nn+1,  k)) &
                      ,abs(f(ll+1,mm+1,nn,  k)) &
-                     ,abs(f(ll+1,mm+1,nn+1,k)))
+                     ,abs(f(ll+1,mm+1,nn+1,k))))
         enddo; enddo; enddo
 
       elseif (dimensionality==1) then
         if (nxgrid/=1) then
           do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll+1,mm,nn,k)))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll+1,mm,nn,k))))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
           do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll,mm+1,nn,k)))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll,mm+1,nn,k))))
           enddo; enddo; enddo
         else
           do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll,mm,nn+1,k)))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll,mm,nn+1,k))))
           enddo; enddo; enddo
         endif
       elseif (nzgrid==1) then   !  x-y
         do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,    k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm+1,nn,  k)) &
                      ,abs(f(ll+1,mm,nn,  k)) &                 
-                     ,abs(f(ll+1,mm+1,nn,k)))
+                     ,abs(f(ll+1,mm+1,nn,k))))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
          do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,    k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm,nn+1,  k)) &
                      ,abs(f(ll+1,mm,nn,  k)) &                 
-                     ,abs(f(ll+1,mm,nn+1,k)))
+                     ,abs(f(ll+1,mm,nn+1,k))))
         enddo; enddo; enddo
       else                      !  y-z
         do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,    k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm,nn+1,  k)) &
                      ,abs(f(ll,mm+1,nn,  k)) &                 
-                     ,abs(f(ll,mm+1,nn+1,k)))
+                     ,abs(f(ll,mm+1,nn+1,k))))
         enddo; enddo; enddo
       endif
 
