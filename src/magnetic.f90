@@ -975,6 +975,8 @@ module Magnetic
         call put_shared_variable('betamin_jxb', betamin_jxb)
       endif
 !
+      call put_shared_variable('rhoref', rhoref)
+!
 !  Shear of B_ext,x is not implemented.
 !
       if (lshear .and. B_ext(1) /= 0.0) call fatal_error('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
@@ -2349,7 +2351,7 @@ module Magnetic
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
       if (idiag_jxbrmax/=0) lpenc_diagnos(i_jxbr2)=.true.
-      if (idiag_poynzmz/=0) lpenc_diagnos(i_jxb)=.true.
+      if (idiag_poynzmz/=0.or.idiag_jxbm/=0) lpenc_diagnos(i_jxb)=.true.
       if (idiag_jxbr2m/=0) lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jxbrxmx/=0 .or. idiag_jxbrymx/=0 .or. idiag_jxbrzmx/=0 .or. &
           idiag_jxbrxmy/=0 .or. idiag_jxbrymy/=0 .or. idiag_jxbrzmy/=0 .or. &
@@ -2824,6 +2826,7 @@ module Magnetic
 !
 !      use General, only: staggered_mean_vec
       use General, only: staggered_max_vec
+      use Density, only: calc_pencils_density
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2831,20 +2834,23 @@ module Magnetic
       logical, dimension(npencils) :: lpenc_loc=.false.
       real, dimension(nx) :: tmp
 !
-      lpenc_loc(i_va2) = lslope_limit_diff
-!
       if (lslope_limit_diff) then
 !
 !  Calculate Alfven speed and store temporarily in first slot of diffusive fluxes.
 !
+        lpenc_loc((/i_va2,i_bb,i_b2,i_rho1/))=.true.
         do n=n1,n2; do m=m1,m2
+
+          call calc_pencils_density(f,p,lpenc_loc)
           call calc_pencils_magnetic(f,p,lpenc_loc)
+
           if (lboris_correction .and. va2max_boris>0) then
             tmp=(1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
             f(l1:l2,m,n,iFF_diff) = sqrt(p%va2*tmp)
           else
             f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
           endif
+
         enddo; enddo
 !
         !call staggered_mean_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
@@ -2929,10 +2935,12 @@ module Magnetic
         addBext: if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. &
                  (.not. ladd_global_field)) then
           call get_bext(B_ext)
-          forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
-          if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
-          if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
-                      (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
+          if (any(B_ext/=0.)) then
+            forall(j = 1:3, B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)
+            if (headtt) print *, 'calc_pencils_magnetic_pencpar: B_ext = ', B_ext
+            if (headtt) print *, 'calc_pencils_magnetic_pencpar: logic = ', &
+                        (lbb_as_comaux .and. lB_ext_in_comaux .and. ladd_global_field)
+          endif
         endif addBext
 !
 !  Add a precessing dipole not in the Bext field
@@ -4727,11 +4735,13 @@ module Magnetic
             .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
             .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
             .or. idiag_uxbmz/=0) then
-          call dot(B_ext_inv,p%uxb,uxb_dotB0)
-          if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
-          if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
-          if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
-          if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)
+          if (idiag_uxbm/=0) then
+            call dot(B_ext_inv,p%uxb,uxb_dotB0)
+            call sum_mn_name(uxb_dotB0,idiag_uxbm)
+          endif
+          call sum_mn_name(uxbb(:,1),idiag_uxbmx)
+          call sum_mn_name(uxbb(:,2),idiag_uxbmy)
+          call sum_mn_name(uxbb(:,3),idiag_uxbmz)
           if (idiag_uxbcmx/=0) call sum_mn_name(uxbb(:,1)*coskz(n),idiag_uxbcmx)
           if (idiag_uxbcmy/=0) call sum_mn_name(uxbb(:,2)*coskz(n),idiag_uxbcmy)
           if (idiag_uxbsmx/=0) call sum_mn_name(uxbb(:,1)*sinkz(n),idiag_uxbsmx)
@@ -4742,9 +4752,9 @@ module Magnetic
 !
         if (idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
             idiag_exatop/=0 .or. idiag_exabot/=0) then
-          if (idiag_examx/=0) call sum_mn_name(p%exa(:,1),idiag_examx)
-          if (idiag_examy/=0) call sum_mn_name(p%exa(:,2),idiag_examy)
-          if (idiag_examz/=0) call sum_mn_name(p%exa(:,3),idiag_examz)
+          call sum_mn_name(p%exa(:,1),idiag_examx)
+          call sum_mn_name(p%exa(:,2),idiag_examy)
+          call sum_mn_name(p%exa(:,3),idiag_examz)
 !
           if (idiag_exabot/=0) then
             if (z(n)==xyz0(3)) then
@@ -4836,8 +4846,10 @@ module Magnetic
 !
 !  Calculate <jxb>.B_0/B_0^2.
 !
-        call dot(B_ext_inv,p%jxb,jxb_dotB0)
-        if (idiag_jxbm/=0) call sum_mn_name(jxb_dotB0,idiag_jxbm)
+        if (idiag_jxbm/=0) then
+          call dot(B_ext_inv,p%jxb,jxb_dotB0)
+          call sum_mn_name(jxb_dotB0,idiag_jxbm)
+        endif
         if (idiag_jxbmx/=0.or.idiag_jxbmy/=0.or.idiag_jxbmz/=0) then
           call cross_mn(p%jj,p%bbb,jxbb)
           if (idiag_jxbmx/=0) call sum_mn_name(jxbb(:,1),idiag_jxbmx)
