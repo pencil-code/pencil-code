@@ -2824,8 +2824,8 @@ module Magnetic
 !
 !   25-sep-15/MR+joern: coded
 !
-!      use General, only: staggered_mean_vec
-      use General, only: staggered_max_vec
+!      use General, only: staggered_mean_scal
+      use General, only: staggered_max_scal
       use Density, only: calc_pencils_density
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2853,8 +2853,8 @@ module Magnetic
 
         enddo; enddo
 !
-        !call staggered_mean_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
-        call staggered_max_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
+        !call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
+        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
 
       endif
 !
