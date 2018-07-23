@@ -120,6 +120,10 @@ class SliceSeries(object):
                     field_list.append(file_name.split('.')[0][6:])
             # Remove duplicates.
             field_list = list(set(field_list))
+            try:
+                field_list.remove('position')
+            except:
+                pass
 
         # Initialize the extensions list.
         if extension:
@@ -135,6 +139,10 @@ class SliceSeries(object):
                     extension_list.append(file_name.split('.')[1])
             # Remove duplicates.
             extension_list = list(set(extension_list))
+            try:
+                extension_list.remove('dat')
+            except:
+                pass
 
         class Foo(object):
             pass
