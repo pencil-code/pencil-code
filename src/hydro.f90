@@ -3046,6 +3046,11 @@ module Hydro
       if (tau_diffrot1/=0.) &
         call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
 !
+!  impose velocity ceiling
+!
+      if (velocity_ceiling/=0.) &
+        call impose_velocity_ceiling(f)
+!
 !  Save the advective derivative as an auxiliary
 !
       if (ladv_der_as_aux) then
