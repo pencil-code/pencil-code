@@ -32,6 +32,11 @@ module Density
 !
   include 'density.h'
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+
+  interface calc_pencils_density
+    module procedure calc_pencils_density_pnc
+    module procedure calc_pencils_density_std
+  endinterface calc_pencils_density
 !
   contains
 !***********************************************************************
@@ -100,7 +105,21 @@ module Density
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
-    subroutine calc_pencils_density(f,p)
+    subroutine calc_pencils_density_std(f,p)
+!
+! Envelope adjusting calc_pencils_density_pnc to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_density_pnc(f,p,lpencil)
+!
+      endsubroutine calc_pencils_density_std
+!***********************************************************************
+    subroutine calc_pencils_density_pnc(f,p,lpenc_loc)
 !
 !  Calculate Density pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -111,37 +130,38 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f, lpenc_loc
       intent(inout) :: p
 ! rho
-      if (lpencil(i_rho)) p%rho=rho0
+      if (lpenc_loc(i_rho)) p%rho=rho0
 ! lnrho
-      if (lpencil(i_lnrho)) p%lnrho=lnrho0
+      if (lpenc_loc(i_lnrho)) p%lnrho=lnrho0
 ! rho1
-      if (lpencil(i_rho1)) p%rho1=1/rho0
+      if (lpenc_loc(i_rho1)) p%rho1=1/rho0
 ! glnrho
-      if (lpencil(i_glnrho)) p%glnrho=0.0
+      if (lpenc_loc(i_glnrho)) p%glnrho=0.0
 ! grho
-      if (lpencil(i_grho)) p%grho=0.0
+      if (lpenc_loc(i_grho)) p%grho=0.0
 ! del6lnrho
-      if (lpencil(i_del6lnrho)) p%del6lnrho=0.0
+      if (lpenc_loc(i_del6lnrho)) p%del6lnrho=0.0
 ! hlnrho
-      if (lpencil(i_hlnrho)) p%hlnrho=0.0
+      if (lpenc_loc(i_hlnrho)) p%hlnrho=0.0
 ! sglnrho
-      if (lpencil(i_sglnrho)) p%sglnrho=0.0
+      if (lpenc_loc(i_sglnrho)) p%sglnrho=0.0
 ! uglnrho
-      if (lpencil(i_uglnrho)) p%uglnrho=0.0
+      if (lpenc_loc(i_uglnrho)) p%uglnrho=0.0
 ! ugrho
-      if (lpencil(i_ugrho)) p%ugrho=0.0
+      if (lpenc_loc(i_ugrho)) p%ugrho=0.0
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
+      if (lpenc_loc(i_uij5glnrho)) p%uij5glnrho=0.0
 ! ekin
-      if (lpencil(i_ekin)) p%ekin=0.0
+      if (lpenc_loc(i_ekin)) p%ekin=0.0
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_density
+    endsubroutine calc_pencils_density_pnc
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
