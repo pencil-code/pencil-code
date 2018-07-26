@@ -11,6 +11,7 @@ from .var import var
 from .slices import slices
 from .ts import ts
 from .averages import aver
+from .power import power
 from .ogdim import ogdim
 from .ogvar import ogvar
 
