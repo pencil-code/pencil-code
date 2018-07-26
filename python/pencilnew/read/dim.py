@@ -1,6 +1,6 @@
 # dim.py
 #
-# Read the dimensions of the simulationp.
+# Read the dimensions of the simulation.
 #
 # Authors:
 # J. Oishi (joishi@amnh.org)
@@ -41,7 +41,7 @@ class Dim(object):
 
     def __init__(self):
         """
-        Fille members with default values.
+        Fill members with default values.
         """
 
         self.mx = self.my = self.mz = 0
