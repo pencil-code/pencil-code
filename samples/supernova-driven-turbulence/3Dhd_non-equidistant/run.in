@@ -15,6 +15,7 @@
   lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
   lproper_averages=T
+  lignore_nonequi=T
 /
 &eos_run_pars
 /
