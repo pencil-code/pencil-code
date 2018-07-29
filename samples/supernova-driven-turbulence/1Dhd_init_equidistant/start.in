@@ -14,8 +14,6 @@
   lfix_unit_std=T
 /
 &initial_condition_pars
-  !amplaa=0.0
-  T_init = 1e3
 /
 &eos_init_pars
   mu=0.531
