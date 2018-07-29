@@ -5,7 +5,7 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1e-24, unit_magnetic=1e-6
+  unit_density=1.6737236e-24
   xyz0=-0.002,-0.002,-1.998
   xyz1=+0.002,+0.002,+1.998
   lperi=T,T,F
