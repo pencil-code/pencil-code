@@ -49,7 +49,9 @@
   SN_interval_rhom=6.64e-2
   laverage_SNII_heating=F
   laverage_SNI_heating=T
-  heatingfunction_scalefactor=5.0
+  heatingfunction_scalefactor=6.75
+  !uncomment after initial transient
+  !heatingfunction_scalefactor=5.0
   heatingfunction_fadefactor=0.
   lSNII=F
   lSNI=F
