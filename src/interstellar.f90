@@ -247,7 +247,7 @@ module Interstellar
 !  Limit placed of minimum density resulting from cavity creation and
 !  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
 !
-  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=7.088E2
+  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=1.E3
   real :: rho0ts=impossible, T_init=impossible, rho_min=impossible
 !
 !  Cooling timestep limiter coefficient
@@ -316,7 +316,8 @@ module Interstellar
 !
 !  Cooling & heating flags
 !
-  logical :: laverage_SN_heating = .false.
+  logical :: laverage_SNI_heating = .false.
+  logical :: laverage_SNII_heating = .false.
   logical :: lheating_UV         = .true.
 !
 !  Remnant location flags
@@ -407,7 +408,7 @@ module Interstellar
       frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, &
       mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
-      laverage_SN_heating, coolingfunction_scalefactor,&
+      laverage_SNI_heating, laverage_SNII_heating, coolingfunction_scalefactor,&
       heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
@@ -581,24 +582,44 @@ module Interstellar
 !
       preSN(:,:)=0
 !
+      if (SN_interval_rhom==impossible) &
+          SN_interval_rhom=SN_interval_rhom_cgs/unit_density
       t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lxyz(1) * Lxyz(2))
       t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lxyz(1) * Lxyz(2))
       if (average_SNI_heating == impossible) average_SNI_heating = &
-          r_SNI *ampl_SN/(sqrt(pi)*h_SNI )
+          r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
       if (average_SNII_heating == impossible) average_SNII_heating = &
-          r_SNII*ampl_SN/(sqrt(pi)*h_SNII)
+          r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
       if (lroot) print*,'initialize_interstellar: t_interval_SNI, SNI rate =', &
           t_interval_SNI,SNI_factor*SNI_area_rate
-      if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
-          average_SNI_heating  * t_interval_SNI / &
-          (t_interval_SNI  + t * heatingfunction_fadefactor) * &
-          heatingfunction_scalefactor
-      if (lroot) print*,'initialize_interstellar: average_SNII_heating =', &
-          average_SNII_heating * t_interval_SNII/ &
-          (t_interval_SNII + t * heatingfunction_fadefactor) * &
-          heatingfunction_scalefactor
-      if (SN_interval_rhom==impossible) &
-          SN_interval_rhom=SN_interval_rhom_cgs/unit_density
+      if (laverage_SNI_heating) then
+        if (lSNI.or.lSNII) then
+          if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
+              average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
+              t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
+              heatingfunction_scalefactor
+        else
+          if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
+              average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
+              heatingfunction_scalefactor
+        endif
+      else
+        if (lroot) print*,'initialize_interstellar: average_SNI_heating = 0'
+      endif
+      if (laverage_SNII_heating) then
+        if (lSNI.or.lSNII) then
+          if (lroot) print*,'initialize_interstellar: average_SNII_heating =', &
+              average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
+              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
+              heatingfunction_scalefactor
+        else
+          if (lroot) print*,'initialize_interstellar: average_SNII_heating =', &
+              average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
+              heatingfunction_scalefactor
+        endif
+      else
+        if (lroot) print*,'initialize_interstellar: average_SNII_heating =0'
+      endif
 !
       if (lroot .and. (ip<14)) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -1523,18 +1544,23 @@ module Interstellar
 !  initial condition is in equilibrium prepared in 1D
 !  Division by density to balance LHS of entropy equation
 !
-      if (laverage_SN_heating) then
+      if (laverage_SNI_heating) then
         if (lSNI.or.lSNII) then
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*&
               t_interval_SNI /(t_interval_SNI +t*heatingfunction_fadefactor)&
                                          *heatingfunction_scalefactor
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
+        else
+          heat=heat+average_SNI_heating *exp(-(2.0*z(n)/h_SNI )**2)*&
+                    heatingfunction_scalefactor
+        endif
+      endif
+      if (laverage_SNII_heating) then
+        if (lSNI.or.lSNII) then
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*&
               t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)&
                                          *heatingfunction_scalefactor
         else
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
-                    heatingfunction_scalefactor
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
+          heat=heat+average_SNII_heating*exp(-(2.0*z(n)/h_SNII)**2)*&
                     heatingfunction_scalefactor
         endif
       endif
