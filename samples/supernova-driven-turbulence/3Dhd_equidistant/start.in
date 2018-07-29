@@ -5,8 +5,7 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1.6728e-24
-  unit_magnetic=1e-6
+  unit_density=1.6737236e-24
   xyz0=-0.032,-0.032,-1.998
   xyz1=+0.032,+0.032,+1.998
   lperi=T,T,F
@@ -15,7 +14,6 @@
   lfix_unit_std=T
 /
 &initial_condition_pars
-  !amplaa=0.0
 /
 &eos_init_pars
   mu=0.531
@@ -41,6 +39,7 @@
   lSNI=T
   lSN_scale_rad=T
   N_mass=25.0
+  !rfactor should set minimum radius to 18pc
   rfactor_SN=4.5
   frac_kin=0.0
   frac_ecr=0.0

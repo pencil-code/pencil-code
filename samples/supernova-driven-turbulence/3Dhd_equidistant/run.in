@@ -46,6 +46,7 @@
   laverage_SN_heating=T
   lSN_scale_rad=T
   N_mass=25.0
+  !rfactor should set minimum radius to 18pc
   rfactor_SN=4.5
   frac_kin=0.0
   frac_ecr=0.0
@@ -59,10 +60,14 @@
 !  lreset_ism_seed=T
 !  seed_reset=1245
 !! vary rate of SN with loss/gain of mass through boundary
-  SN_interval_rhom=0.282
   lscale_SN_interval=T
   iSNdx=1.65
   eps_mass=0.05
+  SN_interval_rhom=6.66e-2
+  laverage_SNII_heating=F
+  laverage_SNI_heating=T
+  heatingfunction_scalefactor=5.0
+  heatingfunction_fadefactor=25.0
 /
 &shear_run_pars
   Sshear = -25.0
