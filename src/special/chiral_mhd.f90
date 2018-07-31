@@ -124,6 +124,8 @@ module Special
   integer :: idiag_dt_mu5_3=0  ! DIAG_DOC: $\delta x^2/D_5$   
   integer :: idiag_dt_bb_1=0   ! DIAG_DOC: $\delta x /(\eta \mathrm{max}(\mu_5))$ 
   integer :: idiag_dt_chiral=0 ! DIAG_DOC: total time-step contribution from chiral MHD
+  integer :: idiag_mu5bxm=0      ! DIAG_DOC: $\left<\mu_5B_x\right>$
+  integer :: idiag_mu5b2m=0      ! DIAG_DOC: $\left<\mu_5B^2\right>$
 !
   contains
 !***********************************************************************
@@ -324,9 +326,9 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5)  !make-p%ugmu5 &
-!      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
-      diffus_mu5_1 = lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2)
+      df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
+      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
+      diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
       diffus_mu5_2 = lambda5*eta*p%b2
       diffus_mu5_3 = diffmu5*dxyz_2
 !                          
@@ -334,7 +336,7 @@ module Special
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) +eta*mu5bb
+         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb
       endif
       diffus_bb_1 = eta*p%mu5*sqrt(dxyz_2)
 !
@@ -358,6 +360,7 @@ module Special
       if (lfirst.and.ldt) then
         diffus_special = cdtchiral*max(diffus_mu5_1, diffus_mu5_2, &
                          diffus_mu5_3, diffus_bb_1)
+        maxdiffus=max(maxdiffus,diffus_special)
       endif
 !
 !  diagnostics
@@ -384,11 +387,13 @@ module Special
           call dot_mn(p%bb,p%jj,bbjj)
           call sum_mn_name((p%mu5*bbjj)**2,idiag_mu5bjrms,lsqrt=.true.)
         endif
-        if (idiag_dt_mu5_1/=0) call max_mn_name(1/diffus_mu5_1,idiag_dt_mu5_1,lreciprocal=.true.)
-        if (idiag_dt_mu5_2/=0) call max_mn_name(1/diffus_mu5_2,idiag_dt_mu5_2,lreciprocal=.true.)
-        if (idiag_dt_mu5_3/=0) call max_mn_name(1/diffus_mu5_3,idiag_dt_mu5_3,lreciprocal=.true.)
-        if (idiag_dt_bb_1/=0) call max_mn_name(1/diffus_bb_1,idiag_dt_bb_1,lreciprocal=.true.)
-        if (idiag_dt_chiral/=0) call max_mn_name(1/(diffus_special),idiag_dt_chiral,lreciprocal=.true.)
+        if (idiag_dt_mu5_1/=0) call max_mn_name(-(1./diffus_mu5_1),idiag_dt_mu5_1,lneg=.true.)
+        if (idiag_dt_mu5_2/=0) call max_mn_name(-(1./diffus_mu5_2),idiag_dt_mu5_2,lneg=.true.)
+        if (idiag_dt_mu5_3/=0) call max_mn_name(-(1./diffus_mu5_3),idiag_dt_mu5_3,lneg=.true.)
+        if (idiag_dt_bb_1/=0) call max_mn_name(-(1./diffus_bb_1),idiag_dt_bb_1,lneg=.true.)
+        if (idiag_dt_chiral/=0) call max_mn_name(-(1./diffus_special),idiag_dt_chiral,lneg=.true.)
+        if (idiag_mu5bxm/=0) call sum_mn_name(p%mu5*p%bb(:,1),idiag_mu5bxm)
+        if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
      endif
 !
     endsubroutine dspecial_dt
@@ -470,6 +475,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dt_mu5_3',idiag_dt_mu5_3)
         call parse_name(iname,cname(iname),cform(iname),'dt_bb_1',idiag_dt_bb_1)
         call parse_name(iname,cname(iname),cform(iname),'dt_chiral',idiag_dt_chiral)
+        call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
+        call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
       enddo
 !
     endsubroutine rprint_special
