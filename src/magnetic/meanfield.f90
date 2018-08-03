@@ -81,14 +81,14 @@ module Magnetic_meanfield
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
-  real :: mf_qJ2=0.0
+  real :: mf_qJ2=0.0, qp_aniso_factor=1.0
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0.
   real, dimension(my,3,3) :: alpha_tensor_y=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
-  real, dimension(mz) :: etat_z, detat_z, qp_profile, qp_profder
+  real, dimension(mz) :: etat_z, detat_z, qp_profile, qp_profder !, qe_profder
   real, dimension(nx) :: qpx_profile, qpx_profder
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
@@ -97,6 +97,7 @@ module Magnetic_meanfield
   logical :: lrhs_term=.false., lrhs_term2=.false.
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
   logical :: lNEMPI_correction_qp_profile=.true.
+  logical :: lqp_aniso_factor=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -121,6 +122,7 @@ module Magnetic_meanfield
       meanfield_qs, meanfield_qp, meanfield_qe, meanfield_qa, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_Ba, &
       lqpcurrent,mf_qJ2, lNEMPI_correction, lNEMPI_correction_qp_profile, &
+      lqp_aniso_factor, qp_aniso_factor, &
       alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -438,7 +440,9 @@ module Magnetic_meanfield
 !
       if (lqp_profile) then
         qp_profile=0.5*(1.-erfunc((z-z_surface)/qp_width))
+        !qe_profile=0.5*(1.-erfunc((z-z_surface)/qe_width))
         qp_profder=-exp(-((z-z_surface)/qp_width)**2)/(qp_width*sqrtpi)
+        !qe_profder=-exp(-((z-z_surface)/qe_width)**2)/(qe_width*sqrtpi)
       else
         qp_profile=1.
         qp_profder=0.
@@ -800,6 +804,10 @@ module Magnetic_meanfield
             endif
           endif
 !
+!  Allow for simple-minded anisotropy
+!
+          if (lqp_aniso_factor) p%jxb_mf(:,3)=p%jxb_mf(:,3)*qp_aniso_factor
+!
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
 !
           call multsv_mn_add(-meanfield_qs_func,p%jxb+mu01*Bk_Bki,p%jxb_mf)
@@ -807,8 +815,12 @@ module Magnetic_meanfield
           call multsv_mn_add(-2.*mu01*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
 !
 !  Add e_z*grad(qe*B^2). This has not yet been found to promote instability.
+!  Added below (in commented out form, how I think it should be if used)
 !
           p%jxb_mf(:,3)=p%jxb_mf(:,3)+2.*mu01*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
+          !p%jxb_mf(:,3)=p%jxb_mf(:,3)+mu01*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3) &
+          !                        -.5*mu01*p%b2**2*meanfield_qe_der,p%glnrho(:,3) &
+          !                        +.5*mu01*qe_profder(n)*meanfield_qe_func*p%b2
 !
 !  Add div[qa*Bz*(Bi*gj+Bj*gi)]
 !  Begin by initializing auxiliary vector X_j (see notes)
