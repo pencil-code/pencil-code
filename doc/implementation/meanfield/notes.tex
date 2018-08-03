@@ -34,9 +34,13 @@ with $\qp=\qp(\beta,z)$, we have
 \section{Implementation of the $\qg$-term}
 
 \begin{eqnarray}
-\half\nab_z[\qg(\beta,z)\BB^2]
-=\half\left[\qp+{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\right]\nab_z\BB^2
-+\half\BB^2\left[-{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\nab_z\ln\rho+\nab_z\qp\right]
+%\half\nab_z[\qg(\beta,z)\BB^2]
+%=\half\left[\qp+{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\right]\nab_z\BB^2
+%+\half\BB^2\left[-{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\nab_z\ln\rho+\nab_z\qp\right]
+\half{\partial\over\partial z}[\qg(\beta,z)\BB^2]
+=\half\left[\qg+{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}\right]{\partial\over\partial z}\BB^2
++\half\BB^2\left[-{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}{\partial\over\partial z}\ln\rho+{\partial\over\partial z}\qg\right]
+%JW: do you mean this?
 \end{eqnarray}
 
 
