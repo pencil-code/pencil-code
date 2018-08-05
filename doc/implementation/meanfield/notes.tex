@@ -6,8 +6,9 @@
 \setlength{\textheight}{220mm}
 \setlength{\topmargin}{-8mm}
 \usepackage{graphicx,natbib}
-\usepackage{bm}
 \graphicspath{{./fig/}{./png/}}
+\def\blue{\textcolor{blue}}
+\usepackage{bm,color}
 \input macros
 \title{}
 \author{}
@@ -37,12 +38,31 @@ with $\qp=\qp(\beta,z)$, we have
 %\half\nab_z[\qg(\beta,z)\BB^2]
 %=\half\left[\qp+{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\right]\nab_z\BB^2
 %+\half\BB^2\left[-{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\nab_z\ln\rho+\nab_z\qp\right]
-\half{\partial\over\partial z}[\qg(\beta,z)\BB^2]
-=\half\left[\qg+{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}\right]{\partial\over\partial z}\BB^2
-+\half\BB^2\left[-{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}{\partial\over\partial z}\ln\rho+{\partial\over\partial z}\qg\right]
+%\half{\partial\over\partial z}[\qg(\beta,z)\BB^2]
+%=\half\left[\qg+{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}\right]{\partial\over\partial z}\BB^2
+%+\half\BB^2\left[-{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}{\partial\over\partial z}\ln\rho+{\partial\over\partial z}\qg\right]
 %JW: do you mean this?
+%AB: yes, and there should be no 1/2 factor
+{\partial\over\partial z}[\qg(\beta,z)\BB^2]
+=\left[\qg+{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}\right]{\partial\over\partial z}\BB^2
++\BB^2\left[-{\dd\qg\over\dd\beta^2}{\BB^2\over\Beq^2}{\partial\over\partial z}\ln\rho+{\partial\over\partial z}\qg\right]
 \end{eqnarray}
 
+%Thus, altogether we have 
+In particular, when $\qp/2+\qg=a_{\rm g}\qp$ with
+$a_{\rm g}=\const$, we have
+\begin{eqnarray}
+\pmatrix{
+\partial[(\qp/2)\BB^2]/\partial x\cr
+\partial[(\qp/2)\BB^2]/\partial y\cr
+\partial[(\qp/2+\qg)\BB^2]/\partial z}
+=\half\pmatrix{
+\partial(\qp\BB^2)/\partial x\cr
+\partial(\qp\BB^2)/\partial y\cr
+\partial(a_{\rm g}\qp\BB^2)/\partial z}
+\end{eqnarray}
+The choice $a_{\rm g}=0.2$ means that
+$\qg/\qp=-\half(1-a_{\rm g})=-0.4$.
 
 %\begin{figure}[h!]\begin{center}
 %\includegraphics[width=\columnwidth]{X}
