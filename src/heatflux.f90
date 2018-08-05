@@ -310,6 +310,8 @@ contains
     if (hyper3_coeff /= 0.) then
        call del6(f,iqx,hc,IGNOREDX=.true.)
        df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) + hyper3_coeff*hc
+       call del6(f,iqy,hc,IGNOREDX=.true.)
+       df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) + hyper3_coeff*hc
        call del6(f,iqz,hc,IGNOREDX=.true.)
        df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) + hyper3_coeff*hc
     endif
@@ -480,7 +482,7 @@ contains
 !
     if (lnfs2) then
 !
-!    for pp=qq/rho there you must divide by rho 
+!    for pp=qq/rho there you must divide by rho
 !
      Kspitzer=Kspitzer_para*exp(3.5*p%lnTT-p%lnrho)
 !
@@ -496,7 +498,7 @@ contains
       endif
     else
 !
-!    for pp=qq*rho there you must a factor of rho 
+!    For pp=qq*rho there you must a factor of rho
 !
      Kspitzer=Kspitzer_para*exp(p%lnrho+3.5*p%lnTT)
 !
@@ -611,7 +613,7 @@ contains
       rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)    
     else
 !     for pp=qq*rho, there is an additional 1/rho factor
-!     and there it is '+ tmp'
+!     and there it is '- tmp'
       rhs = gamma*p%cp1*(p%divq - tmp)*exp(-p%lnTT-2*p%lnrho)
     endif
 !
