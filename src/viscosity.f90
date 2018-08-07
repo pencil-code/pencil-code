@@ -81,6 +81,7 @@ module Viscosity
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_polar=.false.
   logical :: lvisc_hyper3_mesh=.false.
+  logical :: lvisc_hyper3_csmesh=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
   logical :: lvisc_hyper3_nu_const_strict=.false.
@@ -286,6 +287,7 @@ module Viscosity
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_polar=.false.
       lvisc_hyper3_mesh=.false.
+      lvisc_hyper3_csmesh=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_rho_nu_const_symm=.false.
       lvisc_hyper3_mu_const_strict=.false.
@@ -394,6 +396,9 @@ module Viscosity
         case ('hyper3-mesh','hyper3_mesh')
           if (lroot) print*,'viscous force: nu_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
           lvisc_hyper3_mesh=.true.
+        case ('hyper3-csmesh')
+          if (lroot) print*,'viscous force: c_s*nu_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
+          lvisc_hyper3_csmesh=.true.
         case ('hyper3-rho-nu-const','hyper3_rho_nu-const')
           if (lroot) print*,'viscous force: nu_hyper/rho*del6v'
           lvisc_hyper3_rho_nu_const=.true.
@@ -497,6 +502,9 @@ module Viscosity
         if (lvisc_hyper3_mesh.and.nu_hyper3_mesh==0.0) &
              call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3_mesh is zero!')
+        if (lvisc_hyper3_csmesh.and.nu_hyper3_mesh==0.0) &
+             call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_hyper3_mesh is zero!')
         if (lvisc_spitzer.and.nu_spitzer==0.0) &
              call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_spitzer is zero!')
@@ -523,9 +531,10 @@ module Viscosity
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-viscosity
 !
-        if (ldynamical_diffusion.and..not.lvisc_hyper3_mesh) then
+        if (ldynamical_diffusion.and. &
+            .not.(lvisc_hyper3_mesh.or.lvisc_hyper3_csmesh)) then
           call fatal_error("initialize_viscosity",&
-               "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh'")
+               "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh'or'hyper3-csmesh'")
         endif
 !
       endif
@@ -928,6 +937,7 @@ module Viscosity
           lvisc_hyper3_mu_const_strict .or. lvisc_mu_cspeed .or. &
           lvisc_spitzer .or. lvisc_hyper3_cmu_const_strt_otf) &
           lpenc_requested(i_rho1)=.true.
+      if (lvisc_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
 !
       if (lvisc_hyper3_cmu_const_strt_otf) then 
         lpenc_requested(i_del6u_strict)=.true.
@@ -1661,6 +1671,36 @@ module Viscosity
             advec_hypermesh_uu = 0.0
           else
             advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
+        endif
+      endif
+!
+      if (lvisc_hyper3_csmesh) then
+        do j=1,3
+          ju=j+iuu-1
+          do i=1,3
+            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
+            if (ldynamical_diffusion) then
+              p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*sqrt(p%cs2) &
+                          *tmp3*dline_1(:,i)
+            else
+              p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*sqrt(p%cs2) &
+                          *pi5_1/60.*tmp3*dline_1(:,i)
+            endif
+          enddo
+        enddo
+        if (lpencil(i_visc_heat)) then
+          if (headtt) &
+            call warning('calc_pencils_viscosity', 'viscous heating term '//&
+                         'is not implemented for lvisc_hyper3_csmesh')
+        endif
+        if (lfirst .and. ldt) then
+          if (ldynamical_diffusion) then
+            p%diffus_total3=p%diffus_total3+nu_hyper3_mesh*sqrt(p%cs2)
+            advec_hypermesh_uu=0.0
+          else
+            advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2*p%cs2)
           endif
           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
         endif
