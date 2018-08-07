@@ -167,6 +167,7 @@ module Magnetic
   logical :: lresi_hyper3=.false.
   logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_mesh=.false.
+  logical :: lresi_hyper3_csmesh=.false.
   logical :: lresi_hyper3_strict=.false.
   logical :: lresi_zdep, lresi_ydep, lresi_xdep, lresi_xydep
   logical, dimension(7) :: lresi_dep=.false.
@@ -1130,6 +1131,7 @@ module Magnetic
       lresi_hyper3=.false.
       lresi_hyper3_polar=.false.
       lresi_hyper3_mesh=.false.
+      lresi_hyper3_csmesh=.false.
       lresi_hyper3_strict=.false.
       lresi_hyper3_aniso=.false.
       lresi_eta_shock=.false.
@@ -1174,6 +1176,9 @@ module Magnetic
         case ('hyper3-mesh','hyper3_mesh')
           if (lroot) print*, 'resistivity: hyper3 resolution-invariant'
           lresi_hyper3_mesh=.true.
+        case ('hyper3-csmesh')
+          if (lroot) print*, 'resistivity: hyper3 cspeed resol-invariant'
+          lresi_hyper3_csmesh=.true.
         case ('hyper3_strict')
           if (lroot) print*, 'resistivity: strict hyper3 with positive definite heating rate'
           lresi_hyper3_strict=.true.
@@ -1315,6 +1320,9 @@ module Magnetic
              call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if (lresi_hyper3_mesh.and.eta_hyper3_mesh==0.0) &
+             call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_hyper3_mesh is zero!')
+        if (lresi_hyper3_csmesh.and.eta_hyper3_mesh==0.0) &
              call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3_mesh is zero!')
         if (lresi_hyper3_strict.and.eta_hyper3==0.0) &
@@ -2279,6 +2287,7 @@ module Magnetic
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
+      if (lresi_hyper3_csmesh) lpenc_requested(i_cs2)=.true.
 !
 !  Note that for the cylindrical case, according to lpencil_check,
 !  graddiva is not needed. We still need it for the lspherical_coords
@@ -3713,6 +3722,31 @@ module Magnetic
             advec_hypermesh_aa = 0.0
           else
             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
+        endif
+      endif
+!
+      if (lresi_hyper3_csmesh) then
+        do j=1,3
+          ju=j+iaa-1
+          do i=1,3
+            call der6(f,ju,tmp1,i,IGNOREDX=.true.)
+            if (ldynamical_diffusion) then
+              fres(:,j)=fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) &
+                       *tmp1*dline_1(:,i)
+            else
+              fres(:,j)=fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) &
+                       *pi5_1/60.*tmp1*dline_1(:,i)
+            endif
+          enddo
+        enddo
+        if (lfirst.and.ldt) then
+          if (ldynamical_diffusion) then
+            diffus_eta3=diffus_eta3+eta_hyper3_mesh*sqrt(p%cs2)
+            advec_hypermesh_aa=0.0
+          else
+            advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2*p%cs2)
           endif
           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
         endif
