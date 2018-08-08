@@ -159,6 +159,18 @@ module Testfield
   integer :: idiag_eta21z=0     ! DIAG_DOC: $\eta_{21}(z,t)$
   integer :: idiag_eta12z=0     ! DIAG_DOC: $\eta_{12}(z,t)$
   integer :: idiag_eta22z=0     ! DIAG_DOC: $\eta_{22}(z,t)$
+  integer :: idiag_uzjx1z=0     ! DIAG_DOC: $u_z j^{11}_x$
+  integer :: idiag_uzjy1z=0     ! DIAG_DOC: $u_z j^{11}_y$
+  integer :: idiag_uzjz1z=0     ! DIAG_DOC: $u_z j^{11}_z$
+  integer :: idiag_uzjx2z=0     ! DIAG_DOC: $u_z j^{21}_x$
+  integer :: idiag_uzjy2z=0     ! DIAG_DOC: $u_z j^{21}_y$
+  integer :: idiag_uzjz2z=0     ! DIAG_DOC: $u_z j^{21}_z$
+  integer :: idiag_uzjx3z=0     ! DIAG_DOC: $u_z j^{12}_x$
+  integer :: idiag_uzjy3z=0     ! DIAG_DOC: $u_z j^{12}_y$
+  integer :: idiag_uzjz3z=0     ! DIAG_DOC: $u_z j^{12}_z$
+  integer :: idiag_uzjx4z=0     ! DIAG_DOC: $u_z j^{22}_x$
+  integer :: idiag_uzjy4z=0     ! DIAG_DOC: $u_z j^{22}_y$
+  integer :: idiag_uzjz4z=0     ! DIAG_DOC: $u_z j^{22}_z$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -865,9 +877,22 @@ module Testfield
 !
 !  only real part saved here (imaginary is in bbtest2)
 !
-          bpq (:,:,jtest)=bbtest
+          bpq(:,:,jtest)=bbtest
 !
           if (idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
+!
+          if (idiag_uzjx1z/=0.or.idiag_uzjy1z/=0.or.idiag_uzjz1z/=0.or. &
+              idiag_uzjx2z/=0.or.idiag_uzjy2z/=0.or.idiag_uzjz2z/=0.or. &
+              idiag_uzjx3z/=0.or.idiag_uzjy3z/=0.or.idiag_uzjz3z/=0) then
+!
+            call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+            call curl_mn(aijtest,bbtest,aatest)
+            call curl_mn(bijtest,jjtest,bbtest)
+!
+            jpq(:,:,jtest)=jjtest
+!
+          endif
+!
         endif
 !
       enddo    ! end loop over njtestl testfields
@@ -934,6 +959,18 @@ module Testfield
         if (iE0>0) call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
         if (iE0>0) call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
         if (iE0>0) call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i1),idiag_uzjx1z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i1),idiag_uzjy1z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i1),idiag_uzjz1z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i2),idiag_uzjx2z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i2),idiag_uzjy2z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i2),idiag_uzjz2z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i3),idiag_uzjx3z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i3),idiag_uzjy3z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i3),idiag_uzjz3z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i4),idiag_uzjx4z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i4),idiag_uzjy4z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i4),idiag_uzjz4z)
         call xysum_mn_name_z(Eipq(1,:,1,i1),idiag_E111z)
         call xysum_mn_name_z(Eipq(1,:,2,i1),idiag_E211z)
         call xysum_mn_name_z(Eipq(1,:,3,i1),idiag_E311z)
@@ -1599,6 +1636,10 @@ module Testfield
 !
       if (lreset) then
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
+        idiag_uzjx1z=0; idiag_uzjy1z=0; idiag_uzjz1z=0
+        idiag_uzjx2z=0; idiag_uzjy2z=0; idiag_uzjz2z=0
+        idiag_uzjx3z=0; idiag_uzjy3z=0; idiag_uzjz3z=0
+        idiag_uzjx4z=0; idiag_uzjy4z=0; idiag_uzjz4z=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
         idiag_alp11z=0; idiag_alp21z=0; idiag_alp12z=0; idiag_alp22z=0; idiag_alp13z=0; idiag_alp23z=0
@@ -1703,6 +1744,18 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx0mz',idiag_bx0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'by0mz',idiag_by0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz0mz',idiag_bz0mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx1z',idiag_uzjx1z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy1z',idiag_uzjy1z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz1z',idiag_uzjz1z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx2z',idiag_uzjx2z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy2z',idiag_uzjy2z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz2z',idiag_uzjz2z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx3z',idiag_uzjx3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy3z',idiag_uzjy3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz3z',idiag_uzjz3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx4z',idiag_uzjx4z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy4z',idiag_uzjy4z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz4z',idiag_uzjz4z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E111z',idiag_E111z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E211z',idiag_E211z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E311z',idiag_E311z)
