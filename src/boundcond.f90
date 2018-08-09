@@ -2373,7 +2373,7 @@ module Boundcond
     subroutine bc_stratified_y(f,topbot,j)
 !
 !  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction.
-!  This boundary is coded only for linear density in spherical coordinates
+!  This boundary is coded only for spherical coordinates.
 !
 !  06-oct-13/wlad: coded
 !
