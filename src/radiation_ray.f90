@@ -90,6 +90,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
+  real :: TT_bump=0.0, sigma_bump=1.0, ampl_bump=0.0
   real :: z_cutoff=impossible,cool_wid=impossible, qrad_max=0.0,  &
           zclip_dwn=-max_real,zclip_up=max_real
 !
@@ -150,7 +151,7 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
-      lcutoff_zconst,z_cutoff,cool_wid
+      lcutoff_zconst,z_cutoff,cool_wid, TT_bump, sigma_bump, ampl_bump
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -169,7 +170,7 @@ module Radiation
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
-      zclip_up
+      zclip_up, TT_bump, sigma_bump, ampl_bump
 !
   contains
 !***********************************************************************
@@ -1902,7 +1903,8 @@ module Radiation
                 (TT/ref_temp_opa)**expo_temp_opa
             kappa2=kappa20_cst(inu)+kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo2_rho_opa* &
-                (TT/ref_temp_opa)**expo2_temp_opa
+                (TT/ref_temp_opa)**expo2_temp_opa* &
+                (1.+ampl_bump*exp(-.5*((TT-TT_bump)/sigma_bump)**2))
             f(:,m,n,ikapparho)=kapparho_floor+rho/(1./kappa1+1./kappa2)
         enddo; enddo
 !
