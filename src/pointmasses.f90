@@ -49,7 +49,7 @@ module PointMasses
   logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nqpar) :: lfollow_particle=.false., laccretion=.false.
   logical :: lbackreaction=.false., lnorm=.true.
-  logical :: lreset_cm=.false., lnogravz_star=.false., lexclude_frozen=.false.
+  logical :: lreset_cm=.true., lnogravz_star=.false., lexclude_frozen=.false.
   logical :: lramp=.false.
   logical :: ldt_pointmasses=.true.
   logical :: linterpolate_gravity=.false., linterpolate_linear=.true.
