@@ -54,3 +54,7 @@ Use simulation objects to:
 Put simulations in dictionary to:
 * sort them 
 * group them
+
+
+############### open issues ###############
+- SC: Do we need ogvar and ogdim? Ask JA.
