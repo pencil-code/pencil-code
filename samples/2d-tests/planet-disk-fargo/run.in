@@ -31,21 +31,11 @@
   lfargoadvection_as_shift=T
 /
 &density_run_pars
-  idiff='hyper3-mesh' !,'shock'
-  diffrho_hyper3_mesh=20 !,diffrho_shock=1.0
+  idiff='hyper3-mesh' 
+  diffrho_hyper3_mesh=20
   borderlnrho='initial-condition'
-  !lupw_rho=T
-  !idiff='hyper3-mesh'
-  !diffrho_hyper3_mesh=10
-  !diffrho_hyper3=1E-12, idiff='hyper3'
-  !idiff='normal'
-  !diffrho=1e-5
 /
 &grav_run_pars
-/
-&pointmasses_run_pars
-  lfollow_particle=T,T
-  lreset_cm=F
 /
 &viscosity_run_pars
   ivisc='hyper3-mesh','nu-shock'
