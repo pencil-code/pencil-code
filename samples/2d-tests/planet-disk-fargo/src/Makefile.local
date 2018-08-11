@@ -11,15 +11,13 @@ ENTROPY     = noentropy
 MAGNETIC    = nomagnetic
 VISCOSITY   =   viscosity
 
-#GRAVITY     =   gravity_r
+GRAVITY     =   gravity_r
+
 SHOCK       =   shock_highorder
 
-#SPECIAL     = special/fargo
 FOURIER     = fourier_fftpack
 
 INITIAL_CONDITION = initial_condition/centrifugal_balance
-
-POINTMASSES = pointmasses
 
 REAL_PRECISION = double
 

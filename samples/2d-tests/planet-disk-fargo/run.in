@@ -3,24 +3,26 @@
 !  Runtime parameters for shocktube problem
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2008/11/30 03:16:24 wlyra Exp $'
-  nt=100, it1=5, it1d=100, isave=100, itorder=3
+  cvsid='$Id: run.in,v 1.1 2017/04/26 17:31:11 wlyra Exp $'
+  !nt=1000000, it1=25, it1d=5000, isave=5000, itorder=3
+  nt=50, it1=5, it1d=5000, isave=5000, itorder=3
   cdt=0.4
   cdtv=0.4
   cdtv3=0.4
 !
   dsnap=6.28318530718
-  tmax=2000
+!
   dtmin=1e-6
   crash_file_dtmin_factor=10.
   lfargo_advection=T
+  lpencil_check=F
+  lpencil_check_small=F
 !
   fraction_tborder=0.1
-  !tborder=1.0
   wborder_int=0.1
   wborder_ext=0.2
 !
-  tmax=630.
+  tmax=630
 /
 &eos_run_pars
 /
@@ -29,17 +31,25 @@
   lfargoadvection_as_shift=T
 /
 &density_run_pars
-  idiff='hyper3-cyl'
-  diffrho_hyper3=5e-3
+  idiff='hyper3-mesh' !,'shock'
+  diffrho_hyper3_mesh=20 !,diffrho_shock=1.0
   borderlnrho='initial-condition'
+  !lupw_rho=T
+  !idiff='hyper3-mesh'
+  !diffrho_hyper3_mesh=10
+  !diffrho_hyper3=1E-12, idiff='hyper3'
+  !idiff='normal'
+  !diffrho=1e-5
 /
 &grav_run_pars
 /
 &pointmasses_run_pars
+  lfollow_particle=T,T
+  lreset_cm=F
 /
 &viscosity_run_pars
- ivisc='hyper3-cyl','nu-shock'
- nu_hyper3=5e-3,nu_shock=1.
+  ivisc='hyper3-mesh','nu-shock'
+  nu_hyper3=20,nu_shock=4.
 /
 &shock_run_pars
 /
