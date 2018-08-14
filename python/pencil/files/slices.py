@@ -937,7 +937,7 @@ def animate_slices_crossflow(field='uu1', datadir='data/', proc=-1, extension='y
     """
 
     import pylab as plt
-    import matplotlib.patches as patches
+    import matplotlib.patches as ptc
     import matplotlib.ticker as ticker
 
     datadir = os.path.expanduser(datadir)
@@ -969,31 +969,57 @@ def animate_slices_crossflow(field='uu1', datadir='data/', proc=-1, extension='y
     infile = npfile(filename, endian=format)
 
     ax = plt.axes()
-    ax.set_xlabel('x')
-    ax.set_ylabel('z')
+    ax.set_xlabel('y')
+    ax.set_ylabel('x')
     ax.set_ylim
 
 
-    name_list_x = ('0', '3D', '6D', '9D', '12D')
-    name_list_z = ('0', '2D', '4D', '6D', '8D')
-    pos_list_x = np.array([0,120,240,360,480])
-    pos_list_z = np.array([0,80,160,240,320])
+    name_list_x = ('0', '2D', '4D', '6D')
+    #name_list_z = ('12D', '10D', '8D', '6D', '4D','2D','0')
+    name_list_z = ( '0', '2D', '4D', '6D','8D','10D','12D',)
+    pos_list_x = np.array([0,80,160,240])
+    pos_list_z = np.array([0,80,160,240,320,400,480])
+
+    name_list_x = ('0', '5D', '10D')
+    name_list_z = ( '0', '5D', '10D', '15D','20D')
+    pos_list_x = np.array([0,159,319])
+    pos_list_z = np.array([0,159,319,479,639])
     #pos_list = np.arange(len(name_list))
 
 #ax = plt.axes()
-    ax.xaxis.set_major_locator(ticker.FixedLocator((pos_list_x)))
-    ax.xaxis.set_major_formatter(ticker.FixedFormatter((name_list_x)))
-    ax.yaxis.set_major_locator(ticker.FixedLocator((pos_list_z)))
-    ax.yaxis.set_major_formatter(ticker.FixedFormatter((name_list_z)))
+    #ax.xaxis.set_major_locator(ticker.FixedLocator((pos_list_x)))
+    #ax.xaxis.set_major_formatter(ticker.FixedFormatter((name_list_x)))
+    #ax.yaxis.set_major_locator(ticker.FixedLocator((pos_list_z)))
+    #ax.yaxis.set_major_formatter(ticker.FixedFormatter((name_list_z)))
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
 
 
-    ax.add_patch(patches.Rectangle(
-            (220,0),
-            40,
-            320,
-            color='gray'
-        )
-    )
+    # turbulent particle sim xy-vew, Ddx=40
+    #r=20
+    #xy = [120,240]
+#    art = ptc.Circle(xy,r,color='black')
+#    ax.add_artist(art)
+    # uniform flow sim xy-vew, Ddx=64
+   # r=16
+   # xy = [160,320]
+    # Pencil-tests, Re=400, Ddx=96
+    #r=48
+    #xy = [480,960]
+    # Pencil-tests, Re=100, Ddx=64
+    r=32
+    xy = [320,640]
+    art = ptc.Circle(xy,r,color='black')
+    ax.add_artist(art)
+     
+
+    #ax.add_patch(patches.Rectangle(
+    #        (220,0),
+    #        40,
+    #        320,
+    #        color='gray'
+    #    )
+    #)
 
     image = plt.imshow(plane, vmin=amin, vmax=amax)
 
@@ -1036,7 +1062,11 @@ def animate_slices_crossflow(field='uu1', datadir='data/', proc=-1, extension='y
 
             ifirst = False
             fname = '_tmp%03d.eps' % islice
-            plt.savefig(fname,fonttype=42)
+            plt.savefig(fname,fonttype=42,
+                  bbox_inches = 'tight', 
+                 # pad_inches = 0,
+                  dpi = 600, transparant=True)
+            #plt.savefig(fname,fonttype=42)
             islice += 1
 
             sleep(wait)
