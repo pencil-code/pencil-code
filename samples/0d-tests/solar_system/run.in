@@ -13,5 +13,5 @@
 /
 &pointmasses_run_pars
   lfollow_particle=T,T,T,T,T,T,T,T,T
-!  lreset_cm=T
+  lreset_cm=F
 /
