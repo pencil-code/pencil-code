@@ -2037,8 +2037,12 @@ module Viscosity
 !                Rewritten viscous heating from slope-limited diffusion.  
 !  18-may-17/MR: corrected wrong order of loops for viscous heating by slope-limited diffusion.
 !  16-jun-18/axel: reverted "severe bug..." of r74487; see "!AB_REM:" and "!AB_ADD" 
+!  16-aug-18/MR: replaced Joerns implementation of linear interpolation from staggered to normal 
+!                grid as it was not bi-/trilinear in 2D/3D;
+!                added 3rd order interpolation (default)
 !
-      use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2
+      use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
+                     stagger_to_base_interp_1st, stagger_to_base_interp_3rd
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use SharedVariables, only: get_shared_variable
@@ -2142,15 +2146,11 @@ module Viscosity
 !
 !
               do k=1,dimensionality
-                if (dim_mask(k) == 1) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
-                if (dim_mask(k) == 2) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
-                if (dim_mask(k) == 3) &
-                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
-                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
+                call stagger_to_base_interp_3rd(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
+!f(:,m  ,n,iFF_diff1-1+k)=n+(/1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12./)
+                !call stagger_to_base_interp_1st(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
+                f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)*tmp
+!print*, 'k,tmp=', k, tmp
               enddo
 !              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &
 !                          f(l1:l2,m,n,iFF_heat),ladd=.true.)
