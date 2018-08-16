@@ -111,6 +111,7 @@ module Sub
   public :: calc_del6_for_upwind
 !
   public :: remove_mean_value
+  public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -7537,5 +7538,155 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         enddo
 !
     endsubroutine remove_mean_value
+!***********************************************************************
+    subroutine stagger_to_base_interp_1st(f,m,n,fint)
+!
+!  Performs first-order interpolation from the staggered grid to the original one.
+!  The interpolation point is the center of the cuboid defined by the intervals 
+!  (i1-1,i1), (j1-1,j1), (k1-1,k1) of the staggered grid.
+!
+!  10-jul-18/MR: coded
+! 
+      real, dimension(mx,my,mz), intent(IN) :: f      ! values on staggered grid
+      integer,                   intent(IN) :: m,n    ! position in mn-loop at which interpolation is performed
+      real, dimension(nx),       intent(OUT):: fint   ! interpoland
+!
+      real :: fac, facq, facc
+      integer, dimension( 3,-1:0) :: ijk
+      integer, dimension(-1:0) :: i2
+      integer, dimension(-1:0), parameter :: shifts=(/-1,0/)
+      integer :: k
+
+      ijk(1,:)=l1; ijk(2,:)=m; ijk(3,:)=n
+
+      fac=1./2.
+      do k=1,3
+        if (lactive_dimension(k)) ijk(k,:)=ijk(k,:)+shifts
+!print*, 'k,ijk(k,:)=', k, ijk(k,:)
+      enddo
+      i2 = ijk(1,:)+nx-1
+
+      if (dimensionality==1) then
+        fint = (f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1,0):i2(0),ijk(2,0),ijk(3,0)))*fac
+      else
+        facq=fac*fac
+        if (dimensionality==3) then
+          facc=facq*fac
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0))+f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,-1)) &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,-1))+f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3, 0)) &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1)) )*facc
+        elseif (lactive_dimension(3)) then
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)))*facq
+        else
+!print*, ijk(1, 0),i2( 0),ijk(2,-1),n,f(ijk(1, 0):i2( 0),ijk(2,-1),n)
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),n)+f(ijk(1, 0):i2( 0),ijk(2, 0),n) &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),n)+f(ijk(1, 0):i2( 0),ijk(2,-1),n))*facq
+        endif
+      endif
+
+      endsubroutine stagger_to_base_interp_1st
+!***********************************************************************
+    subroutine stagger_to_base_interp_3rd(f,m,n,fint)
+!
+!  Performs third-order interpolation from the staggered grid to the original one.
+!  The interpolation point is the center of the cuboid defined by the intervals 
+!  (i1-1,i1), (j1-1,j1), (k1-1,k1) of the staggered grid.
+!
+!  10-jul-18/MR: coded
+! 
+      real, dimension(mx,my,mz), intent(IN) :: f      ! values on staggered grid
+      integer,                   intent(IN) :: m,n    ! position in mn-loop at which interpolation is performed
+      real, dimension(nx),       intent(OUT):: fint   ! interpoland
+!
+      real :: facm, facp, facmq, facpq, facpm, facpc, facpqm, facpmq, facmc
+      integer, dimension( 3,-2:1) :: ijk
+      integer, dimension(-2:1) :: i2
+      integer, dimension(-2:1), parameter :: shifts=(/-2,-1,0,1/)
+      integer :: k
+
+      ijk(1,:)=l1; ijk(2,:)=m; ijk(3,:)=n
+
+      facm=1./16.; facp=9./16.
+      do k=1,3
+        if (lactive_dimension(k)) ijk(k,:)=ijk(k,:)+shifts
+!print*, 'k,ijk(k,:)=', k, ijk(k,:)
+      enddo
+      i2 = ijk(1,:)+nx-1
+
+      if (dimensionality==1) then
+        fint = (f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1,0):i2(0),ijk(2,0),ijk(3,0)))*facp &
+              -(f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-2))+f(ijk(1,1):i2(1),ijk(2,1),ijk(3,1)))*facm
+      else
+        facmq=facm*facm; facpq=facp*facp; facpm=facp*facm
+        if (dimensionality==2) then
+          if (lactive_dimension(3)) then
+            fint =  ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0))         &
+                     +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1))+f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0)) )*facpq &
+!
+                   -( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-1))         &
+                     +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-2))+f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-1))         &
+                     +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-2))+f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3, 0))         &
+                     +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3, 0)) )*facpm &
+!
+                   +( f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,+1))         &
+                     +f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-2)) )*facmq
+          else
+            fint =  ( f(ijk(1,-1):i2(-1),ijk(2,-1),n)+f(ijk(1, 0):i2( 0),ijk(2, 0),n)         &
+                     +f(ijk(1,-1):i2(-1),ijk(2, 0),n)+f(ijk(1, 0):i2( 0),ijk(2,-1),n) )*facpq &
+!
+                   -( f(ijk(1,-1):i2(-1),ijk(2,+1),n)+f(ijk(1,+1):i2(+1),ijk(2,-1),n)         &
+                     +f(ijk(1,-1):i2(-1),ijk(2,-2),n)+f(ijk(1,-2):i2(-2),ijk(2,-1),n)         &
+                     +f(ijk(1, 0):i2( 0),ijk(2,-2),n)+f(ijk(1,-2):i2(-2),ijk(2, 0),n)         &
+                     +f(ijk(1, 0):i2( 0),ijk(2,+1),n)+f(ijk(1,+1):i2(+1),ijk(2, 0),n) )*facpm &
+!
+                   +( f(ijk(1,-2):i2(-2),ijk(2,-2),n)+f(ijk(1,+1):i2(+1),ijk(2,+1),n)         &
+                     +f(ijk(1,-2):i2(-2),ijk(2,+1),n)+f(ijk(1,+1):i2(+1),ijk(2,-2),n) )*facmq
+          endif
+        else
+          facpc =facpq*facp
+          facpqm=facpq*facm
+          facpmq=facp*facmq
+          facmc =facmq*facm
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,-1)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,-1))+f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0)) &
+                  +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3, 0)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)) )*facpc &  ! 8 terms
+!
+                -( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-2))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,-2))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,-2))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-2))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,+1))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,+1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,+1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,+1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3,-1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3, 0))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3,-1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3, 0))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3,-1))+f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3,-1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3, 0))+f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3, 0))     &
+                  +f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3,-1))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3,-1))     &
+                  +f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3, 0))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3, 0)) )*facpqm & ! 24 terms
+!
+                +( f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-1))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3,-1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3,-1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3, 0))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3, 0))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3, 0))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3, 0))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3,-2))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3,+1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3,-2))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3,+1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3,-2))+f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3,-2))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3,+1))+f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3,+1))     &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3,-2))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3,-2))     &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3,+1))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3,+1)) )*facpmq & ! 24 terms
+!
+                -( f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3,-2))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3,-2))+f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,+1))     &
+                  +f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3,+1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,+1)) )*facmc    ! 8 terms
+        endif
+      endif
+
+    endsubroutine stagger_to_base_interp_3rd
 !***********************************************************************
 endmodule Sub
