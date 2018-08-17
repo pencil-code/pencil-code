@@ -73,6 +73,18 @@ if (not pc_gui_loaded) then BEGIN
 	pc_read_param, obj=start_param, dim=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=orig_dim, datadir=datadir, /quiet
 	pc_units, obj=unit, datadir=datadir, param=start_param, dim=orig_dim, /quiet
+	if (unit.system eq 'cgs') then begin
+		; include conversion to SI in display units
+		display_units = { $
+			default_length:display_units.default_length * 100d0, default_length_str:display_units.default_length_str, $
+			default_velocity:display_units.default_velocity * 100d0, default_velocity_str:display_units.default_velocity_str, $
+			default_time:display_units.default_time, default_time_str:display_units.default_time_str, $
+			default_temperature:display_units.default_temperature, default_temperature_str:display_units.default_temperature_str, $
+			default_density:display_units.default_density * 0.001d0, default_density_str:display_units.default_density_str, $
+			default_mass:display_units.default_mass * 1000d0, default_mass_str:display_units.default_mass_str, $
+			default_magnetic_field:display_units.default_magnetic_field, default_magnetic_field_str:display_units.default_magnetic_field_str, $
+			default_current_density:display_units.default_current_density * 1000d0, default_current_density_str:display_units.default_current_density_str }
+	end
 	unit = create_struct (unit, display_units)
 
 	; Scaling factor for visualisation
