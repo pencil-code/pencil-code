@@ -53,7 +53,8 @@ COMPILE_OPT IDL2,HIDDEN
                energy:density*velocity^2*length^3, $
                specific_energy:velocity^2, $
                magnetic_field:magnetic, $
-               current_density:2.99792458d5*velocity/length^3 }
+               current_density:2.99792458d5*velocity/length^3, $
+               system:'cgs' }
     pc_check_math,location='pc_units - cgs unit calculation'
     tex=texsyms()
     symbols = { temperature:'T', $
@@ -79,8 +80,9 @@ COMPILE_OPT IDL2,HIDDEN
                energy:density*velocity^2*length^3, $
                specific_energy:velocity^2, $
                magnetic_field:magnetic, $
-               current_density:velocity*sqrt(density/(param.mu0*4*!DPi*1.e-7))/length }
-               ; j_SI = curlcurl(A_pc) * unit.current_density
+               current_density:velocity*sqrt(density/(param.mu0*4*!DPi*1.e-7))/length, $
+               ; j_SI = curlcurl(A_pc) * unit.current_density, $
+               system:'SI' }
     pc_check_math,location='pc_units - SI unit calculation'
     tex=texsyms()
     symbols = { temperature:'K', $
