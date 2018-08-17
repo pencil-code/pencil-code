@@ -2146,10 +2146,21 @@ module Viscosity
 !
 !
               do k=1,dimensionality
-                call stagger_to_base_interp_3rd(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
+                if (dim_mask(k) == 1) &
+                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1+1:l2+1,m,n,iFF_diff1-1+k))/2.
+                if (dim_mask(k) == 2) &
+                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m+1,n,iFF_diff1-1+k))/2.
+                if (dim_mask(k) == 3) &
+                  f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)* &
+                    (f(l1:l2,m,n,iFF_diff1-1+k)+f(l1:l2,m,n+1,iFF_diff1-1+k))/2.
+
+!                call stagger_to_base_interp_3rd(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
 !f(:,m  ,n,iFF_diff1-1+k)=n+(/1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12./)
-                !call stagger_to_base_interp_1st(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
-                f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)*tmp
+!                call stagger_to_base_interp_1st(f(:,:,:,iFF_diff1-1+k),m,n,tmp)
+
+ !               f(l1:l2,m,n,iFF_heat)=f(l1:l2,m,n,iFF_heat)+guj(:,k)*tmp
 !print*, 'k,tmp=', k, tmp
               enddo
 !              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &
