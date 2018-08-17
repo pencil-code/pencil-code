@@ -2157,7 +2157,7 @@ module Viscosity
 !
 ! no cooling admitted (Why?)
 !
-              !!! f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
+              f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)
             endif
  
           enddo; enddo
