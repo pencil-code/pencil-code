@@ -190,6 +190,7 @@ module Magnetic
   logical :: lresi_spitzer=.false.
   logical :: lresi_cspeed=.false.
   logical :: lresi_magfield=.false.
+  logical :: lresi_eta_proptouz=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
   logical :: lohmic_heat=.true., lneutralion_heat=.true.
@@ -256,6 +257,7 @@ module Magnetic
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real :: numag=0.0
   real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
+  real :: ampl_eta_uz=0.0
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -337,7 +339,8 @@ module Magnetic
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
-      rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1
+      rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
+      ampl_eta_uz
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1149,6 +1152,7 @@ module Magnetic
       lresi_anomalous=.false.
       lresi_spitzer=.false.
       lresi_cspeed=.false.
+      lresi_eta_proptouz=.false.
 !
       do i=1,nresi_max
         select case (iresistivity(i))
@@ -1275,6 +1279,9 @@ module Magnetic
         case ('magfield')
           if (lroot) print*, 'resistivity: magnetic field dependent'
           lresi_magfield=.true.
+        case ('eta-proptouz')
+          if (lroot) print*, 'resistivity: eta proportional to uz'
+          lresi_eta_proptouz=.true.
         case ('none')
           ! do nothing
         case ('')
@@ -2200,8 +2207,15 @@ module Magnetic
           lresi_eta_shock.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag.or. &
           lresi_eta_shock2.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_eta_shock_profz.or.lresi_eta_shock_profr.or. &
-          lresi_smagorinsky_cross.or.lresi_spitzer.or.lresi_cspeed)) &
+          lresi_smagorinsky_cross.or.lresi_spitzer.or.lresi_cspeed.or. &
+          lresi_eta_proptouz)) &
           lpenc_requested(i_del2a)=.true.
+      if ((.not.lweyl_gauge).and.(lresi_eta_proptouz)) &
+         lpenc_requested(i_diva)=.true.
+         lpenc_requested(i_uij)=.true.
+      if (lresi_eta_proptouz) then
+         lpenc_requested(i_uu)=.true.
+      endif
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_rho1)=.true.
@@ -4032,6 +4046,25 @@ module Magnetic
         endif
         if (lfirst.and.ldt) then
           diffus_eta=diffus_eta+eta*exp(eta_cspeed*p%lnTT)
+        endif
+      endif
+!
+! Resistivity proportional to vertical velocity
+!
+      if (lresi_eta_proptouz) then
+        etatotal = etatotal + eta*ampl_eta_uz*p%uu(:,3)
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i)=fres(:,i)-eta*ampl_eta_uz*p%uu(:,3)*mu0*p%jj(:,i)
+          enddo
+        else
+          do i=1,3
+            fres(:,i)=fres(:,i)+eta*ampl_eta_uz* &
+                 (p%uu(:,3)*p%del2a(:,i)+p%uij(:,3,i)*p%diva)
+          enddo
+        endif
+        if (lfirst.and.ldt) then
+          diffus_eta=diffus_eta+eta*ampl_eta_uz*p%uu(:,3)
         endif
       endif
 !
@@ -5935,6 +5968,10 @@ module Magnetic
         elseif (iforcing_continuous_aa=='cosxcosz') then
           cosx=cos(k1x_ff*x)
           cosz=cos(k1z_ff*z)
+        elseif (iforcing_continuous_aa=='Azsinx') then
+          sinx=cos(k1z_ff*x)
+        elseif (iforcing_continuous_aa=='Aycosz') then
+          cosz=cos(k1z_ff*z)
         elseif (iforcing_continuous_aa=='RobertsFlow') then
           if (lroot) print*,'forcing_continuous: RobertsFlow'
           sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
@@ -5975,6 +6012,16 @@ module Magnetic
         fact=ampl_ff
         forcing_rhs(:,1)=0.
         forcing_rhs(:,2)=fact*cosx(l1:l2)*cosz(n)
+        forcing_rhs(:,3)=0.
+      elseif (iforcing_continuous_aa=='Azsinx') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=0.
+        forcing_rhs(:,2)=0.
+        forcing_rhs(:,3)=fact*sinx(l1:l2)
+      elseif (iforcing_continuous_aa=='Aycosz') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=0.
+        forcing_rhs(:,2)=fact*cosz(n)
         forcing_rhs(:,3)=0.
       elseif (iforcing_continuous_aa=='RobertsFlow') then
         fact=ampl_ff
