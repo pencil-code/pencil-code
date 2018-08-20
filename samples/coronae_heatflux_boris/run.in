@@ -29,7 +29,7 @@
 &density_run_pars
   idiff = 'normal'
   diffrho  = 0.25e3
-  lmassdiff_fixkin=T
+  lmassdiff_fix = T
 /
 &grav_run_pars
   gravz=-274e-3 ! gravz * unit_velocity^2 / unit_length = 274 m/s
@@ -52,7 +52,7 @@
   lohmic_heat = T
 !
   lboris_correction=T
-  va2max_boris=1e8 ! va_limt=1e4 km/s
+  va2max_boris=1e8 ! va_limit=1e4 km/s
 /
 &viscosity_run_pars
   ivisc='nu-const','nu-shock'
@@ -94,6 +94,8 @@
    saturation_flux=1.
    Kc=0.0
    lnfs2=T
+   ltau_spitzer_va=T
+   va2max_tau_boris=1e8 ! va_limit=1e4 km/s
 /
 &shock_run_pars
   lforce_periodic_shockviscosity=T
