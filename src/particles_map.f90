@@ -2199,7 +2199,7 @@ module Particles_map
              +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2
         do k=k1_imn(imn),k2_imn(imn)
            if(rp2(k)>r2_ogrid) then
-              if(i1<=iTT) then
+              if(iTT > 0 .or. i1<=iTT) then
                  call interpolate_linear( &
                       f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
               endif
