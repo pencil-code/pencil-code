@@ -639,17 +639,24 @@ contains
     if (lfirst.and.ldt) then
       if (ltau_spitzer_va) then
         tmp2 = sqrt(diffspitz*tau_inv_va)
+!
+!       The resulting advection time step should not be larger
+!       than the propogation speed (tmp2). We know maxadvec will
+!       include also the alfven speed Va and tmp2 is set to be sqrt(2) va,
+!       we can estimate (1-sqrt(2)/2.) approx 0.3 to correct for that.
+!
+        maxadvec = maxadvec + 0.3*tmp2/dxmin_pencil
       else
         call unit_vector(p%glnTT,unit_glnTT)
         call dot(unit_glnTT,p%bunit,cosgT_b)
         diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
                    gamma*p%cp1*abs(cosgT_b)
         tmp2 = sqrt(diffspitz*tau_inv_spitzer)
+        maxadvec = maxadvec + tmp2/dxmin_pencil
       endif
-      maxadvec = maxadvec + tmp2/dxmax_pencil
 !
       if (ldiagnos.and.idiag_dtq/=0) then
-        call max_mn_name(tmp2/dxmax_pencil/cdt,idiag_dtq,l_dt=.true.)
+        call max_mn_name(tmp2/dxmin_pencil/cdt,idiag_dtq,l_dt=.true.)
       endif
 !
 !     put into dtspitzer, how the time_step would be
