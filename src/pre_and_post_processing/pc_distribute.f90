@@ -145,6 +145,7 @@ program pc_distribute
   close (lun_input)
   t = t_sp
 !
+  call directory_names
   open (lun_global, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent

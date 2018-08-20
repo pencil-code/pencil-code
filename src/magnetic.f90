@@ -207,6 +207,8 @@ module Magnetic
   logical :: lreset_aa=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
+  logical :: lax_ext_global=.false.,lay_ext_global=.false.,&
+             laz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
   logical :: lskip_projection_aa=.false., lno_second_ampl_aa=.true.
   logical :: lscale_tobox=.true.
@@ -231,6 +233,7 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
+      lax_ext_global,lay_ext_global,laz_ext_global, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start
 !
@@ -333,6 +336,7 @@ module Magnetic
       k_relprof,lmagneto_friction,numag, magnetic_zaver_range,&
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
+      lax_ext_global,lay_ext_global,laz_ext_global,&
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz, lremove_meanaxy, eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
@@ -955,6 +959,7 @@ module Magnetic
       !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:), allocatable :: ap
       integer :: i,j,myl,nycap
       real :: J_ext2
 !
@@ -1123,6 +1128,15 @@ module Magnetic
         call farray_register_global("global_by_ext",iglobal_by_ext)
       if (lbz_ext_global) &
         call farray_register_global("global_bz_ext",iglobal_bz_ext)
+!
+!     Store spatially dependent external potential field in a global array
+!
+      if (lax_ext_global) &
+        call farray_register_global("global_ax_ext",iglobal_ax_ext)
+      if (lay_ext_global) &
+        call farray_register_global("global_ay_ext",iglobal_ay_ext)
+      if (laz_ext_global) &
+        call farray_register_global("global_az_ext",iglobal_az_ext)
 !
 !  Initialize resistivity.
 !
@@ -1414,6 +1428,11 @@ module Magnetic
             enddo
           enddo
           A_relprof(:,:,:,3)=0.
+        case('aa_from_global')
+        if (lroot) print*, &
+             'initialize_mag: Set A_relaxprofile to: ', A_relaxprofile
+          if (iglobal_ax_ext/=0 .or. iglobal_ay_ext/=0 .or. iglobal_az_ext/=0) & 
+          A_relprof(:,:,:,1:3)=amp_relprof*f(l1:l2,m1:m2,n1:n2,iglobal_ax_ext:iglobal_az_ext)
         endselect
       endif
 !
@@ -2024,9 +2043,15 @@ module Magnetic
           call input_snap('ap.dat',ap,6,0)
           call input_snap_finalize
 !
-          f(:,:,:,iglobal_bx_ext) = ap(:,:,:,4)
-          f(:,:,:,iglobal_by_ext) = ap(:,:,:,5)
-          f(:,:,:,iglobal_bz_ext) = ap(:,:,:,6)
+          if (iglobal_ax_ext/=0) f(:,:,:,iglobal_ax_ext) = ap(:,:,:,1)
+          if (iglobal_ay_ext/=0) f(:,:,:,iglobal_ay_ext) = ap(:,:,:,2)
+          if (iglobal_az_ext/=0) f(:,:,:,iglobal_az_ext) = ap(:,:,:,3)
+;
+          if (iglobal_bx_ext/=0) f(:,:,:,iglobal_bx_ext) = ap(:,:,:,4)
+          if (iglobal_by_ext/=0) f(:,:,:,iglobal_by_ext) = ap(:,:,:,5)
+          if (iglobal_bz_ext/=0) f(:,:,:,iglobal_bz_ext) = ap(:,:,:,6)
+          call initiate_isendrcv_bdry(f)
+          call finalize_isendrcv_bdry(f)
           if (allocated(ap)) deallocate(ap)
 !
         case('spher-harm-poloidal')
@@ -4385,7 +4410,11 @@ module Magnetic
 !  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
 !
       if (tau_relprof/=0.0) then
-        dAdt= dAdt-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
+!        dAdt= dAdt-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
+! Piyali: The above is not right as dimension of A_relprof(nx,ny,nz,3), 
+! so m,n indices should be the following:
+!
+        dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
       endif
 !
 !  Add ``va^2/dx^2'' contribution to timestep.

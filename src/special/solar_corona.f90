@@ -1217,6 +1217,21 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
+    subroutine special_boundconds(f,bc)
+!
+!  Some precalculated pencils of data are passed in for efficiency,
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type (boundary_condition), intent(in) :: bc
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc)
+!
+    endsubroutine special_boundconds
+!***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -1228,7 +1243,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Deriv, only: der
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real,initiate_isendrcv_bdry, &
+                         finalize_isendrcv_bdry
       use SharedVariables, only: get_shared_variable
       use Sub, only: cross,gij,curl_mn
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1244,6 +1260,15 @@ module Special
 ! Flux emergence by driving an EMF at bottom boundary
 ! Presently only emf from constant field and constant velocity
 !
+      if (lset_boundary_emf) then
+          call initiate_isendrcv_bdry(f,iax,iaz)
+          call finalize_isendrcv_bdry(f,iax,iaz)
+        do m=m1,m2
+          call bc_emf_z(f,df,dt_,'top',iax)
+          call bc_emf_z(f,df,dt_,'top',iay)
+          call bc_emf_z(f,df,dt_,'top',iaz)
+        enddo
+      endif
       if (lfirst_proc_z.and.lcartesian_coords) then
         if (lflux_emerg_bottom) then
           select case (flux_type)
@@ -1319,13 +1344,6 @@ module Special
             call fatal_error('special_after_timestep:','wrong flux_type')
           endselect
         endif
-      endif
-      if (lset_boundary_emf) then
-        do m=m1,m2
-          call bc_emf_z(f,df,dt_,'top',iax)
-          call bc_emf_z(f,df,dt_,'top',iay)
-          call bc_emf_z(f,df,dt_,'top',iaz)
-        enddo
       endif
       if (any(uu_drive /= 0.0)) then
         do m=m1, m2

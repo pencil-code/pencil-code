@@ -6487,6 +6487,14 @@ module Initcond
 !                       alog(exp((x+1)/0.2)+exp(-(x+1)/0.2))),2,my),3,mz)-&
 !                       spread(spread(0.1*(alog(exp((x-1)/0.2)+exp(-(x-1)/0.2))-&
 !                       alog(exp((x-2)/0.2)+exp(-(x-2)/0.2))),2,my),3,mz)
+!          apot(:,:,:,2)=spread(spread(0.1*(alog(exp((x+5)/0.2)+exp(-(x+5)/0.2))-&
+!                       alog(exp((x+4)/0.2)+exp(-(x+4)/0.2))),2,my),3,mz)-&
+!                       spread(spread(0.1*(alog(exp((x+1)/0.2)+exp(-(x+1)/0.2))-&
+!                       alog(exp((x-0)/0.2)+exp(-(x-0)/0.2))),2,my),3,mz) + &
+!                       -spread(spread(0.1*(alog(exp((x+0)/0.2)+exp(-(x+0)/0.2))-&
+!                       alog(exp((x-1)/0.2)+exp(-(x-1)/0.2))),2,my),3,mz)-&
+!                       spread(spread(0.1*(alog(exp((x-5)/0.2)+exp(-(x-5)/0.2))-&
+!                       alog(exp((x-4)/0.2)+exp(-(x-4)/0.2))),2,my),3,mz)
 !          apot(:,:,:,3)=0.0
           f(:,:,:,i  ) = f(:,:,:,i  )+scale_aa*apot(:,:,:,1)
           f(:,:,:,i+1) = f(:,:,:,i+1)+scale_aa*apot(:,:,:,2)
