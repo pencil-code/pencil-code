@@ -2046,7 +2046,7 @@ module Magnetic
           if (iglobal_ax_ext/=0) f(:,:,:,iglobal_ax_ext) = ap(:,:,:,1)
           if (iglobal_ay_ext/=0) f(:,:,:,iglobal_ay_ext) = ap(:,:,:,2)
           if (iglobal_az_ext/=0) f(:,:,:,iglobal_az_ext) = ap(:,:,:,3)
-;
+!
           if (iglobal_bx_ext/=0) f(:,:,:,iglobal_bx_ext) = ap(:,:,:,4)
           if (iglobal_by_ext/=0) f(:,:,:,iglobal_by_ext) = ap(:,:,:,5)
           if (iglobal_bz_ext/=0) f(:,:,:,iglobal_bz_ext) = ap(:,:,:,6)
