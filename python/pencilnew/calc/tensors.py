@@ -9,12 +9,11 @@
 #          Simo Tuomisto (simo.tuomisto@aalto.fi)
 #
 #--------------------------------------------------------------------------
-import gc
 
 #--------------------------------------------------------------------------
-def tensors(*args, **kwargs):
+def tensors_sph(*args, **kwargs):
     tens_tmp=Tensors()
-    tens_tmp.calc_tensors(*args, **kwargs)
+    tens_tmp.calc(*args, **kwargs)
     return tens_tmp
 
 #--------------------------------------------------------------------------
@@ -33,7 +32,7 @@ class Tensors(object):
  
         self.t = np.array([])
 
-    def calc_tensors_sph(self,
+    def calc(self,
                      aver=[],
                      datatopdir='.',
                      lskip_zeros=False,
@@ -80,10 +79,10 @@ class Tensors(object):
         """
         import numpy as np
         import os
-        import pencilnew as pcn
+        from pencilnew import read
 
         os.chdir(datatopdir) # return to working directory
-        grid = pcn.read.grid(proc=proc,trim=True, quiet=True)
+        grid = read.grid(proc=proc,trim=True, quiet=True)
         # if iy None or scalar create numpy array 
         try:
             iy.size>0
@@ -146,7 +145,7 @@ class Tensors(object):
         # Correction to Pencil Code error may be required on old data
         if l_correction:
             if dim==None:
-                dim=pcn.read.dim(quiet=True)
+                dim=read.dim(quiet=True)
             itcorr = np.where(aver.t[imask]<t_correction)[0]
             index = alpformat.format(1,3)
             aver.z.__getattribute__(index)[itcorr] *=\

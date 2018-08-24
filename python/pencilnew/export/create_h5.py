@@ -9,10 +9,6 @@ to save emf tensors for use with mean-field pencil code module.
 To generalise hdf5 for all data structures
 """
 
-import numpy as np
-import os
-import h5py
-
 #===========================================================================
 def create_aver_sph(
     filename,
@@ -20,9 +16,13 @@ def create_aver_sph(
     fields,
     (nz, ny, nx, nt),
     (z, y, x, t),
-    hdf5dir='data/'
-    dgroup='emftensors'
+    hdf5dir='data/',
+    dgroup='emftensors',
     ):
+    import numpy as np
+    import os
+    import h5py
+
     #prepare hdf5 directory 
     if not os.path.exists(hdf5dir):
         os.makedirs(hdf5dir)

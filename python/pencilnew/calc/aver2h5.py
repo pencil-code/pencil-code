@@ -10,14 +10,9 @@
 #
 #--------------------------------------------------------------------------
 
-import numpy as np
-import os
-from .tensors import calc_tensors_sph 
-from ..export import create_aver_sph, fvars
-import h5py
 
 def zav2h5(
-           folder=os.getcwd(),
+           folder='.',
            dataset='time-series',
            filename='data/emftensors.h5',
            timereducer='none',
@@ -31,6 +26,11 @@ def zav2h5(
     with read.aver(plane_list=['z'])
     timereducers needs to be expanded to include various smoothing options
     """
+    import numpy as np
+    from .. import read
+    from ..export import fvars, create_aver_sph 
+    from ..calc import tensors_sph 
+    import h5py
     timereducers= { 
                   'mean': lambda x,args:  np.mean(x,axis=-3,keepdims=True),
                   'mean_last': lambda x,args:  np.mean(np.take(
@@ -58,7 +58,7 @@ def zav2h5(
         rank = 0
         size = 1
         comm=None
-    dim=pcn.read.dim()
+    dim=read.dim()
     nx, nny = dim.nx, dim.ny
     ayindex=np.arange(nny) 
     if l_mpi:
@@ -92,9 +92,9 @@ def zav2h5(
     rmbzeros=2
     lskip_zeros   = rmfzeros+rmbzeros > 0
     if rank==0:
-        grid=pcn.read.grid(trim=True,quiet=True)
-        zav=pcn.read.aver(proc=0,plane_list=['z'])
-        tensors=tens.tensors(
+        grid=read.grid(trim=True,quiet=True)
+        zav=read.aver(proc=0,plane_list=['z'])
+        tensor=tensors_sph(
                        zav,
                        proc=proc[0],
                        rank=rank,
@@ -109,24 +109,24 @@ def zav2h5(
                        dim=dim,
                        #tindex=tindex
                        )
-        nt=tensors.t.size
-        create_aver_hf(
+        nt=tensor.t.size
+        create_aver_sph(
         filename,
         dataset,
         fvars,
         (1, ny, nx, 1 ),
-        [0,grid.y,grid.x,tensors.t],
+        [0,grid.y,grid.x,tensor.t],
         hdf5dir=hdf5dir
         )
     if l_mpi:
-        imask=comm.bcast(tensors.imask, root=0)
+        imask=comm.bcast(tensor.imask, root=0)
     else:
-        imask=tensors.imask
+        imask=tensor.imask
     yndx_tmp = np.array_split(yindex, proc.size, axis=0)
     for iproc in proc:
         yndx=yndx_tmp[iproc]-iproc*(dim.nygrid/dim.nprocy)
         print('yndx {} from yindex {}'.format(yndx,yndx_tmp[iproc]))
-        zav=pcn.read.aver(proc=iproc,plane_list=['z'])
+        zav=read.aver(proc=iproc,plane_list=['z'])
         print('calculating tensors on proc {0} rank {1}'.format(iproc,rank))
         if iproc==1:
             with open('zaver.in', 'r') as f: 
@@ -137,7 +137,7 @@ def zav2h5(
                          0.5*(zav.z.__getattribute__(zaver)[3766]+
                               zav.z.__getattribute__(zaver)[3767]),axis=0))
                 zav.t=np.insert(zav.t,3766,0.5*(zav.t[3766]+zav.t[3767]),axis=0)
-        tensors=tens.tensors(
+        tensor=tensors_sph(
                              aver=zav,
                              proc=iproc,
                              rank=rank,
@@ -164,11 +164,11 @@ def zav2h5(
                    field, rank, proc[iproc]))
             if len(comp)==1:
                 ds['emftensor/{0}/{1}'.format(field,dataset)][:,:,yndx_tmp[iproc],:]=\
-                    tensors.__getattribute__(field)
+                    tensor.__getattribute__(field)
             elif len(comp)==2:
                 ds['emftensor/{0}/{1}'.format(field,dataset)][:,:,:,yndx_tmp[iproc],:]=\
-                    tensors.__getattribute__(field)
+                    tensor.__getattribute__(field)
             else:
                 ds['emftensor/{0}/{1}'.format(field,dataset)][:,:,:,:,yndx_tmp[iproc],:]=\
-                    tensors.__getattribute__(field)
+                    tensor.__getattribute__(field)
         ds.close()
