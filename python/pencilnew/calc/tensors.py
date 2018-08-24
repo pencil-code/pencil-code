@@ -99,7 +99,7 @@ class Tensors(object):
         r, theta = np.meshgrid(grid.x,grid.y[iy],indexing='ij')
         del(grid,theta) #conserve memory
 
-        print('rank {0} calculating tensors for proc {}'.format(rank,proc))
+        print('rank {0} calculating tensors for proc {1}'.format(rank,proc))
 
         # string containers for zaverages.z keys
         uformat = 'u{0}mxy'
