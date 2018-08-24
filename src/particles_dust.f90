@@ -1969,6 +1969,7 @@ module Particles
             if (lshear) call fatal_error("init_particles",&
                  "Keplerian initial condition is for global disks, not shearing boxes")
           endif
+!
           do k=1,npar_loc
             if (lcartesian_coords) then
               rad=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
@@ -1980,14 +1981,14 @@ module Particles
               rad=fp(k,ixp)
               OO=sqrt(gravr)*rad**(-1.5)
               fp(k,ivpx) =  0.0
-              fp(k,ivpy) =  OO*rad
+              fp(k,ivpy) =  (OO-Omega_corot)*rad
               fp(k,ivpz) =  0.0
             elseif (lspherical_coords) then
               rad=fp(k,ixp)*sin(fp(k,iyp))
               OO=sqrt(gravr)*rad**(-1.5)
               fp(k,ivpx) =  0.0
               fp(k,ivpy) =  0.0
-              fp(k,ivpz) =  OO*rad
+              fp(k,ivpz) =  (OO-Omega_corot)*rad
             endif
           enddo
 !
