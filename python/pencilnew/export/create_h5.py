@@ -50,10 +50,11 @@ def create_aver_sph(
             if dataset not in hf['{0}/{1}'.format(dgroup,field)].keys():
                 hf.create_dataset('{0}/{1}/{2}'.format(
                                       dgroup,field,dataset), shape, 'f')
-            if shape != hf['{0}/{1}/{2}'.format(field,dataset)].shape:
-                del(hf['{0}/{1}/{2}'.format(field,dataset)])
-                hf.create_dataset('emftensor/{0}/{1}'.format(
-                                   field,dataset), shape, 'f')
+            if shape != hf['{0}/{1}/{2}'.format(
+                                      dgroup,field,dataset)].shape:
+                del(hf['{0}/{1}/{2}'.format(dgroup,field,dataset)])
+                hf.create_dataset('{0}/{1}/{2}'.format(
+                                      dgroup,field,dataset), shape, 'f')
 #===========================================================================
 fvars=[
            ('utensor',     (3,)), 
