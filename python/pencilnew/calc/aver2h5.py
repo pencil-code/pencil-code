@@ -17,6 +17,11 @@ def zav2h5(
            filename='data/emftensors.h5',
            timereducer='none',
            hdf5dir='data/',
+           l_correction=True,
+           t_correction=8972.,
+           rmfzeros=4,
+           rmbzeros=2,
+           dgroup='emftensor',
           ):
     """
     If large dataset MPI may be required.
@@ -86,10 +91,6 @@ def zav2h5(
     print('proc.size',proc.size)
     """Set up hdf5 file and create datasets in which to save the tensors
     """
-    l_correction=True
-    t_correction=8972.
-    rmfzeros=4
-    rmbzeros=2
     lskip_zeros   = rmfzeros+rmbzeros > 0
     if rank==0:
         grid=read.grid(trim=True,quiet=True)
@@ -114,9 +115,10 @@ def zav2h5(
         filename,
         dataset,
         fvars,
-        (1, ny, nx, 1 ),
+        (1, ny, nx, nt, ),
         [0,grid.y,grid.x,tensor.t],
-        hdf5dir=hdf5dir
+        hdf5dir=hdf5dir,
+        dgroup=dgroup
         )
     if l_mpi:
         imask=comm.bcast(tensor.imask, root=0)
@@ -163,12 +165,12 @@ def zav2h5(
             print('writing {0} from rank {1} for proc {2}'.format(
                    field, rank, proc[iproc]))
             if len(comp)==1:
-                ds['emftensor/{0}/{1}'.format(field,dataset)][:,:,yndx_tmp[iproc],:]=\
+                ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,yndx_tmp[iproc],:]=\
                     tensor.__getattribute__(field)
             elif len(comp)==2:
-                ds['emftensor/{0}/{1}'.format(field,dataset)][:,:,:,yndx_tmp[iproc],:]=\
+                ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,:,yndx_tmp[iproc],:]=\
                     tensor.__getattribute__(field)
             else:
-                ds['emftensor/{0}/{1}'.format(field,dataset)][:,:,:,:,yndx_tmp[iproc],:]=\
+                ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,:,:,yndx_tmp[iproc],:]=\
                     tensor.__getattribute__(field)
         ds.close()
