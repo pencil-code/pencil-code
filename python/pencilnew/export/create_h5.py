@@ -17,7 +17,7 @@ def create_aver_sph(
     (nz, ny, nx, nt),
     (z, y, x, t),
     hdf5dir='data/',
-    dgroup='emftensors',
+    dgroup='emftensor',
     ):
     import numpy as np
     import os
