@@ -10,12 +10,11 @@
 #
 #--------------------------------------------------------------------------
 
-
 def zav2h5(
            folder='.',
-           dataset='time-series',
+           dataset='',
            filename='data/emftensors.h5',
-           timereducer='none',
+           timereducer='mean',
            hdf5dir='data/',
            l_correction=True,
            t_correction=8972.,
@@ -42,10 +41,15 @@ def zav2h5(
             x,np.arange(-int(args[0]),0,1),axis=-3),axis=-3,keepdims=True),
                   'none': lambda x, args: x,
                   }
-    
+    if not timereducer in timereducers:
+        raise ValueError(
+              'timereducer "{}" undefined in timereducers'.format(
+               timereducer)+' options: {}'.format(timereducers.keys()))
+    if len(dataset)==0:
+        dataset=timereducer
     with open('zaver.in', 'r') as f:
         zavers = f.read().splitlines()
-    
+
     """ Find out if the calculation is parallel and distribute the arrays
         according to y-index and ipz=0 processor layout
     """
@@ -55,7 +59,7 @@ def zav2h5(
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-    
+
         l_mpi = True
         l_mpi = l_mpi and (size != 1)
     except ImportError:
@@ -110,7 +114,11 @@ def zav2h5(
                        dim=dim,
                        #tindex=tindex
                        )
-        nt=tensor.t.size
+        if 'mean' in dataset:
+            nt=1
+        else:
+            nt=tensor.t.size
+
         create_aver_sph(
         filename,
         dataset,
@@ -155,7 +163,6 @@ def zav2h5(
                              #tindex=tindex,
                              imask=imask
                              )
-        
         if l_mpi:
             comm.barrier()
             ds=h5py.File(filename, 'a', driver='mpio', comm=comm)
@@ -165,12 +172,12 @@ def zav2h5(
             print('writing {0} from rank {1} for proc {2}'.format(
                    field, rank, proc[iproc]))
             if len(comp)==1:
-                ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,yndx_tmp[iproc],:]=\
-                    tensor.__getattribute__(field)
-            elif len(comp)==2:
                 ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,:,yndx_tmp[iproc],:]=\
                     tensor.__getattribute__(field)
-            else:
+            elif len(comp)==2:
                 ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,:,:,yndx_tmp[iproc],:]=\
+                    tensor.__getattribute__(field)
+            else:
+                ds['{0}/{1}/{2}'.format(dgroup,field,dataset)][:,:,:,:,yndx_tmp[iproc],:]=\
                     tensor.__getattribute__(field)
         ds.close()

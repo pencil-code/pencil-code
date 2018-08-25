@@ -34,7 +34,7 @@ def create_aver_sph(
         if 'grid' not in hf.keys():
             hf.create_group('grid')
         if 't' not in hf['grid'].keys():
-            hf.create_dataset('grid/t',  (nt,), data=np.asfarray(t))
+            hf.create_dataset('grid/t',  (t.size,), data=np.asfarray(t))
         if 'x' not in hf['grid'].keys():
             hf.create_dataset('grid/x',  (nx,), data=np.asfarray(x))
         if 'y' not in hf['grid'].keys():
