@@ -1,4 +1,4 @@
-! $Id$
+! $Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $
 !
 !  This module takes care of everything related to inertial particles.
 !
@@ -92,6 +92,7 @@ module Particles
   real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   real :: r0gaussz=1.0, qgaussz=0.0
   real :: vapor_mixing_ratio_qvs=0., rhoa=1.0
+  real, pointer :: g1, rp1, rp1_pot, t_ramp_mass, t_start_secondary  
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   integer :: istep_dragf=3,istep_pass=3
@@ -141,6 +142,7 @@ module Particles
   logical :: lsimple_volume=.false.
   logical :: lnpmin_exclude_zero = .false.
   logical :: ltauascalar = .false.
+  logical, pointer :: lramp_mass, lsecondary_wait
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -343,7 +345,7 @@ module Particles
       use Particles_potential, only: register_particles_potential
 !
       if (lroot) call svn_id( &
-          "$Id$")
+          "$Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -665,7 +667,7 @@ module Particles
 !
       call put_shared_variable('gravr',gravr,ierr)
       if (ierr/=0) call fatal_error('initialize_particles', &
-          'there was a problem when sharing gravr')
+           'there was a problem when sharing gravr')
 !
 !  Inverse of minimum gas friction time (time-step control).
 !
@@ -939,6 +941,32 @@ module Particles
       if (lparticles_potential) call initialize_particles_potential(fp)
 !
       if (lascalar) call put_shared_variable('G_condensation',G_condensation)
+!
+!  Variables needed for corotational frame on particles. 
+!
+      if (lgravr.and.lcorotational_frame) then 
+        call get_shared_variable('g1',g1,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting g1')
+        call get_shared_variable('rp1',rp1,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting rp1')
+        call get_shared_variable('rp1_pot',rp1_pot,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting rp1_pot')
+        call get_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting t_ramp_mass')
+        call get_shared_variable('t_start_secondary',t_start_secondary,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting t_start_secondary')
+        call get_shared_variable('lramp_mass',lramp_mass,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting lramp_mass')
+        call get_shared_variable('lsecondary_wait',lsecondary_wait,ierr)
+        if (ierr/=0) call fatal_error('initialize_particles', &
+             'there was a problem when getting lsecondary_wait')
+      endif
 !
     endsubroutine initialize_particles
 !***********************************************************************
@@ -3144,6 +3172,8 @@ module Particles
 !
       if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
 !
+      if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
+!
 !  The auxiliary has to be set to zero afterwards
 !
         call diffuse_backreaction(f,df)
@@ -3636,6 +3666,141 @@ module Particles
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine particle_gravity
+!***********************************************************************
+    subroutine indirect_inertial_particles(f,df,fp,dfp,ineargrid)
+!
+!  Clone of gas routine in gravity_r, but for particles.
+!
+!  24-aug-18/wlad: coded
+!
+      use SharedVariables, only: get_shared_variable
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      real :: c2,s2,g2,rrcyl,rr2,gp
+      real :: sint,cost,sinp,cosp
+      logical :: lcentrifugal_force_gravity=.true.,lcoriolis_force_gravity=.true.,lindirect_terms=.true.
+      real, dimension(3) :: ggp
+      integer :: k
+      integer :: ierr
+      type (pencil_case) :: p
+!
+      if (lramp_mass.and.(t<=t_ramp_mass)) then 
+!
+!  Ramp up g1 for the first 5 orbits, to prevent to big an initial impulse
+!
+        g2 = g1/rp1**2 * t/t_ramp_mass
+      else
+        g2 = g1/rp1**2
+      endif
+!
+!  Do not allow secondary before t_start_secondary
+!
+      if (lsecondary_wait .and. t <= t_start_secondary) then
+        g2 = 0. 
+      endif
+!
+      do k=1,npar_loc
+!
+!  Trigonometric shortcuts
+!
+        if (lcylindrical_coords) then
+          cosp=cos(fp(k,iyp))
+          sinp=sin(fp(k,iyp))
+        elseif (lspherical_coords) then
+          sint=sin(fp(k,iyp))
+          cost=cos(fp(k,iyp))
+          sinp=sin(fp(k,izp))
+          cosp=cos(fp(k,izp))
+        endif
+!
+!  Secondary gravity
+!
+        if (lcylindrical_coords) then
+          if (lcylindrical_gravity) then
+            rr2 = fp(k,ixp)**2 + rp1**2 -2*fp(k,ixp)*rp1*cosp
+          else
+            rr2 = fp(k,ixp)**2 + rp1**2 -2*fp(k,ixp)*rp1*cosp + fp(k,izp)**2
+          endif
+        elseif (lspherical_coords) then
+          rr2 = fp(k,ixp)**2 + rp1**2 - 2*fp(k,ixp)*rp1*sint*cosp
+        else
+          call fatal_error("secondary_body_gravity","not coded for Cartesian")
+        endif
+        gp = -g1*(rr2+rp1_pot**2)**(-1.5)
+!
+        if (lcylindrical_coords) then 
+          ggp(1) =  gp * (fp(k,ixp)-rp1*cosp)
+          ggp(2) =  gp *            rp1*sinp
+          ggp(3) =  gp *  fp(k,izp)
+          if (lcylindrical_gravity) ggp(3)=0.
+        else if (lspherical_coords) then
+          ggp(1) =  gp * (fp(k,ixp) - rp1*sint*cosp)
+          ggp(2) = -gp *              rp1*cost*cosp
+          ggp(3) =  gp *              rp1*     sinp
+        endif
+        dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp 
+!
+! Corrections coordinates
+!
+        if (lcylindrical_coords) then
+!
+!  Indirect terms
+!
+          if (lindirect_terms) then
+            dfp(k,ivpx) = dfp(k,ivpx) - g2*cosp
+            dfp(k,ivpy) = dfp(k,ivpy) + g2*sinp
+          endif
+!
+!  Coriolis force
+!
+          if (lcoriolis_force_gravity) then
+            c2 = 2*Omega_corot
+            dfp(k,ivpx) = dfp(k,ivpx) + c2*fp(k,ivpy)
+            dfp(k,ivpy) = dfp(k,ivpy) - c2*fp(k,ivpx)
+          endif
+!
+!  Centrifugal force
+!
+          if (lcentrifugal_force_gravity) &
+               dfp(k,ivpx)  = dfp(k,ivpx) + fp(k,ixp)*Omega_corot**2
+!
+        else if (lspherical_coords) then
+!
+!  Indirect terms
+!
+          if (lindirect_terms) then
+            dfp(k,ivpx) =  dfp(k,ivpx) - g2*sint*cosp
+            dfp(k,ivpy) =  dfp(k,ivpy) - g2*cost*cosp
+            dfp(k,ivpz) =  dfp(k,ivpz) + g2*     sinp
+          endif
+!
+!  Coriolis force
+!
+          if (lcoriolis_force_gravity) then
+            c2 = 2*Omega_corot*cost
+            s2 = 2*Omega_corot*sint
+!
+            dfp(k,ivpx) = dfp(k,ivpx) + s2*fp(k,ivpz)
+            dfp(k,ivpy) = dfp(k,ivpy) + c2*fp(k,ivpz)
+            dfp(k,ivpz) = dfp(k,ivpz) - c2*fp(k,ivpy) - s2*fp(k,ivpx)
+          endif
+!
+!  Centrifugal force
+!
+          if (lcentrifugal_force_gravity) then
+            rrcyl=fp(k,ixp)*sint
+            dfp(k,ivpx) = dfp(k,ivpx) + rrcyl*sint*Omega_corot**2
+            dfp(k,ivpy) = dfp(k,ivpy) + rrcyl*cost*Omega_corot**2
+          endif
+!
+        endif
+      enddo
+!
+    endsubroutine indirect_inertial_particles
 !***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !

@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.1 2017/02/16 18:36:53 wlyra Exp $
+! $Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $
 !
 !  Radial gravity
 !
@@ -44,7 +44,7 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
-  real :: g1=0.,rp1,rp1_pot=0.
+  real, target :: g1=0.,rp1,rp1_pot=0.
   real, target :: gsum=0.
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
@@ -56,7 +56,8 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz=0.,zinfty
   real :: nu_epicycle=1.0
-  real :: t_ramp_mass=impossible,t1_ramp_mass
+  real, target :: t_ramp_mass=impossible
+  real :: t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
   character (len=labellen) :: ipotential_secondary='plummer'
 !
@@ -65,12 +66,12 @@ module Gravity
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
   logical :: lindirect_terms=.true.
-  logical :: lramp_mass=.false.
+  logical, target :: lramp_mass=.false.
   integer :: iglobal_gg=0
-  logical :: lsecondary_wait=.false.
+  logical, target :: lsecondary_wait=.false.
   logical :: lcoriolis_force_gravity=.true.
   logical :: lcentrifugal_force_gravity=.true.
-  real :: t_start_secondary = -impossible
+  real, target :: t_start_secondary = -impossible
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
@@ -96,7 +97,7 @@ module Gravity
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2017/02/16 18:36:53 wlyra Exp $")
+      if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
       lgravr=.true.
       lgravr_gas =.true.
@@ -139,11 +140,43 @@ module Gravity
              "companion gravity coded only for corotational frame")
       endif
 !
-!  Share gsum to modules that may need it
+!  Share variables related to corotational frame to modules that may need it
 !
       call put_shared_variable('gsum',gsum,ierr)
       if (ierr/=0) call fatal_error('initialize_gravity', &
           'there was a problem when putting gsum')
+!
+      call put_shared_variable('g0',g0,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting g0')
+!
+      call put_shared_variable('g1',g1,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting g1')
+!
+      call put_shared_variable('rp1',rp1,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting rp1')
+!
+      call put_shared_variable('rp1_pot',rp1_pot,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting rp1_pot')
+!
+      call put_shared_variable('lramp_mass',lramp_mass,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting lramp_mass')
+!
+      call put_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting t_ramp_mass')
+!
+      call put_shared_variable('lsecondary_wait',lsecondary_wait,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting lsecondary_wait')
+!
+      call put_shared_variable('t_start_secondary',t_start_secondary,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting t_start_secondary')
 !
 !  Shortcut for optimization
 !
