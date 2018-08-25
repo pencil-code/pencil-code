@@ -226,6 +226,7 @@ module InitialCondition
              call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
       endif
 !
+      if (.not.lread_oldsnap) then
       do m=m1,m2
       do n=n1,n2
 !
@@ -295,6 +296,7 @@ module InitialCondition
 !
       enddo
       enddo
+    endif
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
@@ -312,7 +314,7 @@ module InitialCondition
         call farray_use_global('cs2',iglobal_cs2)
       elseif (lentropy) then
         call get_cv1(cv1)
-      elseif (ltemperature) then 
+      elseif (ltemperature) then
         call get_cp1(cp1)
       endif
 !
@@ -323,7 +325,7 @@ module InitialCondition
           !even with ldensity_nolog=T, this rho is in log
           cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
                gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))
-        elseif (ltemperature) then 
+        elseif (ltemperature) then
           if (ltemperature_nolog) then
             cs2=f(l1:l2,m,n,iTT)*gamma_m1/cp1
           else
@@ -429,7 +431,7 @@ module InitialCondition
       do m=1,my; do n=1,mz
         lheader=((m==1).and.(n==1).and.lroot)
         call get_radial_distance(rr_sph,rr_cyl)
-        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then 
+        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then
           rr=rr_cyl 
         elseif (lsphere_in_a_box.or.lspherical_coords) then
           rr=rr_sph
@@ -438,8 +440,8 @@ module InitialCondition
                "no valid coordinate system")
         endif
 !
-        if (llocal_iso.or.lenergy) then 
-          if (.not.lpolynomial_fit_cs2) then 
+        if (llocal_iso.or.lenergy) then
+          if (.not.lpolynomial_fit_cs2) then
             call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
           else 
             call poly_fit(cs2)
@@ -452,16 +454,20 @@ module InitialCondition
             nullify(iglobal_cs2)
             call farray_use_global('cs2',iglobal_cs2)
             ics2=iglobal_cs2
-          elseif (ltemperature) then
-            if (ltemperature_nolog) then 
-              ics2=iTT
-            else
-              ics2=ilnTT
+            f(:,m,n,ics2)=cs2
+          elseif (.not.lread_oldsnap) then
+            if (ltemperature) then
+              if (ltemperature_nolog) then
+                ics2=iTT
+              else
+                ics2=ilnTT
+              endif
+              f(:,m,n,ics2)=cs2
+            elseif (lentropy) then
+              ics2=iss
+              f(:,m,n,ics2)=cs2
             endif
-          elseif (lentropy) then
-            ics2=iss
           endif
-          f(:,m,n,ics2)=cs2
         else
           ics2=impossible_int 
         endif
@@ -473,6 +479,7 @@ module InitialCondition
 !  do this trick below to decide whether this run is
 !  2D or 3D.
 !
+      if (.not.lread_oldsnap) then
       lpresent_zed=.false.
       if (lspherical_coords) then
         if (nygrid/=1) lpresent_zed=.true.
@@ -542,7 +549,7 @@ module InitialCondition
 !
 !  Get the sound speed
 !
-          if (lenergy.or.llocal_iso) then 
+          if (lenergy.or.llocal_iso) then
             cs2=f(:,m,n,ics2)
           else
             cs2=cs20
@@ -605,7 +612,7 @@ module InitialCondition
 !  Correct the velocities for self-gravity
 !
       if (lcorrect_selfgravity) then
-        if (lselfgravity_logspirals) then 
+        if (lselfgravity_logspirals) then
           call correct_selfgravity_logspirals(f)
         else
           call correct_selfgravity(f)
@@ -616,12 +623,14 @@ module InitialCondition
 !
       if (llowk_noise) call lowk_noise_gaussian_rprof(f)
 !
+      endif
+!
 !  Set the thermodynamical variable
 !
       if (llocal_iso) then
         call set_thermodynamical_quantities&
              (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
-      else if (lenergy) then 
+      else if (lenergy.and.(.not.lread_oldsnap)) then
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
 !
@@ -904,7 +913,7 @@ module InitialCondition
           endif
         elseif (ltemperature) then
 !  else do it as temperature ...
-          if (ltemperature_nolog) then 
+          if (ltemperature_nolog) then
             f(l1:l2,m,n,iTT)=cs2*cp1/gamma_m1
           else
             f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
@@ -1130,7 +1139,7 @@ module InitialCondition
        case ("lambda_over_Lz_cte") 
          if (zmode_mag==0) &
               call fatal_error("initcond_aa","zmode_mag is zero")
-         if (magnetic_power_law/=impossible) then 
+         if (magnetic_power_law/=impossible) then
            pblaw=magnetic_power_law
          else
            pblaw=1.5+0.5*density_power_law !alfven
@@ -1167,9 +1176,9 @@ module InitialCondition
       call integrate_field(bz*x,aphi_mx)
 !
       do n=1,mz;do m=1,my
-        if (lcylindrical_coords) then 
+        if (lcylindrical_coords) then
           f(:,m,n,iay) = aphi_mx/x 
-        elseif (lspherical_coords) then 
+        elseif (lspherical_coords) then
           f(:,m,n,iaz) = sin(y(m))*aphi_mx/x 
         else 
           call fatal_error("initial_condition_aa",&
@@ -1236,7 +1245,7 @@ module InitialCondition
       real, dimension(mx), intent(out) :: Bout
       integer :: i
 !      
-      if (rm_int==-impossible.and.rm_ext==impossible) then 
+      if (rm_int==-impossible.and.rm_ext==impossible) then
         Bout=Bin
       else
         do i=1,mx
@@ -1281,7 +1290,7 @@ module InitialCondition
 !  If the run is serial in x, we're done. Otherwise, take into account that 
 !  the contribution of previous x-processors should be summed up. 
 !
-      if (nprocx/=1) then 
+      if (nprocx/=1) then
 !
 !  Store the last value of the integral, which should be the starting point 
 !  for the next x-processor.
@@ -1292,7 +1301,7 @@ module InitialCondition
 !
          do px=0,nprocx-1
             partner = px + nprocx*ipy + nprocxy*ipz
-            if (iproc/=partner) then 
+            if (iproc/=partner) then
                !Send to all processors in this row.
                call mpisend_real(out,partner,111)
                !Receive from all processors in the same row.
@@ -1376,7 +1385,7 @@ module InitialCondition
           gslnrho=glnrho(:,1)
         endif
 !
-        if (lspherical_coords.or.lsphere_in_a_box) then 
+        if (lspherical_coords.or.lsphere_in_a_box) then
           rr=rr_sph
         else
           rr=rr_cyl
@@ -1386,7 +1395,7 @@ module InitialCondition
 !
         if (llocal_iso.or.lenergy) then
           cs2=f(l1:l2,m,n,ics2)
-          if (.not.lpolynomial_fit_cs2) then 
+          if (.not.lpolynomial_fit_cs2) then
              gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
           else
              xi=x(l1:l2)
@@ -1428,7 +1437,7 @@ module InitialCondition
 !
       if (lroot) print*,'Correcting for self-gravity on the '//&
            'centrifugal force'
-      if (.not.lpoisson) then 
+      if (.not.lpoisson) then
         print*,"You want to correct for selfgravity but you "
         print*,"are using POISSON=nopoisson in src/Makefile.local. "
         print*,"Please use a poisson solver."
@@ -1494,7 +1503,7 @@ module InitialCondition
 !
       if (lroot) print*,'Correcting for self-gravity on the '//&
            'centrifugal force'
-      if (.not.lpoisson) then 
+      if (.not.lpoisson) then
         print*,"You want to correct for selfgravity but you "
         print*,"are using POISSON=nopoisson in src/Makefile.local. "
         print*,"Please use a poisson solver."
@@ -1588,7 +1597,7 @@ module InitialCondition
 !
 !  Make sure the correction does not impede centrifugal equilibrium
 !
-      if (lcylindrical_coords.or.lcylinder_in_a_box) then 
+      if (lcylindrical_coords.or.lcylinder_in_a_box) then
         rr=rr_cyl
       else
         rr=rr_sph
@@ -1743,7 +1752,7 @@ module InitialCondition
           do i=1,nx
             ll1=i+l1-1 ; xi=x(ll1)
 !
-            if (lgaussian_distributed_noise) then 
+            if (lgaussian_distributed_noise) then
               fac=exp(-(.5*(xi-xmid)/d0)**2)
             else
               fac=1
@@ -1773,7 +1782,7 @@ module InitialCondition
       f(l1:l2,m1:m2,n1:n2,irho)=1.+&
           normalization_factor*(f(l1:l2,m1:m2,n1:n2,irho)-1.)
 !
-      if (lroot) then 
+      if (lroot) then
         print*,'max density (linear): ',maxval(f(l1:l2,m1:m2,n1:n2,irho))
         print*,'min density (linear): ',minval(f(l1:l2,m1:m2,n1:n2,irho))
         print*,'rms density (linear): ',&
