@@ -474,7 +474,7 @@ module Special
 !
 !  26-feb-07/axel: adapted from gross_pitaevskii
 !
-      use Slice_methods, only: assign_slices_vec
+      use Slices_methods, only: assign_slices_scal
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
@@ -487,7 +487,7 @@ module Special
 !
 !  Lam
 !
-        case ('Lam'); call assign_slices_vec(slices,f,iLam)
+        case ('Lam'); call assign_slices_scal(slices,f,iLam)
 !
       endselect
 !
