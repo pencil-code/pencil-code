@@ -692,14 +692,14 @@ module Particles_main
 !
 !  Send fp to Special for processing in the end of a sub-time-step.
 !
-!  27-feb-18/ccyang: coded
+!  28-aug-18/ccyang: coded
 !
       use Special, only: special_particles_after_dtsub
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, intent(in) :: dtsub
 !
-      call special_particles_after_dtsub(f, dtsub, fp, ineargrid)
+      call special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
 !
     endsubroutine particles_special_after_dtsub
 !***********************************************************************

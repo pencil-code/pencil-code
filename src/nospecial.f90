@@ -602,20 +602,21 @@ module Special
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
-    subroutine special_particles_after_dtsub(f, dtsub, fp, ineargrid)
+    subroutine special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
 !
 !  Possibility to modify fp in the end of a sub-time-step.
 !
-!  27-feb-18/ccyang: coded
+!  28-aug-18/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, intent(in) :: dtsub
-      real, dimension(:,:), intent(in) :: fp
+      real, dimension(:,:), intent(in) :: fp, dfp
       integer, dimension(:,:), intent(in) :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(dtsub)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine special_particles_after_dtsub
