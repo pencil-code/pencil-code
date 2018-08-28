@@ -4473,16 +4473,20 @@ module EquationOfState
 !
 !  Energy equation formulated in logarithmic temperature.
 !
-          if (bcz12(ilntt,1)/='s') then
-            call fatal_error("bc_lnrho_hds_z_iso", &
-                "This boundary condition for density is "// &
-                "currently only correct for bcz1(ilntt)='s'")
-          endif
-!
           if (ltemperature_nolog) then
+            if (bcz12(iTT,1)/='s') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                  "This boundary condition for density is "// &
+                  "currently only correct for bcz1(iTT)='s'")
+            endif
             call eoscalc(ilnrho_TT,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iTT), &
                        cs2=cs2_point)
           else
+            if (bcz12(ilnTT,1)/='s') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                  "This boundary condition for density is "// &
+                  "currently only correct for bcz1(ilnTT)='s'")
+            endif
             call eoscalc(ilnrho_lnTT,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilnTT), &
                        cs2=cs2_point)
           endif

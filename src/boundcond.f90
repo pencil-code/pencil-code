@@ -791,6 +791,7 @@ module Boundcond
 !  30-dec-16/MR: added BC 'a1s' for constant alpha mean-field model in one dimension
 !
       use General, only: var_is_vec
+      use Gravity, only: gravz_profile
       use Special, only: special_boundconds
       use EquationOfState
       use Magnetic_meanfield, only: pc_aasb_const_alpha
@@ -946,17 +947,25 @@ module Boundcond
                 call bc_ss_temp_z(f,topbot,.true.)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                if (j==iss)   call bc_ss_temp2_z(f,topbot)
+                if (j==iss) call bc_ss_temp2_z(f,topbot)
               case ('cT3')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                if (j==iss)   call bc_ss_temp3_z(f,topbot)
+                if (j==iss) call bc_ss_temp3_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
-                if (.not.lgrav) call fatal_error('boundconds_z', &
+                if (.not. lgrav) call fatal_error('boundconds_z', &
                   'hs boundary condition requires gravity')
-                if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
-                if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
-                if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
+                if (gravz_profile /= 'const') call fatal_error('boundconds_z', &
+                  'hs boundary condition requires a constant gravity profile')
+                if (.not. lequidist(3)) call fatal_error('boundconds_z', &
+                  'hs boundary condition requires symmetric grid distances on the z boundary')
+                if ((j==ilnrho) .or. (j==irho_b)) then
+                  call bc_lnrho_hds_z_iso(f,topbot)
+                elseif (j==ipp) then
+                  call bc_pp_hds_z_iso(f,topbot)
+                else
+                  call fatal_error ('boundconds_z', "hs boundary condition requires density or pressure")
+                endif
               case ('hse')
                 ! BCZ_DOC: hydrostatic extrapolation
                 ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
