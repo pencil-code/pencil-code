@@ -32,7 +32,7 @@ module Special
   integer, parameter :: max_gran_levels=3
   integer :: cool_RTV_cutoff=0
 !
-  real :: tdown=0., allp=0., Kgpara=0., heat_cool=0., rho_diff_fix=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
+  real :: nc_tau=0., nc_alt=0., Kgpara=0., heat_cool=0., rho_diff_fix=0., cool_RTV=0., Kgpara2=0., nc_tau_rho=0., nc_alt_rho=0.
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
   real :: T_crit=0., deltaT_crit=0.
   real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
@@ -90,8 +90,8 @@ module Special
 !
   ! run parameters
   namelist /special_run_pars/ &
-      tdown,allp,Kgpara,heat_cool,rho_diff_fix,cool_RTV,lntt0,wlntt,bmdi,hcond1, &
-      Kgpara2,K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
+      nc_tau,nc_alt,Kgpara,heat_cool,rho_diff_fix,cool_RTV,lntt0,wlntt,bmdi,hcond1, &
+      Kgpara2,K_spitzer,nc_tau_rho,nc_alt_rho,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
       b_tau,flux_tau,Bavoid,nglevel,vorticity_factor,Bz_flux,init_time,init_time_hcond, &
       lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
@@ -226,9 +226,9 @@ module Special
       if ((Bavoid > 0.0) .and. (.not. lmagnetic)) &
           call fatal_error ('solar_corona', &
               "'Bavoid' needs the magnetic module.")
-      if ((tdown > 0.0) .and. (allp == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
+      if ((nc_tau > 0.0) .and. (nc_alt == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
           call fatal_error ('solar_corona', &
-              "Please select decaying of Newton Cooling using 'allp' or 'nc_lnrho_num_magn'.")
+              "Please select decaying of Newton Cooling using 'nc_alt' or 'nc_lnrho_num_magn'.")
       ! Restoration half-time of initial total vertical flux:
       if ((flux_tau > 0.0) .and. (Bz_flux <= 0.0)) &
           call fatal_error ('solar_corona/mag_driver', &
@@ -375,14 +375,14 @@ module Special
 ! Only read profiles if needed, e.g. for Newton cooling
 !
       if (.not. (ltemperature .or. lentropy)) return
-      lnewton_cooling = (tdown > 0.0) .or. (tdownr > 0.0)
+      lnewton_cooling = (nc_tau > 0.0) .or. (nc_tau_rho > 0.0)
       if (.not. (linit_uu .or. linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
       ! default: read 'stratification.dat' with density and temperature
       if (prof_type == 'nothing') prof_type = 'lnrho_lnTT'
 !
       ! check if density profile is read, when needed
-      if ((tdownr > 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
+      if ((nc_tau_rho > 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
         call fatal_error ("setup_profiles", &
             "a density profile must be read to use density based newton cooling")
       endif
@@ -663,7 +663,7 @@ module Special
         lpenc_requested(i_rho1) = .true.
       endif
 !
-      if ((tdown > 0.0) .or. (tdownr > 0.0)) then
+      if ((nc_tau > 0.0) .or. (nc_tau_rho > 0.0)) then
         lpenc_requested(i_lnrho) = .true.
         lpenc_requested(i_lnTT) = .true.
       endif
@@ -1101,7 +1101,7 @@ module Special
       if (heat_cool /= 0.0) call calc_heat_cool(df,p)
       if (rho_diff_fix /= 0.0) call calc_rho_diff_fix(df,p)
       if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
-      if (max (tdown, tdownr) > 0.0) call calc_heat_cool_newton(df,p)
+      if (max (nc_tau, nc_tau_rho) > 0.0) call calc_heat_cool_newton(df,p)
       if (K_iso /= 0.0) call calc_heatcond_grad(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
 !
@@ -2108,22 +2108,22 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: newton, newtonr, tmp_tau, lnTT_ref
+      real, dimension(nx) :: newton, newton_rho, tmp_tau, lnTT_ref
 !
       tmp_tau = 0.0
 !
       ! Correction of density profile
-      if (tdownr > 0.0) then
+      if (nc_tau_rho > 0.0) then
         ! Get reference density
-        newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
-        ! allpr is given in [Mm]
-        tmp_tau = tdownr * exp (-allpr * z(n)*unit_length*1e-6)
+        newton_rho = exp (lnrho_init_z(n) - p%lnrho) - 1.0
+        ! nc_alt_rho is given in [Mm]
+        tmp_tau = nc_tau_rho * exp (-nc_alt_rho * z(n)*unit_length*1e-6)
         ! Add correction term to density
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau
       endif
 !
       ! Newton cooling of temperature profile
-      if ((tdown /= 0.0) .and. (.not. lnc_intrin_energy_depend)) then
+      if ((nc_tau /= 0.0) .and. (.not. lnc_intrin_energy_depend)) then
         if (lnc_density_depend) then
           ! Find reference temperature to actual density profile
           call find_ref_temp (p%lnrho, lnTT_ref)
@@ -2134,12 +2134,12 @@ module Special
         endif
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnTT_ref - p%lnTT) - 1.0
-        if (allp /= 0.0) then
+        if (nc_alt /= 0.0) then
           ! Calculate density-dependant inverse time scale and let cooling decay exponentially
-          tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
+          tmp_tau = nc_tau * exp (-nc_alt * (lnrho0 - p%lnrho))
         elseif (nc_lnrho_num_magn /= 0.0) then
           ! Calculate density-dependant inverse time scale with a smooth sine curve decay
-          tmp_tau = tdown * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.25*nc_lnrho_trans_width, -1.0)
+          tmp_tau = nc_tau * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.25*nc_lnrho_trans_width, -1.0)
         endif
         ! Optional height dependant smooth cutoff
         if (nc_z_max /= 0.0) &
@@ -2149,19 +2149,19 @@ module Special
       endif
 !
       ! Newton cooling that keeps the intrinsic energy constant
-      if ((tdown /= 0.0) .and. lnc_intrin_energy_depend) then
+      if ((nc_tau /= 0.0) .and. lnc_intrin_energy_depend) then
         ! Calculate intrinsic-energy-dependant inverse time scale and let cooling decay exponentially
-        tmp_tau = tdown * exp (-allp * (lnrho0*lnTT_init_z(n1) - p%lnrho*p%lnTT))
+        tmp_tau = nc_tau * exp (-nc_alt * (lnrho0*lnTT_init_z(n1) - p%lnrho*p%lnTT))
         ! Optional height dependant smooth cutoff
         if (nc_z_max /= 0.0) &
             tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnrho - p%lnTT) - 1.0
         ! Calculate newton cooling factor to reference density
-        newtonr = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnTT - p%lnrho) - 1.0
+        newton_rho = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnTT - p%lnrho) - 1.0
         ! Add newton cooling term to entropy and density
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau
       endif
 !
       if (lfirst .and. ldt) then
