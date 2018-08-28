@@ -44,8 +44,8 @@
 !  hcond2 = 1.0e-1
 !  hcond3 = 1.0e-1
 !
-  nc_tau = 0.1      ! Newton cooling strength
-  nc_alt = 1.5      ! Newton cooling decay half-time
+  nc_tau = 0.1      ! Newton cooling decay half-time
+  nc_alt = 1.5      ! Newton cooling cutoff height
   cool_rtv = 1.0    ! Radiative losses
   b_tau = 0.5       ! Refresh magnetogram
 !
