@@ -3,10 +3,11 @@
 ### Included by `Makefile'
 ###
 MPICOMM   =   mpicomm
+IO        =   io_mpi2
 #HDF5_IO   =   hdf5_io_parallel
 #IO        =   io_hdf5
-IO        =   io_collect
 #FILE_IO   =   file_io_f2003
+##IO        =   io_collect
 
 HYDRO     =   hydro
 DENSITY   =   density
