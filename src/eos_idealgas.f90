@@ -4436,6 +4436,11 @@ module EquationOfState
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
             endif
+            if (bcz12(ilnrho,1)/='nil') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                "To avoid a double computation, this boundary condition "// &
+                "should be used only with bcz1(ilnrho)='nil' for density.")
+            endif
 !
             rho=getrho_s(f(l1,m1,n1,ilnrho),l1)
             ss=f(l1,m1,n1,iss)
@@ -4451,11 +4456,16 @@ module EquationOfState
               f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - dz2_bound(-i)*dlnrhodz
               f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - dz2_bound(-i)*dssdz
             enddo
-          else if (lanelastic) then
+          elseif (lanelastic) then
             if (bcz12(iss_b,1)/='hs') then
               call fatal_error("bc_lnrho_hds_z_iso", &
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
+            endif
+            if (bcz12(irho_b,1)/='nil') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                "To avoid a double computation, this boundary condition "// &
+                "should be used only with bcz1(irho_b)='nil' for density.")
             endif
             call eoscalc(ipp_ss,log(f(l1,m1,n1,irho_b)),f(l1,m1,n1,iss_b), &
                          cs2=cs2_point)
@@ -4467,6 +4477,9 @@ module EquationOfState
               f(:,:,n1-i,irho_b) = f(:,:,n1+i,irho_b) - dz2_bound(-i)*dlnrhodz*f(:,:,n1+1,irho_b)
               f(:,:,n1-i,iss_b ) = f(:,:,n1+i,iss_b ) - dz2_bound(-i)*dssdz
             enddo
+          else
+            call fatal_error("bc_lnrho_hds_z_iso", &
+                "This boundary condition is at bottom only implemented for ldensity=T or lanelastic=T")
           endif
 !
         elseif (ltemperature) then
@@ -4540,6 +4553,11 @@ module EquationOfState
                   "This boundary condition for density is "//&
                   "currently only correct for bcz2(iss)='hs'")
             endif
+            if (bcz12(ilnrho,2)/='nil') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                "To avoid a double computation, this boundary condition "// &
+                "should be used only with bcz2(ilnrho)='nil' for density.")
+            endif
 
             rho=getrho_s(f(l2,m2,n2,ilnrho),l2)
             ss=f(l2,m2,n2,iss)
@@ -4564,16 +4582,20 @@ module EquationOfState
 !
 !  Energy equation formulated in logarithmic temperature.
 !
-          if (bcz12(ilntt,2)/='s') then
-            call fatal_error("bc_lnrho_hydrostatic_z", &
-                "This boundary condition for density is "//&
-                "currently only correct for bcz2(ilntt)='s'")
-          endif
-!
           if (ltemperature_nolog) then
+            if (bcz12(iTT,2)/='s') then
+              call fatal_error("bc_lnrho_hydrostatic_z", &
+                  "This boundary condition for density is "//&
+                  "currently only correct for bcz2(iTT)='s'")
+            endif
             call eoscalc(ilnrho_TT,f(l2,m2,n2,ilnrho),f(l2,m2,n2,iTT), &
                        cs2=cs2_point)
           else
+            if (bcz12(ilnTT,2)/='s') then
+              call fatal_error("bc_lnrho_hydrostatic_z", &
+                  "This boundary condition for density is "//&
+                  "currently only correct for bcz2(ilnTT)='s'")
+            endif
             call eoscalc(ilnrho_lnTT,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilnTT), &
                        cs2=cs2_point)
           endif
