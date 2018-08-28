@@ -36,7 +36,7 @@ module Special
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
   real :: T_crit=0., deltaT_crit=0.
   real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
-  real :: Bavoid=0., nvor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
+  real :: Bavoid=0., vorticity_factor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
   logical :: lgranulation=.false., lgran_proc=.false., lgran_parallel=.false.
   logical :: luse_vel_field=.false., lquench=.false., lmassflux=.false.
   logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
@@ -93,7 +93,7 @@ module Special
       tdown,allp,Kgpara,heat_cool,rho_diff_fix,cool_RTV,lntt0,wlntt,bmdi,hcond1, &
       Kgpara2,K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
-      b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
+      b_tau,flux_tau,Bavoid,nglevel,vorticity_factor,Bz_flux,init_time,init_time_hcond, &
       lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
       iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
@@ -208,9 +208,9 @@ module Special
           call fatal_error ('solar_corona/gran_driver', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
       ! Using vorticity increase, the x- and y-directions must be equidistant.
-      if (lgranulation .and. (nvor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
+      if (lgranulation .and. (vorticity_factor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
           call fatal_error ('solar_corona/gran_driver', &
-              "If 'nvor' is active, the grid must be equidistant in x and y.")
+              "If 'vorticity_factor' is active, the grid must be equidistant in x and y.")
       ! For only one granulation level, no parallelization is required.
       if (lgran_parallel .and. (nglevel == 1)) &
           call fatal_error ('solar_corona/gran_driver', &
@@ -3324,7 +3324,7 @@ module Special
 ! It is invoked by setting lgranulation=T in run.in
 ! additional parameters are
 ! 'Bavoid': the magn. field strenght in Tesla at which no granule is allowed
-! 'nvor': the strength by which the vorticity is enhanced
+! 'vorticity_factor': the strength by which the vorticity is enhanced
 !
 !  11-may-10/bing: coded
 !
@@ -4211,14 +4211,14 @@ module Special
       vy = Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-      if (nvor > 0.0) then
+      if (vorticity_factor > 0.0) then
         call helmholtz(wscr,wscr2)
-        vx = (vx+nvor*wscr )
-        vy = (vy+nvor*wscr2)
+        vx = vx + vorticity_factor*wscr
+        vy = vy + vorticity_factor*wscr2
       endif
 !
 ! Normalize to given total rms-velocity
-      vrms = sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
+      vrms = sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid)) + tini
 !
       if (unit_system == 'SI') then
         vtot = 3.*1e3/unit_velocity
@@ -4231,8 +4231,8 @@ module Special
 !
 ! Reinserting rotationally enhanced velocity field
 !
-      Ux = vx*vtot/vrms
-      Uy = vy*vtot/vrms
+      Ux = vx * vtot/vrms
+      Uy = vy * vtot/vrms
 !
     endsubroutine enhance_vorticity
 !***********************************************************************
