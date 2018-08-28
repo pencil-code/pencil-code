@@ -10,7 +10,7 @@
   xyz0  = -1., 0., 0.,        ! first corner of box
   xyz1  =  1., 0., 1.,        ! second corner of box
   lperi =  T ,  T ,  F,       ! periodic direction?
-  bcz   = 's','s','a','hs','hs'  ! (ux,uy,uz,lnrho,ss)
+  bcz   = 's','s','a','nil','hs'  ! (ux,uy,uz,lnrho,ss)
 /
 &eos_init_pars
   cs0=1., rho0=1.  ! sound speed cs0=cte and density at bottom
