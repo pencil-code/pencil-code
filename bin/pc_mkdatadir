@@ -130,8 +130,13 @@ else if ($hn =~ nw*) then
 else if ($hn =~ fire) then
   echo $cwd/data >! .tmp
   set str='s/home\/parallab\/ntnu/work/g'
-else if (($hn =~ *stampede*) && ($USER != ccyang)) then #stampede.tacc.utexas.edu
-  set str='s/home1/scratch/g'
+else if ($hn =~ *stampede*) then #stampede.tacc.utexas.edu
+  if ($USER =~ ccyang) then
+    echo "Special entry for Chao-Chin Yang"
+    set str='s/work\/01074\/ccyang\/stampede2/scratch\/01074\/ccyang/g'
+  else
+    set str='s/home1/scratch/g'
+  endif
 else if ($hn =~ login*) then
   echo $cwd/data >! .tmp
   set str='s/home/disk\/global/g'
