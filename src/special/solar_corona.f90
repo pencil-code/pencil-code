@@ -2139,11 +2139,11 @@ module Special
           tmp_tau = nc_tau * exp (-nc_alt * (lnrho0 - p%lnrho))
         elseif (nc_lnrho_num_magn /= 0.0) then
           ! Calculate density-dependant inverse time scale with a smooth sine curve decay
-          tmp_tau = nc_tau * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.25*nc_lnrho_trans_width, -1.0)
+          tmp_tau = nc_tau * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.5*nc_lnrho_trans_width, -1.0)
         endif
         ! Optional height dependant smooth cutoff
         if (nc_z_max /= 0.0) &
-            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
+            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.5*nc_z_trans_width, -1.0))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
       endif
@@ -2154,7 +2154,7 @@ module Special
         tmp_tau = nc_tau * exp (-nc_alt * (lnrho0*lnTT_init_z(n1) - p%lnrho*p%lnTT))
         ! Optional height dependant smooth cutoff
         if (nc_z_max /= 0.0) &
-            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
+            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.5*nc_z_trans_width, -1.0))
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnrho - p%lnTT) - 1.0
         ! Calculate newton cooling factor to reference density
