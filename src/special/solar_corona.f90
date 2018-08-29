@@ -1535,6 +1535,7 @@ module Special
 !
       swamp_fade_fact = swamp_eta * get_swamp_fade_fact (z(n), dfade_fact)
       if (swamp_fade_fact > 0.0) then
+        ! eta varies along z and requires the deta/dz term in the third component
         df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + p%uxb(:,1) + swamp_fade_fact * p%del2a(:,1)
         df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) + p%uxb(:,2) + swamp_fade_fact * p%del2a(:,2)
         df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) + p%uxb(:,3) + swamp_fade_fact * p%del2a(:,3) + swamp_eta * dfade_fact * p%diva
