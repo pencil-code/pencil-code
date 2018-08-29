@@ -691,7 +691,6 @@ module Special
       if (swamp_eta > 0.0) then
         lpenc_requested(i_del2a) = .true.
         lpenc_requested(i_diva) = .true.
-        lpenc_requested(i_uxb) = .true.
       endif
 !
       if (hcond1 /= 0.0) then
