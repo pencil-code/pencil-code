@@ -1764,6 +1764,8 @@ module Energy
 !
 !  Add heat conduction to RHS of temperature equation.
 !
+      ! [PAB]: Is the following correct for ltemperature_nolog=T?
+      ! [PAB]: Should we then not use "iTT" instead of "ilnTT"?
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*g2
 !
 !  Check maximum diffusion from thermal diffusion.
