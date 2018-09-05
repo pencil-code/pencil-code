@@ -35,16 +35,17 @@ module Special
   use Diagnostics
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
-  use Mpicomm, only: mpibarrier
+  use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL
   use Sub, only: numeric_precision, dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor,dot2_mn
   use HDF5
   use File_io, only: parallel_unit
 !
-!
   implicit none
 !
-  include 'mpif.h'
   include '../special.h'
+
+  real, dimension(nx) :: diffus_special, advec_special
+
   ! HDF debug parameters:
   integer :: hdferr
   logical :: hdf_exists
@@ -57,11 +58,11 @@ module Special
   ! Dataset HDF object ids
   integer, parameter :: ntensors = 8
   integer(HID_T),   dimension(ntensors) :: tensor_id_G, tensor_id_D, &
-                                    tensor_id_S, tensor_id_memS
+                                           tensor_id_S, tensor_id_memS
   integer(HSIZE_T), dimension(ntensors,10) :: tensor_dims, &
-                                      tensor_offsets, tensor_counts, &
-                                      tensor_memdims, &
-                                      tensor_memoffsets, tensor_memcounts
+                                              tensor_offsets, tensor_counts, &
+                                              tensor_memdims, &
+                                              tensor_memoffsets, tensor_memcounts
                                       
   ! Actual datasets
   real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data, &
@@ -164,7 +165,9 @@ module Special
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, defaultname, lusecoefs
-  ! loadDataset interface
+
+! loadDataset interface
+
   interface loadDataset
     module procedure loadDataset_rank1
     module procedure loadDataset_rank2
@@ -173,16 +176,34 @@ module Special
 
   contains
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Set up indices for variables in special modules.
 !
 !  6-oct-03/tony: coded
+!
       integer :: i
 !
-      write(*,*) ' register_special running...'
       if (lroot) call svn_id( &
            "$Id$")
+!
+!!      call farray_register_pde('special',ispecial)
+!!      call farray_register_auxiliary('specaux',ispecaux)
+!!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
+!
+    endsubroutine register_special
+!***********************************************************************
+    subroutine initialize_special(f)
+!
+!  Called after reading parameters, but before the time loop.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j
+!
+      call keep_compiler_quiet(f)
+
       if (trim(interpname) == 'none') then
         dataload_len = 1
       !else
@@ -210,43 +231,6 @@ module Special
       do i=1,ntensors
         tensor_memdims(i,1:4) = [ nx, ny, nz, dataload_len ]
       end do
-!
-!!      call farray_register_pde('special',ispecial)
-!!      call farray_register_auxiliary('specaux',ispecaux)
-!!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
-!
-    endsubroutine register_special
-!!***********************************************************************
-    subroutine register_particles_special(npvar)
-!
-!  Set up indices for particle variables in special modules.
-!
-!  4-jan-14/tony: coded
-!
-      integer :: npvar
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-      call keep_compiler_quiet(npvar)
-!
-!
-!!      iqp=npvar+1
-!!      npvar=npvar+1
-!
-    endsubroutine register_particles_special 
-!***********************************************************************
-    subroutine initialize_special(f)
-!
-!  Called after reading parameters, but before the time loop.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j
-!
-      call keep_compiler_quiet(f)
-
-      write(*,*) 'initialize_special running...'
 
       if (lrun) then 
 
@@ -255,20 +239,20 @@ module Special
 
         call H5open_F(hdferr)
 
-        hdf_memtype=-1
         if (numeric_precision() == 'S') then
-          write(*,*) 'initialize special: loading data as single precision'
+          if (lroot) write(*,*) 'initialize special: loading data as single precision'
           hdf_memtype = H5T_NATIVE_REAL
         else
-          write(*,*) 'initialize special: loading data as double precision'
+          if (lroot) write(*,*) 'initialize special: loading data as double precision'
           hdf_memtype = H5T_NATIVE_DOUBLE
         end if
         
-        write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
+        if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
         call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
-        call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+        if (lmpicomm) &     !MR: doesn't work for nompicomm
+          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
-        print *, 'initialize special: opening emftensors.h5 and loading relevant fields of it into memory...'
+        if (lroot) print *, 'initialize special: opening emftensors.h5 and loading relevant fields into memory...'
 
         hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
 
@@ -298,45 +282,43 @@ module Special
         ! alpha
         if (lalpha) then
           call openDataset('alpha', alpha_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/alpha/'//trim(alpha_name)//' for alpha'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/alpha/'//trim(alpha_name)//' for alpha'
         end if
         ! beta
         if (lbeta) then
           call openDataset('beta', beta_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/beta/'//trim(beta_name)//' for beta'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/beta/'//trim(beta_name)//' for beta'
         end if
         ! gamma
         if (lgamma) then
           call openDataset('gamma', gamma_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/gamma/'//trim(gamma_name)//' for gamma'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/gamma/'//trim(gamma_name)//' for gamma'
         end if
         ! delta
         if (ldelta) then
           call openDataset('delta', delta_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/delta/'//trim(delta_name)//' for delta'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/delta/'//trim(delta_name)//' for delta'
         end if
         ! kappa
         if (lkappa) then
           call openDataset('kappa', kappa_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/kappa/'//trim(kappa_name)//' for kappa'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/kappa/'//trim(kappa_name)//' for kappa'
         end if
         ! utensor
         if (lutensor) then
           call openDataset('utensor', utensor_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/utensor/'//trim(utensor_name)//' for utensor'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/utensor/'//trim(utensor_name)//' for utensor'
         end if
         ! acoef
         if (lacoef) then
           call openDataset('acoef', acoef_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/acoef/'//trim(acoef_name)//' for acoef'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/acoef/'//trim(acoef_name)//' for acoef'
         end if
         ! bcoef
         if (lbcoef) then
           call openDataset('bcoef', bcoef_id)
-          write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
+          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
         end if
-        
-        
         
         ! Load initial dataset values
 
@@ -349,6 +331,7 @@ module Special
         allocate(utensor_data(nx,ny,nz,dataload_len,3))
         allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
         allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
+
         alpha_data    = 0
         beta_data     = 0
         gamma_data    = 0
@@ -357,98 +340,99 @@ module Special
         utensor_data  = 0
         acoef_data    = 0
         bcoef_data    = 0
+
         ! Load datasets
         if (lalpha) then
           call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
           if (lroot) then
-              write (*,*) 'Alpha scale:  ', alpha_scale
-              write (*,*) 'Alpha maxval: ', maxval(alpha_data)
-              write (*,*) 'Alpha components used: '
-              do i=1,3
-                  write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
-              end do
+            write (*,*) 'Alpha scale:  ', alpha_scale
+            write (*,*) 'Alpha maxval: ', maxval(alpha_data)
+            write (*,*) 'Alpha components used: '
+            do i=1,3
+              write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
+            end do
           end if
         end if
         if (lbeta) then
           call loadDataset(beta_data, lbeta_arr, beta_id, 0)
           if (lroot) then
-              write (*,*) 'Beta scale:  ', beta_scale
-              write (*,*) 'Beta maxval: ', maxval(beta_data)
-              write (*,*) 'Beta components used: '
-              do i=1,3
-                  write (*,'(A3,3L3,A3)') '|', lbeta_arr(:,i), '|'
-              end do
+            write (*,*) 'Beta scale:  ', beta_scale
+            write (*,*) 'Beta maxval: ', maxval(beta_data)
+            write (*,*) 'Beta components used: '
+            do i=1,3
+              write (*,'(A3,3L3,A3)') '|', lbeta_arr(:,i), '|'
+            end do
           end if
         end if
         if (lgamma) then
           call loadDataset(gamma_data, lgamma_arr, gamma_id, 0)
           if (lroot) then
-              write (*,*) 'Gamma scale:  ', gamma_scale
-              write (*,*) 'Gamma maxval: ', maxval(gamma_data)
-              write (*,*) 'Gamma components used: '
-              write (*,'(A3,3L3,A3)') '|', lgamma_arr, '|'
+            write (*,*) 'Gamma scale:  ', gamma_scale
+            write (*,*) 'Gamma maxval: ', maxval(gamma_data)
+            write (*,*) 'Gamma components used: '
+            write (*,'(A3,3L3,A3)') '|', lgamma_arr, '|'
           end if
         end if
         if (ldelta) then
           call loadDataset(delta_data, ldelta_arr, delta_id, 0)
           if (lroot) then
-              write (*,*) 'Delta scale:  ', delta_scale
-              write (*,*) 'Delta maxval: ', maxval(delta_data)
-              write (*,*) 'Delta components used: '
-              write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
+            write (*,*) 'Delta scale:  ', delta_scale
+            write (*,*) 'Delta maxval: ', maxval(delta_data)
+            write (*,*) 'Delta components used: '
+            write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
           end if
         end if
         if (lkappa) then
           call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
           if (lroot) then
-              write (*,*) 'Kappa scale:  ', kappa_scale
-              write (*,*) 'Kappa maxval: ', maxval(kappa_data)
-              write (*,*) 'Kappa components used: '
-              do j=1,3
-                write(*,*) '|'
-                do i=1,3
-                  write (*,'(A3,3L3,A3)') '||', lkappa_arr(:,j,i), '||'
-                end do
-              end do
+            write (*,*) 'Kappa scale:  ', kappa_scale
+            write (*,*) 'Kappa maxval: ', maxval(kappa_data)
+            write (*,*) 'Kappa components used: '
+            do j=1,3
               write(*,*) '|'
+              do i=1,3
+                write (*,'(A3,3L3,A3)') '||', lkappa_arr(:,j,i), '||'
+              end do
+            end do
+            write(*,*) '|'
           end if
         end if
         if (lutensor) then
           call loadDataset(utensor_data, lutensor_arr, utensor_id, 0)
           if (lroot) then
-              write (*,*) 'U-tensor scale:  ', utensor_scale
-              write (*,*) 'U-tensor maxval: ', maxval(utensor_data)
-              write (*,*) 'U-tensor components used: '
-              write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
+            write (*,*) 'U-tensor scale:  ', utensor_scale
+            write (*,*) 'U-tensor maxval: ', maxval(utensor_data)
+            write (*,*) 'U-tensor components used: '
+            write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
           end if
         end if
         if (lacoef) then
           call loadDataset(acoef_data, lacoef_arr, acoef_id, 0)
           if (lroot) then
-              write (*,*) 'acoef scale:  ', acoef_scale
-              write (*,*) 'acoef maxval: ', maxval(acoef_data)
-              write (*,*) 'acoef components used: '
-              do i=1,3
-                  write (*,'(A3,3L3,A3)') '|', lacoef_arr(:,i), '|'
-              end do
+            write (*,*) 'acoef scale:  ', acoef_scale
+            write (*,*) 'acoef maxval: ', maxval(acoef_data)
+            write (*,*) 'acoef components used: '
+            do i=1,3
+              write (*,'(A3,3L3,A3)') '|', lacoef_arr(:,i), '|'
+            end do
           end if
         end if
         if (lbcoef) then
           call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, 0)
           if (lroot) then
-              write (*,*) 'bcoef scale:  ', bcoef_scale
-              write (*,*) 'bcoef maxval: ', maxval(bcoef_data)
-              write (*,*) 'bcoef components used: '
-              do j=1,3
-                write(*,*) '|'
-                do i=1,3
-                  write (*,'(A3,3L3,A3)') '||', lbcoef_arr(:,j,i), '||'
-                end do
+            write (*,*) 'bcoef scale:  ', bcoef_scale
+            write (*,*) 'bcoef maxval: ', maxval(bcoef_data)
+            write (*,*) 'bcoef components used: '
+            do j=1,3
+              write(*,*) '|'
+              do i=1,3
+                write (*,'(A3,3L3,A3)') '||', lbcoef_arr(:,j,i), '||'
               end do
+            end do
           end if
         end if
       end if
-  !
+ 
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f)
@@ -460,6 +444,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
+
       if (lrun) then
         ! Deallocate data
         if (allocated(alpha_data)) then
@@ -481,8 +466,6 @@ module Special
           deallocate(utensor_data)
         end if
 
-        print *,'Closing emftensors.h5'
-        
         if (lalpha) then
           call closeDataset(alpha_id)
         end if
@@ -512,77 +495,20 @@ module Special
         call H5Fclose_F(hdf_emftensors_file, hdferr)
         call H5Pclose_F(hdf_emftensors_plist, hdferr)
         call H5close_F(hdferr)
-        call mpibarrier()
+        call mpibarrier
       end if
   !
     endsubroutine finalize_special
 !***********************************************************************
-    subroutine init_special(f)
-!
-!  initialise special condition; called from start.f90
-!  06-oct-2003/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      intent(inout) :: f
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case (initspecial)
-!!        case ('nothing'); if (lroot) print*,'init_special: nothing'
-!!        case ('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          call fatal_error("init_special: No such value for initspecial:" &
-!!              ,trim(initspecial))
-!!      endselect
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine init_special
-!***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
+!
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bij)=.true.
       lpenc_requested(i_jj)=.true.
-      lpenc_requested(i_bij_symm)=.true.
-      lpenc_requested(i_alpha_coefs)=.true.
-      lpenc_requested(i_beta_coefs)=.true.
-      lpenc_requested(i_gamma_coefs)=.true.
-      lpenc_requested(i_delta_coefs)=.true.
-      lpenc_requested(i_kappa_coefs)=.true.
-      lpenc_requested(i_utensor_coefs)=.true.
-      lpenc_requested(i_acoef_coefs)=.true.
-      lpenc_requested(i_bcoef_coefs)=.true.
-      lpenc_requested(i_alpha_emf)=.true.
-      lpenc_requested(i_beta_emf)=.true.
-      lpenc_requested(i_gamma_emf)=.true.
-      lpenc_requested(i_delta_emf)=.true.
-      lpenc_requested(i_kappa_emf)=.true.
-      lpenc_requested(i_utensor_emf)=.true.
-      lpenc_requested(i_acoef_emf)=.true.
-      lpenc_requested(i_bcoef_emf)=.true.
-      lpenc_requested(i_emf)=.true.
-
-
-      write(*,*) 'pencil_criteria_special: Pencils requested'
-!
-!  18-07-06/tony: coded
 !
     endsubroutine pencil_criteria_special
-!***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
-!
-!  Interdependency among pencils provided by this module are specified here.
-!
-!  18-07-06/tony: coded
-!
-      logical, dimension(npencils), intent(inout) :: lpencil_in
-!
-      call keep_compiler_quiet(lpencil_in)
-!
-    endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -598,6 +524,7 @@ module Special
       intent(inout) :: p
 !
       integer i,j,k
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
@@ -738,7 +665,7 @@ module Special
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+      if (lroot.and.(headtt.or.ldebug)) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
 !!
@@ -846,10 +773,10 @@ module Special
       write (*,*) 'read_special_init_pars running...'
 !
       iostat = 0
-      call setParameterDefaults()
+      call setParameterDefaults
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
       write (*,*) 'read_special_init_pars parameters read...'
-      call parseParameters()
+      call parseParameters
       write (*,*) 'read_special_init_pars parameters parsed...'
 !
     endsubroutine read_special_init_pars
@@ -858,9 +785,9 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
-      
-    endsubroutine write_special_init_pars
+      write(unit, NML=special_init_pars)
+
+   endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
@@ -869,12 +796,11 @@ module Special
       iostat = 0
       
       write (*,*) 'read_special_run_pars running...'
-      call setParameterDefaults()
+      call setParameterDefaults
       write (*,*) 'read_special_run_pars parameters read...'
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
-      call parseParameters()
+      call parseParameters
       write (*,*) 'read_special_run_pars parameters parsed...'
-!
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -882,13 +808,13 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
-!Reads and registers print parameters relevant to special.
+!  Reads and registers print parameters relevant to special.
 !
 !  06-oct-03/tony: coded
 !
@@ -898,10 +824,10 @@ module Special
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
         ! Max diagnostics
         idiag_alphaxmax=0
@@ -1008,114 +934,6 @@ module Special
       
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
-!
-!  Write slices for animation of Special variables.
-!
-!  26-jun-06/tony: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_special
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  momentum equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  continuity equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_dustdensity(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  continuity equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_dustdensity
-!***********************************************************************
-    subroutine special_calc_energy(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  energy equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_energy
-!***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -1155,209 +973,58 @@ module Special
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
+
 ! Commenting this as advec_special seems to be have been removed from equ.f90
 !!
 !! Calculate advec_special
 !!
 !        if (lalpha) then
-!          tmppencil=0
 !          call dot_mn_vm(dline_1, p%alpha_coefs, tmppencil)
-!          advec_special=advec_special+&
-!                            tmppencil(:,1)+& 
-!                            tmppencil(:,2)+& 
-!                            tmppencil(:,3)
+!          advec_special=advec_special+sum(tmppencil,2)
 !        end if
 !        if (lgamma) then
-!          tmppencil=0
 !          call dot_mn(dline_1, p%gamma_coefs, tmpline)
 !          advec_special=advec_special+tmpline
 !        end if
 !        if (lutensor) then
-!          tmppencil=0
 !          call dot_mn(dline_1, p%utensor_coefs, tmpline)
 !          advec_special=advec_special+tmpline
 !        end if
+
+!        maxadvec=maxadvec+advec_special
+
 ! Commenting this as diffus_special seems to have been removed from equ.f90
 !!
 !! Calculate diffus_special
 !!
 !        if (lbeta) then
-!          tmppencil=0
-!          tmpline=0
 !          call dot_mn_vm(dline_1,p%beta_coefs, tmppencil)
 !          call dot_mn(dline_1, tmppencil, tmpline)
 !          diffus_special=diffus_special+tmpline
 !        end if
 !        
 !        if (ldelta) then
-!          tmppencil=0
-!          tmpline=0
 !          call cross_mn(dline_1,p%delta_coefs, tmppencil)
 !          call dot_mn(dline_1,tmppencil,tmpline)
 !          diffus_special=diffus_special+tmpline
 !        end if
 !        
 !        if (lkappa) then
-!          tmppencil=0
-!          tmpline=0
-!          tmptensor=0
 !          call vec_dot_3tensor(dline_1, p%kappa_coefs, tmptensor)
 !          call dot_mn_vm(dline_1,tmptensor, tmppencil)
-!          diffus_special=diffus_special+&
-!                            tmppencil(:,1)+& 
-!                            tmppencil(:,2)+& 
-!                            tmppencil(:,3)
+!          diffus_special=diffus_special+sum(tmppencil,2)
 !        end if
+
+!        maxdiffus=max(maxdiffus,diffus_special)
+
       end if 
+!
     endsubroutine special_calc_magnetic
 !***********************************************************************
-    subroutine special_calc_pscalar(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  passive scalar equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  15-jun-09/anders: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_pscalar
-!***********************************************************************
-    subroutine special_calc_particles(f,fp,ineargrid)
-!
-!  Called before the loop, in case some particle value is needed
-!  for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (:,:), intent(in) :: fp
-      integer, dimension(:,:) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine special_calc_particles
-!***********************************************************************
-    subroutine special_particles_bfre_bdary(f,fp,ineargrid)
-!
-!  Called before the loop, in case some particle value is needed
-!  for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (:,:), intent(in) :: fp
-      integer, dimension(:,:) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine special_particles_bfre_bdary
-!***********************************************************************
-    subroutine special_calc_chemistry(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  induction equation.
-!
-!
-!  15-sep-10/natalia: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_chemistry
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!  Possibility to modify the f array before the boundaries are
-!  communicated.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
-    subroutine special_after_boundary(f)
-!
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
-!
-!  06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_after_boundary
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
-!
-!  Possibility to modify the f and df after df is updated.
-!  Used for the Fargo shift, for instance.
-!
-!  27-nov-08/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(dt_)
-!
-    endsubroutine special_after_timestep
-!***********************************************************************
-    subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
-!
-!  Possibility to modify the f and df after df is updated.
-!  Used for the Fargo shift, for instance.
-!
-!  27-nov-08/wlad: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(ndustspec) :: dsize,init_distr,init_distr2
-      real :: Ntot
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(dsize,init_distr,init_distr2)
-      call keep_compiler_quiet(Ntot)
-!
-    endsubroutine  set_init_parameters
-!***********************************************************************
+    subroutine openDataset(datagroup,tensor_id)
 
-    subroutine openDataset(datagroup,      &
-                           tensor_id)
       ! Open a dataset e.g. /emftensor/alpha/data and auxillary dataspaces
+
       character(len=*), intent(in)    :: datagroup
       integer, intent(in)             :: tensor_id
 !
@@ -1418,27 +1085,31 @@ module Special
       end if
 
     end subroutine openDataset
-
+!*********************************************************************** 
     subroutine closeDataset(tensor_id)
+
       ! Close opened dataspaces, dataset and group
-      implicit none
+
       integer :: tensor_id
+
       call H5Sclose_F(tensor_id_memS(tensor_id), hdferr)
       call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
       call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
       call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
 
     end subroutine closeDataset
-
+!*********************************************************************** 
     subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart)
+
       ! Load a chunk of data for a vector, beginning at loadstart
-      implicit none
+
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
       integer :: ndims
       integer(HSIZE_T) :: mask_i
+
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,4) = loadstart
       call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
@@ -1468,11 +1139,13 @@ module Special
       dataarray = tensor_scales(tensor_id) * dataarray
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
+
     end subroutine loadDataset_rank1
-    
+!*********************************************************************** 
     subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart)
+
       ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
-      implicit none
+
       real, dimension(:,:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3,3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
@@ -1510,21 +1183,25 @@ module Special
       dataarray = tensor_scales(tensor_id) * dataarray
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
-    end subroutine loadDataset_rank2
 
+    end subroutine loadDataset_rank2
+!*********************************************************************** 
     subroutine loadDataset_rank3(dataarray, datamask, tensor_id, loadstart)
+
       ! Load a chunk of data for a 3-rank tensor, beginning at loadstart
-      implicit none
+
       real, dimension(:,:,:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3,3,3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
       integer :: ndims
       integer(HSIZE_T) :: mask_i, mask_j, mask_k
+
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,4) = loadstart
       call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
       call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
+
       do mask_k=1,3; do mask_j=1,3; do mask_i=1,3
         ! Load only wanted datasets
         if (datamask(mask_i,mask_j,mask_k)) then
@@ -1554,18 +1231,20 @@ module Special
       dataarray = tensor_scales(tensor_id) * dataarray
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
-    end subroutine loadDataset_rank3
 
+    end subroutine loadDataset_rank3
+!*********************************************************************** 
     function emf_interpolate(dataarray) result(interp_data)
+
       real, intent(in), dimension(nx,dataload_len) :: dataarray
       real, dimension(nx) :: interp_data
 
       interp_data=dataarray(:,1)
 
     end function emf_interpolate
-
+!*********************************************************************** 
     subroutine setParameterDefaults
-      implicit none
+
       ! alpha
       lalpha=.false.
       lalpha_c=.false.
@@ -1620,10 +1299,10 @@ module Special
       tensor_maxvals=0.0
       tensor_minvals=0.0
       lusecoefs    = .false.
-    end subroutine setParameterDefaults
 
+    end subroutine setParameterDefaults
+!***********************************************************************
     subroutine parseParameters
-      implicit none
 !
 ! Load boolean array for alpha
 !
@@ -1748,28 +1427,14 @@ module Special
       tensor_names(bcoef_id)    = bcoef_name
             
     end subroutine parseParameters
-!****************************************************************************
-  subroutine initialize_mult_special
-
-  endsubroutine initialize_mult_special
-
-!***********************************************************************
-  subroutine finalize_mult_special
-
-
-  endsubroutine finalize_mult_special
-!***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!  Some precalculated pencils of data are passed in for efficiency,
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(in) :: bc
-!
-    endsubroutine special_boundconds
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include '../special_dummies.inc'
 !*********************************************************************** 
-  
 endmodule Special

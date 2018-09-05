@@ -168,6 +168,7 @@ module Mpicomm
   interface mpiallreduce_min
     module procedure mpiallreduce_min_scl_sgl
     module procedure mpiallreduce_min_scl_dbl
+    module procedure mpiallreduce_min_scl_int
   endinterface
 !
   interface mpiallreduce_or
@@ -310,7 +311,8 @@ module Mpicomm
 !  endinterface
 !
   integer :: mpi_precision
-  integer, parameter :: MPI_COMM_WORLD=0, MPI_COMM_GRID=0, MPI_COMM_YZPLANE=0
+  integer :: MPI_COMM_WORLD=0, MPI_COMM_GRID=0, MPI_COMM_XYPLANE=0, MPI_COMM_YZPLANE=0, &
+             MPI_INFO_NULL=0
 !
   contains
 !***********************************************************************
@@ -1335,6 +1337,20 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, present(comm)
 !
     endsubroutine mpiallreduce_min_scl_sgl
+!***********************************************************************
+    subroutine mpiallreduce_min_scl_int(imin_tmp,imin,comm)
+!
+!  Calculate total minimum and return to all processors.
+!
+      use General, only: ioptest
+
+      integer :: imin_tmp,imin
+      integer, optional :: comm
+!
+      imin=imin_tmp
+      if (ALWAYS_FALSE) print*, present(comm)
+!
+    endsubroutine mpiallreduce_min_scl_int
 !***********************************************************************
     subroutine mpiallreduce_or_scl(flor_tmp, flor, comm)
 !

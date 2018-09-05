@@ -176,6 +176,8 @@ indices_aux = [ $
   { name:'ivisc_heat', label:'Viscous dissipation', dims:1 }, $
   { name:'ihypvis', label:'Hyperviscosity', dims:3 }, $
   { name:'ihypres', label:'Hyperresistivity', dims:3 }, $
+  { name:'ihcond', label:'Thermal conductivity', dims:1 }, $
+  { name:'iglhc', label:'Gradient of thermal conductivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 }, $
   { name:'iStress_ij', label:'Str', dims:6 }, $

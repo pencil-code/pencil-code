@@ -983,14 +983,14 @@ module Particles_coagulation
                   if (fp(swarm_index1,iap)>=fp(swarm_index2,iap)) then
                     fp(swarm_index1,ivpx:ivpz)=(rhopbig*fp(swarm_index1,ivpx:ivpz) + &
                         rhopsma*fp(swarm_index2,ivpx:ivpz))/(rhopsma+rhopbig)
-                    fp(swarm_index1,inpswarm)=1.0/(dx*dy*dz)
+!                    fp(swarm_index1,inpswarm)=1.0/(dx*dy*dz)
                     fp(swarm_index1,iap)=((rhopsma+rhopbig)/fp(swarm_index1,inpswarm)/ &
                         four_pi_rhopmat_over_three)**(1.0/3.0)
                     fp(swarm_index2,iap)=-fp(swarm_index2,iap)
                   else
                     fp(swarm_index2,ivpx:ivpz)=(rhopbig*fp(swarm_index2,ivpx:ivpz) + &
                         rhopsma*fp(swarm_index1,ivpx:ivpz))/(rhopsma+rhopbig)
-                    fp(swarm_index2,inpswarm)=1.0/(dx*dy*dz)
+!                    fp(swarm_index2,inpswarm)=1.0/(dx*dy*dz)
                     fp(swarm_index2,iap)=((rhopsma+rhopbig)/fp(swarm_index2,inpswarm)/ &
                         four_pi_rhopmat_over_three)**(1.0/3.0)
                     fp(swarm_index1,iap)=-fp(swarm_index1,iap)
