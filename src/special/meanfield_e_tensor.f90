@@ -217,19 +217,25 @@ module Special
       ! Set dataset counts
       tensor_counts = 1
       do i=1,ntensors
-        tensor_counts(i,1:4) = [ nx, ny, nz, dataload_len ]
+      ! MV: time is the first index to match the python order
+      !  tensor_counts(i,1:4) = [ nx, ny, nz, dataload_len ]
+        tensor_counts(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
       ! Set dataset memory offsets
       tensor_memoffsets = 0
       ! Set dataset memory counts
       tensor_memcounts = 1
       do i=1,ntensors
-        tensor_memcounts(i,1:4) = [ nx, ny, nz, dataload_len ]
+      ! MV: time is the first index to match the python order
+      !  tensor_memcounts(i,1:4) = [ nx, ny, nz, dataload_len ]
+        tensor_memcounts(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
       ! Set memory dimensions
       tensor_memdims = 3
       do i=1,ntensors
-        tensor_memdims(i,1:4) = [ nx, ny, nz, dataload_len ]
+      ! MV: time is the first index to match the python order
+      !  tensor_memdims(i,1:4) = [ nx, ny, nz, dataload_len ]
+        tensor_memdims(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
 
       if (lrun) then 
@@ -322,15 +328,24 @@ module Special
         
         ! Load initial dataset values
 
+      ! MV: time is the first index to match the python order
         ! Allocate data arrays
-        allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
-        allocate(beta_data(nx,ny,nz,dataload_len,3,3))
-        allocate(gamma_data(nx,ny,nz,dataload_len,3))
-        allocate(delta_data(nx,ny,nz,dataload_len,3))
-        allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
-        allocate(utensor_data(nx,ny,nz,dataload_len,3))
-        allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
-        allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
+        !allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
+        !allocate(beta_data(nx,ny,nz,dataload_len,3,3))
+        !allocate(gamma_data(nx,ny,nz,dataload_len,3))
+        !allocate(delta_data(nx,ny,nz,dataload_len,3))
+        !allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
+        !allocate(utensor_data(nx,ny,nz,dataload_len,3))
+        !allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
+        !allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
+        allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
+        allocate(beta_data(dataload_len,nx,ny,nz,3,3))
+        allocate(gamma_data(dataload_len,nx,ny,nz,3))
+        allocate(delta_data(dataload_len,nx,ny,nz,3))
+        allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
+        allocate(utensor_data(dataload_len,nx,ny,nz,3))
+        allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
+        allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
 
         alpha_data    = 0
         beta_data     = 0
@@ -378,6 +393,15 @@ module Special
           if (lroot) then
             write (*,*) 'Delta scale:  ', delta_scale
             write (*,*) 'Delta maxval: ', maxval(delta_data)
+            write (*,*) 'Delta maxval r: ', maxval(delta_data(:,:,:,:,1))
+            write (*,*) 'Delta minval r: ', minval(delta_data(:,:,:,:,1))
+            write (*,*) 'Delta maxloc r: ', maxloc(delta_data(:,:,:,:,1))
+            write (*,*) 'Delta maxval th: ', maxval(delta_data(:,:,:,:,2))
+            write (*,*) 'Delta minval th: ', minval(delta_data(:,:,:,:,2))
+            write (*,*) 'Delta maxloc th: ', maxloc(delta_data(:,:,:,:,2))
+            write (*,*) 'Delta maxval phi: ', maxval(delta_data(:,:,:,:,3))
+            write (*,*) 'Delta minval phi: ', minval(delta_data(:,:,:,:,3))
+            write (*,*) 'Delta maxloc phi: ', maxloc(delta_data(:,:,:,:,3))
             write (*,*) 'Delta components used: '
             write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
           end if
@@ -401,7 +425,15 @@ module Special
           call loadDataset(utensor_data, lutensor_arr, utensor_id, 0)
           if (lroot) then
             write (*,*) 'U-tensor scale:  ', utensor_scale
-            write (*,*) 'U-tensor maxval: ', maxval(utensor_data)
+            write (*,*) 'U-tensor maxval r: ', maxval(utensor_data(:,:,:,:,1))
+            write (*,*) 'U-tensor minval r: ', minval(utensor_data(:,:,:,:,1))
+            write (*,*) 'U-tensor maxloc r: ', maxloc(utensor_data(:,:,:,:,1))
+            write (*,*) 'U-tensor maxval th: ', maxval(utensor_data(:,:,:,:,2))
+            write (*,*) 'U-tensor minval th: ', minval(utensor_data(:,:,:,:,2))
+            write (*,*) 'U-tensor maxloc th: ', maxloc(utensor_data(:,:,:,:,2))
+            write (*,*) 'U-tensor maxval phi: ', maxval(utensor_data(:,:,:,:,3))
+            write (*,*) 'U-tensor minval phi: ', minval(utensor_data(:,:,:,:,3))
+            write (*,*) 'U-tensor maxloc phi: ', maxloc(utensor_data(:,:,:,:,3))
             write (*,*) 'U-tensor components used: '
             write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
           end if
@@ -532,7 +564,9 @@ module Special
         ! Calculate alpha B
         do j=1,3; do i=1,3
           if (lalpha_arr(i,j)) then
-            p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+           ! MV: changing order to match python order
+           ! p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+            p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
           else
             p%alpha_coefs(1:nx,i,j)=0
           end if
@@ -543,7 +577,9 @@ module Special
         ! Calculate beta (curl B)
         do j=1,3; do i=1,3
           if (lbeta_arr(i,j)) then
-            p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+           ! MV: changing order to match python order
+           ! p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+            p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
           else
             p%beta_coefs(1:nx,i,j)=0
           end if
@@ -554,7 +590,9 @@ module Special
         ! Calculate gamma x B
         do i=1,3
           if (lgamma_arr(i)) then
-            p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+           ! MV: changing order to match python order
+           ! p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+            p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
           else
             p%gamma_coefs(1:nx,i)=0
           end if
@@ -565,7 +603,9 @@ module Special
         ! Calculate delta x (curl B)
         do i=1,3
           if (ldelta_arr(i)) then
-            p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+           ! MV: changing order to match python order
+           ! p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+            p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
           else
             p%delta_coefs(1:nx,i)=0
           end if
@@ -578,7 +618,9 @@ module Special
           p%bij_symm(1:nx,i,j)=0.5*(p%bij(1:nx,i,j) + p%bij(1:nx,j,i))
         end do; end do
         do k=1,3; do j=1,3; do i=1,3
-          p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+           ! MV: changing order to match python order
+         ! p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+          p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j,k))
         end do; end do; end do
         p%kappa_emf = 0
         do k=1,3; do j=1,3; do i=1,3
@@ -589,7 +631,9 @@ module Special
         ! Calculate utensor x B
         do i=1,3
           if (lutensor_arr(i)) then
-            p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+           ! MV: changing order to match python order
+           ! p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+            p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
           else
             p%utensor_coefs(1:nx,i)=0
           end if
@@ -600,7 +644,9 @@ module Special
         ! Calculate acoef B
         do j=1,3; do i=1,3
           if (lacoef_arr(i,j)) then
-            p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+           ! MV: changing order to match python order
+           ! p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+            p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
           else
             p%acoef_coefs(1:nx,i,j)=0
           end if
@@ -610,7 +656,9 @@ module Special
       if (lbcoef) then
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
-          p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+           ! MV: changing order to match python order
+         ! p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+          p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j,k))
         end do; end do; end do
         p%bcoef_emf = 0
         do k=1,3; do j=1,3; do i=1,3
@@ -785,6 +833,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
+      print *, 'In write_special_init_pars ...'
       write(unit, NML=special_init_pars)
 
    endsubroutine write_special_init_pars
@@ -1239,7 +1288,8 @@ module Special
       real, intent(in), dimension(nx,dataload_len) :: dataarray
       real, dimension(nx) :: interp_data
 
-      interp_data=dataarray(:,1)
+     ! interp_data=dataarray(:,1)
+      interp_data=dataarray(1,:)
 
     end function emf_interpolate
 !*********************************************************************** 
