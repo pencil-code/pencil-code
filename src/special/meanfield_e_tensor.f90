@@ -409,7 +409,7 @@ module Special
           call openDataset('bcoef', bcoef_id)
           if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
         end if
-
+        
         ! Load datasets
         if (lalpha) then
           call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
