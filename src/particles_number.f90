@@ -400,6 +400,7 @@ module Particles_number
           if(idiag_admom(k)/=0) then
             if (llog10_for_admom_above10 .and. k>=24) then
               call integrate_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k/nwgrid,idiag_admom(k),llog10=.true.)
+!              call integrate_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k/nwgrid,idiag_admom(k))
             else
               call integrate_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k/nwgrid,idiag_admom(k))
             endif

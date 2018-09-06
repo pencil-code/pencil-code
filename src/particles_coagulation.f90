@@ -47,7 +47,7 @@ module Particles_coagulation
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false., normal_coagulation=.false.
-  logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
+  logical :: lcollision_output=.false., lcollision_output_swapped=.false.,luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
   logical :: kernel_output=.false., radius_output=.false.
   logical :: sphericalKernel=.false.
@@ -90,7 +90,8 @@ module Particles_coagulation
       kernel_output, deltad, a0, rbin, &
       radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
       sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
-      lremove_particle, lremove_particle2
+      lremove_particle, lremove_particle2, &
+      lcollision_output_swapped
 !
   contains
 !***********************************************************************
@@ -1060,7 +1061,7 @@ module Particles_coagulation
               endif
 
 !
-              if (lcollision_output) then
+              if (lcollision_output_swapped) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions_swapped.dat')
                   write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") &

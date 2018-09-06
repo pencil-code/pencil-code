@@ -720,16 +720,22 @@ module Diagnostics
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)
 !
-               if (itype==ilabel_surf)          &
-                   vname(iname)=fsum(isum_count)
+              if (itype==ilabel_integrate_sqrt)      &
+                  vname(iname)=sqrt(fsum(isum_count))
 !
-               if (itype==ilabel_sum_lim) then
-                  vol=1.
-                  if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
-                  if (nzgrid/=1)           vol=vol*Lz
-                  if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
-                  vname(iname)=fsum(isum_count)/vol
-               endif
+              if (itype==ilabel_integrate_log10)      &
+                  vname(iname)=log10(fsum(isum_count))
+!
+              if (itype==ilabel_surf)          &
+                  vname(iname)=fsum(isum_count)
+!
+              if (itype==ilabel_sum_lim) then
+                 vol=1.
+                 if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
+                 if (nzgrid/=1)           vol=vol*Lz
+                 if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
+                 vname(iname)=fsum(isum_count)/vol
+              endif
 !
               if (itype==ilabel_sum_weighted) then
                 if (fweight(isum_count)/=0.0) then
