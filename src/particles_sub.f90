@@ -570,7 +570,8 @@ module Particles_sub
 !
     endsubroutine max_par_name
 !***********************************************************************
-    subroutine integrate_par_name(a,iname)
+!    subroutine integrate_par_name(a,iname)
+    subroutine integrate_par_name(a,iname, lsqrt, llog10)
 !
 !  Calculate integral of a, which is supplied at each call.
 !  Works for particle diagnostics.
@@ -578,6 +579,7 @@ module Particles_sub
 !  29-nov-05/anders: adapted from sum_par_name
 !
       real, dimension (:) :: a
+      logical, optional :: lsqrt, llog10
       integer :: iname
 !
       integer, save :: icount=0
@@ -590,7 +592,16 @@ module Particles_sub
 !
 !  Set corresponding entry in itype_name.
 !
-        itype_name(iname)=ilabel_integrate
+!        itype_name(iname)=ilabel_integrate
+        
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_integrate_sqrt
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_integrate_log10
+        else
+          itype_name(iname)=ilabel_integrate
+        endif
+
 !
 !  Reset sum when npar_loc particles have been considered.
 !
