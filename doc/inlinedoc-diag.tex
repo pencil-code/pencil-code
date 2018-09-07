@@ -15,8 +15,6 @@
 %%   bfield.f90
 %%   chemistry.f90
 %%   chemistry_simple.f90
-%%   chiral_fluids.f90
-%%   chiral_fluids_gradtheta.f90
 %%   chiral_mhd.f90
 %%   coronae.f90
 %%   cosmicray_current.f90
@@ -33,6 +31,7 @@
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
 %%   noentropy.f90
+%%   particles_caustics.f90
 %%   particles_chemistry.f90
 %%   particles_dust.f90
 %%   particles_dust_brdeplete.f90
@@ -40,6 +39,8 @@
 %%   particles_mass_swarm.f90
 %%   particles_surfspec.f90
 %%   polymer.f90
+%%   r75612.f90
+%%   r75759.f90
 %%   shear.f90
 %%   shock.f90
 %%   shock_highorder.f90
@@ -224,7 +225,6 @@
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
-  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
@@ -286,6 +286,7 @@
   \var{eem}       & $\left<e\right>$ \\
   \var{ppm}       & $\left<p\right>$ \\
   \var{csm}       & $\left<c_{\rm s}\right>$ \\
+  \var{csmax}     & $\max (c_{\rm s})$ \\
   \var{cgam}      & $\left<c_{\gamma}\right>$ \\
   \var{pdivum}    & $\left<p\nabla\cdot\uv\right>$ \\
   \var{fradbot}   & $\int F_{\rm bot}\cdot d\vec{S}$ \\
@@ -685,27 +686,6 @@
 \midrule
   \var{dtchem}    & $dt_{chem}$ \\
 \midrule
-  \multicolumn{2}{c}{Module \file{chiral_fluids.f90}} \\
-\midrule
-  \var{mu5m}      & $\left<\mu_5\right>$ \\
-  \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
-  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
-  \var{bgtheta5rms} & $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$ \\
-  \var{theta5m}   & $\left<\theta_5\right>$ \\
-  \var{theta5rms} & $\left<\theta_5^2\right>^{1/2}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{chiral_fluids_gradtheta.f90}} \\
-\midrule
-  \var{mu5m}      & $\left<\mu_5\right>$ \\
-  \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
-  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
-  \var{bgtheta5rms} & $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$ \\
-  \var{gtheta5rms} & $\left<(\nabla\theta_5)^2\right>^{1/2}$ \\
-  \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
-  \var{gtheta5mx} & $\left<\nabla\theta_{5x}\right>$ \\
-  \var{gtheta5my} & $\left<\nabla\theta_{5y}\right>$ \\
-  \var{gtheta5mz} & $\left<\nabla\theta_{5z}\right>$ \\
-\midrule
   \multicolumn{2}{c}{Module \file{chiral_mhd.f90}} \\
 \midrule
   \var{mu5m}      & $\left<\mu_5\right>$ \\
@@ -722,6 +702,8 @@
   \var{dt_mu5_3}  & $\delta x^2/D_5$ \\
   \var{dt_bb_1}   & $\delta x /(\eta \mathrm{max}(\mu_5))$ \\
   \var{dt_chiral} & total time-step contribution from chiral MHD \\
+  \var{mu5bxm}    & $\left<\mu_5B_x\right>$ \\
+  \var{mu5b2m}    & $\left<\mu_5B^2\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -1154,6 +1136,11 @@
                     [=internal] energy) \\
   \var{pdivum}    & $\left<p\nabla\uv\right>$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{particles_caustics.f90}} \\
+\midrule
+  \var{TrSigmapm} & $\langle{\rm Tr}\left[\sigma\right]\rangle$ \\
+  \var{blowupm}   & Mean no. of times $\sigma$ falls below cutoff \\
+\midrule
   \multicolumn{2}{c}{Module \file{particles_chemistry.f90}} \\
 \midrule
   \var{Shchm}     & $\rm{mean particle Sherwood number}$ \\
@@ -1210,6 +1197,66 @@
 \midrule
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
   \var{frmax}     & $\max(f(r))$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{r75612.f90}} \\
+\midrule
+  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
+  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
+  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
+  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
+  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
+  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
+  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
+  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
+  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
+  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
+  \var{hhT2m}     & $\bra{h_T^2}$ \\
+  \var{hhX2m}     & $\bra{h_X^2}$ \\
+  \var{hhTXm}     & $\bra{h_T h_X}$ \\
+  \var{ggT2m}     & $\bra{g_T^2}$ \\
+  \var{ggX2m}     & $\bra{g_X^2}$ \\
+  \var{ggTXm}     & $\bra{g_T g_X}$ \\
+  \var{ggTm}      & $\bra{g_T}$ \\
+  \var{ggXm}      & $\bra{g_X}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{r75759.f90}} \\
+\midrule
+  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
+  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
+  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
+  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
+  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
+  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
+  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
+  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
+  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
+  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
+  \var{hhT2m}     & $\bra{h_T^2}$ \\
+  \var{hhX2m}     & $\bra{h_X^2}$ \\
+  \var{hhTXm}     & $\bra{h_T h_X}$ \\
+  \var{ggT2m}     & $\bra{g_T^2}$ \\
+  \var{ggX2m}     & $\bra{g_X^2}$ \\
+  \var{ggTXm}     & $\bra{g_T g_X}$ \\
+  \var{ggTm}      & $\bra{g_T}$ \\
+  \var{ggXm}      & $\bra{g_X}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
@@ -1289,6 +1336,7 @@
   \var{thcool}    & $\tau_{\rm cool}$ \\
   \var{ppm}       & $\overline{P}$ \\
   \var{csm}       & $\overline{c}_{\rm s}$ \\
+  \var{csmax}     & $\max (c_{\rm s})$ \\
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
                     /\max c_{\rm s}]$
                     \quad(time step relative to
@@ -1834,6 +1882,18 @@
   \var{eta21z}    & $\eta_{21}(z,t)$ \\
   \var{eta12z}    & $\eta_{12}(z,t)$ \\
   \var{eta22z}    & $\eta_{22}(z,t)$ \\
+  \var{uzjx1z}    & $u_z j^{11}_x$ \\
+  \var{uzjy1z}    & $u_z j^{11}_y$ \\
+  \var{uzjz1z}    & $u_z j^{11}_z$ \\
+  \var{uzjx2z}    & $u_z j^{21}_x$ \\
+  \var{uzjy2z}    & $u_z j^{21}_y$ \\
+  \var{uzjz2z}    & $u_z j^{21}_z$ \\
+  \var{uzjx3z}    & $u_z j^{12}_x$ \\
+  \var{uzjy3z}    & $u_z j^{12}_y$ \\
+  \var{uzjz3z}    & $u_z j^{12}_z$ \\
+  \var{uzjx4z}    & $u_z j^{22}_x$ \\
+  \var{uzjy4z}    & $u_z j^{22}_y$ \\
+  \var{uzjz4z}    & $u_z j^{22}_z$ \\
   \var{E111z}     & ${\cal E}_1^{11}$ \\
   \var{E211z}     & ${\cal E}_2^{11}$ \\
   \var{E311z}     & ${\cal E}_3^{11}$ \\
@@ -2139,6 +2199,8 @@
                     \fv_{\rm visc}\right>$ \\
   \var{Sij2m}     & $\left<\Strain^2\right>$ \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
+  \var{slope_c_max} & Max value of characteric speed
+                    of slope limited diffusion \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
                     \quad(time step relative to
