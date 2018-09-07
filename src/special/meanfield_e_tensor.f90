@@ -47,15 +47,20 @@ module Special
   real, dimension(nx) :: diffus_special, advec_special
 
   ! HDF debug parameters:
+
   integer :: hdferr
   logical :: hdf_exists
+
   ! Main HDF object ids and variables
+
   character (len=fnlen) :: hdf_emftensors_filename
   integer(HID_T) :: hdf_memtype, &
                     hdf_emftensors_file,  &
                     hdf_emftensors_plist, &
                     hdf_emftensors_group
+
   ! Dataset HDF object ids
+
   integer, parameter :: ntensors = 8
   integer(HID_T),   dimension(ntensors) :: tensor_id_G, tensor_id_D, &
                                            tensor_id_S, tensor_id_memS
@@ -65,18 +70,23 @@ module Special
                                               tensor_memoffsets, tensor_memcounts
                                       
   ! Actual datasets
+
   real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data, &
                                                  acoef_data
   real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data, &
                                                  utensor_data
   real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data, bcoef_data
+
   ! Dataset mappings
+
   integer,parameter :: alpha_id=1, beta_id=2,    &
                        gamma_id=3, delta_id=4,   &
                        kappa_id=5, utensor_id=6, & 
                        acoef_id=7, bcoef_id=8
   integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5, 6, 7 /) 
+
   ! Dataset logical variables
+
   logical, dimension(3,3)   :: lalpha_arr, lbeta_arr, lacoef_arr
   logical, dimension(3)     :: lgamma_arr, ldelta_arr, lutensor_arr
   logical, dimension(3,3,3) :: lkappa_arr, lbcoef_arr
@@ -92,8 +102,10 @@ module Special
                            acoef_name, bcoef_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
   real, dimension(ntensors) :: tensor_scales, tensor_maxvals, tensor_minvals
+
   ! Diagnostic variables
   ! Max diagnostics
+
   integer :: idiag_alphaxmax=0
   integer :: idiag_alphaymax=0
   integer :: idiag_alphazmax=0
@@ -143,8 +155,10 @@ module Special
   real, dimension(nx)     :: tmpline
   real, dimension(nx,3)   :: tmppencil,emftmp
   real, dimension(nx,3,3) :: tmptensor
+
   ! Input dataset name
   ! Input namelist
+
   namelist /special_init_pars/ &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
       lbeta,    lbeta_c,    beta_name,    beta_scale, &
@@ -255,6 +269,7 @@ module Special
         
         if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
         call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
+
         if (lmpicomm) &     !MR: doesn't work for nompicomm
           call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
@@ -338,6 +353,7 @@ module Special
         !allocate(utensor_data(nx,ny,nz,dataload_len,3))
         !allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
         !allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
+
         allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
         allocate(beta_data(dataload_len,nx,ny,nz,3,3))
         allocate(gamma_data(dataload_len,nx,ny,nz,3))
@@ -361,7 +377,7 @@ module Special
           call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
           if (lroot) then
             write (*,*) 'Alpha scale:  ', alpha_scale
-            write (*,*) 'Alpha maxval: ', maxval(alpha_data)
+            write (*,*) 'Alpha minval, maxval: ', minval(alpha_data), maxval(alpha_data)
             write (*,*) 'Alpha components used: '
             do i=1,3
               write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
@@ -818,7 +834,6 @@ module Special
     subroutine read_special_init_pars(iostat)
 !
       integer, intent(out) :: iostat
-      write (*,*) 'read_special_init_pars running...'
 !
       iostat = 0
       call setParameterDefaults
@@ -844,7 +859,6 @@ module Special
 !
       iostat = 0
       
-      write (*,*) 'read_special_run_pars running...'
       call setParameterDefaults
       write (*,*) 'read_special_run_pars parameters read...'
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
@@ -1027,44 +1041,44 @@ module Special
 !!
 !! Calculate advec_special
 !!
-!        if (lalpha) then
-!          call dot_mn_vm(dline_1, p%alpha_coefs, tmppencil)
-!          advec_special=advec_special+sum(tmppencil,2)
-!        end if
-!        if (lgamma) then
-!          call dot_mn(dline_1, p%gamma_coefs, tmpline)
-!          advec_special=advec_special+tmpline
-!        end if
-!        if (lutensor) then
-!          call dot_mn(dline_1, p%utensor_coefs, tmpline)
-!          advec_special=advec_special+tmpline
-!        end if
+        if (lalpha) then
+          call dot_mn_vm(dline_1, abs(p%alpha_coefs), tmppencil)
+          advec_special=advec_special+sum(tmppencil,2)
+        end if
+        if (lgamma) then
+          call dot_mn(dline_1, abs(p%gamma_coefs), tmpline)
+          advec_special=advec_special+tmpline
+        end if
+        if (lutensor) then
+          call dot_mn(dline_1, abs(p%utensor_coefs), tmpline)
+          advec_special=advec_special+tmpline
+        end if
 
-!        maxadvec=maxadvec+advec_special
+        maxadvec=maxadvec+advec_special
 
 ! Commenting this as diffus_special seems to have been removed from equ.f90
 !!
 !! Calculate diffus_special
 !!
-!        if (lbeta) then
-!          call dot_mn_vm(dline_1,p%beta_coefs, tmppencil)
-!          call dot_mn(dline_1, tmppencil, tmpline)
-!          diffus_special=diffus_special+tmpline
-!        end if
+        if (lbeta) then
+          call dot_mn_vm(dline_1,abs(p%beta_coefs), tmppencil)
+          call dot_mn(dline_1, tmppencil, tmpline)
+          diffus_special=diffus_special+tmpline
+        end if
 !        
-!        if (ldelta) then
-!          call cross_mn(dline_1,p%delta_coefs, tmppencil)
-!          call dot_mn(dline_1,tmppencil,tmpline)
-!          diffus_special=diffus_special+tmpline
-!        end if
+        if (ldelta) then
+          call cross_mn(dline_1,abs(p%delta_coefs), tmppencil)
+          call dot_mn(dline_1,tmppencil,tmpline)
+          diffus_special=diffus_special+tmpline
+        end if
 !        
-!        if (lkappa) then
-!          call vec_dot_3tensor(dline_1, p%kappa_coefs, tmptensor)
-!          call dot_mn_vm(dline_1,tmptensor, tmppencil)
-!          diffus_special=diffus_special+sum(tmppencil,2)
-!        end if
+        if (lkappa) then
+          call vec_dot_3tensor(dline_1, abs(p%kappa_coefs), tmptensor)
+          call dot_mn_vm(dline_1,tmptensor, tmppencil)
+          diffus_special=diffus_special+sum(tmppencil,2)
+        end if
 
-!        maxdiffus=max(maxdiffus,diffus_special)
+        maxdiffus=max(maxdiffus,diffus_special)
 
       end if 
 !
@@ -1201,18 +1215,23 @@ module Special
       integer, intent(in) :: loadstart
       integer :: ndims
       integer(HSIZE_T) :: mask_i, mask_j
+
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,4) = loadstart
       call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
       call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
+
       do mask_j=1,3; do mask_i=1,3
+
         ! Load only wanted datasets
         if (datamask(mask_i,mask_j)) then
+
           ! Set the new offset for data reading
           tensor_offsets(tensor_id,ndims-1)    = mask_i-1
           tensor_offsets(tensor_id,ndims)      = mask_j-1
           tensor_memoffsets(tensor_id,ndims-1) = mask_i-1
           tensor_memoffsets(tensor_id,ndims)   = mask_j-1
+
           ! Hyperslab for data
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
@@ -1225,7 +1244,9 @@ module Special
                                      hdferr)
         end if
       end do; end do
+
       ! Read data into memory
+print*, 'tensor_id, tensor_dims, tensor_id_memS, tensor_id_S=', tensor_id, tensor_dims(tensor_id,1:ndims), tensor_id_memS(tensor_id), tensor_id_S(tensor_id)
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
