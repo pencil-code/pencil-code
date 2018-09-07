@@ -334,8 +334,8 @@ module Special
         if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'  !MR: Why parallel?
         call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)  ! Creates porperty list for HDF5 file.
 
-        if (lmpicomm) &     !MR: doesn't work for nompicomm
-          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+!        if (lmpicomm) &     !MR: doesn't work for nompicomm
+!          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
         if (lroot) print *, 'initialize special: opening emftensors.h5 and loading relevant fields into memory...'
 
@@ -455,15 +455,6 @@ module Special
           if (lroot) then
             write (*,*) 'Delta scale:   ', delta_scale
             write (*,*) 'Delta min/max: ', globmin, globmax
-            write (*,*) 'Delta maxval r: ', maxval(delta_data(:,:,:,:,1))
-            write (*,*) 'Delta minval r: ', minval(delta_data(:,:,:,:,1))
-            write (*,*) 'Delta maxloc r: ', maxloc(delta_data(:,:,:,:,1))
-            write (*,*) 'Delta maxval th: ', maxval(delta_data(:,:,:,:,2))
-            write (*,*) 'Delta minval th: ', minval(delta_data(:,:,:,:,2))
-            write (*,*) 'Delta maxloc th: ', maxloc(delta_data(:,:,:,:,2))
-            write (*,*) 'Delta maxval phi: ', maxval(delta_data(:,:,:,:,3))
-            write (*,*) 'Delta minval phi: ', minval(delta_data(:,:,:,:,3))
-            write (*,*) 'Delta maxloc phi: ', maxloc(delta_data(:,:,:,:,3))
             write (*,*) 'Delta components used: '
             write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
           end if
@@ -492,15 +483,7 @@ module Special
           if (lroot) then
             write (*,*) 'U-tensor scale:   ', utensor_scale
             write (*,*) 'U-tensor min/max: ', globmin, globmax
-            write (*,*) 'U-tensor maxval r: ', maxval(utensor_data(:,:,:,:,1))
-            write (*,*) 'U-tensor minval r: ', minval(utensor_data(:,:,:,:,1))
-            write (*,*) 'U-tensor maxloc r: ', maxloc(utensor_data(:,:,:,:,1))
-            write (*,*) 'U-tensor maxval th: ', maxval(utensor_data(:,:,:,:,2))
-            write (*,*) 'U-tensor minval th: ', minval(utensor_data(:,:,:,:,2))
-            write (*,*) 'U-tensor maxloc th: ', maxloc(utensor_data(:,:,:,:,2))
-            write (*,*) 'U-tensor maxval phi: ', maxval(utensor_data(:,:,:,:,3))
-            write (*,*) 'U-tensor minval phi: ', minval(utensor_data(:,:,:,:,3))
-            write (*,*) 'U-tensor maxloc phi: ', maxloc(utensor_data(:,:,:,:,3))
+            write (*,*) 'U-tensor scale:  ', utensor_scale
             write (*,*) 'U-tensor components used: '
             write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
           end if
@@ -1064,6 +1047,9 @@ module Special
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
+
+       advec_special=0.0
+       diffus_special=0.0
 !!
 !! Calculate advec_special
 !!
@@ -1106,6 +1092,7 @@ module Special
         end if
 
         maxdiffus=max(maxdiffus,diffus_special)
+
 
       end if 
 !
