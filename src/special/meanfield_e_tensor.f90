@@ -213,8 +213,11 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Mpicomm, only: mpireduce_min, mpireduce_max
+
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
+      real :: globmin, globmax
 !
       call keep_compiler_quiet(f)
 
@@ -226,7 +229,7 @@ module Special
       ! Set dataset offsets
       tensor_offsets = 0
       do i=1,ntensors
-        tensor_offsets(i,1:3) = [ ipx*nx, ipy*ny , ipz*nz ]
+        tensor_offsets(i,1:4) = [ 0, ipx*nx, ipy*ny , ipz*nz ]
       end do
       ! Set dataset counts
       tensor_counts = 1
@@ -375,9 +378,11 @@ module Special
         ! Load datasets
         if (lalpha) then
           call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
+          call mpireduce_min(tensor_minvals(alpha_id),globmin)
+          call mpireduce_max(tensor_maxvals(alpha_id),globmax)
           if (lroot) then
-            write (*,*) 'Alpha scale:  ', alpha_scale
-            write (*,*) 'Alpha minval, maxval: ', minval(alpha_data), maxval(alpha_data)
+            write (*,*) 'Alpha scale:   ', alpha_scale
+            write (*,*) 'Alpha min/max: ', globmin, globmax
             write (*,*) 'Alpha components used: '
             do i=1,3
               write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
@@ -386,9 +391,11 @@ module Special
         end if
         if (lbeta) then
           call loadDataset(beta_data, lbeta_arr, beta_id, 0)
+          call mpireduce_min(tensor_minvals(beta_id),globmin)
+          call mpireduce_max(tensor_maxvals(beta_id),globmax)
           if (lroot) then
-            write (*,*) 'Beta scale:  ', beta_scale
-            write (*,*) 'Beta maxval: ', maxval(beta_data)
+            write (*,*) 'Beta scale:   ', beta_scale
+            write (*,*) 'Beta min/max: ', globmin, globmax
             write (*,*) 'Beta components used: '
             do i=1,3
               write (*,'(A3,3L3,A3)') '|', lbeta_arr(:,i), '|'
@@ -397,18 +404,22 @@ module Special
         end if
         if (lgamma) then
           call loadDataset(gamma_data, lgamma_arr, gamma_id, 0)
+          call mpireduce_min(tensor_minvals(gamma_id),globmin)
+          call mpireduce_max(tensor_maxvals(gamma_id),globmax)
           if (lroot) then
-            write (*,*) 'Gamma scale:  ', gamma_scale
-            write (*,*) 'Gamma maxval: ', maxval(gamma_data)
+            write (*,*) 'Gamma scale:   ', gamma_scale
+            write (*,*) 'Gamma min/max: ', globmin, globmax
             write (*,*) 'Gamma components used: '
             write (*,'(A3,3L3,A3)') '|', lgamma_arr, '|'
           end if
         end if
         if (ldelta) then
           call loadDataset(delta_data, ldelta_arr, delta_id, 0)
+          call mpireduce_min(tensor_minvals(delta_id),globmin)
+          call mpireduce_max(tensor_maxvals(delta_id),globmax)
           if (lroot) then
-            write (*,*) 'Delta scale:  ', delta_scale
-            write (*,*) 'Delta maxval: ', maxval(delta_data)
+            write (*,*) 'Delta scale:   ', delta_scale
+            write (*,*) 'Delta min/max: ', globmin, globmax
             write (*,*) 'Delta maxval r: ', maxval(delta_data(:,:,:,:,1))
             write (*,*) 'Delta minval r: ', minval(delta_data(:,:,:,:,1))
             write (*,*) 'Delta maxloc r: ', maxloc(delta_data(:,:,:,:,1))
@@ -424,9 +435,11 @@ module Special
         end if
         if (lkappa) then
           call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
+          call mpireduce_min(tensor_minvals(kappa_id),globmin)
+          call mpireduce_max(tensor_maxvals(kappa_id),globmax)
           if (lroot) then
-            write (*,*) 'Kappa scale:  ', kappa_scale
-            write (*,*) 'Kappa maxval: ', maxval(kappa_data)
+            write (*,*) 'Kappa scale:   ', kappa_scale
+            write (*,*) 'Kappa min/max: ', globmin, globmax
             write (*,*) 'Kappa components used: '
             do j=1,3
               write(*,*) '|'
@@ -439,8 +452,11 @@ module Special
         end if
         if (lutensor) then
           call loadDataset(utensor_data, lutensor_arr, utensor_id, 0)
+          call mpireduce_min(tensor_minvals(utensor_id),globmin)
+          call mpireduce_max(tensor_maxvals(utensor_id),globmax)
           if (lroot) then
-            write (*,*) 'U-tensor scale:  ', utensor_scale
+            write (*,*) 'U-tensor scale:   ', utensor_scale
+            write (*,*) 'U-tensor min/max: ', globmin, globmax
             write (*,*) 'U-tensor maxval r: ', maxval(utensor_data(:,:,:,:,1))
             write (*,*) 'U-tensor minval r: ', minval(utensor_data(:,:,:,:,1))
             write (*,*) 'U-tensor maxloc r: ', maxloc(utensor_data(:,:,:,:,1))
@@ -456,9 +472,11 @@ module Special
         end if
         if (lacoef) then
           call loadDataset(acoef_data, lacoef_arr, acoef_id, 0)
+          call mpireduce_min(tensor_minvals(acoef_id),globmin)
+          call mpireduce_max(tensor_maxvals(acoef_id),globmax)
           if (lroot) then
-            write (*,*) 'acoef scale:  ', acoef_scale
-            write (*,*) 'acoef maxval: ', maxval(acoef_data)
+            write (*,*) 'acoef scale:   ', acoef_scale
+            write (*,*) 'acoef min/max: ', globmin, globmax
             write (*,*) 'acoef components used: '
             do i=1,3
               write (*,'(A3,3L3,A3)') '|', lacoef_arr(:,i), '|'
@@ -467,9 +485,11 @@ module Special
         end if
         if (lbcoef) then
           call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, 0)
+          call mpireduce_min(tensor_minvals(bcoef_id),globmin)
+          call mpireduce_max(tensor_maxvals(bcoef_id),globmax)
           if (lroot) then
-            write (*,*) 'bcoef scale:  ', bcoef_scale
-            write (*,*) 'bcoef maxval: ', maxval(bcoef_data)
+            write (*,*) 'bcoef scale:   ', bcoef_scale
+            write (*,*) 'bcoef min/max: ', globmin, globmax
             write (*,*) 'bcoef components used: '
             do j=1,3
               write(*,*) '|'
@@ -1036,11 +1056,10 @@ module Special
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
-
-! Commenting this as advec_special seems to be have been removed from equ.f90
 !!
 !! Calculate advec_special
 !!
+        advec_special=0.
         if (lalpha) then
           call dot_mn_vm(dline_1, abs(p%alpha_coefs), tmppencil)
           advec_special=advec_special+sum(tmppencil,2)
@@ -1056,10 +1075,10 @@ module Special
 
         maxadvec=maxadvec+advec_special
 
-! Commenting this as diffus_special seems to have been removed from equ.f90
 !!
 !! Calculate diffus_special
 !!
+        diffus_special=0.
         if (lbeta) then
           call dot_mn_vm(dline_1,abs(p%beta_coefs), tmppencil)
           call dot_mn(dline_1, tmppencil, tmpline)
@@ -1174,7 +1193,7 @@ module Special
       integer(HSIZE_T) :: mask_i
 
       ndims = tensor_ndims(tensor_id)
-      tensor_offsets(tensor_id,4) = loadstart
+      tensor_offsets(tensor_id,1) = loadstart
       call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
       call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
       do mask_i=1,3
@@ -1217,7 +1236,7 @@ module Special
       integer(HSIZE_T) :: mask_i, mask_j
 
       ndims = tensor_ndims(tensor_id)
-      tensor_offsets(tensor_id,4) = loadstart
+      tensor_offsets(tensor_id,1) = loadstart
       call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
       call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
 
@@ -1268,7 +1287,7 @@ print*, 'tensor_id, tensor_dims, tensor_id_memS, tensor_id_S=', tensor_id, tenso
       integer(HSIZE_T) :: mask_i, mask_j, mask_k
 
       ndims = tensor_ndims(tensor_id)
-      tensor_offsets(tensor_id,4) = loadstart
+      tensor_offsets(tensor_id,1) = loadstart
       call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
       call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
 
