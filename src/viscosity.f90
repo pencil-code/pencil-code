@@ -1084,7 +1084,7 @@ module Viscosity
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      call keep_compiler_quiet(lpencil_in)
+      if (lvisc_simplified .and. lpencil_in(i_visc_heat)) lpencil_in(i_o2)=.true.
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -1125,19 +1125,17 @@ module Viscosity
 !
 !  viscous force: nu*del2v
 !  -- not physically correct (no momentum conservation), but
-!  numerically easy and in most cases qualitatively OK,
-!  for boussinesq (divu=0) yet exact
+!  numerically easy and in most cases qualitatively OK.
+!  For boussinesq (divu=0) this is exact.
+!  In all other cases we use nu*o2.
 !
       if (.not. limplicit_viscosity .and. lvisc_simplified) then
         p%fvisc=p%fvisc+nu*p%del2u
         if (lpencil(i_visc_heat)) then
           if (lboussinesq) then
             p%visc_heat=p%visc_heat+2.*nu*p%sij2
-          else                                  ! Heating term not implemented
-            if (headtt) then
-              call warning('calc_pencils_viscosity', 'viscous heating term '// &
-                'is not implemented for lvisc_simplified')
-            endif
+          else
+            p%visc_heat=p%visc_heat+nu*p%o2
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu
@@ -1312,7 +1310,6 @@ module Viscosity
             p%fvisc=p%fvisc+nu*(p%del2u+1.0/3.0*p%graddivu)
           endif
         endif
-!
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu
       endif
