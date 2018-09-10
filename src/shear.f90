@@ -361,7 +361,7 @@ module Shear
         enddo
         if (iuutest/=0) then
           do j=iuutest,iuztestpq,3
-            df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear*f(l1:l2,m,n,j)
+            df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear1*f(l1:l2,m,n,j)
           enddo
         endif
       endif
