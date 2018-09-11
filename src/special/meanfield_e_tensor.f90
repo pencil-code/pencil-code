@@ -321,7 +321,7 @@ module Special
         hdf_emftensors_plist = -1
         hdf_emftensors_file  = -1
 
-        call H5open_F(hdferr)
+        call H5open_F(hdferr)                                              ! Initializes HDF5 library.
 
         if (numeric_precision() == 'S') then
           if (lroot) write(*,*) 'initialize special: loading data as single precision'
@@ -331,8 +331,8 @@ module Special
           hdf_memtype = H5T_NATIVE_DOUBLE
         end if
         
-        if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
-        call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
+        if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'  !MR: Why parallel?
+        call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)  ! Creates porperty list for HDF5 file.
 
         if (lmpicomm) &     !MR: doesn't work for nompicomm
           call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
@@ -343,24 +343,29 @@ module Special
 
         inquire(file=hdf_emftensors_filename, exist=hdf_exists)
 
-        if (.not. hdf_exists) then
-          call H5Pclose_F(hdf_emftensors_plist, hdferr)
-          call H5close_F(hdferr)
+        if (.not. hdf_exists) then                                         ! If HDF5 file doesn't exist:
+          call H5Pclose_F(hdf_emftensors_plist, hdferr)                    ! Terminates access to property list.
+          call H5close_F(hdferr)                                           ! Frees resources used by library.
           call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
         end if
 
+!
+!  Opens HDF5 file for read access only, returns file identifier hdf_emftensors_file.
+!
         call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
-
+!
+!  Checks whether in HDF5 file there is a link /emftensor/.
+!
         call H5Lexists_F(hdf_emftensors_file,'/emftensor/', hdf_exists, hdferr)
 
-        if (.not. hdf_exists) then
-          call H5Fclose_F(hdf_emftensors_file, hdferr)
+        if (.not. hdf_exists) then                                         ! If link '/emftensor/' doesn't exist:
+          call H5Fclose_F(hdf_emftensors_file, hdferr)                     ! Terminates access to HDF5 file.
           call H5Pclose_F(hdf_emftensors_plist, hdferr)
           call H5close_F(hdferr)
           call fatal_error('initialize_special','group /emftensor/ does not exist!')
         end if
 
-        call H5Gopen_F(hdf_emftensors_file, 'emftensor', hdf_emftensors_group, hdferr)
+        call H5Gopen_F(hdf_emftensors_file, 'emftensor', hdf_emftensors_group, hdferr) ! Opens group emftensor in HDF5 file
 
         ! Open datasets
 
@@ -546,55 +551,28 @@ module Special
       if (lrun) then
 
         ! Deallocate data
-        if (allocated(alpha_data)) then
-          deallocate(alpha_data)
-        end if
-        if (allocated(beta_data)) then
-          deallocate(beta_data)
-        end if
-        if (allocated(gamma_data)) then
-          deallocate(gamma_data)
-        end if
-        if (allocated(delta_data)) then
-          deallocate(delta_data)
-        end if
-        if (allocated(kappa_data)) then
-          deallocate(kappa_data)
-        end if
-        if (allocated(utensor_data)) then
-          deallocate(utensor_data)
-        end if
+        if (allocated(alpha_data)) deallocate(alpha_data)
+        if (allocated(beta_data)) deallocate(beta_data)
+        if (allocated(gamma_data)) deallocate(gamma_data)
+        if (allocated(delta_data)) deallocate(delta_data)
+        if (allocated(kappa_data)) deallocate(kappa_data)
+        if (allocated(utensor_data)) deallocate(utensor_data)
 
-        if (lalpha) then
-          call closeDataset(alpha_id)
-        end if
-        if (lbeta) then
-          call closeDataset(beta_id)
-        end if
-        if (lgamma) then
-          call closeDataset(gamma_id)
-        end if
-        if (ldelta) then
-          call closeDataset(delta_id)
-        end if
-        if (lkappa) then
-          call closeDataset(kappa_id)
-        end if
-        if (lutensor) then
-          call closeDataset(utensor_id)
-        end if
-        if (lacoef) then
-          call closeDataset(acoef_id)
-        end if
-        if (lbcoef) then
-          call closeDataset(bcoef_id)
-        end if
+        if (lalpha)   call closeDataset(alpha_id)
+        if (lbeta)    call closeDataset(beta_id)
+        if (lgamma)   call closeDataset(gamma_id)
+        if (ldelta)   call closeDataset(delta_id)
+        if (lkappa)   call closeDataset(kappa_id)
+        if (lutensor) call closeDataset(utensor_id)
+        if (lacoef)   call closeDataset(acoef_id)
+        if (lbcoef)   call closeDataset(bcoef_id)
 
         call H5Gclose_F(hdf_emftensors_group, hdferr)
         call H5Fclose_F(hdf_emftensors_file, hdferr)
         call H5Pclose_F(hdf_emftensors_plist, hdferr)
         call H5close_F(hdferr)
         call mpibarrier
+
       end if
   !
     endsubroutine finalize_special
@@ -1137,7 +1115,7 @@ module Special
 
       ! Open a dataset e.g. /emftensor/alpha/data and auxillary dataspaces
 
-      character(len=*), intent(in)    :: datagroup
+      character(len=*), intent(in)    :: datagroup     ! name of data group
       integer, intent(in)             :: tensor_id
 !
       integer(HSIZE_T), dimension(10) :: maxdimsizes
@@ -1145,33 +1123,33 @@ module Special
       logical :: hdf_exists
       character(len=fnlen)            :: dataname
       
-      dataname = tensor_names(tensor_id)
+      dataname = tensor_names(tensor_id)               ! name of dataset.
       ! Check that datagroup e.g. /emftensor/alpha exists
       call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
       if (.not. hdf_exists) then
         call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
                           ' does not exist')
       end if
-      ! Open datagroup
+      ! Open datagroup, returns identifier in tensor_id_G. 
       call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id), hdferr)
       if (hdferr /= 0) then
         call fatal_error('openDataset','Error opening /emftensor/'//trim(datagroup))
       end if
-      ! Check that dataset e.g. /emftensor/alpha/data exists
+      ! Check that dataset e.g. /emftensor/alpha/mean exists
       call H5Lexists_F(tensor_id_G(tensor_id), dataname, hdf_exists, hdferr)
       if (.not. hdf_exists) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
                           '/'//trim(dataname)//' does not exist')
       end if
-      ! Open dataset
+      ! Open dataset dataname in group, returns identifier in tensor_id_D.
       call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id), hdferr)
       if (hdferr /= 0) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','Error opening /emftensor/'// &
                           trim(datagroup)//'/'//trim(dataname))
       end if
-      ! Get dataspace
+      ! Get dataspace of dataset (identifier of copy of dataspace in tensor_id_S).
       call H5Dget_space_F(tensor_id_D(tensor_id), tensor_id_S(tensor_id), hdferr)
       if (hdferr /= 0) then
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
@@ -1179,13 +1157,13 @@ module Special
         call fatal_error('openDataset','Error opening dataspace for /emftensor/'// &
                           trim(datagroup)//'/'//trim(dataname))
       end if
-      ! Get dataspace dimensions
+      ! Get dataspace dimensions in tensor_dims.
       ndims = tensor_ndims(tensor_id)
       call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
                                        tensor_dims(tensor_id,1:ndims), &
                                        maxdimsizes(1:ndims), &
                                        hdferr)
-      ! Create a memory space mapping for input data
+      ! Create a memory space mapping for input data (identifier in tensor_id_memS).
       call H5Screate_simple_F(ndims, tensor_memdims(tensor_id,1:ndims), &
                               tensor_id_memS(tensor_id), hdferr)
       if (hdferr /= 0) then
@@ -1224,20 +1202,21 @@ module Special
 
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,1) = loadstart
-      call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
-      call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
+      call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)     ! resets selection region.
+      call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)  ! perhaps dispensable when
+                                                                ! H5S_SELECT_SET_F is used below.
       do mask_i=1,3
         ! Load only wanted datasets
         if (datamask(mask_i)) then
           ! Set the new offset for data reading
           tensor_offsets(tensor_id,ndims)    = mask_i-1
           tensor_memoffsets(tensor_id,ndims) = mask_i-1
-          ! Hyperslab for data
+          ! Select hyperslab for data
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
                                      hdferr)
-          ! Hyperslab for memory
+          ! Select hyperslab for memory
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_memoffsets(tensor_id,1:ndims),       &
                                      tensor_memcounts(tensor_id,1:ndims),        &
