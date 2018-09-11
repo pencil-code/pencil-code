@@ -221,11 +221,6 @@ module Special
 !
       call keep_compiler_quiet(f)
 
-      if (trim(interpname) == 'none') then
-        dataload_len = 1
-      !else
-      !  call fatal_error('register_special','Unknown interpolation chosen!')
-      end if
       ! Set dataset offsets
       tensor_offsets = 0
       do i=1,ntensors
@@ -256,6 +251,72 @@ module Special
       end do
 
       if (lrun) then 
+
+      ! MV: time is the first index to match the python order
+        ! Allocate data arrays
+        !allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
+        !allocate(beta_data(nx,ny,nz,dataload_len,3,3))
+        !allocate(gamma_data(nx,ny,nz,dataload_len,3))
+        !allocate(delta_data(nx,ny,nz,dataload_len,3))
+        !allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
+        !allocate(utensor_data(nx,ny,nz,dataload_len,3))
+        !allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
+        !allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
+
+      if (trim(interpname) == 'none') then
+        dataload_len = 1
+      !else
+      !  call fatal_error('initialize_special','Unknown interpolation chosen!')
+      end if
+
+      if (lalpha) then
+        if (.not.allocated(alpha_data)) allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
+        alpha_data = 0
+      elseif (allocated(alpha_data)) then
+        deallocate(alpha_data)
+      endif
+      if (lbeta) then
+        if (.not.allocated(beta_data)) allocate(beta_data(dataload_len,nx,ny,nz,3,3))
+        beta_data = 0
+      elseif (allocated(beta_data)) then
+        deallocate(beta_data)
+      endif
+      if (lgamma) then
+        if (.not.allocated(gamma_data)) allocate(gamma_data(dataload_len,nx,ny,nz,3))
+        gamma_data = 0
+      elseif (allocated(gamma_data)) then
+        deallocate(gamma_data)
+      endif
+      if (ldelta) then
+        if (.not.allocated(delta_data)) allocate(delta_data(dataload_len,nx,ny,nz,3))
+        delta_data = 0
+      elseif (allocated(delta_data)) then
+        deallocate(delta_data)
+      endif
+      if (lkappa) then
+        if (.not.allocated(kappa_data)) allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
+        kappa_data = 0
+      elseif (allocated(kappa_data)) then
+        deallocate(kappa_data)
+      endif
+      if (lutensor) then
+        if (.not.allocated(utensor_data)) allocate(utensor_data(dataload_len,nx,ny,nz,3))
+        utensor_data = 0
+      elseif (allocated(utensor_data)) then
+        deallocate(utensor_data)
+      endif
+      if (lacoef) then
+        if (.not.allocated(acoef_data)) allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
+        acoef_data = 0
+      elseif (allocated(acoef_data)) then
+        deallocate(acoef_data)
+      endif
+      if (lbcoef) then
+        if (.not.allocated(bcoef_data)) allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
+        bcoef_data = 0
+      elseif (allocated(bcoef_data)) then
+        deallocate(bcoef_data)
+      endif
 
         hdf_emftensors_plist = -1
         hdf_emftensors_file  = -1
@@ -343,37 +404,6 @@ module Special
           call openDataset('bcoef', bcoef_id)
           if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
         end if
-        
-        ! Load initial dataset values
-
-      ! MV: time is the first index to match the python order
-        ! Allocate data arrays
-        !allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
-        !allocate(beta_data(nx,ny,nz,dataload_len,3,3))
-        !allocate(gamma_data(nx,ny,nz,dataload_len,3))
-        !allocate(delta_data(nx,ny,nz,dataload_len,3))
-        !allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
-        !allocate(utensor_data(nx,ny,nz,dataload_len,3))
-        !allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
-        !allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
-
-        allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
-        allocate(beta_data(dataload_len,nx,ny,nz,3,3))
-        allocate(gamma_data(dataload_len,nx,ny,nz,3))
-        allocate(delta_data(dataload_len,nx,ny,nz,3))
-        allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
-        allocate(utensor_data(dataload_len,nx,ny,nz,3))
-        allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
-        allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
-
-        alpha_data    = 0
-        beta_data     = 0
-        gamma_data    = 0
-        delta_data    = 0
-        kappa_data    = 0
-        utensor_data  = 0
-        acoef_data    = 0
-        bcoef_data    = 0
 
         ! Load datasets
         if (lalpha) then
@@ -514,6 +544,7 @@ module Special
       call keep_compiler_quiet(f)
 
       if (lrun) then
+
         ! Deallocate data
         if (allocated(alpha_data)) then
           deallocate(alpha_data)
@@ -868,7 +899,6 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      print *, 'In write_special_init_pars ...'
       write(unit, NML=special_init_pars)
 
    endsubroutine write_special_init_pars
@@ -1265,7 +1295,6 @@ module Special
       end do; end do
 
       ! Read data into memory
-print*, 'tensor_id, tensor_dims, tensor_id_memS, tensor_id_S=', tensor_id, tensor_dims(tensor_id,1:ndims), tensor_id_memS(tensor_id), tensor_id_S(tensor_id)
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
@@ -1325,7 +1354,7 @@ print*, 'tensor_id, tensor_dims, tensor_id_memS, tensor_id_S=', tensor_id, tenso
 !*********************************************************************** 
     function emf_interpolate(dataarray) result(interp_data)
 
-      real, intent(in), dimension(nx,dataload_len) :: dataarray
+      real, intent(in), dimension(dataload_len,nx) :: dataarray
       real, dimension(nx) :: interp_data
 
      ! interp_data=dataarray(:,1)
