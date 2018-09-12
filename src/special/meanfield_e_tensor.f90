@@ -73,7 +73,7 @@ module Special
   integer, parameter :: nscalars = 1
   integer(HID_T),   dimension(nscalars) :: scalar_id_G, scalar_id_D, &
                                            scalar_id_S, scalar_id_memS
-  integer(HSIZE_T), dimension(nscalars,1)  :: scalar_dims, &
+  integer(HSIZE_T), dimension(nscalars)  :: scalar_dims, &
                                               scalar_offsets, scalar_counts, &
                                               scalar_memdims, &
                                               scalar_memoffsets, scalar_memcounts
@@ -116,7 +116,7 @@ module Special
                            kappa_name, utensor_name, &
                            acoef_name, bcoef_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
-  character (len=fnlen), dimension(nscalars) :: scalar_names
+  character (len=fnlen), dimension(nscalars) :: scalar_names=(/'t'/)
   real, dimension(ntensors) :: tensor_scales, tensor_maxvals, tensor_minvals
 
   ! Diagnostic variables
@@ -230,17 +230,14 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Mpicomm, only: mpireduce_min, mpireduce_max
-
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
-      real :: globmin, globmax
 !
       call keep_compiler_quiet(f)
 
-      if (trim(interpname) == 'none') then
+      if (trim(defaultname) == 'mean') then
         dataload_len = 1
-      else if (trim(interpname) == 'time-series') then
+      else if (trim(defaultname) == 'time-series') then
         dataload_len = -1   ! dataload_len will be read later
         lread_time_series=.true.
       else
@@ -263,8 +260,8 @@ module Special
         if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
         call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
 
-        if (lmpicomm) &     !MR: doesn't work for nompicomm
-          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+!        if (lmpicomm) &     !MR: doesn't work for nompicomm
+!          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
         if (lroot) print *, 'initialize special: opening emftensors.h5 and loading relevant fields into memory...'
 
@@ -300,16 +297,21 @@ module Special
             call fatal_error('initialize_special','group /grid/ does not exist!')
           end if
           call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
-          call H5Sget_simple_extent_npoints_F('grid/t', tensor_times_len, hdferr) 
-          dataload_len = 1
-          allocate(tensor_times(dataload_len)) 
-          call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
-          call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
-                     tensor_dims(tensor_id,1:ndims), hdferr, &
-                     tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
-          tstart = tensor_times(iload)
-        end if
+          if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
+          call openDataset_grid('t',time_id)
+          allocate(tensor_times(scalar_dims(time_id))) 
+          call H5Sselect_all_F(scalar_id_S(time_id), hdferr)
+          if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
+          call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
+                     (/scalar_dims(time_id)/), hdferr, &
+                     scalar_id_memS(time_id), scalar_id_S(time_id))
+          if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
 
+          tstart = tensor_times(iload)
+          print*, 'max time array=',maxval(tensor_times)
+          print*, 'min time array=',minval(tensor_times)
+        end if
+ 
 
       ! Set dataset offsets
       tensor_offsets = 0
@@ -434,7 +436,8 @@ module Special
           call openDataset('bcoef', bcoef_id)
           if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
         end if
-        
+
+    endif        
  
     endsubroutine initialize_special
 !***********************************************************************
@@ -649,13 +652,18 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Mpicomm, only: mpireduce_min, mpireduce_max
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       intent(in) :: f,p
       intent(inout) :: df
-!
+
+      integer :: i, j
+      real :: globmin, globmax ! output for diagnostics
+
 !  Identify module and boundary conditions.
 !
       if (lroot.and.(headtt.or.ldebug)) print*,'dspecial_dt: SOLVE dspecial_dt'
@@ -783,7 +791,6 @@ module Special
         end if
       end if
       lread_datasets=.false.
-    endif
     end if
     end if
 !
@@ -1151,7 +1158,7 @@ module Special
       integer :: ndims
       logical :: hdf_exists
       character(len=fnlen)            :: dataname
-      
+
       dataname = tensor_names(tensor_id)               ! name of dataset.
       ! Check that datagroup e.g. /emftensor/alpha exists
       call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
@@ -1160,7 +1167,7 @@ module Special
                           ' does not exist')
       end if
       ! Open datagroup, returns identifier in tensor_id_G. 
-      call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id), hdferr)
+      call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id),hdferr)
       if (hdferr /= 0) then
         call fatal_error('openDataset','Error opening /emftensor/'//trim(datagroup))
       end if
@@ -1172,18 +1179,19 @@ module Special
                           '/'//trim(dataname)//' does not exist')
       end if
       ! Open dataset dataname in group, returns identifier in tensor_id_D.
-      call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id), hdferr)
+      call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id),hdferr)
       if (hdferr /= 0) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','Error opening /emftensor/'// &
                           trim(datagroup)//'/'//trim(dataname))
       end if
-      ! Get dataspace of dataset (identifier of copy of dataspace in tensor_id_S).
-      call H5Dget_space_F(tensor_id_D(tensor_id), tensor_id_S(tensor_id), hdferr)
+      ! Get dataspace of dataset (identifier of copy of dataspace in
+      ! tensor_id_S).
+      call H5Dget_space_F(tensor_id_D(tensor_id), tensor_id_S(tensor_id),hdferr)
       if (hdferr /= 0) then
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-        call fatal_error('openDataset','Error opening dataspace for /emftensor/'// &
+        call fatal_error('openDataset','Error opening dataspace for/emftensor/'// &
                           trim(datagroup)//'/'//trim(dataname))
       end if
       ! Get dataspace dimensions in tensor_dims.
@@ -1192,18 +1200,79 @@ module Special
                                        tensor_dims(tensor_id,1:ndims), &
                                        maxdimsizes(1:ndims), &
                                        hdferr)
-      ! Create a memory space mapping for input data (identifier in tensor_id_memS).
+      ! Create a memory space mapping for input data (identifier in
+      ! tensor_id_memS).
       call H5Screate_simple_F(ndims, tensor_memdims(tensor_id,1:ndims), &
                               tensor_id_memS(tensor_id), hdferr)
       if (hdferr /= 0) then
         call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-        call fatal_error('openDataset','Error creating memory mapping '// & 
+        call fatal_error('openDataset','Error creating memory mapping '// &
                           'for /emftensor/'//trim(datagroup)//'/'//trim(dataname))
       end if
 
     end subroutine openDataset
+!***********************************************************************
+    subroutine openDataset_grid(datagroup,scalar_id)
+
+      ! Open a dataset e.g. /emfscalar/alpha/data and auxillary dataspaces
+
+      character(len=*), intent(in)    :: datagroup     ! name of data group
+      integer, intent(in)             :: scalar_id
+!
+      integer(HSIZE_T), dimension(10) :: maxdimsizes
+      integer :: ndims
+      logical :: hdf_exists
+      character(len=fnlen)            :: dataname
+
+      dataname = scalar_names(scalar_id)               ! name of dataset.
+
+      ! Check that dataset e.g. /emfscalar/alpha/mean exists
+      call H5Lexists_F(hdf_grid_group, dataname, hdf_exists, hdferr)
+      if (.not. hdf_exists) then
+        call H5Gclose_F(hdf_grid_group, hdferr)
+        call fatal_error('openDataset','/grid/' &
+                          //trim(dataname)//' does not exist')
+      end if
+      ! Open dataset dataname in group, returns identifier in scalar_id_D.
+      call H5Dopen_F(hdf_grid_group, dataname, scalar_id_D(scalar_id),hdferr)
+      if (hdferr /= 0) then
+        call H5Gclose_F(hdf_grid_group, hdferr)
+        call fatal_error('openDataset','Error opening /grid/' &
+                          //trim(dataname))
+      end if
+      ! Get dataspace of dataset (identifier of copy of dataspace in
+      ! scalar_id_S).
+      call H5Dget_space_F(scalar_id_D(scalar_id), scalar_id_S(scalar_id),hdferr)
+      if (hdferr /= 0) then
+        call H5Dclose_F(scalar_id_D(scalar_id), hdferr)
+        call H5Gclose_F(hdf_grid_group, hdferr)
+        call fatal_error('openDataset','Error opening dataspace for/grid/' &
+                          //trim(dataname))
+      end if
+      print*, 'scalar_id_S(1)',scalar_id_S(scalar_id)
+      ! Get dataspace dimensions in scalar_dims.
+      call H5Sget_simple_extent_dims_F(scalar_id_S(scalar_id), &
+                                       !scalar_dims(scalar_id), &
+                                       scalar_dims, &
+                                       !maxdimsizes(scalar_id), &
+                                       maxdimsizes(1:1), &
+                                       hdferr)
+      if(hdferr /= 0) call fatal_error('openDataset','cannot get correct dimensions for grid/t')
+      ! Create a memory space mapping for input data (identifier in
+      ! scalar_id_memS).
+      !call H5Screate_simple_F(1, scalar_memdims(scalar_id), &
+      !                        scalar_id_memS(scalar_id), hdferr)
+      if (hdferr /= 0) then
+        call H5Sclose_F(scalar_id_S(scalar_id), hdferr)
+        call H5Dclose_F(scalar_id_D(scalar_id), hdferr)
+        call H5Gclose_F(hdf_grid_group, hdferr)
+        call fatal_error('openDataset','Error creating memory mapping '// &
+                          'for /grid/'//trim(dataname))
+      end if
+
+    end subroutine openDataset_grid
 !*********************************************************************** 
     subroutine closeDataset(tensor_id)
 
@@ -1218,28 +1287,25 @@ module Special
 
     end subroutine closeDataset
 !*********************************************************************** 
-    subroutine loadDataset_scalar(dataarray, datamask, scalar_id, loadstart)
+    subroutine loadDataset_scalar(dataarray, scalar_id, loadstart)
 
       ! Load a chunk of data for a scalar quantity, beginning at loadstart
 
       real, dimension(:), intent(inout) :: dataarray
       integer, intent(in) :: scalar_id
       integer, intent(in) :: loadstart
-      integer :: ndims
 
-      ndims = 1
-      scalar_offsets(scalar_id,1) = loadstart
+      scalar_offsets(scalar_id) = loadstart
       call H5Sselect_none_F(scalar_id_S(scalar_id), hdferr)     ! resets selection region.
       call H5Sselect_none_F(scalar_id_memS(scalar_id), hdferr)  ! perhaps dispensable when
                                                                 ! H5S_SELECT_SET_F
                                                                 ! is used below.
       ! Read data into memory
       call H5Dread_F(scalar_id_D(scalar_id), hdf_memtype, dataarray, &
-                     scalar_dims(scalar_id,1:ndims), hdferr, &
+                     (/scalar_dims(scalar_id)/), hdferr, &
                      scalar_id_memS(scalar_id), scalar_id_S(scalar_id))
 
     end subroutine loadDataset_scalar
-!*********************************************************************** 
 !*********************************************************************** 
     subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart)
 
@@ -1599,7 +1665,7 @@ module Special
       select case (id)
         ! for backwards-compatibility (deprecated):
         case (id_record_SPECIAL_ILOAD)
-          read (lun_input) iload
+          if (read_persist('SPECIAL_ILOAD', iload)) return
           done = .true.
       end select
       if (lroot) print *,'input_persistent_special:','iload',iload
