@@ -168,7 +168,7 @@ module Special
   integer :: idiag_emfdiffrms=0
   ! Interpolation parameters
   character (len=fnlen) :: interpname
-  integer :: dataload_len, tensor_times_len=1, iload=1
+  integer :: dataload_len, tensor_times_len=1, iload=0
   real, dimension(nx)     :: tmpline
   real, dimension(nx,3)   :: tmppencil,emftmp
   real, dimension(nx,3,3) :: tmptensor
@@ -317,10 +317,11 @@ module Special
                    scalar_id_memS(time_id), scalar_id_S(time_id))
         if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
 
-        tstart = tensor_times(iload)
+        t = tensor_times(iload)
         print*, 'max time array=',maxval(tensor_times)
         print*, 'min time array=',minval(tensor_times)
-
+        
+        dataload_len = 1
       end if
 
       ! Set dataset offsets
@@ -332,8 +333,6 @@ module Special
       ! Set dataset counts
       tensor_counts = 1
       do i=1,ntensors
-      ! MV: time is the first index to match the python order
-      !  tensor_counts(i,1:4) = [ nx, ny, nz, dataload_len ]
         tensor_counts(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
 
@@ -342,16 +341,12 @@ module Special
       ! Set dataset memory counts
       tensor_memcounts = 1
       do i=1,ntensors
-      ! MV: time is the first index to match the python order
-      !  tensor_memcounts(i,1:4) = [ nx, ny, nz, dataload_len ]
         tensor_memcounts(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
 
       ! Set memory dimensions
       tensor_memdims = 3
       do i=1,ntensors
-      ! MV: time is the first index to match the python order
-      !  tensor_memdims(i,1:4) = [ nx, ny, nz, dataload_len ]
         tensor_memdims(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
 
@@ -527,6 +522,61 @@ module Special
   !
     endsubroutine finalize_special
 !***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+
+      print *, 'lfirst'
+      if (lfirst) then
+      print *, 'checking lread_time_series' 
+        if (lread_time_series) then
+      print *, 'lread_time_series=true and t=',tensor_times(iload+1),iload 
+          if (t >= tensor_times(iload+1)) then
+          print *, 't > tmax'
+            lread_datasets=.true.
+            iload = iload + 1  
+          endif
+        endif
+        
+        print *, 'checking lread_dataset'
+        if (lread_datasets) then
+        print *, 'lread_dataset=true'
+          if (iload > tensor_times_len) then 
+            call fatal_error('dspecial_dt', 'no more data to load') 
+          else
+         print *, 'loading datasets'
+          ! Load datasets
+            if (lutensor) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload-1,'Utensor')
+go to 23
+            if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload-1,'Alpha')
+         print *, 'loaded alpha'
+            if (lbeta)  call loadDataset(beta_data, lbeta_arr, beta_id, iload-1,'Beta')
+         print *, 'loaded beta'
+            if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload-1,'Gamma')
+            if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload-1,'Delta')
+            if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload-1,'Kappa')
+            if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
+            if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
+23 continue
+          end if
+          lread_datasets=.false.
+          print *, 'lread_dataset switched to false'
+        end if
+
+      end if
+!
+    endsubroutine special_before_boundary
+!***********************************************************************
     subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
@@ -558,8 +608,6 @@ module Special
         ! Calculate alpha B
         do j=1,3; do i=1,3
           if (lalpha_arr(i,j)) then
-           ! MV: changing order to match python order
-           ! p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
             p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
           else
             p%alpha_coefs(1:nx,i,j)=0
@@ -571,8 +619,6 @@ module Special
         ! Calculate beta (curl B)
         do j=1,3; do i=1,3
           if (lbeta_arr(i,j)) then
-           ! MV: changing order to match python order
-           ! p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
             p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
           else
             p%beta_coefs(1:nx,i,j)=0
@@ -584,8 +630,6 @@ module Special
         ! Calculate gamma x B
         do i=1,3
           if (lgamma_arr(i)) then
-           ! MV: changing order to match python order
-           ! p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
             p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
           else
             p%gamma_coefs(1:nx,i)=0
@@ -597,8 +641,6 @@ module Special
         ! Calculate delta x (curl B)
         do i=1,3
           if (ldelta_arr(i)) then
-           ! MV: changing order to match python order
-           ! p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
             p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
           else
             p%delta_coefs(1:nx,i)=0
@@ -612,8 +654,6 @@ module Special
           p%bij_symm(1:nx,i,j)=0.5*(p%bij(1:nx,i,j) + p%bij(1:nx,j,i))
         end do; end do
         do k=1,3; do j=1,3; do i=1,3
-           ! MV: changing order to match python order
-         ! p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
           p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j,k))
         end do; end do; end do
         p%kappa_emf = 0
@@ -625,8 +665,6 @@ module Special
         ! Calculate utensor x B
         do i=1,3
           if (lutensor_arr(i)) then
-           ! MV: changing order to match python order
-           ! p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
             p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
           else
             p%utensor_coefs(1:nx,i)=0
@@ -638,8 +676,6 @@ module Special
         ! Calculate acoef B
         do j=1,3; do i=1,3
           if (lacoef_arr(i,j)) then
-           ! MV: changing order to match python order
-           ! p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
             p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
           else
             p%acoef_coefs(1:nx,i,j)=0
@@ -650,8 +686,6 @@ module Special
       if (lbcoef) then
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
-           ! MV: changing order to match python order
-         ! p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
           p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j,k))
         end do; end do; end do
         p%bcoef_emf = 0
@@ -712,33 +746,6 @@ module Special
       if (lroot.and.(headtt.or.ldebug)) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-      if (lfirst) then
-
-        if (lread_time_series) then
-          if (t >= tensor_times(iload)) then
-            lread_datasets=.true.
-            iload = iload + 1  
-          endif
-        endif
-
-        if (lread_datasets) then
-          if (iload > tensor_times_len) then 
-            call fatal_error('dspecial_dt', 'no more data to load') 
-          else
-          ! Load datasets
-            if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload,'Alpha')
-            if (lbeta)  call loadDataset(beta_data, lbeta_arr, beta_id, iload,'Beta')
-            if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload,'Gamma')
-            if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload,'Delta')
-            if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload,'Kappa')
-            if (lutensor) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload,'Utensor')
-            if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload,'Acoef')
-            if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload,'Bcoef')
-          end if
-          lread_datasets=.false.
-        end if
-
-      end if
 !
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
@@ -1133,10 +1140,18 @@ module Special
       end if
       ! Get dataspace dimensions in tensor_dims.
       ndims = tensor_ndims(tensor_id)
-      call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
-                                       tensor_dims(tensor_id,1:ndims), &
-                                       maxdimsizes(1:ndims), &
-                                       hdferr)
+      tensor_dims(tensor_id,1:ndims)=tensor_counts(tensor_id,1:ndims)
+      !call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
+      !                                 tensor_dims(tensor_id,1:ndims), &
+      !                                 maxdimsizes(1:ndims), &
+      !                                 hdferr)
+      !if (hdferr /= 0) then
+      !  call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
+      !  call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+      !  call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
+      !  call fatal_error('openDataset','Cannot get dimensions extent '// &
+      !                    'for /emftensor/'//trim(datagroup)//'/'//trim(dataset))
+      !end if
       ! Create a memory space mapping for input data (identifier in tensor_id_memS).
       call H5Screate_simple_F(ndims, tensor_memdims(tensor_id,1:ndims), &
                               tensor_id_memS(tensor_id), hdferr)
@@ -1269,27 +1284,46 @@ module Special
           tensor_offsets(tensor_id,ndims)    = mask_i-1
           tensor_memoffsets(tensor_id,ndims) = mask_i-1
           ! Select hyperslab for data.
+          print *, 'tensor offset',name,tensor_offsets(tensor_id,1:ndims) 
+          print *, 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims) 
+          print *, 'tensor counts',name,tensor_counts(tensor_id,:ndims) 
+          print *, 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims) 
+
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
                                      hdferr)
+           if (hdferr /= 0) then
+             call fatal_error('loadDataset_rank1','Error creating File mapping '// &
+                           'for /grid/'//name)
+           end if
           ! Select hyperslab for memory.
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_memoffsets(tensor_id,1:ndims),       &
                                      tensor_memcounts(tensor_id,1:ndims),        &
                                      hdferr)
+          if (hdferr /= 0) then
+            call fatal_error('loadDataset_rank1','Error creating memory mapping '// &
+                           'for /grid/'//name)
+          end if
         end if
       end do
       ! Read data into memory.
+      tensor_dims(tensor_id,ndims)=3
+      print *, 'tensor_id_D=', tensor_id_D, 'tensor_id_S=', tensor_id_S, 'tensor_id_memS', tensor_id_memS
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+          if (hdferr /= 0) then
+            call fatal_error('loadDataset_rank1','Error creating reading dataset '// &
+                           'for /grid/'//name)
+          end if
 
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
       if (present(name)) then
-        call mpireduce_min(tensor_minvals(alpha_id),globmin)
-        call mpireduce_max(tensor_maxvals(alpha_id),globmax)
+        call mpireduce_min(tensor_minvals(tensor_id),globmin)
+        call mpireduce_max(tensor_maxvals(tensor_id),globmax)
         if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
       endif
       dataarray = tensor_scales(tensor_id) * dataarray
@@ -1340,14 +1374,15 @@ module Special
       end do; end do
 
       ! Read data into memory
+      tensor_dims(tensor_id,ndims-1:ndims)=3
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
       if (present(name)) then
-        call mpireduce_min(tensor_minvals(alpha_id),globmin)
-        call mpireduce_max(tensor_maxvals(alpha_id),globmax)
+        call mpireduce_min(tensor_minvals(tensor_id),globmin)
+        call mpireduce_max(tensor_maxvals(tensor_id),globmax)
         if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
       endif
       dataarray = tensor_scales(tensor_id) * dataarray
@@ -1396,14 +1431,15 @@ module Special
         end if
       end do; end do; end do
       ! Read data into memory
+      tensor_dims(tensor_id,ndims-1:ndims)=3
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
       if (present(name)) then
-        call mpireduce_min(tensor_minvals(alpha_id),globmin)
-        call mpireduce_max(tensor_maxvals(alpha_id),globmax)
+        call mpireduce_min(tensor_minvals(tensor_id),globmin)
+        call mpireduce_max(tensor_maxvals(tensor_id),globmax)
         if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
       endif
       dataarray = tensor_scales(tensor_id) * dataarray
