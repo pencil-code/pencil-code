@@ -1190,11 +1190,10 @@ module Special
       end if
       print*, 'scalar_id_S(1)',scalar_id_S(scalar_id)
       ! Get dataspace dimensions in scalar_dims.
-      call H5Sget_simple_extent_dims_F(scalar_id_S(scalar_id), &
-                                       !scalar_dims(scalar_id), &
-                                       scalar_dims, &
-                                       !maxdimsizes(scalar_id), &
-                                       maxdimsizes(1:1), &
+      call H5Sget_simple_extent_npoints_F(scalar_id_S(scalar_id), &
+                                       scalar_dims(scalar_id), &
+                                       !scalar_dims, &
+                                       !maxdimsizes(1:1), &
                                        hdferr)
       if (hdferr /= 0) call fatal_error('openDataset','cannot get correct dimensions for grid/t')
       ! Create a memory space mapping for input data (identifier in
