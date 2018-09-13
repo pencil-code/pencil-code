@@ -35,7 +35,8 @@ module Special
   use Diagnostics
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
-  use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL
+  use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max
+
   use Sub, only: numeric_precision, dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor,dot2_mn
   use HDF5
   use File_io, only: parallel_unit
@@ -247,7 +248,7 @@ module Special
       hdf_emftensors_plist = -1
       hdf_emftensors_file  = -1
 
-      call H5open_F(hdferr)
+      call H5open_F(hdferr)                                              ! Initializes HDF5 library.
 
       if (numeric_precision() == 'S') then
         if (lroot) write(*,*) 'initialize special: loading data as single precision'
@@ -257,67 +258,77 @@ module Special
         hdf_memtype = H5T_NATIVE_DOUBLE
       end if
         
-        if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
-        call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
+      if (lroot) write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'   !MR: Why parallel?
+      call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)   ! Creates porperty list for HDF5 file.
 
-!        if (lmpicomm) &     !MR: doesn't work for nompicomm
-!          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+!      if (lmpicomm) &     !MR: doesn't work for nompicomm
+!        call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
-        if (lroot) print *, 'initialize special: opening emftensors.h5 and loading relevant fields into memory...'
+      if (lroot) print *, 'initialize special: opening emftensors.h5 and loading relevant fields into memory...'
 
-        hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
+      hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
 
-        inquire(file=hdf_emftensors_filename, exist=hdf_exists)
+      inquire(file=hdf_emftensors_filename, exist=hdf_exists)
 
-        if (.not. hdf_exists) then
-          call H5Pclose_F(hdf_emftensors_plist, hdferr)
-          call H5close_F(hdferr)
-          call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
-        end if
+      if (.not. hdf_exists) then                                        ! If HDF5 file doesn't exist:
+        call H5Pclose_F(hdf_emftensors_plist, hdferr)                   ! Terminates access to property list.
+        call H5close_F(hdferr)                                          ! Frees resources used by library.
+        call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
+      end if
+!
+!Opens HDF5 file for read access only, returns file identifier hdf_emftensors_file.
+!
+      call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
+!
+!Checks whether in HDF5 file there is a link /emftensor/.
+!
+      call H5Lexists_F(hdf_emftensors_file,'/emftensor/', hdf_exists, hdferr)
 
-        call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
+      if (.not. hdf_exists) then                                         ! If link '/emftensor/' doesn't exist:
+        call H5Fclose_F(hdf_emftensors_file, hdferr)                     ! Terminates access to HDF5 file.
+        call H5Pclose_F(hdf_emftensors_plist, hdferr)
+        call H5close_F(hdferr)
+        call fatal_error('initialize_special','group /emftensor/ does not exist!')
+      end if
 
-        call H5Lexists_F(hdf_emftensors_file,'/emftensor/', hdf_exists, hdferr)
+      call H5Gopen_F(hdf_emftensors_file, 'emftensor', hdf_emftensors_group, hdferr) ! Opens group emftensor in HDF5 file.
 
+      if (lread_time_series) then 
+
+        call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
         if (.not. hdf_exists) then
           call H5Fclose_F(hdf_emftensors_file, hdferr)
           call H5Pclose_F(hdf_emftensors_plist, hdferr)
           call H5close_F(hdferr)
-          call fatal_error('initialize_special','group /emftensor/ does not exist!')
+          call fatal_error('initialize_special','group /grid/ does not exist!')
         end if
 
-        call H5Gopen_F(hdf_emftensors_file, 'emftensor', hdf_emftensors_group, hdferr)
+        call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
+        if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
 
-        if (lread_time_series) then 
-          call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
-          if (.not. hdf_exists) then
-            call H5Fclose_F(hdf_emftensors_file, hdferr)
-            call H5Pclose_F(hdf_emftensors_plist, hdferr)
-            call H5close_F(hdferr)
-            call fatal_error('initialize_special','group /grid/ does not exist!')
-          end if
-          call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
-          if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
-          call openDataset_grid('t',time_id)
-          allocate(tensor_times(scalar_dims(time_id))) 
-          call H5Sselect_all_F(scalar_id_S(time_id), hdferr)
-          if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
-          call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
-                     (/scalar_dims(time_id)/), hdferr, &
-                     scalar_id_memS(time_id), scalar_id_S(time_id))
-          if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
+        call openDataset_grid('t',time_id)
+        allocate(tensor_times(scalar_dims(time_id))) 
 
-          tstart = tensor_times(iload)
-          print*, 'max time array=',maxval(tensor_times)
-          print*, 'min time array=',minval(tensor_times)
-        end if
- 
+        call H5Sselect_all_F(scalar_id_S(time_id), hdferr)
+        if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
+
+        call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
+                   (/scalar_dims(time_id)/), hdferr, &
+                   scalar_id_memS(time_id), scalar_id_S(time_id))
+        if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
+
+        tstart = tensor_times(iload)
+        print*, 'max time array=',maxval(tensor_times)
+        print*, 'min time array=',minval(tensor_times)
+
+      end if
 
       ! Set dataset offsets
       tensor_offsets = 0
       do i=1,ntensors
         tensor_offsets(i,1:4) = [ 0, ipx*nx, ipy*ny , ipz*nz ]
       end do
+
       ! Set dataset counts
       tensor_counts = 1
       do i=1,ntensors
@@ -325,6 +336,7 @@ module Special
       !  tensor_counts(i,1:4) = [ nx, ny, nz, dataload_len ]
         tensor_counts(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
+
       ! Set dataset memory offsets
       tensor_memoffsets = 0
       ! Set dataset memory counts
@@ -334,6 +346,7 @@ module Special
       !  tensor_memcounts(i,1:4) = [ nx, ny, nz, dataload_len ]
         tensor_memcounts(i,1:4) = [ dataload_len, nx, ny, nz ]
       end do
+
       ! Set memory dimensions
       tensor_memdims = 3
       do i=1,ntensors
@@ -344,112 +357,146 @@ module Special
 
       if (lrun) then 
 
+        if (lalpha) then
+          if (.not.allocated(alpha_data)) allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
+          alpha_data = 0
+        elseif (allocated(alpha_data)) then
+          deallocate(alpha_data)
+        endif
 
-      if (lalpha) then
-        if (.not.allocated(alpha_data)) allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
-        alpha_data = 0
-      elseif (allocated(alpha_data)) then
-        deallocate(alpha_data)
-      endif
-      if (lbeta) then
-        if (.not.allocated(beta_data)) allocate(beta_data(dataload_len,nx,ny,nz,3,3))
-        beta_data = 0
-      elseif (allocated(beta_data)) then
-        deallocate(beta_data)
-      endif
-      if (lgamma) then
-        if (.not.allocated(gamma_data)) allocate(gamma_data(dataload_len,nx,ny,nz,3))
-        gamma_data = 0
-      elseif (allocated(gamma_data)) then
-        deallocate(gamma_data)
-      endif
-      if (ldelta) then
-        if (.not.allocated(delta_data)) allocate(delta_data(dataload_len,nx,ny,nz,3))
-        delta_data = 0
-      elseif (allocated(delta_data)) then
-        deallocate(delta_data)
-      endif
-      if (lkappa) then
-        if (.not.allocated(kappa_data)) allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
-        kappa_data = 0
-      elseif (allocated(kappa_data)) then
-        deallocate(kappa_data)
-      endif
-      if (lutensor) then
-        if (.not.allocated(utensor_data)) allocate(utensor_data(dataload_len,nx,ny,nz,3))
-        utensor_data = 0
-      elseif (allocated(utensor_data)) then
-        deallocate(utensor_data)
-      endif
-      if (lacoef) then
-        if (.not.allocated(acoef_data)) allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
-        acoef_data = 0
-      elseif (allocated(acoef_data)) then
-        deallocate(acoef_data)
-      endif
-      if (lbcoef) then
-        if (.not.allocated(bcoef_data)) allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
-        bcoef_data = 0
-      elseif (allocated(bcoef_data)) then
-        deallocate(bcoef_data)
-      endif
+        if (lbeta) then
+          if (.not.allocated(beta_data)) allocate(beta_data(dataload_len,nx,ny,nz,3,3))
+          beta_data = 0
+        elseif (allocated(beta_data)) then
+          deallocate(beta_data)
+        endif
+
+        if (lgamma) then
+          if (.not.allocated(gamma_data)) allocate(gamma_data(dataload_len,nx,ny,nz,3))
+          gamma_data = 0
+        elseif (allocated(gamma_data)) then
+          deallocate(gamma_data)
+        endif
+
+        if (ldelta) then
+          if (.not.allocated(delta_data)) allocate(delta_data(dataload_len,nx,ny,nz,3))
+          delta_data = 0
+        elseif (allocated(delta_data)) then
+          deallocate(delta_data)
+        endif
+
+        if (lkappa) then
+          if (.not.allocated(kappa_data)) allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
+          kappa_data = 0
+        elseif (allocated(kappa_data)) then
+          deallocate(kappa_data)
+        endif
+
+        if (lutensor) then
+          if (.not.allocated(utensor_data)) allocate(utensor_data(dataload_len,nx,ny,nz,3))
+          utensor_data = 0
+        elseif (allocated(utensor_data)) then
+          deallocate(utensor_data)
+        endif
+
+        if (lacoef) then
+          if (.not.allocated(acoef_data)) allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
+          acoef_data = 0
+        elseif (allocated(acoef_data)) then
+          deallocate(acoef_data)
+        endif
+
+        if (lbcoef) then
+          if (.not.allocated(bcoef_data)) allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
+          bcoef_data = 0
+        elseif (allocated(bcoef_data)) then
+          deallocate(bcoef_data)
+        endif
+
+        if (lroot) then
+          if (lalpha) then
+            write (*,*) 'Alpha scale:   ', alpha_scale
+            write (*,*) 'Alpha components used: '
+            do i=1,3
+              write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
+            end do
+          endif
+          if (lbeta) then
+            write (*,*) 'Beta scale:   ', beta_scale
+            write (*,*) 'Beta components used: '
+            do i=1,3
+              write (*,'(A3,3L3,A3)') '|', lbeta_arr(:,i), '|'
+            end do
+          endif
+          if (lgamma) then
+            write (*,*) 'Gamma scale:   ', gamma_scale
+            write (*,*) 'Gamma components used: '
+            write (*,'(A3,3L3,A3)') '|', lgamma_arr, '|'
+          endif
+          if (ldelta) then
+            write (*,*) 'Delta scale:   ', delta_scale
+            write (*,*) 'Delta components used: '
+            write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
+          endif
+          if (lkappa) then
+            write (*,*) 'Kappa scale:   ', kappa_scale
+            write (*,*) 'Kappa components used: '
+            do j=1,3
+              write(*,*) '|'
+              do i=1,3
+                write (*,'(A3,3L3,A3)') '||', lkappa_arr(:,j,i), '||'
+              end do
+            end do
+            write(*,*) '|'
+          endif
+          if (lutensor) then
+            write (*,*) 'U-tensor scale:  ', utensor_scale
+            write (*,*) 'U-tensor components used: '
+            write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
+          endif
+          if (lacoef) then
+            write (*,*) 'acoef scale:   ', acoef_scale
+            write (*,*) 'acoef components used: '
+            do i=1,3
+              write (*,'(A3,3L3,A3)') '|', lacoef_arr(:,i), '|'
+            end do
+          endif
+          if (lbcoef) then
+            write (*,*) 'bcoef scale:   ', bcoef_scale
+            write (*,*) 'bcoef components used: '
+            do j=1,3
+              write(*,*) '|'
+              do i=1,3
+                write (*,'(A3,3L3,A3)') '||', lbcoef_arr(:,j,i), '||'
+              end do
+            end do
+          endif
+        end if
 
         ! Open datasets
 
-        ! alpha
-        if (lalpha) then
-          call openDataset('alpha', alpha_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/alpha/'//trim(alpha_name)//' for alpha'
-        end if
-        ! beta
-        if (lbeta) then
-          call openDataset('beta', beta_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/beta/'//trim(beta_name)//' for beta'
-        end if
-        ! gamma
-        if (lgamma) then
-          call openDataset('gamma', gamma_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/gamma/'//trim(gamma_name)//' for gamma'
-        end if
-        ! delta
-        if (ldelta) then
-          call openDataset('delta', delta_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/delta/'//trim(delta_name)//' for delta'
-        end if
-        ! kappa
-        if (lkappa) then
-          call openDataset('kappa', kappa_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/kappa/'//trim(kappa_name)//' for kappa'
-        end if
-        ! utensor
-        if (lutensor) then
-          call openDataset('utensor', utensor_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/utensor/'//trim(utensor_name)//' for utensor'
-        end if
-        ! acoef
-        if (lacoef) then
-          call openDataset('acoef', acoef_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/acoef/'//trim(acoef_name)//' for acoef'
-        end if
-        ! bcoef
-        if (lbcoef) then
-          call openDataset('bcoef', bcoef_id)
-          if (lroot) write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
-        end if
+        if (lalpha)   call openDataset('alpha', alpha_id)
+        if (lbeta)    call openDataset('beta', beta_id)
+        if (lgamma)   call openDataset('gamma', gamma_id)
+        if (ldelta)   call openDataset('delta', delta_id)
+        if (lkappa)   call openDataset('kappa', kappa_id)
+        if (lutensor) call openDataset('utensor', utensor_id)
+        if (lacoef)   call openDataset('acoef', acoef_id)
+        if (lbcoef)   call openDataset('bcoef', bcoef_id)
 
-    endif        
- 
+      endif
+   
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f)
 !
-!  Called right before exiting.
+!    Called right before exiting.
 !
-!  14-aug-2011/Bourdin.KIS: coded
+!    14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+        real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+        call keep_compiler_quiet(f)
 
       if (lrun) then
 
@@ -506,7 +553,6 @@ module Special
       integer i,j,k
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
       if (lalpha) then
         ! Calculate alpha B
@@ -652,8 +698,6 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Mpicomm, only: mpireduce_min, mpireduce_max
-
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -662,137 +706,39 @@ module Special
       intent(inout) :: df
 
       integer :: i, j
-      real :: globmin, globmax ! output for diagnostics
-
+!
 !  Identify module and boundary conditions.
 !
       if (lroot.and.(headtt.or.ldebug)) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-!!
-    
       if (lfirst) then
+
         if (lread_time_series) then
           if (t >= tensor_times(iload)) then
-             lread_datasets=.true.
+            lread_datasets=.true.
             iload = iload + 1  
           endif
         endif
-      if (lread_datasets) then
-        if (iload > tensor_times_len) then 
-          call fatal_error('dspecial_dt', 'no more data to load') 
-        else
-        ! Load datasets
-        if (lalpha) then
-          call loadDataset(alpha_data, lalpha_arr, alpha_id, iload)
-          call mpireduce_min(tensor_minvals(alpha_id),globmin)
-          call mpireduce_max(tensor_maxvals(alpha_id),globmax)
-          if (lroot) then
-            write (*,*) 'Alpha scale:   ', alpha_scale
-            write (*,*) 'Alpha min/max: ', globmin, globmax
-            write (*,*) 'Alpha components used: '
-            do i=1,3
-              write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
-            end do
+
+        if (lread_datasets) then
+          if (iload > tensor_times_len) then 
+            call fatal_error('dspecial_dt', 'no more data to load') 
+          else
+          ! Load datasets
+            if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload,'Alpha')
+            if (lbeta)  call loadDataset(beta_data, lbeta_arr, beta_id, iload,'Beta')
+            if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload,'Gamma')
+            if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload,'Delta')
+            if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload,'Kappa')
+            if (lutensor) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload,'Utensor')
+            if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload,'Acoef')
+            if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload,'Bcoef')
           end if
+          lread_datasets=.false.
         end if
-        if (lbeta) then
-          call loadDataset(beta_data, lbeta_arr, beta_id, iload)
-          call mpireduce_min(tensor_minvals(beta_id),globmin)
-          call mpireduce_max(tensor_maxvals(beta_id),globmax)
-          if (lroot) then
-            write (*,*) 'Beta scale:   ', beta_scale
-            write (*,*) 'Beta min/max: ', globmin, globmax
-            write (*,*) 'Beta components used: '
-            do i=1,3
-              write (*,'(A3,3L3,A3)') '|', lbeta_arr(:,i), '|'
-            end do
-          end if
-        end if
-        if (lgamma) then
-          call loadDataset(gamma_data, lgamma_arr, gamma_id, iload)
-          call mpireduce_min(tensor_minvals(gamma_id),globmin)
-          call mpireduce_max(tensor_maxvals(gamma_id),globmax)
-          if (lroot) then
-            write (*,*) 'Gamma scale:   ', gamma_scale
-            write (*,*) 'Gamma min/max: ', globmin, globmax
-            write (*,*) 'Gamma components used: '
-            write (*,'(A3,3L3,A3)') '|', lgamma_arr, '|'
-          end if
-        end if
-        if (ldelta) then
-          call loadDataset(delta_data, ldelta_arr, delta_id, iload)
-          call mpireduce_min(tensor_minvals(delta_id),globmin)
-          call mpireduce_max(tensor_maxvals(delta_id),globmax)
-          if (lroot) then
-            write (*,*) 'Delta scale:   ', delta_scale
-            write (*,*) 'Delta min/max: ', globmin, globmax
-            write (*,*) 'Delta components used: '
-            write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
-          end if
-        end if
-        if (lkappa) then
-          call loadDataset(kappa_data, lkappa_arr, kappa_id, iload)
-          call mpireduce_min(tensor_minvals(kappa_id),globmin)
-          call mpireduce_max(tensor_maxvals(kappa_id),globmax)
-          if (lroot) then
-            write (*,*) 'Kappa scale:   ', kappa_scale
-            write (*,*) 'Kappa min/max: ', globmin, globmax
-            write (*,*) 'Kappa components used: '
-            do j=1,3
-              write(*,*) '|'
-              do i=1,3
-                write (*,'(A3,3L3,A3)') '||', lkappa_arr(:,j,i), '||'
-              end do
-            end do
-            write(*,*) '|'
-          end if
-        end if
-        if (lutensor) then
-          call loadDataset(utensor_data, lutensor_arr, utensor_id, iload)
-          call mpireduce_min(tensor_minvals(utensor_id),globmin)
-          call mpireduce_max(tensor_maxvals(utensor_id),globmax)
-          if (lroot) then
-            write (*,*) 'U-tensor scale:   ', utensor_scale
-            write (*,*) 'U-tensor min/max: ', globmin, globmax
-            write (*,*) 'U-tensor scale:  ', utensor_scale
-            write (*,*) 'U-tensor components used: '
-            write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
-          end if
-        end if
-        if (lacoef) then
-          call loadDataset(acoef_data, lacoef_arr, acoef_id, iload)
-          call mpireduce_min(tensor_minvals(acoef_id),globmin)
-          call mpireduce_max(tensor_maxvals(acoef_id),globmax)
-          if (lroot) then
-            write (*,*) 'acoef scale:   ', acoef_scale
-            write (*,*) 'acoef min/max: ', globmin, globmax
-            write (*,*) 'acoef components used: '
-            do i=1,3
-              write (*,'(A3,3L3,A3)') '|', lacoef_arr(:,i), '|'
-            end do
-          end if
-        end if
-        if (lbcoef) then
-          call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload)
-          call mpireduce_min(tensor_minvals(bcoef_id),globmin)
-          call mpireduce_max(tensor_maxvals(bcoef_id),globmax)
-          if (lroot) then
-            write (*,*) 'bcoef scale:   ', bcoef_scale
-            write (*,*) 'bcoef min/max: ', globmin, globmax
-            write (*,*) 'bcoef components used: '
-            do j=1,3
-              write(*,*) '|'
-              do i=1,3
-                write (*,'(A3,3L3,A3)') '||', lbcoef_arr(:,j,i), '||'
-              end do
-            end do
-          end if
-        end if
+
       end if
-      lread_datasets=.false.
-    end if
-    end if
 !
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
@@ -803,7 +749,9 @@ module Special
 !!        endif
 !!      endif
 !      emftmp=0
+!
       if (ldiagnos) then
+
         emftmp = p%acoef_emf + p%bcoef_emf + p%utensor_emf
         tmppencil = emftmp - p%emf
         !
@@ -888,7 +836,6 @@ module Special
       end if 
     
       call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -1073,22 +1020,15 @@ module Special
       type (pencil_case), intent(in) :: p
       integer :: i,j,k
 ! 
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(f)
 !
 ! Overwrite with a and b coefs if needed
 !
       if (lusecoefs) then
         emftmp=0
-        if (lacoef) then
-          emftmp = emftmp + p%acoef_emf
-        end if
-        if (lbcoef) then
-          emftmp = emftmp + p%bcoef_emf
-        end if
-        if (lutensor) then
-          emftmp = emftmp + p%utensor_emf
-        end if
+        if (lacoef) emftmp = emftmp + p%acoef_emf
+        if (lbcoef) emftmp = emftmp + p%bcoef_emf
+        if (lutensor) emftmp = emftmp + p%utensor_emf
       else
         emftmp = p%emf
       end if
@@ -1097,11 +1037,11 @@ module Special
 !
       if (lfirst.and.ldt) then
 
-       advec_special=0.0
-       diffus_special=0.0
-!!
-!! Calculate advec_special
-!!
+        advec_special=0.0
+        diffus_special=0.0
+!
+! Calculate advec_special
+!
         advec_special=0.
         if (lalpha) then
           call dot_mn_vm(dline_1, abs(p%alpha_coefs), tmppencil)
@@ -1117,10 +1057,9 @@ module Special
         end if
 
         maxadvec=maxadvec+advec_special
-
-!!
-!! Calculate diffus_special
-!!
+!
+! Calculate diffus_special
+!
         diffus_special=0.
         if (lbeta) then
           call dot_mn_vm(dline_1,abs(p%beta_coefs), tmppencil)
@@ -1142,7 +1081,6 @@ module Special
 
         maxdiffus=max(maxdiffus,diffus_special)
 
-
       end if 
 !
     endsubroutine special_calc_magnetic
@@ -1157,9 +1095,9 @@ module Special
       integer(HSIZE_T), dimension(10) :: maxdimsizes
       integer :: ndims
       logical :: hdf_exists
-      character(len=fnlen)            :: dataname
+      character(len=fnlen)            :: dataset
 
-      dataname = tensor_names(tensor_id)               ! name of dataset.
+      dataset = tensor_names(tensor_id)               ! name of dataset.
       ! Check that datagroup e.g. /emftensor/alpha exists
       call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
       if (.not. hdf_exists) then
@@ -1172,27 +1110,26 @@ module Special
         call fatal_error('openDataset','Error opening /emftensor/'//trim(datagroup))
       end if
       ! Check that dataset e.g. /emftensor/alpha/mean exists
-      call H5Lexists_F(tensor_id_G(tensor_id), dataname, hdf_exists, hdferr)
+      call H5Lexists_F(tensor_id_G(tensor_id), dataset, hdf_exists, hdferr)
       if (.not. hdf_exists) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
-                          '/'//trim(dataname)//' does not exist')
+                          '/'//trim(dataset)//' does not exist')
       end if
-      ! Open dataset dataname in group, returns identifier in tensor_id_D.
-      call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id),hdferr)
+      ! Open dataset dataset in group, returns identifier in tensor_id_D.
+      call H5Dopen_F(tensor_id_G(tensor_id), dataset, tensor_id_D(tensor_id),hdferr)
       if (hdferr /= 0) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','Error opening /emftensor/'// &
-                          trim(datagroup)//'/'//trim(dataname))
+                          trim(datagroup)//'/'//trim(dataset))
       end if
-      ! Get dataspace of dataset (identifier of copy of dataspace in
-      ! tensor_id_S).
+      ! Get dataspace of dataset (identifier of copy of dataspace in tensor_id_S).
       call H5Dget_space_F(tensor_id_D(tensor_id), tensor_id_S(tensor_id),hdferr)
       if (hdferr /= 0) then
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','Error opening dataspace for/emftensor/'// &
-                          trim(datagroup)//'/'//trim(dataname))
+                          trim(datagroup)//'/'//trim(dataset))
       end if
       ! Get dataspace dimensions in tensor_dims.
       ndims = tensor_ndims(tensor_id)
@@ -1200,8 +1137,7 @@ module Special
                                        tensor_dims(tensor_id,1:ndims), &
                                        maxdimsizes(1:ndims), &
                                        hdferr)
-      ! Create a memory space mapping for input data (identifier in
-      ! tensor_id_memS).
+      ! Create a memory space mapping for input data (identifier in tensor_id_memS).
       call H5Screate_simple_F(ndims, tensor_memdims(tensor_id,1:ndims), &
                               tensor_id_memS(tensor_id), hdferr)
       if (hdferr /= 0) then
@@ -1209,14 +1145,16 @@ module Special
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','Error creating memory mapping '// &
-                          'for /emftensor/'//trim(datagroup)//'/'//trim(dataname))
+                          'for /emftensor/'//trim(datagroup)//'/'//trim(dataset))
       end if
+
+      if (lroot) write(*,*) 'Using dataset /emftensor/'//trim(datagroup)//'/'//trim(dataset)//'.'
 
     end subroutine openDataset
 !***********************************************************************
     subroutine openDataset_grid(datagroup,scalar_id)
 
-      ! Open a dataset e.g. /emfscalar/alpha/data and auxillary dataspaces
+      ! Open a dataset in group grid, e.g. /grid/t
 
       character(len=*), intent(in)    :: datagroup     ! name of data group
       integer, intent(in)             :: scalar_id
@@ -1224,32 +1162,31 @@ module Special
       integer(HSIZE_T), dimension(10) :: maxdimsizes
       integer :: ndims
       logical :: hdf_exists
-      character(len=fnlen)            :: dataname
+      character(len=fnlen)            :: dataset
 
-      dataname = scalar_names(scalar_id)               ! name of dataset.
+      dataset = scalar_names(scalar_id)               ! name of dataset
 
-      ! Check that dataset e.g. /emfscalar/alpha/mean exists
-      call H5Lexists_F(hdf_grid_group, dataname, hdf_exists, hdferr)
+      ! Check that dataset exists
+      call H5Lexists_F(hdf_grid_group, dataset, hdf_exists, hdferr)
       if (.not. hdf_exists) then
         call H5Gclose_F(hdf_grid_group, hdferr)
         call fatal_error('openDataset','/grid/' &
-                          //trim(dataname)//' does not exist')
+                          //trim(dataset)//' does not exist')
       end if
-      ! Open dataset dataname in group, returns identifier in scalar_id_D.
-      call H5Dopen_F(hdf_grid_group, dataname, scalar_id_D(scalar_id),hdferr)
+      ! Open dataset dataset in group, returns identifier in scalar_id_D.
+      call H5Dopen_F(hdf_grid_group, dataset, scalar_id_D(scalar_id),hdferr)
       if (hdferr /= 0) then
         call H5Gclose_F(hdf_grid_group, hdferr)
         call fatal_error('openDataset','Error opening /grid/' &
-                          //trim(dataname))
+                          //trim(dataset))
       end if
-      ! Get dataspace of dataset (identifier of copy of dataspace in
-      ! scalar_id_S).
+      ! Get dataspace of dataset (identifier of copy of dataspace in scalar_id_S).
       call H5Dget_space_F(scalar_id_D(scalar_id), scalar_id_S(scalar_id),hdferr)
       if (hdferr /= 0) then
         call H5Dclose_F(scalar_id_D(scalar_id), hdferr)
         call H5Gclose_F(hdf_grid_group, hdferr)
         call fatal_error('openDataset','Error opening dataspace for/grid/' &
-                          //trim(dataname))
+                          //trim(dataset))
       end if
       print*, 'scalar_id_S(1)',scalar_id_S(scalar_id)
       ! Get dataspace dimensions in scalar_dims.
@@ -1259,7 +1196,7 @@ module Special
                                        !maxdimsizes(scalar_id), &
                                        maxdimsizes(1:1), &
                                        hdferr)
-      if(hdferr /= 0) call fatal_error('openDataset','cannot get correct dimensions for grid/t')
+      if (hdferr /= 0) call fatal_error('openDataset','cannot get correct dimensions for grid/t')
       ! Create a memory space mapping for input data (identifier in
       ! scalar_id_memS).
       !call H5Screate_simple_F(1, scalar_memdims(scalar_id), &
@@ -1269,7 +1206,7 @@ module Special
         call H5Dclose_F(scalar_id_D(scalar_id), hdferr)
         call H5Gclose_F(hdf_grid_group, hdferr)
         call fatal_error('openDataset','Error creating memory mapping '// &
-                          'for /grid/'//trim(dataname))
+                          'for /grid/'//trim(dataset))
       end if
 
     end subroutine openDataset_grid
@@ -1307,7 +1244,7 @@ module Special
 
     end subroutine loadDataset_scalar
 !*********************************************************************** 
-    subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart)
+    subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a vector, beginning at loadstart
 
@@ -1315,8 +1252,11 @@ module Special
       logical, dimension(3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
+      character(*), optional :: name
+
       integer :: ndims
       integer(HSIZE_T) :: mask_i
+      real :: globmin, globmax ! output for diagnostics
 
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,1) = loadstart
@@ -1329,29 +1269,35 @@ module Special
           ! Set the new offset for data reading
           tensor_offsets(tensor_id,ndims)    = mask_i-1
           tensor_memoffsets(tensor_id,ndims) = mask_i-1
-          ! Select hyperslab for data
+          ! Select hyperslab for data.
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
                                      hdferr)
-          ! Select hyperslab for memory
+          ! Select hyperslab for memory.
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_memoffsets(tensor_id,1:ndims),       &
                                      tensor_memcounts(tensor_id,1:ndims),        &
                                      hdferr)
         end if
       end do
-      ! Read data into memory
+      ! Read data into memory.
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
-      dataarray = tensor_scales(tensor_id) * dataarray
+
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
+      if (present(name)) then
+        call mpireduce_min(tensor_minvals(alpha_id),globmin)
+        call mpireduce_max(tensor_maxvals(alpha_id),globmax)
+        if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
+      endif
+      dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank1
 !*********************************************************************** 
-    subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart)
+    subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
 
@@ -1359,8 +1305,11 @@ module Special
       logical, dimension(3,3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
+      character(*), optional :: name
+
       integer :: ndims
       integer(HSIZE_T) :: mask_i, mask_j
+      real :: globmin, globmax ! output for diagnostics
 
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,1) = loadstart
@@ -1395,13 +1344,18 @@ module Special
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
-      dataarray = tensor_scales(tensor_id) * dataarray
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
+      if (present(name)) then
+        call mpireduce_min(tensor_minvals(alpha_id),globmin)
+        call mpireduce_max(tensor_maxvals(alpha_id),globmax)
+        if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
+      endif
+      dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank2
 !*********************************************************************** 
-    subroutine loadDataset_rank3(dataarray, datamask, tensor_id, loadstart)
+    subroutine loadDataset_rank3(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a 3-rank tensor, beginning at loadstart
 
@@ -1409,8 +1363,11 @@ module Special
       logical, dimension(3,3,3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
+      character(*), optional :: name
+
       integer :: ndims
       integer(HSIZE_T) :: mask_i, mask_j, mask_k
+      real :: globmin, globmax ! output for diagnostics
 
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,1) = loadstart
@@ -1443,9 +1400,14 @@ module Special
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
-      dataarray = tensor_scales(tensor_id) * dataarray
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
+      if (present(name)) then
+        call mpireduce_min(tensor_minvals(alpha_id),globmin)
+        call mpireduce_max(tensor_maxvals(alpha_id),globmax)
+        if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
+      endif
+      dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank3
 !*********************************************************************** 
