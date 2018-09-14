@@ -238,7 +238,7 @@ module Special
 
       if (lrun) then 
 
-        if (trim(defaultname) == 'time-series') then
+        if (trim(defaultname) == 'time-series' .or. trim(defaultname) == 'time-crop') then
           lread_time_series=.true.
         else
         !  call fatal_error('initialize_special','Unknown interpolation chosen!')
@@ -1348,23 +1348,43 @@ endif
           tensor_memoffsets(tensor_id,ndims)   = mask_j-1
 
           ! Hyperslab for data
+          print '(a,a,6(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
+          print '(a,a,6(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
+          print '(a,a,6(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
+          print '(a,a,6(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
+
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
                                      hdferr)
+           if (hdferr /= 0) then
+             call fatal_error('loadDataset_rank2','Error creating File mapping '// &
+                           'for /grid/'//name)
+           end if
           ! Hyperslab for memory
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_memoffsets(tensor_id,1:ndims),        &
                                      tensor_memcounts(tensor_id,1:ndims),         &
                                      hdferr)
+           if (hdferr /= 0) then
+             call fatal_error('loadDataset_rank2','Error creating memory mapping '// &
+                           'for /grid/'//name)
+           end if
         end if
       end do; end do
 
+
       ! Read data into memory
       tensor_dims(tensor_id,ndims-1:ndims)=3
+      print '(a,a,6(1x,i3))', 'tensor dims',name,tensor_dims(tensor_id,:ndims)
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+           if (hdferr /= 0) then
+             call fatal_error('loadDataset_rank1','Error reading dataset '// &
+                           'for /grid/'//name)
+           end if
+
       tensor_maxvals(tensor_id) = maxval(dataarray)
       tensor_minvals(tensor_id) = minval(dataarray)
       if (present(name)) then
@@ -1406,6 +1426,11 @@ endif
           tensor_memoffsets(tensor_id,ndims-1) = mask_j-1
           tensor_memoffsets(tensor_id,ndims)   = mask_k-1
           ! Hyperslab for data
+          print '(a,a,7(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
+          print '(a,a,7(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
+          print '(a,a,7(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
+          print '(a,a,7(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
+
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
