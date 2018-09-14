@@ -13,17 +13,15 @@
 ! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 !
-! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec)
-! PENCILS PROVIDED nu; gradnu(3); gYYk(3,nchemspec)
+! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3)
+! PENCILS PROVIDED nu; gradnu(3)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED lambda; glambda(3); lambda1
+! PENCILS PROVIDED lambda; glambda(3)
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
-! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
-! PENCILS PROVIDED ccondens; ppwater
-! PENCILS PROVIDED Ywater
+! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec)
+
 !
 !***************************************************************
 module Chemistry
@@ -40,19 +38,14 @@ module Chemistry
   include 'chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension(mx,my,mz) :: cp_full, cv_full
-  real, dimension(:,:,:), pointer :: mu1_full
-  real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
-  real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
-!real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
+  real, dimension(mx,my,mz) :: mu1_full
 ! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: Diff_coef_const=impossible
-  real :: Sc_number=0.7, Pr_number=0.7
-  real :: Cp_const=impossible
+  real :: Sc_number=0.7
   real :: Cv_const=impossible
-  logical :: lfix_Sc=.false., lfix_Pr=.false.
+  logical :: lfix_Sc=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
   character(len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
@@ -68,27 +61,21 @@ module Chemistry
   real :: init_pressure=10.13e5
   real :: global_phi=impossible
 !
-  logical :: lone_spec=.false., lfilter_strict=.false.
+  logical :: lfilter_strict=.false.
 !
 !  parameters related to chemical reactions, diffusion and advection
 !
   logical :: lreactions=.true.
   logical :: ladvection=.true.
   logical :: ldiffusion=.true.
-!  logical :: lnospec_eqns=.true.
 !
   logical :: lheatc_chemistry=.true.
-  logical :: lDiff_simple=.false.
-  logical :: lDiff_lewis=.false.
+  logical :: lDiff_simple=.true.
   logical :: lThCond_simple=.false.
   logical :: lT_const=.false.
-  logical :: lDiff_fick=.false.
-  logical :: lFlux_simple=.false.
   logical :: ldiff_corr=.false.
   logical, save :: tran_exist=.false.
   logical, save :: lew_exist=.false.
-  logical :: lSmag_heat_transport=.false.
-  logical :: lSmag_diffusion=.false.
 !
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
@@ -107,19 +94,14 @@ module Chemistry
   logical, allocatable, dimension(:) :: back
   character(len=30), allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
-  logical :: ldamp_zone_for_NSCBC=.false.
+!  logical :: ldamp_zone_for_NSCBC=.false.
   logical :: linit_temperature=.false., linit_density=.false.
   logical :: lreac_as_aux=.false.
 !
 ! 1step_test case
 ! possible, will be removed later
 !
-  logical :: l1step_test=.false.
-  logical :: lflame_front=.false., ltriple_flame=.false.
-  logical :: lFlameMaster=.false.
-  integer :: ipr=2
-  real :: Tc=440., Tinf=2000., beta=1.09
-  real :: z_cloud=0.
+  logical :: lflame_front=.false.
 !
 !  hydro-related parameters
 !
@@ -132,10 +114,7 @@ module Chemistry
   character(len=60) :: prerun_directory='nothing'
   character(len=60) :: file_name='nothing'
 !
-  real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
-  real, allocatable, dimension(:,:,:,:) :: Diff_full, Diff_full_add
-  real, dimension(mx,my,mz,nchemspec) :: XX_full
-  real, dimension(mx,my,mz,nchemspec) :: species_viscosity
+  real, allocatable, dimension(:,:,:,:) ::  Diff_full_add
   real, dimension(mx,my,mz,nchemspec), save :: RHS_Y_full
   real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
@@ -151,12 +130,6 @@ module Chemistry
   logical, allocatable, dimension(:) :: Mplus_case
   logical, allocatable, dimension(:) :: photochem_case
   real :: lamb_low, lamb_up, Pr_turb=0.7
-!
-!   Atmospheric physics
-!
-  logical :: latmchem=.false.
-  logical :: lcloud=.false.
-  integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
 !   Lewis coefficients
 !
@@ -174,18 +147,17 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, &
-      lDiff_lewis,lFlux_simple, &
-      lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const, &
+      amplchemk,amplchemk2, chem_diff,nu_spec, &
+      lThCond_simple,lambda_const, visc_const,Cv_const,Diff_coef_const, &
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
       init_TT2,init_rho, &
-      init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
-      str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
-      ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory, &
+      init_ux,init_uy,init_uz,Sc_number,init_pressure,lfix_Sc, &
+      str_thick,lT_tanh,lT_const,lheatc_chemistry, &
+      prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud
+      reac_rate_method,global_phi, Pr_turb !ldamp_zone_for_NSCBC,
 !
 !
 ! run parameters
@@ -193,11 +165,11 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lFlux_simple, &
-      lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
+      lmobility,mobility, lfilter,lT_tanh, &
+      lThCond_simple,visc_const,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
-      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
+      ldiff_corr, lreac_as_aux, reac_rate_method,global_phi
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -213,8 +185,6 @@ module Chemistry
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
 !
 !
-  integer :: idiag_cpfull=0
-  integer :: idiag_cvfull=0
   integer :: idiag_e_intm=0
 !
   integer :: idiag_lambdam=0
@@ -224,6 +194,7 @@ module Chemistry
 !
   integer :: ireac=0
   integer, dimension(nchemspec) :: ireaci=0
+!
 
   contains
 !
@@ -271,6 +242,7 @@ module Chemistry
 !  Register viscosity
 !
       call farray_register_auxiliary('viscosity',iviscosity,communicated=.false.)
+      call farray_register_auxiliary('cp',icp,communicated=.false.)
 !
 !  Writing files for use with IDL
 !
@@ -292,12 +264,21 @@ module Chemistry
       if (cheminp) input_file='chem.inp'
       if (chemin) input_file='chem.in'
 !
-      if (lcheminp) call read_species(input_file)
+      if (lcheminp) then
+        call read_species(input_file)
+      else
+        varname(ichemspec(1):ichemspec(nchemspec)) = (/ 'H2        ','O2        ','H2O       ','H         ','O         ',&
+             'OH        ','HO2       ','H2O2      ','AR        ','N2        ','HE        ','CO        ','CO2       '/)
+      endif
 !
 !  Read data on the thermodynamical properties of the different species.
 !  All these data are stored in the array species_constants.
 !
-      if (lcheminp) call read_thermodyn(input_file)
+      if (lcheminp) then
+        call read_thermodyn(input_file)
+      else 
+        call read_thermodyn_simple()
+      endif
 !
 !  Write all data on species and their thermodynamics to file.
 !
@@ -308,6 +289,86 @@ module Chemistry
       if (lroot) call svn_id( "$Id$")
 !
     endsubroutine register_chemistry
+!***********************************************************************
+    subroutine read_thermodyn_simple()
+
+!   Hard-coded mechanism
+!   SPECIES:
+!   1-H2 2-O2 3-H2O 4-H 5-O 6-OH 7-HO2 8-H2O2 9-AR 10-N2 11-HE 12-CO 13-CO2
+
+    integer, dimension(7) :: iaa1,iaa2
+    integer :: iTemp1=2,iTemp2=3,iTemp3=4
+!
+    iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
+    iaa1(5)=9;iaa1(6)=10;iaa1(7)=11
+!
+    iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
+    iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
+
+    species_constants(5,iaa1(1):iaa2(7)) = (/ 2.54205966E+00,-2.75506191E-05,-3.10280335E-09, 4.55106742E-12, &
+                                             -4.36805150E-16, 2.92308027E+04, 4.92030811E+00, 2.94642878E+00, &
+                                             -1.63816649E-03, 2.42103170E-06,-1.60284319E-09, 3.89069636E-13, &
+                                              2.91476445E+04, 2.96399498E+00 /)
+    species_constants(4,iaa1(1):iaa2(7)) = (/ 2.50000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, &
+                                              0.00000000E+00, 2.54716270E+04,-4.60117638E-01, 2.50000000E+00, &
+                                              0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, &
+                                              2.54716270E+04,-4.60117608E-01 /)
+    species_constants(6,iaa1(1):iaa2(7)) = (/ 2.86472886E+00, 1.05650448E-03,-2.59082758E-07, 3.05218674E-11, &
+                                             -1.33195876E-15, 3.68362875E+03, 5.70164073E+00, 4.12530561E+00, &
+                                             -3.22544939E-03, 6.52764691E-06,-5.79853643E-09, 2.06237379E-12, &
+                                              3.34630913E+03,-6.90432960E-01 /)
+    species_constants(1,iaa1(1):iaa2(7)) = (/ 2.99142337E+00, 7.00064411E-04,-5.63382869E-08,-9.23157818E-12, &
+                                              1.58275179E-15,-8.35033997E+02,-1.35511017E+00, 3.29812431E+00, &
+                                              8.24944174E-04,-8.14301529E-07,-9.47543433E-11, 4.13487224E-13, &
+                                             -1.01252087E+03,-3.29409409E+00 /)
+    species_constants(2,iaa1(1):iaa2(7)) = (/ 3.69757819E+00, 6.13519689E-04,-1.25884199E-07, 1.77528148E-11, &
+                                             -1.13643531E-15,-1.23393018E+03, 3.18916559E+00, 3.21293640E+00, &
+                                              1.12748635E-03,-5.75615047E-07, 1.31387723E-09,-8.76855392E-13, &
+                                             -1.00524902E+03, 6.03473759E+00 /)
+    species_constants(3,iaa1(1):iaa2(7)) = (/ 2.67214561E+00, 3.05629289E-03,-8.73026011E-07, 1.20099639E-10, &
+                                             -6.39161787E-15,-2.98992090E+04, 6.86281681E+00, 3.38684249E+00, & 
+                                              3.47498246E-03,-6.35469633E-06, 6.96858127E-09,-2.50658847E-12, &
+                                             -3.02081133E+04, 2.59023285E+00 /)
+    species_constants(7,iaa1(1):iaa2(7)) = (/ 4.01721090E+00, 2.23982013E-03,-6.33658150E-07, 1.14246370E-10, &
+                                             -1.07908535E-14, 1.11856713E+02, 3.78510215E+00, 4.30179801E+00, &
+                                             -4.74912051E-03, 2.11582891E-05,-2.42763894E-08, 9.29225124E-12, &
+                                              2.94808040E+02, 3.71666245E+00 /)
+    species_constants(8,iaa1(1):iaa2(7)) = (/ 4.57316685E+00, 4.33613639E-03,-1.47468882E-06, 2.34890357E-10, &
+                                             -1.43165356E-14,-1.80069609E+04, 5.01136959E-01, 3.38875365E+00, &
+                                              6.56922581E-03,-1.48501258E-07,-4.62580552E-09, 2.47151475E-12, &
+                                             -1.76631465E+04, 6.78536320E+00 /)
+    species_constants(9,iaa1(1):iaa2(7)) = (/ 0.02500000E+02, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, &
+                                              0.00000000E+00,-0.07453750E+04, 0.04366001E+02, 0.02500000E+02, &
+                                              0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, &
+                                             -0.07453750E+04, 0.04366001E+02 /) 
+    species_constants(10,iaa1(1):iaa2(7)) = (/0.02926640E+02, 0.01487977E-01,-0.05684761E-05, 0.01009704E-08, &
+                                             -0.06753351E-13,-0.09227977E+04, 0.05980528E+02, 0.03298677E+02, &
+                                              0.01408240E-01,-0.03963222E-04, 0.05641515E-07,-0.02444855E-10, &
+                                             -0.01020900E+05, 0.03950372E+02 /)
+    species_constants(11,iaa1(1):iaa2(7)) = (/0.02500000E+02, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, &
+                                              0.00000000E+00,-0.07453750E+04, 0.09153489E+01, 0.02500000E+02, &
+                                              0.00000000E+00, 0.00000000E+00, 0.00000000E+00, 0.00000000E+00, &
+                                             -0.07453750E+04, 0.09153488E+01 /)
+    species_constants(12,iaa1(1):iaa2(7)) = (/0.03025078E+02, 0.01442689E-01,-0.05630828E-05, 0.01018581E-08, &
+                                             -0.06910952E-13,-0.01426835E+06, 0.06108218E+02, 0.03262452E+02, &
+                                              0.01511941E-01,-0.03881755E-04, 0.05581944E-07,-0.02474951E-10, &
+                                             -0.01431054E+06, 0.04848897E+02 /)
+    species_constants(13,iaa1(1):iaa2(7)) = (/0.04453623E+02, 0.03140169E-01,-0.01278411E-04, 0.02393997E-08, &
+                                             -0.01669033E-12,-0.04896696E+06,-0.09553959E+01, 0.02275725E+02, &
+                                              0.09922072E-01,-0.01040911E-03, 0.06866687E-07,-0.02117280E-10, &
+                                             -0.04837314E+06, 0.01018849E+03 /)
+
+    species_constants(1:13,imass) = (/ 2.*1.00794, 2.*15.9994, 2.*1.00794+15.9994, 1.00794, &
+                                       15.9994, 1.00794+15.9994, 1.00794+2.*15.9994, 2.*1.00794+2.*15.9994, &
+                                       39.948, 2.*14.00674, 4.0026, 12.0107+15.9994, 12.0107+2.*15.9994 /)
+
+    species_constants(1:13,iTemp1) = (/ 300.00, 300.00, 300.00, 300.00, 300.00, 200.00, 200.00, &
+                                        300.00, 300.00, 300.00, 300.00, 300.00, 300.00 /)
+    species_constants(1:13,iTemp3) = (/ 5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 6000.00, 3500.00, &
+                                        5000.00, 5000.00, 5000.00, 5000.00, 5000.00, 5000.00 /)
+    species_constants(1:13,iTemp2) = 1000.00
+
+    endsubroutine read_thermodyn_simple
 !***********************************************************************
     subroutine initialize_chemistry(f)
 !
@@ -333,7 +394,6 @@ module Chemistry
 !
 !  initialize chemistry
 !
-      if (lcheminp) then
         if (unit_temperature /= 1) then
           call fatal_error('initialize_chemistry', &
               'unit_temperature must be unity when using chemistry!')
@@ -346,72 +406,14 @@ module Chemistry
           Rgas_unit_sys = k_B_cgs/m_u_cgs
           Rgas = Rgas_unit_sys/unit_energy
         endif
-      endif
-!
-      if (nchemspec == 1) then
-        lone_spec = .true.
-        lreactions = .false.
-        ladvection = .false.
-        ldiffusion = .false.
-      endif
-!
-!  check for the existence of chemistry input files
-!
-      inquire (file=file1,exist=exist1)
-      inquire (file=file2,exist=exist2)
-      inquire (file='chemistry.dat',exist=exist)
 !
 !  Read in data file in ChemKin format
 !
       if (lcheminp) then
         call chemkin_data(f)
         data_file_exit = .true.
-        if (latmchem) then
-          call find_species_index('O2',ind_glob,ind_chem,found_specie)
-          if (found_specie) then
-            index_O2 = ind_chem
-          else
-            call fatal_error('initialize_chemistry', 'no O2 has been found')
-          endif
-          call find_species_index('N2',ind_glob,ind_chem,found_specie)
-          if (found_specie) then
-            index_N2 = ind_chem
-          else
-            call fatal_error('initialize_chemistry', 'no N2 has been found')
-          endif
-          call find_species_index('O2N2',ind_glob,ind_chem,found_specie)
-          if (found_specie) then
-            index_O2N2 = ind_chem
-          else
-            call fatal_error('initialize_chemistry', 'no O2N2 has been found')
-          endif
-          call find_species_index('H2O',ind_glob,ind_chem,found_specie)
-          if (found_specie) then
-            index_H2O = ind_chem
-          else
-            call fatal_error('initialize_chemistry', 'no H2O has been found')
-          endif
-        endif
-        if (lcloud) then
-          call find_species_index('H2O',ind_glob,ind_chem,found_specie)
-          if (found_specie) then
-            index_H2O = ind_chem
-          else
-            call fatal_error('initialize_chemistry', 'no H2O has been found')
-          endif
-        endif
-      endif
-!
-!  Alternatively, read in stoichiometric matrices in explicit format.
-!  For historical reasons this is referred to as "astrobiology_data"
-!
-      if (exist1 .and. exist2) then
-        call astrobiology_data(f)
-        data_file_exit = .true.
-      endif
-!
-      if (exist) then
-        call astrobiology_data(f)
+      else
+        call chemkin_data_simple(f)
         data_file_exit = .true.
       endif
 !
@@ -420,7 +422,6 @@ module Chemistry
       if (.not. data_file_exit) then
         call stop_it('initialize_chemistry: there is no chemistry data file')
       endif
-!
 !
       if ((nxgrid == 1) .and. (nygrid == 1) .and. (nzgrid == 1)) then
         ll1 = 1
@@ -496,12 +497,6 @@ module Chemistry
           enddo
           close (3)
         endif
-      endif
-!
-      if (leos) then
-        call get_shared_variable('mu1_full',mu1_full,caller='initialize_chemistry')
-      else
-        call warning('initialize_chemistry','mu1_full not provided by eos')
       endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -596,25 +591,6 @@ module Chemistry
           endif
         case ('flame_front')
           call flame_front(f)
-        case ('TTD')
-          call TTD(f)
-        case ('triple_flame')
-          call triple_flame(f)
-        case ('flame')
-          if (lroot) print*, 'initchem: flame '
-          call flame(f)
-        case ('flame_blob')
-          call flame_blob(f)
-        case ('opposite_flames')
-          call opposite_flames(f)
-        case ('opposite_ignitions')
-          call opposite_ignitions(f)
-        case ('prerun_1D')
-          call prerun_1D(f,prerun_directory)
-        case ('prerun_1D_opp')
-          call prerun_1D_opp(f,prerun_directory)
-        case ('FlameMaster')
-          call FlameMaster_ini(f,file_name)
         case default
 !
 !  Catch unknown values
@@ -630,13 +606,6 @@ module Chemistry
 !
       if (linitial_condition) call initial_condition_chemistry(f)
 !
-!   The following lines are kept temporally
-!
-!      if (lone_spec) then
-!        f(:,:,:,ichemspec(1))=1.
-!        if (lroot) print*, 'initchem: this is one specie case'
-!      endif
-!
     endsubroutine init_chemistry
 !***********************************************************************
     subroutine pencil_criteria_chemistry()
@@ -645,50 +614,30 @@ module Chemistry
 !
 !  13-aug-07/steveb: coded
 !
-      lpenc_requested(i_gXXk) = .true.
-      lpenc_requested(i_gYYk) = .true.
-!      if (lreactions)
       lpenc_requested(i_ghhk) = .true.
 !
       if (lreactions) lpenc_requested(i_DYDt_reac) = .true.
       lpenc_requested(i_DYDt_diff) = .true.
 !
-      if (lcheminp) then
         lpenc_requested(i_rho) = .true.
         lpenc_requested(i_cv) = .true.
         lpenc_requested(i_cp) = .true.
         lpenc_requested(i_cv1) = .true.
         lpenc_requested(i_cp1) = .true.
-!         if (lreactions)
         lpenc_requested(i_H0_RT) = .true.
-!         if (lreactions)
         lpenc_requested(i_S0_R) = .true.
         lpenc_requested(i_nu) = .true.
         lpenc_requested(i_gradnu) = .true.
-        lpenc_requested(i_cs2) = .true.
 !
-!         if (lreactions)
         lpenc_requested(i_hhk_full) = .true.
-        if (lThCond_simple) lpenc_requested(i_glncp) = .true.
+!        lpenc_requested(i_glncp) = .true.
 !
         if (lheatc_chemistry) then
           lpenc_requested(i_lambda) = .true.
           lpenc_requested(i_glambda) = .true.
-          lpenc_requested(i_lambda1) = .true.
-          if (lSmag_heat_transport) lpenc_requested(i_sij2) = .true.
-        endif
-!
-        if (latmchem .or. lcloud) then
-          lpenc_requested(i_ppwater) = .true.
-          lpenc_requested(i_Ywater) = .true.
-        endif
 !
         if (ldiffusion .or. lparticles_chemistry) then
           lpenc_requested(i_Diff_penc_add) = .true.
-          if (.not. lDiff_fick) then
-            lpenc_requested(i_mukmu1) = .true.
-            lpenc_requested(i_glnmu) = .true.
-          endif
         endif
       endif
 !
@@ -702,10 +651,7 @@ module Chemistry
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_cv1))    lpencil_in(i_cv) = .true.
-      if (lpencil_in(i_cp1))    lpencil_in(i_cp) = .true.
-      if (lpencil_in(i_glambda).or. lpencil_in(i_lambda1)) &
-          lpencil_in(i_lambda) = .true.
+      lpencil_in(i_lambda) = .true.
 !
       if (lpencil_in(i_H0_RT).or. lpencil_in(i_S0_R))  then
         lpencil_in(i_TT) = .true.
@@ -730,10 +676,6 @@ module Chemistry
         lpencil_in(i_glnTT) = .true.
         lpencil_in(i_TT) = .true.
       endif
-      if (lpencil_in(i_ppwater))  then
-        lpencil_in(i_TT) = .true.
-        lpencil_in(i_rho) = .true.
-      endif
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -751,80 +693,19 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx,3) :: gXX_tmp, glncp_tmp!, ghhk_tmp
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
-      integer :: k,i
+      integer :: k,i,j2,j3
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
-      real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4
-      logical :: ldiffusion2
-!
-      ldiffusion2 = ldiffusion .and. (.not. lchemonly)
-!
-      if (lpencil(i_gYYk)) then
-        do k = 1,nchemspec
-          call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
-          do i = 1,3
-            p%gYYk(:,i,k) = gXX_tmp(:,i)
-          enddo
-        enddo
-      endif
-!
-      if (lpencil(i_gXXk)) then
-        do k = 1,nchemspec
-          call grad(XX_full(:,:,:,k),gXX_tmp)
-          do i = 1,3
-            p%gXXk(:,i,k) = gXX_tmp(:,i)
-          enddo
-        enddo
-      endif
-!
-      if (lpencil(i_mukmu1)) then
-        do k = 1,nchemspec
-          p%mukmu1(:,k) = species_constants(k,imass)/unit_mass*p%mu1(:)
-        enddo
-      endif
-!
-      if (lcheminp) then
-!
-        if (lpencil(i_glncp) .and. lThCond_simple) then
-          call grad(cp_full,glncp_tmp)
-          do i = 1,3
-            p%glncp(:,i) = glncp_tmp(:,i)/cp_full(l1:l2,m,n)
-          enddo
-        endif
-!
-!  Specific heat at constant volume (i.e. density)
-!
-        if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
-        if (lpencil(i_cv1)) p%cv1 = 1./p%cv
-        if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
-        if (lpencil(i_cp1)) p%cp1 = 1./p%cp
+      real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4, D_th
+      real, dimension(nchemspec) ::  cp_k, cv_k, Le = 1.
+      real, dimension(nx,3) :: glnDiff_full_add
 !
         TT_2 = p%TT*p%TT
         TT_3 = TT_2*p%TT
         TT_4 = TT_2*TT_2
-!
-!  Viscosity of a mixture
-!
-        if (lpencil(i_nu).and.(.not. lchemonly)) then
-          if (visc_const < impossible) then
-            p%nu = visc_const
-          else
-            p%nu = f(l1:l2,m,n,iviscosity)
-          endif
-          if (lpencil(i_gradnu)) then
-            if (visc_const < impossible) then
-              p%gradnu = 0.
-            else
-              call grad(f(:,:,:,iviscosity),p%gradnu)
-            endif
-          endif
-        endif
-!
-      endif
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -834,17 +715,6 @@ module Chemistry
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-!
-! Natalia:pencil_check
-! if lpencil_check and full compiler settings then
-! the problem appears for T_loc= p%TT
-! Does anybody know why it is so?
-! While this problem is not resolved
-! I use T_loc= exp(f(l1:l2,m,n,ilnTT))
-!  NILS: This is going to fail if nologtemperature=T. The real error
-!  NILS: should be found instead of making a quick fix.
-!  NILS: I am not able to reproduce the error natalia reported.
-!
 !              T_loc= exp(f(l1:l2,m,n,ilnTT))
             T_loc = p%TT
             where (T_loc <= T_mid)
@@ -874,40 +744,18 @@ module Chemistry
               endif
             enddo
           endif
-!
-          if (lpencil(i_ghhk)  .and. (.not. lchemonly)) then
-            do k = 1,nchemspec
-              if (species_constants(k,imass) > 0.)  then
-                do i = 1,3
-                  p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1) &
-                      /species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
-                enddo
-              endif
-            enddo
-          endif
         endif
       endif
 !
 !  Find the entropy by using fifth order temperature fitting function
 !
-      if (lpencil(i_S0_R) .and. (.not. llsode .or. lchemonly)) then
+      if (lpencil(i_S0_R)) then
 !AB: Natalia, maybe we should ask earlier for lentropy?
         if ((.not. lT_const).and.(ilnTT /= 0)) then
           do k = 1,nchemspec
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-!
-! Natalia:pencil_check
-! if lpencil_check and full compiler settings then
-! the problem appears for T_loc= p%TT
-! Does anybody know why it is so?
-! While this problem is not resolved
-! I use T_loc= exp(f(l1:l2,m,n,ilnTT))
-!  NILS: This is going to fail if nologtemperature=T. The real error
-!  NILS: should be found instead of making a quick fix.
-!  NILS: I am not able to reproduce the error natalia reported.
-!
             T_loc = p%TT
 !T_loc= exp(f(l1:l2,m,n,ilnTT))
             where (T_loc <= T_mid .and. T_low <= T_loc)
@@ -932,166 +780,31 @@ module Chemistry
 ! Calculate the reaction term and the corresponding pencil
 !
       if (lreactions .and. lpencil(i_DYDt_reac)) then
-        if (.not. llsode .or. lchemonly) then
-          call calc_reaction_term(f,p)
-        else
-          p%DYDt_reac = 0.
-        endif
+        call calc_reaction_term(f,p)
       else
         p%DYDt_reac = 0.
       endif
 !
-! Calculate the thermal diffusivity
-!
-      if (lpencil(i_lambda) .and. lheatc_chemistry) then
-        if ((lThCond_simple) .or. (lambda_const < impossible)) then
-          if (lThCond_simple) then
-!
-!  04-18-11/Julien: Modified the computation of simple heat conductivity according
-!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
-!                   to 2.58e-4
-!                   instead of 1e4, and represents the ratio \lambda0/cp0. 
-!                   Formula:
-!                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
-!
-            if (lambda_const == impossible) lambda_const = 2.58e-4
-            p%lambda = lambda_const*p%cp*exp(0.7*log(p%TT(:)/298.))
-            if (lpencil(i_glambda))  then
-              do i = 1,3
-                p%glambda(:,i) = p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
-              enddo
-            endif
-          elseif ((.not. lThCond_simple) .and. (lambda_const < impossible)) then
-            p%lambda = lambda_const
-            if (lpencil(i_glambda)) p%glambda = 0.
-          endif
-        elseif (lSmag_heat_transport) then
-!
-! Natalia 
-! turbulent heat transport in Smagorinsky case
-! probably it should be moved to viscosity module
-!
-          p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/Pr_turb*p%cv*p%rho
-        else
-          p%lambda = lambda_full(l1:l2,m,n)
-          if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
-        endif
-        if (lpencil(i_lambda1)) p%lambda1 = 1./max(tini,p%lambda)
-      endif
-!
 ! Calculate the diffusion term and the corresponding pencil
 !
-      if (lcheminp) then
+      if (lpencil(i_Diff_penc_add)) then
 !
-! There are 4 cases:
-! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
-! 2) the case of constant diffusion coefficients
-! 3) the case of constant Lewis numbers with diffusion coef. depending 
-!    on heat diffusivity
-! 4) full complex diffusion coefficients
+! D_th is computed twice in calc_penc in eos and here
+! For now Le = 1
 !
-        if (lpencil(i_Diff_penc_add)) then
-          if (lDiff_simple) then
-!
-!  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
-!                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
-!                   does not represent a constant diffusion coefficient, 
-!                   but \rho0 D0.
-!                   Diff_penc_add are still the diffusion coefficients. Formula:
-!                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
-!
-            if (Diff_coef_const == impossible) Diff_coef_const = 2.58e-4
-            do k = 1,nchemspec
-              p%Diff_penc_add(:,k) = &
-                  Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
-              if (lew_exist) p%Diff_penc_add(:,k) = &
-                  p%Diff_penc_add(:,k)*Lewis_coef1(k)
-            enddo
-!
-!  Constant diffusion coefficients
-!
-          elseif ((.not. lDiff_simple) .and. (Diff_coef_const < impossible)) then
-            if (lSmag_diffusion) then
-              if (lcloud) then
-                if (z(n)>=z_cloud) then
-                  do k = 1,nchemspec
-                     p%Diff_penc_add(:,k) = (0.15*dxmax)**2.*sqrt(2*p%sij2)/Sc_number
-                  enddo
-                else
-                  do k = 1,nchemspec
-                     p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
-                  enddo
-                endif
-              else
-                do k = 1,nchemspec
-                  p%Diff_penc_add(:,k) = (0.15*dxmax)**2.*sqrt(2*p%sij2)/Sc_number
-                enddo
-              endif
-            else
-              do k = 1,nchemspec
-                p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
-              enddo
-            endif 
-!
-!  Diffusion coefficient of a mixture with constant Lewis numbers and 
-!  given heat conductivity
-!
-          elseif (lDiff_lewis .and. lew_exist) then
-            do k = 1,nchemspec
-              p%Diff_penc_add(:,k) = p%lambda*p%rho1*p%cp1*Lewis_coef1(k)
-            enddo
-          elseif (lDiff_lewis .and. l1step_test) then
-            p%Diff_penc_add(:,k) = p%lambda*p%rho1*p%cp1
-!
-!  Full diffusion coefficient case
-!
-          else
-            do k = 1,nchemspec
-              p%Diff_penc_add(:,k) = Diff_full_add(l1:l2,m,n,k)
-            enddo
-          endif
-        endif
+        D_th = f(l1:l2,m,n,iviscosity)/Pr_number
+        do k = 1,nchemspec
+          p%Diff_penc_add(:,k) = D_th/Le(k)
+        enddo
       endif
 !
-!  More initialization of pencils
-!
-      if (ldiffusion2 .and. lpencil(i_DYDt_diff)) then
-        if (.not. lchemonly) then
-          call calc_diffusion_term(f,p)
-        else
-          p%DYDt_diff = 0.
-        endif
+      if (ldiffusion .and. lpencil(i_DYDt_diff)) then
+        call calc_diffusion_term(f,p)
       else
         p%DYDt_diff = 0.
       endif
 !
-      if (latmchem) then
-        RHS_Y_full(l1:l2,m,n,:) = p%DYDt_diff
-      else
-        RHS_Y_full(l1:l2,m,n,:) = p%DYDt_reac+p%DYDt_diff
-      endif
-!
-      if (lpencil(i_cs2) .and. lcheminp) then
-        if (any(p%cv == 0.0)) then
-        else
-          p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
-        endif
-      endif
-!
-      if (lpencil(i_ppwater) .and. .not. lchemonly) then
-        if (index_H2O > 0) then
-          p%ppwater = p%rho*Rgas*p%TT/18.*f(l1:l2,m,n,ichemspec(index_H2O))
-        endif
-      endif
-      if (lpencil(i_Ywater) .and. .not. lchemonly) then
-        if (index_H2O > 0) then
-          p%Ywater = f(l1:l2,m,n,ichemspec(index_H2O))
-        endif
-      endif
-!
-!  Energy per unit mass
-!
-      if (lpencil(i_ee)) p%ee = p%cv*p%TT
+      RHS_Y_full(l1:l2,m,n,:) = p%DYDt_reac+p%DYDt_diff
 !
     endsubroutine calc_pencils_chemistry
 !***********************************************************************
@@ -1259,7 +972,7 @@ module Chemistry
           endif
         enddo
 !
-      elseif (.not. l1step_test) then
+      else
         do k = 1,mx
           if (x(k) >= init_x1 .and. x(k) < init_x2) then
             f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
@@ -1323,1421 +1036,46 @@ module Chemistry
 !
     endsubroutine flame_front
 !***********************************************************************
-    subroutine TTD(f)
-!
-!  15-may-03/Nils Erland L. Haugen: adapted from flame_front
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i, j,k
-!
-      real :: initial_mu1, ksi_TTD, dTdr_c, deltaT, PP
-!
-      call air_field(f,PP)
-!
-      ksi_TTD = 1.
-      dTdr_c = 2000 ![K/m]
-!      dTdr_c=20000 ![K/m]
-!
-!  Initialize temperature
-!
-      do k = l1,l2
-        if (ltemperature_nolog) then
-          f(k,:,:,iTT) = f(k,:,:,iTT)+ksi_TTD*dTdr_c*(xyz1(1)-x(k))/100.
-        else
-          deltaT = ksi_TTD*dTdr_c*(xyz1(1)-x(k))/100.
-          f(k,:,:,ilnTT) = log(exp(f(k,:,:,ilnTT))+deltaT)
-!          print*,'deltaT=',deltaT, exp(f(k,m1,n1,ilnTT)), f(k,m1,n1,ilnTT)
-        endif
-      enddo
-!
-!  Initialize density
-!
-      call getmu_array(f,mu1_full)
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(PP)-log(Rgas)  &
-          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
-!
-!  Initialize velocity
-!
-      f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux)+init_ux
-!
-!  Check if we want nolog of density or nolog of temperature
-!
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
-!
-! Renormalize all species to be sure that the sum of all mass fractions
-! are unity
-!
-      do i = 1,mx
-        do j = 1,my
-          do k = 1,mz
-            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
-          enddo
-        enddo
-      enddo
-!
-    endsubroutine TTD
-!***********************************************************************
-    subroutine triple_flame(f)
-!
-! 26-jul-10/Julien Savre: Copy from the flame_front case
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i, j,k
-!
-      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
-      real :: del, PP
-      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
-      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
-      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
-      real :: final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2
-      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
-      real :: beta
-      real :: init_y1, init_y2
-      real :: init_rho, init_m1
-      real, dimension(ny) :: dim
-      logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
-      logical :: lCH4=.false., lCO2=.false.
-!
-      ltriple_flame = .true.
-!
-      call air_field(f,PP)
-!
-      init_y1 = xyz0(2) + Lxyz(2)/3.
-      init_y2 = xyz0(2) + 2.*Lxyz(2)/3.
-!
-      if (ltemperature_nolog) f(:,:,:,ilnTT) = log(f(:,:,:,ilnTT))
-      if (lroot) print*, 'init_chem: triple_flame '
-!
-! Initialize some indexes
-!
-      call find_species_index('H2',i_H2,ichem_H2,lH2)
-      if (lH2) then
-        mH2 = species_constants(ichem_H2,imass)
-        init_H2 = initial_massfractions(ichem_H2)
-      endif
-      call find_species_index('O2',i_O2,ichem_O2,lO2)
-      if (lO2) then
-        mO2 = species_constants(ichem_O2,imass)
-        init_O2 = initial_massfractions(ichem_O2)
-      endif
-      call find_species_index('N2',i_N2,ichem_N2,lN2)
-      if (lN2) then
-        mN2 = species_constants(ichem_N2,imass)
-        init_N2 = initial_massfractions(ichem_N2)
-      endif
-      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
-      if (lH2O) then
-        mH2O = species_constants(ichem_H2O,imass)
-        init_H2O = initial_massfractions(ichem_H2O)
-      endif
-      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
-      if (lCH4) then
-        mCH4 = species_constants(ichem_CH4,imass)
-        init_CH4 = initial_massfractions(ichem_CH4)
-      endif
-      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
-      if (lCO2) then
-        mCO2 = species_constants(ichem_CO2,imass)
-        init_CO2 = initial_massfractions(ichem_CO2)
-      endif
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2 = 0.
-      if (lH2) then
-        final_massfrac_H2O = mH2O/(2.*mH2) * init_H2
-        final_massfrac_O2 = 1. - final_massfrac_H2O - init_N2
-      elseif (lCH4) then
-        final_massfrac_CH4 = 0.
-        final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
-        final_massfrac_CO2 = mCO2/mCH4 * init_CH4
-        final_massfrac_O2 = &
-            1. - final_massfrac_CO2 - final_massfrac_H2O  &
-            - init_N2
-      endif
-!
-      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
-      if (lroot) then
-        print*, '          init                      final'
-        if (lH2) print*, 'H2 :', init_H2, 0.
-        if (lCH4) print*, 'CH4 :', init_CH4, 0.
-        if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
-        if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
-        if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
-      endif
-!
-!  Initialize temperature and species
-!
-      if (lT_tanh) then
-        if (lroot) print*, 'Temperature initialization: tanh function.'
-      else
-        if (lroot) print*, 'Temperature initialization: linear.'
-      endif
-!
-      do k = 1,mx
-!
-!  Initialize temperature
-!
-        if (lT_tanh) then
-          del = init_x2-init_x1
-          f(k,:,:,ilnTT) = f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-              +((init_TT2-init_TT1)*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
-        else
-          if (x(k) <= init_x1) then
-            f(k,:,:,ilnTT) = log(init_TT1)
-          endif
-          if (x(k) >= init_x2) then
-            f(k,:,:,ilnTT) = log(init_TT2)
-          endif
-          if (x(k) > init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,ilnTT) = &
-                log((x(k)-init_x1)/(init_x2-init_x1) &
-                *(init_TT2-init_TT1)+init_TT1)
-          endif
-        endif
-!
-!  Initialize fuel
-!
-        if (lT_tanh) then
-          if (lH2) then
-            del = (init_x2-init_x1)
-            f(k,:,:,i_H2) = (0.+f(l1,:,:,i_H2))*0.5  &
-                +(0.-f(l1,:,:,i_H2))*0.5  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-          endif
-          if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
-          endif
-!
-        else
-          if (x(k) > init_x1) then
-            if (lH2) then
-              f(k,:,:,i_H2) = init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-            if (lCH4) then
-              f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-          endif
-        endif
-!
-!  Initialize oxygen
-!
-        if (lT_tanh) then
-          del = (init_x2-init_x1)
-          f(k,:,:,i_O2) = (f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
-              +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-        else
-!
-          if (x(k) > init_x2) f(k,:,:,i_O2) = final_massfrac_O2
-          if (x(k) > init_x1 .and. x(k) <= init_x2) &
-              f(k,:,:,i_O2) = (x(k)-init_x1)/(init_x2-init_x1) &
-              *(final_massfrac_O2-init_O2)+init_O2
-        endif
-      enddo
-!
-! Initialize products
-!
-      if (lT_tanh) then
-        do k = 1,mx
-          if (lH2) then
-            del = (init_x2-init_x1)
-            f(k,:,:,i_H2O) = (f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
-                +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-          endif
-          if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
-          endif
-        enddo
-      else
-        do k = 1,mx
-          if (x(k) >= init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_H2O
-            if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_CO2
-          elseif (x(k) >= init_x2) then
-            if (lCO2) f(k,:,:,i_CO2) = final_massfrac_CO2
-            if (lH2O) f(k,:,:,i_H2O) = final_massfrac_H2O
-          endif
-        enddo
-      endif
-!
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
-      endif
-!
-!  Set the initial equivalence ratio gradient in the fresh gases
-!
-      dim(1:ny) = y(m1:m2)
-      beta = init_N2/init_O2
-      do i = 1, mx
-        if (x(i) <= init_x1) then
-          do j = 1, ny
-            if (dim(j) >= init_y1 .and. dim(j) <= init_y2) then
-              if (lH2) then
-                f(i,m1+j-1,:,i_H2) = init_zz2 - (init_zz2-init_zz1) * (init_y2 - dim(j)) / &
-                    (init_y2 - init_y1)
-              elseif (lCH4) then
-                f(i,m1+j-1,:,i_CH4) = init_zz2 - (init_zz2-init_zz1) * (init_y2 - dim(j)) / &
-                    (init_y2 - init_y1)
-              endif
-            elseif (dim(j) <= init_y1) then
-              if (lH2) then
-                f(i,m1+j-1,:,i_H2) = init_zz1
-              elseif (lCH4) then
-                f(i,m1+j-1,:,i_CH4) = init_zz1
-              endif
-            elseif (dim(j) >= init_y2) then
-              if (lH2) then
-                f(i,m1+j-1,:,i_H2) = init_zz2
-              elseif (lCH4) then
-                f(i,m1+j-1,:,i_CH4) = init_zz2
-              endif
-            endif
-          enddo
-!
-          if (lH2) then
-            f(i,ny:my,:,i_H2) = init_zz2
-            if (lO2) f(i,:,:,i_O2) = (1.-f(i,:,:,i_H2)) / (1.+beta)
-            if (lN2) f(i,:,:,i_N2) = 1.-f(i,:,:,i_O2)-f(i,:,:,i_H2)
-          elseif (lCH4) then
-            f(i,ny:my,:,i_CH4) = init_zz2
-            if (lO2) f(i,:,:,i_O2) = (1.-f(i,:,:,i_CH4)) / (1.+beta)
-            if (lN2) f(i,:,:,i_N2) = 1.-f(i,:,:,i_O2)-f(i,:,:,i_CH4)
-            if (lCO2) f(i,:,:,i_CO2) = 0.
-            if (lH2O) f(i,:,:,i_H2O) = 0.
-          endif
-        endif
-      enddo
-!
-! Renormalize all species to be sure that the sum of all mass fractions
-! are unity
-!
-      do i = 1,mx
-        do j = 1,my
-          do k = 1,mz
-            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
-          enddo
-        enddo
-      enddo
-!
-!  Initialize density
-!
-      call getmu_array(f,mu1_full)
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
-          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
-!
-!  Initialize velocity
-!
-      if (lCH4) then
-        init_m1 = init_CH4/mCH4 + init_O2/mO2 + init_N2/mN2
-        init_rho = init_pressure/(init_TT1 * init_m1 * Rgas)
-        f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux) +   &
-            init_ux * init_rho / exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      else
-        f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux)+init_ux
-      endif
-!
-!  Check if we want nolog of density or nolog of temperature
-!
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
-!
-    endsubroutine triple_flame
-!***********************************************************************
-    subroutine flame(f)
-!
-! 05-jun-09/Nils Erland L. Haugen: adapted from similar
-!                                   routine in special/chem_stream.f90
-! This routine set up the initial profiles used in 1D flame speed measurments
-! NILS: This routine is essentially the samw as flame_front, but I leave
-! NILS: flame_front as it is for now for backwards compatibility.
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i, j,k
-!
-      real :: mO2, mH2, mN2, mH2O, mCH4, mCO2
-      real :: log_inlet_density, del, PP
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      integer :: i_CH4, i_CO2, ichem_CH4, ichem_CO2
-      real :: initial_mu1, final_massfrac_O2
-      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
-      logical :: lH2, lO2, lN2, lH2O, lCH4, lCO2
-!
-      lflame_front = .true.
-!
-      call air_field(f,PP)
-!
-      if (ltemperature_nolog) f(:,:,:,ilnTT) = log(f(:,:,:,ilnTT))
-!
-! Initialize some indexes
-!
-      call find_species_index('H2',i_H2,ichem_H2,lH2)
-      if (lH2) then
-        mH2 = species_constants(ichem_H2,imass)
-        init_H2 = initial_massfractions(ichem_H2)
-      endif
-      call find_species_index('O2',i_O2,ichem_O2,lO2)
-      if (lO2) then
-        mO2 = species_constants(ichem_O2,imass)
-        init_O2 = initial_massfractions(ichem_O2)
-      endif
-      call find_species_index('N2',i_N2,ichem_N2,lN2)
-      if (lN2) then
-        mN2 = species_constants(ichem_N2,imass)
-        init_N2 = initial_massfractions(ichem_N2)
-      endif
-      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
-      if (lH2O) then
-        mH2O = species_constants(ichem_H2O,imass)
-        init_H2O = initial_massfractions(ichem_H2O)
-      endif
-      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
-      if (lCH4) then
-        mCH4 = species_constants(ichem_CH4,imass)
-        init_CH4 = initial_massfractions(ichem_CH4)
-      endif
-      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
-      if (lCO2) then
-        mCO2 = species_constants(ichem_CO2,imass)
-        init_CO2 = initial_massfractions(ichem_CO2)
-      endif
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2 = (init_O2/mO2 -init_H2/(2.*mH2) -init_CH4*2/(mCH4))*mO2
-!
-      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
-!
-!  Initialize temperature and species
-!
-      do k = 1,mx
-!
-!  Initialize temperature
-!
-        if (lT_tanh) then
-          del = init_x2-init_x1
-          f(k,:,:,ilnTT) = f(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-              +((init_TT2-init_TT1)*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
-        else
-          if (x(k) <= init_x1) then
-            f(k,:,:,ilnTT) = log(init_TT1)
-          endif
-          if (x(k) >= init_x2) then
-            f(k,:,:,ilnTT) = log(init_TT2)
-          endif
-          if (x(k) > init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,ilnTT) = &
-                log((x(k)-init_x1)/(init_x2-init_x1) &
-                *(init_TT2-init_TT1)+init_TT1)
-          endif
-        endif
-!
-!  Initialize steam and hydrogen
-!
-        if (lT_tanh) then
-          del = (init_x2-init_x1)
-          if (lH2) then
-            f(k,:,:,i_H2) = (0.+f(l1,:,:,i_H2))*0.5  &
-                +(0.-f(l1,:,:,i_H2))*0.5  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-            f(k,:,:,i_H2O) = (f(l1,:,:,i_H2)/2.*18.+f(l1,:,:,i_H2O))*0.5  &
-                +((f(l1,:,:,i_H2)/2.*18.-f(l1,:,:,i_H2O))*0.5)  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-          endif
-          if (lCH4) then
-            f(k,:,:,i_CH4) = init_CH4*0.5  &
-                -init_CH4*0.5  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-            f(k,:,:,i_H2O) = init_H2O+(init_CH4-f(k,:,:,i_CH4))*2.*mH2O/mCH4
-            f(k,:,:,i_CO2) = init_CO2+(init_CH4-f(k,:,:,i_CH4))*1.*mCO2/mCH4
-            f(k,:,:,i_O2) = init_O2 -(init_CH4-f(k,:,:,i_CH4))*2.*mO2 /mCH4
-          endif
-        else
-          if (x(k) > init_x1) then
-            if (lH2) then
-              f(k,:,:,i_H2) = init_H2*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-            if (lCH4) then
-              f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
-                  /(init_TT1-init_TT2)
-            endif
-          endif
-        endif
-!
-!  Initialize oxygen
-!
-        if (lT_tanh) then
-! $          del=(init_x2-init_x1)
-! $          f(k,:,:,i_O2)=(f(l2,:,:,i_O2)+f(l1,:,:,i_O2))*0.5  &
-! $              +((f(l2,:,:,i_O2)-f(l1,:,:,i_O2))*0.5)  &
-! $              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-        else
-          if (x(k) > init_x2) then
-            f(k,:,:,i_O2) = final_massfrac_O2
-          endif
-          if (x(k) > init_x1 .and. x(k) < init_x2) then
-            f(k,:,:,i_O2) = (x(k)-init_x2)/(init_x1-init_x2) &
-                *(init_O2-final_massfrac_O2) &
-                +final_massfrac_O2
-          endif
-        endif
-      enddo
-!
-! Initialize steam and CO2
-!
-      if (.not. lT_tanh) then
-        do k = 1,mx
-          if (x(k) >= init_x1) then
-            if (final_massfrac_O2 > 0.) then
-              f(k,:,:,i_H2O) = initial_massfractions(ichem_H2)/mH2*mH2O &
-                  *(exp(f(k,:,:,ilnTT))-init_TT1) &
-                  /(init_TT2-init_TT1)+init_H2O
-            else
-              if (x(k) >= init_x2) then
-                if (lCO2) f(k,:,:,i_CO2) = init_CO2+(init_CH4-f(k,:,:,i_CH4))
-                f(k,:,:,i_H2O) = 1.-f(k,:,:,i_N2)-f(k,:,:,i_H2)-f(k,:,:,i_O2)
-                if (lCH4) f(k,:,:,i_H2O) = f(k,:,:,i_H2O)-f(k,:,:,i_CH4)
-                if (lCO2) f(k,:,:,i_H2O) = f(k,:,:,i_H2O)-f(k,:,:,i_CO2)
-              else
-                f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
-                    *((1.-f(l2,:,:,i_N2)-f(l2,:,:,i_H2)) &
-                    -initial_massfractions(ichem_H2O)) &
-                    +initial_massfractions(ichem_H2O)
-              endif
-            endif
-          endif
-        enddo
-      endif
-!
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
-      endif
-!
-!  Find logaritm of density at inlet
-!
-      initial_mu1 &
-          = initial_massfractions(ichem_H2)/(mH2) &
-          +initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
-          +initial_massfractions(ichem_N2)/(mN2)
-      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
-      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = &
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-!
-      call getmu_array(f,mu1_full)
-!
-!  Initialize density
-!
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
-          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
-!
-!  Initialize velocity
-!
-      f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux)+init_ux
-!
-!  Check if we want nolog of density or nolog of temperature
-!
-      if (ldensity_nolog) &
-          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
-!
-! Renormalize all species too be sure that the sum of all mass fractions
-! are unity
-!
-      do i = 1,mx
-        do j = 1,my
-          do k = 1,mz
-            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
-          enddo
-        enddo
-      enddo
-!
-    endsubroutine flame
-!***********************************************************************
-    subroutine flame_blob(f)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer :: j1, j2, j3
-!
-      real :: mO2, mH2, mN2, mH2O, PP
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      real :: initial_mu1, final_massfrac_O2
-      logical :: found_specie
-!
-      real :: Rad, sz1, sz2
-!
-      lflame_front = .true.
-!
-      call air_field(f,PP)
-!
-! Initialize some indexes
-!
-      call find_species_index('H2',i_H2,ichem_H2,found_specie)
-      call find_species_index('O2',i_O2,ichem_O2,found_specie)
-      call find_species_index('N2',i_N2,ichem_N2,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,found_specie)
-      mO2 = species_constants(ichem_O2,imass)
-      mH2 = species_constants(ichem_H2,imass)
-      mH2O = species_constants(ichem_H2O,imass)
-      mN2 = species_constants(ichem_N2,imass)
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2 &
-          = (initial_massfractions(ichem_O2)/mO2 &
-          -initial_massfractions(ichem_H2)/(2*mH2))*mO2
-!
-!  Initialize temperature and species in air_field(f)
-!
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
-      endif
-!
-!  Find logaritm of density at inlet
-!
-      initial_mu1 &
-          = initial_massfractions(ichem_H2)/(mH2) &
-          +initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
-          +initial_massfractions(ichem_N2)/(mN2)
-!
-      call getmu_array(f,mu1_full)
-!
-      do j3 = 1,mz
-        do j2 = 1,my
-          do j1 = 1,mx
-!
-            Rad = 0.
-            if (nxgrid > 1) then
-              Rad = x(j1)*x(j1)
-            endif
-            if (nygrid > 1) then
-              Rad = Rad+y(j2)*y(j2)
-            endif
-            if (nzgrid > 1) then
-              Rad = Rad+z(j3)*z(j3)
-            endif
-!
-            Rad = sqrt(Rad)
-!
-            f(j1,j2,j3,ilnTT) = log((init_TT2-init_TT1)*exp(-(Rad/init_x2)**2)+init_TT1)
-            mu1_full(j1,j2,j3) = f(j1,j2,j3,i_H2)/(mH2)+f(j1,j2,j3,i_O2)/(mO2) &
-                +f(j1,j2,j3,i_H2O)/(mH2O)+f(j1,j2,j3,i_N2)/(mN2)
-!
-            f(j1,j2,j3,ilnrho) = log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
-                -log(mu1_full(j1,j2,j3))
-!
-!  Initialize velocity
-!
-            f(j1,j2,j3,iux) = f(j1,j2,j3,iux)  &
-                +init_ux!*exp(log_inlet_density)/exp(f(j1,j2,j3,ilnrho))
-            f(j1,j2,j3,iuy) = f(j1,j2,j3,iuy)+ init_uy
-            f(j1,j2,j3,iuz) = f(j1,j2,j3,iuz)+ init_uz
-!
-            if (nxgrid == 1) f(j1,j2,j3,iux) = 0.
-            if (nygrid == 1) f(j1,j2,j3,iuy) = 0.
-            if (nzgrid == 1) f(j1,j2,j3,iuz) = 0.
-!
-            if (nxgrid /= 1) then
-              sz1 = (xyz0(1)+Lxyz(1)*0.15)
-              sz2 = (xyz0(1)+Lxyz(1)*(1.-0.15))
-            endif
-!
-            if (nygrid /= 1)   then
-              sz1 = (xyz0(2)+Lxyz(2)*0.15)
-              sz2 = (xyz0(2)+Lxyz(2)*(1.-0.15))
-            endif
-!
-            if (nzgrid /= 1)  then
-              sz1 = (xyz0(3)+Lxyz(3)*0.15)
-              sz2 = (xyz0(3)+Lxyz(3)*(1.-0.15))
-            endif
-!
-          enddo
-        enddo
-      enddo
-!
-!  Check if we want nolog of density
-!
-      if (ldensity_nolog) f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
-!
-    endsubroutine flame_blob
-!***********************************************************************
-    subroutine opposite_flames(f)
-!
-!  03-jan-10/nilshau: adapted from opposite_ignitions
-!
-!  Set up two oppositely directed flame fronts in the x-direction.
-!  The two fronts have fresh gas between them.
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer :: j1, j2, j3
-!
-      real :: mO2, mH2, mN2, mH2O, lower, upper, PP
-      integer :: i_H2, i_O2, i_H2O, i_N2, ichem_H2, ichem_O2, ichem_N2, ichem_H2O
-      integer :: i_C3H8, ichem_C3H8, i_CO2, ichem_CO2
-      real :: final_massfrac_O2, mu1, phi, delta_O2, mC3H8, mCO2
-      logical :: found_specie, lH2, lCO2, lC3H8, lH2O
-      real :: norm, flat_range
-!
-      lflame_front = .true.
-!
-      call air_field(f,PP)
-!
-! Initialize some indexes
-!
-      call find_species_index('H2',i_H2,ichem_H2,lH2)
-      call find_species_index('O2',i_O2,ichem_O2,found_specie)
-      call find_species_index('N2',i_N2,ichem_N2,found_specie)
-      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
-      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
-      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
-      mO2 = species_constants(ichem_O2,imass)
-      mH2O = species_constants(ichem_H2O,imass)
-      mN2 = species_constants(ichem_N2,imass)
-      if (lC3H8) mC3H8 = species_constants(ichem_C3H8,imass)
-      if (lH2)   mH2   = species_constants(ichem_H2,imass)
-      if (lCO2)  mCO2 = species_constants(ichem_CO2,imass)
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-!
-      final_massfrac_O2 = initial_massfractions(ichem_O2)
-      if (lH2) then
-        delta_O2 = initial_massfractions(ichem_H2)/(2*mH2)*mO2
-      else
-        delta_O2 = 0.
-      endif
-      final_massfrac_O2 = final_massfrac_O2-delta_O2
-!
-      if (lC3H8) then
-        delta_O2 = 5*initial_massfractions(ichem_C3H8)/mC3H8*mO2
-      else
-        delta_O2 = 0.
-      endif
-      final_massfrac_O2 = final_massfrac_O2-delta_O2
-!
-      if (ltemperature_nolog) call fatal_error('opposite_flames', &
-          'only implemented for ltemperature_nolog=F')
-!
-!  Loop over all grid points
-!
-      do j3 = 1,mz
-        do j2 = 1,my
-          do j1 = 1,mx
-!
-!  First define the distance from the lower and upper domain boundary.
-!
-            lower = x(j1)-xyz0(1)
-            upper = xyz1(1)-x(j1)
-!
-!  Find progress variable phi based on distance from boundaries.
-!
-            flat_range = init_x2*0.1
-            phi &
-                = exp(-((lower-flat_range)/init_x2)**2) &
-                +exp(-((upper-flat_range)/init_x2)**2)
-            if (phi > 1.0) phi = 1.
-            if (flat_range > lower) phi = 1.
-            if (flat_range > upper) phi = 1.
-!
-!  Find temperature, species and density based on progress variable
-!
-            f(j1,j2,j3,ilnTT) = log(init_TT1+phi*(init_TT2-init_TT1))
-            if (lH2) then
-              f(j1,j2,j3,i_H2) = (1-phi)*initial_massfractions(ichem_H2)
-              f(j1,j2,j3,i_H2O) = phi*initial_massfractions(ichem_H2)*mH2O/mH2
-            endif
-            if (lC3H8) then
-              f(j1,j2,j3,i_C3H8) = (1-phi)*initial_massfractions(ichem_C3H8)
-              f(j1,j2,j3,i_H2O) = 4*phi*initial_massfractions(ichem_C3H8)*mH2O/mC3H8
-              f(j1,j2,j3,i_CO2) = 3*phi*initial_massfractions(ichem_C3H8)*mCO2/mC3H8
-            endif
-            f(j1,j2,j3,i_O2) = (1-phi)*(initial_massfractions(ichem_O2) &
-                -final_massfrac_O2)+final_massfrac_O2
-!
-!  Re-normalize mass fractions
-!
-            norm = f(j1,j2,j3,i_O2)+f(j1,j2,j3,i_N2)
-            if (lC3H8) norm = norm + f(j1,j2,j3,i_C3H8)
-            if (lCO2)  norm = norm + f(j1,j2,j3,i_CO2)
-            if (lH2O)  norm = norm + f(j1,j2,j3,i_H2O)
-            if (lH2)   norm = norm + f(j1,j2,j3,i_H2)
-            f(j1,j2,j3,minval(ichemspec):maxval(ichemspec)) &
-                = f(j1,j2,j3,minval(ichemspec):maxval(ichemspec))/norm
-!
-!  Find mean molecular weight and density
-!
-            mu1 &
-                = f(j1,j2,j3,i_O2 )/mO2 &
-                +f(j1,j2,j3,i_H2O)/mH2O &
-                +f(j1,j2,j3,i_N2 )/mN2
-            if (lH2)   mu1 = mu1+f(j1,j2,j3,i_H2  )/mH2
-            if (lCO2)  mu1 = mu1+f(j1,j2,j3,i_CO2 )/mCO2
-            if (lC3H8) mu1 = mu1+f(j1,j2,j3,i_C3H8)/mC3H8
-            f(j1,j2,j3,ilnrho) = log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
-                -log(mu1)
-          enddo
-        enddo
-      enddo
-!
-!  Check if we want nolog of density
-!
-      if (ldensity_nolog)     f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
-      if (ltemperature_nolog) f(:,:,:,iTT) = exp(f(:,:,:,ilnTT))
-!
-    endsubroutine opposite_flames
-!***********************************************************************
-    subroutine opposite_ignitions(f)
-!
-!  03-jan-10/nilshau: adapted from flame_blob
-!
-!  Set up two oppositely directed flame fronts in the x-direction.
-!  The two fronts have fresh gas between them.
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer :: j1, j2, j3
-!
-      real :: lower, upper, PP
-      real :: T0, T1, rho0, rho1
-!
-      lflame_front = .true.
-!
-      call air_field(f,PP)
-!
-! Initialize some indexes
-!
-      do j3 = n1,n2
-        do j2 = m1,m2
-          do j1 = l1,l2
-!
-!  First define the distance from the lower and upper domain boundary.
-!
-            lower = x(j1)-xyz0(1)
-            upper = xyz1(1)-x(j1)
-!
-!  Find temperature and density based on distance from boundaries.
-!
-            if (ltemperature_nolog) then
-              T0 = f(j1,j2,j3,ilnTT)
-            else
-              T0 = exp(f(j1,j2,j3,ilnTT))
-            endif
-            if (ldensity_nolog) then
-              rho0 = f(j1,j2,j3,ilnrho)
-            else
-              rho0 = exp(f(j1,j2,j3,ilnrho))
-            endif
-            T1 = &
-                (init_TT2-init_TT1)*exp(-(lower/init_x2)**2)+ &
-                (init_TT2-init_TT1)*exp(-(upper/init_x2)**2)+ &
-                init_TT1
-            if (ltemperature_nolog) then
-              f(j1,j2,j3,ilnTT) = T1
-            else
-              f(j1,j2,j3,ilnTT) = log(T1)
-            endif
-            rho1 = rho0*T0/T1
-            if (ldensity_nolog) then
-              f(j1,j2,j3,ilnrho) = rho1
-            else
-              f(j1,j2,j3,ilnrho) = log(rho1)
-            endif
-          enddo
-        enddo
-      enddo
-!
-    endsubroutine opposite_ignitions
-!***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
 !  Calculate quantities for a mixture
 !
-!  22-jun-10/julien: Added evaluation of diffusion coefficients using constant
-!                     Lewis numers Di = lambda/(rho*Cp*Lei)
-!  10-jan-11/julien: Modified for a resolution with LSODE
-!  26-jui-11/julien: Replaced fatal_error by inevitably_fatal_error to allow
-!                    proper exit when T_loc<T_low or T_loc>T_up
-!
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) ::  tmp_sum, tmp_sum2, nu_dyn, nuk_nuj, Phi
-      real, dimension(mx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
-!
-      integer :: k, j, j2, j3
-      real :: T_up, T_mid, T_low
-      real :: mk_mj
-      real :: EE=0., TT=0., yH=1.
-!
-      logical, save :: lwrite=.true.
-!
-      character(len=fnlen) :: output_file="./data/mix_quant.out"
-      character(len=15) :: writeformat
-      integer :: file_id=123
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
-!
-!  Density and temperature
-!
-!     call timing('calc_for_chem_mixture','entered')
-      call getdensity(f,EE,TT,yH,rho_full)
-      call gettemperature(f,TT_full)
-!
-! Now this routine is only for chemkin data !!!
-!
-      if (lcheminp) then
-!
-        if (unit_system == 'cgs') then
-!
-          Rgas_unit_sys = k_B_cgs/m_u_cgs
-          Rgas = Rgas_unit_sys/unit_energy
-!
-          call getmu_array(f,mu1_full)
-!
-          if (l1step_test) then
-            species_constants(:,imass) = 1.
-            mu1_full = 1.
-          endif
-!
-!  Mole fraction XX
-!
+      real, dimension(mx) ::  nu_dyn
+! lambda_Suth in [g/(cm*s*K^0.5)]
+      real :: lambda_Suth = 1.5e-5, Suth_const = 200.
+      integer :: j2,j3, k
+
+! cp array
+      do j3 = nn1,nn2
+        do j2 = mm1,mm2
+          f(:,j2,j3,icp) = 0
           do k = 1,nchemspec
-            if (species_constants(k,imass) > 0.) then
-              do j2 = mm1,mm2
-                do j3 = nn1,nn2
-                  XX_full(:,j2,j3,k) = f(:,j2,j3,ichemspec(k))*unit_mass &
-                      /(species_constants(k,imass)*mu1_full(:,j2,j3))
-                enddo
-              enddo
-            endif
+            f(:,j2,j3,icp) = f(:,j2,j3,icp)+Cp_const/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
           enddo
-!
-!          do m=m1,m2
-!            do n=n1,n2
-!              call  getpressure(pp_full(l1:l2,m,n),TT_full(l1:l2,m,n),&
-!                  rho_full(l1:l2,m,n),mu1_full(l1:l2,m,n))
-!            enddo
-!          enddo
-!
-!  Specific heat at constant pressure
-!
-          if ((Cp_const < impossible) .or. (Cv_const < impossible)) then
-!
-            if (Cp_const < impossible) then
-              cp_full = Cp_const*mu1_full
-              cv_full = (Cp_const-Rgas)*mu1_full
-            endif
-!
-            if (Cv_const < impossible) then
-              cv_full = Cv_const*mu1_full
-            endif
-          else
-            cp_full = 0.
-            cv_full = 0.
-            do j3 = nn1,nn2
-              do j2 = mm1,mm2
-                T_loc = TT_full(:,j2,j3)
-                T_loc_2 = T_loc*T_loc
-                T_loc_3 = T_loc_2*T_loc
-                T_loc_4 = T_loc_3*T_loc
-                do k = 1,nchemspec
-                  if (species_constants(k,imass) > 0.) then
-                    T_low = species_constants(k,iTemp1)-1.
-                    T_mid = species_constants(k,iTemp2)
-                    T_up = species_constants(k,iTemp3)
-!
-! $                  if (j1<=l1 .or. j2>=l2) then
-! $                    T_low=0.
-! $                    T_up=1e10
-! $                  endif
-!
-                    if (j2 <= m1 .or. j2 >= m2) then
-                      T_low = 0.
-                      T_up = 1e10
-                    endif
-!
-                    if (j3 <= n1 .or. j3 >= n2) then
-                      T_low = 0.
-                      T_up = 1e10
-                    endif
-!
-                    if (lcloud) T_low = 20.
-                    where (T_loc >= T_low .and. T_loc <= T_mid)
-                      cp_R_spec = species_constants(k,iaa2(ii1)) &
-                          +species_constants(k,iaa2(ii2))*T_loc &
-                          +species_constants(k,iaa2(ii3))*T_loc_2 &
-                          +species_constants(k,iaa2(ii4))*T_loc_3 &
-                          +species_constants(k,iaa2(ii5))*T_loc_4
-                    elsewhere (T_loc >= T_mid .and. T_loc <= T_up)
-                      cp_R_spec = species_constants(k,iaa1(ii1)) &
-                          +species_constants(k,iaa1(ii2))*T_loc &
-                          +species_constants(k,iaa1(ii3))*T_loc_2 &
-                          +species_constants(k,iaa1(ii4))*T_loc_3 &
-                          +species_constants(k,iaa1(ii5))*T_loc_4
-                    endwhere
-                    cv_R_spec_full(:,j2,j3,k) = cp_R_spec-1.
-!
-! Check if the temperature are within bounds
-!
-                    if (maxval(T_loc) > T_up .or. minval(T_loc) < T_low) then
-                      print*,'iproc=',iproc
-                      print*,'TT_full(:,j2,j3)=',T_loc
-                      print*,'j2,j3=',j2,j3
-                      call inevitably_fatal_error('calc_for_chem_mixture', &
-                          'TT_full(:,j2,j3) is outside range', .true.)
-                    endif
-!
-! Find cp and cv for the mixture for the full domain
-!
-                    cp_full(:,j2,j3) = cp_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
-                        *cp_R_spec/species_constants(k,imass)*Rgas
-                    cv_full(:,j2,j3) = cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
-                        *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
-                  endif
-                enddo
-              enddo
-            enddo
-          endif
-!
-!  All the transport properties are calculated only if we are not using LSODE
-!  to solve chemistry or during the transport substep
-!
-          if (.not. lchemonly) then
-!
+        enddo
+      enddo
+
 !  Viscosity of a mixture
 !
-            if (tran_exist) then
-              call calc_diff_visc_coef(f)
-            endif
-!
-            if (visc_const == impossible) then
-              do j3 = nn1,nn2
-                do j2 = mm1,mm2
-!
-                  if  (lone_spec) then
-                    f(:,j2,j3,iviscosity) = species_viscosity(:,j2,j3,1)/rho_full(:,j2,j3)
-                  else
-                    nu_dyn = 0.
-                    do k = 1,nchemspec
-                      if (species_constants(k,imass) > 0.) then
-                        tmp_sum2 = 0.
-                        do j = 1,nchemspec
-                          mk_mj = species_constants(k,imass)/species_constants(j,imass)
-                          nuk_nuj = species_viscosity(:,j2,j3,k)/species_viscosity(:,j2,j3,j)
-                          Phi = 1./sqrt(8.)*1./sqrt(1.+mk_mj)*(1.+sqrt(nuk_nuj)*mk_mj**(-0.25))**2
-                          tmp_sum2 = tmp_sum2 + XX_full(:,j2,j3,j)*Phi
-                        enddo
-                        nu_dyn = nu_dyn + XX_full(:,j2,j3,k)*species_viscosity(:,j2,j3,k)/tmp_sum2
-                      endif
-                    enddo
-                    f(:,j2,j3,iviscosity) = nu_dyn/rho_full(:,j2,j3)
-                  endif
-!
-                enddo
-              enddo
-            endif
-!
-!  Diffusion coefficient of a mixture from tran.dat file
-!
-            if ((.not. lDiff_simple).and.(.not. lDiff_lewis)) then
-!
-              do j3 = nn1,nn2
-                do j2 = mm1,mm2
-!
-                  Diff_full(:,j2,j3,:) = 0.
-                  if (.not. lone_spec) then
-!
-                    if (lfix_Sc) then
-                      do k = 1,nchemspec
-                        if (species_constants(k,imass) > 0.) then
-                          Diff_full(:,j2,j3,k) = species_viscosity(:,j2,j3,k) &
-                              /rho_full(:,j2,j3)/Sc_number
-                        endif
-                      enddo
-                    elseif (ldiffusion) then
-!
-! The mixture diffusion coefficient as described in eq. 5-45 of the Chemkin
-! manual. Previously eq. 5-44 was used, but due to problems in the limit
-! when the mixture becomes a pure specie we changed to the more robust eq. 5-45.
-!
-                      do k = 1,nchemspec
-                        tmp_sum = 0.
-                        tmp_sum2 = 0.
-                        do j = 1,nchemspec
-                          if (species_constants(k,imass) > 0.) then
-                            if (j /= k) then
-                              tmp_sum = tmp_sum &
-                                  +XX_full(:,j2,j3,j)/Bin_Diff_coef(:,j2,j3,j,k)
-                              tmp_sum2 = tmp_sum2 &
-                                  +XX_full(:,j2,j3,j)*species_constants(j,imass)
-!
-                            endif
-                          endif
-                        enddo
-                        Diff_full_add(:,j2,j3,k) = mu1_full(:,j2,j3)*tmp_sum2/tmp_sum
-                      enddo
-                    endif
-                  endif
-                enddo
-              enddo
-            endif
-!
-!  Thermal diffusivity
-!
-            if (lheatc_chemistry .and. (.not. lThCond_simple)) then
-              call calc_therm_diffus_coef(f)
-            endif
+      do j3 = nn1,nn2
+        do j2 = mm1,mm2
+          if (ltemperature_nolog) then
+            nu_dyn = lambda_Suth*f(:,j2,j3,iTT)**(3./2.)/(Suth_const+f(:,j2,j3,iTT))
+          else
+            nu_dyn = lambda_Suth*exp(f(:,j2,j3,ilnTT))**(3./2.)/(Suth_const+exp(f(:,j2,j3,ilnTT)))
           endif
-!
-        else
-          call stop_it('This case works only for cgs units system!')
-        endif
-      endif
-!
-!  Write block
-!
-      if (lwrite) then
-        open (file_id,file=output_file)
-        write (file_id,*) 'Mixture quantities'
-        write (file_id,*) '*******************'
-        write (file_id,*) ''
-        write (file_id,*) 'Mass, g/mole'
-        write (file_id,'(7E12.4)') 1./maxval(mu1_full/unit_mass)
-        write (file_id,*) ''
-        write (file_id,*) 'Density, g/cm^3'
-        write (file_id,'(7E12.4)') rho_full(l1,m1,n1)*unit_mass/unit_length**3, &
-            rho_full(l2,m2,n2)*unit_mass/unit_length**3
-        write (file_id,*) ''
-        write (file_id,*) 'Themperature, K'
-! Commented the next line out because
-! samples/2d-tests/chemistry_GrayScott apparently has no f(:,:,:,5)
-        if (ilnTT > 0) write (file_id,'(7E12.4)')  &
-            exp(f(l1,m1,n1,ilnTT))*unit_temperature, &
-            exp(f(l2,m2,n2,ilnTT))*unit_temperature
-        write (file_id,*) ''
-        write (file_id,*) 'Cp,  erg/mole/K'
-        write (file_id,'(7E12.4)') cp_full(l1,m1,n1)/Rgas* &
-            Rgas_unit_sys/mu1_full(l1,m1,n1)/unit_mass,cp_full(l2,m2,n2)/Rgas* &
-            Rgas_unit_sys/mu1_full(l2,m2,n2)/unit_mass
-        write (file_id,*) ''
-        write (file_id,*) 'cp, erg/g/K'
-        write (file_id,'(7E12.4)') cp_full(l1,m1,n1)/Rgas*Rgas_unit_sys,cp_full(l2,m2,n2)/Rgas*Rgas_unit_sys
-        write (file_id,*) ''
-        write (file_id,*) 'gamma,max,min'
-        write (file_id,'(7E12.4)') cp_full(l1,m1,n1)/cv_full(l1,m1,n1), &
-            cp_full(l2,m2,n2)/cv_full(l2,m2,n2)
-        if (.not. lchemonly) then
-          write (file_id,*) ''
-          write (file_id,*) 'Species viscosity, g/cm/s,'
-          do k = 1,nchemspec
-            write (file_id,'(7E12.4)') species_viscosity(l1,m1,n1,k),  &
-                species_viscosity(l2-1,m1,n1,k)
-          enddo
-          write (file_id,*) ''
-          write (file_id,*) 'Thermal cond, erg/(cm K s),'
-          write (file_id,'(7E12.4)') (lambda_full(l1,m1,n1)* &
-              unit_energy/unit_time/unit_length/unit_temperature), &
-              (lambda_full(l2,m2,n2)* &
-              unit_energy/unit_time/unit_length/unit_temperature)
-          write (file_id,*) ''
-          write (file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-          if (.not. lDiff_simple) then
-            do k = 1,nchemspec
-              write (file_id,'(7E12.4)') &
-                  Diff_full_add(l1,m1,n1,k)*unit_length**2/unit_time, &
-                  Diff_full_add(l2,m2,n2,k)*unit_length**2/unit_time
-            enddo
+          if (ldensity_nolog) then
+            f(:,j2,j3,iviscosity) = nu_dyn/f(:,j2,j3,irho)
+          else
+            f(:,j2,j3,iviscosity) = nu_dyn/exp(f(:,j2,j3,ilnrho))
           endif
-          if (lparticles_chemistry) then
-            write (file_id,*) ''
-            writeformat = '(  E12.4)'
-            write (writeformat(2:3),'(I2)') nchemspec
-            write (file_id,*) 'Mass fraction, -'
-            write (file_id,writeformat) f(l1,m1,n1,ichemspec(1):ichemspec(nchemspec))
-            write (file_id,*) ''
-            write (file_id,writeformat) species_constants(:,imass)
-          endif
-        endif
-        write (file_id,*) ''
-        if (lroot) print*,'calc_for_chem_mixture: writing mix_quant.out file'
-        close (file_id)
-        lwrite = .false.
-      endif
-!
-      call timing('calc_for_chem_mixture','finished')
+        enddo
+      enddo
 !
     endsubroutine calc_for_chem_mixture
 !***********************************************************************
-    subroutine chemspec_normalization(f)
-!
-!   20-sep-10/Natalia: coded
-!   renormalization of the species
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: sum_Y
-      integer :: k
-!
-      sum_Y = 0.
-      do k = 1,nchemspec
-        sum_Y = sum_Y+f(:,:,:,ichemspec(k))
-      enddo
-      do k = 1,nchemspec
-        f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k))/sum_Y
-      enddo
-!
-    endsubroutine chemspec_normalization
-!***********************************************************************
-    subroutine astrobiology_data(f)
-!
-!  Proceedure to read in stoichiometric matrices in explicit format for
-!  forward and backward reations. For historical reasons this is referred
-!  to as "astrobiology_data".
-!
-!  28-feb-08/axel: coded
-!
-      character(len=80) :: chemicals=''
-      ! Careful, limits the absolut size of the input matrix !!!
-      character(len=15) :: file1='chemistry_m.dat', file2='chemistry_p.dat'
-!      character (len=fnlen) :: input_file='chem.inp'
-      real, dimension(mx,my,mz,mfarray) :: f
-      real :: dummy
-      logical :: exist, exist1, exist2
-      integer :: i, j, stat
-      integer :: nchemspectemp
-      character :: tmpchar
-      logical :: inside
-!
-!  Find number of reactions by reading how many lines we have in file2
-!
-      j = 1
-      open (19,file=file2)
-      read (19,*) chemicals
-      do while (.true.)
-        read (19,*,end=996) dummy
-        j = j+1
-      enddo
-996   close (19)
-      mreactions = j-1
-      if (lroot) print*,'Number of reactions=',mreactions
-!
-!  Find number of compounds by reading how many columns we have in file1
-!
-      open (19,file=file1)
-      read (19,fmt="(a80)") chemicals
-      nchemspectemp = 0
-      inside = .true.
-      do i = 1,len_trim(chemicals)
-        tmpchar = chemicals(i:i)
-        if (tmpchar == ' ') then
-          if (.not. inside) then
-            inside = .true.
-            nchemspectemp = nchemspectemp+1
-          endif
-        else
-          inside = .false.
-        endif
-      enddo
-      if (inside) nchemspectemp = nchemspectemp-1
-      close (19)
-      if (lroot) print*,'Number of compounds=',nchemspectemp
-      if (nchemspectemp > nchemspec) call &
-          stop_it("Too many chemicals! Change NCHEMSPEC in src/cparam.local")
-!
-!  Allocate reaction arrays (but not during reloading!)
-!
-      if (.not. lreloading) then
-        allocate(stoichio(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
-        allocate(Sijm(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for Sijm")
-        allocate(Sijp(nchemspec,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for Sijp")
-        allocate(kreactions_z(mz,mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_z")
-        allocate(kreactions_p(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_p")
-        allocate(kreactions_m(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_m")
-        allocate(reaction_name(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for reaction_name")
-        allocate(kreactions_profile(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_profile")
-        allocate(kreactions_profile_width(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_profile_width")
-        allocate(kreactions_alpha(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_alpha")
-        allocate(back(mreactions),STAT=stat)
-        if (stat > 0) call stop_it("Couldn't allocate memory for back")
-      endif
-!
-!  Initialize data
-!
-      kreactions_z = 1.
-      Sijp = 0
-      Sijm = 0
-      back = .true.
-!
-!  read chemistry data
-!
-      inquire (file=file1,exist=exist1)
-      inquire (file=file2,exist=exist2)
-!
-      if (exist1 .and. exist2) then
-!
-!  if both chemistry1.dat and chemistry2.dat are present,
-!  then read Sijp and Sijm, and calculate their sum
-!
-!  file1
-!
-        open (19,file=file1)
-        read (19,*) chemicals
-        do j = 1,mreactions
-          read (19,*,end=994) kreactions_m(j),(Sijm(i,j),i=1,nchemspectemp)
-        enddo
-994     close (19)
-        nreactions1 = j-1
-!
-!  file2
-!
-        open (19,file=file2)
-        read (19,*) chemicals
-        do j = 1,mreactions
-          if (lkreactions_profile) then
-            if (lkreactions_alpha) then
-              read (19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_profile(j), &
-                  kreactions_profile_width(j),kreactions_alpha(j)
-            else
-              read (19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_profile(j), &
-                  kreactions_profile_width(j)
-            endif
-          else
-            if (lkreactions_alpha) then
-              read (19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp),kreactions_alpha(j)
-            else
-              read (19,*) kreactions_p(j),(Sijp(i,j),i=1,nchemspectemp)
-            endif
-          endif
-        enddo
-        close (19)
-        nreactions2 = j-1
-!
-!  calculate stoichio and nreactions
-!
-        if (nreactions1 == nreactions2) then
-          nreactions = nreactions1
-          stoichio = Sijp-Sijm
-        else
-          call stop_it('nreactions1/=nreactions2')
-        endif
-        if (nreactions /= mreactions) call stop_it('nreactions/=mreactions')
-!
-      else
-!
-!  old method: read chemistry data, if present
-!
-        inquire (file='chemistry.dat',exist=exist)
-        if (exist) then
-          open (19,file='chemistry.dat')
-          read (19,*) chemicals
-          do j = 1,mreactions
-            read (19,*,end=990) kreactions_p(j),(stoichio(i,j),i=1,nchemspec)
-          enddo
-990       close (19)
-          nreactions = j-1
-          Sijm = -min(stoichio,0.0)
-          Sijp = +max(stoichio,0.0)
-        else
-          if (lroot) print*,'no chemistry.dat file to be read.'
-          lreactions = .false.
-        endif
-      endif
-!
-!  print input data for verification
-!
-      if (lroot) then
-!        print*,'chemicals=',chemicals
-        print*,'kreactions_m=',kreactions_m(1:nreactions)
-        print*,'kreactions_p=',kreactions_p(1:nreactions)
-        print*,'Sijm:'
-        do i = 1,nreactions
-          print*,Sijm(:,i)
-        enddo
-        print*,'Sijp:'
-        do i = 1,nreactions
-          print*,Sijp(:,i)
-        enddo
-        print*,'stoichio='
-        do i = 1,nreactions
-          print*,stoichio(:,i)
-        enddo
-      endif
-!
-!  possibility of z-dependent kreactions_z profile
-!
-      if (lkreactions_profile) then
-        do j = 1,nreactions
-          if (kreactions_profile(j) == 'cosh') then
-            do n = 1,mz
-              kreactions_z(n,j) = 1./cosh(z(n)/kreactions_profile_width(j))**2
-            enddo
-          elseif (kreactions_profile(j) == 'gauss') then
-            do n = 1,mz
-              kreactions_z(n,j) = exp(-((z(n)/kreactions_profile_width(j))**2))
-            enddo
-          elseif (kreactions_profile(j) == 'square') then
-            do n = 1,mz
-              if (n < mz/2) then
-                kreactions_z(n,j) = kreactions_profile_width(j)
-              else
-                kreactions_z(n,j) = 0.
-              endif
-            enddo
-          elseif (kreactions_profile(j) == 'saw') then
-            do n = 1,mz
-              kreactions_z(n,j) = 0.51+(sin(pi*z(n)/kreactions_profile_width(j)) &
-                  +sin(2*pi*z(n)/kreactions_profile_width(j))/2 &
-                  +sin(3*pi*z(n)/kreactions_profile_width(j))/3 &
-                  +sin(4*pi*z(n)/kreactions_profile_width(j))/4)/3
-            enddo
-          elseif (kreactions_profile(j) == 'sin') then
-            do n = 1,mz
-              kreactions_z(n,j) = 0.5*(1+cos(pi*z(n)/kreactions_profile_width(j)))
-            enddo
-          elseif (kreactions_profile(j) == 'sin-bg') then
-            do n = 1,mz
-              kreactions_z(n,j) = 0.5*(1.1+cos(pi*z(n)/kreactions_profile_width(j)))
-            enddo
-          elseif (kreactions_profile(j) == 'spike') then
-            do n = 1,mz
-              if (cos(pi*z(n)/kreactions_profile_width(j)) > 0.99) then
-                kreactions_z(n,j) = 1
-              else
-                kreactions_z(n,j) = 0
-              endif
-            enddo
-          endif
-        enddo
-      endif
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine astrobiology_data
+! subroutine chemspec_normalization(f) was here
 !***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
@@ -2772,7 +1110,7 @@ module Chemistry
 !
 !  indices
 !
-      integer :: j, k,i,ii
+      integer :: j, k,i
       integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
       integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
       integer :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
@@ -2782,17 +1120,11 @@ module Chemistry
       intent(in) :: p,f
       intent(inout) :: df
 !
-      logical :: ldiffusion2
-      ldiffusion2 = ldiffusion .and. (.not. lchemonly)
 !
 !  identify module and boundary conditions
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
       if (headtt .or. ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
-!
-!  Interface for your personal subroutines calls
-!
-      if (lspecial) call special_calc_chemistry(f,df,p)
 !
 !  loop over all chemicals
 !
@@ -2800,7 +1132,7 @@ module Chemistry
 !
 !  advection terms
 !
-        if (lhydro .and. ladvection .and.(.not. lchemonly)) then
+        if (lhydro .and. ladvection) then
           call grad(f,ichemspec(k),gchemspec)
           call dot_mn(p%uu,gchemspec,ugchemspec)
           if (lmobility) ugchemspec = ugchemspec*mobility(k)
@@ -2813,9 +1145,8 @@ module Chemistry
 !  further one should check the existence of a file with
 !  binary diffusion coefficients!
 !
-        if (ldiffusion2) then
-          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+ &
-              p%DYDt_diff(:,k)
+        if (ldiffusion) then
+          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
         endif
 !
 !  chemical reactions:
@@ -2823,14 +1154,7 @@ module Chemistry
 !  d/dt(x_i) = S_ij v_j
 !
         if (lreactions) then
-          if (lchemonly) then
-!  If chemistry is solved in a separate step, we want df to contain only the
-!  chemical contribution, that's why no sum is required
-            df(l1:l2,m,n,ichemspec(k)) = p%DYDt_reac(:,k)
-          else
-            df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+ &
-                p%DYDt_reac(:,k)
-          endif
+          df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+ p%DYDt_reac(:,k)
         endif
 !
 !  Add filter for negative concentrations
@@ -2861,15 +1185,8 @@ module Chemistry
 !
       enddo
 !
-      if (ldensity .and. lcheminp) then
+      if (ldensity) then 
 !
-        if (l1step_test) then
-          sum_DYDt = 0.
-          do i = 1,nx
-            sum_DYDt(i) = -p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
-                *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
-          enddo
-        else
           sum_DYDt = 0.
           sum_hhk_DYDt_reac = 0.
           sum_dk_ghk = 0.
@@ -2884,24 +1201,11 @@ module Chemistry
 !
 !  Sum over all species of diffusion terms
 !
-              if (ldiffusion2) then
-                if (lDiff_fick) then
-                  call grad(f,ichemspec(k),gchemspec)
-                  do i = 1,3
-                    dk_D(:,i) = gchemspec(:,i)*p%Diff_penc_add(:,k)
-                  enddo
-                elseif (lFlux_simple) then
-                  do i = 1,3
-                    dk_D(:,i) = p%gXXk(:,i,k)*p%Diff_penc_add(:,k)*p%mukmu1(:,k)
-                  enddo
-                else
-                  do i = 1,3
-                    dk_D(:,i) = (p%gXXk(:,i,k) &
-                        +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
-                        *p%Diff_penc_add(:,k)*p%mukmu1(:,k)
-                  enddo
-                endif
-!
+              if (ldiffusion) then
+                call grad(f,ichemspec(k),gchemspec)
+                do i = 1,3
+                  dk_D(:,i) = gchemspec(:,i)*p%Diff_penc_add(:,k)
+                enddo
                 call dot_mn(dk_D,p%ghhk(:,:,k),dk_dhhk)
                 sum_dk_ghk = sum_dk_ghk+dk_dhhk
                 if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
@@ -2912,73 +1216,39 @@ module Chemistry
 !
 ! If the correction velocity is added
 !
-          if (ldiff_corr .and. ldiffusion2) then
+          if (ldiff_corr .and. ldiffusion) then
             do k = 1,nchemspec
               call dot_mn(sum_diff,p%ghhk(:,:,k),sum_dhhk)
               sum_dk_ghk(:) = sum_dk_ghk(:)-f(l1:l2,m,n,ichemspec(k))*sum_dhhk(:)
             enddo
           endif
-        endif
 !
-        if (l1step_test) then
-          RHS_T_full = sum_DYDt(:)
-        else
           if (ltemperature_nolog) then
             call stop_it('ltemperature_nolog case does not work now!')
           else
-            if (lchemonly) then
-              RHS_T_full = (sum_DYDt(:)+sum_hhk_DYDt_reac*p%TT1(:))*p%cv1
-            else
-              RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
-                  +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
-            endif
+            RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
+                +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
           endif
-        endif
 !
         if (.not. lT_const) then
-          if (lchemonly) then
-!  If chemistry is solved in a separate step, we want df to contain only the
-!  chemical contribution, that's why no sum is required
-            df(l1:l2,m,n,ilnTT) = RHS_T_full
-          else
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full
-          endif
         endif
 !
-        if (lheatc_chemistry .and.(.not. lchemonly)) &
-            call calc_heatcond_chemistry(f,df,p)
+        if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
       endif
 !
-      if (lreactions .and. ireac /= 0 .and. ((.not. llsode).or. lchemonly)) then
+      if (lreactions .and. ireac /= 0 .and. ((.not. llsode))) then
         if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)
-      endif
-!
-!  Atmosphere case
-!
-      if (lcloud .and.(.not. lchemonly)) then
-!
-        df(l1:l2,m,n,ichemspec(index_H2O)) = df(l1:l2,m,n,ichemspec(index_H2O)) &
-            - p%ccondens
-        do i = 1,mx
-          if ((f(i,m,n,ichemspec(index_H2O)) &
-              +df(i,m,n,ichemspec(index_H2O))*dt) >= 1. ) &
-              df(i,m,n,ichemspec(index_H2O)) = 0.
-          if ((f(i,m,n,ichemspec(index_H2O)) &
-              +df(i,m,n,ichemspec(index_H2O))*dt) < 0. ) &
-              df(i,m,n,ichemspec(index_H2O)) = 0.
-        enddo
       endif
 !
 ! this damping zone is needed in a case of NSCBC
 !
-      if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
+!      if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (lfirst .and. ldt .and. (.not. lchemonly)) then
-        if (.not. lcheminp) then
-          diffus_chem = chem_diff*maxval(chem_diff_prefactor)*dxyz_2
-        else
+      if (lfirst .and. ldt) then
+print*,'Why never enters here??***********************************************************'
           diffus_chem=0.
           do j = 1,nx
             if (ldiffusion .and. .not. ldiff_simple) then
@@ -2993,14 +1263,13 @@ module Chemistry
               diffus_chem(j) = 0.
             endif
           enddo
-        endif
         maxdiffus=max(maxdiffus,diffus_chem)
       endif
 !
 ! NB: it should be discussed
 !
       if (lfirst .and. ldt) then
-        if (lreactions .and.(.not. llsode .or. lchemonly)) then
+        if (lreactions .and.(.not. llsode)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,
 !  or maximum of absolute rate, if growing.
@@ -3012,7 +1281,7 @@ module Chemistry
                   abs(p%DYDt_reac(:,k)/max(f(l1:l2,m,n,ichemspec(k)),.001)))
             enddo
 !
-          elseif (lcheminp) then
+          else
             reac_chem = 0.
             !sum_reac_rate=0.
             do k = 1,nchemspec
@@ -3035,50 +1304,27 @@ module Chemistry
           call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
         endif
 !
-!  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
-!      to have them all in the same array? The nbody
-!      module, for instance, has idiag_xxq and idiag_vvq, which
-!      allows the user to add output the positions and velocities
-!      of as many particle they wants.
-!  RP: Totally agree... I still have to expand manually these hard-coded
-!      Y1-Y9 and chemspec-chemspec9 when needed, but this is just work-around...
-!  AB: I also agree!
-!
-!
-        do ii = 1,nchemspec
-          if (idiag_Ym(ii)/= 0) then
-            call sum_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ym(ii))
+        do i = 1,nchemspec
+          if (idiag_Ym(i)/= 0) then
+            call sum_mn_name(f(l1:l2,m,n,ichemspec(i)),idiag_Ym(i))
           endif
-          if (idiag_Ymax(ii)/= 0) then
-            call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
+          if (idiag_Ymax(i)/= 0) then
+            call max_mn_name(f(l1:l2,m,n,ichemspec(i)),idiag_Ymax(i))
           endif
-          if (idiag_Ymin(ii)/= 0) then
-            call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
-          endif
-          if (idiag_diffm(ii)/= 0) then
-            call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+          if (idiag_Ymin(i)/= 0) then
+            call max_mn_name(-f(l1:l2,m,n,ichemspec(i)),idiag_Ymin(i),lneg=.true.)
           endif
         enddo
 !
-        if (idiag_cpfull /= 0) call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
-        if (idiag_cvfull /= 0) call sum_mn_name(cv_full(l1:l2,m,n),idiag_cvfull)
-!
-        if (idiag_lambdam /= 0) call sum_mn_name(lambda_full(l1:l2,m,n), &
-            idiag_lambdam)
         if (idiag_num /= 0) call sum_mn_name(f(l1:l2,m,n,iviscosity), idiag_num)
-!
-!  Sample for hard coded diffusion diagnostics
-!
-!        if (idiag_diff1m /= 0) call sum_mn_name(diff_full(l1:l2,m,n,i1), &
-!            idiag_diff1m)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-        do ii = 1,nchemspec
-          if (idiag_Ymz(ii)/= 0) &
-            call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
+        do i = 1,nchemspec
+          if (idiag_Ymz(i)/= 0) &
+            call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i)),idiag_Ymz(i))
         enddo
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)
@@ -3128,7 +1374,7 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: itoa, get_species_nr
+      use General, only: itoa
 !
       integer :: iname, inamez,ii
       logical :: lreset, lwr
@@ -3141,7 +1387,6 @@ module Chemistry
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
       character(len=7) :: diagn_diffm
-      character(len=fmtlen) :: sname
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
@@ -3160,8 +1405,6 @@ module Chemistry
         idiag_cpm = 0
         idiag_diffm = 0
 !
-        idiag_cpfull = 0
-        idiag_cvfull = 0
         idiag_e_intm = 0
         idiag_Ymz = 0
 !
@@ -3193,8 +1436,6 @@ module Chemistry
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_diffm),idiag_diffm(ii))
         enddo
         call parse_name(iname,cname(iname),cform(iname),'dtchem',idiag_dtchem)
-        call parse_name(iname,cname(iname),cform(iname),'cpfull',idiag_cpfull)
-        call parse_name(iname,cname(iname),cform(iname),'cvfull',idiag_cvfull)
 !
 !   Sample for hard-coded heat capacity diagnostics 
 !
@@ -3218,16 +1459,6 @@ module Chemistry
         enddo
       enddo
 !
-!  check for those quantities for which we want video slices
-!
-      do iname=1,nnamev
-        sname=trim(cnamev(iname))
-        if (sname(1:8)=='chemspec') then
-          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) &
-            cformv(iname)='DEFINED'
-        endif
-      enddo
-!
 !  Write chemistry index in short notation
 !
       if (lwr) then
@@ -3245,21 +1476,169 @@ module Chemistry
 !  16-may-09/raphael: added more slices
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
+      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
       type (slice_data) :: slices
-
-      character(len=fmtlen) :: sname
-      integer :: ispec
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
 !
 !  Chemical species mass fractions.
 !
-      sname=trim(slices%name)
-      if (sname(9:)==' ') then    ! 9=len('chemspec')+1
-        ispec=1
-      else
-        read(sname(9:),'(i3)') ispec
-      endif
-! 
-      call assign_slices_scal(slices,f,ichemspec(ispec))
+      case ('chemspec')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i1))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i1))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i1))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i1))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i1))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i1))
+        slices%ready = .true.
+      case ('chemspec2')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i2))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i2))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i2))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i2))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i2))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i2))
+        slices%ready = .true.
+      case ('chemspec3')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i3))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i3))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i3))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i3))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i3))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i3))
+        slices%ready = .true.
+      case ('chemspec4')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i4))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i4))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i4))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i4))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i4))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i4))
+        slices%ready = .true.
+      case ('chemspec5')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i5))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i5))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i5))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i5))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i5))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i5))
+        slices%ready = .true.
+      case ('chemspec6')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i6))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i6))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i6))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i6))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i6))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i6))
+        slices%ready = .true.
+      case ('chemspec7')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i7))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i7))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i7))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i7))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i7))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i7))
+        slices%ready = .true.
+      case ('chemspec8')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i8))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i8))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i8))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i8))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i8))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i8))
+        slices%ready = .true.
+      case ('chemspec9')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i9))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i9))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i9))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i9))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i9))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i9))
+        slices%ready = .true.
+      case ('chemspec10')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i10))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i10))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i10))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i10))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i10))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i10))
+        slices%ready = .true.
+      case ('chemspec11')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i11))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i11))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i11))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i11))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i11))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i11))
+        slices%ready = .true.
+      case ('chemspec12')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i12))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i12))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i12))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i12))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i12))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i12))
+        slices%ready = .true.
+      case ('chemspec13')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i13))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i13))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i13))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i13))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i13))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i13))
+        slices%ready = .true.
+      case ('chemspec14')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i14))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i14))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i14))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i14))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i14))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i14))
+        slices%ready = .true.
+      case ('chemspec15')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i15))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i15))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i15))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i15))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i15))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i15))
+        slices%ready = .true.
+      case ('chemspec16')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i16))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i16))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i16))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i16))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i16))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i16))
+        slices%ready = .true.
+      case ('chemspec17')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i17))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i17))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i17))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i17))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i17))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i17))
+        slices%ready = .true.
+      case ('chemspec18')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i18))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i18))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i18))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i18))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i18))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i18))
+        slices%ready = .true.
+      case ('chemspec19')
+        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i19))
+        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i19))
+        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i19))
+        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i19))
+        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i19))
+        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i19))
+        slices%ready = .true.
+      endselect
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
@@ -3431,23 +1810,12 @@ module Chemistry
       if (.not. tran_exist) then
         inquire (file='tran.in',exist=tran_exist)
       endif
-      inquire (file='lewis.dat',exist=lew_exist)
+!      inquire (file='lewis.dat',exist=lew_exist)
 !
 !  Allocate binary diffusion coefficient array
 !
-!      if (.not. lreloading) then
-!Natalia:
-!this does not work for ldiffusion=F
-!        if (ldiffusion .and. .not. lfix_Sc) then
         if (.not. lfix_Sc) then
-!NILS: Since Bin_diff_coeff is such a huge array we must check if it
-!NILS: required to define it for the full domain!!!!!!
           if (.not. lreloading) then
-            allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
-            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-                "for binary diffusion coefficients")
-!
-            allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
             allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
             if (stat > 0) call stop_it("Couldn't allocate memory "// &
                 "for binary diffusion coefficients")
@@ -3463,24 +1831,22 @@ module Chemistry
         call read_transport_data
       endif
 !
-      if (lew_exist) then
-        if (lroot) then
-          print*,'lewis.dat file with transport data is found.'
-          print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
-        endif
-        call read_Lewis
-      endif
+!      if (lew_exist) then
+!        if (lroot) then
+!          print*,'lewis.dat file with transport data is found.'
+!          print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
+!        endif
+!        call read_Lewis
+!      endif
 !
-      if (.not. lew_exist .and. lDiff_lewis .and. lroot) then
-        if (.not. l1step_test) then
-          print*, 'No lewis.dat file present, switch to simplified diffusion'
-          lDiff_lewis = .false.
-          lDiff_simple = .true.
-        else
-          print*, 'Le=1'
-          lDiff_lewis = .true.
-        endif
-      endif
+!      if (.not. lew_exist .and. lDiff_lewis .and. lroot) then
+!          print*, 'No lewis.dat file present, switch to simplified diffusion'
+!          lDiff_lewis = .false.
+!          lDiff_simple = .true.
+!        else
+!          print*, 'Le=1'
+!          lDiff_lewis = .true.
+!      endif
 !
       if (lroot .and. .not. tran_exist .and. .not. lew_exist) then
         if (chem_diff == 0.) &
@@ -3489,11 +1855,6 @@ module Chemistry
         print*,'lewis.dat file with Lewis numbers is not found.'
         print*,'Now diffusion coefficients is ',chem_diff
         print*,'Now species viscosity is ',nu_spec
-        Bin_Diff_coef = chem_diff/(unit_length*unit_length/unit_time)
-        do k = 1,nchemspec
-          species_viscosity(:,:,:,k) = nu_spec(k)/ &
-              (unit_mass/unit_length/unit_time)
-        enddo
       endif
 !
 !  Find number of ractions
@@ -3591,6 +1952,1519 @@ module Chemistry
       call keep_compiler_quiet(f)
 !
     endsubroutine chemkin_data
+!***********************************************************************
+    subroutine chemkin_data_simple(f)
+!
+! 
+!
+      character(len=fnlen) :: input_file
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: stat, k,i
+      character(len=fnlen) :: input_file2="./data/stoich.out"
+      integer :: file_id=123
+      logical :: chemin,cheminp
+!
+!  Allocate binary diffusion coefficient array
+!
+          if (.not. lreloading) then
+            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
+            if (stat > 0) call stop_it("Couldn't allocate memory "// &
+                "for binary diffusion coefficients")
+          endif
+!
+        tran_data(1,1:7) = (/ 1.0000000000000000        ,38.000000000000000        ,2.9199999999999999        ,&
+                              0.0000000000000000E+000  ,0.79000000000000004        ,280.00000000000000        ,&
+                              0.0000000000000000E+000 /)
+        tran_data(2,1:7) = (/ 1.0000000000000000        ,107.40000000000001        ,3.4580000000000002        ,&
+                              0.0000000000000000E+000   ,1.6000000000000001        ,3.7999999999999998        ,&
+                              0.0000000000000000E+000 /)
+        tran_data(3,1:7) = (/ 2.0000000000000000        ,572.39999999999998        ,2.6050000000000000        ,&
+                              1.8440000000000001        ,0.0000000000000000E+000   ,4.0000000000000000        ,&
+                              0.0000000000000000E+000 /)
+        tran_data(4,1:7) = (/ 0.0000000000000000E+000   ,145.00000000000000        ,2.0499999999999998        ,&
+                              0.0000000000000000E+000   ,0.0000000000000000E+000   ,0.0000000000000000E+000   ,&
+                              0.0000000000000000E+000 /)
+        tran_data(5,1:7) = (/ 0.0000000000000000E+000   ,80.000000000000000        ,2.7500000000000000        ,&
+                              0.0000000000000000E+000   ,0.0000000000000000E+000   ,0.0000000000000000E+000   ,&
+                              0.0000000000000000E+000 /)
+        tran_data(6,1:7) = (/ 1.0000000000000000        ,80.000000000000000        ,2.7500000000000000        ,&
+                              0.0000000000000000E+000   ,0.0000000000000000E+000   ,0.0000000000000000E+000   ,&
+                              0.0000000000000000E+000 /)
+        tran_data(7,1:7) = (/ 2.0000000000000000        ,107.40000000000001        ,3.4580000000000002        ,&
+                              0.0000000000000000E+000   ,0.0000000000000000E+000   ,1.0000000000000000        ,&
+                              0.0000000000000000E+000 /)
+        tran_data(8,1:7) = (/ 2.0000000000000000        ,107.40000000000001        ,3.4580000000000002        ,&
+                              0.0000000000000000E+000   ,0.0000000000000000E+000   ,3.7999999999999998        ,&
+                              0.0000000000000000E+000 /)
+        tran_data(9,1:7) = (/ 0.0000000000000000E+000   ,136.50000000000000        ,3.3300000000000001        ,&
+                              0.0000000000000000E+000   ,0.0000000000000000E+000   ,0.0000000000000000E+000   ,&
+                              0.0000000000000000E+000 /)
+        tran_data(10,1:7) = (/ 1.0000000000000000        ,97.530000000000001        ,3.6210000000000000        ,&
+                               0.0000000000000000E+000   ,1.7600000000000000        ,4.0000000000000000        ,&
+                               0.0000000000000000E+000 /)
+        tran_data(11,1:7) = (/ 0.0000000000000000E+000   ,10.199999999999999        ,2.5760000000000001        ,&
+                               0.0000000000000000E+000   ,0.0000000000000000E+000   ,0.0000000000000000E+000   ,&
+                               0.0000000000000000E+000 /)
+        tran_data(12,1:7) = (/ 1.0000000000000000        ,98.099999999999994        ,3.6499999999999999        ,&
+                               0.0000000000000000E+000   ,1.9500000000000000        ,1.8000000000000000        ,&
+                               0.0000000000000000E+000 /)
+        tran_data(13,1:7) = (/ 1.0000000000000000        ,244.00000000000000        ,3.7629999999999999        ,&
+                               0.0000000000000000E+000   ,2.6499999999999999        ,2.1000000000000001        ,&
+                               0.0000000000000000E+000 /)
+!
+!  Find number of ractions
+!
+      mreactions = 25
+      if (lroot) print*,'Number of reactions=',mreactions
+      if (lroot) print*,'Number of species=',nchemspec
+      nreactions = mreactions
+!
+!  Allocate reaction arrays
+!
+      if (.not. lreloading) then
+        allocate(stoichio(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
+        allocate(Sijm(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for Sijm")
+        allocate(Sijp(nchemspec,mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for Sijp")
+        allocate(reaction_name(mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for reaction_name")
+        allocate(back(mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for back")
+        allocate(B_n(mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for B_n")
+        B_n = 0.
+        allocate(alpha_n(mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for alpha_n")
+        alpha_n = 0.
+        allocate(E_an(mreactions),STAT=stat)
+        if (stat > 0) call stop_it("Couldn't allocate memory for E_an")
+        E_an = 0.
+!
+        allocate(low_coeff(3,nreactions),STAT=stat)
+        low_coeff = 0.
+        if (stat > 0) call stop_it("Couldn't allocate memory for low_coeff")
+        allocate(high_coeff(3,nreactions),STAT=stat)
+        high_coeff = 0.
+        if (stat > 0) call stop_it("Couldn't allocate memory for high_coeff")
+        allocate(troe_coeff(3,nreactions),STAT=stat)
+        troe_coeff = 0.
+        if (stat > 0) call stop_it("Couldn't allocate memory for troe_coeff")
+        allocate(a_k4(nchemspec,nreactions),STAT=stat)
+        a_k4 = impossible
+        if (stat > 0) call stop_it("Couldn't allocate memory for troe_coeff")
+        allocate(Mplus_case (nreactions),STAT=stat)
+        Mplus_case = .false.
+        allocate(photochem_case (nreactions),STAT=stat)
+        photochem_case = .false.
+        if (stat > 0) call stop_it("Couldn't allocate memory for photochem_case")
+      endif
+!
+!  Initialize data
+!
+      Sijp = 0.
+      Sijm = 0.0
+      back = .true.
+!
+!  read chemistry data
+!
+ Sijp(:,           1 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           2 ) = (/ &
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           3 ) = (/ &
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           4 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           5 ) = (/ &
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           6 ) = (/ &
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           7 ) = (/ &
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           8 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,           9 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          10 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          11 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          12 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          13 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          14 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          15 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          16 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          17 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          18 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          19 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          20 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          21 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          22 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          23 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          24 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijp(:,          25 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           1 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           2 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           3 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           4 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           5 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           6 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           7 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           8 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,           9 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          10 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          11 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          12 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          13 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          14 ) = (/ &
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          15 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          16 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          17 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          18 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          19 ) = (/ &
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          20 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          21 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          22 ) = (/ &
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          23 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          24 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ Sijm(:,          25 ) = (/ &
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ B_n = (/&
+   35.804878570702172      ,&
+   10.835651633566574      ,&
+   19.190788965648441      ,&
+   14.904072510778882      ,&
+   45.270160528558371      ,&
+   43.211262470732954      ,&
+   43.211262470732954      ,&
+   36.357664531526993      ,&
+   30.568064393133859      ,&
+   30.568064393133859      ,&
+   42.997068478406760      ,&
+   51.991873112601347      ,&
+   28.019679105720332      ,&
+   30.440423811291044      ,&
+   31.890738863714645      ,&
+   31.112261205264240      ,&
+   30.994862711046935      ,&
+   33.671275827205960      ,&
+   25.590800287401994      ,&
+   33.318335397877441      ,&
+   30.813232956425157      ,&
+   31.506380136985104      ,&
+   16.072051712456911      ,&
+   27.631021115928547      ,&
+   33.994049219469012      /)
+ alpha_n = (/&
+ -0.40600000000000003      ,&
+   2.6699999999999999      ,&
+   1.5100000000000000      ,&
+   2.0200000000000000      ,&
+  -1.3999999999999999      ,&
+  -1.1000000000000001      ,&
+  -1.1000000000000001      ,&
+ -0.50000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+  -1.0000000000000000      ,&
+  -2.0000000000000000      ,&
+  0.59999999999999998      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   2.0000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ E_an = (/&
+   16599.000000000000      ,&
+   6290.0000000000000      ,&
+   3430.0000000000000      ,&
+   13400.000000000000      ,&
+   104380.00000000000      ,&
+   104380.00000000000      ,&
+   104380.00000000000      ,&
+   0.0000000000000000E+000 ,&
+  -1788.0000000000000      ,&
+  -1788.0000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   823.00000000000000      ,&
+   295.00000000000000      ,&
+   0.0000000000000000E+000 ,&
+  -497.00000000000000      ,&
+   11982.000000000000      ,&
+  -1629.3000000000000      ,&
+   48430.000000000000      ,&
+   3970.0000000000000      ,&
+   7950.0000000000000      ,&
+   3970.0000000000000      ,&
+   0.0000000000000000E+000 ,&
+   9557.0000000000000      /)
+! 
+   back(:) = .true.
+   Mplus_case(:) = .false.
+   Mplus_case(13) = .true.
+   Mplus_case(20) = .true.
+   photochem_case(:) = .false.
+
+ low_coeff(           1 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   47.902673188740813      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   39.327933417011792      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ low_coeff(           2 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+  -1.7200000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ low_coeff(           3 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   524.79999999999995      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   45500.000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ troe_coeff(           1 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+  0.80000000000000004      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+  0.50000000000000000      ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ troe_coeff(           2 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   9.9999999999999996E-039 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   9.9999999999999996E-039 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ troe_coeff(           3 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000E+022 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   1.0000000000000000E+022 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ high_coeff(           1 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ high_coeff(           2 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+ high_coeff(           3 ,:) = (/&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 ,&
+   0.0000000000000000E+000 /)
+!
+ a_k4(           1 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   2.5000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   2.5000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   2.5000000000000000      ,&
+   2.5000000000000000      ,&
+   2.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   2.5000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           2 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+  0.78000000000000003      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           3 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   12.000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   12.000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   12.000000000000000      ,&
+   12.000000000000000      ,&
+   11.000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   12.000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           4 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           5 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           6 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           7 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           8 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(           9 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   0.0000000000000000E+000 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   0.0000000000000000E+000 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+  0.75000000000000000      ,&
+  0.38000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+  0.64000000000000001      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(          10 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(          11 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   0.0000000000000000E+000 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+  0.75000000000000000      ,&
+  0.38000000000000000      ,&
+   1.0000000000000000      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+  0.64000000000000001      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(          12 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.8999999999999999      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.8999999999999999      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.8999999999999999      ,&
+   1.8999999999999999      ,&
+   1.8999999999999999      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   1.8999999999999999      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+ a_k4(          13 ,:) = (/&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.7999999999999998      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.7999999999999998      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.7999999999999998      ,&
+   3.7999999999999998      ,&
+   3.7999999999999998      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.7999999999999998      ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 ,&
+   3.9084999999999999E+037 /)
+!
+      call write_reactions()
+!
+!  calculate stoichio and nreactions
+!
+      stoichio = Sijp-Sijm
+!
+!  print input data for verification
+!
+      if (lroot .and. nreactions > 0) then
+!
+        open (file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
+        write (file_id,*) 'STOICHIOMETRIC MATRIX'
+!
+        write (file_id,*) 'Species names'
+        write (file_id,101) varname(ichemspec(:))
+!
+        write (file_id,*) 'Sijm'
+        do i = 1,nreactions
+          write (file_id,100) i,Sijm(:,i)
+        enddo
+        write (file_id,*) 'Sijp:'
+        do i = 1,nreactions
+          write (file_id,100) i,Sijp(:,i)
+        enddo
+        write (file_id,*) 'stoichio='
+        do i = 1,nreactions
+          write (file_id,100) i,stoichio(:,i)
+        enddo
+        close (file_id)
+      endif
+!
+100   format(I1,26f6.1)
+101   format('    ',26A6)
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine chemkin_data_simple
 !***********************************************************************
     subroutine read_reactions(input_file,NrOfReactions)
 !
@@ -3872,7 +3746,6 @@ module Chemistry
                         do ind_chem=1,nchemspec
                           if (a_k4(ind_chem,k)==impossible) a_k4(ind_chem,k)=1
                         enddo
-
                       endif
                     enddo
                     goto 100 ! this is an excellent example of "spaghetti code" [Bourdin.KIS]
@@ -4063,19 +3936,7 @@ module Chemistry
 !
 !  Find forward rate constant for reaction 'reac'
 !
-          if (latmchem) then
-            if ((B_n(reac) == 0.) .and. (alpha_n(reac) == 0.)  &
-                .and. (E_an(reac) == 0.)) then
-              do i = 1,nx
-                call calc_extra_react(f,reac,kf(i),i,m,n,p)
-              enddo
-              kf = log(kf)
-            else
-              kf = B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*TT1_loc
-            endif
-          else
-            kf = B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
-          endif
+          kf = B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
 !
 !  Find backward rate constant for reaction 'reac'
 !
@@ -4147,11 +4008,7 @@ module Chemistry
 !  progress variable.
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
-          if (latmchem) then
-            kr = kf
-          else
             kr = kf-Kc
-          endif
 !
           if (Mplus_case (reac)) then
             where (prod1 > 0.)
@@ -4180,29 +4037,6 @@ module Chemistry
 !
           if (.not. back(reac)) vreact_m(:,reac) = 0.
         enddo
-!
-! This part calculates forward and reverse reaction rates
-! for the test case R->P
-! For more details see Doom, et al., J. Comp. Phys., 226, 2007
-!
-      elseif (reac_rate_method == '1step_test') then
-        do i = 1,nx
-          if (p%TT(i) > Tc) then
-            vreact_p(i,reac) = f(l1,m,n,iux)*f(l1,m,n,iux)*p%rho(1)*Cp_const &
-                /lambda_const*beta*(beta-1.)*(1.-f(l1-1+i,m,n,ichemspec(ipr)))
-          else
-            vreact_p(i,reac) = 0.
-          endif
-        enddo
-        vreact_m(:,reac) = 0.
-!
-!  Add alternative method for finding the reaction rates based on work by
-!  Roux et al. (2009)
-!  NILS: Should split the different methods for calculating the reaction
-!  NILS: rates into different subroutines at some point.
-!
-      elseif (reac_rate_method == 'roux') then
-        call roux(f,p,vreact_p,vreact_m)
       endif
 !
       if (lwrite_first .and. lroot) &
@@ -4210,112 +4044,6 @@ module Chemistry
       lwrite_first = .false.
 !
     endsubroutine get_reaction_rate
-!***********************************************************************
-    subroutine roux(f,p,vreact_p,vreact_m)
-!
-!  nilshau: 2011.01.11 (coded)
-!
-!  Calculate reaction rates based on the method of Roux et al. (2009).
-!  This is a single step reaction mechanism for propane:
-!
-!  C3H8 + 5O2 +XN2 -> 3CO2 + 4H2O + XN2
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,nreactions), intent(out) :: vreact_p, vreact_m
-      type (pencil_case) :: p
-!
-      real :: mC3H8, mO2, Rcal, f_phi, E_a
-      real, save :: init_C3H8, init_O2
-      integer :: i_O2, i_C3H8, ichem_O2, ichem_C3H8, j
-      logical :: lO2, lC3H8
-      logical, save :: lfirsttime=.true.
-      real, dimension(nx) :: activation_energy, pre_exp, term1, term2
-!
-      if (nreactions /= 1) &
-          call fatal_error('roux','nreactions should always be 1.')
-!
-!  Check that a global equivalence ratio is given at input
-!
-      if (global_phi == impossible) call fatal_error('roux', &
-          'global_phi must be given as input')
-!
-      Rcal = Rgas_unit_sys/4.14*1e-7
-!
-!  Find indeces for oxygen and propane
-!
-      call find_species_index('O2',i_O2,ichem_O2,lO2)
-      call find_species_index('C3H8',i_C3H8,ichem_C3H8,lC3H8)
-!
-!  Check that oxygen and propane exist and find their molar masses
-!
-      if (lO2) then
-        mO2 = species_constants(ichem_O2,imass)
-      else
-        call fatal_error('roux','O2 is not defined!')
-      endif
-      if (lC3H8) then
-        mC3H8 = species_constants(ichem_C3H8,imass)
-      else
-        call fatal_error('roux','C3H8 is not defined!')
-      endif
-!
-!  Find initial mass fractions
-!
-      if (lfirsttime) then
-        do j = 1,nchemspec
-          initial_massfractions(j) = f(l1,m1,n1,ichemspec(j))
-          if (lroot) print*,'initial_massfractions=',initial_massfractions
-        enddo
-        init_O2 = initial_massfractions(ichem_O2)
-        init_C3H8 = initial_massfractions(ichem_C3H8)
-      endif
-!
-!  Find Laminar flame speed corrector based on equivalence ratio phi
-!
-      f_phi &
-          = 0.5*(1+tanh((0.8-global_phi)/1.5)) &
-          +2.11/4*(1+tanh((global_phi-0.11)/0.2)) &
-          *(1+tanh((1.355-global_phi)/0.24))
-!
-!  Find the classical Arrhenius terms
-!
-      E_a = 31126
-      activation_energy = exp(-E_a*p%TT1/Rcal)
-      pre_exp = 3.2916e10
-!
-!  Find density and mass fraction dependent terms
-!
-      term1 = (f(l1:l2,m,n,i_C3H8)*p%rho &
-          /species_constants(i_C3H8,imass))**0.856
-      term2 = (f(l1:l2,m,n,i_O2)*p%rho /species_constants(i_O2,imass))**0.503
-!
-!  Use the above to find reaction terms
-!
-      vreact_p(:,1) = f_phi*pre_exp*term1*term2*activation_energy
-!
-!  Set reaction rate to zero when mass fractions of propane of oxygen is
-!  very close to zero.
-!
-      where (f(l1:l2,m,n,i_C3H8) < 1e-12)
-        vreact_p(:,1) = 0.
-      endwhere
-      where (f(l1:l2,m,n,i_O2) < 1e-12)
-        vreact_p(:,1) = 0.
-      endwhere
-      vreact_m(:,1) = 0.
-!
-!  Print debugging output
-!
-      if (lfirsttime .and. lroot) then
-        print*,'i_O2, i_C3H8, ichem_O2, ichem_C3H8=', &
-            i_O2, i_C3H8, ichem_O2, ichem_C3H8
-        print*,'lO2, lC3H8=',lO2, lC3H8
-        print*,'init_C3H8,init_O2,mO2,mC3H8=',init_C3H8,init_O2,mO2,mC3H8
-      endif
-!
-      if (lfirsttime) lfirsttime = .false.
-!
-    endsubroutine roux
 !***********************************************************************
     subroutine calc_reaction_term(f,p)
 !
@@ -4338,44 +4066,14 @@ module Chemistry
 !
       p%DYDt_reac = 0.
       rho1 = 1./p%rho
-      if (lcheminp .and. (.not. l1step_test)) then
-        do k = 1,nchemspec
-          molm(:,k) = rho1*species_constants(k,imass)
-        enddo
-      else
-        molm = 1.
-      endif
-!
-!  if we do reactions, we must calculate the reaction speed vector
-!  outside the loop where we multiply it by the stoichiometric matrix
-!
-      if (.not. lcheminp) then
-!
-!  Axel' case
-!
-        do j = 1,nreactions
-          if (lkreactions_alpha) then
-            alpha = kreactions_alpha(j)
-          else
-            alpha = 1.
-          endif
-          vreactions_p(:,j) = alpha*kreactions_p(j)*kreactions_z(n,j)
-          vreactions_m(:,j) = alpha*kreactions_m(j)*kreactions_z(n,j)
-          do k = 1,nchemspec
-            vreactions_p(:,j) = vreactions_p(:,j)* &
-                f(l1:l2,m,n,ichemspec(k))**Sijm(k,j)
-            vreactions_m(:,j) = vreactions_m(:,j)* &
-                f(l1:l2,m,n,ichemspec(k))**Sijp(k,j)
-          enddo
-        enddo
-        vreactions_m = -vreactions_m
-        vreactions_p = -vreactions_p
-      else
+      do k = 1,nchemspec
+        molm(:,k) = rho1*species_constants(k,imass)
+      enddo
 !
 !  Chemkin data case
 !
         call get_reaction_rate(f,vreactions_p,vreactions_m,p)
-      endif
+!      endif
 !
 !  Calculate rate of reactions (labeled q in the chemkin manual)
 !
@@ -4405,17 +4103,6 @@ module Chemistry
         enddo
       endif
 !
-! NH:
-!
-!  Sums for diagnostics
-!
-      !sum_omega=0.
-      !sum_Y=0.
-      !do k=1,nchemspec
-      !  sum_omega=sum_omega+maxval(p%DYDt_reac(:,k))
-      !  sum_Y=sum_Y+maxval(f(l1:l2,m,n,ichemspec(k)))
-      !enddo
-!
 !  Calculate diagnostic quantities
 !
       if (ldiagnos) then
@@ -4438,300 +4125,13 @@ module Chemistry
     subroutine  write_net_reaction
 !
 !  write net reactions to file
-!
+
       open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
       write (1,*) t
       write (1,'(8e10.2)') net_react_p, net_react_m
       close (1)
 !
     endsubroutine  write_net_reaction
-!***********************************************************************
-    subroutine  calc_collision_integral(omega,lnTst,Omega_kl)
-!
-!  Get coefficients for calculating of the collision integral
-!  This routine is called from calc_diff_visc_coeff, which again is called from
-!  calc_for_chem_mixture, which is why we work on full chunks of arrays here.
-!
-!  03-apr-08/natalia: coded
-!
-      character(len=*), intent(in) :: omega
-      real, dimension(mx,my,mz), intent(in) :: lnTst
-      real, dimension(mx,my,mz), intent(out) :: Omega_kl
-      integer :: i
-      real, dimension(8) :: aa
-!
-      select case (omega)
-      case ('Omega11')
-        aa(1) = 6.96945701E-1
-        aa(2) = 3.39628861E-1
-        aa(3) = 1.32575555E-2
-        aa(4) = -3.41509659E-2
-        aa(5) = 7.71359429E-3
-        aa(6) = 6.16106168E-4
-        aa(7) = -3.27101257E-4
-        aa(8) = 2.51567029E-5
-      case ('Omega22')
-        aa(1) = 6.33225679E-1
-        aa(2) = 3.14473541E-1
-        aa(3) = 1.78229325E-2
-        aa(4) = -3.99489493E-2
-        aa(5) = 8.98483088E-3
-        aa(6) = 7.00167217E-4
-        aa(7) = -3.82733808E-4
-        aa(8) = 2.97208112E-5
-      case default
-        call stop_it('Insert Omega_kl')
-      endselect
-!
-      Omega_kl = 0.
-      do i = 1,8
-        Omega_kl = Omega_kl+aa(i)*(lnTst)**(i-1)
-      enddo
-      Omega_kl = 1./Omega_kl
-!
-    endsubroutine  calc_collision_integral
-!***********************************************************************
-    subroutine calc_diff_visc_coef(f)
-!
-!  Calculation of the binary diffusion coefficients and the species viscosities.
-!  This routind is called from calc_for_chem_mixture,
-!  which is why we work on full chunks of arrays here.
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      intent(in) :: f
-      real, dimension(mx,my,mz) :: Omega_kl, prefactor
-      real, dimension(mx,my,mz) :: lnTjk, lnTk_array
-      integer :: k, j, j2, j3
-      real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
-      real :: Na=6.022E23, tmp_local, tmp_local2, delta_jk_star
-      character(len=7) :: omega
-!
-!  Find binary diffusion coefficients
-!
-      tmp_local = 3./16.*sqrt(2.*k_B_cgs**3/pi)
-      do j3 = nn1,nn2
-        do j2 = mm1,mm2
-          prefactor(ll1:ll2,j2,j3) = tmp_local*sqrt(TT_full(ll1:ll2,j2,j3)) &
-              *unit_length**3/(Rgas_unit_sys*rho_full(ll1:ll2,j2,j3))
-        enddo
-      enddo
-!
-      omega = 'Omega11'
-!
-! Check if we use fixed Schmidt number for speeding up calculations
-!
-      if (.not. lfix_Sc) then
-!
-! Check if we use simplified version of the binary diffusion calculation
-!
-        if (ldiffusion .and. (.not. lDiff_simple) .and. (.not. lDiff_lewis)) then
-!
-!  Do non-simplified binary diffusion coefficient
-!
-          do k = 1,nchemspec
-            do j = k,nchemspec
-!  Account for the difference between eq. 5-4 and 5-31 in the Chemkin theory
-!  manual
-!
-              if (j /= k) then
-                eps_jk = sqrt(tran_data(j,2)*tran_data(k,2))
-                sigma_jk = 0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
-                m_jk = (species_constants(j,imass)*species_constants(k,imass)) &
-                    /(species_constants(j,imass)+species_constants(k,imass))/Na
-                delta_jk = 0.5*tran_data(j,4)*tran_data(k,4)*1e-18*1e-18
-              else
-                eps_jk = tran_data(j,2)
-                sigma_jk = tran_data(j,3)*1e-8
-                m_jk = species_constants(j,imass)/(2*Na)
-                delta_jk = 0.5*(tran_data(j,4)*1e-18)*(tran_data(j,4)*1e-18)
-              endif
-!
-! Loop over all grid points
-!
-              do j3 = nn1,nn2
-                do j2 = mm1,mm2
-                  if (ltemperature_nolog) then
-                    lnTjk(ll1:ll2,j2,j3) = log(f(ll1:ll2,j2,j3,ilnTT)/eps_jk)
-                  else
-                    lnTjk(ll1:ll2,j2,j3) = f(ll1:ll2,j2,j3,ilnTT)-log(eps_jk)
-                  endif
-!
-                  Omega_kl(ll1:ll2,j2,j3) = &
-                      1./(6.96945701E-1   +3.39628861E-1*lnTjk(ll1:ll2,j2,j3) &
-                      +1.32575555E-2*lnTjk(ll1:ll2,j2,j3)*lnTjk(ll1:ll2,j2,j3) &
-                      -3.41509659E-2*lnTjk(ll1:ll2,j2,j3)**3 &
-                      +7.71359429E-3*lnTjk(ll1:ll2,j2,j3)**4 &
-                      +6.16106168E-4*lnTjk(ll1:ll2,j2,j3)**5 &
-                      -3.27101257E-4*lnTjk(ll1:ll2,j2,j3)**6 &
-                      +2.51567029E-5*lnTjk(ll1:ll2,j2,j3)**7)
-                  delta_jk_star = delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
-!
-                  Omega_kl(ll1:ll2,j2,j3) = Omega_kl(ll1:ll2,j2,j3) &
-                      +0.19*delta_jk_star*delta_jk_star/(TT_full(ll1:ll2,j2,j3)/eps_jk)
-                  if (j /= k) then
-                    Bin_Diff_coef(ll1:ll2,j2,j3,k,j) = prefactor(ll1:ll2,j2,j3)/mu1_full(ll1:ll2,j2,j3) &
-                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))
-                  else
-                    Bin_Diff_coef(ll1:ll2,j2,j3,k,j) = prefactor(ll1:ll2,j2,j3) &
-                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl(ll1:ll2,j2,j3))*species_constants(k,imass)
-!
-                  endif
-                enddo
-              enddo
-            enddo
-          enddo
-!
-          do j3 = nn1,nn2
-            do j2 = mm1,mm2
-              do k = 1,nchemspec
-                do j = 1,k-1
-                  Bin_Diff_coef(ll1:ll2,j2,j3,k,j) = Bin_Diff_coef(ll1:ll2,j2,j3,j,k)
-                enddo
-              enddo
-            enddo
-          enddo
-!
-        else
-          if (.not. lDiff_simple .and. .not. lDiff_lewis) then
-            Bin_Diff_coef = 0.
-          endif
-        endif
-      endif
-!
-!  Calculate viscosity
-!
-!     if (visc_const==impossible) then
-      omega = 'Omega22'
-      tmp_local = 5./16.*sqrt(k_B_cgs/(Na*pi))
-!
-      do k = 1,nchemspec
-        tmp_local2 = sqrt(species_constants(k,imass))/  &
-            ((tran_data(k,3)*1e-8)*(tran_data(k,3)*1e-8))*tmp_local
-!
-! 1 Debye = 10**(-18) esu -> (1e-18*tran_data(k,4))
-!
-        delta_st = (1e-18*tran_data(k,4))*(1e-18*tran_data(k,4))/2./ &
-            (tran_data(k,2)*k_B_cgs*(tran_data(k,3)*1e-8)**3)
-!
-        if (ltemperature_nolog) then
-          lnTk_array = log(f(:,:,:,ilnTT)/tran_data(k,2))
-        else
-          lnTk_array = f(:,:,:,ilnTT)-log(tran_data(k,2))
-        endif
-        call calc_collision_integral(omega,lnTk_array,Omega_kl)
-!
-        do j3 = nn1,nn2
-          do j2 = mm1,mm2
-            species_viscosity(ll1:ll2,j2,j3,k) = sqrt(TT_full(ll1:ll2,j2,j3)) &
-                /(Omega_kl(ll1:ll2,j2,j3) &
-                +0.2*delta_st*delta_st/(TT_full(ll1:ll2,j2,j3)  &
-                /tran_data(k,2)))*tmp_local2 &
-                /(unit_mass/unit_length/unit_time)
-          enddo
-        enddo
-      enddo
-!      endif
-!
-    endsubroutine calc_diff_visc_coef
-!***********************************************************************
-    subroutine calc_therm_diffus_coef(f)
-!
-!  Calculate the thermal diffusion coefficient based on equation 5-17 in
-!  the Chemkin theory manual
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,nchemspec) :: species_cond
-      real, dimension(mx) :: tmp_val, ZZ, FF, tmp_sum, tmp_sum2
-      real, dimension(mx) :: AA, BB, f_tran, f_rot, f_vib
-      real, dimension(mx) :: Cv_vib_R, T_st, pi_1_5, pi_2
-      real :: Cv_rot_R, Cv_tran_R
-      intent(in) :: f
-      integer :: j2, j3,k
-!
-!        call timing('calc_therm_diffus_coef','just entered')
-!
-      pi_2 = pi*pi
-      pi_1_5 = pi*sqrt(pi)
-!
-      do j3 = nn1,nn2
-        do j2 = mm1,mm2
-          tmp_sum = 0.
-          tmp_sum2 = 0.
-          do k = 1,nchemspec
-!
-! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
-!
-            if (tran_data(k,1) == 0.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 0.
-              Cv_vib_R = 0.
-            elseif (tran_data(k,1) == 1.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 1.
-              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-2.5
-            elseif (tran_data(k,1) == 2.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 1.5
-              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-3.
-            else
-              Cv_tran_R = 0
-              Cv_rot_R = 0
-              Cv_vib_R = 0
-              call fatal_error('calc_therm_diffus_coef','No such tran_data!')
-            endif
-!
-! The rotational and vibrational contributions are zero for the single
-! atom molecules but not for the linear or non-linear molecules
-!
-            if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
-              tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
-                  /species_viscosity(:,j2,j3,k)
-              AA = 2.5-tmp_val
-              T_st = tran_data(k,2)/298.
-              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-                  *(T_st)+pi_1_5*(T_st)**1.5
-              ZZ = tran_data(k,6)*FF
-              T_st = tran_data(k,2)/TT_full(:,j2,j3)
-              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-                  *(T_st)+pi_1_5*(T_st)**1.5
-              ZZ = ZZ/FF
-              BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
-              f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
-              f_rot = tmp_val*(1+2./pi*AA/BB)
-              f_vib = tmp_val
-            else
-              f_tran = 2.5
-              f_rot = 0.0
-              f_vib = 0.0
-            endif
-            species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
-                /(species_constants(k,imass)/unit_mass)*Rgas* &
-                (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
-                +f_vib*Cv_vib_R)
-!
-! tmp_sum and tmp_sum2 are used later to find the mixture averaged
-! conductivity.
-!
-            tmp_sum = tmp_sum +XX_full(:,j2,j3,k)*species_cond(:,j2,j3,k)
-            tmp_sum2 = tmp_sum2 +XX_full(:,j2,j3,k)/species_cond(:,j2,j3,k)
-          enddo
-!
-! Find the mixture averaged conductivity
-!
-          where (tmp_sum2 <= 0.)
-            lambda_full(:,j2,j3) = 0.
-          elsewhere
-            lambda_full(:,j2,j3) = 0.5*(tmp_sum+1./tmp_sum2)
-          endwhere
-        enddo
-      enddo
-!
-      call keep_compiler_quiet(f)
-      call timing('calc_therm_diffus_coef','just finished')
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_therm_diffus_coef
 !***********************************************************************
     subroutine calc_diffusion_term(f,p)
 !
@@ -4744,140 +4144,48 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx) :: Xk_Yk
-      real, dimension(nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
+      real, dimension(nx,3) :: gDiff_full_add, gchemspec
       real, dimension(nx) :: del2chemspec
-      real, dimension(nx) :: diff_op, diff_op1, diff_op2, diff_op3, del2XX, del2lnpp
-      real, dimension(nx) :: glnpp_gXkYk, glnrho_glnpp, gD_glnpp, glnpp_glnpp
-      real, dimension(nx) :: sum_gdiff=0., gY_sumdiff, glnmu_glnpp
+      real, dimension(nx) :: diff_op, diff_op1, diff_op2
+      real, dimension(nx) :: sum_gdiff=0., gY_sumdiff
       real, dimension(nx,3) :: sum_diff=0., dk_D
-      real :: diff_k
       integer :: k,i
 !
       intent(in) :: f
 !
       p%DYDt_diff = 0.
-      diff_k = chem_diff
 !
 !  Loop over all chemical species.
 !
       do k = 1,nchemspec
 !
-!  Simple chemistry (not using ChemKin formalism).
-!  Eliminate need for p%glnrho if density is not included.
-!
-        if (.not. lcheminp) then
-          if (chem_diff /= 0.) then
-            diff_k = chem_diff*chem_diff_prefactor(k)
-            if (headtt) print*,'dchemistry_dt: k,diff_k=',k,diff_k
-            call del2(f,ichemspec(k),del2chemspec)
-            call grad(f,ichemspec(k),gchemspec)
-            if (ldensity) then
-              call dot_mn(p%glnrho,gchemspec,diff_op)
-              diff_op = diff_op+del2chemspec
-            else
-              diff_op = del2chemspec
-            endif
-            p%DYDt_diff(:,k) = diff_k*diff_op
-          endif
-        else
-!
 !  Detailed chemistry and transport using CHEMKIN formalism.
 !
-          if (ldiffusion) then
+        if (ldiffusion) then
 !
-!  Calculate diffusion coefficient gradients gDiff_full_add in 3 cases:
-!    1) Simplified diffusion coefficients
+!  Calculate diffusion coefficient gradients gDiff_full_add in a case:
 !    2) Constant Lewis numbers and heat conductivity
-!    3) Detailed transport
 !
-            if (lDiff_simple) then
-              do i = 1,3
-                gDiff_full_add(:,i) = p%Diff_penc_add(:,k) &
-                    *(0.7*p%glnTT(:,i)-p%glnrho(:,i))
-              enddo
-            elseif (lDiff_lewis .and. lew_exist) then
-              do i = 1,3
-                gDiff_full_add(:,i) = &
-                    (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
-                    *p%Diff_penc_add(:,k)
-              enddo
-            elseif (lDiff_lewis .and. l1step_test) then
-              do i = 1,3
-                gDiff_full_add(:,i) = &
-                    (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
-                    *p%Diff_penc_add(:,k)
-              enddo
-            else
-              call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-            endif
+            do i = 1,3
+             gDiff_full_add(:,i) = p%gradnu(:,i)/Pr_number !*Lewis_coef1(k)
+            enddo
 !
-!  Calculate the terms needed by the diffusion fluxes in 3 cases:
+!  Calculate the terms needed by the diffusion fluxes in a case:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
-!    2) Simplified fluxes (gradient of species MOLAR fractions)
-!    3) Detailed transport (with pressure gradients included)
 !
-            if (lDiff_fick) then
               call del2(f,ichemspec(k),del2chemspec)
               call grad(f,ichemspec(k),gchemspec)
               call dot_mn(p%glnrho,gchemspec,diff_op1)
               call dot_mn(gDiff_full_add,gchemspec,diff_op2)
-            elseif (lFlux_simple) then
-              call del2(XX_full(:,:,:,k),del2XX)
-              call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-              call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
-              call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
-            else
-              call del2(XX_full(:,:,:,k),del2XX)
-              call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-              call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
-              call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
-              call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
-              do i = 1,3
-                gXk_Yk(:,i) = p%gXXk(:,i,k)-p%gYYk(:,i,k)
-              enddo
-              del2lnpp = p%del2pp/p%pp-glnpp_glnpp
-              Xk_Yk = XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
-              call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
-              call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
-              call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
-              call dot_mn(p%glnmu,p%glnpp,glnmu_glnpp)
-            endif
 !
-!  Calculate the diffusion fluxes and dk_D in 3 cases:
+!  Calculate the diffusion fluxes and dk_D in a case:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
-!    2) Simplified diffusion fluxes (only gradient of species MOLAR fractions)
-!    3) Detailed transport (with pressure gradients included)
-!  Note that the ratio Wk/Wm is introduced here and not during the calculation
-!  of species diffusion coefficients as before. It indeed depends on the diffusion
-!  flux formulation and not on the diffusive properties of each species.
 !
-            if (lDiff_fick) then
               p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) &
                   +diff_op2
               do i = 1,3
                 dk_D(:,i) = p%Diff_penc_add(:,k)*gchemspec(:,i)
               enddo
-            elseif (lFlux_simple) then
-              p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*p%mukmu1(:,k) &
-                  *(del2XX+diff_op1-diff_op3)+ &
-                  p%mukmu1(:,k)*diff_op2
-              do i = 1,3
-                dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
-              enddo
-            else
-              p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*p%mukmu1(:,k) &
-                  *(del2XX+diff_op1-diff_op3)+ &
-                  p%mukmu1(:,k)*diff_op2+ &
-                  p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:) &
-                  *(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
-                  Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k) &
-                  *p%mukmu1(:,k)*glnpp_gXkYk
-              do i = 1,3
-                dk_D(:,i) = p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k)+ &
-                    Xk_Yk(:)*p%glnpp(:,i))
-              enddo
-            endif
 !
             if (ldiff_corr) then
               do i = 1,3
@@ -4885,7 +4193,6 @@ module Chemistry
               enddo
               sum_gdiff(:) = sum_gdiff(:)+ p%DYDt_diff(:,k)
             endif
-          endif
         endif
       enddo
 !
@@ -4924,10 +4231,6 @@ module Chemistry
 !
 !  Add heat conduction to RHS of temperature equation
 !
-!      if (l1step_test .or. lSmag_heat_transport) then
-       if (l1step_test) then
-        tmp1 = p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
-      else
         if (ltemperature_nolog) then
           tmp1 = (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
@@ -4935,7 +4238,6 @@ module Chemistry
           tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
         endif
-      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -4956,40 +4258,115 @@ module Chemistry
       intent(out) :: cs2_full
       integer :: j,k
 !
-      do j = 1,my
-        do k = 1,mz
-          if (minval(cv_full(:,j,k)) <= 0) then
-            cs2_full(:,j,k) = 0.
-          else
-            cs2_full(:,j,k) = cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k) &
-                *TT_full(:,j,k)*Rgas
-          endif
-        enddo
-      enddo
+      call fatal_error('get_cs2_full',&
+        'This function is not working with chemistry_simple since all full arrays are removed')
 !
     endsubroutine get_cs2_full
 !***********************************************************************
-    subroutine get_cs2_slice(slice,dir,index)
+    subroutine get_cs2_slice(slice,dir,index,f)
 !
 ! Find a slice of the speed of sound
 !
 ! 10-dez-09/nils: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
+      integer :: j2, j3, k
+      real, dimension(nchemspec) ::  cp_k, cv_k
+      real, dimension (:,:), allocatable :: TT_full, cp_full, cv_full, mu1_full
+!
+      do k = 1,nchemspec
+        cp_k(k) = Cp_const/species_constants(k,imass)
+        cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
+      enddo
 !
       if (dir == 1) then
-        slice = cp_full(index,m1:m2,n1:n2)/cv_full(index,m1:m2,n1:n2) &
-            *mu1_full(index,m1:m2,n1:n2)*TT_full(index,m1:m2,n1:n2)*Rgas
+         allocate (TT_full(my,mz))  
+         allocate (cp_full(my,mz))  
+         allocate (cv_full(my,mz))  
+         allocate (mu1_full(my,mz))  
+         mu1_full=0.
+         cp_full = 0.
+         cv_full = 0.
+         TT_full = 0.
+         TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=m1,m2
+                  do j3=n1,n2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
+                     cp_full(j2,j3) = &
+                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
+                     cv_full(j2,j3) = &
+                          cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
+                  enddo
+               enddo
+            endif
+         enddo
+         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
+              *mu1_full(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
       elseif (dir == 2) then
-        slice = cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2) &
-            *mu1_full(l1:l2,index,n1:n2)*TT_full(l1:l2,index,n1:n2)*Rgas
+         allocate (TT_full(mx,mz))  
+         allocate (cp_full(mx,mz))  
+         allocate (cv_full(mx,mz))  
+         allocate (mu1_full(mx,mz)) 
+         mu1_full=0.
+         cp_full = 0.
+         cv_full = 0.
+         TT_full = 0.
+         TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=n1,n2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
+                     cp_full(j2,j3) = &
+                          cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
+                     cv_full(j2,j3) = &
+                          cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
+                  enddo
+               enddo
+            endif
+         enddo
+         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
+              *mu1_full(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
       elseif (dir == 3) then
-        slice = cp_full(l1:l2,m1:m2,index)/cv_full(l1:l2,m1:m2,index) &
-            *mu1_full(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2,index)*Rgas
+         allocate (TT_full(mx,my))  
+         allocate (cp_full(mx,my))  
+         allocate (cv_full(mx,my))  
+         allocate (mu1_full(mx,my)) 
+         mu1_full=0.
+         cp_full = 0.
+         cv_full = 0.
+         TT_full = 0.
+         TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=m1,m2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
+                     cp_full(j2,j3) = &
+                          cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
+                     cv_full(j2,j3) = &
+                          cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
+                  enddo
+               enddo
+            endif
+         enddo
+         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
+              *mu1_full(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
       else
-        call fatal_error('get_cs2_slice','No such dir!')
+         call fatal_error('get_cs2_slice','No such dir!')
       endif
+!
+      deallocate (TT_full)  
+      deallocate (cp_full)  
+      deallocate (cv_full)  
+      deallocate (mu1_full) 
 !
     endsubroutine get_cs2_slice
 !***********************************************************************
@@ -4999,35 +4376,89 @@ module Chemistry
       intent(out) :: gamma_full
       integer :: j,k
 !
-      do j = 1,my
-        do k = 1,mz
-          if (minval(cv_full(:,j,k)) <= 0) then
-            gamma_full(:,j,k) = 0.
-          else
-            gamma_full(:,j,k) = cp_full(:,j,k)/cv_full(:,j,k)
-          endif
-        enddo
-      enddo
+      call fatal_error('get_gamma_full',&
+        'This function is not working with chemistry_simple since all full arrays are removed')
+!
     endsubroutine get_gamma_full
 !***********************************************************************
-    subroutine get_gamma_slice(slice,dir,index)
+    subroutine get_gamma_slice(slice,dir,index,f)
 !
 !  Get a 2D slice of gamma
 !
 !  10-dez-09/Nils Erland L. Haugen: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
+      integer :: j2, j3, k
+      real, dimension(nchemspec) ::  cp_k, cv_k
+      real, dimension (:,:), allocatable :: cp_full, cv_full
+!
+      do k = 1,nchemspec
+        cp_k(k) = Cp_const/species_constants(k,imass)
+        cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
+      enddo
 !
       if (dir == 1) then
-        slice = cp_full(index,m1:m2,n1:n2)/cv_full(index,m1:m2,n1:n2)
+         allocate (cp_full(my,mz))  
+         allocate (cv_full(my,mz))  
+         cp_full = 0.
+         cv_full = 0.
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=m1,m2
+                  do j3=n1,n2
+                     cp_full(j2,j3) = &
+                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
+                     cv_full(j2,j3) = &
+                          cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
+                  enddo
+               enddo
+            endif
+         enddo
+        slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
       elseif (dir == 2) then
-        slice = cp_full(l1:l2,index,n1:n2)/cv_full(l1:l2,index,n1:n2)
+         allocate (cp_full(mx,mz))  
+         allocate (cv_full(mx,mz))  
+         cp_full = 0.
+         cv_full = 0.
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=n1,n2
+                     cp_full(j2,j3) = &
+                          cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
+                     cv_full(j2,j3) = &
+                          cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
+                  enddo
+               enddo
+            endif
+         enddo
+        slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
       elseif (dir == 3) then
-        slice = cp_full(l1:l2,m1:m2,index)/cv_full(l1:l2,m1:m2,index)
+         allocate (cp_full(mx,my))  
+         allocate (cv_full(mx,my))  
+         cp_full = 0.
+         cv_full = 0.
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=m1,m2
+                     cp_full(j2,j3) = &
+                          cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
+                     cv_full(j2,j3) = &
+                          cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
+                  enddo
+               enddo
+            endif
+         enddo
+        slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
       else
         call fatal_error('get_gamma_slice','No such dir!')
       endif
+!
+      deallocate (cp_full)  
+      deallocate (cv_full) 
 !
     endsubroutine get_gamma_slice
 !***********************************************************************
@@ -5165,7 +4596,7 @@ module Chemistry
       endif
 
       if (.not. reinitialize_chemistry) then
-      if (.not.lflame_front .and. .not.ltriple_flame .and. .not.lFlameMaster)  then
+      if (.not.lflame_front)  then
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
         else
@@ -5263,233 +4694,11 @@ module Chemistry
 !***********************************************************************
 !          NSCBC boundary conditions
 !***********************************************************************
-    subroutine damp_zone_for_NSCBC(f,df)
-!
-!   16-jul-06/natalia: coded
-!   24-jan-11/julien: modified
-!    buffer zone to damp the acustic waves!!!!!!!!!!!
-!    important for NSCBC
-!    Most of this routine is still hard-coded
-!    Should contain more tests to detect boundaries and set the reference conditions
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      integer :: sz_x, sz_y, sz_z, ll1, ll2, i
-!      integer :: sz_r_x, sz_l_x, sz_r_y, sz_l_y, sz_r_z, sz_l_z
-      real :: dt1, func_x !,func_y,func_z
-      real :: ux_ref, uy_ref, uz_ref, lnTT_ref, lnrho_ref, gamma, cs
-      real :: del
-!      logical :: lzone_y=.false.,lzone_z=.false.
-      logical :: dir_damp1=.true. !, dir_damp2=.false., dir_damp3=.false.
-      logical :: lright=.true., lleft=.true.
-!
-      ux_ref = 0.
-      uy_ref = 0.
-      uz_ref = 0.
-!      lnTT_ref=6.39693
-      lnTT_ref = log(init_TT1)
-      lnrho_ref = log(init_pressure)-log(Rgas)-lnTT_ref-log(mu1_full(l1,m1,n1))
-      gamma = 1.4
-      cs = sqrt(gamma*init_pressure/exp(lnrho_ref))
-!
-!  The characteristic time scale is taken of the order of a CFL time scale
-!
-      dt1 = (ux_ref+cs)/(Lxyz(1)/nxgrid)
-      del = 0.1
-!
-      sz_x = int(del*nxgrid)
-      sz_y = int(del*nygrid)
-      sz_z = int(del*nzgrid)
-      ll1 = l1
-      ll2 = l2
-!
-      if (nxgrid /= 1 .and. dir_damp1) then
-!
-!  On the right side
-!
-        if (lright) then
-          ll1 = nxgrid-sz_x
-          ll2 = nxgrid
-          do i = l1,l2
-            if (x(i) >= xgrid(ll1)) then
-              func_x = (x(i)-xgrid(ll1))**3/(xgrid(ll2)-xgrid(ll1))**3
-              df(i,m,n,iux) = df(i,m,n,iux)-func_x*(f(i,m,n,iux)-ux_ref)*dt1
-              df(i,m,n,iuy) = df(i,m,n,iuy)-func_x*(f(i,m,n,iuy)-uy_ref)*dt1
-              df(i,m,n,iuz) = df(i,m,n,iuz)-func_x*(f(i,m,n,iuz)-uz_ref)*dt1
-!            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
-!            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
-            endif
-          enddo
-        endif
-!
-!  On the left side
-!
-        if (lleft) then
-          ll1 = 1
-          ll2 = sz_x
-          do i = l1,l2
-            if (x(i) <= xgrid(ll2)) then
-              func_x = (x(i)-xgrid(ll2))**3/(xgrid(ll1)-xgrid(ll2))**3
-              df(i,m,n,iux) = df(i,m,n,iux)-func_x*(f(i,m,n,iux)-ux_ref)*dt1
-              df(i,m,n,iuy) = df(i,m,n,iuy)-func_x*(f(i,m,n,iuy)-uy_ref)*dt1
-              df(i,m,n,iuz) = df(i,m,n,iuz)-func_x*(f(i,m,n,iuz)-uz_ref)*dt1
-!            df(i,m,n,ilnrho)=df(i,m,n,ilnrho)-func_x*(f(i,m,n,ilnrho)-lnrho_ref)*dt1
-!            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
-            endif
-          enddo
-        endif
-!
-      endif
-!
-!  The following should be replaced to generalize the formula
-!
-!       if (nygrid/=1 .and. dir_damp2) then
-!
-!       if (sz_r_y<=m1) call fatal_error('to use ldamp_zone_NSCBC',&
-!                  'you should increase nygrid!')
-!
-!       if ((m<=sz_l_y) .and. (m>=m1)) then
-!        func_y=(y(m)-y(sz_l_y))**3/(y(m1)-y(sz_l_y))**3
-!        lzone_y=.true.
-!       elseif ((m>=sz_r_y) .and. (m<=m2)) then
-!        func_y= (y(m)-y(sz_r_y))**3/(y(m2)-y(sz_r_y))**3
-!        lzone_y=.true.
-!       endif
-!
-!       if (lzone_y) then
-!        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
-!           -func_y*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&
-!           -func_y*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&
-!           -func_y*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
-!           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&
-!           -func_y*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
-!        lzone_y=.false.
-!       endif
-!       endif
-!
-!      if (nzgrid/=1 .and. dir_damp3) then
-!        if (sz_r_z<=n1) call fatal_error('to use ldamp_zone_NSCBC',&
-!                  'you should increase nzgrid!')
-!
-!      if ((n<=sz_l_z) .and. (n>=n1)) then
-!        func_z=(z(n)-z(sz_l_z))**3/(z(n1)-z(sz_l_z))**3
-!        lzone_z=.true.
-!       elseif ((n>=sz_r_z) .and. (n<=n2)) then
-!        func_z= (z(n)-z(sz_r_z))**3/(z(n2)-z(sz_r_z))**3
-!        lzone_z=.true.
-!       endif
-!
-!       if (lzone_z) then
-!        df(sz_l_x:sz_r_x,m,n,iux)=df(sz_l_x:sz_r_x,m,n,iux)&
-!           -func_z*(f(sz_l_x:sz_r_x,m,n,iux)-ux_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,iuy)=df(sz_l_x:sz_r_x,m,n,iuy)&
-!           -func_z*(f(sz_l_x:sz_r_x,m,n,iuy)-uy_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,iuz)=df(sz_l_x:sz_r_x,m,n,iuz)&
-!           -func_z*(f(sz_l_x:sz_r_x,m,n,iuz)-uz_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,ilnrho)=df(sz_l_x:sz_r_x,m,n,ilnrho)&
-!           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnrho)-lnrho_ref)*dt1
-!        df(sz_l_x:sz_r_x,m,n,ilnTT)=df(sz_l_x:sz_r_x,m,n,ilnTT)&
-!           -func_z*(f(sz_l_x:sz_r_x,m,n,ilnTT)-lnTT_ref)*dt1
-!        lzone_z=.false.
-!       endif
-!       endif
-!
-    endsubroutine damp_zone_for_NSCBC
+!    subroutine damp_zone_for_NSCBC(f,df) was here
 !***********************************************************************
-    subroutine jacobn(f,jacob)
-!
-! Compute the jacobian, i.e. the matrix  jacob(nchemspec x nchemspec)
-! where jacob(i,j)=dv_i/dc_j
-! v is the vector of dimension nchemspec of the rates dc_j/dt
-! (the c_j being concentrations, stocked in f among other)
-!
-!  28-may-09/rplasson: coded
-!
-!   exchange data
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
-!
-      intent(in) :: f
-      intent(out) :: jacob
-!   internal data
-!
-!   indices
-      integer :: i, j, k, l, ii
-!
-!   temporary
-      real :: tmp_p, tmp_m
-!   Code
-!
-      jacob = 0.
-!
-!  identify module
-!
-      if (headtt .or. ldebug) print*,'jacobn: compute the jacobian matrix'
-!
-      if (lreactions) then
-        do n = n1,n2
-          do m = m1,m2
-            do l = l1,l2
-              do i = 1,nchemspec
-                do j = 1,nchemspec
-! Compute dv_i/dc_j
-!              print*,"dv_",i,"/dc_",j,"="
-                  do k = 1,nreactions
-! Check if compound i participate in reaction k
-                    if (Sijp(i,k) /= Sijm(i,k)) then
-! Compute the contribution of reaction k to dv_i/dc_j
-!                  print*,"+(",(Sijp(i,k)-Sijm(i,k)),"k_",k,"(+/-)"
-                      tmp_p = (Sijp(i,k)-Sijm(i,k))*kreactions_p(k)*kreactions_z(n,k)
-                      tmp_m = (Sijm(i,k)-Sijp(i,k))*kreactions_m(k)*kreactions_z(n,k)
-                      do  ii = 1,nchemspec
-! Compute the contribution of compound ii in reaction k
-!                    print*,"**-",Sijm(ii,k),Sijp(ii,k),"-**"
-                        if (ii /= j) then
-!                      print*,"c_",ii,"^",Sijm(ii,k)," (/) ","c_",ii,"^",Sijp(ii,k)
-                          tmp_p = tmp_p*f(l,m,n,ichemspec(ii))**Sijm(ii,k)
-                          tmp_m = tmp_m*f(l,m,n,ichemspec(ii))**Sijp(ii,k)
-                        else
-                          if (Sijm(ii,k) == 0) then
-!                        print*,"0*c_",ii
-                            tmp_p = 0.
-                          elseif (Sijm(ii,k) > 1) then
-!                        print*,Sijm(ii,k),"*c_",ii,"^",(Sijm(ii,k)-1)
-                            tmp_p = Sijm(ii,k)*tmp_p*f(l,m,n,ichemspec(ii))**(Sijm(ii,k)-1)
-!                      else
-!                        print*,"c_",ii,"^0"
-                          endif
-!                      print*," (/) "
-                          if (Sijp(ii,k) == 0) then
-!                        print*,"0*c_",ii
-                            tmp_m = 0.
-                          elseif (Sijp(ii,k) > 1) then
-!                        print*,Sijp(ii,k),"*c_",ii,"^",(Sijp(ii,k)-1)
-                            tmp_m = Sijp(ii,k)*tmp_m*f(l,m,n,ichemspec(ii))**(Sijp(ii,k)-1)
-!                      else
-!                        print*,"c_",ii,"^0"
-                          endif
-                        endif
-                      enddo
-!                  print*,")"
-! Add the contribution of reaction k to dv_i/dc_j
-                      jacob(l,m,n,i,j) = jacob(l,m,n,i,j)+tmp_p+tmp_m
-!                  print*,"(=",tmp_p," (-) ",tmp_m,")"
-                    endif
-                  enddo
-                enddo
-              enddo
-            enddo
-          enddo
-        enddo
-      endif
-!
-    endsubroutine jacobn
+! Here was the subroutine jacobn(f,jacob) which is called from timestep_stiff.f90
 !***********************************************************************
-    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction)
+    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction,f)
 !
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
@@ -5498,454 +4707,90 @@ module Chemistry
 !
       use Deriv, only: der_onesided_4_slice_other
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       real, dimension(:,:), intent(out) :: grad_slice
       integer, intent(in) :: index, sgn, direction
 !
+      integer :: j2, j3, k
+      real, dimension (:,:,:), allocatable :: mu1_full
+!
       if (direction == 1) then
-        slice = mu1_full(index,m1:m2,n1:n2)
-        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
+         allocate (mu1_full(5,my,mz))  
+         mu1_full=0.
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=m1,m2
+                  do j3=n1,n2
+                     if (sgn > 0) then 
+                        mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+f(index:index+sgn*4,j2,j3,ichemspec(k))/species_constants(k,imass)
+                     else
+                        mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+f(index+sgn*4:index,j2,j3,ichemspec(k))/species_constants(k,imass)
+                     endif
+                  enddo
+               enddo
+            endif
+         enddo
+         if (sgn > 0) then 
+            slice = mu1_full(1,m1:m2,n1:n2)
+            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,1,direction)
+         else
+            slice = mu1_full(5,m1:m2,n1:n2)
+            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,5,direction)
+         endif
       elseif (direction == 2) then
-        slice = mu1_full(l1:l2,index,n1:n2)
-        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
+         allocate (mu1_full(mx,5,mz)) 
+         mu1_full=0.
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=n1,n2
+                     if (sgn > 0) then 
+                        mu1_full(j2,:,j3)=mu1_full(j2,:,j3)+f(j2,index:index+sgn*4,j3,ichemspec(k))/species_constants(k,imass)
+                     else
+                        mu1_full(j2,:,j3)=mu1_full(j2,:,j3)+f(j2,index+sgn*4:index,j3,ichemspec(k))/species_constants(k,imass)
+                     endif
+                  enddo
+               enddo
+            endif
+         enddo
+         if (sgn > 0) then 
+            slice = mu1_full(l1:l2,1,n1:n2)
+            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,1,direction)
+         else
+            slice = mu1_full(l1:l2,5,n1:n2)
+            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,5,direction)
+         endif
+      elseif (direction == 3) then
+         allocate (mu1_full(mx,my,5)) 
+         mu1_full=0.
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=m1,m2
+                     if (sgn > 0) then 
+                        mu1_full(j2,j3,:)=mu1_full(j2,j3,:)+f(j2,j3,index:index+sgn*4,ichemspec(k))/species_constants(k,imass)
+                     else
+                        mu1_full(j2,j3,:)=mu1_full(j2,j3,:)+f(j2,j3,index:index+sgn*4,ichemspec(k))/species_constants(k,imass)
+                     endif
+                  enddo
+               enddo
+            endif
+         enddo
+         if (sgn > 0) then 
+            slice = mu1_full(l1:l2,m1:m2,1)
+            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,1,direction)
+         else
+            slice = mu1_full(l1:l2,m1:m2,5)
+            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,5,direction)
+         endif
       else
-        slice = mu1_full(l1:l2,m1:m2,index)
-        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
+         call fatal_error('get_cs2_slice','No such dir!')
       endif
 !
+      deallocate (mu1_full) 
+!
     endsubroutine get_mu1_slice
-!***********************************************************************
-    subroutine calc_extra_react(f,reac,kf_loc,i,mm,nn,p)
-!
-!   character (len=*), intent(in) :: element_name
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case), intent(in) :: p
-      integer, intent(in) :: reac, i, mm, nn
-      real, intent(out) :: kf_loc
-      real :: X_O2, X_N2, X_O2N2, X_M, X_H2O
-      real :: K1, K2, K3, K4, KMT06
-!
-!
-      select case (reaction_name(reac))
-      case ('O=O3')
-        X_O2 = f(l1+i-1,mm,nn,ichemspec(index_O2))*unit_mass &
-            /species_constants(index_O2,imass)*p%rho(i)
-        X_N2 = f(l1+i-1,mm,nn,ichemspec(index_N2))*unit_mass &
-            /species_constants(index_N2,imass)*p%rho(i)
-        kf_loc = 5.60D-34*X_O2*X_N2*((1./300.*p%TT(i))**(-2.6)) &
-            +6.00D-34*X_O2**2*((1./300.*p%TT(i))**(-2.6))
-      case ('O1D=O')
-        X_O2 = f(l1+i-1,mm,nn,ichemspec(index_O2))*unit_mass &
-            /species_constants(index_O2,imass)*p%rho(i)
-        X_N2 = f(l1+i-1,mm,nn,ichemspec(index_N2))*unit_mass &
-            /species_constants(index_N2,imass)*p%rho(i)
-        kf_loc = 3.20D-11*X_O2*exp(67.*p%TT1(i))+1.80D-11*X_N2*exp(107.*p%TT1(i))
-      case ('OH+CO=HO2')
-        X_O2N2 = f(l1+i-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
-            /species_constants(index_O2N2,imass)*p%rho(i)
-        kf_loc = 1.30D-13*(1+((0.6*index_O2N2)/(2.652E+19*(300.*p%TT1(i)))))
-      case ('2HO2=H2O2')
-        X_M = p%rho(i)*mu1_full(l1+i-1,mm,nn)
-        X_H2O = f(l1+i-1,mm,nn,ichemspec(index_H2O))*unit_mass &
-            /species_constants(index_H2O,imass)*p%rho(i)
-        KMT06 = 1 + (1.4E-21 * EXP(2200.*p%TT1(i)) * X_H2O)
-        kf_loc = 2.20D-13*KMT06*EXP(600.*p%TT1(i)) &
-            + 1.90D-33*X_M*KMT06*EXP(980.*p%TT1(i))
-      case ('OH+HNO3=NO3')
-        X_O2N2 = f(l1+i-1,mm,nn,ichemspec(index_O2N2))*unit_mass &
-            /species_constants(index_O2N2,imass)*p%rho(i)
-        K1        =  2.4E-14 * EXP(460.*p%TT1(i))
-        K3        =  6.5E-34 * EXP(1335.*p%TT1(i))
-        K4        =  2.7E-17 * EXP(2199.*p%TT1(i))
-        K2        =  (K3 * X_O2N2) / (1 + (K3*X_O2N2/K4))
-        kf_loc = K1 + K2
-      case default
-        if (lroot) print*,'reaction_name=', reaction_name(reac)
-        call stop_it('calc_extra_react: Element not found!')
-      endselect
-!
-    endsubroutine calc_extra_react
-!***********************************************************************
-    subroutine prerun_1D(f,prerun_dir)
-!
-!  read snapshot file, possibly with mesh and time (if mode=1)
-!  11-apr-97/axel: coded
-!
-      character(len=*) :: prerun_dir
-      character(len=100) :: file
-      character(len=10) :: processor
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(:,:,:,:), allocatable :: a
-      real, dimension(:,:,:), allocatable :: grid
-      real, dimension(:), allocatable :: cc
-      real :: t, sum
-      integer :: j, k, i, ii, imid, ipos
-      integer :: mx2, my2, mz2, mv2
-      integer :: l22, m22
-!
-! NILS: For the time beeing the prerun simulation can not have been run in parallell
-! NILS: Should fix this soon.
-!
-! Read dimension of the array stored during the 1D prerun
-!
-      processor = 'proc0'
-      file = trim(prerun_dir)//'/data/'//trim(processor)//'/dim.dat'
-      print*,'Reading prerun dim from ',file
-      open (1,FILE=file)
-      read (1,*) mx2, my2, mz2, mv2
-      close (1)
-      l22 = mx2-l1+1
-      m22 = mx2-2*(l1-1)
-      allocate(a(mx2,my2,mz2,mv2), grid(m22,my2-6,mz2-6), cc(m22))
-!
-! Read the grid used during the prerun
-!
-      file = trim(prerun_dir)//'/data/'//trim(processor)//'/grid.dat'
-      print*,'Reading prerun grid from ',file
-      open (1,FILE=file,FORM='unformatted')
-      read (1) t,grid(:,1,1),grid(1,:,1),grid(1,1,:)
-      close (1)
-!
-! Read the data stored during the prerun
-!
-      file = trim(prerun_dir)//'/data/'//trim(processor)//'/var.dat'
-      print*,'Reading inlet data from ',file
-      open (1,FILE=file,FORM='unformatted')
-      read (1) a
-      close (1)
-!
-! Definition of a progress variable
-!
-      cc(1) = 0.
-      ipos = 0
-      imid = 0
-      do ii = 2, m22-1
-        cc(ii) = (exp(a(ii,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))/ &
-            (exp(a(m22-1,m1,n1,iuz+2)) - exp(a(l1,m1,n1,iuz+2)))
-        if (cc(ii) > 0.7 .and. cc(ii-1) <= 0.7) imid = ii
-        if (grid(ii,1,1) > flame_pos .and. grid(ii-1,1,1) <= flame_pos) ipos = ii
-        if (ipos > 0 .and. imid > 0) exit
-      enddo
-!
-!  The center of the flame, arbitrarily identified by cc=0.7, is
-!  located at the position flame_pos (chemistry_init_pars)
-!  The flame is thus moved in its domain
-!
-!  Spread the data on the f-array
-!
-      do j = 1,my
-        do k = 1,mz
-          do i = 1,mx
-!
-            do ii = 2, m22-1
-              if (x(i) > grid(ii,1,1)-(grid(imid,1,1)-grid(ipos,1,1)) .and. x(i) &
-                  <= grid(ii+1,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
-                if (.not. lperi(1)) then
-                  f(i,j,k,iux) = f(i,j,k,iux)+a(ii,m1,n1,iux)+(x(i)-grid(ii,1,1) &
-                      +(grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iux) &
-                      -a(ii,m1,n1,iux))/(grid(ii+1,1,1)-grid(ii,1,1))
-                endif
-                f(i,j,k,iuz+1:mvar) = a(ii,m1,n1,iuz+1:mvar)+(x(i)-grid(ii,1,1)+ &
-                    (grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iuz+1:mvar) &
-                    -a(ii,m1,n1,iuz+1:mvar))/(grid(ii+1,1,1)-grid(ii,1,1))
-              elseif (x(i) <= grid(2,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
-                if (.not. lperi(1)) f(i,j,k,iux) = f(i,j,k,iux)+a(l1,m1,n1,iux)
-                f(i,j,k,iuz+1:mvar) = a(l1,m1,n1,iuz+1:mvar)
-                exit
-              elseif (x(i) >= grid(m22-1,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
-                if (.not. lperi(1)) f(i,j,k,iux) = f(i,j,k,iux)+a(l22,m1,n1,iux)
-                f(i,j,k,iuz+1:mvar) = a(l22,m1,n1,iuz+1:mvar)
-                exit
-              endif
-            enddo
-!
-!  Renormalize the species mass fractions
-!
-            sum = 0.
-            do ii = 1, nchemspec
-              sum = sum + f(i,j,k,ichemspec(ii))
-            enddo
-            f(i,j,k,ichemspec(1):ichemspec(nchemspec)) = &
-                f(i,j,k,ichemspec(1):ichemspec(nchemspec))/sum
-!
-          enddo
-        enddo
-      enddo
-!
-!  Set the y and z velocities to zero in order to avoid random noise
-!
-!      if (.not. reinitialize_chemistry) then
-!        f(:,:,:,iuy:iuz)=0
-!      endif
-!
-      deallocate(a,grid,cc)
-!
-    endsubroutine prerun_1D
-!***********************************************************************
-    subroutine prerun_1D_opp(f,prerun_dir)
-!
-!  read snapshot file, possibly with mesh and time (if mode=1)
-!  04-aug-10/julien: coded
-!
-      character(len=*) :: prerun_dir
-      character(len=100) :: file
-      character(len=10) :: processor
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(:,:,:,:), allocatable :: a
-      real, dimension(:,:,:), allocatable :: grid
-      real :: t
-      real :: x1, x2, xm, xfl
-      integer :: j, k, i, ii, ifl
-      integer :: mx2, my2, mz2, mv2
-      integer :: l22, m22
-!
-      x1 = xyz0(1)+Lxyz(1) / 4.
-      x2 = x1+Lxyz(1) / 2.
-      xm = xyz0(1)+Lxyz(1) / 2.
-!
-! Read dimension of the array stored during the 1D prerun
-!
-      processor = 'proc0'
-      file = trim(prerun_dir)//'/data/'//trim(processor)//'/dim.dat'
-      print*,'Reading prerun dim from ',file
-      open (1,FILE=file)
-      read (1,*) mx2, my2, mz2, mv2
-      close (1)
-      l22 = mx2-l1+1
-      m22 = mx2-2*(l1-1)
-      allocate(a(mx2,my2,mz2,mv2), grid(m22,my2-6,mz2-6))
-!
-! Read the grid used during the prerun
-!
-      file = trim(prerun_dir)//'/data/'//trim(processor)//'/grid.dat'
-      print*,'Reading prerun grid from ',file
-      open (1,FILE=file,FORM='unformatted')
-      read (1) t,grid(:,1,1),grid(1,:,1),grid(1,1,:)
-      close (1)
-!
-! Read the data stored during the prerun
-!
-      file = trim(prerun_dir)//'/data/'//trim(processor)//'/var.dat'
-      print*,'Reading inlet data from ',file
-      open (1,FILE=file,FORM='unformatted')
-      read (1) a
-      close (1)
-!
-      do ii = 1, m22-1
-        if (exp(a(ii,m1,n1,iuz+2)) < 1200. .and. exp(a(ii+1,m1,n1,iuz+2)) >= 1200.) then
-          xfl = grid(ii,1,1)
-          ifl = ii
-          exit
-        endif
-      enddo
-!
-!  Spread the data on the f-array : interpolations
-!
-      do j = 1,my
-        do k = 1,mz
-          do i = 1,mx
-!
-            if (x(i) < xm) then
-              do ii = 2, m22-1
-                if (x(i)-x1 > grid(ii,1,1)-xfl .and. x(i)-x1 <= grid(ii+1,1,1)-xfl) then
-                  f(i,j,k,iuz+1:mvar) = a(ii,m1,n1,iuz+1:mvar)+((x(i)-x1)-(grid(ii,1,1)-xfl))* &
-                      (a(ii+1,m1,n1,iuz+1:mvar)-a(ii,m1,n1,iuz+1:mvar))/            &
-                      (grid(ii+1,1,1)-grid(ii,1,1))
-                  exit
-                elseif (x(i)-x1 <= grid(l1,1,1)-xfl) then
-                  f(i,j,k,iuz+1:mvar) = a(l1,m1,n1,iuz+1:mvar)
-                  exit
-                elseif (x(i)-x1 >= grid(m22,1,1)-xfl) then
-                  f(i,j,k,iuz+1:mvar) = a(l22,m1,n1,iuz+1:mvar)
-                  exit
-                endif
-              enddo
-!
-            elseif (x(i) >= xm) then
-              do ii = 2, m22-1
-                if (x(i)-x2 > grid(ii,1,1)-xfl .and. x(i)-x2 <= grid(ii+1,1,1)-xfl &
-                    .and. 2*ifl > ii+1) then
-                  f(i,j,k,iuz+1:mvar) = a(2*ifl-ii,m1,n1,iuz+1:mvar)+((x(i)-x2)-(grid(ii,1,1)-xfl)) &
-                      *(a(2*ifl-ii-1,m1,n1,iuz+1:mvar)-a(2*ifl-ii,m1,n1,iuz+1:mvar))/(grid(ii+1,1,1)-grid(ii,1,1))
-                  exit
-                elseif (x(i)-x2 <= grid(l1,1,1)-xfl) then
-                  f(i,j,k,iuz+1:mvar) = a(l22,m1,n1,iuz+1:mvar)
-                  exit
-                elseif (x(i)-x2 >= grid(m22-1,1,1)-xfl .or. 2*ifl <= ii+1) then
-                  f(i,j,k,iuz+1:mvar) = a(l1,m1,n1,iuz+1:mvar)
-                  exit
-                endif
-              enddo
-            endif
-          enddo
-        enddo
-      enddo
-!
-!  Set the y and z velocities to zero in order to avoid random noise
-!
-!      if (.not. reinitialize_chemistry) then
-!        f(:,:,:,iuy:iuz)=0
-!      endif
-!
-      deallocate(a,grid)
-!
-    endsubroutine prerun_1D_opp
-!***********************************************************************
-    subroutine FlameMaster_ini(f,file_name)
-!
-!  read FlameMaster file for flame initialization
-!  11-nov-10/julien: coded
-!
-      character(len=*) :: file_name
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(:,:), allocatable :: a
-      real, dimension(:), allocatable :: grid
-      real, dimension(:), allocatable :: cc
-      integer :: j, k, i, ii, imid, ipos
-      integer :: is, js
-      integer :: nsp, npts
-      character(len=8), dimension(:), allocatable :: name_sp
-      character(len=10) :: car10='nothing'
-      character(len=12) :: car12
-      character(len=20) :: car20='nothing'
-      character(len=1) :: car1
-!
-      lFlameMaster = .true.
-!
-! Read dimension of the array stored in the FlameMaster initial file
-!
-      open (1,FILE=trim(file_name))
-      if (lroot) print*, 'Reading initial conditions in file ', trim(file_name)
-      do while (car10 /= 'FlameThick')
-        read (1,*) car10
-      enddo
-      read (1,*) car12, car1, nsp
-      read (1,*) car12, car1, npts
-      allocate(a(npts,nsp+3), grid(npts), cc(npts))
-      allocate(name_sp(nsp))
-!
-! Read the data stored during the prerun
-!
-      do while (car10 /= 'body')
-        read (1,*) car10
-      enddo
-      read (1,*)
-      read (1,*) grid
-      grid = grid*100.
-!
-      i = 0
-      do while (trim(car20) /= 'trailer')
-        read (1,*) car20
-        select case (car20(1:12))
-        case ('massflowrate')
-          read (1,*) a(:,1)
-        case ('temperature')
-          read (1,*) a(:,3)
-        case ('massfraction')
-          i = i+1
-          read (1,*) a(:,3+i)
-          name_sp(i) = car20(14:20)
-        case ('density')
-          read (1,*) a(:,2)
-        endselect
-      enddo
-      close (1)
-      a(:,1) = a(:,1) / a(:,2)
-      a(:,1) = a(:,1)*100.
-      a(:,2) = a(:,2)/1000.
-!
-! Definition of a progress variable
-!
-      cc(1) = 0.
-      ipos = 0
-      imid = 0
-      do ii = 2, npts
-        cc(ii) = (a(ii,3) - a(1,3)) / (a(npts,3) - a(1,3))
-        if (cc(ii) > 0.7 .and. cc(ii-1) <= 0.7) imid = ii
-        if (grid(ii) > flame_pos .and. grid(ii-1) <= flame_pos) ipos = ii
-        if (ipos > 0 .and. imid > 0) exit
-      enddo
-!
-!  The center of the flame, arbitrarily identified by cc=0.7, is
-!  located at the position flame_pos (chemistry_init_pars)
-!  The flame is thus moved in its domain
-!
-!  Spread the data on the f-array : interpolations
-!
-      do j = 1,my
-        do k = 1,mz
-          do i = 1,mx
-!
-            do ii = 2, npts-1
-              if (x(i) > grid(ii)-(grid(imid)-grid(ipos)) .and. x(i) &
-                  <= grid(ii+1)-(grid(imid)-grid(ipos))) then
-                if (.not. init_from_file) &
-                    f(i,j,k,iux) = f(i,j,k,iux)+a(ii,1)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
-                    (a(ii+1,1)-a(ii,1)) / (grid(ii+1)-grid(ii))
-                f(i,j,k,iuz+2) = a(ii,3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
-                    (a(ii+1,3)-a(ii,3)) / (grid(ii+1)-grid(ii))
-                f(i,j,k,iuz+1) = a(ii,2)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))* &
-                    (a(ii+1,2)-a(ii,2)) / (grid(ii+1)-grid(ii))
-                do is = 1, nsp
-                  do js = 1, nchemspec
-                    if (trim(name_sp(is)) == trim(varname(ichemspec(js)))) then
-                      f(i,j,k,iuz+2+js) = a(ii,is+3)+(x(i)-grid(ii)+(grid(imid)-grid(ipos)))*   &
-                          (a(ii+1,is+3)-a(ii,is+3)) / (grid(ii+1)-grid(ii))
-                      exit
-                    endif
-                  enddo
-                enddo
-!
-              elseif (x(i) <= grid(2)-(grid(imid)-grid(ipos))) then
-                if (.not. init_from_file) f(i,j,k,iux) = f(i,j,k,iux)+a(1,1)
-                f(i,j,k,iuz+2) = a(1,3)
-                f(i,j,k,iuz+1) = a(1,2)
-                do is = 1, nsp
-                  do js = 1, nchemspec
-                    if (trim(name_sp(is)) == trim(varname(ichemspec(js)))) then
-                      f(i,j,k,iuz+2+js) = a(1,is+3)
-                      exit
-                    endif
-                  enddo
-                enddo
-                exit
-!
-              elseif (x(i) >= grid(npts)-(grid(imid)-grid(ipos))) then
-                if (.not. init_from_file) f(i,j,k,iux) = f(i,j,k,iux)+a(npts,1)
-                f(i,j,k,iuz+2) = a(npts,3)
-                f(i,j,k,iuz+1) = a(npts,2)
-                do is = 1, nsp
-                  do js = 1, nchemspec
-                    if (trim(name_sp(is)) == trim(varname(ichemspec(js)))) then
-                      f(i,j,k,iuz+2+js) = a(npts,is+3)
-                      exit
-                    endif
-                  enddo
-                enddo
-                exit
-              endif
-            enddo
-!
-!  Renormalize the species mass fractions
-!
-            f(i,j,k,iuz+3:iuz+2+nchemspec) = f(i,j,k,iuz+3:iuz+2+nchemspec) &
-                / sum(f(i,j,k,iuz+3:iuz+2+nchemspec))
-!
-          enddo
-        enddo
-      enddo
-      if (.not. ldensity_nolog) f(:,:,:,iuz+1) = log(f(:,:,:,iuz+1))
-      if (.not. ltemperature_nolog) f(:,:,:,iuz+2) = log(f(:,:,:,iuz+2))
-!
-!  Set the y and z velocities to zero in order to avoid random noise
-!
-!      if (.not. reinitialize_chemistry) then
-!        f(:,:,:,iuy:iuz)=0
-!      endif
-!
-      deallocate(a,grid,name_sp)
-!
-    endsubroutine FlameMaster_ini
 !***********************************************************************
     subroutine get_reac_rate(wt,f,p)
 !
@@ -5965,7 +4810,6 @@ module Chemistry
 !***********************************************************************
     subroutine chemistry_clean_up()
 !
-      if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
       if (allocated(stoichio))       deallocate(stoichio)
       if (allocated(Sijm))           deallocate(Sijm)
       if (allocated(Sijp))           deallocate(Sijp)
@@ -5985,7 +4829,6 @@ module Chemistry
       if (allocated(net_react_m))    deallocate(net_react_m)
       if (allocated(net_react_p))    deallocate(net_react_p)
       if (allocated(back))           deallocate(back)
-      if (allocated(Diff_full))      deallocate(Diff_full)
       if (allocated(Diff_full_add))  deallocate(Diff_full_add)
 !
     endsubroutine chemistry_clean_up
@@ -6006,23 +4849,7 @@ module Chemistry
 !
     endsubroutine find_remove_real_stoic
 !!***********************************************************************
-    subroutine chemspec_normalization_N2(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: sum_Y !, sum_Y2
-      integer :: k ,isN2, ichemsN2
-      logical :: lsN2
-!
-      call find_species_index('N2', isN2, ichemsN2, lsN2 )
-      sum_Y=0.0 !; sum_Y2=0.0
-      do k=1,nchemspec
-        if (k/=ichemsN2) then
-          sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-        endif
-      enddo
-      f(:,:,:,isN2)=1.0-sum_Y
-!
-    endsubroutine chemspec_normalization_N2
+! subroutine chemspec_normalization_N2(f) was here
 !***********************************************************************
     subroutine getmu_array(f,mu1_full)
 !
