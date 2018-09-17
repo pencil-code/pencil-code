@@ -34,7 +34,7 @@ module Special
   use Cdata
   use Diagnostics
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, warning
   use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max
 
   use Sub, only: numeric_precision, dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor,dot2_mn
@@ -72,8 +72,7 @@ module Special
                                               tensor_memdims, &
                                               tensor_memoffsets, tensor_memcounts
   integer, parameter :: nscalars = 1
-  integer(HID_T),   dimension(nscalars) :: scalar_id_G, scalar_id_D, &
-                                           scalar_id_S, scalar_id_memS
+  integer(HID_T),   dimension(nscalars) :: scalar_id_D, scalar_id_S
   integer(HSIZE_T), dimension(nscalars)  :: scalar_dims, &
                                               scalar_offsets, scalar_counts, &
                                               scalar_memdims, &
@@ -200,7 +199,6 @@ module Special
 ! loadDataset interface
 
   interface loadDataset
-    module procedure loadDataset_scalar
     module procedure loadDataset_rank1
     module procedure loadDataset_rank2
     module procedure loadDataset_rank3
@@ -219,33 +217,7 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-!!      call farray_register_pde('special',ispecial)
-!!      call farray_register_auxiliary('specaux',ispecaux)
-!!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
-!
-    endsubroutine register_special
-!***********************************************************************
-    subroutine initialize_special(f)
-!
-!  Called after reading parameters, but before the time loop.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j
-!
-      call keep_compiler_quiet(f)
-
       if (lrun) then 
-
-        if (trim(defaultname) == 'time-series' .or. trim(defaultname) == 'time-crop') then
-          lread_time_series=.true.
-        else
-        !  call fatal_error('initialize_special','Unknown interpolation chosen!')
-        end if
-
-        hdf_emftensors_plist = -1
-        hdf_emftensors_file  = -1
 
         call H5open_F(hdferr)                                              ! Initializes HDF5 library.
 
@@ -275,11 +247,11 @@ module Special
           call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
         end if
 !
-!Opens   HDF5 file for read access only, returns file identifier hdf_emftensors_file.
+! Opens HDF5 file for read access only, returns file identifier hdf_emftensors_file.
 !
         call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
 !
-!Checks   whether in HDF5 file there is a link /emftensor/.
+! Checks whether in HDF5 file there is a link /emftensor/.
 !
         call H5Lexists_F(hdf_emftensors_file,'/emftensor/', hdf_exists, hdferr)
 
@@ -292,38 +264,66 @@ module Special
 
         call H5Gopen_F(hdf_emftensors_file, 'emftensor', hdf_emftensors_group, hdferr) ! Opens group emftensor in HDF5 file.
 
-        if (lread_time_series) then 
+      endif
 
-          call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
-          if (.not. hdf_exists) then
-            call H5Fclose_F(hdf_emftensors_file, hdferr)
-            call H5Pclose_F(hdf_emftensors_plist, hdferr)
-            call H5close_F(hdferr)
-            call fatal_error('initialize_special','group /grid/ does not exist!')
-          end if
+!!      call farray_register_pde('special',ispecial)
+!!      call farray_register_auxiliary('specaux',ispecaux)
+!!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
+!
+    endsubroutine register_special
+!***********************************************************************
+    subroutine initialize_special(f)
+!
+!  Called after reading parameters, but before the time loop.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j
+!
+      call keep_compiler_quiet(f)
 
-          call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
-          if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
+      if (lrun) then 
 
-          call openDataset_grid(time_id)
-          tensor_times_len = scalar_dims(time_id)
-          allocate(tensor_times(tensor_times_len)) 
-        
-          call H5Sselect_all_F(scalar_id_S(time_id), hdferr)
-          if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
-
-          call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
-                     (/scalar_dims(time_id)/), hdferr, &
-                     scalar_id_memS(time_id), scalar_id_S(time_id))
-          if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
-
-          t = tensor_times(1)
-          if (lroot) then
-            print*, 'max time array=',maxval(tensor_times)
-            print*, 'min time array=',minval(tensor_times)
-          endif
- 
+        if (trim(defaultname) == 'time-series' .or. trim(defaultname) == 'time-crop') then
+          lread_time_series=.true.
+        else
+        !  call fatal_error('initialize_special','Unknown dataset chosen!')
         end if
+
+        if (.not.lreloading) then
+
+          if (lread_time_series) then 
+
+            call H5Lexists_F(hdf_emftensors_file,'/grid/', hdf_exists, hdferr)
+            if (.not. hdf_exists) then
+              call H5Fclose_F(hdf_emftensors_file, hdferr)
+              call H5Pclose_F(hdf_emftensors_plist, hdferr)
+              call H5close_F(hdferr)
+              call fatal_error('initialize_special','group /grid/ does not exist!')
+            end if
+
+            call H5Gopen_F(hdf_emftensors_file, 'grid', hdf_grid_group, hdferr)
+            if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
+
+            call openDataset_grid(time_id)
+            tensor_times_len = scalar_dims(time_id)
+            allocate(tensor_times(tensor_times_len)) 
+          
+            if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
+
+            call H5Dread_F(scalar_id_D(time_id), hdf_memtype, tensor_times, &
+                           [scalar_dims(time_id)], hdferr)
+            if (hdferr /= 0) call fatal_error('initialize special','cannot read grid/t')
+
+            t = tensor_times(1)
+            if (lroot) then
+              print*, 'min time array=',minval(tensor_times)
+              print*, 'max time array=',maxval(tensor_times)
+            endif
+   
+          end if
+        endif
 
         ! Set dataset offsets
         tensor_offsets = 0
@@ -354,59 +354,91 @@ module Special
         end do
 
         if (lalpha) then
-          if (.not.allocated(alpha_data)) allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
-          alpha_data = 0
+          if (.not.allocated(alpha_data)) then
+            allocate(alpha_data(dataload_len,nx,ny,nz,3,3))
+            call openDataset('alpha',alpha_id)
+          endif
+          alpha_data = 0.
         elseif (allocated(alpha_data)) then
           deallocate(alpha_data)
+          call closeDataset(alpha_id)
         endif
 
         if (lbeta) then
-          if (.not.allocated(beta_data)) allocate(beta_data(dataload_len,nx,ny,nz,3,3))
-          beta_data = 0
+          if (.not.allocated(beta_data)) then
+            allocate(beta_data(dataload_len,nx,ny,nz,3,3))
+            call openDataset('beta',beta_id)
+          endif
+          beta_data = 0.
         elseif (allocated(beta_data)) then
           deallocate(beta_data)
+          call closeDataset(beta_id)
         endif
 
         if (lgamma) then
-          if (.not.allocated(gamma_data)) allocate(gamma_data(dataload_len,nx,ny,nz,3))
-          gamma_data = 0
+          if (.not.allocated(gamma_data)) then
+            allocate(gamma_data(dataload_len,nx,ny,nz,3))
+            call openDataset('gamma',gamma_id)
+          endif
+          gamma_data = 0.
         elseif (allocated(gamma_data)) then
           deallocate(gamma_data)
+          call closeDataset(gamma_id)
         endif
 
         if (ldelta) then
-          if (.not.allocated(delta_data)) allocate(delta_data(dataload_len,nx,ny,nz,3))
-          delta_data = 0
+          if (.not.allocated(delta_data)) then
+            allocate(delta_data(dataload_len,nx,ny,nz,3))
+            call openDataset('delta',delta_id)
+          endif
+          delta_data = 0.
         elseif (allocated(delta_data)) then
           deallocate(delta_data)
+          call closeDataset(delta_id)
         endif
 
         if (lkappa) then
-          if (.not.allocated(kappa_data)) allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
-          kappa_data = 0
+          if (.not.allocated(kappa_data)) then
+            allocate(kappa_data(dataload_len,nx,ny,nz,3,3,3))
+            call openDataset('kappa',kappa_id)
+          endif
+          kappa_data = 0.
         elseif (allocated(kappa_data)) then
           deallocate(kappa_data)
+          call closeDataset(kappa_id)
         endif
 
         if (lutensor) then
-          if (.not.allocated(utensor_data)) allocate(utensor_data(dataload_len,nx,ny,nz,3))
-          utensor_data = 0
+          if (.not.allocated(utensor_data)) then 
+            allocate(utensor_data(dataload_len,nx,ny,nz,3))
+            call openDataset('utensor',utensor_id)
+          endif
+          utensor_data = 0.
         elseif (allocated(utensor_data)) then
           deallocate(utensor_data)
+          call closeDataset(utensor_id)
         endif
 
         if (lacoef) then
-          if (.not.allocated(acoef_data)) allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
-          acoef_data = 0
+          if (.not.allocated(acoef_data)) then
+            allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
+            call openDataset('acoef', bcoef_id)
+          endif
+          acoef_data = 0.
         elseif (allocated(acoef_data)) then
           deallocate(acoef_data)
+          call closeDataset(acoef_id)
         endif
 
         if (lbcoef) then
-          if (.not.allocated(bcoef_data)) allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
-          bcoef_data = 0
+          if (.not.allocated(bcoef_data)) then 
+            allocate(bcoef_data(dataload_len,nx,ny,nz,3,3,3))
+            call openDataset('bcoef', bcoef_id)
+          endif
+          bcoef_data = 0.
         elseif (allocated(bcoef_data)) then
           deallocate(bcoef_data)
+          call closeDataset(bcoef_id)
         endif
 
         if (lroot) then
@@ -471,14 +503,7 @@ module Special
 
         ! Open datasets
 
-        if (lalpha)   call openDataset('alpha', alpha_id)
-        if (lbeta)    call openDataset('beta', beta_id)
-        if (lgamma)   call openDataset('gamma', gamma_id)
-        if (ldelta)   call openDataset('delta', delta_id)
-        if (lkappa)   call openDataset('kappa', kappa_id)
-        if (lutensor) call openDataset('utensor', utensor_id)
-        if (lacoef)   call openDataset('acoef', acoef_id)
-        if (lbcoef)   call openDataset('bcoef', bcoef_id)
+        lread_datasets=.true.
 
       endif
    
@@ -512,6 +537,12 @@ module Special
         if (lutensor) call closeDataset(utensor_id)
         if (lacoef)   call closeDataset(acoef_id)
         if (lbcoef)   call closeDataset(bcoef_id)
+
+        if (lread_time_series) then
+          if (allocated(tensor_times)) deallocate(tensor_times)
+          call closeDataset_grid(time_id)
+          call H5Gclose_F(hdf_grid_group, hdferr)
+        endif
 
         call H5Gclose_F(hdf_emftensors_group, hdferr)
         call H5Fclose_F(hdf_emftensors_file, hdferr)
@@ -1212,6 +1243,17 @@ endif
 
     end subroutine openDataset_grid
 !*********************************************************************** 
+    subroutine closeDataset_grid(id)
+
+      ! Close opened dataspaces, dataset and group
+
+      integer :: id
+
+      call H5Sclose_F(scalar_id_S(id), hdferr)
+      call H5Dclose_F(scalar_id_D(id), hdferr)
+
+    end subroutine closeDataset_grid
+!*********************************************************************** 
     subroutine closeDataset(tensor_id)
 
       ! Close opened dataspaces, dataset and group
@@ -1224,26 +1266,6 @@ endif
       call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
 
     end subroutine closeDataset
-!*********************************************************************** 
-    subroutine loadDataset_scalar(dataarray, scalar_id, loadstart)
-
-      ! Load a chunk of data for a scalar quantity, beginning at loadstart
-
-      real, dimension(:), intent(inout) :: dataarray
-      integer, intent(in) :: scalar_id
-      integer, intent(in) :: loadstart
-
-      scalar_offsets(scalar_id) = loadstart
-      call H5Sselect_none_F(scalar_id_S(scalar_id), hdferr)     ! resets selection region.
-      call H5Sselect_none_F(scalar_id_memS(scalar_id), hdferr)  ! perhaps dispensable when
-                                                                ! H5S_SELECT_SET_F
-                                                                ! is used below.
-      ! Read data into memory
-      call H5Dread_F(scalar_id_D(scalar_id), hdf_memtype, dataarray, &
-                     (/scalar_dims(scalar_id)/), hdferr, &
-                     scalar_id_memS(scalar_id), scalar_id_S(scalar_id))
-
-    end subroutine loadDataset_scalar
 !*********************************************************************** 
     subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart,name)
 
@@ -1271,10 +1293,10 @@ endif
           tensor_offsets(tensor_id,ndims)    = mask_i-1
           tensor_memoffsets(tensor_id,ndims) = mask_i-1
           ! Select hyperslab for data.
-          print '(a,a,5(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims) 
-          print '(a,a,5(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims) 
-          print '(a,a,5(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims) 
-          print '(a,a,5(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims) 
+!          print '(a,a,5(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims) 
+!          print '(a,a,5(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims) 
+!          print '(a,a,5(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims) 
+!          print '(a,a,5(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims) 
 
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
@@ -1297,7 +1319,6 @@ endif
       end do
       ! Read data into memory.
       tensor_dims(tensor_id,ndims)=3
-      !print *, 'tensor_id_D=', tensor_id_D, 'tensor_id_S=', tensor_id_S, 'tensor_id_memS', tensor_id_memS
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
@@ -1348,10 +1369,10 @@ endif
           tensor_memoffsets(tensor_id,ndims)   = mask_j-1
 
           ! Hyperslab for data
-          print '(a,a,6(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
-          print '(a,a,6(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
-          print '(a,a,6(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
-          print '(a,a,6(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
+!          print '(a,a,6(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
+!          print '(a,a,6(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
+!          print '(a,a,6(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
+!          print '(a,a,6(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
 
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
@@ -1376,7 +1397,6 @@ endif
 
       ! Read data into memory
       tensor_dims(tensor_id,ndims-1:ndims)=3
-      print '(a,a,6(1x,i3))', 'tensor dims',name,tensor_dims(tensor_id,:ndims)
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
@@ -1426,10 +1446,10 @@ endif
           tensor_memoffsets(tensor_id,ndims-1) = mask_j-1
           tensor_memoffsets(tensor_id,ndims)   = mask_k-1
           ! Hyperslab for data
-          print '(a,a,7(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
-          print '(a,a,7(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
-          print '(a,a,7(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
-          print '(a,a,7(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
+!          print '(a,a,7(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
+!          print '(a,a,7(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
+!          print '(a,a,7(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
+!          print '(a,a,7(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
 
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
@@ -1597,6 +1617,12 @@ endif
 !
       if (lacoef) then
         lacoef_arr = .true.
+        if (any([lalpha,lgamma])) then
+          if (lroot) call warning('initialize_special', &
+            'lacoef=T overrides settings of lalpha and lgamma')     
+        endif
+        lalpha=.false.; lgamma=.false.
+        lalpha_arr = .false.; lgamma_arr = .false.
       else
         lacoef_arr = .false.
       end if
@@ -1606,6 +1632,13 @@ endif
 !
       if (lbcoef) then
         lbcoef_arr = .true.
+        if (any([lbeta,ldelta,lkappa])) then
+          if (lroot) call warning('initialize_special', &
+            'lbcoef=T overrides settings of lbeta,ldelta,lkappa')     
+        endif
+        lbeta=.false.; lbeta_arr = .false.
+        ldelta=.false.; ldelta_arr = .false.
+        lkappa=.false.; lkappa_arr = .false.
       else
         lbcoef_arr = .false.
       end if
