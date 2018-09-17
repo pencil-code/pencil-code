@@ -149,7 +149,7 @@ module Magnetic
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
-  real :: Pm_smag1=1.
+  real :: Pm_smag1=1., k1hel=0., k2hel=max_real
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
   integer :: N_modes_aa=1, naareset
@@ -235,7 +235,7 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
       lax_ext_global,lay_ext_global,laz_ext_global, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
-      source_zav,nzav,indzav,izav_start
+      source_zav,nzav,indzav,izav_start, k1hel, k2hel
 !
 ! Run parameters
 !
@@ -1724,7 +1724,7 @@ module Magnetic
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
-            lskip_projection_aa,lno_second_ampl_aa,.true.)
+            lskip_projection_aa,lno_second_ampl_aa,.true.,k1hel=k1hel,k2hel=k2hel)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
