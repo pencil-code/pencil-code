@@ -4808,7 +4808,8 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
-      lskip_projection,lno_second_ampl,lvectorpotential,lscale_tobox)
+      lskip_projection,lno_second_ampl,lvectorpotential,lscale_tobox, &
+      k1hel, k2hel)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -4825,6 +4826,7 @@ module Initcond
 !  e.g., from 3e-4 to 17e-4.
 !
 !  08-sep-14/axel: adapted from power_randomphase
+!  17-sep-18/axel: added optional wavenumber interval for helical field.
 !
       use Fourier, only: fft_xyz_parallel, fourier_transform
 !
@@ -4832,6 +4834,7 @@ module Initcond
       logical :: lvectorpotential, lscale_tobox1
       logical :: lskip_projection, lno_second_ampl
       integer :: i,i1,i2,ikx,iky,ikz,stat
+      real, intent(in), optional :: k1hel, k2hel
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
@@ -5001,6 +5004,17 @@ module Initcond
 !
         r=relhel/sqrt(k2)
         r(1,1,1)=0.
+!
+!  put sigma=0 outside [r1hel,r2hel]
+!
+        if (present(k2hel) .and. present(k2hel)) then
+          if (k1hel>0. .and. k2hel<max_real) then
+            where (k2<k1hel**2 .or. k2>k2hel**2)
+              r = 0.
+            endwhere
+          endif
+        endif
+!
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
