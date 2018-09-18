@@ -64,7 +64,10 @@ module EquationOfState
   logical :: l_cp=.false.
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
 !
- real, dimension(nchemspec,18) :: species_constants
+  real, dimension(nchemspec,18) :: species_constants
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
 !MR: Is now allocated only once.

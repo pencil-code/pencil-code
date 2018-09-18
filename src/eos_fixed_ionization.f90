@@ -66,6 +66,9 @@ module EquationOfState
 !
   real, dimension(nchemspec,18) :: species_constants
 !
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+!
   contains
 !***********************************************************************
     subroutine register_eos

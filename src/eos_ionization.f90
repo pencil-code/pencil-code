@@ -37,7 +37,8 @@ module EquationOfState
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
-  integer :: icp,ics
+!  integer :: icp,ics
+  integer :: ics
 ! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
@@ -61,6 +62,9 @@ module EquationOfState
   integer :: imass=1
 !
   real, dimension(nchemspec,18) :: species_constants
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
 !
   contains
 !***********************************************************************

@@ -49,8 +49,8 @@ module Chemistry
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: Diff_coef_const=impossible
-  real :: Sc_number=0.7, Pr_number=0.7
-  real :: Cp_const=impossible
+  real :: Sc_number=0.7!, Pr_number=0.7
+!  real :: Cp_const=impossible
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
@@ -4972,12 +4972,13 @@ module Chemistry
 !
     endsubroutine get_cs2_full
 !***********************************************************************
-    subroutine get_cs2_slice(slice,dir,index)
+    subroutine get_cs2_slice(f,slice,dir,index)
 !
 ! Find a slice of the speed of sound
 !
 ! 10-dez-09/nils: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
 !
@@ -5013,12 +5014,13 @@ module Chemistry
       enddo
     endsubroutine get_gamma_full
 !***********************************************************************
-    subroutine get_gamma_slice(slice,dir,index)
+    subroutine get_gamma_slice(f,slice,dir,index)
 !
 !  Get a 2D slice of gamma
 !
 !  10-dez-09/Nils Erland L. Haugen: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
 !
@@ -5492,7 +5494,7 @@ module Chemistry
 !
     endsubroutine jacobn
 !***********************************************************************
-    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction)
+    subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
@@ -5504,6 +5506,7 @@ module Chemistry
       real, dimension(:,:), intent(out) :: slice
       real, dimension(:,:), intent(out) :: grad_slice
       integer, intent(in) :: index, sgn, direction
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       if (direction == 1) then
         slice = mu1_full(index,m1:m2,n1:n2)

@@ -526,7 +526,7 @@ module NSCBC
 !  This includes values and gradients of; density, temperature, pressure
 !  In addition also speed of sound, gamma and mu1 is found.
 !
-      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,&
+      call get_thermodynamics(f,mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,&
           grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t,llinlet,&
           imin,imax,jmin,jmax)
 !
@@ -1405,7 +1405,7 @@ module NSCBC
 !
       end subroutine turbulent_vel_z
 !***********************************************************************
-      subroutine get_thermodynamics(mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,&
+      subroutine get_thermodynamics(f,mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,&
           grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t,llinlet,&
           imin,imax,jmin,jmax)
 !
@@ -1416,6 +1416,7 @@ module NSCBC
         use Chemistry
         use EquationOfState, only: cs0, cs20, eoscalc, irho_TT, gamma
 !
+        real, dimension(mx,my,mz,mfarray) :: f
         integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax
         real, dimension(:,:), intent(out)  :: mu1,cs2,cs,gamma_, grad_mu1
         real, dimension(:,:), intent(out)  :: rho0,TT,P0
@@ -1447,8 +1448,8 @@ module NSCBC
 !
         if (ilnTT>0 .or. iTT>0) then
           if (leos_chemistry) then
-            call get_mu1_slice(mu1,grad_mu1,lll,sgn,direction)
-            call get_gamma_slice(gamma_,direction,lll)
+            call get_mu1_slice(f,mu1,grad_mu1,lll,sgn,direction)
+            call get_gamma_slice(f,gamma_,direction,lll)
           else
             gamma_=gamma
             mu1=1.0
@@ -1476,7 +1477,7 @@ module NSCBC
           cs=cs0
         endif
       elseif (leos_chemistry) then
-        call get_cs2_slice(cs2,direction,lll)
+        call get_cs2_slice(f,cs2,direction,lll)
         cs=sqrt(cs2)
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."

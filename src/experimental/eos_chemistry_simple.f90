@@ -1612,4 +1612,77 @@ module EquationOfState
 !
     endsubroutine get_stratz
 !***********************************************************************
+   subroutine getdensity(f,EE,TT,yH,rho_full)
+!
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: rho_full
+     real, intent(in), optional :: EE,TT,yH
+!
+      call keep_compiler_quiet(yH,EE,TT)
+      call keep_compiler_quiet(rho_full)
+      call keep_compiler_quiet(f)
+!
+   endsubroutine getdensity
+!***********************************************************************
+   subroutine gettemperature(f,TT_full)
+!
+     real, dimension (mx,my,mz,mfarray) :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_full
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(TT_full)
+!
+   endsubroutine gettemperature
+!***********************************************************************
+  subroutine getpressure(pp,TT,rho,mu1)
+!
+     real, dimension (nx), intent(out) :: pp
+     real, dimension (nx), intent(in) :: TT, rho, mu1
+!
+      call keep_compiler_quiet(rho,mu1,TT)
+      call keep_compiler_quiet(pp)
+!
+   endsubroutine getpressure
+!***********************************************************************
+     subroutine get_average_pressure(average_density,average_pressure)
+!
+!   01-dec-2009/piyali+dhrube: coded
+!
+      real, intent(in):: average_density
+      real, intent(out):: average_pressure
+      call keep_compiler_quiet(average_density)
+      call keep_compiler_quiet(average_pressure)
+
+    endsubroutine get_average_pressure
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call keep_compiler_quiet(p_par)
+
+    endsubroutine pushpars2c
+!***********************************************************************
+    subroutine eosperturb(f,psize,ee,pp,ss)
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(in), optional :: ee,pp,ss
+!
+      call not_implemented("eosperturb")
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(present(ee),present(pp),present(ss))
+!
+    endsubroutine eosperturb
+!***********************************************************************
 endmodule EquationOfState

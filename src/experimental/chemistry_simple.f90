@@ -4263,7 +4263,7 @@ print*,'Why never enters here??*************************************************
 !
     endsubroutine get_cs2_full
 !***********************************************************************
-    subroutine get_cs2_slice(slice,dir,index,f)
+    subroutine get_cs2_slice(f,slice,dir,index)
 !
 ! Find a slice of the speed of sound
 !
@@ -4272,6 +4272,7 @@ print*,'Why never enters here??*************************************************
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
+      intent(in) :: f
       integer :: j2, j3, k
       real, dimension(nchemspec) ::  cp_k, cv_k
       real, dimension (:,:), allocatable :: TT_full, cp_full, cv_full, mu1_full
@@ -4381,7 +4382,7 @@ print*,'Why never enters here??*************************************************
 !
     endsubroutine get_gamma_full
 !***********************************************************************
-    subroutine get_gamma_slice(slice,dir,index,f)
+    subroutine get_gamma_slice(f,slice,dir,index)
 !
 !  Get a 2D slice of gamma
 !
@@ -4390,6 +4391,7 @@ print*,'Why never enters here??*************************************************
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
+      intent(in) :: f
       integer :: j2, j3, k
       real, dimension(nchemspec) ::  cp_k, cv_k
       real, dimension (:,:), allocatable :: cp_full, cv_full
@@ -4698,7 +4700,7 @@ print*,'Why never enters here??*************************************************
 !***********************************************************************
 ! Here was the subroutine jacobn(f,jacob) which is called from timestep_stiff.f90
 !***********************************************************************
-    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction,f)
+    subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
@@ -4711,6 +4713,7 @@ print*,'Why never enters here??*************************************************
       real, dimension(:,:), intent(out) :: slice
       real, dimension(:,:), intent(out) :: grad_slice
       integer, intent(in) :: index, sgn, direction
+      intent(in) :: f
 !
       integer :: j2, j3, k
       real, dimension (:,:,:), allocatable :: mu1_full
@@ -4733,10 +4736,10 @@ print*,'Why never enters here??*************************************************
          enddo
          if (sgn > 0) then 
             slice = mu1_full(1,m1:m2,n1:n2)
-            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,1,direction)
+            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,1,direction)
          else
             slice = mu1_full(5,m1:m2,n1:n2)
-            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,5,direction)
+            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,5,direction)
          endif
       elseif (direction == 2) then
          allocate (mu1_full(mx,5,mz)) 
@@ -4756,10 +4759,10 @@ print*,'Why never enters here??*************************************************
          enddo
          if (sgn > 0) then 
             slice = mu1_full(l1:l2,1,n1:n2)
-            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,1,direction)
+            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,1,direction)
          else
             slice = mu1_full(l1:l2,5,n1:n2)
-            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,5,direction)
+            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,5,direction)
          endif
       elseif (direction == 3) then
          allocate (mu1_full(mx,my,5)) 
@@ -4779,10 +4782,10 @@ print*,'Why never enters here??*************************************************
          enddo
          if (sgn > 0) then 
             slice = mu1_full(l1:l2,m1:m2,1)
-            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,1,direction)
+            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,1,direction)
          else
             slice = mu1_full(l1:l2,m1:m2,5)
-            call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,5,direction)
+            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,5,direction)
          endif
       else
          call fatal_error('get_cs2_slice','No such dir!')
@@ -5029,5 +5032,100 @@ print*,'Why never enters here??*************************************************
       close(file_id)
 !
     endsubroutine read_transport_data
+!***********************************************************************
+    subroutine der_onesided_4_slice_chemistry(f,sgn,df,pos,j)
+!
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
+!   Uses a one-sided 4th order stencil.
+!   sgn = +1 for forward difference, sgn = -1 for backwards difference.
+!
+!   Because of its original intended use in relation to solving
+!   characteristic equations on boundaries (NSCBC), this sub should
+!   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
+!   scaling factors and connection terms should instead be done when
+!   solving the characteristic equations.
+!
+!   7-jul-08/arne: coded.
+!
+      real, dimension (:,:,:) :: f
+      real, dimension (:,:) :: df
+      real :: fac
+      integer :: pos,sgn,j
+!
+      intent(in)  :: f,pos,sgn,j
+      intent(out) :: df
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2)&
+                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
+                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
+                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
+                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*(f(l1:l2,pos,n1:n2)-f(l1:l2,pos+sgn*1,n1:n2))&
+                    +sgn*23*(f(l1:l2,pos+sgn*1,n1:n2)-f(l1:l2,pos+sgn*2,n1:n2))&
+                    -sgn*13*(f(l1:l2,pos+sgn*2,n1:n2)-f(l1:l2,pos+sgn*3,n1:n2))&
+                    +sgn*3*(f(l1:l2,pos+sgn*3,n1:n2)-f(l1:l2,pos+sgn*4,n1:n2)))
+!
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
+                    +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
+                    -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
+                    +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
+                    -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
+!
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine der_onesided_4_slice_chemistry
+!***********************************************************************
+    subroutine jacobn(f,jacob)
+!
+!   dummy routine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
+!
+!      call keep_compiler_quiet(jacob)
+      call keep_compiler_quiet(f)
+!
+    endsubroutine jacobn
+!***********************************************************************
+    subroutine chemspec_normalization(f)
+!
+!   dummy routine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine chemspec_normalization
+!***********************************************************************
+    subroutine chemspec_normalization_N2(f)
+!
+!   dummy routine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine chemspec_normalization_N2
 !***********************************************************************
 endmodule Chemistry

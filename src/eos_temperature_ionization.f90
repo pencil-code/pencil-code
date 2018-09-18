@@ -35,7 +35,8 @@ module EquationOfState
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: icp, icv, ics, idelta, igamma, inabad
+  integer :: icv, ics, idelta, igamma, inabad
+!  integer :: icp, icv, ics, idelta, igamma, inabad
   integer :: imass = 1
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
@@ -87,6 +88,9 @@ module EquationOfState
   real, dimension (:,:,:), allocatable :: cp_full
 !
   real, dimension(nchemspec,18) :: species_constants
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
 !
   contains
 !***********************************************************************

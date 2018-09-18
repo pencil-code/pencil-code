@@ -42,6 +42,8 @@ module EquationOfState
   real, parameter :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma1=1./gamma
   real :: cs2bot=1.0, cs2top=1.0
   real, dimension(nchemspec,18) :: species_constants
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
 !
   contains
 !***********************************************************************

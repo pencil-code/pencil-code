@@ -58,6 +58,7 @@
   public :: read_species,find_species_index,find_mass
   public :: imass
   public :: species_constants
+  public :: Pr_number, cp_const
 !  public :: B_n, alpha_n, E_an, low_coeff,high_coeff,troe_coeff,a_k4
 !  public :: Mplus_case, tran_data
 !
