@@ -108,7 +108,7 @@ module Special
   logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
   logical, dimension(3,3,3) :: lkappa_c, lbcoef_c
   logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef, lusecoefs 
-  logical :: lread_datasets=.true., lread_time_series=.false.
+  logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false.
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, acoef_scale, bcoef_scale
   character (len=fnlen) :: defaultname
   character (len=fnlen) :: alpha_name, beta_name,    &
@@ -167,7 +167,7 @@ module Special
   integer :: idiag_emfdiffrms=0
   ! Interpolation parameters
   character (len=fnlen) :: interpname
-  integer :: dataload_len=1, tensor_times_len=1, iload=0
+  integer :: dataload_len=1, tensor_times_len=-1, iload=0
   real, dimension(nx)     :: tmpline
   real, dimension(nx,3)   :: tmppencil,emftmp
   real, dimension(nx,3,3) :: tmptensor
@@ -184,7 +184,7 @@ module Special
       lutensor, lutensor_c, utensor_name, utensor_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname, lusecoefs
+      interpname, defaultname, lusecoefs, lloop
   namelist /special_run_pars/ &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
       lbeta,    lbeta_c,    beta_name,    beta_scale, &
@@ -194,7 +194,7 @@ module Special
       lutensor, lutensor_c, utensor_name, utensor_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname, lusecoefs
+      interpname, defaultname, lusecoefs, lloop
 
 ! loadDataset interface
 
@@ -307,8 +307,7 @@ module Special
             if (hdferr /= 0) call fatal_error('initialize_special','error while opening /grid/')
 
             call openDataset_grid(time_id)
-            tensor_times_len = scalar_dims(time_id)
-            allocate(tensor_times(tensor_times_len)) 
+            allocate(tensor_times(scalar_dims(time_id))) 
           
             if (hdferr /= 0) call fatal_error('initialize special','cannot select grid/t')
 
@@ -566,6 +565,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
+      real :: delt
+
       call keep_compiler_quiet(f)
 
       if (lfirst) then
@@ -580,24 +581,30 @@ module Special
         
         if (lread_datasets) then
           if (iload > tensor_times_len) then 
-            call fatal_error('dspecial_dt', 'no more data to load') 
-          else
+            if (lloop) then
+              iload=1
+              delt=2*tensor_times(tensor_times_len)-tensor_times(1)-tensor_times(tensor_times_len-1)
+              tensor_times = tensor_times+delt
+            else
+              call fatal_error('dspecial_dt', 'no more data to load') 
+            endif
+          endif
 if (lread_time_series) then
 print *, 'loading: t,iload=',tensor_times(iload),iload 
 else
 print *, 'loading: iload=',iload 
 endif
           ! Load datasets
-            if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload-1,'Alpha')
-            if (lbeta)  call loadDataset(beta_data,  lbeta_arr,  beta_id,  iload-1,'Beta')
-            if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload-1,'Gamma')
-            if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload-1,'Delta')
-            if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload-1,'Kappa')
-            if (lutensor) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload-1,'Utensor')
-            if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
-            if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
-          end if
+          if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload-1,'Alpha')
+          if (lbeta)  call loadDataset(beta_data,  lbeta_arr,  beta_id,  iload-1,'Beta')
+          if (lgamma) call loadDataset(gamma_data, lgamma_arr, gamma_id, iload-1,'Gamma')
+          if (ldelta) call loadDataset(delta_data, ldelta_arr, delta_id, iload-1,'Delta')
+          if (lkappa) call loadDataset(kappa_data, lkappa_arr, kappa_id, iload-1,'Kappa')
+          if (lutensor) call loadDataset(utensor_data, lutensor_arr, utensor_id, iload-1,'Utensor')
+          if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
+          if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
           lread_datasets=.false.
+
         end if
 
       end if
@@ -1126,8 +1133,9 @@ endif
       character(len=*), intent(in)    :: datagroup     ! name of data group
       integer, intent(in)             :: tensor_id
 !
-      integer(HSIZE_T), dimension(10) :: maxdimsizes
+      integer(HSIZE_T), dimension(10) :: dimsizes, maxdimsizes
       integer :: ndims
+      integer(HSIZE_T) :: num
       logical :: hdf_exists
       character(len=fnlen)            :: dataset
 
@@ -1167,18 +1175,25 @@ endif
       end if
       ! Get dataspace dimensions in tensor_dims.
       ndims = tensor_ndims(tensor_id)
-      !tensor_dims(tensor_id,1:ndims)=tensor_counts(tensor_id,1:ndims)
-      !call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
-      !                                 tensor_dims(tensor_id,1:ndims), &
-      !                                 maxdimsizes(1:ndims), &
-      !                                 hdferr)
-      !if (hdferr /= 0) then
-      !  call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
-      !  call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
-      !  call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-      !  call fatal_error('openDataset','Cannot get dimensions extent '// &
-      !                    'for /emftensor/'//trim(datagroup)//'/'//trim(dataset))
-      !end if
+      call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
+                                       dimsizes(1:ndims), &
+                                       maxdimsizes(1:ndims), &
+                                       hdferr)                 !MR: hdferr/=0!
+      call H5Sget_simple_extent_npoints_F(tensor_id_S(tensor_id),num,hdferr) ! This is to mask the error of the preceding call.
+      tensor_dims(tensor_id,1:ndims)=dimsizes(1:ndims)
+      if (tensor_times_len==-1) then
+        tensor_times_len=dimsizes(1)
+      elseif (tensor_times_len/=dimsizes(1)) then
+        call fatal_error('openDataset','dataset emftensor/'//trim(datagroup)//'/'//trim(dataset)//' has deviating time extent')  
+      endif
+      if (hdferr /= 0) then
+        call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
+        call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
+        call fatal_error('openDataset','Cannot get dimensions extent '// &
+                          'for /emftensor/'//trim(datagroup)//'/'//trim(dataset))
+      end if
+
       ! Create a memory space mapping for input data (identifier in tensor_id_memS).
       call H5Screate_simple_F(ndims, tensor_memdims(tensor_id,1:ndims), &
                               tensor_id_memS(tensor_id), hdferr)
@@ -1544,6 +1559,7 @@ endif
       tensor_maxvals=0.0
       tensor_minvals=0.0
       lusecoefs    = .false.
+      lloop = .false.
 
     end subroutine setParameterDefaults
 !***********************************************************************
