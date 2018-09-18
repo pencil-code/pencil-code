@@ -5489,6 +5489,87 @@ where $K_{ij}=\tau\tilde{K}_{ij}$ would be the original diffusion tensor
 of \Eq{Difftensor}, if the time derivative were negligible.
 Further details are described in Snodin et al.\ (2006).
 
+%JS added (Is this too long?):
+\subsection{Chiral MHD}
+\index{Chiral MHD}
+
+At high energies, $k_{\rm B} T \gtrsim 10~\mathrm{MeV}$, a quantum effect called the 
+\textit{chiral magnetic effect} (CME) can modify the MHD equations. 
+The CME occurs in magnetized relativistic plasmas, in
+which the number density of left-handed fermions,
+$n_{_{\rm L}}$, differs from the one of right-handed
+fermions, $n_{_{\rm R}}$ (see e.g., Kharzeev et al.\ (2013) for a review).
+This asymmetry is described by the chiral chemical potential
+$\mu_5 \equiv 6\,(n_{_{\rm L}}-n_{_{\rm R}})\,{(\hbar c)^3/(k_{\rm B}  T)^2}$, 
+where $T$ is the temperature, $k_{\rm B}$ is the Boltzmann constant,
+$c$ is the speed of light, and $\hbar$ is the reduced Planck constant.
+In the presence of a magnetic field, $\mu_5$ leads to the occurrence of the current
+\begin{eqnarray}
+   \bm{J}_{\rm CME} = \frac{\alpha_\mathrm{em}}{\pi \hbar} \mu_5 \bm{B} ,
+  \label{CME}
+\end{eqnarray}
+where $\alpha_\mathrm{em} \approx 1/137$ is the fine structure constant.
+
+The chiral current~(\ref{CME}) adds to the classical Ohmic current, leading
+to a modification of the Maxwell equations.
+As a result, the induction equation is extended by one 
+additional term:
+\begin{eqnarray}
+  \frac{\partial \bm{A}}{\partial t} = {\bm{U}} \times   {\bm{B}}
+  - \eta \, \left(\nab   \times   {\bm{B}}
+  - \mu {\bm{B}} \right), 
+\label{ind-DNS}
+\end{eqnarray}
+where the chiral chemical potential $\mu_5$ is normalized such that
+$\mu = (4 \alpha_\mathrm{em} /\hbar c) \mu_5$.
+The latter is determined by the evolution equation
+\begin{eqnarray}
+  \frac{D \mu}{D t} = D_5 \, \Delta \mu
+  + \lambda \, \eta \, \left[{\bm{B}} {\bm \cdot} (\nab   \times   {\bm{B}})
+  - \mu {\bm{B}}^2\right]
+  -\Gamma_{\rm\!f}\mu,
+\label{mu-DNS}
+\end{eqnarray}
+where $D_5$ is a chiral diffusion coefficient, $\lambda$ the chiral feedback parameter, and $\Gamma_{\rm\!f}$ the rate of chiral flipping reactions.
+All remaining evolution equations are the same as in classical MHD. 
+Details on the derivation of the chiral MHD equations can be found in 
+Boyarsky et al.\ (2015) and Rogachevskii et al.\ (2017).
+
+In the Pencil Code, the chiral MHD equations can be solved by adding the line
+\begin{verbatim}
+SPECIAL        =    special/chiral_mhd 
+\end{verbatim}
+to \texttt{src/Makefile.local}.
+Further, for running the chiral MHD module, one needs to add
+\begin{verbatim}
+   &special_init_pars
+   initspecial='const', mu5_const=10.
+\end{verbatim}
+to \texttt{start.in} and
+\begin{verbatim}
+   &special_run_pars
+   diffmu5=1e-4, lambda5=1e3, cdtchiral=1.0
+\end{verbatim}
+to \texttt{run.in}, where we have chosen exemplary values for the chiral
+parameters.
+
+Caution should be taken when solving the chiral MHD equations
+numerically, since the evolution of the plasma can be strongly affected by 
+the CME. 
+In particular, the initial value of $\mu$ is related to 
+a small-scale dynamo instability. 
+In order to resolve this instability in a domain of size $(2\pi)^3$, 
+the minimum number of grid points is given as:
+\begin{equation}
+  N_\mathrm{grid} \gtrsim \left(\frac{\mu_0}{\lambda}\right)^{1/2} \frac{2\pi}{\nu \mbox{Re}_{\rm mesh, crit}}.
+\end{equation}
+Also the value of $\lambda$ should not be choosen too small, since it scales 
+inversely with the saturation magnetic helicity produced by a chiral dynamo. 
+Hence, for a very small $\lambda$ parameter, the Alfv\'en time step becomes extremely small in the non-linear stage which can lead to a code crash.    
+More details on the numerical modeling of chiral MHD can be found in
+Schober et al.\ (2018).
+%JS.
+
 
 \subsection{Particles}
 \label{S-particles-equations}
