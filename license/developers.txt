@@ -58,6 +58,7 @@ Chao-Chin Yang,       ccyang/unlv.edu,               ccyang/unlv.edu,      +1 70
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
 Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,     ,                     ,                  +46 73 627 2556,          ,            NORDITA
 Luiz F. S. Rodrigues, luiz.rodrigues/ncl.ac.uk,      ,                     +44 191 208 3560,  ,                         luizfelippesr, Newcastle University
+Ewa Karchniwy,        ewa.karchniwy/ntnu.no,         ,                     ,                  +48 662 998 910,          ,              NTNU, Silesian University of Technology
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
