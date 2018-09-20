@@ -7,7 +7,8 @@
 #
 # Chao-Chin Yang, 2013-10-22
 #=======================================================================
-def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None, **kwargs):
+def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None,
+          **kwargs):
     """Plots the space-time diagram of a 1D average.
 
     Positional Arguments:
@@ -27,11 +28,15 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None, **kwar
         **kwargs
             Sent to matplotlib.pyplot.imshow.
     """
-    # Chao-Chin Yang, 2014-11-04
+    # Author: Chao-Chin Yang
+    # Created: 2013-10-28
+    # Last Modified: 2018-09-20
     from . import read
-    import numpy as np
+    import math
     import matplotlib.pyplot as plt
+    import numpy as np
     from scipy.interpolate import interp1d
+
     # Check the plane of the average.
     if plane == 'xy':
         xlabel = '$z$'
@@ -44,22 +49,25 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None, **kwar
         xdir = 0
     else:
         raise ValueError("Keyword plane only accepts 'xy', 'xz', or 'yz'. ")
+
     # Read the data.
     print("Reading 1D averages...")
     time, avg = read.avg1d(datadir=datadir, plane=plane, verbose=False)
     par = read.parameters(datadir=datadir)
     xmin, xmax = par.xyz0[xdir], par.xyz1[xdir]
+
     # Set colorbar label.
     if logscale:
         cblabel = r'$\log(\tt{' + name + '})$'
     else:
         cblabel = name
+
     # Interpolate the time series.
     print("Interpolating", name, "...")
     tmin, tmax = np.min(time), np.max(time)
     if tsize is None:
         dt = (time[1:] - time[:-1]).min()
-        tsize = (tmax - tmin) / dt + 1
+        tsize = int(math.ceil((tmax - tmin) / dt)) + 1
     ns = avg.shape[1]
     t = np.linspace(tmin, tmax, tsize)
     a = np.empty((tsize, ns))
@@ -68,9 +76,11 @@ def avg1d(name, datadir='./data', logscale=False, plane='xy', tsize=None, **kwar
             a[:,j] = interp1d(time, np.log10(avg[name][:,j]))(t)
         else:
             a[:,j] = interp1d(time, avg[name][:,j])(t)
+
     # Plot the space-time diagram.
     print("Plotting...")
-    img = plt.imshow(a, origin='bottom', extent=[xmin,xmax,tmin,tmax], aspect='auto', **kwargs)
+    img = plt.imshow(a, origin='bottom', extent=[xmin,xmax,tmin,tmax],
+                        aspect='auto', **kwargs)
     ax = plt.gca()
     ax.set_ylabel('$t$')
     ax.set_xlabel(xlabel)
