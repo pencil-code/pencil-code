@@ -33,7 +33,7 @@ Grid & Grid::operator=(const Grid & grid)
     if (this==&grid) return *this;
 
     UUX=grid.UUX; UUY=grid.UUY; UUZ=grid.UUZ; LNRHO=grid.LNRHO; RHO=grid.RHO;
-    AAX=grid.AAX; AAY=grid.AAY; AAZ=grid.AAZ; NUM_ARRS=grid.NUM_ARRS;
+    AAX=grid.AAX; AAY=grid.AAY; AAZ=grid.AAZ; SS=grid.SS; NUM_ARRS=grid.NUM_ARRS;
     arr = (real**) malloc(NUM_ARRS*sizeof(real*));
 
     return *this;
@@ -49,6 +49,7 @@ RHO=LNRHO; //!!!
         AAX = iax-1;
         AAY = iay-1;
         AAZ = iaz-1;
+        SS  = iss-1;
         NUM_ARRS = mvar;
 
     arr = (real**) malloc(NUM_ARRS*sizeof(real*));
@@ -66,6 +67,9 @@ RHO=LNRHO; //!!!
         }else{
           arr[LNRHO] = farray + offset; offset+=mw;
         }
+    }
+    if (lentropy) {
+        arr[SS] = farray + offset; offset+=mw;
     }
     if (lmagnetic){
         arr[AAX] = farray + offset; offset+=mw;

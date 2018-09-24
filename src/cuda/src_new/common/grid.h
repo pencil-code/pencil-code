@@ -47,8 +47,8 @@ struct Grid {
 public:
     //real* arr[NUM_ARRS];
     real** arr=NULL;
-    int UUX=-1, UUY=-1, UUZ=-1, RHO=-1, LNRHO=-1, AAX=-1, AAY=-1, AAZ=-1, NUM_ARRS=0;
-    const char* names[7] = {"uu_x", "uu_y", "uu_z", "lnrho", "aa_x", "aa_y", "aa_z"};
+    int UUX=-1, UUY=-1, UUZ=-1, RHO=-1, LNRHO=-1, AAX=-1, AAY=-1, AAZ=-1, SS=-1, NUM_ARRS=0;
+    const char* names[8] = {"uu_x", "uu_y", "uu_z", "lnrho", "ss", "aa_x", "aa_y", "aa_z"};
 
     Grid();
     Grid & operator=(const Grid &);
