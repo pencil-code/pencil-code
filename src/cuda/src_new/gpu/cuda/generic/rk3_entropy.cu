@@ -7,9 +7,9 @@
 static const dim3 tpb(4, 4, 4);
 
 // Grid indices
-#define IDX_1D(i, j, k) ((i) + (j)*d_mx + (k)*d_mx*d_my)
+#define IDX_1D(i, j, k) ((i) + (j)*d_mx + (k)*d_mxy)
 
-
+#ifdef ENTROPY 
 static __device__ __forceinline__ real
 dot(const real a0, const real a1, const real a2,
     const real b0, const real b1, const real b2)
@@ -23,18 +23,17 @@ static __device__ __forceinline__ real
 get_lnT(const real lnrho, const real entropy_s)
 {
 
-    const real gamma = d_CP_SOUND / d_CV_SOUND;
-    const real lnT = d_LNT0 +
-                     (entropy_s / d_CV_SOUND) +
-                     (gamma - real(1.0))*(lnrho - d_LNRHO0);
+    const real lnT = d_LNTT0 +
+                     (entropy_s / d_CV) +
+                     (d_GAMMA - real(1.0))*(lnrho - d_LNRHO0);
 
     // TODO NOTE: This is not the actual lnT, this part accumulates huge
     // arithmetic error so replaced temporarily with a toy solution that's free
     // of any significant loss in precision (see model_rk3.cc also)
     //const real lnT = .5f * (entropy_s + lnrho);
-    // NOTE UPDATE: The error comes from d_LNT0: if it is bigger than the
+    // NOTE UPDATE: The error comes from d_LNTT0: if it is bigger than the
     // range of the values in the grid, then with addition we inherently lose
-    // precision. Therefore special care must be taken when choosing d_LNT0
+    // precision. Therefore special care must be taken when choosing d_LNTT0
     return lnT;
 }
 
@@ -338,50 +337,50 @@ dernm_scal(int i, int j, int k, DERNM_TYPE type, const real* __restrict__ scal)
    if (type == DERNM_XY) {
       const real fac = (1.0/720.0)*(1.0/dx)*(1.0/dy);
       return fac*(
-        270.0*( scal[i+1 + (j+1)*d_mx + k*d_mx*d_my]
-              - scal[i-1 + (j+1)*d_mx + k*d_mx*d_my]
-              + scal[i-1 + (j-1)*d_mx + k*d_mx*d_my]
-              - scal[i+1 + (j-1)*d_mx + k*d_mx*d_my] )
-        -27.0*( scal[i+2 + (j+2)*d_mx + k*d_mx*d_my]
-              - scal[i-2 + (j+2)*d_mx + k*d_mx*d_my]
-              + scal[i-2 + (j-2)*d_mx + k*d_mx*d_my]
-              - scal[i+2 + (j-2)*d_mx + k*d_mx*d_my] )
-        + real(2.)*( scal[i+3 + (j+3)*d_mx + k*d_mx*d_my]
-              - scal[i-3 + (j+3)*d_mx + k*d_mx*d_my]
-              + scal[i-3 + (j-3)*d_mx + k*d_mx*d_my]
-              - scal[i+3 + (j-3)*d_mx + k*d_mx*d_my] )
+        270.0*( scal[i+1 + (j+1)*d_mx + k*d_mxy]
+              - scal[i-1 + (j+1)*d_mx + k*d_mxy]
+              + scal[i-1 + (j-1)*d_mx + k*d_mxy]
+              - scal[i+1 + (j-1)*d_mx + k*d_mxy] )
+        -27.0*( scal[i+2 + (j+2)*d_mx + k*d_mxy]
+              - scal[i-2 + (j+2)*d_mx + k*d_mxy]
+              + scal[i-2 + (j-2)*d_mx + k*d_mxy]
+              - scal[i+2 + (j-2)*d_mx + k*d_mxy] )
+        + 2.0*( scal[i+3 + (j+3)*d_mx + k*d_mxy]
+              - scal[i-3 + (j+3)*d_mx + k*d_mxy]
+              + scal[i-3 + (j-3)*d_mx + k*d_mxy]
+              - scal[i+3 + (j-3)*d_mx + k*d_mxy] )
                 );
    } else if (type == DERNM_YZ) {
       const real fac = (1.0/720.0)*(1.0/dy)*(1.0/dz);
       return fac*(
-        270.0*( scal[i + (j+1)*d_mx + (k+1)*d_mx*d_my]
-              - scal[i + (j+1)*d_mx + (k-1)*d_mx*d_my]
-              + scal[i + (j-1)*d_mx + (k-1)*d_mx*d_my]
-              - scal[i + (j-1)*d_mx + (k+1)*d_mx*d_my] )
-        -27.0*( scal[i + (j+2)*d_mx + (k+2)*d_mx*d_my]
-              - scal[i + (j+2)*d_mx + (k-2)*d_mx*d_my]
-              + scal[i + (j-2)*d_mx + (k-2)*d_mx*d_my]
-              - scal[i + (j-2)*d_mx + (k+2)*d_mx*d_my] )
-        + real(2.)*( scal[i + (j+3)*d_mx + (k+3)*d_mx*d_my]
-              - scal[i + (j+3)*d_mx + (k-3)*d_mx*d_my]
-              + scal[i + (j-3)*d_mx + (k-3)*d_mx*d_my]
-              - scal[i + (j-3)*d_mx + (k+3)*d_mx*d_my] )
+        270.0*( scal[i + (j+1)*d_mx + (k+1)*d_mxy]
+              - scal[i + (j+1)*d_mx + (k-1)*d_mxy]
+              + scal[i + (j-1)*d_mx + (k-1)*d_mxy]
+              - scal[i + (j-1)*d_mx + (k+1)*d_mxy] )
+        -27.0*( scal[i + (j+2)*d_mx + (k+2)*d_mxy]
+              - scal[i + (j+2)*d_mx + (k-2)*d_mxy]
+              + scal[i + (j-2)*d_mx + (k-2)*d_mxy]
+              - scal[i + (j-2)*d_mx + (k+2)*d_mxy] )
+        + 2.0*( scal[i + (j+3)*d_mx + (k+3)*d_mxy]
+              - scal[i + (j+3)*d_mx + (k-3)*d_mxy]
+              + scal[i + (j-3)*d_mx + (k-3)*d_mxy]
+              - scal[i + (j-3)*d_mx + (k+3)*d_mxy] )
                 );
    } else if (type == DERNM_XZ) {
       const real fac = (1.0/720.0)*(1.0/dz)*(1.0/dx);
       return fac*(
-        270.0*( scal[i+1 + j*d_mx + (k+1)*d_mx*d_my]
-              - scal[i-1 + j*d_mx + (k+1)*d_mx*d_my]
-              + scal[i-1 + j*d_mx + (k-1)*d_mx*d_my]
-              - scal[i+1 + j*d_mx + (k-1)*d_mx*d_my] )
-        -27.0*( scal[i+2 + j*d_mx + (k+2)*d_mx*d_my]
-              - scal[i-2 + j*d_mx + (k+2)*d_mx*d_my]
-              + scal[i-2 + j*d_mx + (k-2)*d_mx*d_my]
-              - scal[i+2 + j*d_mx + (k-2)*d_mx*d_my] )
-        + real(2.)*( scal[i+3 + j*d_mx + (k+3)*d_mx*d_my]
-              - scal[i-3 + j*d_mx + (k+3)*d_mx*d_my]
-              + scal[i-3 + j*d_mx + (k-3)*d_mx*d_my]
-              - scal[i+3 + j*d_mx + (k-3)*d_mx*d_my] )
+        270.0*( scal[i+1 + j*d_mx + (k+1)*d_mxy]
+              - scal[i-1 + j*d_mx + (k+1)*d_mxy]
+              + scal[i-1 + j*d_mx + (k-1)*d_mxy]
+              - scal[i+1 + j*d_mx + (k-1)*d_mxy] )
+        -27.0*( scal[i+2 + j*d_mx + (k+2)*d_mxy]
+              - scal[i-2 + j*d_mx + (k+2)*d_mxy]
+              + scal[i-2 + j*d_mx + (k-2)*d_mxy]
+              - scal[i+2 + j*d_mx + (k-2)*d_mxy] )
+        + 2.0*( scal[i+3 + j*d_mx + (k+3)*d_mxy]
+              - scal[i-3 + j*d_mx + (k+3)*d_mxy]
+              + scal[i-3 + j*d_mx + (k-3)*d_mxy]
+              - scal[i+3 + j*d_mx + (k-3)*d_mxy] )
                 );
    } else {
         return NAN;
@@ -500,7 +499,7 @@ entropy(const int i, const int j, const int k,
 
     // 2 * rho * visc * S contract_op S
     const real S_contract_S = contract_S_to_scal(i, j, k, uux, uuy, uuz);
-    const real strain_tensor_term = real(2.) * exp(lnrho[idx]) * d_NU_VISC * S_contract_S;
+    const real strain_tensor_term = real(2.) * exp(lnrho[idx]) * d_NU * S_contract_S;
 
     return conv_deriv + inv_pT*(nabla2_lnT + _dot_grad_lnT2 + _eta_mu0_j_dot_j + strain_tensor_term);
 }
@@ -570,16 +569,16 @@ rk3_entropy_step(const int step_number, const Grid* d_grid, Grid* d_grid_dst, co
                    (unsigned int) ceil(ny / tpb.y),
                    (unsigned int) ceil(nz / tpb.z));
 
-    #define KERNEL_PARAMETER_LIST d_grid->arr[LNRHO],\
-                                          d_grid->arr[UUX],\
-                                          d_grid->arr[UUY],\
-                                          d_grid->arr[UUZ],\
-                                          d_grid->arr[AX],\
-                                          d_grid->arr[AY],\
-                                          d_grid->arr[AZ],\
-                                          d_grid->arr[ENTROPY_S],\
+    #define KERNEL_PARAMETER_LIST d_grid->arr[d_grid->LNRHO],\
+                                          d_grid->arr[d_grid->UUX],\
+                                          d_grid->arr[d_grid->UUY],\
+                                          d_grid->arr[d_grid->UUZ],\
+                                          d_grid->arr[d_grid->AAX],\
+                                          d_grid->arr[d_grid->AAY],\
+                                          d_grid->arr[d_grid->AAZ],\
+                                          d_grid->arr[d_grid->SS],\
                                           dt,\
-                                          d_grid_dst->arr[ENTROPY_S]
+                                          d_grid_dst->arr[d_grid->SS]
 
     if (step_number == 0)
         entropy_kernel<0><<<bpg, tpb, 0, stream>>>(KERNEL_PARAMETER_LIST);
@@ -593,3 +592,4 @@ rk3_entropy_step(const int step_number, const Grid* d_grid, Grid* d_grid_dst, co
 
     #undef KERNEL_PARAMETER_LIST
 }
+#endif
