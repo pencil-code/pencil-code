@@ -439,7 +439,7 @@ module Testfield
           close(3)
         endif
       endif
-
+!
       if (ivid_bb11/=0) then
         if (lwrite_slice_xy .and..not.allocated(bb11_xy) ) allocate(bb11_xy (nx,ny,3))
         if (lwrite_slice_xz .and..not.allocated(bb11_xz) ) allocate(bb11_xz (nx,nz,3))
@@ -694,6 +694,13 @@ module Testfield
           +etatest*del2Atest
         df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
           +nutest*del2Utest
+!
+!  Coriolis term (just vertical, for now)
+!
+        if (Omega/=0.) then
+          df(l1:l2,m,n,iuxtest)=df(l1:l2,m,n,iuxtest)+2.*Omega*uutest(:,2)
+          df(l1:l2,m,n,iuytest)=df(l1:l2,m,n,iuytest)-2.*Omega*uutest(:,1)
+        endif
 !
 !  With imposed field, calculate uutest x B0 and jjtest x B0 terms.
 !  This applies to all terms, including the reference fields.
