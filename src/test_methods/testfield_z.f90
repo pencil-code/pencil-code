@@ -371,13 +371,13 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtestl)
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtestl)
         endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_testfield: iuxb = ', iuxb
+        if (iuxbtest/=0.and.lroot) then
+          print*, 'initialize_testfield: iuxbtest = ', iuxbtest
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
+          write(3,*) 'iuxbtest=',iuxbtest
           close(3)
         endif
       endif
@@ -386,13 +386,13 @@ module Testfield
 !  used in connection with testflow method)
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtestl)
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtestl)
         endif
-        if (ijxb/=0.and.lroot) then
-          print*, 'initialize_testfield: ijxb = ', ijxb
+        if (ijxbtest/=0.and.lroot) then
+          print*, 'initialize_testfield: ijxbtest = ', ijxbtest
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxb=',ijxb
+          write(3,*) 'ijxbtest=',ijxbtest
           close(3)
         endif
       endif
@@ -622,8 +622,8 @@ module Testfield
 !
         if (.not.lsoca) then
 !
-          if ((iuxb/=0.and..not.ltest_uxb).and.chiraltest==0.) then
-            uxb=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+          if ((iuxbtest/=0.and..not.ltest_uxb).and.chiraltest==0.) then
+            uxb=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
           else
             call calc_uxb(f,p,iaxtest,uxb,bbtest)
           endif
@@ -827,8 +827,8 @@ module Testfield
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_jxb=.false.)
 !
-            if (ijxb/=0.and..not.ltest_jxb) then
-              jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+            if (ijxbtest/=0.and..not.ltest_jxb) then
+              jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
             else
               call cross_mn(jjtest,bbtest,jxbrtest)
             endif
@@ -1397,14 +1397,14 @@ module Testfield
               call calc_pencils_hydro(f,p(1),lpenc_loc)
               call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
 !
-              juxb=iuxb+3*(jtest-1)
+              juxb=iuxbtest+3*(jtest-1)
               if (ltestfield_taver) then
                 if (llast) then
-                  if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)= &
+                  if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)= &
                           fac1*f(l1:l2,m,n,juxb:juxb+2)+fac2*uxbtest
                 endif
               else
-                if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+                if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
               uxbtestm(nl,:,jtest)=uxbtestm(nl,:,jtest)+fac*sum(uxbtest,1)
               headtt=.false.
@@ -1446,8 +1446,8 @@ module Testfield
               call curl_mn(aijtest,bbtest,aatest)
               call curl_mn(bijtest,jjtest,bbtest)
               call cross_mn(jjtest,bbtest,jxbtest)
-              jjxb=ijxb+3*(jtest-1)
-              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+              jjxb=ijxbtest+3*(jtest-1)
+              if (ijxbtest/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
               jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)
               headtt=.false.
             enddo
