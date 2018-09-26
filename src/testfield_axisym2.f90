@@ -306,13 +306,13 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
         endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: iuxb = ', iuxb
+        if (iuxbtest/=0.and.lroot) then
+          print*, 'initialize_magnetic: iuxbtest = ', iuxbtest
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
+          write(3,*) 'iuxbtest=',iuxbtest
           close(3)
         endif
       endif
@@ -321,13 +321,13 @@ module Testfield
 !  used in connection with testflow method)
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
         endif
-        if (ijxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: ijxb = ', ijxb
+        if (ijxbtest/=0.and.lroot) then
+          print*, 'initialize_magnetic: ijxbtest = ', ijxbtest
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxb=',ijxb
+          write(3,*) 'ijxbtest=',ijxbtest
           close(3)
         endif
       endif
@@ -604,8 +604,8 @@ module Testfield
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_uxb=.false.)
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
-            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+          if (iuxbtest/=0.and..not.ltest_uxb) then
+            uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
           else
             aatest=f(l1:l2,m,n,iaxtest:iaztest)
             call gij(f,iaxtest,aijtest,1)
@@ -849,14 +849,14 @@ module Testfield
               call gij(f,iaxtest,aijtest,1)
               call curl_mn(aijtest,bbtest,aatest)
               call cross_mn(p%uu,bbtest,uxbtest)
-              juxb=iuxb+3*(jtest-1)
+              juxb=iuxbtest+3*(jtest-1)
               if (ltestfield_taver) then
                 if (llast) then
-                  if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)= &
+                  if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)= &
                           fac1*f(l1:l2,m,n,juxb:juxb+2)+fac2*uxbtest
                 endif
               else
-                if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+                if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
               do j=1,3
                 uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+fac*sum(uxbtest(:,j))
@@ -911,8 +911,8 @@ module Testfield
               call curl_mn(aijtest,bbtest,aatest)
               call curl_mn(bijtest,jjtest,bbtest)
               call cross_mn(jjtest,bbtest,jxbtest)
-              jjxb=ijxb+3*(jtest-1)
-              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+              jjxb=ijxbtest+3*(jtest-1)
+              if (ijxbtest/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
               do j=1,3
                 jxbtestm(n,j,jtest)=jxbtestm(n,j,jtest)+fac*sum(jxbtest(:,j))
               enddo

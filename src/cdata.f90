@@ -55,7 +55,7 @@ module Cdata
 !
 !  Yin-Yang grid.
 !
-  logical :: lyinyang=.false., lyang=.false.
+  logical :: lyinyang=.false., lyang=.false., lcutoff_corners=.false.
   character(LEN=labellen) :: cyinyang_intpol_type='bilinear'
   integer :: iyinyang_intpol_type=BILIN
   integer :: nzgrid_eff=nzgrid
@@ -307,7 +307,7 @@ module Cdata
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
              iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
-  integer :: iuxb=0,iugu=0,iugh=0
+  integer :: iuxbtest=0,ijxbtest=0,iugutest=0,iughtest=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky,iviscosity=0
