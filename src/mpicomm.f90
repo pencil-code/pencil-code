@@ -1014,7 +1014,8 @@ module Mpicomm
               call yy_transform_strip(1,nycut,1,nghost,thphprime_strip_z(:,:,:nycut))
               call yy_transform_strip(nycut+1,my,1,nghost,thphprime_strip_z(:,:,nycut+1:my),iph_shift_=1)
             elseif (lfirst_proc_y) then
-              call yy_transform_strip(1,my-nycut,mz-len_cornstrip_z+4-nghost,mz-len_cornstrip_z+3,thphprime_strip_z(:,:,:my-nycut),iph_shift_=-1)       
+              call yy_transform_strip(1,my-nycut,mz-len_cornstrip_z+4-nghost,mz-len_cornstrip_z+3, &
+                                      thphprime_strip_z(:,:,:my-nycut),iph_shift_=-1)       
               call yy_transform_strip(my-nycut+1,my,1,nghost,thphprime_strip_z(:,:,my-nycut+1:my))
             endif
           else
@@ -1080,7 +1081,8 @@ endif
               call yy_transform_strip(1,nycut,n2+1,mz,thphprime_strip_z(:,:,:nycut))
               call yy_transform_strip(nycut+1,my,n2+1,mz,thphprime_strip_z(:,:,nycut+1:my),iph_shift_=-1)
             elseif (lfirst_proc_y) then
-              call yy_transform_strip(1,my-nycut,len_cornstrip_z-2,len_cornstrip_z-3+nghost,thphprime_strip_z(:,:,:my-nycut),iph_shift_=1)
+              call yy_transform_strip(1,my-nycut,len_cornstrip_z-2,len_cornstrip_z-3+nghost, &
+                                      thphprime_strip_z(:,:,:my-nycut),iph_shift_=1)
               call yy_transform_strip(my-nycut+1,my,n2+1,mz,thphprime_strip_z(:,:,my-nycut+1:my))
             endif
           else
@@ -1158,9 +1160,11 @@ endif
           if (lcutoff_corners.and.lcorner_yz) then
             if (llast_proc_z) then
               call yy_transform_strip(1,nghost,1,nzcut,thphprime_strip_y(:,:,:nzcut))
-              call yy_transform_strip(1,nghost,nzcut+1,mz,thphprime_strip_y(:,:,nzcut+1:mz),ith_shift_=1)
+              call yy_transform_strip(1,nghost,nzcut+1,mz, &
+                                      thphprime_strip_y(:,:,nzcut+1:mz),ith_shift_=1)
             elseif (lfirst_proc_z) then 
-              call yy_transform_strip(my-len_cornstrip_y+4-nghost,my-len_cornstrip_y+3,1,mz-nzcut,thphprime_strip_y(:,:,:mz-nzcut),ith_shift_=-1)
+              call yy_transform_strip(my-len_cornstrip_y+4-nghost,my-len_cornstrip_y+3,1,mz-nzcut, &
+                                      thphprime_strip_y(:,:,:mz-nzcut),ith_shift_=-1)
               call yy_transform_strip(1,nghost,mz-nzcut+1,mz,thphprime_strip_y(:,:,mz-nzcut+1:mz))
             endif
           else
@@ -1239,9 +1243,11 @@ endif
           if (lcutoff_corners.and.lcorner_yz) then
             if (llast_proc_z) then
               call yy_transform_strip(m2+1,my,1,nzcut,thphprime_strip_y(:,:,:nzcut))
-              call yy_transform_strip(m2+1,my,nzcut+1,mz,thphprime_strip_y(:,:,nzcut+1:mz),ith_shift_=-1)
+              call yy_transform_strip(m2+1,my,nzcut+1,mz,thphprime_strip_y(:,:,nzcut+1:mz), &
+                                      ith_shift_=-1)
             elseif (lfirst_proc_z) then
-              call yy_transform_strip(my-len_cornstrip_y+3-nghost,my-len_cornstrip_y+2,1,mz-nzcut,thphprime_strip_y(:,:,:mz-nzcut),ith_shift_=1)
+              call yy_transform_strip(my-len_cornstrip_y+3-nghost,my-len_cornstrip_y+2,1, &
+                                      mz-nzcut,thphprime_strip_y(:,:,:mz-nzcut),ith_shift_=1)
               call yy_transform_strip(m2+1,my,mz-nzcut+1,mz,thphprime_strip_y(:,:,mz-nzcut+1:mz))
             endif
           else
