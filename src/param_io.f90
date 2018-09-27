@@ -105,7 +105,8 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors, lyinyang, cyinyang_intpol_type, yy_biquad_weights
+      ldirect_access, ltolerate_namelist_errors, &
+      lyinyang, cyinyang_intpol_type, yy_biquad_weights, nycut, nzcut
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -168,7 +169,7 @@ module Param_IO
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
-      cyinyang_intpol_type, yy_biquad_weights, lignore_nonequi
+      cyinyang_intpol_type, yy_biquad_weights, nycut, nzcut, lignore_nonequi
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
