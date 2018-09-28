@@ -4442,7 +4442,7 @@ module General
         if (jshift/=0) jshift=jshift+jshift_
       enddo
 !
-    end
+    endsubroutine copy_with_shift
 !***********************************************************************
     subroutine transform_thph_yy( vec, powers, transformed, theta, phi )
 !
