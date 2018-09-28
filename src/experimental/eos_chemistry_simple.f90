@@ -179,7 +179,6 @@ module EquationOfState
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
       endif
-!      if (lchemistry) call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -364,7 +363,6 @@ module EquationOfState
 
       lpenc_requested(i_ghhk) = .true.
       lpenc_requested(i_cv) = .true.
-!        lpenc_requested(i_cp) = .true.
       lpenc_requested(i_cv1) = .true.
       lpenc_requested(i_cp1) = .true.
 !
@@ -384,10 +382,15 @@ module EquationOfState
       if (ltemperature_nolog) then
         lpenc_requested(i_gTT)=.true.
       endif
-      lpenc_requested(i_glnTT)=.true.
       lpenc_requested(i_glnrho)=.true.
 !
+      lpenc_requested(i_rho1gpp)=.true.
       lpenc_requested(i_mu1)=.true.
+      lpenc_requested(i_gmu1)=.true.
+      lpenc_requested(i_pp)=.true.
+      lpenc_requested(i_glnTT)=.true.
+!
+      lpenc_requested(i_cs2) = .true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -429,77 +432,36 @@ module EquationOfState
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx,3) :: glnDiff_full_add, glncp
-      real, dimension(nchemspec) ::  cp_k, cv_k
-      real, dimension(nx) :: D_th
+      real, dimension(nx) :: D_th, R_mix
+      real, dimension (mx,my,mz) :: mu1_full
+      real, dimension(nx) :: del2TT, gradTgradT
 !
-      intent(in) :: f, lpenc_loc
+      intent(in) :: lpenc_loc
       intent(inout) :: p
 !
-      integer :: i,k
-!
+      integer :: i,k,j2,j3
 !
 !! Cp/Cv pencils
 !
-!          p%cp = 0.
           p%cp =  f(l1:l2,m,n,icp)
           p%cv = 0.
 !
-!          if ((lpencil(i_cv)) .and. (lpencil(i_cp))) then
           if (lpencil(i_cv))  then
+            if (Cp_const < impossible) then
               do k = 1,nchemspec
-                if (Cp_const < impossible) then
- !                 cp_k(k) = Cp_const/species_constants(k,imass)
-                  cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
-                else
-                  call fatal_error('calc_pencils_chemistry','For simplified chemistry Cp_const must be given')           
-                endif
- !               p%cp = p%cp + cp_k(k)*f(l1:l2,m,n,ichemspec(k))
-                p%cv = p%cv + cv_k(k)*f(l1:l2,m,n,ichemspec(k))
+                p%cv = p%cv + (Cp_const-Rgas)/species_constants(k,imass)*f(l1:l2,m,n,ichemspec(k))
               enddo
-              if (lpencil(i_cv1)) p%cv1 = 1./p%cv
-              if (lpencil(i_cp1)) p%cp1 = 1./p%cp
+            else
+              R_mix = 0.
+              do k = 1,nchemspec
+                R_mix = R_mix + Rgas/species_constants(k,imass)*f(l1:l2,m,n,ichemspec(k))
+              enddo
+              p%cv = p%cp - R_mix 
+!              call fatal_error('calc_pencils_chemistry','For simplified chemistry Cp_const must be given')           
+            endif
+            if (lpencil(i_cv1)) p%cv1 = 1./p%cv
+            if (lpencil(i_cp1)) p%cp1 = 1./p%cp
           endif
-
-! Viscosity of a mixture
-
-        if (lpencil(i_nu)) then
-            p%nu = f(l1:l2,m,n,iviscosity)
-          if (lpencil(i_gradnu)) then
-            call grad(f(:,:,:,iviscosity),p%gradnu)
-          endif
-        endif
-          if (lpencil(i_ghhk)) then
-            do k = 1,nchemspec
-              if (species_constants(k,imass) > 0.)  then
-                do i = 1,3
-! Here: is it ok?
-! In the chemistry module this was coded as:
-! p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
-! By the way, why is there grad(lnT)*T instead of grad(T)?
-! Ask for that!!!!
-                  p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
-                enddo
-              endif
-            enddo
-          endif
-
-! Calculate thermal conductivity & diffusivity
-!
-      D_th = f(l1:l2,m,n,iviscosity)/Pr_number
-!
-      if (lpencil(i_lambda)) p%lambda = p%cp*p%rho*D_th
-      if (lpencil(i_glambda)) then         
-         call grad(f(:,:,:,icp),p%glncp)
-         do i = 1,3
-           p%glncp(:,i) = p%glncp(:,i)/p%cp
-           glnDiff_full_add(:,i) = p%gradnu(:,i)/p%nu
-           p%glambda(:,i) = p%lambda*(p%glnrho(:,i)+glnDiff_full_add(:,i) + p%glncp(:,i)) 
-         enddo
-      endif
-!
-!  Energy per unit mass
-!
-      if (lpencil(i_ee)) p%ee = p%cv*p%TT
 !
 !  Temperature
 !
@@ -534,41 +496,584 @@ module EquationOfState
 !  Temperature laplacian and gradient
 !
         if (lpenc_loc(i_glnTT)) then
-         if (ltemperature_nolog) then
-           call grad(f,iTT,p%glnTT)
-           p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
-           p%glnTT(:,2)=p%glnTT(:,2)/p%TT(:)
-           p%glnTT(:,3)=p%glnTT(:,3)/p%TT(:)
-         else
-           call grad(f,ilnTT,p%glnTT)
-         endif
+          if (ltemperature_nolog) then
+            call grad(f,iTT,p%glnTT)
+            p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
+            p%glnTT(:,2)=p%glnTT(:,2)/p%TT(:)
+            p%glnTT(:,3)=p%glnTT(:,3)/p%TT(:)
+          else
+            call grad(f,ilnTT,p%glnTT)
+          endif
         endif
 !
         if (ltemperature_nolog) then
           if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
-         !NILS: The call below does not yield del2lnTT but rather del2TT,
-         !NILS: this should be fixed before used. One should also look
-         !NILS: through the chemistry module to make sure del2lnTT is used
-         !NILS: corectly.
-          if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+!          call dot2(p%gTT,gradTgradT) 
+!          call del2(f,iTT,del2TT)
+!          p%del2lnTT = -1./p%TT/p%TT*gradTgradT+1./p%TT*del2TT
           call fatal_error('calc_pencils_eos',&
               'del2lnTT is not correctly implemented - this must be fixed!')
         else
           if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
+
+!
+! Viscosity of a mixture
+!
+      if (lpencil(i_nu)) then
+          p%nu = f(l1:l2,m,n,iviscosity)
+        if (lpencil(i_gradnu)) then
+          call grad(f(:,:,:,iviscosity),p%gradnu)
+        endif
+      endif
+!
+! p%ghhk moved from chemistry to eos as it depends on p%cp
+!
+      if (lpencil(i_ghhk)) then
+        do k = 1,nchemspec
+          if (species_constants(k,imass) > 0.)  then
+            do i = 1,3
+! In the chemistry module this was coded as:
+! p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
+              p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
+            enddo
+          endif
+        enddo
+      endif
+!
+! Calculate thermal conductivity & diffusivity
+!
+      D_th = f(l1:l2,m,n,iviscosity)/Pr_number
+      if (lpencil(i_lambda)) p%lambda = p%cp*p%rho*D_th
+      if (lpencil(i_glambda)) then         
+         call grad(f(:,:,:,icp),p%glncp)
+         do i = 1,3
+           p%glncp(:,i) = p%glncp(:,i)*p%cp1
+           ! Assuming Le = 1
+           glnDiff_full_add(:,i) = p%gradnu(:,i)/p%nu
+           p%glambda(:,i) = p%lambda*(p%glnrho(:,i)+glnDiff_full_add(:,i) + p%glncp(:,i)) 
+         enddo
+      endif
 !
 !  Mean molecular weight
 !
-      p%mu1=0.
+!        p%mu1=0.
+!        do k=1,nchemspec
+!          if (species_constants(k,imass)>0.) then
+!            p%mu1(:)= p%mu1(:)+f(l1:l2,m,n,ichemspec(k))/species_constants(k,imass)
+!          endif
+!        enddo
+!
+      mu1_full = 0.
       do k=1,nchemspec
         if (species_constants(k,imass)>0.) then
-              p%mu1(:)= p%mu1(:)+f(l1:l2,m,n,ichemspec(k))/species_constants(k,imass)
+! Why that does not result in the same as nested do loops below?
+!          do j2=m-3,m+3
+!              mu1_full(:,j2,n)= &
+!                  mu1_full(:,j2,n)+f(:,j2,n,ichemspec(k))/species_constants(k,imass)
+!          enddo
+!          do j3=n-3,n+3
+!              mu1_full(:,m,j3)= &
+!                  mu1_full(:,m,j3)+f(:,m,j3,ichemspec(k))/species_constants(k,imass)
+!          enddo
+          do j2=m-3,m+3
+            do j3=n-3,n+3
+              mu1_full(:,j2,j3)= &
+                  mu1_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))/species_constants(k,imass)
+            enddo
+          enddo
         endif
       enddo
+      p%mu1(:) = mu1_full(l1:l2,m,n)
 !
-!  Pressure (removed)
+!  Pressure
+!
+        if (lpenc_loc(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
+        call grad_other_chem(mu1_full(:,m-3:m+3,n-3:n+3),p%gmu1)
+!
+!  Logarithmic pressure gradient
+!
+        if (lpenc_loc(i_rho1gpp)) then
+          do i=1,3
+            p%rho1gpp(:,i) = p%pp/p%rho(:) &
+               *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+          enddo
+        endif
+!
+!  Energy per unit mass (this is not used now)
+!
+       if (lpencil(i_ee)) p%ee = p%cv*p%TT
+!
+! Gradient of lnpp (removed)
+!
+! This is not used now since advec_cs2 is not computed
+      if (lpencil(i_cs2)) then
+        if (any(p%cv1 == 0.0)) then
+        else
+          p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
+        endif
+      endif
 !
     endsubroutine calc_pencils_eos_pencpar
+!***********************************************************************
+    subroutine grad_other_chem(f,g)
+!
+!  For non 'mvar' variable calculate gradient of a scalar, get vector
+!
+!  26-nov-02/tony: coded
+!
+      use Deriv, only: der
+!
+      real, dimension (:,:,:) :: f
+      real, dimension (nx,3) :: g
+      real, dimension (nx) :: tmp
+!
+      intent(in) :: f
+      intent(out) :: g
+!
+!  Uses overloaded der routine.
+!
+      call der_other_chem(f,tmp,1); g(:,1)=tmp
+      call der_other_chem(f,tmp,2); g(:,2)=tmp
+      call der_other_chem(f,tmp,3); g(:,3)=tmp
+!
+    endsubroutine grad_other_chem
+!***********************************************************************
+    subroutine der_other_chem(f,df,j)
+!
+!  Along one pencil in NON f variable
+!  calculate derivative of a scalar, get scalar
+!  accurate to 6th order, explicit, periodic
+!  replace cshifts by explicit construction -> x6.5 faster!
+!
+!  26-nov-02/tony: coded - duplicate der_main but without k subscript
+!                          then overload the der interface.
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
+!  30-sep-16/MR: allow results dimensions > nx
+!
+      real, dimension (:,:,:) :: f
+      real, dimension (:) :: df
+      integer :: j
+!
+      intent(in)  :: f,j
+      intent(out) :: df
+
+      real, dimension (size(df)) :: fac
+      integer :: l1_, l2_, sdf
+!
+!debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
+!debug                          der_call_count(1,icount_der_other,j,1) + 1
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          fac=(1./60)*dx_1(l1:l2)
+          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
+                  -  9.0*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
+                  +      (f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
+        endif
+      else
+        sdf=size(df)
+        if (sdf>nx) then
+          l1_=1; l2_=sdf
+        else
+          l1_=l1; l2_=l2 
+        endif
+         if (j==2) then
+          if (nygrid/=1) then
+            fac=(1./60)*dy_1(m)
+            df=fac*(+ 45.0*(f(l1_:l2_,m+1,n)-f(l1_:l2_,m-1,n)) &
+                    -  9.0*(f(l1_:l2_,m+2,n)-f(l1_:l2_,m-2,n)) &
+                    +      (f(l1_:l2_,m+3,n)-f(l1_:l2_,m-3,n)))
+            if (lspherical_coords)     df=df*r1_mn
+            if (lcylindrical_coords)   df=df*rcyl_mn1
+          else
+            df=0.
+            if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
+          endif
+        elseif (j==3) then
+          if (nzgrid/=1) then
+            fac=(1./60)*dz_1(n)
+            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
+                    -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
+                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+            if (lspherical_coords) df=df*r1_mn*sin1th(m)
+          else
+            df=0.
+            if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
+          endif
+        endif
+      endif
+!
+    endsubroutine der_other_chem
+!***********************************************************************
+    subroutine find_mass(element_name,MolMass)
+!
+!  Find mass of element
+!
+!  05-feb-08/nils: coded
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=*), intent(in) :: element_name
+      real, intent(out) :: MolMass
+!
+      select case (element_name)
+      case ('H')
+        MolMass=1.00794
+      case ('C')
+        MolMass=12.0107
+      case ('N')
+        MolMass=14.00674
+      case ('O')
+        MolMass=15.9994
+      case ('Ar','AR')
+        MolMass=39.948
+      case ('He','HE')
+        MolMass=4.0026
+      case ('S')
+        MolMass=32.0655
+      case ('CLOUD')
+        MolMass=0.
+      case default
+        if (lroot) print*,'element_name=',element_name
+        call stop_it('find_mass: Element not found!')
+      end select
+!
+    endsubroutine find_mass
+!***********************************************************************
+   subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
+!
+!  Find index in the f array for specie
+!
+!  05-feb-08/nils: coded
+!
+      integer, intent(out) :: ind_glob
+      integer, intent(inout) :: ind_chem
+      character (len=*), intent(in) :: species_name
+      integer :: k
+      logical, intent(out) :: found_specie
+!
+      ind_glob=0
+    !  ind_chem=0
+      do k=1,nchemspec
+        if (trim(varname(ichemspec(k)))==species_name) then
+          ind_glob=k+ichemspec(1)-1
+          ind_chem=k
+          exit
+        endif
+!print*, trim(varname(ichemspec(k))),(species_name)
+      enddo
+!
+!  Check if the species was really found
+!
+      if ((ind_glob==0)) then
+        found_specie=.false.
+     !  if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem,species_name
+     !   call fatal_error('find_species_index',&
+      !                 'no species has been found')
+      else
+        found_specie=.true.
+    !    if (lroot) print*,species_name,'   species index= ',ind_chem
+      endif
+!
+    endsubroutine find_species_index
+!***********************************************************************
+    subroutine read_species(input_file)
+!
+!  This subroutine reads all species information from chem.inp
+!  See the chemkin manual for more information on
+!  the syntax of chem.inp.
+!
+!  06-mar-08/nils: coded
+!
+      use Mpicomm, only: stop_it
+!
+      logical :: IsSpecie=.false., emptyfile
+      integer :: k,file_id=123, StartInd, StopInd
+      character (len=80) :: ChemInpLine
+      character (len=*) :: input_file
+!
+      emptyFile=.true.
+      k=1
+      open(file_id,file=input_file)
+      dataloop: do
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+!
+!  Check if we are reading a line within the species section
+!
+        if (ChemInpLine(1:7)=="SPECIES")            IsSpecie=.true.
+        if (ChemInpLine(1:3)=="END" .and. IsSpecie) IsSpecie=.false.
+!
+!  Read in species
+!
+        if (IsSpecie) then
+          if (ChemInpLine(1:7) /= "SPECIES") then
+            StartInd=1; StopInd =0
+            stringloop: do
+              StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+              if (StopInd==StartInd) then
+                StartInd=StartInd+1
+              else
+                if (k>nchemspec) then
+                  print*,'nchemspec=',nchemspec
+                  call stop_it("There were too many species, "//&
+                      "please increase nchemspec!")
+                endif
+                varname(ichemspec(k))=trim(ChemInpLine(StartInd:StopInd-1))
+                StartInd=StopInd
+                k=k+1
+              endif
+              if (StartInd==80) exit
+            enddo stringloop
+          endif
+        endif
+      enddo dataloop
+!
+!  Stop if chem.inp is empty
+!
+1000  if (emptyFile)  call stop_it('The input file chem.inp was empty!')
+!
+!  Check if nchemspec where not too large
+!
+      if (k<nchemspec-1) then
+        print*,'nchemspec=',nchemspec
+        call stop_it("There were too few species, "//&
+            "please decrease nchemspec!")
+      endif
+!
+      close(file_id)
+!
+    endsubroutine read_species
+!***********************************************************************
+   subroutine read_thermodyn(input_file)
+!
+!  This subroutine reads the thermodynamical data for all species
+!  from chem.inp. See the chemkin manual for more information on
+!  the syntax of chem.inp.
+!
+!  06-mar-08/nils: coded
+!
+      character (len=*), intent(in) :: input_file
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      integer :: In1,In2,In3,In4,In5,iElement,iTemperature,StopInd
+      integer :: NumberOfElement_i
+      logical :: IsThermo=.false., found_specie, existing_specie
+      real, dimension(4) :: MolMass
+      real, dimension(3) :: tmp_temp
+      character (len=5) :: NumberOfElement_string,element_string
+      character (len=10) :: specie_string,TemperatureNr_i
+      real :: nne
+      integer, dimension(7) :: iaa1,iaa2
+!
+      integer :: iTemp1=2,iTemp2=3,iTemp3=4
+!
+      ind_chem=0
+!
+!  Initialize some index pointers
+!
+      iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
+      iaa1(5)=9;iaa1(6)=10;iaa1(7)=11
+!
+      iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
+      iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
+!
+      open(file_id,file=input_file)
+      dataloop2: do
+        read(file_id,'(80A)',end=1001) ChemInpLine(1:80)
+!
+! Check if we are reading a line within the thermo section
+!
+        if (ChemInpLine(1:6)=="THERMO") IsThermo=.true.
+        if (ChemInpLine(1:3)=="END" .and. IsThermo) IsThermo=.false.
+!
+! Read in thermo data
+!
+        if (IsThermo) then
+          if (ChemInpLine(1:7) /= "THERMO") then
+            StopInd=index(ChemInpLine,' ')
+            specie_string=trim(ChemInpLine(1:StopInd-1))
+!
+            call find_species_index(specie_string,ind_glob,ind_chem,&
+                found_specie)
+!
+! Check if we are working with a specie that was found under the SPECIES
+! section of chem.inp.
+!
+            if (ChemInpLine(80:80)=="1") then
+              if (found_specie) then
+                existing_specie=.true.
+              else
+                existing_specie=.false.
+              endif
+            endif
+!
+! What problems are in the case of  ind_chem=0?
+!
+            if (ind_chem>0 .and. ind_chem<=nchemspec) then
+!
+            if (existing_specie) then
+            if (found_specie) then
+!
+! Find molar mass
+!
+              MolMass=0
+              do iElement=1,4
+                In1=25+(iElement-1)*5
+                In2=26+(iElement-1)*5
+                In3=27+(iElement-1)*5
+                In4=29+(iElement-1)*5
+                if (ChemInpLine(In1:In1)==' ') then
+                  MolMass(iElement)=0
+                else
+                  element_string=trim(ChemInpLine(In1:In2))
+                  call find_mass(element_string,MolMass(iElement))
+                  In5=verify(ChemInpLine(In3:In4),' ')+In3-1
+                  NumberOfElement_string=trim(ChemInpLine(In5:In4))
+                  read (unit=NumberOfElement_string,fmt='(I5)') &
+                      NumberOfElement_i
+                  MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
+                endif
+              enddo
+              species_constants(ind_chem,imass)=sum(MolMass)
+!
+! Find temperature-ranges for low and high temperature fitting
+!
+              do iTemperature=1,3
+                In1=46+(iTemperature-1)*10
+                In2=55+(iTemperature-1)*10
+                if (iTemperature==3) In2=73
+                In3=verify(ChemInpLine(In1:In2),' ')+In1-1
+                TemperatureNr_i=trim(ChemInpLine(In3:In2))
+                read (unit=TemperatureNr_i,fmt='(F10.1)') nne
+                tmp_temp(iTemperature)=nne
+              enddo
+              species_constants(ind_chem,iTemp1)=tmp_temp(1)
+              species_constants(ind_chem,iTemp2)=tmp_temp(3)
+              species_constants(ind_chem,iTemp3)=tmp_temp(2)
+!
+            elseif (ChemInpLine(80:80)=="2") then
+              ! Read iaa1(1):iaa1(5)
+              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
+                  species_constants(ind_chem,iaa1(1):iaa1(5))
+!
+            elseif (ChemInpLine(80:80)=="3") then
+              ! Read iaa1(6):iaa5(3)
+              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
+                  species_constants(ind_chem,iaa1(6):iaa2(3))
+            elseif (ChemInpLine(80:80)=="4") then
+              ! Read iaa2(4):iaa2(7)
+              read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
+                  species_constants(ind_chem,iaa2(4):iaa2(7))
+            endif
+!
+          endif
+          endif
+          endif !(from ind_chem>0 query)
+        endif
+      enddo dataloop2
+1001  continue
+      close(file_id)
+!
+   endsubroutine read_thermodyn
+!***********************************************************************
+    subroutine write_thermodyn
+!
+!  This subroutine writes the thermodynamical data for every specie
+!  to ./data/chem.out.
+!
+!  06-mar-08/nils: coded
+!
+      use General
+!
+      character (len=fnlen) :: input_file="./data/chem.out"
+      character (len=intlen) :: ispec
+      integer :: file_id=123,k
+      integer, dimension(7) :: iaa1,iaa2
+      integer :: iTemp1=2,iTemp3=4
+!
+!      Initialize some index pointers
+!
+      iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
+      iaa1(5)=9;iaa1(6)=10;iaa1(7)=11
+!
+      iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
+      iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
+!
+      open(file_id,file=input_file)
+      write(file_id,*) 'Specie'
+      write(file_id,*) 'MolMass Temp1 Temp2 Temp3'
+      write(file_id,*) 'a1(1)  a1(2)  a1(3)  a1(4)  a1(5)  a1(6)  a1(7)'
+      write(file_id,*) 'a2(1)  a2(2)  a2(3)  a2(4)  a2(5)  a2(6)  a2(7)'
+      write(file_id,*) '***********************************************'
+      dataloop2: do k=1,nchemspec
+        write(file_id,*) varname(ichemspec(k))
+        write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),&
+            species_constants(k,iTemp1:iTemp3)
+        write(file_id,'(7E12.5)') species_constants(k,iaa1)
+        write(file_id,'(7E12.5)') species_constants(k,iaa2)
+      enddo dataloop2
+!
+      close(file_id)
+!
+      if (lroot) then
+        print*,'Write pc_constants.pro in chemistry.f90'
+        open (143,FILE=trim(datadir)//'/pc_constants.pro',POSITION="append")
+        write (143,*) 'specname=strarr(',nchemspec,')'
+        write (143,*) 'specmass=fltarr(',nchemspec,')'
+        do k=1,nchemspec
+          ispec=itoa(k-1)
+          write (143,*) 'specname[',trim(ispec),']=',"'",&
+              trim(varname(ichemspec(k))),"'"
+          write (143,*) 'specmass[',trim(ispec),']=',species_constants(k,imass)
+        enddo
+        close (143)
+      endif
+!
+    endsubroutine write_thermodyn
+!***********************************************************************
+    subroutine read_eos_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=eos_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_eos_init_pars
+!***********************************************************************
+    subroutine write_eos_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=eos_init_pars)
+!
+    endsubroutine write_eos_init_pars
+!***********************************************************************
+    subroutine read_eos_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=eos_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_eos_run_pars
+!***********************************************************************
+    subroutine write_eos_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=eos_run_pars)
+!
+    endsubroutine write_eos_run_pars
+!***********************************************************************
+!**************ONLY DUMMY ROUTINES BELOW********************************
 !***********************************************************************
    subroutine ioninit(f)
 !
@@ -815,42 +1320,6 @@ module EquationOfState
       call keep_compiler_quiet(TT)
 !
     endsubroutine get_soundspeed
-!***********************************************************************
-    subroutine read_eos_init_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read(parallel_unit, NML=eos_init_pars, IOSTAT=iostat)
-!
-    endsubroutine read_eos_init_pars
-!***********************************************************************
-    subroutine write_eos_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit, NML=eos_init_pars)
-!
-    endsubroutine write_eos_init_pars
-!***********************************************************************
-    subroutine read_eos_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read(parallel_unit, NML=eos_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_eos_run_pars
-!***********************************************************************
-    subroutine write_eos_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write(unit, NML=eos_run_pars)
-!
-    endsubroutine write_eos_run_pars
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !
@@ -1266,333 +1735,6 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hdss_z_iso
-!***********************************************************************
-    subroutine find_mass(element_name,MolMass)
-!
-!  Find mass of element
-!
-!  05-feb-08/nils: coded
-!
-      use Mpicomm, only: stop_it
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-      select case (element_name)
-      case ('H')
-        MolMass=1.00794
-      case ('C')
-        MolMass=12.0107
-      case ('N')
-        MolMass=14.00674
-      case ('O')
-        MolMass=15.9994
-      case ('Ar','AR')
-        MolMass=39.948
-      case ('He','HE')
-        MolMass=4.0026
-      case ('S')
-        MolMass=32.0655
-      case ('CLOUD')
-        MolMass=0.
-      case default
-        if (lroot) print*,'element_name=',element_name
-        call stop_it('find_mass: Element not found!')
-      end select
-!
-    endsubroutine find_mass
-!***********************************************************************
-   subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-!  Find index in the f array for specie
-!
-!  05-feb-08/nils: coded
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      integer :: k
-      logical, intent(out) :: found_specie
-!
-      ind_glob=0
-    !  ind_chem=0
-      do k=1,nchemspec
-        if (trim(varname(ichemspec(k)))==species_name) then
-          ind_glob=k+ichemspec(1)-1
-          ind_chem=k
-          exit
-        endif
-!print*, trim(varname(ichemspec(k))),(species_name)
-      enddo
-!
-!  Check if the species was really found
-!
-      if ((ind_glob==0)) then
-        found_specie=.false.
-     !  if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem,species_name
-     !   call fatal_error('find_species_index',&
-      !                 'no species has been found')
-      else
-        found_specie=.true.
-    !    if (lroot) print*,species_name,'   species index= ',ind_chem
-      endif
-!
-    endsubroutine find_species_index
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-!  This subroutine reads all species information from chem.inp
-!  See the chemkin manual for more information on
-!  the syntax of chem.inp.
-!
-!  06-mar-08/nils: coded
-!
-      use Mpicomm, only: stop_it
-!
-      logical :: IsSpecie=.false., emptyfile
-      integer :: k,file_id=123, StartInd, StopInd
-      character (len=80) :: ChemInpLine
-      character (len=*) :: input_file
-!
-      emptyFile=.true.
-      k=1
-      open(file_id,file=input_file)
-      dataloop: do
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-        emptyFile=.false.
-!
-!  Check if we are reading a line within the species section
-!
-        if (ChemInpLine(1:7)=="SPECIES")            IsSpecie=.true.
-        if (ChemInpLine(1:3)=="END" .and. IsSpecie) IsSpecie=.false.
-!
-!  Read in species
-!
-        if (IsSpecie) then
-          if (ChemInpLine(1:7) /= "SPECIES") then
-            StartInd=1; StopInd =0
-            stringloop: do
-              StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-              if (StopInd==StartInd) then
-                StartInd=StartInd+1
-              else
-                if (k>nchemspec) then
-                  print*,'nchemspec=',nchemspec
-                  call stop_it("There were too many species, "//&
-                      "please increase nchemspec!")
-                endif
-                varname(ichemspec(k))=trim(ChemInpLine(StartInd:StopInd-1))
-                StartInd=StopInd
-                k=k+1
-              endif
-              if (StartInd==80) exit
-            enddo stringloop
-          endif
-        endif
-      enddo dataloop
-!
-!  Stop if chem.inp is empty
-!
-1000  if (emptyFile)  call stop_it('The input file chem.inp was empty!')
-!
-!  Check if nchemspec where not too large
-!
-      if (k<nchemspec-1) then
-        print*,'nchemspec=',nchemspec
-        call stop_it("There were too few species, "//&
-            "please decrease nchemspec!")
-      endif
-!
-      close(file_id)
-!
-    endsubroutine read_species
-!***********************************************************************
-   subroutine read_thermodyn(input_file)
-!
-!  This subroutine reads the thermodynamical data for all species
-!  from chem.inp. See the chemkin manual for more information on
-!  the syntax of chem.inp.
-!
-!  06-mar-08/nils: coded
-!
-      character (len=*), intent(in) :: input_file
-      integer :: file_id=123, ind_glob, ind_chem
-      character (len=80) :: ChemInpLine
-      integer :: In1,In2,In3,In4,In5,iElement,iTemperature,StopInd
-      integer :: NumberOfElement_i
-      logical :: IsThermo=.false., found_specie, existing_specie
-      real, dimension(4) :: MolMass
-      real, dimension(3) :: tmp_temp
-      character (len=5) :: NumberOfElement_string,element_string
-      character (len=10) :: specie_string,TemperatureNr_i
-      real :: nne
-      integer, dimension(7) :: iaa1,iaa2
-!
-      integer :: iTemp1=2,iTemp2=3,iTemp3=4
-!
-      ind_chem=0
-!
-!  Initialize some index pointers
-!
-      iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
-      iaa1(5)=9;iaa1(6)=10;iaa1(7)=11
-!
-      iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
-      iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
-!
-      open(file_id,file=input_file)
-      dataloop2: do
-        read(file_id,'(80A)',end=1001) ChemInpLine(1:80)
-!
-! Check if we are reading a line within the thermo section
-!
-        if (ChemInpLine(1:6)=="THERMO") IsThermo=.true.
-        if (ChemInpLine(1:3)=="END" .and. IsThermo) IsThermo=.false.
-!
-! Read in thermo data
-!
-        if (IsThermo) then
-          if (ChemInpLine(1:7) /= "THERMO") then
-            StopInd=index(ChemInpLine,' ')
-            specie_string=trim(ChemInpLine(1:StopInd-1))
-!
-            call find_species_index(specie_string,ind_glob,ind_chem,&
-                found_specie)
-!
-! Check if we are working with a specie that was found under the SPECIES
-! section of chem.inp.
-!
-            if (ChemInpLine(80:80)=="1") then
-              if (found_specie) then
-                existing_specie=.true.
-              else
-                existing_specie=.false.
-              endif
-            endif
-!
-! What problems are in the case of  ind_chem=0?
-!
-            if (ind_chem>0 .and. ind_chem<=nchemspec) then
-!
-            if (existing_specie) then
-            if (found_specie) then
-!
-! Find molar mass
-!
-              MolMass=0
-              do iElement=1,4
-                In1=25+(iElement-1)*5
-                In2=26+(iElement-1)*5
-                In3=27+(iElement-1)*5
-                In4=29+(iElement-1)*5
-                if (ChemInpLine(In1:In1)==' ') then
-                  MolMass(iElement)=0
-                else
-                  element_string=trim(ChemInpLine(In1:In2))
-                  call find_mass(element_string,MolMass(iElement))
-                  In5=verify(ChemInpLine(In3:In4),' ')+In3-1
-                  NumberOfElement_string=trim(ChemInpLine(In5:In4))
-                  read (unit=NumberOfElement_string,fmt='(I5)') &
-                      NumberOfElement_i
-                  MolMass(iElement)=MolMass(iElement)*NumberOfElement_i
-                endif
-              enddo
-              species_constants(ind_chem,imass)=sum(MolMass)
-!
-! Find temperature-ranges for low and high temperature fitting
-!
-              do iTemperature=1,3
-                In1=46+(iTemperature-1)*10
-                In2=55+(iTemperature-1)*10
-                if (iTemperature==3) In2=73
-                In3=verify(ChemInpLine(In1:In2),' ')+In1-1
-                TemperatureNr_i=trim(ChemInpLine(In3:In2))
-                read (unit=TemperatureNr_i,fmt='(F10.1)') nne
-                tmp_temp(iTemperature)=nne
-              enddo
-              species_constants(ind_chem,iTemp1)=tmp_temp(1)
-              species_constants(ind_chem,iTemp2)=tmp_temp(3)
-              species_constants(ind_chem,iTemp3)=tmp_temp(2)
-!
-            elseif (ChemInpLine(80:80)=="2") then
-              ! Read iaa1(1):iaa1(5)
-              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                  species_constants(ind_chem,iaa1(1):iaa1(5))
-!
-            elseif (ChemInpLine(80:80)=="3") then
-              ! Read iaa1(6):iaa5(3)
-              read (unit=ChemInpLine(1:75),fmt='(5E15.8)')  &
-                  species_constants(ind_chem,iaa1(6):iaa2(3))
-            elseif (ChemInpLine(80:80)=="4") then
-              ! Read iaa2(4):iaa2(7)
-              read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
-                  species_constants(ind_chem,iaa2(4):iaa2(7))
-            endif
-!
-          endif
-          endif
-          endif !(from ind_chem>0 query)
-        endif
-      enddo dataloop2
-1001  continue
-      close(file_id)
-!
-   endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine write_thermodyn
-!
-!  This subroutine writes the thermodynamical data for every specie
-!  to ./data/chem.out.
-!
-!  06-mar-08/nils: coded
-!
-      use General
-!
-      character (len=fnlen) :: input_file="./data/chem.out"
-      character (len=intlen) :: ispec
-      integer :: file_id=123,k
-      integer, dimension(7) :: iaa1,iaa2
-      integer :: iTemp1=2,iTemp3=4
-!
-!      Initialize some index pointers
-!
-      iaa1(1)=5;iaa1(2)=6;iaa1(3)=7;iaa1(4)=8
-      iaa1(5)=9;iaa1(6)=10;iaa1(7)=11
-!
-      iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
-      iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
-!
-      open(file_id,file=input_file)
-      write(file_id,*) 'Specie'
-      write(file_id,*) 'MolMass Temp1 Temp2 Temp3'
-      write(file_id,*) 'a1(1)  a1(2)  a1(3)  a1(4)  a1(5)  a1(6)  a1(7)'
-      write(file_id,*) 'a2(1)  a2(2)  a2(3)  a2(4)  a2(5)  a2(6)  a2(7)'
-      write(file_id,*) '***********************************************'
-      dataloop2: do k=1,nchemspec
-        write(file_id,*) varname(ichemspec(k))
-        write(file_id,'(F10.2,3F10.2)') species_constants(k,imass),&
-            species_constants(k,iTemp1:iTemp3)
-        write(file_id,'(7E12.5)') species_constants(k,iaa1)
-        write(file_id,'(7E12.5)') species_constants(k,iaa2)
-      enddo dataloop2
-!
-      close(file_id)
-!
-      if (lroot) then
-        print*,'Write pc_constants.pro in chemistry.f90'
-        open (143,FILE=trim(datadir)//'/pc_constants.pro',POSITION="append")
-        write (143,*) 'specname=strarr(',nchemspec,')'
-        write (143,*) 'specmass=fltarr(',nchemspec,')'
-        do k=1,nchemspec
-          ispec=itoa(k-1)
-          write (143,*) 'specname[',trim(ispec),']=',"'",&
-              trim(varname(ichemspec(k))),"'"
-          write (143,*) 'specmass[',trim(ispec),']=',species_constants(k,imass)
-        enddo
-        close (143)
-      endif
-!
-    endsubroutine write_thermodyn
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

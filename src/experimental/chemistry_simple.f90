@@ -42,9 +42,7 @@ module Chemistry
 ! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
-  real :: Diff_coef_const=impossible
   real :: Sc_number=0.7
-  real :: Cv_const=impossible
   logical :: lfix_Sc=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
   character(len=30) :: reac_rate_method = 'chemkin'
@@ -88,7 +86,6 @@ module Chemistry
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
   real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp
-!     integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
   real, allocatable, dimension(:,:) :: kreactions_z
   real, allocatable, dimension(:) :: kreactions_m, kreactions_p
   logical, allocatable, dimension(:) :: back
@@ -97,9 +94,6 @@ module Chemistry
 !  logical :: ldamp_zone_for_NSCBC=.false.
   logical :: linit_temperature=.false., linit_density=.false.
   logical :: lreac_as_aux=.false.
-!
-! 1step_test case
-! possible, will be removed later
 !
   logical :: lflame_front=.false.
 !
@@ -148,7 +142,7 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, &
-      lThCond_simple,lambda_const, visc_const,Cv_const,Diff_coef_const, &
+      lThCond_simple,lambda_const, visc_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
       init_TT2,init_rho, &
       init_ux,init_uy,init_uz,Sc_number,init_pressure,lfix_Sc, &
@@ -239,7 +233,7 @@ module Chemistry
         ichemspec(k) = ichemspec_tmp+k-1
       enddo
 !
-!  Register viscosity
+!  Register viscosity and cp
 !
       call farray_register_auxiliary('viscosity',iviscosity,communicated=.false.)
       call farray_register_auxiliary('cp',icp,communicated=.false.)
@@ -410,10 +404,10 @@ module Chemistry
 !  Read in data file in ChemKin format
 !
       if (lcheminp) then
-        call chemkin_data(f)
+        call chemkin_data
         data_file_exit = .true.
       else
-        call chemkin_data_simple(f)
+        call chemkin_data_simple
         data_file_exit = .true.
       endif
 !
@@ -651,7 +645,7 @@ module Chemistry
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      lpencil_in(i_lambda) = .true.
+!      lpencil_in(i_lambda) = .true.
 !
       if (lpencil_in(i_H0_RT).or. lpencil_in(i_S0_R))  then
         lpencil_in(i_TT) = .true.
@@ -700,7 +694,7 @@ module Chemistry
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4, D_th
-      real, dimension(nchemspec) ::  cp_k, cv_k, Le = 1.
+      real, dimension(nchemspec) :: Le = 1.
       real, dimension(nx,3) :: glnDiff_full_add
 !
         TT_2 = p%TT*p%TT
@@ -757,7 +751,6 @@ module Chemistry
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
             T_loc = p%TT
-!T_loc= exp(f(l1:l2,m,n,ilnTT))
             where (T_loc <= T_mid .and. T_low <= T_loc)
               p%S0_R(:,k) = species_constants(k,iaa2(ii1))*p%lnTT &
                   +species_constants(k,iaa2(ii2))*T_loc &
@@ -1045,16 +1038,76 @@ module Chemistry
 ! lambda_Suth in [g/(cm*s*K^0.5)]
       real :: lambda_Suth = 1.5e-5, Suth_const = 200.
       integer :: j2,j3, k
+      real, dimension(mx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
+      real :: T_up, T_mid, T_low
 
-! cp array
-      do j3 = nn1,nn2
-        do j2 = mm1,mm2
-          f(:,j2,j3,icp) = 0
-          do k = 1,nchemspec
-            f(:,j2,j3,icp) = f(:,j2,j3,icp)+Cp_const/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
-          enddo
-        enddo
-      enddo
+            f(:,:,:,icp) = 0.
+            if (Cp_const < impossible) then
+!
+              do j3 = nn1,nn2
+                do j2 = mm1,mm2
+                  do k = 1,nchemspec
+                    f(:,j2,j3,icp) = f(:,j2,j3,icp)+Cp_const/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
+                  enddo
+                enddo
+              enddo
+!            
+            else
+!
+              do j3 = nn1,nn2
+                do j2 = mm1,mm2
+                  T_loc = exp(f(:,j2,j3,ilnTT))
+                  T_loc_2 = T_loc*T_loc
+                  T_loc_3 = T_loc_2*T_loc
+                  T_loc_4 = T_loc_3*T_loc
+                  do k = 1,nchemspec
+                    if (species_constants(k,imass) > 0.) then
+                      T_low = species_constants(k,iTemp1)-1.
+                      T_mid = species_constants(k,iTemp2)
+                      T_up = species_constants(k,iTemp3)
+!
+                      if (j2 <= m1 .or. j2 >= m2) then
+                        T_low = 0.
+                        T_up = 1e10
+                      endif
+!
+                      if (j3 <= n1 .or. j3 >= n2) then
+                        T_low = 0.
+                        T_up = 1e10
+                      endif
+!
+                      where (T_loc >= T_low .and. T_loc <= T_mid)
+                        cp_R_spec = species_constants(k,iaa2(1)) &
+                          +species_constants(k,iaa2(2))*T_loc &
+                          +species_constants(k,iaa2(3))*T_loc_2 &
+                          +species_constants(k,iaa2(4))*T_loc_3 &
+                          +species_constants(k,iaa2(5))*T_loc_4
+                      elsewhere (T_loc >= T_mid .and. T_loc <= T_up)
+                        cp_R_spec = species_constants(k,iaa1(1)) &
+                          +species_constants(k,iaa1(2))*T_loc &
+                          +species_constants(k,iaa1(3))*T_loc_2 &
+                          +species_constants(k,iaa1(4))*T_loc_3 &
+                          +species_constants(k,iaa1(5))*T_loc_4
+                      endwhere
+!
+! Check if the temperature are within bounds
+!
+                      if (maxval(T_loc) > T_up .or. minval(T_loc) < T_low) then
+                        print*,'iproc=',iproc
+                        print*,'TT_full(:,j2,j3)=',T_loc
+                        print*,'j2,j3=',j2,j3
+                        call inevitably_fatal_error('calc_for_chem_mixture', &
+                        'TT_full(:,j2,j3) is outside range', .true.)
+                      endif
+!
+! Find cp and cv for the mixture for the full domain
+!
+                      f(:,j2,j3,icp) = f(:,j2,j3,icp)+cp_R_spec*Rgas/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
+                    endif
+                  enddo
+                enddo
+              enddo
+            endif
 
 !  Viscosity of a mixture
 !
@@ -1074,8 +1127,6 @@ module Chemistry
       enddo
 !
     endsubroutine calc_for_chem_mixture
-!***********************************************************************
-! subroutine chemspec_normalization(f) was here
 !***********************************************************************
     subroutine dchemistry_dt(f,df,p)
 !
@@ -1098,7 +1149,6 @@ module Chemistry
 !
       use Diagnostics
       use Sub, only: grad,dot_mn
-      use Special, only: special_calc_chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -1140,10 +1190,6 @@ module Chemistry
         endif
 !
 !  diffusion operator
-!
-!  Temporary we check the existence of chem.imp data,
-!  further one should check the existence of a file with
-!  binary diffusion coefficients!
 !
         if (ldiffusion) then
           df(l1:l2,m,n,ichemspec(k)) = df(l1:l2,m,n,ichemspec(k))+p%DYDt_diff(:,k)
@@ -1223,12 +1269,12 @@ module Chemistry
             enddo
           endif
 !
-          if (ltemperature_nolog) then
-            call stop_it('ltemperature_nolog case does not work now!')
-          else
-            RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
-                +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
-          endif
+        if (ltemperature_nolog) then
+          call stop_it('ltemperature_nolog case does not work now!')
+        else
+          RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
+              +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
+        endif
 !
         if (.not. lT_const) then
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + RHS_T_full
@@ -1241,60 +1287,65 @@ module Chemistry
         if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)
       endif
 !
+! The part below is commented because ldt = false all the time and it's
+! never executed (llsode = F, lfirst = T/F depending on sub-timestep)
+! That's because ldt = (dt==0.) in register.f90, and dt is set in run.in
+! file. We'd probably want to compute dt dynamically?
+!
 ! this damping zone is needed in a case of NSCBC
 !
 !      if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (lfirst .and. ldt) then
-print*,'Why never enters here??***********************************************************'
-          diffus_chem=0.
-          do j = 1,nx
-            if (ldiffusion .and. .not. ldiff_simple) then
+!      if (lfirst .and. ldt) then
+!print*,'Why never enters here??***********************************************************'
+!          diffus_chem=0.
+!          do j = 1,nx
+!            if (ldiffusion .and. .not. ldiff_simple) then
 !
 !--------------------------------------
 !  This expression should be discussed
 !--------------------------------------
 !
-              diffus_chem(j) = diffus_chem(j)+ &
-                  maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
-            else
-              diffus_chem(j) = 0.
-            endif
-          enddo
-        maxdiffus=max(maxdiffus,diffus_chem)
-      endif
+!              diffus_chem(j) = diffus_chem(j)+ &
+!                  maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+!            else
+!              diffus_chem(j) = 0.
+!            endif
+!          enddo
+!        maxdiffus=max(maxdiffus,diffus_chem)
+!      endif
 !
 ! NB: it should be discussed
 !
-      if (lfirst .and. ldt) then
-        if (lreactions .and.(.not. llsode)) then
+!      if (lfirst .and. ldt) then
+!        if (lreactions .and.(.not. llsode)) then
 !
 !  calculate maximum of *relative* reaction rate if decaying,
 !  or maximum of absolute rate, if growing.
 !
-          if (lchem_cdtc) then
-            reac_chem = 0.
-            do k = 1,nchemspec
-              reac_chem = max(reac_chem, &
-                  abs(p%DYDt_reac(:,k)/max(f(l1:l2,m,n,ichemspec(k)),.001)))
-            enddo
+!          if (lchem_cdtc) then
+!            reac_chem = 0.
+!            do k = 1,nchemspec
+!              reac_chem = max(reac_chem, &
+!                  abs(p%DYDt_reac(:,k)/max(f(l1:l2,m,n,ichemspec(k)),.001)))
+!            enddo
 !
-          else
-            reac_chem = 0.
-            !sum_reac_rate=0.
-            do k = 1,nchemspec
-              reac_chem = reac_chem+abs(p%DYDt_reac(:,k)/ &
-                  max(f(l1:l2,m,n,ichemspec(k)),0.001))
-              !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
-            enddo
-            if (maxval(reac_chem) > 1e11) then
-              reac_chem = 1e11
-            endif
-          endif
-        endif
-      endif
+!          else
+!            reac_chem = 0.
+!            !sum_reac_rate=0.
+!            do k = 1,nchemspec
+!              reac_chem = reac_chem+abs(p%DYDt_reac(:,k)/ &
+!                  max(f(l1:l2,m,n,ichemspec(k)),0.001))
+!              !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
+!            enddo
+!            if (maxval(reac_chem) > 1e11) then
+!              reac_chem = 1e11
+!            endif
+!          endif
+!        endif
+!      endif
 !
 !  Calculate diagnostic quantities
 !
@@ -1374,7 +1425,7 @@ print*,'Why never enters here??*************************************************
 !  13-aug-07/steveb: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: itoa
+      use General, only: itoa, get_species_nr
 !
       integer :: iname, inamez,ii
       logical :: lreset, lwr
@@ -1387,6 +1438,7 @@ print*,'Why never enters here??*************************************************
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
       character(len=7) :: diagn_diffm
+      character(len=fmtlen) :: sname
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
@@ -1459,6 +1511,16 @@ print*,'Why never enters here??*************************************************
         enddo
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        sname=trim(cnamev(iname))
+        if (sname(1:8)=='chemspec') then
+          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) &
+            cformv(iname)='DEFINED'
+        endif
+      enddo
+!
 !  Write chemistry index in short notation
 !
       if (lwr) then
@@ -1475,170 +1537,24 @@ print*,'Why never enters here??*************************************************
 !  13-aug-07/steveb: dummy
 !  16-may-09/raphael: added more slices
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
       type (slice_data) :: slices
-!
-!  Loop over slices
-!
-      select case (trim(slices%name))
+
+      character(len=fmtlen) :: sname
+      integer :: ispec
 !
 !  Chemical species mass fractions.
 !
-      case ('chemspec')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i1))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i1))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i1))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i1))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i1))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i1))
-        slices%ready = .true.
-      case ('chemspec2')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i2))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i2))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i2))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i2))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i2))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i2))
-        slices%ready = .true.
-      case ('chemspec3')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i3))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i3))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i3))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i3))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i3))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i3))
-        slices%ready = .true.
-      case ('chemspec4')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i4))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i4))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i4))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i4))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i4))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i4))
-        slices%ready = .true.
-      case ('chemspec5')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i5))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i5))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i5))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i5))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i5))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i5))
-        slices%ready = .true.
-      case ('chemspec6')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i6))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i6))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i6))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i6))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i6))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i6))
-        slices%ready = .true.
-      case ('chemspec7')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i7))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i7))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i7))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i7))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i7))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i7))
-        slices%ready = .true.
-      case ('chemspec8')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i8))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i8))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i8))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i8))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i8))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i8))
-        slices%ready = .true.
-      case ('chemspec9')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i9))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i9))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i9))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i9))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i9))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i9))
-        slices%ready = .true.
-      case ('chemspec10')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i10))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i10))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i10))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i10))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i10))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i10))
-        slices%ready = .true.
-      case ('chemspec11')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i11))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i11))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i11))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i11))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i11))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i11))
-        slices%ready = .true.
-      case ('chemspec12')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i12))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i12))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i12))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i12))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i12))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i12))
-        slices%ready = .true.
-      case ('chemspec13')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i13))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i13))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i13))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i13))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i13))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i13))
-        slices%ready = .true.
-      case ('chemspec14')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i14))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i14))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i14))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i14))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i14))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i14))
-        slices%ready = .true.
-      case ('chemspec15')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i15))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i15))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i15))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i15))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i15))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i15))
-        slices%ready = .true.
-      case ('chemspec16')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i16))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i16))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i16))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i16))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i16))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i16))
-        slices%ready = .true.
-      case ('chemspec17')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i17))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i17))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i17))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i17))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i17))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i17))
-        slices%ready = .true.
-      case ('chemspec18')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i18))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i18))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i18))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i18))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i18))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i18))
-        slices%ready = .true.
-      case ('chemspec19')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i19))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i19))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i19))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i19))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i19))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i19))
-        slices%ready = .true.
-      endselect
+      sname=trim(slices%name)
+      if (sname(9:)==' ') then    ! 9=len('chemspec')+1
+        ispec=1
+      else
+        read(sname(9:),'(i3)') ispec
+      endif
+! 
+      call assign_slices_scal(slices,f,ichemspec(ispec))
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
@@ -1784,7 +1700,7 @@ print*,'Why never enters here??*************************************************
 !
     endsubroutine write_reactions
 !***********************************************************************
-    subroutine chemkin_data(f)
+    subroutine chemkin_data
 !
 !  if the file with chemkin data exists
 !  reading the Chemkin data
@@ -1793,7 +1709,6 @@ print*,'Why never enters here??*************************************************
 !                     for each species
 !
       character(len=fnlen) :: input_file
-      real, dimension(mx,my,mz,mfarray) :: f
       integer :: stat, k,i
       character(len=fnlen) :: input_file2="./data/stoich.out"
       integer :: file_id=123
@@ -1820,9 +1735,7 @@ print*,'Why never enters here??*************************************************
             if (stat > 0) call stop_it("Couldn't allocate memory "// &
                 "for binary diffusion coefficients")
           endif
-!
         endif
-!      endif
 !
       if (tran_exist) then
         if (lroot) then
@@ -1949,16 +1862,11 @@ print*,'Why never enters here??*************************************************
 100   format(I1,26f6.1)
 101   format('    ',26A6)
 !
-      call keep_compiler_quiet(f)
-!
     endsubroutine chemkin_data
 !***********************************************************************
-    subroutine chemkin_data_simple(f)
-!
-! 
+    subroutine chemkin_data_simple
 !
       character(len=fnlen) :: input_file
-      real, dimension(mx,my,mz,mfarray) :: f
       integer :: stat, k,i
       character(len=fnlen) :: input_file2="./data/stoich.out"
       integer :: file_id=123
@@ -3462,8 +3370,6 @@ print*,'Why never enters here??*************************************************
 100   format(I1,26f6.1)
 101   format('    ',26A6)
 !
-      call keep_compiler_quiet(f)
-!
     endsubroutine chemkin_data_simple
 !***********************************************************************
     subroutine read_reactions(input_file,NrOfReactions)
@@ -4167,25 +4073,25 @@ print*,'Why never enters here??*************************************************
 !    2) Constant Lewis numbers and heat conductivity
 !
             do i = 1,3
-             gDiff_full_add(:,i) = p%gradnu(:,i)/Pr_number !*Lewis_coef1(k)
+              gDiff_full_add(:,i) = p%gradnu(:,i)/Pr_number !*Lewis_coef1(k)
             enddo
 !
 !  Calculate the terms needed by the diffusion fluxes in a case:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
 !
-              call del2(f,ichemspec(k),del2chemspec)
-              call grad(f,ichemspec(k),gchemspec)
-              call dot_mn(p%glnrho,gchemspec,diff_op1)
-              call dot_mn(gDiff_full_add,gchemspec,diff_op2)
+            call del2(f,ichemspec(k),del2chemspec)
+            call grad(f,ichemspec(k),gchemspec)
+            call dot_mn(p%glnrho,gchemspec,diff_op1)
+            call dot_mn(gDiff_full_add,gchemspec,diff_op2)
 !
 !  Calculate the diffusion fluxes and dk_D in a case:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
 !
-              p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) &
-                  +diff_op2
-              do i = 1,3
-                dk_D(:,i) = p%Diff_penc_add(:,k)*gchemspec(:,i)
-              enddo
+            p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) &
+                +diff_op2
+            do i = 1,3
+              dk_D(:,i) = p%Diff_penc_add(:,k)*gchemspec(:,i)
+            enddo
 !
             if (ldiff_corr) then
               do i = 1,3
@@ -4277,6 +4183,8 @@ print*,'Why never enters here??*************************************************
       real, dimension(nchemspec) ::  cp_k, cv_k
       real, dimension (:,:), allocatable :: TT_full, cp_full, cv_full, mu1_full
 !
+      if (Cp_const < impossible) then
+!
       do k = 1,nchemspec
         cp_k(k) = Cp_const/species_constants(k,imass)
         cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
@@ -4287,7 +4195,7 @@ print*,'Why never enters here??*************************************************
          allocate (cp_full(my,mz))  
          allocate (cv_full(my,mz))  
          allocate (mu1_full(my,mz))  
-         mu1_full=0.
+         mu1_full= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
@@ -4313,7 +4221,7 @@ print*,'Why never enters here??*************************************************
          allocate (cp_full(mx,mz))  
          allocate (cv_full(mx,mz))  
          allocate (mu1_full(mx,mz)) 
-         mu1_full=0.
+         mu1_full= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
@@ -4339,7 +4247,7 @@ print*,'Why never enters here??*************************************************
          allocate (cp_full(mx,my))  
          allocate (cv_full(mx,my))  
          allocate (mu1_full(mx,my)) 
-         mu1_full=0.
+         mu1_full= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
@@ -4364,11 +4272,98 @@ print*,'Why never enters here??*************************************************
          call fatal_error('get_cs2_slice','No such dir!')
       endif
 !
+!print*,'slice cs2',slice
       deallocate (TT_full)  
       deallocate (cp_full)  
       deallocate (cv_full)  
       deallocate (mu1_full) 
 !
+      else
+!
+      if (dir == 1) then
+         allocate (TT_full(my,mz))  
+         allocate (cp_full(my,mz))  
+         allocate (cv_full(my,mz))  
+         allocate (mu1_full(my,mz))  
+         mu1_full= 0.
+         cp_full = 0.
+         cv_full = 0.
+         TT_full = 0.
+         TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=m1,m2
+                  do j3=n1,n2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
+                  enddo
+               enddo
+            endif
+         enddo
+         cv_full = cp_full - Rgas*mu1_full
+         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
+              *mu1_full(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
+      elseif (dir == 2) then
+         allocate (TT_full(mx,mz))  
+         allocate (cp_full(mx,mz))  
+         allocate (cv_full(mx,mz))  
+         allocate (mu1_full(mx,mz)) 
+         mu1_full= 0.
+         cp_full = 0.
+         cv_full = 0.
+         TT_full = 0.
+         TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=n1,n2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
+                  enddo
+               enddo
+            endif
+         enddo
+         cv_full = cp_full - Rgas*mu1_full
+         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
+              *mu1_full(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
+      elseif (dir == 3) then
+         allocate (TT_full(mx,my))  
+         allocate (cp_full(mx,my))  
+         allocate (cv_full(mx,my))  
+         allocate (mu1_full(mx,my)) 
+         mu1_full= 0.
+         cp_full = 0.
+         cv_full = 0.
+         TT_full = 0.
+         TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=m1,m2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
+                  enddo
+               enddo
+            endif
+         enddo
+         cv_full = cp_full - Rgas*mu1_full
+         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
+              *mu1_full(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
+      else
+         call fatal_error('get_cs2_slice','No such dir!')
+      endif
+!
+!print*,'slice cs2',slice
+      deallocate (TT_full)  
+      deallocate (cp_full)  
+      deallocate (cv_full)  
+      deallocate (mu1_full) 
+!
+    endif  
+
     endsubroutine get_cs2_slice
 !***********************************************************************
     subroutine get_gamma_full(gamma_full)
@@ -4394,7 +4389,9 @@ print*,'Why never enters here??*************************************************
       intent(in) :: f
       integer :: j2, j3, k
       real, dimension(nchemspec) ::  cp_k, cv_k
-      real, dimension (:,:), allocatable :: cp_full, cv_full
+      real, dimension (:,:), allocatable :: cp_full, cv_full,mu1_full
+!
+    if (Cp_const < impossible) then
 !
       do k = 1,nchemspec
         cp_k(k) = Cp_const/species_constants(k,imass)
@@ -4405,13 +4402,14 @@ print*,'Why never enters here??*************************************************
          allocate (cp_full(my,mz))  
          allocate (cv_full(my,mz))  
          cp_full = 0.
+         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
          cv_full = 0.
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=m1,m2
                   do j3=n1,n2
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
+!                     cp_full(j2,j3) = &
+!                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
                      cv_full(j2,j3) = &
                           cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
                   enddo
@@ -4423,13 +4421,14 @@ print*,'Why never enters here??*************************************************
          allocate (cp_full(mx,mz))  
          allocate (cv_full(mx,mz))  
          cp_full = 0.
+         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
          cv_full = 0.
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=n1,n2
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
+    !                 cp_full(j2,j3) = &
+    !                      cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
                      cv_full(j2,j3) = &
                           cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
                   enddo
@@ -4441,13 +4440,14 @@ print*,'Why never enters here??*************************************************
          allocate (cp_full(mx,my))  
          allocate (cv_full(mx,my))  
          cp_full = 0.
+         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
          cv_full = 0.
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=m1,m2
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
+       !             cp_full(j2,j3) = &
+       !                   cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
                      cv_full(j2,j3) = &
                           cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
                   enddo
@@ -4461,6 +4461,80 @@ print*,'Why never enters here??*************************************************
 !
       deallocate (cp_full)  
       deallocate (cv_full) 
+!
+    else
+!
+      if (dir == 1) then
+         allocate (cp_full(my,mz))  
+         allocate (cv_full(my,mz))  
+         allocate (mu1_full(mx,my))  
+         mu1_full= 0.
+         cp_full = 0.
+         cv_full = 0.
+         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=m1,m2
+                  do j3=n1,n2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
+                  enddo
+               enddo
+            endif
+         enddo
+         cv_full = cp_full - Rgas*mu1_full
+         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
+      elseif (dir == 2) then
+         allocate (cp_full(mx,mz))  
+         allocate (cv_full(mx,mz))  
+         allocate (mu1_full(mx,my))  
+         mu1_full= 0.
+         cp_full = 0.
+         cv_full = 0.
+         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=n1,n2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
+                  enddo
+               enddo
+            endif
+         enddo
+         cv_full = cp_full - Rgas*mu1_full
+         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
+      elseif (dir == 3) then
+         allocate (cp_full(mx,my))  
+         allocate (cv_full(mx,my))  
+         allocate (mu1_full(mx,my))  
+         mu1_full= 0.
+         cp_full = 0.
+         cv_full = 0.
+         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
+         do k=1,nchemspec
+            if (species_constants(k,imass)>0.) then
+               do j2=l1,l2
+                  do j3=m1,m2
+                     mu1_full(j2,j3)= &
+                          mu1_full(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
+                  enddo
+               enddo
+            endif
+         enddo
+         cv_full = cp_full - Rgas*mu1_full
+         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
+      else
+        call fatal_error('get_gamma_slice','No such dir!')
+      endif
+!
+!print*,'cp_const',cp_const
+!print*,'slice gamma',slice
+      deallocate (cp_full)  
+      deallocate (cv_full) 
+      deallocate (mu1_full)  
+!
+    endif
 !
     endsubroutine get_gamma_slice
 !***********************************************************************
@@ -4790,6 +4864,8 @@ print*,'Why never enters here??*************************************************
       else
          call fatal_error('get_cs2_slice','No such dir!')
       endif
+!print*,'slice',slice
+!print*,'grad_slice',grad_slice
 !
       deallocate (mu1_full) 
 !
@@ -5110,21 +5186,38 @@ print*,'Why never enters here??*************************************************
 !***********************************************************************
     subroutine chemspec_normalization(f)
 !
-!   dummy routine
+!   20-sep-10/Natalia: coded
+!   renormalization of the species
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz) :: sum_Y
+      integer :: k
 !
-      call keep_compiler_quiet(f)
+      sum_Y = 0.
+      do k = 1,nchemspec
+        sum_Y = sum_Y+f(:,:,:,ichemspec(k))
+      enddo
+      do k = 1,nchemspec
+        f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k))/sum_Y
+      enddo
 !
     endsubroutine chemspec_normalization
 !***********************************************************************
     subroutine chemspec_normalization_N2(f)
 !
-!   dummy routine
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: sum_Y !, sum_Y2
+      integer :: k ,isN2, ichemsN2
+      logical :: lsN2
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
+      call find_species_index('N2', isN2, ichemsN2, lsN2 )
+      sum_Y=0.0 !; sum_Y2=0.0
+      do k=1,nchemspec
+        if (k/=ichemsN2) then
+          sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+        endif
+      enddo
+      f(:,:,:,isN2)=1.0-sum_Y
 !
     endsubroutine chemspec_normalization_N2
 !***********************************************************************
