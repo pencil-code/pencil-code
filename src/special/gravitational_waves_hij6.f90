@@ -490,7 +490,9 @@ module Special
       else
         scale_factor=(t+tshift)**nscale_factor_conformal
       endif
-      stress_prefactor2=stress_prefactor/scale_factor**3
+      !stress_prefactor2=stress_prefactor/scale_factor**3
+!AB: correction of Sept 28, 2018
+      stress_prefactor2=stress_prefactor/scale_factor
 !
 !  Assemble rhs of GW equations.
 !
