@@ -99,6 +99,7 @@ module Special
    real, dimension (nx) :: diffus_bb_1, diffus_special
    real, dimension (nx) :: uxbj
    integer :: imu5
+   logical :: ldiffus_mu5_1_old=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
@@ -106,7 +107,7 @@ module Special
       initspecial, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, cdtchiral, gammaf5
+      diffmu5, lambda5, cdtchiral, gammaf5, ldiffus_mu5_1_old
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -300,6 +301,7 @@ module Special
 !  efficiency.
 !
 !  06-oct-03/tony: coded
+!  29-sep-18/axel: included ldiffus_mu5_1_old and modified diffus_mu5_1
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
       use Diagnostics, only: sum_mn_name, max_mn_name
@@ -328,7 +330,11 @@ module Special
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
       +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
-      diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
+      if (ldiffus_mu5_1_old) then
+        diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
+      else
+        diffus_mu5_1 = lambda5*eta*p%b2
+      endif
       diffus_mu5_2 = lambda5*eta*p%b2
       diffus_mu5_3 = diffmu5*dxyz_2
 !                          
