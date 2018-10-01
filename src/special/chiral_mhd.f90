@@ -43,7 +43,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; gmu5(3); del2mu5
+! PENCILS PROVIDED muS; mu5; gmuS(3); gmu5(3); del2mu5
 ! PENCILS PROVIDED ugmu5
 !***************************************************************
 !
@@ -89,28 +89,37 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
+   real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
+   real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
    real :: diffmu5, lambda5, mu5_const=0., gammaf5
+   real :: mu_chem_const=0., coef_mu_chem=0., coef_mu5=0.
    real :: meanmu5=0., flucmu5=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
-   real :: cdtal=1.
+   real :: cdtchiral=1.
    real, dimension (nx) :: diffus_mu5_1, diffus_mu5_2, diffus_mu5_3
    real, dimension (nx) :: diffus_bb_1, diffus_special
    real, dimension (nx) :: uxbj
-   integer :: imu5
-   logical :: ldiffus_mu5_1_old=.false.
+   integer :: imu5, imuS
+   logical :: ldiffus_mu5_1_old=.false., lmu_chem=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial, mu5_const
+      initspecial, mu5_const, &
+      lmu_chem, mu_chem_const, coef_mu_chem, &
+      amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
+      amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, cdtchiral, gammaf5, ldiffus_mu5_1_old
+      diffmu5, lambda5, cdtchiral, gammaf5, ldiffus_mu5_1_old, &
+      coef_mu_chem, coef_mu5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
+  integer :: idiag_muSm=0      ! DIAG_DOC: $\left<\mu_S\right>$
+  integer :: idiag_muSrms=0    ! DIAG_DOC: $\left<\mu_S^2\right>^{1/2}$
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_gmu5rms=0   ! DIAG_DOC: $\left<(\nabla\mu_5)^2\right>^{1/2}$     
@@ -145,6 +154,11 @@ module Special
            "$Id$")
 !
       call farray_register_pde('mu5',imu5)
+!
+      if (lmu_chem) then
+        call farray_register_pde('muS',imuS)
+      endif
+!
 !!      call farray_register_auxiliary('specaux',ispecaux)
 !!      call
 !farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
@@ -221,9 +235,15 @@ module Special
 !
         case ('zero')
           f(:,:,:,imu5) = 0.
+          if (lmu_chem) f(:,:,:,imuS) = 0.
 !
         case ('const')
           f(:,:,:,imu5) = mu5_const
+          if (lmu_chem) f(:,:,:,imuS) = mu_chem_const
+!
+        case ('sinwave-phase')
+          call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
+          call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
 !
         case default
           call fatal_error("init_special: No such value for initspecial:" &
@@ -242,6 +262,10 @@ module Special
 !
       lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
+      if (lmu_chem) then
+        lpenc_requested(i_muS)=.true.
+        lpenc_requested(i_gmuS)=.true.
+      endif
       lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_ugmu5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
@@ -284,6 +308,10 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
+      if (lmu_chem) then
+        if (lpencil(i_muS)) p%muS=f(l1:l2,m,n,imuS)
+        if (lpencil(i_gmuS)) call grad(f,imuS,p%gmuS)
+      endif
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
@@ -316,7 +344,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: bgmu5, EB, uujj, bbjj, gmu52
+      real, dimension (nx) :: bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
       real, dimension (nx,3) :: mu5bb
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -333,9 +361,9 @@ module Special
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
 !JS: added vorticity effect
-!      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5  
-      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 &
-      +p%mu5*p%oo
+        +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5  
+  !     +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 &
+  !     +p%mu5*p%oo
 !JS.
       if (ldiffus_mu5_1_old) then
         diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
@@ -344,12 +372,23 @@ module Special
       endif
       diffus_mu5_2 = lambda5*eta*p%b2
       diffus_mu5_3 = diffmu5*dxyz_2
+!
+!  Evolution of mu_chem
+!
+      if (lmu_chem) then
+        call dot(p%bb,p%gmu5,bdotgmu5)
+        call dot(p%bb,p%gmuS,bdotgmuS)
+        df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
+          -coef_mu_chem*bdotgmu5
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
+          -coef_mu5*bdotgmuS
+      endif
 !                          
 !  Additions to evolution of bb
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb
       endif
       diffus_bb_1 = eta*p%mu5*sqrt(dxyz_2)
 !
@@ -379,6 +418,8 @@ module Special
 !  diagnostics
 !
       if (ldiagnos) then
+        if (idiag_muSm/=0) call sum_mn_name(p%muS,idiag_muSm)
+        if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
         if (idiag_gmu5rms/=0) then
@@ -472,6 +513,7 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_muSm=0; idiag_muSrms=0
         idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; 
         idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
@@ -483,6 +525,8 @@ module Special
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'muSm',idiag_muSm)
+        call parse_name(iname,cname(iname),cform(iname),'muSrms',idiag_muSrms)
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
@@ -544,10 +588,10 @@ module Special
 !  communicate and divide by all mesh meshpoints
 !
 !JEN
-      if (nprocxy>1) then
-      call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
-      endif
-      fact=1./ncpus
+   !  if (nprocxy>1) then
+   !    call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
+   !  endif
+   !  fact=1./ncpus
 !JEN.
       meanmu5=fact*meanmu5_tmp
 !      flucmu5=p%mu5-meanmu5
