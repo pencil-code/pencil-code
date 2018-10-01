@@ -133,7 +133,8 @@ indices = [ $
   { name:'ifcr', label:'Cosmic ray energy flux', dims:3 }, $
   { name:'igtheta5', label:'Chemical potential gradient', dims:3 }, $
   { name:'itheta5', label:'Chemical potential', dims:1 }, $
-  { name:'imu5', label:'Cosmic ray energy density', dims:1 }, $
+  { name:'imuS', label:'Chemical potential', dims:1 }, $
+  { name:'imu5', label:'Chiral chemical potential', dims:1 }, $
   { name:'iam', label:'Meanfield dynamo', dims:3 }, $
   { name:'ipsi_real', label:'Wave function real part', dims:1 }, $
   { name:'ipsi_imag', label:'Wave function imaginary part', dims:1 }, $
@@ -401,6 +402,7 @@ for var = 0, num_vars-1 do begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
       if (num_components gt 1) then idl_var += str (component)
+;stop,"AXEL"
       varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
       varcontent[pos[component-1]-1].idlvar = idl_var
       varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
