@@ -92,7 +92,7 @@ module Special
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
    real :: diffmu5, lambda5, mu5_const=0., gammaf5
-   real :: mu_chem_const=0., coef_mu_chem=0., coef_mu5=0.
+   real :: muS_const=0., coef_muS=0., coef_mu5=0.
    real :: meanmu5=0., flucmu5=0.
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
@@ -102,19 +102,20 @@ module Special
    real, dimension (nx) :: diffus_bb_1, diffus_special
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
-   logical :: ldiffus_mu5_1_old=.false., lmu_chem=.false.
+   logical :: ldiffus_mu5_1_old=.false., lmuS=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
       initspecial, mu5_const, &
-      lmu_chem, mu_chem_const, coef_mu_chem, &
+      lmuS, muS_const, coef_muS, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
-      amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5
+      amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
+      coef_muS, coef_mu5
 !
   namelist /special_run_pars/ &
       diffmu5, lambda5, cdtchiral, gammaf5, ldiffus_mu5_1_old, &
-      coef_mu_chem, coef_mu5
+      coef_muS, coef_mu5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -155,7 +156,7 @@ module Special
 !
       call farray_register_pde('mu5',imu5)
 !
-      if (lmu_chem) then
+      if (lmuS) then
         call farray_register_pde('muS',imuS)
       endif
 !
@@ -235,11 +236,11 @@ module Special
 !
         case ('zero')
           f(:,:,:,imu5) = 0.
-          if (lmu_chem) f(:,:,:,imuS) = 0.
+          if (lmuS) f(:,:,:,imuS) = 0.
 !
         case ('const')
           f(:,:,:,imu5) = mu5_const
-          if (lmu_chem) f(:,:,:,imuS) = mu_chem_const
+          if (lmuS) f(:,:,:,imuS) = muS_const
 !
         case ('sinwave-phase')
           call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
@@ -260,19 +261,21 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_b2)=.true.
-      lpenc_requested(i_mu5)=.true.
-      if (lmu_chem) then
+      if (lmuS) then
         lpenc_requested(i_muS)=.true.
         lpenc_requested(i_gmuS)=.true.
       endif
+      lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_ugmu5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
 !      lpenc_requested(i_jjij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
-      if (lmagnetic) lpenc_requested(i_bb)=.true.
+      if (lmagnetic) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
+      endif
 !      if (lmagnetic) lpenc_requested(i_jij)=.true.
 !      if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
@@ -308,7 +311,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-      if (lmu_chem) then
+      if (lmuS) then
         if (lpencil(i_muS)) p%muS=f(l1:l2,m,n,imuS)
         if (lpencil(i_gmuS)) call grad(f,imuS,p%gmuS)
       endif
@@ -373,13 +376,13 @@ module Special
       diffus_mu5_2 = lambda5*eta*p%b2
       diffus_mu5_3 = diffmu5*dxyz_2
 !
-!  Evolution of mu_chem
+!  Evolution of muS
 !
-      if (lmu_chem) then
+      if (lmuS) then
         call dot(p%bb,p%gmu5,bdotgmu5)
         call dot(p%bb,p%gmuS,bdotgmuS)
         df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
-          -coef_mu_chem*bdotgmu5
+          -coef_muS*bdotgmu5
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
           -coef_mu5*bdotgmuS
       endif
@@ -503,11 +506,14 @@ module Special
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='muS'.or.cnamev=='mu5') cformv='DEFINED'
+      endif
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -554,13 +560,19 @@ module Special
 !
 !  Write slices for animation of Special variables.
 !
-!  26-jun-06/tony: dummy
+!   1-oct-18/axel: adapted from sample
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+!  Loop over slices.
+!
+      select case (trim(slices%name))
+        case ('muS'); call assign_slices_scal(slices,f,imuS)
+        case ('mu5'); call assign_slices_scal(slices,f,imu5)
+      endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************
