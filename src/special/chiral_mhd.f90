@@ -94,7 +94,7 @@ module Special
    real, dimension (nx,3) :: aatest, bbtest
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
-   real :: cdtchiral=1.
+   real :: cdtal=1.
    real, dimension (nx) :: diffus_mu5_1, diffus_mu5_2, diffus_mu5_3
    real, dimension (nx) :: diffus_bb_1, diffus_special
    real, dimension (nx) :: uxbj
@@ -127,6 +127,9 @@ module Special
   integer :: idiag_dt_chiral=0 ! DIAG_DOC: total time-step contribution from chiral MHD
   integer :: idiag_mu5bxm=0      ! DIAG_DOC: $\left<\mu_5B_x\right>$
   integer :: idiag_mu5b2m=0      ! DIAG_DOC: $\left<\mu_5B^2\right>$
+!JEN:
+  integer :: idiag_jxm = 0      ! DIAG_DOC: $\langle J_x\rangle$
+!JEN
 !
   contains
 !***********************************************************************
@@ -329,7 +332,11 @@ module Special
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5
+!JS: added vorticity effect
+!      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5  
+      +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 &
+      +p%mu5*p%oo
+!JS.
       if (ldiffus_mu5_1_old) then
         diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
       else
@@ -400,6 +407,12 @@ module Special
         if (idiag_dt_chiral/=0) call max_mn_name(-(1./diffus_special),idiag_dt_chiral,lneg=.true.)
         if (idiag_mu5bxm/=0) call sum_mn_name(p%mu5*p%bb(:,1),idiag_mu5bxm)
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
+!JEN:
+        if (idiag_jxm /= 0) then
+          lpenc_diagnos(i_jj) = .true.
+          call sum_mn_name(p%jj(:,1), idiag_jxm)
+        endif
+!JEN.
      endif
 !
     endsubroutine dspecial_dt
@@ -463,7 +476,10 @@ module Special
         idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
         idiag_dt_chiral=0; idiag_dt_bb_1=0;
-        idiag_dt_mu5_1=0; idiag_dt_mu5_2=0; idiag_dt_mu5_3=0
+        idiag_dt_mu5_1=0; idiag_dt_mu5_2=0; idiag_dt_mu5_3=0;
+!JEN:
+        idiag_jxm=0
+!JEN.
       endif
 !
       do iname=1,nname
@@ -483,6 +499,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dt_chiral',idiag_dt_chiral)
         call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
         call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
+!JEN:
+        call parse_name(iname, cname(iname), cform(iname), 'jxm', idiag_jxm)
+!JEN.
       enddo
 !
     endsubroutine rprint_special
@@ -524,8 +543,12 @@ module Special
 !
 !  communicate and divide by all mesh meshpoints
 !
-      call mpiallreduce_sum(meanmu5,meanmu5_tmp,1)
-      fact=1./(nw*ncpus)
+!JEN
+      if (nprocxy>1) then
+      call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
+      endif
+      fact=1./ncpus
+!JEN.
       meanmu5=fact*meanmu5_tmp
 !      flucmu5=p%mu5-meanmu5
 !
