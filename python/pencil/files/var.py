@@ -358,9 +358,12 @@ class DataCube(object):
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity.
         for key,value in index.items():
-            # print key,value.
+#            print key,value
             if key != 'global_gg':
-                setattr(self,key,self.f[value-1,...])
+                if self.f.ndim!=1:
+                    setattr(self,key,self.f[value-1,...])
+                else:
+                    setattr(self,key,self.f)
         # special treatment for vector quantities
         if 'uu' in index.keys():
             self.uu = self.f[index['ux']-1:index['uz'],...]
