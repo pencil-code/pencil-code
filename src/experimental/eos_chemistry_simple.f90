@@ -71,7 +71,7 @@ module EquationOfState
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
 !MR: Is now allocated only once.
-! real, dimension(mx,my,mz), target :: mu1_full
+ real, dimension(mx,my,mz), target :: mu1_full
 !
   namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const
 !
@@ -179,6 +179,7 @@ module EquationOfState
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
       endif
+      if (lchemistry) call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -433,7 +434,7 @@ module EquationOfState
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx,3) :: glnDiff_full_add, glncp
       real, dimension(nx) :: D_th, R_mix
-      real, dimension (mx,my,mz) :: mu1_full
+!      real, dimension (mx,my,mz) :: mu1_full
       real, dimension(nx) :: del2TT, gradTgradT
 !
       intent(in) :: lpenc_loc
@@ -495,27 +496,28 @@ module EquationOfState
 !
 !  Temperature laplacian and gradient
 !
-        if (lpenc_loc(i_glnTT)) then
-          if (ltemperature_nolog) then
-            call grad(f,iTT,p%glnTT)
-            p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
-            p%glnTT(:,2)=p%glnTT(:,2)/p%TT(:)
-            p%glnTT(:,3)=p%glnTT(:,3)/p%TT(:)
-          else
-            call grad(f,ilnTT,p%glnTT)
-          endif
-        endif
-!
+      if (lpenc_loc(i_glnTT)) then
         if (ltemperature_nolog) then
-          if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
-!          call dot2(p%gTT,gradTgradT) 
-!          call del2(f,iTT,del2TT)
-!          p%del2lnTT = -1./p%TT/p%TT*gradTgradT+1./p%TT*del2TT
-          call fatal_error('calc_pencils_eos',&
-              'del2lnTT is not correctly implemented - this must be fixed!')
+          call grad(f,iTT,p%glnTT)
+          p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
+          p%glnTT(:,2)=p%glnTT(:,2)/p%TT(:)
+          p%glnTT(:,3)=p%glnTT(:,3)/p%TT(:)
+        else
+          call grad(f,ilnTT,p%glnTT)
+        endif
+      endif
+!
+      if (ltemperature_nolog) then
+        if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
+! del2TT is computed in calc_heatcond_chemistry, here only del2lnTT which is needed for pressure Laplacian 
+          call dot2(p%gTT,gradTgradT) 
+          call del2(f,iTT,del2TT)
+          p%del2lnTT = -1./p%TT/p%TT*gradTgradT+1./p%TT*del2TT
+!        call fatal_error('calc_pencils_eos',&
+!              'del2lnTT is not correctly implemented - this must be fixed!')
         else
           if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
-        endif
+      endif
 
 !
 ! Viscosity of a mixture
@@ -556,57 +558,30 @@ module EquationOfState
       endif
 !
 !  Mean molecular weight
-!
-!        p%mu1=0.
-!        do k=1,nchemspec
-!          if (species_constants(k,imass)>0.) then
-!            p%mu1(:)= p%mu1(:)+f(l1:l2,m,n,ichemspec(k))/species_constants(k,imass)
-!          endif
-!        enddo
-!
-      mu1_full = 0.
-      do k=1,nchemspec
-        if (species_constants(k,imass)>0.) then
-! Why that does not result in the same as nested do loops below?
-!          do j2=m-3,m+3
-!              mu1_full(:,j2,n)= &
-!                  mu1_full(:,j2,n)+f(:,j2,n,ichemspec(k))/species_constants(k,imass)
-!          enddo
-!          do j3=n-3,n+3
-!              mu1_full(:,m,j3)= &
-!                  mu1_full(:,m,j3)+f(:,m,j3,ichemspec(k))/species_constants(k,imass)
-!          enddo
-          do j2=m-3,m+3
-            do j3=n-3,n+3
-              mu1_full(:,j2,j3)= &
-                  mu1_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))/species_constants(k,imass)
-            enddo
-          enddo
-        endif
-      enddo
-      p%mu1(:) = mu1_full(l1:l2,m,n)
+        if (lpenc_loc(i_mu1)) p%mu1=mu1_full(l1:l2,m,n)
+        if (lpenc_loc(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !  Pressure
 !
-        if (lpenc_loc(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
-        call grad_other_chem(mu1_full(:,m-3:m+3,n-3:n+3),p%gmu1)
+      if (lpenc_loc(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
 !
 !  Logarithmic pressure gradient
 !
-        if (lpenc_loc(i_rho1gpp)) then
-          do i=1,3
-            p%rho1gpp(:,i) = p%pp/p%rho(:) &
+      if (lpenc_loc(i_rho1gpp)) then
+        do i=1,3
+          p%rho1gpp(:,i) = p%pp/p%rho(:) &
                *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
-          enddo
-        endif
+        enddo
+      endif
 !
 !  Energy per unit mass (this is not used now)
 !
-       if (lpencil(i_ee)) p%ee = p%cv*p%TT
+      if (lpencil(i_ee)) p%ee = p%cv*p%TT
 !
 ! Gradient of lnpp (removed)
 !
-! This is not used now since advec_cs2 is not computed
+! This is not used now since advec_cs2 is not computed but will probably be needed 
+!
       if (lpencil(i_cs2)) then
         if (any(p%cv1 == 0.0)) then
         else
@@ -615,100 +590,6 @@ module EquationOfState
       endif
 !
     endsubroutine calc_pencils_eos_pencpar
-!***********************************************************************
-    subroutine grad_other_chem(f,g)
-!
-!  For non 'mvar' variable calculate gradient of a scalar, get vector
-!
-!  26-nov-02/tony: coded
-!
-      use Deriv, only: der
-!
-      real, dimension (:,:,:) :: f
-      real, dimension (nx,3) :: g
-      real, dimension (nx) :: tmp
-!
-      intent(in) :: f
-      intent(out) :: g
-!
-!  Uses overloaded der routine.
-!
-      call der_other_chem(f,tmp,1); g(:,1)=tmp
-      call der_other_chem(f,tmp,2); g(:,2)=tmp
-      call der_other_chem(f,tmp,3); g(:,3)=tmp
-!
-    endsubroutine grad_other_chem
-!***********************************************************************
-    subroutine der_other_chem(f,df,j)
-!
-!  Along one pencil in NON f variable
-!  calculate derivative of a scalar, get scalar
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
-!
-!  26-nov-02/tony: coded - duplicate der_main but without k subscript
-!                          then overload the der interface.
-!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
-!  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
-!  30-sep-16/MR: allow results dimensions > nx
-!
-      real, dimension (:,:,:) :: f
-      real, dimension (:) :: df
-      integer :: j
-!
-      intent(in)  :: f,j
-      intent(out) :: df
-
-      real, dimension (size(df)) :: fac
-      integer :: l1_, l2_, sdf
-!
-!debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
-!debug                          der_call_count(1,icount_der_other,j,1) + 1
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          fac=(1./60)*dx_1(l1:l2)
-          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
-                  -  9.0*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
-                  +      (f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
-        endif
-      else
-        sdf=size(df)
-        if (sdf>nx) then
-          l1_=1; l2_=sdf
-        else
-          l1_=l1; l2_=l2 
-        endif
-         if (j==2) then
-          if (nygrid/=1) then
-            fac=(1./60)*dy_1(m)
-            df=fac*(+ 45.0*(f(l1_:l2_,m+1,n)-f(l1_:l2_,m-1,n)) &
-                    -  9.0*(f(l1_:l2_,m+2,n)-f(l1_:l2_,m-2,n)) &
-                    +      (f(l1_:l2_,m+3,n)-f(l1_:l2_,m-3,n)))
-            if (lspherical_coords)     df=df*r1_mn
-            if (lcylindrical_coords)   df=df*rcyl_mn1
-          else
-            df=0.
-            if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
-          endif
-        elseif (j==3) then
-          if (nzgrid/=1) then
-            fac=(1./60)*dz_1(n)
-            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                    -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-            if (lspherical_coords) df=df*r1_mn*sin1th(m)
-          else
-            df=0.
-            if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
-          endif
-        endif
-      endif
-!
-    endsubroutine der_other_chem
 !***********************************************************************
     subroutine find_mass(element_name,MolMass)
 !

@@ -38,7 +38,8 @@ module Chemistry
   include 'chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension(mx,my,mz) :: mu1_full
+  real, dimension(:,:,:), pointer :: mu1_full
+!  real, dimension(mx,my,mz) :: mu1_full
 ! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
@@ -493,6 +494,12 @@ module Chemistry
         endif
       endif
 !
+      if (leos) then
+        call get_shared_variable('mu1_full',mu1_full,caller='initialize_chemistry')
+      else
+        call warning('initialize_chemistry','mu1_full not provided by eos')
+      endif
+!
 !  write array dimension to chemistry diagnostics file
 !
       open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
@@ -629,11 +636,11 @@ module Chemistry
         if (lheatc_chemistry) then
           lpenc_requested(i_lambda) = .true.
           lpenc_requested(i_glambda) = .true.
+        endif
 !
         if (ldiffusion .or. lparticles_chemistry) then
           lpenc_requested(i_Diff_penc_add) = .true.
         endif
-      endif
 !
     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
@@ -704,7 +711,8 @@ module Chemistry
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
       if (lpencil(i_H0_RT)) then
-        if ((.not. lT_const).and.(ilnTT /= 0)) then
+        if ((.not. lT_const)) then
+!        if ((.not. lT_const).and.(ilnTT /= 0)) then
           do k = 1,nchemspec
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
@@ -745,7 +753,8 @@ module Chemistry
 !
       if (lpencil(i_S0_R)) then
 !AB: Natalia, maybe we should ask earlier for lentropy?
-        if ((.not. lT_const).and.(ilnTT /= 0)) then
+        if ((.not. lT_const)) then
+!        if ((.not. lT_const).and.(ilnTT /= 0)) then
           do k = 1,nchemspec
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
@@ -1040,7 +1049,9 @@ module Chemistry
       integer :: j2,j3, k
       real, dimension(mx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
       real :: T_up, T_mid, T_low
-
+!
+          call getmu_array(f,mu1_full)
+!
             f(:,:,:,icp) = 0.
             if (Cp_const < impossible) then
 !
@@ -1056,7 +1067,11 @@ module Chemistry
 !
               do j3 = nn1,nn2
                 do j2 = mm1,mm2
-                  T_loc = exp(f(:,j2,j3,ilnTT))
+                  if (ltemperature_nolog) then 
+                    T_loc = (f(:,j2,j3,iTT))
+                  else
+                    T_loc = exp(f(:,j2,j3,ilnTT))
+                  endif
                   T_loc_2 = T_loc*T_loc
                   T_loc_3 = T_loc_2*T_loc
                   T_loc_4 = T_loc_3*T_loc
@@ -1171,6 +1186,8 @@ module Chemistry
       intent(inout) :: df
 !
 !
+!print*,'f(l1:l2,m,n,ilnTT)',f(l1:l2,m,n,ilnTT)
+!print*,'f(l1:l2,m,n,iTT)',f(l1:l2,m,n,iTT)
 !  identify module and boundary conditions
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
@@ -1270,6 +1287,8 @@ module Chemistry
           endif
 !
         if (ltemperature_nolog) then
+          RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1*p%TT &
+                  +sum_dk_ghk*p%cv1+sum_hhk_DYDt_reac*p%cv1
           call stop_it('ltemperature_nolog case does not work now!')
         else
           RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
@@ -4121,12 +4140,12 @@ module Chemistry
 !
 !  29-feb-08/natalia: coded
 !
-      use Sub, only: dot
+      use Sub, only: dot, del2
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1
+      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1, del2TT
 !
       if (ltemperature_nolog) then
         call dot(p%gTT,p%glambda,g2TTlambda)
@@ -4138,7 +4157,10 @@ module Chemistry
 !  Add heat conduction to RHS of temperature equation
 !
         if (ltemperature_nolog) then
-          tmp1 = (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
+! changed here del2lnTT to del2TT since that was really computed in the no_log case
+! this should probably be defined as pencil
+          call del2(f,iTT,del2TT)
+          tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
         else
           tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
@@ -4181,7 +4203,7 @@ module Chemistry
       intent(in) :: f
       integer :: j2, j3, k
       real, dimension(nchemspec) ::  cp_k, cv_k
-      real, dimension (:,:), allocatable :: TT_full, cp_full, cv_full, mu1_full
+      real, dimension (:,:), allocatable :: TT_full, cp_full, cv_full!, mu1_slice
 !
       if (Cp_const < impossible) then
 !
@@ -4194,8 +4216,8 @@ module Chemistry
          allocate (TT_full(my,mz))  
          allocate (cp_full(my,mz))  
          allocate (cv_full(my,mz))  
-         allocate (mu1_full(my,mz))  
-         mu1_full= 0.
+!         allocate (mu1_slice(my,mz))  
+!         mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
@@ -4204,8 +4226,8 @@ module Chemistry
             if (species_constants(k,imass)>0.) then
                do j2=m1,m2
                   do j3=n1,n2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
+  !                   mu1_slice(j2,j3)= &
+  !                        mu1_slice(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
                      cp_full(j2,j3) = &
                           cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
                      cv_full(j2,j3) = &
@@ -4214,14 +4236,16 @@ module Chemistry
                enddo
             endif
          enddo
+ !        slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
+ !             *mu1_slice(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
          slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-              *mu1_full(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
+              *mu1_full(index,m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
       elseif (dir == 2) then
          allocate (TT_full(mx,mz))  
          allocate (cp_full(mx,mz))  
          allocate (cv_full(mx,mz))  
-         allocate (mu1_full(mx,mz)) 
-         mu1_full= 0.
+  !       allocate (mu1_slice(mx,mz)) 
+  !       mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
@@ -4230,8 +4254,8 @@ module Chemistry
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=n1,n2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
+   !                  mu1_slice(j2,j3)= &
+   !                       mu1_slice(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
                      cp_full(j2,j3) = &
                           cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
                      cv_full(j2,j3) = &
@@ -4240,14 +4264,16 @@ module Chemistry
                enddo
             endif
          enddo
+  !       slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
+  !            *mu1_slice(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
          slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-              *mu1_full(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
+              *mu1_full(l1:l2,index,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
       elseif (dir == 3) then
          allocate (TT_full(mx,my))  
          allocate (cp_full(mx,my))  
          allocate (cv_full(mx,my))  
-         allocate (mu1_full(mx,my)) 
-         mu1_full= 0.
+  !       allocate (mu1_slice(mx,my)) 
+  !       mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
@@ -4256,8 +4282,8 @@ module Chemistry
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
                   do j3=m1,m2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
+   !                  mu1_slice(j2,j3)= &
+   !                       mu1_slice(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
                      cp_full(j2,j3) = &
                           cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
                      cv_full(j2,j3) = &
@@ -4266,17 +4292,18 @@ module Chemistry
                enddo
             endif
          enddo
+   !      slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
+   !           *mu1_slice(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
          slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-              *mu1_full(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
+              *mu1_full(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2)*Rgas
       else
          call fatal_error('get_cs2_slice','No such dir!')
       endif
 !
-!print*,'slice cs2',slice
       deallocate (TT_full)  
       deallocate (cp_full)  
       deallocate (cv_full)  
-      deallocate (mu1_full) 
+!      deallocate (mu1_slice) 
 !
       else
 !
@@ -4284,86 +4311,94 @@ module Chemistry
          allocate (TT_full(my,mz))  
          allocate (cp_full(my,mz))  
          allocate (cv_full(my,mz))  
-         allocate (mu1_full(my,mz))  
-         mu1_full= 0.
+  !       allocate (mu1_slice(my,mz))  
+  !       mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
          TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
          cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
-                  enddo
-               enddo
-            endif
-         enddo
-         cv_full = cp_full - Rgas*mu1_full
+   !      do k=1,nchemspec
+   !         if (species_constants(k,imass)>0.) then
+   !            do j2=m1,m2
+   !               do j3=n1,n2
+   !                  mu1_slice(j2,j3)= &
+   !                       mu1_slice(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
+   !               enddo
+   !            enddo
+   !         endif
+   !      enddo
+   !      cv_full = cp_full - Rgas*mu1_slice
+   !      slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
+   !           *mu1_slice(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
+         cv_full = cp_full - Rgas*mu1_full(index,:,:)
          slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-              *mu1_full(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
+              *mu1_full(index,m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
       elseif (dir == 2) then
          allocate (TT_full(mx,mz))  
          allocate (cp_full(mx,mz))  
          allocate (cv_full(mx,mz))  
-         allocate (mu1_full(mx,mz)) 
-         mu1_full= 0.
+    !     allocate (mu1_slice(mx,mz)) 
+    !     mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
          TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
          cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
-                  enddo
-               enddo
-            endif
-         enddo
-         cv_full = cp_full - Rgas*mu1_full
+     !    do k=1,nchemspec
+     !       if (species_constants(k,imass)>0.) then
+     !          do j2=l1,l2
+     !             do j3=n1,n2
+     !                mu1_slice(j2,j3)= &
+     !                     mu1_slice(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
+     !             enddo
+     !          enddo
+     !       endif
+     !    enddo
+     !    cv_full = cp_full - Rgas*mu1_slice
+     !    slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
+     !         *mu1_slice(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
+         cv_full = cp_full - Rgas*mu1_full(:,index,:)
          slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-              *mu1_full(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
+              *mu1_full(l1:l2,index,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
       elseif (dir == 3) then
          allocate (TT_full(mx,my))  
          allocate (cp_full(mx,my))  
          allocate (cv_full(mx,my))  
-         allocate (mu1_full(mx,my)) 
-         mu1_full= 0.
+     !    allocate (mu1_slice(mx,my)) 
+     !    mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
          TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
          cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
-                  enddo
-               enddo
-            endif
-         enddo
-         cv_full = cp_full - Rgas*mu1_full
+      !   do k=1,nchemspec
+      !      if (species_constants(k,imass)>0.) then
+      !         do j2=l1,l2
+      !            do j3=m1,m2
+      !               mu1_slice(j2,j3)= &
+      !                    mu1_slice(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
+      !            enddo
+      !         enddo
+      !      endif
+      !   enddo
+      !   cv_full = cp_full - Rgas*mu1_slice
+   !      slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
+   !           *mu1_slice(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
+         cv_full = cp_full - Rgas*mu1_full(:,:,index)
          slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-              *mu1_full(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
+              *mu1_full(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2)*Rgas
       else
          call fatal_error('get_cs2_slice','No such dir!')
       endif
 !
-!print*,'slice cs2',slice
       deallocate (TT_full)  
       deallocate (cp_full)  
       deallocate (cv_full)  
-      deallocate (mu1_full) 
+ !     deallocate (mu1_slice) 
 !
     endif  
-
+!
     endsubroutine get_cs2_slice
 !***********************************************************************
     subroutine get_gamma_full(gamma_full)
@@ -4389,7 +4424,7 @@ module Chemistry
       intent(in) :: f
       integer :: j2, j3, k
       real, dimension(nchemspec) ::  cp_k, cv_k
-      real, dimension (:,:), allocatable :: cp_full, cv_full,mu1_full
+      real, dimension (:,:), allocatable :: cp_full, cv_full!,mu1_slice
 !
     if (Cp_const < impossible) then
 !
@@ -4467,72 +4502,73 @@ module Chemistry
       if (dir == 1) then
          allocate (cp_full(my,mz))  
          allocate (cv_full(my,mz))  
-         allocate (mu1_full(mx,my))  
-         mu1_full= 0.
+    !     allocate (mu1_slice(mx,my))  
+    !     mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
-                  enddo
-               enddo
-            endif
-         enddo
-         cv_full = cp_full - Rgas*mu1_full
+    !     do k=1,nchemspec
+    !        if (species_constants(k,imass)>0.) then
+    !           do j2=m1,m2
+    !              do j3=n1,n2
+    !                 mu1_slice(j2,j3)= &
+    !                      mu1_slice(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
+    !              enddo
+    !           enddo
+    !        endif
+    !     enddo
+    !     cv_full = cp_full - Rgas*mu1_slice
+         cv_full = cp_full - Rgas*mu1_full(index,:,:)
          slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
       elseif (dir == 2) then
          allocate (cp_full(mx,mz))  
          allocate (cv_full(mx,mz))  
-         allocate (mu1_full(mx,my))  
-         mu1_full= 0.
+   !      allocate (mu1_slice(mx,my))  
+   !      mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
-                  enddo
-               enddo
-            endif
-         enddo
-         cv_full = cp_full - Rgas*mu1_full
+    !     do k=1,nchemspec
+    !        if (species_constants(k,imass)>0.) then
+    !           do j2=l1,l2
+    !              do j3=n1,n2
+    !                 mu1_slice(j2,j3)= &
+    !                      mu1_slice(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
+    !              enddo
+    !           enddo
+    !        endif
+    !     enddo
+    !     cv_full = cp_full - Rgas*mu1_slice
+         cv_full = cp_full - Rgas*mu1_full(:,index,:)
          slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
       elseif (dir == 3) then
          allocate (cp_full(mx,my))  
          allocate (cv_full(mx,my))  
-         allocate (mu1_full(mx,my))  
-         mu1_full= 0.
+     !    allocate (mu1_slice(mx,my))  
+     !    mu1_slice= 0.
          cp_full = 0.
          cv_full = 0.
          cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-                     mu1_full(j2,j3)= &
-                          mu1_full(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
-                  enddo
-               enddo
-            endif
-         enddo
-         cv_full = cp_full - Rgas*mu1_full
+     !    do k=1,nchemspec
+     !       if (species_constants(k,imass)>0.) then
+     !          do j2=l1,l2
+     !             do j3=m1,m2
+     !                mu1_slice(j2,j3)= &
+     !                     mu1_slice(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
+     !             enddo
+     !          enddo
+     !       endif
+     !    enddo
+     !    cv_full = cp_full - Rgas*mu1_slice
+         cv_full = cp_full - Rgas*mu1_full(:,:,index)
          slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
       else
         call fatal_error('get_gamma_slice','No such dir!')
       endif
 !
-!print*,'cp_const',cp_const
-!print*,'slice gamma',slice
       deallocate (cp_full)  
       deallocate (cv_full) 
-      deallocate (mu1_full)  
+ !     deallocate (mu1_slice)  
 !
     endif
 !
@@ -4790,84 +4826,93 @@ module Chemistry
       intent(in) :: f
 !
       integer :: j2, j3, k
-      real, dimension (:,:,:), allocatable :: mu1_full
+!      real, dimension (:,:,:), allocatable :: mu1_slice
 !
+!      if (direction == 1) then
+!         allocate (mu1_slice(5,my,mz))  
+!         mu1_slice=0.
+!         do k=1,nchemspec
+!            if (species_constants(k,imass)>0.) then
+!               do j2=m1,m2
+!                  do j3=n1,n2
+!                     if (sgn > 0) then 
+!                        mu1_slice(:,j2,j3)=mu1_slice(:,j2,j3)+f(index:index+sgn*4,j2,j3,ichemspec(k))/species_constants(k,imass)
+!                     else
+!                        mu1_slice(:,j2,j3)=mu1_slice(:,j2,j3)+f(index+sgn*4:index,j2,j3,ichemspec(k))/species_constants(k,imass)
+!                     endif
+!                  enddo
+!               enddo
+!            endif
+!         enddo
+!         if (sgn > 0) then 
+!            slice = mu1_slice(1,m1:m2,n1:n2)
+!            call der_onesided_4_slice_chemistry(mu1_slice,sgn,grad_slice,1,direction)
+!         else
+!            slice = mu1_slice(5,m1:m2,n1:n2)
+!            call der_onesided_4_slice_chemistry(mu1_slice,sgn,grad_slice,5,direction)
+!         endif
+!      elseif (direction == 2) then
+!         allocate (mu1_slice(mx,5,mz)) 
+!         mu1_slice=0.
+!         do k=1,nchemspec
+!            if (species_constants(k,imass)>0.) then
+!               do j2=l1,l2
+!                  do j3=n1,n2
+!                     if (sgn > 0) then 
+!                        mu1_slice(j2,:,j3)=mu1_slice(j2,:,j3)+f(j2,index:index+sgn*4,j3,ichemspec(k))/species_constants(k,imass)
+!                     else
+!                        mu1_slice(j2,:,j3)=mu1_slice(j2,:,j3)+f(j2,index+sgn*4:index,j3,ichemspec(k))/species_constants(k,imass)
+!                     endif
+!                  enddo
+!               enddo
+!            endif
+!         enddo
+!         if (sgn > 0) then 
+!            slice = mu1_slice(l1:l2,1,n1:n2)
+!            call der_onesided_4_slice_chemistry(mu1_slice,sgn,grad_slice,1,direction)
+!         else
+!            slice = mu1_slice(l1:l2,5,n1:n2)
+!            call der_onesided_4_slice_chemistry(mu1_slice,sgn,grad_slice,5,direction)
+!         endif
+!      elseif (direction == 3) then
+!         allocate (mu1_slice(mx,my,5)) 
+!         mu1_slice=0.
+!         do k=1,nchemspec
+!            if (species_constants(k,imass)>0.) then
+!               do j2=l1,l2
+!                  do j3=m1,m2
+!                     if (sgn > 0) then 
+!                        mu1_slice(j2,j3,:)=mu1_slice(j2,j3,:)+f(j2,j3,index:index+sgn*4,ichemspec(k))/species_constants(k,imass)
+!                     else
+!                        mu1_slice(j2,j3,:)=mu1_slice(j2,j3,:)+f(j2,j3,index:index+sgn*4,ichemspec(k))/species_constants(k,imass)
+!                     endif
+!                  enddo
+!               enddo
+!            endif
+!         enddo
+!         if (sgn > 0) then 
+!            slice = mu1_slice(l1:l2,m1:m2,1)
+!            call der_onesided_4_slice_chemistry(mu1_slice,sgn,grad_slice,1,direction)
+!         else
+!            slice = mu1_slice(l1:l2,m1:m2,5)
+!            call der_onesided_4_slice_chemistry(mu1_slice,sgn,grad_slice,5,direction)
+!         endif
+!      else
+!         call fatal_error('get_cs2_slice','No such dir!')
+!      endif
+!
+!      deallocate (mu1_slice) 
+
       if (direction == 1) then
-         allocate (mu1_full(5,my,mz))  
-         mu1_full=0.
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-                     if (sgn > 0) then 
-                        mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+f(index:index+sgn*4,j2,j3,ichemspec(k))/species_constants(k,imass)
-                     else
-                        mu1_full(:,j2,j3)=mu1_full(:,j2,j3)+f(index+sgn*4:index,j2,j3,ichemspec(k))/species_constants(k,imass)
-                     endif
-                  enddo
-               enddo
-            endif
-         enddo
-         if (sgn > 0) then 
-            slice = mu1_full(1,m1:m2,n1:n2)
-            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,1,direction)
-         else
-            slice = mu1_full(5,m1:m2,n1:n2)
-            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,5,direction)
-         endif
+        slice = mu1_full(index,m1:m2,n1:n2)
+        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
       elseif (direction == 2) then
-         allocate (mu1_full(mx,5,mz)) 
-         mu1_full=0.
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-                     if (sgn > 0) then 
-                        mu1_full(j2,:,j3)=mu1_full(j2,:,j3)+f(j2,index:index+sgn*4,j3,ichemspec(k))/species_constants(k,imass)
-                     else
-                        mu1_full(j2,:,j3)=mu1_full(j2,:,j3)+f(j2,index+sgn*4:index,j3,ichemspec(k))/species_constants(k,imass)
-                     endif
-                  enddo
-               enddo
-            endif
-         enddo
-         if (sgn > 0) then 
-            slice = mu1_full(l1:l2,1,n1:n2)
-            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,1,direction)
-         else
-            slice = mu1_full(l1:l2,5,n1:n2)
-            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,5,direction)
-         endif
-      elseif (direction == 3) then
-         allocate (mu1_full(mx,my,5)) 
-         mu1_full=0.
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-                     if (sgn > 0) then 
-                        mu1_full(j2,j3,:)=mu1_full(j2,j3,:)+f(j2,j3,index:index+sgn*4,ichemspec(k))/species_constants(k,imass)
-                     else
-                        mu1_full(j2,j3,:)=mu1_full(j2,j3,:)+f(j2,j3,index:index+sgn*4,ichemspec(k))/species_constants(k,imass)
-                     endif
-                  enddo
-               enddo
-            endif
-         enddo
-         if (sgn > 0) then 
-            slice = mu1_full(l1:l2,m1:m2,1)
-            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,1,direction)
-         else
-            slice = mu1_full(l1:l2,m1:m2,5)
-            call der_onesided_4_slice_chemistry(mu1_full,sgn,grad_slice,5,direction)
-         endif
+        slice = mu1_full(l1:l2,index,n1:n2)
+        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
       else
-         call fatal_error('get_cs2_slice','No such dir!')
+        slice = mu1_full(l1:l2,m1:m2,index)
+        call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
       endif
-!print*,'slice',slice
-!print*,'grad_slice',grad_slice
-!
-      deallocate (mu1_full) 
 !
     endsubroutine get_mu1_slice
 !***********************************************************************
