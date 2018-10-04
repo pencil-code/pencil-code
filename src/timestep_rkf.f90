@@ -70,6 +70,7 @@ module Timestep
         dt_temp = safety*dt*(errmax**dt_decrease)
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+!print*,'AXEL: ',dt,dt_temp,errmax,safety
         ! New time
         tnew = t+dt
         if (tnew == t) then
@@ -85,6 +86,7 @@ module Timestep
         ! But not by more than a factor of 5
         dt_next = 5.0*dt
       endif
+!print*,'AXEL2: ',dt,dt_temp,errmax,safety
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt  !(all have same dt?)
 ! Increase time

@@ -5949,7 +5949,8 @@ module Hydro
         enddo
         if (lroot.and.ip<6) print*,'remove_mean_momenta: rum=',rum
       else
-        call remove_mean_flow(f,iux)         ! as this is equivalent to remove
+        !call remove_mean_flow(f,iux)         ! as this is equivalent to remove
+        call remove_mean_flow(f,indux)       ! as this is equivalent to remove
                                              ! mean momenta for constant density
       endif
     endsubroutine remove_mean_momenta

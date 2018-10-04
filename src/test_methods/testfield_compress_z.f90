@@ -1373,6 +1373,18 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
+    subroutine testfield_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!    4-oct-18/axel+nishant: adapted from testflow
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine testfield_before_boundary
+!***********************************************************************
     subroutine testfield_after_boundary(f)
 !
 !  Calculate <uxb^T> + <u^Txb>, which is needed when lsoca=.false.

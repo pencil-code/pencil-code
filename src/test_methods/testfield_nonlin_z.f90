@@ -22,6 +22,7 @@
 ! CPARAM logical, parameter :: ltestfield_xy = .false.
 ! CPARAM logical, parameter :: ltestfield_z = .true.
 ! CPARAM logical, parameter :: ltestfield_xz  = .false.
+! CPARAM logical, parameter :: ltestfield_nonlin = .true.
 !
 !***************************************************************
 
@@ -57,6 +58,7 @@ module Testfield
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
+  logical :: lremove_mean_momenta_testfield_nonlin=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,lugu_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lignore_ugutestm=.false., &
@@ -81,7 +83,7 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
-       Btest_ext,zextent,lsoca,lsoca_jxb, &
+       lremove_mean_momenta_testfield_nonlin, Btest_ext, zextent, lsoca, lsoca_jxb, &
        itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
@@ -1223,6 +1225,24 @@ module Testfield
       call keep_compiler_quiet(f)
 !
     endsubroutine get_slices_testfield
+!***********************************************************************
+    subroutine testfield_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!    4-oct-18/axel+nishant: adapted from testflow
+!
+      use Hydro, only: remove_mean_momenta
+      use Cdata
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (lremove_mean_momenta_testfield_nonlin) &
+        iuxtest=iuutest+3*(njtest-1)
+        call remove_mean_momenta(f,iuxtest)
+!
+    endsubroutine testfield_before_boundary
 !***********************************************************************
     subroutine testfield_after_boundary(f)
 !

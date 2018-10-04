@@ -193,6 +193,7 @@ module Equ
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
       if (ltestflow)     call testflow_before_boundary(f)
+      if (ltestfield)    call testfield_before_boundary(f)
       if (lparticles)    call particles_before_boundary(f)
       if (ldetonate)     call detonate_before_boundary(f)
 !

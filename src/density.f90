@@ -285,7 +285,7 @@ module Density
 !  Communicate lrelativistic_eos to entropy too.
 !
       call put_shared_variable('lrelativistic_eos', &
-          lrelativistic_eos, caller='initialize_density')
+          lrelativistic_eos, caller='register_density')
 
     endsubroutine register_density
 !***********************************************************************
