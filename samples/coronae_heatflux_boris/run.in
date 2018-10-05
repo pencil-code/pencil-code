@@ -8,10 +8,8 @@
   dsnap=60.   ! = 60 sec
   dtmin =1e-10
 !
-  bcz = 's:a' ,'s:a' ,'div:a','fg:s','fg:s','pfe','nil','nil','a','a','a'
+  bcz = 's:a' ,'s:a' ,'div:a','fg:s','fg:s','pfe','nil','nil','s','s','a'
   fbcz_bot= 0.,    0., 0., 0., 0., 0.25
-  fbcz1= 0.,0.,0.,1.09
-  fbcz2= 0.,0.,0.,1.09
 !
   lpencil_check=F
   lpencil_check_small=F
@@ -20,7 +18,6 @@
   iz2=1
   slice_position='m'
 !
-  border_frac_z = 0.,0.1
 /
 &eos_run_pars
 /
@@ -89,7 +86,7 @@
 /
 &heatflux_run_pars
    iheatflux='spitzer'
-   tau_inv_spitzer=20.
+   tau_inv_spitzer=0.001
    Kspitzer_para=2e-5
    saturation_flux=1.
    Kc=0.0
