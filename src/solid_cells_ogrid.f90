@@ -316,6 +316,7 @@ module Solid_Cells
   ! Index for auxiliary gradient of temperature on ogrid, as
   ! well as additional variables for thermophoresis cases
   integer :: iogTTx=0, iogTTy=0, iogTTz=0
+  real :: init_rho_cyl = 1.0
   logical :: lstore_ogTT = .false.
   logical, pointer :: lthermophoretic_forces
   real, dimension(:,:), allocatable ::  curv_cart_transform
@@ -340,7 +341,7 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af,lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
-      lstore_ogTT
+      lstore_ogTT, init_rho_cyl
 
 
 !  Read run.in file
@@ -896,7 +897,7 @@ module Solid_Cells
         f_ogrid(:,:,:,iTT)=f(l1,m1,n1,iTT)
       endif
       if(ldensity_nolog) then
-        f_ogrid(:,:,:,irho)=1.
+        f_ogrid(:,:,:,irho)=init_rho_cyl
       else
         call fatal_error('init_solid_cells','Must use linear density for solid_cells_ogrid')
       endif
