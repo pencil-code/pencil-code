@@ -135,7 +135,7 @@ module Magnetic
   real :: taareset=0.0, daareset=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
-  real :: eta_jump=0.0, damp=0., two_step_factor=1.
+  real :: eta_jump=0.0, eta_jump2=0.0, damp=0., two_step_factor=1.
   real :: radRFP=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: znoise_int=impossible,znoise_ext=impossible
@@ -233,7 +233,7 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      lax_ext_global,lay_ext_global,laz_ext_global, &
+      lax_ext_global,lay_ext_global,laz_ext_global, eta_jump2, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel
 !
@@ -247,7 +247,7 @@ module Magnetic
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
   real :: tau_aa_exterior=0.0, tauAD=0.0
   real :: sigma_ratio=1.0, eta_z0=1.0, eta_z1=1.0
-  real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0
+  real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0, eta_zwidth2=0.0
   real :: eta_width_shock=0.0, eta_zshock=1.0, eta_jump_shock=1.0
   real :: eta_xwidth0=0.0,eta_xwidth1=0.0, eta_xshock=1.0
   real :: eta_x0=1.0, eta_x1=1.0, eta_y0=1.0, eta_y1=1.0
@@ -324,14 +324,14 @@ module Magnetic
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, &
-      eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
+      eta_xwidth, eta_ywidth, eta_zwidth, eta_zwidth2, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
-      lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
+      lhalox, vcrit_anom, eta_jump, eta_jump2, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
       k_relprof,lmagneto_friction,numag, magnetic_zaver_range,&
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
@@ -7616,9 +7616,10 @@ module Magnetic
             geta_z = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_zwidth)
           endif
 !
-        case ('cubic_step')
 !
 !  Cubic-step profile
+!
+        case ('cubic_step')
 !
           if (eta_zwidth == 0.) eta_zwidth = 5.*dz
           eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_zwidth)
@@ -7664,6 +7665,24 @@ module Magnetic
           if (present(geta_z)) then
             geta_z = eta*(eta_jump-two_step_factor)*( &
               der_step(z,eta_z0,-eta_zwidth)+der_step(z,eta_z1,eta_zwidth))
+          endif
+!
+!
+!  Cubic-two-step profile
+!
+        case ('cubic_two_step')
+!
+          if (eta_zwidth == 0.) eta_zwidth = 5.*dz
+          if (eta_zwidth2 == 0.) eta_zwidth2 = 5.*dz
+          eta_z = (eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_zwidth))* &
+                  (1+(eta_jump2-1.)*cubic_step(z,eta_z1,-eta_zwidth2))
+!
+! its gradient:
+          if (present(geta_z)) then
+            geta_z = (eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_zwidth))* &
+                  (1+(eta_jump2-1.)*cubic_step(z,eta_z1,-eta_zwidth2)) &
+                + (eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_zwidth))* &
+                  ((eta_jump2-1.)*cubic_der_step(z,eta_z1,-eta_zwidth2))
           endif
 !
 !  Powerlaw-z
