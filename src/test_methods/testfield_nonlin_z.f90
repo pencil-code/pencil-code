@@ -1231,16 +1231,22 @@ module Testfield
 !  Actions to take before boundary conditions are set.
 !
 !    4-oct-18/axel+nishant: adapted from testflow
+!    5-Oct-18/MR: changed to remove_mean_flow, as independent from what is used
+!                 in the main run, density shoul dnot be involved.
 !
-      use Hydro, only: remove_mean_momenta
+      use Hydro, only: remove_mean_flow
       use Cdata
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (lremove_mean_momenta_testfield_nonlin) &
+      if (lremove_mean_momenta_testfield_nonlin) then
+!
+!  Removes mean flow from  the "0" problem.
+!
         iuxtest=iuutest+3*(njtest-1)
-        call remove_mean_momenta(f,iuxtest)
+        call remove_mean_flow(f,iuxtest)
+      endif
 !
     endsubroutine testfield_before_boundary
 !***********************************************************************

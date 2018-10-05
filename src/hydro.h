@@ -11,7 +11,8 @@
   public :: init_uu, duu_dt, hydro_after_boundary, calc_pencils_hydro
   public :: time_integrals_hydro
   public :: pencil_criteria_hydro, pencil_interdep_hydro
-  public :: calc_mflow, remove_mean_momenta, impose_velocity_ceiling
+  public :: calc_mflow, remove_mean_momenta, remove_mean_flow
+  public :: impose_velocity_ceiling
   public :: hydro_clean_up
   public :: coriolis_cartesian
   public :: kinematic_random_phase

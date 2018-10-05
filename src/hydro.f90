@@ -5971,7 +5971,6 @@ module Hydro
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer,                            intent (in)    :: indux
 !
-      real, dimension (nx) :: uu
       real, dimension (indux:indux+2) :: um, um_tmp
       integer :: m,n,j
       real    :: fac
@@ -5989,8 +5988,7 @@ module Hydro
 !  Compute mean flow in each of the 3 directions.
 !
           do j=indux,indux+2
-            uu = f(l1:l2,m,n,j)
-            um(j) = um(j) + fac*sum(uu)
+            um(j) = um(j) + fac*sum(f(l1:l2,m,n,j))
           enddo
         enddo
         enddo

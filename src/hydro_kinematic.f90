@@ -2807,6 +2807,18 @@ module Hydro
 !
     endsubroutine remove_mean_momenta
 !***********************************************************************
+    subroutine remove_mean_flow(f,indux)
+!
+!  Dummy.
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer,                            intent (in)    :: indux
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(indux)
+!
+    endsubroutine remove_mean_flow
+!***********************************************************************
     subroutine impose_velocity_ceiling(f)
 !
 !  13-aug-2007/anders: dummy
