@@ -58,9 +58,11 @@ module Testfield
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
-  logical :: lremove_mean_momenta_testfield_nonlin=.false.
+  logical :: lremove_mean_flow_testfield_nonlin_all=.false.
+  logical :: lremove_mean_flow_testfield_nonlin_zero=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.
-  logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,lugu_as_aux=.false.,linit_aatest=.false.
+  logical :: luxb_as_aux=.false., ljxb_as_aux=.false., lugu_as_aux=.false.
+  logical :: linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lignore_ugutestm=.false., &
              lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
@@ -81,10 +83,13 @@ module Testfield
   real, dimension(njtest) :: rescale_aatest=0.,rescale_uutest=0.
   logical :: ltestfield_newz=.true.,leta_rank2=.true.
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
+  logical :: lugu=.false.
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
-       lremove_mean_momenta_testfield_nonlin, Btest_ext, zextent, lsoca, lsoca_jxb, &
-       itestfield,ktestfield,itestfield_method, &
+       lremove_mean_flow_testfield_nonlin_zero, &
+       lremove_mean_flow_testfield_nonlin_all, &
+       Btest_ext, zextent, lsoca, lsoca_jxb, &
+       lugu, itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
@@ -285,7 +290,7 @@ module Testfield
 !
 !  possibility of using u.grad u as auxiliary array 
 !
-      if (lshear.and.lugu_as_aux) then
+      if (lugu.and.lugu_as_aux) then
         if (iugutest==0) &
           call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
 
@@ -552,7 +557,7 @@ module Testfield
       lpenc_diagnos(i_oo)=.true.
 
       if (lforcing_cont_aatest) lpenc_requested(i_fcont)=.true.
-      if (lshear) lpenc_requested(i_uij)=.true.
+      if (lugu) lpenc_requested(i_uij)=.true.
 !
     endsubroutine pencil_criteria_testfield
 !***********************************************************************
@@ -892,13 +897,13 @@ module Testfield
 !
         uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
         jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
-        if (lshear) ugutest=f(l1:l2,m,n,iugutest+3*(jtest-1):iugutest+3*jtest-1)
+        if (lugu) ugutest=f(l1:l2,m,n,iugutest+3*(jtest-1):iugutest+3*jtest-1)
 !
 !  evaluate different contributions to <uxb> and <jxb>
 !
         Eipq(:,:,jtest)=uxbtest*bamp1
         Fipq(:,:,jtest)=jxbtest*bamp1/rho0
-        if (lshear) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest*bamp1
+        if (lugu) Fipq(:,:,jtest)=Fipq(:,:,jtest)-ugutest*bamp1
 
         if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) &
             jpq(:,:,jtest)=jjtest
@@ -1232,18 +1237,26 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !    5-Oct-18/MR: changed to remove_mean_flow, as independent from what is used
-!                 in the main run, density shoul dnot be involved.
+!                 in the main run, density should not be involved.
 !
       use Hydro, only: remove_mean_flow
       use Cdata
       use Mpicomm
 !
+      integer :: jtest
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (lremove_mean_momenta_testfield_nonlin) then
+!  Remove mean flow from all 5 test problems.
 !
-!  Removes mean flow from  the "0" problem.
+      if (lremove_mean_flow_testfield_nonlin_all) then
+        do jtest=1,njtest
+          iuxtest=iuutest+3*(jtest-1)
+          call remove_mean_flow(f,iuxtest)
+        enddo
 !
+!  Remove mean flow from the "0" problem only.
+!
+      elseif (lremove_mean_flow_testfield_nonlin_zero) then
         iuxtest=iuutest+3*(njtest-1)
         call remove_mean_flow(f,iuxtest)
       endif
@@ -1355,7 +1368,7 @@ module Testfield
           call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
           call curl_mn(aijtest,bbtest,aatest)
           call curl_mn(bijtest,jjtest,bbtest)
-          if (lshear) call gij(f,iuxtest,uijtest,1)
+          if (lugu) call gij(f,iuxtest,uijtest,1)
 !
 !  Get u0ref, b0ref, and j0ref (if iE0=5).
 !  Also compute u0 x b0 and j0 x b0, and put into corresponding array.
@@ -1367,7 +1380,7 @@ module Testfield
             j0ref=jjtest
             call cross_mn(u0ref,b0ref,uxbtest)
             call cross_mn(j0ref,b0ref,jxbtest)
-            if (lshear) then
+            if (lugu) then
               uij0ref=uijtest
               call u_dot_grad(f,iuxtest,uij0ref,u0ref,ugutest,UPWIND=.false.)   !u0.grad u0
             endif
@@ -1405,7 +1418,7 @@ module Testfield
 !
 !  Calculate u.grad utest + utest.grad u0.
 !
-            if (lshear) then
+            if (lugu) then
               call u_dot_grad(f,iux,uijtest,uufluct,ugutest,UPWIND=.false.) ! (ufluct.grad)(utest); only correct w/o upw   
               call u_dot_grad(f,iuutest,uij0ref,uutest,ugutest,UPWIND=.false.,LADD=.true.)   ! (utest.grad)(u0)
             endif
@@ -1430,7 +1443,7 @@ module Testfield
 !
           uxbtestmz(nl,:,jtest)=uxbtestmz(nl,:,jtest)+fac*sum(uxbtest,1)
           jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+fac*sum(jxbtest,1)
-          if (lshear) ugutestmz(nl,:,jtest)=ugutestmz(nl,:,jtest)+fac*sum(ugutest,1)
+          if (lugu) ugutestmz(nl,:,jtest)=ugutestmz(nl,:,jtest)+fac*sum(ugutest,1)
           headtt=.false.
 !
 !  finish jtest and mn loops
@@ -1443,7 +1456,7 @@ module Testfield
 !
       call finalize_aver(nprocxy,12,uxbtestmz)
       call finalize_aver(nprocxy,12,jxbtestmz)
-      if (lshear) call finalize_aver(nprocxy,12,ugutestmz)
+      if (lugu) call finalize_aver(nprocxy,12,ugutestmz)
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
