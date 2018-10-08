@@ -102,13 +102,13 @@ module Special
    real, dimension (nx) :: diffus_bb_1, diffus_special
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
-   logical :: ldiffus_mu5_1_old=.false., lmuS=.false.
+   logical :: ldiffus_mu5_1_old=.false., lmuS=.false., lCVE=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
       initspecial, mu5_const, &
-      lmuS, muS_const, coef_muS, &
+      lmuS, lCVE, muS_const, coef_muS, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5
@@ -348,7 +348,8 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx,3) :: mu5bb
+      real, dimension (nx) :: muSmu5, oobb
+      real, dimension (nx,3) :: mu5bb, muSmu5oo
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -363,11 +364,7 @@ module Special
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-!JS: added vorticity effect
         +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5  
-  !     +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 &
-  !     +p%mu5*p%oo
-!JS.
       if (ldiffus_mu5_1_old) then
         diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
       else
@@ -379,19 +376,28 @@ module Special
 !  Evolution of muS
 !
       if (lmuS) then
+        muSmu5 = p%muS*p%mu5
         call dot(p%bb,p%gmu5,bdotgmu5)
         call dot(p%bb,p%gmuS,bdotgmuS)
         df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
           -coef_muS*bdotgmu5
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-          -coef_mu5*bdotgmuS
+          -coef_mu5*bdotgmuS  
+        if (lCVE) then   
+          call dot(p%oo,p%bb,oobb)
+          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb
+        endif
       endif
 !                          
 !  Additions to evolution of bb
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb 
+        if (lCVE) then   
+          call multsv(muSmu5,p%oo,muSmu5oo)
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*muSmu5oo
+        endif
       endif
       diffus_bb_1 = eta*p%mu5*sqrt(dxyz_2)
 !
@@ -451,12 +457,10 @@ module Special
         if (idiag_dt_chiral/=0) call max_mn_name(-(1./diffus_special),idiag_dt_chiral,lneg=.true.)
         if (idiag_mu5bxm/=0) call sum_mn_name(p%mu5*p%bb(:,1),idiag_mu5bxm)
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
-!JEN:
         if (idiag_jxm /= 0) then
           lpenc_diagnos(i_jj) = .true.
           call sum_mn_name(p%jj(:,1), idiag_jxm)
         endif
-!JEN.
      endif
 !
     endsubroutine dspecial_dt
@@ -525,9 +529,7 @@ module Special
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
         idiag_dt_chiral=0; idiag_dt_bb_1=0;
         idiag_dt_mu5_1=0; idiag_dt_mu5_2=0; idiag_dt_mu5_3=0;
-!JEN:
         idiag_jxm=0
-!JEN.
       endif
 !
       do iname=1,nname
@@ -549,9 +551,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dt_chiral',idiag_dt_chiral)
         call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
         call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
-!JEN:
         call parse_name(iname, cname(iname), cform(iname), 'jxm', idiag_jxm)
-!JEN.
       enddo
 !
     endsubroutine rprint_special
