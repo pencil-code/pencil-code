@@ -114,6 +114,7 @@ contains
         endif
 
         sname=trim(cnamev(inamev))
+
         slices%name=sname
         call assign_slices_scal(slices,slice_xy,slice_xz,slice_yz,slice_xy2,slice_xy3,slice_xy4,slice_xz2)
         slices%ready=.false.
@@ -443,6 +444,15 @@ contains
       call position(iz3,ipz,nz,iz3_loc,lwrite_slice_xy3)
       call position(iz4,ipz,nz,iz4_loc,lwrite_slice_xy4)
 !
+      if (.not.lactive_dimension(3)) then
+        lwrite_slice_xy2=.false.; lwrite_slice_xy3=.false.; lwrite_slice_xy4=.false.
+        iz2_loc=-1; iz3_loc=-1; iz4_loc=-1
+      endif 
+
+      if (.not.lactive_dimension(2)) then
+        lwrite_slice_xz2=.false.; iy2_loc=-1
+      endif
+
       call setup_slices_write
 !
       if (lroot.and.dvid>0.) then  !MR: tbdone: write global position from all procs
