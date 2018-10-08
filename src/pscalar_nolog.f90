@@ -909,6 +909,12 @@ module Pscalar
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ccmxy',idiag_ccmxy)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='cc'.or.cnamev=='lncc') cformv='DEFINED'
+      endif
+!
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
