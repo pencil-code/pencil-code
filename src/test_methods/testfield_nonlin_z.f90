@@ -290,15 +290,20 @@ module Testfield
 !
 !  possibility of using u.grad u as auxiliary array 
 !
-      if (lugu.and.lugu_as_aux) then
-        if (iugutest==0) &
-          call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
-
-        if (iugutest/=0.and.lroot) then
-          print*, 'register_testfield: iugutest = ', iugutest
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iugutest=',iugutest
-          close(3)
+      if (lugu) then
+        if (lugu_as_aux) then
+          if (iugutest==0) &
+            call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
+  
+          if (iugutest/=0.and.lroot) then
+            print*, 'register_testfield: iugutest = ', iugutest
+            open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+            write(3,*) 'iugutest=',iugutest
+            close(3)
+          endif
+        else
+          call warning('register_testfield','lugu=T requires lugu_as_aux=T -> switched off')
+          lugu=.false.
         endif
       endif
 !
