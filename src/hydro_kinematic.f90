@@ -112,11 +112,6 @@ module Hydro
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
 !
-  interface calc_pencils_hydro
-    module procedure calc_pencils_hydro_pencpar
-    module procedure calc_pencils_hydro_std
-  endinterface calc_pencils_hydro
-!
   logical :: lupdate_aux=.false.
   contains
 !***********************************************************************
