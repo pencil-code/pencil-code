@@ -84,19 +84,25 @@ extern "C" void substepGPU(int isubstep, bool full=false)
     }
     else
     {
-        GPULoadOuterHalos(&h_grid,halo_buffer);
-        //!!!GPULoad(&h_grid); 
+        //!!!GPULoadOuterHalos(&h_grid,halo_buffer);
+        GPULoad(&h_grid); 
         //exchange_halos_cuda_generic(false);      // no circular halo exchange
     }
 
     //Integrate on the GPUs in this node
     //NOTE: In astaroth code, isubstep may be {0,1,2}, in PC it is {1,2,3}
 
-    GPUIntegrateStep(isubstep-1, dt);
+/*if (isubstep==1){
+printf("vor substep 1 \n");
+real maxux=h_grid.arr[h_grid.UUX][0];
+for (int i=1;i<134*134*134;i++){if (h_grid.arr[h_grid.UUX][i]>maxux){ maxux=(h_grid.arr[h_grid.UUX])[i];}}
+printf("maxux= %.14f\n", maxux);
+}*/
     if (ldiagnos) timeseries_diagnostics(h_grid);
+    GPUIntegrateStep(isubstep-1, dt);
 
-    GPUStoreInternalHalos(&h_grid,halo_buffer);
-    //!!!GPUStore(&h_grid);
+    //!!!GPUStoreInternalHalos(&h_grid,halo_buffer);
+    GPUStore(&h_grid);
 
 //CRASH("GPUDiagnostics");
 }
@@ -117,7 +123,9 @@ extern "C" void initGPU()
 extern "C" void initializeGPU()
 {
     //Setup configurations used for initializing and running the GPU code
-
+#ifdef DOUBLE_PRECISION
+printf("DOUBLE PRECISION!\n");
+#endif
     	cparams.Setup(dx, dy, dz);
 
         GPUInitialize(&cparams, &run_params, h_grid);         // loads device constants
