@@ -220,7 +220,21 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro(f,p)
+    subroutine calc_pencils_hydro_std(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_hydro_pencpar(f,p,lpencil)
+!
+      endsubroutine calc_pencils_hydro_std
+!***********************************************************************
+    subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -233,37 +247,38 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f, lpenc_loc
       intent(inout) :: p
 ! uu
-      if (lpencil(i_uu)) p%uu=0.0
+      if (lpenc_loc(i_uu)) p%uu=0.0
 ! u2
-      if (lpencil(i_u2)) p%u2=0.0
+      if (lpenc_loc(i_u2)) p%u2=0.0
 ! oo
-      if (lpencil(i_oo)) p%oo=0.0
+      if (lpenc_loc(i_oo)) p%oo=0.0
 ! ou
-      if (lpencil(i_ou)) p%ou=0.0
+      if (lpenc_loc(i_ou)) p%ou=0.0
 ! uij
-      if (lpencil(i_uij)) p%uij=0.0
+      if (lpenc_loc(i_uij)) p%uij=0.0
 ! sij
-      if (lpencil(i_sij)) p%sij=0.0
+      if (lpenc_loc(i_sij)) p%sij=0.0
 ! sij2
-      if (lpencil(i_sij2)) p%sij2=0.0
+      if (lpenc_loc(i_sij2)) p%sij2=0.0
 ! divu
-      if (lpencil(i_divu)) p%divu=0.0
+      if (lpenc_loc(i_divu)) p%divu=0.0
 ! uij5
-      if (lpencil(i_uij5)) p%uij5=0.0
+      if (lpenc_loc(i_uij5)) p%uij5=0.0
 ! graddivu
-      if (lpencil(i_graddivu)) p%graddivu=0.0
+      if (lpenc_loc(i_graddivu)) p%graddivu=0.0
 ! ugu
-      if (lpencil(i_ugu)) p%ugu=0.0
+      if (lpenc_loc(i_ugu)) p%ugu=0.0
 ! ogu
-      if (lpencil(i_ogu)) p%ogu=0.0
+      if (lpenc_loc(i_ogu)) p%ogu=0.0
 ! del2u
-      if (lpencil(i_del2u)) p%del2u=0.0
+      if (lpenc_loc(i_del2u)) p%del2u=0.0
 ! curlo
-      if (lpencil(i_curlo)) p%curlo=0.0
+      if (lpenc_loc(i_curlo)) p%curlo=0.0
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -284,7 +299,7 @@ module Hydro
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_hydro
+    endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
     subroutine hydro_before_boundary(f)
 !
@@ -353,7 +368,7 @@ module Hydro
 !  coriolis terms for cartesian geometry
 !
 !  30-oct-09/MR: outsourced, parameter velind added
-!  checked to be an equivalent change by auot-test conv-slab-noequi, mdwarf
+!  checked to be an equivalent change by auto-test conv-slab-noequi, mdwarf
 !
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
