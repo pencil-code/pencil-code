@@ -1299,7 +1299,9 @@ module Testfield
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
       type (pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc
+!--      logical, dimension(npencils) :: lpenc_loc
+!AB: Matthias, revoked this change, after which imposed field result
+!AB: was no longer recovered
 !
       intent(inout) :: f
 !
@@ -1319,7 +1321,9 @@ module Testfield
 !
       uxbtestmz=0.; jxbtestmz=0.; ugutestmz=0.
 !
-      lpenc_loc = .false.; lpenc_loc((/i_uu,i_bbb,i_jj/))=.true.
+!--     lpenc_loc = .false.; lpenc_loc((/i_uu,i_bbb,i_jj/))=.true.
+!AB: Matthias, revoked this change, after which imposed field result
+!AB: was no longer recovered
 !
 !  Start mn loop
 !
@@ -1329,8 +1333,12 @@ module Testfield
 !
 !  Begin by getting/computing fields from main run.
 !
-        call calc_pencils_hydro(f,p,lpenc_loc)
-        call calc_pencils_magnetic(f,p,lpenc_loc)
+        !call calc_pencils_hydro(f,p,lpenc_loc)
+        !call calc_pencils_magnetic(f,p,lpenc_loc)
+!AB: Matthias, revoked this change, after which imposed field result
+!AB: was no longer recovered
+        call calc_pencils_hydro(f,p)
+        call calc_pencils_magnetic(f,p)
 !
 !  Calculate uufluct=U-Umean.
 !-  Note that uumz has dimensions mz*3, not nz*3.
