@@ -653,6 +653,11 @@ module Forcing
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='initialize_forcing')
+!
+!  Make sure that testfields/testflows are registered.  
+!    
+      ltestfield_forcing = ltestfield_forcing.and.iaatest>0
+      ltestflow_forcing = ltestflow_forcing.and.iuutest>0
 
       if (.not.lforcing_cont) return
       
@@ -1643,7 +1648,7 @@ module Forcing
 !  If one of the testfield methods is used, we need to add a forcing term
 !  in one of the auxiliary equations. Their location is denoted by jtest_aa0
 !  and jtest_uu0 for the testfield and testflow equations, respectively.
-!  In the testflow module, jtest_uu0=1 is used, while in the testfield_nonlinear
+!  In the testflow module, jtest_uu0=1 is used, while in the testfield_nonlinear_z
 !  module jtest_uu0=5 is used, so for now we give them by hand.
 !
                 if (ltestfield_forcing) then
@@ -2448,11 +2453,12 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
               endif
               if (ltestfield_forcing) then
-                do jtest=1,12
-                  iaxtest=iaatest+3*(jtest-1)
-                  jf=j+iaxtest-1
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
-                enddo
+                jf=j+iaatest-1+3*(jtest_aa0-1)
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+              endif
+              if (ltestflow_forcing) then
+                jf=j+iuutest-1+3*(jtest_uu0-1)
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
               endif
             endif
           enddo
