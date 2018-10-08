@@ -30,3 +30,10 @@
   public :: uumz, guumz, lcalc_uumeanz, lupw_uu
   public :: uumxy, uumxz,lcalc_uumeanxy, lcalc_uumeanxz
   public :: ampl_fcont_uu
+
+  interface calc_pencils_hydro
+    module procedure calc_pencils_hydro_pencpar
+    module procedure calc_pencils_hydro_std
+  endinterface calc_pencils_hydro
+!
+

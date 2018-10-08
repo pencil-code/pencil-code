@@ -129,9 +129,9 @@ module Hydro
   logical :: luut_as_aux=.false.,loot_as_aux=.false.
   logical :: lscale_tobox=.true.
   logical, target :: lpressuregradient_gas=.true.
-  logical, target :: lcoriolis_force=.true.
-  logical         :: lshear_in_coriolis=.false.
-  logical, target :: lcentrifugal_force=.false.
+  logical :: lcoriolis_force=.true.
+  logical :: lshear_in_coriolis=.false.
+  logical :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false., lno_second_ampl=.true.
@@ -659,11 +659,6 @@ module Hydro
 !
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: Omegav=0.
-!
-  interface calc_pencils_hydro
-    module procedure calc_pencils_hydro_pencpar
-    module procedure calc_pencils_hydro_std
-  endinterface calc_pencils_hydro
 !
   contains
 !***********************************************************************
