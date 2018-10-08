@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED bb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
+! PENCILS PROVIDED bb(3); bbb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3); jj(3)
 ! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3), bunit(3)
 !
 !***************************************************************
@@ -114,7 +114,18 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
-    subroutine calc_pencils_magnetic(f,p)
+    subroutine calc_pencils_magnetic_std(f,p)
+!
+!  Standard version (_std): global variable lpencil contains information about needed pencils.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+!
+      call calc_pencils_magnetic_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_magnetic_std
+!***********************************************************************
+    subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -123,22 +134,24 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
 !
-      intent(in)  :: f
+      intent(in)  :: f, lpenc_loc
       intent(inout) :: p
 !
-      if (lpencil(i_aa)) p%aa=0.0
-      if (lpencil(i_bb)) p%bb=0.0
-      if (lpencil(i_bunit)) p%bunit=0.0
-      if (lpencil(i_b2)) p%b2=0.0
-      if (lpencil(i_jxbr)) p%jxbr=0.0
-      if (lpencil(i_bij)) p%bij=0.0
-      if (lpencil(i_uxb)) p%uxb=0.0
-      if (lpencil(i_jj)) p%jj=0.0
+      if (lpenc_loc(i_aa)) p%aa=0.0
+      if (lpenc_loc(i_bb)) p%bb=0.0
+      if (lpenc_loc(i_bbb)) p%bbb=0.0
+      if (lpenc_loc(i_bunit)) p%bunit=0.0
+      if (lpenc_loc(i_b2)) p%b2=0.0
+      if (lpenc_loc(i_jxbr)) p%jxbr=0.0
+      if (lpenc_loc(i_bij)) p%bij=0.0
+      if (lpenc_loc(i_uxb)) p%uxb=0.0
+      if (lpenc_loc(i_jj)) p%jj=0.0
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_magnetic
+    endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine update_char_vel_magnetic(f)
 !

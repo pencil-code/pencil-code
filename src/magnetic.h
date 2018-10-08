@@ -34,4 +34,9 @@
   public :: lresi_dep
   public :: lcovariant_magnetic
 
+  interface calc_pencils_magnetic
+    module procedure calc_pencils_magnetic_pencpar
+    module procedure calc_pencils_magnetic_std
+  endinterface calc_pencils_magnetic
+
   private

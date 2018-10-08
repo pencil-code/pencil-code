@@ -527,7 +527,18 @@ module Magnetic
 !
     endsubroutine magnetic_after_boundary
 !***********************************************************************
-    subroutine calc_pencils_magnetic(f, p)
+    subroutine calc_pencils_magnetic_std(f,p)
+!
+!  Standard version (_std): global variable lpencil contains information about needed pencils.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+!
+      call calc_pencils_magnetic_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_magnetic_std
+!***********************************************************************
+    subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculates Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -536,13 +547,14 @@ module Magnetic
 !
       use Sub, only: gij, div_mn, curl_mn, cross, dot2_mn
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      type(pencil_case), intent(inout) :: p
+      real, dimension(mx,my,mz,mfarray), intent(in)   :: f
+      type(pencil_case),                 intent(inout):: p
+      logical, dimension(:),             intent(in)   :: lpenc_loc
 !
       real, dimension(nx,3,3) :: eij
       real, dimension(3) :: b_ext
 !
-      bb: if (lpencil(i_bb)) then
+      bb: if (lpenc_loc(i_bb)) then
         if (lbext) then
           call get_bext(b_ext)
           p%bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
@@ -551,37 +563,37 @@ module Magnetic
         endif
       endif bb
 !
-      if (lpencil(i_bbb)) p%bbb = f(l1:l2,m,n,ibx:ibz)
+      if (lpenc_loc(i_bbb)) p%bbb = f(l1:l2,m,n,ibx:ibz)
 !
-      if (lpencil(i_b2)) p%b2 = sum(p%bb**2, dim=2)
+      if (lpenc_loc(i_b2)) p%b2 = sum(p%bb**2, dim=2)
 !
-      if (lpencil(i_bij)) call gij(f, ibb, p%bij, 1)
+      if (lpenc_loc(i_bij)) call gij(f, ibb, p%bij, 1)
 !
-      if (lpencil(i_jj)) p%jj = f(l1:l2,m,n,ijx:ijz)
+      if (lpenc_loc(i_jj)) p%jj = f(l1:l2,m,n,ijx:ijz)
 !
-      if (lpencil(i_j2)) call dot2_mn(p%jj, p%j2)
+      if (lpenc_loc(i_j2)) call dot2_mn(p%jj, p%j2)
 !
-      if (lpencil(i_divb)) call div_mn(p%bij, p%divb, p%bb)
+      if (lpenc_loc(i_divb)) call div_mn(p%bij, p%divb, p%bb)
 !
-      jxbr: if (lpencil(i_jxbr)) then
+      jxbr: if (lpenc_loc(i_jxbr)) then
         call cross(p%jj, p%bb, p%jxbr)
         p%jxbr = spread(p%rho1,2,3) * p%jxbr
       endif jxbr
 !
-      curle: if (lpencil(i_curle)) then
+      curle: if (lpenc_loc(i_curle)) then
         call gij(f, iee, eij, 1)
         call curl_mn(eij, p%curle, f(l1:l2,m,n,ieex:ieez))
       endif curle
 !
-      if (lpencil(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
+      if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
 !
-      if (lpencil(i_va2)) p%va2 = mu01 * p%b2 * p%rho1
+      if (lpenc_loc(i_va2)) p%va2 = mu01 * p%b2 * p%rho1
 !
 !  Dummy pencils
 !
-      if (lpencil(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
+      if (lpenc_loc(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
 !
-      if (lpencil(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
+      if (lpenc_loc(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************

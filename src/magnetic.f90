@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3)
+! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED bijtilde(3,2)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
@@ -72,6 +72,8 @@ module Magnetic
   real, target, dimension (:,:), allocatable :: beta1_yz
   real, target, dimension (:,:), allocatable :: beta1_xz
   real, target, dimension (:,:), allocatable :: beta1_xz2
+!
+  real, target, dimension (:,:), allocatable :: aps_xy, aps_xz, aps_yz, aps_xz2
 !
 !  xy-averaged field
 !
@@ -840,13 +842,8 @@ module Magnetic
 !
 !  Video data.
 !
-  integer :: ivid_bb=0, ivid_jj=0, ivid_b2=0, ivid_j2=0, ivid_ab=0, &
+  integer :: ivid_aps=0, ivid_bb=0, ivid_jj=0, ivid_b2=0, ivid_j2=0, ivid_ab=0, &
              ivid_jb=0, ivid_beta1=0, ivid_poynting=0
-!
-  interface calc_pencils_magnetic
-    module procedure calc_pencils_magnetic_pencpar
-    module procedure calc_pencils_magnetic_std
-  endinterface calc_pencils_magnetic
 !
 ! Module Variables
 !
@@ -1586,6 +1583,18 @@ module Magnetic
       llorentz_rhoref = llorentzforce .and. rhoref/=impossible .and. rhoref>0.
       if (llorentz_rhoref) rhoref1=1./rhoref
 
+      if (ivid_aps/=0) then
+        if (.not.lcylindrical_coords.and..not.lspherical_coords.and. &
+            .not.(dimensionality==2.and..not.lactive_dimension(3)))  then
+          call warning('initialize_magnetic','aa_phi x (axis distance) on slices only implemented for axisymmetric setups')
+          ivid_aps=0
+        endif
+        if (lwrite_slice_xy .and..not.allocated(aps_xy ) ) allocate(aps_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(aps_xz ) ) allocate(aps_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(aps_yz ) ) allocate(aps_yz (ny,nz))
+        if (lwrite_slice_xz2.and..not.allocated(aps_xz2) ) allocate(aps_xz2(nx,nz))
+      endif
+
       if (ivid_bb/=0) then
         !call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
         if (lwrite_slice_xy .and..not.allocated(bb_xy) ) allocate(bb_xy (nx,ny,3))
@@ -2198,6 +2207,10 @@ module Magnetic
       endif
 !
       if (lwrite_slices) then
+        if (ivid_aps/=0) then
+          lpenc_video(i_aps)=.true.
+          lpenc_video(i_rcyl_mn)=.true.
+        endif
         if (ivid_bb/=0) lpenc_video(i_bb)=.true.
         if (ivid_jj/=0) lpenc_video(i_jj)=.true.
         if (ivid_b2/=0) lpenc_video(i_b2)=.true.
@@ -2214,10 +2227,10 @@ module Magnetic
       if ((lresi_eta_const.or.lresi_eta_tdep) .and. .not. lweyl_gauge &
           .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
 !
-      zdep: if (lresi_zdep) then
+      if (lresi_zdep) then
         if (.not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
         lpenc_requested(i_diva) = .true.
-      endif zdep
+      endif
 !
 !  jj pencil always needed when in Weyl gauge
 !
@@ -2960,6 +2973,8 @@ module Magnetic
           call div_other(f(:,:,:,iax:iaz),p%diva)
         endif
       endif
+! aps
+      if (lpenc_loc(i_aps)) p%aps=f(l1:l2,m,n,iaz)*p%rcyl_mn
 ! bb
       if (lpenc_loc(i_bb)) then
         if (lbb_as_comaux) then
@@ -5367,6 +5382,7 @@ module Magnetic
 !
       if (lvideo.and.lfirst) then
 !
+        if (ivid_aps/=0) call store_slices(p%aps,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
         if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
         if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
         if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
@@ -6104,6 +6120,11 @@ module Magnetic
 !
         case ('aa')
           call assign_slices_vec(slices,f,iaa)
+!
+!  Phi component of magnetic vector potential times axis distance (derived variable)
+!
+        case ('aps')
+          call assign_slices_scal(slices,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
 !
 !  Magnetic field (derived variable)
 !
@@ -8175,7 +8196,7 @@ module Magnetic
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
         idiag_hjparallelm=0;idiag_hjperpm=0;idiag_magfricmax=0
-        ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
+        ivid_aps=0; ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
         ivid_jb=0; ivid_beta1=0; ivid_poynting=0    
       endif
 !
@@ -8714,6 +8735,7 @@ module Magnetic
       idum=0
       do inamev=1,nnamev
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'aa',idum)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'aps',ivid_aps)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'bb',ivid_bb)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'jj',ivid_jj)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'b2',ivid_b2)
