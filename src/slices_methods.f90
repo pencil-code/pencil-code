@@ -42,9 +42,11 @@ module Slices_methods
 !  Assignment of slice pointers according to slice selection switches.
 !
 !  12-apr-17/MR: coded 
+!   8-oct-18/MR: made some pars optional
 !
-      type (slice_data),            intent(OUT):: slices
-      real, dimension(:,:), target, intent(IN) :: xy,xz,yz,xy2,xy3,xy4,xz2
+      type (slice_data),                      intent(OUT):: slices
+      real, dimension(:,:), target,           intent(IN) :: xy
+      real, dimension(:,:), target, optional, intent(IN) :: xz,yz,xy2,xy3,xy4,xz2
 
       if (lwrite_slice_yz ) slices%yz =>yz
       if (lwrite_slice_xz ) slices%xz =>xz
@@ -185,17 +187,19 @@ module Slices_methods
 !  Stores scalar data from pencil in auxiliary arrays when needed.
 !
 !  12-apr-17/MR: coded 
+!   8-oct-18/MR: made some pars optional
 !
-      real, dimension(nx) , intent(IN) :: pencil
-      real, dimension(:,:), intent(OUT):: xy,xz,yz,xy2,xy3,xy4,xz2
+      real, dimension(nx) , intent(IN)           :: pencil
+      real, dimension(:,:), intent(OUT)          :: xy
+      real, dimension(:,:), intent(OUT),optional :: xz,yz,xy2,xy3,xy4,xz2
 
-      if (n==iz_loc)  xy(:,m-m1+1)=pencil
-      if (m==iy_loc)  xz(:,n-n1+1)=pencil
-      if (lwrite_slice_yz) yz(m-m1+1,n-n1+1)=pencil(ix_loc-l1+1)
-      if (n==iz2_loc) xy2(:,m-m1+1)=pencil
-      if (n==iz3_loc) xy3(:,m-m1+1)=pencil
-      if (n==iz4_loc) xy4(:,m-m1+1)=pencil
-      if (m==iy2_loc) xz2(:,n-n1+1)=pencil
+      if (n==iz_loc) xy(:,m-m1+1)=pencil
+      if (present(xz) .and.m==iy_loc)  xz(:,n-n1+1)=pencil
+      if (present(yz) .and.lwrite_slice_yz) yz(m-m1+1,n-n1+1)=pencil(ix_loc-l1+1)
+      if (present(xy2).and.n==iz2_loc) xy2(:,m-m1+1)=pencil
+      if (present(xy3).and.n==iz3_loc) xy3(:,m-m1+1)=pencil
+      if (present(xy4).and.n==iz4_loc) xy4(:,m-m1+1)=pencil
+      if (present(xz2).and.m==iy2_loc) xz2(:,n-n1+1)=pencil
 
     endsubroutine store_slices_scal
 !***********************************************************************
