@@ -1292,9 +1292,9 @@ endif
       integer, intent(in) :: loadstart
       character(*), optional :: name
 
-      integer :: ndims
+      integer :: ndims,i
       integer(HSIZE_T) :: mask_i
-      real :: globmin, globmax ! output for diagnostics
+      real :: globmin, globmax, sum, rms ! output for diagnostics
 
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,1) = loadstart
@@ -1342,13 +1342,20 @@ endif
                            'for /grid/'//name)
           end if
 
-      tensor_maxvals(tensor_id) = maxval(dataarray)
-      tensor_minvals(tensor_id) = minval(dataarray)
-      if (present(name)) then
-        call mpireduce_min(tensor_minvals(tensor_id),globmin)
-        call mpireduce_max(tensor_maxvals(tensor_id),globmax)
-        if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
-      endif
+      sum = 0. ; rms = 0.
+      do i=1,3
+        tensor_maxvals(tensor_id) = maxval(dataarray(:,:,:,:,i))
+        tensor_minvals(tensor_id) = minval(dataarray(:,:,:,:,i))
+        if (present(name)) then
+          call mpireduce_min(tensor_minvals(tensor_id),globmin)
+          call mpireduce_max(tensor_maxvals(tensor_id),globmax)
+          if (lroot) write (*,*) trim(name)//'( ', i, ')  min/max:', globmin, globmax
+        endif
+      sum = sum + tensor_maxvals(tensor_id)*tensor_maxvals(tensor_id)
+      enddo
+      rms = sqrt(sum)
+      if (present(name) .and. lroot) write (*,*) trim(name)//' (rms):', rms
+
       dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank1
@@ -1363,9 +1370,9 @@ endif
       integer, intent(in) :: loadstart
       character(*), optional :: name
 
-      integer :: ndims
+      integer :: ndims, i, j
       integer(HSIZE_T) :: mask_i, mask_j
-      real :: globmin, globmax ! output for diagnostics
+      real :: globmin, globmax, sum, rms ! output for diagnostics
 
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,1) = loadstart
@@ -1420,13 +1427,20 @@ endif
                            'for /grid/'//name)
            end if
 
-      tensor_maxvals(tensor_id) = maxval(dataarray)
-      tensor_minvals(tensor_id) = minval(dataarray)
-      if (present(name)) then
-        call mpireduce_min(tensor_minvals(tensor_id),globmin)
-        call mpireduce_max(tensor_maxvals(tensor_id),globmax)
-        if (lroot) write (*,*) trim(name)//' min/max: ', globmin, globmax
-      endif
+      sum = 0.; rms = 0.
+      do i=1,3 ; do j=1,3 
+        tensor_maxvals(tensor_id) = maxval(dataarray(:,:,:,:,i,j))
+        tensor_minvals(tensor_id) = minval(dataarray(:,:,:,:,i,j))
+        if (present(name)) then
+          call mpireduce_min(tensor_minvals(tensor_id),globmin)
+          call mpireduce_max(tensor_maxvals(tensor_id),globmax)
+          if (i == j .and. lroot) write (*,*) trim(name)//'( ', i, ',', j,' ) min/max: ', globmin, globmax
+        endif
+        sum = sum + tensor_maxvals(tensor_id)*tensor_maxvals(tensor_id)
+      enddo ; enddo
+      rms=sqrt(sum)
+      if (present(name) .and. lroot) write (*,*) trim(name)//' (rms):', rms
+
       dataarray = tensor_scales(tensor_id) * dataarray
 
     end subroutine loadDataset_rank2
