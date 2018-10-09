@@ -52,7 +52,7 @@ module Special
   real :: mach_chen=0.,maxvA=0., dA=1.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.,hyper_heating=.false.
-  logical :: linject_maghel=.false.
+  logical :: linject_maghel=.false., lmag_bound_vec=.false.
   real :: maghel_ampl=0., Bz2xym=1.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -85,7 +85,7 @@ module Special
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
       sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
       R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating, &
-      linject_maghel, maghel_ampl, ldensity_floor, density_min
+      linject_maghel, maghel_ampl, ldensity_floor, density_min, lmag_bound_vec
 !
 ! variables for print.in
 !
@@ -2369,6 +2369,8 @@ module Special
       integer :: ierr,lend,i,idx2,idy2,stat
 !
       real, dimension (:,:), allocatable :: Bz0_i,Bz0l,Bz0r
+      real, dimension (:,:), allocatable :: Bx0_i,Bx0l,Bx0r
+      real, dimension (:,:), allocatable :: By0_i,By0l,By0r
       real, dimension (:,:), allocatable :: A_i,A_r
       real, dimension (:,:), allocatable :: kx,ky,k2
       real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr,Azl,Azr
@@ -2407,6 +2409,17 @@ module Special
         allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
 !
+!     using a Vector magnetogram
+!
+        if (lmag_bound_vec) then
+          allocate(Bx0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(Bx0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(Bx0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+          allocate(By0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(By0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(By0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+        endif
+!
         kx =spread(kx_fft,2,nygrid)
         ky =spread(ky_fft,1,nxgrid)
         k2 = kx*kx + ky*ky
@@ -2440,10 +2453,25 @@ module Special
 !
         open (10,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
-        read (10,rec=i) Bz0l
-        read (10,rec=i+1) Bz0r
+          if (lmag_bound_vec) then
+            read (10,rec=3*(i-1)+1) Bx0l
+            read (10,rec=3*i+1)     Bx0r
+            read (10,rec=3*(i-1)+2) By0l
+            read (10,rec=3*i+2)     By0r
+            read (10,rec=3*(i-1)+3) Bz0l
+            read (10,rec=3*i+3)     Bz0r
+          else 
+            read (10,rec=i) Bz0l
+            read (10,rec=i+1) Bz0r
+          endif
         close (10)
 !
+        if (lmag_bound_vec) then
+          Bx0l = Bx0l *  1e-4 / unit_magnetic  ! left real part
+          Bx0r = Bx0r *  1e-4 / unit_magnetic  ! right real part
+          By0l = By0l *  1e-4 / unit_magnetic  ! left real part
+          By0r = By0r *  1e-4 / unit_magnetic  ! right real part
+        endif
         Bz0l = Bz0l *  1e-4 / unit_magnetic  ! left real part
         Bz0r = Bz0r *  1e-4 / unit_magnetic  ! right real part
 !
@@ -2459,6 +2487,12 @@ module Special
           Azl = maghel_ampl/Bz2xym * Bz0l(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
         endif
 !
+        if (lmag_bound_vec) then
+          Bx0_i = 0.
+          call fourier_transform_other(Bx0l,Bx0_i)
+          By0_i = 0.
+          call fourier_transform_other(By0l,By0_i)
+        endif
         Bz0_i = 0.
         call fourier_transform_other(Bz0l,Bz0_i)
 !
@@ -2484,6 +2518,23 @@ module Special
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
+        if (lmag_bound_vec) then
+          where (k2 /= 0 )
+            A_r =  -By0_i*kx/k2 + Bx0_i*ky/k2
+            A_i =  By0l*kx/k2 - Bx0l*ky/k2
+          elsewhere
+            A_r =  -By0_i*kx/kx(idx2,1) + Bx0_i*ky/ky(1,idy2)
+            A_i =  By0l*kx/kx(idx2,1) - Bx0l*ky/ky(1,idy2)
+          endwhere
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+          if (.not. linject_maghel) then
+            Azl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          else
+            Azl = Azl + A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         endif
+       endif
+!
 !
 ! second point in time
 !
@@ -2495,6 +2546,13 @@ module Special
         if (linject_maghel) then
           Bz2xym=sum(Bz0r**2.)/nxgrid/nygrid
           Azr = maghel_ampl/Bz2xym * Bz0r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
+!
+        if (lmag_bound_vec) then
+          Bx0_i = 0.
+          call fourier_transform_other(Bx0r,Bx0_i)
+          By0_i = 0.
+          call fourier_transform_other(By0r,By0_i)
         endif
 !
         Bz0_i = 0.
@@ -2521,6 +2579,23 @@ module Special
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
+        if (lmag_bound_vec) then
+          where (k2 /= 0 )
+            A_r =  -By0_i*kx/k2 + Bx0_i*ky/k2
+            A_i =  By0r*kx/k2 - Bx0r*ky/k2
+          elsewhere
+            A_r =  -By0_i*kx/kx(idx2,1) + Bx0_i*ky/ky(1,idy2)
+            A_i =  By0r*kx/kx(idx2,1) - Bx0r*ky/ky(1,idy2)
+          endwhere
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+          if (.not. linject_maghel) then
+            Azr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          else
+            Azr = Azr + A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          endif
+        endif
+!
         if (allocated(Bz0l)) deallocate(Bz0l)
         if (allocated(Bz0r)) deallocate(Bz0r)
         if (allocated(Bz0_i)) deallocate(Bz0_i)
@@ -2529,6 +2604,14 @@ module Special
         if (allocated(kx)) deallocate(kx)
         if (allocated(ky)) deallocate(ky)
         if (allocated(k2)) deallocate(k2)
+        if (lmag_bound_vec) then
+          if (allocated(Bx0l)) deallocate(Bx0l)
+          if (allocated(Bx0r)) deallocate(Bx0r)
+          if (allocated(Bx0_i)) deallocate(Bx0_i)
+          if (allocated(By0l)) deallocate(By0l)
+          if (allocated(By0r)) deallocate(By0r)
+          if (allocated(By0_i)) deallocate(By0_i)
+        endif
 !
       endif
 !
@@ -2538,7 +2621,7 @@ module Special
         f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)*dt*b_tau
 !
-        if (linject_maghel) then
+        if (linject_maghel .or. lmag_bound_vec) then
           f(l1:l2,m1:m2,n1,iaz) = f(l1:l2,m1:m2,n1,iaz)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Azr - Azl) / (tr - tl) + Azl)*dt*b_tau
         endif
@@ -2547,7 +2630,7 @@ module Special
         f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
         f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
 !
-        if (linject_maghel) then
+        if (linject_maghel .or. lmag_bound_vec) then
           f(l1:l2,m1:m2,n1,iaz) = (time_SI - (tl+delta_t)) * (Azr - Azl) / (tr - tl) + Azl
         endif
       endif
