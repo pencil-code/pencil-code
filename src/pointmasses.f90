@@ -256,6 +256,8 @@ module PointMasses
 !  inverse total mass
 !
       totmass=sum(pmass)
+      if (totmass/=1) &
+           call warning("initialize_pointmasses","The masses do not sum up to one!")
       totmass1=1./max(totmass, tini)
 !
 !  Check for consistency between the cylindrical gravities switches
@@ -598,6 +600,12 @@ module PointMasses
 !  Define iplanet. istar=1 and iplanet=2 is default
 !
         if (istar == 2) iplanet=1
+!
+!  Reassign total mass of the star so that totmass=1
+!
+        pmass(istar)=1-pmass(iplanet)
+        pmass1=1./max(pmass,tini)
+        totmass=1.;totmass1=1.
 !
 !  Radial position at barycentric coordinates. Start both at apocenter,
 !
