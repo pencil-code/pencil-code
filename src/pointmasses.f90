@@ -40,7 +40,7 @@ module PointMasses
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   integer :: ramp_orbits=5
-  integer :: iglobal_ggp=0, istar=1, iplanet=2
+  integer :: iglobal_ggp=0, iprimary=1, isecondary=2
   integer :: ivpx_cart=0,ivpy_cart=0,ivpz_cart=0
 !
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
@@ -76,7 +76,7 @@ module PointMasses
       pmass, r_smooth, lcylindrical_gravity_nbody, lexclude_frozen, GNewton, &
       bcqx, bcqy, bcqz, ramp_orbits, lramp, final_ramped_mass, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
-      accrete_hills_frac, istar, &
+      accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, lretrograde, &
 !      linertial_frame,
       eccentricity, semimajor_axis, & !lcartesian_evolution, &
@@ -87,7 +87,7 @@ module PointMasses
       lreset_cm, &
       lnogravz_star, lfollow_particle, lbackreaction, lexclude_frozen, &
       GNewton, bcqx, bcqy, bcqz, &
-      linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
+      linterpolate_quadratic_spline, laccretion, accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
       ltempering, & !linertial_frame, & !lcartesian_evolution,
       ipotential_pointmass, density_scale,&
@@ -242,9 +242,9 @@ module PointMasses
       if (lstart) then
         if (lramp) then
           do ks=1,nqpar
-            if (ks/=istar) pmass(ks) = epsi
+            if (ks/=iprimary) pmass(ks) = epsi
           enddo
-          pmass(istar)=1-epsi*(nqpar-1)
+          pmass(iprimary)=1-epsi*(nqpar-1)
         endif
       else
         !read imass from the snapshot
@@ -264,9 +264,9 @@ module PointMasses
 !  from cdata and the one from point mass.
 !
       if (((lcylindrical_gravity).and.&
-        (.not.lcylindrical_gravity_nbody(istar))).or.&
+        (.not.lcylindrical_gravity_nbody(iprimary))).or.&
              (.not.lcylindrical_gravity).and.&
-             (lcylindrical_gravity_nbody(istar))) then
+             (lcylindrical_gravity_nbody(iprimary))) then
         call fatal_error('initialize_pointmasses','inconsitency '//&
             'between lcylindrical_gravity from cdata and the '//&
             'one from point mass')
@@ -276,7 +276,7 @@ module PointMasses
 !
       if (any(r_smooth == impossible)) then 
         do ks=1,nqpar
-          if (ks/=istar) then
+          if (ks/=iprimary) then
             r_smooth(ks) = frac_smooth(ks) * xq0(ks) * (pmass(ks)/3.)**(1./3)
           else
             r_smooth(ks) = rsmooth
@@ -284,9 +284,9 @@ module PointMasses
         enddo
       endif
 !
-      if (rsmooth/=r_smooth(istar)) then
+      if (rsmooth/=r_smooth(iprimary)) then
         print*,'rsmooth from cdata=',rsmooth
-        print*,'r_smooth(istar)=',r_smooth(istar)
+        print*,'r_smooth(iprimary)=',r_smooth(iprimary)
         call fatal_error('initialize_pointmasses','inconsistency '//&
             'between rsmooth from cdata and the '//&
             'one from point mass')
@@ -521,7 +521,7 @@ module PointMasses
         mass_secondaries = 0.
         baricenter_secondaries=0.
         do ks=1,nqpar
-          if (ks/=istar) then
+          if (ks/=iprimary) then
             sma(ks) = abs(positions(ks,1))
             mass_secondaries = mass_secondaries + pmass(ks)
             baricenter_secondaries = baricenter_secondaries + positions(ks,1)*pmass(ks)
@@ -532,7 +532,7 @@ module PointMasses
 !  Fixed-cm assumes that the total mass is always one. The mass of the
 !  star is adjusted to ensure this.
 !
-        pmass(istar)=1.- mass_secondaries
+        pmass(iprimary)=1.- mass_secondaries
         pmass1=1./max(pmass,tini)
         totmass=1.;totmass1=1.
 !
@@ -550,7 +550,7 @@ module PointMasses
 !
         do ks=1,nqpar
           ! sign(A,B) returns the value of A with the sign of B
-          if (ks/=istar) &
+          if (ks/=iprimary) &
               positions(ks,1)=sign(1.,positions(ks,1))* (sma(ks) - absolute_offset_star)
         enddo
 !
@@ -558,14 +558,14 @@ module PointMasses
 !
         if (lcartesian_coords) then
           !put the star opposite to the baricenter of planets
-          positions(istar,1)=-sign(1.,baricenter_secondaries)*absolute_offset_star
+          positions(iprimary,1)=-sign(1.,baricenter_secondaries)*absolute_offset_star
         elseif (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
-          positions(istar,1)=absolute_offset_star
-          positions(istar,2)=pi
+          positions(iprimary,1)=absolute_offset_star
+          positions(iprimary,2)=pi
         elseif (lspherical_coords) then
-          positions(istar,1)=absolute_offset_star
-          positions(istar,3)=pi
+          positions(iprimary,1)=absolute_offset_star
+          positions(iprimary,3)=pi
         endif
 !
         if (ldebug) then
@@ -597,13 +597,13 @@ module PointMasses
         if (nqpar /= 2) call fatal_error("init_pointmasses",&
              "This initial condition is currently coded for 2 massive particles only.")
 !
-!  Define iplanet. istar=1 and iplanet=2 is default
+!  Define isecondary. iprimary=1 and isecondary=2 is default
 !
-        if (istar == 2) iplanet=1
+        if (iprimary == 2) isecondary=1
 !
 !  Reassign total mass of the star so that totmass=1
 !
-        pmass(istar)=1-pmass(iplanet)
+        pmass(iprimary)=1-pmass(isecondary)
         pmass1=1./max(pmass,tini)
         totmass=1.;totmass1=1.
 !
@@ -613,13 +613,13 @@ module PointMasses
 !
 !  See, i.e., Murray & Dermott, p.45, barycentric orbits.
 !
-        positions(iplanet,1)=(1+eccentricity) * semimajor_axis * pmass(  istar)/totmass
-        positions(  istar,1)=(1+eccentricity) * semimajor_axis * pmass(iplanet)/totmass
+        positions(isecondary,1)=(1+eccentricity) * semimajor_axis * pmass(  iprimary)/totmass
+        positions(  iprimary,1)=(1+eccentricity) * semimajor_axis * pmass(isecondary)/totmass
 !
 !  Azimuthal position. Planet and star phased by pi.
 !
-        positions(iplanet,2)=0
-        positions(  istar,2)=pi
+        positions(isecondary,2)=0
+        positions(  iprimary,2)=pi
 !
         do k=1,nqpar
           !if (ipar(k) <= nqpar) then
@@ -673,14 +673,14 @@ module PointMasses
 !
         velocity_baricenter_secondaries=0.
         do ks=1,nqpar
-          if (ks/=istar) then
+          if (ks/=iprimary) then
             kep_vel(ks)=sqrt(1./sma(ks)) !circular velocity
             velocity_baricenter_secondaries = velocity_baricenter_secondaries + kep_vel(ks)*pmass(ks)
           endif
         enddo
         velocity_baricenter_secondaries = velocity_baricenter_secondaries*totmass
         do ks=1,nqpar
-          if (ks/=istar) then
+          if (ks/=iprimary) then
             if (lcartesian_coords) then
               velocity(ks,2) = sign(1.,positions(ks,1))*(kep_vel(ks) - velocity_baricenter_secondaries)
             elseif (lcylindrical_coords) then
@@ -695,11 +695,11 @@ module PointMasses
 !  The last one (star) fixes the CM also with velocity zero
 !
         if (lcartesian_coords) then
-          velocity(istar,2)= -sign(1.,baricenter_secondaries)*velocity_baricenter_secondaries
+          velocity(iprimary,2)= -sign(1.,baricenter_secondaries)*velocity_baricenter_secondaries
         elseif (lcylindrical_coords) then
-          velocity(istar,2)= velocity_baricenter_secondaries
+          velocity(iprimary,2)= velocity_baricenter_secondaries
         elseif (lspherical_coords) then
-          velocity(istar,3)= velocity_baricenter_secondaries
+          velocity(iprimary,3)= velocity_baricenter_secondaries
         endif
 !
 !  Revert all velocities if retrograde
@@ -721,11 +721,11 @@ module PointMasses
         if (nqpar /= 2) call fatal_error("init_pointmasses",&
              "This initial condition is currently coded for 2 massive particles only.")
 !
-!  Define iplanet. istar=1 and iplanet=2 is default.
+!  Define isecondary. iprimary=1 and isecondary=2 is default.
 !
-        if (istar == 2) iplanet=1
-        velocity(iplanet,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  istar)/totmass
-        velocity(  istar,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(iplanet)/totmass
+        if (iprimary == 2) isecondary=1
+        velocity(isecondary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  iprimary)/totmass
+        velocity(  iprimary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(isecondary)/totmass
 !
 !  Revert all velocities if retrograde.
 !
@@ -831,7 +831,7 @@ module PointMasses
 !  numerical troubles as the star is too close to the origin (in cylindrical
 !  coordinates).
 !
-          if ((ks==istar).and.lnoselfgrav_primary) lintegrate=.false.
+          if ((ks==iprimary).and.lnoselfgrav_primary) lintegrate=.false.
 !
           diskgravity: if (lintegrate) then
 !
@@ -928,7 +928,7 @@ module PointMasses
       real :: rr,w2,sma2
 !
       do ks=1,nqpar
-        if (laccretion(ks).and.(ks/=istar)) then
+        if (laccretion(ks).and.(ks/=iprimary)) then
           if (lcartesian_coords) then
             rr=sqrt(fq(ks,ixq)**2 + fq(ks,iyq)**2 + fq(ks,izq)**2)
           elseif (lcylindrical_coords) then
@@ -953,7 +953,7 @@ module PointMasses
 !
 ! squared hills radius
 !
-          hill_radius_square(ks)=sma2*(pmass(ks)*pmass1(istar)/3)**(2./3.)
+          hill_radius_square(ks)=sma2*(pmass(ks)*pmass1(iprimary)/3)**(2./3.)
         else
           hill_radius_square(ks)=0.0
         endif
@@ -1414,7 +1414,7 @@ module PointMasses
       real :: rr,w2,smap,hills,phip,phi,pcut
       integer :: ks,i
 !
-      if (ks==istar) call fatal_error('calc_torque', &
+      if (ks==iprimary) call fatal_error('calc_torque', &
           'Nonsense to calculate torques for the star')
 !
       if (lcartesian_coords) then
@@ -1434,7 +1434,7 @@ module PointMasses
 !
       w2    = fq(ks,ivxq)**2 + fq(ks,ivyq)**2 + fq(ks,ivzq)**2
       smap  = 1./(2./rr - w2)
-      hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
+      hills = smap*(pmass(ks)*pmass1(iprimary)/3.)**(1./3.)
 !
 !  Define separate torques for gas and dust/particles
 !
@@ -1534,13 +1534,13 @@ module PointMasses
         tmp=0.
         !just need to do that for the original masses
         do ks=1,nqpar !_orig
-          if (ks/=istar) then
+          if (ks/=iprimary) then
             pmass(ks)= max(dble(tini),&
                  final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
             tmp=tmp+pmass(ks)
           endif
         enddo
-        pmass(istar)= 1-tmp
+        pmass(iprimary)= 1-tmp
       else
         pmass(1:nqpar)=final_ramped_mass(1:nqpar)
       endif
@@ -1583,7 +1583,7 @@ module PointMasses
         grav_particle =-GNewton*pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
         call get_gravity_field_pointmasses(grav_particle,ggp,ks)
 !
-        if ((ks==istar).and.lnogravz_star) &
+        if ((ks==iprimary).and.lnogravz_star) &
             ggp(:,3) = 0.
 !
 !  Sum up the accelerations of the massive particles
@@ -1609,7 +1609,7 @@ module PointMasses
       real :: rr1_3
       integer, intent(in) :: ks
 !
-      if (ks/=istar) then
+      if (ks/=iprimary) then
         rr1_3=(fq(ks,ixq)**2 + fq(ks,iyq)**2 + fq(ks,izq)**2)**(-1.5)
         ggt(:,1) = ggt(:,1) - GNewton*pmass(ks)*fq(ks,ixq)*rr1_3
         ggt(:,2) = ggt(:,2) - GNewton*pmass(ks)*fq(ks,iyq)*rr1_3

@@ -44,7 +44,7 @@
   pmass=1e-3, 1.
   xq0=1,0
   r_smooth=0.07,0.0
-  istar=2
+  iprimary=2
 /
 &initial_condition_pars
   density_power_law=1.5

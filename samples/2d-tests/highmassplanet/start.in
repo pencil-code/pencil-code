@@ -44,7 +44,7 @@
   xq0=1,0
   r_smooth=0.15,0.
   lcylindrical_gravity_nbody=T,T
-  istar=2
+  iprimary=2
   bcqx='out',bcqy='p'
 /
 &entropy_init_pars

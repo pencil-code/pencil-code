@@ -19,7 +19,7 @@
   GNewton =1.0
   pmass   =1.,2e-7,3e-6,3e-6,3e-7,1e-3,3e-4,4e-5,5e-5
   r_smooth=0.,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00
-  istar=1
+  iprimary=1
 !
 ! test the "out" boundary condition
 ! there is no particle inside the grid box!
