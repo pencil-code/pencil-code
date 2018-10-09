@@ -694,12 +694,12 @@ module Particles_main
 !
 !  28-aug-18/ccyang: coded
 !
-      use Special, only: special_particles_after_dtsub
+!AB   use Special, only: special_particles_after_dtsub
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, intent(in) :: dtsub
 !
-      call special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
+!AB   call special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
 !
     endsubroutine particles_special_after_dtsub
 !***********************************************************************
