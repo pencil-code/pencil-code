@@ -1277,6 +1277,8 @@ module Testfield
 !  24-sep-13/MR  : parameter p removed, calculation of pencil restricted
 !  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(mz,...;
 !                  communication simplified
+!   9-oct-18/MR  : fixed bug: to get p%bbb calculated lpencil(i_bb)=.true. necessary;
+!                  likewise for p%jj, lpencil(i_bij)=.true. needed
 !
       use Cdata
       use Sub
@@ -1299,9 +1301,7 @@ module Testfield
       logical :: headtt_save
       real :: fac, bcosphz, bsinphz
       type (pencil_case) :: p
-!--      logical, dimension(npencils) :: lpenc_loc
-!AB: Matthias, revoked this change, after which imposed field result
-!AB: was no longer recovered
+      logical, dimension(npencils) :: lpenc_loc
 !
       intent(inout) :: f
 !
@@ -1313,17 +1313,14 @@ module Testfield
 !
 !  Stop if iE0 is too small.
 !
-      if (iE0/=5) then
+      if (iE0/=5) &
         call fatal_error('testfield_after_boundary','need ntest=5 for u0ref')
-      endif
 !
 !  Initialize buffer for mean fields.
 !
       uxbtestmz=0.; jxbtestmz=0.; ugutestmz=0.
 !
-!--     lpenc_loc = .false.; lpenc_loc((/i_uu,i_bbb,i_jj/))=.true.
-!AB: Matthias, revoked this change, after which imposed field result
-!AB: was no longer recovered
+      lpenc_loc = .false.; lpenc_loc((/i_uu,i_bb,i_bij,i_jj/))=.true.
 !
 !  Start mn loop
 !
@@ -1333,12 +1330,13 @@ module Testfield
 !
 !  Begin by getting/computing fields from main run.
 !
-        !call calc_pencils_hydro(f,p,lpenc_loc)
-        !call calc_pencils_magnetic(f,p,lpenc_loc)
+        call calc_pencils_hydro(f,p,lpenc_loc)
+        call calc_pencils_magnetic(f,p,lpenc_loc)
 !AB: Matthias, revoked this change, after which imposed field result
 !AB: was no longer recovered
-        call calc_pencils_hydro(f,p)
-        call calc_pencils_magnetic(f,p)
+!MR: bug now corrected: I confirmed that both versions give identical results
+        !call calc_pencils_hydro(f,p)
+        !call calc_pencils_magnetic(f,p)
 !
 !  Calculate uufluct=U-Umean.
 !-  Note that uumz has dimensions mz*3, not nz*3.
