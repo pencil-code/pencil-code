@@ -1541,8 +1541,13 @@ module Testfield
           do jtest=1,njtest
             iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
             iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
-            f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)
-            f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)
+            !f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)=rescale_aatest(jtest)*f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)
+            !f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)=rescale_uutest(jtest)*f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)
+!
+!  Reset to zero to avoid NaNs
+!
+            f(l1:l2,m1:m2,n1:n2,iaxtest:iaztest)=0.
+            f(l1:l2,m1:m2,n1:n2,iuxtest:iuztest)=0.
           enddo
 !
 !  Reinitialize reference fields with fluctuations of main run.
