@@ -39,6 +39,7 @@ module Chemistry
 !
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension(:,:,:), pointer :: mu1_full
+  real, dimension(mx,my,mz,nchemspec) :: cp_R_spec
 !  real, dimension(mx,my,mz) :: mu1_full
 ! parameters for simplified cases
   real :: lambda_const=impossible
@@ -128,7 +129,7 @@ module Chemistry
 !
 !   Lewis coefficients
 !
- real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
+ real, dimension(nchemspec) :: Lewis_coef=1., Lewis_coef1=1.
 !
 !   Transport data
 !
@@ -145,14 +146,14 @@ module Chemistry
       amplchemk,amplchemk2, chem_diff,nu_spec, &
       lThCond_simple,lambda_const, visc_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
-      init_TT2,init_rho, &
+      init_TT2,init_rho,&
       init_ux,init_uy,init_uz,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lT_tanh,lT_const,lheatc_chemistry, &
       prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, Pr_turb !ldamp_zone_for_NSCBC,
+      reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef !ldamp_zone_for_NSCBC,
 !
 !
 ! run parameters
@@ -500,6 +501,13 @@ module Chemistry
         call warning('initialize_chemistry','mu1_full not provided by eos')
       endif
 !
+      if (lew_exist) then 
+        Lewis_coef1 = 1./Lewis_coef
+      else
+        print*,'Lewis numbers need to be read from start.in, no option to read from file'
+        print*,'Set all Le = 1'
+      endif
+!
 !  write array dimension to chemistry diagnostics file
 !
       open (1,file=trim(datadir)//'/net_reactions.dat',position='append')
@@ -701,12 +709,11 @@ module Chemistry
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4, D_th
-      real, dimension(nchemspec) :: Le = 1.
       real, dimension(nx,3) :: glnDiff_full_add
 !
-        TT_2 = p%TT*p%TT
-        TT_3 = TT_2*p%TT
-        TT_4 = TT_2*TT_2
+                  TT_2 = T_loc*T_loc
+                  TT_3 = TT_2*T_loc
+                  TT_4 = TT_3*T_loc
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -717,7 +724,6 @@ module Chemistry
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-!              T_loc= exp(f(l1:l2,m,n,ilnTT))
             T_loc = p%TT
             where (T_loc <= T_mid)
               p%H0_RT(:,k) = species_constants(k,iaa2(ii1)) &
@@ -747,6 +753,22 @@ module Chemistry
             enddo
           endif
         endif
+      endif
+!
+! p%ghhk moved from chemistry to eos as it depends on p%cp
+!
+      if (lpencil(i_ghhk)) then
+        do k = 1,nchemspec
+          if (species_constants(k,imass) > 0.)  then
+            do i = 1,3
+! In the chemistry module this was coded as:
+! p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
+!              p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
+              p%ghhk(:,i,k) = cp_R_spec(l1:l2,m,n,k)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT
+            enddo
+          endif
+!print*,'p%hhk_full',k,'************',p%ghhk(:,1,k)
+        enddo
       endif
 !
 !  Find the entropy by using fifth order temperature fitting function
@@ -796,7 +818,9 @@ module Chemistry
 !
         D_th = f(l1:l2,m,n,iviscosity)/Pr_number
         do k = 1,nchemspec
-          p%Diff_penc_add(:,k) = D_th/Le(k)
+          p%Diff_penc_add(:,k) = D_th*Lewis_coef1(k)
+!print*,'p%Diff_penc_add(:,k)',k,'************',p%Diff_penc_add(:,k)
+!print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
         enddo
       endif
 !
@@ -1047,7 +1071,7 @@ module Chemistry
 ! lambda_Suth in [g/(cm*s*K^0.5)]
       real :: lambda_Suth = 1.5e-5, Suth_const = 200.
       integer :: j2,j3, k
-      real, dimension(mx) :: cp_R_spec, T_loc, T_loc_2, T_loc_3, T_loc_4
+      real, dimension(mx) :: T_loc, T_loc_2, T_loc_3, T_loc_4!, cp_R_spec
       real :: T_up, T_mid, T_low
 !
           call getmu_array(f,mu1_full)
@@ -1055,13 +1079,14 @@ module Chemistry
             f(:,:,:,icp) = 0.
             if (Cp_const < impossible) then
 !
-              do j3 = nn1,nn2
-                do j2 = mm1,mm2
-                  do k = 1,nchemspec
-                    f(:,j2,j3,icp) = f(:,j2,j3,icp)+Cp_const/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
-                  enddo
-                enddo
-              enddo
+!              do j3 = nn1,nn2
+!                do j2 = mm1,mm2
+!                  do k = 1,nchemspec
+!                    f(:,j2,j3,icp) = f(:,j2,j3,icp)+Cp_const/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
+!                  enddo
+!                enddo
+!              enddo
+              f(:,:,:,icp) = Cp_const*mu1_full
 !            
             else
 !
@@ -1092,13 +1117,15 @@ module Chemistry
                       endif
 !
                       where (T_loc >= T_low .and. T_loc <= T_mid)
-                        cp_R_spec = species_constants(k,iaa2(1)) &
+                        cp_R_spec(:,j2,j3,k) = species_constants(k,iaa2(1)) &
+          !              cp_R_spec(:) = species_constants(k,iaa2(1)) &
                           +species_constants(k,iaa2(2))*T_loc &
                           +species_constants(k,iaa2(3))*T_loc_2 &
                           +species_constants(k,iaa2(4))*T_loc_3 &
                           +species_constants(k,iaa2(5))*T_loc_4
                       elsewhere (T_loc >= T_mid .and. T_loc <= T_up)
-                        cp_R_spec = species_constants(k,iaa1(1)) &
+                        cp_R_spec(:,j2,j3,k) = species_constants(k,iaa1(1)) &
+          !              cp_R_spec(:) = species_constants(k,iaa1(1)) &
                           +species_constants(k,iaa1(2))*T_loc &
                           +species_constants(k,iaa1(3))*T_loc_2 &
                           +species_constants(k,iaa1(4))*T_loc_3 &
@@ -1117,7 +1144,8 @@ module Chemistry
 !
 ! Find cp and cv for the mixture for the full domain
 !
-                      f(:,j2,j3,icp) = f(:,j2,j3,icp)+cp_R_spec*Rgas/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
+!                      f(:,j2,j3,icp) = f(:,j2,j3,icp)+cp_R_spec*Rgas/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
+                      f(:,j2,j3,icp) = f(:,j2,j3,icp)+cp_R_spec(:,j2,j3,k)*Rgas/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
                     endif
                   enddo
                 enddo
@@ -3998,7 +4026,6 @@ module Chemistry
 !  Chemkin data case
 !
         call get_reaction_rate(f,vreactions_p,vreactions_m,p)
-!      endif
 !
 !  Calculate rate of reactions (labeled q in the chemkin manual)
 !
@@ -4025,6 +4052,7 @@ module Chemistry
             net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j) &
                 *sum(vreactions_m(:,j))
           enddo
+print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
         enddo
       endif
 !
@@ -4069,7 +4097,8 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx,3) :: gDiff_full_add, gchemspec
+      real, dimension(nx,3) :: gchemspec !,gDiff_full_add
+      real, dimension(nx,3,nchemspec) :: gDiff_full_add
       real, dimension(nx) :: del2chemspec
       real, dimension(nx) :: diff_op, diff_op1, diff_op2
       real, dimension(nx) :: sum_gdiff=0., gY_sumdiff
@@ -4092,7 +4121,7 @@ module Chemistry
 !    2) Constant Lewis numbers and heat conductivity
 !
             do i = 1,3
-              gDiff_full_add(:,i) = p%gradnu(:,i)/Pr_number !*Lewis_coef1(k)
+              gDiff_full_add(:,i,k) = p%gradnu(:,i)/Pr_number*Lewis_coef1(k)
             enddo
 !
 !  Calculate the terms needed by the diffusion fluxes in a case:
@@ -4101,7 +4130,7 @@ module Chemistry
             call del2(f,ichemspec(k),del2chemspec)
             call grad(f,ichemspec(k),gchemspec)
             call dot_mn(p%glnrho,gchemspec,diff_op1)
-            call dot_mn(gDiff_full_add,gchemspec,diff_op2)
+            call dot_mn(gDiff_full_add(:,:,k),gchemspec,diff_op2)
 !
 !  Calculate the diffusion fluxes and dk_D in a case:
 !    1) Fickian diffusion law (gradient of species MASS fractions)

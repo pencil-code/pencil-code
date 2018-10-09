@@ -524,24 +524,27 @@ module EquationOfState
 !
       if (lpencil(i_nu)) then
           p%nu = f(l1:l2,m,n,iviscosity)
+!print*,'p%nu',p%nu
         if (lpencil(i_gradnu)) then
           call grad(f(:,:,:,iviscosity),p%gradnu)
+!print*,'p%gradnu',p%gradnu(:,1)
         endif
       endif
 !
 ! p%ghhk moved from chemistry to eos as it depends on p%cp
 !
-      if (lpencil(i_ghhk)) then
-        do k = 1,nchemspec
-          if (species_constants(k,imass) > 0.)  then
-            do i = 1,3
+!      if (lpencil(i_ghhk)) then
+!        do k = 1,nchemspec
+!          if (species_constants(k,imass) > 0.)  then
+!            do i = 1,3
 ! In the chemistry module this was coded as:
 ! p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
-              p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
-            enddo
-          endif
-        enddo
-      endif
+!              p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
+!            enddo
+!          endif
+!print*,'p%hhk_full',k,'************',p%ghhk(:,1,k)
+!        enddo
+!      endif
 !
 ! Calculate thermal conductivity & diffusivity
 !
