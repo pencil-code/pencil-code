@@ -595,7 +595,7 @@ module Magnetic
 !
       if (lpenc_loc(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
 !
-    endsubroutine calc_pencils_magnetic
+    endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine daa_dt(f, df, p)
 !
