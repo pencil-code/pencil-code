@@ -382,6 +382,13 @@ module Magnetic_meanfield
           detat_x=0.
           detat_y=meanfield_etat_exp*sin(y)**(meanfield_etat_exp-1.)*cos(y)
           detat_z=0.
+        case ('Jouve-2008-benchmark')
+          etat_x = meanfield_etat*(0.01 + 0.5*(1.-0.01)*(1.0+erfunc((x(l1:l2)-0.7)/0.02)))
+          etat_y = 1.
+          etat_z = 1.
+          detat_x= meanfield_etat*0.5*(1.-0.01)*exp(-((x(l1:l2)-0.7)/0.02)**2)
+          detat_y= 0.
+          detat_z= 0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
           'no such meanfield_etat_profile profile')
@@ -912,6 +919,8 @@ module Magnetic_meanfield
           alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*spiral
         case ('z/H*erfunc(H-z)'); alpha_tmp=z(n)/xyz1(3)*erfunc((xyz1(3)-abs(z(n)))/alpha_width)
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
+        case ('Jouve-2008-benchmark')
+          alpha_tmp=(3.*sqrt(3.)/4.)*(sin(y(m)))**2*cos(y(m))*(1.0+erfunc((x(l1:l2)-0.7)/0.02))
         case ('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'alpha_profile="nothing" has been renamed to "const", please update your run.in')
