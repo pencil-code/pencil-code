@@ -57,7 +57,7 @@ module Hydro
   real :: ampl_fcont_uu=1.
   logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
   real, dimension(nx) :: ck_r,ck_rsqr
-  integer :: ll_sh=0, mm_sh=0
+  integer :: ll_sh=0, mm_sh=0, n_xprof=-1
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
 !  init parameters
@@ -95,7 +95,7 @@ module Hydro
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
-      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, ll_sh, mm_sh
+      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, ll_sh, mm_sh, n_xprof
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -233,12 +233,17 @@ module Hydro
         endif
 
         if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
-          if (.not.lspherical_coords) call fatal_error("init_uu", &
-              "spher-harm-poloidal only meaningful for spherical coordinates"//trim(kinematic_flow))
-          if (.not.lkinflow_as_aux) call fatal_error("init_uu", &
-              "spher-harm-poloidal requires lkinflow_as_aux=T")
-          tmp_mn=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))
-          vel_prof=tmp_mn/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))
+          if (.not.lspherical_coords) call inevitably_fatal_error("init_uu", &
+              '"spher-harm-poloidal" only meaningful for spherical coordinates')
+          if (.not.lkinflow_as_aux) call inevitably_fatal_error("init_uu", &
+              '"spher-harm-poloidal" requires lkinflow_as_aux=T')
+          if (n_xprof==-1) then
+            tmp_mn=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))
+            vel_prof=tmp_mn/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))     ! f/r + d f/dr 
+          else
+            tmp_mn=sin((2.*pi/(Lxyz(1))*n_xprof)*(x(l1:l2)-xyz0(1)))
+            vel_prof=tmp_mn/x(l1:l2) + (2.*pi/(Lxyz(1))*n_xprof)*cos((2.*pi/(Lxyz(1))*n_xprof)*(x(l1:l2)-xyz0(1)))
+          endif
           if (lyang) then
             allocate(yz(2,ny*nz))
             call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
@@ -263,8 +268,11 @@ module Hydro
                 sph=ampl_kinflow*ylm(ll_sh,mm_sh,sph_har_der)
                 f(l1:l2,m,n,iux) = 2.*tmp_mn*sph
                 f(l1:l2,m,n,iuy) = ampl_kinflow*vel_prof*sph_har_der
-                if (mm_sh/=0) & 
+                if (mm_sh/=0) then
                   f(l1:l2,m,n,iuz) = -vel_prof*sph*mm_sh/sinth(m)*sin(mm_sh*z(n))/cos(mm_sh*z(n))    ! d/d phi / sin(theta)
+                else
+                  f(l1:l2,m,n,iuz) = 0.
+                endif
               enddo
             enddo
           endif
@@ -380,6 +388,11 @@ module Hydro
       if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
+      if (idiag_ekin/=0 .or. idiag_ekintot/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_u2)=.true.
+      endif
+
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
     subroutine pencil_interdep_hydro(lpencil_in)
@@ -585,7 +598,7 @@ module Hydro
         endif
 ! divu
         if (lpenc_loc(i_divu) .or. lpenc_loc(i_uij)) &
-          call fatal_error('hydro_kinematic:', 'divu and uij not implemented for roberts-xz')
+          call inevitably_fatal_error('hydro_kinematic', 'divu and uij not implemented for "roberts-xz"')
 
      case ('Roberts-II-xz')
         if (headtt) print*,'Glen Roberts flow II w.r.t. x and z; kx_uukin,kz_uukin=',kx_uukin,kz_uukin
@@ -712,8 +725,8 @@ module Hydro
       case ('Roberts-IV')
         if (headtt) print*,'Roberts-IV flow; eps_kinflow=',eps_kinflow
         if (eps_kinflow==0.) &
-          call fatal_error('hydro_kinematic: kinflow = Roberts IV', &
-                           'eps_kinflow=0. ')
+          call inevitably_fatal_error('hydro_kinematic','kinflow = "Roberts IV", '//&
+                                      'eps_kinflow=0')
         fac=sqrt(2./eps_kinflow)*ampl_kinflow
         fac2=sqrt(eps_kinflow)*ampl_kinflow
 ! uu
@@ -1724,8 +1737,8 @@ module Hydro
 !          der6_uprof=der6_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
-          call fatal_error('hydro_kinematic:kinflow = radial wind', &
-              'no such wind profile. ')
+          call inevitably_fatal_error('hydro_kinematic', 'kinflow = "radial wind" - '//&
+                                      'no such wind profile')
         endselect
 !
         if (lpenc_loc(i_uu)) then
@@ -1833,8 +1846,8 @@ module Hydro
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
-          call fatal_error('hydro_kinematic: kinflow= radial_wind-circ',&
-              'no such wind profile. ')
+          call inevitably_fatal_error('hydro_kinematic', 'kinflow="radial_wind-circ" - '//&
+                                      'no such wind profile')
         endselect
         rone=xyz0(1)
         theta=y(m)
@@ -1877,8 +1890,8 @@ module Hydro
           div_uprof=der_step(x(l1:l2),wind_rmin,wind_step_width)
           der6_uprof=0.
         case default;
-          call fatal_error('hydro_kinematic: kinflow= radial-shear+rwind+rcirc',&
-              'no such wind profile. ')
+          call inevitably_fatal_error('hydro_kinematic', 'kinflow="radial-shear+rwind+rcirc" - '//&
+                                      'no such wind profile')
         endselect
         rone=xyz0(1)
         theta=y(m)
@@ -1929,8 +1942,12 @@ module Hydro
 ! divu
           if (lpenc_loc(i_divu)) p%divu=0. ! tb implemented
         else
-          call fatal_error('hydro_kinematic:', 'from-snap requires lkinflow_as_aux=T')
+          call inevitably_fatal_error('hydro_kinematic', '"from-snap" requires lkinflow_as_aux=T')
         endif
+      case ('Jouve-2008-benchmark-noav')
+        p%uu(:,1)=0.
+        p%uu(:,2)=0.
+        p%uu(:,3)=ampl_kinflow*x(l1:l2)*sin(y(m))*(-0.011125 + 0.5*(1.0 + erf((x(l1:l2)-0.7)/0.02))*(1.0-0.92-0.2*(cos(y(m)))**2)) 
 !
 ! no kinematic flow.
 !
@@ -1942,23 +1959,16 @@ module Hydro
       case('spher-harm-poloidal')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
       case('spher-harm-poloidal-per')
-        if (lpenc_loc(i_uu)) then
-          p%uu(:,1:2)=f(l1:l2,m,n,iux:iuz)*sin(omega_kinflow*t)
-          !p%uu(:,3)=f(l1:l2,m,n,iuz)*cos(omega_kinflow*t)
-        endif
+        if (lpenc_loc(i_uu)) &
+          p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
       case default
-        call fatal_error('hydro_kinematic:', 'kinflow not found')
+        call inevitably_fatal_error('hydro_kinematic', 'kinflow not found')
       end select
 !
 ! kinflows end here
 !
 ! u2
-!
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
-      if (idiag_ekin/=0 .or. idiag_ekintot/=0) then
-        lpenc_diagnos(i_rho)=.true.
-        lpenc_diagnos(i_u2)=.true.
-      endif
 ! o2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
@@ -2343,9 +2353,10 @@ module Hydro
       use General
 !
       real, intent(in) :: initpower
-      real, allocatable, dimension(:,:) :: unit_k,k,A,B,orderK
-      real, allocatable, dimension(:) :: kk,delk,energy,omega,klengths
-      real, allocatable, dimension(:) :: ampA(:), ampB(:)
+
+      real, dimension(3,KS_modes) :: unit_k,k,A,B,orderK
+      real, dimension(KS_modes) :: kk,delk,energy,omega,klengths
+      real, dimension(KS_modes) :: ampA, ampB
       real, dimension(3) :: angle,dir_in
       real :: k_option(3,10000),mkunit(10000)
       real :: arg, unity
@@ -2359,12 +2370,6 @@ module Hydro
 !
       allocate(KS_k(3,KS_modes), KS_A(3,KS_modes),KS_B(3,KS_modes),KS_omega(KS_modes))
 !
-!  The rest are dummy arrays used to get above.
-!
-      allocate(unit_k(3,KS_modes), k(3,KS_modes), A(3,KS_modes), B(3,KS_modes))
-      allocate(orderk(3,KS_modes), kk(KS_modes), delk(KS_modes), energy(KS_modes))
-      allocate(omega(KS_modes), klengths(KS_modes), ampA(KS_modes), ampB(KS_modes))
-!
 !  Dummy variable.
 !
       num=1
@@ -2373,7 +2378,7 @@ module Hydro
 !
       bubble=1.
 !
-!  Needs adaptingf for 2D runs.
+!  Needs adapting for 2D runs.
 !
       max_box=min(nxgrid,nygrid,nzgrid)
 !
@@ -2402,7 +2407,7 @@ module Hydro
         k_option(2,i)=direction(2)*2.*pi*angle(2)
         k_option(3,i)=direction(3)*2.*pi*angle(3)
 !
-        if (i==1)then
+        if (i==1) then
           k_option(1,i)=2.*pi
           k_option(2,i)=0.
           k_option(3,i)=0.
@@ -2534,10 +2539,6 @@ module Hydro
 !
       KS_omega(:)=omega(:)
       KS_k=k
-!
-!  Tidy up.
-!
-      deallocate(unit_k,orderk,kk,delk,energy,omega,klengths,ampA,ampB)
 !
     endsubroutine periodic_KS_setup
 !***********************************************************************
