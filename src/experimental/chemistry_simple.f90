@@ -711,9 +711,10 @@ module Chemistry
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4, D_th
       real, dimension(nx,3) :: glnDiff_full_add
 !
-                  TT_2 = T_loc*T_loc
-                  TT_3 = TT_2*T_loc
-                  TT_4 = TT_3*T_loc
+      T_loc = p%TT
+      TT_2 = T_loc*T_loc
+      TT_3 = TT_2*T_loc
+      TT_4 = TT_3*T_loc
 !
 !  Dimensionless Standard-state molar enthalpy H0/RT
 !
@@ -724,7 +725,7 @@ module Chemistry
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-            T_loc = p%TT
+  !          T_loc = p%TT
             where (T_loc <= T_mid)
               p%H0_RT(:,k) = species_constants(k,iaa2(ii1)) &
                   +species_constants(k,iaa2(ii2))*T_loc/2 &
@@ -781,7 +782,7 @@ module Chemistry
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-            T_loc = p%TT
+   !         T_loc = p%TT
             where (T_loc <= T_mid .and. T_low <= T_loc)
               p%S0_R(:,k) = species_constants(k,iaa2(ii1))*p%lnTT &
                   +species_constants(k,iaa2(ii2))*T_loc &
@@ -1074,6 +1075,8 @@ module Chemistry
       real, dimension(mx) :: T_loc, T_loc_2, T_loc_3, T_loc_4!, cp_R_spec
       real :: T_up, T_mid, T_low
 !
+!print*,'f(:,4,4,iTT)',f(:,4,4,iTT)
+!print*,'f(:,4,4,ilnTT)',f(:,4,4,ilnTT)
           call getmu_array(f,mu1_full)
 !
             f(:,:,:,icp) = 0.
@@ -1213,7 +1216,6 @@ module Chemistry
       intent(in) :: p,f
       intent(inout) :: df
 !
-!
 !print*,'f(l1:l2,m,n,ilnTT)',f(l1:l2,m,n,ilnTT)
 !print*,'f(l1:l2,m,n,iTT)',f(l1:l2,m,n,iTT)
 !  identify module and boundary conditions
@@ -1317,7 +1319,7 @@ module Chemistry
         if (ltemperature_nolog) then
           RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1*p%TT &
                   +sum_dk_ghk*p%cv1+sum_hhk_DYDt_reac*p%cv1
-          call stop_it('ltemperature_nolog case does not work now!')
+   !       call stop_it('ltemperature_nolog case does not work now!')
         else
           RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
               +sum_dk_ghk*p%TT1(:)*p%cv1+sum_hhk_DYDt_reac*p%TT1(:)*p%cv1
@@ -4187,7 +4189,6 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
         if (ltemperature_nolog) then
 ! changed here del2lnTT to del2TT since that was really computed in the no_log case
-! this should probably be defined as pencil
           call del2(f,iTT,del2TT)
           tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
@@ -4250,7 +4251,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
-         TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+         if (ltemperature_nolog) then
+           TT_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,iTT)
+         else
+           TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+         endif
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=m1,m2
@@ -4278,7 +4283,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
-         TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+         if (ltemperature_nolog) then
+           TT_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,iTT)
+         else
+           TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+         endif
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
@@ -4306,7 +4315,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
-         TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+         if (ltemperature_nolog) then
+           TT_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,iTT)
+         else
+           TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+         endif
          do k=1,nchemspec
             if (species_constants(k,imass)>0.) then
                do j2=l1,l2
@@ -4345,7 +4358,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
-         TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+         if (ltemperature_nolog) then
+           TT_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,iTT)
+         else
+           TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
+         endif
          cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
    !      do k=1,nchemspec
    !         if (species_constants(k,imass)>0.) then
@@ -4372,7 +4389,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
-         TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+         if (ltemperature_nolog) then
+           TT_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,iTT)
+         else
+           TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
+         endif
          cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
      !    do k=1,nchemspec
      !       if (species_constants(k,imass)>0.) then
@@ -4399,7 +4420,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
          cp_full = 0.
          cv_full = 0.
          TT_full = 0.
-         TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+         if (ltemperature_nolog) then
+           TT_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,iTT)
+         else
+           TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
+         endif
          cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
       !   do k=1,nchemspec
       !      if (species_constants(k,imass)>0.) then
@@ -5182,69 +5207,6 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
       close(file_id)
 !
     endsubroutine read_transport_data
-!***********************************************************************
-    subroutine der_onesided_4_slice_chemistry(f,sgn,df,pos,j)
-!
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
-!   Uses a one-sided 4th order stencil.
-!   sgn = +1 for forward difference, sgn = -1 for backwards difference.
-!
-!   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should
-!   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
-!   scaling factors and connection terms should instead be done when
-!   solving the characteristic equations.
-!
-!   7-jul-08/arne: coded.
-!
-      real, dimension (:,:,:) :: f
-      real, dimension (:,:) :: df
-      real :: fac
-      integer :: pos,sgn,j
-!
-      intent(in)  :: f,pos,sgn,j
-      intent(out) :: df
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          fac=1./12.*dx_1(pos)
-          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2)&
-                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
-                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
-                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
-                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          fac=1./12.*dy_1(pos)
-          df = fac*(-sgn*25*(f(l1:l2,pos,n1:n2)-f(l1:l2,pos+sgn*1,n1:n2))&
-                    +sgn*23*(f(l1:l2,pos+sgn*1,n1:n2)-f(l1:l2,pos+sgn*2,n1:n2))&
-                    -sgn*13*(f(l1:l2,pos+sgn*2,n1:n2)-f(l1:l2,pos+sgn*3,n1:n2))&
-                    +sgn*3*(f(l1:l2,pos+sgn*3,n1:n2)-f(l1:l2,pos+sgn*4,n1:n2)))
-!
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          fac=1./12.*dz_1(pos)
-          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
-                    +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
-                    -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
-                    +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
-                    -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
-!
-        else
-          df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
-        endif
-      endif
-!
-    endsubroutine der_onesided_4_slice_chemistry
 !***********************************************************************
     subroutine jacobn(f,jacob)
 !

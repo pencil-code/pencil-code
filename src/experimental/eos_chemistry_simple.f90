@@ -329,6 +329,8 @@ module EquationOfState
 !  Write slices for animation of Eos variables.
 !
 !  26-jul-06/tony: coded
+
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -339,13 +341,25 @@ module EquationOfState
 !
 !  Temperature.
 !
-        case ('lnTT')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
+        case ('lnTT'); call assign_slices_scal(slices,f,ilnTT)
+        case ('pp')
+          if (ldensity_nolog .or. ltemperature_nolog) &
+              call fatal_error('get_slices_eos',&
+              'pp not implemented for ldensity_nolog .or. ltemperature_nolog')
+          if (lwrite_slice_yz) slices%yz=Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho)) &
+                                             *mu1_full(ix_loc,m1:m2,n1:n2)
+          if (lwrite_slice_xz) slices%xz=Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho)) &
+                                             *mu1_full(l1:l2,iy_loc,n1:n2)
+          if (lwrite_slice_xz2) slices%xz=Rgas*exp(f(l1:l2,iy2_loc,n1:n2,ilnTT)+f(l1:l2,iy2_loc,n1:n2,ilnrho)) &
+                                              *mu1_full(l1:l2,iy2_loc,n1:n2)
+          if (lwrite_slice_xy) slices%xy=Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho)) &
+                                             *mu1_full(l1:l2,m1:m2,iz_loc)
+          if (lwrite_slice_xy2) slices%xy2=Rgas*exp(f(l1:l2,m1:m2,iz2_loc,ilnTT)+f(l1:l2,m1:m2,iz2_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz2_loc)
+          if (lwrite_slice_xy3) slices%xy3=Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)+f(l1:l2,m1:m2,iz3_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz3_loc)
+          if (lwrite_slice_xy4) slices%xy4=Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)+f(l1:l2,m1:m2,iz4_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz4_loc)
           slices%ready=.true.
 !
       endselect
