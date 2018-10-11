@@ -91,7 +91,7 @@ module Special
 !
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
-   real :: diffmu5, lambda5, mu5_const=0., gammaf5
+   real :: diffmu5, lambda5, mu5_const=0., gammaf5, Cw=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0.
    real :: meanmu5=0., flucmu5=0.
    real, dimension (nx,3) :: aatest, bbtest
@@ -115,7 +115,7 @@ module Special
 !
   namelist /special_run_pars/ &
       diffmu5, lambda5, cdtchiral, gammaf5, ldiffus_mu5_1_old, &
-      coef_muS, coef_mu5
+      coef_muS, coef_mu5, Cw
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -130,6 +130,8 @@ module Special
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ 
   integer :: idiag_mu5bjm=0    ! DIAG_DOC: $\left<\mu_5 ((\nabla\times\Bv)\cdot\Bv) \right>$
   integer :: idiag_mu5bjrms=0  ! DIAG_DOC: $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$
+  integer :: idiag_oogmu5rms=0  
+  integer :: idiag_oogmuSrms=0  
   integer :: idiag_dt_mu5_1=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
   integer :: idiag_dt_mu5_2=0  ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
   integer :: idiag_dt_mu5_3=0  ! DIAG_DOC: $\delta x^2/D_5$   
@@ -137,9 +139,7 @@ module Special
   integer :: idiag_dt_chiral=0 ! DIAG_DOC: total time-step contribution from chiral MHD
   integer :: idiag_mu5bxm=0      ! DIAG_DOC: $\left<\mu_5B_x\right>$
   integer :: idiag_mu5b2m=0      ! DIAG_DOC: $\left<\mu_5B^2\right>$
-!JEN:
   integer :: idiag_jxm = 0      ! DIAG_DOC: $\langle J_x\rangle$
-!JEN
 !
   contains
 !***********************************************************************
@@ -348,7 +348,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
-      real, dimension (nx) :: muSmu5, oobb
+      real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
       real, dimension (nx,3) :: mu5bb, muSmu5oo
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -385,7 +385,10 @@ module Special
           -coef_mu5*bdotgmuS  
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
-          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb
+          call dot(p%oo,p%gmuS,oogmuS)
+          call dot(p%oo,p%gmu5,oogmu5)
+          df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb &
+            -2.*Cw*(p%muS*oogmuS+p%mu5*oogmu5)
         endif
       endif
 !                          
@@ -450,6 +453,8 @@ module Special
           call dot_mn(p%bb,p%jj,bbjj)
           call sum_mn_name((p%mu5*bbjj)**2,idiag_mu5bjrms,lsqrt=.true.)
         endif
+        if (idiag_oogmu5rms/=0) call sum_mn_name(oogmu5**2,idiag_oogmu5rms,lsqrt=.true.)
+        if (idiag_oogmuSrms/=0) call sum_mn_name(oogmuS**2,idiag_oogmuSrms,lsqrt=.true.)
         if (idiag_dt_mu5_1/=0) call max_mn_name(-(1./diffus_mu5_1),idiag_dt_mu5_1,lneg=.true.)
         if (idiag_dt_mu5_2/=0) call max_mn_name(-(1./diffus_mu5_2),idiag_dt_mu5_2,lneg=.true.)
         if (idiag_dt_mu5_3/=0) call max_mn_name(-(1./diffus_mu5_3),idiag_dt_mu5_3,lneg=.true.)
@@ -529,7 +534,7 @@ module Special
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
         idiag_dt_chiral=0; idiag_dt_bb_1=0;
         idiag_dt_mu5_1=0; idiag_dt_mu5_2=0; idiag_dt_mu5_3=0;
-        idiag_jxm=0
+        idiag_jxm=0; idiag_oogmuSrms=0; idiag_oogmu5rms=0
       endif
 !
       do iname=1,nname
@@ -544,6 +549,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjm',idiag_mu5bjm)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjrms',idiag_mu5bjrms)
+        call parse_name(iname,cname(iname),cform(iname),'oogmuSrms',idiag_oogmuSrms)
+        call parse_name(iname,cname(iname),cform(iname),'oogmu5rms',idiag_oogmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'dt_mu5_1',idiag_dt_mu5_1)
         call parse_name(iname,cname(iname),cform(iname),'dt_mu5_2',idiag_dt_mu5_2)
         call parse_name(iname,cname(iname),cform(iname),'dt_mu5_3',idiag_dt_mu5_3)
