@@ -1947,7 +1947,7 @@ module Hydro
       case ('Jouve-2008-benchmark-noav')
         p%uu(:,1)=0.
         p%uu(:,2)=0.
-        p%uu(:,3)=ampl_kinflow*x(l1:l2)*sin(y(m))*(-0.011125 + 0.5*(1.0 + erf((x(l1:l2)-0.7)/0.02))*(1.0-0.92-0.2*(cos(y(m)))**2)) 
+        p%uu(:,3)=ampl_kinflow*x(l1:l2)*sin(y(m))*(-0.011125 + 0.5*(1.0 + erfunc((x(l1:l2)-0.7)/0.02))*(1.0-0.92-0.2*(cos(y(m)))**2)) 
 !
 ! no kinematic flow.
 !
