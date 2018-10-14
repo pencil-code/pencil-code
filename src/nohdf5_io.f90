@@ -193,7 +193,6 @@ module HDF5_IO
 !
       open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
       close(3)
- write (34,*) 'REACHED!'
 !
     endsubroutine index_reset
 !***********************************************************************
