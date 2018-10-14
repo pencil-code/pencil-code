@@ -66,6 +66,10 @@ if (! $?_sourceme) then		# called for the fist time?
     else
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:<IDL_DEFAULT>"
     endif
+
+    # Set HDF5 path
+    if (! $?HDF5_HOME) setenv HDF5_HOME `which h5fc | sed -e 's/\/bin\/h5fc$//'`
+
     #  Set PYTHON path
     if ($?PYTHONPATH) then
       setenv PYTHONPATH "${PYTHONPATH}:${PENCIL_HOME}/python:${PWD}/python"
