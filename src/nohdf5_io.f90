@@ -187,4 +187,28 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_4D
 !***********************************************************************
+    subroutine index_reset()
+!
+! 14-oct-18/PAB: coded
+!
+      open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
+      close(3)
+ write (34,*) 'REACHED!'
+!
+    endsubroutine index_reset
+!***********************************************************************
+    subroutine index_append(varname,ivar,vector)
+!
+! 14-oct-18/PAB: coded
+!
+      character (len=*), intent(in) :: varname
+      integer, intent(in) :: ivar
+      integer, intent(in), optional :: vector
+!
+      open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+      write(3,*) varname, '=', ivar
+      close(3)
+!
+    endsubroutine index_append
+!***********************************************************************
 endmodule HDF5_IO
