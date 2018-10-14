@@ -2342,7 +2342,21 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
 # LD?=$(FC)
 LD=$(FC)
-export HDF5_FLINKER:=$(FC)
+
+ifneq ($(HDF5_IO),nohdf5_io)
+	# default location of HDF5 installation
+	HDF5_HOME ?= /usr
+	# set if undefined
+	HDF5_INC ?= $(HDF5_HOME)/include
+	HDF5_LIB ?= $(HDF5_HOME)/lib
+	HDF5_BIN ?= $(HDF5_HOME)/bin
+	# add HDF5 library path
+	LDFLAGS += -L$(HDF5_LIB)
+	# set HDF5 linker
+	LD := $(HDF5_BIN)/h5fc
+	export HDF5_FLINKER:=$(FC)
+endif
+
 #
 #  RULES SECTION
 #
@@ -2502,6 +2516,9 @@ pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
 pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_solid.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
 	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x $(LDFLAGS) $(LDFLAGS_HELPER)
+#
+hdf5_io%.o: hdf5_io%.f90 hdf5_io.h $(HDF5_IO_OBJ) Makefile.local
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -I$(HDF5_INC) -o hdf5_io_parallel.o -c hdf5_io_parallel.f90
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
