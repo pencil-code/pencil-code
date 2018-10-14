@@ -33,7 +33,8 @@ module Special
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.
   real :: width_newton=0.,gauss_newton=0.
-  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.,lmag_time_bound=.false.
+  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.
+  logical :: lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
   real :: Bz_flux=0.,quench=0.,quench0=0.,quench_width=1., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
@@ -2358,6 +2359,7 @@ module Special
 !  converts into the vector potential.
 !
 !  15-jan-11/bing: coded
+!  14-oct-18/joern: add vector magnetogram
 !
       use File_io, only: file_exists
       use Fourier, only: fourier_transform_other
@@ -2372,7 +2374,7 @@ module Special
       real, dimension (:,:), allocatable :: Bx0_i,Bx0l,Bx0r
       real, dimension (:,:), allocatable :: By0_i,By0l,By0r
       real, dimension (:,:), allocatable :: A_i,A_r
-      real, dimension (:,:), allocatable :: kx,ky,k2
+      real, dimension (:,:), allocatable :: kx,ky,kz,k2
       real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr,Azl,Azr
 !
       real :: time_SI
@@ -2418,6 +2420,7 @@ module Special
           allocate(By0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
           allocate(By0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
           allocate(By0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+          allocate(kz(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         endif
 !
         kx =spread(kx_fft,2,nygrid)
@@ -2454,12 +2457,13 @@ module Special
         open (10,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
           if (lmag_bound_vec) then
-            read (10,rec=3*(i-1)+1) Bx0l
-            read (10,rec=3*i+1)     Bx0r
-            read (10,rec=3*(i-1)+2) By0l
-            read (10,rec=3*i+2)     By0r
-            read (10,rec=3*(i-1)+3) Bz0l
-            read (10,rec=3*i+3)     Bz0r
+!! reading first Bz, so mag_field.dat can be used for initial condition
+            read (10,rec=3*(i-1)+1) Bz0l
+            read (10,rec=3*i+1)     Bz0r
+            read (10,rec=3*(i-1)+2) Bx0l
+            read (10,rec=3*i+2)     Bx0r
+            read (10,rec=3*(i-1)+3) By0l
+            read (10,rec=3*i+3)     By0r
           else 
             read (10,rec=i) Bz0l
             read (10,rec=i+1) Bz0r
@@ -2496,24 +2500,51 @@ module Special
         Bz0_i = 0.
         call fourier_transform_other(Bz0l,Bz0_i)
 !
-        where (k2 /= 0 )
-          A_r = -Bz0_i*ky/k2
-          A_i =  Bz0l *ky/k2
-        elsewhere
-          A_r = -Bz0_i*ky/ky(1,idy2)
-          A_i =  Bz0l *ky/ky(1,idy2)
-        endwhere
+        if (lmag_bound_vec) then
+          where(Bz0l /= 0. )
+            kz=(-kx*Bx0_i-ky*By0_i)/Bz0l
+          elsewhere
+            kz=0.0
+          endwhere
+          k2=kx*kx+ky*ky-kz*kz
+!
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2 - By0l *kz/k2
+            A_i =  Bz0l *ky/k2 + By0_i*kz/k2
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2) - By0l *kz/ky(1,idy2)
+            A_i =  Bz0l *ky/ky(1,idy2) + By0_i*kz/ky(1,idy2)
+          endwhere
+        else
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2
+            A_i =  Bz0l *ky/k2
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2)
+            A_i =  Bz0l *ky/ky(1,idy2)
+          endwhere
+        endif
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Axl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        where (k2 /= 0 )
-          A_r =  Bz0_i*kx/k2
-          A_i = -Bz0l *kx/k2
-        elsewhere
-          A_r =  Bz0_i*kx/kx(idx2,1)
-          A_i = -Bz0l *kx/kx(idx2,1)
-        endwhere
+        if (lmag_bound_vec) then
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2  + Bx0l*kz/k2
+            A_i = -Bz0l *kx/k2  - Bx0_i*kz/k2
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)  + Bx0l*kz/kx(idx2,1)
+            A_i = -Bz0l *kx/kx(idx2,1)  - Bx0_i*kz/kx(idx2,1)
+          endwhere
+        else
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2
+            A_i = -Bz0l *kx/k2
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)
+            A_i = -Bz0l *kx/kx(idx2,1)
+          endwhere
+        endif
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
@@ -2557,24 +2588,52 @@ module Special
 !
         Bz0_i = 0.
         call fourier_transform_other(Bz0r,Bz0_i)
-        where (k2 /= 0 )
-          A_r = -Bz0_i*ky/k2
-          A_i =  Bz0r *ky/k2
-        elsewhere
-          A_r = -Bz0_i*ky/ky(1,idy2)
-          A_i =  Bz0r *ky/ky(1,idy2)
-        endwhere
+!
+        if (lmag_bound_vec) then
+          where(Bz0_i /= 0. )
+            kz=(-kx*Bx0_i-ky*By0_i)/Bz0r
+          elsewhere
+            kz=0
+          endwhere
+          k2=kx*kx+ky*ky-kz*kz
+!
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2 - By0r *kz/k2
+            A_i =  Bz0r *ky/k2 + By0_i*kz/k2
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2) - By0r *kz/ky(1,idy2)
+            A_i =  Bz0r *ky/ky(1,idy2) + By0_i*kz/ky(1,idy2)
+          endwhere
+        else
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2
+            A_i =  Bz0r *ky/k2
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2)
+            A_i =  Bz0r *ky/ky(1,idy2)
+          endwhere
+        endif
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Axr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        where (k2 /= 0 )
-          A_r =  Bz0_i*kx/k2
-          A_i = -Bz0r *kx/k2
-        elsewhere
-          A_r =  Bz0_i*kx/kx(idx2,1)
-          A_i = -Bz0r *kx/kx(idx2,1)
-        endwhere
+        if (lmag_bound_vec) then
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2  + Bx0r*kz/k2
+            A_i = -Bz0r *kx/k2  - Bx0_i*kz/k2
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)  + Bx0r*kz/kx(idx2,1)
+            A_i = -Bz0r *kx/kx(idx2,1)  - Bx0_i*kz/kx(idx2,1)
+          endwhere
+        else
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2
+            A_i = -Bz0r *kx/k2
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)
+            A_i = -Bz0r *kx/kx(idx2,1)
+          endwhere
+        endif
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
@@ -2611,6 +2670,7 @@ module Special
           if (allocated(By0l)) deallocate(By0l)
           if (allocated(By0r)) deallocate(By0r)
           if (allocated(By0_i)) deallocate(By0_i)
+          if (allocated(kz)) deallocate(kz)
         endif
 !
       endif
