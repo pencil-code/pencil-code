@@ -786,6 +786,7 @@ module Entropy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -822,19 +823,19 @@ module Entropy
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnTT=',ilnTT
-        write(3,*) 'iss=',iss
-        write(3,*) 'i_TTmax=',idiag_TTmax
-        write(3,*) 'i_TTmin=',idiag_TTmin
-        write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_eem=',idiag_eem
-        write(3,*) 'i_ppm=',idiag_ppm
-        write(3,*) 'i_csm=',idiag_csm
+        call farray_index_append('nname',nname)
+        call farray_index_append('ilnTT',ilnTT)
+        call farray_index_append('iss',iss)
+        call farray_index_append('i_TTmax',idiag_TTmax)
+        call farray_index_append('i_TTmin',idiag_TTmin)
+        call farray_index_append('i_TTm',idiag_TTm)
+        call farray_index_append('i_ethm',idiag_ethm)
+        call farray_index_append('i_ssm',idiag_ssm)
+        call farray_index_append('i_dtchi',idiag_dtchi)
+        call farray_index_append('i_dtc',idiag_dtc)
+        call farray_index_append('i_eem',idiag_eem)
+        call farray_index_append('i_ppm',idiag_ppm)
+        call farray_index_append('i_csm',idiag_csm)
       endif
 !
     endsubroutine rprint_entropy

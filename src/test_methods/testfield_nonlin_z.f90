@@ -227,7 +227,7 @@ module Testfield
       use Cdata
       use Mpicomm
       use Sub
-      use FArrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary, farray_index_append
 !
       integer :: j
 !
@@ -265,26 +265,20 @@ module Testfield
       if (luxb_as_aux) then
         if (iuxbtest==0) then
           call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
-        endif
-        if (iuxbtest/=0.and.lroot) then
-          print*, 'register_testfield: iuxbtest = ', iuxbtest
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxbtest=',iuxbtest
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          call farray_index_append('iuxbtest',iuxbtest)
         endif
       endif
 !
 !  possibility of using jxb as auxiliary array 
 !
       if (ljxb_as_aux) then
-        if (ijxbtest==0) &
+        if (ijxbtest==0) then
           call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
-
-        if (ijxbtest/=0.and.lroot) then
-          print*, 'register_testfield: ijxbtest = ', ijxbtest
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxbtest=',ijxbtest
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          call farray_index_append('ijxbtest',ijxbtest)
         endif
       endif
 !
@@ -292,14 +286,11 @@ module Testfield
 !
       if (lugu) then
         if (lugu_as_aux) then
-          if (iugutest==0) &
+          if (iugutest==0) then
             call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
-  
-          if (iugutest/=0.and.lroot) then
-            print*, 'register_testfield: iugutest = ', iugutest
-            open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-            write(3,*) 'iugutest=',iugutest
-            close(3)
+          else
+            if (lroot) print*, 'initialize_testfield: iugutest = ', iugutest
+            call farray_index_append('iugutest',iugutest)
           endif
         else
           call warning('register_testfield','lugu=T requires lugu_as_aux=T -> switched off')
@@ -1736,6 +1727,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamez
@@ -1908,10 +1900,10 @@ module Testfield
       endif
 !
       if (loptest(lwrite)) then
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'iuutest=',iuutest
-        write(3,*) 'ntestfield=',ntestfield/2
-        write(3,*) 'ntestflow=',ntestfield/2
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('iuutest',iuutest)
+        call farray_index_append('ntestfield',ntestfield/2)
+        call farray_index_append('ntestflow',ntestfield/2)
       endif
 !
     endsubroutine rprint_testfield

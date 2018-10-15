@@ -302,6 +302,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  define diagnostics variable
 !
@@ -361,25 +362,25 @@ module Special
 !
       if (lwr) then
         !hydro
-        write(3,*) 'i_urm=',idiag_urm
-        write(3,*) 'i_upm=',idiag_upm
-        write(3,*) 'i_uzzm=',idiag_uzzm
-        write(3,*) 'i_ur2m=',idiag_ur2m
-        write(3,*) 'i_up2m=',idiag_up2m
-        write(3,*) 'i_uzz2m=',idiag_uzz2m
-        write(3,*) 'i_urupm=',idiag_urupm
+        call farray_index_append('i_urm',idiag_urm)
+        call farray_index_append('i_upm',idiag_upm)
+        call farray_index_append('i_uzzm',idiag_uzzm)
+        call farray_index_append('i_ur2m',idiag_ur2m)
+        call farray_index_append('i_up2m',idiag_up2m)
+        call farray_index_append('i_uzz2m',idiag_uzz2m)
+        call farray_index_append('i_urupm',idiag_urupm)
         !magnetic
-        write(3,*) 'i_brm=',idiag_brm
-        write(3,*) 'i_bpm=',idiag_bpm
-        write(3,*) 'i_bzm=',idiag_bzm
-        write(3,*) 'i_br2m=',idiag_br2m
-        write(3,*) 'i_bp2m=',idiag_bp2m
-        write(3,*) 'i_bzz2m=',idiag_bzz2m
-        write(3,*) 'i_brbpm=',idiag_brbpm
+        call farray_index_append('i_brm',idiag_brm)
+        call farray_index_append('i_bpm',idiag_bpm)
+        call farray_index_append('i_bzm',idiag_bzm)
+        call farray_index_append('i_br2m',idiag_br2m)
+        call farray_index_append('i_bp2m',idiag_bp2m)
+        call farray_index_append('i_bzz2m',idiag_bzz2m)
+        call farray_index_append('i_brbpm',idiag_brbpm)
         !1d
-        write(3,*) 'i_brbpmr=',idiag_brbpmr
-        write(3,*) 'i_urupmr=',idiag_urupmr
-        write(3,*) 'i_mdotmr=',idiag_mdotmr
+        call farray_index_append('i_brbpmr',idiag_brbpmr)
+        call farray_index_append('i_urupmr',idiag_urupmr)
+        call farray_index_append('i_mdotmr',idiag_mdotmr)
       endif
 !
     endsubroutine rprint_special

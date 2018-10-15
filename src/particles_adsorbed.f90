@@ -424,6 +424,7 @@ module Particles_adsorbed
 !  06-oct-14/jonas: adapted
 !
       use Diagnostics
+!     use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -436,7 +437,7 @@ module Particles_adsorbed
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-!     if (lwr) write (3,*) 'iads=', iads
+!     if (lwr) call farray_index_append('iads', iads)
 !
       if (lreset) then
         idiag_ads = 0

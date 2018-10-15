@@ -279,6 +279,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -303,8 +305,8 @@ module Special
       enddo
 !  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'idiag_posx=',idiag_posx(1)
-        write(3,*) 'idiag_Iring=',idiag_Iring(ibp)
+        call farray_index_append('idiag_posx',idiag_posx(1))
+        call farray_index_append('idiag_Iring',idiag_Iring(ibp))
       endif
       enddo
 !!

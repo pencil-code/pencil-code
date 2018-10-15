@@ -277,6 +277,8 @@ module Particles_density
 !
 !  22-nov-10/anders+michiel: adapted
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -287,7 +289,7 @@ module Particles_density
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'irhopswarm=', irhopswarm
+      if (lwr) call farray_index_append('irhopswarm', irhopswarm)
 !
       call keep_compiler_quiet(lreset)
 !

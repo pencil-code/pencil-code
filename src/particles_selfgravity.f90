@@ -405,6 +405,7 @@ module Particles_selfgravity
 !  14-jun-06/anders: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -428,9 +429,9 @@ module Particles_selfgravity
 !  Write information to index.pro
 !
       if (lwr) then
-        write(3,*) 'igpotselfx=', igpotselfx
-        write(3,*) 'igpotselfy=', igpotselfy
-        write(3,*) 'igpotselfz=', igpotselfz
+        call farray_index_append('igpotselfx', igpotselfx)
+        call farray_index_append('igpotselfy', igpotselfy)
+        call farray_index_append('igpotselfz', igpotselfz)
       endif
 !
     endsubroutine rprint_particles_selfgrav

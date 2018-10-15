@@ -446,12 +446,9 @@ module Testfield
       if (luxb_as_aux) then
         if (iuxb==0) then
           call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
-        endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_testfield: iuxb = ', iuxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: iuxb = ', iuxb
+          call farray_index_append('iuxb',iuxb)
         endif
       endif
 !
@@ -460,12 +457,9 @@ module Testfield
       if (ljxb_as_aux) then
         if (ijxb==0) then
           call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
-        endif
-        if (ijxb/=0.and.lroot) then
-          print*, 'initialize_testfield: ijxb = ', ijxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxb=',ijxb
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: ijxb = ', ijxb
+          call farray_index_append('ijxb',ijxb)
         endif
       endif
 !
@@ -474,12 +468,9 @@ module Testfield
       if (lugu_as_aux) then
         if (iugu==0) then
           call farray_register_auxiliary('ugu',iugu,vector=3*njtest)
-        endif
-        if (iugu/=0.and.lroot) then
-          print*, 'initialize_testfield: iugu = ', iugu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iugu=',iugu
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: iugu = ', iugu
+          call farray_index_append('iugu',iugu)
         endif
       endif
 !
@@ -488,12 +479,9 @@ module Testfield
       if (lugh_as_aux) then
         if (iugh==0) then
           call farray_register_auxiliary('ugh',iugh,vector=njtest)
-        endif
-        if (iugh/=0.and.lroot) then
-          print*, 'initialize_testfield: iugh = ', iugh
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iugh=',iugh
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: iugh = ', iugh
+          call farray_index_append('iugh',iugh)
         endif
       endif
 !
@@ -1872,6 +1860,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamez
@@ -2042,12 +2031,12 @@ module Testfield
       enddo
 !
       if (loptest(lwrite)) then
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'iuutest=',iuutest
-        write(3,*) 'ilnrhotest=',ihhtest
-        write(3,*) 'ntestfield=',(ntestfield-njtest)/2
-        write(3,*) 'ntestflow=',(ntestfield-njtest)/2
-        write(3,*) 'ntestlnrho=',njtest
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('iuutest',iuutest)
+        call farray_index_append('ilnrhotest',ihhtest)
+        call farray_index_append('ntestfield',(ntestfield-njtest)/2)
+        call farray_index_append('ntestflow',(ntestfield-njtest)/2)
+        call farray_index_append('ntestlnrho',njtest)
       endif
 !
     endsubroutine rprint_testfield

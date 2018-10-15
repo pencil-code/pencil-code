@@ -287,6 +287,7 @@ module Lorenz_gauge
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
 !  define counters
@@ -328,7 +329,7 @@ module Lorenz_gauge
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'iphi=',iphi
+        call farray_index_append('iphi',iphi)
       endif
 !
     endsubroutine rprint_lorenz_gauge

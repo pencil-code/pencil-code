@@ -1269,6 +1269,7 @@ module Radiation
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -1301,14 +1302,14 @@ module Radiation
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'ie=',ie
-        write(3,*) 'iQrad=',iQrad
-        write(3,*) 'ikapparho=',ikapparho
-        write(3,*) 'iFrad=',iFrad
-        write(3,*) 'iFradx=',iFradx
-        write(3,*) 'iFrady=',iFrady
-        write(3,*) 'iFradz=',iFradz
+        call farray_index_append('nname',nname)
+        call farray_index_append('ie',ie)
+        call farray_index_append('iQrad',iQrad)
+        call farray_index_append('ikapparho',ikapparho)
+        call farray_index_append('iFrad',iFrad)
+        call farray_index_append('iFradx',iFradx)
+        call farray_index_append('iFrady',iFrady)
+        call farray_index_append('iFradz',iFradz)
       endif
 !
       call keep_compiler_quiet(lreset)

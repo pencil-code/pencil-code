@@ -2672,6 +2672,7 @@ module Energy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -2789,50 +2790,50 @@ module Energy
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_ethtot=',idiag_ethtot
-        write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_ss2m=',idiag_ss2m
-        write(3,*) 'i_eem=',idiag_eem
-        write(3,*) 'i_ppm=',idiag_ppm
-        write(3,*) 'i_pdivum=',idiag_pdivum
-        write(3,*) 'i_heatm=',idiag_heatm
-        write(3,*) 'i_csm=',idiag_csm
-        write(3,*) 'i_fconvm=',idiag_fconvm
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
-        write(3,*) 'i_fradbot=',idiag_fradbot
-        write(3,*) 'i_fradtop=',idiag_fradtop
-        write(3,*) 'i_TTtop=',idiag_TTtop
-        write(3,*) 'i_ssmphi=',idiag_ssmphi
-        write(3,*) 'i_cs2mphi=',idiag_cs2mphi
-        write(3,*) 'i_fturbz=',idiag_fturbz
-        write(3,*) 'i_fconvz=',idiag_fconvz
-        write(3,*) 'i_dcoolz=',idiag_dcoolz
-        write(3,*) 'i_fradz=',idiag_fradz
-        write(3,*) 'i_ssmz=',idiag_ssmz
-        write(3,*) 'i_TTmz=',idiag_TTmz
-        write(3,*) 'i_uxTTmz=',idiag_uxTTmz
-        write(3,*) 'i_uyTTmz=',idiag_uyTTmz
-        write(3,*) 'i_uzTTmz=',idiag_uzTTmz
-        write(3,*) 'i_ssmr=',idiag_ssmr
-        write(3,*) 'i_TTmr=',idiag_TTmr
-        write(3,*) 'nname=',nname
-        write(3,*) 'iss=',iss
-        write(3,*) 'i_yHmax=',idiag_yHmax
-        write(3,*) 'i_yHm=',idiag_yHm
-        write(3,*) 'i_TTmax=',idiag_TTmax
-        write(3,*) 'i_TTmin=',idiag_TTmin
-        write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_TTp=',idiag_TTp
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'ilnTT=',ilnTT
-        write(3,*) 'i_TTmxy=',idiag_TTmxy
-        write(3,*) 'i_TTmxz=',idiag_TTmxz
-        write(3,*) 'i_ssmxy=',idiag_ssmxy
-        write(3,*) 'i_ssmxz=',idiag_ssmxz
+        call farray_index_append('i_dtc',idiag_dtc)
+        call farray_index_append('i_dtchi',idiag_dtchi)
+        call farray_index_append('i_ethtot',idiag_ethtot)
+        call farray_index_append('i_ethdivum',idiag_ethdivum)
+        call farray_index_append('i_ethm',idiag_ethm)
+        call farray_index_append('i_ssm',idiag_ssm)
+        call farray_index_append('i_ss2m',idiag_ss2m)
+        call farray_index_append('i_eem',idiag_eem)
+        call farray_index_append('i_ppm',idiag_ppm)
+        call farray_index_append('i_pdivum',idiag_pdivum)
+        call farray_index_append('i_heatm',idiag_heatm)
+        call farray_index_append('i_csm',idiag_csm)
+        call farray_index_append('i_fconvm',idiag_fconvm)
+        call farray_index_append('i_ugradpm',idiag_ugradpm)
+        call farray_index_append('i_fradbot',idiag_fradbot)
+        call farray_index_append('i_fradtop',idiag_fradtop)
+        call farray_index_append('i_TTtop',idiag_TTtop)
+        call farray_index_append('i_ssmphi',idiag_ssmphi)
+        call farray_index_append('i_cs2mphi',idiag_cs2mphi)
+        call farray_index_append('i_fturbz',idiag_fturbz)
+        call farray_index_append('i_fconvz',idiag_fconvz)
+        call farray_index_append('i_dcoolz',idiag_dcoolz)
+        call farray_index_append('i_fradz',idiag_fradz)
+        call farray_index_append('i_ssmz',idiag_ssmz)
+        call farray_index_append('i_TTmz',idiag_TTmz)
+        call farray_index_append('i_uxTTmz',idiag_uxTTmz)
+        call farray_index_append('i_uyTTmz',idiag_uyTTmz)
+        call farray_index_append('i_uzTTmz',idiag_uzTTmz)
+        call farray_index_append('i_ssmr',idiag_ssmr)
+        call farray_index_append('i_TTmr',idiag_TTmr)
+        call farray_index_append('nname',nname)
+        call farray_index_append('iss',iss)
+        call farray_index_append('i_yHmax',idiag_yHmax)
+        call farray_index_append('i_yHm',idiag_yHm)
+        call farray_index_append('i_TTmax',idiag_TTmax)
+        call farray_index_append('i_TTmin',idiag_TTmin)
+        call farray_index_append('i_TTm',idiag_TTm)
+        call farray_index_append('i_TTp',idiag_TTp)
+        call farray_index_append('iyH',iyH)
+        call farray_index_append('ilnTT',ilnTT)
+        call farray_index_append('i_TTmxy',idiag_TTmxy)
+        call farray_index_append('i_TTmxz',idiag_TTmxz)
+        call farray_index_append('i_ssmxy',idiag_ssmxy)
+        call farray_index_append('i_ssmxz',idiag_ssmxz)
       endif
 !
     endsubroutine rprint_energy

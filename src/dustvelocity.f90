@@ -147,11 +147,9 @@ module Dustvelocity
 !
 !  Write dust index in short notation
 !
-      if (lroot .and. ndustspec/=1) then
-        open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'nuud=',ndustspec
-        write(3,*) 'iuud=indgen('//trim(itoa(ndustspec))//')*3 + '//trim(itoa(iuud(1)))
-        close(3)
+      if (ndustspec >= 1) then
+        call farray_index_append('nuud',ndustspec)
+        call farray_index_append('iuud',iuud(1),3,ndustspec)
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -1708,6 +1706,7 @@ module Dustvelocity
 !   3-may-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: itoa
 !
       logical :: lreset
@@ -1723,11 +1722,13 @@ module Dustvelocity
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ndustspec=',ndustspec
-        write(3,*) 'iuud=',iuud
-        write(3,*) 'iudx=',iudx
-        write(3,*) 'iudy=',iudy
-        write(3,*) 'iudz=',iudz
+        if (ndustspec >= 1) then
+          call farray_index_append('ndustspec',ndustspec)
+          call farray_index_append('iuud',iuud(1),3,ndustspec)
+          call farray_index_append('iudx',iudx(1),3,ndustspec)
+          call farray_index_append('iudy',iudy(1),3,ndustspec)
+          call farray_index_append('iudz',iudz(1),3,ndustspec)
+        endif
       endif
 !
 !  Reset everything in case of reset.

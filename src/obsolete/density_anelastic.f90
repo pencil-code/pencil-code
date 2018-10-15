@@ -2295,6 +2295,7 @@ module Density
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -2393,32 +2394,32 @@ module Density
 !  write column where which density variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rhom=',idiag_rhom
-        write(3,*) 'i_rho2m=',idiag_rho2m
-        write(3,*) 'i_drho2m=',idiag_drho2m
-        write(3,*) 'i_drhom=',idiag_drhom
-        write(3,*) 'i_rhomin=',idiag_rhomin
-        write(3,*) 'i_rhomax=',idiag_rhomax
-        write(3,*) 'i_lnrho2m=',idiag_lnrho2m
-        write(3,*) 'i_ugrhom=',idiag_ugrhom
-        write(3,*) 'i_uglnrhom=',idiag_uglnrhom
-        write(3,*) 'i_rhomz=',idiag_rhomz
-        write(3,*) 'i_rhomy=',idiag_rhomy
-        write(3,*) 'i_rhomx=',idiag_rhomx
-        write(3,*) 'i_rhomxy=',idiag_rhomxy
-        write(3,*) 'i_rhomxz=',idiag_rhomxz
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnrho=',ilnrho
-        write(3,*) 'irho=',irho
-        write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
-        write(3,*) 'i_rhomphi=',idiag_rhomphi
-        write(3,*) 'i_rhomr=',idiag_rhomr
-        write(3,*) 'i_dtd=',idiag_dtd
-        write(3,*) 'i_totmass=',idiag_totmass
-        write(3,*) 'i_mass=',idiag_mass
-        write(3,*) 'i_divrhoum=',idiag_divrhoum
-        write(3,*) 'i_divrhourms=',idiag_divrhourms
-        write(3,*) 'i_divrhoumax=',idiag_divrhoumax
+        call farray_index_append('i_rhom',idiag_rhom)
+        call farray_index_append('i_rho2m',idiag_rho2m)
+        call farray_index_append('i_drho2m',idiag_drho2m)
+        call farray_index_append('i_drhom',idiag_drhom)
+        call farray_index_append('i_rhomin',idiag_rhomin)
+        call farray_index_append('i_rhomax',idiag_rhomax)
+        call farray_index_append('i_lnrho2m',idiag_lnrho2m)
+        call farray_index_append('i_ugrhom',idiag_ugrhom)
+        call farray_index_append('i_uglnrhom',idiag_uglnrhom)
+        call farray_index_append('i_rhomz',idiag_rhomz)
+        call farray_index_append('i_rhomy',idiag_rhomy)
+        call farray_index_append('i_rhomx',idiag_rhomx)
+        call farray_index_append('i_rhomxy',idiag_rhomxy)
+        call farray_index_append('i_rhomxz',idiag_rhomxz)
+        call farray_index_append('nname',nname)
+        call farray_index_append('ilnrho',ilnrho)
+        call farray_index_append('irho',irho)
+        call farray_index_append('i_lnrhomphi',idiag_lnrhomphi)
+        call farray_index_append('i_rhomphi',idiag_rhomphi)
+        call farray_index_append('i_rhomr',idiag_rhomr)
+        call farray_index_append('i_dtd',idiag_dtd)
+        call farray_index_append('i_totmass',idiag_totmass)
+        call farray_index_append('i_mass',idiag_mass)
+        call farray_index_append('i_divrhoum',idiag_divrhoum)
+        call farray_index_append('i_divrhourms',idiag_divrhourms)
+        call farray_index_append('i_divrhoumax',idiag_divrhoumax)
       endif
 !
     endsubroutine rprint_density

@@ -878,15 +878,12 @@ module Magnetic
           ibx=ibb
           iby=ibb+1
           ibz=ibb+2
-        endif
-        if (ibb/=0.and.lroot) then
-          print*, 'initialize_magnetic: ibb = ', ibb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ibb=',ibb
-          write(3,*) 'ibx=',ibx
-          write(3,*) 'iby=',iby
-          write(3,*) 'ibz=',ibz
-          close(3)
+        else
+          if (lroot) print*, 'initialize_magnetic: ibb = ', ibb
+          call farray_index_append('ibb',ibb)
+          call farray_index_append('ibx',ibx)
+          call farray_index_append('iby',iby)
+          call farray_index_append('ibz',ibz)
         endif
       endif
 !
@@ -898,15 +895,12 @@ module Magnetic
           ijx=ijj
           ijy=ijj+1
           ijz=ijj+2
-        endif
-        if (ijj/=0.and.lroot) then
-          print*, 'initialize_magnetic: ijj = ', ijj
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijj=',ijj
-          write(3,*) 'ijx=',ijx
-          write(3,*) 'ijy=',ijy
-          write(3,*) 'ijz=',ijz
-          close(3)
+        else
+          if (lroot) print*, 'initialize_magnetic: ijj = ', ijj
+          call farray_index_append('ijj',ijj)
+          call farray_index_append('ijx',ijx)
+          call farray_index_append('ijy',ijy)
+          call farray_index_append('ijz',ijz)
         endif
       endif
 !
@@ -919,15 +913,12 @@ module Magnetic
           ibxt=ibbt
           ibyt=ibbt+1
           ibzt=ibbt+2
-        endif
-        if (ibbt/=0.and.lroot) then
-          print*, 'initialize_velocity: ibbt = ', ibbt
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ibbt=',ibbt
-          write(3,*) 'ibxt=',ibxt
-          write(3,*) 'ibyt=',ibyt
-          write(3,*) 'ibzt=',ibzt
-          close(3)
+        else
+          if (lroot) print*, 'initialize_velocity: ibbt = ', ibbt
+          call farray_index_append('ibbt',ibbt)
+          call farray_index_append('ibxt',ibxt)
+          call farray_index_append('ibyt',ibyt)
+          call farray_index_append('ibzt',ibzt)
         endif
       endif
 !
@@ -937,15 +928,12 @@ module Magnetic
           ijxt=ijjt
           ijyt=ijjt+1
           ijzt=ijjt+2
-        endif
-        if (ijjt/=0.and.lroot) then
-          print*, 'initialize_velocity: ijjt = ', ijjt
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijjt=',ijjt
-          write(3,*) 'ijxt=',ijxt
-          write(3,*) 'ijyt=',ijyt
-          write(3,*) 'ijzt=',ijzt
-          close(3)
+        else
+          if (lroot) print*, 'initialize_velocity: ijjt = ', ijjt
+          call farray_index_append('ijjt',ijjt)
+          call farray_index_append('ijxt',ijxt)
+          call farray_index_append('ijyt',ijyt)
+          call farray_index_append('ijzt',ijzt)
         endif
       endif
 !
@@ -5867,6 +5855,7 @@ module Magnetic
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half
       logical :: lreset,lwr
@@ -6338,15 +6327,15 @@ module Magnetic
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
-        write(3,*) 'ihypres=',ihypres
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamexz',nnamexz)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('iaa',iaa)
+        call farray_index_append('iax',iax)
+        call farray_index_append('iay',iay)
+        call farray_index_append('iaz',iaz)
+        call farray_index_append('ihypres',ihypres)
       endif
 !
 !  call corresponding mean-field routine

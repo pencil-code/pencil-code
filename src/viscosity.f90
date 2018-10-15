@@ -772,6 +772,7 @@ module Viscosity
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -844,7 +845,7 @@ module Viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'ihypvis=',ihypvis
+          call farray_index_append('ihypvis',ihypvis)
         endif
       endif
 !

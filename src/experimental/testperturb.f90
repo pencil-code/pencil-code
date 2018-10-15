@@ -406,6 +406,7 @@ module TestPerturb
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -444,18 +445,18 @@ module TestPerturb
 !  write column where which testperturb variable is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alp11=',idiag_alp11
-        write(3,*) 'idiag_alp21=',idiag_alp21
-        write(3,*) 'idiag_alp31=',idiag_alp31
-        write(3,*) 'idiag_alp12=',idiag_alp12
-        write(3,*) 'idiag_alp22=',idiag_alp22
-        write(3,*) 'idiag_alp32=',idiag_alp32
-        write(3,*) 'idiag_eta11=',idiag_eta11
-        write(3,*) 'idiag_eta21=',idiag_eta21
-        write(3,*) 'idiag_eta31=',idiag_eta31
-        write(3,*) 'idiag_eta12=',idiag_eta12
-        write(3,*) 'idiag_eta22=',idiag_eta22
-        write(3,*) 'idiag_eta32=',idiag_eta32
+        call farray_index_append('idiag_alp11',idiag_alp11)
+        call farray_index_append('idiag_alp21',idiag_alp21)
+        call farray_index_append('idiag_alp31',idiag_alp31)
+        call farray_index_append('idiag_alp12',idiag_alp12)
+        call farray_index_append('idiag_alp22',idiag_alp22)
+        call farray_index_append('idiag_alp32',idiag_alp32)
+        call farray_index_append('idiag_eta11',idiag_eta11)
+        call farray_index_append('idiag_eta21',idiag_eta21)
+        call farray_index_append('idiag_eta31',idiag_eta31)
+        call farray_index_append('idiag_eta12',idiag_eta12)
+        call farray_index_append('idiag_eta22',idiag_eta22)
+        call farray_index_append('idiag_eta32',idiag_eta32)
       endif
 !
     endsubroutine rprint_testperturb

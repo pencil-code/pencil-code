@@ -254,6 +254,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
 !   SAMPLE IMPLEMENTATION
@@ -281,9 +282,9 @@ module Special
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_xx=',idiag_xx
-        write(3,*) 'i_yy=',idiag_yy
-        write(3,*) 'i_zz=',idiag_zz
+        call farray_index_append('i_xx',idiag_xx)
+        call farray_index_append('i_yy',idiag_yy)
+        call farray_index_append('i_zz',idiag_zz)
       endif
 !
     endsubroutine rprint_special

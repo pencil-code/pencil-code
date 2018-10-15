@@ -1119,6 +1119,8 @@ module Gravity
 !
 !  26-apr-03/axel: coded
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1129,10 +1131,10 @@ module Gravity
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'igg=',igg
-        write(3,*) 'igx=',igx
-        write(3,*) 'igy=',igy
-        write(3,*) 'igz=',igz
+        call farray_index_append('igg',igg)
+        call farray_index_append('igx',igx)
+        call farray_index_append('igy',igy)
+        call farray_index_append('igz',igz)
       endif
 !
       call keep_compiler_quiet(lreset)

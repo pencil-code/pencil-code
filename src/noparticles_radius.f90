@@ -151,6 +151,8 @@ module Particles_radius
 !
 !  22-aug-05/anders: dummy
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset, lwr
       logical, optional :: lwrite
 !
@@ -158,7 +160,7 @@ module Particles_radius
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'iap=', iap
+        call farray_index_append('iap', iap)
       endif
 !
       call keep_compiler_quiet(lreset)

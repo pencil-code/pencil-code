@@ -95,8 +95,6 @@ module Particles_main
 !
       logical :: lreset
 !
-      if (lroot) open(3, file=trim(datadir)//'/index.pro', &
-          STATUS='old', POSITION='append')
       call rprint_particles              (lreset,LWRITE=lroot)
       call rprint_particles_radius       (lreset,LWRITE=lroot)
       call rprint_particles_grad         (lreset,LWRITE=lroot)
@@ -116,7 +114,6 @@ module Particles_main
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_state(lreset,LWRITE=lroot)
-      if (lroot) close(3)
 !
 !  check for those quantities for which we want video slices
 !

@@ -4547,6 +4547,7 @@ module Hydro
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
       use General, only: itoa
 !
       integer :: k
@@ -5319,11 +5320,11 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'iuu=',iuu
-        write(3,*) 'iux=',iux
-        write(3,*) 'iuy=',iuy
-        write(3,*) 'iuz=',iuz
-        if (lhelmholtz_decomp) write(3,*) 'iphiuu=',iphiuu
+        call farray_index_append('iuu',iuu)
+        call farray_index_append('iux',iux)
+        call farray_index_append('iuy',iuy)
+        call farray_index_append('iuz',iuz)
+        if (lhelmholtz_decomp) call farray_index_append('iphiuu',iphiuu)
       endif
 !
     endsubroutine rprint_hydro

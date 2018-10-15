@@ -293,6 +293,7 @@ module Special
 !  04-sep-10/bing: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -338,13 +339,13 @@ module Special
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtchi2=',idiag_dtchi2
-        write(3,*) 'i_dthyper3=',idiag_dthyper3
-        write(3,*) 'i_dtrad=',idiag_dtrad
-        write(3,*) 'i_dtnewt=',idiag_dtnewt
-        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
-        write(3,*) 'i_qmax=',idiag_qmax
-        write(3,*) 'i_qrms=',idiag_qrms
+        call farray_index_append('i_dtchi2',idiag_dtchi2)
+        call farray_index_append('i_dthyper3',idiag_dthyper3)
+        call farray_index_append('i_dtrad',idiag_dtrad)
+        call farray_index_append('i_dtnewt',idiag_dtnewt)
+        call farray_index_append('i_dtspitzer',idiag_dtspitzer)
+        call farray_index_append('i_qmax',idiag_qmax)
+        call farray_index_append('i_qrms',idiag_qrms)
       endif
 !
     endsubroutine rprint_special

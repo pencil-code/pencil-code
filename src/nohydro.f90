@@ -125,15 +125,9 @@ module Hydro
           iux=iuu
           iuy=iuu+1
           iuz=iuu+2
-        endif
-        if (iuu/=0.and.lroot) then
-          if (ip<14) print*, 'initialize_velocity: iuu = ', iuu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuu=',iuu
-          write(3,*) 'iux=',iux
-          write(3,*) 'iuy=',iuy
-          write(3,*) 'iuz=',iuz
-          close(3)
+        else
+          if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
+          call farray_index_append('iuu',iuu,3)
         endif
       endif
 !
@@ -833,6 +827,7 @@ module Hydro
 !   8-jun-02/axel: adapted from hydro
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -900,10 +895,10 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'iuu=',iuu
-        write(3,*) 'iux=',iux
-        write(3,*) 'iuy=',iuy
-        write(3,*) 'iuz=',iuz
+        call farray_index_append('iuu',iuu)
+        call farray_index_append('iux',iux)
+        call farray_index_append('iuy',iuy)
+        call farray_index_append('iuz',iuz)
       endif
 !
     endsubroutine rprint_hydro

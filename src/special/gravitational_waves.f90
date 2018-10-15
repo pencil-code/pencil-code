@@ -1212,6 +1212,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
+!!      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -1239,7 +1240,7 @@ module Special
 !!
 !!!  write column where which magnetic variable is stored
 !!      if (lwr) then
-!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
+!!        call farray_index_append('i_SPECIAL_DIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
 !!      endif
 !!
     endsubroutine rprint_special

@@ -293,7 +293,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-!!      integer :: iname
+      use FArrayManager, only: farray_index_append
+!
+!      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -314,8 +316,8 @@ module Special
 !
 !  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'ieta=' ,ieta
-        write(3,*) 'izeta=',izeta
+        call farray_index_append('ieta' ,ieta)
+        call farray_index_append('izeta',izeta)
       endif
 !
     endsubroutine rprint_special

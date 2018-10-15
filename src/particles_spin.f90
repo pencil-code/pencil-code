@@ -304,6 +304,7 @@ module Particles_spin
 !  06-oct-15/ccyang: continued.
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
@@ -317,9 +318,9 @@ module Particles_spin
       if (present(lwrite)) lwr = lwrite
 !
       indices: if (lwr) then
-        write(3,*) "ipsx = ", ipsx
-        write(3,*) "ipsy = ", ipsy
-        write(3,*) "ipsz = ", ipsz
+        call farray_index_append('ipsx', ipsx)
+        call farray_index_append('ipsy', ipsy)
+        call farray_index_append('ipsz', ipsz)
       endif indices
 !
 !  Reset everything in case of reset

@@ -489,6 +489,7 @@ module Particles_mass
 !  23-sep-14/Nils: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -499,7 +500,7 @@ module Particles_mass
       ! Write information to index.pro.
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-      if (lwr) write (3,*) 'imp=', imp
+      if (lwr) call farray_index_append('imp', imp)
 !
       ! Reset everything in case of reset.
       if (lreset) then

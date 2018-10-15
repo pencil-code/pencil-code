@@ -633,6 +633,7 @@ module Density
 !  27-feb-13/ccyang: coded.
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
@@ -728,10 +729,10 @@ module Density
 !
 !  Write column where which density variable is stored.
 !
-      indices: if (lwr) then
-        write(3,*) 'ilnrho = 0'
-        write(3,*) 'irho = ', irho
-      endif indices
+      if (lwr) then
+        call farray_index_append('ilnrho',0)
+        call farray_index_append('irho',irho)
+      endif
 !
     endsubroutine rprint_density
 !***********************************************************************

@@ -318,6 +318,7 @@ module Cosmicrayflux
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr
@@ -362,7 +363,7 @@ module Cosmicrayflux
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
 !
       if (lwr) then
-        write(3,*) 'ifcr=',ifcr
+        call farray_index_append('ifcr',ifcr)
       endif
 !
     endsubroutine rprint_cosmicrayflux

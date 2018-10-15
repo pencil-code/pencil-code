@@ -588,6 +588,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,inamexz
       logical :: lreset,lwr
@@ -631,7 +632,7 @@ module Testfield
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (lwr) write(3,*) 'iaatest=',iaatest
+      if (lwr) call farray_index_append('iaatest',iaatest)
 !
     endsubroutine rprint_testfield
 

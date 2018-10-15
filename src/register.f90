@@ -42,6 +42,7 @@ module Register
       use Dustvelocity,     only: register_dustvelocity
       use Energy,           only: register_energy
       use EquationOfState,  only: register_eos
+      use FArrayManager, only: farray_index_reset
       use Forcing,          only: register_forcing
       use Gravity,          only: register_gravity
       use Heatflux,         only: register_heatflux
@@ -80,10 +81,7 @@ module Register
 !
 !  Initialize index.pro file.
 !
-      if (lroot) then
-        open(3,file=trim(datadir)//'/index.pro',status='replace')
-        close(3)
-      endif
+      call farray_index_reset()
 !
 !  Set up the ordering of the pencils.
 !
@@ -1058,8 +1056,6 @@ module Register
 !  For the convenience of idl users, the indices of variables in
 !  the f-array and the time_series.dat files are written to data/index.pro.
 !
-      if (lroot) open(3,file=trim(datadir)//'/index.pro',position='append')
-!
       call rprint_general         (lreset,LWRITE=lroot)
       call rprint_heatflux        (lreset,LWRITE=lroot)
       call rprint_hydro           (lreset,LWRITE=lroot)
@@ -1096,8 +1092,6 @@ module Register
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
       call rprint_pointmasses     (lreset,LWRITE=lroot)
-      
-      if (lroot) close(3)
 !
     endsubroutine rprint_list
 !***********************************************************************
@@ -1113,6 +1107,7 @@ module Register
       use Diagnostics
       use General, only: loptest
       use Energy,  only: expand_shands_energy
+      use FArrayManager, only: farray_index_append
       use Hydro,   only: expand_shands_hydro
       use Magnetic,only: expand_shands_magnetic
 !
@@ -1188,17 +1183,18 @@ module Register
 !  For compatibility with older IDL scripts.
 !
       if (loptest(lwrite)) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamev=',nnamev
-        write(3,*) 'nnamex=',nnamex
-        write(3,*) 'nnamey=',nnamey
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamer=',nnamer
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'nnamerz=',nnamerz
-        write(3,*) 'nname_sound=',nname_sound
-        write(3,*) 'ncoords_sound=',ncoords_sound
+        ! [PAB]: why do we need these?
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamev',nnamev)
+        call farray_index_append('nnamex',nnamex)
+        call farray_index_append('nnamey',nnamey)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('nnamer',nnamer)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamexz',nnamexz)
+        call farray_index_append('nnamerz',nnamerz)
+        call farray_index_append('nname_sound',nname_sound)
+        call farray_index_append('ncoords_sound',ncoords_sound)
       endif
 !
     endsubroutine rprint_general

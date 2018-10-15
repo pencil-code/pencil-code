@@ -235,6 +235,7 @@ module Shock
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -290,8 +291,10 @@ module Shock
 !  Write column where which shock variable is stored.
 !
       if (present(lwrite)) then
-        if (lwrite) write(3,*) 'ishock=',ishock
-        if (lwrite) write(3,*) 'ishock_perp=',ishock_perp
+        if (lwrite) then
+          call farray_index_append('ishock',ishock)
+          call farray_index_append('ishock_perp',ishock_perp)
+        endif
       endif
 !
     endsubroutine rprint_shock

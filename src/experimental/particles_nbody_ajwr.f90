@@ -166,10 +166,7 @@ module Particles_nbody
 !  When first called, mspar was zero, so no diagnostic index was written to
 !  index.pro
 !
-      if (lroot) open(3, file=trim(datadir)//'/index.pro', &
-          STATUS='old', POSITION='append')
       call rprint_particles_nbody(.false.,LWRITE=lroot)
-      if (lroot) close(3)
 !
 !  G_Newton. Overwrite the one set by start.in if set again here,
 !  because I might want units in which both G and GM are 1.
@@ -2157,6 +2154,7 @@ module Particles_nbody
 !  17-nov-05/anders+wlad: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: itoa
 !
       logical :: lreset,lwr
@@ -2171,9 +2169,7 @@ module Particles_nbody
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if (lwr) then
-        write(3,*) 'imass_nbody=', imass_nbody
-      endif
+      if (lwr) call farray_index_append('imass_nbody',imass_nbody)
 !
 !  Reset everything in case of reset
 !
@@ -2205,10 +2201,8 @@ module Particles_nbody
 !  Run through parse list again
 !
           if (lwr) then
-            write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
-                 idiag_xxspar(ks,j)
-            write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
-                 idiag_vvspar(ks,j)
+            call farray_index_append('i_'//trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
+            call farray_index_append('i_v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
           endif
 !
         enddo
@@ -2229,12 +2223,12 @@ module Particles_nbody
         enddo
 !
         if (lwr) then
-          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_gas'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_gas'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_par'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_par'//trim(sks)//'=',idiag_torqext(ks)
+          call farray_index_append('i_torqint_'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_'//trim(sks),idiag_torqext(ks))
+          call farray_index_append('i_torqint_gas'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_gas'//trim(sks),idiag_torqext(ks))
+          call farray_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
         endif
       enddo
 !
@@ -2247,10 +2241,10 @@ module Particles_nbody
              'totangmom',idiag_totangmom)
       enddo
 !
-       if (lwr) then
-         write(3,*) 'i_totenergy=',idiag_totenergy
-         write(3,*) 'i_totangmom=',idiag_totangmom
-       endif
+      if (lwr) then
+        call farray_index_append('i_totenergy',idiag_totenergy)
+        call farray_index_append('i_totangmom',idiag_totangmom)
+      endif
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************

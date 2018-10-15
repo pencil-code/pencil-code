@@ -794,6 +794,7 @@ module Pscalar
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -918,13 +919,13 @@ module Pscalar
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'ilncc=0'
+        call farray_index_append('ilncc', 0)
         if (npscalar > 1) then
           write(fmt,'(I2)') npscalar - 1
           fmt = '(1X, A, ' // trim(fmt) // '(I2, A2), I2, A)'
           write(3,fmt) 'icc = [', (i, ', ', i = icc, icc+npscalar-2), icc+npscalar-1, ']'
         else
-          write(3,*) 'icc = ', icc
+          call farray_index_append('icc', icc)
         endif
       endif
 !

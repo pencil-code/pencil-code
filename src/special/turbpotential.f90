@@ -679,6 +679,7 @@ module Special
     subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  reads and registers print parameters relevant to special
 !
@@ -715,12 +716,12 @@ module Special
       endif
 !
       if (lwr) then
-        write(3,*) 'i_potturbm=',idiag_potturbm
-        write(3,*) 'i_potturbmax=',idiag_potturbmax
-        write(3,*) 'i_potturbmin=',idiag_potturbmin
-        write(3,*) 'i_gpotturbx2m=',idiag_gpotturbx2m
-        write(3,*) 'i_gpotturby2m=',idiag_gpotturby2m
-        write(3,*) 'i_gpotturbz2m=',idiag_gpotturbz2m
+        call farray_index_append('i_potturbm',idiag_potturbm)
+        call farray_index_append('i_potturbmax',idiag_potturbmax)
+        call farray_index_append('i_potturbmin',idiag_potturbmin)
+        call farray_index_append('i_gpotturbx2m',idiag_gpotturbx2m)
+        call farray_index_append('i_gpotturby2m',idiag_gpotturby2m)
+        call farray_index_append('i_gpotturbz2m',idiag_gpotturbz2m)
       endif
 !
     endsubroutine rprint_special

@@ -316,6 +316,8 @@ module Particles
 !
 !  22-aug-05/anders: dummy
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset, lwr
       logical, optional :: lwrite
 !
@@ -325,14 +327,14 @@ module Particles
       if (present(lwrite)) lwr=lwrite
 
       if (lwr) then
-        write(3,*) 'ixp=0'
-        write(3,*) 'iyp=0'
-        write(3,*) 'izp=0'
-        write(3,*) 'ivpx=0'
-        write(3,*) 'ivpy=0'
-        write(3,*) 'ivpz=0'
-        write(3,*) 'inp=0'
-        write(3,*) 'irho=0'
+        call farray_index_append('ixp',0)
+        call farray_index_append('iyp',0)
+        call farray_index_append('izp',0)
+        call farray_index_append('ivpx',0)
+        call farray_index_append('ivpy',0)
+        call farray_index_append('ivpz',0)
+        call farray_index_append('inp',0)
+        call farray_index_append('irho',0)
       endif
 !
       call keep_compiler_quiet(lreset)

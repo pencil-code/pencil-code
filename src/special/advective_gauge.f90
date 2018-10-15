@@ -397,6 +397,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
 !  define counters
@@ -455,15 +456,15 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_Lamm=',idiag_Lamm
-        write(3,*) 'i_Lamrms=',idiag_Lamrms
-        write(3,*) 'i_Lambzm=',idiag_Lambzm
-        write(3,*) 'i_Lambzmz=',idiag_Lambzmz
-        write(3,*) 'i_Lampt=',idiag_Lampt
-        write(3,*) 'i_Lamp2=',idiag_Lamp2
-        write(3,*) 'i_gLambm=',idiag_gLambm
-        write(3,*) 'i_apbrms=',idiag_apbrms
-        write(3,*) 'iLam=',iLam
+        call farray_index_append('i_Lamm',idiag_Lamm)
+        call farray_index_append('i_Lamrms',idiag_Lamrms)
+        call farray_index_append('i_Lambzm',idiag_Lambzm)
+        call farray_index_append('i_Lambzmz',idiag_Lambzmz)
+        call farray_index_append('i_Lampt',idiag_Lampt)
+        call farray_index_append('i_Lamp2',idiag_Lamp2)
+        call farray_index_append('i_gLambm',idiag_gLambm)
+        call farray_index_append('i_apbrms',idiag_apbrms)
+        call farray_index_append('iLam',iLam)
       endif
 !
     endsubroutine rprint_special

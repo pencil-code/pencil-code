@@ -635,6 +635,7 @@ module Ascalar
     subroutine rprint_ascalar(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -704,9 +705,9 @@ module Ascalar
       enddo
 !
       if (lwr) then 
-        write(3,*) 'iacc = ', iacc
-        write(3,*) 'issat=', issat
-        write(3,*) 'ittc=', ittc
+        call farray_index_append('iacc',iacc)
+        call farray_index_append('issat',issat)
+        call farray_index_append('ittc',ittc)
       endif
 !
     endsubroutine rprint_ascalar 

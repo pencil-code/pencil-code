@@ -206,6 +206,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -230,8 +231,8 @@ module Special
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_u1=',idiag_u1
-        write(3,*) 'i_u2=',idiag_u2
+        call farray_index_append('i_u1',idiag_u1)
+        call farray_index_append('i_u2',idiag_u2)
       endif
 !
     endsubroutine rprint_special

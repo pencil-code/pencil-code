@@ -587,6 +587,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr
@@ -678,46 +679,46 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_abm=',idiag_abm
-        write(3,*) 'i_jbm=',idiag_jbm
-        write(3,*) 'i_b2m=',idiag_b2m
-        write(3,*) 'i_e2m=',idiag_e2m
-        write(3,*) 'i_dive2m=',idiag_dive2m
-        write(3,*) 'i_divee2m=',idiag_divee2m
-        write(3,*) 'i_bm2=',idiag_bm2
-        write(3,*) 'i_j2m=',idiag_j2m
-        write(3,*) 'i_jm2=',idiag_jm2
-        write(3,*) 'i_epsM=',idiag_epsM
-        write(3,*) 'i_brms=',idiag_brms
-        write(3,*) 'i_bmax=',idiag_bmax
-        write(3,*) 'i_jrms=',idiag_jrms
-        write(3,*) 'i_jmax=',idiag_jmax
-        write(3,*) 'i_vArms=',idiag_vArms
-        write(3,*) 'i_vAmax=',idiag_vAmax
-        write(3,*) 'i_bx2m=',idiag_bx2m
-        write(3,*) 'i_by2m=',idiag_by2m
-        write(3,*) 'i_bz2m=',idiag_bz2m
-        write(3,*) 'i_uxbm=',idiag_uxbm
-        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
-        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
-        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
-        write(3,*) 'i_bxmz=',idiag_bxmz
-        write(3,*) 'i_bymz=',idiag_bymz
-        write(3,*) 'i_bzmz=',idiag_bzmz
-        write(3,*) 'i_bmx=',idiag_bmx
-        write(3,*) 'i_bmy=',idiag_bmy
-        write(3,*) 'i_bmz=',idiag_bmz
-        write(3,*) 'i_bxmxy=',idiag_bxmxy
-        write(3,*) 'i_bymxy=',idiag_bymxy
-        write(3,*) 'i_bzmxy=',idiag_bzmxy
-        write(3,*) 'i_b2mphi=',idiag_b2mphi
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
+        call farray_index_append('i_abm',idiag_abm)
+        call farray_index_append('i_jbm',idiag_jbm)
+        call farray_index_append('i_b2m',idiag_b2m)
+        call farray_index_append('i_e2m',idiag_e2m)
+        call farray_index_append('i_dive2m',idiag_dive2m)
+        call farray_index_append('i_divee2m',idiag_divee2m)
+        call farray_index_append('i_bm2',idiag_bm2)
+        call farray_index_append('i_j2m',idiag_j2m)
+        call farray_index_append('i_jm2',idiag_jm2)
+        call farray_index_append('i_epsM',idiag_epsM)
+        call farray_index_append('i_brms',idiag_brms)
+        call farray_index_append('i_bmax',idiag_bmax)
+        call farray_index_append('i_jrms',idiag_jrms)
+        call farray_index_append('i_jmax',idiag_jmax)
+        call farray_index_append('i_vArms',idiag_vArms)
+        call farray_index_append('i_vAmax',idiag_vAmax)
+        call farray_index_append('i_bx2m',idiag_bx2m)
+        call farray_index_append('i_by2m',idiag_by2m)
+        call farray_index_append('i_bz2m',idiag_bz2m)
+        call farray_index_append('i_uxbm',idiag_uxbm)
+        call farray_index_append('i_oxuxbm',idiag_oxuxbm)
+        call farray_index_append('i_jxbxbm',idiag_jxbxbm)
+        call farray_index_append('i_uxDxuxbm',idiag_uxDxuxbm)
+        call farray_index_append('i_bxmz',idiag_bxmz)
+        call farray_index_append('i_bymz',idiag_bymz)
+        call farray_index_append('i_bzmz',idiag_bzmz)
+        call farray_index_append('i_bmx',idiag_bmx)
+        call farray_index_append('i_bmy',idiag_bmy)
+        call farray_index_append('i_bmz',idiag_bmz)
+        call farray_index_append('i_bxmxy',idiag_bxmxy)
+        call farray_index_append('i_bymxy',idiag_bymxy)
+        call farray_index_append('i_bzmxy',idiag_bzmxy)
+        call farray_index_append('i_b2mphi',idiag_b2mphi)
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('iaa',iaa)
+        call farray_index_append('iax',iax)
+        call farray_index_append('iay',iay)
+        call farray_index_append('iaz',iaz)
       endif
 !
     endsubroutine rprint_magnetic

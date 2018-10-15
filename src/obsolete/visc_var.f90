@@ -100,6 +100,7 @@ module Viscosity
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -123,10 +124,10 @@ module Viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_dtnu=',idiag_dtnu
-          write(3,*) 'ihyper=',ihyper
-          write(3,*) 'ishock=',ishock
-          write(3,*) 'itest=',0
+          call farray_index_append('i_dtnu',idiag_dtnu)
+          call farray_index_append('ihyper',ihyper)
+          call farray_index_append('ishock',ishock)
+          call farray_index_append('itest',0)
         endif
       endif
 !

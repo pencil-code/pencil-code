@@ -1155,6 +1155,7 @@ module Gravity
 !  12-jun-04/axel: adapted from grav_z
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -1220,7 +1221,7 @@ module Gravity
 !  IDL needs this even if everything is zero.
 !
       if (lwr) then
-        write(3,*) 'igg=',igg
+        call farray_index_append('igg',igg)
       endif
 !
     endsubroutine rprint_gravity

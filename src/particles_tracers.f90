@@ -906,6 +906,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -919,17 +920,17 @@ module Particles
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-!        write(3,*) 'ivpx=', mpvar+ivpx
-!        write(3,*) 'ivpy=', mpvar+ivpy
-!        write(3,*) 'ivpz=', mpvar+ivpz
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
+        call farray_index_append('ixp', ixp)
+        call farray_index_append('iyp', iyp)
+        call farray_index_append('izp', izp)
+!        call farray_index_append('ivpx', mpvar+ivpx)
+!        call farray_index_append('ivpy', mpvar+ivpy)
+!        call farray_index_append('ivpz', mpvar+ivpz)
+        call farray_index_append('ivpx', ivpx)
+        call farray_index_append('ivpy', ivpy)
+        call farray_index_append('ivpz', ivpz)
+        call farray_index_append('inp', inp)
+        call farray_index_append('irhop', irhop)
       endif
 !
 !  Reset everything in case of reset

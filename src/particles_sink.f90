@@ -1571,6 +1571,7 @@ module Particles_sink
 !  11-aug-12/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -1585,7 +1586,7 @@ module Particles_sink
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iaps=', iaps
+      if (lwr) call farray_index_append('iaps', iaps)
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparsink', &

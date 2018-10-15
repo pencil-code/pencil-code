@@ -519,6 +519,7 @@ module Testfield
 !   6-mar-13/MR  : alternative parse_name used
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       logical :: lreset
@@ -530,9 +531,9 @@ module Testfield
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!
-        idiags=0; idiags_x=0; idiags_xy=0
-!
+        idiags=0
+        idiags_x=0
+        idiags_xy=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -562,12 +563,10 @@ module Testfield
       enddo
 !
       if (loptest(lwrite)) then
-!
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'ntestfield=',ntestfield
-        write(3,*) 'nnamex=',nnamex
-        write(3,*) 'nnamexy=',nnamexy
-!
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('ntestfield',ntestfield)
+        call farray_index_append('nnamex',nnamex)
+        call farray_index_append('nnamexy',nnamexy)
       endif
 !
       needed2d = diagnos_interdep(idiags(1:idiag_base_end),idiags_x(1:idiag_base_end), &

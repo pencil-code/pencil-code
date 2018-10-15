@@ -2097,6 +2097,7 @@ module Energy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -2247,14 +2248,14 @@ module Energy
 !
       if (lwr) then
         if (ltemperature_nolog) then
-          write(3,*) 'ilnTT=0'
-          write(3,*) 'iTT=', iTT
+          call farray_index_append('ilnTT', 0)
+          call farray_index_append('iTT', iTT)
         else
-          write(3,*) 'ilnTT=', ilnTT
-          write(3,*) 'iTT=0'
+          call farray_index_append('ilnTT', ilnTT)
+          call farray_index_append('iTT', 0)
         endif
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'iss=',iss
+        call farray_index_append('iyH', iyH)
+        call farray_index_append('iss', iss)
       endif
 !
     endsubroutine rprint_energy

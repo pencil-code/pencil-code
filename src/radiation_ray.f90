@@ -2298,6 +2298,7 @@ module Radiation
 !  16-jul-02/nils: adapted from rprint_hydro
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -2350,12 +2351,12 @@ module Radiation
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'iQrad=',iQrad
-        write(3,*) 'ikapparho=',ikapparho
-        write(3,*) 'iKR_Frad=',iKR_Frad
-        write(3,*) 'iKR_Fradx=',iKR_Fradx
-        write(3,*) 'iKR_Frady=',iKR_Frady
-        write(3,*) 'iKR_Fradz=',iKR_Fradz
+        call farray_index_append('iQrad',iQrad)
+        call farray_index_append('ikapparho',ikapparho)
+        call farray_index_append('iKR_Frad',iKR_Frad)
+        call farray_index_append('iKR_Fradx',iKR_Fradx)
+        call farray_index_append('iKR_Frady',iKR_Frady)
+        call farray_index_append('iKR_Fradz',iKR_Fradz)
       endif
 !
     endsubroutine rprint_radiation

@@ -929,6 +929,8 @@ endif
 !
 !  06-oct-03/tony: coded
 !
+!!      use FArrayManager, only: farray_index_append
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -993,7 +995,7 @@ endif
 !!
 !!!  write column where which magnetic variable is stored
 !!      if (lwr) then
-!!        write(3,*) 'idiag_SPECIAL_DIAGNOSTIC=',idiag_SPECIAL_DIAGNOSTIC
+!!        call farray_index_append('idiag_SPECIAL_DIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
 !!      endif
 !!
       do iname=1,nname

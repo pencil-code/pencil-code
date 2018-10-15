@@ -334,6 +334,7 @@ module Special
     subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  reads and registers print parameters relevant to special
 !
@@ -359,9 +360,9 @@ module Special
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_pstratm=',idiag_pstratm
-        write(3,*) 'i_pstratmax=',idiag_pstratmax
-        write(3,*) 'i_pstratmin=',idiag_pstratmin
+        call farray_index_append('i_pstratm',idiag_pstratm)
+        call farray_index_append('i_pstratmax',idiag_pstratmax)
+        call farray_index_append('i_pstratmin',idiag_pstratmin)
       endif
 !
     endsubroutine rprint_special

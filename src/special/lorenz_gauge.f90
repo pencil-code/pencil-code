@@ -280,6 +280,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
 !  define counters
@@ -322,12 +323,12 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_phim=',idiag_phim
-        write(3,*) 'i_phibzm=',idiag_phibzm
-        write(3,*) 'i_phibzmz=',idiag_phibzmz
-        write(3,*) 'i_phipt=',idiag_phipt
-        write(3,*) 'i_phip2=',idiag_phip2
-        write(3,*) 'iphi=',iphi
+        call farray_index_append('i_phim',idiag_phim)
+        call farray_index_append('i_phibzm',idiag_phibzm)
+        call farray_index_append('i_phibzmz',idiag_phibzmz)
+        call farray_index_append('i_phipt',idiag_phipt)
+        call farray_index_append('i_phip2',idiag_phip2)
+        call farray_index_append('iphi',iphi)
       endif
 !
     endsubroutine rprint_special

@@ -328,6 +328,7 @@ module Special
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
@@ -367,13 +368,13 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_bmx2m=',idiag_bmx2m
-        write(3,*) 'i_bmy2m=',idiag_bmy2m
-        write(3,*) 'i_bmxpt=',idiag_bmxpt
-        write(3,*) 'i_bmypt=',idiag_bmypt
-        write(3,*) 'i_bmxp2=',idiag_bmxp2
-        write(3,*) 'i_bmyp2=',idiag_bmyp2
-        write(3,*) 'iam=',iam
+        call farray_index_append('i_bmx2m',idiag_bmx2m)
+        call farray_index_append('i_bmy2m',idiag_bmy2m)
+        call farray_index_append('i_bmxpt',idiag_bmxpt)
+        call farray_index_append('i_bmypt',idiag_bmypt)
+        call farray_index_append('i_bmxp2',idiag_bmxp2)
+        call farray_index_append('i_bmyp2',idiag_bmyp2)
+        call farray_index_append('iam',iam)
       endif
 !
     endsubroutine rprint_special

@@ -223,6 +223,7 @@ module Hydro
 !   8-jun-02/axel: adapted from hydro
 !
       use Cdata
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -253,21 +254,21 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_u2m=',idiag_u2m
-        write(3,*) 'i_um2=',idiag_um2
-        write(3,*) 'i_o2m=',idiag_o2m
-        write(3,*) 'i_oum=',idiag_oum
-        write(3,*) 'i_urms=',idiag_urms
-        write(3,*) 'i_umax=',idiag_umax
-        write(3,*) 'i_orms=',idiag_orms
-        write(3,*) 'i_omax=',idiag_omax
-        write(3,*) 'i_u2mphi=',idiag_u2mphi
-        write(3,*) 'i_oumphi=',idiag_oumphi
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuu=',iuu
-        write(3,*) 'iux=',iux
-        write(3,*) 'iuy=',iuy
-        write(3,*) 'iuz=',iuz
+        call farray_index_append('i_u2m',idiag_u2m)
+        call farray_index_append('i_um2',idiag_um2)
+        call farray_index_append('i_o2m',idiag_o2m)
+        call farray_index_append('i_oum',idiag_oum)
+        call farray_index_append('i_urms',idiag_urms)
+        call farray_index_append('i_umax',idiag_umax)
+        call farray_index_append('i_orms',idiag_orms)
+        call farray_index_append('i_omax',idiag_omax)
+        call farray_index_append('i_u2mphi',idiag_u2mphi)
+        call farray_index_append('i_oumphi',idiag_oumphi)
+        call farray_index_append('nname',nname)
+        call farray_index_append('iuu',iuu)
+        call farray_index_append('iux',iux)
+        call farray_index_append('iuy',iuy)
+        call farray_index_append('iuz',iuz)
       endif
 !
     endsubroutine rprint_hydro

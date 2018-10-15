@@ -163,6 +163,8 @@ module Particles_spin
 !
 !  21-jul-08/kapelrud: adapted from particles_radius
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -172,7 +174,7 @@ module Particles_spin
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
+      if (lwr) call farray_index_append('iox', iox)
 !
       call keep_compiler_quiet(lreset)
 !

@@ -1948,6 +1948,7 @@ module Radiation
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -1985,33 +1986,33 @@ module Radiation
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_frms=',idiag_frms
-        write(3,*) 'i_fmax=',idiag_fmax
-        write(3,*) 'i_Erad_rms=',idiag_Erad_rms
-        write(3,*) 'i_Erad_max=',idiag_Erad_max
-        write(3,*) 'i_Egas_rms=',idiag_Egas_rms
-        write(3,*) 'i_Egas_max=',idiag_Egas_max
-        write(3,*) 'i_Qradrms=',idiag_Qradrms
-        write(3,*) 'i_Qradmax=',idiag_Qradmax
-        write(3,*) 'i_Fradzm=',idiag_Fradzm
-        write(3,*) 'i_xyFradzm=',idiag_xyFradzm
-        write(3,*) 'i_Sradm=',idiag_Sradm
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_dtrad=',idiag_dtrad
-        write(3,*) 'nname=',nname
-        write(3,*) 'ie=',ie
-        write(3,*) 'iQrad=',iQrad
-        write(3,*) 'ikapparho=',ikapparho
-        write(3,*) 'iQrad2=',iQrad2
-        write(3,*) 'ikapparho2=',ikapparho2
-        write(3,*) 'iFrad=',iFrad
-        write(3,*) 'iFradx=',iFradx
-        write(3,*) 'iFrady=',iFrady
-        write(3,*) 'iFradz=',iFradz
-        write(3,*) 'iFrad2=',iFrad2
-        write(3,*) 'iFradx2=',iFradx2
-        write(3,*) 'iFrady2=',iFrady2
-        write(3,*) 'iFradz2=',iFradz2
+        call farray_index_append('i_frms',idiag_frms)
+        call farray_index_append('i_fmax',idiag_fmax)
+        call farray_index_append('i_Erad_rms',idiag_Erad_rms)
+        call farray_index_append('i_Erad_max',idiag_Erad_max)
+        call farray_index_append('i_Egas_rms',idiag_Egas_rms)
+        call farray_index_append('i_Egas_max',idiag_Egas_max)
+        call farray_index_append('i_Qradrms',idiag_Qradrms)
+        call farray_index_append('i_Qradmax',idiag_Qradmax)
+        call farray_index_append('i_Fradzm',idiag_Fradzm)
+        call farray_index_append('i_xyFradzm',idiag_xyFradzm)
+        call farray_index_append('i_Sradm',idiag_Sradm)
+        call farray_index_append('i_dtchi',idiag_dtchi)
+        call farray_index_append('i_dtrad',idiag_dtrad)
+        call farray_index_append('nname',nname)
+        call farray_index_append('ie',ie)
+        call farray_index_append('iQrad',iQrad)
+        call farray_index_append('ikapparho',ikapparho)
+        call farray_index_append('iQrad2',iQrad2)
+        call farray_index_append('ikapparho2',ikapparho2)
+        call farray_index_append('iFrad',iFrad)
+        call farray_index_append('iFradx',iFradx)
+        call farray_index_append('iFrady',iFrady)
+        call farray_index_append('iFradz',iFradz)
+        call farray_index_append('iFrad2',iFrad2)
+        call farray_index_append('iFradx2',iFradx2)
+        call farray_index_append('iFrady2',iFrady2)
+        call farray_index_append('iFradz2',iFradz2)
       endif
 !
       call keep_compiler_quiet(lreset)

@@ -1006,6 +1006,7 @@ module Particles_radius
 !  22-aug-05/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -1017,7 +1018,7 @@ module Particles_radius
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-      if (lwr) write (3,*) 'iap=', iap
+      if (lwr) call farray_index_append('iap', iap)
 !
 !  Reset everything in case of reset.
 !

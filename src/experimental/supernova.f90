@@ -993,6 +993,7 @@ module Interstellar
 !  01-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -1035,8 +1036,8 @@ module Interstellar
 !  Write column in which each interstellar variable is stored
 !
       if (lwr) then
-        write(3,*) 'icooling=',icooling
-        write(3,*) 'inetheat=',inetheat
+        call farray_index_append('icooling',icooling)
+        call farray_index_append('inetheat',inetheat)
       endif
 !
     endsubroutine rprint_interstellar

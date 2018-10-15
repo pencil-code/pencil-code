@@ -587,6 +587,7 @@ module Polymer
 !   8-aug-10/dhruba: aped from pscalar
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -635,17 +636,17 @@ module Polymer
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'ipoly=',ipoly
-        write(3,*) 'ip11=',ip11
-        write(3,*) 'ip12=',ip12
-        write(3,*) 'ip13=',ip13
-        write(3,*) 'ip21=',ip21
-        write(3,*) 'ip22=',ip22
-        write(3,*) 'ip23=',ip23
-        write(3,*) 'ip31=',ip31
-        write(3,*) 'ip32=',ip32
-        write(3,*) 'ip33=',ip33
-        write(3,*) 'ipoly_fr=',ipoly_fr
+        call farray_index_append('ipoly',ipoly)
+        call farray_index_append('ip11',ip11)
+        call farray_index_append('ip12',ip12)
+        call farray_index_append('ip13',ip13)
+        call farray_index_append('ip21',ip21)
+        call farray_index_append('ip22',ip22)
+        call farray_index_append('ip23',ip23)
+        call farray_index_append('ip31',ip31)
+        call farray_index_append('ip32',ip32)
+        call farray_index_append('ip33',ip33)
+        call farray_index_append('ipoly_fr',ipoly_fr)
       endif
 !
     endsubroutine rprint_polymer

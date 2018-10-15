@@ -7240,6 +7240,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamex,inamey,inamez,inamev,ixy,ixz,irz,inamer,iname_half,iname_sound,idum
       logical :: lreset,lwr
@@ -7901,15 +7902,15 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
       enddo
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
-        write(3,*) 'ihypres=',ihypres
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamexz',nnamexz)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('iaa',iaa)
+        call farray_index_append('iax',iax)
+        call farray_index_append('iay',iay)
+        call farray_index_append('iaz',iaz)
+        call farray_index_append('ihypres',ihypres)
       endif
 !
 !  call corresponding mean-field routine

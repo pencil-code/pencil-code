@@ -2120,6 +2120,7 @@ module Particles_nbody
 !  17-nov-05/anders+wlad: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: itoa
 !
       logical :: lreset,lwr
@@ -2135,7 +2136,7 @@ module Particles_nbody
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'imass_nbody=', imass_nbody
+        call farray_index_append('imass_nbody', imass_nbody)
       endif
 !
 !  Reset everything in case of reset
@@ -2168,10 +2169,8 @@ module Particles_nbody
 !  Run through parse list again
 !
           if (lwr) then
-            write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',&
-                 idiag_xxspar(ks,j)
-            write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',&
-                 idiag_vvspar(ks,j)
+            call farray_index_append('i_'//trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
+            call farray_index_append('i_v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
           endif
 !
         enddo
@@ -2192,12 +2191,12 @@ module Particles_nbody
         enddo
 !
         if (lwr) then
-          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_gas'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_gas'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_par'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_par'//trim(sks)//'=',idiag_torqext(ks)
+          call farray_index_append('i_torqint_'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_'//trim(sks),idiag_torqext(ks))
+          call farray_index_append('i_torqint_gas'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_gas'//trim(sks),idiag_torqext(ks))
+          call farray_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
         endif
       enddo
 !
@@ -2211,8 +2210,8 @@ module Particles_nbody
       enddo
 !
        if (lwr) then
-         write(3,*) 'i_totenergy=',idiag_totenergy
-         write(3,*) 'i_totangmom=',idiag_totangmom
+         call farray_index_append('i_totenergy',idiag_totenergy)
+         call farray_index_append('i_totangmom',idiag_totangmom)
        endif
 !
     endsubroutine rprint_particles_nbody

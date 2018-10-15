@@ -335,6 +335,7 @@ module Cosmicrayflux
       ! 3-may-02/axel: coded
       ! 27-may-02/axel: added possibility to reset list
       use Sub
+      use FArrayManager, only: farray_index_append
 
       integer :: iname, inamez, ixy, irz
       logical :: lreset, lwr
@@ -370,9 +371,7 @@ module Cosmicrayflux
       enddo
 
       ! Write column, idiag_XYZ, where our variable XYZ is stored.
-      if (lwr) then
-        write(3,*) 'ifcr=',ifcr
-      endif
+      if (lwr) call farray_index_append('ifcr',ifcr)
     endsubroutine rprint_cosmicrayflux
 !*******************************************************************************
 endmodule Cosmicrayflux

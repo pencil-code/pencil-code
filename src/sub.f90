@@ -6611,7 +6611,7 @@ nameloop: do
 !  13-jan-11/MR: coded
 !  29-may-14/ccyang: add optional argument communicated
 !
-      use FArrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary, farray_index_append
 !
       implicit none
 !
@@ -6637,10 +6637,8 @@ nameloop: do
         endif
       endif
 !
-      if (index==0) then
-!
+      if (index == 0) then
         call farray_register_auxiliary(trim(name), index, vector=abs(vec), communicated=communicated)
-!
         if (vec>=1) then
           ind_aux1=index
           if (vec>=2) then
@@ -6648,31 +6646,9 @@ nameloop: do
             if (vec==3) ind_aux3=index+2
           endif
         endif
-!
-      endif
-!
-      if (index/=0.and.lroot) then
-!
-        print*, 'register_report_aux: i'//trim(name)//' =', index
-        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) 'i'//trim(name)//' =',index
-!
-        if ( vec>=1 ) then
-          tail=' ='
-          ch = name(1:1)
-          if ( ch==name(2:2) ) then
-            if ( len_trim(name)>2 ) tail = trim(name(3:))//' ='
-          endif
-!
-          write(3,*) 'i'//ch//'x'//trim(tail),ind_aux1
-          if ( vec>=2 ) then
-            write(3,*) 'i'//ch//'y'//trim(tail),ind_aux2
-            if ( vec==3 ) write(3,*) 'i'//ch//'z'//trim(tail),ind_aux3
-          endif
-        endif
-!
-        close(3)
-!
+      else
+        if (lroot) print*, 'register_report_aux: i'//trim(name)//' =', index
+        call farray_index_append('i'//trim(name),index,vec)
       endif
 !
     endsubroutine register_report_aux

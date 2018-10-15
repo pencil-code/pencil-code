@@ -236,6 +236,7 @@ module Energy
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,irz
       logical :: lreset,lwr
@@ -274,7 +275,7 @@ module Energy
 !  write column where which energy variable is stored
 !
       if (lwr) then
-        write(3,*) 'iss=',iss
+        call farray_index_append('iss',iss)
       endif
 !
     endsubroutine rprint_energy

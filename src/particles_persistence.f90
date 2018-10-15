@@ -207,6 +207,7 @@ contains
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General,   only: itoa
 !
       logical :: lreset
@@ -223,10 +224,10 @@ contains
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-         write(3,*) 'ixp0=',ixp0
-         write(3,*) 'iyp0=',iyp0
-         write(3,*) 'izp0=',izp0
-         write(3,*) 'ippersist=', ippersist
+         call farray_index_append('ixp0',ixp0)
+         call farray_index_append('iyp0',iyp0)
+         call farray_index_append('izp0',izp0)
+         call farray_index_append('ippersist', ippersist)
       endif
 !
 !  Reset everything in case of reset

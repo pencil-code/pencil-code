@@ -150,6 +150,8 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -159,7 +161,7 @@ module Particles_temperature
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
+      if (lwr) call farray_index_append('iox', iox)
 !
       call keep_compiler_quiet(lreset)
 !

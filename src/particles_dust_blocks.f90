@@ -2787,6 +2787,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  29-dec-04/anders: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -2800,14 +2801,14 @@ k_loop:   do while (.not. (k>npar_loc))
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
+        call farray_index_append('ixp', ixp)
+        call farray_index_append('iyp', iyp)
+        call farray_index_append('izp', izp)
+        call farray_index_append('ivpx', ivpx)
+        call farray_index_append('ivpy', ivpy)
+        call farray_index_append('ivpz', ivpz)
+        call farray_index_append('inp', inp)
+        call farray_index_append('irhop', irhop)
       endif
 !
 !  Reset everything in case of reset.

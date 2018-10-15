@@ -209,10 +209,7 @@ module PointMasses
 !  When first called, nqpar was zero, so no diagnostic index was written to
 !  index.pro
 !
-      if (lroot) open(3, file=trim(datadir)//'/index.pro', &
-          STATUS='old', POSITION='append')
       call rprint_pointmasses(.false.,LWRITE=lroot)
-      if (lroot) close(3)
 !
 !  G_Newton. Overwrite the one set by start.in if set again here,
 !  because I might want units in which both G and GM are 1.
@@ -1852,6 +1849,7 @@ module PointMasses
 !  17-nov-05/anders+wlad: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: itoa
 !
       logical :: lreset,lwr
@@ -1867,13 +1865,13 @@ module PointMasses
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixq=',ixq 
-        write(3,*) 'iyq=',iyq 
-        write(3,*) 'izq=',izq
-        write(3,*) 'ivxq=',ivxq 
-        write(3,*) 'ivyq=',ivyq 
-        write(3,*) 'ivzq=',ivzq
-        write(3,*) 'imass=', imass
+        call farray_index_append('ixq',ixq)
+        call farray_index_append('iyq',iyq)
+        call farray_index_append('izq',izq)
+        call farray_index_append('ivxq',ivxq)
+        call farray_index_append('ivyq',ivyq)
+        call farray_index_append('ivzq',ivzq)
+        call farray_index_append('imass',imass)
       endif
 !
 !  Reset everything in case of reset
@@ -1906,10 +1904,8 @@ module PointMasses
 !  Run through parse list again
 !
           if (lwr) then
-            write(3,*) ' i_'//trim(str)//'q'//trim(sks)//'=',&
-                 idiag_xxq(ks,j)
-            write(3,*) 'i_v'//trim(str)//'q'//trim(sks)//'=',&
-                 idiag_vvq(ks,j)
+            call farray_index_append('i_'//trim(str)//'q'//trim(sks),idiag_xxq(ks,j))
+            call farray_index_append('i_v'//trim(str)//'q'//trim(sks),idiag_vvq(ks,j))
           endif
 !
         enddo
@@ -1930,12 +1926,12 @@ module PointMasses
         enddo
 !
         if (lwr) then
-          write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_gas'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_gas'//trim(sks)//'=',idiag_torqext(ks)
-          write(3,*) 'i_torqint_par'//trim(sks)//'=',idiag_torqint(ks)
-          write(3,*) 'i_torqext_par'//trim(sks)//'=',idiag_torqext(ks)
+          call farray_index_append('i_torqint_'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_'//trim(sks),idiag_torqext(ks))
+          call farray_index_append('i_torqint_gas'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_gas'//trim(sks),idiag_torqext(ks))
+          call farray_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
+          call farray_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
         endif
       enddo
 !
@@ -1946,7 +1942,7 @@ module PointMasses
       enddo
 !
        if (lwr) then
-         write(3,*) 'i_totenergy=',idiag_totenergy
+         call farray_index_append('i_totenergy',idiag_totenergy)
        endif
 !
     endsubroutine rprint_pointmasses

@@ -484,6 +484,7 @@ module Special
 !   6-jul-02/axel: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -522,13 +523,13 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_alpm_int=',idiag_alpm_int
-        write(3,*) 'i_gatop=',idiag_gatop
-        write(3,*) 'i_gabot=',idiag_gabot
-        write(3,*) 'i_alpmm=',idiag_alpmm
-        write(3,*) 'i_ammax=',idiag_ammax
-        write(3,*) 'i_amrms=',idiag_amrms
-        write(3,*) 'ispecial=',ialpm
+        call farray_index_append('i_alpm_int',idiag_alpm_int)
+        call farray_index_append('i_gatop',idiag_gatop)
+        call farray_index_append('i_gabot',idiag_gabot)
+        call farray_index_append('i_alpmm',idiag_alpmm)
+        call farray_index_append('i_ammax',idiag_ammax)
+        call farray_index_append('i_amrms',idiag_amrms)
+        call farray_index_append('ispecial',ialpm)
       endif
 !
     endsubroutine rprint_special

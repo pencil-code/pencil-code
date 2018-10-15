@@ -215,6 +215,7 @@ module Shock
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -250,10 +251,10 @@ module Shock
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_shockmax=',idiag_shockmax
-          write(3,*) 'i_shockmax_perp=',idiag_shockmax_perp
-          write(3,*) 'ishock=',ishock
-          write(3,*) 'ishock_perp=',ishock_perp
+          call farray_index_append('i_shockmax',idiag_shockmax)
+          call farray_index_append('i_shockmax_perp',idiag_shockmax_perp)
+          call farray_index_append('ishock',ishock)
+          call farray_index_append('ishock_perp',ishock_perp)
         endif
       endif
 !

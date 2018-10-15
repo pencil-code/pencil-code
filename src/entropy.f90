@@ -6256,6 +6256,7 @@ module Energy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -6461,9 +6462,9 @@ module Energy
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
-        write(3,*) 'iss=',iss
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'ilnTT=',ilnTT
+        call farray_index_append('iss',iss)
+        call farray_index_append('iyH',iyH)
+        call farray_index_append('ilnTT',ilnTT)
       endif
 !
     endsubroutine rprint_energy

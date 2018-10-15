@@ -485,16 +485,13 @@ module Chemistry
           do i = 0, nchemspec-1
             ireaci(i+1) = ireac+i
           enddo
-        endif
-        if (ireac /= 0 .and. lroot) then
-          print*, 'initialize_reaction_rates: ireac = ', ireac
-          open (3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write (3,*) 'ireac=',ireac
+        else
+          if (lroot) print*, 'initialize_chemistry: ireac = ', ireac
+          call farray_index_append('ireac',ireac)
           do i = 1, nchemspec
             write (car2,'(i2)') i
-            write (3,*) 'ireac'//trim(adjustl(car2))//'=', ireaci(i)
+            call farray_index_append('ireac'//trim(adjustl(car2)),ireaci(i))
           enddo
-          close (3)
         endif
       endif
 !
@@ -3131,6 +3128,7 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
       use General, only: itoa, get_species_nr
 !
       integer :: iname, inamez,ii
@@ -3234,8 +3232,8 @@ module Chemistry
 !  Write chemistry index in short notation
 !
       if (lwr) then
-        write (3,*) 'nchemspec=',nchemspec
-        write (3,*) 'ichemspec=indgen('//trim(itoa(nchemspec))//') + '//trim(itoa(ichemspec(1)))
+        call farray_index_append('nchemspec',nchemspec)
+        call farray_index_append('ichemspec',ichemspec(1),1,nchemspec)
       endif
 !
     endsubroutine rprint_chemistry

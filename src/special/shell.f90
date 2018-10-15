@@ -482,6 +482,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -508,9 +509,9 @@ module Special
 !!
 !!!  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'i_uuGOY=',idiag_uuGOY
-        write(3,*) 'i_deltM=',idiag_deltM
-        write(3,*) 'i_eddy_time=',idiag_eddy_time
+        call farray_index_append('i_uuGOY',idiag_uuGOY)
+        call farray_index_append('i_deltM',idiag_deltM)
+        call farray_index_append('i_eddy_time',idiag_eddy_time)
       endif
 !!
     endsubroutine rprint_special

@@ -352,6 +352,7 @@ contains
 !  07-sept-17/bingert: updated
 !
     use Diagnostics, only: parse_name
+    use FArrayManager, only: farray_index_append
 !
     integer :: iname
     logical :: lreset,lwr
@@ -392,17 +393,17 @@ contains
       call parse_name(iname,cnamev(iname),cformv(iname),'divq',ivid_divq)
     enddo
 
-   if (lwr) then
-      write(3,*) 'iqq=',iqq
-      write(3,*) 'iqx=',iqx
-      write(3,*) 'iqy=',iqy
-      write(3,*) 'iqz=',iqz
-      write (3,*) 'i_dtspitzer=',idiag_dtspitzer
-      write (3,*) 'i_dtq=',idiag_dtq
-      write (3,*) 'i_dtq2=',idiag_dtq2
-      write (3,*) 'i_qsatmin=',idiag_qsatmin
-      write (3,*) 'i_qsatrms=',idiag_qsatrms
-   endif
+    if (lwr) then
+      call farray_index_append('iqq',iqq)
+      call farray_index_append('iqx',iqx)
+      call farray_index_append('iqy',iqy)
+      call farray_index_append('iqz',iqz)
+      call farray_index_append('i_dtspitzer',idiag_dtspitzer)
+      call farray_index_append('i_dtq',idiag_dtq)
+      call farray_index_append('i_dtq2',idiag_dtq2)
+      call farray_index_append('i_qsatmin',idiag_qsatmin)
+      call farray_index_append('i_qsatrms',idiag_qsatrms)
+    endif
 !
   endsubroutine rprint_heatflux
 !***********************************************************************

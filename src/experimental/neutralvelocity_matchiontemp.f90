@@ -853,6 +853,7 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
       logical :: lreset,lwr
@@ -1009,11 +1010,11 @@ module NeutralVelocity
 !  write column where which neutralvelocity variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuun=',iuun
-        write(3,*) 'iunx=',iunx
-        write(3,*) 'iuny=',iuny
-        write(3,*) 'iunz=',iunz
+        call farray_index_append('nname',nname)
+        call farray_index_append('iuun',iuun)
+        call farray_index_append('iunx',iunx)
+        call farray_index_append('iuny',iuny)
+        call farray_index_append('iunz',iunz)
       endif
 !
     endsubroutine rprint_neutralvelocity

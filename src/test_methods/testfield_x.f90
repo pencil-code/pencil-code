@@ -314,12 +314,9 @@ module Testfield
       if (luxb_as_aux) then
         if (iuxbtest==0) then
           call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
-        endif
-        if (iuxbtest/=0.and.lroot) then
-          print*, 'initialize_magnetic: iuxbtest = ', iuxbtest
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxbtest=',iuxbtest
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          call farray_index_append('iuxbtest',iuxbtest)
         endif
       endif
 !
@@ -329,12 +326,9 @@ module Testfield
       if (ljxb_as_aux) then
         if (ijxbtest==0) then
           call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
-        endif
-        if (ijxbtest/=0.and.lroot) then
-          print*, 'initialize_magnetic: ijxbtest = ', ijxbtest
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxbtest=',ijxbtest
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          call farray_index_append('ijxbtest',ijxbtest)
         endif
       endif
 !
@@ -1095,6 +1089,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamex,inamez,inamexz
@@ -1213,8 +1208,8 @@ module Testfield
       enddo
 !
       if (loptest(lwrite)) then
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'ntestfield=',ntestfield
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('ntestfield',ntestfield)
       endif
 !
     endsubroutine rprint_testfield

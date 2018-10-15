@@ -554,6 +554,7 @@ module Selfgravity
 !  16-may-06/anders+jeff: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -639,7 +640,7 @@ module Selfgravity
 !  Write column where which variable is stored.
 !
       if (lwr) then
-        write(3,*) 'ipotself=', ipotself
+        call farray_index_append('ipotself', ipotself)
       endif
 !
     endsubroutine rprint_selfgravity

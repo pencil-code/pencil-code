@@ -386,12 +386,9 @@ module Testscalar
       if (lug_as_aux) then
         if (iug==0) then
           call farray_register_auxiliary('ug',iug,vector=njtestscalar)
-        endif
-        if (iug/=0.and.lroot) then
-          print*, 'initialize_magnetic: iug = ', iug
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iug=',iug
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testscalar: iug = ', iug
+          call farray_index_append('iug',iug)
         endif
       endif
 !
@@ -1115,6 +1112,7 @@ module Testscalar
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamez
@@ -1226,8 +1224,8 @@ module Testscalar
       enddo
 !
       if (loptest(lwrite)) then
-        write(3,*) 'icctest=',icctest
-        write(3,*) 'ntestscalar=',ntestscalar
+        call farray_index_append('icctest',icctest)
+        call farray_index_append('ntestscalar',ntestscalar)
       endif
 !
     endsubroutine rprint_testscalar

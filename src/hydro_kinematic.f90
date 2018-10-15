@@ -217,19 +217,11 @@ module Hydro
           iux=iuu
           iuy=iuu+1
           iuz=iuu+2
-        endif
-        if (iuu/=0) then
+        else
 ! set the initial velocity to zero
           if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
-          if (lroot) then
-            if (ip<14) print*, 'initialize_velocity: iuu = ', iuu
-            open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-            write(3,*) 'iuu=',iuu
-            write(3,*) 'iux=',iux
-            write(3,*) 'iuy=',iuy
-            write(3,*) 'iuz=',iuz
-            close(3)
-          endif
+          if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
+          call farray_index_append('iuu',iuu,3)
         endif
 
         if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
@@ -2674,6 +2666,7 @@ module Hydro
 !   8-jun-02/axel: adapted from hydro
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -2746,10 +2739,10 @@ module Hydro
 !  Write column where which variable is stored.
 !
       if (lwr) then
-        write(3,*) 'iuu=',iuu
-        write(3,*) 'iux=',iux
-        write(3,*) 'iuy=',iuy
-        write(3,*) 'iuz=',iuz
+        call farray_index_append('iuu',iuu)
+        call farray_index_append('iux',iux)
+        call farray_index_append('iuy',iuy)
+        call farray_index_append('iuz',iuz)
       endif
 !
     endsubroutine rprint_hydro

@@ -613,6 +613,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -646,8 +647,8 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'ipsi_real=',ipsi_real
-        write(3,*) 'ipsi_imag=',ipsi_imag
+        call farray_index_append('ipsi_real',ipsi_real)
+        call farray_index_append('ipsi_imag',ipsi_imag)
       endif
 !
     endsubroutine rprint_special

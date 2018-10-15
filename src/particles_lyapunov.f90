@@ -303,6 +303,7 @@ module Particles_lyapunov
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General,   only: itoa
 !
       logical :: lreset
@@ -319,18 +320,18 @@ module Particles_lyapunov
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'iup11=',iup11
-        write(3,*) 'iup12=',iup12
-        write(3,*) 'iup13=',iup13
-        write(3,*) 'iup21=',iup21
-        write(3,*) 'iup22=',iup22
-        write(3,*) 'iup23=',iup23
-        write(3,*) 'iup31=',iup31
-        write(3,*) 'iup32=',iup32
-        write(3,*) 'iup33=',iup33
-        write(3,*) 'ibpx=', ibpx
-        write(3,*) 'ibpy=', ibpy
-        write(3,*) 'ibpz=', ibpz
+        call farray_index_append('iup11',iup11)
+        call farray_index_append('iup12',iup12)
+        call farray_index_append('iup13',iup13)
+        call farray_index_append('iup21',iup21)
+        call farray_index_append('iup22',iup22)
+        call farray_index_append('iup23',iup23)
+        call farray_index_append('iup31',iup31)
+        call farray_index_append('iup32',iup32)
+        call farray_index_append('iup33',iup33)
+        call farray_index_append('ibpx', ibpx)
+        call farray_index_append('ibpy', ibpy)
+        call farray_index_append('ibpz', ibpz)
       endif
 !
 !  Reset everything in case of reset.

@@ -8070,6 +8070,7 @@ module Magnetic
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half,iname_sound,inamev
       logical :: lreset,lwr
@@ -8747,11 +8748,9 @@ module Magnetic
       enddo
 !
       if (lwr) then
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
-        write(3,*) 'ihypres=',ihypres
+        ! *** WORK HERE ***: 'iaa' seems to be appended also in register_magnetic?
+        call farray_index_append('iaa',iaa,3)
+        call farray_index_append('ihypres',ihypres)
       endif
 !
 !  call corresponding mean-field routine

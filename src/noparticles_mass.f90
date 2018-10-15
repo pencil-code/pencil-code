@@ -152,6 +152,8 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -161,7 +163,7 @@ module Particles_mass
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'imp=', imp
+      if (lwr) call farray_index_append('imp', imp)
 !
       call keep_compiler_quiet(lreset)
 !

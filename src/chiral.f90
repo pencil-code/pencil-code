@@ -529,6 +529,7 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -588,8 +589,8 @@ module Chiral
 !  write column where which chiral variable is stored
 !
       if (lwr) then
-        write(3,*) 'iXX_chiral=',iXX_chiral
-        write(3,*) 'iYY_chiral=',iYY_chiral
+        call farray_index_append('iXX_chiral',iXX_chiral)
+        call farray_index_append('iYY_chiral',iYY_chiral)
       endif
 !
     endsubroutine rprint_chiral

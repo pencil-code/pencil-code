@@ -289,6 +289,8 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
+      use FArrayManager, only: farray_index_append
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -315,13 +317,13 @@ module Special
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_photom=',idiag_photom
-        write(3,*) 'i_photomax=',idiag_photomax
-        write(3,*) 'i_photomin=',idiag_photomin
-        write(3,*) 'i_polym=',idiag_polym
-        write(3,*) 'i_polymax=',idiag_polymax
-        write(3,*) 'i_polymin=',idiag_polymin
-        write(3,*) 'i_dtcp=',idiag_dtcp
+        call farray_index_append('i_photom',idiag_photom)
+        call farray_index_append('i_photomax',idiag_photomax)
+        call farray_index_append('i_photomin',idiag_photomin)
+        call farray_index_append('i_polym',idiag_polym)
+        call farray_index_append('i_polymax',idiag_polymax)
+        call farray_index_append('i_polymin',idiag_polymin)
+        call farray_index_append('i_dtcp',idiag_dtcp)
       endif
 !
     endsubroutine rprint_special

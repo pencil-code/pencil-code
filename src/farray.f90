@@ -13,6 +13,7 @@ module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
   use Cdata, only: nvar,naux,naux_com,datadir,lroot,lwrite_aux,lreloading
+  use HDF5_IO
   use Messages
 !
   implicit none
@@ -24,6 +25,8 @@ module FArrayManager
   public :: farray_register_auxiliary
   public :: farray_register_global
   public :: farray_use_variable
+  public :: farray_index_append
+  public :: farray_index_reset
   public :: farray_use_pde
   public :: farray_use_auxiliary
   public :: farray_use_global
@@ -318,15 +321,54 @@ module FArrayManager
         if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
                                     vartype==iFARRAY_TYPE_AUXILIARY )) return
 !
-        if (lroot) then
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'i'//varname, '=', ivar
-          close(3)
-        endif
+        call farray_index_append('i'//varname,ivar,vector)
 !
       endif
 !
     endsubroutine farray_register_variable
+!***********************************************************************
+    subroutine farray_index_append(varname,ivar,vector,array)
+!
+! 14-oct-18/PAB: coded
+!
+      character (len=*), intent(in) :: varname
+      integer, intent(in) :: ivar
+      integer, optional, intent(in) :: vector
+      integer, optional, intent(in) :: array
+!
+      character (len=len(varname)) :: component
+      integer :: l
+!
+      if (lroot) then
+        call index_append(trim(varname),ivar,vector,array)
+        if (.not. present (array) .and. present (vector)) then
+          ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
+          component = trim(varname)
+          l = len(trim(varname))
+          if (vector >= 1) then
+            component(l:l) = 'x'
+            call index_append(component,ivar)
+          endif
+          if (vector >= 2) then
+            component(l:l) = 'y'
+            call index_append(component,ivar+1)
+          endif
+          if (vector >= 3) then
+            component(l:l) = 'z'
+            call index_append(component,ivar+2)
+          endif
+        endif
+      endif
+!
+    endsubroutine farray_index_append
+!***********************************************************************
+    subroutine farray_index_reset()
+!
+! 14-oct-18/PAB: coded
+!
+      if (lroot) call index_reset()
+!
+    endsubroutine farray_index_reset
 !***********************************************************************
     subroutine farray_acquire_scratch_area(varname,ivar,vector,ierr)
 !

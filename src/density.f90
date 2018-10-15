@@ -3244,6 +3244,7 @@ module Density
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -3362,11 +3363,11 @@ module Density
 !
       if (lwr) then
         if (ldensity_nolog) then
-          write(3,*) 'ilnrho=0'
-          write(3,*) 'irho=', irho
+          call farray_index_append('ilnrho',0)
+          call farray_index_append('irho',irho)
         else
-          write(3,*) 'ilnrho=', ilnrho
-          write(3,*) 'irho=', 0
+          call farray_index_append('ilnrho',ilnrho)
+          call farray_index_append('irho',0)
         endif
       endif
 !

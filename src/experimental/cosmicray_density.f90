@@ -324,6 +324,7 @@ module Cosmicray
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -367,7 +368,7 @@ module Cosmicray
 !  write column where which cosmic ray variable is stored
 !
       if (lwr) then
-        write(3,*) 'iecr=',iecr
+        call farray_index_append('iecr',iecr)
       endif
 !
     endsubroutine rprint_cosmicray

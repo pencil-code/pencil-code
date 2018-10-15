@@ -441,12 +441,9 @@ module Testflow
       if (lugu_as_aux) then
         if (iugu==0) then
           call farray_register_auxiliary('ugu',iugu,vector=3*njtestflow)
-        endif
-        if (iugu/=0.and.lroot) then
-          print*, 'initialize_magnetic: iugu = ', iugu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iugu=',iugu
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testflow: iugu = ', iugu
+          call farray_index_append('iugu',iugu)
         endif
       endif
 !
@@ -1978,6 +1975,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Cdata
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       logical           :: lreset
@@ -2150,8 +2148,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (loptest(lwrite)) then
-        write(3,*) 'iuutest=',iuutest
-        write(3,*) 'ntestflow=',ntestflow
+        call farray_index_append('iuutest',iuutest)
+        call farray_index_append('ntestflow',ntestflow)
       endif
 !
     endsubroutine rprint_testflow

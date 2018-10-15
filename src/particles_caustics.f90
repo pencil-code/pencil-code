@@ -310,6 +310,7 @@ contains
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General,   only: itoa
 !
       logical :: lreset
@@ -326,19 +327,19 @@ contains
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'isigmap11=', isigmap11
-        write(3,*) 'isigmap12=', isigmap13
-        write(3,*) 'isigmap13=', isigmap13
-        write(3,*) 'isigmap21=', isigmap21
-        write(3,*) 'isigmap22=', isigmap22
-        write(3,*) 'isigmap23=', isigmap23
-        write(3,*) 'isigmap31=', isigmap31
-        write(3,*) 'isigmap32=', isigmap32
-        write(3,*) 'isigmap33=', isigmap33
-        write(3,*) 'iPPp=', iPPp
-        write(3,*) 'iQQp=', iQQp
-        write(3,*) 'iRRp=', iRRp
-        write(3,*) 'iblowup=', iblowup
+        call farray_index_append('isigmap11', isigmap11)
+        call farray_index_append('isigmap12', isigmap13)
+        call farray_index_append('isigmap13', isigmap13)
+        call farray_index_append('isigmap21', isigmap21)
+        call farray_index_append('isigmap22', isigmap22)
+        call farray_index_append('isigmap23', isigmap23)
+        call farray_index_append('isigmap31', isigmap31)
+        call farray_index_append('isigmap32', isigmap32)
+        call farray_index_append('isigmap33', isigmap33)
+        call farray_index_append('iPPp', iPPp)
+        call farray_index_append('iQQp', iQQp)
+        call farray_index_append('iRRp', iRRp)
+        call farray_index_append('iblowup', iblowup)
       endif
 !
 !  Reset everything in case of reset.

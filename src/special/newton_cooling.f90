@@ -468,6 +468,7 @@ module Special
     subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  reads and registers print parameters relevant to special
 !
@@ -507,19 +508,19 @@ module Special
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_dts=',idiag_dts
+        call farray_index_append('i_dts',idiag_dts)
 !
-        write(3,*) 'i_kappam=',idiag_kappam
-        write(3,*) 'i_kappamax=',idiag_kappamax
-        write(3,*) 'i_kappamin=',idiag_kappamin
+        call farray_index_append('i_kappam',idiag_kappam)
+        call farray_index_append('i_kappamax',idiag_kappamax)
+        call farray_index_append('i_kappamin',idiag_kappamin)
 !
-        write(3,*) 'i_taum=',idiag_taum
-        write(3,*) 'i_taumax=',idiag_taumax
-        write(3,*) 'i_taumin=',idiag_taumin
+        call farray_index_append('i_taum',idiag_taum)
+        call farray_index_append('i_taumax',idiag_taumax)
+        call farray_index_append('i_taumin',idiag_taumin)
 !
-        write(3,*) 'i_taucoolm=',idiag_taucoolm
-        write(3,*) 'i_taucoolmax=',idiag_taucoolmax
-        write(3,*) 'i_taucoolmin=',idiag_taucoolmin
+        call farray_index_append('i_taucoolm',idiag_taucoolm)
+        call farray_index_append('i_taucoolmax',idiag_taucoolmax)
+        call farray_index_append('i_taucoolmin',idiag_taucoolmin)
       endif
 !
     endsubroutine rprint_special

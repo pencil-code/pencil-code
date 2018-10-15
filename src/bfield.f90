@@ -728,6 +728,7 @@ module Magnetic
 !  25-jun-13/ccyang: coded.
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
@@ -922,18 +923,18 @@ module Magnetic
 !
       option: if (present(lwrite)) then
         indices: if (lwrite) then
-          write(3,*) 'ibb = ', ibb
-          write(3,*) 'ibx = ', ibx
-          write(3,*) 'iby = ', iby
-          write(3,*) 'ibz = ', ibz
-          write(3,*) 'iEE = ', iEE
-          write(3,*) 'iEEx = ', iEEx
-          write(3,*) 'iEEy = ', iEEy
-          write(3,*) 'iEEz = ', iEEz
-          write(3,*) 'ijj = ', ijj
-          write(3,*) 'ijx = ', ijx
-          write(3,*) 'ijy = ', ijy
-          write(3,*) 'ijz = ', ijz
+          call farray_index_append('ibb',ibb)
+          call farray_index_append('ibx',ibx)
+          call farray_index_append('iby',iby)
+          call farray_index_append('ibz',ibz)
+          call farray_index_append('iEE',iEE)
+          call farray_index_append('iEEx',iEEx)
+          call farray_index_append('iEEy',iEEy)
+          call farray_index_append('iEEz',iEEz)
+          call farray_index_append('ijj',ijj)
+          call farray_index_append('ijx',ijx)
+          call farray_index_append('ijy',ijy)
+          call farray_index_append('ijz',ijz)
         endif indices
       endif option
 !

@@ -321,6 +321,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  define diagnostics variable
 !
@@ -347,8 +348,8 @@ module Special
 !
 !  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'i_dtcrad=',idiag_dtcrad
-        write(3,*) 'i_dtchi=',idiag_dtchi
+        call farray_index_append('i_dtcrad',idiag_dtcrad)
+        call farray_index_append('i_dtchi',idiag_dtchi)
       endif
 !
     endsubroutine rprint_special

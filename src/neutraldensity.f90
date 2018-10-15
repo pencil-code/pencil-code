@@ -854,6 +854,7 @@ module NeutralDensity
 !  28-feb-07/wlad: adapted
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -931,7 +932,7 @@ module NeutralDensity
 !  write column where which density variable is stored
 !
       if (lwr) then
-        write(3,*) 'ilnrhon=',ilnrhon
+        call farray_index_append('ilnrhon',ilnrhon)
       endif
 !
     endsubroutine rprint_neutraldensity
