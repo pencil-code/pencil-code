@@ -1317,8 +1317,8 @@ module Chemistry
           endif
 !
         if (ltemperature_nolog) then
-          RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1*p%TT &
-                  +sum_dk_ghk*p%cv1+sum_hhk_DYDt_reac*p%cv1
+          RHS_T_full = p%cv1*((sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%TT &
+                  +sum_dk_ghk+sum_hhk_DYDt_reac)
    !       call stop_it('ltemperature_nolog case does not work now!')
         else
           RHS_T_full = (sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%cv1 &
@@ -4178,26 +4178,21 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
       type (pencil_case) :: p
       real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1, del2TT
 !
+!  Add heat conduction to RHS of temperature equation
+!
       if (ltemperature_nolog) then
         call dot(p%gTT,p%glambda,g2TTlambda)
+        call del2(f,iTT,del2TT)
+        tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
       else
         call dot(p%glnTT,p%glambda,g2TTlambda)
         call dot(p%glnTT,p%glnTT,g2TT)
+        tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
       endif
 !
-!  Add heat conduction to RHS of temperature equation
-!
-        if (ltemperature_nolog) then
-! changed here del2lnTT to del2TT since that was really computed in the no_log case
-          call del2(f,iTT,del2TT)
-          tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
-        else
-          tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
-        endif
-!
-      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(f)
 !
     endsubroutine calc_heatcond_chemistry
 !***********************************************************************

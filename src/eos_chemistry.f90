@@ -484,6 +484,7 @@ module EquationOfState
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
       real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
+      real, dimension(nx) :: del2TT, gradTgradT
 !
       intent(in) :: f, lpenc_loc
       intent(inout) :: p
@@ -535,13 +536,16 @@ module EquationOfState
 !
         if (ltemperature_nolog) then
           if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
+            call dot2(p%gTT,gradTgradT) 
+            call del2(f,iTT,del2TT)
+            p%del2lnTT = -p%TT1*p%TT1*gradTgradT+p%TT1*del2TT
          !NILS: The call below does not yield del2lnTT but rather del2TT,
          !NILS: this should be fixed before used. One should also look
          !NILS: through the chemistry module to make sure del2lnTT is used
          !NILS: corectly.
-          if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
-          call fatal_error('calc_pencils_eos',&
-              'del2lnTT is not correctly implemented - this must be fixed!')
+ !         if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+ !         call fatal_error('calc_pencils_eos',&
+ !             'del2lnTT is not correctly implemented - this must be fixed!')
         else
           if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif

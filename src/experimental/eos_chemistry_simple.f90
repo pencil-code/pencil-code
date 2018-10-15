@@ -472,7 +472,6 @@ module EquationOfState
                 R_mix = R_mix + Rgas/species_constants(k,imass)*f(l1:l2,m,n,ichemspec(k))
               enddo
               p%cv = p%cp - R_mix 
-!              call fatal_error('calc_pencils_chemistry','For simplified chemistry Cp_const must be given')           
             endif
             if (lpencil(i_cv1)) p%cv1 = 1./p%cv
             if (lpencil(i_cp1)) p%cp1 = 1./p%cp
@@ -523,10 +522,10 @@ module EquationOfState
 !
       if (ltemperature_nolog) then
         if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
-! del2TT is computed in calc_heatcond_chemistry, here only del2lnTT which is needed for pressure Laplacian 
+! del2TT is computed again in calc_heatcond_chemistry, but is also needed here for pressure Laplacian 
           call dot2(p%gTT,gradTgradT) 
           call del2(f,iTT,del2TT)
-          p%del2lnTT = -1./p%TT/p%TT*gradTgradT+1./p%TT*del2TT
+          p%del2lnTT = -p%TT1*p%TT1*gradTgradT+p%TT1*del2TT
 !        call fatal_error('calc_pencils_eos',&
 !              'del2lnTT is not correctly implemented - this must be fixed!')
         else
@@ -544,21 +543,6 @@ module EquationOfState
 !print*,'p%gradnu',p%gradnu(:,1)
         endif
       endif
-!
-! p%ghhk moved from chemistry to eos as it depends on p%cp
-!
-!      if (lpencil(i_ghhk)) then
-!        do k = 1,nchemspec
-!          if (species_constants(k,imass) > 0.)  then
-!            do i = 1,3
-! In the chemistry module this was coded as:
-! p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
-!              p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
-!            enddo
-!          endif
-!print*,'p%hhk_full',k,'************',p%ghhk(:,1,k)
-!        enddo
-!      endif
 !
 ! Calculate thermal conductivity & diffusivity
 !

@@ -2925,7 +2925,9 @@ module Chemistry
           RHS_T_full = sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-            call stop_it('ltemperature_nolog case does not work now!')
+              RHS_T_full = p%cv1*((sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%TT &
+                  +sum_dk_ghk+sum_hhk_DYDt_reac)
+   !       call stop_it('ltemperature_nolog case does not work now!')
           else
             if (lchemonly) then
               RHS_T_full = (sum_DYDt(:)+sum_hhk_DYDt_reac*p%TT1(:))*p%cv1
@@ -4911,15 +4913,16 @@ module Chemistry
 !
 !  29-feb-08/natalia: coded
 !
-      use Sub, only: dot
+      use Sub, only: dot, del2
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1
+      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1, del2TT
 !
       if (ltemperature_nolog) then
         call dot(p%gTT,p%glambda,g2TTlambda)
+        call del2(f,iTT,del2TT)
       else
         call dot(p%glnTT,p%glambda,g2TTlambda)
         call dot(p%glnTT,p%glnTT,g2TT)
@@ -4928,11 +4931,12 @@ module Chemistry
 !  Add heat conduction to RHS of temperature equation
 !
 !      if (l1step_test .or. lSmag_heat_transport) then
-       if (l1step_test) then
+      if (l1step_test) then
         tmp1 = p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
         if (ltemperature_nolog) then
-          tmp1 = (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
+          tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
+   !       tmp1 = (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
         else
           tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
