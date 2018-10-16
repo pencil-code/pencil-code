@@ -6,7 +6,7 @@
 module HDF5_IO
 !
   use Cdata
-  use Cparam, only: mvar, maux
+  use Cparam, only: mvar, maux, labellen
   use HDF5
   use Messages, only: fatal_error
 !
@@ -38,6 +38,13 @@ module HDF5_IO
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
+!
+  type element
+    character(len=labellen) :: label
+    integer :: component
+    type (element), pointer :: previous
+  endtype element
+  type (element), pointer :: last => null()
 !
   contains
 !***********************************************************************
@@ -520,6 +527,8 @@ module HDF5_IO
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
 !
+      type (element), pointer, save :: new => null()
+!
       ! ignore variables that are not written
       if ((ivar < 1) .or. (ivar > mvar+maux)) return
 !
@@ -527,7 +536,12 @@ module HDF5_IO
       if ((varname(1:1) /= 'i') .or. (varname(2:2) == '_')) return
 !
       ! append this entry to an internal list of written HDF5 variables
-      ! write (*,*) 'DEBUG OUTPUT: register '//trim (varname), ivar
+      allocate (new)
+      nullify (new%previous)
+      if (associated (last)) new%previous => last
+      new%label = trim(varname)
+      new%component = ivar
+      last => new
 !
     endsubroutine index_register
 !***********************************************************************
@@ -535,8 +549,17 @@ module HDF5_IO
 !
 ! 14-oct-2018/PAB: coded
 !
+      type (element), pointer, save :: current => null()
+!
       open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
       close(3)
+!
+      do while (associated (last))
+        current => last
+        last => last%previous
+        deallocate (current)
+        nullify (current)
+      enddo
 !
     endsubroutine index_reset
 !***********************************************************************
