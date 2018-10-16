@@ -228,7 +228,8 @@ module Particles_sub
 !   Zero radial, Keplerian azimuthal, velocities
                 fp(k,ivpx) = 0.
 !   Keplerian azimuthal velocity
-                fp(k,ivpy) = fp(k,ixp)**(-1.5)
+                OO = rp_ext**(-1.5)
+                fp(k,ivpy) = OO*fp(k,ixp)
               endif
 !
             elseif (lcartesian_coords) then
