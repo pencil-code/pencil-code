@@ -6,6 +6,7 @@
 module HDF5_IO
 !
   use Cdata
+  use Cparam, only: mvar, maux
   use HDF5
   use Messages, only: fatal_error
 !
@@ -478,7 +479,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine index_append(varname,ivar,vector,array)
 !
-! 14-oct-18/PAB: coded
+! 14-oct-2018/PAB: coded
 !
       use General, only: itoa
 !
@@ -502,17 +503,37 @@ module HDF5_IO
         ! expand array: iuud => iuud#=(#-1)*vector+ivar
         do pos=1, array
           write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa((pos-1)*vector+ivar))
+          call index_register (trim(varname)//trim(itoa(pos)), (pos-1)*vector+ivar)
         enddo
       else
         write(3,*) trim(varname)//'='//trim(itoa(ivar))
+        call index_register (trim(varname), ivar)
       endif
       close(3)
 !
     endsubroutine index_append
 !***********************************************************************
+    subroutine index_register(varname,ivar)
+!
+! 17-oct-2018/PAB: coded
+!
+      character (len=*), intent(in) :: varname
+      integer, intent(in) :: ivar
+!
+      ! ignore variables that are not written
+      if ((ivar < 1) .or. (ivar > mvar+maux)) return
+!
+      ! ignore non-index variables
+      if ((varname(1:1) /= 'i') .or. (varname(2:2) == '_')) return
+!
+      ! append this entry to an internal list of written HDF5 variables
+      ! write (*,*) 'DEBUG OUTPUT: register '//trim (varname), ivar
+!
+    endsubroutine index_register
+!***********************************************************************
     subroutine index_reset()
 !
-! 14-oct-18/PAB: coded
+! 14-oct-2018/PAB: coded
 !
       open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
       close(3)
