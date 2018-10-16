@@ -2591,7 +2591,7 @@ module Special
         call fourier_transform_other(Bz0r,Bz0_i)
 !
         if (lmag_bound_vec) then
-          where(Bz0_i /= 0. )
+          where(Bz0r /= 0. )
             kz=(-kx*Bx0_i-ky*By0_i)/Bz0r
           elsewhere
             kz=0
