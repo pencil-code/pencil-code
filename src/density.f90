@@ -3364,9 +3364,7 @@ module Density
       if (lwr) then
         if (ldensity_nolog) then
           call farray_index_append('ilnrho',0)
-          call farray_index_append('irho',irho)
         else
-          call farray_index_append('ilnrho',ilnrho)
           call farray_index_append('irho',0)
         endif
       endif
