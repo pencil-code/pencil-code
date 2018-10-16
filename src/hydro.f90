@@ -5320,10 +5320,6 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        call farray_index_append('iuu',iuu)
-        call farray_index_append('iux',iux)
-        call farray_index_append('iuy',iuy)
-        call farray_index_append('iuz',iuz)
         if (lhelmholtz_decomp) call farray_index_append('iphiuu',iphiuu)
       endif
 !
