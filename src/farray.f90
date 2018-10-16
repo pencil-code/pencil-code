@@ -347,15 +347,15 @@ module FArrayManager
           l = len(trim(varname))
           if (vector >= 1) then
             component(l:l) = 'x'
-            call index_append(component,ivar)
+            call index_append(trim(component),ivar)
           endif
           if (vector >= 2) then
             component(l:l) = 'y'
-            call index_append(component,ivar+1)
+            call index_append(trim(component),ivar+1)
           endif
           if (vector >= 3) then
             component(l:l) = 'z'
-            call index_append(component,ivar+2)
+            call index_append(trim(component),ivar+2)
           endif
         endif
       endif
