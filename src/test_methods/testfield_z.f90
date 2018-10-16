@@ -219,7 +219,7 @@ module Testfield
 !
       use Diagnostics, only: gen_form_legend
       use Cdata
-      use FarrayManager, only: farray_register_auxiliary
+      use FarrayManager, only: farray_register_auxiliary, farray_index_append
       use General, only: operator(.in.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
