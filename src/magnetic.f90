@@ -8748,8 +8748,6 @@ module Magnetic
       enddo
 !
       if (lwr) then
-        ! *** WORK HERE ***: 'iaa' seems to be appended also in register_magnetic?
-        call farray_index_append('iaa',iaa,3)
         call farray_index_append('ihypres',ihypres)
       endif
 !
