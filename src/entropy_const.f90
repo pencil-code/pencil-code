@@ -276,6 +276,9 @@ module Energy
 !
       if (lwr) then
         call farray_index_append('iss',iss)
+        call farray_index_append('iyH',iyH)
+        call farray_index_append('ilnTT',ilnTT)
+        call farray_index_append('iTT',iTT)
       endif
 !
     endsubroutine rprint_energy
