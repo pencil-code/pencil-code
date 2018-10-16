@@ -412,6 +412,10 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_hdf5_3D(name, data)
 !
+!  Write HDF5 dataset from a distributed 3D array.
+!
+!  17-Oct-2018/PABourdin: coded
+!
       character (len=*), intent(in) :: name
       real, dimension (mx,my,mz), intent(in) :: data
 !
@@ -421,7 +425,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_hdf5_4D(name, data, nv)
 !
-!  Write HDF5 dataset from a distributed 3D or 4D array.
+!  Write HDF5 dataset from a distributed 4D array.
 !
 !  26-Oct-2016/PABourdin: coded
 !
@@ -486,7 +490,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine index_append(varname,ivar,vector,array)
 !
-! 14-oct-2018/PAB: coded
+! 14-Oct-2018/PABourdin: coded
 !
       use General, only: itoa
 !
@@ -522,7 +526,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine index_register(varname,ivar)
 !
-! 17-oct-2018/PAB: coded
+! 17-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
@@ -547,7 +551,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine index_reset()
 !
-! 14-oct-2018/PAB: coded
+! 14-Oct-2018/PABourdin: coded
 !
       type (element), pointer, save :: current => null()
 !
