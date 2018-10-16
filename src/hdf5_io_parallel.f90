@@ -487,10 +487,22 @@ module HDF5_IO
       integer, intent(in), optional :: vector
       integer, intent(in), optional :: array
 !
+      integer :: pos
+!
+      ! omit all unused variables
+      if (ivar <= 0) return
+!
+      ! ignore vectors because they get expanded in 'farray_index_append'
+      if (present (vector) .and. .not. present (array)) return
+!
       open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-      if (present (vector) .and. present (array)) then
-        ! expand array: iuud => indgen(vector)
+      if (present (array)) then
+        ! backwards-compatibile expansion: iuud => indgen(vector)
         write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
+        ! expand array: iuud => iuud#=(#-1)*vector+ivar
+        do pos=1, array
+          write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa((pos-1)*vector+ivar))
+        enddo
       else
         write(3,*) trim(varname)//'='//trim(itoa(ivar))
       endif
