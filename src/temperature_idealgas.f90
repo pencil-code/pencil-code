@@ -2249,9 +2249,7 @@ module Energy
       if (lwr) then
         if (ltemperature_nolog) then
           call farray_index_append('ilnTT', 0)
-          call farray_index_append('iTT', iTT)
         else
-          call farray_index_append('ilnTT', ilnTT)
           call farray_index_append('iTT', 0)
         endif
         call farray_index_append('iyH', iyH)
