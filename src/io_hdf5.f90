@@ -295,6 +295,7 @@ module Io
           endif
           call file_close_hdf5
         endif
+        if (lroot) deallocate (gx, gy, gz)
       endif
 !
     endsubroutine output_snap
