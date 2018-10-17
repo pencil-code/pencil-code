@@ -6360,10 +6360,7 @@ module Particles
       endif
       Cint=0.5
       if (interp%lgradTT) then
-         temp_grad=interp_gradTT(k,:)
-         !if (modulo(it,100)==0) then
-         !   print*, 'debuggtt_dust', temp_grad
-         !endif
+        temp_grad=interp_gradTT(k,:)
       else
         temp_grad=temp_grad0
      endif
