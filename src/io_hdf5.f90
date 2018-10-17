@@ -294,8 +294,8 @@ module Io
             call output_hdf5 ('dim/precision', 'D')
           endif
           call file_close_hdf5
+          deallocate (gx, gy, gz)
         endif
-        if (lroot) deallocate (gx, gy, gz)
       endif
 !
     endsubroutine output_snap
@@ -1188,6 +1188,7 @@ module Io
       if (lroot) then
         write (lun_output) gx, gy, gz
         close (lun_output)
+        deallocate (gx, gy, gz)
       endif
 !
     endsubroutine wgrid
