@@ -45,6 +45,7 @@
   xq0=1,0
   r_smooth=0.07,0.0
   iprimary=2
+  ipotential_pointmasses='plummer','newton'
 /
 &initial_condition_pars
   density_power_law=1.5
