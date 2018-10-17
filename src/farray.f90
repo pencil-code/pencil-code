@@ -339,24 +339,22 @@ module FArrayManager
       character (len=len(varname)) :: component
       integer :: l
 !
-      if (lroot) then
-        call index_append(trim(varname),ivar,vector,array)
-        if (.not. present (array) .and. present (vector)) then
-          ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
-          component = trim(varname)
-          l = len(trim(varname))
-          if (vector >= 1) then
-            component(l:l) = 'x'
-            call index_append(trim(component),ivar)
-          endif
-          if (vector >= 2) then
-            component(l:l) = 'y'
-            call index_append(trim(component),ivar+1)
-          endif
-          if (vector >= 3) then
-            component(l:l) = 'z'
-            call index_append(trim(component),ivar+2)
-          endif
+      call index_append(trim(varname),ivar,vector,array)
+      if (.not. present (array) .and. present (vector)) then
+        ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
+        component = trim(varname)
+        l = len(trim(varname))
+        if (vector >= 1) then
+          component(l:l) = 'x'
+          call index_append(trim(component),ivar)
+        endif
+        if (vector >= 2) then
+          component(l:l) = 'y'
+          call index_append(trim(component),ivar+1)
+        endif
+        if (vector >= 3) then
+          component(l:l) = 'z'
+          call index_append(trim(component),ivar+2)
         endif
       endif
 !
@@ -366,7 +364,7 @@ module FArrayManager
 !
 ! 14-oct-18/PAB: coded
 !
-      if (lroot) call index_reset()
+      call index_reset()
 !
     endsubroutine farray_index_reset
 !***********************************************************************

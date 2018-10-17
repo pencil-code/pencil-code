@@ -192,20 +192,23 @@ module HDF5_IO
 ! 14-oct-18/PAB: coded
 !
       use General, only: itoa
+      use Mpicomm, only: lroot
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, intent(in), optional :: vector
       integer, intent(in), optional :: array
 !
-      open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
-      if (present (vector) .and. present (array)) then
-        ! expand array: iuud => indgen(vector)
-        write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
-      else
-        write(3,*) trim(varname)//'='//trim(itoa(ivar))
+      if (lroot) then
+        open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+        if (present (vector) .and. present (array)) then
+          ! expand array: iuud => indgen(vector)
+          write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
+        else
+          write(3,*) trim(varname)//'='//trim(itoa(ivar))
+        endif
+        close(3)
       endif
-      close(3)
 !
     endsubroutine index_append
 !***********************************************************************
@@ -213,8 +216,12 @@ module HDF5_IO
 !
 ! 14-oct-18/PAB: coded
 !
-      open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
-      close(3)
+      use Mpicomm, only: lroot
+!
+      if (lroot) then
+        open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
+        close(3)
+      endif
 !
     endsubroutine index_reset
 !***********************************************************************

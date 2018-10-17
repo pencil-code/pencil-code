@@ -231,6 +231,10 @@ module HDF5_IO
 !***********************************************************************
     subroutine input_hdf5_3D(name, data)
 !
+!  Read HDF5 dataset from a distributed 3D array.
+!
+!  26-Oct-2016/PABourdin: coded
+!
       character (len=*), intent(in) :: name
       real, dimension (mx,my,mz), intent(out) :: data
 !
@@ -240,7 +244,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine input_hdf5_4D(name, data, nv)
 !
-!  Read HDF5 dataset from a distributed 3D or 4D array.
+!  Read HDF5 dataset from a distributed 4D array.
 !
 !  26-Oct-2016/PABourdin: coded
 !
@@ -493,6 +497,7 @@ module HDF5_IO
 ! 14-Oct-2018/PABourdin: coded
 !
       use General, only: itoa
+      use Mpicomm, only: lroot
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
@@ -507,20 +512,20 @@ module HDF5_IO
       ! ignore vectors because they get expanded in 'farray_index_append'
       if (present (vector) .and. .not. present (array)) return
 !
-      open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+      if (lroot) open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
       if (present (array)) then
         ! backwards-compatibile expansion: iuud => indgen(vector)
-        write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
+        if (lroot) write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
         ! expand array: iuud => iuud#=(#-1)*vector+ivar
         do pos=1, array
-          write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa((pos-1)*vector+ivar))
+          if (lroot) write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa((pos-1)*vector+ivar))
           call index_register (trim(varname)//trim(itoa(pos)), (pos-1)*vector+ivar)
         enddo
       else
-        write(3,*) trim(varname)//'='//trim(itoa(ivar))
+        if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar))
         call index_register (trim(varname), ivar)
       endif
-      close(3)
+      if (lroot) close(3)
 !
     endsubroutine index_append
 !***********************************************************************
@@ -553,10 +558,14 @@ module HDF5_IO
 !
 ! 14-Oct-2018/PABourdin: coded
 !
+      use Mpicomm, only: lroot
+!
       type (element), pointer, save :: current => null()
 !
-      open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
-      close(3)
+      if (lroot) then
+        open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
+        close(3)
+      endif
 !
       do while (associated (last))
         current => last
