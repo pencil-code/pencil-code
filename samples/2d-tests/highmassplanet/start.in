@@ -46,6 +46,7 @@
   lcylindrical_gravity_nbody=T,T
   iprimary=2
   bcqx='out',bcqy='p'
+  ipotential_pointmass='plummer','newton'
 /
 &entropy_init_pars
 /

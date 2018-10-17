@@ -16,3 +16,4 @@ Comments:
     change 'gamma' from 1 to 1.4 in start.in under 'eos_init_pars'.
 References:
     Richert et al. (2015): http://adsabs.harvard.edu/abs/2015ApJ...804...95R
+    For the pointmasses code, this tests the potential 'plummer' for the planet.
