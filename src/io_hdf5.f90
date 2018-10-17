@@ -364,6 +364,8 @@ module Io
           call input_hdf5 ('grid/x', gx, mxgrid)
           call input_hdf5 ('grid/y', gy, mygrid)
           call input_hdf5 ('grid/z', gz, mzgrid)
+        else
+          allocate (gx(1), gy(1), gz(1), stat=alloc_err)
         endif
         call distribute_grid (x, y, z, gx, gy, gz)
         if (lroot) then
@@ -384,8 +386,8 @@ module Io
           call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
         endif
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        deallocate (gx, gy, gz)
         if (lroot) then
-          deallocate (gx, gy, gz)
           call file_close_hdf5
         endif
         call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
