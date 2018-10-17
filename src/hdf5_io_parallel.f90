@@ -529,6 +529,27 @@ module HDF5_IO
 !
     endsubroutine index_append
 !***********************************************************************
+    function index_get(ivar)
+!
+! 17-Oct-2018/PABourdin: coded
+!
+      character (len=labellen) :: index_get
+      integer, intent(in) :: ivar
+!
+      type (element), pointer, save :: current => null()
+!
+      index_get = ''
+      current => last
+      do while (associated (current))
+        if (current%component == ivar) then
+          index_get = current%label(2:len(current%label))
+          exit
+        endif
+        current = current%previous
+      enddo
+!
+    endfunction index_get
+!***********************************************************************
     subroutine index_register(varname,ivar)
 !
 ! 17-Oct-2018/PABourdin: coded
