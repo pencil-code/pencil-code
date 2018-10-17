@@ -1559,9 +1559,13 @@ module Dustdensity
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
             if (dsize(k)>0. .and. dsize(k)/=1.01e-6) then
-              if (.not.ldcore) &
-                p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+              if (.not.ldcore) then
+                ! catch extremely large values in p%TT1 during pencil check
+                T_tmp = AA*p%TT1
+                if (lpencil_check_at_work) T_tmp = T_tmp / exp(real(nint(alog(T_tmp))))
+                p%ppsf(:,k)=p%ppsat*exp(T_tmp/(2.*dsize(k)) &
                             -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
+              endif
             endif
           enddo
         endif
