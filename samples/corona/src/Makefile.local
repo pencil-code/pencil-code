@@ -7,8 +7,8 @@ MPICOMM   =   mpicomm
 #================================
 # Please uncomment one IO option:
 #================================
-IO        =   io_hdf5
-HDF5_IO   =   hdf5_io_parallel
+#IO        =   io_hdf5
+#HDF5_IO   =   hdf5_io_parallel
 #--------------------------------
 #IO        =   io_dist
 #--------------------------------
@@ -16,7 +16,7 @@ HDF5_IO   =   hdf5_io_parallel
 #--------------------------------
 #IO        =   io_collect_xy
 #--------------------------------
-#IO        =   io_mpi2
+IO        =   io_mpi2
 #================================
 
 #FILE_IO   =   file_io_f2003
