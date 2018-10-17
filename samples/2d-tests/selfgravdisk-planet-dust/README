@@ -14,4 +14,4 @@ Recommended resolution:
 Comments:
     Main run of Lyra et al. 2009, A&A, 493, 1125. It should test 
     the N-body + dust modules together.
-
+    For the pointmasses code, this tests the potential 'newton' for the planet. 
