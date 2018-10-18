@@ -4155,6 +4155,7 @@ module Chemistry
           else
             kr = kf-Kc
           endif
+          if (lpencil_check_at_work) where (kr > 32) kr = kr / exp(real(nint(alog(kr))))
 !
           if (Mplus_case (reac)) then
             where (prod1 > 0.)
