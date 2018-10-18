@@ -959,7 +959,7 @@ module Boundcond
                   'hs boundary condition requires a constant gravity profile')
                 if (.not. lequidist(3)) call fatal_error('boundconds_z', &
                   'hs boundary condition requires symmetric grid distances on the z boundary')
-                if ((j==ilnrho) .or. (j==irho_b)) then
+                if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
                   call bc_lnrho_hds_z_iso(f,topbot)
                 elseif (j==ipp) then
                   call bc_pp_hds_z_iso(f,topbot)
