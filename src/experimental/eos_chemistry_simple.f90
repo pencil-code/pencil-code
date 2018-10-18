@@ -375,9 +375,8 @@ module EquationOfState
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
 !
-
-      lpenc_requested(i_ghhk) = .true.
       lpenc_requested(i_cv) = .true.
+      lpenc_requested(i_cp) = .true.
       lpenc_requested(i_cv1) = .true.
       lpenc_requested(i_cp1) = .true.
 !
@@ -406,6 +405,7 @@ module EquationOfState
       lpenc_requested(i_glnTT)=.true.
 !
       lpenc_requested(i_cs2) = .true.
+!      lpenc_requested(i_ee) = .true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -448,7 +448,6 @@ module EquationOfState
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx,3) :: glnDiff_full_add, glncp
       real, dimension(nx) :: D_th, R_mix
-!      real, dimension (mx,my,mz) :: mu1_full
       real, dimension(nx) :: del2TT, gradTgradT
 !
       intent(in) :: lpenc_loc
@@ -458,10 +457,10 @@ module EquationOfState
 !
 !! Cp/Cv pencils
 !
-          p%cp =  f(l1:l2,m,n,icp)
-          p%cv = 0.
+          if (lpencil(i_cp)) p%cp =  f(l1:l2,m,n,icp)
 !
           if (lpencil(i_cv))  then
+            p%cv = 0.
             if (Cp_const < impossible) then
               do k = 1,nchemspec
                 p%cv = p%cv + (Cp_const-Rgas)/species_constants(k,imass)*f(l1:l2,m,n,ichemspec(k))
@@ -509,38 +508,33 @@ module EquationOfState
 !
 !  Temperature laplacian and gradient
 !
+      if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
       if (lpenc_loc(i_glnTT)) then
         if (ltemperature_nolog) then
-          call grad(f,iTT,p%glnTT)
-          p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
-          p%glnTT(:,2)=p%glnTT(:,2)/p%TT(:)
-          p%glnTT(:,3)=p%glnTT(:,3)/p%TT(:)
+          p%glnTT(:,1)=p%gTT(:,1)/p%TT(:)
+          p%glnTT(:,2)=p%gTT(:,2)/p%TT(:)
+          p%glnTT(:,3)=p%gTT(:,3)/p%TT(:)
         else
           call grad(f,ilnTT,p%glnTT)
         endif
       endif
 !
-      if (ltemperature_nolog) then
-        if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
-! del2TT is computed again in calc_heatcond_chemistry, but is also needed here for pressure Laplacian 
+      if (lpenc_loc(i_del2lnTT)) then
+        if (ltemperature_nolog) then
           call dot2(p%gTT,gradTgradT) 
           call del2(f,iTT,del2TT)
           p%del2lnTT = -p%TT1*p%TT1*gradTgradT+p%TT1*del2TT
-!        call fatal_error('calc_pencils_eos',&
-!              'del2lnTT is not correctly implemented - this must be fixed!')
         else
-          if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+          call del2(f,ilnTT,p%del2lnTT)
+        endif
       endif
-
 !
 ! Viscosity of a mixture
 !
       if (lpencil(i_nu)) then
           p%nu = f(l1:l2,m,n,iviscosity)
-!print*,'p%nu',p%nu
         if (lpencil(i_gradnu)) then
           call grad(f(:,:,:,iviscosity),p%gradnu)
-!print*,'p%gradnu',p%gradnu(:,1)
         endif
       endif
 !
@@ -552,7 +546,6 @@ module EquationOfState
          call grad(f(:,:,:,icp),p%glncp)
          do i = 1,3
            p%glncp(:,i) = p%glncp(:,i)*p%cp1
-           ! Assuming Le = 1
            glnDiff_full_add(:,i) = p%gradnu(:,i)/p%nu
            p%glambda(:,i) = p%lambda*(p%glnrho(:,i)+glnDiff_full_add(:,i) + p%glncp(:,i)) 
          enddo

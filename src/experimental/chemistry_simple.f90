@@ -40,7 +40,6 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension(:,:,:), pointer :: mu1_full
   real, dimension(mx,my,mz,nchemspec) :: cp_R_spec
-!  real, dimension(mx,my,mz) :: mu1_full
 ! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
@@ -110,7 +109,6 @@ module Chemistry
   character(len=60) :: prerun_directory='nothing'
   character(len=60) :: file_name='nothing'
 !
-  real, allocatable, dimension(:,:,:,:) ::  Diff_full_add
   real, dimension(mx,my,mz,nchemspec), save :: RHS_Y_full
   real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
@@ -621,31 +619,14 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       lpenc_requested(i_ghhk) = .true.
-!
       if (lreactions) lpenc_requested(i_DYDt_reac) = .true.
       lpenc_requested(i_DYDt_diff) = .true.
-!
-        lpenc_requested(i_rho) = .true.
-        lpenc_requested(i_cv) = .true.
-        lpenc_requested(i_cp) = .true.
-        lpenc_requested(i_cv1) = .true.
-        lpenc_requested(i_cp1) = .true.
-        lpenc_requested(i_H0_RT) = .true.
-        lpenc_requested(i_S0_R) = .true.
-        lpenc_requested(i_nu) = .true.
-        lpenc_requested(i_gradnu) = .true.
-!
-        lpenc_requested(i_hhk_full) = .true.
-!        lpenc_requested(i_glncp) = .true.
-!
-        if (lheatc_chemistry) then
-          lpenc_requested(i_lambda) = .true.
-          lpenc_requested(i_glambda) = .true.
-        endif
-!
-        if (ldiffusion .or. lparticles_chemistry) then
-          lpenc_requested(i_Diff_penc_add) = .true.
-        endif
+      lpenc_requested(i_H0_RT) = .true.
+      lpenc_requested(i_S0_R) = .true.
+      lpenc_requested(i_hhk_full) = .true.
+      if (ldiffusion .or. lparticles_chemistry) then
+        lpenc_requested(i_Diff_penc_add) = .true.
+      endif
 !
     endsubroutine pencil_criteria_chemistry
 !***********************************************************************
@@ -695,8 +676,6 @@ module Chemistry
 !   13-aug-07/steveb: coded
 !   10-jan-11/julien: adapted for the case where chemistry is solved by LSODE
 !
-      use Sub, only: grad
-!
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -706,7 +685,6 @@ module Chemistry
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4, D_th
-      real, dimension(nx,3) :: glnDiff_full_add
 !
       T_loc = p%TT
       TT_2 = T_loc*T_loc
@@ -717,26 +695,24 @@ module Chemistry
 !
       if (lpencil(i_H0_RT)) then
         if ((.not. lT_const)) then
-!        if ((.not. lT_const).and.(ilnTT /= 0)) then
           do k = 1,nchemspec
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-  !          T_loc = p%TT
             where (T_loc <= T_mid)
               p%H0_RT(:,k) = species_constants(k,iaa2(ii1)) &
-                  +species_constants(k,iaa2(ii2))*T_loc/2 &
-                  +species_constants(k,iaa2(ii3))*TT_2/3 &
-                  +species_constants(k,iaa2(ii4))*TT_3/4 &
-                  +species_constants(k,iaa2(ii5))*TT_4/5 &
-                  +species_constants(k,iaa2(ii6))/T_loc
+                           + species_constants(k,iaa2(ii2))*T_loc/2 &
+                           + species_constants(k,iaa2(ii3))*TT_2/3  &
+                           + species_constants(k,iaa2(ii4))*TT_3/4  &
+                           + species_constants(k,iaa2(ii5))*TT_4/5  &
+                           + species_constants(k,iaa2(ii6))/T_loc
             elsewhere
               p%H0_RT(:,k) = species_constants(k,iaa1(ii1)) &
-                  +species_constants(k,iaa1(ii2))*T_loc/2 &
-                  +species_constants(k,iaa1(ii3))*TT_2/3 &
-                  +species_constants(k,iaa1(ii4))*TT_3/4 &
-                  +species_constants(k,iaa1(ii5))*TT_4/5 &
-                  +species_constants(k,iaa1(ii6))/T_loc
+                           + species_constants(k,iaa1(ii2))*T_loc/2 &
+                           + species_constants(k,iaa1(ii3))*TT_2/3  &
+                           + species_constants(k,iaa1(ii4))*TT_3/4  &
+                           + species_constants(k,iaa1(ii5))*TT_4/5  &
+                           + species_constants(k,iaa1(ii6))/T_loc
             endwhere
           enddo
 !
@@ -753,47 +729,39 @@ module Chemistry
         endif
       endif
 !
-! p%ghhk moved from chemistry to eos as it depends on p%cp
-!
       if (lpencil(i_ghhk)) then
         do k = 1,nchemspec
           if (species_constants(k,imass) > 0.)  then
             do i = 1,3
-! In the chemistry module this was coded as:
-! p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
 !              p%ghhk(:,i,k) = p%cp*p%glnTT(:,i)*p%TT
               p%ghhk(:,i,k) = cp_R_spec(l1:l2,m,n,k)/species_constants(k,imass)*Rgas*p%glnTT(:,i)*p%TT
             enddo
           endif
-!print*,'p%hhk_full',k,'************',p%ghhk(:,1,k)
         enddo
       endif
 !
 !  Find the entropy by using fifth order temperature fitting function
 !
       if (lpencil(i_S0_R)) then
-!AB: Natalia, maybe we should ask earlier for lentropy?
-        if ((.not. lT_const)) then
-!        if ((.not. lT_const).and.(ilnTT /= 0)) then
+        if (.not. lT_const) then
           do k = 1,nchemspec
             T_low = species_constants(k,iTemp1)
             T_mid = species_constants(k,iTemp2)
             T_up = species_constants(k,iTemp3)
-   !         T_loc = p%TT
             where (T_loc <= T_mid .and. T_low <= T_loc)
               p%S0_R(:,k) = species_constants(k,iaa2(ii1))*p%lnTT &
-                  +species_constants(k,iaa2(ii2))*T_loc &
-                  +species_constants(k,iaa2(ii3))*TT_2/2 &
-                  +species_constants(k,iaa2(ii4))*TT_3/3 &
-                  +species_constants(k,iaa2(ii5))*TT_4/4 &
-                  +species_constants(k,iaa2(ii7))
+                          + species_constants(k,iaa2(ii2))*T_loc  &
+                          + species_constants(k,iaa2(ii3))*TT_2/2 &
+                          + species_constants(k,iaa2(ii4))*TT_3/3 &
+                          + species_constants(k,iaa2(ii5))*TT_4/4 &
+                          + species_constants(k,iaa2(ii7))
             elsewhere (T_mid <= T_loc .and. T_loc <= T_up)
               p%S0_R(:,k) = species_constants(k,iaa1(ii1))*p%lnTT &
-                  +species_constants(k,iaa1(ii2))*T_loc &
-                  +species_constants(k,iaa1(ii3))*TT_2/2 &
-                  +species_constants(k,iaa1(ii4))*TT_3/3 &
-                  +species_constants(k,iaa1(ii5))*TT_4/4 &
-                  +species_constants(k,iaa1(ii7))
+                          + species_constants(k,iaa1(ii2))*T_loc  &
+                          + species_constants(k,iaa1(ii3))*TT_2/2 &
+                          + species_constants(k,iaa1(ii4))*TT_3/3 &
+                          + species_constants(k,iaa1(ii5))*TT_4/4 &
+                          + species_constants(k,iaa1(ii7))
             endwhere
           enddo
         endif
@@ -812,13 +780,10 @@ module Chemistry
       if (lpencil(i_Diff_penc_add)) then
 !
 ! D_th is computed twice in calc_penc in eos and here
-! For now Le = 1
 !
         D_th = f(l1:l2,m,n,iviscosity)/Pr_number
         do k = 1,nchemspec
           p%Diff_penc_add(:,k) = D_th*Lewis_coef1(k)
-!print*,'p%Diff_penc_add(:,k)',k,'************',p%Diff_penc_add(:,k)
-!print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
         enddo
       endif
 !
@@ -1072,20 +1037,11 @@ module Chemistry
       real, dimension(mx) :: T_loc, T_loc_2, T_loc_3, T_loc_4!, cp_R_spec
       real :: T_up, T_mid, T_low
 !
-!print*,'f(:,4,4,iTT)',f(:,4,4,iTT)
-!print*,'f(:,4,4,ilnTT)',f(:,4,4,ilnTT)
           call getmu_array(f,mu1_full)
 !
             f(:,:,:,icp) = 0.
             if (Cp_const < impossible) then
 !
-!              do j3 = nn1,nn2
-!                do j2 = mm1,mm2
-!                  do k = 1,nchemspec
-!                    f(:,j2,j3,icp) = f(:,j2,j3,icp)+Cp_const/species_constants(k,imass)*f(:,j2,j3,ichemspec(k))
-!                  enddo
-!                enddo
-!              enddo
               f(:,:,:,icp) = Cp_const*mu1_full
 !            
             else
@@ -1213,8 +1169,6 @@ module Chemistry
       intent(in) :: p,f
       intent(inout) :: df
 !
-!print*,'f(l1:l2,m,n,ilnTT)',f(l1:l2,m,n,ilnTT)
-!print*,'f(l1:l2,m,n,iTT)',f(l1:l2,m,n,iTT)
 !  identify module and boundary conditions
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
@@ -1274,6 +1228,8 @@ module Chemistry
         endif
 !
       enddo
+!
+!  Modify RHS of temperature equation
 !
       if (ldensity) then 
 !
@@ -1752,9 +1708,6 @@ module Chemistry
 !  if the file with chemkin data exists
 !  reading the Chemkin data
 !
-!  21-jul-10/julien: Reading lewis.dat file to collect constant Lewis numbers
-!                     for each species
-!
       character(len=fnlen) :: input_file
       integer :: stat, k,i
       character(len=fnlen) :: input_file2="./data/stoich.out"
@@ -1776,13 +1729,13 @@ module Chemistry
 !
 !  Allocate binary diffusion coefficient array
 !
-        if (.not. lfix_Sc) then
-          if (.not. lreloading) then
-            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-                "for binary diffusion coefficients")
-          endif
-        endif
+!        if (.not. lfix_Sc) then
+!          if (.not. lreloading) then
+!            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
+!            if (stat > 0) call stop_it("Couldn't allocate memory "// &
+!                "for binary diffusion coefficients")
+!          endif
+!        endif
 !
       if (tran_exist) then
         if (lroot) then
@@ -1921,11 +1874,11 @@ module Chemistry
 !
 !  Allocate binary diffusion coefficient array
 !
-          if (.not. lreloading) then
-            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-                "for binary diffusion coefficients")
-          endif
+!          if (.not. lreloading) then
+!            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
+!            if (stat > 0) call stop_it("Couldn't allocate memory "// &
+!                "for binary diffusion coefficients")
+!          endif
 !
         tran_data(1,1:7) = (/ 1.0000000000000000        ,38.000000000000000        ,2.9199999999999999        ,&
                               0.0000000000000000E+000  ,0.79000000000000004        ,280.00000000000000        ,&
@@ -4052,7 +4005,6 @@ module Chemistry
             net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j) &
                 *sum(vreactions_m(:,j))
           enddo
-print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
         enddo
       endif
 !
@@ -4097,12 +4049,10 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx,3) :: gchemspec !,gDiff_full_add
+      real, dimension(nx,3) :: gchemspec, sum_diff=0., dk_D
       real, dimension(nx,3,nchemspec) :: gDiff_full_add
-      real, dimension(nx) :: del2chemspec
-      real, dimension(nx) :: diff_op, diff_op1, diff_op2
+      real, dimension(nx) :: del2chemspec, diff_op1, diff_op2
       real, dimension(nx) :: sum_gdiff=0., gY_sumdiff
-      real, dimension(nx,3) :: sum_diff=0., dk_D
       integer :: k,i
 !
       intent(in) :: f
@@ -4117,8 +4067,8 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
         if (ldiffusion) then
 !
-!  Calculate diffusion coefficient gradients gDiff_full_add in a case:
-!    2) Constant Lewis numbers and heat conductivity
+!  Calculate diffusion coefficient gradients gDiff_full_add for the case:
+!    2) Constant Lewis number (= 1 by default or read from start.in) and given Pr
 !
             do i = 1,3
               gDiff_full_add(:,i,k) = p%gradnu(:,i)/Pr_number*Lewis_coef1(k)
@@ -4132,11 +4082,8 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
             call dot_mn(p%glnrho,gchemspec,diff_op1)
             call dot_mn(gDiff_full_add(:,:,k),gchemspec,diff_op2)
 !
-!  Calculate the diffusion fluxes and dk_D in a case:
-!    1) Fickian diffusion law (gradient of species MASS fractions)
-!
-            p%DYDt_diff(:,k) = p%Diff_penc_add(:,k)*(del2chemspec+diff_op1) &
-                +diff_op2
+            p%DYDt_diff(:,k) = p%Diff_penc_add(:,k) &
+                             *(del2chemspec+diff_op1) + diff_op2
             do i = 1,3
               dk_D(:,i) = p%Diff_penc_add(:,k)*gchemspec(:,i)
             enddo
@@ -4156,8 +4103,8 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
         do k = 1,nchemspec
           call grad(f,ichemspec(k),gchemspec)
           call dot_mn(gchemspec(:,:),sum_diff,gY_sumdiff)
-          p%DYDt_diff(:,k) = p%DYDt_diff(:,k)-   &
-              (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
+          p%DYDt_diff(:,k) = p%DYDt_diff(:,k) &
+                - (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
         enddo
       endif
 !
@@ -4207,7 +4154,6 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
       real, dimension(mx,my,mz) :: cs2_full
       intent(out) :: cs2_full
-      integer :: j,k
 !
       call fatal_error('get_cs2_full',&
         'This function is not working with chemistry_simple since all full arrays are removed')
@@ -4452,7 +4398,6 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
       real, dimension(mx,my,mz) :: gamma_full
       intent(out) :: gamma_full
-      integer :: j,k
 !
       call fatal_error('get_gamma_full',&
         'This function is not working with chemistry_simple since all full arrays are removed')
@@ -4855,8 +4800,6 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !***********************************************************************
 !    subroutine damp_zone_for_NSCBC(f,df) was here
 !***********************************************************************
-! Here was the subroutine jacobn(f,jacob) which is called from timestep_stiff.f90
-!***********************************************************************
     subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
@@ -5000,7 +4943,6 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
       if (allocated(net_react_m))    deallocate(net_react_m)
       if (allocated(net_react_p))    deallocate(net_react_p)
       if (allocated(back))           deallocate(back)
-      if (allocated(Diff_full_add))  deallocate(Diff_full_add)
 !
     endsubroutine chemistry_clean_up
 !***********************************************************************
@@ -5050,55 +4992,11 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
     endsubroutine getmu_array
 !***********************************************************************
-   subroutine read_Lewis
+!   subroutine read_Lewis
 !
-!  Reading of the species Lewis numbers in an input file
+! Removed. Lewis # read from start.in
 !
-!  21-jun-10/julien: coded
-!  30-jun-17/MR: moved here from eos_chemistry.
-!
-     use Mpicomm, only: stop_it
-!
-      logical :: emptyfile
-      logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem, i
-      real    :: lewisk
-      character (len=10) :: specie_string
-!
-      emptyFile=.true.
-!
-      open(file_id,file="lewis.dat")
-!
-      if (lroot) print*, 'lewis.dat: beginning of the list:'
-!
-      i=0
-      dataloop: do
-        read(file_id,*,end=1000) specie_string, lewisk
-        emptyFile=.false.
-!
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-!
-        if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' Lewis=', lewisk
-          Lewis_coef(ind_chem) = lewisk
-          Lewis_coef1(ind_chem) = 1./lewisk
-          i=i+1
-        endif
-      enddo dataloop
-!
-! Stop if lewis.dat is empty
-!
-1000  if (emptyFile)  call stop_it('End of the file!')
-!
-      if (lroot) then
-        print*, 'lewis.dat: end of the list:'
-        if (i == 0) &
-            print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
-      endif
-!
-      close(file_id)
-!
-    endsubroutine read_Lewis
+ !   endsubroutine read_Lewis
 !***********************************************************************
    subroutine read_transport_data
 !
@@ -5207,6 +5105,9 @@ print*,'p%DYDt_reac(:,k)',k,'***********',p%DYDt_reac(:,k)
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
+!
+          call fatal_error('jacobn', &
+              'this does not work for simplified chemistry!')
 !
 !      call keep_compiler_quiet(jacob)
       call keep_compiler_quiet(f)
