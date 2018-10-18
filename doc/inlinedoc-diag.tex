@@ -39,8 +39,6 @@
 %%   particles_mass_swarm.f90
 %%   particles_surfspec.f90
 %%   polymer.f90
-%%   r75612.f90
-%%   r75759.f90
 %%   shear.f90
 %%   shock.f90
 %%   shock_highorder.f90
@@ -225,6 +223,7 @@
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
@@ -688,6 +687,8 @@
 \midrule
   \multicolumn{2}{c}{Module \file{chiral_mhd.f90}} \\
 \midrule
+  \var{muSm}      & $\left<\mu_S\right>$ \\
+  \var{muSrms}    & $\left<\mu_S^2\right>^{1/2}$ \\
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
   \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
@@ -704,6 +705,7 @@
   \var{dt_chiral} & total time-step contribution from chiral MHD \\
   \var{mu5bxm}    & $\left<\mu_5B_x\right>$ \\
   \var{mu5b2m}    & $\left<\mu_5B^2\right>$ \\
+  \var{jxm}       & $\langle J_x\rangle$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -1197,66 +1199,6 @@
 \midrule
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
   \var{frmax}     & $\max(f(r))$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{r75612.f90}} \\
-\midrule
-  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
-  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
-  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
-  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
-  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
-  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
-  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
-  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
-  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
-  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
-  \var{hhT2m}     & $\bra{h_T^2}$ \\
-  \var{hhX2m}     & $\bra{h_X^2}$ \\
-  \var{hhTXm}     & $\bra{h_T h_X}$ \\
-  \var{ggT2m}     & $\bra{g_T^2}$ \\
-  \var{ggX2m}     & $\bra{g_X^2}$ \\
-  \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{ggTm}      & $\bra{g_T}$ \\
-  \var{ggXm}      & $\bra{g_X}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{r75759.f90}} \\
-\midrule
-  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
-  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
-  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
-  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
-  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
-  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
-  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
-  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
-  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
-  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
-  \var{hhT2m}     & $\bra{h_T^2}$ \\
-  \var{hhX2m}     & $\bra{h_X^2}$ \\
-  \var{hhTXm}     & $\bra{h_T h_X}$ \\
-  \var{ggT2m}     & $\bra{g_T^2}$ \\
-  \var{ggX2m}     & $\bra{g_X^2}$ \\
-  \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{ggTm}      & $\bra{g_T}$ \\
-  \var{ggXm}      & $\bra{g_X}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule

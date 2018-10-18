@@ -5285,6 +5285,31 @@ ions and neutrals.
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Combustion}
+\index{Combustion}
+
+The easiest entry into the subject of simulating combustion is through
+\path{samples/0d-tests/chemistry_H2_ignition_rkf}
+or \path{samples/1d-tests/H2_flamespeed}.
+The former case is studying H2 ignition delay, while the second one
+is focusing on H2 flame-speed.
+If you want to study turbulent premixed flames, the recommended cases are
+\path{samples/2d-tests/2d_methane_flame} and \path{samples/turbulent_flame}.
+Here, the first of these examples is not really realistic since its only 2D,
+but this does of course make it faster to try out.
+Also, this case is easier to set up. The most realistic test case is
+\path{samples/turbulent_flame}, which studies a full 3D hydrogen flame.
+This test case requires that a set of smaller pre-runs are finalized
+before the main simulation can be run (see the associated README file
+for more details).
+
+The \path{chemistry_H2_ignition_rkf} directory, for example, has the file
+\file{tran.dat}, which contains the parameters characterizing the transport
+properties, and \file{chem.inp}, which contains the NASA polynomials;
+see Eq.~(18) of Ref.~\cite{BHB11}.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Radiative transfer}
 \index{Radiative transfer}
 
@@ -5563,7 +5588,7 @@ the minimum number of grid points is given as:
 \begin{equation}
   N_\mathrm{grid} \gtrsim \left(\frac{\mu_0}{\lambda}\right)^{1/2} \frac{2\pi}{\nu \mbox{Re}_{\rm mesh, crit}}.
 \end{equation}
-Also the value of $\lambda$ should not be choosen too small, since it scales 
+Also the value of $\lambda$ should not be chosen too small, since it scales 
 inversely with the saturation magnetic helicity produced by a chiral dynamo. 
 Hence, for a very small $\lambda$ parameter, the Alfv\'en time step becomes extremely small in the non-linear stage which can lead to a code crash.    
 More details on the numerical modeling of chiral MHD can be found in
@@ -5802,10 +5827,15 @@ parameter, $T_{ij}$ is the source term, $c$ is the speed of light,
 and $G$ is Newton's constant.
 For $n=0$, when the cosmic expansion is ignored, we have $a=1$ and
 ${\cal H}=0$.
-We use the {\sc Pencil Code}; for the numerical treatment of \Eq{d2hdt}
-and equations~(\ref{dlnrhodt})--(\ref{mhd3}).
-For most of the simulations, we use $1152^3$ meshpoints on $1152$ cores
-of a Cray XC40 system with 2.3 GHz processors.
+In practice, we solve the GW equation for the scaled variable
+$\tilde{h}_{ij}=ah_{ij}$,
+\begin{equation}
+{\partial^2\tilde{h}_{ij}\over\partial t^2}
+=c^2\nabla^2\tilde{h}_{ij}+{16\pi G\over a c^2} T_{ij}.
+\label{d2hdt}
+\end{equation}
+For the numerical treatment of \Eq{d2hdt} and
+equations~(\ref{dlnrhodt})--(\ref{mhd3}).
 
 The source term is chosen to be the traceless part of the stress tensor,
 \begin{equation}
@@ -10399,7 +10429,7 @@ initlnrho, inituu, initss, initaa, etc `nothing'), and
 \noindent 5) Run \code{pc\_start}. 
 
 The variable \code{lread\_oldsnap} makes the code on start time read
-from the f-array of the snapshop, instead of the default, which is to
+from the f-array of the snapshot, instead of the default, which is to
 initialize it with zeros. The necessity in step (4) to remove all calls to
 initial conditions is because otherwise the code would rewrite the
 content of the f-array with these initial conditions, or add them on
@@ -13903,6 +13933,10 @@ initial condition.
   \emph{Pocketbook of Mathematical Functions\/},
   Harri Deutsch, Frankfurt (1984)
 
+\bibitem{BHB11} Babkovskaia, N., Haugen, N. E. L., Brandenburg, A.\yjour{2011}{J.\ Comp.\ Phys.}{230}{1}
+{12}{A high-order public domain code for direct numerical simulations of turbulent combustion}
+(\arXiv{1005.5301})
+
 \bibitem{BB14} Barekat, A., \& Brandenburg, A.,
   \emph{Astron. Astrophys.} \textbf{571}, A68 (2014)
   ``Near-polytropic stellar simulations with a radiative surface''
@@ -14065,7 +14099,7 @@ $ $Id$ $}
 % LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
 % LocalWords:  tarball unix somewhere cd gunzip xf mhd passwd CVSROOT cshrc sh
 % LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp struct Weyl vidx
-% LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
+% LocalWords:  keepaspectratio spher gravz README cparam idl dx nograv
 % LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
 % LocalWords:  nofft dist mpicomm nompicomm DFUNDERSCORE nodebug mkfile var dat
 % LocalWords:  interoperability rall bb aa jj Pvwave param nml param nml param
