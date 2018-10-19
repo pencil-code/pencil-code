@@ -1124,10 +1124,10 @@ module PointMasses
 !
             r2_ij=rr2
             if (r2_ij .gt. hill_radius_square(ks)) then
-              Omega2_pm = GNewton*pmass(ks)*r2_ij**(-1.5)
+              Omega2_pm =  GNewton*pmass(ks)*r2_ij**(-1.5)
             else
               rhill1=1./sqrt(hill_radius_square(ks))
-              Omega2_pm = GNewton*pmass(ks)*(3*sqrt(r2_ij)*rhill1 - 4)*rhill1**3
+              Omega2_pm = -GNewton*pmass(ks)*(3*sqrt(r2_ij)*rhill1 - 4)*rhill1**3
             endif
 !
 
