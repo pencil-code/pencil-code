@@ -2099,6 +2099,30 @@ module PointMasses
                 call fatal_error_local('boundconds_pointmasses','')
               endif
             endif
+          elseif (boundy=='p2pi') then
+!  yp < y0
+            if (fq(k,iyq)< -pi) then
+              fq(k,iyq)=fq(k,iyq)+2*pi
+              if (fq(k,iyq)<-pi) then
+                print*, 'boundconds_pointmasses: ERROR - particle ', k, &
+                     ' was further than Ly outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'xxq=', fq(k,ixq:izq)
+                call fatal_error_local('boundconds_pointmasses','')
+              endif
+            endif
+!  yp > y1
+            if (fq(k,iyq)>=pi) then
+              fq(k,iyq)=fq(k,iyq)-2*pi
+              if (fq(k,iyq)>=pi) then
+                print*, 'boundconds_pointmasses: ERROR - particle ', k, &
+                     ' was further than Ly outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'xxq=', fq(k,ixq:izq)
+                call fatal_error_local('boundconds_pointmasses','')
+              endif
+            endif
+
           elseif (boundy=='out') then
             ! massive particles can be out of the box
             ! the star, for example, in a cylindrical simulation
