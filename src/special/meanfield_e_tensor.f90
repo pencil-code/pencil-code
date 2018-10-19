@@ -586,7 +586,7 @@ module Special
               delt=2*tensor_times(tensor_times_len)-tensor_times(1)-tensor_times(tensor_times_len-1)
               tensor_times = tensor_times+delt
             else
-              call fatal_error('dspecial_dt', 'no more data to load') 
+              call fatal_error('special_before_boundary', 'no more data to load') 
             endif
           endif
 if (lread_time_series) then
@@ -638,116 +638,111 @@ endif
 !
       call keep_compiler_quiet(f)
 !
+! Calculate emf pencil
+!
+      p%emf = 0
+!
       if (lalpha) then
         ! Calculate alpha B
         do j=1,3; do i=1,3
           if (lalpha_arr(i,j)) then
-            p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
+            p%alpha_coefs(:,i,j)=emf_interpolate(alpha_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
           else
-            p%alpha_coefs(1:nx,i,j)=0
+            p%alpha_coefs(:,i,j)=0
           end if
         end do; end do
         call dot_mn_vm(p%bb,p%alpha_coefs,p%alpha_emf)
+        p%emf = p%emf + p%alpha_emf
       end if
+!
       if (lbeta) then
         ! Calculate beta (curl B)
         do j=1,3; do i=1,3
           if (lbeta_arr(i,j)) then
-            p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
+            p%beta_coefs(:,i,j)=emf_interpolate(beta_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
           else
-            p%beta_coefs(1:nx,i,j)=0
+            p%beta_coefs(:,i,j)=0
           end if
         end do; end do
         call dot_mn_vm(p%jj,p%beta_coefs,p%beta_emf)
+        p%emf = p%emf - p%beta_emf
       end if
+!
       if (lgamma) then
         ! Calculate gamma x B
         do i=1,3
           if (lgamma_arr(i)) then
-            p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
+            p%gamma_coefs(:,i)=emf_interpolate(gamma_data(1:dataload_len,:,m-nghost,n-nghost,i))
           else
-            p%gamma_coefs(1:nx,i)=0
+            p%gamma_coefs(:,i)=0
           end if
         end do
         call cross_mn(p%gamma_coefs,p%bb,p%gamma_emf)
+        p%emf = p%emf + p%gamma_emf
       end if
+!
       if (ldelta) then
         ! Calculate delta x (curl B)
         do i=1,3
           if (ldelta_arr(i)) then
-            p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
+            p%delta_coefs(:,i)=emf_interpolate(delta_data(1:dataload_len,:,m-nghost,n-nghost,i))
           else
-            p%delta_coefs(1:nx,i)=0
+            p%delta_coefs(:,i)=0
           end if
         end do
         call cross_mn(p%delta_coefs,p%jj,p%delta_emf)
+        p%emf = p%emf - p%delta_emf
       end if
+!
       if (lkappa) then
         ! Calculate kappa (grad B)_symm
         do j=1,3; do i=1,3
-          p%bij_symm(1:nx,i,j)=0.5*(p%bij(1:nx,i,j) + p%bij(1:nx,j,i))
+          p%bij_symm(:,i,j)=0.5*(p%bij(:,i,j) + p%bij(:,j,i))
         end do; end do
         do k=1,3; do j=1,3; do i=1,3
-          p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j,k))
+          p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
         end do; end do; end do
         p%kappa_emf = 0
         do k=1,3; do j=1,3; do i=1,3
-          p%kappa_emf(1:nx,i)=p%kappa_emf(1:nx,i)+p%kappa_coefs(1:nx,i,j,k)*p%bij_symm(1:nx,j,k)
+          p%kappa_emf(:,i)=p%kappa_emf(:,i)+p%kappa_coefs(:,i,j,k)*p%bij_symm(:,j,k)
         end do; end do; end do
+        p%emf = p%emf - p%kappa_emf
       end if
+!
       if (lutensor) then
         ! Calculate utensor x B
         do i=1,3
           if (lutensor_arr(i)) then
-            p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:dataload_len,1:nx,m-nghost,n-nghost,i))
+            p%utensor_coefs(:,i)=emf_interpolate(utensor_data(1:dataload_len,:,m-nghost,n-nghost,i))
           else
-            p%utensor_coefs(1:nx,i)=0
+            p%utensor_coefs(:,i)=0
           end if
         end do
         call cross_mn(p%utensor_coefs,p%bb,p%utensor_emf)
+        p%emf = p%emf + p%utensor_emf
       end if
+!
       if (lacoef) then
         ! Calculate acoef B
         do j=1,3; do i=1,3
           if (lacoef_arr(i,j)) then
-            p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j))
+            p%acoef_coefs(:,i,j)=emf_interpolate(acoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
           else
-            p%acoef_coefs(1:nx,i,j)=0
+            p%acoef_coefs(:,i,j)=0
           end if
         end do; end do
         call dot_mn_vm(p%bb,p%acoef_coefs,p%acoef_emf)
       end if
+!
       if (lbcoef) then
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
-          p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,1:nx,m-nghost,n-nghost,i,j,k))
+          p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
         end do; end do; end do
         p%bcoef_emf = 0
         do k=1,3; do j=1,3; do i=1,3
-          p%bcoef_emf(1:nx,i)=p%bcoef_emf(1:nx,i)+p%bcoef_coefs(1:nx,i,j,k)*p%bij(1:nx,j,k)
+          p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bij(:,j,k)
         end do; end do; end do
-      end if
-!
-! Calculate emf pencil
-!
-      p%emf = 0
-      if (lalpha) then
-        p%emf = p%emf + p%alpha_emf
-      end if
-      if (lbeta) then
-        p%emf = p%emf - p%beta_emf
-      end if
-      if (lgamma) then
-        p%emf = p%emf + p%gamma_emf
-      end if
-      if (ldelta) then
-        p%emf = p%emf - p%delta_emf
-      end if
-      if (lkappa) then
-        p%emf = p%emf - p%kappa_emf
-      end if
-      if (lutensor) then
-        p%emf = p%emf + p%utensor_emf
       end if
 !
     endsubroutine calc_pencils_special
@@ -1062,7 +1057,7 @@ endif
       real :: diffus_tmp
       type (pencil_case), intent(in) :: p
       integer :: i,j,k
-! 
+!
       call keep_compiler_quiet(f)
 !
 ! Overwrite with a and b coefs if needed
@@ -1178,9 +1173,10 @@ endif
       ! Get dataspace dimensions in tensor_dims.
       ndims = tensor_ndims(tensor_id)
       call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
-                                       dimsizes(1:ndims), &
+                                       dimsizes, &
                                        maxdimsizes(1:ndims), &
                                        hdferr)                 !MR: hdferr/=0!
+print*, 'hdferr=', hdferr
       call H5Sget_simple_extent_npoints_F(tensor_id_S(tensor_id),num,hdferr) ! This is to mask the error of the preceding call.
       tensor_dims(tensor_id,1:ndims)=dimsizes(1:ndims)
       if (tensor_times_len==-1) then
@@ -1287,6 +1283,8 @@ endif
     subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a vector, beginning at loadstart
+    
+      use General, only: itoa
 
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3), intent(in) :: datamask
@@ -1351,7 +1349,7 @@ endif
         if (present(name)) then
           call mpireduce_min(tensor_minvals(tensor_id),globmin)
           call mpireduce_max(tensor_maxvals(tensor_id),globmax)
-          if (lroot) write (*,*) trim(name)//'( ', i, ')  min/max:', globmin, globmax
+          if (lroot) write (*,*) trim(name)//'(', trim(itoa(i)), ')  min/max:', globmin, globmax
         endif
       sum = sum + tensor_maxvals(tensor_id)*tensor_maxvals(tensor_id)
       enddo
@@ -1365,6 +1363,8 @@ endif
     subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
+
+      use General, only: itoa
 
       real, dimension(:,:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3,3), intent(in) :: datamask
@@ -1436,7 +1436,8 @@ endif
         if (present(name)) then
           call mpireduce_min(tensor_minvals(tensor_id),globmin)
           call mpireduce_max(tensor_maxvals(tensor_id),globmax)
-          if (i == j .and. lroot) write (*,*) trim(name)//'( ', i, ',', j,' ) min/max: ', globmin, globmax
+          if (i == j .and. lroot) write (*,*) trim(name)// &
+            '(', trim(itoa(i)), ',', trim(itoa(j)),') min/max: ', globmin, globmax
         endif
         sum = sum + tensor_maxvals(tensor_id)*tensor_maxvals(tensor_id)
       enddo ; enddo
@@ -1595,7 +1596,6 @@ endif
         lalpha_arr(3,2) = lalpha_c(5)
         lalpha_arr(3,3) = lalpha_c(6)
       else if (lalpha) then
-        lalpha     = .true.
         lalpha_arr = .true.
       end if
 !
@@ -1613,25 +1613,24 @@ endif
         lbeta_arr(3,2) = lbeta_c(5)
         lbeta_arr(3,3) = lbeta_c(6)
       else if (lbeta) then
-        lbeta     = .true.
         lbeta_arr = .true.
       end if
 !
 ! Load boolean array for gamma
 !
       if (any(lgamma_c)) then
+        lgamma = .true.
         lgamma_arr  = lgamma_c
       else if (lgamma) then
-        lgamma      = .true.
         lgamma_arr  = .true.
       end if
 !
 ! Load boolean array for delta
 !
       if (any(ldelta_c)) then
+        ldelta = .true.
         ldelta_arr  = ldelta_c
       else if (ldelta) then
-        ldelta      = .true.
         ldelta_arr  = .true.
       end if
 !
@@ -1678,9 +1677,9 @@ endif
 ! Load boolean array for utensor
 !
       if (any(lutensor_c)) then
+        lutensor = .true.
         lutensor_arr  = lutensor_c
       else if (lutensor) then
-        lutensor      = .true.
         lutensor_arr  = .true.
       end if
 !
