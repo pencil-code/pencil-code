@@ -86,8 +86,8 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
-       lremove_mean_flow_testfield_nonlin_zero, &
-       lremove_mean_flow_testfield_nonlin_all, &
+       lremove_mean_flow_NLTFM_zero, &
+       lremove_mean_flow_NLTFM_all, &
        Btest_ext, zextent, lsoca, lsoca_jxb, &
        lugu, itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
@@ -1271,7 +1271,7 @@ module Testfield
 !
 !  Remove mean flow from all 5 test problems.
 !
-      if (lremove_mean_flow_testfield_nonlin_all) then
+      if (lremove_mean_flow_NLTFM_all) then
         do jtest=1,njtest
           iuxtest=iuutest+3*(jtest-1)
           call remove_mean_flow(f,iuxtest)
@@ -1279,7 +1279,7 @@ module Testfield
 !
 !  Remove mean flow from the "0" problem only.
 !
-      elseif (lremove_mean_flow_testfield_nonlin_zero) then
+      elseif (lremove_mean_flow_NLTFM_zero) then
         iuxtest=iuutest+3*(njtest-1)
         call remove_mean_flow(f,iuxtest)
       endif
