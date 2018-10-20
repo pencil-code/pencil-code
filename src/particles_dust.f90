@@ -2834,7 +2834,8 @@ module Particles
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1) = .true.
       endif
-      if (ldraglaw_epstein) then
+      if (ldraglaw_epstein .and. &
+          (lcollisional_cooling_rms .or. lcollisional_cooling_twobody .or. lcompensate_friction_increase)) then
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_rho)=.true.
       endif
@@ -2852,7 +2853,7 @@ module Particles
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1)=.true.
       endif
-      if (ldraglaw_epstein_transonic  .or.&
+      if (ldraglaw_epstein_transonic .or. &
           ldraglaw_eps_stk_transonic) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_rho)=.true.
