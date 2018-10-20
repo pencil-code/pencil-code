@@ -9,6 +9,7 @@ module HDF5_IO
   use Cparam, only: mvar, maux, labellen
   use HDF5
   use Messages, only: fatal_error
+  use Mpicomm, only: lroot, mpi_precision
 !
   implicit none
 !
@@ -37,7 +38,8 @@ module HDF5_IO
   integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype, h5_group
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
-  integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
+  integer(kind=8), dimension(n_dims+1) :: global_size, global_start
+  logical :: lcollective, lwrite
 !
   type element
     character(len=labellen) :: label
@@ -53,8 +55,6 @@ module HDF5_IO
 !  Initialize the HDF IO.
 !
 !  28-Oct-2016/PABoudin: coded
-!
-      use Mpicomm, only: mpi_precision
 !
       ! dimensions for local data portion with ghost layers
       local_size(1) = mx
@@ -125,14 +125,15 @@ module HDF5_IO
 !
     endsubroutine finalize_hdf5
 !***********************************************************************
-    subroutine file_open_hdf5(file, truncate, global, read_only)
+    subroutine file_open_hdf5(file, truncate, global, read_only, write)
 !
       character (len=*), intent(in) :: file
       logical, optional, intent(in) :: truncate
       logical, optional, intent(in) :: global
       logical, optional, intent(in) :: read_only
+      logical, optional, intent(in) :: write
 !
-      logical :: ltrunc, lglobal, lread_only
+      logical :: ltrunc, lread_only
       integer :: h5_read_mode
 !
       lread_only = .false.
@@ -144,10 +145,12 @@ module HDF5_IO
       if (present (truncate)) ltrunc = truncate
       if (lread_only) ltrunc = .false.
 !
-      lglobal = .true.
-      if (present (global)) lglobal = global
+      lcollective = .true.
+      if (present (global)) lcollective = global
+      lwrite = lroot
+      if (present (write)) lwrite = write
 !
-      if (lglobal) then
+      if (lcollective) then
         ! setup file access property list
         call h5pcreate_f (H5P_FILE_ACCESS_F, h5_plist, h5_err)
         if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'create global file access property list', .true.)
@@ -166,7 +169,7 @@ module HDF5_IO
 !
         call h5pclose_f (h5_plist, h5_err)
         if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'close global file access property list', .true.)
-      else
+      elseif (lwrite) then
         call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
         if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'open local file "'//trim (file)//'"', .true.)
       endif
@@ -175,14 +178,18 @@ module HDF5_IO
 !***********************************************************************
     subroutine file_close_hdf5
 !
-      call h5fclose_f (h5_file, h5_err)
-      if (h5_err /= 0) call fatal_error ('file_close_hdf5', 'close file', .true.)
+      if (lcollective .or. lwrite) then
+        call h5fclose_f (h5_file, h5_err)
+        if (h5_err /= 0) call fatal_error ('file_close_hdf5', 'close file', .true.)
+      endif
 !
     endsubroutine file_close_hdf5
 !***********************************************************************
     subroutine create_group_hdf5(name)
 !
       character (len=*), intent(in) :: name
+!
+      if (.not. (lcollective .or. lwrite)) return
 !
       call h5gcreate_f (h5_file, trim (name), h5_group, h5_err)
       if (h5_err /= 0) call fatal_error ('create_group_hdf5', 'create group "'//trim (name)//'"', .true.)
@@ -363,6 +370,9 @@ module HDF5_IO
       character (len=len(data)), dimension(1) :: str_data
       integer(SIZE_T), dimension(1) :: str_len
 !
+      if (lcollective) call fatal_error ('output_hdf5', 'string output requires local file "'//trim (name)//'"', .true.)
+      if (.not. lwrite) return
+!
       str_len(1) = len_trim (data)
       size(1) = str_len(1)
       size(2) = 1
@@ -397,6 +407,9 @@ module HDF5_IO
       integer(HID_T) :: h5_inttype
       integer(kind=8), dimension(1) :: size = (/ 1 /)
 !
+      if (lcollective) call fatal_error ('output_hdf5', 'integer output requires local file "'//trim (name)//'"', .true.)
+      if (.not. lwrite) return
+!
       ! create data space
       call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer data space "'//trim (name)//'"', .true.)
@@ -423,7 +436,7 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_0D
 !***********************************************************************
-    subroutine output_hdf5_1D(name, data, nv)
+    subroutine output_local_hdf5_1D(name, data, nv)
 !
 !  Write HDF5 dataset as scalar or array.
 !
@@ -434,6 +447,8 @@ module HDF5_IO
       real, dimension (nv), intent(in) :: data
 !
       integer(kind=8), dimension(1) :: size
+!
+      if (.not. (lcollective .or. lwrite)) return
 !
       size = (/ nv /)
 !
@@ -464,6 +479,94 @@ module HDF5_IO
       call h5sclose_f (h5_dspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close data space "'//trim (name)//'"', .true.)
 !
+    endsubroutine output_local_hdf5_1D
+!***********************************************************************
+    subroutine output_hdf5_1D(name, data, nv, lsame_size)
+!
+!  Write HDF5 dataset as scalar or array.
+!
+!  24-Oct-2016/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (nv), intent(in) :: data
+      logical, optional, intent(in) :: lsame_size
+!
+      logical :: lfixed
+      integer(kind=8), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=8), dimension(1) :: global_size_1D, global_start_1D
+      integer(kind=8), dimension (1) :: h5_stride, h5_count
+!
+      if (.not. lcollective) then
+        call output_local_hdf5_1D(name, data, nv)
+        return
+      endif
+!
+      lfixed = .true.
+      if (present (lsame_size)) lfixed = lsame_size
+! *** WORK HERE *** (particles collect)
+! memspace = H5Screate_simple(1, &nelems, NULL);
+! MPI_Allreduce(&nelems, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+! filespace = H5Screate_simple(1, &sum, NULL);
+! MPI_Scan(&nelems, &offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+! H5Sselect_hyperslab(filespace, H5S_SELECT_SET, &offset, NULL, &nelems, NULL);
+      if (lfixed) then
+        local_size_1D = nv
+        local_subsize_1D = nv
+        local_start_1D = 0
+        global_size_1D = nv * ncpus
+        global_start_1D = 0
+      else
+        call fatal_error ('output_hdf5', 'variable-size 1D output not yet implemented "'//trim (name)//'"', .true.)
+      endif
+!
+      ! define 'file-space' to indicate the data portion in the global file
+      call h5screate_simple_f (1, global_size_1D, h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create global file space "'//trim (name)//'"', .true.)
+!
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_simple_f (n, local_size_1D, h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
+!
+      ! create the dataset
+      call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      call h5sclose_f (h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' in the global file
+      h5_stride(:) = 1
+      h5_count(:) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'get dataset for file space "'//trim (name)//'"', .true.)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within file "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' portion in memory
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within memory "'//trim (name)//'"', .true.)
+!
+      ! prepare data transfer
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'set data transfer properties "'//trim (name)//'"', .true.)
+      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select collective IO "'//trim (name)//'"', .true.)
+!
+      ! collectively write the data
+      call h5dwrite_f (h5_dset, h5_ntype, data, &
+          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write dataset "'//trim (name)//'"', .true.)
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close file space "'//trim (name)//'"', .true.)
+      call h5sclose_f (h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close memory space "'//trim (name)//'"', .true.)
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close dataset "'//trim (name)//'"', .true.)
+      call h5pclose_f (h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
+!
     endsubroutine output_hdf5_1D
 !***********************************************************************
     subroutine output_hdf5_3D(name, data)
@@ -477,6 +580,8 @@ module HDF5_IO
 !
       integer(kind=8), dimension (n_dims) :: h5_stride, h5_count
       integer, parameter :: n = n_dims
+!
+      if (.not. lcollective) call fatal_error ('output_hdf5', '3D array output requires global file "'//trim (name)//'"', .true.)
 !
       ! define 'file-space' to indicate the data portion in the global file
       call h5screate_simple_f (n, global_size(1:n), h5_fspace, h5_err)
@@ -539,6 +644,8 @@ module HDF5_IO
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
       integer :: pos
+!
+      if (.not. lcollective) call fatal_error ('output_hdf5', '4D array output requires global file "'//trim (name)//'"', .true.)
 !
       if (name == 'f') then
         ! write components of f-array
@@ -608,7 +715,6 @@ module HDF5_IO
 ! 14-Oct-2018/PABourdin: coded
 !
       use General, only: itoa
-      use Mpicomm, only: lroot
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
@@ -689,8 +795,6 @@ module HDF5_IO
     subroutine index_reset()
 !
 ! 14-Oct-2018/PABourdin: coded
-!
-      use Mpicomm, only: lroot
 !
       type (element), pointer, save :: current => null()
 !
