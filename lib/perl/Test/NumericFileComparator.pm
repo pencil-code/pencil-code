@@ -21,6 +21,7 @@ package Test::NumericFileComparator;
 use warnings;
 use strict;
 use Carp;
+use Cwd;
 use Math::Complex;
 use Test::NumberComparator;
 
@@ -407,7 +408,7 @@ sub _read_file_in_column_format {
             @variables = _create_var_names(@items) unless @variables;
             if ($#items != $#variables) {
                 croak(
-                    "Inconsistent column count:",
+                    "Wrong column count in ".getcwd."/$file:",
                     " expected ", 0 + @variables,
                     ", found ", 0 + @items,
                     " in line <$line>\n"
@@ -419,7 +420,7 @@ sub _read_file_in_column_format {
                 push @{$columns[$i]}, $items[$i];
             }
         } else {
-            croak "File $file: Unexpected line $linenum in column format: <$line>\n";
+            croak "Malformed file ".getcwd."/$file: Unexpected line $linenum in column format: <$line>\n";
         }
     }
     close $fh;
