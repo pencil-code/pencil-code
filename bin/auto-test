@@ -279,7 +279,7 @@ Examples:
                  # referece.out{,.double} file
   auto-test --level=1         # run all level 1 tests
   auto-test -l --max-level=1  # list test dirs in levels 0 and 1
-  auto-test -al  # list all dirs `auto-test -a' would run in
+  auto-test -al  # list all dirs 'auto-test -a' would run in
   auto-test -aL  # list all run dirs under samples/, even those without
                  # reference data
 ";
