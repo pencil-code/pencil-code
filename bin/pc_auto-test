@@ -134,7 +134,6 @@ my %tests = (
              # Level 3 for now contains all non-canonical tests that run
              # successfully
              3 => [qw(
-                         0d-tests/coagulation-fragmentation
                          0d-tests/heating_ionize_planck
                          1d-tests/jeans-drag-dustpar-x
                          1d-tests/jeans-x
@@ -202,6 +201,7 @@ my %tests = (
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
              6 => [qw(
+                         0d-tests/coagulation-fragmentation
                      )],
              # Level 7 for now contains all non-canonical tests that
              # compile, but don't start sucessfully
