@@ -5,14 +5,14 @@
 &run_pars
   cvsid='$Id$',
   ip=13,
-  nt=20, it1=4, isave=500, itorder=3, 
+  nt=17, it1=2, isave=500, itorder=3, 
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
   dsnap=10., dvid=.2, d2davg=10.
   ttransient=0.,
   tavg = 10.,                   ! time constant for time averaging
   random_gen='nr_f90',
   slice_position='e'
-  lpencil_check=T
+  lpencil_check=F
   lbidiagonal_derij=F  !(uses the slightly more accurate formulation for derij)
 /
 !
