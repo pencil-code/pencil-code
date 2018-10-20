@@ -59,8 +59,8 @@ module Testfield
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
-  logical :: lremove_mean_flow_testfield_nonlin_all=.false.
-  logical :: lremove_mean_flow_testfield_nonlin_zero=.false.
+  logical :: lremove_mean_flow_NLTFM_all=.false.
+  logical :: lremove_mean_flow_NLTFM_zero=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true., lugu=.true., lupw_uutest=.false.
   logical :: luxb_as_aux=.false., ljxb_as_aux=.false., lugu_as_aux=.false.
   logical :: linit_aatest=.false.
