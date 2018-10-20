@@ -3,7 +3,7 @@
 !
 &run_pars
   cvsid = '$Id$'
-  nt = 1000, it1 = 10
+  nt = 51, it1 = 10
   tmax = 10.1, dsnap = 10.0
   cdt = 0.4
   lpencil_check = .true.
