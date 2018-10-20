@@ -288,6 +288,7 @@ Options:
                            \tUse 'DEFAULT' to get all configured types with
                            \ttheir default interpreters
        --time-limit=limit  \tLimit time for each phase
+       --auto-clean        \tAutomatic clean & recompile, if compilation fails
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
                            \tconfiguration files, rather than trying to find a
@@ -357,6 +358,7 @@ GetOptions(\%opts,
                     --max-level=s
                     --script-tests=s
                     --time-limit=s
+                    --auto-clean
                     --config-files=s
                     --host-id=s
                     --list-maintainers
@@ -399,6 +401,7 @@ my $level       = (              $opts{'level'}                   );
 my $max_level   = (              $opts{'max-level'}               );
 my $script_tests = (             $opts{'script-tests'}            );
 my $time_limit  = (              $opts{'time-limit'}      || ''   );
+my $auto_clean  = (              $opts{'auto-clean'}      || 0    );
 my $config_files = (             $opts{'config-files'}    || ''   );
 my $host_id     = (              $opts{'host-id'}         || ''   );
 my $list_maint  = (              $opts{'list-maintainers'} || 0   );
@@ -843,6 +846,17 @@ sub test_shell_cmd {
     $! = 0;                     # reset
     my $res = `$nice $cmd 2>&1`;
     my ($cmdstatus, $cmdmesg) = ($?, $!);
+
+    if ($auto_clean && ($phase eq 'compilation') && ($cmdstatus != 0)) {
+        # Retry compilation after cleaning
+        test_shell_cmd("@pc_build --cleanall", $dir, "cleaning up", QUIET);
+        return "ERROR running @pc_build --cleanall" if ($test_status);
+        print STDERR "\nRetrying `$nice $cmd`\n" if ($debug);
+        $! = 0;                     # reset
+        $res = `$nice $cmd 2>&1`;
+        ($cmdstatus, $cmdmesg) = ($?, $!);
+    }
+
     $res = '' unless defined($res);
     chomp($res);
     if ($res ne '') {
