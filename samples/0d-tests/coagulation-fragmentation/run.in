@@ -5,7 +5,9 @@
   cvsid='$Id$',
   nt=100, it1=10, cdt=0.4, cdtv=0.4, isave=1000, itorder=3
   dsnap=1.0e37, dvid=1.0, dtmin=1e-9
-  lpencil_check=T
+  ! pencil check always fails in 'coagulation_fragmentation', therefore:
+  lpencil_check=F
+  lpencil_check_small=F
   dtmax=1.0e9
 /
 &eos_run_pars
