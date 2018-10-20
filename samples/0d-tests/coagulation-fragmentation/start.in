@@ -15,7 +15,7 @@
   ldensity_nolog=T
 /
 &pscalar_init_pars
-  initlncc='constant', cc_const=1.0
+  initlncc='constant', cc_const=4.0
 /
 &particles_init_pars
   initxxp='nothing', eps_dtog=1.0
