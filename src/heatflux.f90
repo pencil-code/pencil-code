@@ -540,8 +540,11 @@ contains
         spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
       endwhere
       if (ldiagnos) then
-        if (idiag_qsatmin/=0) call max_mn_name(-1.*qsat/(qabs+sqrt(tini)),idiag_qsatmin,lneg=.true.)
-        if (idiag_qsatrms/=0) call sum_mn_name(qsat/(qabs+sqrt(tini)),idiag_qsatrms)
+        ! pc_auto-test may digest at maximum 2 digits in the exponent
+        tmp = qsat/(qabs+sqrt(tini))
+        where (tmp > 9.99d99) tmp = 9.99d99
+        if (idiag_qsatmin/=0) call max_mn_name(-tmp,idiag_qsatmin,lneg=.true.)
+        if (idiag_qsatrms/=0) call sum_mn_name(tmp,idiag_qsatrms)
       endif
     endif
 !
