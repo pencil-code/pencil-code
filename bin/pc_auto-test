@@ -1151,7 +1151,12 @@ sub test_results {
                   $dir, "results");
             return;
         }
-        my $comparator = Test::NumericFileComparator->new($reference_out);
+        my $comparator;
+        eval { $comparator = Test::NumericFileComparator->new($reference_out); };
+        if ($@) {
+          my_ok(0, 1, join ("\n",$@), $dir, "results");
+          return;
+        }
         my @message = $comparator->compare($ts_file);
         if (@message) {
             my $msg = join(
