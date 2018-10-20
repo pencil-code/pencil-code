@@ -171,6 +171,9 @@ my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc 
 $instances_running =~ s/\s+$//s;
 if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
 
+# Immediate flushing after "\n"
+$| = 1;
+
 print_header();
 
 ## Run test(s)
