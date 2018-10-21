@@ -418,18 +418,6 @@ module Particles_main
       integer :: dummy
       call keep_compiler_quiet(dummy)
     endsubroutine fetch_nparloc
-!***********************************************************************
-    subroutine fetch_npvar(dummy)
-! dummy subroutine
-      integer :: dummy
-      call keep_compiler_quiet(dummy)
-    endsubroutine fetch_npvar
-!***********************************************************************
-    subroutine return_npvar(dummy)
-! dummy subroutine
-      integer :: dummy
-      call keep_compiler_quiet(dummy)
-    endsubroutine return_npvar
 !*********************************************************************** 
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !
