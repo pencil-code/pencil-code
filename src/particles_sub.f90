@@ -119,12 +119,19 @@ module Particles_sub
 !***********************************************************************
     subroutine append_npvar(label,ilabel)
 !
+      use General, only: itoa
+!
       character (len=*), intent(in) :: label
       integer, intent(out) :: ilabel
 !
       npvar = npvar + 1
       ilabel = npvar
       pvarname(ilabel) = trim(label)
+!
+      if (npvar > mpvar) then
+        ! fp and dfp arrays are too small
+        call fatal_error('append_npvar','npvar('//trim(itoa(npvar))//') > mpvar('//trim(itoa(mpvar))//') @ "'//trim(label)//'"')
+      endif
 !
     endsubroutine append_npvar
 !***********************************************************************
