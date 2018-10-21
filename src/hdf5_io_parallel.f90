@@ -9,7 +9,7 @@ module HDF5_IO
   use Cparam, only: mvar, maux, labellen
   use HDF5
   use Messages, only: fatal_error
-  use Mpicomm, only: lroot, mpi_precision, mpiallreduce_sum_int, mpiscan_int
+  use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
 !
   implicit none
 !
@@ -498,7 +498,7 @@ module HDF5_IO
       logical, optional, intent(in) :: same_size
 !
       logical :: lsame_size
-      integer :: total, offset
+      integer :: total, offset, last
       integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
       integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
       integer(kind=8), dimension (1) :: h5_stride, h5_count
@@ -511,12 +511,15 @@ module HDF5_IO
       lsame_size = .false.
       if (present (same_size)) lsame_size = same_size
       if (lsame_size) then
+        last = nv * (iproc + 1) - 1
         total = nv * ncpus
         offset = nv * iproc
       else
-        call mpiallreduce_sum_int(nv,total)
         call mpiscan_int(nv, offset)
+        last = offset - 1
+        total = offset
         offset = offset - nv
+        call mpibcast_int(total, ncpus-1)
       endif
       local_start_1D = 0
       local_size_1D = nv
