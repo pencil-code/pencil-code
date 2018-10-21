@@ -2473,7 +2473,6 @@ module Particles
 !
       use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
-      use Particles_mpicomm
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
