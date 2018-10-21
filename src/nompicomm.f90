@@ -984,6 +984,15 @@ module Mpicomm
 
     endsubroutine mpisendrecv_real_arr4
 !***********************************************************************
+    subroutine mpiscan_int(num,offset,comm)
+!
+      integer :: num,offset
+      integer, optional :: comm
+!
+      if (ALWAYS_FALSE) print*, num, offset, comm
+!
+    endsubroutine mpiscan_int
+!***********************************************************************
     subroutine mpisend_int_scl(bcast_array,proc_rec,tag_id)
 !
       integer :: bcast_array

@@ -4034,6 +4034,20 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
+    subroutine mpiscan_int(num,offset,comm)
+!
+!  Calculate for each processor offset of local array within a global array.
+!
+      use General, only: ioptest
+
+      integer :: num,offset
+      integer, optional :: comm
+!
+      call MPI_SCAN(num, offset, 1, MPI_INTEGER, MPI_SUM, &
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpiscan_int
+!***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
 !  Calculate total sum for each array element and return to all processors.

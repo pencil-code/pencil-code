@@ -9,7 +9,7 @@ module HDF5_IO
   use Cparam, only: mvar, maux, labellen
   use HDF5
   use Messages, only: fatal_error
-  use Mpicomm, only: lroot, mpi_precision
+  use Mpicomm, only: lroot, mpi_precision, mpiallreduce_sum_int, mpiscan_int
 !
   implicit none
 !
@@ -481,7 +481,7 @@ module HDF5_IO
 !
     endsubroutine output_local_hdf5_1D
 !***********************************************************************
-    subroutine output_hdf5_1D(name, data, nv, lsame_size)
+    subroutine output_hdf5_1D(name, data, nv, same_size)
 !
 !  Write HDF5 dataset as scalar or array.
 !
@@ -490,11 +490,12 @@ module HDF5_IO
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(in) :: data
-      logical, optional, intent(in) :: lsame_size
+      logical, optional, intent(in) :: same_size
 !
-      logical :: lfixed
-      integer(kind=8), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
-      integer(kind=8), dimension(1) :: global_size_1D, global_start_1D
+      logical :: lsame_size
+      integer :: total, offset
+      integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
       integer(kind=8), dimension (1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
@@ -502,30 +503,28 @@ module HDF5_IO
         return
       endif
 !
-      lfixed = .true.
-      if (present (lsame_size)) lfixed = lsame_size
-! *** WORK HERE *** (particles collect)
-! memspace = H5Screate_simple(1, &nelems, NULL);
-! MPI_Allreduce(&nelems, &sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-! filespace = H5Screate_simple(1, &sum, NULL);
-! MPI_Scan(&nelems, &offset, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-! H5Sselect_hyperslab(filespace, H5S_SELECT_SET, &offset, NULL, &nelems, NULL);
-      if (lfixed) then
-        local_size_1D = nv
-        local_subsize_1D = nv
-        local_start_1D = 0
-        global_size_1D = nv * ncpus
-        global_start_1D = 0
+      lsame_size = .false.
+      if (present (same_size)) lsame_size = same_size
+      if (lsame_size) then
+        total = nv * ncpus
+        offset = nv * iproc
       else
-        call fatal_error ('output_hdf5', 'variable-size 1D output not yet implemented "'//trim (name)//'"', .true.)
+        call mpiallreduce_sum_int(nv,total)
+        call mpiscan_int(nv, offset)
+        offset = offset - nv
       endif
+      local_start_1D = 0
+      local_size_1D = nv
+      local_subsize_1D = nv
+      global_size_1D = total
+      global_start_1D = offset
 !
       ! define 'file-space' to indicate the data portion in the global file
       call h5screate_simple_f (1, global_size_1D, h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create global file space "'//trim (name)//'"', .true.)
 !
       ! define 'memory-space' to indicate the local data portion in memory
-      call h5screate_simple_f (n, local_size_1D, h5_mspace, h5_err)
+      call h5screate_simple_f (1, local_size_1D, h5_mspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
 !
       ! create the dataset
@@ -554,7 +553,7 @@ module HDF5_IO
 !
       ! collectively write the data
       call h5dwrite_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+          global_size_1D, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'write dataset "'//trim (name)//'"', .true.)
 !
       ! close data spaces, dataset, and the property list
