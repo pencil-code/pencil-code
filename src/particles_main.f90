@@ -1354,15 +1354,16 @@ module Particles_main
 
     endsubroutine fetch_nparloc
 !***********************************************************************
-    subroutine fetch_npvar(npvar_aux)
-      integer, intent(out) :: npvar_aux
-      npvar_aux=npvar
-    endsubroutine fetch_npvar
-!***********************************************************************
-    subroutine return_npvar(npvar_aux)
-      integer, intent(in) :: npvar_aux
-      npvar=npvar_aux
-    endsubroutine return_npvar
+    subroutine append_npvar(label,ilabel)
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      npvar = npvar + 1
+      ilabel = npvar
+      pvarname(ilabel) = trim(label)
+!
+    endsubroutine append_npvar
 !***********************************************************************
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !

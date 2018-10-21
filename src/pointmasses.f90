@@ -107,9 +107,9 @@ module PointMasses
 !
 !  27-aug-06/wlad: adapted
 !
-      use Particles_main, only: fetch_npvar,return_npvar
+      use Particles_main, only: append_npvar
 !      
-      integer :: iqvar, npvar_aux
+      integer :: iqvar
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -157,12 +157,9 @@ module PointMasses
       endif
 !
       if (lparticles) then
-        call fetch_npvar(npvar_aux)
-        ivpx_cart = npvar_aux+1
-        ivpy_cart = npvar_aux+2
-        ivpz_cart = npvar_aux+3
-        npvar_aux=npvar_aux+3
-        call return_npvar(npvar_aux)
+        call append_npvar('ivpx_cart',ivpx_cart)
+        call append_npvar('ivpy_cart',ivpy_cart)
+        call append_npvar('ivpz_cart',ivpz_cart)
       endif
 !
       if (lroot) then
