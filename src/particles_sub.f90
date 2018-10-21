@@ -16,7 +16,8 @@ module Particles_sub
 !
   private
 !
-  public :: input_particles, output_particles, append_npvar, boundconds_particles
+  public :: input_particles, output_particles
+  public :: append_npvar, append_npaux, boundconds_particles
   public :: sum_par_name, max_par_name, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
@@ -130,10 +131,28 @@ module Particles_sub
 !
       if (npvar > mpvar) then
         ! fp and dfp arrays are too small
-        call fatal_error('append_npvar','npvar('//trim(itoa(npvar))//') > mpvar('//trim(itoa(mpvar))//') @ "'//trim(label)//'"')
+        call fatal_error('append_npvar', 'npvar('//trim(itoa(npvar))//') > mpvar('//trim(itoa(mpvar))//') @ "'//trim(label)//'"')
       endif
 !
     endsubroutine append_npvar
+!***********************************************************************
+    subroutine append_npaux(label,ilabel)
+!
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      npaux = npaux + 1
+      ilabel = mpvar + npaux
+      pvarname(ilabel) = trim(label)
+!
+      if (npaux > mpaux) then
+        ! fp and dfp arrays are too small
+        call fatal_error('append_npaux', 'npaux('//trim(itoa(npaux))//') > mpaux('//trim(itoa(mpaux))//') @ "'//trim(label)//'"')
+      endif
+!
+    endsubroutine append_npaux
 !***********************************************************************
     subroutine boundconds_particles(fp,ipar,dfp,linsert)
 !
