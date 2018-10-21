@@ -827,6 +827,7 @@ module Energy
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_cp1)=.true.
       endif
+      if (lheatc_chicubicstep) lpenc_requested(i_z_mn)=.true.
 !
       if (lheatc_Kconst) then
         if (ldensity.or.lboussinesq.or.lanelastic) lpenc_requested(i_rho1)=.true.
