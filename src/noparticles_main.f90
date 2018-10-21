@@ -418,6 +418,16 @@ module Particles_main
       integer :: dummy
       call keep_compiler_quiet(dummy)
     endsubroutine fetch_nparloc
+!***********************************************************************
+    subroutine append_particle_index(label,ilabel)
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      call keep_compiler_quiet(label)
+      call keep_compiler_quiet(ilabel)
+!
+    endsubroutine append_particle_index
 !*********************************************************************** 
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !

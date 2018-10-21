@@ -107,7 +107,7 @@ module PointMasses
 !
 !  27-aug-06/wlad: adapted
 !
-      use Particles_sub, only: append_npvar
+      use Particles_main, only: append_particle_index
 !      
       integer :: iqvar
 !
@@ -157,9 +157,9 @@ module PointMasses
       endif
 !
       if (lparticles) then
-        call append_npvar('ivpx_cart',ivpx_cart)
-        call append_npvar('ivpy_cart',ivpy_cart)
-        call append_npvar('ivpz_cart',ivpz_cart)
+        call append_particle_index('ivpx_cart',ivpx_cart)
+        call append_particle_index('ivpy_cart',ivpy_cart)
+        call append_particle_index('ivpz_cart',ivpz_cart)
       endif
 !
       if (lroot) then

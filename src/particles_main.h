@@ -22,3 +22,4 @@
   public :: particles_cleanup
   public :: particles_stochastic
   public :: fetch_nparloc,fetch_fp_array,return_fp_array
+  public :: append_particle_index
