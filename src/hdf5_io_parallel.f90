@@ -39,7 +39,7 @@ module HDF5_IO
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_start
-  logical :: lcollective, lwrite
+  logical :: lcollective = .false., lwrite = .false.
 !
   type element
     character(len=labellen) :: label
@@ -136,6 +136,8 @@ module HDF5_IO
       logical :: ltrunc, lread_only
       integer :: h5_read_mode
 !
+      if (lcollective .or. lwrite) call file_close_hdf5 ()
+!
       lread_only = .false.
       if (present (read_only)) lread_only = read_only
       h5_read_mode = H5F_ACC_RDWR_F
@@ -178,10 +180,13 @@ module HDF5_IO
 !***********************************************************************
     subroutine file_close_hdf5
 !
-      if (lcollective .or. lwrite) then
-        call h5fclose_f (h5_file, h5_err)
-        if (h5_err /= 0) call fatal_error ('file_close_hdf5', 'close file', .true.)
-      endif
+      if (.not. (lcollective .or. lwrite)) return
+!
+      call h5fclose_f (h5_file, h5_err)
+      if (h5_err /= 0) call fatal_error ('file_close_hdf5', 'close file', .true.)
+!
+      lcollective = .false.
+      lwrite = .false.
 !
     endsubroutine file_close_hdf5
 !***********************************************************************
