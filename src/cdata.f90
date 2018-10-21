@@ -506,8 +506,8 @@ module Cdata
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
-  character (LEN=40) :: xy_spec=''
-  character (LEN=10), dimension(n_xy_specs_max) :: xy_specs=''
+  character (LEN=labellen*4) :: xy_spec=''
+  character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: sp_spec=.false.
@@ -541,7 +541,7 @@ module Cdata
   real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom,2) :: bcx12='', bcy12='', bcz12=''
-  character (len=10), dimension(mfarray) :: varname
+  character (len=labellen), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
 !
 !  Parameters for freezing boundary zones.

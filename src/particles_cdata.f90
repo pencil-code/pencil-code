@@ -105,8 +105,8 @@ module Particles_cdata
   logical :: lnocollapse_zdir_onecell=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
-  character (len=10), dimension(mparray) :: pvarname
-  character(len=labellen) :: particle_mesh = ''
+  character (len=labellen), dimension(mparray) :: pvarname
+  character (len=labellen) :: particle_mesh = ''
   character (len=labellen) :: remove_particle_criteria='all'
 !
   type quant_interp_penc
