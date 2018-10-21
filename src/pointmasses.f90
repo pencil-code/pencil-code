@@ -107,7 +107,7 @@ module PointMasses
 !
 !  27-aug-06/wlad: adapted
 !
-      use Particles_main, only: append_npvar
+      use Particles_sub, only: append_npvar
 !      
       integer :: iqvar
 !

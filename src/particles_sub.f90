@@ -16,7 +16,7 @@ module Particles_sub
 !
   private
 !
-  public :: input_particles, output_particles, boundconds_particles
+  public :: input_particles, output_particles, append_npvar, boundconds_particles
   public :: sum_par_name, max_par_name, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
@@ -116,6 +116,17 @@ module Particles_sub
       close(lun_output)
 !
     endsubroutine output_particles
+!***********************************************************************
+    subroutine append_npvar(label,ilabel)
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      npvar = npvar + 1
+      ilabel = npvar
+      pvarname(ilabel) = trim(label)
+!
+    endsubroutine append_npvar
 !***********************************************************************
     subroutine boundconds_particles(fp,ipar,dfp,linsert)
 !
