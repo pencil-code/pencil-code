@@ -41,7 +41,7 @@ module Energy
   real, dimension (ninit) :: ampl_lnTT=0.0
   real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
-  real :: chi=impossible
+  real :: chi=impossible, chi_jump=1., chi_z0=0.0, chi_zwidth=0.0
   real :: zbot=0.0, ztop=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
@@ -66,7 +66,7 @@ module Energy
   logical :: lheatc_tensordiffusion=.false., lheatc_hyper3_mesh=.false.
   logical :: lheatc_chiconst=.false., lheatc_chiconst_accurate=.false.
   logical :: lfreeze_lnTTint=.false., lfreeze_lnTText=.false.
-  logical :: lhcond_global=.false.
+  logical :: lhcond_global=.false., lheatc_chicubicstep=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
   logical :: lheatc_Ktherm=.false.
   logical :: lviscosity_heat=.true.
@@ -112,7 +112,7 @@ module Energy
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
       temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width, &
-      gradTT0, w_sldchar_ene
+      gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -334,6 +334,7 @@ module Energy
       lheatc_Karctan= .false.
       lheatc_tensordiffusion=.false.
       lheatc_chiconst = .false.
+      lheatc_chicubicstep = .false.
 !
 !  Initialize thermal diffusion.
 !
@@ -373,6 +374,10 @@ module Energy
           lheatc_chiconst=.true.
           if (lroot) call information('initialize_energy', &
               ' heat conduction: constant chi')
+        case ('chi-cubicstep')
+          lheatc_chicubicstep=.true.
+          if (lroot) call information('initialize_energy', &
+              ' heat conduction: cubic step profile of chi')
         case('K-therm')
           lheatc_Ktherm=.true.
           if (lroot) call information('initialize_energy', &
@@ -498,6 +503,9 @@ module Energy
         call warning('initialize_energy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. chi==0.0) then
+        call warning('initialize_energy','chi is zero!')
+      endif
+      if (lheatc_chicubicstep .and. chi==0.0) then
         call warning('initialize_energy','chi is zero!')
       endif
       if (lrun) then
@@ -808,7 +816,7 @@ module Energy
         endif
       endif
 !
-      if (lheatc_chiconst) then
+      if (lheatc_chiconst.or.lheatc_chicubicstep) then
         if (ltemperature_nolog) then
           lpenc_requested(i_del2TT)=.true.
           lpenc_requested(i_gTT)=.true.
@@ -1200,6 +1208,7 @@ module Energy
 !
       diffus_chi=0.; diffus_chi3=0.
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+      if (lheatc_chicubicstep) call calc_heatcond_cubicstepchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
@@ -1778,6 +1787,61 @@ module Energy
       endif
 !
     endsubroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine calc_heatcond_cubicstepchi(df,p)
+!
+!  Calculate the radiative diffusion term for chi with cubic step profile:
+!
+!  lnTT version: cp*chi*Div(rho*TT*glnTT)/(rho*cv*TT)
+!           = gamma*[chi*((glnrho+glnTT).glnTT+g2lnTT) + glnTT.gradchi]
+!
+!    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
+!           = gamma*[chi*(glnrho.gTT+g2TT) + gT.gradchi]
+!
+!  21-oct-18/joern: adapted from calc_heatcond_constchi
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot, cubic_step, cubic_der_step
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: g2, chi_z, gradchi_z
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+      if (chi_zwidth == 0.) chi_zwidth = 5.*dz
+      chi_z= chi + chi*(chi_jump-1.)*cubic_step(p%z_mn,chi_z0,-chi_zwidth)
+!
+      gradchi_z=chi*(chi_jump-1.)*cubic_der_step(p%z_mn,chi_z0,-chi_zwidth)
+!
+      if (ltemperature_nolog) then
+        call dot(p%glnrho,p%gTT,g2)
+        g2=g2+p%del2TT
+      else
+        call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+        g2=g2+p%del2lnTT
+      endif
+!
+!  Add heat conduction to RHS of temperature equation.
+!
+      if (ltemperature_nolog) then
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + gamma*(chi_z*g2 + gradchi_z*p%gTT(:,3))
+      else
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*(chi_z*g2 + gradchi_z*p%glnTT(:,3))
+      endif
+!
+!  Check maximum diffusion from thermal diffusion.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi_z*dxyz_2
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_cubicstepchi
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
