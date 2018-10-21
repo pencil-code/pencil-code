@@ -86,8 +86,7 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.,lforcing_cont_uutest=.false.
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
-       lremove_mean_flow_NLTFM_zero, &
-       lremove_mean_flow_NLTFM_all, &
+       lremove_mean_flow_NLTFM_zero, lremove_mean_flow_NLTFM_all, &
        Btest_ext, zextent, lsoca, lsoca_jxb, &
        lugu, itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
