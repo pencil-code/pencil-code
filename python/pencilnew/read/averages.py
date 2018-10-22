@@ -206,7 +206,10 @@ class Averages(object):
                 pnu = proc_dim.nx
                 pnv = proc_dim.ny
             proc_data = np.array(proc_data)
-            proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
+            proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu]
+
+            if allprocs:
+                return np.array(t), proc_data.swapaxes(proc_data,2,3)
 
             # Add the proc_data (one proc) to the raw_data (all procs)
             if plane == 'y':
