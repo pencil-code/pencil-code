@@ -31,6 +31,7 @@ NSCBC              = noNSCBC
 POWER              = nopower_spectrum
 SOLID_CELLS        = nosolid_cells
 SOLID_CELLS_MPICOMM= nosolid_cells_mpicomm
+SOLID_CELLS_OGRID_SUB= nosolid_cells_ogrid_sub
 SLICES             =   slices
 SLICES_METHODS     =   slices_methods
 SIGNAL_HANDLING    = nosignal_handling
@@ -248,6 +249,7 @@ endif
 # Set up MPI-communication if overlapping grids are used with solid_cells
 #
 ifeq ($(SOLID_CELLS),solid_cells_ogrid)
+  SOLID_CELLS_OGRID_SUB=solid_cells_ogrid_sub	
   ifeq ($(MPICOMM),mpicomm)
     SOLID_CELLS_MPICOMM= solid_cells_ogrid_mpicomm
   endif
@@ -766,6 +768,9 @@ SOLID_CELLS_SRC=$(SOLID_CELLS).f90
 #
 SOLID_CELLS_MPICOMM_OBJ=$(SOLID_CELLS_MPICOMM).o
 SOLID_CELLS_MPICOMM_SRC=$(SOLID_CELLS_MPICOMM).f90
+#
+SOLID_CELLS_OGRID_SUB_OBJ=$(SOLID_CELLS_OGRID_SUB).o
+SOLID_CELLS_OGRID_SUB_SRC=$(SOLID_CELLS_OGRID_SUB).f90
 #
 SPECIAL_OBJ=$(SPECIAL).o
 SPECIAL_SRC=$(SPECIAL).f90
