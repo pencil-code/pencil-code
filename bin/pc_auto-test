@@ -82,11 +82,11 @@ my %tests = (
                          2d-tests/selfgravitating-shearwave
                          2d-tests/shearwave-dust-par
                          0d-tests/heating_ionize
-#                         dust-vortex
                          damped_alfven_waves
                          2d-tests/streaming_instability
-#                         helical-MHDturb
                      )],
+#                         dust-vortex
+#                         helical-MHDturb
              2 => [qw(
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
