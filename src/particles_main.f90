@@ -77,6 +77,7 @@ module Particles_main
 !
 !  Print summary of variable names.
 !
+      ! [PAB]: We now have a "particle_index.pro"; can we remove the "pvarname.dat" file?
       if (lroot) then
         open(3,file=trim(datadir)//'/pvarname.dat',status='replace')
         do ipvar=1,mparray
