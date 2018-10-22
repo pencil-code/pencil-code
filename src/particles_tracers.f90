@@ -10,8 +10,8 @@
 ! CPARAM character (len=20), parameter :: particles_module="tracer"
 !
 ! MAUX CONTRIBUTION 2
-! MPVAR CONTRIBUTION 6
-! MPAUX CONTRIBUTION 0
+! MPVAR CONTRIBUTION 3
+! MPAUX CONTRIBUTION 3
 !
 ! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3); peh
 !
@@ -83,9 +83,9 @@ module Particles
 !
 !  Indices for particle velocity.
 !
-      call append_npvar('ivpx',ivpx)
-      call append_npvar('ivpy',ivpy)
-      call append_npvar('ivpz',ivpz)
+      call append_npaux('ivpx',ivpx)
+      call append_npaux('ivpy',ivpy)
+      call append_npaux('ivpz',ivpz)
 !
 !  Set indices for auxiliary variables.
 !
