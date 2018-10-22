@@ -4,13 +4,22 @@ module solid_cells_ogrid_sub
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
+  use solid_cells_ogrid_cdata
 !
   implicit none
 
 private
 
-public :: grad_ogrid, grad_other_ogrid, del2_ogrid
+public :: grad_ogrid, grad_other_ogrid, del2_ogrid, g2ij_ogrid, dot2_mn_ogrid
+public :: gij_ogrid, div_mn_ogrid, traceless_strain_ogrid, multm2_sym_mn_ogrid
+public :: curl_mn_ogrid, dot_mn_ogrid, dot2_0_ogrid, u_dot_grad_vec_ogrid
+public :: u_dot_grad_scl_ogrid, doupwind_ogrid, multmv_mn_ogrid
+public :: gij_etc_ogrid, der_ogrid, der_other_ogrid, der2_ogrid
+public :: derij_ogrid, der6_ogrid, deri_3d_inds_ogrid
+public :: bval_from_neumann_arr_ogrid, bval_from_neumann_SBP
+public :: bval_from_neumann_bdry5, set_ghosts_onesided_ogrid
 
+  contains
 
 !***********************************************************************
     subroutine grad_ogrid(f,k,g)
