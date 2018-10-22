@@ -904,12 +904,6 @@ module Particles
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        call farray_index_append('ixp', ixp)
-        call farray_index_append('iyp', iyp)
-        call farray_index_append('izp', izp)
-        call farray_index_append('ivpx', ivpx)
-        call farray_index_append('ivpy', ivpy)
-        call farray_index_append('ivpz', ivpz)
         call farray_index_append('inp', inp)
         call farray_index_append('irhop', irhop)
       endif
@@ -948,16 +942,16 @@ module Particles
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',          idiag_rhopmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',          idiag_epspmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
       enddo
 !
 !  check for those quantities for which we want z-averages
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',          idiag_rhopmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',          idiag_epspmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
       enddo
 !
     endsubroutine rprint_particles
