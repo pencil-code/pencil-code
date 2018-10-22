@@ -149,7 +149,6 @@ module Dustvelocity
 !
       if (ndustspec >= 1) then
         call farray_index_append('nuud',ndustspec)
-        call farray_index_append('iuud',iuud(1),3,ndustspec)
       endif
 !
 !  Identify version number (generated automatically by SVN).
