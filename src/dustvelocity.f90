@@ -135,15 +135,10 @@ module Dustvelocity
       integer :: k, uud_tmp
       character(len=intlen) :: sdust
 !
-      do k=1,ndustspec
-        sdust='['//trim(itoa(k-1))//']'
-        if (ndustspec==1) sdust=''
-        call farray_register_pde('uud'//sdust,uud_tmp,vector=3)
-        iuud(k) = uud_tmp
-        iudx(k) = iuud(k)
-        iudy(k) = iuud(k)+1
-        iudz(k) = iuud(k)+2
-      enddo
+!  Identify version number (generated automatically by SVN).
+!
+      if (lroot) call svn_id( &
+          "$Id$")
 !
 !  Write dust index in short notation
 !
@@ -151,11 +146,15 @@ module Dustvelocity
         call farray_index_append('nuud',ndustspec)
       endif
 !
-!  Identify version number (generated automatically by SVN).
-!
-      if (lroot) call svn_id( &
-          "$Id$")
-!
+      do k=1,ndustspec
+        sdust = ''
+        if (ndustspec > 1) sdust = itoa(k-1)
+        call farray_register_pde('uud'//trim(sdust),uud_tmp,vector=3)
+        iuud(k) = uud_tmp
+        iudx(k) = iuud(k)
+        iudy(k) = iuud(k)+1
+        iudz(k) = iuud(k)+2
+      enddo
 !
 !  Writing files for use with IDL.
 !
@@ -1705,30 +1704,13 @@ module Dustvelocity
 !   3-may-02/axel: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
       use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamexy, k
-      logical :: lwr
       character (len=intlen) :: sdust
-!
-!  Write information to index.pro that should not be repeated for i.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        if (ndustspec >= 1) then
-          call farray_index_append('ndustspec',ndustspec)
-          call farray_index_append('iuud',iuud(1),3,ndustspec)
-          call farray_index_append('iudx',iudx(1),3,ndustspec)
-          call farray_index_append('iudy',iudy(1),3,ndustspec)
-          call farray_index_append('iudz',iudz(1),3,ndustspec)
-        endif
-      endif
 !
 !  Reset everything in case of reset.
 !
