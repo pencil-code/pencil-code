@@ -15,7 +15,8 @@ module HDF5_IO
 !
   interface output_hdf5
     module procedure output_hdf5_string
-    module procedure output_hdf5_int
+    module procedure output_hdf5_int_0D
+    module procedure output_hdf5_int_1D
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
     module procedure output_hdf5_3D
@@ -23,6 +24,8 @@ module HDF5_IO
   endinterface
 !
   interface input_hdf5
+    module procedure input_hdf5_int_0D
+    module procedure input_hdf5_int_1D
     module procedure input_hdf5_0D
     module procedure input_hdf5_1D
     module procedure input_hdf5_3D
@@ -202,6 +205,44 @@ module HDF5_IO
       if (h5_err /= 0) call fatal_error ('create_group_hdf5', 'close group "'//trim (name)//'"', .true.)
 !
     endsubroutine create_group_hdf5
+!***********************************************************************
+    subroutine input_hdf5_int_0D(name, data)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(out) :: data
+!
+      integer, dimension(1) :: read
+!
+      call input_hdf5_int_1D (name, read, 1)
+      data = read(1)
+!
+    endsubroutine input_hdf5_int_0D
+!***********************************************************************
+    subroutine input_hdf5_int_1D(name, data, nv)
+!
+!  Read HDF5 dataset as scalar or array.
+!
+!  05-Jun-2017/Fred: coded based on input_hdf5_1D
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      integer, dimension (nv), intent(out) :: data
+!
+      integer(HSIZE_T), dimension(1) :: size
+!
+      size = (/ nv /)
+!
+      ! open dataset
+      call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+      ! read dataset
+      call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, size, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'read data "'//trim (name)//'"', .true.)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//trim (name)//'"', .true.)
+!
+    endsubroutine input_hdf5_int_1D
 !***********************************************************************
     subroutine input_hdf5_0D(name, data)
 !
