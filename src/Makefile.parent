@@ -112,6 +112,13 @@ pc_h5collect:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ experimental/pc_h5collect.x )
 
+# This should be triggered automatically, only if "pencil-code/src/Makefile.src" has changed, but is currently inactive:
+setupsrc_inc: $(PENCIL_HOME)/src/Makefile.src
+	pc_setupsrc
+
+# Manually trigger "pc_setupsrc"
+setup: setupsrc_inc
+
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.
 # Don't know whether .PHONY declaration is portable, so we just slightly
