@@ -961,9 +961,9 @@ module HDF5_IO
       new%label = trim(varname)
       new%component = ivar
       if (loptest (particle)) then
-        last => new
-      else
         last_particle => new
+      else
+        last => new
       endif
 !
     endsubroutine index_register
