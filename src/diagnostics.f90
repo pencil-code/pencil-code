@@ -278,7 +278,7 @@ module Diagnostics
           lfirst_call_time_series = .false.
         endif
         write(lun,'(a)') trim(line)
-        flush(lun)
+        !flush(lun)               ! this is a F2003 feature...
         close(lun)
 !
 !  Write to stdout.
