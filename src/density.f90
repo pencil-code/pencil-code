@@ -2492,6 +2492,81 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
+!  Shock diffusion
+!
+      if (ldiff_shock) then
+        if (ldensity_nolog) then
+          call dot_mn(p%gshock,p%grho,tmp)
+          fdiff = fdiff + diffrho_shock * (p%shock * p%del2rho + tmp)
+        else
+          if (ldiffusion_nolog) then
+            call dot_mn(p%gshock,p%grho,tmp)
+            fdiff = fdiff + p%rho1 * diffrho_shock * (p%shock * p%del2rho + tmp)
+          else
+            call dot_mn(p%gshock,p%glnrho,tmp)
+            fdiff = fdiff + diffrho_shock * (p%shock * (p%del2lnrho + p%glnrho2) + tmp)
+!
+!  Counteract the shock diffusion of the mean stratification. Must set
+!  lwrite_stratification=T in start.in for this to work.
+!
+            if (lanti_shockdiffusion) then
+              fdiff = fdiff - diffrho_shock * ( &
+                      p%shock*(del2lnrho_glnrho2_init_z(n) + &
+                      2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
+                      p%gshock(:,3)*dlnrhodz_init_z(n) )
+            endif
+          endif
+        endif
+        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
+        if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
+      endif
+
+      if (ldensity_slope_limited.and.lfirst) then
+        fdiff=fdiff-f(l1:l2,m,n,iFF_div_rho)
+        if (ldt) then
+          chi_sld=abs(f(l1:l2,m,n,iFF_div_rho))/dxyz_2
+          !!!diffus_diffrho=diffus_diffrho+chi_sld
+        endif
+      endif
+!
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_density(f,df,p)
+!
+!  Add diffusion term to continuity equation
+!
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
+      else
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+      endif
+!
+!  Improve energy and momentum conservation by compensating for mass diffusion
+!
+      if (lmassdiff_fix) then
+        if (ldensity_nolog) then
+          tmp = fdiff*p%rho1
+        else
+          tmp = fdiff
+        endif
+
+        if (lhydro) then
+          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+        endif
+
+        if (lentropy.and.(.not.pretend_lnTT)) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
+        elseif (lentropy.and.pretend_lnTT) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+        elseif (ltemperature.and.(.not. ltemperature_nolog)) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+        elseif (ltemperature.and.ltemperature_nolog) then
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
+        elseif (lthermal_energy) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
+        endif
+      endif
+!
 !  Hyper diffusion.
 !
       if (ldiff_hyper3.or.ldiff_hyper3_strict) then
@@ -2588,81 +2663,6 @@ module Density
         endif
         if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
-      endif
-!
-!  Shock diffusion
-!
-      if (ldiff_shock) then
-        if (ldensity_nolog) then
-          call dot_mn(p%gshock,p%grho,tmp)
-          fdiff = fdiff + diffrho_shock * (p%shock * p%del2rho + tmp)
-        else
-          if (ldiffusion_nolog) then
-            call dot_mn(p%gshock,p%grho,tmp)
-            fdiff = fdiff + p%rho1 * diffrho_shock * (p%shock * p%del2rho + tmp)
-          else
-            call dot_mn(p%gshock,p%glnrho,tmp)
-            fdiff = fdiff + diffrho_shock * (p%shock * (p%del2lnrho + p%glnrho2) + tmp)
-!
-!  Counteract the shock diffusion of the mean stratification. Must set
-!  lwrite_stratification=T in start.in for this to work.
-!
-            if (lanti_shockdiffusion) then
-              fdiff = fdiff - diffrho_shock * ( &
-                      p%shock*(del2lnrho_glnrho2_init_z(n) + &
-                      2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
-                      p%gshock(:,3)*dlnrhodz_init_z(n) )
-            endif
-          endif
-        endif
-        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
-        if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
-      endif
-
-      if (ldensity_slope_limited.and.lfirst) then
-        fdiff=fdiff-f(l1:l2,m,n,iFF_div_rho)
-        if (ldt) then
-          chi_sld=abs(f(l1:l2,m,n,iFF_div_rho))/dxyz_2
-          !!!diffus_diffrho=diffus_diffrho+chi_sld
-        endif
-      endif
-!
-!  Interface for your personal subroutines calls
-!
-      if (lspecial) call special_calc_density(f,df,p)
-!
-!  Add diffusion term to continuity equation
-!
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
-      else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
-      endif
-!
-!  Improve energy and momentum conservation by compensating for mass diffusion
-!
-      if (lmassdiff_fix) then
-        if (ldensity_nolog) then
-          tmp = fdiff*p%rho1
-        else
-          tmp = fdiff
-        endif
-
-        if (lhydro) then
-          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
-        endif
-
-        if (lentropy.and.(.not.pretend_lnTT)) then
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
-        elseif (lentropy.and.pretend_lnTT) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.(.not. ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.ltemperature_nolog) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
-        elseif (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
-        endif
       endif
 !
 !  Multiply diffusion coefficient by Nyquist scale.
