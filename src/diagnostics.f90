@@ -278,6 +278,7 @@ module Diagnostics
           lfirst_call_time_series = .false.
         endif
         write(lun,'(a)') trim(line)
+        flush(lun)
         close(lun)
 !
 !  Write to stdout.
