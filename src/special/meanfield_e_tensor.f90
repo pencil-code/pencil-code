@@ -101,12 +101,12 @@ module Special
 
   ! Dataset logical variables
 
-  logical, dimension(3,3)   :: lalpha_arr, lbeta_arr, lacoef_arr
-  logical, dimension(3)     :: lgamma_arr, ldelta_arr, lutensor_arr
-  logical, dimension(3,3,3) :: lkappa_arr, lbcoef_arr
-  logical, dimension(6)     :: lalpha_c, lbeta_c, lacoef_c
-  logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
-  logical, dimension(3,3,3) :: lkappa_c, lbcoef_c
+  logical, dimension(3,3)  :: lalpha_arr, lbeta_arr, lacoef_arr
+  logical, dimension(3)    :: lgamma_arr, ldelta_arr, lutensor_arr
+  logical, dimension(3,3,3):: lkappa_arr, lbcoef_arr
+  logical, dimension(6)    :: lalpha_c, lbeta_c, lacoef_c
+  logical, dimension(3)    :: lgamma_c, ldelta_c, lutensor_c
+  logical, dimension(3,6)  :: lkappa_c, lbcoef_c
   logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef, lusecoefs 
   logical :: lread_datasets=.true., lread_time_series=.false., lloop=.false.
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, acoef_scale, bcoef_scale
@@ -628,13 +628,15 @@ endif
 !
 !  24-nov-04/tony: coded
 !
+      use General, only: notanumber
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 !
-      integer i,j,k
+      integer :: i,j,k, ind(1)
 !
       call keep_compiler_quiet(f)
 !
@@ -693,18 +695,32 @@ endif
         call cross_mn(p%delta_coefs,p%jj,p%delta_emf)
         p%emf = p%emf - p%delta_emf
       end if
-!
+
+if (.false.) then
+!if (any(sum(sum(p%bij_symm**2,3),2)/sum(p%jj**2,2)>1e5 .and. sum(p%jj**2,2)>1e-4)) then
+  print*, 'big b_ij, m=',m 
+  ind=maxloc(sum(sum(p%bij_symm**2,3),2)/sum(p%jj**2,2))
+  print*, 'maxind=', ind, maxval(sum(sum(p%bij_symm**2,3),2)), sum(p%jj(ind,:)**2)
+  print*, 'bij=', p%bij_symm(ind,:,:)
+endif
       if (lkappa) then
         ! Calculate kappa (grad B)_symm
         do j=1,3; do i=1,3
           p%bij_symm(:,i,j)=0.5*(p%bij(:,i,j) + p%bij(:,j,i))
         end do; end do
+
         do k=1,3; do j=1,3; do i=1,3
-          p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+          if (lkappa_arr(i,j,k)) then
+            p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+          else
+            p%kappa_coefs(:,i,j,k)=0
+          endif
         end do; end do; end do
+
         p%kappa_emf = 0
         do k=1,3; do j=1,3; do i=1,3
-          p%kappa_emf(:,i)=p%kappa_emf(:,i)+p%kappa_coefs(:,i,j,k)*p%bij_symm(:,j,k)
+          if (lkappa_arr(i,j,k)) &
+            p%kappa_emf(:,i)=p%kappa_emf(:,i)+p%kappa_coefs(:,i,j,k)*p%bij_symm(:,j,k)
         end do; end do; end do
         p%emf = p%emf - p%kappa_emf
       end if
@@ -737,11 +753,17 @@ endif
       if (lbcoef) then
         ! Calculate bcoef (grad B)
         do k=1,3; do j=1,3; do i=1,3
-          p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+          if (lbcoef_arr(i,j,k)) then
+            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+          else
+            p%bcoef_coefs(:,i,j,k)=0
+          end if
         end do; end do; end do
+
         p%bcoef_emf = 0
         do k=1,3; do j=1,3; do i=1,3
-          p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bij(:,j,k)
+          if (lbcoef_arr(i,j,k)) &
+            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bij(:,j,k)
         end do; end do; end do
       end if
 !
@@ -1581,6 +1603,8 @@ print*, 'hdferr=', hdferr
     end subroutine setParameterDefaults
 !***********************************************************************
     subroutine parseParameters
+ 
+    integer :: i
 !
 ! Load boolean array for alpha
 !
@@ -1635,43 +1659,71 @@ print*, 'hdferr=', hdferr
       end if
 !
 ! Load boolean array for kappa
-! TODO: implement kappa components
 !
-      if (lkappa) then
+      if (any(lkappa_c)) then
+        lkappa = .true.
+        do i=1,3
+          lkappa_arr(i,1,1) = lkappa_c(i,1)
+          lkappa_arr(i,2,1) = lkappa_c(i,2)
+          lkappa_arr(i,1,2) = lkappa_c(i,2)
+          lkappa_arr(i,3,1) = lkappa_c(i,3)
+          lkappa_arr(i,1,3) = lkappa_c(i,3)
+          lkappa_arr(i,2,2) = lkappa_c(i,4)
+          lkappa_arr(i,2,3) = lkappa_c(i,5)
+          lkappa_arr(i,3,2) = lkappa_c(i,5)
+          lkappa_arr(i,3,3) = lkappa_c(i,6)
+        enddo
+      elseif (lkappa) then
         lkappa_arr = .true.
-      else
-        lkappa_arr = .false.
       end if
 !
 ! Load boolean array for acoef
-! TODO: implement acoef components
 !
-      if (lacoef) then
-        lacoef_arr = .true.
+      if (any(lacoef_c)) then
+        lacoef=.true.
+        lacoef_arr(1,1) = lacoef_c(1)
+        lacoef_arr(2,1) = lacoef_c(2)
+        lacoef_arr(1,2) = lacoef_c(2)
+        lacoef_arr(3,1) = lacoef_c(3)
+        lacoef_arr(1,3) = lacoef_c(3)
+        lacoef_arr(2,2) = lacoef_c(4)
+        lacoef_arr(2,3) = lacoef_c(5)
+        lacoef_arr(3,2) = lacoef_c(5)
+        lacoef_arr(3,3) = lacoef_c(6)
         if (any([lalpha,lgamma])) then
           if (lroot) call warning('initialize_special', &
             'lacoef=T overrides settings of lalpha and lgamma')     
+          lalpha=.false.; lgamma=.false.
+          lalpha_arr = .false.; lgamma_arr = .false.
         endif
-        lalpha=.false.; lgamma=.false.
-        lalpha_arr = .false.; lgamma_arr = .false.
-      else
-        lacoef_arr = .false.
+      elseif (lacoef) then
+        lacoef_arr = .true.
       end if
 !
 ! Load boolean array for bcoef
-! TODO: implement bcoef components
 !
-      if (lbcoef) then
-        lbcoef_arr = .true.
+      if (any(lbcoef_c)) then
+        lbcoef = .true.
+        do i=1,3
+          lbcoef_arr(i,1,1) = lbcoef_c(i,1)
+          lbcoef_arr(i,2,1) = lbcoef_c(i,2)
+          lbcoef_arr(i,1,2) = lbcoef_c(i,2)
+          lbcoef_arr(i,3,1) = lbcoef_c(i,3)
+          lbcoef_arr(i,1,3) = lbcoef_c(i,3)
+          lbcoef_arr(i,2,2) = lbcoef_c(i,4)
+          lbcoef_arr(i,2,3) = lbcoef_c(i,5)
+          lbcoef_arr(i,3,2) = lbcoef_c(i,5)
+          lbcoef_arr(i,3,3) = lbcoef_c(i,6)
+        enddo
         if (any([lbeta,ldelta,lkappa])) then
           if (lroot) call warning('initialize_special', &
             'lbcoef=T overrides settings of lbeta,ldelta,lkappa')     
+          lbeta=.false.; lbeta_arr = .false.
+          ldelta=.false.; ldelta_arr = .false.
+          lkappa=.false.; lkappa_arr = .false.
         endif
-        lbeta=.false.; lbeta_arr = .false.
-        ldelta=.false.; ldelta_arr = .false.
-        lkappa=.false.; lkappa_arr = .false.
-      else
-        lbcoef_arr = .false.
+      elseif (lbcoef) then
+        lbcoef_arr = .true.
       end if
 !
 ! Load boolean array for utensor
