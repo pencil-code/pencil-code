@@ -17,7 +17,7 @@ module HDF5_IO
   interface output_hdf5
     module procedure output_hdf5_string
     module procedure output_hdf5_int_0D
-!    module procedure output_hdf5_int_1D
+    module procedure output_hdf5_int_1D
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
     module procedure output_hdf5_3D
@@ -446,18 +446,6 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_string
 !***********************************************************************
-    subroutine output_local_hdf5_int_0D(name, data)
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: data
-!
-      integer, dimension(1) :: output
-!
-      output = data
-      call output_local_hdf5_int_1D(name, output, 1)
-!
-    endsubroutine output_local_hdf5_int_0D
-!***********************************************************************
     subroutine output_local_hdf5_int_1D(name, data, nv)
 !
       character (len=*), intent(in) :: name
@@ -465,6 +453,8 @@ module HDF5_IO
       integer, dimension(nv), intent(in) :: data
 !
       integer(kind=8), dimension(1) :: size
+!
+      if (.not. lwrite) return
 !
       size = (/ nv /)
 !
@@ -487,25 +477,60 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
 !
+!  Write HDF5 dataset as scalar from one or all processor.
+!
+!  22-Oct-2018/PABourdin: coded
+!
       character (len=*), intent(in) :: name
       integer, intent(in) :: data
 !
-      integer(kind=8), dimension(1) :: size = (/ 1 /)
+      integer, dimension(1) :: output = (/ 1 /)
 !
+      output = data
+      call output_hdf5_int_1D(name, output, 1, .true.)
+!
+    endsubroutine output_hdf5_int_0D
+!***********************************************************************
+    subroutine output_hdf5_int_1D(name, data, nv, same_size)
+!
+!  Write HDF5 dataset as array from one or all processors.
+!
+!  24-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      integer, dimension (nv), intent(in) :: data
+      logical, optional, intent(in) :: same_size
+!
+      logical :: lsame_size
+      integer :: total, offset, last
       integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
       integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
       integer(kind=8), dimension (1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
-        call output_local_hdf5_int_0D(name, data)
+        call output_local_hdf5_int_1D(name, data, nv)
         return
       endif
 !
+      lsame_size = .false.
+      if (present (same_size)) lsame_size = same_size
+      if (lsame_size) then
+        last = nv * (iproc + 1) - 1
+        total = nv * ncpus
+        offset = nv * iproc
+      else
+        call mpiscan_int(nv, offset)
+        last = offset - 1
+        total = offset
+        offset = offset - nv
+        call mpibcast_int(total, ncpus-1)
+      endif
       local_start_1D = 0
-      local_size_1D = 1
-      local_subsize_1D = 1
-      global_size_1D = ncpus
-      global_start_1D = iproc
+      local_size_1D = nv
+      local_subsize_1D = nv
+      global_size_1D = total
+      global_start_1D = offset
 !
       ! define 'file-space' to indicate the data portion in the global file
       call h5screate_simple_f (1, global_size_1D, h5_fspace, h5_err)
@@ -554,7 +579,7 @@ module HDF5_IO
       call h5pclose_f (h5_plist, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
 !
-    endsubroutine output_hdf5_int_0D
+    endsubroutine output_hdf5_int_1D
 !***********************************************************************
     subroutine output_hdf5_0D(name, data)
 !
