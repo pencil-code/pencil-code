@@ -6,7 +6,7 @@
 module HDF5_IO
 !
   use Cdata
-  use Cparam, only: mvar, maux, labellen
+  use Cparam, only: mvar, maux, labellen, mparray
   use General, only: loptest, itoa
   use HDF5
   use Messages, only: fatal_error
@@ -20,6 +20,7 @@ module HDF5_IO
     module procedure output_hdf5_int_1D
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
+    module procedure output_hdf5_part_2D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
   endinterface
@@ -724,6 +725,30 @@ module HDF5_IO
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
 !
     endsubroutine output_hdf5_1D
+!***********************************************************************
+    subroutine output_hdf5_part_2D(name, data, mv, nv)
+!
+!  Write HDF5 dataset from a distributed particle array.
+!
+!  22-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: mv, nv
+      real, dimension (mv,mparray), intent(in) :: data
+!
+      integer :: pos
+!
+      if (.not. lcollective) call fatal_error ('output_hdf5', 'particle output requires a global file "'//trim (name)//'"', .true.)
+!
+      if (name == 'fp') then
+        ! write components of fp-array
+        call create_group_hdf5 ('part')
+        do pos=1, mparray
+          call output_hdf5_1D ('part/'//index_get(pos, particle=.true.), data(1:nv,pos), nv)
+        enddo
+      endif
+!
+    endsubroutine output_hdf5_part_2D
 !***********************************************************************
     subroutine output_hdf5_3D(name, data)
 !
