@@ -7,6 +7,7 @@ module HDF5_IO
 !
   use Cdata
   use Cparam, only: mvar, maux, labellen
+  use General, only: loptest, itoa
   use HDF5
   use Messages, only: fatal_error
   use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
@@ -16,7 +17,7 @@ module HDF5_IO
   interface output_hdf5
     module procedure output_hdf5_string
     module procedure output_hdf5_int_0D
-    module procedure output_hdf5_int_1D
+!    module procedure output_hdf5_int_1D
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
     module procedure output_hdf5_3D
@@ -49,7 +50,7 @@ module HDF5_IO
     integer :: component
     type (element), pointer :: previous
   endtype element
-  type (element), pointer :: last => null()
+  type (element), pointer :: last => null(), last_particle => null()
 !
   contains
 !***********************************************************************
@@ -249,10 +250,10 @@ module HDF5_IO
       character (len=*), intent(in) :: name
       real, intent(out) :: data
 !
-      real, dimension(1) :: read
+      real, dimension(1) :: input
 !
-      call input_hdf5_1D (name, read, 1)
-      data = read(1)
+      call input_hdf5_1D (name, input, 1)
+      data = input(1)
 !
     endsubroutine input_hdf5_0D
 !***********************************************************************
@@ -445,17 +446,30 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_string
 !***********************************************************************
-    subroutine output_local_hdf5_int(name, data)
+    subroutine output_local_hdf5_int_0D(name, data)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: data
 !
-      integer(kind=8), dimension(1) :: size = (/ 1 /)
+      integer, dimension(1) :: output
 !
-      if (.not. (lcollective .or. lwrite)) return
+      output = data
+      call output_local_hdf5_int_1D(name, output, 1)
+!
+    endsubroutine output_local_hdf5_int_0D
+!***********************************************************************
+    subroutine output_local_hdf5_int_1D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      integer, dimension(nv), intent(in) :: data
+!
+      integer(kind=8), dimension(1) :: size
+!
+      size = (/ nv /)
 !
       ! create data space
-      call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
+      call h5screate_simple_f (1, size, h5_dspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer data space "'//trim (name)//'"', .true.)
       ! create dataset
       call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err)
@@ -469,9 +483,9 @@ module HDF5_IO
       call h5sclose_f (h5_dspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close integer data space "'//trim (name)//'"', .true.)
 !
-    endsubroutine output_local_hdf5_int
+    endsubroutine output_local_hdf5_int_1D
 !***********************************************************************
-    subroutine output_hdf5_int(name, data)
+    subroutine output_hdf5_int_0D(name, data)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: data
@@ -483,7 +497,7 @@ module HDF5_IO
       integer(kind=8), dimension (1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
-        call output_local_hdf5_int(name, data)
+        call output_local_hdf5_int_0D(name, data)
         return
       endif
 !
@@ -540,7 +554,7 @@ module HDF5_IO
       call h5pclose_f (h5_plist, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
 !
-    endsubroutine output_hdf5_int
+    endsubroutine output_hdf5_int_0D
 !***********************************************************************
     subroutine output_hdf5_0D(name, data)
 !
@@ -849,8 +863,6 @@ module HDF5_IO
 !
 ! 14-Oct-2018/PABourdin: coded
 !
-      use General, only: itoa
-!
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, intent(in), optional :: vector
@@ -881,17 +893,35 @@ module HDF5_IO
 !
     endsubroutine index_append
 !***********************************************************************
-    function index_get(ivar)
+    subroutine particle_index_append(label,ilabel)
+!
+! 22-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: ilabel
+!
+      if (lroot) then
+        open(3,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
+        write(3,*) trim(label)//'='//trim(itoa(ilabel))
+        close(3)
+      endif
+      call index_register (trim(label), ilabel, particle=.true.)
+!
+    endsubroutine particle_index_append
+!***********************************************************************
+    function index_get(ivar,particle)
 !
 ! 17-Oct-2018/PABourdin: coded
 !
       character (len=labellen) :: index_get
       integer, intent(in) :: ivar
+      logical, optional, intent(in) :: particle
 !
       type (element), pointer, save :: current => null()
 !
       index_get = ''
       current => last
+      if (loptest (particle)) current => last_particle
       do while (associated (current))
         if (current%component == ivar) then
           index_get = current%label(2:len(current%label))
@@ -902,17 +932,20 @@ module HDF5_IO
 !
     endfunction index_get
 !***********************************************************************
-    subroutine index_register(varname,ivar)
+    subroutine index_register(varname,ivar,particle)
 !
 ! 17-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
+      logical, optional, intent(in) :: particle
 !
       type (element), pointer, save :: new => null()
 !
-      ! ignore variables that are not written
-      if ((ivar < 1) .or. (ivar > mvar+maux)) return
+      if (.not. loptest (particle)) then
+        ! ignore variables that are not written
+        if ((ivar < 1) .or. (ivar > mvar+maux)) return
+      endif
 !
       ! ignore non-index variables
       if ((varname(1:1) /= 'i') .or. (varname(2:2) == '_')) return
@@ -920,10 +953,18 @@ module HDF5_IO
       ! append this entry to an internal list of written HDF5 variables
       allocate (new)
       nullify (new%previous)
-      if (associated (last)) new%previous => last
+      if (loptest (particle)) then
+        if (associated (last_particle)) new%previous => last_particle
+      else
+        if (associated (last)) new%previous => last
+      endif
       new%label = trim(varname)
       new%component = ivar
-      last => new
+      if (loptest (particle)) then
+        last => new
+      else
+        last_particle => new
+      endif
 !
     endsubroutine index_register
 !***********************************************************************
@@ -936,11 +977,20 @@ module HDF5_IO
       if (lroot) then
         open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
         close(3)
+        open(3,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
+        close(3)
       endif
 !
       do while (associated (last))
         current => last
         last => last%previous
+        deallocate (current)
+        nullify (current)
+      enddo
+!
+      do while (associated (last_particle))
+        current => last_particle
+        last_particle => last%previous
         deallocate (current)
         nullify (current)
       enddo

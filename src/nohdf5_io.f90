@@ -6,8 +6,9 @@
 module HDF5_IO
 !
   use Cdata
+  use General, only: keep_compiler_quiet, itoa
   use Messages, only: fatal_error
-  use General, only: keep_compiler_quiet
+  use Mpicomm, only: lroot
 !
   implicit none
 !
@@ -191,9 +192,6 @@ module HDF5_IO
 !
 ! 14-oct-18/PAB: coded
 !
-      use General, only: itoa
-      use Mpicomm, only: lroot
-!
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, intent(in), optional :: vector
@@ -212,14 +210,29 @@ module HDF5_IO
 !
     endsubroutine index_append
 !***********************************************************************
+    subroutine particle_index_append(label,ilabel)
+!
+! 22-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: ilabel
+!
+      if (lroot) then
+        open(3,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
+        write(3,*) trim(label)//'='//trim(itoa(ilabel))
+        close(3)
+      endif
+!
+    endsubroutine particle_index_append
+!***********************************************************************
     subroutine index_reset()
 !
 ! 14-oct-18/PAB: coded
 !
-      use Mpicomm, only: lroot
-!
       if (lroot) then
         open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
+        close(3)
+        open(3,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
         close(3)
       endif
 !
