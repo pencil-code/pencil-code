@@ -329,7 +329,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_index_append(varname,ivar,vector,array)
 !
-! 14-oct-18/PAB: coded
+! 14-Oct-2018/PAB: coded
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
@@ -343,18 +343,19 @@ module FArrayManager
       if (.not. present (array) .and. present (vector)) then
         ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
         component = trim(varname)
-        l = len(trim(varname))
+        l = len(trim(component))
+        if (l >= 2) then
+          ! double endings: iuu, iaa, etc.
+          if (component(l:l) == component(l-1:l-1)) l = l - 1
+        endif
         if (vector >= 1) then
-          component(l:l) = 'x'
-          call index_append(trim(component),ivar)
+          call index_append(trim(component(1:l))//'x',ivar)
         endif
         if (vector >= 2) then
-          component(l:l) = 'y'
-          call index_append(trim(component),ivar+1)
+          call index_append(trim(component(1:l))//'y',ivar+1)
         endif
         if (vector >= 3) then
-          component(l:l) = 'z'
-          call index_append(trim(component),ivar+2)
+          call index_append(trim(component(1:l))//'z',ivar+2)
         endif
       endif
 !
