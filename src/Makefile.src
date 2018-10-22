@@ -2758,18 +2758,6 @@ file_io_f95.o: file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_dist.o -c file_io_dist.f90
 #
-#  Remove all build files, but keep executables (misleading name..)
-#
-run:
-	rm -f *.o *.mod *.d
-	rm -f work.pc work.pcl
-#
-#  Alternative to make run. To copy executables to parent directory. Make
-#  clean(n) could then be run on the source. (misleading name..)
-#
-install:
-	cp *.x ../
-#
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
 #  temporarily create them
