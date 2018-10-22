@@ -121,6 +121,7 @@ module Particles_sub
     subroutine append_npvar(label,ilabel)
 !
       use General, only: itoa
+      use HDF5_IO, only: particle_index_append
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: ilabel
@@ -128,6 +129,7 @@ module Particles_sub
       npvar = npvar + 1
       ilabel = npvar
       pvarname(ilabel) = trim(label)
+      call particle_index_append(label,ilabel)
 !
       if (npvar > mpvar) then
         ! fp and dfp arrays are too small
@@ -139,6 +141,7 @@ module Particles_sub
     subroutine append_npaux(label,ilabel)
 !
       use General, only: itoa
+      use HDF5_IO, only: particle_index_append
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: ilabel
@@ -146,6 +149,7 @@ module Particles_sub
       npaux = npaux + 1
       ilabel = mpvar + npaux
       pvarname(ilabel) = trim(label)
+      call particle_index_append(label,ilabel)
 !
       if (npaux > mpaux) then
         ! fp and dfp arrays are too small
