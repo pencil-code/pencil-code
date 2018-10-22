@@ -249,7 +249,7 @@ endif
 # Set up MPI-communication if overlapping grids are used with solid_cells
 #
 ifeq ($(SOLID_CELLS),solid_cells_ogrid)
-  SOLID_CELLS_OGRID_SUB=solid_cells_ogrid_sub	
+  SOLID_CELLS_OGRID_SUB=solid_cells_ogrid_sub
   ifeq ($(MPICOMM),mpicomm)
     SOLID_CELLS_MPICOMM= solid_cells_ogrid_mpicomm
   endif
