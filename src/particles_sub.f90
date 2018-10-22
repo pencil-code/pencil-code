@@ -87,6 +87,8 @@ module Particles_sub
 !
 !  29-dec-04/anders: adapted from output
 !
+      use IO, only: output_part_snap
+!
       character(len=*) :: filename
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension(mpar_loc) :: ipar
@@ -94,27 +96,10 @@ module Particles_sub
 !
       intent (in) :: filename, ipar
 !
-      t_sp = t
       if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '// &
           filename
 !
-      open(lun_output,FILE=filename,FORM='unformatted')
-!
-!  First write the number of particles present at the processor and the index
-!  numbers of the particles.
-!
-        write(lun_output) npar_loc
-        if (npar_loc/=0) write(lun_output) ipar(1:npar_loc)
-!
-!  Then write particle data.
-!
-        if (npar_loc/=0) write(lun_output) fp(1:npar_loc,:)
-!
-!  Write time and grid parameters.
-!
-        write(lun_output) t_sp, x, y, z, dx, dy, dz
-!
-      close(lun_output)
+      call output_part_snap (ipar, fp, mpar_loc, npar_loc, filename, ltruncate=.true.)
 !
     endsubroutine output_particles
 !***********************************************************************

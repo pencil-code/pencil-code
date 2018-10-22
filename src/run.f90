@@ -794,7 +794,7 @@ program run
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
     if (lparticles) &
-        call write_snapshot_particles(directory_dist,f,ENUM=.true.)
+        call write_snapshot_particles(f,ENUM=.true.)
     if (lpointmasses) &
         call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
@@ -823,7 +823,7 @@ program run
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &
-            call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+            call write_snapshot_particles(f,ENUM=.false.)
         if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
         if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
@@ -895,7 +895,7 @@ program run
   if (.not.lnowrite) then
     if (save_lastsnap) then
       if (lparticles) &
-          call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+          call write_snapshot_particles(f,ENUM=.false.)
       if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
       if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !

@@ -367,26 +367,22 @@ module Particles_main
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
-    subroutine write_snapshot_particles(snap_directory,f,enum,snapnum)
+    subroutine write_snapshot_particles(f,enum,snapnum)
 !
       use General, only: itoa
 !
-      character (len=*) :: snap_directory
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
       integer, optional :: snapnum
 !
       if (present(snapnum)) then
-        call particles_write_snapshot(trim(snap_directory)//'/PVAR'//itoa(snapnum),f, &
-            enum=.false.,FLIST='pvarN.list')
+        call particles_write_snapshot('PVAR'//itoa(snapnum),f,enum=.false.,FLIST='pvarN.list')
 !
       elseif (enum) then
-        call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
-            ENUM=.true.,FLIST='pvarN.list')
+        call particles_write_snapshot('PVAR',f,ENUM=.true.,FLIST='pvarN.list')
 !
       else
-        call particles_write_snapshot( &
-            trim(snap_directory)//'/pvar.dat',f,enum=.false.)
+        call particles_write_snapshot('pvar.dat',f,enum=.false.)
 !
       endif
 !

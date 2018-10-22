@@ -574,7 +574,7 @@ program start
 !
   if (lwrite_ic) then
     if (lparticles) &
-        call write_snapshot_particles(directory_dist,f,ENUM=.false.,snapnum=0)
+        call write_snapshot_particles(f,ENUM=.false.,snapnum=0)
 !
     call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list')
     call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR0',ENUM=.false.,FLIST='qvarN.list')
@@ -588,7 +588,7 @@ program start
   if (.not.lnowrite .and. .not.lnoerase) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
-        call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+        call write_snapshot_particles(f,ENUM=.false.)
     call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
     call wsnap('var.dat',f,mvar_io,ENUM=.false.)
   elseif (lmodify) then
