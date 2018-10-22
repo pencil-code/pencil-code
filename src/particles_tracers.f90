@@ -10,8 +10,8 @@
 ! CPARAM character (len=20), parameter :: particles_module="tracer"
 !
 ! MAUX CONTRIBUTION 2
-! MPVAR CONTRIBUTION 3
-! MPAUX CONTRIBUTION 3
+! MPVAR CONTRIBUTION 6
+! MPAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3); peh
 !
