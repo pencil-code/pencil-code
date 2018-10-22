@@ -446,7 +446,6 @@ Helmholtz Institute in Potsdam (2001) 期间发展起来的.
 虽然一些流体力学和吃流体力学的 SPH 和 PPM 的代码都是公开的,但这不代表高阶微分法或谱分析代码也被公开了.
 已经有不少对此感兴趣的朋友接触过我们,基于此,我们决定让其使用起来更灵活并尽可能地对用户友好一些,于是这个程序包便被放到了公有 \name{CVS} 库上.
 自从 2008年9月21号起,它便通过 \url{https://github.com/pencil-code/pencil-code} 发布了出来.
-Since 21 September 2008 it is distributed via
 \url{https://github.com/pencil-code/pencil-code}.
 这段代码不应该被视作黑箱,为了用一种较为优化的方式解决新出现的问题,用户将会需要自己配置合适的参数.
 特别的,你需要小心地对一些参数选择正确的数值,比如说粘度,磁扩散率和辐射热传导率等.
@@ -470,9 +469,7 @@ one wants to monitor the magnetic helicity, for example.
 The code is therefore particularly well suited for all kinds of
 dynamo problems.
 
-The code is normally non-conservative; thus, conserved quantities should only be
-conserved up to the discretization error of the scheme (not to machine
-accuracy).
+
 {\sc Pencil Code} 一般来说不保证守恒量守恒;所以,守恒量的稳定性将会依赖于算法的离散误差(不是指机器精度).
 There is no guarantee that a conservative code is more accurate with
 respect to quantities that are not explicitly conserved, such as entropy.
@@ -536,31 +533,41 @@ Although the {\sc Pencil Code} is mainly designed to run on supercomputers,
 more than 50\% of the users run their code also on Macs, and the other half
 uses either directly Linux on their laptops or they use VirtualBox
 on their Windows machine on which they install Ubuntu Linux.
+尽管 主要设计在超级计算机上运行,但也有超过 的用户直接在 Macs 上运行代码,另一半用户要不直接在他们的
+ Linux 笔记本电脑系统上运行或者在 Windows 上安装 Ubuntu Linux 虚拟机.
 If you have \name{IDL} as
 well, you will be able to visualize the results (a number of sample
 procedures are provided), but other tools such as
 \name{Python}, \name{DX} (OpenDX, data explorer) can also be used
 and some relevant tools and routines come with the {\sc Pencil Code}.
+如果你也有 IDL,你就能够便捷地可视化运算结果(我们有大量的样例),但其他的工具比如说 也能用,
+相关的工具和程序和 放在一起.
+
 
 \bigskip
 
 If you want to make creative use of the code, this manual will contain far
 too little information.
+如果你想富有新意地利用这个程序包,这份文档的内容还不充分.
 Its major aim is to give you an idea of the way the code is organized, so
 you can more efficiently \emph{read the source code}, which contains a
 reasonable amount of comments.
+它主要的目标是告诉你程序的组织架构,让你能够有效率地阅读源码,源码中包含了更多详尽的注释.
 You might want to read through the various sample directories that are checked in.
 Choose one that is closest to your application and start modifying.
 For further enhancements that you may want to add to the code, you can
 take as an example the lines in the code that deal with related variables,
 functions, diagnostics, equations etc., which have already been implemented.
+如果你希望给 {\sc Pencil Code} 一些新功能,你可以把代码中已经实现的相关变量,函数,诊断,方程等拿来当例子.
 Just remember: \cmd{grep} is one of your best friends when you want to
 understand how certain variables or functions are used in the code.
+记住一点: 当你想要理解一些特定的变量或者是函数时, 能给你很大的帮助.
 
 \bigskip
 
 We will be happy to include user-supplied changes and updates to the code
 in future releases and welcome any feedback.
+我们将会非常开心地接纳来自用户的代码改进,欢迎任何形式的反馈.
 
 \vspace{5mm}
 %\noindent
@@ -642,7 +649,7 @@ for Scientific Computing for granting time on Horseshoe, which is a
   \item \name{C} 编译器
   \end{itemize}
 
-\item 经常需要用到的(如果你没有其中之一,你需要手动修改许多事情):
+\item 经常需要用到的(如果你没有其中之一,你需要手动修改许多细节):
   \begin{itemize}
   \item a \name{Unix}/\name{Linux}-type system with \name{make} and \name{csh}
   \item \name{Perl} (remember: if it doesn't run Perl, it's not a
@@ -759,15 +766,17 @@ Here is the upgrading procedure for \name{svn}:
 If you have made useful changes, please contact one of the (currently) 10
 ``Contributors'' (listed under \url{https://github.com/pencil-code/pencil-code})
 who can give you push or check-in permission.
+如果你已经做出了一些有意义的修改,那就可以联系贡献者列表中的任何一人了,他们在这个网址下列出来了 ,他们可以给你 push 或者 check-in 的权限.
 Be sure to have sufficient comments in the code and please follow our
 standard coding conventions explained in Section~\ref{ProgrammingStyle}.
+请务必在代码中写上足够多的注释,并遵循我们标注的代码风格.我们的代码风格请参见 .
 There is also a script to check and fix the most common stylebreaks, 
 pc\_codingstyle.
 \index{Style}
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Getting the last validated version}
+\subsection{取得最新的有效版本 Getting the last validated version}
 \index{svn}
 
 The script \cmd{pc_svnup} accepts arguments -val or -validated, which
@@ -801,7 +810,7 @@ from any trouble.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Getting older versions}
+\subsection{取得更老版本的代码 Getting older versions}
 \index{svn}
 
 You may find that the latest \name{svn} version of the code produces errors.
@@ -831,7 +840,7 @@ compiler were different, resulting e.g.\ in different rounding errors.
 
 % ====================================================================== %
 
-\section{Getting started}
+\section{开始吧! Getting started}
 \label{S-getting-started}
 
 如果你要开始的话,你需要先拿 \file{samples/} 内的样例下手.
@@ -840,10 +849,10 @@ Sect.~\ref{S-Visualization})可视化,你才能得到一个对数值计算结果
 
 % ---------------------------------------------------------------------- %
 
-\subsection{安装Setup}
+\subsection{安装 Setup}
 \index{Setup}
 
-\subsubsection{环境设置Environment settings}
+\subsubsection{环境设置 Environment settings}
 
 The functionality of helper scripts and IDL routines relies on a few
 environment variables being set correctly.
@@ -943,7 +952,7 @@ to that directory:
 \end{alltt}
 
 
-\subsubsection{Adapting \file{Makefile.src}}
+\subsubsection{调整\file{Makefile.src} Adapting \file{Makefile.src}}
 \index{Makefile}
 
 这一步骤需要一些你的输入,但它仅仅需要在电脑上看见一次就足够了.
@@ -951,7 +960,7 @@ to that directory:
 
 \paragraph{Note:} 如果你幸运地和我们用的类似的编译器,那么这一步你很有可能可以跳过去.但如果不能编译的话,就需要你自己检查一下了. 如果用的不是类似的编译器的话,你可以运行 \cmd{make} 并指定一些标记,这部分请参看 Sect.~\ref{S-make-flags} ,具体的标记会在出现在表格  Table~\ref{Tab-compiler-options} 内.
 
-\subsubsection{Running \cmd{make}}
+\subsubsection{执行 \cmd{make} 命令 Running \cmd{make}}
 
 下一步,在你的运行目录的子目录 \file[src/]{src} 里面运行 \cmd{make}.
 因为你正在用一个之前定义好的问题来做测试,在 \file[Makefile.local]{src/Makefile.local} 里面的设置和 \file[cparam.local]{src/cparam.local} 都是有效的.那么你现在只需要运行下面的代码.
@@ -963,7 +972,7 @@ to that directory:
 如果已经正确的配置好了这个编译器的标记(flags).那边编译将会成功完成.
 
 
-\subsubsection{Choosing a data directory}
+\subsubsection{选定存储数据的文件夹Choosing a data directory}
 
 默认情况下程序会将数据结果切片写入到工作目录下的子目录 \file[data/]{data}.
 因为这涉及到大量的输入输出操作(至少对于大尺度网格是这样的),一般我们会建议接近尽量避免用 NFS 手段写入数据.推荐的配置数据文件夹 \file[data/]{data} 的方法是生成一个磁盘中对应的目录,将它软链接到你的工作目录下的 \file[data/]{./data} 文件夹.即使这个链接是 NFS 目录的一部分,所有的输入输出操作也会是局部的.
@@ -983,9 +992,9 @@ to that directory:
 在这样的情况下符号链接将会在不同的工作目录下重复生成,所以 \file{datadir.in} 应该只包含一个简短的相对路径.
 
 
-\subsubsection{Running the code}
+\subsubsection{运行代码 Running the code}
 
-You are now ready to start the code:
+你现在可以执行代码了:
 \begin{alltt}
   \prompt{unix> } start.csh\small
   Linux cincinnatus 2.4.18-4GB #1 Wed Mar 27 13:57:05 UTC 2002 i686 unknown
@@ -1127,10 +1136,10 @@ useful for all your other runs too.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Further tests}
+\subsection{更多的测试 Further tests}
 
 在 \file{samples/} 文件夹内有大量的其他测试.你可以用脚本 \file[auto-test]{bin/auto-test} 来自动运行这些测试程序并且将输出与参考结果作对比.
-There is a number of other tests in thedirectory.
+
 % ====================================================================== %
 
 \section{代码架构}
@@ -1232,7 +1241,7 @@ manually.
 
 \subsection{基本概念}
 
-\subsubsection{Data access in pencils}
+\subsubsection{Pencils 中的数据访问 Data access in pencils}
 \index{Pencil design}
 
 不像 80 年代和 90 年代早期作为超级计算领域主角的 CRAY 计算机,所有的现代计算器都有缓存,而这原是引起许多程序运行的瓶颈.
@@ -1446,7 +1455,7 @@ Each of the directories can contain the following files:
 % ====================================================================== %
 
 
-    \subsection{Start and run parameters}
+    \subsection{开始并运行参数 Start and run parameters}
     \label{S-start-params}
     所有的\file{start.in} 和\file{run.in}里面的输入参数都集合在 Fortran \name{namelists}内.
     This allows arbitrary order of the parameters (\emph{within} the given
@@ -1692,21 +1701,22 @@ Each of the directories can contain the following files:
     
     % ---------------------------------------------------------------------- %
     
-    \subsection{The time step}
+    \subsection{时间步长 The time step}
     \label{time-step}
     \index{Runge-Kutta time step}
     \index{Time step}
     
-    \subsubsection{The usual RK-2N time step}
+    \subsubsection{常规 RK-2N 时间步长 The usual RK-2N time step}
     
     RK-2N refers to the third order Runge-Kutta scheme by Williamson (1980)
     with a memory consumption of two chunks.
+    RK-2N 指的是三阶龙格-库塔算法(Williamson 1980),它有着两个代码块(翻译存疑)的空间复杂度,所以名字里有2N.
     Therefore the 2N in the name.
     
     The time step is normally specified as Courant time step through the
     coefficients \var{cdt} ($c_{\delta t}$), \var{cdtv} ($c_{\delta t,{\rm v}}$)
     and \var{cdts} ($c_{\delta t,{\rm s}}$).
-    The resulting Courant step is given by
+    产生的 Courant 时间步长依据下式给出
     \begin{equation}
       \delta t
       = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
@@ -1727,14 +1737,13 @@ Each of the directories can contain the following files:
       U_{\rm max} \equiv \max\left(|\uv|
                           + \sqrt{\cs^2{+}\vA^2}\right) \; ,
     \end{equation}
-    $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed, respectively;
+    $\cs$ 和 $\vA$ 分别表示声速 Alfv\'en 速度;
     \begin{equation} \label{Dmax}
       D_{\rm max} = \max(\nu,\gamma\chi,\eta,D) ,
     \end{equation}
-    where
-    $\nu$ denotes kinematic viscosity,
-    $\chi = K/(c_p\rho)$ thermal
-    diffusivity and $\eta$ the magnetic diffusivity;
+    公式中 
+    $\nu$ 表示动粘度(翻译存疑) denotes kinematic viscosity,
+    $\chi = K/(c_p\rho)$ 表示热扩散率而 $\eta$表示磁扩散率;
     and
     \begin{equation} \label{Hmax}
       H_{\rm max} = \max\left(\frac{2\nu\Strain^2
@@ -1750,7 +1759,7 @@ Each of the directories can contain the following files:
     如果时间步长超过了粘滞的时间步长,那么模拟结果将不一定可靠.
     If the time step exceeds the viscous time step the simulation  may
     actually run ok for quite some time. Inspection of images usually
-    helps to recognize the problem. An example is shown in
+    helps to recognize the problem. 下面有个图片展示的例子
     Fig.~\ref{Ftimestepoverviscous}.
     
     \begin{figure}[h!]\begin{center}\includegraphics[width=.99\textwidth]
@@ -1862,14 +1871,14 @@ Each of the directories can contain the following files:
 
 % ====================================================================== %
 
-\section{Using the code}
+\section{使用程序 Using the code}
 \label{Input-params}
 
-\subsection{Configuring the code to compile and run on your computer}
+\subsection{配置代码以使之编译并运行,Configuring the code to compile and run on your computer}
 \label{S-configuration}
 
-\paragraph{Note:} We recommend to use the procedure described here, rather than
-the old method described in Sects.~\ref{adapt-mkfile} and \ref{start-run-getconf}.
+\paragraph{Note:} 我们建议不要参考 Sects.~\ref{adapt-mkfile} 和 \ref{start-run-getconf} 中比较老的文档内容,
+本章节的内容更合适.
 
 \paragraph{Quick instructions:}
 You may compile with a default compiler-specific configuration:
@@ -2085,9 +2094,9 @@ The \file{.conf} files consist of the following elements:
 \end{description}
 
 
-\subsubsection{Compiling the code}
+\subsubsection{编译源码 Compiling the code}
 
-Use the \cmd{pc_build} command to compile the code:
+用 \cmd{pc_build} 命令来编译代码:
 \begin{alltt}
   \prompt{unix> } pc_build                               # use default compiler suite
   \prompt{unix> } pc_build -f Intel_MPI                  # specify a compiler suite
@@ -2103,9 +2112,9 @@ The fourth example shows how to define extra variables
 See \cmd{pc_build --help} for a complete list of options.
 
 
-\subsubsection{Running the code}
+\subsubsection{跑代码 Running the code}
 
-Use the \cmd{pc_run} command to run the code:
+用 \cmd{pc_run} 命令来跑代码:
 \begin{alltt}
   \prompt{unix> } pc_run                    # start if necessary, then run
   \prompt{unix> } pc_run start
@@ -2260,7 +2269,7 @@ main variable (f) array, the main reason it that with static allocation
 the compiler can check whether we are out of bounds.
 
 % ---------------------------------------------------------------------- %
-\subsection{Using a non-equidistant grid}
+\subsection{使用非等距网格 Using a non-equidistant grid}
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
 
 We introduce a non-equidistant grid $z_i$
@@ -3214,366 +3223,21 @@ A full list of input parameters is given in Appendix~\ref{S-all-parameters}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Physical units}
-\label{physdim}
-\index{Units}
-\index{SI units}
-\index{cgs units}
-
-Many calculations are unit-agnostic, in the sense that all results remain
-the same independent of the unit system in which you interpret the numbers.
-E.\,g.~if you simulate a simple hydrodynamical flow in a box of length $L=1.$
-and get a maximum velocity of $u_{\rm max}=0.5$ after $t=3$ time units,
-then you may interpret this as
-$L=\unit[1]{m}$, $u_{\rm max}=\unit[0.5]{m/s}$, $t=\unit[3]{s}$,
-or as $L=\unit[1]{pc}$, $u_{\rm max}=\unit[0.5]{pc/Myr}$, $t=\unit[3]{Myr}$,
-depending on the physical system you have in mind.
-The units you are using must of course be consistent, thus in the second
-example above, the units for diffusivities would be $\unit{pc^2/Myr}$,
-etc.
-
-The units of magnetic field and temperature are determined by the values
-$\mu_0=1$ and $c_p=1$ used internally by the code\footnote{
-  Note that $c_p=1$ is only assumed if you use the module
-  \name{noionization.f90}.
-  If you work with \name{ionization.f90}, temperature units are specified
-  by \var{unit_temperature} as described below.
-}.
-This means that if your units for density and velocity are
-$[\rho]$ and $[v]$, then magnetic fields will be in
-\begin{equation} \label{unit-B}
-  [B] = \sqrt{\mu_0\,[\rho]\,[v]^2} \; ,
-\end{equation}
-and temperatures are in
-\begin{equation} \label{unit-T}
-  [T] = \frac{[v]^2}{c_p}
-      = \frac{\gamma{-}1}{\gamma}\,\frac{[v]^2}{\mathcal{R}/\mu} \; .
-\end{equation}
-
-\begin{table}[htbp]
-  \centering
-  \caption{Units of magnetic field and temperature for some choices of
-    $[\rho]$ and $[v]$ according to Eqs.~(\ref{unit-B}) and
-    (\ref{unit-T}).
-    Values are for a monatomic gas ($\gamma=5/3$) of mean atomic
-    weight $\bar{\mu}_{\rm g} = \bar{\mu}/\unit[1]{g}$ in grams.}
-  \label{Tab-units-B-T}
-  \newcommand{\fracstrut}{\rule[-2.0ex]{0pt}{5.2ex}}%
-  \begin{tabular}{ll@{\quad}ll}
-  \toprule
-    $[\rho]$
-        & $[v]$
-            & $[B]$
-                & $[T]$ \\
-  \midrule
-    $\unit[1]{kg/m^3}$
-        & $\unit[1]{m/s}$
-            & $\unit[1.12]{mT} = \unit[11.2]{G}$
-                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
-                   \times \unit[2.89\EE{-5}]{K}$\\
-    $\unit[1]{g/cm^3}$
-        & $\unit[1]{cm/s}$
-            & $\unit[3.54\EE{-4}]{T} = \unit[3.54]{G}$
-                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
-                   \times \unit[2.89]{nK}$ \\
-    $\unit[1]{g/cm^3}$
-        & $\unit[1]{km/s}$
-            & $\unit[35.4]{T} = \unit[354]{kG}$
-                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
-                   \times \unit[28.9]{K}$ \\
-    $\unit[1]{g/cm^3}$
-        & $\unit[10]{km/s}$
-            & $\unit[354]{T} = \unit[3.54]{MG}$
-                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
-                   \times \unit[2\,890]{K}$ \\
-  \bottomrule
-  \end{tabular}
-\end{table}
-
-For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
-shows the resulting units of magnetic field and temperature.
-
-On the other hand, as soon as material equations are used (e.g.\ one of
-the popular parameterizations for radiative losses, Kramers opacity,
-Spitzer conductivities or ionization, which implies well-defined
-ionization energies), the corresponding routines in the code need to know
-the units you are using.
-This information is specified in \file{start.in} or \file{run.in} through
-the parameters \var{unit_system},
-\var{unit_length},  \var{unit_velocity}, \var{unit_density} and
-\var{unit_temperature}\footnote{
-  Note: the parameter \var{unit_temperature} is currently only used in
-  connection with \name{ionization.f90}.
-  If you are working with \name{noionization.f90}, the temperature unit is
-  completely determined by Eq.~(\ref{unit-T}) above.
-} like e.\,g.
-\begin{Verbatim}
-  unit_system='SI',
-  unit_length=3.09e16, unit_velocity=978.  ! [l]=1pc, [v]=1pc/Myr
-\end{Verbatim}
-
-Note: The default unit system is \code{unit_system='cgs'} which is a
-synonym for \code{unit_system='Babylonian cubits'}.
-
-
-%% You can run the code in physical units.  Suppose you want the unit length
-%% to be $1\,{\rm kpc}$, then you would say \code{unit_length=3e21}.
-%% It might then be handy to put \code{unit_velocity=1e5}, which means
-%% 1~km/s. This implies a time unit of $3\times10^{16}\,{\rm s}$, which
-%% is roughly $1\,{\rm Gyr}$.
-%% (Of course, politically correct would be to say \code{unit_system='SI'}
-%% in which case you say \code{unit_length=3e19}. More accurate would be
-%% \code{unit_length=3.1e19}.)
-%% For km/s you'd then say \code{unit_velocity=1e3}.
-%% If you are used to work with hot stuff, you'd choose
-%% \code{unit_temperature='1e6'} for mega-Kelvin.
-%% If you prefer dimensionless units then just don't worry, because unity
-%% is the default. But if you are doing things like ionization it is really
-%% best to work with physical dimensions.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Minimum amount of viscosity}
-\index{Viscosity}
-\index{Shock viscosity}
-\label{viscosity}
-
-We emphasize that, by default,
-the code works with constant diffusion coefficients
-(viscosity $\nu$, thermal diffusivity $\chi$, magnetic diffusivity $\eta$,
-or passive scalar diffusivity ${\cal D}$).
-If any of these numbers is too small, you would need to have more
-meshpoints to get consistent numerical solutions; otherwise the code
-develops wiggles (`ringing') and will eventually crash.
-A useful criterion is given by the
-mesh Reynolds number based on the maximum velocity,
-\begin{equation}
-  \mbox{Re}_{\rm mesh}=\max(|\uv|)\max(\delta x,\delta y,\delta z)/\nu,
-\end{equation}
-which should not exceed a certain value which can be problem-dependent.
-Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
-Similarly there exist mesh P\'eclet and mesh magnetic Reynolds numbers that
-should not be too large.
-
-Note that in some cases, `wiggles' in $\ln\rho$ will develop despite
-sufficiently large diffusion coefficients, essentially because the
-continuity equation contains no dissipative term.
-For convection runs (but not only for these), we have found that this can
-often be prevented by \name[Upwinding]{upwinding}, see Sect.~\ref{S-upwind}.
-
-If the Mach number of the code approaches unity, i.e.\ if the rms velocity
-becomes comparable with the speed of sound, shocks may form.
-In such a case the mesh Reynolds number should be smaller.
-In order to avoid excessive viscosity in the unshocked regions,
-one can use the so-called shock viscosity (Sect.~\ref{ShockViscosity})
-to concentrate the effects of a low mesh Reynolds number to only those
-areas where it is necessary.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{The time step}
-\label{time-step}
-\index{Runge-Kutta time step}
-\index{Time step}
-
-\subsubsection{The usual RK-2N time step}
-
-RK-2N refers to the third order Runge-Kutta scheme by Williamson (1980)
-with a memory consumption of two chunks.
-Therefore the 2N in the name.
-
-The time step is normally specified as Courant time step through the
-coefficients \var{cdt} ($c_{\delta t}$), \var{cdtv} ($c_{\delta t,{\rm v}}$)
-and \var{cdts} ($c_{\delta t,{\rm s}}$).
-The resulting Courant step is given by
-\begin{equation}
-  \delta t
-  = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
-                    {U_{\rm max}} ,
-               c_{\delta t,{\rm v}}
-               \frac{\delta x_{\rm min}^2}
-                    {D_{\rm max}},
-               c_{\delta t,{\rm s}}
-               \frac{1}
-                    {H_{\rm max}}
-         \right) \; ,
-\end{equation}
-where
-\begin{equation}
-  \delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z) \; ;
-\end{equation}
-\begin{equation}
-  U_{\rm max} \equiv \max\left(|\uv|
-                      + \sqrt{\cs^2{+}\vA^2}\right) \; ,
-\end{equation}
-$\cs$ and $\vA$ denoting sound speed and Alfv\'en speed, respectively;
-\begin{equation} \label{Dmax}
-  D_{\rm max} = \max(\nu,\gamma\chi,\eta,D) ,
-\end{equation}
-where
-$\nu$ denotes kinematic viscosity,
-$\chi = K/(c_p\rho)$ thermal
-diffusivity and $\eta$ the magnetic diffusivity;
-and
-\begin{equation} \label{Hmax}
-  H_{\rm max} = \max\left(\frac{2\nu\Strain^2
-+\zeta_{\rm shock}(\Div\uv)^2+...}{c_vT}\right),
-\end{equation}
-where dots indicate the presence of other terms on the rhs of the
-entropy equation.
-
-To fix the time step $\delta t$ to a value independent of velocities and
-diffusivities, explicitly set the run parameter \var{dt}, rather than
-\var{cdt} or \var{cdtv} (see p.~\pageref{dt-run}).
-
-If the time step exceeds the viscous time step the simulation  may
-actually run ok for quite some time. Inspection of images usually
-helps to recognize the problem. An example is shown in
-Fig.~\ref{Ftimestepoverviscous}.
-
-\begin{figure}[h!]\begin{center}\includegraphics[width=.99\textwidth]
-{timestepoverviscous}\end{center}\caption[]{
-Example of a velocity slice from a run where the time step is too long.
-Note the spurious checkerboard modulation in places, for example
-near $x=-0.5$ and $-2.5<y<-1.5$.
-This is an example of a hyperviscous turbulence simulations with
-$512^3$ meshpoints and a third order hyperviscosity of
-$\nu_3=5\times10^{-12}$. Hyperviscosity is explained in the
-Appendix~\ref{high-freq-filters}.}\label{Ftimestepoverviscous}\end{figure}
-
-Timestepping is accomplished using the Runge-Kutta 2N scheme.
-Regarding details of this scheme see Sect.~\ref{S-2N-scheme}.
-
-\subsubsection{The Runge-Kutta-Fehlberg time step}
-\index{Runge-Kutta-Fehlberg time step}
-
-A fifth order Runge-Kutta-Fehlberg time stepping procedure is available.
-It is used mostly for chemistry application, often together with the
-double precision option.
-In order to make this work, you need to compile with
-\begin{verbatim}
-TIMESTEP  =   timestep_rkf
-\end{verbatim}
-in \file{src/Makefile.local}.
-In addition, you must put \var[itorder]{itorder=5} in \file{run.in}.
-An example application is
-\file[H2_flamespeed/]{samples/1d-tests/H2_flamespeed}.
-This procedure is still experimental.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Boundary conditions}
-\label{boundconds}
-\index{Boundary conditions}
-
-\subsubsection{Where to specify boundary conditions}
-\label{S-boundconds-where}
-
-In most tests that come with the {\sc Pencil Code}, boundary conditions are set
-in \file{run.in}, which is a natural choice.
-However, this may lead to unexpected initial data written by
-\file{start.x}, since when you start the code (via \file{start.csh}), the
-boundary conditions are unknown and \file{start.x} will then fill the ghost
-zones assuming periodicity (the default boundary condition) in all three
-directions.
-These ghost data will never be used in a calculation, as \file{run.x} will
-apply the boundary conditions before using any ghost-zone values.
-
-To avoid these periodic conditions in the initial snapshot, you
-can set the boundary conditions in \file{start.in} already.
-In this case, they will be inherited by \file{run.x}, unless you also
-explicitly set boundary conditions in \file{run.in}.
-
-
-\subsubsection{How to specify boundary conditions}
-\index{Ghost zones}
-
-Boundary conditions are implemented through three layers of
-\name{ghost points} on either boundary, which is quite a natural choice
-for an MPI code that uses ghost zones for representing values located on
-the neighboring processors anyway.
-The desired type of boundary condition is set through the parameters
-\var{bc\{x,y,z\}}
-\index[var]{bcx@\emph{bcx}}%
-\index[var]{bcy@\emph{bcy}}%
-\index[var]{bcz@\emph{bcz}}%
-in \file{run.in}; the nomenclature used is as follows.
-Set \var{bc\{x,y,z\}} to a sequence of letters like
-\begin{alltt}
-  bcx = 'p','p','p', 'p',  'p'
-\end{alltt}
-for periodic boundaries, or
-\begin{alltt}
-  bcz = 's','s','a','a2','c1:c2'
-\end{alltt}
-for non-periodic ones.
-Each element corresponds to one of the
-variables, which are those of the variables
-$u_x$, $u_y$, $u_z$, $\ln\rho$, $s/c_p$, $A_x$, $A_y$, $A_z$, $\ln c$
-that are actually used \emph{in this order}.
-The following conditions are available:
-\begin{description}
-\item[\option{p}] periodic boundary condition
-\item[\option{a}] antisymmetric condition w.\,r.\,t.~the
-  boundary, i.\,e.~vanishing value
-\item[\option{s}] symmetric condition w.\,r.\,t.~the
-  boundary, i.\,e.~vanishing first derivative
-\item[\option{a2}] antisymmetry w.\,r.\,t.~the
-  arbitrary value on the boundary, i.\,e.~vanishing
-  second derivative
-\item[\option{c1}] special boundary condition for
-  $\ln\rho$ and $s$: constant heat flux through the
-  boundary
-\item[\option{c2}] special boundary condition for
-  $s$: constant temperature at the boundary --- requires boundary
-  condition \code{a2} for $\ln\rho$
-\item[\option{cT}] special boundary condition for
-  $s$ or $\ln\ T$: constant temperature at the boundary (for arbitrarily set
-  $\ln\rho$)
-\item[\option{ce}] special boundary condition for
-  $s$: set temperature in ghost points to value on boundary (for
-  arbitrarily set $\ln\rho$)
-\item[\option{db}] low-order one-sided derivatives (``no
-    boundary condition'') for density
-\item[\option{she}] shearing-sheet boundary condition (default when the
-  module \name{Shear} is used)
-\item[\option{g}] force the value of the corresponding field on vertical
-boundaries (should be used in combination with the force_lower_bound and
-force_upper_bound flags set in the namelist {\it init_pars})
-\item[\option{hs}] special boundary condition for $\ln\rho$ and $s$
-which enforces hydrostatic equilibrium on vertical boundaries
-\end{description}
-The extended syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
-boundary condition $a$ at the left/lower boundary, but
-$b$ at the right/upper one.
-
-If you build a new \file{run.in} file from another one with a different number
-of variables (\name{noentropy} vs.~\name{entropy}, for example), you need
-to remember to adjust the {\it length} of the arrays \var{bcx} to \var{bcz}.
-The advantage of the present approach is that it is very easy to exchange
-all boundary conditions by a new set of conditions in a particular
-direction (for example, make everything periodic, or switch off shearing
-sheet boundary conditions and have stress-free instead).
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Restarting a simulation}
+\subsection{重启模拟 Restarting a simulation}
 \index{Restarting}
 
-When a run stops at the end of a simulation, you can just resubmit
-the job again, and it will start from the latest snapshot saved in
-\file[var.dat]{data/proc*/var.dat}. The value of the latest time is saved in a
-separate file, \file[time.dat]{data/proc*/time.dat}.
+
+如果你的运行程序跑到一半中断了,你还可以重新运行,从中断的地方继续,它可以从\file[var.dat]{data/proc*/var.dat}里你保存的最新帧的数据处再开始.
+最新帧的数据保存在一个单独的文件中 \file[time.dat]{data/proc*/time.dat}.
 On parallel machines it is possible that some (or just one) of the
 \file{var.dat} are corrupt; for example after a system crash.
 Check for file size and date, and restart from a good \file{VAR}$N$
 file instead.
 
-If you want to run on a different machine, you just need to copy the
-\file[var.dat]{data/proc*/var.dat} (and, just to be sure)
-\file[time.dat]{data/proc*/time.dat}) files into a new directory tree.
-You may also need the \file[seed.dat]{data/proc*/seed.dat}
-files for the random number generator. The easiest way to get all these
+如果你要到另一台计算机上接着运行了,你只需要复制
+\file[var.dat]{data/proc*/var.dat} (为了以防万一加上 \file[time.dat]{data/proc*/time.dat}) 到一个新的目录下面.
+你也许还需要 \file[seed.dat]{data/proc*/seed.dat}
+作为你的随机数生成器. The easiest way to get all these
 other files is to run \cmd{start.csh} again on the new machine (or in
 a new directory) and then to overwrite the
 \file[var.dat]{data/proc*/var.dat} files with the correct ones.
@@ -3583,7 +3247,7 @@ fields, or test fields, see Sect.~\ref{RestartingFromLessPhysics}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{One- and two-dimensional runs}
+\subsection{一维和二维的运行 One- and two-dimensional runs}
 
 If you want to run two-dimensional problems, set the number
 of mesh points in one direction to unity, e.g.\ \var{nygrid}=1
@@ -4153,7 +3817,7 @@ In [1]: pc.animate_interactive(slices, t)
 This affects reading var files and slice files.
 % ---------------------------------------------------------------------- %
 
-\subsection{Running on multi-processor computers}
+\subsection{在多核处理器上跑吧 Running on multi-processor computers}
 \label{MPI}
 
 The code is parallelized using \name{MPI} (\dfn{message passing
@@ -4338,7 +4002,7 @@ and 512 processors for $1536^3$ mesh points.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Running in double-precision}
+\subsection{双精度运算 Running in double-precision}
 \label{double-precision}
 \index{double precision}
 
@@ -4378,7 +4042,7 @@ Sect.~\ref{After-changing-REALPRECISION}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Power spectrum}
+\subsection{功率谱 Power spectrum}
 \label{power-spectrum}
 Given a real variable $u$, its Fourier transform $\tilde{u}$
 is given by
@@ -4507,7 +4171,7 @@ for options to \cmd{power}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Structure functions}
+\subsection{结构函数 Structure functions}
 \label{structure-functions}
 We define the p-th order longitudinal structure function of $\vec{u}$ as
 \begin{equation}
@@ -4592,7 +4256,7 @@ for options to \cmd{structure}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Particles}
+\subsection{粒子群 Particles}
 
 The {\sc Pencil Code} has modules for tracer particles and for dust particles
 (see Sect.~\ref{S-particles-equations}). The particle modules are chosen by
@@ -4663,7 +4327,7 @@ friction times should be resolved in a minimum time-step.
 The sample run \file[sedimentation/]{samples/sedimentation/} contains the latest setup for dust
 particles.
 
-\subsubsection{Particles in parallel}
+\subsubsection{并行的粒子 Particles in parallel}
 
 The particle variables (e.g. $\vec{x}_i$ and $\vec{v}_i$) are kept in the
 arrays \code{fp} and \code{dfp}. For parallel runs, particles must be able to
@@ -4776,7 +4440,7 @@ of blocks any processor may adopt. This should not be so low that there is not
 room for all the bricks with particles, nor so high that the code runs out of
 memory.
 
-\subsubsection{Large number of particles}
+\subsubsection{大规模粒子群 Large number of particles}
 
 When dealing with large number of particles, one needs to make sure that the
 number of particles \code{npar} is less than the maximum integer that the
@@ -4802,7 +4466,7 @@ to promote all the integers to 64 Bit. This will break the Fortran-C interface.
 One should also make sure that \code{npar_mig<=npar/ncpus}. It is also beneficial
 to set \code{mpar_loc=2*npar/ncpus}.
 
-\subsubsection{Random number generator}
+\subsubsection{随机数生成器 Random number generator}
 
 There are several methods to generate random number in the code.
 It is worth noting that when simulating coagulation with the
@@ -4816,7 +4480,7 @@ the module \code{particles_coag_run_pars} in \code{run.in}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Non-cartesian coordinate systems}
+\subsection{非笛卡尔坐标系 Non-cartesian coordinate systems}
 \index{Curvilinear coordinates}
 \index{Coordinate systems}
 \label{Coordinate-systems}
@@ -4875,40 +4539,40 @@ Further details are given in Appendix~\ref{Curvilinear-coordinates}.
 
 \section{The equations}
 
-The equations solved by the {\sc Pencil Code} are basically the standard
-compressible MHD equations. However, the modular structure allows
-some variations of the MHD equations, as well as switching off
-some of the equations or individual terms of the equation (nomagnetic,
-noentropy, etc.).
+ {\sc Pencil Code} 求解的方程基本上都是标准的可压缩磁流体力学方程.不过模块化的代码结构能够允许用户做出一些磁流体力学方程的改变.
+你可以关掉某些方程,或者将方程中的某些项消掉(比如说 nomagnetic,
+noentropy 等等).
 
 In this section the equations are presented in their most complete form.
+在本章节中方程都会以尽可能完整的形式展现出来.
 It may be expected that the code can evolve most subsets or
 simplifications of these equations.
+{\sc Pencil Code} 团队希望能够将这些方程的大多数实现,或者退而求其次实现其化简版.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Continuity equation}
+\subsection{连续性方程 Continuity equation}
 
-In the code the continuity equation,
+在本代码中,连续性方程
 $\partial\rho/\partial t+\Div\rho\uv=0$,
-is written in terms of $\ln\rho$,
+是以 $\ln\rho$ 代替 $\rho$ 来写的,
 \begin{equation}
   \frac{\De\ln\rho}{\De t}
   = - \Div\uv \; .
 \end{equation}
-Here $\rho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
-$\De/\De t \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
+这里 $\rho$ 表示密度, $\uv$ 是流体速度, $t$ 是时间而
+$\De/\De t \equiv \partial/\partial t + \uv\cdot\grad$ 是对流导数.(翻译存疑) the convective
 derivative.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Equation of motion}
+\subsection{动量方程 Equation of motion}
 \label{S-Eqn-of-motion}
 
-In the equation of motion, using a perfect gas, the pressure term,
-can be expressed as
+
+在动量方程汇总,如果是理想气体的话,压强项可以写作
 $-\rho^{-1}\grad p = -\cs^2(\grad s/c_p+\grad\ln\rho)$,
-where the squared sound speed is given by
+其中声速平方可由下式给出
 \begin{equation}
   \cs^2 = \gamma \frac{p}{\rho}
         = c_{\rm s0}^2\exp\left[\gamma s/c_p
@@ -4916,11 +4580,11 @@ where the squared sound speed is given by
                                \right],
 \label{EOSsimple}
 \end{equation}
-and $\gamma=c_p/c_v$ is the ratio of specific heats, or \emph{adiabatic index}.
-Note that $\cs^2$ is proportional to the temperature with
+式中 $\gamma=c_p/c_v$ 是比热比,或者说 \emph{绝热指数}.
+注意 $\cs^2$ 和温度成正比,因为
 $\cs^2=(\gamma-1)c_p T$.
 
-The equation of motion is accordingly
+动量方程如下所示
 \begin{eqnarray}
   \frac{\De\uv}{\De t}
    =& &-\cs^2\grad\biggl(\frac{s}{c_p} + \ln\rho\biggr)
@@ -4930,10 +4594,9 @@ The equation of motion is accordingly
       + 2\Strain\cdot\grad\ln\rho\right) + \zeta\left(\grad\Div\uv\right);
 \label{DuDt}
 \end{eqnarray}
-Here $\Phi_{\rm grav}$ is the gravity potential,
-$\jv$ the electric current density, $\Bv$
-the magnetic flux density, $\nu$ is kinematic viscosity, $\zeta$ describes a bulk
-viscosity, and, in Cartesian coordinates
+式中 $\Phi_{\rm grav}$ 为重力势能,
+$\jv$ 电流密度, $\Bv$ 磁感应强度, $\nu$ 运动粘度, $\zeta$ 体粘滞系数.
+并且在笛卡尔坐标下
 \begin{equation} \label{Eq-S-traceless}
   {\mathsf S}_{ij} = \frac{1}{2}\left({\partial u_i\over\partial x_j}
                  + {\partial u_j\over\partial x_i}
@@ -4945,47 +4608,41 @@ In curvilinear coordinates, we have to replace partial differentiation
 by covariant differentiation (indicated by semicolons), so we write
 ${\mathsf S}_{ij}=\frac{1}{2}(u_{i;j}+u_{j;i})-\frac{1}{3}\delta_{ij}\Div\uv$.
 
-The interpretation of the two viscosity terms varies greatly depending upon
-the Viscosity module used, and indeed on the parameters given to the module.
-See \S\ref{Bulkviscosity}.
+对于两个粘滞系数项的解释会因为所使用的粘性模型而异,并依赖于给数值计算对应模块的具体参数.参见 \S\ref{Bulkviscosity}.
 
-For isothermal hydrodynamics, see \S\ref{entropy} below.
+对于恒温流体力学,参见 \S\ref{entropy} .
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Induction equation}
+\subsection{磁感应方程 Induction equation}
 
 \begin{equation}
   \frac{\partial\Av}{\partial t}
   = \uv\times\Bv - \eta\mu_0\jv \; .
 \end{equation}
 
-Here $\Av$ is the magnetic vector potential\index{Vector potential},
-$\Bv = \curl\Av$ the magnetic
-flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
-($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
-magnetic vacuum permeability.
-This form of the induction equation corresponds to the \name{Weyl gauge}
-$\Phi=0$, where $\Phi$ denotes the scalar potential.
+此处 $\Av$ 是磁矢势\index{Vector potential},
+$\Bv = \curl\Av$ 是磁感应强度, $\eta = 1/(\mu_0\sigma)$ 磁扩散率
+($\sigma$ 为电导率), 以及 $\mu_0$ 为 
+真空磁导率.
+这种形式的磁感应方程能够确保 \name{Weyl gauge}
+$\Phi=0$, 而 $\Phi$ 意味着标量势.
 
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Entropy equation}
+\subsection{熵方程 Entropy equation}
 \index{Entropy}%
 \label{entropy}%
 
-The current thermodynamics module \name{entropy} formulates the thermal
-part of the physics in terms of \emph{entropy} $s$, rather than thermal
-energy $e$, which you may be more familiar with.
-Thus the two fundamental thermodynamical variables are $\ln\rho$
-and $s$.
-The reason for this choice of variables is that entropy is the natural
-physical variable for (at least) convection processes: the sign of the
-entropy gradient determines convective (in)stability, the
+目前的热力学模块  \name{entropy} 计划用 \emph{entropy} $s$ 来作为热力学物理量中的基石,而不是通过读者更熟悉的热能密度 thermal
+energy $e$.于是 $\ln\rho$
+和 $s$ 便成为两个基础的热力学变量. 
+我们这么做的原因是因为熵(至少)于对流过程而言是更自然的物理量;熵梯度的正负号帮助确定对流的(不)稳定性; \emph{Rayleigh 数} 在流体静力学的实例中和熵的梯度成正比等(翻译存疑the
 \emph{Rayleigh number} is proportional to the entropy gradient
-of the associated hydrostatic reference solution, etc.
-The equation solved is
+of the associated hydrostatic reference solution, etc).
+
+求解的方程如下
 \begin{equation} \label{entropy-eq}
   \rho T\frac{\De s}{\De t}
    =  \Heat - \Cool
@@ -4994,13 +4651,12 @@ The equation solved is
       + 2\rho\nu\Strain\otimes\Strain + \zeta\rho\left(\Div\uv\right)^2\; .
 \end{equation}
 
-Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
+其中, $T$ 为温度, $c_p$ 恒温比热,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
-$K$ is the radiative (thermal) conductivity, $\zeta$ describes a
-bulk viscosity, and $\Strain$ is the rate-of-shear tensor that is traceless.
+$K$ 为(热)辐射传导率, $\zeta$ 描述的是体粘滞系数, 以及 $\Strain$ 为迹为零的剪切速率张量(翻译存疑traceless).
 
-In the entropy module we solve for the specific entropy, $s$.
-The heat conduction term on the right hand side can be written in the form
+在熵模块中, In the entropy module we solve for the specific entropy, $s$.
+右侧的热传导项可以用下面的形式写
 \begin{eqnarray}
 \lefteqn{\frac{\Div(K\grad T)}
               {\rho T}} \\
@@ -5018,18 +4674,17 @@ The heat conduction term on the right hand side can be written in the form
           \cdot\left[ \gamma\left(\grad s/c_p + \grad\ln\rho\right)
                       + \grad\ln\chi \right] \; ,
 \end{eqnarray}
-where $\chi = K/(\rho c_p)$ is the thermal diffusivity.
+ $\chi = K/(\rho c_p)$ 是热扩散率.
 The latter equation shows that the diffusivity for $s$ is $\gamma\chi$,
 which is what we have used in Eq.~(\ref{Dmax}).
 
-In an alternative formulation for a constant $K$, the heat conduction
-term on the right hand side can also be written in the form
+在对常数 $K$ 的另一种表示中, 右侧的热传导率也可以写为
 \begin{eqnarray}
 \frac{\Div(K\grad T)}
               {\rho T} =
   \frac{K}{\rho}\Bigl[ \Laplace\ln T + (\grad \ln T)^2 \Bigr]
 \end{eqnarray}
-which is the form used when constant $K$ is chosen.
+当 $K$ 已知时,我们常常会用这种形式.
 \bigskip
 
 Note that by setting $\gamma=1$ and initially $s=0$, one obtains an
@@ -5043,14 +4698,13 @@ polytropic behavior
 A better way to achieve isothermality is to use the \name{noentropy}
 module.
 
-\subsubsection{Viscous heating}
+\subsubsection{粘滞加热 Viscous heating}
 
-We can write the viscosity as the divergence of a tensor $\tau_{ij,j}$,
+我们将粘滞系数在这里写成一个张量的散度形式 $\tau_{ij,j}$,
 \begin{equation}
   \rho \frac{\partial u_i}{\partial t} = ...+\tau_{ij,j} \, ,
 \end{equation}
-where $\tau_{ij}=2\nu\rho{\sf S}_{ij}$ is the stress tensor. The viscous power
-density $P$ is
+其中 $\tau_{ij}=2\nu\rho{\sf S}_{ij}$ 为应力张量. 粘滞加热功率密度为 $P$ 
 \begin{eqnarray}
   P &=& u_i\tau_{ij,j}\\
     &=& {\partial\over\partial x_j}\left(u_i\tau_{ij}\right) - u_{i,j}\tau_{ij}
@@ -5063,16 +4717,15 @@ is $\frac{1}{2}(u_{i,j}+u_{j,i})$, so
 \begin{equation}
   u_{i,j}\tau_{ij}=\frac{1}{2}\nu\rho(u_{i,j}+u_{j,i})(2{\sf S}_{ij}) \, .
 \end{equation}
-But, because ${\sf S}_{ij}$ is traceless, we can add anything
-proportional to $\delta_{ij}$ and, in particular, we can write
+但由于 ${\sf S}_{ij}$ 的迹为零, 我们可以添加正比于 $\delta_{ij}$ 的数给它, 特别的一种加法是这样的
 \begin{eqnarray}
 u_{i,j}\tau_{ij}&=&\frac{1}{2}(u_{i,j}+u_{j,i})(2\nu\rho{\sf S}_{ij})\\
 &=&\frac{1}{2}(u_{i,j}+u_{j,i}-\frac{1}{3}\delta_{ij}\nab\cdot\vec{u})(2\nu\rho{\sf         S}_{ij})\\
 &=&2\nu\rho\mathbf{S}^2,
 \end{eqnarray}
-which is positive definite.
+而它是正定的.
 
-\subsubsection{Alternative description}
+\subsubsection{可选的描述?? Alternative description}
 \index{pretend_lnTT}
 
 By setting \code{pretend_lnTT=T} in \code{init_pars} or
@@ -5097,7 +4750,7 @@ where $\mathbf{RHS}$ is the right hand side of equation (\ref{entropy-eq}).
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Transport equation for a passive scalar}
+\subsection{被动标量的输运方程 Transport equation for a passive scalar}
 
 In conservative form, the equation for a passive scalar is
 \begin{equation}
@@ -5120,7 +4773,7 @@ invoking \code{PSCALAR=pscalar_nolog}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Bulk viscosity}
+\subsection{Bulk 粘性 Bulk viscosity}
 \label{Bulkviscosity}
 \index{Viscosity}
 
@@ -5130,7 +4783,7 @@ However, for supersonic flows, or even otherwise, one might want to add a
 shock viscosity which, in its simplest formulation, take the form of a
 bulk viscosity.
 
-\subsubsection{Shock viscosity}
+\subsubsection{激波粘性 Shock viscosity}
 \index{Shock viscosity}
 \label{ShockViscosity}
 
@@ -5163,7 +4816,7 @@ $2\langle\Strain^2\rangle=\langle\omv^2\rangle+{4\over3}\langle(\nab\cdot\uv)^2\
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Equation of state}
+\subsection{状态方程 Equation of state}
 \index{Equation of state}
 \label{S-eos}
 
@@ -5216,7 +4869,7 @@ $y=x_{\rm e}/(1-2x_{\rm H_2})$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Ionization}
+\subsection{电离 Ionization}
 \index{Ionization}
 \label{S-ionization}
 
@@ -5482,7 +5135,7 @@ All dust species fulfill the continuity equation
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Cosmic ray pressure in diffusion approximation}
+\subsection{扩散近似下的宇宙线压力 Cosmic ray pressure in diffusion approximation}
 \index{Cosmic rays}
 
 Cosmic rays are treated in the diffusion approximation.
@@ -5539,7 +5192,7 @@ of \Eq{Difftensor}, if the time derivative were negligible.
 Further details are described in Snodin et al.\ (2006).
 
 %JS added (Is this too long?):
-\subsection{Chiral MHD}
+\subsection{手性磁流体力学 Chiral MHD}
 \index{Chiral MHD}
 
 At high energies, $k_{\rm B} T \gtrsim 10~\mathrm{MeV}$, a quantum effect called the 
@@ -5629,7 +5282,7 @@ where a fluid only has a velocity vector field (the continuity equation of a
 fluid in some way corresponds to the space coordinate of particles). In the
 code particles are present either as tracer particles or as dust particles
 
-\subsubsection{Tracer particles}
+\subsubsection{示踪粒子 Tracer particles}
 
 Tracer particles always have the local velocity of the gas. The dynamical
 equations are thus
@@ -5759,7 +5412,7 @@ to have a time-evolving mass.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Test-field equations}
+\subsection{测试场方程 Test-field equations}
 \index{Testfield method}
 
 The test-field method is used to calculate turbulent transport coefficients
@@ -5771,7 +5424,7 @@ For technical details; see also Sect.~\ref{RestartingFromLessPhysics}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Gravitational wave equations}
+\subsection{引力波方程 Gravitational wave equations}
 \index{Gravitational Waves}
 
 \def\SX{S_\times}
@@ -6415,7 +6068,7 @@ and it is time to complain.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Pencil check}
+\subsection{Pencil 检查 Pencil check}
 
 \subsubsection{The pencil check complains for no reason.}
 
@@ -6753,7 +6406,7 @@ conveniently set the field strength by your choice of plasma beta (=
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Visualization}
+\subsection{可视化 Visualization}
 
 %%%
 \subsubsection{\file{start.pro} doesn't work:}
@@ -6914,7 +6567,7 @@ They would leave gaps in the counting of entries in your
 
 % ---------------------------------------------------------------------- %
 
-\subsection{General questions}
+\subsection{一般问题 General questions}
 
 %%%
 \subsubsection{``Installation'' procedure}
@@ -7057,7 +6710,7 @@ Note: the above way to get svn works. It takes a while however, so there
 are certainly faster ways out there. If you already have a non-obsolete svn
 version, use that instead.
 
-\subsubsection{Pencil Code discussion forum}
+\subsubsection{Pencil Code 讨论论坛 discussion forum}
 
 Do I just need to send an email somewhere to subscribe or what?
 
@@ -7089,7 +6742,7 @@ Again, the answer is yes; just go to:
 \cleardoublepage
 % ====================================================================== %
 
-\part{Programming the {\sc Pencil Code}}
+\part{编写 {\sc Pencil Code} Programming the {\sc Pencil Code}}
 \index{Check-in details}
 \index{h-index}
 
@@ -7226,7 +6879,7 @@ code as it is, but it may also indicate that it is getting harder
 to understand the code.
 How to understand the code will be discussed in the next section.
 
-\section{Understanding the code}
+\section{理解代码 Understanding the code}
 
 Understanding the code means looking through the code.
 This is not normally done by just printing out the entire code,
