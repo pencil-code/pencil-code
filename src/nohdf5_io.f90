@@ -147,7 +147,7 @@ module HDF5_IO
     subroutine output_hdf5_int_1D(name, data)
 !
       character (len=*), intent(in) :: name
-      integer, intent(in) :: data
+      integer, dimension(:), intent(in) :: data
 !
       call fatal_error ('output_hdf5_int_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
