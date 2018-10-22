@@ -55,21 +55,9 @@ module Particles_spin
 !
 !  Indices for particle spin
 !
-      ipsx = npvar + 1
-      pvarname(ipsx) = 'ipsx'
-      ipsy = npvar + 2
-      pvarname(ipsy) = 'ipsy'
-      ipsz = npvar + 3
-      pvarname(ipsz) = 'ipsz'
-!
-      npvar = npvar + 3
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      bound: if (npvar > mpvar) then
-        if (lroot) print *, 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_spin', 'npvar > mpvar')
-      endif bound
+      call append_npvar('ipsx',ipsx)
+      call append_npvar('ipsy',ipsy)
+      call append_npvar('ipsz',ipsz)
 !
     endsubroutine register_particles_spin
 !***********************************************************************

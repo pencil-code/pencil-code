@@ -71,38 +71,16 @@ module Particles_mass
           "$Id: particles_mass.f90 20849 2013-08-06 18:45:43Z anders@astro.lu.se $")
 !
       ! Index for particle mass.
-      imp = npvar+1
-      pvarname(npvar+1) = 'imp'
-      npvar = npvar+1
+      call append_npvar('imp',imp)
 !
       ! Index for density at the outer shell.
-      irhosurf = npvar+1
-      pvarname(npvar+1) = 'irhosurf'
-      npvar = npvar+1
-!
-      ! Check that the fp and dfp arrays are big enough.
-      if (npvar > mpvar) then
-        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_mass: npvar > mpvar','')
-      endif
+      call append_npvar('irhosurf',irhosurf)
 !
       ! Index for initial value of particle mass.
-      impinit = mpvar+npaux+1
-      pvarname(impinit) = 'impinit'
-      npaux = npaux+1
+      call append_npaux('impinit',impinit)
 !
       ! Index for particle radius
-      iapinit = impinit+1
-      pvarname(iapinit) = 'iapinit'
-      npaux = npaux+1
-
-
-!
-      ! Check that the fp and dfp arrays are big enough.
-      if (npaux > mpaux) then
-        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
-        call fatal_error('register_particles_mass: npaux > mpaux','')
-      endif
+      call append_npaux('iapinit',iapinit)
 !
 !  We need to register an auxiliary array to dmp
 !

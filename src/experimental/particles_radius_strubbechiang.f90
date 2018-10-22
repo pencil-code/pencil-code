@@ -85,38 +85,13 @@ module Particles_radius
 !
 !  Index for particle radius.
 !
-      iap=npvar+1
-      pvarname(npvar+1)='iap'
+      call append_npvar('iap',iap)
 !
-!  Increase npvar accordingly.
-!
-      npvar=npvar+1
-!
-      if (lparticles_radius_rpbeta) then
-        irpbeta=npvar+1
-        pvarname(npvar+1)='irpbeta'
-        npvar=npvar+1
-      endif
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles: npvar > mpvar','')
-      endif
+      if (lparticles_radius_rpbeta) call append_npvar('irpbeta',irpbeta)
 !
 ! Index for the effectiveness factor of surface reactions
 !
-      ieffp = mpvar+npaux+1
-      pvarname(ieffp) = 'ieffp'
-      npaux = npaux+1
-!
-! Check that the fp and dfp arrays are big enough.
-!
-      if (npaux > mpaux) then
-        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
-        call fatal_error('register_particles_radius: npaux > mpaux','')
-      endif
+      call append_npaux('ieffp',ieffp)
 !
     endsubroutine register_particles_radius
 !***********************************************************************

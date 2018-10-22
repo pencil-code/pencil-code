@@ -19,6 +19,7 @@ module Particles_mass
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
+  use Particles_sub
 !
   implicit none
 !
@@ -42,16 +43,7 @@ module Particles_mass
 !
 ! Index for particle mass.
 !
-      imp = npvar + 1
-      npvar = npvar + 1
-      pvarname(imp) = 'imp'
-!
-! Check that the fp and dfp arrays are big enough.
-!
-      chknpvar: if (npvar > mpvar) then
-        if (lroot) print *, 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_mass', 'npvar > mpvar')
-      endif chknpvar
+      call append_npvar('imp',imp)
 !
     endsubroutine register_particles_mass
 !***********************************************************************

@@ -118,13 +118,9 @@ module Particles_nbody
 !  Auxiliary variables for polar coordinates
 !
       !if (.not.lcartesian_coords) then
-        ivpx_cart = npvar+1
-        pvarname(npvar+1)='ivpx_cart'
-        ivpy_cart = npvar+2
-        pvarname(npvar+1)='ivpy_cart'
-        ivpz_cart = npvar+3
-        pvarname(npvar+1)='ivpz_cart'
-        npvar=npvar+3
+        call append_npvar('ivpx_cart',ivpx_cart)
+        call append_npvar('ivpy_cart',ivpy_cart)
+        call append_npvar('ivpz_cart',ivpz_cart)
       !endif
 !
     endsubroutine register_particles_nbody

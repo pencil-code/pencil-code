@@ -73,16 +73,7 @@ module Particles_sink
 !
 !  Index for sink particle radius.
 !
-      iaps=npvar+1
-      pvarname(npvar+1)='iaps'
-      npvar=npvar+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_sink_particles','npvar > mpvar')
-      endif
+      call append_npvar('iaps',iaps)
 !
     endsubroutine register_particles_sink
 !***********************************************************************

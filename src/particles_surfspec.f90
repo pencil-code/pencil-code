@@ -133,18 +133,8 @@ module Particles_surfspec
 !  Increase of npvar according to N_surface_species, which is
 !  the concentration of gas phase species at the particle surface
 !
-      if (N_surface_species > 1) then
-        isurf = npvar+1
-        npvar = npvar+N_surface_species-1
-        isurf_end = isurf+N_surface_species-1
-      else
+      if (N_surface_species <= 1) then
         call fatal_error('register_particles_', 'N_surface_species must be > 1')
-      endif
-!
-! Check that the fp and dfp arrays are big enough
-      if (npvar > mpvar) then
-        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_ads','npvar > mpvar')
       endif
 !
 ! Allocate memory for a number of arrays
@@ -178,11 +168,10 @@ module Particles_surfspec
       call get_reactants(reactants)
       call sort_compounds(reactants,solid_species,n_surface_species)
 !
-      if (N_surface_species > 1) then
-        do i = 1,N_surface_species
-          pvarname(isurf+i-1) = 'i'//solid_species(i)
-        enddo
-      endif
+      do i = 1,N_surface_species
+        call append_npvar('i'//solid_species(i),isurf)
+      enddo
+      isurf_end = isurf
 !
 !  create binding between gas phase and near field gas species
 !  chemistry and particles_chemistry module

@@ -182,25 +182,15 @@ module Particles
 !
 !  Indices for particle position.
 !
-      ixp=npvar+1
-      pvarname(npvar+1)='ixp'
-      iyp=npvar+2
-      pvarname(npvar+2)='iyp'
-      izp=npvar+3
-      pvarname(npvar+3)='izp'
+      call append_npvar('ixp',ixp)
+      call append_npvar('iyp',iyp)
+      call append_npvar('izp',izp)
 !
 !  Indices for particle velocity.
 !
-      ivpx=npvar+4
-      pvarname(npvar+4)='ivpx'
-      ivpy=npvar+5
-      pvarname(npvar+5)='ivpy'
-      ivpz=npvar+6
-      pvarname(npvar+6)='ivpz'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+6
+      call append_npvar('ivpx',ivpx)
+      call append_npvar('ivpy',ivpy)
+      call append_npvar('ivpz',ivpz)
 !
 !  Set indices for auxiliary variables
 !
@@ -208,13 +198,6 @@ module Particles
           communicated=lcommunicate_np)
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles','npvar > mpvar')
-      endif
 !
     endsubroutine register_particles
 !***********************************************************************

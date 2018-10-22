@@ -46,19 +46,7 @@ module Particles_density
 !
 !  Index for particle density.
 !
-      irhopswarm=npvar+1
-      pvarname(npvar+1)='irhopswarm'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_density: npvar > mpvar','')
-      endif
+      call append_npvar('irhopswarm',irhopswarm)
 !
     endsubroutine register_particles_density
 !***********************************************************************
