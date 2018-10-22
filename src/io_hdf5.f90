@@ -216,7 +216,6 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
       logical :: lwrite_add
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
@@ -244,7 +243,6 @@ module Io
         call collect_grid (x, y, z, gx, gy, gz)
         if (lroot) then
           call file_open_hdf5 (filename, truncate=.false., global=.false.)
-          t_sp = t
           call output_hdf5 ('t', t)
           call create_group_hdf5 ('grid')
           call output_hdf5 ('grid/x', gx, mxgrid)
@@ -339,7 +337,6 @@ module Io
       integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lread_add
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
       filename = trim (directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
@@ -360,7 +357,7 @@ module Io
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
           call file_open_hdf5 (filename, global=.false., read_only=.true.)
-          call input_hdf5 ('t', t_sp)
+          call input_hdf5 ('t', t)
           call input_hdf5 ('grid/x', gx, mxgrid)
           call input_hdf5 ('grid/y', gy, mygrid)
           call input_hdf5 ('grid/z', gz, mzgrid)
@@ -390,8 +387,7 @@ module Io
         if (lroot) then
           call file_close_hdf5
         endif
-        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
-        t = t_sp
+        call mpibcast_real (t,comm=MPI_COMM_WORLD)
         call mpibcast_real (dx,comm=MPI_COMM_WORLD)
         call mpibcast_real (dy,comm=MPI_COMM_WORLD)
         call mpibcast_real (dz,comm=MPI_COMM_WORLD)
@@ -1164,7 +1160,6 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
@@ -1173,12 +1168,11 @@ module Io
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = t
       endif
 
       call collect_grid (x, y, z, gx, gy, gz)
       if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+        write (lun_output) t, gx, gy, gz, dx, dy, dz
         write (lun_output) dx, dy, dz
         write (lun_output) Lx, Ly, Lz
       endif
@@ -1207,14 +1201,13 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (lroot) then
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-        read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+        read (lun_input) t, gx, gy, gz, dx, dy, dz
         call distribute_grid (x, y, z, gx, gy, gz)
         read (lun_input) dx, dy, dz
         read (lun_input) Lx, Ly, Lz
