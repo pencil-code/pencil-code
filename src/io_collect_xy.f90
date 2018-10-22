@@ -287,6 +287,23 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
+!
+!  Write particle snapshot file, always write mesh and time.
+!
+!  23-Oct-2018/PABourdin: adapted from output_snap
+!
+      integer, intent(in) :: mv, nv
+      integer, dimension (mv), intent(in) :: ipar
+      real, dimension (mv,mparray), intent(in) :: a
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+      logical, optional, intent(in) :: ltruncate
+!
+      call fatal_error ('output_part_snap', 'not implemented for "io_collect"', .true.)
+!
+    endsubroutine output_part_snap
+!***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)

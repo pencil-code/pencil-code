@@ -211,11 +211,10 @@ module Io
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
-      logical :: ltrunc, lexists
+      logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
-      logical :: lwrite_add
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
@@ -314,6 +313,104 @@ module Io
       endif
 !
     endsubroutine output_snap_finalize
+!***********************************************************************
+    subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
+!
+!  Write particle snapshot file, always write mesh and time.
+!
+!  22-Oct-2018/PABourdin: adapted from output_snap
+!
+      use File_io, only: parallel_file_exists
+      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
+!
+      integer, intent(in) :: mv, nv
+      integer, dimension (mv), intent(in) :: ipar
+      real, dimension (mv,mparray), intent(in) :: a
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+      logical, optional, intent(in) :: ltruncate
+!
+      logical :: ltrunc, lexists
+      character (len=fnlen) :: filename, dataset
+      real, dimension (:), allocatable :: gx, gy, gz
+      integer :: alloc_err
+!
+      dataset = 'fp'
+      if (present (label)) dataset = label
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+      lexists = parallel_file_exists(filename)
+      ltrunc = .true.
+      if (present (ltruncate)) ltrunc = ltruncate
+      if (.not. lexists) ltrunc = .true.
+!
+      ! open global HDF5 file and write main data
+      call file_open_hdf5 (filename, truncate=ltrunc)
+      call output_hdf5 (dataset, a, mv, nv)
+      call file_close_hdf5
+!
+      ! write additional data:
+      if (ltrunc .and. (trim (dataset) == 'fp')) then
+        if (lroot) then
+          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('output_part_snap', 'allocate memory for gx,gy,gz', .true.)
+        endif
+        call collect_grid (x, y, z, gx, gy, gz)
+        if (lroot) then
+          call file_open_hdf5 (filename, truncate=.false., global=.false.)
+          call output_hdf5 ('t', t)
+          call create_group_hdf5 ('grid')
+          call output_hdf5 ('grid/x', gx, mxgrid)
+          call output_hdf5 ('grid/y', gy, mygrid)
+          call output_hdf5 ('grid/z', gz, mzgrid)
+          call output_hdf5 ('grid/dx', dx)
+          call output_hdf5 ('grid/dy', dy)
+          call output_hdf5 ('grid/dz', dz)
+          call output_hdf5 ('grid/Lx', Lx)
+          call output_hdf5 ('grid/Ly', Ly)
+          call output_hdf5 ('grid/Lz', Lz)
+        endif
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) then
+          call output_hdf5 ('grid/dx_1', gx, mxgrid)
+          call output_hdf5 ('grid/dy_1', gy, mygrid)
+          call output_hdf5 ('grid/dz_1', gz, mzgrid)
+        endif
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        if (lroot) then
+          call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
+          call output_hdf5 ('grid/dy_tilde', gy, mygrid)
+          call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
+          call create_group_hdf5 ('dim')
+          call output_hdf5 ('dim/mx', nxgrid+2*nghost)
+          call output_hdf5 ('dim/my', nygrid+2*nghost)
+          call output_hdf5 ('dim/mz', nzgrid+2*nghost)
+          call output_hdf5 ('dim/nx', nxgrid)
+          call output_hdf5 ('dim/ny', nygrid)
+          call output_hdf5 ('dim/nz', nzgrid)
+          call output_hdf5 ('dim/l1', nghost)
+          call output_hdf5 ('dim/m1', nghost)
+          call output_hdf5 ('dim/n1', nghost)
+          call output_hdf5 ('dim/l2', nghost+nxgrid-1)
+          call output_hdf5 ('dim/m2', nghost+nygrid-1)
+          call output_hdf5 ('dim/n2', nghost+nzgrid-1)
+          call output_hdf5 ('dim/nghost', nghost)
+          call output_hdf5 ('dim/mvar', mvar)
+          call output_hdf5 ('dim/maux', maux)
+          call output_hdf5 ('dim/mglobal', mglobal)
+          call output_hdf5 ('dim/nprocx', nprocx)
+          call output_hdf5 ('dim/nprocy', nprocy)
+          call output_hdf5 ('dim/nprocz', nprocz)
+          if (mpi_precision == MPI_REAL) then
+            call output_hdf5 ('dim/precision', 'S')
+          else
+            call output_hdf5 ('dim/precision', 'D')
+          endif
+          call file_close_hdf5
+          deallocate (gx, gy, gz)
+        endif
+      endif
+!
+    endsubroutine output_part_snap
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode, label)
 !

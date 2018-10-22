@@ -4,7 +4,7 @@
 
   public :: lun_input, lun_output, lcollective_IO, IO_strategy
   public :: register_io, finalize_io
-  public :: output_snap, output_snap_finalize
+  public :: output_snap, output_snap_finalize, output_part_snap
   public :: input_snap, input_snap_finalize
   public :: output_globals, input_globals
   public :: init_write_persist, write_persist, write_persist_id

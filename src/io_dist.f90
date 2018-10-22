@@ -200,6 +200,42 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
+!
+!  Write particle snapshot file, always write mesh and time.
+!
+!  22-Oct-2018/PABourdin: adapted from output_snap
+!
+      integer, intent(in) :: mv, nv
+      integer, dimension (mv), intent(in) :: ipar
+      real, dimension (mv,mparray), intent(in) :: a
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+      logical, optional, intent(in) :: ltruncate
+!
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      t_sp = t
+      open(lun_output,FILE=trim(directory_dist)//'/'//file,FORM='unformatted')
+!
+!  First write the number of particles present at the processor and the index
+!  numbers of the particles.
+!
+        write(lun_output) nv
+        if (nv/=0) write(lun_output) ipar(1:nv)
+!
+!  Then write particle data.
+!
+        if (nv/=0) write(lun_output) a(1:nv,:)
+!
+!  Write time and grid parameters.
+!
+        write(lun_output) t_sp, x, y, z, dx, dy, dz
+!
+      close(lun_output)
+!
+    endsubroutine output_part_snap
+!***********************************************************************
     logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to snapshot file.
