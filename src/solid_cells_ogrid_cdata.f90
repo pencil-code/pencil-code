@@ -318,31 +318,16 @@ module solid_cells_ogrid_cdata
   real, dimension(6,9) :: D1_SBP, D2_SBP
 
 !  EOS parameters
-  real :: rho0, lnrho0, lnTT0
+  real ::  lnTT0!,rho0, lnrho0
 
 !  Energy parameters
   real, pointer :: chi
   logical, pointer :: ladvection_temperature, lheatc_chiconst, lupw_lnTT
 
-!  Chemistry parameters
-! Copied here without thinking
-! TODO: verify which ones are needed here and remove the rest
-  real, dimension(:,:,:), pointer :: mu1_full
-!  real, dimension(mx_ogrid,my_ogrid,mz_ogrid), target :: mu1_full
-  real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec), save :: RHS_Y_full_ogrid
-  real, dimension(nchemspec,18) :: species_constants
-  real, dimension(:), pointer :: Lewis_coef1
-  logical, pointer :: ldiffusion, ldiff_corr, lew_exist, lcheminp
-  logical, pointer :: lThCond_simple,lheatc_chemistry, tran_exist, lfix_Sc
-  logical, pointer :: lt_const, ladvection, lfilter_strict, lfilter, lreactions
-  real, pointer :: visc_const, cp_const, lambda_const, Pr_number, Rgas
-  real, pointer, dimension(:,:) :: tran_data
-  integer :: iTemp1=2, iTemp2=3, iTemp3=4, imass=1
-  integer, dimension(7) :: iaa1, iaa2
-
-! Eos_chemistry parameters
+! Eos_chemistry + chemistry parameters
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1_ogrid,ll2_ogrid,mm1_ogrid,mm2_ogrid,nn1_ogrid,nn2_ogrid
+  logical, pointer :: lheatc_chemistry
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0

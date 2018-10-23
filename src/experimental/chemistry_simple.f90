@@ -374,7 +374,7 @@ module Chemistry
 !                    in the f array for output.
 !
       use FArrayManager
-      use SharedVariables, only: get_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
       use Messages, only: warning
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -502,6 +502,16 @@ module Chemistry
         print*,'Lewis numbers need to be read from start.in, no option to read from file'
         print*,'Set all Le = 1'
       endif
+!
+!  Needed by ogrid_chemistry 
+!
+      call put_shared_variable('lheatc_chemistry', lheatc_chemistry)
+      call put_shared_variable('lcheminp',lcheminp)
+      call put_shared_variable('tran_exist',tran_exist)
+      call put_shared_variable('tran_data',tran_data)
+      call put_shared_variable('Lewis_coef1',Lewis_coef1)
+      call put_shared_variable('Rgas',Rgas)
+      call put_shared_variable('Sc_number',Sc_number)
 !
 !  write array dimension to chemistry diagnostics file
 !

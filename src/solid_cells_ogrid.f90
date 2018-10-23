@@ -25,6 +25,7 @@ module Solid_Cells
   use Messages
   use Solid_cells_ogrid_sub
   use Solid_cells_ogrid_cdata
+  use Solid_cells_ogrid_chemistry
 !
   implicit none
 !
@@ -371,7 +372,11 @@ module Solid_Cells
 !
 !  Set up necessary units for equation of state
 !
-      call initialize_eos
+      if (.not. lchemistry) then
+        call initialize_eos_ogr
+      else
+        call initialize_eos_chemistry
+      endif       
 !
 !  Check if it will be necessary to use communication between processors 
 !  to perform the interpolation between the overlapping grids.
@@ -446,14 +451,15 @@ module Solid_Cells
 !
 !  Get thermal diffusivity from energy module
 !
-      if (iTT .ne. 0) then
+      if ((iTT .ne. 0) .and. (.not. lchemistry)) then
         call get_shared_variable('chi',chi)
         call get_shared_variable('ladvection_temperature',&
             ladvection_temperature)
         call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call get_shared_variable('lupw_lnTT',lupw_lnTT)
       else
-        if (ilnTT .ne. 0) then
+       ! if (ilnTT .ne. 0) then
+        if (iTT .eq. 0) then
           call fatal_error('initialize_solid_cells',&
               'Most use linear temperature for solid_cells_ogrid') 
         endif
@@ -461,30 +467,9 @@ module Solid_Cells
 
 ! TODO: chemistry should be initialized somewhere here but there's no f_og
 !       to call initialize_chemistry_og(f_og)
-
-! TODO: all the below must exist and be first shared in chemistry!!
-      if (lchemistry) then !(nchemspec .ne. 0) then
-        call get_shared_variable('ldiffusion',ldiffusion)
-        call get_shared_variable('ldiff_corr',ldiff_corr)
-        call get_shared_variable('lew_exist',lew_exist)
-        call get_shared_variable('lcheminp',lcheminp)
-        call get_shared_variable('lThCond_simple',lThCond_simple)
-        call get_shared_variable('visc_const',visc_const)
-        call get_shared_variable('cp_const',cp_const)
-        call get_shared_variable('lambda_const',lambda_const)
+!
+      if (lchemistry) then
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
-        call get_shared_variable('tran_exist',tran_exist)
-        call get_shared_variable('lfix_Sc',lfix_Sc)
-        call get_shared_variable('tran_data',tran_data)
-        call get_shared_variable('Pr_number',Pr_number)
-        call get_shared_variable('lt_const',lt_const)
-        call get_shared_variable('ladvection',ladvection)
-        call get_shared_variable('lfilter',lfilter)
-        call get_shared_variable('lfilter_strict',lfilter_strict)
-        call get_shared_variable('Lewis_coef1',Lewis_coef1)
-        call get_shared_variable('mu1_full',mu1_full)
-        call get_shared_variable('lreactions',lreactions)
-        call get_shared_variable('Rgas',Rgas)
       endif
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
@@ -797,7 +782,7 @@ module Solid_Cells
 !
     endsubroutine initialize_pencils_ogrid
 !***********************************************************************
-    subroutine initialize_eos
+    subroutine initialize_eos_ogr
 !  
 !  Set up parameters necessary to compute the energy and pressure using
 !  the ideal gas eos.
@@ -806,18 +791,16 @@ module Solid_Cells
 !
 !  4-apr-17/Jorgen: Coded
 !
-      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1
+      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1,rho0,lnrho0
       real :: cp1, cp
-!
-      if (.not. lchemistry) then
 !
 !  Inverse cv and cp values.
 !
         call get_cp1(cp1)
         cp=1./cp1
 !
-        rho0=1.0
-        lnrho0=log(rho0)
+!        rho0=1.0
+!        lnrho0=log(rho0)
         if (gamma_m1/=0.0) then
           lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
           leos_isentropic=.true.
@@ -826,35 +809,7 @@ module Solid_Cells
           leos_isothermal=.true.
         endif
 !
-      else 
-!
-! Initialize variable selection code (needed for RELOADing)
-!
-        ieosvars=-1
-        ieosvar_count=0
-!
-        if ((nxgrid_ogrid==1) .and. (nygrid_ogrid==1) .and. (nzgrid_ogrid==1)) then
-          ll1_ogrid=1; ll2_ogrid=mx_ogrid; mm1_ogrid=m1_ogrid; mm2_ogrid=m2_ogrid; nn1_ogrid=n1_ogrid; nn2_ogrid=n2_ogrid
-        elseif (nxgrid_ogrid==1) then
-          ll1_ogrid=l1_ogrid; ll2_ogrid=l2_ogrid
-        else
-          ll1_ogrid=1; ll2_ogrid=mx_ogrid
-        endif
-!
-        if (nygrid_ogrid==1) then
-          mm1_ogrid=m1_ogrid; mm2_ogrid=m2_ogrid
-        else
-          mm1_ogrid=1; mm2_ogrid=my_ogrid
-        endif
-!
-        if (nzgrid_ogrid==1) then
-          nn1_ogrid=n1_ogrid; nn2_ogrid=n2_ogrid
-        else
-          nn1_ogrid=1;  nn2_ogrid=mz_ogrid
-        endif
-      endif
-!
-    endsubroutine initialize_eos
+    endsubroutine initialize_eos_ogr
 !***********************************************************************
     subroutine initialize_interpolate_points
 !
@@ -1788,6 +1743,8 @@ module Solid_Cells
 !  11-apr-17/Jorgen: Coded
 !
       use Mpicomm, only: mpireduce_sum
+      use EquationOfState, only: rho0
+!
       real, intent(inout) :: c_dragx,c_dragy
       real :: c_dragx_all,c_dragy_all
       real :: norm
@@ -4708,10 +4665,9 @@ module Solid_Cells
       c_dragy=0.
       Nusselt=0.
 !
-! TODO: switch this on once connected with ogrid_chemistry
-! TODO: is it the right place for that, btw?
+! TODO: is it the right place for calc_for_chem_mixture_ogrid?
 !
-!  if (lchemistry .and. ldensity) call calc_for_chem_mixture_ogrid(f_og)
+  if (lchemistry .and. ldensity) call calc_for_chem_mixture_ogrid(f_og)
 !
 !  Initiate communication and do boundary conditions.
 !
@@ -4901,8 +4857,7 @@ module Solid_Cells
         if (lheatc_chiconst) then
           call calc_heatcond_constchi_ogrid(df,p_ogrid)
         elseif (lheatc_chemistry) then
-! TODO: switch this on once connected with ogrid_chemistry
-!          call calc_heatcond_chemistry_ogrid(f_og,df,p_ogrid)
+          call calc_heatcond_chemistry_ogrid(f_og,df,p_ogrid)
         else
           call fatal_error('denergy_dt_ogrid','Must use lheatc_chicons=T')
         endif
@@ -4910,214 +4865,6 @@ module Solid_Cells
       endif
 !
     endsubroutine denergy_dt_ogrid
-!***********************************************************************
-    subroutine dYk_dt_ogrid(f_og,df)
-!
-!  species transport equation
-!  calculate dYk/dt = - u.gradYk - div(rho*Yk*Vk)/rho + R/rho
-!  add chemistry contribution to temperature equation
-!
-      use Diagnostics
-!
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
-      real, dimension(nx_ogrid,3) :: gchemspec, dk_D, sum_diff=0.
-      real, dimension(nx_ogrid) :: ugchemspec, sum_DYDT, sum_dhhk=0.
-      real, dimension(nx_ogrid) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac
-      type (pencil_case_ogrid) :: p_ogrid
-      real, dimension(nx_ogrid) :: RHS_T_full!, diffus_chem
-
-      integer :: j,k,i
-
-      intent(inout) :: df, f_og
-!
-!  identify module and boundary conditions
-!
-      call timing('dchemistry_dt','entered',mnloop=.true.)
-      if (headtt .or. ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
-
-        do k=1,nchemspec
-!
-!  Advection 
-!
-          if (lhydro .and. ladvection) then
-            call grad_ogrid(f_og,ichemspec(k),gchemspec)
-            call dot_mn_ogrid(p_ogrid%uu,gchemspec,ugchemspec)
-!            if (lmobility) ugchemspec = ugchemspec*mobility(k)
-            df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) = &
-                df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) - ugchemspec
-          endif
-!
-!  Diffusion
-!
-          if (ldiffusion) then
-            df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) = &
-                df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) + p_ogrid%DYDt_diff(:,k)
-          endif
-!
-!  Reaction
-!
-          if (lreactions) then
-            df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) = &
-                df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) + p_ogrid%DYDt_reac(:,k)
-          endif
-!
-!  Add filter for negative concentrations
-! TODO: dt or dt_ogrid or it doesn't matter? 
-!
-          if (lfilter .and. .not. lfilter_strict) then
-            do i = 1,mx_ogrid
-              if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) < -1e-25 ) then
-                df(i,m_ogrid,n_ogrid,ichemspec(k)) = -1e-25*dt
-              endif
-              if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) > 1. ) then
-                df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt
-              endif
-            enddo
-          endif
-!
-!  Add strict filter for negative concentrations
-!
-          if (lfilter_strict) then
-            do i = 1,mx_ogrid
-              if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) < 0.0 ) then
-                if (df(i,m_ogrid,n_ogrid,ichemspec(k)) < 0.)&
-                   df(i,m_ogrid,n_ogrid,ichemspec(k)) = 0.
-              endif
-              if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) > 1. ) then
-                df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt
-              endif
-            enddo
-          endif
-
-        enddo
-!
-!  Modify RHS of temperature equation
-!
-      if (ldensity) then 
-!
-          sum_DYDt = 0.
-          sum_hhk_DYDt_reac = 0.
-          sum_dk_ghk = 0.
-!
-          do k = 1,nchemspec
-            if (species_constants(k,imass) > 0.) then
-              sum_DYDt = sum_DYDt+Rgas/species_constants(k,imass) &
-                  *(p_ogrid%DYDt_reac(:,k)+p_ogrid%DYDt_diff(:,k))
-              if (lreactions) then
-                sum_hhk_DYDt_reac = sum_hhk_DYDt_reac-p_ogrid%hhk_full(:,k)*p_ogrid%DYDt_reac(:,k)
-              endif
-!
-!  Sum over all species of diffusion terms
-!
-              if (ldiffusion) then
-!                call grad_ogrid(f,ichemspec(k),gchemspec)
-                do i = 1,3
-                  dk_D(:,i) = gchemspec(:,i)*p_ogrid%Diff_penc_add(:,k)
-                enddo
-                call dot_mn_ogrid(dk_D,p_ogrid%ghhk(:,:,k),dk_dhhk)
-                sum_dk_ghk = sum_dk_ghk+dk_dhhk
-                if (ldiff_corr) sum_diff(:,k) = sum_diff(:,k)+dk_D(:,k)
-              endif
-!
-            endif
-          enddo
-!
-! If the correction velocity is added
-!
-          if (ldiff_corr .and. ldiffusion) then
-            do k = 1,nchemspec
-              call dot_mn_ogrid(sum_diff,p_ogrid%ghhk(:,:,k),sum_dhhk)
-              sum_dk_ghk(:) = sum_dk_ghk(:)-f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*sum_dhhk(:)
-            enddo
-          endif
-!
-        if (ltemperature_nolog) then
-          RHS_T_full = p_ogrid%cv1*((sum_DYDt(:)-Rgas*p_ogrid%mu1*p_ogrid%divu)*p_ogrid%TT &
-                     + sum_dk_ghk*p_ogrid%cv1+sum_hhk_DYDt_reac)
-        else
-          RHS_T_full = (sum_DYDt(:)-Rgas*p_ogrid%mu1*p_ogrid%divu)*p_ogrid%cv1 &
-            + sum_dk_ghk*p_ogrid%TT1(:)*p_ogrid%cv1+sum_hhk_DYDt_reac*p_ogrid%TT1(:)*p_ogrid%cv1
-        endif
-!
-        if (.not. lT_const) then
-            df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT) = &
-               df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT) + RHS_T_full
-        endif
-!
-!     Heatcond called from denergy_dt so removed here
-!        if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
-!
-      endif
-!
-!      if (lreactions .and. ireac /= 0 .and. ((.not. llsode))) then
-!        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f_og,p_ogrid)
-!      endif
-!
-!
-! The part below is commented because ldt = false all the time and it's
-! never executed (llsode = F, lfirst = T/F depending on sub-timestep)
-! TODO: uncomment
-!
-! this damping zone is needed in a case of NSCBC
-!
-!      if (ldamp_zone_for_NSCBC) call damp_zone_for_NSCBC(f,df)
-!
-!  For the timestep calculation, need maximum diffusion
-!
-!      if (lfirst .and. ldt) then
-!          diffus_chem=0.
-!          do j = 1,nx
-!            if (ldiffusion .and. .not. ldiff_simple) then
-!
-!--------------------------------------
-!  This expression should be discussed
-!--------------------------------------
-!
-!              diffus_chem(j) = diffus_chem(j)+ &
-!                  maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
-!            else
-!              diffus_chem(j) = 0.
-!            endif
-!          enddo
-!        maxdiffus=max(maxdiffus,diffus_chem)
-!      endif
-!
-! NB: it should be discussed
-!
-!      if (lfirst .and. ldt) then
-!        if (lreactions .and.(.not. llsode)) then
-!
-!  calculate maximum of *relative* reaction rate if decaying,
-!  or maximum of absolute rate, if growing.
-!
-!          if (lchem_cdtc) then
-!            reac_chem = 0.
-!            do k = 1,nchemspec
-!              reac_chem = max(reac_chem, &
-!                  abs(p%DYDt_reac(:,k)/max(f(l1:l2,m,n,ichemspec(k)),.001)))
-!            enddo
-!
-!          else
-!            reac_chem = 0.
-!            !sum_reac_rate=0.
-!            do k = 1,nchemspec
-!              reac_chem = reac_chem+abs(p%DYDt_reac(:,k)/ &
-!                  max(f(l1:l2,m,n,ichemspec(k)),0.001))
-!              !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
-!            enddo
-!            if (maxval(reac_chem) > 1e11) then
-!              reac_chem = 1e11
-!            endif
-!          endif
-!        endif
-!      endif
-!
-    endsubroutine dYk_dt_ogrid
 !***********************************************************************
     subroutine calc_heatcond_constchi_ogrid(df,p_ogrid)
 !
@@ -5212,7 +4959,7 @@ module Solid_Cells
 !
 !  10-feb-17/Jorgen+Nils: Adapted from calc_pencils_eos_pencpar in eos_idealgas.f90
 !
-      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1
+      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1,lnrho0
 !
       real :: cp1, cv1, cp, cv
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
@@ -5252,150 +4999,6 @@ module Solid_Cells
 
 
     endsubroutine calc_pencils_eos_ogrid
-!***********************************************************************
-    subroutine calc_pencils_eos_ogrid_chem(f_og,p_ogrid)
-!
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
-
-      type (pencil_case_ogrid) :: p_ogrid
-      intent(inout) :: p_ogrid
-
-      real, dimension(nx_ogrid,3) :: glnDiff_full_add, glncp
-      real, dimension(nx_ogrid) :: D_th, R_mix
-      real, dimension(nx_ogrid) :: gradTgradT
-!
-      integer :: i,k,j2,j3
-!
-! Cp/Cv pencils
-!
-      if (lpencil_ogrid(i_og_cp)) p_ogrid%cp = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,icp)
-!
-      if (lpencil_ogrid(i_og_cv))  then
-        p_ogrid%cv = 0.
-        if (Cp_const < impossible) then
-          do k = 1,nchemspec
-            p_ogrid%cv = p_ogrid%cv + (Cp_const-Rgas)/species_constants(k,imass)&
-                         *f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))
-          enddo
-        else
-          R_mix = 0.
-          do k = 1,nchemspec
-            R_mix = R_mix + Rgas/species_constants(k,imass)&
-                    *f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))
-          enddo
-          p_ogrid%cv = p_ogrid%cp - R_mix 
-        endif
-        if (lpencil_ogrid(i_og_cv1)) p_ogrid%cv1 = 1./p_ogrid%cv
-        if (lpencil_ogrid(i_og_cp1)) p_ogrid%cp1 = 1./p_ogrid%cp
-      endif
-!
-!  Temperature
-!
-      if (lpencil_ogrid(i_og_lnTT)) then
-        if (ltemperature_nolog) then
-          p_ogrid%lnTT=log(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT))
-        else
-          p_ogrid%lnTT=f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT)
-        endif
-      endif
-!
-      if (lpencil_ogrid(i_og_TT))  then
-        if (ltemperature_nolog) then
-          p_ogrid%TT=f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-        else
-          p_ogrid%TT=exp(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT))
-        endif
-!
-        if (minval(p_ogrid%TT)==0.) then
-          call fatal_error('calc_pencils_eos_ogrid','p_ogrid%TT=0!')
-        endif         
-      endif
-!
-      if (lpencil_ogrid(i_og_TT1)) then
-        if (ltemperature_nolog) then
-          p_ogrid%TT1=1./f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-        else 
-          p_ogrid%TT1=1./exp(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT))
-        endif
-      endif
-!
-!  Temperature laplacian and gradient
-!
-      if (lpencil_ogrid(i_og_gTT))call grad_ogrid(f_og,iTT,p_ogrid%gTT)
-      if (lpencil_ogrid(i_og_glnTT)) then
-        if (ltemperature_nolog) then
-          p_ogrid%glnTT(:,1)=p_ogrid%gTT(:,1)/p_ogrid%TT(:)
-          p_ogrid%glnTT(:,2)=p_ogrid%gTT(:,2)/p_ogrid%TT(:)
-          p_ogrid%glnTT(:,3)=p_ogrid%gTT(:,3)/p_ogrid%TT(:)
-        else
-          call grad_ogrid(f_og,ilnTT,p_ogrid%glnTT)
-        endif
-      endif
-!
-      if (lpencil_ogrid(i_og_del2lnTT)) then
-        if (ltemperature_nolog) then
-          call dot2_mn_ogrid(p_ogrid%gTT,gradTgradT) 
-          call del2_ogrid(f_og   ,iTT,p_ogrid%del2TT)
-          p_ogrid%del2lnTT = -p_ogrid%TT1*p_ogrid%TT1*gradTgradT+p_ogrid%TT1*p_ogrid%del2TT
-        else
-          call del2_ogrid(f_og,ilnTT,p_ogrid%del2lnTT)
-        endif
-      endif
-!
-! Viscosity of a mixture
-!
-      if (lpencil_ogrid(i_og_nu)) then
-          p_ogrid%nu = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)
-        if (lpencil_ogrid(i_og_gradnu)) then
-          call grad_ogrid(f_og,iviscosity,p_ogrid%gradnu)
-        endif
-      endif
-!
-! Calculate thermal conductivity & diffusivity
-!
-      D_th = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)/Pr_number
-      if (lpencil_ogrid(i_og_lambda)) p_ogrid%lambda = p_ogrid%cp*p_ogrid%rho*D_th
-      if (lpencil_ogrid(i_og_glambda)) then         
-        call grad_ogrid(f_og,icp,p_ogrid%glncp)
-        do i = 1,3
-          p_ogrid%glncp(:,i) = p_ogrid%glncp(:,i)*p_ogrid%cp1
-          glnDiff_full_add(:,i) = p_ogrid%gradnu(:,i)/p_ogrid%nu
-          p_ogrid%glambda(:,i) = p_ogrid%lambda*(p_ogrid%glnrho(:,i) &
-                               + glnDiff_full_add(:,i) + p_ogrid%glncp(:,i)) 
-        enddo
-      endif
-!
-!  Mean molecular weight
-      if (lpencil_ogrid(i_og_mu1)) p_ogrid%mu1=mu1_full(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid)
-      if (lpencil_ogrid(i_og_gmu1)) call grad_other_ogrid(mu1_full,p_ogrid%gmu1)
-!
-!  Pressure
-!
-      if (lpencil_ogrid(i_og_pp)) p_ogrid%pp = Rgas*p_ogrid%TT*p_ogrid%mu1*p_ogrid%rho
-!
-!  Logarithmic pressure gradient
-!
-      if (lpencil_ogrid(i_og_rho1gpp)) then
-        do i=1,3
-          p_ogrid%rho1gpp(:,i) = p_ogrid%pp/p_ogrid%rho(:) &
-              *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%gmu1(:,i)/p_ogrid%mu1(:))
-        enddo
-      endif
-!
-!  Energy per unit mass 
-!
-!        if (lpencil(i_og_ee)) p_ogrid%ee = p_ogrid%cv*p_ogrid%TT
-!
-! Gradient of lnpp (removed)
-!
-      if (lpencil_ogrid(i_og_cs2)) then
-        if (any(p_ogrid%cv1 == 0.0)) then
-        else
-          p_ogrid%cs2 = p_ogrid%cp*p_ogrid%cv1*p_ogrid%mu1*p_ogrid%TT*Rgas
-        endif
-      endif
-!
-    endsubroutine calc_pencils_eos_ogrid_chem
 !***********************************************************************
     subroutine calc_pencils_energy_ogrid(f_og)
 !
@@ -5460,202 +5063,6 @@ module Solid_Cells
       endif
 !
     end subroutine calc_pencils_viscosity_ogrid
-!***********************************************************************
-    subroutine calc_pencils_chemistry_ogrid(f_og,p_ogrid)
-!
-!  Calculate chemistry pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-! TODO: switch this on once connected with ogrid_chemistry
-!     use chemistry, only: calc_reaction_term_ogr
-!     And this one off (will be computed in calc_for_chem_mixture_og):
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: cp_R_spec_ogrid
-
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-      type (pencil_case_ogrid) :: p_ogrid
-      intent(inout) :: p_ogrid
-!
-      integer :: k,i,j2,j3
-      integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
-      real :: T_low, T_up, T_mid
-      real, dimension(nx_ogrid) :: T_loc, TT_2, TT_3, TT_4, D_th
-!
-      T_loc = p_ogrid%TT
-      TT_2 = p_ogrid%TT*p_ogrid%TT
-      TT_3 = TT_2*p_ogrid%TT
-      TT_4 = TT_2*TT_2
-!
-!  Dimensionless Standard-state molar enthalpy H0/RT
-!
-      if (lpencil(i_og_H0_RT)) then
-        if (.not. lT_const) then
-          do k = 1,nchemspec
-            T_low = species_constants(k,iTemp1)
-            T_mid = species_constants(k,iTemp2)
-            T_up = species_constants(k,iTemp3)
-            where (T_loc <= T_mid)
-              p_ogrid%H0_RT(:,k) = species_constants(k,iaa2(ii1))         &
-                                 + species_constants(k,iaa2(ii2))*T_loc/2 &
-                                 + species_constants(k,iaa2(ii3))*TT_2/3  &
-                                 + species_constants(k,iaa2(ii4))*TT_3/4  &
-                                 + species_constants(k,iaa2(ii5))*TT_4/5  &
-                                 + species_constants(k,iaa2(ii6))/T_loc
-            elsewhere
-              p_ogrid%H0_RT(:,k) = species_constants(k,iaa1(ii1))         &
-                                 + species_constants(k,iaa1(ii2))*T_loc/2 &
-                                 + species_constants(k,iaa1(ii3))*TT_2/3  &
-                                 + species_constants(k,iaa1(ii4))*TT_3/4  &
-                                 + species_constants(k,iaa1(ii5))*TT_4/5  &
-                                 + species_constants(k,iaa1(ii6))/T_loc
-            endwhere
-          enddo
-!
-!  Enthalpy flux
-!
-          if (lpencil(i_og_hhk_full) ) then
-            do k = 1,nchemspec
-              if (species_constants(k,imass) > 0.)  then
-                p_ogrid%hhk_full(:,k) = p_ogrid%H0_RT(:,k)*Rgas*T_loc &
-                    /species_constants(k,imass)
-              endif
-            enddo
-          endif
-        endif
-      endif
-!
-      if (lpencil_ogrid(i_og_ghhk)) then
-        do k = 1,nchemspec
-          if (species_constants(k,imass) > 0.)  then
-            do i = 1,3
-!              p_ogrid%ghhk(:,i,k) = p_ogrid%cp*p_ogrid%glnTT(:,i)*p_ogrid%TT
-              p_ogrid%ghhk(:,i,k) = cp_R_spec_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k)&
-                                  /species_constants(k,imass)*Rgas*p_ogrid%glnTT(:,i)*p_ogrid%TT
-            enddo
-          endif
-        enddo
-      endif
-!
-!  Find the entropy by using fifth order temperature fitting function
-!
-      if (lpencil(i_og_S0_R)) then
-        if (.not. lT_const) then
-          do k = 1,nchemspec
-            T_low = species_constants(k,iTemp1)
-            T_mid = species_constants(k,iTemp2)
-            T_up = species_constants(k,iTemp3)
-            where (T_loc <= T_mid .and. T_low <= T_loc)
-              p_ogrid%S0_R(:,k) = species_constants(k,iaa2(ii1))*p_ogrid%lnTT &
-                                + species_constants(k,iaa2(ii2))*T_loc  &
-                                + species_constants(k,iaa2(ii3))*TT_2/2 &
-                                + species_constants(k,iaa2(ii4))*TT_3/3 &
-                                + species_constants(k,iaa2(ii5))*TT_4/4 &
-                                + species_constants(k,iaa2(ii7))
-            elsewhere (T_mid <= T_loc .and. T_loc <= T_up)
-              p_ogrid%S0_R(:,k) = species_constants(k,iaa1(ii1))*p_ogrid%lnTT &
-                                + species_constants(k,iaa1(ii2))*T_loc  &
-                                + species_constants(k,iaa1(ii3))*TT_2/2 &
-                                + species_constants(k,iaa1(ii4))*TT_3/3 &
-                                + species_constants(k,iaa1(ii5))*TT_4/4 &
-                                + species_constants(k,iaa1(ii7))
-            endwhere
-          enddo
-        endif
-      endif
-!
-! Calculate the reaction term and the corresponding pencil
-!
-      if (lreactions .and. lpencil(i_og_DYDt_reac)) then
-! TODO: switch this on once connected with ogrid_chemistry
-!        call calc_reaction_term_ogr(f_og,p_ogrid)
-      else
-        p_ogrid%DYDt_reac = 0.
-      endif
-!
-! Calculate the diffusion term and the corresponding pencil
-!
-      if (lpencil(i_og_Diff_penc_add)) then
-!
-! D_th is computed twice in calc_penc in eos and here
-!
-        D_th = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)/Pr_number
-        do k = 1,nchemspec
-          p_ogrid%Diff_penc_add(:,k) = D_th*Lewis_coef1(k)
-        enddo
-      endif
-!
-      if (ldiffusion .and. lpencil(i_og_DYDt_diff)) then
-        call calc_diffusion_term_ogrid(f_og,p_ogrid)
-      else
-        p_ogrid%DYDt_diff = 0.
-      endif
-!
-      RHS_Y_full_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,:) = p_ogrid%DYDt_reac+p_ogrid%DYDt_diff
-!
-    endsubroutine calc_pencils_chemistry_ogrid
-!***********************************************************************
-    subroutine calc_diffusion_term_ogrid(f_og,p_ogrid)
-!
-!  Calculate diffusion term, p%DYDt_diff
-!
-      real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-      type (pencil_case_ogrid) :: p_ogrid
-!
-      real, dimension(nx_ogrid) :: sum_gdiff_ogrid=0., gYk_sumdiff_ogrid
-      real, dimension(nx_ogrid) :: del2Yk, diff_op1_ogrid, diff_op2_ogrid
-      real, dimension(nx_ogrid,3) :: gYk, sum_diff_ogrid=0., dk_D_ogrid
-      real, dimension(nx_ogrid,3,nchemspec) :: gDiff_full_add_ogrid
-      integer :: k,i
-!
-      p_ogrid%DYDt_diff = 0.
-!
-!  Loop over all chemical species.
-!
-      do k = 1,nchemspec
-!
-          if (ldiffusion) then
-!
-!  Calculate diffusion coefficient gradients gDiff_full_add for the case:
-!    2) Constant Lewis number (= 1 by default or read from start.in) and given Pr
-!
-              do i = 1,3
-                gDiff_full_add_ogrid(:,i,k) = p_ogrid%gradnu(:,i)/Pr_number*Lewis_coef1(k)
-              enddo
-!
-!  Calculate the terms needed by the diffusion fluxes for the case:
-!    1) Fickian diffusion law (gradient of species MASS fractions)
-!
-              call del2_ogrid(f_og,ichemspec(k),del2Yk)
-              call grad_ogrid(f_og,ichemspec(k),gYk)
-              call dot_mn_ogrid(p_ogrid%glnrho,gYk,diff_op1_ogrid)
-              call dot_mn_ogrid(gDiff_full_add_ogrid(:,:,k),gYk,diff_op2_ogrid)
-!
-              p_ogrid%DYDt_diff(:,k) = p_ogrid%Diff_penc_add(:,k) &
-                                     *(del2Yk+diff_op1_ogrid) + diff_op2_ogrid
-              do i = 1,3
-                dk_D_ogrid(:,i) = p_ogrid%Diff_penc_add(:,k)*gYk(:,i)
-              enddo
-!
-              if (ldiff_corr) then
-                do i = 1,3
-                  sum_diff_ogrid(:,i) = sum_diff_ogrid(:,i)+dk_D_ogrid(:,i)
-                enddo
-                sum_gdiff_ogrid(:) = sum_gdiff_ogrid(:)+ p_ogrid%DYDt_diff(:,k)
-              endif
-          endif
-      enddo
-!
-!  Adding correction diffusion velocity to ensure mass balance
-!
-      if (ldiffusion .and. ldiff_corr) then
-        do k = 1,nchemspec
-          call grad_ogrid(f_og,ichemspec(k),gYk)
-          call dot_mn_ogrid(gYk(:,:),sum_diff_ogrid,gYk_sumdiff_ogrid)
-          p_ogrid%DYDt_diff(:,k) = p_ogrid%DYDt_diff(:,k) &
-            - (gYk_sumdiff_ogrid+f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*sum_gdiff_ogrid(:))
-        enddo
-      endif
-
-    endsubroutine calc_diffusion_term_ogrid
 !***********************************************************************
 !  FROM BOUNDCOND.F90
 !***********************************************************************

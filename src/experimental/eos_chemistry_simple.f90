@@ -175,10 +175,10 @@ module EquationOfState
         nn1=1;  nn2=mz
       endif
 
-      if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,caller='initialize_eos')
-        call put_shared_variable('lnrho0',lnrho0)
-      endif
+!      if (.not.ldensity) then
+!        call put_shared_variable('rho0',rho0,caller='initialize_eos')
+!        call put_shared_variable('lnrho0',lnrho0)
+!      endif
       if (lchemistry) call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
 !
     endsubroutine initialize_eos
