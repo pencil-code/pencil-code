@@ -201,7 +201,7 @@ sub run_tests_on {
     $shost = "\u$shost";
 
     if ($html) {
-        unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
+        unless ($first) { print "<p>\n<hr>\n<p>\n" };
         print "<h2>$shost:</h2>\n\n<pre>\n";
     } else {
         unless ($first) { print "\n\n" };
@@ -350,7 +350,7 @@ sub print_header {
     my $xml = "";
     my $testname = "Pencil Code auto-test";
 
-    $testname = ": ".$1 if ($commandline =~ /--pencil-home='[^\s]+([^\/]+)'/is);
+    $testname .= ": ".$1 if ($commandline =~ /--pencil-home='[^\s]+?([^\/]+)'/is);
 
     if ($with_xml) {
         $xml=<<"END_XMLHEAD";
