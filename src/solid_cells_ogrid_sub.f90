@@ -18,6 +18,10 @@ public :: gij_etc_ogrid, der_ogrid, der_other_ogrid, der2_ogrid
 public :: derij_ogrid, der6_ogrid, deri_3d_inds_ogrid
 public :: bval_from_neumann_arr_ogrid, bval_from_neumann_SBP
 public :: bval_from_neumann_bdry5, set_ghosts_onesided_ogrid
+public :: der_ogrid_SBP, der_ogrid_bdry5, der2_ogrid_bdry5
+public :: der2_ogrid_bdry5_alt, der2_ogrid_SBP, der_ijm_ogrid_SBP
+public :: der_ijn_ogrid_SBP, der_ijm_ogrid_bdry5, der_ijn_ogrid_bdry5
+public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 
   contains
 
@@ -1210,4 +1214,330 @@ public :: bval_from_neumann_bdry5, set_ghosts_onesided_ogrid
 
     endsubroutine bval_from_neumann_bdry5
 !***********************************************************************
+    subroutine der_ogrid_SBP(f,df)
+! 
+!  Summation by parts boundary condition for first derivative.
+!  Only implemented in radial direction.
+!
+!  21-mar-17/Jorgen: Coded
+      real, dimension(l1_ogrid:l1_ogrid+8), intent(in) :: f
+      real, dimension(6), intent(out) :: df
+      integer :: i
+
+      do i=1,6
+        df(i)=dx_1_ogrid(l1_ogrid+i-1)*(D1_SBP(i,1)*f(l1_ogrid  ) + &
+                                        D1_SBP(i,2)*f(l1_ogrid+1) + &
+                                        D1_SBP(i,3)*f(l1_ogrid+2) + &
+                                        D1_SBP(i,4)*f(l1_ogrid+3) + &
+                                        D1_SBP(i,5)*f(l1_ogrid+4) + &
+                                        D1_SBP(i,6)*f(l1_ogrid+5) + &
+                                        D1_SBP(i,7)*f(l1_ogrid+6) + &
+                                        D1_SBP(i,8)*f(l1_ogrid+7) + &
+                                        D1_SBP(i,9)*f(l1_ogrid+8) )
+      enddo
+
+    endsubroutine der_ogrid_SBP
+!***********************************************************************
+    subroutine der_ogrid_bdry5(f,df)
+! 
+!  Fifth order boundary closures for first derivatives 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(l1_ogrid:l1_ogrid+5), intent(in) :: f
+      real, dimension(3), intent(out) :: df
+
+      df(1) = dx_1_ogrid(l1_ogrid)*(&
+              -2.2833333333333333   *f(l1_ogrid  ) &
+              +5.0000000000000000   *f(l1_ogrid+1) &
+              -5.0000000000000000   *f(l1_ogrid+2) &
+              +3.3333333333333333   *f(l1_ogrid+3) &
+              -1.2500000000000000   *f(l1_ogrid+4) &
+              +0.20000000000000000  *f(l1_ogrid+5) )
+      
+      df(2) = dx_1_ogrid(l1_ogrid+1)*(&
+              -0.20000000000000000  *f(l1_ogrid  ) &
+              -1.0833333333333333   *f(l1_ogrid+1) &
+              +2.0000000000000000   *f(l1_ogrid+2) &
+              -1.0000000000000000   *f(l1_ogrid+3) &
+              +0.33333333333333333  *f(l1_ogrid+4) &
+              -0.050000000000000000 *f(l1_ogrid+5) )
+      
+      df(3) = dx_1_ogrid(l1_ogrid+2)*(&
+              +0.050000000000000000 *f(l1_ogrid  ) &
+              -0.50000000000000000  *f(l1_ogrid+1) &
+              -0.33333333333333333  *f(l1_ogrid+2) &
+              +1.0000000000000000   *f(l1_ogrid+3) &
+              -0.25000000000000000  *f(l1_ogrid+4) &
+              +0.033333333333333333 *f(l1_ogrid+5) )
+
+    endsubroutine der_ogrid_bdry5
+!***********************************************************************
+    subroutine der2_ogrid_bdry5(f,df)
+! 
+!  Fifth order boundary closures for second derivatives 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(l1_ogrid:l1_ogrid+6), intent(in) :: f
+      real, dimension(3), intent(out) :: df
+
+      df(1) = dx_1_ogrid(l1_ogrid)**2*(&
+              +4.5111111111111111 *f(l1_ogrid  ) &
+              -17.39999999999999  *f(l1_ogrid+1) &
+              +29.25000000000000  *f(l1_ogrid+2) &
+              -28.22222222222222  *f(l1_ogrid+3) &
+              +16.50000000000000  *f(l1_ogrid+4) &
+              -5.4000000000000000 *f(l1_ogrid+5) &
+              +0.76111111111111111*f(l1_ogrid+6) )
+
+      df(2) = dx_1_ogrid(l1_ogrid+1)**2*(&
+              +0.76111111111111111  *f(l1_ogrid  ) &
+              -0.81666666666666667  *f(l1_ogrid+1) &
+              -1.4166666666666667   *f(l1_ogrid+2) &
+              +2.6111111111111111   *f(l1_ogrid+3) &
+              -1.5833333333333333   *f(l1_ogrid+4) &
+              +0.51666666666666667  *f(l1_ogrid+5) &
+              -0.072222222222222222 *f(l1_ogrid+6) )
+                
+      df(3) = dx_1_ogrid(l1_ogrid+2)**2*(&
+              -0.072222222222222222*f(l1_ogrid  ) &
+              +1.26666666666666667 *f(l1_ogrid+1) &
+              -2.33333333333333333 *f(l1_ogrid+2) &
+              +1.11111111111111111 *f(l1_ogrid+3) &
+              +0.083333333333333333*f(l1_ogrid+4) &
+              -0.066666666666666666*f(l1_ogrid+5) &
+              +0.011111111111111111*f(l1_ogrid+6) )
+    endsubroutine der2_ogrid_bdry5
+!***********************************************************************
+    subroutine der2_ogrid_bdry5_alt(f,df2,k)
+! 
+!  Fifth order boundary closures for second derivatives 
+!  Only implemented in radial direction.
+!  Alternative edition, that uses first derivatives twice, instead
+!  of explicit use of second derivatives
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(3), intent(out) :: df2
+      integer, intent(in) :: k
+      real, dimension(6) :: df
+
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid,k),df(1:3))
+      df(4:6)=(1/60.)*dx_1_ogrid(l1_ogrid+3:l1_ogrid+5) *( &
+                      + 45.0*(f(l1_ogrid+4:l1_ogrid+6,m_ogrid,n_ogrid,k)-f(l1_ogrid+2:l1_ogrid+4,m_ogrid,n_ogrid,k)) &
+                      -  9.0*(f(l1_ogrid+5:l1_ogrid+7,m_ogrid,n_ogrid,k)-f(l1_ogrid+1:l1_ogrid+3,m_ogrid,n_ogrid,k)) &
+                      +      (f(l1_ogrid+6:l1_ogrid+8,m_ogrid,n_ogrid,k)-f(l1_ogrid  :l1_ogrid+2,m_ogrid,n_ogrid,k)))
+      df2(1) = dx_1_ogrid(l1_ogrid)*(&
+              -2.2833333333333333   *df(1) &
+              +5.0000000000000000   *df(2) &
+              -5.0000000000000000   *df(3) &
+              +3.3333333333333333   *df(4) &
+              -1.2500000000000000   *df(5) &
+              +0.20000000000000000  *df(6) )
+      
+      df2(2) = dx_1_ogrid(l1_ogrid+1)*(&
+              -0.20000000000000000  *df(1) &
+              -1.0833333333333333   *df(2) &
+              +2.0000000000000000   *df(3) &
+              -1.0000000000000000   *df(4) &
+              +0.33333333333333333  *df(5) &
+              -0.050000000000000000 *df(6) )
+      
+      df2(3) = dx_1_ogrid(l1_ogrid+2)*(&
+              +0.050000000000000000 *df(1) &
+              -0.50000000000000000  *df(2) &
+              -0.33333333333333333  *df(3) &
+              +1.0000000000000000   *df(4) &
+              -0.25000000000000000  *df(5) &
+              +0.033333333333333333 *df(6) )
+
+    endsubroutine der2_ogrid_bdry5_alt
+!***********************************************************************
+    subroutine der2_ogrid_SBP(f,df2)
+! 
+!  Summation by parts boundary condition for second derivative.
+!  Only implemented in radial direction.
+!
+!  21-mar-17/Jorgen: Coded
+      real, dimension(l1_ogrid:l1_ogrid+8), intent(in) :: f
+      real, dimension(6), intent(out) :: df2
+      integer :: i
+
+      do i=1,6
+        df2(i)=(dx_1_ogrid(l1_ogrid+i-1)**2)*(D2_SBP(i,1)*f(l1_ogrid  ) + &
+                                              D2_SBP(i,2)*f(l1_ogrid+1) + &
+                                              D2_SBP(i,3)*f(l1_ogrid+2) + &
+                                              D2_SBP(i,4)*f(l1_ogrid+3) + &
+                                              D2_SBP(i,5)*f(l1_ogrid+4) + &
+                                              D2_SBP(i,6)*f(l1_ogrid+5) + &
+                                              D2_SBP(i,7)*f(l1_ogrid+6) + &
+                                              D2_SBP(i,8)*f(l1_ogrid+7) + &
+                                              D2_SBP(i,9)*f(l1_ogrid+8) )
+      enddo
+
+    endsubroutine der2_ogrid_SBP
+!***********************************************************************
+    subroutine der_ijm_ogrid_SBP(f,df,k)
+! 
+!  Cross derivatives for SBP boundary closures 
+!  Only implemented in radial direction.
+!
+!  10-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(6), intent(out) :: df
+      real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+      integer, intent(in) :: k
+
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+1,n_ogrid,k),df_mn1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-1,n_ogrid,k),df_mn_1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+2,n_ogrid,k),df_mn2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-2,n_ogrid,k),df_mn_2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid+3,n_ogrid,k),df_mn3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid-3,n_ogrid,k),df_mn_3)
+
+      
+
+     df(1:6)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
+                        45.*(df_mn1-df_mn_1) &
+                        -9.*(df_mn2-df_mn_2) &
+                           +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijm_ogrid_SBP
+!*********************************************************************** 
+    subroutine der_ijn_ogrid_SBP(f,df,k)
+! 
+!  Cross derivatives for SBP boundary closures 
+!  Only implemented in radial direction.
+!
+!  10-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      integer, intent(in) :: k
+      real, dimension(6), intent(out) :: df
+      real, dimension(6)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+1,k),df_mn1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-1,k),df_mn_1)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+2,k),df_mn2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-2,k),df_mn_2)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid+3,k),df_mn3)
+      call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid-3,k),df_mn_3)
+
+      
+      df(1:6)=(1./60.)*dz_1_ogrid(n_ogrid)*( &
+                       45.*(df_mn1-df_mn_1) &
+                       -9.*(df_mn2-df_mn_2) &
+                          +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijn_ogrid_SBP
+!*********************************************************************** 
+    subroutine der_ijm_ogrid_bdry5(f,df,k)
+! 
+!  Cross derivatives for fifth order boundary closures 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      integer, intent(in) :: k
+      real, dimension(3), intent(out) :: df
+      real, dimension(3)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+1,n_ogrid,k),df_mn1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-1,n_ogrid,k),df_mn_1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+2,n_ogrid,k),df_mn2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-2,n_ogrid,k),df_mn_2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid+3,n_ogrid,k),df_mn3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid-3,n_ogrid,k),df_mn_3)
+
+      
+      df(1:3)=(1./60.)*dy_1_ogrid(m_ogrid)*( &
+                      45.*(df_mn1-df_mn_1) &
+                      -9.*(df_mn2-df_mn_2) &
+                         +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijm_ogrid_bdry5
+!*********************************************************************** 
+    subroutine der_ijn_ogrid_bdry5(f,df,k)
+! 
+!  Cross derivatives for fifth order boundary closures 
+!  Only implemented in radial direction.
+!
+!  13-okt-17/Jorgen: Coded
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      integer, intent(in) :: k
+      real, dimension(3), intent(out) :: df
+      real, dimension(3)  :: df_mn1,df_mn_1,df_mn2,df_mn_2,df_mn3,df_mn_3
+
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+1,k),df_mn1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-1,k),df_mn_1)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+2,k),df_mn2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-2,k),df_mn_2)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid+3,k),df_mn3)
+      call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid-3,k),df_mn_3)
+
+      
+      df(1:3)=(1./60.)*dz_1_ogrid(n_ogrid)*( &
+                       45.*(df_mn1-df_mn_1) &
+                       -9.*(df_mn2-df_mn_2) &
+                          +(df_mn3-df_mn_3))
+
+     endsubroutine der_ijn_ogrid_bdry5
+!*********************************************************************** 
+    subroutine der_ogrid_SBP_experimental(f,k,df)
+! 
+!  Summation by parts boundary condition for first derivative.
+!  Only implemented in radial direction.
+!  This experimental routine is for the outer boundary
+!
+!  12-may-17/Jorgen: Coded
+!
+      real, dimension(9,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(6), intent(out) :: df
+      integer, intent(in) :: k
+      real :: fac
+      integer :: i
+
+      do i=1,6
+        fac = dx_1_ogrid(mx_ogrid-i+1)
+        df(7-i)=fac*        (D1_SBP(i,1)*f(9,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,2)*f(8,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,3)*f(7,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,4)*f(6,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,5)*f(5,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,6)*f(4,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,7)*f(3,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,8)*f(2,m_ogrid,n_ogrid,k) + &
+                             D1_SBP(i,9)*f(1,m_ogrid,n_ogrid,k) )
+      enddo
+
+    endsubroutine der_ogrid_SBP_experimental
+!***********************************************************************
+    subroutine der2_ogrid_SBP_experimental(f,k,df2)
+! 
+!  Summation by parts boundary condition for second derivative.
+!  Only implemented in radial direction.
+!  This experimental routine is for the outer boundary
+!
+!  12-may-17/Jorgen: Coded
+      real, dimension(9,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(6), intent(out) :: df2
+      integer, intent(in) :: k
+      real :: fac
+      integer :: i
+
+      do i=1,6
+        fac = dx_1_ogrid(mx_ogrid-i+1)
+        df2(7-i)=(fac**2)       *(D2_SBP(i,1)*f(9,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,2)*f(8,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,3)*f(7,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,4)*f(6,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,5)*f(5,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,6)*f(4,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,7)*f(3,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,8)*f(2,m_ogrid,n_ogrid,k) + &
+                                  D2_SBP(i,9)*f(1,m_ogrid,n_ogrid,k) )
+      enddo
+
+    endsubroutine der2_ogrid_SBP_experimental
+!*********************************************************************** 
   end module solid_cells_ogrid_sub
