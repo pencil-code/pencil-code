@@ -906,7 +906,7 @@ program run
 !
       if (ip<=11 .or. lwrite_dvar) then
         call wsnap('dvar.dat',df,mvar,ENUM=.false.,noghost=.true.)
-        call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
+        call particles_write_dsnapshot('dpvar.dat',f)
       endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
