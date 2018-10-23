@@ -293,7 +293,8 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, save :: nmig_max = 0
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
-      integer :: nmig_leave_total, nmig_left, ileave_high_max
+      integer :: nmig_leave_total, nmig_left, ileave_high_max, buffer_max
+      real, dimension (:,:), allocatable :: buffer
       logical :: lredo, lredo_all
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
 !
@@ -568,17 +569,29 @@ module Particles_mpicomm
               dfp_mig(isort_array(1:nmig_leave_total),:)
         endif
 !
+!  Set communication buffers.
+!
+        buffer_max = 0
+        do i=0,ncpus-1
+          buffer_max = max(buffer_max, nmig_leave(i))
+          buffer_max = max(buffer_max, nmig_enter(i))
+        enddo
+        call mpireduce_max_int(max (0,buffer_max), buffer_max)
+        call mpibcast(buffer_max)
+        if (buffer_max > 0) allocate (buffer(buffer_max,mpcom))
+!
 !  Set to receive.
 !
         do i=0,ncpus-1
           if (iproc/=i .and. nmig_enter(i)/=0) then
-            call mpirecv_real(fp(npar_loc+1:npar_loc+nmig_enter(i),:), &
-                (/nmig_enter(i),mpcom/),i,itag_fp)
-            call mpirecv_int(ipar(npar_loc+1:npar_loc+nmig_enter(i)), &
-                nmig_enter(i),i,itag_ipar)
-            if (present(dfp)) &
-                call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:), &
-                (/nmig_enter(i),mpvar/),i,itag_dfp)
+            call mpirecv_real(buffer,(/buffer_max,mpcom/),i,itag_fp+2)
+            fp(npar_loc+1:npar_loc+nmig_enter(i),:) = buffer(1:nmig_enter(i),:)
+            call mpirecv_int(ipar(npar_loc+1:npar_loc+nmig_enter(i)),nmig_enter(i),i,itag_ipar)
+            if (present(dfp)) then
+!              call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig_enter(i),:),(/nmig_enter(i),mpvar/),i,itag_dfp)
+              call mpirecv_real(buffer(:,1:mpvar),(/buffer_max,mpvar/),i,itag_dfp)
+              dfp(npar_loc+1:npar_loc+nmig_enter(i),:) = buffer(1:nmig_enter(i),1:mpvar)
+            endif
             if (ip<=6) then
               print*, 'migrate_particles: iproc, iproc_send=', iproc, i
               print*, 'migrate_particles: received fp=', &
@@ -643,13 +656,14 @@ module Particles_mpicomm
           if (iproc==i) then
             do j=0,ncpus-1
               if (iproc/=j .and. nmig_leave(j)/=0) then
-                call mpisend_real(fp_mig(ileave_low(j):ileave_high(j),:), &
-                    (/nmig_leave(j),mpcom/),j,itag_fp)
-                call mpisend_int(ipar_mig(ileave_low(j):ileave_high(j)), &
-                    nmig_leave(j),j,itag_ipar)
-                if (present(dfp)) &
-                    call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:), &
-                    (/nmig_leave(j),mpvar/),j,itag_dfp)
+                buffer(1:nmig_leave(j),:) = fp_mig(ileave_low(j):ileave_high(j),:)
+                call mpisend_real(buffer,(/buffer_max,mpcom/),j,itag_fp+2)
+                call mpisend_int(ipar_mig(ileave_low(j):ileave_high(j)),nmig_leave(j),j,itag_ipar)
+                if (present(dfp)) then
+!                  call mpisend_real(dfp_mig(ileave_low(j):ileave_high(j),:),(/nmig_leave(j),mpvar/),j,itag_dfp)
+                  buffer(1:nmig_leave(j),1:mpvar) = dfp_mig(ileave_low(j):ileave_high(j),:)
+                  call mpisend_real(buffer(:,1:mpvar),(/buffer_max,mpvar/),j,itag_dfp)
+                endif
                 if (ip<=6) then
                   print*, 'migrate_particles: iproc, iproc_rec=', iproc, j
                   print*, 'migrate_particles: sent fp=', &
@@ -664,6 +678,7 @@ module Particles_mpicomm
             enddo
           endif
         enddo
+        if (buffer_max > 0) deallocate (buffer)
         nmig_left = nmig_left + nmig_leave_total
 !
 !  Sum up processors that have not had place to let all migrating particles go.
