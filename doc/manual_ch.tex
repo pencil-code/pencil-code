@@ -12,7 +12,7 @@
 %%  Description:
 %     User manual for the Pencil Code
 %   Process with:
-%     This file needs to be handled by full version of Texlive, which takes the package of Chinese. xelatex is required.
+%     This file needs to be handled by full version of Texlive, which takes the package of Chinese. xelatex is required. Normally, one may need to complie twice to make the contents complete.
 %
 %   Macros for files, variables, etc (list loosely adopted from texinfo):
 %
@@ -58,9 +58,6 @@
 %                   obfuscated to be misunderstood
 %     \acronym: An acronym (hardly ever used here):
 %                   should we call the code \acronym{PROMPT}?
-
-% This is needed in English-version manual.
-% \input{driver_switch}              % sets \mydriver, set up by Makefile
 
 \RequirePackage{ifpdf}
 \ifpdf
@@ -402,11 +399,11 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   \vspace*{2cm}
 
   {\Large\sffamily\bfseries The Pencil Code:\\[2\parskip]
-    A High-Order MPI code for MHD Turbulence}
+   MHD 湍流的高阶 MPI 模拟包}
 
   \vspace{3ex}
 
-  {\sffamily User's and Reference Manual}
+  {\sffamily 用户参考手册}
 
   \vspace{\stretch{2}}
 
@@ -453,21 +450,13 @@ Helmholtz Institute in Potsdam (2001) 期间发展起来的.
 
 {\sc Pencil Code} 主要用来解决弱可压缩的湍流问题,这也是为什么我们用了高阶的一次和二次导数.
 为了实现较好的并行化预算,我们使用了显式有限差分法(与之相对的是紧致的有限差分法).
-Typical scientific targets include driven MHD turbulence in a periodic box,
-convection in a slab with non-periodic upper and lower boundaries,
-a convective star embedded in a fully nonperiodic box, accretion disc
-turbulence in the shearing sheet approximation, etc.
-本程序包典型的科学目标包括周期边界条件长方体内受迫的 MHD 湍流;平面板上下边界条件非周期性,研究对流运行;嵌在完全非周期盒中的对流星(翻译存疑);吸积盘湍流的剪切片近似.
+本程序包典型的科学目标包括周期边界条件长方体内受迫的 MHD 湍流;平面板上下边界条件非周期性,研究对流运行;嵌在完全非周期盒中的对流星(翻译存疑a convective star embedded in a fully nonperiodic box);吸积盘湍流的剪切片近似等等.
 此外,我们还有非局域辐射输运,惯性粒子,尘埃凝聚,自引力,化学反应网络等多种物理元件,其数量在稳步增加.
 除了笛卡尔坐标系外,该代码还可以处理球极坐标系和柱极坐标系.
 
 
 磁场是通过磁矢势来实现的,这可以保证磁场维持环形,而不夹杂任何散度.
-At the same time, having the magnetic
-vector potential readily available is a big advantage if
-one wants to monitor the magnetic helicity, for example.
-The code is therefore particularly well suited for all kinds of
-dynamo problems.
+同时,用磁矢势还有一个巨大的好处,例如,当研究者想要控制磁场螺旋度时,磁矢势会非常方便. 从而使得本程序包非常适合于各类 dynamo (翻译存疑)问题.
 
 
 {\sc Pencil Code} 一般来说不保证守恒量守恒;所以,守恒量的稳定性将会依赖于算法的离散误差(不是指机器精度).
@@ -486,14 +475,15 @@ In order to be cache-efficient, we solve the equations along
 \name{pencils} in the $x$ direction.
 为了使得缓存使用便捷高效, {\sc Pencil Code} 在 $x$ 方向上沿着 \name{pencils} 求解方程.
 One very convenient side-effect is that auxiliary and derived variables
-use very little memory, as they are only ever defined on one pencil.
+use very little memory, as they are only ever defined on one pencil. 这样做的便利是附属变量和衍生变量仅仅占用非常少的内存,因为他们仅仅定义在一个 pencil 上.
 The domain can be tiled in the $y$ and $z$ directions.
+定义域可以在 $y$ 和 $z$ 方向上堆积起来.
 On multiprocessor computers, the code can use \name{MPI}
 (Message Passing Interface) calls to communicate between processors.
+在多核计算机上, {\sc Pencil Code} 可以用 \name{MPI} 来实现处理器之间的交互.
 An easy switching mechanism allows the user to run the code on a machine
 without MPI libraries (e.g.\ a notebook computer).
-Ghost zones are used to implement boundary conditions on physical and
-processor boundaries.
+程序中用鬼区来在物理边界和处理器边界上实现边界条件.
 
 A high level of flexibility is achieved by encapsulating individual
 physical processes and variables in individual \name{modules}, which can
@@ -517,23 +507,12 @@ both \file{magnetic.f90} and \file{nomagnetic.f90} define an F90
 module named \emph{Magnetic} --- this is the basis of the switching
 mechanism we are using.
 
-Input parameters (which are set in the files \file{start.in},
-\file{run.in}) can be changed without recompilation.
-Furthermore, one can change the list of variables for monitoring
-(diagnostic) output on the fly, and there are mechanisms for making the
-code reload new parameters or exit gracefully at runtime. You may want to
-check for correctness of these files with the command \code{pc_configtest}.
+输入参数(在 \file{start.in},
+\file{run.in} 中配置好的)修改后无需再编译.甚至用户还可以在数值模拟过程中修改输出的诊断变量种类,还有相关程序可以实现运行中重新载入参数或者热退出(exit gracefully).你可以通过命令 \code{pc_configtest} 来检验这些文件的正确性.
 
-The requirements for using the Pencil-MPI code are modest: you can use it
-on any Linux or Unix system with a \name{F95} and \name{C} compiler suite,
-like \name{GNU gcc} and \name{gfortran}, together with the shell \name{CSH},
-and the \name{Perl} interpreter are mandatory requirements.
+使用 Pencil-MPI 代码的要求不高: 你可以在任何一个带了 \name{F95} 和 \name{C} 编译器的 Linux 或者 Unix 系统上运行.比如说 \name{GNU gcc} 和 \name{gfortran} 编译器就可以.另外还需要 shell \name{CSH} 和 \name{Perl} 解释器.
 
-Although the {\sc Pencil Code} is mainly designed to run on supercomputers,
-more than 50\% of the users run their code also on Macs, and the other half
-uses either directly Linux on their laptops or they use VirtualBox
-on their Windows machine on which they install Ubuntu Linux.
-尽管 主要设计在超级计算机上运行,但也有超过 的用户直接在 Macs 上运行代码,另一半用户要不直接在他们的
+尽管  {\sc Pencil Code}  主要设计在超级计算机上运行,但也有超过 50\%  的用户直接在 Macs 上运行代码,另一半用户在他们的
  Linux 笔记本电脑系统上运行或者在 Windows 上安装 Ubuntu Linux 虚拟机.
 If you have \name{IDL} as
 well, you will be able to visualize the results (a number of sample
@@ -546,27 +525,15 @@ and some relevant tools and routines come with the {\sc Pencil Code}.
 
 \bigskip
 
-If you want to make creative use of the code, this manual will contain far
-too little information.
-如果你想富有新意地利用这个程序包,这份文档的内容还不充分.
-Its major aim is to give you an idea of the way the code is organized, so
-you can more efficiently \emph{read the source code}, which contains a
-reasonable amount of comments.
-它主要的目标是告诉你程序的组织架构,让你能够有效率地阅读源码,源码中包含了更多详尽的注释.
-You might want to read through the various sample directories that are checked in.
-Choose one that is closest to your application and start modifying.
-For further enhancements that you may want to add to the code, you can
-take as an example the lines in the code that deal with related variables,
-functions, diagnostics, equations etc., which have already been implemented.
+如果你想要充分地,富有开创性地利用这个程序包,这份文档的内容还不充分.
+它主要的目标是告诉你程序的组织架构,让你能够有效率地 \emph{阅读源码},源码中包含了更多详尽的注释.
+你可能会需要看一遍样例文件夹里面的文件.
+选择一个最贴近你应用的样例并着手修改.
 如果你希望给 {\sc Pencil Code} 一些新功能,你可以把代码中已经实现的相关变量,函数,诊断,方程等拿来当例子.
-Just remember: \cmd{grep} is one of your best friends when you want to
-understand how certain variables or functions are used in the code.
-记住一点: 当你想要理解一些特定的变量或者是函数时, 能给你很大的帮助.
+记住一点: 当你想要理解一些特定的变量或者是函数时, \cmd{grep} 能给你很大的帮助.
 
 \bigskip
 
-We will be happy to include user-supplied changes and updates to the code
-in future releases and welcome any feedback.
 我们将会非常开心地接纳来自用户的代码改进,欢迎任何形式的反馈.
 
 \vspace{5mm}
@@ -1768,7 +1735,7 @@ Each of the directories can contain the following files:
     near $x=-0.5$ and $-2.5<y<-1.5$.
     This is an example of a hyperviscous turbulence simulations with
     $512^3$ meshpoints and a third order hyperviscosity of
-    $\nu_3=5\times10^{-12}$. 流体年度的解释参见 Appendix~\ref{high-freq-filters}.}\label{Ftimestepoverviscous}\end{figure}
+    $\nu_3=5\times10^{-12}$. 流体粘度的解释参见 Appendix~\ref{high-freq-filters}.}\label{Ftimestepoverviscous}\end{figure}
     
     通过 Runge-Kutta 2N scheme 时步法得以实现.细节参见 Sect.~\ref{S-2N-scheme}.
     
@@ -4599,10 +4566,7 @@ $\jv$ 电流密度, $\Bv$ 磁感应强度, $\nu$ 运动粘度, $\zeta$ 体粘滞
                  + {\partial u_j\over\partial x_i}
                  -\frac{2}{3} \delta_{ij}\Div\uv\right)
 \end{equation}
-is the rate-of-shear tensor that is traceless, because it can be written as
-the generic rate-of-strain tensor minus its trace.
-In curvilinear coordinates, we have to replace partial differentiation
-by covariant differentiation (indicated by semicolons), so we write
+是剪切速率张量,它的矩阵迹等于零,因为它可以写成广义应变率张量减去其自身迹的形式. 如果是在曲线坐标系下,这里的偏微分就需要用斜变微分来代替(用分号表示),可以写成 
 ${\mathsf S}_{ij}=\frac{1}{2}(u_{i;j}+u_{j;i})-\frac{1}{3}\delta_{ij}\Div\uv$.
 
 对于两个粘滞系数项的解释会因为所使用的粘性模型而异,并依赖于给数值计算对应模块的具体参数.参见 \S\ref{Bulkviscosity}.
@@ -4648,10 +4612,10 @@ of the associated hydrostatic reference solution, etc).
 \end{equation}
 
 其中, $T$ 为温度, $c_p$ 恒温比热,
-$\Heat$ and $\Cool$ are explicit heating and cooling terms,
+$\Heat$ 和 $\Cool$ 是显示的加热和降温项,
 $K$ 为(热)辐射传导率, $\zeta$ 描述的是体粘滞系数, 以及 $\Strain$ 为迹为零的剪切速率张量(翻译存疑traceless).
 
-在熵模块中, In the entropy module we solve for the specific entropy, $s$.
+熵模块用来求解比熵, $s$(翻译存疑specific entrop).
 右侧的热传导项可以用下面的形式写
 \begin{eqnarray}
 \lefteqn{\frac{\Div(K\grad T)}
@@ -4770,54 +4734,50 @@ times.
 \label{Bulkviscosity}
 \index{Viscosity}
 
-对单原子气体而言,它的体粘滞系数作用是可以忽略不计的,所以我们在大多数运算中并不会用到这个系数.然而,对于超声速气流或其他类似情况而言,研究者可能会想要加入
+对单原子气体而言,它的体粘滞系数作用是可以忽略不计的,所以我们在大多数运算中并不会用到这个系数.然而,对于超声速气流或其他类似情况而言,研究者可能会想要加入激波粘性(在最简单的表示中,它表现为体粘滞系数)
 
-For a monatomic gas it can be shown that the bulk viscosity vanishes.
-We therefore don't use it in most of our runs.
-However, for supersonic flows, or even otherwise, one might want to add a
-shock viscosity which, in its simplest formulation, take the form of a
-bulk viscosity.
 
 \subsubsection{激波粘性 Shock viscosity}
 \index{Shock viscosity}
 \label{ShockViscosity}
 
+激波粘性,它在本代码和 {\AA}ke Nordlund 的 Stagger Code 中都有使用.
 Shock viscosity, as it is used here and also in the Stagger Code of {\AA}ke Nordlund,
 is proportional to positive flow convergence, maximum over
 five zones, and smoothed to second order,
+
 \begin{equation}
 \zeta_{\rm shock}=c_{\rm shock}\left<\max_5[(-\Div\uv)_+]\right>(\min(\delta x,\delta y,\delta z))^2,
 \end{equation}
 where $c_{\rm shock}$ is a constant defining the strength of the shock viscosity.
-In the code this dimensionless coefficient is called \code{nu_shock}, and it
-is usually chosen to be around unity.
-Assume that the shock viscosity only enters as a bulk viscosity,
-so the whole stress tensor is then
+在程序包中这个无量纲系数变量名为 \code{nu_shock}, 它的取值通常在 1 左右.
+假设粘性系数仅作为体粘滞系数而作用,那么整个应力张量可以表示为
+
 \begin{equation}
 \vec{\tau}_{ij}=2\rho\nu{\sf S}_{ij}+\rho\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
 \end{equation}
-Assume $\nu=\mbox{const}$, but $\zeta\neq\mbox{const}$, so
+假设 $\nu=\mbox{const}$, 但 $\zeta\neq\mbox{const}$, 于是有
 \begin{equation}
 \rho^{-1}\vec{F}_{\rm visc}=
 \nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\rho\right)
 +\zeta_{\rm shock}\left[\grad\Div\uv+\left(\grad\ln\rho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
 \end{equation}
-and
+
 \begin{equation}
 \rho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta_{\rm shock}(\Div\uv)^2.
 \end{equation}
-In the special case with periodic boundary conditions, we have
+在特殊的有周期性边界条件的情况下,有
 $2\langle\Strain^2\rangle=\langle\omv^2\rangle+{4\over3}\langle(\nab\cdot\uv)^2\rangle$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{状态方程 Equation of state}
+\subsection{气体状态方程 Equation of state}
 \index{Equation of state}
 \label{S-eos}
 
-In its present configuration only hydrogen ionization is explicitly included.
-Other constituents (currently He and H$_2$) can have fixed values.
-The pressure is proportional to the total number of particles, i.e.\
+在目前的代码构造中,只有氢的电离程度在代码中实现了.
+其他成分 (目前支持 He 和 H$_2$) 有着固定的电离程度参数.
+压强正比于粒子总数,可以写成
 \begin{equation}
 p=(n_{\rm HI}+n_{\rm HII}+n_{\rm H_2}+n_{\rm e}+n_{\rm He}+...)k_{\rm B}T.
 \end{equation}
@@ -4857,10 +4817,7 @@ For example, $Y=0.27$ corresponds to $x_{\rm He}=0.092$
 and $Y=0.25$ to $x_{\rm He}=0.083$.
 Note also that for 100\% H$_2$ abundance, $x_{\rm H_2}=1/2$.
 
-In the following, the ionization fraction is given as $y=n_{\rm e}/n_{\rm H}$,
-which can be different from $x_{\rm e}$ if there is H$_2$.
-Substituting for $n_{\rm H}$ in terms of $n_{\rm Htot}$ yields
-$y=x_{\rm e}/(1-2x_{\rm H_2})$.
+在下面的章节中,电离度用 $y=n_{\rm e}/n_{\rm H}$ 来表示.在存在 H$_2$ 的情况下,它和  $x_{\rm e}$ 略有不同. 如果我们用 $n_{\rm Htot}$ 替换掉  $n_{\rm H}$,就能得到 $y=x_{\rm e}/(1-2x_{\rm H_2})$.
 
 % ---------------------------------------------------------------------- %
 
@@ -4868,35 +4825,27 @@ $y=x_{\rm e}/(1-2x_{\rm H_2})$.
 \index{Ionization}
 \label{S-ionization}
 
-This part of the code can be invoked by setting \code{EOS=eos_ionization}
-(or \code{EOS=eos_temperature_ionization}) in the \file{Makefile.local} file.
+这一部分的代码可以通过在 \file{Makefile.local} 中设置 \code{EOS=eos_ionization}
+(或者 \code{EOS=eos_temperature_ionization}) 来调用.
 The equation of state described below works for variable ionization, and the
 entropy offset is different from that used in Eq.~(\ref{EOSsimple}), which
-is now no longer valid.  As a replacement, one can use
-\code{EOS=eos_fixed_ionization}, where the degree of ionization can be given
-by hand.  Here the normalization of the entropy is the same as for
-\code{EOS=eos_ionization}.  This case is described in more detail
-below.\footnote{We omit here the contribution of H$_2$.}
+is now no longer valid.  作为替代措施,研究者可以用
+\code{EOS=eos_fixed_ionization}, 这允许研究者手动设置电离程度.
+  它的熵的归一化(翻译存疑normalization)和 \code{EOS=eos_ionization}的是一样的.  下面会将这一情况讲述地更清晰.\footnote{We omit here the contribution of H$_2$.}
 
-We treat the gas as being composed of partially ionized hydrogen and neutral
-helium. These are four different particle species, each of which regarded as
-a perfect gas.
+这里提到的气体是由部分电离的氢和中性的氦组成的. 其中有四种不同的粒子种类,均可以被单独视为理想气体.
 
-The ionization fraction $y$, which gives the ratio of ionized hydrogen to the
-total amount of hydrogen $n_{\rm H}$, is obtained from the Saha equation
-which, in this case, may be written as
+电离度 $y$ 表示电离的氢在氢的总数 $n_{\rm H}$ 中的占比, 可以从 Saha 方程中求得. Saha 方程可以写成以下形式
 \begin{equation}
 \frac{y^2}{1-y}=\frac{1}{n_{\rm H}}
 \left(\frac{m_{\rm e}k_{\rm B}T}{2\pi\hbar^2}\right)^{3/2}
 \exp\left(-\frac{\chi_{\rm H}}{k_{\rm B}T}\right)\ .
 \end{equation}
 
-The temperature $T$ cannot be obtained directly from the {\sc Pencil Code}'s
-independent variables $\ln\rho$ and $s$, but is itself dependent on $y$.
-Hence, the calculation of $y$ essentially becomes a root finding problem.
+温度  $T$ 不可以直接从 {\sc Pencil Code} 的独立变量 $\ln\rho$ 和  $s$ 中获得,但它依赖于 $y$  . 
+所以, $y$ 的计算实质上是一个求根问题.
 
-The entropy of a perfect gas consisting of particles of type $i$ is known from
-the Sackur-Tetrode equation
+由 $i$ 粒子构成的理想气体的熵可以通过 Sackur-Tetrode 方程获得
 \begin{equation}
 S_i=k_{\rm B}N_i\left(\ln\left[\frac{1}{n_{\rm tot}}
                                \left(\frac{m_ik_{\rm B}T}
@@ -4904,8 +4853,7 @@ S_i=k_{\rm B}N_i\left(\ln\left[\frac{1}{n_{\rm tot}}
                       +\frac{5}{2}\right)\ .
 \end{equation}
 
-Here $N_i$ is the number of particles of a single species and $n_{\rm tot}$
-is the total number density of all particle species.
+这里 $N_i$ 表示单一类型的粒子的数目,而 $n_{\rm tot}$ 表示所有粒子的总的数密度.
 
 In addition to the individual entropies we also have to take the entropy of
 mixing, \mbox{$S_{\rm mix}=-N_{\rm tot}k_{\rm B}\sum_ip_i\ln p_i$}, into
@@ -4919,14 +4867,12 @@ for $T$.
   \includegraphics%
     [width=.6\textwidth,keepaspectratio]%
     {pTTss}
-  \caption{Dependence of temperature on entropy for different values of
-     the density.}
+  \caption{在不同的密度下,温度对熵的依赖关系}
   \label{pTTss}
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-For given $\ln\rho$ and $s$ we are then able to calculate the ionization
-fraction $y$ by finding the root of
+只要给定 $\ln\rho$ 和 $s$ ,我们就可以通过找到下列方程的根计算电离百分比 $y$
 
 \begin{equation}
 f(y)=\ln\left[\frac{1-y}{y^2}\frac{1}{n_{\rm H}}
@@ -4935,24 +4881,21 @@ f(y)=\ln\left[\frac{1-y}{y^2}\frac{1}{n_{\rm H}}
      -\frac{\chi_{\rm H}}{k_{\rm B}T(y)}\ .
 \end{equation}
 
-In the ionized case, several thermodynamic quantities of the gas become
-dependent on the ionization fraction $y$ such as its pressure,
-$P\!=(1\!+y+x_{\rm He})n_{\rm H}k_{\rm B}T$, and its internal energy,
-$E=\frac{3}{2}(1+y+x_{\rm He})n_{\rm H}k_{\rm B}T+y\chi_{\rm H}$, where
-$x_{\rm He}$ gives the ratio of neutral helium to the total amount of hydrogen.
-The dependence of temperature on entropy is shown in Fig.~\ref{pTTss}
-for different values of the density.
+在电离的情况下,一些气体的热力学量会受电离百分比 $y$ 的影响.比如说压强
+$P\!=(1\!+y+x_{\rm He})n_{\rm H}k_{\rm B}T$, 内能
+$E=\frac{3}{2}(1+y+x_{\rm He})n_{\rm H}k_{\rm B}T+y\chi_{\rm H}$, 其中
+$x_{\rm He}$ 给出的是中性氦占氢的总数的百分比.
+在不同的密度条件下,温度对熵的依赖关系已经在 Fig.~\ref{pTTss} 中刻画出来了.
 
-For further details regarding the procedure of solving for the entropy
-see Sect.~\ref{S-Ioni} in the appendix.
+更多的关于求解熵的信息附在了附录里的 Sect.~\ref{S-Ioni}.
+
 
 % ---------------------------------------------------------------------- %
 
 \subsubsection{双极性扩散 Ambipolar diffusion}
 
-Another way of dealing with ionization in the {\sc Pencil code} is
-through use of the {\it neutrals} module. That module solves the
-coupled equations of neutral and ionized gas, in a two-fluid model
+{\sc Pencil code}  中另外一种处理电离的方法是通过使用  {\it neutrals} 模块.
+这一模块能够通过双流体模型,求解中性气体和电离气体的耦合方程 
 
 \begin{eqnarray}
   \pderiv{\rho_i}{t} &=& -\Div{(\rho_i \vec{u}_i)} + {\mathcal G} \label{ionized-continuity}\\
@@ -4962,39 +4905,33 @@ coupled equations of neutral and ionized gas, in a two-fluid model
   \pderiv{(\rho_n \vec{u}_n)}{t} &=& -\Div{(\rho_n \vec{u}_n:\vec{u}_n)} -
     \grad{p_n} - {\mathcal F}                                          \label{neutral-ns}\\
   \pderiv{\vec{A}}{t} &=& \vec{u}_i \times \vec{B}
-\end{eqnarray}where the subscripts $n$ and $i$ are for neutral and ionized,
-respectively. The terms ${\mathcal G}$ and ${\mathcal F}$, through which the two fluids exchange mass and
-momentum, are given by
+\end{eqnarray}
+这里的下标 $n$ 和 $i$ 分别表示中性或电离了的粒子.  ${\mathcal G}$ 和 ${\mathcal F}$ 是关于两种流体间交换质量和动量的物理量,通过以下公式给出
 
 \begin{eqnarray}
   {\mathcal G} &=& \zeta\rho_n - \alpha \rho_i^2 \\
   {\mathcal F} &=& \zeta\rho_n\vec{u}_n - \alpha \rho_i^2\vec{u}_i + \gamma\rho_i\rho_n (\vec{u}_n - \vec{u}_i) \;.
-\end{eqnarray}In the above equations, $\zeta$ is the ionization coefficient, $\alpha$ is the
-recombination coefficient, and $\gamma$ the collisional drag strength. By the time of writing
+\end{eqnarray}
+在上面的方程中, $\zeta$ 是电离系数, $\alpha$ 是复合系数(翻译存疑recombination coefficient) 以及 $\gamma$ 为碰撞阻力强度.
+By the time of writing
 (spring 2009), these three quantities are supposed constant. The electron pressure $p_e$ is
 also assumed equal to the ion pressure. Only isothermal neutrals are supported so far.
 
-In the code, \eq{ionized-continuity} and \eq{ionized-ns} are solved in \file{density.f90}
-and \file{hydro.f90} respectively. Equation~\ref{neutral-continuity} is solved in
-\file{neutraldensity.f90} and \eq{neutral-ns} in \file{neutralvelocity.f90}. The sample
-\file{1d-test/ambipolar-diffusion} has the current setup for a two-fluid simulation with
-ions and neutrals.
+在本程序包中,两个方程 \eq{ionized-continuity} 和 \eq{ionized-ns} 分别在 \file{density.f90} 和 \file{hydro.f90} 中求解. 方程 Equation~\ref{neutral-continuity} 在
+\file{neutraldensity.f90} 中求解, 而 \eq{neutral-ns} 则在文件 \file{neutralvelocity.f90}内. 样例 \file{1d-test/ambipolar-diffusion} 已经有了现成的给双流体(离子和中性粒子)模型的参数配置.
 
 % ---------------------------------------------------------------------- %
 
 \subsection{辐射传输 Radiative transfer}
 \index{Radiative transfer}
 
-Here we only state the basic equations.
-A full description about the implementation is given in
-Sect.~\ref{S-radi-trans} and in the original paper by
-Heinemann et al.\ (2006).
+这里我们仅列出基础的方程,更详细的代码实现说明在 Sect.~\ref{S-radi-trans} 和 Heinemann et al.\ (2006)的初始论文中呈现.
 
-The basic equation for radiative transfer is
+辐射传输的基本方程是
 \begin{equation} \label{radiative-transfer}
   \frac{dI}{d\tau} = -I +S \; ,
 \end{equation}
-where
+其中
 \begin{equation}
   \tau \equiv \int\limits_0^s \chi(s') \, ds'
 \end{equation}
@@ -5051,7 +4988,7 @@ smooth in all its derivatives.
 \index{incompressible}
 \index{anelastic}
 
-This part has not yet been documented and is still under development.
+这一部分还没有编写文档,有待填补.
 
 % ---------------------------------------------------------------------- %
 
@@ -5106,7 +5043,7 @@ $S_{\rm mon}$ is the saturation level of the monomer given by
 Here $P_{\rm sat}$ is the saturated vapor pressure of the monomer. Currently
 only water ice has been implemented in the code.
 \\ \\
-All dust species fulfill the continuity equation
+所有尘埃粒子满足连续性方程
 \begin{equation}
   {\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0.
 \end{equation}
@@ -5272,10 +5209,7 @@ Schober et al.\ (2018).
 \label{S-particles-equations}
 \index{Particles}
 
-Particles are entities that each have a space coordinate and a velocity vector,
-where a fluid only has a velocity vector field (the continuity equation of a
-fluid in some way corresponds to the space coordinate of particles). In the
-code particles are present either as tracer particles or as dust particles
+粒子是那些有着空间坐标和速度矢量的实体,而一个流体只有速度矢量场(流体的连续性方程某种意义上对应着粒子的空间坐标). 本程序包中,粒子有两种存在形式,一种是示踪粒子,另外一种是尘粒.
 
 \subsubsection{示踪粒子 Tracer particles}
 
@@ -6777,14 +6711,10 @@ has not changed much.
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
   \centering
-  \includegraphics%
-    [width=.65\textwidth,keepaspectratio]%
+  \includegraphics
+    [width=.65\textwidth,keepaspectratio]
     {pfile-size}
-  \caption{Number of lines of code and the number of subroutines
-  since the end of 2001. The jump in the Summer of 2005 was the
-  moment when the developments on the side branch (eos branch) were
-  merged with the main trunk of the code. Note the approximately
-  linear scaling with time.}
+  \caption{自从 2001 年末以来,代码函数和子程序数目的变化. 2005 年的突增是由于写在另外一个分支(eos branch)上的改进合并到了主程序中.注意代码的增长和时间近似呈现线性增长关系.}
   \label{pfile-size}
 \end{figure}
 % ---------------------------------------------------------------------- %
@@ -6991,26 +6921,19 @@ If you think you find an error, file a ticket at
 \url{http://code.google.com/p/pencil-code/issues/list}.
 You can of course also repair it!
 
-\section{Adapting the code}
+\section{改进代码 Adapting the code}
 
-\subsection{The {\sc Pencil Code} coding standard}
+\subsection{编程规范 The {\sc Pencil Code} coding standard}
 \label{ProgrammingStyle}
 \index{Programming style}
 \index{Coding standards}
 \index{Style}
 
-As with any code longer than a few lines the appearance and layout
-of the source code is of the utmost importance.  Well laid out
-code is more easy to read and understand and as such is less prone
-to errors.
+就如同任何超过聊聊几行的代码一样,代码的书写风格和布局对本程序包非常重要.布局优秀的代码更加容易阅读和理解,能够减少犯错的机会.
 
-A consistent coding style has evolved in the {\sc Pencil Code} and we
-ask that those contributing try to be consistent for everybody's
-benefit.  In particular, it would be appreciated if those committing
-changes of existing code via svn follow the given coding style.
+{\sc Pencil Code} 已经发展出了统一的书写风格,并且我们也要求其他贡献者能够尽可能地保持一致,这对所有人都有好处.特别的,如果贡献者对现有的代码进行风格上的统一,那将是值得赞赏的.
 
-There are not terribly many rules and using existing code as a template
-is usually the easiest way to proceed.  In short the most important rules are:
+我们没有太多的规则,简单地遵循已有代码的风格通常来说就已经足够了.简单来说,最重要的规则就是:
 \begin{itemize}
 \item \cmd{tab} characters do not occur anywhere in the code (in fact the use of
 tab character is an extension to the Fortran standard).
@@ -7045,37 +6968,39 @@ This is wrong:
 \end{verbatim}
 \item
 In general, try to follow common practice used elsewhere in the code.
+总而言之, 尽量模仿程序包内常用的代码风格.
 For example, in the code fragment above there are no empty spaces within
-the mathematical expressions programmed in the code.
+the mathematical expressions programmed in the code. 比如说,在上面的程序段中,数学表达式内并没有空格.
 A unique convention helps in finding certain expressions and patterns
-in the code.
+in the code.这样的惯例可以帮助我们找到程序包中特定的表达式和模式.
 However, empty spaces are often used after commas and semicolons, for
 examples in name lists.
-\item Relational operators are written with symbols
-($==$, $/=$, $<$, $<=$, $>$, $>=$), {\it not} with characters
+然而,空的空格经常在逗号或者分号后面加上,例如名字列表中.
+\item 关系运算符通常用符号
+($==$, $/=$, $<$, $<=$, $>$, $>=$), 而{\it 不}用字符串
 (\code{.eq.}, \code{.ne.}, \code{.lt.}, \code{.le.}, \code{.gt.}, \code{.ge.}).
 \item In general all comments are placed on their own lines with the '!'
 appearing in the first column.
+所有的注释都放在他们自己的那些行里面,'!'放在第一列.
 \item All subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
+所有的子程序/函数都开头加上一段标准的注释描述这个玩意是干什么的,什么时候需要调用,它的创造者是谁.任何有意义的修改都需要在后面注释上他们是什么时候被改动的,以及改动人是谁.
 \item Lines longer that 78 characters should be explicitly wrapped using
   the \& character, unless there is a block of longer lines that can only
   be read easily when they are not wrapped. Always add one whitespace before
   the \& character.
+如果一行超过了 78 个字符,那他就要用 \& 来换行,除非不换行的时候更加有助于理解.记得在 \& 前加上空格.
+
 \end{itemize}
 
-These and other issues are discussed in more depth and with examples in
-Appendix~\ref{coding-standard}, and in particular in Sect.~\ref{CodingStandards}.
+这些事项在 Appendix~\ref{coding-standard} 中有着更多的叙述和例子,特别是在 Sect.~\ref{CodingStandards} 内.
 
-\subsection{Adding new output diagnostics}
+\subsection{增加诊断输出 Adding new output diagnostics}
 \label{S-new-output-diagnostics}
 
-With the implementation of new physics and the development of new procedures
-it will become necessary to monitor new diagnostic quantities that
-have not yet been implemented in the code.
-In the following, we describe the steps necessary to set up a new
-diagnostic variable.
+随着新物理规律的加入和新机制的发展,输出一些新的诊断变量来对其进行观察将会是非常有必要的.
+在下文中.我们将会描述一些设置新的诊断变量所需要的步骤.
 
 This is nontrivial as, in order to keep latency effects low on
 multi-processor machines, the code minimizes the number of global
@@ -7160,22 +7085,19 @@ in the code, and we were only now adding it, we would need to do the following
   \end{alltt}
 \end{enumerate}
 
-If, instead of a mean value, you want a new maximum quantity, you need to
-replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
+如果你不想要平均值,而是想要最大值,那就需要用 \code{max\_mn\_name()} 去替代 \code{sum\_mn\_name()}. 
 
-Sect.~\ref{S-1d-averages} describes how to output horizontal averages
-of the magnetic and velocity fields. New such averages can be added to
-the code by using the existing averaging procedures \code{calc\_bmz()}
-or \code{calc\_jmz()} as examples.
+Sect.~\ref{S-1d-averages} 讲述了如何输出磁场和速度场的水平平均值. 通过借鉴现有的平均值计算流程 \code{calc\_bmz()} 或 \code{calc\_jmz()},类似的平均值也可以实现.
 
 \subsection{The f-array}
 \label{f-array}
 \index{f-array}
 The `f' array is the largest array in the {\sc Pencil Code} and its primary role
-is to store the current state of the timestepped PDE variables.  The f-array
-and its slightly smaller counter part (the df-array; see below)
-are the only full size 3D arrays in
-the code.  The f-array is of type real but PDEs for a complex variable may
+is to store the current state of the timestepped PDE variables. 
+ `f' 数组是 {\sc Pencil Code} 里面最大的数组,它主要的作用是储存当前阶段的时进(timestepped)偏微分方程变量.
+f 数组和稍微比它小一点的类似的 df 数组是本数据包内仅有的三维数组.
+
+The f-array is of type real but PDEs for a complex variable may
 be solved by using two slots in the f-array.  The actual size of the f-array
 is $\rm{mx}\times\rm{my}\times\rm{mz}\times\rm{mfarray}$. Here,
 $\rm{mfarray}=\rm{mvar}+\rm{maux}+\rm{mglobal}+\rm{mscratch}$
@@ -7218,7 +7140,7 @@ In order to output this part of the f-array, one must write
 
 \subsection{The df-array}
 \label{df-array}
-The `df' array is the second largest chunk of data in the {\sc Pencil Code}.
+`df'  {\sc Pencil Code}里面第二大的数据就是 `df' 数组了 .
 By using a 2N storage scheme (see \ref{S-2N-scheme}) after
 Williamson \cite{2Nstorage} the code only needs one more storage
 area for each timestepped variable on top of the current state stored in
@@ -7237,8 +7159,10 @@ $\rm{mz}$ large the wasted storage becomes negligible.
 \index{fp-array}
 
 Similar to the `f' array the code also has a 'fp' array which contains current
-states of all the particles. Like the f-array the fp-array also has a time
-derivative part, the dfp-array. The dimension of the fp-array is
+states of all the particles. 
+和 `f' 数组类似的是, `fp' 数组保存了所有粒子的当前状态.
+Like the f-array the fp-array also has a time
+derivative part, the dfp-array. 就好像 f 数组一样, fp 数组也有时间微分的对应数组 dfp. The dimension of the fp-array is
 $mpar_local\times mpvar$ where $mpar_local$ is the number of particles in the
 local processor (for serial runs this is the total number of particles) and
 $mpvar$ depends on the problem at hand. For example if we are solving for only
@@ -7277,7 +7201,7 @@ The seventh slot (or the fourth if we are use tracer particles) is the radius
 of the particle which can also change as a function of time as particles
 collide and fuse together to form bigger particles.
 
-\subsection{The pencil case}
+\subsection{Pencil 样例 The pencil case}
 \label{pencil-case}
 
 Variables that are derived from the basic physical variables of the code are
@@ -7322,8 +7246,8 @@ variables in pencils.
 
 The centralized pencil calculation scheme is a guarantee that
 \begin{itemize}
-  \item All pencils are only calculated once
-  \item Pencils are always calculated by the proper physics module
+  \item 所有的 pencil 只计算一次
+  \item Pencil 总是由合适的物理模块来计算
 \end{itemize}
 Since the {\sc Pencil Code} is a multipurpose code that has many different physics
 modules, it can lead to big problems if a module tries to calculate a derived
@@ -7363,7 +7287,7 @@ combination of events can occur:
     The pencil is requested and is needed.
 \end{itemize}
 
-\subsubsection{Adding new pencils}
+\subsubsection{添加新的 pencils, Adding new pencils}
 
 Adding a new pencil to the pencil case is trivial but requires a few steps.
 \begin{itemize}
@@ -7389,7 +7313,7 @@ modules.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Adding new physics: the Special module}
+\subsection{加入新物理机制: 特殊模块 Adding new physics: the Special module}
 \index{Special module}
 
 If you want to add new physics to the code, you will in many cases want to
@@ -7449,9 +7373,10 @@ gives you a good overview of which files you need to edit or add.
 \index{InitialCondition module}
 
 Although the code has many initial conditions implemented, we
-now {\it discourage} such practice. We aim to eventually removed
-most of them. The recommended course of action is to make use of
-the InitialCondition module.
+now {\it discourage} such practice. 
+尽管程序包已经设置了很多的初始条件,但{\it 尽量不要}再让它的数量增长了. We aim to eventually removed
+most of them. 我们希望最后能够将大部分初始条件移除. The recommended course of action is to make use of
+the InitialCondition module.推荐的做法是利用好 InitialCondition 模块. 
 
 InitialCondition works pretty much like the Special module. To implement your
 own custom initial conditions,
@@ -7481,7 +7406,7 @@ for examples of how the module is used.
 
 % ====================================================================== %
 
-\section{Testing the code}
+\section{测试代码 Testing the code}
 \label{S-Testing}
 
 To maintain reproducibility despite sometimes quite rapid development,
@@ -7621,12 +7546,13 @@ following steps.
 \section{Useful internals}
 
 %%%
-\subsection{Global variables}
+\subsection{全局变量 Global variables}
 
 The following variables are defined in \file{cdata.f90} and are available
 in any routine that \cmd{use}s the module \name{Cdata}.
+以下的变量都定义在 \file{cdata.f90} 内,并且可以在所有的调用了 \cmd{use} \name{Cdata}模块的程序中都可以使用.
 
- \begin{longtable}{lp{0.6\textwidth}}
+\begin{longtable}{lp{0.6\textwidth}}
 \toprule
   \multicolumn{1}{c}{\emph{Variable}}
                & \multicolumn{1}{c}{\emph{Meaning}} \\
@@ -7691,7 +7617,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 
 
 %%%
-\subsection{Subroutines and functions}
+\subsection{子程序和函数 Subroutines and functions}
 
 \begin{description}
 \item[\code{output(file,a,nv)}]
@@ -9113,7 +9039,7 @@ $\Ra_{\rm HTM}=10^5$, a density contrast of 11, and had a vertical imposed
 magnetic field (Chandrasekhar number $Q=72$). This corresponds to
 $\Ra=3.6\times10^8$, $K=0.0011$, $F_{\rm bot}=0.0014$.
 
-\subsubsection{Entropy boundary condition}
+\subsubsection{熵边界条件 Entropy boundary condition}
 
 This discussion only applies to the case of convection in a slab.
 A commonly used lower boundary condition is to prescribe the
@@ -9132,7 +9058,7 @@ c_p{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\rho\over\dd z}\right)
 for the derivative of the entropy at the bottom.
 This is implemented as the \option{c1} boundary condition at the bottom.
 
-\subsubsection{Temperature boundary condition at the top}
+\subsubsection{温度边界条件(翻译存疑at the top)Temperature boundary condition at the top}
 
 In earlier papers the temperature at the top was set in terms of the
 quantity $\xi_0$, which is the ratio of the pressure scale height relative
@@ -9324,25 +9250,24 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
 
 % ====================================================================== %
 
-\section{Some specific boundary conditions}
+\section{一些特定的边界条件 Some specific boundary conditions}
 \label{s-boundary-conditions}
 
-In this section, we formulate and discuss the implementation of some
-common boundary conditions in spherical and cylindrical coordinates.
+在这一章节中,我们讨论了一些常用的球坐标系或柱坐标系中的边界条件.
 
-\subsection{Perfect-conductor boundary condition}
+\subsection{理想导体边界条件 Perfect-conductor boundary condition}
 
-This is a popular boundary condition for the magnetic field; it implies that
+这是一个常用的磁场的边界分布条件,它意味着在边界上
 \begin{equation}
   \label{Eq-boundcond-perfcond-1}
   B_n = 0
 \end{equation}
-and
+
 \begin{equation}
   \vec{E}_t = 0
 \end{equation}
-on the boundary, where the subscript $n$ denotes the normal component, and
-$\vec{E}_t$ denotes the tangential components of the electric field.
+, 下标 $n$ 表示法向分量, 而
+$\vec{E}_t$ 表示切向的电场分量.
 
 In Cartesian geometry, these conditions can be implemented by setting
 the two tangential components of the vector potential $\vec{A}$ to zero
@@ -10436,13 +10361,13 @@ is well described by integrating $-2\eta\langle\Jv\cdot\Bv\rangle$
 
 % ====================================================================== %
 
-\section{Numerical methods}
+\section{数值方法 Numerical methods}
 
-\subsection{Sixth-order spatial derivatives}
+\subsection{六阶精度的空间导数 Sixth-order spatial derivatives}
 \index{6th-order derivatives}
 \index{Sixth-order derivatives}
 \label{S-6th-order}
-
+ 
 Spectral methods are commonly used in almost all studies of ordinary
 (usually incompressible) turbulence. The use of this method is justified
 mainly by the high numerical accuracy of spectral schemes. Alternatively,
@@ -10457,7 +10382,7 @@ referred to as {\it Hermitian methods} or as {\it Mehrstellen-Verfahren},
 because the derivative in one point is calculated using the derivatives
 in neighboring points.}
 
-The sixth order first and second derivative schemes are given by
+六阶精度的一阶,二阶空间导数由下式给出
 \begin{equation}
 f'_i=(-f_{i-3}+9f_{i-2}-45f_{i-1}
 +45f_{i+1}-9f_{i+2}+f_{i+3})/(60\delta x),
@@ -10515,7 +10440,7 @@ $-\mu_0\Jv=\nabla^2\Av-\nab\nab\cdot\Av$. This will be important in
 the MHD calculations presented below. \index{Hyperviscosity}
 
 
-\subsection{Upwind derivatives to avoid `wiggles'}
+\subsection{避免振荡的逆风导数 Upwind derivatives to avoid `wiggles'}
 \index{Upwinding}
 \label{S-upwind}
 \newcommand{\Order}[1]{O\left(#1\right)}
@@ -12207,10 +12132,10 @@ number of the available modules.
 
 % ====================================================================== %
 
-\section{启动选项和运行时参数 Startup and run-time parameters}
+\section{启动选项和运行中参数 Startup and run-time parameters}
 \label{S-all-parameters}
 
-中文翻译的同学计划将这一部分单独列做出一个文件,这一步还在计划中.
+Chinese translation team plans to make the parameters file standalone, but with low priority. 中文翻译的团队计划将这一部分单独列做出一个文件,这一步还在计划中.
 
 \subsection[Startup parameters for \File{start.in}]%
 {List of startup parameters for \file{start.in}}
@@ -12232,480 +12157,6 @@ For single precision, this is typically about
 $\varepsilon \approx 5\times1.2{\times}10^{-7} = 6{\times}10^{-7}$; for
 double precision, $\varepsilon\approx10^{-15}$.
 
-% ---------------------------------------------------------------------- %
-\begin{longtable}{lp{0.6\textwidth}}
-%\begin{tabular}{lp{0.6\textwidth}}
-\toprule
-  \multicolumn{1}{c}{\emph{Variable [default value]}}
-               & \multicolumn{1}{c}{\emph{Meaning}} \\
-\midrule
-  \multicolumn{2}{c}{Namelist \name{init_pars}}\\
-\midrule
-  \var{cvsid} [\code{''}]
-               & the \name{svn} identification string, which allows you to
-                 keep track of the version of \file{start.in}.\\
-  \var{ip} [$14$]
-               & (anti-)verbosity level: \code{ip=1} produces lots of
-                 diagnostic output, \code{ip=14} virtually none. \\
-  \var{xyz0} [$(-\pi,-\pi,-\pi)$],\\
-  \var{Lxyz} [$(2\pi,2\pi,2\pi)$],\\
-  \var{lperi} [(\code{T},\code{T},\code{T})]
-               & determine the geometry of the box. All three are vectors
-                 of the form ($x$-comp., $y$-comp., $z$-comp.); \var{xyz0}
-                 describes the left (lower) corner of the box, \var{Lxyz}
-                 the box size.
-                 \var{lperi} specifies whether a direction is considered
-                 periodic (in which case the last point is omitted) or not.
-                 In all cases, three ghost zones will be added. \\
-  \var{lprocz_slowest} [\code{T}]
-               & if set to \code{F}, the ordering of processor numbers is
-                 changed, so the $z$ processors are now in the inner loop.
-                 Since \var{nprocy}=4 is optimal (see Sect.~\ref{Bandwidth}),
-                 you may want to put \var{lprocz_slowest}=T when
-                 \code{nygrid}$>$\code{nzgrid}.\\
-  \var{lwrite_ic} [\code{F}]
-               & if set \code{T}, the initial data are written into the
-                 file \file{VAR0}. This is generally useful, but doing this
-                 all the time uses up plenty of disk space.\\
-  \var{lnowrite} [\code{F}]
-               & if set \code{T}, all initialization files are written,
-                 including the param.nml file,
-                 except \file{var.dat}. This option allows you to use old
-                 file{var.dat} files, but updates all other initialization
-                 files. This could be useful after having changed the code
-                 and, in particular, when the \file{var.dat} files will be
-                 overwritten by \file{remesh.csh}.\\
-  \var{lwrite_aux} [\code{F}]
-               & if set \code{T}, auxiliary variables (those calculated at
-                 each step, but not evolved mathematically) to
-                 \file{var.dat} after the evolved quantities. \\
-  \var{lwrite_2d} [\code{F}]
-               & if set \code{T}, only 2D-snapshots are written into VAR
-                 files in the case of 2D-runs with $nygrid=1$ or
-                 $nzgrid=1$.\\
-  \var{lread_oldsnap} [\code{F}]
-               & if set \code{T}, the old snapshot will be read in before
-                 producing (overwriting) initial conditions. For example, if
-                 you just want to add a perturbation to the magnetic field,
-                 you'd give no initial condition for density and velocity
-                 (so you keep the data from a hopefully relaxed run),
-                 and just add whatever you need for the magnetic field.
-                 In this connection you may want to \cmd{touch NOERASE},
-                 so as not to erase the previous data.\\
-  \var{lread_oldsnap_nomag} [\code{F}]
-               & if set \code{T}, the old snapshot from a non-magnetic run
-                 will be read in before producing (overwriting) initial
-                 conditions. This allows one to let a hydrodynamic
-                 run relax before adding a magnetic field. However,
-                 for this to work one has to modify {\it manually}
-                 \file{data/param.nml} by adding an entry for
-                 \var{MAGNETIC_INIT_PARS} or \var{PSCALAR_INIT_PARS}.
-                 In addition, for \code{idl} to read correctly after the
-                 first restarted run, you must adjust the value of \var{mvar}
-                 in \file{data/dim.dat} \\
-  \var{lread_oldsnap_nopscalar} [\code{F}]
-               & if set \code{T}, the old snapshot from a run without
-                 passive scalar will be read in before producing
-                 (overwriting) initial conditions. This allows one to
-                 let a hydrodynamic run relax before adding a passive
-                 scalar.\\
-  \var{lshift_origin} [\code{F,F,F}]
-               & if set \code{T} for any or some of the three directions,
-                 the mesh is shifted by 1/2 meshpoint in that or those
-                 directions so that the mesh goes through the origin.\\
-  \var{unit_system} [\code{'cgs'}]
-               & you can set this character string to \index{SI units}
-                 \code{'SI'}, which means that you can give \index{Units}
-                 physical dimensions in \index{SI units} SI units.
-                 The default is \index{cgs units} cgs units.\\
-  \var{unit_length} [\code{1}]
-               & allows you to set the unit length. Suppose you want
-                 the unit length to be $1\,{\rm kpc}$, then you would
-                 say \code{unit_length='3e21'}. (Of course, politically
-                 correct would be to say \code{unit_system='SI'} in
-                 which case you say \code{unit_length='3e19'}.)\\
-  \var{unit_velocity} [\code{1}]
-               & Example: if you want km/s you say \code{unit_length='1e5'}.\\
-  \var{unit_density} [\code{1}]
-               & Example: if you want your unit density to be
-                 $10^{-24}\,{\rm g}/{\rm cm}^3$ you say
-                 \code{unit_density='1e-24'}.\\
-  \var{unit_temperature} [\code{1}]
-               & Example: \code{unit_temperature='1e6'} if you want
-                 mega-Kelvin.\\
-  \var{random_gen} [\code{system}]
-               & \label{random-gen-init}
-                 choose random number generator;
-                 currently valid choices are
-                 \begin{description}
-                 \item[\code{'system'}] (your compiler's generator),
-                 \item[\code{'min_std'}] (the `minimal standard' generator
-                   \code{ran0()} from `Numerical Recipes'),
-                 \item[\code{'nr_f90'}] (the Parker-Miller-Marsaglia
-                   generator \code{ran()} from `Numerical Recipes for
-                   F90').
-                 \end{description} \\
-  \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
-  \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
-  \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
-               & boundary conditions. See Sect.~\ref{boundconds} for a
-                 discussion of where and how to set these. \\
-  \var{pretend_lnTT} [\code{F}]
-                & \index{pretend_lnTT}
-                selects $\ln T$ as fundamental thermodynamic variable
-                in the entropy module \\
-                 \\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
-\midrule
-  \var{inituu} [\code{'zero'}]
-               & initialization of velocity. Currently valid choices are
-                 \begin{description}
-                 \item[\code{`zero'}] ($\uv=0$ ),
-                 \item[\code{`gaussian-noise'}] (random,
-                   normally-distributed $u_x$,$u_z$),
-                 \item[\code{`gaussian-noise-x'}] (random,
-                   normally-distributed $u_x$),
-                 \item[\code{`sound-wave'}] (sound wave in $x$ direction),
-                 \item[\code{`shock-tube'}] (polytropic standing shock),
-                 \item[\code{`bullets'}] (blob-like velocity perturbations),
-                 \item[\code{`Alfven-circ-x'}] (circularly polarized
-                   Alfven wave in x direction),
-                 \item[\code{`const-ux'}] (constant x-velocity),
-                 \item[\code{`const-uy'}] (constant y-velocity),
-                 \item[\code{`tang-discont-z'}] (tangential discontinuity:
-                   velocity is directed along $x$, jump is at $z=0$),
-                 \item[\code{`Fourier-trunc'}] (truncated Fourier series),
-                 \item[\code{`up-down'}] (flow upward in one spot,
-                   downward in another; not solenoidal).
-                 \end{description}
-                 \\
-  \var{ampluu} [$0.$]
-               & amplitude for some types of initial velocities. \\
-  \var{widthuu} [$0.1$]
-               & width for some types of initial velocities. \\
-  \var{urand} [$0.$]
-               & additional random perturbation of $\uv$. If
-                 \verb|urand>0|, the perturbation is additive,
-                 $u_i \mapsto u_i + u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
-                 if \verb|urand<0|, it is multiplicative,
-                 $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
-                 in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
-                 distributed random variable on the interval $[-0.5,0.5]$.\\
-  \var{uu_left} [$0.$], \\
-  \var{uu_right} [$0.$]
-               & needed for \code{inituu='shock-tube'}.\\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{density_init_pars}} \\
-\midrule
-  \var{initlnrho} [\code{'zero'}]
-               & initialization of density. Currently valid choices are
-                 \begin{description}
-                 \item[\code{`zero'}] ($\ln\rho=0$),
-                 \item[\code{`isothermal'}] (isothermal stratification),
-                 \item[\code{`polytropic\_simple'}] (polytropic stratification),
-                 \item[\code{`hydrostatic-z-2'}] (hydrostatic vertical
-                   stratification for isentropic atmosphere),
-                 \item[\code{`xjump'}] (density jump in $x$ of width
-                   \var{widthlnrho}),
-                 \item[\code{`rho-jump-z'}] (density jump in $z$ of width
-                   \var{widthlnrho}),
-                 \item[\code{`piecew-poly'}] (piecewise polytropic vertical
-                   stratification for solar convection),
-                 \item[\code{`polytropic'}] (polytropic vertical
-                   stratification),
-                 \item[\code{`sound-wave'}] (sound wave),
-                 \item[\code{`shock-tube'}] (polytropic standing shock),
-                 \item[\code{`gaussian-noise'}] (Gaussian-distributed,
-                   uncorrelated noise),
-                 \item[\code{`gaussian-noise'}] (Gaussian-distributed,
-                   uncorrelated noise in $x$, but uniform in $y$ and $z$),
-                 \item[\code{`hydrostatic-r'}] (hydrostatic radial density
-                   stratification for isentropic or isothermal sphere),
-                 \item[\code{`sin-xy'}] (sine profile in $x$ and $y$),
-                 \item[\code{`sin-xy-rho'}] (sine profile in $x$ and $y$, but
-                   in $\rho$, not $\ln\rho$),
-                 \item[\code{`linear'}] (linear profile in $\kv\cdot\xv$),
-                 \item[\code{`planet'}] (planet solution; see \S\ref{S-planet}).
-                 \end{description}
-                 \\
-  \var{gamma} [$5./3$]
-               & adiabatic index $\gamma=c_p/c_v$. \\
-  \var{cs0} [$1.$]
-               & can be used to set the dimension of velocity;
-                 larger values can be used to decrease stratification \\
-  \var{rho0} [$1.$]
-               & \label{cs0-rho0-init}%
-                 reference values of sound speed and density,
-                 i.\,e.~values at height \var{zref}. \\
-  \var{ampllnrho} [$0.$], \\
-  \var{widthlnrho} [$0.1$]
-               & amplitude and width for some types of initial densities. \\
-  \var{rho_left} [$1.$], \\
-  \var{rho_right} [$1.$]
-               & needed for \code{initlnrho='shock-tube'}. \\
-  \var{cs2bot} [$1.$], \\
-  \var{cs2top} [$1.$]
-               & sound speed at bottom and top. Needed for some types of
-                 stratification. \\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{grav_init_pars}} \\
-\midrule
-  \var{zref} [$0.$]
-               & \label{zref-init}%
-                 reference height where in the initial stratification
-                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
-  \var{gravz} [$-1.$]
-               & vertical gravity component $g_z$.\\
-  \var{grav_profile} \\{}
-    [\code{'const'}]
-               & constant gravity $g_z = \texttt{gravz}$
-                 (\code{grav_profile='const'}) gravity
-                 or linear profile $g_z = \texttt{gravz}\cdot z$
-                 (\code{grav_profile='linear'}, for accretion discs and
-                 similar). \\
-  \var{z1} [$0.$], \\
-  \var{z2} [$1.$]
-               & specific to the solar convection case
-                 \code{initlnrho='piecew-poly'}.
-                 The stable layer is $z_0 < z < z_1$, the unstable layer
-                 $z_1 < z < z_2$, and the top (isothermal) layer is
-                 $z_2 < z < z_{\rm top}$. \\
-  \var{nu_epicycle} [$1.$]
-               & vertical epicyclic frequency; for accretion
-                 discs it should be equal to Omega, but not for
-                 galactic discs; see Eq.~(\ref{disc-gravz-init}) in
-                 Sect.~\ref{VerticalStratification}.\\
-  \var{grav_amp} [$0.$], \var{grav_tilt} [$0.$]
-               & specific to the tilted gravity case (amplitude and angle
-                 wrt the vertical direction).\\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{entropy_init_pars}} \\
-\midrule
-  \var{initss} [\code{'nothing'}]
-               & initialization of entropy. Currently valid choices are
-                 \begin{description}
-                 \item[\code{`nothing'}] (leaves the initialization done
-                   in the density module unchanged),
-                 \item[\code{`zero'}] (put $s=0$ explicitly; this may
-                   overwrite the initialization done in the density module),
-                 \item[\code{`isothermal'}] (isothermal stratification,
-                   $T=\const$),
-                 \item[\code{`isobaric'}] (isobaric, $p=\const$),
-                 \item[\code{`isentropic'}] (isentropic with superimposed
-                   hot [or cool] bubble),
-                 \item[\code{`linprof'}] (linear entropy profile in $z$),
-                 \item[\code{`piecew-poly'}] (piecewise polytropic
-                   stratification for convection),
-                 \item[\code{`polytropic'}] (polytropic stratification,
-                   polytropic exponent is \var{mpoly0}),
-                 \item[\code{`blob'}] (puts a gaussian blob in entropy for
-                   buoyancy experiments; see Ref.~\cite{BH01} for details)
-                 \item[\code{`xjump'}] (jump in $x$ direction),
-                 \item[\code{`hor-tube'}] (horizontal flux tube in entropy,
-                   oriented in the $y$-direction).
-                 \end{description}
-                 \\
-  \var{pertss} [\code{'zero'}]
-               & additional perturbation to entropy. Currently valid
-                 choices are
-                 \begin{description}
-                 \item[\code{'zero'}] (no perturbation)
-                 \item[\code{'hexagonal'}] (hexagonal perturbation for
-                   convection).
-                 \end{description}
-                 \\
-  \var{ampl_ss} [$0.$], \\
-  \var{widthss} [$2\varepsilon$]
-               & amplitude and width for some types of initial entropy. \\
-  \var{grads0} [$0.$]
-               & initial entropy gradient for \code{initss=linprof}. \\
-  \var{radius_ss} [$0.1$]
-               & radius of bubble for \code{initss=isentropic}. \\
-  \var{mpoly0} [$1.5$], \\
-  \var{mpoly1} [$1.5$], \\
-  \var{mpoly2} [$1.5$]
-               & \label{mpoly012-init}%
-                 specific to the solar convection case
-                 \code{initss=piecew-poly}:
-                 polytropic indices of unstable (\var{mpoly0}), stable
-                 (\var{mpoly1}) and top layer (\var{mpoly2}).
-                 If the flag \var{isothtop} is set, the
-                 top layer is initialized to be isothermal, otherwise
-                 thermal (plus hydrostatic) equilibrium is assumed for all
-                 three layers, which results in a piecewise polytropic
-                 stratification. \\
-  \var{isothtop} [$0$]
-               & flag for isothermal top layer for \code{initss=piecew-poly}. \\
-  \var{khor_ss} [$1.$]
-               & horizontal wave number for \code{pertss=hexagonal} \\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
-\midrule
-  \var{initaa} [\code{'zero'}]
-               & initialization of magnetic field (vector potential).
-                 Currently valid choices are
-                 \begin{description}
-                 \item[\code{`Alfven-x'}] (Alfv\'en wave traveling in the
-                   $x$-direction; this also sets the velocity),
-                 \item[\code{`Alfven-z'}] (Alfv\'en wave traveling in the
-                   $z$-direction; this also sets the velocity),
-                 \item[\code{`Alfvenz-rot'}] (same as \code{`Alfven-z'}, but
-                   with rotation),
-                 \item[\code{`Alfven-circ-x'}] (circularly polarized
-                   Alfven wave in x direction),
-                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
-                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
-                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
-                 \item[\code{`Bz(x)'}] ($B_z\propto\cos(k x)$),
-                 \item[\code{`crazy'}] (for testing purposes).
-                 \item[\code{`diffrot'}] ([needs to be documented]),
-                 \item[\code{`fluxrings'}] (two interlocked magnetic fluxrings;
-                   see \S~\ref{fluxrings}),
-                 \item[\code{`gaussian-noise'}] (white noise),
-                 \item[\code{`halfcos-Bx'}] ([needs to be documented]),
-                 \item[\code{`hor-tube'}] (horizontal flux tube in $\Bv$,
-                   oriented in the $y$-direction).
-                 \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
-                 \item[\code{`mag-support'}] ([needs to be documented]),
-                 \item[\code{`mode'}] ([needs to be documented]),
-                 \item[\code{`modeb'}] ([needs to be documented]),
-                 \item[\code{`propto-ux'}] ([needs to be documented]),
-                 \item[\code{`propto-uy'}] ([needs to be documented]),
-                 \item[\code{`propto-uz'}] ([needs to be documented]),
-                 \item[\code{`sinxsinz'}] ($\sin x \sin z$),
-                 \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
-                 \item[\code{`uniform-By'}] (uniform field in $y$ direction),
-                 \item[\code{`uniform-Bz'}] (uniform field in $z$ direction),
-                 \item[\code{`zero'}] (zero field),
-                 \end{description}
-                 \\
-  \var{initaa2} [\code{'zero'}]
-               & additional perturbation of magnetic field.
-                 Currently valid choices are
-                 \begin{description}
-                 \item[\code{`zero'}] (zero perturbation),
-                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
-                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
-                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave).
-                 \end{description}
-                 \\
-  \var{amplaa} [$0.$]
-               & amplitude for some types of initial magnetic fields. \\
-  \var{amplaa2} [$0.$]
-               & amplitude for some types of magnetic field perturbation. \\
-  \var[fring1,fring2]{fring\{1,2\}} [$0.$], \\
-  \var[Iring1,Iring2]{Iring\{1,2\}} [$0.$], \\
-  \var[Rring1,Rring2]{Rring\{1,2\}} [$1.$], \\
-  \var[wr1,wr2]{wr\{1,2\}} [$0.3$]
-               & flux, current, outer and inner radius of flux ring 1/2;
-                 see Sect.~\ref{fluxrings}. \\
-  \var{radius} [$0.1$]
-               & used by some initial fields. \\
-  \var{epsilonaa} [$10^{-2}$]
-               & used by some initial fields. \\
-  \var{widthaa} [$0.5$]
-               & used by some initial fields. \\
-  \var{z0aa} [$0.$]
-               & used by some initial fields. \\
-  \var{kx_aa} [$1.$], \\
-  \var{ky_aa} [$1.$], \\
-  \var{kz_aa} [$1.$]
-               & wavenumbers used by some initial fields. \\
-  \var{lpress_equil} [F]
-               & flag for pressure equilibrium (can be used in connection
-                 with all initial fields) \\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{pscalar_init_pars}} \\
-\midrule
-  \var{initlncc} [\code{'zero'}]
-               & initialization of passive scalar
-                 (concentration per unit mass, $c$).
-                 Currently valid choices (for $\ln c$) are
-                 \begin{description}
-                 \item[\code{`zero'}] ($\ln c=0.$),
-                 \item[\code{`gaussian-noise'}] (white noise),
-                 \item[\code{`wave-x'}] (wave in $x$ direction),
-                 \item[\code{`wave-y'}] (wave in $y$ direction),
-                 \item[\code{`wave-z'}] (wave in $z$ direction),
-                 \item[\code{`tang-discont-z'}] (Kelvin-Helmholtz instability),
-                 \item[\code{`hor-tube'}] (horizontal tube in concentration;
-                  used as a marker for magnetic flux tubes).
-                 \end{description}
-                 \\
-  \var{initlncc2} [\code{'zero'}]
-               & additional perturbation of passive scalar concentration $c$.
-                 Currently valid choices are
-                 \begin{description}
-                 \item[\code{`zero'}] ($\delta\ln c=0.$),
-                 \item[\code{`wave-x'}] (add $x$-directed wave to $\ln c$).
-                 \end{description}
-                 \\
-\var{ampllncc} [$0.1$]
-               & amplitude for some types of initial concentration. \\
-  \var{ampllncc2} [$0.$]
-               & amplitude for some types of concentration perturbation. \\
-  \var{kx_lncc} [$1.$], \\
-  \var{ky_lncc} [$1.$], \\
-  \var{kz_lncc} [$1.$]
-               & wave numbers for some types of initial concentration. \\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{shear_init_pars}} \\
-\midrule
-  \var{qshear} [$0.$]
-               & \label{qshear-init}%
-                 degree of shear for shearing-box simulations (the
-                 shearing-periodic boundaries are the $x$-boundaries and
-                 are sheared in the $y$-direction). The shear velocity
-                 is ${\bf U}=-q\varOmega x\,{\hat{\bf y}}$. \\
-\midrule
-  \multicolumn{2}{c}{Namelist \name{particles_ads_init_pars}} \\
-\midrule
-  \var{init_ads_mol_frac} [$0.$]
-               & initial adsorbed mole fraction\\
-\midrule
-  \multicolumn{2}{c}{Namelist \name{particles_surf_init_pars}} \\
-\midrule
-  \var{init_surf_mol_frac} [$0.$]
-               & initial surface mole fraction\\
-\midrule
-  \multicolumn{2}{c}{Namelist \name{particles_chem_init_pars}} \\
-\midrule
-  \var{total_carbon_sites} [$1.08e-8$]
-               & carbon sites per surface area [mol/cm]2\\
-\midrule
-  \multicolumn{2}{c}{Namelist \name{particles_stalker_init_pars}} \\
-\midrule
-  \var{dstalk} [$0.1$]
-               & times between printout of stalker data\\
-  \var{lstalk_xx} [F]
-               & particles position\\
-  \var{lstalk_vv} [F]
-               & particles velocity\\
-  \var{lstalk_uu} [F]
-               & gas velocity at particles position\\
-  \var{lstalk_guu} [F]
-               & gas velocity gradient at particles position\\
-  \var{lstalk_rho} [F]
-               & gas density at particles position\\
-  \var{lstalk_grho} [F]
-               & gas density gradient at particles position\\
-  \var{lstalk_ap} [F]
-               & particles diameter\\
-  \var{lstalk_bb} [T]
-               & magnetic field at particles position\\
-  \var{lstalk_relvel} [F]
-               &  particles relative velocity to gas\\
-\bottomrule
-%\end{tabular}
-\end{longtable}
 % ---------------------------------------------------------------------- %
 
 \subsection[Runtime parameters for \File{run.in}]%
@@ -12734,11 +12185,6 @@ these configuration files, before you apply them in an active simulation run.
 
 The following table lists all possible inputs to the file \file{print.in}
 that are documented.
-
-% ---------------------------------------------------------------------- %
-\input{inlinedoc-diag.tex}
-% ---------------------------------------------------------------------- %
-
 
 \subsection[Parameters for \File{video.in}]%
 {List of parameters for \file{video.in}}\
