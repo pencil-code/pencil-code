@@ -361,7 +361,6 @@ END_XMLHEAD
     }
     if ($html) {
         print <<"END_HEAD";
-<!-- $commandline -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html lang="en">
 <head>
