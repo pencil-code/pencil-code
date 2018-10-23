@@ -143,7 +143,6 @@ my %tests = (
                          2d-tests/conv-slab-MLT
                          2d-tests/2d_methane_flame
                          conv-slab
-                         interstellar
                          interlocked-fluxrings
                          conv-slab-flat
                          coronae_heatflux_boris
@@ -171,6 +170,7 @@ my %tests = (
              # Level 5 for now contains all non-canonical tests that run,
              # but produce wrong results
              5 => [qw(
+                         interstellar
                          hexagon
                          MHD-ABCforcing
                          taylor-couette
