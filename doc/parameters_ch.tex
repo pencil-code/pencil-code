@@ -1,0 +1,1884 @@
+%!TEX program = xelatex
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%%   manual.tex   %%%
+%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%  Date:   06-Mar-2002
+%%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+%%           ab (Axel.Brandenburg@nordita.org)
+%%           Wenyin Wei (weiwy16@mails.tsinghua.edu.cn)
+%%  CVS: $Id$
+%%  Description:
+%     User manual for the Pencil Code
+%   Process with:
+%     This file needs to be handled by full version of Texlive, which takes the package of Chinese. xelatex is required.
+%
+%   Macros for files, variables, etc (list loosely adopted from texinfo):
+%
+%     \code:    A fragment of code:
+%                   use the line \code{call remove\_file()}
+%     \kbd:     Keyboard input:
+%                   type \kbd{M-x comment-region}
+%     \key:     A key  or key combination on your keyboard:
+%                   press \key{F1} of \key{C-h}
+%     \samp:    Sample input (?)
+%                   \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
+%     \url:     A url:
+%                   \url{http://www.nowhere.net/second_page.html}
+%     \email:   An email address:
+%                   \email{nobody@nowhere.nil}
+%
+% The following will also be automatically indexed:
+%     \name:    Name of a program, object, etc.
+%                   \name{object}
+%               will put `Object' (capitalized) into the index;
+%                   \name[Subject]{object}
+%               will put `Subject' into the index;
+%     \var:     A variable:
+%                   is determined by \var{ivisc}
+%     \env:     An environment variable:
+%                   this sets \env{CVSROOT}
+%     \file:    A file or directory name:
+%                   written to \file{var.dat} in \file{data/}
+%               Please make sure that the index entries for directory
+%               names end in `/'.
+%               Like \name, \file accepts an optional argument that will
+%               override the index entry:
+%                   \file[var.dat]{data/var.dat}
+%     \File     Same formatting as \file, but generates no index entry
+%               (useful for section headings to avoid weird header lines)
+%     \command,
+%     \cmd:     A command line:
+%                   use \command{rm -f *} at your own risk
+%     \option:  An option (command line or similar):
+%                   use CVS with the option \option{-q}
+%     \dfn:     A definition:
+%                   a \dfn{definition} is a specification sufficiently
+%                   obfuscated to be misunderstood
+%     \acronym: An acronym (hardly ever used here):
+%                   should we call the code \acronym{PROMPT}?
+
+% This is needed in English-version manual.
+% \input{driver_switch}              % sets \mydriver, set up by Makefile
+
+\RequirePackage{ifpdf}
+\ifpdf
+  \def\mydriver{pdftex}         % anything else make no sense
+\else
+\fi
+
+\documentclass[12pt,twoside,notitlepage,a4paper]{ctexart}
+
+
+%\usepackage{url} %(do we not need this; but it's not working anyway)
+%\usepackage{german,a4}
+%\usepackage[german,british]{babel}
+%\usepackage[T1]{fontenc}
+%\usepackage{ae}                 % To get good PDF with the T1 encoding
+\usepackage{newcent,helvet}
+\renewcommand{\ttdefault}{cmtt} % Courier is too broad
+\usepackage{amsmath,amssymb,bm}
+
+\usepackage[it,footnotesize]{caption2}
+\setlength{\abovecaptionskip}{5pt} % Space before caption
+\setlength{\belowcaptionskip}{5pt} % Space after caption
+
+\usepackage[bf,sf,small,nonindentfirst]{titlesec}
+
+\newcommand{\sectionbreak}{\clearpage} % starts new page for new section
+\titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
+%\titlespacing{\subsubsection}{0pt}{*1}{*-1}
+\usepackage{fancyhdr}
+\usepackage{fancybox}
+\setcounter{tocdepth}{3} % Older versions of fancybox very annoyingly (and
+                         % unnecessarily) resets this and make table of
+                         % contents disappear
+
+\usepackage{amssymb}
+\usepackage{expdlist,booktabs,units,longtable}
+
+\usepackage{fancyvrb}
+%\DefineShortVerb{\|}
+\usepackage{alltt}
+\usepackage{underscore}
+
+\usepackage{graphicx}
+\graphicspath{{figs/}}
+
+\usepackage{parskip}%,vmargin}
+%\setmargrb{20mm}{25mm}{20mm}{15mm}
+\usepackage[inner=23mm,outer=17mm,top=25mm,bottom=15mm]{geometry}
+\usepackage{multicol}
+
+%% Load hyperref after titlesec, or else (with dvipdfm) the \section links
+%% are one or two pages off
+\usepackage{hyperref}
+%\usepackage{makeidx}
+\usepackage{index}      % Allow for multiple indexes (load after hyperref)
+
+\renewcommand{\textfraction}{0}
+\renewcommand{\bottomfraction}{1}
+\renewcommand{\floatpagefraction}{1}
+
+\frenchspacing
+\sloppy
+
+%%% Multiple, three-column indexes
+\makeindex
+\newindex{var}{vidx}{vind}{Variable Index}
+\newindex{file}{fidx}{find}{File Index}
+%% The following is adapted from hyperref.sty and fixes hyperrefs in the
+%% index after all of our nasty manipulations:
+\makeatletter
+  \@ifpackageloaded{hyperref}{%
+    \let\HyInd@org@wrindex\@wrindex
+    \def\@wrindex#1#2{\HyInd@@wrindex{#1}#2||\\}%
+    \def\HyInd@@wrindex#1#2|#3|#4\\{%
+      \ifx\\#3\\%
+        \HyInd@org@wrindex{#1}{#2|hyperpage}%
+      \else
+        \def\Hy@temp@A{#3}%
+        \ifx\Hy@temp@A\HyInd@ParenLeft
+          HyInd@org@wrindex{#1}{#2|#3hyperpage}%
+        \else
+          \HyInd@org@wrindex{#1}{#2|#3}%
+        \fi
+      \fi
+    }%
+  }{}
+\makeatother
+%% Redefine index to be in three columns (adapted from `index.sty'):
+\makeatletter
+\renewenvironment{theindex}{%
+  \edef\indexname{\the\@nameuse{idxtitle@\@indextype}}%
+  \if@twocolumn\@restonecolfalse
+  \else\@restonecoltrue
+  \fi
+  \columnseprule \z@
+  \columnsep 35\p@
+  \begin{multicols}{3}[\section*{\indexname}%
+    \ifx\index@prologue\@empty%
+    \else\index@prologue\bigskip
+    \fi
+  ]%
+  \@mkboth{\MakeUppercase\indexname}%
+          {\MakeUppercase\indexname}%
+  \thispagestyle{plain}%
+  \parindent\z@
+  \parskip\z@ \@plus .3\p@\relax
+  \let\item\@idxitem
+}
+{ \end{multicols}
+  \if@restonecol\onecolumn\else\clearpage\fi
+}
+\makeatother
+
+
+%%% Page headings
+\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]{% Don't upcase the section title
+  \markright{\thesection.\ #1}}
+\fancyhead{}                    % clear header
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[CE]{\sc{The Pencil Code}}
+\fancyhead[CO]{\rightmark}
+%
+\fancyfoot{}
+
+% ---------------------------------------------------------------------- %
+
+%%% Macros
+
+%% Centered table cells for headings
+\newcommand{\mcc}[1]{\multicolumn{1}{c}{#1}}
+
+%% Bold face \tt prompts (only works within `alltt' or \tt environment)
+\newcommand{\prompt}[1]{{\ttfamily\bfseries{}#1}}
+
+%% Margin and inline notes and remarks
+\newcommand\note[1]{\marginpar{\renewcommand{\baselinestretch}{0.8}
+        \raggedright\scriptsize\usefont{OT1}{phv}{mc}{n} #1}}
+\newcommand{\Note}[1]{\emph{[#1]}}
+
+
+%% Symbols for dependency tables
+%% required
+\newcommand{\req}{$\bullet$}
+%% optional
+\newcommand{\opt}{$\diamond$}
+
+%% keys, names, paths, files, etc.
+%% Examples: \name{Greeks} \name[Trojans]{Greeks}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\cmd}{\command}
+\newcommand{\kbd}[1]{\texttt{\textsl{#1\/}}}
+\newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
+\newcommand{\samp}[1]{`\code{#1}'}
+%\newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\cite}[1]{}
+\newcommand{\acronym}[1]{\textsc{#1}\index{#1}}
+%\newcommand{\url}[1]{}
+\newcommand{\email}[1]{\code{#1}}
+
+%\newcommand{\command}[1]{\code{#1}\index{#1}}
+%\newcommand{\env}[1]{\code{#1}\index[var]{#1}}
+%\newcommand{\file}[1]{`\texttt{#1}'\index{#1@\texttt{#1}}}
+%\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\option}[1]{`\code{#1}'\index{Option #1@Option \emph{`#1'}}}
+%\newcommand{\var}[1]{\textsl{#1}\index[var]{#1@\emph{#1}}\/}
+\makeatletter
+\newcommand{\command}[2][]{%
+  \def\index@{#1}%
+  \code{#2}%
+  \ifx\index@\@empty\index{#2@\emph{#2}}%
+  \else\index{#1@\emph{#1}}%
+  \fi%
+}
+\newcommand{\env}[2][]{%
+  \def\index@{#1}%
+  \code{#2}%
+  \ifx\index@\@empty\index[var]{#2}%
+  \else\index[var]{#1}%
+  \fi%
+}
+\newcommand{\file}[2][]{%
+  \def\index@{#1}%
+  `\texttt{#2}'%
+  \ifx\index@\@empty\index[file]{#2@\texttt{#2}}%
+  \else\index[file]{#1@\texttt{#1}}%
+  \fi%
+}
+\newcommand{\File}[2][]{%
+  `\texttt{#2}'%
+}
+\newcommand{\name}[2][]{%
+  \def\index@{#1}%
+  \textsl{#2\/}%
+  \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
+  \else\index{#1}%
+  \fi%
+}
+\newcommand{\option}[2][]{%
+  \def\index@{#1}%
+  `\code{#2}'%
+  \ifx\index@\@empty\index{Option #2@Option \emph{`#2'}}%
+  \else\index{Option #1@Option \emph{`#1'}}%
+  \fi%
+}
+\newcommand{\var}[2][]{%
+  \def\index@{#1}%
+  \textsl{#2\/}%
+  \ifx\index@\@empty\index[var]{#2@\emph{#2}}%
+  \else\index[var]{#1@\emph{#1}}%
+  \fi%
+}
+\makeatother
+\newcommand{\dfn}{\name}
+\newcommand{\Path}[1]{\file{#1}}
+
+%
+\newcommand{\bsT}{{\fontencoding{T1}\selectfont{\symbol{92}}}}
+\newcommand{\bcks}{\texttt{\symbol{92}}}
+\newcommand{\bs}{\bcks}       % Save us creation of a couple of fonts
+
+% ---------------------------------------------------------------------- %
+%% Maths operators
+
+\newcommand{\de}      {\mathrm{d}}
+\newcommand{\De}      {\mathrm{D}}
+\newcommand{\artanh}  {\mathop{\rm artanh}\nolimits}
+\renewcommand{\vec}[1]{\mbox{\boldmath{$#1$}}}
+\newcommand{\vcs}[1]  {\mbox{\boldmath{$\scriptstyle{#1}$}}}
+\newcommand{\const}   {\mbox{\rm const}}
+\newcommand{\grad}    {\vec{\nabla}}
+\newcommand{\Div}     {\vec{\nabla}\cdot}
+\newcommand{\curl}    {\nabla\times}
+\newcommand{\Laplace} {\nabla^2}
+\newcommand{\rot}     {\curl}
+\newcommand{\erfc}    {\mathop{\rm erfc}\nolimits}
+\newcommand{\erf}     {\mathop{\rm erf}\nolimits}
+
+\newcommand{\pderiv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pderivn}[3]{\frac{{\partial{}}^{#3} #1}{{\partial #2}^{#3}}}
+
+%% Maths variables
+
+%% Vectors
+\newcommand{\Av}            {\vec{A}}
+% \newcommand{\av}            {\vec{a}}
+\newcommand{\Bv}            {\vec{B}}
+\newcommand{\Jv}            {\vec{J}}
+\newcommand{\Uv}            {\vec{U}}
+\newcommand{\Wv}            {\vec{W}}
+% \newcommand{\bv}            {\vec{b}}
+\newcommand{\ev}            {\vec{e}}
+\newcommand{\Ev}            {\vec{E}}
+% \newcommand{\ex}            {\ev_{x}}
+% \newcommand{\ey}            {\ev_{y}}
+% \newcommand{\ez}            {\ev_{z}}
+\newcommand{\Fv}            {\vec{F}}
+\newcommand{\fv}            {\vec{f}}
+\newcommand{\gv}            {\vec{g}}
+\newcommand{\jv}            {\vec{j}}
+\newcommand{\kv}            {\vec{k}}
+\newcommand{\uv}            {\vec{u}}
+\newcommand{\vv}            {\vec{v}}
+\newcommand{\qv}            {\vec{q}}
+\newcommand{\bv}            {\vec{b}}
+\newcommand{\xv}            {\vec{x}}
+\newcommand{\zerovect}      {\vec{0}}
+\newcommand{\omv}           {\boldsymbol{\omega}}
+
+% Reynolds numbers
+\newcommand{\Ra}            {\mathrm{Ra}}
+\newcommand{\Reynolds}      {\mathrm{Re}}
+\newcommand{\Rm}            {\mathrm{Rm}}
+
+% Heating and Cooling
+\newcommand{\Heat}          {{\cal H}}
+\newcommand{\Heavi}         {\theta}
+\newcommand{\Cool}          {{\cal C}}
+
+% Sound Speed
+\newcommand{\cs}            {c_{\rm s}}
+\newcommand{\csnull}        {c_{{\rm s},0}}
+
+% Strain Tensor
+\newcommand{\Strain}        {\boldsymbol{\mathsf{S}}}
+
+
+% \newcommand{\Vol}           {{\cal V}}
+% Alfven Speed
+\newcommand{\vA}            {v_{\rm A}}
+
+\newcommand{\bra}[1]{\langle #1\rangle}
+\newcommand{\Eq}[1]{Eq.~(\ref{#1})}
+\newcommand{\Fig}[1]{Fig.~\ref{#1}}
+\newcommand{\eq}[1]{\Eq{#1}}
+\newcommand{\fig}[1]{\Fig{#1}}
+\newcommand{\nab}{\mbox{\boldmath $\nabla$} {}}
+\newcommand{\dd}{{\rm d} {}}
+
+\newcommand{\Bhat}{\hat{B}}
+\newcommand{\BBhat}{\hat{\vec{B}}}
+
+\newcommand{\EE}[1]{\,{\times}\,10^{#1}}
+\newcommand{\ttimes}[1]{10^{#1}}
+\newcommand{\xtimes}[2]{#1 \times 10^{#2}}
+
+\def\la{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr<\cr\sim\cr}}}}}
+\def\ga{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr>\cr\sim\cr}}}}}
+
+% ---------------------------------------------------------------------- %
+
+%\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
+%\subtitle{A very preliminary manual}
+%\author{Wolfgang Dobler \& Axel Brandenburg}
+%\date{$ $Date$ $,~ $ $Revision$ $}
+
+% ====================================================================== %
+
+\begin{document}
+\pagestyle{empty}
+\pagestyle{plain}
+\pagenumbering{roman}
+
+%\maketitle
+
+\begin{titlepage}
+  \begin{center}
+
+  \large
+
+  \vspace*{2cm}
+
+  {\Large\sffamily\bfseries The Pencil Code:\\[2\parskip]
+    A High-Order MPI code for MHD Turbulence}
+
+  \vspace{3ex}
+
+  {\sffamily User's and Reference Manual}
+
+  \vspace{\stretch{2}}
+
+  \centerline{\includegraphics[angle=-90,width=0.9\textwidth]{pencils}}
+
+  \vspace{\stretch{2}}
+
+  %\htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/}
+  %\&
+  %\htmladdnormallink{Axel Brandenburg}{http://www.nordita.org/~brandenb/}
+
+  \vspace{\stretch{1}}
+
+  %\emph{$ $Date$ $,~ $ $Revision$ $}\\
+  \today\\
+  \url{http://www.nordita.org/software/pencil-code/}\\
+  \url{https://github.com/pencil-code/pencil-code}
+
+  \vspace{\stretch{3}}
+
+\end{center}
+
+\end{titlepage}
+
+
+\newpage
+\mbox{}
+
+% ====================================================================== %
+
+\section{Startup and run-time parameters}
+\label{S-all-parameters}
+
+\subsection[Startup parameters for \File{start.in}]%
+{List of startup parameters for \file{start.in}}
+\label{S-all-init-params}
+
+The following table lists all (at the time of writing, September 2002)
+namelists used in \file{start.in}, with the corresponding parameters
+and their default values (in square brackets).
+Any variable referred to as a \dfn{flag} can be set to any nonzero value
+to switch the corresponding feature on.
+Not all parameters are used for a given scenario.
+This list is not necessarily up to date; also, in many cases it can only
+give an idea of the corresponding initial state; to get more insight and
+the latest set of parameters, you need to look at the code.
+
+The value $\varepsilon$ corresponds to 5 times the smallest number larger
+than zero.
+For single precision, this is typically about
+$\varepsilon \approx 5\times1.2{\times}10^{-7} = 6{\times}10^{-7}$; for
+double precision, $\varepsilon\approx10^{-15}$.
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.6\textwidth}}
+%\begin{tabular}{lp{0.6\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable [default value]}}
+               & \multicolumn{1}{c}{\emph{Meaning}} \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{init_pars}}\\
+\midrule
+  \var{cvsid} [\code{''}]
+               & the \name{svn} identification string, which allows you to
+                 keep track of the version of \file{start.in}.\\
+  \var{ip} [$14$]
+               & (anti-)verbosity level: \code{ip=1} produces lots of
+                 diagnostic output, \code{ip=14} virtually none. \\
+  \var{xyz0} [$(-\pi,-\pi,-\pi)$],\\
+  \var{Lxyz} [$(2\pi,2\pi,2\pi)$],\\
+  \var{lperi} [(\code{T},\code{T},\code{T})]
+               & determine the geometry of the box. All three are vectors
+                 of the form ($x$-comp., $y$-comp., $z$-comp.); \var{xyz0}
+                 describes the left (lower) corner of the box, \var{Lxyz}
+                 the box size.
+                 \var{lperi} specifies whether a direction is considered
+                 periodic (in which case the last point is omitted) or not.
+                 In all cases, three ghost zones will be added. \\
+  \var{lprocz_slowest} [\code{T}]
+               & if set to \code{F}, the ordering of processor numbers is
+                 changed, so the $z$ processors are now in the inner loop.
+                 Since \var{nprocy}=4 is optimal (see Sect.~\ref{Bandwidth}),
+                 you may want to put \var{lprocz_slowest}=T when
+                 \code{nygrid}$>$\code{nzgrid}.\\
+  \var{lwrite_ic} [\code{F}]
+               & if set \code{T}, the initial data are written into the
+                 file \file{VAR0}. This is generally useful, but doing this
+                 all the time uses up plenty of disk space.\\
+  \var{lnowrite} [\code{F}]
+               & if set \code{T}, all initialization files are written,
+                 including the param.nml file,
+                 except \file{var.dat}. This option allows you to use old
+                 file{var.dat} files, but updates all other initialization
+                 files. This could be useful after having changed the code
+                 and, in particular, when the \file{var.dat} files will be
+                 overwritten by \file{remesh.csh}.\\
+  \var{lwrite_aux} [\code{F}]
+               & if set \code{T}, auxiliary variables (those calculated at
+                 each step, but not evolved mathematically) to
+                 \file{var.dat} after the evolved quantities. \\
+  \var{lwrite_2d} [\code{F}]
+               & if set \code{T}, only 2D-snapshots are written into VAR
+                 files in the case of 2D-runs with $nygrid=1$ or
+                 $nzgrid=1$.\\
+  \var{lread_oldsnap} [\code{F}]
+               & if set \code{T}, the old snapshot will be read in before
+                 producing (overwriting) initial conditions. For example, if
+                 you just want to add a perturbation to the magnetic field,
+                 you'd give no initial condition for density and velocity
+                 (so you keep the data from a hopefully relaxed run),
+                 and just add whatever you need for the magnetic field.
+                 In this connection you may want to \cmd{touch NOERASE},
+                 so as not to erase the previous data.\\
+  \var{lread_oldsnap_nomag} [\code{F}]
+               & if set \code{T}, the old snapshot from a non-magnetic run
+                 will be read in before producing (overwriting) initial
+                 conditions. This allows one to let a hydrodynamic
+                 run relax before adding a magnetic field. However,
+                 for this to work one has to modify {\it manually}
+                 \file{data/param.nml} by adding an entry for
+                 \var{MAGNETIC_INIT_PARS} or \var{PSCALAR_INIT_PARS}.
+                 In addition, for \code{idl} to read correctly after the
+                 first restarted run, you must adjust the value of \var{mvar}
+                 in \file{data/dim.dat} \\
+  \var{lread_oldsnap_nopscalar} [\code{F}]
+               & if set \code{T}, the old snapshot from a run without
+                 passive scalar will be read in before producing
+                 (overwriting) initial conditions. This allows one to
+                 let a hydrodynamic run relax before adding a passive
+                 scalar.\\
+  \var{lshift_origin} [\code{F,F,F}]
+               & if set \code{T} for any or some of the three directions,
+                 the mesh is shifted by 1/2 meshpoint in that or those
+                 directions so that the mesh goes through the origin.\\
+  \var{unit_system} [\code{'cgs'}]
+               & you can set this character string to \index{SI units}
+                 \code{'SI'}, which means that you can give \index{Units}
+                 physical dimensions in \index{SI units} SI units.
+                 The default is \index{cgs units} cgs units.\\
+  \var{unit_length} [\code{1}]
+               & allows you to set the unit length. Suppose you want
+                 the unit length to be $1\,{\rm kpc}$, then you would
+                 say \code{unit_length='3e21'}. (Of course, politically
+                 correct would be to say \code{unit_system='SI'} in
+                 which case you say \code{unit_length='3e19'}.)\\
+  \var{unit_velocity} [\code{1}]
+               & Example: if you want km/s you say \code{unit_length='1e5'}.\\
+  \var{unit_density} [\code{1}]
+               & Example: if you want your unit density to be
+                 $10^{-24}\,{\rm g}/{\rm cm}^3$ you say
+                 \code{unit_density='1e-24'}.\\
+  \var{unit_temperature} [\code{1}]
+               & Example: \code{unit_temperature='1e6'} if you want
+                 mega-Kelvin.\\
+  \var{random_gen} [\code{system}]
+               & \label{random-gen-init}
+                 choose random number generator;
+                 currently valid choices are
+                 \begin{description}
+                 \item[\code{'system'}] (your compiler's generator),
+                 \item[\code{'min_std'}] (the `minimal standard' generator
+                   \code{ran0()} from `Numerical Recipes'),
+                 \item[\code{'nr_f90'}] (the Parker-Miller-Marsaglia
+                   generator \code{ran()} from `Numerical Recipes for
+                   F90').
+                 \end{description} \\
+  \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
+               & boundary conditions. See Sect.~\ref{boundconds} for a
+                 discussion of where and how to set these. \\
+  \var{pretend_lnTT} [\code{F}]
+                & \index{pretend_lnTT}
+                selects $\ln T$ as fundamental thermodynamic variable
+                in the entropy module \\
+                 \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
+\midrule
+  \var{inituu} [\code{'zero'}]
+               & initialization of velocity. Currently valid choices are
+                 \begin{description}
+                 \item[\code{`zero'}] ($\uv=0$ ),
+                 \item[\code{`gaussian-noise'}] (random,
+                   normally-distributed $u_x$,$u_z$),
+                 \item[\code{`gaussian-noise-x'}] (random,
+                   normally-distributed $u_x$),
+                 \item[\code{`sound-wave'}] (sound wave in $x$ direction),
+                 \item[\code{`shock-tube'}] (polytropic standing shock),
+                 \item[\code{`bullets'}] (blob-like velocity perturbations),
+                 \item[\code{`Alfven-circ-x'}] (circularly polarized
+                   Alfven wave in x direction),
+                 \item[\code{`const-ux'}] (constant x-velocity),
+                 \item[\code{`const-uy'}] (constant y-velocity),
+                 \item[\code{`tang-discont-z'}] (tangential discontinuity:
+                   velocity is directed along $x$, jump is at $z=0$),
+                 \item[\code{`Fourier-trunc'}] (truncated Fourier series),
+                 \item[\code{`up-down'}] (flow upward in one spot,
+                   downward in another; not solenoidal).
+                 \end{description}
+                 \\
+  \var{ampluu} [$0.$]
+               & amplitude for some types of initial velocities. \\
+  \var{widthuu} [$0.1$]
+               & width for some types of initial velocities. \\
+  \var{urand} [$0.$]
+               & additional random perturbation of $\uv$. If
+                 \verb|urand>0|, the perturbation is additive,
+                 $u_i \mapsto u_i + u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
+                 if \verb|urand<0|, it is multiplicative,
+                 $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
+                 in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
+                 distributed random variable on the interval $[-0.5,0.5]$.\\
+  \var{uu_left} [$0.$], \\
+  \var{uu_right} [$0.$]
+               & needed for \code{inituu='shock-tube'}.\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{density_init_pars}} \\
+\midrule
+  \var{initlnrho} [\code{'zero'}]
+               & initialization of density. Currently valid choices are
+                 \begin{description}
+                 \item[\code{`zero'}] ($\ln\rho=0$),
+                 \item[\code{`isothermal'}] (isothermal stratification),
+                 \item[\code{`polytropic\_simple'}] (polytropic stratification),
+                 \item[\code{`hydrostatic-z-2'}] (hydrostatic vertical
+                   stratification for isentropic atmosphere),
+                 \item[\code{`xjump'}] (density jump in $x$ of width
+                   \var{widthlnrho}),
+                 \item[\code{`rho-jump-z'}] (density jump in $z$ of width
+                   \var{widthlnrho}),
+                 \item[\code{`piecew-poly'}] (piecewise polytropic vertical
+                   stratification for solar convection),
+                 \item[\code{`polytropic'}] (polytropic vertical
+                   stratification),
+                 \item[\code{`sound-wave'}] (sound wave),
+                 \item[\code{`shock-tube'}] (polytropic standing shock),
+                 \item[\code{`gaussian-noise'}] (Gaussian-distributed,
+                   uncorrelated noise),
+                 \item[\code{`gaussian-noise'}] (Gaussian-distributed,
+                   uncorrelated noise in $x$, but uniform in $y$ and $z$),
+                 \item[\code{`hydrostatic-r'}] (hydrostatic radial density
+                   stratification for isentropic or isothermal sphere),
+                 \item[\code{`sin-xy'}] (sine profile in $x$ and $y$),
+                 \item[\code{`sin-xy-rho'}] (sine profile in $x$ and $y$, but
+                   in $\rho$, not $\ln\rho$),
+                 \item[\code{`linear'}] (linear profile in $\kv\cdot\xv$),
+                 \item[\code{`planet'}] (planet solution; see \S\ref{S-planet}).
+                 \end{description}
+                 \\
+  \var{gamma} [$5./3$]
+               & adiabatic index $\gamma=c_p/c_v$. \\
+  \var{cs0} [$1.$]
+               & can be used to set the dimension of velocity;
+                 larger values can be used to decrease stratification \\
+  \var{rho0} [$1.$]
+               & \label{cs0-rho0-init}%
+                 reference values of sound speed and density,
+                 i.\,e.~values at height \var{zref}. \\
+  \var{ampllnrho} [$0.$], \\
+  \var{widthlnrho} [$0.1$]
+               & amplitude and width for some types of initial densities. \\
+  \var{rho_left} [$1.$], \\
+  \var{rho_right} [$1.$]
+               & needed for \code{initlnrho='shock-tube'}. \\
+  \var{cs2bot} [$1.$], \\
+  \var{cs2top} [$1.$]
+               & sound speed at bottom and top. Needed for some types of
+                 stratification. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{grav_init_pars}} \\
+\midrule
+  \var{zref} [$0.$]
+               & \label{zref-init}%
+                 reference height where in the initial stratification
+                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
+  \var{gravz} [$-1.$]
+               & vertical gravity component $g_z$.\\
+  \var{grav_profile} \\{}
+    [\code{'const'}]
+               & constant gravity $g_z = \texttt{gravz}$
+                 (\code{grav_profile='const'}) gravity
+                 or linear profile $g_z = \texttt{gravz}\cdot z$
+                 (\code{grav_profile='linear'}, for accretion discs and
+                 similar). \\
+  \var{z1} [$0.$], \\
+  \var{z2} [$1.$]
+               & specific to the solar convection case
+                 \code{initlnrho='piecew-poly'}.
+                 The stable layer is $z_0 < z < z_1$, the unstable layer
+                 $z_1 < z < z_2$, and the top (isothermal) layer is
+                 $z_2 < z < z_{\rm top}$. \\
+  \var{nu_epicycle} [$1.$]
+               & vertical epicyclic frequency; for accretion
+                 discs it should be equal to Omega, but not for
+                 galactic discs; see Eq.~(\ref{disc-gravz-init}) in
+                 Sect.~\ref{VerticalStratification}.\\
+  \var{grav_amp} [$0.$], \var{grav_tilt} [$0.$]
+               & specific to the tilted gravity case (amplitude and angle
+                 wrt the vertical direction).\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{entropy_init_pars}} \\
+\midrule
+  \var{initss} [\code{'nothing'}]
+               & initialization of entropy. Currently valid choices are
+                 \begin{description}
+                 \item[\code{`nothing'}] (leaves the initialization done
+                   in the density module unchanged),
+                 \item[\code{`zero'}] (put $s=0$ explicitly; this may
+                   overwrite the initialization done in the density module),
+                 \item[\code{`isothermal'}] (isothermal stratification,
+                   $T=\const$),
+                 \item[\code{`isobaric'}] (isobaric, $p=\const$),
+                 \item[\code{`isentropic'}] (isentropic with superimposed
+                   hot [or cool] bubble),
+                 \item[\code{`linprof'}] (linear entropy profile in $z$),
+                 \item[\code{`piecew-poly'}] (piecewise polytropic
+                   stratification for convection),
+                 \item[\code{`polytropic'}] (polytropic stratification,
+                   polytropic exponent is \var{mpoly0}),
+                 \item[\code{`blob'}] (puts a gaussian blob in entropy for
+                   buoyancy experiments; see Ref.~\cite{BH01} for details)
+                 \item[\code{`xjump'}] (jump in $x$ direction),
+                 \item[\code{`hor-tube'}] (horizontal flux tube in entropy,
+                   oriented in the $y$-direction).
+                 \end{description}
+                 \\
+  \var{pertss} [\code{'zero'}]
+               & additional perturbation to entropy. Currently valid
+                 choices are
+                 \begin{description}
+                 \item[\code{'zero'}] (no perturbation)
+                 \item[\code{'hexagonal'}] (hexagonal perturbation for
+                   convection).
+                 \end{description}
+                 \\
+  \var{ampl_ss} [$0.$], \\
+  \var{widthss} [$2\varepsilon$]
+               & amplitude and width for some types of initial entropy. \\
+  \var{grads0} [$0.$]
+               & initial entropy gradient for \code{initss=linprof}. \\
+  \var{radius_ss} [$0.1$]
+               & radius of bubble for \code{initss=isentropic}. \\
+  \var{mpoly0} [$1.5$], \\
+  \var{mpoly1} [$1.5$], \\
+  \var{mpoly2} [$1.5$]
+               & \label{mpoly012-init}%
+                 specific to the solar convection case
+                 \code{initss=piecew-poly}:
+                 polytropic indices of unstable (\var{mpoly0}), stable
+                 (\var{mpoly1}) and top layer (\var{mpoly2}).
+                 If the flag \var{isothtop} is set, the
+                 top layer is initialized to be isothermal, otherwise
+                 thermal (plus hydrostatic) equilibrium is assumed for all
+                 three layers, which results in a piecewise polytropic
+                 stratification. \\
+  \var{isothtop} [$0$]
+               & flag for isothermal top layer for \code{initss=piecew-poly}. \\
+  \var{khor_ss} [$1.$]
+               & horizontal wave number for \code{pertss=hexagonal} \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
+\midrule
+  \var{initaa} [\code{'zero'}]
+               & initialization of magnetic field (vector potential).
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`Alfven-x'}] (Alfv\'en wave traveling in the
+                   $x$-direction; this also sets the velocity),
+                 \item[\code{`Alfven-z'}] (Alfv\'en wave traveling in the
+                   $z$-direction; this also sets the velocity),
+                 \item[\code{`Alfvenz-rot'}] (same as \code{`Alfven-z'}, but
+                   with rotation),
+                 \item[\code{`Alfven-circ-x'}] (circularly polarized
+                   Alfven wave in x direction),
+                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
+                 \item[\code{`Bz(x)'}] ($B_z\propto\cos(k x)$),
+                 \item[\code{`crazy'}] (for testing purposes).
+                 \item[\code{`diffrot'}] ([needs to be documented]),
+                 \item[\code{`fluxrings'}] (two interlocked magnetic fluxrings;
+                   see \S~\ref{fluxrings}),
+                 \item[\code{`gaussian-noise'}] (white noise),
+                 \item[\code{`halfcos-Bx'}] ([needs to be documented]),
+                 \item[\code{`hor-tube'}] (horizontal flux tube in $\Bv$,
+                   oriented in the $y$-direction).
+                 \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
+                 \item[\code{`mag-support'}] ([needs to be documented]),
+                 \item[\code{`mode'}] ([needs to be documented]),
+                 \item[\code{`modeb'}] ([needs to be documented]),
+                 \item[\code{`propto-ux'}] ([needs to be documented]),
+                 \item[\code{`propto-uy'}] ([needs to be documented]),
+                 \item[\code{`propto-uz'}] ([needs to be documented]),
+                 \item[\code{`sinxsinz'}] ($\sin x \sin z$),
+                 \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
+                 \item[\code{`uniform-By'}] (uniform field in $y$ direction),
+                 \item[\code{`uniform-Bz'}] (uniform field in $z$ direction),
+                 \item[\code{`zero'}] (zero field),
+                 \end{description}
+                 \\
+  \var{initaa2} [\code{'zero'}]
+               & additional perturbation of magnetic field.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`zero'}] (zero perturbation),
+                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave).
+                 \end{description}
+                 \\
+  \var{amplaa} [$0.$]
+               & amplitude for some types of initial magnetic fields. \\
+  \var{amplaa2} [$0.$]
+               & amplitude for some types of magnetic field perturbation. \\
+  \var[fring1,fring2]{fring\{1,2\}} [$0.$], \\
+  \var[Iring1,Iring2]{Iring\{1,2\}} [$0.$], \\
+  \var[Rring1,Rring2]{Rring\{1,2\}} [$1.$], \\
+  \var[wr1,wr2]{wr\{1,2\}} [$0.3$]
+               & flux, current, outer and inner radius of flux ring 1/2;
+                 see Sect.~\ref{fluxrings}. \\
+  \var{radius} [$0.1$]
+               & used by some initial fields. \\
+  \var{epsilonaa} [$10^{-2}$]
+               & used by some initial fields. \\
+  \var{widthaa} [$0.5$]
+               & used by some initial fields. \\
+  \var{z0aa} [$0.$]
+               & used by some initial fields. \\
+  \var{kx_aa} [$1.$], \\
+  \var{ky_aa} [$1.$], \\
+  \var{kz_aa} [$1.$]
+               & wavenumbers used by some initial fields. \\
+  \var{lpress_equil} [F]
+               & flag for pressure equilibrium (can be used in connection
+                 with all initial fields) \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{pscalar_init_pars}} \\
+\midrule
+  \var{initlncc} [\code{'zero'}]
+               & initialization of passive scalar
+                 (concentration per unit mass, $c$).
+                 Currently valid choices (for $\ln c$) are
+                 \begin{description}
+                 \item[\code{`zero'}] ($\ln c=0.$),
+                 \item[\code{`gaussian-noise'}] (white noise),
+                 \item[\code{`wave-x'}] (wave in $x$ direction),
+                 \item[\code{`wave-y'}] (wave in $y$ direction),
+                 \item[\code{`wave-z'}] (wave in $z$ direction),
+                 \item[\code{`tang-discont-z'}] (Kelvin-Helmholtz instability),
+                 \item[\code{`hor-tube'}] (horizontal tube in concentration;
+                  used as a marker for magnetic flux tubes).
+                 \end{description}
+                 \\
+  \var{initlncc2} [\code{'zero'}]
+               & additional perturbation of passive scalar concentration $c$.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`zero'}] ($\delta\ln c=0.$),
+                 \item[\code{`wave-x'}] (add $x$-directed wave to $\ln c$).
+                 \end{description}
+                 \\
+\var{ampllncc} [$0.1$]
+               & amplitude for some types of initial concentration. \\
+  \var{ampllncc2} [$0.$]
+               & amplitude for some types of concentration perturbation. \\
+  \var{kx_lncc} [$1.$], \\
+  \var{ky_lncc} [$1.$], \\
+  \var{kz_lncc} [$1.$]
+               & wave numbers for some types of initial concentration. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{shear_init_pars}} \\
+\midrule
+  \var{qshear} [$0.$]
+               & \label{qshear-init}%
+                 degree of shear for shearing-box simulations (the
+                 shearing-periodic boundaries are the $x$-boundaries and
+                 are sheared in the $y$-direction). The shear velocity
+                 is ${\bf U}=-q\varOmega x\,{\hat{\bf y}}$. \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_ads_init_pars}} \\
+\midrule
+  \var{init_ads_mol_frac} [$0.$]
+               & initial adsorbed mole fraction\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_surf_init_pars}} \\
+\midrule
+  \var{init_surf_mol_frac} [$0.$]
+               & initial surface mole fraction\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_chem_init_pars}} \\
+\midrule
+  \var{total_carbon_sites} [$1.08e-8$]
+               & carbon sites per surface area [mol/cm]2\\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_stalker_init_pars}} \\
+\midrule
+  \var{dstalk} [$0.1$]
+               & times between printout of stalker data\\
+  \var{lstalk_xx} [F]
+               & particles position\\
+  \var{lstalk_vv} [F]
+               & particles velocity\\
+  \var{lstalk_uu} [F]
+               & gas velocity at particles position\\
+  \var{lstalk_guu} [F]
+               & gas velocity gradient at particles position\\
+  \var{lstalk_rho} [F]
+               & gas density at particles position\\
+  \var{lstalk_grho} [F]
+               & gas density gradient at particles position\\
+  \var{lstalk_ap} [F]
+               & particles diameter\\
+  \var{lstalk_bb} [T]
+               & magnetic field at particles position\\
+  \var{lstalk_relvel} [F]
+               &  particles relative velocity to gas\\
+\bottomrule
+%\end{tabular}
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+\subsection[Runtime parameters for \File{run.in}]%
+{List of runtime parameters for \file{run.in}}
+\label{S-all-run-params}
+
+The following table lists all (at the time of writing, September 2002)
+namelists used in file \file{run.in}, with the corresponding
+parameters and their default values (in square brackets).
+Default values marked as [start] are taken from \file{start.in}.
+Any variable referred to as a \dfn{flag} can be set to any nonzero value
+to switch the corresponding feature on.
+Not all parameters are used for a given scenario.
+This list is not necessarily up to date; also, in many cases it can only
+give an idea of the corresponding setup; to get more insight and
+the latest set of parameters, you need to look at the code.
+
+Once you have changed any of the \file{*.in} files, you may want to first
+execute the command \code{pc_configtest} in order to test the correctness of
+these configuration files, before you apply them in an active simulation run.
+
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.6\textwidth}}
+%\begin{tabular}{lp{0.6\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable [default value]}}
+               & \multicolumn{1}{c}{\emph{Meaning}} \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{run_pars}}\\
+\midrule
+  \var{cvsid} [\code{''}]
+               & \name{svn} identification string, which allows you to
+                 keep track of the version of \file{run.in}. \\
+  \var{ip} [$14$]
+               & (anti-)verbosity level: \code{ip=1} produces lots of
+                 additional diagnostic output, \code{ip=14} virtually none. \\
+  \var{nt} [$0$]
+               & number of time steps to run. This number can be increased
+                 or decreased during the run by \cmd{touch RELOAD}.\\
+  \var{it1} [$10$]
+               & write diagnostic output every \var{it1} time steps
+                 (see Sect.~\ref{diagnostic-IO}). \\
+  \var{it1d} [$it1$]
+               & write averages every \var{it1d} time steps
+                 (see Sect.~\ref{S-1d-averages}). \var{it1d} has to be
+                 greater than or equal to \var{it1}.\\
+  \var{cdt} [$0.4$]
+               & Courant coefficient for advective time step; see
+                 \S\ref{time-step}. \\
+  \var{cdtv} [$0.08$]
+               & Courant coefficient for diffusive time step; see
+                 \S\ref{time-step}. \\
+  \var{dt} [$0.$]
+               & \label{dt-run}%
+                 time step; if $\ne 0.$, this overwrites
+                 the Courant time step. See \S\ref{time-step} for a
+                 discussion of the latter. \\
+  \var{dtmin} [$10^{-6}$]
+               & abort if time step $\delta t < \delta t_{\rm min}$. \\
+  \var{tmax} [$10^{33}$]
+               & don't run time steps beyond this time. Useful if you want
+                 to run for a given amount of time, but don't know the
+                 necessary number of time steps.\\
+  \var{isave} [$100$]
+               & update current snapshot \file{var.dat} every \var{isave}
+                 time steps. \\
+  \var{itorder} [$3$]
+               & order of time step (1 for Euler; 2 for 3nd-order, 3 for
+                 3rd-order Runge--Kutta). \\
+  \var{dsnap} [$100.$]
+               & save permanent snapshot every \var{dsnap} time units to
+                 files \file{VAR$N$}, where $N$ counts from $N=1$ upward.
+                 (This information is stored in the file
+                 \file[tsnap.dat]{data/tsnap.dat};
+                 see the module \var{wsnaps.f90}, which in turn uses the
+                 subroutines \var{out1} and \var{out2}). \\
+  \var{dvid} [$100.$]
+               & write two-dimensional sections for generation of videos
+                 every \var{dvid} time units (not timesteps; see the
+                 subroutines \var{out1} and \var{out2} in the code). \\
+  \var{iwig} [$0$]
+               & if $\ne 0$, apply a Nyquist filter (a filter eliminating
+                 any signal at the Nyquist frequency, but affecting large
+                 scales as little as possible) every \var{iwig} time steps to
+                 logarithmic density (sometimes necessary with convection
+                 simulations). \\
+  \var{ix} [$-1$],
+  \var{iy} [$-1$],
+  \var{iz} [$-1$],
+  \var{iz2} [$-1$]
+               & position of slice planes for video files.
+                 Any negative value of some of these variables will be
+                 overwritten according to the value of
+                 \var{slice_position}.
+                 See \S~\ref{S-slices}) for details. \\
+  \var{slice_position} ['p']
+               & symbolic specification of slice position.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{'p'}] (\emph{periphery} of the box)
+                 \item[\code{'m'}] (\emph{middle} of the box)
+                 \item[\code{'e'}] (\emph{equator} for half-sphere
+                   calculations, i.\,e.~$x$, $y$ centered, $z$ bottom)
+                 \end{description}
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 See \S~\ref{S-slices}) for details. \\
+  \var{zbot_slice} [value]
+               & z position of slice xy-plane.
+                 The value can be any float number inside the z domain.
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 Saved as slice with the suffix \var{xy}.
+                 See \S~\ref{S-slices}) for details. \\
+   \var{ztop_slice} [value]
+               & z position of slice xy-plane.
+                 The value can be any float number inside the z domain.
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 Saved as slice with the suffix \var{xy2}.
+                 See \S~\ref{S-slices}) for details. \\
+  \var{tavg} [$0$]
+               & averaging time $\tau_{\rm avg}$ for time averages (if
+                 $\ne 0$); at the same time, time interval for writing
+                 time averages. See \S~\ref{S-time-averages} for details. \\
+  \var{idx_tavg} [$(0,0,\ldots,0)$]
+               & indices of variables to time-average.
+                 See \S~\ref{S-time-averages} for details. \\
+  \var{d2davg} [$100.$]
+               & time interval for azimuthal and $z$-averages, i.e.~the
+                 averages that produce 2d data.
+                 See \S~\ref{S-phi-averages} for details. \\
+  \var{ialive} [$0$]
+               & if $\ne 0$, each processor writes the current time step
+                 to \file{alive.info} every \var{ialive} time steps.
+                 This provides the best test that the job is still alive.
+                 (This can be used to find out which node has crashed
+                 if there is a problem and the run is hanging.)\\
+  \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
+               & boundary conditions. See Sect.~\ref{boundconds} for a
+                 discussion of where and how to set these. \\
+  \var{random_gen} [start]
+               & see start parameters, p.~\pageref{random-gen-init} \\
+  \var{lwrite_aux} [start]
+               & if set \code{T}, auxiliary variables (those calculated at
+                 each step, but not evolved mathematically) to
+                 \file{var.dat} and \file{VAR} files after the evolved
+                 quantities. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
+\midrule
+  \var{Omega} [$0.$]
+               & magnitude of angular velocity for \name{Coriolis force}
+                 (note: the centrifugal force is turned off by default,
+                 unless \code{lcentrifugal_force=T} is set).\\
+  \var{theta} [$0.$]
+               & direction of angular velocity in degrees ($\theta=0$ for
+                 $z$-direction, $\theta=90$ for the negative $x$-direction,
+                 corresponding to a box located at the equator of a
+                 rotating sphere.
+                 Thus, e.g., $\theta=60$ corresponds to $30^\circ$ latitude.
+                 (Note: prior to April 29, 2007, there was a minus sign in
+                 the definition of $\theta$.)\\
+  \var{ttransient} [$0.$]
+               & initial time span for which to do something special
+                 (transient).
+                 Currently just used to smoothly switch on heating
+                 [Should be in \name{run_pars}, rather than here]. \\
+  \var{dampu} [$0.$], \\
+  \var{tdamp} [$0.$], \\
+  \var{ldamp_fade} [F]
+               & damp motions during the initial time interval
+                 $0<t<t_{\rm damp}$ with a damping term $-\var{dampu}(\uv)$.
+                 If \var{ldamp_fade} is set, smoothly reduce damping to
+                 zero over the second half of the time interval \var{tdamp}.
+                 Initial velocity damping is useful for situations where
+                 initial conditions are far from equilibrium. \\
+  \var{dampuint} [$0.$],
+               & weighting of damping external to spherical region
+                 (see \var{wdamp}, $\var{damp}_u$ below). \\
+  \var{dampuext} [$0.$],
+               & weighting of damping in internal spherical region
+                 (see \var{wdamp}, $\var{damp}_u$ below). \\
+  \var{rdampint} [$0.$],
+               & radius of internal damping region  \\
+  \var{rdampext} [impossible],
+               & radius of external damping region, used in place of
+                 former variable \var{rdamp} \\
+  \var{wdamp} [$0.2$],
+               & permanently damp motions in $|\xv|<r_{\rm dampint}$
+                 with damping term
+                 $-\var{damp}_uint \,\uv\,\chi(r{-}r_{\rm dampint})$
+                 or $|\xv|>r_{\rm dampext}$ with damping term
+                 $-\var{damp}_uext \,\uv\,\chi(r{-}r_{\rm dampext})$,
+                 where $\chi(\cdot)$ is a smooth profile of width
+                 \var{wdamp}. \\
+  \var{ampl_forc} [$0.$],
+               & amplitude of the ux-forcing or uy-forcing on the vertical
+                 boundaries that is of the form
+                 $u\_x(t)=ampl\_forc*sin(k\_forc*x)*cos(w\_forc*t)$
+                 [must be used in connection with bcx='g' or bcz=`g' and
+                 force_lower_bound=`vel_time' or
+                 force_upper_bound=`vel_time'] \\
+  \var{k_forc} [$0.$],
+               & corresponding horizontal wavenumber \\
+  \var{w_forc} [$0.$]
+               & corresponding frequency \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{density_run_pars}} \\
+\midrule
+  \var{cs0} [start], \\
+  \var{rho0} [start], \\
+  \var{gamma} [start]
+               & \label{cs0-rho0-run}%
+                 see start parameters, p.~\pageref{cs0-rho0-init} \\
+  \var{cdiffrho} [$0.$]
+               & Coefficient for mass diffusion (diffusion term will be
+                 $c_{\rm diffrho}\,\delta x\, {\cs}_0$ . \\
+  \var{cs2bot} [start], \\
+  \var{cs2top} [start]
+               & squared sound speed at bottom and top for boundary
+                 condition \option{c2}. \\
+  \var{lupw_lnrho} [.false.]
+               & use 5th-order upwind derivative operator for the
+               advection term $\uv\cdot\grad\ln\rho$ to avoid spurious
+               Nyquist signal (`wiggles'); see \S\ref{S-upwind}. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{entropy_run_pars}} \\
+\midrule
+  \var{hcond0} [$0.$], \\
+  \var{hcond1} [start], \\
+  \var{hcond2} [start]
+               & specific to the solar convection case
+                 \code{initss=piecew-poly}:
+                 heat conductivities $K$ in the individual layers.
+                 \var{hcond0} is the value $K_{\rm unst}$ in the
+                 unstable layer, \var{hcond1} is the \emph{ratio}
+                 $K_{\rm stab}/K_{\rm unst}$ for the stable
+                 layer, and \var{hcond2} is the \emph{ratio}
+                 $K_{\rm top}/K_{\rm unst}$ for the top layer.
+                 The function $K(z)$ is not discontinuous, as the
+                 transition between the different values is smoothed over
+                 the width \var{widthss}.
+                 If \var{hcond1} or \var{hcond2} are not set, they are
+                 calculated according to the polytropic indices of the
+                 initial profile, $K\propto m{+}1$. \\
+  \var{iheatcond} [\code{'K-const'}]
+               & select type of heat conduction.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`K-const'}]   (constant heat conductivity),
+                 \item[\code{`K-profile'}] (vertical or radial profile),
+                 \item[\code{`chi-const'}] (constant thermal diffusivity),
+                 \item[\code{`magnetic'}]  (heat conduction by electrons
+                   in magnetic field -- currently still experimental).
+                 \end{description}
+                 \\
+  \var{lcalc_heatcond_constchi} [F]
+               & flag for assuming thermal diffusivity
+                 $\chi=K/(c_p\rho)=\const$, rather than $K=\const$
+                 (which is the default).
+                 \emph{This is currently only correct with
+                 \file{noionization.f90}}.
+                 Superseded by \var{iheatcond}. \\
+  \var{chi} [$0.$]
+               & value of $\chi$ when \code{lcalc_heatcond_constchi=T}. \\
+  \var{widthss} [start]
+               & width of transition region between layers.
+                 See start parameters, p.~\pageref{mpoly012-init}. \\
+  \var{isothtop} [start]
+               & flag for isothermal top layer for solar convection case.
+                 See start parameters, p.~\pageref{mpoly012-init}. \\
+  \var{luminosity} [$0.$], \\
+  \var{wheat} [$0.1$]
+               & strength and width of heating region. \\
+  \var{cooltype} [\code{'Temp'}]
+               & type of cooling; \emph{currently only implemented for
+                 spherical geometry}.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`Temp'},\code{`cs2'}] (cool temperature
+                   toward $\cs^2=\var{cs2cool}$) with a cooling term
+                   \[
+                     -\mathcal{C} = -c_{\rm cool}
+                                     \frac{\cs^2-{\cs^2}_{\rm cool}}
+                                          {{\cs^2}_{\rm cool}}
+                   \])
+                 \item[\code{`Temp-rho'},\code{cs2-rho}]
+                   (cool temperature toward $\cs^2=\var{cs2cool}$) with a
+                   cooling term
+                   \[
+                     -\mathcal{C} = -c_{\rm cool}\,\rho\,
+                                     \frac{\cs^2-{\cs^2}_{\rm cool}}
+                                          {{\cs^2}_{\rm cool}}
+                   \]
+                   --- this avoids numerical instabilities in low-density
+                   regions [currently, the cooling coefficient
+                   $c_{\rm cool}\equiv$\var{cool} is not taken into account
+                   when the time step is calculated])
+                 \item[\code{`entropy'}] (cool entropy toward $0.$).
+                 \end{description}
+                 \\
+  \var{cool} [$0.$], \\
+  \var{wcool} [$0.1$]
+               & strength $c_{\rm cool}$ and smoothing width of cooling
+                 region. \\
+  \var{rcool} [$1.$]
+               & radius of cooling region: cool for
+                 $|\xv| \ge \mbox{\var{rcool}}$.\\
+  \var{Fbot} [start]
+               & heat flux for bottom boundary condition \option{c1}.
+                 For polytropic atmospheres, if \var{Fbot} is not set, it will
+                 be calculated from the value of \var{hcond0} in \file{start.x},
+                 provided the entropy boundary condition is set to \option{c1}. \\
+  \var{chi_t} [$0.$]
+               & entropy diffusion coefficient for diffusive term
+                 $\partial s/\partial t = \ldots + \chi_{\rm t}\Laplace s$
+                 in the entropy equation, that can represent some kind of
+                 turbulent (sub-grid) mixing.
+                 It is probably a bad idea to combine this with heat
+                 conduction $\var{hcond0} \ne 0$. \\
+  \var{lupw_ss} [.false.]
+               & use 5th-order upwind derivative operator for the
+                 advection term $\uv\cdot\grad s$ to avoid spurious Nyquist
+                 signal (`wiggles'); see \S\ref{S-upwind}. \\
+  \var{tauheat_buffer} [$0.$]
+               & time scale for heating to target temperature
+                 (=\var{TTheat_buffer}); zero disables the buffer zone. \\
+  \var{zheat_buffer} [$0.$]
+               & $z$ coordinate of the thermal buffer zone. Buffering
+                 is active in $|z|>$\var{TTheat_buffer}. \\
+  \var{dheat_buffer1} [$0.$]
+               & Inverse thickness of transition to buffered layer.\\
+  \var{TTheat_buffer} [$0.$]
+               & target temperature in thermal buffer zone ($z$ direction only). \\
+  \var{lhcond_global} [F]
+               & flag for calculating the heat conductivity $K$ (and also
+                 $\grad \log K$) globally using the global arrays facility.
+                 Only valid when \var{iheatcond}=\code{`K-profile'}.\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{magnetic_run_pars}} \\
+\midrule
+  \var{B_ext} [$(0.,0.,0.)$]
+               & uniform background magnetic field (for fully periodic
+                 boundary conditions, uniform fields need to be explicitly
+                 added, since otherwise the vector potential $\Av$ has a
+                 linear $\xv$-dependence which is incompatible with
+                 periodicity). \\
+  \var{lignore_Bext_in_b2} [F]
+               & add uniform background magnetic field when \\
+  or \var{luse_Bext_in_b2} [T]
+               & computing $\bv^2$ pencils\\
+  \var{eta} [$0.$]
+               & magnetic diffusivity $\eta=1/(\mu_0\sigma)$, where
+                 $\sigma$ is the electric conductivity. \\
+  \var{height_eta} [$0.$], \\
+  \var{eta_out} [$0.$]
+               & used to add extra diffusivity in a halo region. \\
+  \var{eta_int} [$0.$]
+               & used to add extra diffusivity inside sphere of
+                 radius \var{r_int}. \\
+  \var{eta_ext} [$0.$]
+               & used to add extra diffusivity outside sphere of
+                 radius \var{r_ext}. \\
+  \var{kinflow} [\code{''}]
+               & set type of flow fixed with \option{nohydro}. Currently
+                 the only recognized value is \code{'ABC'} for an $ABC$
+                 flow; all other values lead to $\uv=\zerovect$. \\
+  \var{kx} [$1.$], \\
+  \var{ky} [$1.$], \\
+  \var{kz} [$1.$]
+               & wave numbers for $ABC$ flow. \\
+  \var{ABC_A} [$1.$], \\
+  \var{ABC_B} [$1.$], \\
+  \var{ABC_C} [$1.$]
+               & amplitudes $A$, $B$ and $C$ for $ABC$ flow. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{pscalar_run_pars}} \\
+\midrule
+  \var{pscalar_diff} [$0.$]
+               & diffusion for passive scalar concentration $c$. \\
+  \var{tensor_pscalar_diff} [$0.$]
+               & coefficient for non-isotropic diffusion of passive scalar. \\
+  \var{reinitialize_lncc} [F]
+               & reinitialize the passive scalar to the value of cc\_const in start.in at next run\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{forcing_run_pars}} \\
+\midrule
+  \var{iforce} [$2$]
+               & select form of forcing in the equation of motion;
+                 currently valid choices are
+                 \begin{description}
+                 \item[\code{'zero'}] (no forcing),
+                 \item[\code{'irrotational'}] (irrotational forcing),
+                 \item[\code{'helical'}] (helical forcing),
+                 \item[\code{'fountain'}] (forcing of ``fountain flow'';
+                   see Ref.~\cite{BMS95}),
+                 \item[\code{'horizontal-shear'}] (forcing localized
+                   horizontal sinusoidal shear).
+                 \item[\code{'variable_gravz'}] (time-dependent vertical
+                   gravity for forcing internal waves),
+                 \end{description}
+                 \\
+  \var{iforce2} [$0$]
+               & select form of additional forcing in the equation of
+                 motion; valid choices are as for \var{iforce}. \\
+  \var{force} [$0.$]
+               & amplitude of forcing. \\
+  \var{relhel} [$1.$]
+               & helicity of forcing. The parameter \var{relhel} corresponds
+                 to $\sigma$ introduced in Sect.~\ref{SRandomForcingFunction}.
+                 ($\sigma=\pm1$ corresponds to maximum helicity
+                 of either sign). \\
+  \var{height_ff} [$0.$]
+               & multiply forcing by $z$-dependent profile of width
+               \var{height_ff} (if $\ne 0$) . \\
+  \var{r_ff} [$0.$]
+               & if $\ne 0$, multiply forcing by spherical cutoff profile
+                 (of radius \var{r_ff}) and flip signs of helicity at
+                 equatorial plane. \\
+  \var{width_ff} [$0.5$]
+               & width of vertical and radial profiles for modifying
+                 forcing. \\
+  \var{kfountain} [$5$]
+               & horizontal wavenumber of the fountain flow. \\
+  \var{fountain} [$1.$]
+               & amplitude of the fountain flow. \\
+  \var{omega_ff} [$1.$]
+               & frequency of the cos or sin forcing [e.g. cos(omega_ff*t)]. \\
+  \var{ampl_ff} [$1.$]
+               & amplitude of forcing in front of cos or sin [e.g.
+                 ampl_ff*cos(omega_ff*t)]. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{grav_run_pars}} \\
+\midrule
+  \var{zref} [start], \\
+  \var{gravz} [start], \\
+  \var{grav_profile} [start]
+               & see p.~\pageref{zref-init}. \\
+  \var{nu_epicycle} [start]
+               & see Eq.~(\ref{disc-gravz-init}) in
+                 Sect.~\ref{VerticalStratification}.\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{viscosity_run_pars}} \\
+\midrule
+  \var{nu} [$0.$]
+               & kinematic viscosity. \\
+  \var{nu_hyper2} [$0.$]
+               & kinematic hyperviscosity (with $\nabla^4\uv$). \\
+  \var{nu_hyper3} [$0.$]
+               & kinematic hyperviscosity (with $\nabla^6\uv$). \\
+  \var{zeta} [$0.$]
+               & bulk viscosity. \\
+  \var{ivisc} [\code{'nu-const'}]
+               & select form of viscous term (see
+                 \S\ref{S-Eqn-of-motion}); currently valid choices are
+                 \begin{description}
+                 \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
+                   $\Fv_{\rm visc}=\nu(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv
+                    + 2\mathsf{S}\cdot\grad\ln\rho)$
+                 \item[\code{'rho_nu-const'}] -- viscous force for
+                   $\mu\equiv\rho\nu=\const$,
+                   $\Fv_{\rm visc}=(\mu/\rho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$.
+                   With this option, the input parameter \var{nu} actually
+                   sets the value of $\mu/\rho_0$
+                   (\var{rho0}=$\rho_0$ is another input parameter, see
+                   pp.~\pageref{cs0-rho0-init} and \pageref{cs0-rho0-run})
+                 \item[\code{'simplified'}] -- simplified viscous force
+                   $\Fv_{\rm visc}=\nu\Laplace\uv$
+                 \end{description}
+                 \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{shear_run_pars}} \\
+\midrule
+  \var{qshear} [start]
+               & See p.~\pageref{qshear-init}. \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_run_pars}} \\
+\midrule
+  \var{ldragforce_dust_par} [F]
+               & dragforce on particles \\
+  \var{ldragforce_gas_par} [F]
+               & particle-gas friction force \\
+  \var{ldraglaw_steadystate} [F]
+               & particle forces only with $\frac{1}{\tau}\Delta v$ \\
+  \var{lpscalar_sink} [F]
+               & particles consume passive scalar \\
+  \var{pscalar_sink_rate} [0]
+               & volumetric pscalar consumption rate \\
+  \var{lbubble} [F]
+               & addition of the virtual mass term \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_ads_run_pars}} \\
+\midrule
+  \var{placeholder} [start]
+               & placeholder \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_surf_run_pars}} \\
+\midrule
+  \var{lspecies_transfer [T]}
+               & Species transfer from solid to fluid phase \\
+\midrule
+  \multicolumn{2}{c}{Namelist \name{particles_chem_run_pars}} \\
+\midrule
+  \var{lthiele [T]}
+               & Modeling of particle porosity by application of Thiele modulus \\
+\bottomrule
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{print.in}]%
+{List of parameters for \file{print.in}}
+\label{S-print.in-params}
+
+The following table lists all possible inputs to the file \file{print.in}
+that are documented.
+
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-diag.tex}
+% ---------------------------------------------------------------------- %
+
+
+\subsection[Parameters for \File{video.in}]%
+{List of parameters for \file{video.in}}\
+\label{S-video.in-params}
+
+The following table lists all (at the time of writing, \today)
+possible inputs to the file \file{video.in}.
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.7\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
+\midrule
+  \var{uu}    & velocity vector $\uv$;
+                writes all three components separately to files
+                \file[]{u[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{u2}    & kinetic energy density $\uv^2$; writes
+                \file[]{u2.\{xz,yz,xy,xy2\}}  \\
+  \var{oo}    & vorticity vector $\vec{\omega} = \curl\uv$;
+                writes all three components separately to files
+                \file[]{oo[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{o2}    & enstrophy $\omega^2 = |\curl\uv|^2$;
+                writes \file[]{o2.\{xz,yz,xy,xy2\}}  \\
+  \var{divu}  & $\Div\uv$;
+                writes \file[]{divu.\{xz,yz,xy,xy2\}}  \\
+  \var{mach}  & Mach number squared $\text{Ma}^2$;
+                writes \file[]{mach.\{xz,yz,xy,xy2\}}  \\
+%
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{density.f90}} \\
+\midrule
+  \var{lnrho} & logarithmic density $\ln\rho$;
+                writes \file[]{lnrho.\{xz,yz,xy,xy2\}}  \\
+  \var{rho}   & density $\rho$;
+                writes \file[]{rho.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{ss}    & entropy $s$;
+                writes \file[]{ss.\{xz,yz,xy,xy2\}}  \\
+  \var{pp}    & pressure $p$;
+                writes \file[]{pp.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
+\midrule
+  \var{lnTT}  & logarithmic temperature $\ln T$;
+                writes \file[]{lnTT.\{xz,yz,xy,xy2\}}  \\
+  \var{TT}    & temperature $T$;
+                writes \file[]{TT.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{shock.f90}} \\
+\midrule
+  \var{shock} & shock viscosity $\nu_{\rm shock}$;
+                writes \file[]{shock.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{eos_ionization.f90}} \\
+\midrule
+  \var{yH} & ionization fraction $y_{\rm H}$;
+                     writes \file[]{yH.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{radiation_ray.f90}} \\
+\midrule
+  \var{Qrad}  & radiative heating rate $Q_{\rm rad}$;
+                writes \file[]{Qrad.\{xz,yz,xy,xy2\}}  \\
+  \var{Isurf} & surface intensity $I_{\rm surf}$ (?);
+                writes \file[]{Isurf.xz}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
+\midrule
+  \var{aa}    & magnetic vector potential $\Av$;
+                writes \file[]{aa[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{bb}     & magnetic flux density $\Bv$;
+                writes \file[]{bb[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{b2}    & magnetic energy density $\Bv^2$;
+                writes \file[]{b2.\{xz,yz,xy,xy2\}}  \\
+  \var{jj}    & current density $\jv$;
+                writes \file[]{jj[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{j2}    & current density squared $\jv^2$;
+                writes \file[]{j2.\{xz,yz,xy,xy2\}}  \\
+  \var{jb}    & $\jv\Bv$;
+                writes \file[]{jb.\{xz,yz,xy,xy2\}}  \\
+  \var{beta1}   & inverse plasma beta $\Bv^2/(2\mu_0p)$;
+                writes \file[]{beta1.\{xz,yz,xy,xy2\}}  \\
+  \var{Poynting} & Poynting vector  $\eta \jv \times \Bv
+                     -(\uv\times\Bv)\times\Bv/\mu_0$;
+                writes \file[]{Poynting[xyz].\{xz,yz,xy,xy2\}}  \\
+  \var{ab}    & magnetic helicity density $\Av\cdot\Bv$;
+                writes \file[]{ab[xyz].\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
+\midrule
+  \var{lncc}  & logarithmic density of passive scalar $\ln c$;
+                writes \file[]{lncc.\{xz,yz,xy,xy2\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{cosmicray.f90}} \\
+\midrule
+  \var{ecr}   & energy $e_{\rm cr}$ of cosmic rays (?);
+                writes \file[]{ec.\{xz,yz,xy,xy2\}}  \\
+%
+\bottomrule
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{phiaver.in}]%
+{List of parameters for \file{phiaver.in}}\
+\label{S-phiaver.in-params}
+
+The following table lists all (at the time of writing, November 2003)
+possible inputs to the file \file{phiaver.in}.
+
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-phiavg.tex}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{xyaver.in}]%
+{List of parameters for \file{xyaver.in}}\
+\label{S-xyaver.in-params}
+
+The following table lists possible inputs to the file \file{xyaver.in}.
+This list is not complete and maybe outdated.
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-xyavg.tex}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{xzaver.in}]%
+{List of parameters for \file{xzaver.in}}\
+\label{S-xzaver.in-params}
+
+The following table lists possible inputs to the file \file{xzaver.in}.
+This list is not complete and maybe outdated.
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-xzavg.tex}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{yzaver.in}]%
+{List of parameters for \file{yzaver.in}}\
+\label{S-yzaver.in-params}
+
+The following table lists possible inputs to the file \file{yzaver.in}.
+This list is not complete and maybe outdated.
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-yzavg.tex}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{yaver.in}]%
+{List of parameters for \file{yaver.in}}\
+\label{S-yaver.in-params}
+
+The following table lists possible inputs to the file \file{yaver.in}.
+This list is not complete and maybe outdated.
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-yavg.tex}
+% ---------------------------------------------------------------------- %
+
+\subsection[Parameters for \File{zaver.in}]%
+{List of parameters for \file{zaver.in}}\
+\label{S-zaver.in-params}
+
+The following table lists possible inputs to the file \file{zaver.in}.
+This list is not complete and maybe outdated.
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-zavg.tex}
+% ---------------------------------------------------------------------- %
+
+\subsection{Boundary conditions}
+\label{S-boundconds}
+
+The following tables list all possible boundary condition labels
+that are documented.
+
+\subsubsection{Boundary condition \var{bcx}}
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-bcx.tex}
+% ---------------------------------------------------------------------- %
+
+\subsubsection{Boundary condition \var{bcy}}
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-bcy.tex}
+% ---------------------------------------------------------------------- %
+
+\subsubsection{Boundary condition \var{bcz}}
+% ---------------------------------------------------------------------- %
+\input{inlinedoc-bcz.tex}
+% ---------------------------------------------------------------------- %
+
+
+\subsection{Initial condition parameter dependence}
+\label{S-all-init-depend}
+
+The following tables list which parameters from each Namelist are required
+(\req), optional (\opt) or irrelevant (blank). The distinction is
+made between required and optional where by a parameter requires a setting
+if the default value would give an invalid or degenerate case for the
+initial condition.
+
+% - hydro_init_pars ---------------------------------------------------- %
+\begin{tabular}{@{}l|c|c|c|c|c|c|c|c|c|c|c|c}
+
+\toprule
+  inituu &
+       \rotatebox{90}{ampluu}   &
+       \rotatebox{90}{widthuu}  &
+       \rotatebox{90}{urand}    &
+       \rotatebox{90}{uu_left}  &
+       \rotatebox{90}{uu_right} &
+       \rotatebox{90}{uu_upper} &
+       \rotatebox{90}{uu_lower} &
+       \rotatebox{90}{uy_left}  &
+       \rotatebox{90}{uy_right} &
+       \rotatebox{90}{kx_uu}    &
+       \rotatebox{90}{ky_uu}    &
+       \rotatebox{90}{kz_uu}    \\
+\midrule
+  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   gaussian-noise   & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   gaussian-noise-x & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   xjump            & {}   & \opt & {}   & \req & \req & {}   & {}
+                    & \req & \req & {}   & {}   & {}   \\
+\midrule
+   Beltrami-x       & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Beltrami-y       & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Beltrami-z       & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-y      & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-z      & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   cos-cos-sin-uz   & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   tor_pert         & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   sound-wave       & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & \req & {}   & {}   \\
+\midrule
+   shock-tube       & {}   & \opt & {}   & \req & \req & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   bullets          & \req & \opt & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Alfven-circ-x    & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & \opt & {}   & {}   \\
+\midrule
+   const-ux         & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   const-uy         & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   tang-discont-z   & \opt & \req & {}   & {}   & {}   & \req & \req
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Fourier-trunc    & \req & \opt & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & \req & \req & {}   \\
+\midrule
+   up-down          & \req & \opt & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   \\
+%
+\bottomrule
+\end{tabular}
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
+
+\toprule
+  initss &
+       \rotatebox{90}{ampl_ss}   &
+       \rotatebox{90}{radius_ss}   &
+       \rotatebox{90}{widthss}   &
+       \rotatebox{90}{epsilon_ss}   &
+       \rotatebox{90}{grads0}  &
+       \rotatebox{90}{pertss}   &
+       \rotatebox{90}{ss_left}  &
+       \rotatebox{90}{ss_right} &
+       \rotatebox{90}{ss_const} &
+       \rotatebox{90}{mpoly0} &
+       \rotatebox{90}{mpoly1}  &
+       \rotatebox{90}{mpoly2} &
+       \rotatebox{90}{isothtop}    &
+       \rotatebox{90}{khor_ss}    &
+       \rotatebox{90}{center1_x}    &
+       \rotatebox{90}{center1_y}    &
+       \rotatebox{90}{center1_z}    &
+       \rotatebox{90}{center2_x}    &
+       \rotatebox{90}{center2_y}    &
+       \rotatebox{90}{center2_z}    &
+       \rotatebox{90}{thermal_background}    &
+       \rotatebox{90}{thermal_peak}    &
+       \rotatebox{90}{thermal_scaling}    \\
+\midrule
+  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  const_ss          & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & \req & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  blob              & \req & \req & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  isothermal        & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  Ferri{\`e}re      & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  xjump             & {}   & {}   & \req & {}   & {}   & {}   & \req
+                    & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  hor-fluxtube      & \req & \req & {}   & \req & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  hor-tube          & \req & \req & {}   & \req & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  sedov             & {}   & \req & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & \req & \req & \req & {}   & {}   & {}   & \req
+                    & \req & \req \\
+\midrule
+  sedov-dual        & {}   & \req & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & \req & \req & \req & \req & \req & \req & \req
+                    & \req & \req \\
+\midrule
+  isobaric          & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  isentropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  linprof           & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  piecew-poly       & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  polytropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+%
+\bottomrule
+\end{longtable}
+
+
+
+\end{document}
+
+\iffalse
+\begin{figure}[!htbp]
+	\begin{center}
+		\includegraphics[width=0.32\linewidth]{cusp.jpg}
+		\caption{An image of Lena.}
+		\label{Itisjustalabel}
+	\end{center}
+	\vspace{-0.5em}
+\end{figure}
+\fi
