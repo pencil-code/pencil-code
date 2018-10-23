@@ -891,24 +891,6 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_4D
 !***********************************************************************
-    subroutine set_part_dist_hdf5(name, nv)
-!
-      character (len=*), intent(in) :: name
-      integer, intent(out) :: nv
-!
-      call fatal_error ('set_part_dist_hdf5', 'Not yet implemented.')
-!
-    endsubroutine set_part_dist_hdf5
-!***********************************************************************
-    subroutine get_part_dist_hdf5(name, nv)
-!
-      character (len=*), intent(in) :: name
-      integer, intent(out) :: nv
-!
-      call fatal_error ('get_part_dist_hdf5', 'Not yet implemented.')
-!
-    endsubroutine get_part_dist_hdf5
-!***********************************************************************
     subroutine index_append(varname,ivar,vector,array)
 !
 ! 14-Oct-2018/PABourdin: coded
