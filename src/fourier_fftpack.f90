@@ -4028,6 +4028,7 @@ module Fourier
       real, dimension (nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
       integer :: nprocy_used
+      real, dimension (:,:), allocatable :: buffer
       integer, parameter :: itag=666
 !
 !  Fourier transform of the subdivided y-interval is done by collecting
@@ -4094,12 +4095,14 @@ module Fourier
             nprocy_used=nz
           endif
 !
+          allocate (buffer(ny,nz_new))
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
-              if (ipy<nprocy_used) call mpirecv_real( &
-                  a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
-                  (/ny,nz_new/),iproc_from,itag)
+              if (ipy<nprocy_used) then
+                call mpirecv_real(buffer,(/ny,nz_new/),iproc_from,itag)
+                a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:) = buffer
+              endif
             else
               if (ipy<nprocy_used) a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
                   a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
@@ -4166,12 +4169,14 @@ module Fourier
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
               do ipy_to=0,nprocy-1
                 iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
-                if (ipy/=ipy_to) call mpisend_real( &
-                    a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
-                    (/ny,nz_new/),iproc_to,itag+100)
+                if (ipy/=ipy_to) then
+                  buffer = a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:)
+                  call mpisend_real(buffer,(/ny,nz_new/),iproc_to,itag+100)
+                endif
               enddo
             endif
           enddo
+          deallocate (buffer)
         endif
       else
 !  Only parallelization along z (or not at all).
