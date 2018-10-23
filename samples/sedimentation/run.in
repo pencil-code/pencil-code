@@ -4,7 +4,7 @@
   nt=20, it1=5, cdt=0.4, cdtv=0.25, isave=1000, itorder=3
   dsnap=6.2831853, dvid=0.2, d2davg=0.2, dtmin=1.0e-6
   slice_position='m'
-  lpencil_check=T
+  lpencil_check=F
 /
 &eos_run_pars
 /
