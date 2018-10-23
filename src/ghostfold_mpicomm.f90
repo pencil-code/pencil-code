@@ -229,23 +229,21 @@ module GhostFold
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
-              call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/),ylneigh,itag3)
+              call mpirecv_real(f_tmp_xz,(/nx+2,1,nz,nvar_fold/),ylneigh,itag3)
+              f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
+                  f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + f_tmp_xz
             elseif (iproc_rcv==yuneigh) then
-              call mpisend_real(f(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/),yuneigh,itag3)
+              f_tmp_xz = f(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2)
+              call mpisend_real(f_tmp_xz,(/nx+2,1,nz,nvar_fold/),yuneigh,itag3)
             endif
-            if (iproc==iproc_rcv) f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
-                f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + f_tmp_xz
             if (iproc==iproc_rcv) then
-              call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/),yuneigh,itag4)
+              call mpirecv_real(f_tmp_xz,(/nx+2,1,nz,nvar_fold/),yuneigh,itag4)
+              f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
+                  f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
             elseif (iproc_rcv==ylneigh) then
-              call mpisend_real(f(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/),ylneigh,itag4)
+              f_tmp_xz = f(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2)
+              call mpisend_real(f_tmp_xz,(/nx+2,1,nz,nvar_fold/),ylneigh,itag4)
             endif
-            if (iproc==iproc_rcv) f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
-                f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
           enddo
 !
         endif
