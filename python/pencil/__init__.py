@@ -5,11 +5,13 @@ from pencil.files.ts import *
 from pencil.files.sn import *
 from pencil.files.dim import *
 from pencil.files.pdim import *
+from pencil.files.qdim import *
 from pencil.files.param import *
 from pencil.files.grid import read_grid
 from pencil.files.var import read_var
 from pencil.files.read_pvar import read_pvar
 #from pencil.files.read_qvar import read_qvar
+from pencil.files.qvar import read_qvar
 from pencil.files.index import *
 from pencil.files.rrmv_par import *
 from pencil.files.slices import *
