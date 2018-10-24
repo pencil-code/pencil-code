@@ -1937,7 +1937,7 @@ print*,'interp_default=',interp_default,particle_mesh
 !
 ! Update total number of inserted particles, npar_inserted_tot.
 ! Not the same as npar_total, which is the number of particles in the system,
-! without couting removed particles
+! without counting removed particles
 !
           npar_inserted_tot = n_insert + npar_inserted_tot
 !
