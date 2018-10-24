@@ -6,7 +6,7 @@
 module HDF5_IO
 !
   use Cdata
-  use Cparam, only: mvar, maux, labellen, mparray
+  use Cparam, only: mvar, maux, labellen
   use General, only: loptest, itoa
   use HDF5
   use Messages, only: fatal_error
@@ -30,6 +30,7 @@ module HDF5_IO
     module procedure input_hdf5_int_1D
     module procedure input_hdf5_0D
     module procedure input_hdf5_1D
+    module procedure input_hdf5_part_2D
     module procedure input_hdf5_3D
     module procedure input_hdf5_4D
   endinterface
@@ -283,6 +284,38 @@ module HDF5_IO
       if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//trim (name)//'"', .true.)
 !
     endsubroutine input_hdf5_1D
+!***********************************************************************
+    subroutine input_hdf5_part_2D(name, data, mv, nc, nv)
+!
+!  Read HDF5 particle dataset into a distributed array.
+!
+!  24-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: mv, nc
+      integer, intent(out) :: nv
+      real, dimension (mv,nc), intent(out) :: data
+!
+      integer :: pos
+      character (len=labellen) :: label
+!
+      if (.not. lcollective) call fatal_error ('input_hdf5', 'particle input requires a global file "'//trim (name)//'"', .true.)
+!
+      if (name == 'fp') then
+        call input_hdf5_int_0D ('part/processor_distribution', nv)
+      endif
+      ! read components into particle data array
+      do pos=1, nc
+        if (name == 'fp') then
+          label = 'part/'//trim(index_get(pos, particle=.true.))
+        else
+          label = trim(name)
+          if (nc >= 2) label = trim(label)//'_'//trim(itoa(pos))
+        endif
+        call input_hdf5_1D ('part/'//trim(index_get(pos, particle=.true.)), data(1:nv,pos), nv)
+      enddo
+!
+    endsubroutine input_hdf5_part_2D
 !***********************************************************************
     subroutine input_hdf5_3D(name, data)
 !
@@ -726,27 +759,35 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_1D
 !***********************************************************************
-    subroutine output_hdf5_part_2D(name, data, mv, nv)
+    subroutine output_hdf5_part_2D(name, data, mv, nc, nv)
 !
 !  Write HDF5 dataset from a distributed particle array.
 !
 !  22-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: name
-      integer, intent(in) :: mv, nv
-      real, dimension (mv,mparray), intent(in) :: data
+      integer, intent(in) :: mv, nc, nv
+      real, dimension (mv,nc), intent(in) :: data
 !
       integer :: pos
+      character (len=labellen) :: label
 !
       if (.not. lcollective) call fatal_error ('output_hdf5', 'particle output requires a global file "'//trim (name)//'"', .true.)
 !
+      ! write components of particle data array
       if (name == 'fp') then
-        ! write components of fp-array
         call create_group_hdf5 ('part')
-        do pos=1, mparray
-          call output_hdf5_1D ('part/'//index_get(pos, particle=.true.), data(1:nv,pos), nv)
-        enddo
+        call output_hdf5_int_0D ('part/processor_distribution', nv)
       endif
+      do pos=1, nc
+        if (name == 'fp') then
+          label = 'part/'//trim(index_get(pos, particle=.true.))
+        else
+          label = trim(name)
+          if (nc >= 2) label = trim(label)//'_'//trim(itoa(pos))
+        endif
+        call output_hdf5_1D (label, data(1:nv,pos), nv)
+      enddo
 !
     endsubroutine output_hdf5_part_2D
 !***********************************************************************

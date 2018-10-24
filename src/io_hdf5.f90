@@ -69,7 +69,7 @@ module Io
 !
       if (lroot) call svn_id ("$Id$")
       if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
-          "This module only works with the setting lseparate_persist=.true.")
+          "This module only works with the setting lseparate_persist=T")
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
@@ -345,7 +345,7 @@ module Io
 !
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
-      call output_hdf5 (dataset, a, mv, nv)
+      call output_hdf5 (dataset, a, mv, mparray, nv)
       call file_close_hdf5
 !
       ! write additional data:
