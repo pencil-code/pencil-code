@@ -308,7 +308,7 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
 !
 !  Write particle snapshot file, always write mesh and time.
 !
@@ -319,7 +319,7 @@ module Io
 !
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
-      real, dimension (mv,mparray), intent(in) :: a
+      real, dimension (mv,mparray), intent(in) :: ap
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
@@ -337,9 +337,10 @@ module Io
       if (present (ltruncate)) ltrunc = ltruncate
       if (.not. lexists) ltrunc = .true.
 !
-      ! open global HDF5 file and write main data
+      ! open global HDF5 file and write particle data
       call file_open_hdf5 (filename, truncate=ltrunc)
-      call output_hdf5 (dataset, a, mv, mparray, nv)
+      call output_hdf5 (dataset, ap, mv, mparray, nv)
+      call output_hdf5 ('part/number', ipar(1:nv), nv)
       call file_close_hdf5
 !
       ! write additional data:
@@ -429,7 +430,7 @@ module Io
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lread_add
 !
-      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
 !
@@ -502,6 +503,38 @@ module Io
       endif
 !
     endsubroutine input_snap_finalize
+!***********************************************************************
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+!
+!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!
+!  24-Oct-2018/PABourdin: coded
+!
+      use Mpicomm, only: mpireduce_sum_int
+!
+      integer, intent(in) :: mv
+      integer, dimension (mv), intent(out) :: ipar
+      real, dimension (mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_total
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+!
+      character (len=fnlen) :: filename, dataset
+!
+      dataset = 'fp'
+      if (present (label)) dataset = label
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+!
+      ! open global HDF5 file and read particle data
+      call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 (dataset, ap, mv, mparray, nv)
+      call input_hdf5 ('part/number', ipar(1:nv), nv)
+      call file_close_hdf5
+!
+      ! Sum the total number of all particles on the root processor.
+      call mpireduce_sum_int (nv, npar_total)
+!
+    endsubroutine input_part_snap
 !***********************************************************************
     logical function init_write_persist(file)
 !

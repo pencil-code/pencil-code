@@ -200,7 +200,7 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
 !
 !  Write particle snapshot file, always write mesh and time.
 !
@@ -208,7 +208,7 @@ module Io
 !
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
-      real, dimension (mv,mparray), intent(in) :: a
+      real, dimension (mv,mparray), intent(in) :: ap
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
@@ -226,7 +226,7 @@ module Io
 !
 !  Then write particle data.
 !
-        if (nv/=0) write(lun_output) a(1:nv,:)
+        if (nv/=0) write(lun_output) ap(1:nv,:)
 !
 !  Write time and grid parameters.
 !
@@ -741,6 +741,37 @@ module Io
       if (lserial_io) call end_serialize
 !
     endsubroutine input_snap_finalize
+!***********************************************************************
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+!
+!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!
+!  24-Oct-2018/PABourdin: apadpted and moved to IO module
+!
+      use Mpicomm, only: mpireduce_sum_int
+!
+      integer, intent(in) :: mv
+      integer, dimension (mv), intent(out) :: ipar
+      real, dimension (mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_total
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+!
+      open (1, FILE=trim(directory_dist)//'/'//file, FORM='unformatted')
+      ! Read number of particles for this processor.
+      read (1) nv
+      if (nv > 0) then
+        ! Read particle number identifier and then particle data.
+        read (1) ipar(1:nv)
+        read (1) ap(1:nv,:)
+      endif
+      close (1)
+      if (ip<=8 .and. lroot) print*, 'input_particles: read ', file
+!
+      ! Sum the total number of all particles on the root processor.
+      call mpireduce_sum_int (nv, npar_total)
+!
+    endsubroutine input_part_snap
 !***********************************************************************
     logical function init_read_persist(file)
 !

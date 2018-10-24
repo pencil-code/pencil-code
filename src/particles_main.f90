@@ -289,7 +289,7 @@ module Particles_main
 !
       character (len=*) :: snap_directory
 !
-      call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
+      call particles_read_snapshot('pvar.dat')
       if (lparticles_lyapunov)      call init_particles_lyapunov(fp)
       if (lparticles_caustics)      call reinitialize_caustics(fp)
 !

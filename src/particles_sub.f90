@@ -39,45 +39,17 @@ module Particles_sub
 !
 !  Read snapshot file with particle data.
 !
-!  29-dec-04/anders: adapted from input
+!  24-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpireduce_max_scl_int
+      use IO, only: input_part_snap
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      character (len=*) :: filename
-      integer, dimension (mpar_loc) :: ipar
+      character(len=*), intent(in) :: filename
+      real, dimension (mpar_loc,mparray), intent(out) :: fp
+      integer, dimension(mpar_loc), intent(out) :: ipar
 !
-      intent (in) :: filename
-      intent (out) :: fp,ipar
+      if (ip<=8.and.lroot) print*,'input_particles: reading snapshot file '//filename
 !
-      open(1,FILE=filename,FORM='unformatted')
-!
-!  First read the number of particles present at the processor and the index
-!  numbers of the particles.
-!
-        read(1) npar_loc
-        if (npar_loc/=0) read(1) ipar(1:npar_loc)
-!
-!  Then read particle data.
-!
-        if (npar_loc/=0) read(1) fp(1:npar_loc,:)
-!
-!  Read snapshot time.
-!
-!        read(1) t
-!
-        if (ip<=8) print*, 'input_particles: read ', filename
-!
-      close(1)
-!
-!  If we are inserting particles contiuously during the run root must
-!  know the total number of particles in the simulation.
-!
-      if (npar_loc/=0) then
-        call mpireduce_max_scl_int(maxval(ipar(1:npar_loc)),npar_total)
-      else
-        call mpireduce_max_scl_int(npar_loc,npar_total)
-      endif
+      call input_part_snap (ipar, fp, mpar_loc, npar_loc, npar_total, filename)
 !
     endsubroutine input_particles
 !***********************************************************************
@@ -85,19 +57,15 @@ module Particles_sub
 !
 !  Write snapshot file with particle data.
 !
-!  29-dec-04/anders: adapted from output
+!  24-Oct-2018/PABourdin: coded
 !
       use IO, only: output_part_snap
 !
-      character(len=*) :: filename
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension(mpar_loc) :: ipar
-      real :: t_sp   ! t in single precision for backwards compatibility
+      character(len=*), intent(in) :: filename
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc), intent(in) :: ipar
 !
-      intent (in) :: filename, ipar
-!
-      if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '// &
-          filename
+      if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '//filename
 !
       call output_part_snap (ipar, fp, mpar_loc, npar_loc, filename, ltruncate=.true.)
 !

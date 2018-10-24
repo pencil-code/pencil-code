@@ -12,6 +12,16 @@ module HDF5_IO
 !
   implicit none
 !
+  interface input_hdf5
+    module procedure input_hdf5_int_0D
+    module procedure input_hdf5_int_1D
+    module procedure input_hdf5_0D
+    module procedure input_hdf5_1D
+    module procedure input_hdf5_part_2D
+    module procedure input_hdf5_3D
+    module procedure input_hdf5_4D
+  endinterface
+!
   interface output_hdf5
     module procedure output_hdf5_string
     module procedure output_hdf5_int_0D
@@ -21,16 +31,6 @@ module HDF5_IO
     module procedure output_hdf5_part_2D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
-  endinterface
-!
-  interface input_hdf5
-    module procedure input_hdf5_int_0D
-    module procedure input_hdf5_int_1D
-    module procedure input_hdf5_0D
-    module procedure input_hdf5_1D
-    module procedure input_hdf5_part_2D
-    module procedure input_hdf5_3D
-    module procedure input_hdf5_4D
   endinterface
 !
   include 'hdf5_io.h'
@@ -87,19 +87,21 @@ module HDF5_IO
 !
       call fatal_error ('input_hdf5_int_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
-      data = -1.0
+      data = -1
 !
     endsubroutine input_hdf5_int_0D
 !***********************************************************************
-    subroutine input_hdf5_int_1D(name, data, nv)
+    subroutine input_hdf5_int_1D(name, data, nv, same_size)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       integer, dimension (nv), intent(out) :: data
+      logical, optional, intent(in) :: same_size
 !
       call fatal_error ('input_hdf5_int_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
-      data(:) = -1.0
+      data(:) = -1
+      call keep_compiler_quiet(.true., same_size)
 !
     endsubroutine input_hdf5_int_1D
 !***********************************************************************
@@ -114,29 +116,31 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_0D
 !***********************************************************************
-    subroutine input_hdf5_1D(name, data, nv)
+    subroutine input_hdf5_1D(name, data, nv, same_size)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(out) :: data
+      logical, optional, intent(in) :: same_size
 !
       call fatal_error ('input_hdf5_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
       data(:) = -1.0
+      call keep_compiler_quiet(.true., same_size)
 !
     endsubroutine input_hdf5_1D
 !***********************************************************************
-    subroutine input_hdf5_part_2D(name, data, mv, ncomp, nv)
+    subroutine input_hdf5_part_2D(name, data, mv, nc, nv)
 !
       character (len=*), intent(in) :: name
-      integer, intent(in) :: mv, ncomp
-      integer, intent(out) :: nv
+      integer, intent(in) :: mv, nc
       real, dimension (mv,mparray), intent(out) :: data
+      integer, intent(out) :: nv
 !
       call fatal_error ('input_hdf5_part_2D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
       call keep_compiler_quiet(mv)
-      call keep_compiler_quiet(ncomp)
+      call keep_compiler_quiet(nc)
       data(:,:) = -1.0
       nv = -1
 !
@@ -186,14 +190,17 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_int_0D
 !***********************************************************************
-    subroutine output_hdf5_int_1D(name, data)
+    subroutine output_hdf5_int_1D(name, data, nv, same_size)
 !
       character (len=*), intent(in) :: name
-      integer, dimension(:), intent(in) :: data
+      integer, intent(in) :: nv
+      integer, dimension(nv), intent(in) :: data
+      logical, optional, intent(in) :: same_size
 !
       call fatal_error ('output_hdf5_int_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
       call keep_compiler_quiet(data)
+      call keep_compiler_quiet(.true., same_size)
 !
     endsubroutine output_hdf5_int_1D
 !***********************************************************************
@@ -208,29 +215,32 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_0D
 !***********************************************************************
-    subroutine output_hdf5_1D(name, data, nv)
+    subroutine output_hdf5_1D(name, data, nv, same_size)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(in) :: data
+      logical, optional, intent(in) :: same_size
 !
       call fatal_error ('output_hdf5_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
       call keep_compiler_quiet(data)
+      call keep_compiler_quiet(.true., same_size)
 !
     endsubroutine output_hdf5_1D
 !***********************************************************************
-    subroutine output_hdf5_part_2D(name, data, mv, ncomp, nv)
+    subroutine output_hdf5_part_2D(name, data, mv, nc, nv)
 !
       character (len=*), intent(in) :: name
-      integer, intent(in) :: mv, ncomp, nv
+      integer, intent(in) :: mv, nc
       real, dimension (mv,mparray), intent(in) :: data
+      integer, intent(in) :: nv
 !
       call fatal_error ('output_hdf5_part_2D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
       call keep_compiler_quiet(data)
       call keep_compiler_quiet(mv)
-      call keep_compiler_quiet(ncomp)
+      call keep_compiler_quiet(nc)
       call keep_compiler_quiet(nv)
 !
     endsubroutine output_hdf5_part_2D

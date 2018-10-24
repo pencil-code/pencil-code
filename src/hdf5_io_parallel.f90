@@ -6,13 +6,23 @@
 module HDF5_IO
 !
   use Cdata
-  use Cparam, only: mvar, maux, labellen
+  use Cparam, only: mvar, maux, fnlen
   use General, only: loptest, itoa
   use HDF5
   use Messages, only: fatal_error
   use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
 !
   implicit none
+!
+  interface input_hdf5
+    module procedure input_hdf5_int_0D
+    module procedure input_hdf5_int_1D
+    module procedure input_hdf5_0D
+    module procedure input_hdf5_1D
+    module procedure input_hdf5_part_2D
+    module procedure input_hdf5_3D
+    module procedure input_hdf5_4D
+  endinterface
 !
   interface output_hdf5
     module procedure output_hdf5_string
@@ -23,16 +33,6 @@ module HDF5_IO
     module procedure output_hdf5_part_2D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
-  endinterface
-!
-  interface input_hdf5
-    module procedure input_hdf5_int_0D
-    module procedure input_hdf5_int_1D
-    module procedure input_hdf5_0D
-    module procedure input_hdf5_1D
-    module procedure input_hdf5_part_2D
-    module procedure input_hdf5_3D
-    module procedure input_hdf5_4D
   endinterface
 !
   include 'hdf5_io.h'
@@ -48,7 +48,7 @@ module HDF5_IO
   logical :: lcollective = .false., lwrite = .false.
 !
   type element
-    character(len=labellen) :: label
+    character(len=fnlen) :: label
     integer :: component
     type (element), pointer :: previous
   endtype element
@@ -221,7 +221,7 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_int_0D
 !***********************************************************************
-    subroutine input_hdf5_int_1D(name, data, nv)
+    subroutine input_local_hdf5_int_1D(name, data, nv)
 !
 !  Read HDF5 dataset as scalar or array.
 !
@@ -232,6 +232,9 @@ module HDF5_IO
       integer, dimension (nv), intent(out) :: data
 !
       integer(HSIZE_T), dimension(1) :: size
+!
+      if (lcollective) call fatal_error ('output_hdf5', 'local output requires local file', .true.)
+      if (.not. lwrite) return
 !
       size = (/ nv /)
 !
@@ -244,6 +247,90 @@ module HDF5_IO
       ! close dataset and data space
       call h5dclose_f (h5_dset, h5_err)
       if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//trim (name)//'"', .true.)
+!
+    endsubroutine input_local_hdf5_int_1D
+!***********************************************************************
+    subroutine input_hdf5_int_1D(name, data, nv, same_size)
+!
+!  Read HDF5 dataset as scalar or array.
+!
+!  24-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      integer, dimension (nv), intent(out) :: data
+      logical, optional, intent(in) :: same_size
+!
+      logical :: lsame_size
+      integer :: total, offset, last
+      integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
+      integer(kind=8), dimension (1) :: h5_stride, h5_count
+!
+      if (.not. lcollective) then
+        call input_local_hdf5_int_1D(name, data, nv)
+        return
+      endif
+!
+      lsame_size = .false.
+      if (present (same_size)) lsame_size = same_size
+      if (lsame_size) then
+        last = nv * (iproc + 1) - 1
+        total = nv * ncpus
+        offset = nv * iproc
+      else
+        call mpiscan_int(nv, offset)
+        last = offset - 1
+        total = offset
+        offset = offset - nv
+        call mpibcast_int(total, ncpus-1)
+      endif
+      local_start_1D = 0
+      local_size_1D = nv
+      local_subsize_1D = nv
+      global_size_1D = total
+      global_start_1D = offset
+!
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_simple_f (1, local_size_1D, h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
+!
+      ! open the dataset
+      call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' in the global file
+      h5_stride(:) = 1
+      h5_count(:) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'get dataset for file space "'//trim (name)//'"', .true.)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select hyperslab within file "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' portion in memory
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select hyperslab within memory "'//trim (name)//'"', .true.)
+!
+      ! prepare data transfer
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'set data transfer properties "'//trim (name)//'"', .true.)
+      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select collective IO "'//trim (name)//'"', .true.)
+!
+      ! collectively read the data
+      call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, &
+          global_size_1D, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'read dataset "'//trim (name)//'"', .true.)
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close file space "'//trim (name)//'"', .true.)
+      call h5sclose_f (h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close memory space "'//trim (name)//'"', .true.)
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//trim (name)//'"', .true.)
+      call h5pclose_f (h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
 !
     endsubroutine input_hdf5_int_1D
 !***********************************************************************
@@ -259,7 +346,7 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_0D
 !***********************************************************************
-    subroutine input_hdf5_1D(name, data, nv)
+    subroutine input_local_hdf5_1D(name, data, nv)
 !
 !  Read HDF5 dataset as scalar or array.
 !
@@ -270,6 +357,9 @@ module HDF5_IO
       real, dimension (nv), intent(out) :: data
 !
       integer(HSIZE_T), dimension(1) :: size
+!
+      if (lcollective) call fatal_error ('output_hdf5', 'local output requires local file', .true.)
+      if (.not. lwrite) return
 !
       size = (/ nv /)
 !
@@ -283,6 +373,90 @@ module HDF5_IO
       call h5dclose_f (h5_dset, h5_err)
       if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//trim (name)//'"', .true.)
 !
+    endsubroutine input_local_hdf5_1D
+!***********************************************************************
+    subroutine input_hdf5_1D(name, data, nv, same_size)
+!
+!  Read HDF5 dataset as scalar or array.
+!
+!  24-Oct-2016/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (nv), intent(out) :: data
+      logical, optional, intent(in) :: same_size
+!
+      logical :: lsame_size
+      integer :: total, offset, last
+      integer(kind=8), dimension (1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=8), dimension (1) :: global_size_1D, global_start_1D
+      integer(kind=8), dimension (1) :: h5_stride, h5_count
+!
+      if (.not. lcollective) then
+        call input_local_hdf5_1D(name, data, nv)
+        return
+      endif
+!
+      lsame_size = .false.
+      if (present (same_size)) lsame_size = same_size
+      if (lsame_size) then
+        last = nv * (iproc + 1) - 1
+        total = nv * ncpus
+        offset = nv * iproc
+      else
+        call mpiscan_int(nv, offset)
+        last = offset - 1
+        total = offset
+        offset = offset - nv
+        call mpibcast_int(total, ncpus-1)
+      endif
+      local_start_1D = 0
+      local_size_1D = nv
+      local_subsize_1D = nv
+      global_size_1D = total
+      global_start_1D = offset
+!
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_simple_f (1, local_size_1D, h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
+!
+      ! open the dataset
+      call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' in the global file
+      h5_stride(:) = 1
+      h5_count(:) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'get dataset for file space "'//trim (name)//'"', .true.)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select hyperslab within file "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' portion in memory
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select hyperslab within memory "'//trim (name)//'"', .true.)
+!
+      ! prepare data transfer
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'set data transfer properties "'//trim (name)//'"', .true.)
+      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select collective IO "'//trim (name)//'"', .true.)
+!
+      ! collectively read the data
+      call h5dread_f (h5_dset, h5_ntype, data, &
+          global_size_1D, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'read dataset "'//trim (name)//'"', .true.)
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close file space "'//trim (name)//'"', .true.)
+      call h5sclose_f (h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close memory space "'//trim (name)//'"', .true.)
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//trim (name)//'"', .true.)
+      call h5pclose_f (h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
+!
     endsubroutine input_hdf5_1D
 !***********************************************************************
     subroutine input_hdf5_part_2D(name, data, mv, nc, nv)
@@ -293,11 +467,11 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: mv, nc
-      integer, intent(out) :: nv
       real, dimension (mv,nc), intent(out) :: data
+      integer, intent(out) :: nv
 !
       integer :: pos
-      character (len=labellen) :: label
+      character (len=fnlen) :: label
 !
       if (.not. lcollective) call fatal_error ('input_hdf5', 'particle input requires a global file "'//trim (name)//'"', .true.)
 !
@@ -480,7 +654,27 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_string
 !***********************************************************************
+    subroutine output_hdf5_int_0D(name, data)
+!
+!  Write HDF5 dataset as scalar from one or all processor.
+!
+!  22-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: data
+!
+      integer, dimension(1) :: output = (/ 1 /)
+!
+      output = data
+      call output_hdf5_int_1D(name, output, 1, .true.)
+!
+    endsubroutine output_hdf5_int_0D
+!***********************************************************************
     subroutine output_local_hdf5_int_1D(name, data, nv)
+!
+!  Write HDF5 dataset as scalar from one or all processor.
+!
+!  23-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -488,6 +682,7 @@ module HDF5_IO
 !
       integer(kind=8), dimension(1) :: size
 !
+      if (lcollective) call fatal_error ('output_hdf5', 'local output requires local file', .true.)
       if (.not. lwrite) return
 !
       size = (/ nv /)
@@ -508,22 +703,6 @@ module HDF5_IO
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close integer data space "'//trim (name)//'"', .true.)
 !
     endsubroutine output_local_hdf5_int_1D
-!***********************************************************************
-    subroutine output_hdf5_int_0D(name, data)
-!
-!  Write HDF5 dataset as scalar from one or all processor.
-!
-!  22-Oct-2018/PABourdin: coded
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: data
-!
-      integer, dimension(1) :: output = (/ 1 /)
-!
-      output = data
-      call output_hdf5_int_1D(name, output, 1, .true.)
-!
-    endsubroutine output_hdf5_int_0D
 !***********************************************************************
     subroutine output_hdf5_int_1D(name, data, nv, same_size)
 !
@@ -636,7 +815,8 @@ module HDF5_IO
 !
       integer(kind=8), dimension(1) :: size
 !
-      if (.not. (lcollective .or. lwrite)) return
+      if (lcollective) call fatal_error ('output_hdf5', 'local output requires local file', .true.)
+      if (.not. lwrite) return
 !
       size = (/ nv /)
 !
@@ -766,11 +946,12 @@ module HDF5_IO
 !  22-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: name
-      integer, intent(in) :: mv, nc, nv
+      integer, intent(in) :: mv, nc
       real, dimension (mv,nc), intent(in) :: data
+      integer, intent(in) :: nv
 !
       integer :: pos
-      character (len=labellen) :: label
+      character (len=fnlen) :: label
 !
       if (.not. lcollective) call fatal_error ('output_hdf5', 'particle output requires a global file "'//trim (name)//'"', .true.)
 !
@@ -986,7 +1167,7 @@ module HDF5_IO
 !
 ! 17-Oct-2018/PABourdin: coded
 !
-      character (len=labellen) :: index_get
+      character (len=fnlen) :: index_get
       integer, intent(in) :: ivar
       logical, optional, intent(in) :: particle
 !
