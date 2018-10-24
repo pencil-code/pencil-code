@@ -218,19 +218,17 @@ module Io
       t_sp = t
       open(lun_output,FILE=trim(directory_dist)//'/'//file,FORM='unformatted')
 !
-!  First write the number of particles present at the processor and the index
-!  numbers of the particles.
+      ! write the number of particles present at the processor
+      write(lun_output) nv
+      if (nv /= 0) then
+        ! write particle index
+        write(lun_output) ipar(1:nv)
+        ! write particle data
+        write(lun_output) ap(1:nv,:)
+      endif
 !
-        write(lun_output) nv
-        if (nv/=0) write(lun_output) ipar(1:nv)
-!
-!  Then write particle data.
-!
-        if (nv/=0) write(lun_output) ap(1:nv,:)
-!
-!  Write time and grid parameters.
-!
-        write(lun_output) t_sp, x, y, z, dx, dy, dz
+      ! write time and grid parameters
+      write(lun_output) t_sp, x, y, z, dx, dy, dz
 !
       close(lun_output)
 !
