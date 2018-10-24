@@ -254,11 +254,11 @@ module Io
 !
       if (filename /= "") then
         close (lun_output)
-        call delete_file(trim (directory_snap)//'/'//file)
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', &
+        call delete_file(trim (directory_snap)//'/'//filename)
+        open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', &
               IOSTAT=io_err, status='new')
         init_write_persist = outlog (io_err, 'openw persistent file', &
-                             trim (directory_snap)//'/'//file, location='init_write_persist' )
+                             trim (directory_snap)//'/'//filename, location='init_write_persist' )
         filename = ""
       endif
 !

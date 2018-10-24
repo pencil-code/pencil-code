@@ -257,8 +257,8 @@ module Io
 !
       if (filename /= "") then
         close (lun_output)
-        call delete_file(trim (directory_snap)//'/'//file)
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='new')
+        call delete_file(trim (directory_snap)//'/'//filename)
+        open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='new')
         filename = ""
       endif
 !
