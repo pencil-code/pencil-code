@@ -215,7 +215,7 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine output_part_snap(ipar, a, mv, nv, file, label, ltruncate)
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
 !
 !  Write particle snapshot file, always write mesh and time.
 !
@@ -223,12 +223,33 @@ module Io
 !
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
-      real, dimension (mv,mparray), intent(in) :: a
+      real, dimension (mv,mparray), intent(in) :: ap
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
 !
-      call fatal_error ('output_part_snap', 'not implemented for "io_collect"', .true.)
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      t_sp = t
+      open(lun_output,FILE=trim(directory_dist)//'/'//file,FORM='unformatted', IOSTAT=io_err, status='new')
+      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_part_snap')
+!
+      ! write the number of particles present at the processor
+      write(lun_output, IOSTAT=io_err) nv
+      lerror = outlog (io_err, 'number of particles per processor')
+      if (nv/=0) then
+        ! write particle index
+        write(lun_output, IOSTAT=io_err) ipar(1:nv)
+        ! write particle data
+        write(lun_output, IOSTAT=io_err) ap(1:nv,:)
+      endif
+      lerror = outlog(io_err, 'main data')
+!
+      ! write time and grid parameters
+      write(lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+      lerror = outlog(io_err, 'additional data')
+!
+      close(lun_output)
 !
     endsubroutine output_part_snap
 !***********************************************************************
@@ -755,6 +776,41 @@ module Io
       if (lserial_io) call end_serialize
 !
     endsubroutine input_snap_finalize
+!***********************************************************************
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+!
+!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!
+!  25-Oct-2018/PABourdin: apadpted and moved to IO module
+!
+      use Mpicomm, only: mpireduce_sum_int
+!
+      integer, intent(in) :: mv
+      integer, dimension (mv), intent(out) :: ipar
+      real, dimension (mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_total
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+!
+      open (1, FILE=trim(directory_dist)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
+      lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, location='read_snap_double')
+!
+      ! Read number of particles for this processor.
+      read (1, IOSTAT=io_err) nv
+      lerror = outlog (io_err, 'number of particles per processor')
+      if (nv > 0) then
+        ! Read particle number identifier and then particle data.
+        read (1, IOSTAT=io_err) ipar(1:nv)
+        read (1, IOSTAT=io_err) ap(1:nv,:)
+        lerror = outlog (io_err, 'main data')
+      endif
+      close (1)
+      if (ip<=8 .and. lroot) print*, 'input_particles: read ', file
+!
+      ! Sum the total number of all particles on the root processor.
+      call mpireduce_sum_int (nv, npar_total)
+!
+    endsubroutine input_part_snap
 !***********************************************************************
     logical function init_read_persist(file)
 !
