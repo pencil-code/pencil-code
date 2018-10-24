@@ -63,10 +63,6 @@ module Io
 !
 !  04-Jul-2011/Boudin.KIS: coded
 !
-      use Mpicomm, only: mpi_precision, stop_it_if_any
-!
-!  identify version number
-!
       if (lroot) call svn_id ("$Id$")
       if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
           "This module only works with the setting lseparate_persist=T")
@@ -202,7 +198,7 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use File_io, only: parallel_file_exists
-      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
+      use Mpicomm, only: collect_grid, mpi_precision
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -303,8 +299,6 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use Mpicomm, only: stop_it_if_any
-!
       if (persist_initialized) then
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
         write (lun_output) id_block_PERSISTENT
@@ -321,7 +315,7 @@ module Io
 !  22-Oct-2018/PABourdin: adapted from output_snap
 !
       use File_io, only: parallel_file_exists
-      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
+      use Mpicomm, only: collect_grid, mpi_precision
 !
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
@@ -421,7 +415,7 @@ module Io
 !                  this subroutine seems not yet to be adapted to HDF5
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
       integer, intent(in) :: nv
