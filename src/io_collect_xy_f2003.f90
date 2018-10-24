@@ -249,7 +249,7 @@ module Io
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
 !
-      call fatal_error ('output_part_snap', 'not implemented for "io_collect"', .true.)
+      call fatal_error ('output_part_snap', 'not implemented for "io_collect_xy_f2003"', .true.)
 !
     endsubroutine output_part_snap
 !***********************************************************************
@@ -343,6 +343,23 @@ module Io
       if (lfirst_proc_xy) close (lun_input)
 !
     endsubroutine input_snap_finalize
+!***********************************************************************
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+!
+!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!
+!  25-Oct-2018/PABourdin: apadpted and moved to IO module
+!
+      integer, intent(in) :: mv
+      integer, dimension (mv), intent(out) :: ipar
+      real, dimension (mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_total
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+!
+      call fatal_error ('input_part_snap', 'not implemented for "io_collect_xy_f2003"', .true.)
+!
+    endsubroutine input_part_snap
 !***********************************************************************
     logical function init_write_persist(file)
 !
