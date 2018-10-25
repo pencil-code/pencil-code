@@ -561,8 +561,8 @@ program run
 
   Time_loop: do while (it<=nt)
 !
-    lout   = mod(it-1,it1) ==0
-    l1davg = mod(it-1,it1d)==0
+    lout   = (mod(it-1,it1) == 0) .and. (it > it1start)
+    l1davg = (mod(it-1,it1d) == 0)
 !
     if (lwrite_sound) then
       if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then

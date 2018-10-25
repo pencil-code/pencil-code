@@ -110,7 +110,7 @@ module Param_IO
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
-      nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
+      nt, it1, it1start, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
       d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, ldivu_perp, &
       dtracers, dfixed_points, unit_system, unit_length, &
