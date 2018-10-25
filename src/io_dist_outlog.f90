@@ -253,6 +253,34 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_pointmass(file, labels, fq, mv, nc)
+!
+!  Write pointmass snapshot file with time.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(in) :: fq
+!
+      if (.not. lroot) return
+!
+      open(lun_output,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted', IOSTAT=io_err, status='new')
+      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_pointmass')
+      write(lun_output, IOSTAT=io_err) mv
+      lerror = outlog (io_err, 'number of pointmasses')
+      if (mv > 0) then
+        write(lun_output, IOSTAT=io_err) fq
+        lerror = outlog (io_err, 'main data')
+      endif
+      write(lun_output, IOSTAT=io_err) t
+      lerror = outlog (io_err, 'additional data')
+      close(lun_output)
+      if (ip<=10) print*,'written pointmass snapshot ', trim (file)
+!
+    endsubroutine output_pointmass
+!***********************************************************************
     logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to snapshot file.
@@ -811,6 +839,37 @@ module Io
       call mpireduce_sum_int (nv, npar_total)
 !
     endsubroutine input_part_snap
+!***********************************************************************
+    subroutine input_pointmass(file, labels, fq, mv, nc)
+!
+!  Read pointmass snapshot file.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      use Mpicomm, only: mpibcast_real
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(out) :: fq
+!
+      integer :: mv_in
+!
+      if (lroot) then
+        open(lun_input,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted')
+        lerror = outlog (io_err, 'openr', file, dist=lun_input, location='input_pointmass')
+        read(lun_input) mv_in
+        lerror = outlog (io_err, 'number of pointmasses')
+        if (mv_in /= mv) call fatal_error("","")
+        if (mv_in /= 0) read(lun_input) fq
+        lerror = outlog (io_err, 'main data')
+        close(lun_input)
+        if (ip<=8) print*, 'read pointmass snapshot', trim (file)
+      endif
+!
+      call mpibcast_real(fq,(/mv,nc/))
+!
+    endsubroutine input_pointmass
 !***********************************************************************
     logical function init_read_persist(file)
 !

@@ -1794,28 +1794,17 @@ module PointMasses
 !
     endsubroutine integrate_selfgravity
 !***********************************************************************
-
     subroutine pointmasses_read_snapshot(filename)
 !
 !  Read nbody particle info
 !
 !  01-apr-08/wlad: dummy
 !
-      use Mpicomm, only: mpibcast_real
+      use IO, only: input_pointmass
 !
       character (len=*) :: filename
-      integer :: nqpar_read
 !
-      if (lroot) then
-        open(1,FILE=filename,FORM='unformatted')
-        read(1) nqpar_read
-        if (nqpar_read /= nqpar) call fatal_error("","")
-        if (nqpar_read/=0) read(1) fq
-        if (ip<=8) print*, 'read snapshot', filename
-        close(1)
-      endif
-!
-      call mpibcast_real(fq,(/nqpar,mqarray/))
+      call input_pointmass(filename, qvarname, fq, nqpar, mqarray)
 !
       if (ldebug) then
         print*,'pointmasses_read_snapshot'
@@ -1826,11 +1815,11 @@ module PointMasses
 !
     endsubroutine pointmasses_read_snapshot
 !***********************************************************************
-    subroutine pointmasses_write_snapshot(snapbase,enum,flist)
+    subroutine pointmasses_write_snapshot(file,enum,flist)
 !
       use General, only:safe_character_assign
       use Sub, only: update_snaptime, read_snaptime
-      use IO, only: lun_output,log_filename_to_file
+      use IO, only: log_filename_to_file, output_pointmass
 !
 !  Input and output of information about the massive particles
 !
@@ -1839,13 +1828,16 @@ module PointMasses
       logical, save :: lfirst_call=.true.
       integer, save :: nsnap
       real, save :: tsnap
-      character (len=*) :: snapbase,flist
-      character (len=fnlen) :: snapname, filename_diag
+      character (len=*) :: file,flist
+      character (len=fnlen) :: filename, filename_diag
       logical :: enum,lsnap
       character (len=intlen) :: nsnap_ch
       optional :: flist
 !
+      filename=file
+!
       if (enum) then
+        if (lsnap) filename=trim(file)//nsnap_ch
 !
         if (lfirst_call) then
           call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
@@ -1854,36 +1846,12 @@ module PointMasses
         endif
 !
         call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
-        if (lsnap) then
-          snapname=trim(snapbase)//nsnap_ch
+      endif
 !
 !  Write number of massive particles and their data -- only root needs. 
 !
-          if (lroot) then
-            open(lun_output,FILE=snapname,FORM='unformatted')
-            write(lun_output) nqpar
-            if (nqpar/=0) write(lun_output) fq
-            write(lun_output) t
-            close(lun_output)
-            if (ip<=10) print*,'written snapshot ', snapname
-          endif
-          if (present(flist)) call log_filename_to_file(snapname,flist)
-        endif
-      else
-!
-!  Write snapshot without label
-!
-        snapname=snapbase
-        if (lroot) then 
-          open(lun_output,FILE=snapname,FORM='unformatted')
-          write(lun_output) nqpar
-          if (nqpar/=0) write(lun_output) fq
-          write(lun_output) t
-          close(lun_output)
-          if (ip<=10) print*,'written snapshot ', snapname
-        endif
-        if (present(flist)) call log_filename_to_file(snapname,flist)
-      endif
+      call output_pointmass (filename, qvarname, fq, nqpar, mqarray)
+      if (present(flist)) call log_filename_to_file(filename,flist)
 !
     endsubroutine pointmasses_write_snapshot
 !***********************************************************************

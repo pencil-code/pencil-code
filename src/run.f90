@@ -414,7 +414,7 @@ program run
   call report_undefined_diagnostics
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
-  if (lpointmasses) call pointmasses_read_snapshot(trim(directory_snap)//'/qvar.dat')
+  if (lpointmasses) call pointmasses_read_snapshot('qvar.dat')
 !
   call get_nseed(nseed)
 !
@@ -796,7 +796,7 @@ program run
     if (lparticles) &
         call write_snapshot_particles(f,ENUM=.true.)
     if (lpointmasses) &
-        call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR',ENUM=.true.,FLIST='qvarN.list')
+        call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list')
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
@@ -824,7 +824,7 @@ program run
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &
             call write_snapshot_particles(f,ENUM=.false.)
-        if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+        if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
         if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
@@ -896,7 +896,7 @@ program run
     if (save_lastsnap) then
       if (lparticles) &
           call write_snapshot_particles(f,ENUM=.false.)
-      if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+      if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
       if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !
       call wsnap('var.dat',f,mvar_io,ENUM=.false.)

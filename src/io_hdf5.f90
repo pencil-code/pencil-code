@@ -407,6 +407,33 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_pointmass(file, labels, fq, mv, nc)
+!
+!  Write pointmass snapshot file with time.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (mqarray), intent(in) :: labels
+      real, dimension (mv,mparray), intent(in) :: fq
+!
+      if (.not. lroot) return
+!
+      call file_open_hdf5 (filename, truncate=.true., global=.false.)
+      open(lun_output,FILE=trim(directory_snap)//'/'//trim(file)//'.h5',FORM='unformatted')
+      call output_hdf5 ('number', mv)
+      if (mv > 0) then
+        call create_group_hdf5 ('points')
+        do pos=1, nc
+          call output_hdf5 ('points/'//trim(labels(pos)), fq(:,pos), mv)
+        enddo
+      endif
+      call output_hdf5 ('t', t)
+      call file_close_hdf5
+!
+    endsubroutine output_pointmass
+!***********************************************************************
     subroutine input_snap(file, a, nv, mode, label)
 !
 !  Read snapshot file. Also read mesh and time, if mode==1.
@@ -535,6 +562,38 @@ module Io
       call mpireduce_sum_int (nv, npar_total)
 !
     endsubroutine input_part_snap
+!***********************************************************************
+    subroutine input_pointmass(file, labels, fq, mv, nc)
+!
+!  Read pointmass snapshot file.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      use Mpicomm, only: mpibcast_real
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(out) :: fq
+!
+      integer :: mv_in
+!
+      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      if (lroot) then
+        call file_open_hdf5 (filename, read_only=.true., global=.false.)
+        call input_hdf5 ('number', mv_in)
+        if (mv_in /= mv) call fatal_error("","")
+        if (mv_in /= 0) then
+          do pos=1, nc
+            call input_hdf5 ('points/'//trim(labels(pos)), fq(:,pos), mv)
+          enddo
+        endif
+        call file_close_hdf5
+      endif
+!
+      call mpibcast_real(fq,(/nqpar,mqarray/))
+!
+    endsubroutine input_pointmass
 !***********************************************************************
     logical function init_write_persist(file)
 !

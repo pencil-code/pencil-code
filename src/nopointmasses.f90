@@ -155,13 +155,13 @@ module PointMasses
 !
     endsubroutine pointmasses_read_snapshot
 !***********************************************************************
-    subroutine pointmasses_write_snapshot(snapbase,enum,flist)
+    subroutine pointmasses_write_snapshot(file,enum,flist)
 !
-      character (len=*) :: snapbase,flist
+      character (len=*) :: file,flist
       logical :: enum
       optional :: flist
 !
-      call keep_compiler_quiet(snapbase,flist)
+      call keep_compiler_quiet(file,flist)
       call keep_compiler_quiet(enum)
 !
     endsubroutine pointmasses_write_snapshot

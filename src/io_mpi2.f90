@@ -433,6 +433,21 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_pointmass(file, labels, fq, mv, nc)
+!
+!  Write pointmass snapshot file with time.
+!
+!  26-Oct-2018/PABourdin: adapted from output_snap
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (mqarray), intent(in) :: labels
+      real, dimension (mv,mparray), intent(in) :: fq
+!
+      call fatal_error ('output_pointmass', 'not implemented for "io_mpi2"', .true.)
+!
+    endsubroutine output_pointmass
+!***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
@@ -546,6 +561,21 @@ module Io
       call fatal_error ('input_part_snap', 'not implemented for "io_mpi2"', .true.)
 !
     endsubroutine input_part_snap
+!***********************************************************************
+    subroutine input_pointmass(file, labels, fq, mv, nc)
+!
+!  Read pointmass snapshot file.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(out) :: fq
+!
+      call fatal_error ('input_pointmass', 'not implemented for "io_mpi2"', .true.)
+!
+    endsubroutine output_pointmass
 !***********************************************************************
     logical function init_write_persist(file)
 !

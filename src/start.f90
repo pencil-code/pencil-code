@@ -577,7 +577,7 @@ program start
         call write_snapshot_particles(f,ENUM=.false.,snapnum=0)
 !
     call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list')
-    call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR0',ENUM=.false.,FLIST='qvarN.list')
+    call pointmasses_write_snapshot('QVAR0',ENUM=.false.,FLIST='qvarN.list')
   endif
 !
 !  The option lnowrite writes everything except the actual var.dat file.
@@ -589,7 +589,7 @@ program start
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
         call write_snapshot_particles(f,ENUM=.false.)
-    call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+    call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
     call wsnap('var.dat',f,mvar_io,ENUM=.false.)
   elseif (lmodify) then
     call wsnap(modify_filename,f,mvar_io,ENUM=.false.)
