@@ -2684,7 +2684,7 @@ module General
 !***********************************************************************
   subroutine write_full_columns_real(unit,buffer,range,unfilled,ncol,fmt)
 !
-! range-wise output of a real or complex vector in ncol columns
+! range-wise output of a real vector in ncol columns
 ! unfilled (inout) - number of unfilled slots in last written line
 !
 !  20-apr-11/MR: coded
@@ -2693,7 +2693,6 @@ module General
 !
     integer,                        intent(in)    :: unit
     real,    dimension(*),          intent(in)    :: buffer
-    complex, dimension(*),          intent(in)    :: buffer_cmplx
     integer, dimension(3),          intent(in)    :: range
     integer,                        intent(inout) :: unfilled
     integer,              optional, intent(in)    :: ncol
@@ -2702,9 +2701,6 @@ module General
     integer              :: ncoll, nd, ia, ie, is, rest
     character(len=intlen):: str
     character(len=intlen):: fmtl, fmth
-    logical              :: lcomplex
-!
-    lcomplex = .false.
 !
     if ( present(fmt) ) then
       fmtl = fmt
@@ -2712,19 +2708,7 @@ module General
       fmtl = 'e10.2'
     endif
 !
-    goto 1
-!
-  entry write_full_columns_cmplx(unit,buffer_cmplx,range,unfilled,ncol,fmt)
-!
-    lcomplex = .true.
-!
-    if ( present(fmt) ) then
-      fmtl = '('//fmt//',1x,'//fmt//')'
-    else
-      fmtl = '(e10.2,1x,e10.2)'
-    endif
-!
- 1  nd = get_range_no(range,1)
+    nd = get_range_no(range,1)
     if ( nd==0 ) return
 !
     ncoll = ioptest(ncol,8)
@@ -2741,14 +2725,9 @@ module General
         if (nd<unfilled) fmth = trim(fmtl)//'$'
         str=itoa(nd)
       endif
-!
       nd = nd-unfilled
 !
-      if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer_cmplx(range(1):ie:is)
-      else
-        write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
-      endif
+      write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
 !
       if ( nd>0 ) then
         ia = ie + is
@@ -2765,28 +2744,93 @@ module General
 !
     if ( rest<nd ) then
       str=itoa(ncoll)
-      if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer_cmplx(ia:ie:is)
-      else
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
-      endif
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
     endif
 !
     if ( rest > 0 ) then
-!
       str=itoa(rest)
-      if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer_cmplx(ie+is:range(2):is)
-      else
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
-      endif
-!
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
       unfilled = ncoll-rest
     else
       unfilled = 0
     endif
 !
   endsubroutine write_full_columns_real
+!***********************************************************************
+  subroutine write_full_columns_cmplx(unit,buffer,range,unfilled,ncol,fmt)
+!
+! range-wise output of a complex vector in ncol columns
+! unfilled (inout) - number of unfilled slots in last written line
+!
+!  20-apr-11/MR: coded
+!  29-jan-14/MR: introduced is for range step; inserted some trim calls
+!  05-feb-14/MR: corrected wrong placement of is definition
+!
+    integer,                        intent(in)    :: unit
+    complex, dimension(*),          intent(in)    :: buffer
+    integer, dimension(3),          intent(in)    :: range
+    integer,                        intent(inout) :: unfilled
+    integer,              optional, intent(in)    :: ncol
+    character(len=*),     optional, intent(in)    :: fmt
+!
+    integer              :: ncoll, nd, ia, ie, is, rest
+    character(len=intlen):: str
+    character(len=intlen):: fmtl, fmth
+!
+    if ( present(fmt) ) then
+      fmtl = '('//fmt//',1x,'//fmt//')'
+    else
+      fmtl = '(e10.2,1x,e10.2)'
+    endif
+!
+    nd = get_range_no(range,1)
+    if ( nd==0 ) return
+!
+    ncoll = ioptest(ncol,8)
+    is = range(3)
+!
+    if ( unfilled > 0 ) then
+!
+      fmth = fmtl
+      if ( nd>unfilled ) then
+        ie = range(1)+(unfilled-1)*is
+        str=itoa(unfilled)
+      else
+        ie = range(2)
+        if (nd<unfilled) fmth = trim(fmtl)//'$'
+        str=itoa(nd)
+      endif
+      nd = nd-unfilled
+!
+      write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
+!
+      if ( nd>0 ) then
+        ia = ie + is
+      else
+        unfilled = -nd
+        return
+      endif
+    else
+      ia = range(1)
+    endif
+!
+    rest = mod(nd,ncoll)
+    ie = (nd-rest-1)*is + ia
+!
+    if ( rest<nd ) then
+      str=itoa(ncoll)
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
+    endif
+!
+    if ( rest > 0 ) then
+      str=itoa(rest)
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
+      unfilled = ncoll-rest
+    else
+      unfilled = 0
+    endif
+!
+  endsubroutine write_full_columns_cmplx
 !***********************************************************************
     function add_merge_range( ranges, ie, range ) result (iel)
 !  
@@ -3315,7 +3359,7 @@ module General
 !******************************************************************************
   subroutine write_by_ranges_2d_real( unit, buffer, xranges, yranges, trans )
 !
-! writes a real or complex 2D array controlled by lists of ranges
+! writes a real 2D array controlled by lists of ranges
 ! xranges and yranges for each of the two dimensions; output optionally transposed
 !
 ! 10-may-11/MR: coded
@@ -3327,20 +3371,12 @@ module General
     integer,                 intent(in)           :: unit
     integer, dimension(3,*), intent(in)           :: xranges, yranges
     real,    dimension(:,:), intent(in)           :: buffer
-    complex, dimension(:,:), intent(in)           :: buffer_cmplx
     logical,                 intent(in), optional :: trans
 !
     integer :: i,j,jl,unfilled
-    logical :: transl, lcomplex
+    logical :: transl
 !
-    lcomplex = .false.
-    goto 1
-!
-  entry write_by_ranges_2d_cmplx( unit, buffer_cmplx, xranges, yranges, trans )
-!
-    lcomplex = .true.
-!
- 1  unfilled = 0
+    unfilled = 0
 !
     if ( present(trans) ) then
       transl = trans
@@ -3350,25 +3386,14 @@ module General
 !
     do j=1,nk_max
       if ( yranges(1,j) == 0 ) exit
-!
       do jl=yranges(1,j),yranges(2,j),yranges(3,j)
         do i=1,nk_max
           if ( xranges(1,i) == 0 ) exit
-!
           if ( transl ) then
-            if (lcomplex) then
-              call write_full_columns_cmplx( unit, buffer_cmplx(jl,:), xranges(1,i), unfilled )
-            else
-              call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
-            endif
+            call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
           else
-            if (lcomplex) then
-              call write_full_columns_cmplx( unit, buffer_cmplx(:,jl), xranges(1,i), unfilled )
-            else
-              call write_full_columns_real( unit, buffer(:,jl), xranges(1,i), unfilled )
-            endif
+            call write_full_columns_real( unit, buffer(:,jl), xranges(1,i), unfilled )
           endif
-!
         enddo
       enddo
     enddo
@@ -3377,9 +3402,54 @@ module General
 !
   endsubroutine write_by_ranges_2d_real
 !***********************************************************************
+  subroutine write_by_ranges_2d_cmplx( unit, buffer, xranges, yranges, trans )
+!
+! writes a real or complex 2D array controlled by lists of ranges
+! xranges and yranges for each of the two dimensions; output optionally transposed
+!
+! 10-may-11/MR: coded
+! 27-jan-14/MR: loops truncated if all valid ranges processed
+! 29-jan-14/MR: changed declaration of buffer*
+!
+    use Cdata, only: nk_max
+!
+    integer,                 intent(in)           :: unit
+    integer, dimension(3,*), intent(in)           :: xranges, yranges
+    complex, dimension(:,:), intent(in)           :: buffer
+    logical,                 intent(in), optional :: trans
+!
+    integer :: i,j,jl,unfilled
+    logical :: transl
+!
+    unfilled = 0
+!
+    if ( present(trans) ) then
+      transl = trans
+    else
+      transl = .false.
+    endif
+!
+    do j=1,nk_max
+      if ( yranges(1,j) == 0 ) exit
+      do jl=yranges(1,j),yranges(2,j),yranges(3,j)
+        do i=1,nk_max
+          if ( xranges(1,i) == 0 ) exit
+          if ( transl ) then
+            call write_full_columns_cmplx( unit, buffer(jl,:), xranges(1,i), unfilled )
+          else
+            call write_full_columns_cmplx( unit, buffer(:,jl), xranges(1,i), unfilled )
+          endif
+        enddo
+      enddo
+    enddo
+!
+    if ( unfilled > 0 ) write( unit,'(a)')
+!
+  endsubroutine write_by_ranges_2d_cmplx
+!***********************************************************************
   subroutine write_by_ranges_1d_real(unit,buffer,ranges)
 !
-! writes a real or complex vector controlled by lists of ranges
+! writes a real vector controlled by lists of ranges
 ! output optionally transposed
 !
 ! 10-may-11/MR: coded
@@ -3390,32 +3460,46 @@ module General
 !
     integer,                 intent(in) :: unit
     real,    dimension(:)  , intent(in) :: buffer
-    complex, dimension(:)  , intent(in) :: buffer_cmplx
     integer, dimension(3,*), intent(in) :: ranges
 !
     integer :: unfilled, i
-    logical :: lcomplex
 !
-    lcomplex = .false.
-    goto 1
-!
-  entry  write_by_ranges_1d_cmplx(unit,buffer_cmplx,ranges)
-!
-    lcomplex = .true.
-!
- 1  unfilled = 0
+    unfilled = 0
     do i=1,nk_max
       if ( ranges(1,i) == 0 ) exit
-      if (lcomplex) then
-        call write_full_columns_cmplx( unit, buffer_cmplx, ranges(1,i), unfilled )
-      else
-        call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
-      endif
+      call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
     enddo
 !
     if ( unfilled > 0 ) write(unit,'(a)')
 !
   endsubroutine write_by_ranges_1d_real
+!***********************************************************************
+  subroutine write_by_ranges_1d_cmplx(unit,buffer,ranges)
+!
+! writes a complex vector controlled by lists of ranges
+! output optionally transposed
+!
+! 10-may-11/MR: coded
+! 27-jan-14/MR: loop truncated if all valid ranges processed
+! 29-jan-14/MR: changed declaration of buffer*
+!
+    use Cdata, only: nk_max
+!
+    integer,                 intent(in) :: unit
+    complex, dimension(:)  , intent(in) :: buffer
+    integer, dimension(3,*), intent(in) :: ranges
+!
+    integer :: unfilled, i
+!
+    unfilled = 0
+    do i=1,nk_max
+      if ( ranges(1,i) == 0 ) exit
+      call write_full_columns_cmplx( unit, buffer, ranges(1,i), unfilled )
+    enddo
+!
+    if ( unfilled > 0 ) write(unit,'(a)')
+!
+  endsubroutine write_by_ranges_1d_cmplx
 !***********************************************************************
     subroutine date_time_string(date)
 !
