@@ -305,8 +305,8 @@ module General
         call random_number_wrapper(r)
       enddo
       call random_number_wrapper(p)
-      gn(1)=sqrt(-2*log(r))*sin(2*pi*p)
-      gn(2)=sqrt(-2*log(r))*cos(2*pi*p)
+      gn(1)=sqrt(-2*log(r))*sin(twopi*p)
+      gn(2)=sqrt(-2*log(r))*cos(twopi*p)
     endsubroutine gaunoise_number
 !***********************************************************************
     subroutine random_number_wrapper_0(a)
@@ -2007,7 +2007,7 @@ module General
 ! III
       if ((re< 0.0).and.(im< 0.0)) complex_phase=  pi-asin(im/c)
 ! IV
-      if ((re>=0.0).and.(im< 0.0)) complex_phase=2*pi+asin(im/c)
+      if ((re>=0.0).and.(im< 0.0)) complex_phase=twopi+asin(im/c)
 !
     endfunction complex_phase
 !***********************************************************************
@@ -4460,7 +4460,7 @@ module General
 
           thphprime(1,itp,jtp) = atan2(sprime,zprime)
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
-          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
 !
           !thphprime(1,itp,jtp) = ii
           !thphprime(2,itp,jtp) = jj
@@ -4527,7 +4527,7 @@ module General
 
           thphprime(1,itp,jtp) = atan2(sprime,zprime)
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
-          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
 !
           !thphprime(1,itp,jtp) = ii
           !thphprime(2,itp,jtp) = jj
@@ -4908,7 +4908,7 @@ module General
 
           yz(1,ind) = atan2(sprime,zprime)
           yz(2,ind) = atan2(yprime,xprime)
-          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+2.*pi
+          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+twopi
           ind = ind+1
 
         enddo
