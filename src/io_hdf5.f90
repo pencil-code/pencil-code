@@ -418,9 +418,13 @@ module Io
       character (len=*), dimension (mqarray), intent(in) :: labels
       real, dimension (mv,mparray), intent(in) :: fq
 !
+      integer :: pos
+      character (len=labellen) :: filename
+!
       if (.not. lroot) return
 !
-      call file_open_hdf5 (trim(directory_snap)//'/'//trim(file)//'.h5', truncate=.true., global=.false.)
+      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      call file_open_hdf5 (filename, global=.false.)
       call output_hdf5 ('number', mv)
       if (mv > 0) then
         call create_group_hdf5 ('points')
@@ -575,10 +579,12 @@ module Io
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(out) :: fq
 !
-      integer :: mv_in
+      integer :: pos, mv_in
+      character (len=labellen) :: filename
 !
+      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
       if (lroot) then
-        call file_open_hdf5 (trim (directory_snap)//'/'//trim(file)//'.h5', read_only=.true., global=.false.)
+        call file_open_hdf5 (filename, read_only=.true., global=.false.)
         call input_hdf5 ('number', mv_in)
         if (mv_in /= mv) call fatal_error("","")
         if (mv_in /= 0) then
