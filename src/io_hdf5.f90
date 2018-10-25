@@ -420,8 +420,7 @@ module Io
 !
       if (.not. lroot) return
 !
-      call file_open_hdf5 (filename, truncate=.true., global=.false.)
-      open(lun_output,FILE=trim(directory_snap)//'/'//trim(file)//'.h5',FORM='unformatted')
+      call file_open_hdf5 (trim(directory_snap)//'/'//trim(file)//'.h5', truncate=.true., global=.false.)
       call output_hdf5 ('number', mv)
       if (mv > 0) then
         call create_group_hdf5 ('points')
@@ -578,9 +577,8 @@ module Io
 !
       integer :: mv_in
 !
-      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
       if (lroot) then
-        call file_open_hdf5 (filename, read_only=.true., global=.false.)
+        call file_open_hdf5 (trim (directory_snap)//'/'//trim(file)//'.h5', read_only=.true., global=.false.)
         call input_hdf5 ('number', mv_in)
         if (mv_in /= mv) call fatal_error("","")
         if (mv_in /= 0) then
