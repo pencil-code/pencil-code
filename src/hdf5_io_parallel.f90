@@ -6,7 +6,7 @@
 module HDF5_IO
 !
   use Cdata
-  use Cparam, only: mvar, maux, fnlen
+  use Cparam, only: mvar, maux, labellen
   use General, only: loptest, itoa
   use HDF5
   use Messages, only: fatal_error
@@ -48,7 +48,7 @@ module HDF5_IO
   logical :: lcollective = .false., lwrite = .false.
 !
   type element
-    character(len=fnlen) :: label
+    character(len=labellen) :: label
     integer :: component
     type (element), pointer :: previous
   endtype element
@@ -133,14 +133,14 @@ module HDF5_IO
 !***********************************************************************
     subroutine file_open_hdf5(file, truncate, global, read_only, write)
 !
-      character (len=*), intent(in) :: file
+      character (len=*), intent(inout) :: file
       logical, optional, intent(in) :: truncate
       logical, optional, intent(in) :: global
       logical, optional, intent(in) :: read_only
       logical, optional, intent(in) :: write
 !
       logical :: ltrunc, lread_only
-      integer :: h5_read_mode
+      integer :: h5_read_mode, pos
 !
       if (lcollective .or. lwrite) call file_close_hdf5 ()
 !
@@ -157,6 +157,9 @@ module HDF5_IO
       if (present (global)) lcollective = global
       lwrite = lroot
       if (present (write)) lwrite = write
+!
+      pos = index (file, '.dat.h5')
+      if (pos > 1) file = file(1:pos-1)//'.h5'
 !
       if (lcollective) then
         ! setup file access property list
@@ -471,7 +474,7 @@ module HDF5_IO
       integer, intent(out) :: nv
 !
       integer :: pos
-      character (len=fnlen) :: label
+      character (len=labellen) :: label
 !
       if (.not. lcollective) call fatal_error ('input_hdf5', 'particle input requires a global file "'//trim (name)//'"', .true.)
 !
@@ -951,7 +954,7 @@ module HDF5_IO
       integer, intent(in) :: nv
 !
       integer :: pos
-      character (len=fnlen) :: label
+      character (len=labellen) :: label
 !
       if (.not. lcollective) call fatal_error ('output_hdf5', 'particle output requires a global file "'//trim (name)//'"', .true.)
 !
@@ -1167,7 +1170,7 @@ module HDF5_IO
 !
 ! 17-Oct-2018/PABourdin: coded
 !
-      character (len=fnlen) :: index_get
+      character (len=labellen) :: index_get
       integer, intent(in) :: ivar
       logical, optional, intent(in) :: particle
 !
