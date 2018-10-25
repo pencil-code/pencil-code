@@ -4404,42 +4404,30 @@ module General
 
     endsubroutine transform_spher_cart_yy
 !***********************************************************************
-    subroutine yy_transform_strip(ith1_,ith2_,iph1_,iph2_,thphprime,ith_shift_,iph_shift_)
+    subroutine yy_transform_strip(ith1,ith2,iph1,iph2,thphprime,ith_shift_,iph_shift_)
 !
 !  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
-!  Strip is defined by index ranges (ith1_,ith2_), (iph1_,iph2_) with respect
+!  Strip is defined by index ranges (ith1,ith2), (iph1,iph2) with respect
 !  to local grid, in particular sinth, costh etc.
 !
 !  4-dec-15/MR: coded
 ! 12-mar-16/MR: entry yy_transform_strip_other added
 ! 10-sep-18/MR: added parameters ith_shift_,iph_shift_ for creating slanted strips
+! 25-oct-18/PABourdin: entry yy_transform_strip_other removed and simplified code
 !
       use Cdata, only: costh,sinth,cosph,sinph, y, z
 
-      integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
+      integer,               intent(IN) :: ith1,ith2,iph1,iph2
       real, dimension(:,:,:),intent(OUT):: thphprime
-      real, dimension(:),    intent(IN) :: th,ph
       integer, optional,     intent(IN) :: iph_shift_, ith_shift_
 
-      integer :: i,j,itp,jtp,ith1,ith2,iph1,iph2,iph_shift,ith_shift,ii,jj,ishift,jshift
+      integer :: i,j,itp,jtp,iph_shift,ith_shift,ii,jj,ishift,jshift
       real :: sth, cth, xprime, yprime, zprime, sprime
-      logical :: ltransp, lother
+      logical :: ltransp
 
-      lother=.false.
-      ith1=ith1_; ith2=ith2_; iph1=iph1_; iph2=iph2_
       if (ith2<ith1.or.iph2<iph1) return
 
-      goto 1
-
-    entry yy_transform_strip_other(th,ph,thphprime,ith_shift_,iph_shift_)
-!
-!  Here strip is given by vectors th and ph not related to local grid.
-!
-      lother=.true.
-      ith1=1; ith2=size(th)
-      iph1=1; iph2=size(ph)
-
- 1    ltransp = ith2-ith1+1 /= size(thphprime,2)
+      ltransp = ith2-ith1+1 /= size(thphprime,2)
 
       iph_shift=ioptest(iph_shift_)        ! default is zero
       ith_shift=ioptest(ith_shift_)        ! default is zero
@@ -4448,27 +4436,18 @@ module General
 !
       jshift=iph_shift
       do i=ith1,ith2
-        ishift=ith_shift; 
+        ishift=ith_shift
         do j=iph1,iph2
 !
 !  Rotate by Pi about z axis, then by Pi/2 about x axis.
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
           ii=i+ishift
-          if (lother) then
-            sth=sin(th(ii)); cth=cos(th(ii))
-          else
-            sth=sinth(ii); cth=costh(ii)
-          endif
+          sth=sinth(ii); cth=costh(ii)
 
           jj=j+jshift
-          if (lother) then
-            xprime = -cos(ph(jj))*sth
-            zprime = -sin(ph(jj))*sth
-          else
-            xprime = -cosph(jj)*sth
-            zprime = -sinph(jj)*sth
-          endif
+          xprime = -cosph(jj)*sth
+          zprime = -sinph(jj)*sth
           yprime = -cth
 
           sprime = sqrt(xprime**2 + yprime**2)
@@ -4494,6 +4473,73 @@ module General
       enddo
 
     endsubroutine yy_transform_strip
+!***********************************************************************
+    subroutine yy_transform_strip_other(th,ph,thphprime,ith_shift_,iph_shift_)
+!
+!  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
+!  Strip is defined by by vectors th and ph not related to local grid.
+!
+!  4-dec-15/MR: coded
+! 12-mar-16/MR: entry yy_transform_strip_other added
+! 10-sep-18/MR: added parameters ith_shift_,iph_shift_ for creating slanted strips
+! 25-oct-18/PABourdin: entry yy_transform_strip_other removed and simplified code
+!
+      use Cdata, only: costh,sinth,cosph,sinph, y, z
+
+      real, dimension(:),    intent(IN) :: th,ph
+      real, dimension(:,:,:),intent(OUT):: thphprime
+      integer, optional,     intent(IN) :: iph_shift_, ith_shift_
+
+      integer :: i,j,itp,jtp,iph_shift,ith_shift,ii,jj,ishift,jshift
+      real :: sth, cth, xprime, yprime, zprime, sprime
+      logical :: ltransp
+
+      ltransp = size(th) /= size(thphprime,2)
+
+      iph_shift=ioptest(iph_shift_)        ! default is zero
+      ith_shift=ioptest(ith_shift_)        ! default is zero
+
+      thphprime(1,:,:)=0.                  ! to indicate undefined values
+!
+      jshift=iph_shift
+      do i=1,size(th)
+        ishift=ith_shift; 
+        do j=1,size(ph)
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          ii=i+ishift
+          sth=sin(th(ii)); cth=cos(th(ii))
+
+          jj=j+jshift
+          xprime = -cos(ph(jj))*sth
+          zprime = -sin(ph(jj))*sth
+          yprime = -cth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+
+          if (ltransp) then
+            jtp = i; itp = j
+          else
+            itp = i; jtp = j
+          endif
+
+          thphprime(1,itp,jtp) = atan2(sprime,zprime)
+          thphprime(2,itp,jtp) = atan2(yprime,xprime)
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
+!
+          !thphprime(1,itp,jtp) = ii
+          !thphprime(2,itp,jtp) = jj
+!
+!if (iproc_world==0.and.size(thphprime,3)==41) &
+!  print'(4(f7.4,1x),4(i2,1x))', y(i), z(j), thphprime(:,itp,jtp), i,j,itp,jtp
+          if (ishift/=0) ishift=ishift+ith_shift
+        enddo
+        if (jshift/=0) jshift=jshift+iph_shift
+      enddo
+
+    endsubroutine yy_transform_strip_other
 !***********************************************************************
     subroutine copy_with_shift(i1, i2, j1, j2, source, dest, ishift_, jshift_)
 !
