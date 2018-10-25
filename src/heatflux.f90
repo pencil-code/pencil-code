@@ -542,7 +542,7 @@ contains
       if (ldiagnos) then
         ! pc_auto-test may digest at maximum 2 digits in the exponent
         tmp = qsat/(qabs+sqrt(tini))
-        where (tmp > 1d0) tmp = 1d0
+        where (tmp > 1d50) tmp = 1d50
         if (idiag_qsatmin/=0) call max_mn_name(-tmp,idiag_qsatmin,lneg=.true.)
         if (idiag_qsatrms/=0) call sum_mn_name(tmp,idiag_qsatrms)
       endif
