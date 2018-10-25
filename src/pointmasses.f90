@@ -24,7 +24,7 @@ module PointMasses
 !
   include 'pointmasses.h'
 !
-  character (len=10), dimension(mqarray) :: qvarname
+  character (len=labellen), dimension(mqarray) :: qvarname
   real, dimension(nqpar,mqarray) :: fq
   real, dimension(nqpar,mqvar) :: dfq
   real, dimension(nqpar,3) :: dfq_cart
