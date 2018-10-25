@@ -181,8 +181,13 @@ module HDF5_IO
         call h5pclose_f (h5_plist, h5_err)
         if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'close global file access property list', .true.)
       elseif (lwrite) then
-        call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
-        if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'open local file "'//trim (file)//'"', .true.)
+        if (ltrunc) then
+          call h5fcreate_f (trim (file), H5F_ACC_TRUNC_F, h5_file, h5_err)
+          if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'create global file "'//trim (file)//'"', .true.)
+        else
+          call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
+          if (h5_err /= 0) call fatal_error ('file_open_hdf5', 'open local file "'//trim (file)//'"', .true.)
+        endif
       endif
 !
     endsubroutine file_open_hdf5
