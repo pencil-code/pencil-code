@@ -44,6 +44,8 @@ module Shear
   logical :: lmagnetic_tilt=.false.
   logical :: lhyper3x_mesh = .false.
 !
+  real, dimension(:,:), allocatable :: Usdfdymz
+!
   include 'shear.h'
 !
   namelist /shear_init_pars/ &
@@ -150,17 +152,22 @@ module Shear
 !
 !  Set up B-spline interpolation if requested.
 !
-      bsplines: if (nygrid > 1 .and. lshearadvection_as_shift .and. shear_method == 'bspline') then
+      if (nygrid > 1 .and. lshearadvection_as_shift .and. shear_method == 'bspline') then
         call bspline_precondition(nygrid, bspline_k, bspline_ay)
         call ludcmp(bspline_ay, bspline_iy)
-      endif bsplines
+      endif
 !
 !  Hand over shear acceleration to Particles_drag.
 !
-      drag: if (lparticles_drag .and. lshear_acceleration) then
+      if (lparticles_drag .and. lshear_acceleration) then
         lshear_acceleration = .false.
         if (lroot) print *, 'initialize_shear: turned off and hand over shear acceleration to Particles_drag. '
-      endif drag
+      endif
+
+      if (ltestfield_z) then
+        if (allocated(Usdfdymz)) deallocate(Usdfdymz)
+        allocate(Usdfdymz(nz,nvar)) 
+      endif
 !
     endsubroutine initialize_shear
 !***********************************************************************
@@ -224,6 +231,8 @@ module Shear
           uy0 = Sshear * (x(l1:l2) - x0_shear)
         endif
       endif
+!
+      Usdfdymz=0.
 !
       call keep_compiler_quiet(f)
 !
@@ -309,6 +318,9 @@ module Shear
           if (ltestflow .and. (j >= iuutest) .and. (j <= iuutest+ntestflow-1)) cycle
           call der(f,j,dfdy,2)
           df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - uy0*dfdy
+          if (ltestfield_z.and.((j >= iaatest .and. j <= iaatest+3*njtest-1).or. &
+                                (iuutest>0 .and. j >= iuutest .and. j <= iuutest+3*njtest-1))) &
+            Usdfdymz(n-nghost,j)=Usdfdymz(n-nghost,j)+sum(uy0*dfdy)
         enddo
       endif
 !
@@ -319,19 +331,19 @@ module Shear
 !
 !  Hyper-diffusion in x-direction to damp aliasing.
 !
-      hyper3x: if (lhyper3x_mesh) then
+      if (lhyper3x_mesh) then
         d = diff_hyper3x_mesh * abs(Sshear)
-        comp1: do j = 1, nvar
+        do j = 1, nvar
           if ((lbfield .and. ibx <= j .and. j <= ibz) .or. &
               (lpscalar .and. icc <= j .and. j <= icc+npscalar-1)) continue
           call der6(f, j, penc, 1, ignoredx=.true.)
           df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + d * penc
-        enddo comp1
+        enddo
         if (lfirst .and. ldt) then
           diffus_shear3 = d
           maxdiffus3=max(maxdiffus3,diffus_shear3)
         endif
-      endif hyper3x
+      endif
 !
 !  Add (Lagrangian) shear term for all dust species.
 !
@@ -464,11 +476,12 @@ module Shear
 !
       use Diagnostics, only: save_name
       use Mpicomm, only: update_neighbors, isendrcv_bdry_x
+      use Sub, only: finalize_aver
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
-      integer :: ivar
+      integer :: ivar,j,nn
       logical :: posdef
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
@@ -482,6 +495,22 @@ module Shear
           print*, 'FOURIER=fourier_fftpack'
           print*
         endif
+      endif
+!
+!  Substract mean(U_shear df/dy) for test methods with xy average
+!
+      if (ltestfield_z) then
+        call finalize_aver(nprocxy,12,Usdfdymz)
+        do nn=n1,n2
+          do j=iaatest,iaatest+3*njtest-1
+            df(l1:l2,m1:m2,nn,j) = df(l1:l2,m1:m2,nn,j) + Usdfdymz(nn-nghost,j)
+          enddo
+          if (iuutest>0) then
+            do j=iuutest,iuutest+3*njtest-1
+              df(l1:l2,m1:m2,nn,j) = df(l1:l2,m1:m2,nn,j) + Usdfdymz(nn-nghost,j)
+            enddo
+          endif
+        enddo
       endif
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
