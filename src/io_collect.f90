@@ -456,7 +456,7 @@ module Io
 !
       call fatal_error ('input_pointmass', 'not implemented for "io_collect"', .true.)
 !
-    endsubroutine output_pointmass
+    endsubroutine input_pointmass
 !***********************************************************************
     logical function init_write_persist(file)
 !
