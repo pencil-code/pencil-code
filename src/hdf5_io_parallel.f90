@@ -659,9 +659,15 @@ module HDF5_IO
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'modify string data space type "'//trim (name)//'"', .true.)
       call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string data space "'//trim (name)//'"', .true.)
-      ! create dataset
-      call h5dcreate_f (h5_file, trim (name), h5_strtype, h5_dspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open string dataset "'//trim (name)//'"', .true.)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), h5_strtype, h5_dspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string dataset "'//trim (name)//'"', .true.)
+      endif
       ! write dataset
       call h5dwrite_vl_f (h5_dset, h5_strtype, str_data, size, str_len, h5_err, h5_dspace)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'write string data "'//trim (name)//'"', .true.)
@@ -709,9 +715,15 @@ module HDF5_IO
       ! create data space
       call h5screate_simple_f (1, size, h5_dspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer data space "'//trim (name)//'"', .true.)
-      ! create dataset
-      call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open integer dataset "'//trim (name)//'"', .true.)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer dataset "'//trim (name)//'"', .true.)
+      endif
       ! write dataset
       call h5dwrite_f (h5_dset, H5T_NATIVE_INTEGER, data, size, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'write integer data "'//trim (name)//'"', .true.)
@@ -772,9 +784,15 @@ module HDF5_IO
       call h5screate_simple_f (1, local_size_1D, h5_mspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
 !
-      ! create the dataset
-      call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_fspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open integer dataset "'//trim (name)//'"', .true.)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_fspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      endif
       call h5sclose_f (h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//trim (name)//'"', .true.)
 !
@@ -850,9 +868,15 @@ module HDF5_IO
         call h5sset_extent_simple_f (h5_dspace, 1, size, size, h5_err) 
       endif
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'set data space extent "'//trim (name)//'"', .true.)
-      ! create dataset
-      call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_dspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_dspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      endif
       ! write dataset
       if (nv <= 1) then
         call h5dwrite_f (h5_dset, h5_ntype, data(1), size, h5_err)
@@ -917,9 +941,15 @@ module HDF5_IO
       call h5screate_simple_f (1, local_size_1D, h5_mspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
 !
-      ! create the dataset
-      call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      endif
       call h5sclose_f (h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//trim (name)//'"', .true.)
 !
@@ -1014,9 +1044,15 @@ module HDF5_IO
       call h5screate_simple_f (n, local_size(1:n), h5_mspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
 !
-      ! create the dataset
-      call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      endif
       call h5sclose_f (h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//trim (name)//'"', .true.)
 !
@@ -1092,9 +1128,15 @@ module HDF5_IO
       call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
 !
-      ! create the dataset
-      call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      endif
       call h5sclose_f (h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//trim (name)//'"', .true.)
 !
