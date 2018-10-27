@@ -495,7 +495,7 @@ module HDF5_IO
       if (.not. lcollective) call fatal_error ('input_hdf5', 'particle input requires a global file "'//trim (name)//'"', .true.)
 !
       if (name == 'fp') then
-        call input_hdf5_int_0D ('part/processor_distribution', nv)
+        call input_hdf5_int_0D ('proc/distribution', nv)
       endif
       ! read components into particle data array
       do pos=1, nc
@@ -976,8 +976,9 @@ module HDF5_IO
 !
       ! write components of particle data array
       if (name == 'fp') then
+        call create_group_hdf5 ('proc')
+        call output_hdf5_int_0D ('proc/distribution', nv)
         call create_group_hdf5 ('part')
-        call output_hdf5_int_0D ('part/processor_distribution', nv)
       endif
       do pos=1, nc
         if (name == 'fp') then
