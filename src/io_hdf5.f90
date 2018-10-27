@@ -68,9 +68,6 @@ module Io
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
 !
-      ! open the HDF5 library
-      call initialize_hdf5
-!
     endsubroutine register_io
 !***********************************************************************
     subroutine finalize_io
@@ -458,8 +455,7 @@ module Io
 !
       character (len=fnlen) :: filename, dataset
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
-      integer, dimension(MPI_STATUS_SIZE) :: status
+      integer :: alloc_err
       logical :: lread_add
 !
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
@@ -984,41 +980,72 @@ module Io
 !
 !  Write grid coordinates.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: collect_grid
+      use Mpicomm, only: collect_grid, mpi_precision
 !
-      character (len=*) :: file
-      integer, optional :: mxout,myout,mzout
+      character (len=*), intent(in) :: file
+      integer, intent(in), optional :: mxout,myout,mzout
 !
+      character (len=fnlen) :: filename
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
-
-      if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+      filename = trim (directory_snap)//'/grid.h5'
+      if (lroot) then
+        allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('wgrid', 'allocate memory for gx,gy,gz', .true.)
       endif
-
+!
       call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
-
+      call file_open_hdf5 (filename, global=.false.)
+      call create_group_hdf5 ('grid')
+      call output_hdf5 ('grid/x', gx, mxgrid)
+      call output_hdf5 ('grid/y', gy, mygrid)
+      call output_hdf5 ('grid/z', gz, mzgrid)
+      call output_hdf5 ('grid/dx', dx)
+      call output_hdf5 ('grid/dy', dy)
+      call output_hdf5 ('grid/dz', dz)
+      call output_hdf5 ('grid/Lx', Lx)
+      call output_hdf5 ('grid/Ly', Ly)
+      call output_hdf5 ('grid/Lz', Lz)
       call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
-
+      call output_hdf5 ('grid/dx_1', gx, mxgrid)
+      call output_hdf5 ('grid/dy_1', gy, mygrid)
+      call output_hdf5 ('grid/dz_1', gz, mzgrid)
       call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
-        deallocate (gx, gy, gz)
+      call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
+      call output_hdf5 ('grid/dy_tilde', gy, mygrid)
+      call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
+      call create_group_hdf5 ('dim')
+      call output_hdf5 ('dim/mx', nxgrid+2*nghost)
+      call output_hdf5 ('dim/my', nygrid+2*nghost)
+      call output_hdf5 ('dim/mz', nzgrid+2*nghost)
+      call output_hdf5 ('dim/nx', nxgrid)
+      call output_hdf5 ('dim/ny', nygrid)
+      call output_hdf5 ('dim/nz', nzgrid)
+      call output_hdf5 ('dim/l1', nghost)
+      call output_hdf5 ('dim/m1', nghost)
+      call output_hdf5 ('dim/n1', nghost)
+      call output_hdf5 ('dim/l2', nghost+nxgrid-1)
+      call output_hdf5 ('dim/m2', nghost+nygrid-1)
+      call output_hdf5 ('dim/n2', nghost+nzgrid-1)
+      call output_hdf5 ('dim/nghost', nghost)
+      call output_hdf5 ('dim/mvar', mvar)
+      call output_hdf5 ('dim/maux', maux)
+      call output_hdf5 ('dim/mglobal', mglobal)
+      call output_hdf5 ('dim/nprocx', nprocx)
+      call output_hdf5 ('dim/nprocy', nprocy)
+      call output_hdf5 ('dim/nprocz', nprocz)
+      if (mpi_precision == MPI_REAL) then
+        call output_hdf5 ('dim/precision', 'S')
+      else
+        call output_hdf5 ('dim/precision', 'D')
       endif
+      call file_close_hdf5
+      if (lroot) deallocate (gx, gy, gz)
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -1026,37 +1053,46 @@ module Io
 !
 !  Read grid coordinates.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
 !
+      character (len=fnlen) :: filename
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
 !
+      filename = trim (directory_snap)//'/grid.h5'
       if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-!
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-        read (lun_input) t, gx, gy, gz, dx, dy, dz
-        call distribute_grid (x, y, z, gx, gy, gz)
-        read (lun_input) dx, dy, dz
-        read (lun_input) Lx, Ly, Lz
-        read (lun_input) gx, gy, gz
-        call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        read (lun_input) gx, gy, gz
-        call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-        close (lun_input)
-!
-        deallocate (gx, gy, gz)
+        allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
       else
-        call distribute_grid (x, y, z)
-        call distribute_grid (dx_1, dy_1, dz_1)
-        call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
+        allocate (gx(1), gy(1), gz(1), stat=alloc_err)
       endif
+      if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
+      call file_open_hdf5 (filename, global=.false., read_only=.true.)
+      call input_hdf5 ('grid/x', gx, mxgrid)
+      call input_hdf5 ('grid/y', gy, mygrid)
+      call input_hdf5 ('grid/z', gz, mzgrid)
+      call distribute_grid (x, y, z, gx, gy, gz)
+      call input_hdf5 ('grid/dx', dx)
+      call input_hdf5 ('grid/dy', dy)
+      call input_hdf5 ('grid/dz', dz)
+      call input_hdf5 ('grid/Lx', Lx)
+      call input_hdf5 ('grid/Ly', Ly)
+      call input_hdf5 ('grid/Lz', Lz)
+      call input_hdf5 ('grid/dx_1', gx, mxgrid)
+      call input_hdf5 ('grid/dy_1', gy, mygrid)
+      call input_hdf5 ('grid/dz_1', gz, mzgrid)
+      call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+      call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
+      call input_hdf5 ('grid/dy_tilde', gy, mygrid)
+      call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
+      call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      deallocate (gx, gy, gz)
+      call file_close_hdf5
+      call mpibcast_real (t,comm=MPI_COMM_WORLD)
       call mpibcast_real (dx,comm=MPI_COMM_WORLD)
       call mpibcast_real (dy,comm=MPI_COMM_WORLD)
       call mpibcast_real (dz,comm=MPI_COMM_WORLD)

@@ -67,6 +67,7 @@ program run
   use General,         only: random_seed_wrapper, touch_file, itoa
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays
   use Gpu,             only: gpu_init, register_gpu
+  use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
@@ -147,6 +148,10 @@ program run
 !  Initialise MPI communication.
 !
   call initialize_mpicomm
+!
+!  Initialise HDF5 communication.
+!
+  call initialize_hdf5
 !
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !

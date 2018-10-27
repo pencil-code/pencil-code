@@ -63,6 +63,7 @@ program start
   use Filter
   use Gravity,          only: init_gg
   use Grid
+  use HDF5_IO,          only: initialize_hdf5
   use Hydro,            only: init_uu
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
@@ -154,6 +155,10 @@ program start
 !  Initialise MPI communication.
 !
   call initialize_mpicomm
+!
+!  Initialise HDF5 communication.
+!
+  call initialize_hdf5
 !
 !  Register variables in the f array.
 !
