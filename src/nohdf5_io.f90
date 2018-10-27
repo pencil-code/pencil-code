@@ -41,7 +41,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine initialize_hdf5
 !
-      call fatal_error ('initialize_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+      ! nothing to do
 !
     endsubroutine initialize_hdf5
 !***********************************************************************
