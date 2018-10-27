@@ -209,6 +209,7 @@ module HDF5_IO
       character (len=*), intent(in) :: name
 !
       if (.not. (lcollective .or. lwrite)) return
+      if (exists_in_hdf5 (trim (name))) return
 !
       call h5gcreate_f (h5_file, trim (name), h5_group, h5_err)
       if (h5_err /= 0) call fatal_error ('create_group_hdf5', 'create group "'//trim (name)//'"', .true.)

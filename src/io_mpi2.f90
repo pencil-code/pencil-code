@@ -448,6 +448,25 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
+    subroutine output_slice_position
+!
+!  'data/procN/slice_position.dat' is distributed, but may not be synchronized
+!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
+!
+!  27-Nov-2014/Bourdin.KIS: cleaned up the actual writing code
+!
+      open (lun_output, file=trim(directory)//'/slice_position.dat', STATUS='unknown')
+      write (lun_output, '(l5,i5," XY")') lwrite_slice_xy, iz_loc
+      write (lun_output, '(l5,i5," XY2")') lwrite_slice_xy2, iz2_loc
+      write (lun_output, '(l5,i5," XY3")') lwrite_slice_xy3, iz3_loc
+      write (lun_output, '(l5,i5," XY4")') lwrite_slice_xy4, iz4_loc
+      write (lun_output, '(l5,i5," XZ")') lwrite_slice_xz, iy_loc
+      write (lun_output, '(l5,i5," XZ2")') lwrite_slice_xz2, iy2_loc
+      write (lun_output, '(l5,i5," YZ")') lwrite_slice_yz, ix_loc
+      close (lun_output)
+!
+    endsubroutine output_slice_position
+!***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)

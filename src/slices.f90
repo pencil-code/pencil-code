@@ -185,6 +185,7 @@ contains
 !
     endsubroutine wvid
 !***********************************************************************
+! *** WORK HERE ***: move to IO modules and provide HDF5 output routine
     subroutine wslice(filename,a,pos,ndim1,ndim2)
 !
 !  appending to an existing slice file
@@ -214,46 +215,6 @@ contains
 !
     endsubroutine wslice
 !***********************************************************************
-    subroutine setup_slices_write
-!
-!  27-Nov-2014/Bourdin.KIS: cleaned up the actual writing code
-!
-      integer :: iostat
-      integer, parameter :: lun = 1
-!
-      open(lun,file=trim(directory)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
-!
-!  file 'data/procN/slice_position.dat' is distributed, but will not be synchronized
-!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary
-!
-      if (outlog(iostat,'open',trim(directory)//'/slice_position.dat')) return
-!
-      write(lun,'(l5,i5," XY")',IOSTAT=iostat) lwrite_slice_xy,iz_loc
-      if (outlog(iostat,'write lwrite_slice_xy,iz_loc')) return
-!
-      write(lun,'(l5,i5," XY2")',IOSTAT=iostat) lwrite_slice_xy2,iz2_loc
-      if (outlog(iostat,'write lwrite_slice_xy2,iz2_loc')) return
-!
-      write(lun,'(l5,i5," XY3")',IOSTAT=iostat) lwrite_slice_xy3,iz3_loc
-      if (outlog(iostat,'write lwrite_slice_xy3,iz3_loc')) return
-!
-      write(lun,'(l5,i5," XY4")',IOSTAT=iostat) lwrite_slice_xy4,iz4_loc
-      if (outlog(iostat,'write lwrite_slice_xy4,iz4_loc')) return
-!
-      write(lun,'(l5,i5," XZ")',IOSTAT=iostat) lwrite_slice_xz,iy_loc
-      if (outlog(iostat,'write lwrite_slice_xz,iy_loc')) return
-!
-      write(lun,'(l5,i5," XZ2")',IOSTAT=iostat) lwrite_slice_xz2,iy2_loc
-      if (outlog(iostat,'write lwrite_slice_xz2,iy2_loc')) return
-!
-      write(lun,'(l5,i5," YZ")',IOSTAT=iostat) lwrite_slice_yz,ix_loc
-      if (outlog(iostat,'write lwrite_slice_yz,ix_loc')) return
-!
-      close(lun,IOSTAT=iostat)
-      if (outlog(iostat,'close')) return
-!
-    endsubroutine setup_slices_write
-!***********************************************************************
     subroutine setup_slices
 !
 !  Determine slice positions and whether slices are to be written on this
@@ -268,6 +229,7 @@ contains
 !
       !use Slices_methods, only: alloc_slice_buffers
       use General, only: itoa
+      use IO, only: output_slice_position
     
       character(LEN=80) :: text, data
 
@@ -453,7 +415,7 @@ contains
         lwrite_slice_xz2=.false.; iy2_loc=-1
       endif
 
-      call setup_slices_write
+      call output_slice_position
 !
       if (lroot.and.dvid>0.) then  !MR: tbdone: write global position from all procs
 

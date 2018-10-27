@@ -418,7 +418,7 @@ module Io
       real, dimension (mv,mparray), intent(in) :: fq
 !
       integer :: pos
-      character (len=labellen) :: filename
+      character (len=fnlen) :: filename
 !
       if (.not. lroot) return
 !
@@ -435,6 +435,48 @@ module Io
       call file_close_hdf5
 !
     endsubroutine output_pointmass
+!***********************************************************************
+    subroutine initialize_slice(label, pos)
+!
+!  27-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: pos
+
+      if (pos >= 0) then
+        call create_group_hdf5 (label)
+        call output_hdf5 (trim (label)//'/position', pos)
+        if (.not. exists_in_hdf5 (trim (label)//'/number')) &
+            call output_hdf5 (trim (label)//'/number', 0)
+      endif
+!
+    endsubroutine initialize_slice
+!***********************************************************************
+    subroutine output_slice_position
+!
+!  27-Oct-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+!
+      logical :: ltrunc
+      character (len=fnlen) :: filename
+!
+      if ((iz < 0) .and. (iz2 < 0) .and. (iz3 < 0) .and. (iz4 < 0) .and. (iy < 0) .and. (iy2 < 0) .and. (ix < 0)) return
+!
+      filename = trim(directory_snap)//'/slices.h5'
+      ltrunc = .false.
+      if (lroot) ltrunc = .not. file_exists (filename)
+      call file_open_hdf5 (filename, truncate=ltrunc, global=.false.)
+      call initialize_slice ('z', iz)
+      call initialize_slice ('z2', iz2)
+      call initialize_slice ('z3', iz3)
+      call initialize_slice ('z4', iz4)
+      call initialize_slice ('y', iy)
+      call initialize_slice ('y2', iy2)
+      call initialize_slice ('x', ix)
+      call file_close_hdf5
+!
+    endsubroutine output_slice_position
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode, label)
 !
@@ -587,7 +629,7 @@ module Io
       real, dimension (mv,nc), intent(out) :: fq
 !
       integer :: pos, mv_in
-      character (len=labellen) :: filename
+      character (len=fnlen) :: filename
 !
       filename = trim (directory_snap)//'/'//trim(file)//'.h5'
       if (lroot) then

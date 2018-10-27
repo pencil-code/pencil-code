@@ -6,7 +6,7 @@
   public :: register_io, finalize_io
   public :: output_snap, output_snap_finalize, output_part_snap, output_pointmass
   public :: input_snap, input_snap_finalize, input_part_snap, input_pointmass
-  public :: output_globals, input_globals
+  public :: output_globals, input_globals, output_slice_position
   public :: init_write_persist, write_persist, write_persist_id
   public :: init_read_persist, read_persist, read_persist_id
 

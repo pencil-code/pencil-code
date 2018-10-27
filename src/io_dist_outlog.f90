@@ -281,6 +281,45 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
+    subroutine output_slice_position
+!
+!  'data/procN/slice_position.dat' is distributed, but may not be synchronized
+!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
+!
+!  27-Nov-2014/Bourdin.KIS: cleaned up the actual writing code
+!
+      integer :: iostat
+!
+      open (lun_output, file=trim(directory)//'/slice_position.dat', STATUS='unknown', IOSTAT=io_err)
+!
+      if (outlog (io_err, 'open', trim(directory)//'/slice_position.dat')) return
+!
+      write (lun_output, '(l5,i5," XY")', IOSTAT=io_err) lwrite_slice_xy, iz_loc
+      if (outlog (io_err, 'write lwrite_slice_xy,iz_loc')) return
+!
+      write (lun_output, '(l5,i5," XY2")', IOSTAT=io_err) lwrite_slice_xy2, iz2_loc
+      if (outlog (io_err, 'write lwrite_slice_xy2,iz2_loc')) return
+!
+      write (lun_output, '(l5,i5," XY3")', IOSTAT=io_err) lwrite_slice_xy3, iz3_loc
+      if (outlog (io_err, 'write lwrite_slice_xy3,iz3_loc')) return
+!
+      write (lun_output, '(l5,i5," XY4")', IOSTAT=io_err) lwrite_slice_xy4, iz4_loc
+      if (outlog (io_err, 'write lwrite_slice_xy4,iz4_loc')) return
+!
+      write (lun_output, '(l5,i5," XZ")', IOSTAT=io_err) lwrite_slice_xz, iy_loc
+      if (outlog (io_err, 'write lwrite_slice_xz,iy_loc')) return
+!
+      write (lun_output, '(l5,i5," XZ2")', IOSTAT=io_err) lwrite_slice_xz2, iy2_loc
+      if (outlog (io_err, 'write lwrite_slice_xz2,iy2_loc')) return
+!
+      write (lun_output, '(l5,i5," YZ")', IOSTAT=io_err) lwrite_slice_yz, ix_loc
+      if (outlog (io_err, 'write lwrite_slice_yz,ix_loc')) return
+!
+      close (lun_output, IOSTAT=io_err)
+      if (outlog (io_err,'close')) return
+!
+    endsubroutine output_slice_position
+!***********************************************************************
     logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to snapshot file.
