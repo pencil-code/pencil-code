@@ -335,7 +335,7 @@ module Io
       ! open global HDF5 file and write particle data
       call file_open_hdf5 (filename, truncate=ltrunc)
       call output_hdf5 (dataset, ap, mv, mparray, nv)
-      call output_hdf5 ('part/number', ipar(1:nv), nv)
+      call output_hdf5 ('part/ID', ipar(1:nv), nv)
       call file_close_hdf5
 !
       ! write additional data:
@@ -399,6 +399,13 @@ module Io
           deallocate (gx, gy, gz)
         endif
       endif
+!
+      ! write processor boundaries
+      call file_open_hdf5 (filename, truncate=.false., global=.false.)
+      call output_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
+      call output_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
+      call output_hdf5 ('proc/bounds_z', procz_bounds(0:nprocz), nprocz+1)
+      call file_close_hdf5
 !
     endsubroutine output_part_snap
 !***********************************************************************
@@ -534,7 +541,7 @@ module Io
 !
 !  24-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpireduce_sum_int
+      use Mpicomm, only: mpireduce_sum_int, mpibcast
 !
       integer, intent(in) :: mv
       integer, dimension (mv), intent(out) :: ipar
@@ -552,11 +559,21 @@ module Io
       ! open global HDF5 file and read particle data
       call file_open_hdf5 (filename, read_only=.true.)
       call input_hdf5 (dataset, ap, mv, mparray, nv)
-      call input_hdf5 ('part/number', ipar(1:nv), nv)
+      call input_hdf5 ('part/ID', ipar(1:nv), nv)
       call file_close_hdf5
 !
       ! Sum the total number of all particles on the root processor.
       call mpireduce_sum_int (nv, npar_total)
+!
+      ! read processor boundaries
+      call file_open_hdf5 (filename, global=.false., read_only=.true.)
+      call input_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
+      call input_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
+      call input_hdf5 ('proc/bounds_z', procz_bounds(0:nprocz), nprocz+1)
+      call mpibcast (procx_bounds, nprocx+1)
+      call mpibcast (procy_bounds, nprocy+1)
+      call mpibcast (procz_bounds, nprocz+1)
+      call file_close_hdf5
 !
     endsubroutine input_part_snap
 !***********************************************************************
@@ -1058,22 +1075,11 @@ module Io
 !
 !   Export processor boundaries to file.
 !
-!   19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!   27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: stop_it
+      character (len=*), intent(in) :: file
 !
-      character (len=*) :: file
-!
-      integer :: ierr
-!
-      call delete_file(file)
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
-      write (lun_output) procy_bounds
-      write (lun_output) procz_bounds
-      close (lun_output)
+      ! already written in particle snapshot
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -1081,21 +1087,11 @@ module Io
 !
 !   Import processor boundaries from file.
 !
-!   19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!   27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: stop_it
+      character (len=*), intent(in) :: file
 !
-      character (len=*) :: file
-!
-      integer :: ierr
-!
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read (lun_input) procy_bounds
-      read (lun_input) procz_bounds
-      close (lun_input)
+      ! already read with particle snapshot
 !
     endsubroutine rproc_bounds
 !***********************************************************************
