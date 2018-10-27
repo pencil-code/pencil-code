@@ -217,6 +217,17 @@ module HDF5_IO
 !
     endsubroutine create_group_hdf5
 !***********************************************************************
+    logical function exists_in_hdf5(name)
+!
+      character (len=*), intent(in) :: name
+!
+      if (.not. (lcollective .or. lwrite)) return
+!
+      call h5lexists_f(h5_file, trim (name), exists_in_hdf5, h5_err)
+      if (h5_err /= 0) exists_in_hdf5 = .false.
+!
+    endfunction exists_in_hdf5
+!***********************************************************************
     subroutine input_hdf5_int_0D(name, data)
 !
       character (len=*), intent(in) :: name

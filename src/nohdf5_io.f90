@@ -80,6 +80,15 @@ module HDF5_IO
 !
     endsubroutine create_group_hdf5
 !***********************************************************************
+    logical function exists_in_hdf5(name)
+!
+      character (len=*), intent(in) :: name
+!
+      call keep_compiler_quiet(name)
+      call fatal_error ('exists_in_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endfunction exists_in_hdf5
+!***********************************************************************
     subroutine input_hdf5_int_0D(name, data)
 !
       character (len=*), intent(in) :: name
