@@ -50,8 +50,8 @@ module Io
   logical :: lcollective_IO = .true.
   character (len=labellen) :: IO_strategy = "HDF5"
 !
+  character (len=fnlen) :: last_snapshot = ""
   logical :: persist_initialized = .false.
-  integer :: persist_last_id = -max_int
 !
   contains
 !***********************************************************************
@@ -64,8 +64,6 @@ module Io
 !  04-Jul-2011/Boudin.KIS: coded
 !
       if (lroot) call svn_id ("$Id$")
-      if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
-          "This module only works with the setting lseparate_persist=T")
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
@@ -227,10 +225,10 @@ module Io
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
       call output_hdf5 (dataset, a, nv)
-      call file_close_hdf5
 !
       ! write additional data:
       if (lwrite_add) then
+        call file_close_hdf5
         if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('output_snap', 'allocate memory for gx,gy,gz', .true.)
@@ -289,6 +287,7 @@ module Io
           call file_close_hdf5
           deallocate (gx, gy, gz)
         endif
+        call file_open_hdf5 (filename, truncate=.false.)
       endif
 !
     endsubroutine output_snap
@@ -299,12 +298,8 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      if (persist_initialized) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
-        write (lun_output) id_block_PERSISTENT
-        persist_initialized = .false.
-        close (lun_output)
-      endif
+      call file_close_hdf5
+      if (persist_initialized) persist_initialized = .false.
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -527,9 +522,8 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
       if (persist_initialized) then
-        close (lun_input)
+        call file_close_hdf5
         persist_initialized = .false.
-        persist_last_id = -max_int
       endif
 !
     endsubroutine input_snap_finalize
@@ -603,28 +597,27 @@ module Io
 !
 !  Initialize writing of persistent data to persistent file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in), optional :: file
 !
       character (len=fnlen), save :: filename=""
 !
-      persist_last_id = -max_int
       init_write_persist = .false.
 !
       if (present (file)) then
-        filename = file
+        filename = trim(directory_snap)//'/'//trim(file)//'.h5'
         persist_initialized = .false.
         return
       endif
 !
       if (filename /= "") then
-        call delete_file(trim(directory_dist)//'/'//filename)
-        open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
-        if (ip <= 9) write (*,*) 'begin persistent block'
-        write (lun_output) id_block_PERSISTENT
+        call file_close_hdf5
+        call file_open_hdf5 (filename)
         filename = ""
       endif
+!
+      if (.not. exists_in_hdf5 ('persist')) call create_group_hdf5 ('persist')
 !
       init_write_persist = .false.
       persist_initialized = .true.
@@ -643,15 +636,6 @@ module Io
       write_persist_id = .true.
       if (.not. persist_initialized) write_persist_id = init_write_persist ()
       if (.not. persist_initialized) return
-!
-      if (persist_last_id /= id) then
-        if (lroot) then
-          if (ip <= 9) write (*,*) 'write persistent ID '//trim (label)
-          write (lun_output) id
-        endif
-        persist_last_id = id
-      endif
-!
       write_persist_id = .false.
 !
     endfunction write_persist_id
@@ -660,47 +644,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_log_0D = 700
-      logical, dimension (:,:,:), allocatable :: global
-      logical :: buffer
+      logical, dimension(1) :: out
 !
-      write_persist_logical_0D = .true.
-      if (write_persist_id (label, id)) return
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_logical_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_logical (buffer, partner, tag_log_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global)
-      else
-        call mpisend_logical (value, 0, tag_log_0D)
-      endif
-!
-      write_persist_logical_0D = .false.
+      out(1) = value
+      write_persist_logical_0D = write_persist_logical_1D (label, id, out)
 !
     endfunction write_persist_logical_0D
 !***********************************************************************
@@ -708,47 +661,20 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, dimension(:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_log_1D = 701
-      logical, dimension (:,:,:,:), allocatable :: global
-      logical, dimension (:), allocatable :: buffer
+      integer, dimension(size (value)) :: value_int
 !
       write_persist_logical_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_logical_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1,:) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_logical (buffer, nv, partner, tag_log_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global, buffer)
-      else
-        call mpisend_logical (value, nv, 0, tag_log_1D)
-      endif
+      value_int = 0
+      where (value) value_int = 1
+      call output_hdf5 ('persist/'//label, value_int, size (value), same_size=.true.)
 !
       write_persist_logical_1D = .false.
 !
@@ -758,47 +684,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       integer, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_int_0D = 702
-      integer, dimension (:,:,:), allocatable :: global
-      integer :: buffer
+      integer, dimension(1) :: out
 !
-      write_persist_int_0D = .true.
-      if (write_persist_id (label, id)) return
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_int_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_int (buffer, partner, tag_int_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global)
-      else
-        call mpisend_int (value, 0, tag_int_0D)
-      endif
-!
-      write_persist_int_0D = .false.
+      out(1) = value
+      write_persist_int_0D = write_persist_int_1D (label, id, out)
 !
     endfunction write_persist_int_0D
 !***********************************************************************
@@ -806,7 +701,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  26-Oct-2018/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -814,39 +709,10 @@ module Io
       integer, intent(in) :: id
       integer, dimension (:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_int_1D = 703
-      integer, dimension (:,:,:,:), allocatable :: global
-      integer, dimension (:), allocatable :: buffer
-!
       write_persist_int_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_int_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1,:) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_int (buffer, nv, partner, tag_int_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global, buffer)
-      else
-        call mpisend_int (value, nv, 0, tag_int_1D)
-      endif
+      call output_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       write_persist_int_1D = .false.
 !
@@ -856,47 +722,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_real_0D = 704
-      real, dimension (:,:,:), allocatable :: global
-      real :: buffer
+      real, dimension(1) :: out
 !
-      write_persist_real_0D = .true.
-      if (write_persist_id (label, id)) return
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_real_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_real (buffer, partner, tag_real_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global)
-      else
-        call mpisend_real (value, 0, tag_real_0D)
-      endif
-!
-      write_persist_real_0D = .false.
+      out(1) = value
+      write_persist_real_0D = write_persist_real_1D (label, id, out)
 !
     endfunction write_persist_real_0D
 !***********************************************************************
@@ -904,47 +739,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, dimension (:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_real_1D = 705
-      real, dimension (:,:,:,:), allocatable :: global
-      real, dimension (:), allocatable :: buffer
-!
       write_persist_real_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_real_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1,:) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_real (buffer, nv, partner, tag_real_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global, buffer)
-      else
-        call mpisend_real (value, nv, 0, tag_real_1D)
-      endif
+      call output_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       write_persist_real_1D = .false.
 !
@@ -954,24 +758,21 @@ module Io
 !
 !  Initialize reading of persistent data from persistent file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  27-Oct-2018/PABourdin: coded
 !
-      use File_io, only: file_exists
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use File_io, only: parallel_file_exists
 !
       character (len=*), intent(in), optional :: file
+!
+      character (len=fnlen) :: filename
 !
       init_read_persist = .true.
 !
       if (present (file)) then
-        if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
+        filename = trim (directory_snap)//'/'//trim (file)//'.h5'
+        init_read_persist = .not. parallel_file_exists (filename)
         if (init_read_persist) return
-      endif
-!
-      if (present (file)) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
-        open (lun_input, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='old')
+        call file_open_hdf5 (filename, read_only=.true.)
       endif
 !
       init_read_persist = .false.
@@ -983,31 +784,20 @@ module Io
 !
 !  Read persistent block ID from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
       logical, intent(in), optional :: lerror_prone
 !
-      logical :: lcatch_error
-      integer :: io_err
+      logical :: lcatch_error, lexists
 !
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
-      if (lroot) then
-        if (ip <= 9) write (*,*) 'read persistent ID '//trim (label)
-        if (lcatch_error) then
-          read (lun_input, iostat=io_err) id
-          if (io_err /= 0) id = -max_int
-        else
-          read (lun_input) id
-        endif
-      endif
-!
-      call mpibcast_int (id,comm=MPI_COMM_WORLD)
+      lexists = exists_in_hdf5('persist')
+      if (lexists) lexists = exists_in_hdf5('persist/'//trim (label))
+      if (lcatch_error .and. .not. lexists) id = -max_int
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -1018,41 +808,15 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_log_0D = 706
-      logical, dimension (:,:,:), allocatable :: global
+      logical, dimension(1) :: read
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_logical_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1), partner, tag_log_0D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_logical (value, 0, tag_log_0D)
-      endif
-!
-      read_persist_logical_0D = .false.
+      read_persist_logical_0D = read_persist_logical_1D(label, read)
+      value = read(1)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -1060,41 +824,16 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_log_1D = 707
-      logical, dimension (:,:,:,:), allocatable :: global
+      integer, dimension(size (value)) :: value_int
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_logical_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1,:), nv, partner, tag_log_1D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_logical (value, nv, 0, tag_log_1D)
-      endif
+      call input_hdf5 ('persist/'//label, value_int, size (value), same_size=.true.)
+      value = .false.
+      where (value_int > 0) value = .true.
 !
       read_persist_logical_1D = .false.
 !
@@ -1104,41 +843,15 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_int_0D = 708
-      integer, dimension (:,:,:), allocatable :: global
+      integer, dimension(1) :: read
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_int_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1), partner, tag_int_0D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_int (value, 0, tag_int_0D)
-      endif
-!
-      read_persist_int_0D = .false.
+      read_persist_int_0D = read_persist_int_1D(label, read)
+      value = read(1)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -1146,41 +859,12 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_int_1D = 709
-      integer, dimension (:,:,:,:), allocatable :: global
-!
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_int_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1,:), nv, partner, tag_int_1D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_int (value, nv, 0, tag_int_1D)
-      endif
+      call input_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       read_persist_int_1D = .false.
 !
@@ -1190,41 +874,15 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_real_0D = 710
-      real, dimension (:,:,:), allocatable :: global
+      real, dimension(1) :: read
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_real_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1), partner, tag_real_0D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_real (value, 0, tag_real_0D)
-      endif
-!
-      read_persist_real_0D = .false.
+      read_persist_real_0D = read_persist_real_1D(label, read)
+      value = read(1)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
@@ -1232,41 +890,12 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_real_1D = 711
-      real, dimension (:,:,:,:), allocatable :: global
-!
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_real_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1,:), nv, partner, tag_real_1D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_real (value, nv, 0, tag_real_1D)
-      endif
+      call input_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       read_persist_real_1D = .false.
 !
