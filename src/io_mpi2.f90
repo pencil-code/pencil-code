@@ -453,7 +453,7 @@ module Io
 !  'data/procN/slice_position.dat' is distributed, but may not be synchronized
 !  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
 !
-!  27-Nov-2014/Bourdin.KIS: cleaned up the actual writing code
+!  27-Oct-2018/PABourdin: cleaned up
 !
       open (lun_output, file=trim(directory)//'/slice_position.dat', STATUS='unknown')
       write (lun_output, '(l5,i5," XY")') lwrite_slice_xy, iz_loc
