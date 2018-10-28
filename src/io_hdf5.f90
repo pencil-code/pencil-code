@@ -440,8 +440,7 @@ module Io
       if (pos >= 0) then
         call create_group_hdf5 (label)
         call output_hdf5 (trim (label)//'/position', pos)
-        if (.not. exists_in_hdf5 (trim (label)//'/number')) &
-            call output_hdf5 (trim (label)//'/number', 0)
+        call output_hdf5 (trim (label)//'/number', 0)
       endif
 !
     endsubroutine initialize_slice
