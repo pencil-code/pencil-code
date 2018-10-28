@@ -4385,14 +4385,15 @@ module Magnetic
 !
 !  Add ambipolar diffusion in strong coupling approximation
 !
-      if (lambipolar_strong_coupling.and.(.not.lhydro).and.tauAD/=0.0) then
+      if (lambipolar_strong_coupling.and.tauAD/=0.0) then
         if (lfirst.and.ldt) diffus_eta=diffus_eta+tauAD*p%b2
-        dAdt=dAdt+tauAD*mu01*p%jxbxb
+        dAdt=dAdt+tauAD*mu0*p%jxbxb
       endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
 !  Note that this is similar to lambipolar_strong_coupling, but here
 !  there is a division by b^2.
+!AB: Piyali, I think the mu01 should be replaced by mu0.
 !
       if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
          B0_magfric=B0_magfric/unit_magnetic**2
