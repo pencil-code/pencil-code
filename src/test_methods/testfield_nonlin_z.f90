@@ -645,7 +645,7 @@ module Testfield
       real, dimension (nx,3) :: u0ref,b0ref,j0ref
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest,uijtest,uijm
       real, dimension (nx) :: jbpq,upq2,jpq2,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1., &
-                              diffus_eta, advec_uu
+                              diffus_eta, advec_uu, advec_va2
       integer :: jtest,j,nl
       integer, parameter :: i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.,ltest_ugu=.false.  ! MR: needed for?
@@ -695,6 +695,8 @@ module Testfield
 !  so we compute the zero field first
 !
 !jtest-loop:
+      advec_uu=0.; advec_va2=0.
+
       do jtest=njtest,1,-1
 !
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
@@ -746,7 +748,7 @@ module Testfield
 !
         if (lhydro) then
           call coriolis_cartesian(df,uutest,iuxtest)
-        else
+        elseif (Omega/=0.) then
           df(l1:l2,m,n,iuxtest  )=df(l1:l2,m,n,iuxtest  )+2*Omega*uutest(:,2)
           df(l1:l2,m,n,iuxtest+1)=df(l1:l2,m,n,iuxtest+1)-2*Omega*uutest(:,1)
         endif
@@ -918,6 +920,17 @@ module Testfield
         if (ldiagnos.and.(idiag_jb0m/=0.or.idiag_j11rms/=0)) &
             jpq(:,:,jtest)=jjtest
 !
+        if (lfirst.and.ldt) then
+!
+! advective and Alfven timestep
+!
+          advec_uu=max(advec_uu,abs(uutest(:,1))*dline_1(:,1)+&
+                                abs(uutest(:,1))*dline_1(:,2)+&
+                                abs(uutest(:,2))*dline_1(:,3))
+          advec_va2=max(advec_va2,((bbtest(:,1)*dx_1(l1:l2))**2+ &
+                                   (bbtest(:,2)*dy_1(  m  ))**2+ &
+                                   (bbtest(:,3)*dz_1(  n  ))**2)*mu01/rho0)
+        endif
       enddo !jtest-loop
 !
 !  compute kinetic, magnetic, and magneto-kinetic contributions
@@ -938,18 +951,9 @@ module Testfield
       endif
 !
       if (lfirst.and.ldt) then
-!
-! advective timestep (alfven speed missing yet)
-!
-        advec_uu=0.
-        do jtest=1,njtest
-          iuxtest=iuutest+3*(jtest-1); iuztest=iuxtest+2
-
-          advec_uu=max(advec_uu,abs(f(l1:l2,m,n,iuxtest  ))*dline_1(:,1)+&
-                                abs(f(l1:l2,m,n,iuxtest+1))*dline_1(:,2)+&
-                                abs(f(l1:l2,m,n,iuxtest+2))*dline_1(:,3))
-        enddo
         maxadvec=maxadvec+advec_uu
+        advec2=advec2+advec_va2
+!
         if (headtt.or.ldebug) print*,'daatest_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  diffusive time step, just take the max of diffus_eta (if existent)
