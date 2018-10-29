@@ -105,7 +105,7 @@ module Solid_Cells
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer :: i, ndims
+      integer :: i, ndims, k
 !
       call keep_compiler_quiet(f)
       if (cylinder_radius <= 0) then
@@ -191,6 +191,20 @@ module Solid_Cells
         if (flow_dir == 3) T0 = fbcz(ilnTT,1)
         if (flow_dir == -3) T0 = fbcz(ilnTT,2)
         if (.not. ltemperature_nolog) T0 = exp(T0)
+      endif
+!
+! Initial chemical composition
+!
+! Chemistry
+      if (lchemistry) then
+        do k = 1,nchemspec
+          if (flow_dir == 1) chemspec0(k) = fbcx(ichemspec(k),1)
+          if (flow_dir == -1) chemspec0(k) = fbcx(ichemspec(k),2)
+          if (flow_dir == 2) chemspec0(k) = fbcy(ichemspec(k),1)
+          if (flow_dir == -2) chemspec0(k) = fbcy(ichemspec(k),2)
+          if (flow_dir == 3) chemspec0(k) = fbcz(ichemspec(k),1)
+          if (flow_dir == -3) chemspec0(k) = fbcz(ichemspec(k),2)
+        enddo
       endif
 !
 !  Initialize the pencils overlapping grid and construct arrays
@@ -372,6 +386,10 @@ module Solid_Cells
 !
 !  Set up necessary units for equation of state
 !
+! TODO: ogrid works only with no-log density and temperature
+!       check if that option is correctly implememnted in chemistry_simple
+! TODO: check units... (chemistry only works with cgs, remember!)
+
       if (.not. lchemistry) then
         call initialize_eos_ogr
       else
@@ -451,31 +469,24 @@ module Solid_Cells
 !
 !  Get thermal diffusivity from energy module
 !
-      if ((iTT .ne. 0) .and. (.not. lchemistry)) then
-        call get_shared_variable('chi',chi)
-        call get_shared_variable('ladvection_temperature',&
-            ladvection_temperature)
+      if (iTT .ne. 0) then
+        if (.not. lchemistry) call get_shared_variable('chi',chi)
         call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
+        call get_shared_variable('ladvection_temperature',ladvection_temperature)
         call get_shared_variable('lupw_lnTT',lupw_lnTT)
       else
-       ! if (ilnTT .ne. 0) then
-        if (iTT .eq. 0) then
           call fatal_error('initialize_solid_cells',&
-              'Most use linear temperature for solid_cells_ogrid') 
-        endif
+              'Must use linear temperature for solid_cells_ogrid') 
       endif
-
-! TODO: chemistry should be initialized somewhere here but there's no f_og
-!       to call initialize_chemistry_og(f_og)
 !
       if (lchemistry) then
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
+        call initialize_chemistry_og(f_ogrid)
       endif
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
 !
       if(lrk_tvd) allocate(f_tmp(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
-
 !
 !  For particles with thermophoretic effects, the gradient of the temperature has
 !  to be saved in as an auxiliary so that it can then be interpolated over
@@ -491,7 +502,6 @@ module Solid_Cells
          allocate(curv_cart_transform(my_ogrid,2))
          call create_curv_cart_transform(curv_cart_transform)
       endif   
-      
 !
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -517,7 +527,7 @@ module Solid_Cells
       real :: a2, rr2, rr2_low, rr2_high 
       real :: wall_smoothing,wall_smoothing_temp
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
-      integer i,j,cyl,iflow,iorth
+      integer i,j,cyl,iflow,iorth, k
       real :: shift_top,shift_bot,r_k_top,r_k_bot,theta_k_top,theta_k_bot
       real :: ur_k_top ,ur_k_bot ,uth_k_top,uth_k_bot
       logical :: lnoerase=.false.
@@ -579,6 +589,13 @@ module Solid_Cells
                   f(i,j,:,irho) = f(l2,m2,n2,irho) &
                     *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
+! TODO: what to set for chemistry?
+                if (lchemistry) then  
+                  do k = 1,nchemspec
+                    f(i,j,:,ichemspec(k)) = chemspec0(k)
+                    !f(l2,m2,n2,ichemspec(k))*f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)         
+                  enddo
+                endif
               else
                 shift_orth = cyl*Lorth
                 rr2_low = (flow_r+shift_flow)**2+(orth_r+shift_orth)**2
@@ -601,6 +618,11 @@ module Solid_Cells
               f(i,j,:,irho) = f(l2,m2,n2,irho) &
                 *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
+            if (lchemistry) then  
+              do k = 1,nchemspec
+                f(i,j,:,ichemspec(k)) = chemspec0(k)
+              enddo
+            endif
           endif
         enddo
       enddo
@@ -615,6 +637,11 @@ module Solid_Cells
       f_ogrid(:,:,:,iux:iuz)=0.
       if(iTT.ne.0) then
         f_ogrid(:,:,:,iTT)=f(l1,m1,n1,iTT)
+      endif
+      if (lchemistry) then  
+        do k = 1,nchemspec
+          f_ogrid(:,:,:,ichemspec(k)) = f(l1,m1,n1,ichemspec(k))    
+        enddo
       endif
       if(ldensity_nolog) then
         f_ogrid(:,:,:,irho)=init_rho_cyl
@@ -635,6 +662,14 @@ module Solid_Cells
               +cylinder_temp*(1-wall_smoothing_temp)
             f_ogrid(i,j,:,irho) = f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,irho) &
               *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
+! TODO: Set initial conditions for chemistry on the ogrid
+            if (lchemistry) then  
+              do k = 1,nchemspec
+                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)
+!f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ichemspec(k))&
+!*f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)         
+              enddo
+            endif
           endif
 !  Compute contribution to flow from cylinders above and below, due to periodic boundary conditions
           do cyl = 1,100
@@ -678,7 +713,7 @@ module Solid_Cells
         call wdim(trim(datadir)//'/ogdim.dat', &
             mxgrid_ogrid,mygrid_ogrid,mzgrid_ogrid,lglobal=.true.)
       endif
-
+!
     endsubroutine init_solid_cells
 !***********************************************************************
     subroutine initialize_pencils_ogrid(penc0)
@@ -4541,8 +4576,15 @@ module Solid_Cells
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
+
+!print*,'f_cart(:,130:134,4,iux)',f_cartesian(128,:,4,iux)
+!print*,'f_cart(:,130:134,4,irho)',f_cartesian(128,:,4,irho)
+!print*,'f_cart(:,130:134,4,iTT)',f_cartesian(128,:,4,iTT)
     call update_ghosts(f_cartesian,1,mvar)
     call communicate_ip_cart_to_curv(f_cartesian,1,mvar)
+do j = 1,4
+!print*,'f_og(:,130:134,4,iux)',f_ogrid(:,129+j,4,iux),'i',j
+enddo
 !
     dt_ogrid = dt/timestep_factor
     !print*, 'dt_ogrid', dt_ogrid
@@ -4716,7 +4758,6 @@ module Solid_Cells
         call dlnrho_dt_ogrid(df)
         call denergy_dt_ogrid(df,f_og)
         if (lchemistry) call dYk_dt_ogrid(f_og,df)
-
 !
 !  Compute drag and lift coefficient, if this is the last sub-timestep
 !
@@ -4811,26 +4852,23 @@ module Solid_Cells
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
-      integer :: j,ju
+      integer :: j
       intent(inout) :: df
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
       if (.not. lchemistry) then
-        do j=1,3
-          ju=j+iuu-1
-          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)=df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)+p_ogrid%fpres(:,j)
-        enddo
+          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)= &
+              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)+p_ogrid%fpres
       else
-        do j=1,3
-          ju=j+iuu-1
-          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)=df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)- p_ogrid%rho1gpp(:,j)
-        enddo
+! TODO: pressure gradient term when chemistry
+          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)= &
+              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)+p_ogrid%fpres !p_ogrid%rho1gpp
       endif
 !
 !  Solve Energy equation (in case of non-isothermal equation of state)
 !
-      if (iTT .ne. 0) then        
+      if (iTT .ne. 0) then
 !
 !  Advection term and PdV-work.
 !
@@ -4859,7 +4897,7 @@ module Solid_Cells
         elseif (lheatc_chemistry) then
           call calc_heatcond_chemistry_ogrid(f_og,df,p_ogrid)
         else
-          call fatal_error('denergy_dt_ogrid','Must use lheatc_chicons=T')
+          call fatal_error('denergy_dt_ogrid','Must use lheatc_chicons=T or lheatc_chemistry=T')
         endif
 !
       endif
@@ -5013,13 +5051,13 @@ module Solid_Cells
 !  Pencils: fpres (=pressure gradient force)
 !
 ! TODO: modifications for chemistry    
-
+!
       if (iTT .ne. 0) then
         if (lpencil_ogrid(i_og_ugTT)) then
           call u_dot_grad_ogrid(f_og   ,iTT,p_ogrid%gTT,p_ogrid%uu,&
               p_ogrid%ugTT,UPWIND=lupw_lnTT)
         endif
-        if (lpencil_ogrid(i_og_fpres)) then
+        if ((lpencil_ogrid(i_og_fpres)) ) then   !.and. (.not. lchemistry)
           do j=1,3
             p_ogrid%fpres(:,j)=-gamma1*p_ogrid%cs2*&
                 (p_ogrid%glnrho(:,j)+p_ogrid%gTT(:,j)/p_ogrid%TT)
@@ -5094,6 +5132,7 @@ module Solid_Cells
 !
       use density, only:lupw_lnrho
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
+      integer :: k
 !
       if(lfirst_proc_x) then
         if(SBP) then
@@ -5107,6 +5146,12 @@ module Solid_Cells
           call set_ghosts_onesided_ogrid(iuz)
           if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
+! TODO: 
+          if (lchemistry) then
+            do k = 1,nchemspec
+              call set_ghosts_onesided_ogrid(ichemspec(k))
+            enddo
+          endif 
         endif
         !if(lupw_lnrho) then
         !  if(lexpl_rho) call bval_from_neumann_upw_ogrid

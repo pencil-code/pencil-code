@@ -30,6 +30,7 @@ module solid_cells_ogrid_chemistry
   use Cdata
   use General, only: keep_compiler_quiet
   use EquationOfState
+  use Chemistry, only: Rgas, lreactions, lchemistry_diag
   use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
   use Mpicomm, only: stop_it
   use solid_cells_ogrid_cdata
@@ -40,8 +41,6 @@ module solid_cells_ogrid_chemistry
 public :: initialize_eos_chemistry, calc_for_chem_mixture_ogrid, calc_pencils_eos_ogrid_chem
 public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
-  integer :: nreactions=0
-
   real :: Rgas_unit_sys=1.
   real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
   real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: cp_R_spec_ogrid
@@ -63,34 +62,22 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !  parameters related to chemical reactions, diffusion and advection
 !
+  integer, pointer :: nreactions
 !  real, dimension(:,:), pointer :: species_constants ! available already from eos_simple
 !  real, pointer ::cp_const ! available already from eos_simple
   real, dimension(:), pointer :: Lewis_coef1
-  logical, pointer ::  lcheminp!,ldiffusion,ldiff_corr, lew_exist,
-  logical, pointer ::  tran_exist, Sc_number!, lfix_Sc, lThCond_simple,lheatc_chemistry,
- ! logical, pointer :: lfilter_strict, lfilter!, lreactions, ladvection,lt_const
-  real, pointer :: Rgas!,Pr_number,lambda_const,visc_const
-  real, pointer, dimension(:,:) :: tran_data
-
-  logical ::  ldiffusion,ldiff_corr, lew_exist
-  logical ::  lfix_Sc, lThCond_simple
-  logical :: lfilter_strict, lfilter, lreactions, ladvection,lt_const
-  real :: lambda_const,visc_const
+  integer, dimension(:), pointer :: iaa1, iaa2
+!  character(len=30), pointer, dimension(:) :: reaction_name
+  real, dimension(:), pointer :: alpha_n, E_an, B_n
+  logical, pointer ::  lcheminp,ldiffusion,ldiff_corr
+  logical, pointer ::  tran_exist, lThCond_simple!,lheatc_chemistry,
+  logical, pointer :: lfilter_strict, lfilter, ladvection,lt_const
+  real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
+  real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
+  logical, pointer, dimension(:) :: photochem_case, Mplus_case, back
 !
-  logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
-  real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
-!
-  integer :: mreactions
-!
-!  The stociometric factors need to be reals for arbitrary reaction orders
-
-  real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp
-  real, allocatable, dimension(:,:) :: kreactions_z
-  real, allocatable, dimension(:) :: kreactions_m, kreactions_p
-  logical, allocatable, dimension(:) :: back
-  character(len=30), allocatable, dimension(:) :: reaction_name
+!  character(len=30), allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
-!  logical :: ldamp_zone_for_NSCBC=.false.
   logical :: linit_temperature=.false., linit_density=.false.
   logical :: lreac_as_aux=.false.
 !
@@ -103,7 +90,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   real :: amplchem=1., kx_chem=1., ky_chem=1., kz_chem=1., widthchem=1.
   real :: chem_diff=0.
   character(len=labellen), dimension(ninit) :: initchem='nothing'
-  character(len=labellen), allocatable, dimension(:) :: kreactions_profile
   character(len=60) :: prerun_directory='nothing'
   character(len=60) :: file_name='nothing'
 !
@@ -112,56 +98,15 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !  Chemkin related parameters
 !
-!  logical :: lcheminp=.false., lchem_cdtc=.false.
   logical :: lchem_cdtc=.false.
   logical :: lmobility=.false.
   integer :: iTemp1=2, iTemp2=3, iTemp3=4
-  integer, dimension(7) :: iaa1, iaa2
-  real, allocatable, dimension(:) :: B_n, alpha_n, E_an
-  real, allocatable, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
-  logical, allocatable, dimension(:) :: Mplus_case
-  logical, allocatable, dimension(:) :: photochem_case
   real :: lamb_low, lamb_up, Pr_turb=0.7
-!
-!   Lewis coefficients
-!
- real, dimension(nchemspec) :: Lewis_coef=1.
-!
-!   Transport data
-!
-! real, dimension(nchemspec,7) :: tran_data
 !
 !   Diagnostics
 !
-  real, allocatable, dimension(:,:) :: net_react_m, net_react_p
-  logical :: lchemistry_diag=.false.
-!
-! input parameters
-  namelist /chemistry_init_pars/ &
-      initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec, &
-      lThCond_simple,lambda_const, visc_const,&
-      init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
-      init_TT2,init_rho,&
-      init_ux,init_uy,init_uz,init_pressure,lfix_Sc, &
-      str_thick,lT_tanh,lT_const, &
-      prerun_directory, &
-      lchemistry_diag,lfilter_strict,linit_temperature, &
-      linit_density, init_rho2, &
-      file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef !ldamp_zone_for_NSCBC,
-!
-!
-! run parameters
-  namelist /chemistry_run_pars/ &
-      lkreactions_profile, lkreactions_alpha, &
-      chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc, lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh, &
-      lThCond_simple,visc_const,reinitialize_chemistry,init_from_file, &
-      lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
-      linit_density, &
-      ldiff_corr, lreac_as_aux, reac_rate_method,global_phi
+!  real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+!  logical :: lchemistry_diag=.false.
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -187,111 +132,22 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   integer :: ireac=0
   integer, dimension(nchemspec) :: ireaci=0
 !
-
   contains
 !
 !***********************************************************************
-    subroutine register_chemistry()
+!    subroutine register_chemistry()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables
-!  which should be know to be able to evaluate
+! Not used for ogrid
 !
-!  13-aug-07/steveb: coded
-!   8-jan-08/axel: added modifications analogously to dustdensity
-!   5-mar-08/nils: Read thermodynamical data from chem.inp
-!
-      use FArrayManager
-!
-      integer :: k, ichemspec_tmp
-      character(len=fnlen) :: input_file
-      logical ::  chemin, cheminp
-!
-!  Initialize some index pointers
-!
-      iaa1(1) = 5
-      iaa1(2) = 6
-      iaa1(3) = 7
-      iaa1(4) = 8
-      iaa1(5) = 9
-      iaa1(6) = 10
-      iaa1(7) = 11
-!
-      iaa2(1) = 12
-      iaa2(2) = 13
-      iaa2(3) = 14
-      iaa2(4) = 15
-      iaa2(5) = 16
-      iaa2(6) = 17
-      iaa2(7) = 18
-!
-!  Set ichemistry to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec.
-!
-      call farray_register_pde('chemspec',ichemspec_tmp,vector=nchemspec)
-      do k = 1,nchemspec
-        ichemspec(k) = ichemspec_tmp+k-1
-      enddo
-!
-!  Register viscosity and cp
-!
-      call farray_register_auxiliary('viscosity',iviscosity,communicated=.false.)
-      call farray_register_auxiliary('cp',icp,communicated=.false.)
-!
-!  Writing files for use with IDL
-!
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',viscosity $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',viscosity'
-      aux_count = aux_count+1
-      if (lroot) write (4,*) ',visocsity $'
-      if (lroot) write (15,*) 'viscosity = fltarr(mx,my,mz)*one'
-!
-!  Read species to be used from chem.inp (if the file exists).
-!
-!      inquire (FILE='chem.inp', EXIST=lcheminp)
-!      if (.not. lcheminp) inquire (FILE='chem.in', EXIST=lcheminp)
-      
-!      inquire (FILE='chem.inp', EXIST=cheminp)
-!      inquire (FILE='chem.in', EXIST=chemin)
-!      if (cheminp .and. chemin) call fatal_error('chemistry', &
-!          'chem.inp and chem.in found, please decide for one')
-!      if (cheminp) input_file='chem.inp'
-!      if (chemin) input_file='chem.in'
-!
-!      if (lcheminp) then
-!        call read_species(input_file)
-!      else
-!        varname(ichemspec(1):ichemspec(nchemspec)) = (/ 'H2        ','O2        ','H2O       ','H         ','O         ',&
-!             'OH        ','HO2       ','H2O2      ','AR        ','N2        ','HE        ','CO        ','CO2       '/)
-!      endif
-!
-!  Read data on the thermodynamical properties of the different species.
-!  All these data are stored in the array species_constants.
-!
-!      if (lcheminp) then
-!        call read_thermodyn(input_file)
-!      else 
-!        call read_thermodyn_simple()
-!      endif
-!
-!  Write all data on species and their thermodynamics to file.
-!
-!      if (lcheminp) call write_thermodyn()
-!
-!  Identify version number (generated automatically by SVN).
-!
-!      if (lroot) call svn_id( "$Id$")
-!
-    endsubroutine register_chemistry
-!***********************************************************************
+!    endsubroutine register_chemistry
 !***********************************************************************
 !    subroutine read_thermodyn_simple()
 !
-! Does not involve f array, not executed for the ogrid
+! species_constants - available from eos, iaa1, iaa2 - copied from chemistry
 !
 !    endsubroutine read_thermodyn_simple
 !***********************************************************************
     subroutine initialize_eos_chemistry
-!
-!      use SharedVariables, only: put_shared_variable
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
@@ -325,30 +181,16 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine initialize_eos_chemistry
 !***********************************************************************
-!    subroutine initialize_chemistry_og(f_og)
-    subroutine initialize_chemistry_og
+    subroutine initialize_chemistry_og(f_og)
 !
-!  called by run.f90 after reading parameters, but before the time loop
+!  chemistry initialization on the ogrid
+!  called from initialize_solid_cells in solid_cells_ogrid
 !
-!  13-aug-07/steveb: coded
-!  19-feb-08/axel: reads in chemistry.dat file
-!  21-nov-10/julien: added the reaction rates as optional auxiliary variables
-!                    in the f array for output.
-!
-      use FArrayManager
-      use SharedVariables, only: get_shared_variable, put_shared_variable
-      use Messages, only: warning
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
       integer :: i
 
-!  initialize chemistry
-!
-!        if (unit_temperature /= 1) then
-!          call fatal_error('initialize_chemistry', &
-!              'unit_temperature must be unity when using chemistry!')
-!        endif
-!
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
 !
@@ -356,22 +198,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !          Rgas_unit_sys = k_B_cgs/m_u_cgs
 !          Rgas = Rgas_unit_sys/unit_energy
 !        endif
-!
-!  Read in data file in ChemKin format
-!
-!      if (lcheminp) then
-!        call chemkin_data
-!        data_file_exit = .true.
-!      else
-!        call chemkin_data_simple
-!        data_file_exit = .true.
-!      endif
-!
-! check the existence of a data file
-!
-!      if (.not. data_file_exit) then
-!        call stop_it('initialize_chemistry: there is no chemistry data file')
-!      endif
 !
       if ((nxgrid_ogrid == 1) .and. (nygrid_ogrid == 1) .and. (nzgrid_ogrid == 1)) then
         ll1_ogrid = 1
@@ -409,8 +235,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  Reinitialize if required
 !
       if (reinitialize_chemistry) then
-        if (lroot) print*,'Reinitializing chemistry.'
-        call init_chemistry(f_og)
+          call fatal_error('initialize_chemistry_og', &
+              'Reinitialize chemistry - not implemented on th ogrid!')
       endif
 !
 !  allocate memory for net_reaction diagnostics
@@ -449,42 +275,43 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !        endif
 !      endif
 !
-! TODO: all the below must exist and be first shared in chemistry!!
-      if (lchemistry) then !(nchemspec .ne. 0) then
- !       call get_shared_variable('ldiffusion',ldiffusion)
- !       call get_shared_variable('ldiff_corr',ldiff_corr)
- !       call get_shared_variable('lew_exist',lew_exist)
+      if (lchemistry) then
+        call get_shared_variable('ldiffusion',ldiffusion)
+        call get_shared_variable('ldiff_corr',ldiff_corr)
         call get_shared_variable('lcheminp',lcheminp)
-       ! call get_shared_variable('lThCond_simple',lThCond_simple)
-       ! call get_shared_variable('visc_const',visc_const)
-       ! call get_shared_variable('cp_const',cp_const)
-       ! call get_shared_variable('lambda_const',lambda_const)
-       ! call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
+        call get_shared_variable('lThCond_simple',lThCond_simple)
         call get_shared_variable('tran_exist',tran_exist)
-       ! call get_shared_variable('lfix_Sc',lfix_Sc)
         call get_shared_variable('tran_data',tran_data)
-       ! call get_shared_variable('Pr_number',Pr_number)
-       ! call get_shared_variable('lt_const',lt_const)
-       ! call get_shared_variable('ladvection',ladvection)
-       ! call get_shared_variable('lfilter',lfilter)
-       ! call get_shared_variable('lfilter_strict',lfilter_strict)
+        call get_shared_variable('lt_const',lt_const)
+        call get_shared_variable('ladvection',ladvection)
+        call get_shared_variable('lfilter',lfilter)
+        call get_shared_variable('lfilter_strict',lfilter_strict)
         call get_shared_variable('Lewis_coef1',Lewis_coef1)
-       ! call get_shared_variable('lreactions',lreactions)
-        call get_shared_variable('Rgas',Rgas)
-        call get_shared_variable('Sc_number',Sc_number)
+        call get_shared_variable('nreactions',nreactions)
+        call get_shared_variable('Sijm',Sijm)
+        call get_shared_variable('Sijp',Sijp)
+  !      call get_shared_variable('reaction_name',reaction_name)
+        call get_shared_variable('back',back)
+        call get_shared_variable('B_n',B_n)
+        call get_shared_variable('alpha_n',alpha_n)
+        call get_shared_variable('E_an',E_an)
+        call get_shared_variable('low_coeff',low_coeff)
+        call get_shared_variable('high_coeff',high_coeff)
+        call get_shared_variable('troe_coeff',troe_coeff)
+        call get_shared_variable('a_k4',a_k4)
+        call get_shared_variable('Mplus_case',Mplus_case)
+        call get_shared_variable('photochem_case',photochem_case)
+        call get_shared_variable('stoichio',stoichio)
+        call get_shared_variable('iaa1',iaa1)
+        call get_shared_variable('iaa2',iaa2)
       endif
-
- !     if (leos) then
- !       call get_shared_variable('mu1_full_og',mu1_full_og,caller='initialize_chemistry')
- !       call put_shared_variable('mu1_full_og',mu1_full_og,caller='initialize_chemistry')
- !     endif
 !
-      if (lew_exist) then 
-        Lewis_coef1 = 1./Lewis_coef
-      else
-        print*,'Lewis numbers need to be read from start.in, no option to read from file'
-        print*,'Set all Le = 1'
-      endif
+!      if (lew_exist) then 
+!        Lewis_coef1 = 1./Lewis_coef
+!      else
+!        print*,'Lewis numbers need to be read from start.in, no option to read from file'
+!        print*,'Set all Le = 1'
+!      endif
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -495,102 +322,12 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine initialize_chemistry_og
 !***********************************************************************
-    subroutine init_chemistry(f_og)
+!    subroutine init_chemistry_og(f_og)
 !
-!  initialise chemistry initial condition; called from start.f90
+! TODO: decide what to do for the ogrid
+! Not used for ogrid
 !
-!  13-aug-07/steveb: coded
-!     jul-10/julien: Added some new initial cases
-!
-      use Initcond
-      use InitialCondition, only: initial_condition_chemistry
-!
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
-      real :: PP
-      integer :: j,k
-      logical :: lnothing, air_exist
-!
-      intent(inout) :: f_og
-!
-!  different initializations of nd (called from start)
-!
-      lnothing = .false.
-      do j = 1,ninit
-        select case (initchem(j))
-!
-        case ('nothing')
-          if (lroot .and. .not. lnothing) print*, 'initchem: nothing '
-          lnothing = .true.
-        case ('constant')
-          do k = 1,nchemspec
-            f_og(:,:,:,ichemspec(k)) = amplchemk(k)
-          enddo
-        case ('positive-noise')
- !         do k = 1,nchemspec
- !           call posnoise(amplchemk(k),f_og,ichemspec(k))
- !         enddo
-        case ('positive-noise-rel')
- !         do k = 1,nchemspec
- !           call posnoise_rel(amplchemk(k),amplchemk2(k),f_og,ichemspec(k))
- !         enddo
-        case ('innerbox')
-  !        do k = 1,nchemspec
-   !         call innerbox(amplchemk(k),amplchemk2(k),f_og,ichemspec(k),widthchem)
-    !      enddo
-        case ('cos2x_cos2y_cos2z')
-  !        do k = 1,nchemspec
-  !          call cos2x_cos2y_cos2z(amplchemk(k),f_og,ichemspec(k))
-  !        enddo
-        case ('coswave-x')
-   !       do k = 1,nchemspec
-   !         call coswave(amplchem,f_og,ichemspec(k),kx=kx_chem)
-   !       enddo
-        case ('gaussian-x')
-   !       do k = 1,nchemspec
-   !         call gaussian(amplchem,f_og,ichemspec(k),kx=kx_chem)
-   !       enddo
-        case ('gaussian-pos')
-    !      do k = 1,nchemspec
-    !        call gaussianpos(amplchemk(k),f_og,ichemspec(k),widthchem,kx_chem,ky_chem,kz_chem)
-    !        print*,"c(",x(l1),",",y(m1),",",z(n1),")=", f_og(l1_ogrid,m1_ogrid,n1_ogrid,ichemspec(k))
-    !      enddo
-        case ('hatwave-x')
-     !     do k = 1,nchemspec
-     !       call hatwave(amplchem,f_og,ichemspec(k),widthchem,kx=kx_chem)
-     !     enddo
-        case ('hatwave-y')
-     !     do k = 1,nchemspec
-     !       call hatwave(amplchem,f_og,ichemspec(k),widthchem,ky=ky_chem)
-     !     enddo
-        case ('hatwave-z')
-     !     do k = 1,nchemspec
-     !       call hatwave(amplchem,f_og,ichemspec(k),widthchem,kz=kz_chem)
-     !     enddo
-        case ('air')
-          if (lroot ) print*, 'init_chem: air '
-          inquire (file='air.dat',exist=air_exist)
-          if (.not. air_exist) then
-            inquire (file='air.in',exist=air_exist)
-          endif
-          if (air_exist) then
-            call air_field_ogr(f_og,PP)
-          else
-            call stop_it('there is no air.in/dat file')
-          endif
-        case ('flame_front')
-          call flame_front(f_og)
-        case default
-!
-!  Catch unknown values
-!
-          if (lroot) print*, 'initchem: No such value for initchem: ', &
-              trim(initchem(j))
-          call stop_it('')
-!
-        endselect
-      enddo
-!
-    endsubroutine init_chemistry
+!    endsubroutine init_chemistry_og
 !***********************************************************************
 !    subroutine pencil_criteria_chemistry()
 !
@@ -703,7 +440,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 ! Calculate the reaction term and the corresponding pencil
 !
       if (lreactions .and. lpencil_ogrid(i_og_DYDt_reac)) then
-! TODO: switch this on once connected with ogrid_chemistry
         call calc_reaction_term_ogr(f_og,p_ogrid)
       else
         p_ogrid%DYDt_reac = 0.
@@ -730,7 +466,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       RHS_Y_full_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,:) = p_ogrid%DYDt_reac+p_ogrid%DYDt_diff
 !
     endsubroutine calc_pencils_chemistry_ogrid
-!***********************************************************************
 !***********************************************************************
     subroutine calc_pencils_eos_ogrid_chem(f_og,p_ogrid)
 !
@@ -852,7 +587,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       if (lpencil_ogrid(i_og_pp)) p_ogrid%pp = Rgas*p_ogrid%TT*p_ogrid%mu1*p_ogrid%rho
 !
-!  Logarithmic pressure gradient
+!  pressure gradient
 !
       if (lpencil_ogrid(i_og_rho1gpp)) then
         do i=1,3
@@ -876,239 +611,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine calc_pencils_eos_ogrid_chem
 !***********************************************************************
-    subroutine flame_front(f_og)
+!    subroutine flame_front(f_og)
 !
-! TODO: change this to ogrid 
-!  05-jun-09/Nils Erland L. Haugen: adapted from similar
-!                                   routine in special/chem_stream.f90
-!  24-jun-10/Julien Savre: Modifications for lean methane/air combustion
-!  This routine set up the initial profiles used in 1D flame speed measurments
-!
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
-      integer :: i, j,k
-!
-      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
-      real :: log_inlet_density, del, PP
-      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
-      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
-      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
-      real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2
-      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
-      logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
-      logical :: lCH4=.false., lCO2=.false.
-!
-      lflame_front = .true.
-!
-      call air_field_ogr(f_og,PP)
-!
-      if (ltemperature_nolog) f_og(:,:,:,ilnTT) = log(f_og(:,:,:,ilnTT))
-!
-! Initialize some indexes
-!
-      call find_species_index('H2',i_H2,ichem_H2,lH2)
-      if (lH2) then
-        mH2 = species_constants(ichem_H2,imass)
-        init_H2 = initial_massfractions(ichem_H2)
-      endif
-      call find_species_index('O2',i_O2,ichem_O2,lO2)
-      if (lO2) then
-        mO2 = species_constants(ichem_O2,imass)
-        init_O2 = initial_massfractions(ichem_O2)
-      endif
-      call find_species_index('N2',i_N2,ichem_N2,lN2)
-      if (lN2) then
-        mN2 = species_constants(ichem_N2,imass)
-        init_N2 = initial_massfractions(ichem_N2)
-      else
-        init_N2 = 0
-      endif
-      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
-      if (lH2O) then
-        mH2O = species_constants(ichem_H2O,imass)
-        init_H2O = initial_massfractions(ichem_H2O)
-      endif
-      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
-      if (lCH4) then
-        mCH4 = species_constants(ichem_CH4,imass)
-        init_CH4 = initial_massfractions(ichem_CH4)
-      endif
-      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
-      if (lCO2) then
-        mCO2 = species_constants(ichem_CO2,imass)
-        init_CO2 = initial_massfractions(ichem_CO2)
-        final_massfrac_CO2 = init_CO2
-      else
-        init_CO2 = 0
-        final_massfrac_CO2 = init_CO2
-      endif
-!
-! Find approximate value for the mass fraction of O2 after the flame front
-! Warning: These formula are only correct for lean fuel/air mixtures. They
-!          must be modified under rich conditions to account for the excess
-!          of fuel.
-!
-      final_massfrac_O2 = 0.
-      if (lH2 .and. .not. lCH4) then
-        final_massfrac_H2O = mH2O/mH2 * init_H2
-        final_massfrac_O2 = 1. - final_massfrac_H2O- init_N2
-      elseif (lCH4) then
-        final_massfrac_CH4 = 0.
-        final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
-        final_massfrac_CO2 = mCO2/mCH4 * init_CH4
-        final_massfrac_O2 = &
-            1. - final_massfrac_CO2 - final_massfrac_H2O  &
-            - init_N2
-      endif
-!
-      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
-      if (lroot) then
-        print*, '          init                      final'
-        if (lH2 .and. .not. lCH4) print*, 'H2 :', init_H2, 0.
-        if (lCH4) print*, 'CH4 :', init_CH4, 0.
-        if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
-        if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
-        if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
-      endif
-!
-!  Initialize temperature and species
-!
-      do k = 1,mx
-!
-!  Initialize temperature
-!
-        if (lT_tanh) then
-          del = init_x2-init_x1
-          f_og(k,:,:,ilnTT) = f_og(k,:,:,ilnTT)+log((init_TT2+init_TT1)*0.5  &
-              +((init_TT2-init_TT1)*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del)))
-        else
-          if (x(k) <= init_x1) f_og(k,:,:,ilnTT) = log(init_TT1)
-          if (x(k) >= init_x2) f_og(k,:,:,ilnTT) = log(init_TT2)
-          if (x(k) > init_x1 .and. x(k) < init_x2) &
-              f_og(k,:,:,ilnTT) = log((x(k)-init_x1)/(init_x2-init_x1) &
-              *(init_TT2-init_TT1)+init_TT1)
-        endif
-!
-!  Initialize fuel
-!
-        if (lT_tanh) then
-          if (lH2 .and. .not. lCH4) then
-            del = (init_x2-init_x1)
-            f_og(k,:,:,i_H2) = (0.+f_og(l1_ogrid,:,:,i_H2))*0.5+(0.-f_og(l1_ogrid,:,:,i_H2))*0.5  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-          endif
-          if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
-          endif
-!
-        else
-          if (x(k) > init_x1) then
-            if (lH2 .and. .not. lCH4) f_og(k,:,:,i_H2) = init_H2* &
-                (exp(f_og(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
-            if (lCH4) f_og(k,:,:,i_CH4) = init_CH4*(exp(f_og(k,:,:,ilnTT))-init_TT2) &
-                /(init_TT1-init_TT2)
-          endif
-        endif
-!
-!  Initialize oxygen
-!
-        if (lT_tanh) then
-          del = (init_x2-init_x1)
-          f_og(k,:,:,i_O2) = (f_og(l2_ogrid,:,:,i_O2)+f_og(l1_ogrid,:,:,i_O2))*0.5  &
-              +((f_og(l2_ogrid,:,:,i_O2)-f_og(l1_ogrid,:,:,i_O2))*0.5)  &
-              *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-        else
-          if (x(k) > init_x2) f_og(k,:,:,i_O2) = final_massfrac_O2
-          if (x(k) > init_x1 .and. x(k) <= init_x2) &
-              f_og(k,:,:,i_O2) = (x(k)-init_x1)/(init_x2-init_x1) &
-              *(final_massfrac_O2-init_O2)+init_O2
-        endif
-      enddo
-!
-! Initialize products
-!
-      if (lT_tanh) then
-        do k = 1,mx
-          if (lH2 .and. .not. lCH4) then
-            del = (init_x2-init_x1)
-            f_og(k,:,:,i_H2O) = (f_og(l1_ogrid,:,:,i_H2)/2.*18.+f_og(l1_ogrid,:,:,i_H2O))*0.5  &
-                +((f_og(l1_ogrid,:,:,i_H2)/2.*18.-f_og(l1_ogrid,:,:,i_H2O))*0.5)  &
-                *(exp(x(k)/del)-exp(-x(k)/del))/(exp(x(k)/del)+exp(-x(k)/del))
-          endif
-          if (lCH4) then
-            if (lroot) print*, 'No tanh initial function available for CH4 combustion.'
-          endif
-        enddo
-!
-      else
-        do k = 1,mx
-          if (x(k) >= init_x1 .and. x(k) < init_x2) then
-            f_og(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_H2O
-            if (lCO2) f_og(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
-                *final_massfrac_CO2
-          elseif (x(k) >= init_x2) then
-            if (lCO2) f_og(k,:,:,i_CO2) = final_massfrac_CO2
-            if (lH2O) f_og(k,:,:,i_H2O) = final_massfrac_H2O
-          endif
-        enddo
-      endif
-!
-      if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
-        Rgas = Rgas_unit_sys/unit_energy
-      endif
-!
-!  Find logaritm of density at inlet
-!
-      initial_mu1 = &
-          initial_massfractions(ichem_O2)/(mO2) &
-          +initial_massfractions(ichem_H2O)/(mH2O) &
-          +initial_massfractions(ichem_N2)/(mN2)
-      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
-          initial_massfractions(ichem_H2)/(mH2)
-      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
-      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
-      log_inlet_density = &
-          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
-!
-!  Initialize density
-!
-      call getmu_array_ogrid(f_og,mu1_full_og)
-      f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ilnrho) = log(init_pressure)&
-          -log(Rgas)-f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ilnTT) &
-          -log(mu1_full_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid))
-!
-!  Initialize velocity
-!
-!      f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iux)=
-!          exp(log_inlet_density - f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ilnrho)) &
-!          * (f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iux)+init_ux)
-      f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iux) = &
-          f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iux)+init_ux
-!
-!  Check if we want nolog of density or nolog of temperature
-!
-      if (ldensity_nolog) &
-          f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,irho) = &
-                exp(f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ilnrho))
-      if (ltemperature_nolog) &
-          f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,iTT) = &
-                exp(f_og(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ilnTT))
-!
-! Renormalize all species to be sure that the sum of all mass fractions
-! are unity
-!
-      do i = 1,mx_ogrid
-        do j = 1,my_ogrid
-          do k = 1,mz_ogrid
-            f_og(i,j,k,ichemspec) = f_og(i,j,k,ichemspec)/sum(f_og(i,j,k,ichemspec))
-          enddo
-        enddo
-      enddo
-!
-    endsubroutine flame_front
+!    endsubroutine flame_front
 !***********************************************************************
     subroutine calc_for_chem_mixture_ogrid(f_og)
 !
@@ -1133,7 +638,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
               do j3 = nn1_ogrid,nn2_ogrid
                 do j2 = mm1_ogrid,mm2_ogrid
-                  T_loc = exp(f_og(:,j2,j3,ilnTT))
+                  T_loc = f_og(:,j2,j3,iTT)
+!                  T_loc = exp(f_og(:,j2,j3,ilnTT))
                   T_loc_2 = T_loc*T_loc
                   T_loc_3 = T_loc_2*T_loc
                   T_loc_4 = T_loc_3*T_loc
@@ -1175,7 +681,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
                         print*,'iproc=',iproc
                         print*,'TT_full(:,j2,j3)=',T_loc
                         print*,'j2,j3=',j2,j3
-                        call inevitably_fatal_error('calc_for_chem_mixture', &
+                        call inevitably_fatal_error('calc_for_chem_mixture_ogrid', &
                         'TT_full(:,j2,j3) is outside range', .true.)
                       endif
 !
@@ -1417,43 +923,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine dYk_dt_ogrid
 !***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_init_pars
-!***********************************************************************
-    subroutine write_chemistry_init_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_init_pars)
-!
-    endsubroutine write_chemistry_init_pars
-!***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
-!
-      integer, intent(out) :: iostat
-!
-      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
-!
-    endsubroutine read_chemistry_run_pars
-!***********************************************************************
-    subroutine write_chemistry_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      write (unit, NML=chemistry_run_pars)
-!
-    endsubroutine write_chemistry_run_pars
-!***********************************************************************
-    subroutine rprint_chemistry(lreset,lwrite)
+    subroutine rprint_chemistry_og(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to chemistry
 !
@@ -1563,7 +1033,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         write (3,*) 'ichemspec=indgen('//trim(itoa(nchemspec))//') + '//trim(itoa(ichemspec(1)))
       endif
 !
-    endsubroutine rprint_chemistry
+    endsubroutine rprint_chemistry_og
 !***********************************************************************
 !    subroutine get_slices_chemistry(f,slices)
 !
@@ -1689,7 +1159,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !***********************************************************************
 !    subroutine chemkin_data
 !
-! Does not involve f array, not computed separately for the ogrid
+! All variables from this function apart from varname shared on the ogrid
 !
 !    endsubroutine chemkin_data
 !***********************************************************************
@@ -1911,7 +1381,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       real :: alpha, eps
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f_og
-      real, dimension(nx_ogrid,mreactions) :: vreactions, vreactions_p, vreactions_m 
+      real, dimension(nx_ogrid,nreactions) :: vreactions, vreactions_p, vreactions_m 
       real, dimension(nx_ogrid,nchemspec) :: xdot
       real, dimension(nx_ogrid) :: rho1
       real, dimension(nx_ogrid,nchemspec) :: molm
@@ -1947,16 +1417,16 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !  For diagnostics
 !
-      if (lchemistry_diag) then
-        do k = 1,nchemspec
-          do j = 1,nreactions
-            net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j) &
-                *sum(vreactions_p(:,j))
-            net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j) &
-                *sum(vreactions_m(:,j))
-          enddo
-        enddo
-      endif
+!      if (lchemistry_diag) then
+!        do k = 1,nchemspec
+!          do j = 1,nreactions
+!            net_react_p(k,j) = net_react_p(k,j)+stoichio(k,j) &
+!                *sum(vreactions_p(:,j))
+!            net_react_m(k,j) = net_react_m(k,j)+stoichio(k,j) &
+!                *sum(vreactions_m(:,j))
+!          enddo
+!        enddo
+!      endif
 !
 !  Calculate diagnostic quantities
 !
@@ -2098,415 +1568,19 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine get_RHS_Y_full_ogrid
 !***********************************************************************
-    subroutine get_cs2_full_ogr(cs2_full)
+!    subroutine get_cs2_full_ogr(cs2_full)
 !
-      real, dimension(mx,my,mz) :: cs2_full
-      intent(out) :: cs2_full
-!
-      call fatal_error('get_cs2_full_ogr',&
-        'This function is not working with chemistry_simple since all full arrays are removed')
-!
-    endsubroutine get_cs2_full_ogr
+!    endsubroutine get_cs2_full_ogr
 !***********************************************************************
-    subroutine get_cs2_slice(f,slice,dir,index)
+!    subroutine get_cs2_slice(f,slice,dir,index)
 !
-! TODO: what do I do with BCs? can I remove this function?
+! TODO: what do I do with BCs?
 !
-! Find a slice of the speed of sound
-!
-! 10-dez-09/nils: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(:,:), intent(out) :: slice
-      integer, intent(in) :: index, dir
-      intent(in) :: f
-      integer :: j2, j3, k
-      real, dimension(nchemspec) ::  cp_k, cv_k
-      real, dimension (:,:), allocatable :: TT_full, cp_full, cv_full!, mu1_slice
-!
-      if (Cp_const < impossible) then
-!
-      do k = 1,nchemspec
-        cp_k(k) = Cp_const/species_constants(k,imass)
-        cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
-      enddo
-!
-      if (dir == 1) then
-         allocate (TT_full(my,mz))  
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-!         allocate (mu1_slice(my,mz))  
-!         mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
-         if (ltemperature_nolog) then
-           TT_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,iTT)
-         else
-           TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
-         endif
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-  !                   mu1_slice(j2,j3)= &
-  !                        mu1_slice(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
-         enddo
- !        slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
- !             *mu1_slice(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
-         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-              *mu1_full_og(index,m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
-      elseif (dir == 2) then
-         allocate (TT_full(mx,mz))  
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-  !       allocate (mu1_slice(mx,mz)) 
-  !       mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
-         if (ltemperature_nolog) then
-           TT_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,iTT)
-         else
-           TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
-         endif
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-   !                  mu1_slice(j2,j3)= &
-   !                       mu1_slice(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
-         enddo
-  !       slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-  !            *mu1_slice(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
-         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-              *mu1_full_og(l1:l2,index,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
-      elseif (dir == 3) then
-         allocate (TT_full(mx,my))  
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-  !       allocate (mu1_slice(mx,my)) 
-  !       mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
-         if (ltemperature_nolog) then
-           TT_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,iTT)
-         else
-           TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
-         endif
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-   !                  mu1_slice(j2,j3)= &
-   !                       mu1_slice(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
-                     cp_full(j2,j3) = &
-                          cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
-                  enddo
-               enddo
-            endif
-         enddo
-   !      slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-   !           *mu1_slice(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
-         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-              *mu1_full_og(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2)*Rgas
-      else
-         call fatal_error('get_cs2_slice','No such dir!')
-      endif
-!
-      deallocate (TT_full)  
-      deallocate (cp_full)  
-      deallocate (cv_full)  
-!      deallocate (mu1_slice) 
-!
-      else
-!
-      if (dir == 1) then
-         allocate (TT_full(my,mz))  
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-  !       allocate (mu1_slice(my,mz))  
-  !       mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
-         if (ltemperature_nolog) then
-           TT_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,iTT)
-         else
-           TT_full(m1:m2,n1:n2) = exp(f(index,m1:m2,n1:n2,ilnTT))
-         endif
-         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-   !      do k=1,nchemspec
-   !         if (species_constants(k,imass)>0.) then
-   !            do j2=m1,m2
-   !               do j3=n1,n2
-   !                  mu1_slice(j2,j3)= &
-   !                       mu1_slice(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
-   !               enddo
-   !            enddo
-   !         endif
-   !      enddo
-   !      cv_full = cp_full - Rgas*mu1_slice
-   !      slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-   !           *mu1_slice(m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
-         cv_full = cp_full - Rgas*mu1_full_og(index,:,:)
-         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2) &
-              *mu1_full_og(index,m1:m2,n1:n2)*TT_full(m1:m2,n1:n2)*Rgas
-      elseif (dir == 2) then
-         allocate (TT_full(mx,mz))  
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-    !     allocate (mu1_slice(mx,mz)) 
-    !     mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
-         if (ltemperature_nolog) then
-           TT_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,iTT)
-         else
-           TT_full(l1:l2,n1:n2) = exp(f(l1:l2,index,n1:n2,ilnTT))
-         endif
-         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-     !    do k=1,nchemspec
-     !       if (species_constants(k,imass)>0.) then
-     !          do j2=l1,l2
-     !             do j3=n1,n2
-     !                mu1_slice(j2,j3)= &
-     !                     mu1_slice(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
-     !             enddo
-     !          enddo
-     !       endif
-     !    enddo
-     !    cv_full = cp_full - Rgas*mu1_slice
-     !    slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-     !         *mu1_slice(l1:l2,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
-         cv_full = cp_full - Rgas*mu1_full_og(:,index,:)
-         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2) &
-              *mu1_full_og(l1:l2,index,n1:n2)*TT_full(l1:l2,n1:n2)*Rgas
-      elseif (dir == 3) then
-         allocate (TT_full(mx,my))  
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-     !    allocate (mu1_slice(mx,my)) 
-     !    mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         TT_full = 0.
-         if (ltemperature_nolog) then
-           TT_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,iTT)
-         else
-           TT_full(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,index,ilnTT))
-         endif
-         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-      !   do k=1,nchemspec
-      !      if (species_constants(k,imass)>0.) then
-      !         do j2=l1,l2
-      !            do j3=m1,m2
-      !               mu1_slice(j2,j3)= &
-      !                    mu1_slice(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
-      !            enddo
-      !         enddo
-      !      endif
-      !   enddo
-      !   cv_full = cp_full - Rgas*mu1_slice
-   !      slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-   !           *mu1_slice(l1:l2,m1:m2)*TT_full(l1:l2,m1:m2)*Rgas
-         cv_full = cp_full - Rgas*mu1_full_og(:,:,index)
-         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2) &
-              *mu1_full_og(l1:l2,m1:m2,index)*TT_full(l1:l2,m1:m2)*Rgas
-      else
-         call fatal_error('get_cs2_slice','No such dir!')
-      endif
-!
-      deallocate (TT_full)  
-      deallocate (cp_full)  
-      deallocate (cv_full)  
- !     deallocate (mu1_slice) 
-!
-    endif  
-!
-    endsubroutine get_cs2_slice
+!    endsubroutine get_cs2_slice
 !***********************************************************************
-    subroutine get_gamma_slice(f,slice,dir,index)
+!    subroutine get_gamma_slice(f,slice,dir,index)
 !
-! TODO: what do I do with BCs? can I remove this function?
-!
-!  Get a 2D slice of gamma
-!
-!  10-dez-09/Nils Erland L. Haugen: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(:,:), intent(out) :: slice
-      integer, intent(in) :: index, dir
-      intent(in) :: f
-      integer :: j2, j3, k
-      real, dimension(nchemspec) ::  cp_k, cv_k
-      real, dimension (:,:), allocatable :: cp_full, cv_full!,mu1_slice
-!
-    if (Cp_const < impossible) then
-!
-      do k = 1,nchemspec
-        cp_k(k) = Cp_const/species_constants(k,imass)
-        cv_k(k) = (Cp_const-Rgas)/species_constants(k,imass)
-      enddo
-!
-      if (dir == 1) then
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-         cp_full = 0.
-         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-         cv_full = 0.
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=m1,m2
-                  do j3=n1,n2
-!                     cp_full(j2,j3) = &
-!                          cp_full(j2,j3)+cp_k(k)*f(index,j2,j3,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(index,j2,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
-         enddo
-        slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
-      elseif (dir == 2) then
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-         cp_full = 0.
-         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-         cv_full = 0.
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=n1,n2
-    !                 cp_full(j2,j3) = &
-    !                      cp_full(j2,j3)+cp_k(k)*f(j2,index,j3,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,index,j3,ichemspec(k))
-                  enddo
-               enddo
-            endif
-         enddo
-        slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
-      elseif (dir == 3) then
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-         cp_full = 0.
-         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-         cv_full = 0.
-         do k=1,nchemspec
-            if (species_constants(k,imass)>0.) then
-               do j2=l1,l2
-                  do j3=m1,m2
-       !             cp_full(j2,j3) = &
-       !                   cp_full(j2,j3)+cp_k(k)*f(j2,j3,index,ichemspec(k))
-                     cv_full(j2,j3) = &
-                          cv_full(j2,j3)+cv_k(k)*f(j2,j3,index,ichemspec(k))
-                  enddo
-               enddo
-            endif
-         enddo
-        slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
-      else
-        call fatal_error('get_gamma_slice','No such dir!')
-      endif
-!
-      deallocate (cp_full)  
-      deallocate (cv_full) 
-!
-    else
-!
-      if (dir == 1) then
-         allocate (cp_full(my,mz))  
-         allocate (cv_full(my,mz))  
-    !     allocate (mu1_slice(mx,my))  
-    !     mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         cp_full(m1:m2,n1:n2) = f(index,m1:m2,n1:n2,icp)
-    !     do k=1,nchemspec
-    !        if (species_constants(k,imass)>0.) then
-    !           do j2=m1,m2
-    !              do j3=n1,n2
-    !                 mu1_slice(j2,j3)= &
-    !                      mu1_slice(j2,j3)+f(index,j2,j3,ichemspec(k))/species_constants(k,imass)
-    !              enddo
-    !           enddo
-    !        endif
-    !     enddo
-    !     cv_full = cp_full - Rgas*mu1_slice
-         cv_full = cp_full - Rgas*mu1_full_og(index,:,:)
-         slice = cp_full(m1:m2,n1:n2)/cv_full(m1:m2,n1:n2)
-      elseif (dir == 2) then
-         allocate (cp_full(mx,mz))  
-         allocate (cv_full(mx,mz))  
-   !      allocate (mu1_slice(mx,my))  
-   !      mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         cp_full(l1:l2,n1:n2) = f(l1:l2,index,n1:n2,icp)
-    !     do k=1,nchemspec
-    !        if (species_constants(k,imass)>0.) then
-    !           do j2=l1,l2
-    !              do j3=n1,n2
-    !                 mu1_slice(j2,j3)= &
-    !                      mu1_slice(j2,j3)+f(j2,index,j3,ichemspec(k))/species_constants(k,imass)
-    !              enddo
-    !           enddo
-    !        endif
-    !     enddo
-    !     cv_full = cp_full - Rgas*mu1_slice
-         cv_full = cp_full - Rgas*mu1_full_og(:,index,:)
-         slice = cp_full(l1:l2,n1:n2)/cv_full(l1:l2,n1:n2)
-      elseif (dir == 3) then
-         allocate (cp_full(mx,my))  
-         allocate (cv_full(mx,my))  
-     !    allocate (mu1_slice(mx,my))  
-     !    mu1_slice= 0.
-         cp_full = 0.
-         cv_full = 0.
-         cp_full(l1:l2,m1:m2) = f(l1:l2,m1:m2,index,icp)
-     !    do k=1,nchemspec
-     !       if (species_constants(k,imass)>0.) then
-     !          do j2=l1,l2
-     !             do j3=m1,m2
-     !                mu1_slice(j2,j3)= &
-     !                     mu1_slice(j2,j3)+f(j2,j3,index,ichemspec(k))/species_constants(k,imass)
-     !             enddo
-     !          enddo
-     !       endif
-     !    enddo
-     !    cv_full = cp_full - Rgas*mu1_slice
-         cv_full = cp_full - Rgas*mu1_full_og(:,:,index)
-         slice = cp_full(l1:l2,m1:m2)/cv_full(l1:l2,m1:m2)
-      else
-        call fatal_error('get_gamma_slice','No such dir!')
-      endif
-!
-      deallocate (cp_full)  
-      deallocate (cv_full) 
- !     deallocate (mu1_slice)  
-!
-    endif
-!
-    endsubroutine get_gamma_slice
+!    endsubroutine get_gamma_slice
 !***********************************************************************
     subroutine air_field_ogr(f_og,PP)
 !
@@ -2638,7 +1712,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       enddo
 
       if (mvar < 5) then
-        call fatal_error("air_field", "I can only set existing fields")
+        call fatal_error("air_field_ogr", "I can only set existing fields")
       endif
 
       if (.not. reinitialize_chemistry) then
@@ -2746,75 +1820,27 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !***********************************************************************
 !    subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
-! TODO: what do I do with BCs? can I remove this function?
-!
-! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
-! its gradient, is required.
-!
-!  10-dez-09/Nils Erland L. Haugen: coded
-!
-!      use Deriv, only: der_onesided_4_slice_other
-!
-!      real, dimension(mx,my,mz,mfarray) :: f
-!      real, dimension(:,:), intent(out) :: slice
-!      real, dimension(:,:), intent(out) :: grad_slice
-!      integer, intent(in) :: index, sgn, direction
-!      intent(in) :: f
-!
-!      integer :: j2, j3, k
-!
-!      if (direction == 1) then
-!        slice = mu1_full_og(index,m1:m2,n1:n2)
-!        call der_onesided_4_slice_other(mu1_full_og,sgn,grad_slice,index,direction)
-!      elseif (direction == 2) then
-!        slice = mu1_full_og(l1:l2,index,n1:n2)
-!        call der_onesided_4_slice_other(mu1_full_og,sgn,grad_slice,index,direction)
-!      else
-!        slice = mu1_full_og(l1:l2,m1:m2,index)
-!        call der_onesided_4_slice_other(mu1_full_og,sgn,grad_slice,index,direction)
-!      endif
-!
 !    endsubroutine get_mu1_slice
 !***********************************************************************
-    subroutine get_reac_rate(wt,f_og,p_ogrid)
+!    subroutine get_reac_rate(wt,f_og,p_ogrid)
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
-      real, dimension(nx_ogrid) :: wt
-      real, dimension(nx_ogrid,nchemspec) :: ydot
-      type (pencil_case_ogrid) :: p_ogrid
+!      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
+!      real, dimension(nx_ogrid) :: wt
+!      real, dimension(nx_ogrid,nchemspec) :: ydot
+!      type (pencil_case_ogrid) :: p_ogrid
 !
-      ydot = p_ogrid%DYDt_reac
-      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireaci(1):ireaci(nchemspec)) = ydot
+!      ydot = p_ogrid%DYDt_reac
+!      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireaci(1):ireaci(nchemspec)) = ydot
 !         f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
 !
-      if (maux == nchemspec+1) f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireaci(nchemspec)+1) = wt
+!      if (maux == nchemspec+1) f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireaci(nchemspec)+1) = wt
 !         f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
 !
-    endsubroutine get_reac_rate
+!    endsubroutine get_reac_rate
 !***********************************************************************
-    subroutine chemistry_clean_up()
+!    subroutine chemistry_clean_up()
 !
-      if (allocated(stoichio))       deallocate(stoichio)
-      if (allocated(Sijm))           deallocate(Sijm)
-      if (allocated(Sijp))           deallocate(Sijp)
-      if (allocated(kreactions_z))   deallocate(kreactions_z)
-      if (allocated(kreactions_m))   deallocate(kreactions_m)
-      if (allocated(kreactions_p))   deallocate(kreactions_p)
-      if (allocated(reaction_name))  deallocate(reaction_name)
-      if (allocated(B_n))            deallocate(B_n)
-      if (allocated(alpha_n))        deallocate(alpha_n)
-      if (allocated(E_an))           deallocate(E_an)
-      if (allocated(low_coeff))      deallocate(low_coeff)
-      if (allocated(high_coeff))     deallocate(high_coeff)
-      if (allocated(troe_coeff))     deallocate(troe_coeff)
-      if (allocated(a_k4))           deallocate(a_k4)
-      if (allocated(Mplus_case))     deallocate(Mplus_case)
-      if (allocated(photochem_case)) deallocate(photochem_case)
-      if (allocated(net_react_m))    deallocate(net_react_m)
-      if (allocated(net_react_p))    deallocate(net_react_p)
-      if (allocated(back))           deallocate(back)
-!
-    endsubroutine chemistry_clean_up
+!    endsubroutine chemistry_clean_up
 !***********************************************************************
 !    subroutine find_remove_real_stoic(Speciesstring,lreal,stoi,startindex)
 !
@@ -2860,21 +1886,11 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !    endsubroutine read_transport_data
 !***********************************************************************
-    subroutine jacobn_ogr(f_og,jacob)
+!    subroutine jacobn_ogr(f_og,jacob)
 !
-!   dummy routine
-!
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec,nchemspec) :: jacob
-!
-          call fatal_error('jacobn', &
-              'this does not work for simplified chemistry!')
-!
-      call keep_compiler_quiet(f_og)
-!
-    endsubroutine jacobn_ogr
+!    endsubroutine jacobn_ogr
 !***********************************************************************
-    subroutine chemspec_normalization(f_og)
+    subroutine chemspec_normalization_og(f_og)
 !
 !   20-sep-10/Natalia: coded
 !   renormalization of the species
@@ -2891,9 +1907,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         f_og(:,:,:,ichemspec(k)) = f_og(:,:,:,ichemspec(k))/sum_Y
       enddo
 !
-    endsubroutine chemspec_normalization
+    endsubroutine chemspec_normalization_og
 !***********************************************************************
-    subroutine chemspec_normalization_N2(f_og)
+    subroutine chemspec_normalization_N2_og(f_og)
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: sum_Y !, sum_Y2
@@ -2909,6 +1925,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       enddo
       f_og(:,:,:,isN2)=1.0-sum_Y
 !
-    endsubroutine chemspec_normalization_N2
+    endsubroutine chemspec_normalization_N2_og
 !***********************************************************************
 endmodule solid_cells_ogrid_chemistry

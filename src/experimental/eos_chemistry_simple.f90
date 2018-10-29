@@ -291,6 +291,9 @@ module EquationOfState
         case (ieosvar_rho+ieosvar_cs2)
           if (lroot) print*,"select_eos_variable: Using rho and cs2",iproc
           ieosvars=irho_cs2
+        case (ieosvar_rho+ieosvar_TT)
+          if (lroot) print*, 'select_eos_variable: Using rho and TT'
+          ieosvars=irho_TT
         case default
           if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
@@ -494,7 +497,7 @@ module EquationOfState
          endif
 !
          if (minval(p%TT)==0.) then
-           call fatal_error('calc_pencils_eos','p%TT=0!')
+   !        call fatal_error('calc_pencils_eos','p%TT=0!')
          endif         
        endif
 !

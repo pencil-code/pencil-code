@@ -342,14 +342,6 @@ grav_r_message:
 	exit 1
 endif
 #
-ifeq ($(SOLID_CELLS),solid_cells_ogrid)
-  ifeq ($(CHEMISTRY),chemistry)
-        @echo ";;; One can only use experimental/chemistry_simple in connection with the solid_cells_ogrid module."
-        @echo ";;; Please adapt the settings in Makefile.local."
-	exit 1
-  endif
-endif
-#
 ifdef ENTROPY
   ENERGY     =   $(ENTROPY)
 endif

@@ -192,6 +192,11 @@ module Energy
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
+      if (lsolid_cells) then
+        call put_shared_variable('ladvection_temperature',ladvection_temperature)
+        call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
+        call put_shared_variable('lupw_lnTT',lupw_lnTT)
+      endif
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !

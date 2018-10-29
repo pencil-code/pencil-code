@@ -41,10 +41,6 @@ module Chemistry
   real, dimension(:,:,:), pointer :: mu1_full
   real, dimension(mx,my,mz,nchemspec) :: cp_R_spec
 ! parameters for simplified cases
-  real :: lambda_const=impossible
-  real :: visc_const=impossible
-  real :: Sc_number=0.7
-  logical :: lfix_Sc=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
   character(len=30) :: reac_rate_method = 'chemkin'
 ! parameters for initial conditions
@@ -77,18 +73,14 @@ module Chemistry
   logical, save :: lew_exist=.false.
 !
   logical :: lfilter=.false.
-  logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
   integer :: nreactions=0, nreactions1=0, nreactions2=0
   integer :: ll1, ll2, mm1, mm2, nn1, nn2
-  real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
 !
   integer :: mreactions
 !
 !  The stociometric factors need to be reals for arbitrary reaction orders
 !
   real, allocatable, dimension(:,:) :: stoichio, Sijm, Sijp
-  real, allocatable, dimension(:,:) :: kreactions_z
-  real, allocatable, dimension(:) :: kreactions_m, kreactions_p
   logical, allocatable, dimension(:) :: back
   character(len=30), allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
@@ -105,7 +97,6 @@ module Chemistry
   real :: amplchem=1., kx_chem=1., ky_chem=1., kz_chem=1., widthchem=1.
   real :: chem_diff=0.
   character(len=labellen), dimension(ninit) :: initchem='nothing'
-  character(len=labellen), allocatable, dimension(:) :: kreactions_profile
   character(len=60) :: prerun_directory='nothing'
   character(len=60) :: file_name='nothing'
 !
@@ -142,10 +133,10 @@ module Chemistry
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
       amplchemk,amplchemk2, chem_diff,nu_spec, &
-      lThCond_simple,lambda_const, visc_const,&
+      lThCond_simple,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
       init_TT2,init_rho,&
-      init_ux,init_uy,init_uz,Sc_number,init_pressure,lfix_Sc, &
+      init_ux,init_uy,init_uz,init_pressure, &
       str_thick,lT_tanh,lT_const,lheatc_chemistry, &
       prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
@@ -156,11 +147,10 @@ module Chemistry
 !
 ! run parameters
   namelist /chemistry_run_pars/ &
-      lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh, &
-      lThCond_simple,visc_const,reinitialize_chemistry,init_from_file, &
+      lThCond_simple,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lreac_as_aux, reac_rate_method,global_phi
@@ -505,13 +495,40 @@ module Chemistry
 !
 !  Needed by ogrid_chemistry 
 !
+   if (lsolid_cells) then
+!
       call put_shared_variable('lheatc_chemistry', lheatc_chemistry)
+      call put_shared_variable('ldiffusion',ldiffusion)
+      call put_shared_variable('ldiff_corr',ldiff_corr)
+      call put_shared_variable('lew_exist',lew_exist)
       call put_shared_variable('lcheminp',lcheminp)
+      call put_shared_variable('lThCond_simple',lThCond_simple)
       call put_shared_variable('tran_exist',tran_exist)
       call put_shared_variable('tran_data',tran_data)
+      call put_shared_variable('lt_const',lt_const)
+      call put_shared_variable('ladvection',ladvection)
+      call put_shared_variable('lfilter',lfilter)
+      call put_shared_variable('lfilter_strict',lfilter_strict)
       call put_shared_variable('Lewis_coef1',Lewis_coef1)
-      call put_shared_variable('Rgas',Rgas)
-      call put_shared_variable('Sc_number',Sc_number)
+      call put_shared_variable('nreactions',nreactions)
+      call put_shared_variable('Sijm',Sijm)
+      call put_shared_variable('Sijp',Sijp)
+ !     call put_shared_variable('reaction_name',reaction_name)
+      call put_shared_variable('back',back)
+      call put_shared_variable('B_n',B_n)
+      call put_shared_variable('alpha_n',alpha_n)
+      call put_shared_variable('E_an',E_an)
+      call put_shared_variable('low_coeff',low_coeff)
+      call put_shared_variable('high_coeff',high_coeff)
+      call put_shared_variable('troe_coeff',troe_coeff)
+      call put_shared_variable('a_k4',a_k4)
+      call put_shared_variable('Mplus_case',Mplus_case)
+      call put_shared_variable('photochem_case',photochem_case)
+      call put_shared_variable('stoichio',stoichio)
+      call put_shared_variable('iaa1',iaa1)
+      call put_shared_variable('iaa2',iaa2)
+!
+   endif 
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -1735,17 +1752,6 @@ module Chemistry
       if (.not. tran_exist) then
         inquire (file='tran.in',exist=tran_exist)
       endif
-!      inquire (file='lewis.dat',exist=lew_exist)
-!
-!  Allocate binary diffusion coefficient array
-!
-!        if (.not. lfix_Sc) then
-!          if (.not. lreloading) then
-!            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-!            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-!                "for binary diffusion coefficients")
-!          endif
-!        endif
 !
       if (tran_exist) then
         if (lroot) then
@@ -1753,23 +1759,6 @@ module Chemistry
         endif
         call read_transport_data
       endif
-!
-!      if (lew_exist) then
-!        if (lroot) then
-!          print*,'lewis.dat file with transport data is found.'
-!          print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
-!        endif
-!        call read_Lewis
-!      endif
-!
-!      if (.not. lew_exist .and. lDiff_lewis .and. lroot) then
-!          print*, 'No lewis.dat file present, switch to simplified diffusion'
-!          lDiff_lewis = .false.
-!          lDiff_simple = .true.
-!        else
-!          print*, 'Le=1'
-!          lDiff_lewis = .true.
-!      endif
 !
       if (lroot .and. .not. tran_exist .and. .not. lew_exist) then
         if (chem_diff == 0.) &
@@ -1881,14 +1870,6 @@ module Chemistry
       character(len=fnlen) :: input_file2="./data/stoich.out"
       integer :: file_id=123
       logical :: chemin,cheminp
-!
-!  Allocate binary diffusion coefficient array
-!
-!          if (.not. lreloading) then
-!            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-!            if (stat > 0) call stop_it("Couldn't allocate memory "// &
-!                "for binary diffusion coefficients")
-!          endif
 !
         tran_data(1,1:7) = (/ 1.0000000000000000        ,38.000000000000000        ,2.9199999999999999        ,&
                               0.0000000000000000E+000  ,0.79000000000000004        ,280.00000000000000        ,&
@@ -4937,9 +4918,6 @@ module Chemistry
       if (allocated(stoichio))       deallocate(stoichio)
       if (allocated(Sijm))           deallocate(Sijm)
       if (allocated(Sijp))           deallocate(Sijp)
-      if (allocated(kreactions_z))   deallocate(kreactions_z)
-      if (allocated(kreactions_m))   deallocate(kreactions_m)
-      if (allocated(kreactions_p))   deallocate(kreactions_p)
       if (allocated(reaction_name))  deallocate(reaction_name)
       if (allocated(B_n))            deallocate(B_n)
       if (allocated(alpha_n))        deallocate(alpha_n)

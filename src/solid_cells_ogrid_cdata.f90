@@ -328,6 +328,7 @@ module solid_cells_ogrid_cdata
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1_ogrid,ll2_ogrid,mm1_ogrid,mm2_ogrid,nn1_ogrid,nn2_ogrid
   logical, pointer :: lheatc_chemistry
+  real, dimension(nchemspec) :: chemspec0
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
