@@ -4,7 +4,15 @@
 ###
 
 MPICOMM   =   mpicomm
+
+#================================
+# Please uncomment one IO option:
+#================================
 IO        =   io_collect
+#--------------------------------
+#IO        =   io_dist
+#================================
+
 FILE_IO   =   file_io_f95
 
 HYDRO     =   hydro
