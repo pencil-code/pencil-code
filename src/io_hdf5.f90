@@ -67,6 +67,8 @@ module Io
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
 !
+      lmonolithic_io = .true.
+!
     endsubroutine register_io
 !***********************************************************************
     subroutine finalize_io

@@ -88,6 +88,8 @@ module Io
       if (lroot) call svn_id ("$Id$")
       if (ldistribute_persist) call fatal_error ('io_mpi2', "Distibuted persistent variables are not allowed with MPI-IO.")
 !
+      lmonolithic_io = .true.
+!
       if (lwrite_2d) then
         io_dims=3
       else
