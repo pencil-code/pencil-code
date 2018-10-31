@@ -1275,6 +1275,7 @@ module Hydro
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
       integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz
+      logical :: lvectorpotential=.false.
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -1749,7 +1750,7 @@ module Hydro
         case ('power_randomphase_hel')
           call power_randomphase_hel(ampluu(j),initpower,initpower2, &
             cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
-            lskip_projection, lno_second_ampl, .false.)
+            lskip_projection, lno_second_ampl,lvectorpotential,lscale_tobox)
 !
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower,f,iux,N_modes_uu)
