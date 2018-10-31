@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  This module takes care of massive parallel HDF5 file Input/Output.
-!  We use here only F95 features for HPC-friendly behaviour.
+!  We use here only F95 and MPI features for HPC-friendly behaviour.
 !
 module HDF5_IO
 !
