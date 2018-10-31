@@ -180,7 +180,7 @@ module Initcond
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
                                    *spread(spread(sin(ky1*y),1,mx),3,mz)&
                                    *spread(spread(sin(kz1*z),1,mx),2,my))
-!XXX
+!
       endif
 !
     endsubroutine sinx_siny_sinz
@@ -4707,7 +4707,7 @@ module Initcond
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
       else
-        lscale_tobox1 = .false.
+        lscale_tobox1 = .true.
       endif
 !
 !  Allocate memory for arrays.
@@ -4738,15 +4738,15 @@ module Initcond
 !  calculate k^2
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lx
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lx
         kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Ly
+        if (.not.lscale_tobox1) scale_factor=2*pi/Ly
         ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lz
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  integration over shells
@@ -4847,7 +4847,7 @@ module Initcond
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
       else
-        lscale_tobox1 = .false.
+        lscale_tobox1 = .true.
       endif
 !
 !  Allocate memory for arrays.
@@ -4885,15 +4885,15 @@ module Initcond
 !  calculate k^2
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lx
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lx
         kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Ly
+        if (.not.lscale_tobox1) scale_factor=2*pi/Ly
         ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lz
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
@@ -4934,11 +4934,11 @@ module Initcond
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
 !  The 1/2 factor comes from setting uk (as opposed to uk^2).
 !
+        fact=(kpeak1*scale_factor)**1.5
         if (lvectorpotential) then
-          fact=kpeak1**2.5
+          fact=fact*kpeak1
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
         else
-          fact=kpeak1**1.5
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
         r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
