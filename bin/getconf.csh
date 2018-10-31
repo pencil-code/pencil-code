@@ -2055,6 +2055,7 @@ if ($HDF5) then
   # set procdirs = ()
   # we currently still require the proc directories for additional files:
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
+  set subdirs = ("allprocs" "allprocs/slices" "reduced" "averages" "idl")
 else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
 endif
