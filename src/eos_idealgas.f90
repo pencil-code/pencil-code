@@ -2529,6 +2529,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
+      real, dimension (size(f,2),size(f,3)) :: hcond_total, hcond_kramers
+      real :: hcond_Kprof
       integer :: i
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
@@ -2653,7 +2655,7 @@ module EquationOfState
 !            
           TT_yz=cs2_yz/(gamma_m1*cp)
 !
-!  Calculate d rho/d x    or   d ln(rho) / dx
+!  Calculate d rho/d x  or  d ln(rho) / d x
 !
           dlnrhodx_yz= coeffs_1_x(1,2)*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
                       +coeffs_1_x(2,2)*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
@@ -2663,9 +2665,6 @@ module EquationOfState
 !          dlnrhodx_yz=fac*(45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
 !                    -       9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
 !                    +           (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
-!print*, 'coeffs(1)=', 45.*fac, coeffs_1_x(1,2)
-!print*, 'coeffs(2)=', -9.*fac, coeffs_1_x(2,2)
-!print*, 'coeffs(3)=',     fac, coeffs_1_x(3,2)
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density to d rho/d x and divide by total density
@@ -2679,13 +2678,20 @@ module EquationOfState
 
           endif
 !
+!  Compute total heat conductivity
+!
           if (lheatc_kramers) then
-            dsdx_yz=-cv*( (sigmaSBt/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
-                         +gamma_m1*dlnrhodx_yz)      ! no turbulent diffusivity considered here!
+            hcond_kramers=hcond0_kramers*TT_yz**(6.5*nkramers)*rho_yz**(-2.*nkramers)
           else
-            dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*gamma_m1*dlnrhodx_yz)/ &
-                     (chit_prof2*chi_t*rho_yz+hcondxtop/cv)
+            hcond_kramers=0.
           endif
+!
+          if (hcondxtop == impossible) hcond_Kprof=0.
+          if (hcondxtop /= impossible) hcond_Kprof=hcondxtop
+          hcond_total=hcond_Kprof+hcond_kramers
+!
+           dsdx_yz=-(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
+                   (chit_prof2*chi_t*rho_yz+hcond_total/cv)
 !
 !  Substract gradient of reference entropy.
 !
