@@ -21,7 +21,6 @@ module Io
   include 'hdf5_io.h'
   include 'io.h'
   include 'mpif.h'
-  include 'record_types.h'
 !
   interface write_persist
     module procedure write_persist_logical_0D
