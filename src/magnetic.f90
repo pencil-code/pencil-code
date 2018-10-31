@@ -1716,6 +1716,7 @@ module Magnetic
       real :: beq2,RFPradB12,RFPradJ12
       real :: s,c,sph_har_der
       integer :: j,iyz,llp1
+      logical :: lvectorpotential=.true.
 !
       do j=1,ninit
 !
@@ -1735,7 +1736,8 @@ module Magnetic
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
-            lskip_projection_aa,lno_second_ampl_aa,.true.,k1hel=k1hel,k2hel=k2hel)
+            lskip_projection_aa,lno_second_ampl_aa,lvectorpotential, &
+            lscale_tobox, k1hel=k1hel, k2hel=k2hel)
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
