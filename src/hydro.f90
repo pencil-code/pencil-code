@@ -193,6 +193,7 @@ module Hydro
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
   logical :: lremove_uumeanxy=.false.
+  logical :: lremove_uumeanz=.false.
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.,lcalc_uumean
@@ -228,14 +229,14 @@ module Hydro
       inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
       xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, phase_diffrot, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
-      lremove_uumeanxy, &
+      lremove_uumeanxy,lremove_uumeanz, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       utop, ubot, omega_out, omega_in, lprecession, omega_precession, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
       lalways_use_gij_etc, amp_centforce, &
-      lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz, &
+      lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz,lcalc_uumeanz, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
@@ -3862,6 +3863,15 @@ module Hydro
         enddo
       endif
 !
+!  Remove mean flow (xy average).
+!
+        if (lremove_uumeanz) then
+          do j=1,3
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+            enddo
+          enddo
+        endif
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
@@ -6117,6 +6127,7 @@ module Hydro
       real, dimension (nx) :: prof_amp1, prof_amp2, local_Omega
       real, dimension (mz) :: prof_amp3
       real, dimension (my) :: prof_amp4
+      real, dimension (nz,3), save :: uumz_prof
       character (len=labellen) :: prof_diffrot
       real :: tmp, tmp2
       logical :: ldiffrot_test
@@ -6475,6 +6486,20 @@ module Hydro
           (uumxy(l1:l2,m,3)-ampl1_diffrot*local_Omega*x(l1:l2)*sinth(m))
       endif
 !
+!  Relax toward profiles read from file
+!
+      case ('uumz_profile')
+      if (.not.lcalc_uumeanz) then
+        call fatal_error("uumz_profile","you need to set lcalc_uumean=T in hydro_run_pars")
+      else
+        if (it == 1) then 
+          call read_uumz_profile(uumz_prof)
+        endif
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*(uumz(n,1)-uumz_prof(n-nghost,1))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumz(n,2)-uumz_prof(n-nghost,2))
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(uumz(n,3)-uumz_prof(n-nghost,3))
+      endif
+!
 !  no profile matches
 !
       case default
@@ -6482,6 +6507,62 @@ module Hydro
       endselect
 !
     endsubroutine impose_profile_diffrot
+!***********************************************************************
+    subroutine read_uumz_profile(uumz_prof)
+!
+!  Read radial profiles of horizontally averaged flows from file.
+!
+!  23-oct-18/pjk: added
+!
+      real, dimension(nz,3), intent(out) :: uumz_prof
+      integer, parameter :: nztotal=nz*nprocz
+      real, dimension(nz*nprocz) :: tmp1z,tmp2z,tmp3z
+      real :: var1,var2,var3
+      logical :: exist
+      integer :: stat
+!
+!  Read hcond and glhc and write into an array.
+!  If file is not found in run directory, search under trim(directory).
+!
+      inquire(file='uumz.dat',exist=exist)
+      if (exist) then
+        open(31,file='uumz.dat')
+      else
+        inquire(file=trim(directory)//'/uumz.ascii',exist=exist)
+        if (exist) then
+          open(31,file=trim(directory)//'/uumz.ascii')
+        else
+          call fatal_error('read_uumz_profile','*** error *** - no input file')
+        endif
+      endif
+!
+!  Read profiles.
+!
+!  Gravity in the z-direction
+!
+      if (lgravz) then
+        do n=1,nztotal
+          read(31,*,iostat=stat) var1,var2,var3
+          if (stat<0) exit
+          if (ip<5) print*,'uxmz, uymz, uzmz: ',var1,var2,var3
+          tmp1z(n)=var1
+          tmp2z(n)=var2
+          tmp3z(n)=var3
+        enddo
+!
+!  Assuming no ghost zones in uumz.dat.
+!
+        do n=n1,n2
+          uumz_prof(n-nghost,1)=tmp1z(ipz*nz+n-nghost)
+          uumz_prof(n-nghost,2)=tmp2z(ipz*nz+n-nghost)
+          uumz_prof(n-nghost,3)=tmp3z(ipz*nz+n-nghost)
+        enddo
+!
+        close(31)
+!
+      endif
+!
+    endsubroutine read_uumz_profile
 !***********************************************************************
     subroutine impose_velocity_ceiling(f)
 !
