@@ -2455,6 +2455,8 @@ module Special
         enddo
         close (10)
 !
+!  Read magnetogram
+!
         open (10,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
           if (lmag_bound_vec) then
@@ -2492,6 +2494,8 @@ module Special
           Azl = maghel_ampl/Bz2xym * Bz0l(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
         endif
 !
+!  optionally, also use and transform Bx and By; otherwise just Bz
+!
         if (lmag_bound_vec) then
           Bx0_i = 0.
           call fourier_transform_other(Bx0l,Bx0_i)
@@ -2517,14 +2521,22 @@ module Special
 !            A_i =  Bz0l *ky/ky(1,idy2) + By0_i*kz/ky(1,idy2)
 !          endwhere
 !        else
+!
+!  compute Ax, but call it here just A
+!
           where (k2 /= 0 )
             A_r = -Bz0_i*ky/k2
             A_i =  Bz0l *ky/k2
           elsewhere
-            A_r = -Bz0_i*ky/ky(1,idy2)
-            A_i =  Bz0l *ky/ky(1,idy2)
+            !A_r = -Bz0_i*ky/ky(1,idy2)
+            !A_i =  Bz0l *ky/ky(1,idy2)
+!AXEL: why not set to zero here?
+            A_r = 0.
+            A_i = 0.
           endwhere
 !        endif
+!
+!  transform back to real space
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Axl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
@@ -2538,14 +2550,22 @@ module Special
 !            A_i = -Bz0l *kx/kx(idx2,1)  - Bx0_i*kz/kx(idx2,1)
 !          endwhere
 !        else
+!
+!  Compute Ay, and call it A (real and imaginary parts)
+!
           where (k2 /= 0 )
             A_r =  Bz0_i*kx/k2
             A_i = -Bz0l *kx/k2
           elsewhere
-            A_r =  Bz0_i*kx/kx(idx2,1)
-            A_i = -Bz0l *kx/kx(idx2,1)
+            !A_r =  Bz0_i*kx/kx(idx2,1)
+            !A_i = -Bz0l *kx/kx(idx2,1)
+!AXEL: why not set to zero here?
+            A_r = 0.
+            A_i = 0.
           endwhere
 !        endif
+!
+!  transform back to real space
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
