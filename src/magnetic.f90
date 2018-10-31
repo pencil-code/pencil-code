@@ -3969,27 +3969,35 @@ module Magnetic
       endif
 !
       if (lresi_smagorinsky) then
-        if (letasmag_as_aux) then
-           eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
-           call multsv(eta_smag+eta,p%del2a,fres)
-           call grad(f,ietasmag,geta)
+        if (.not.lweyl_gauge) then
+          if (letasmag_as_aux) then
+             eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+             call multsv(eta_smag+eta,p%del2a,fres)
+             call grad(f,ietasmag,geta)
 !
-           do j=1,3 
-             fres(:,j)=fres(:,j)+geta(:,j)*p%diva
-           enddo
+             do j=1,3 
+               fres(:,j)=fres(:,j)+geta(:,j)*p%diva
+             enddo
 !
-           if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
-           etatotal=etatotal+eta_smag+eta
-        else  
+          else  
 !
 !  Term grad(eta_smag) divA not implemented with pencils!
 !
-           eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
-           call multsv(eta_smag+eta,p%del2a,fres)
+            eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+            call multsv(eta_smag+eta,p%del2a,fres)
 !
-           if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
-           etatotal=etatotal+eta_smag+eta
+          endif
+        else
+          eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+!
+          do j=1,3
+            fres(:,j)=fres(:,j)-eta_smag*mu0*p%jj(:,j)
+          enddo
+!
         endif
+!
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_smag+eta
+        etatotal=etatotal+eta_smag+eta
       endif
 !
       if (lresi_smagorinsky_nusmag) then
