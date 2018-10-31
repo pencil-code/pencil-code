@@ -467,6 +467,33 @@ module Io
 !
     endsubroutine output_slice_position
 !***********************************************************************
+    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+!
+!  append to a slice file
+!
+!  12-nov-02/axel: coded
+!  26-jun-06/anders: moved to slices
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
+!  28-Oct-2018/PABourdin: cleaned up, moved to IO module
+!
+      logical, intent(in) :: lwrite
+      real, intent(in) :: time
+      character (len=*), intent(in) :: label, suffix
+      real, dimension (:) :: grid
+      integer, intent(in) :: pos, grid_pos
+      integer, intent(in) :: ndim1, ndim2
+      real, dimension (:,:), pointer :: data
+!
+      if (.not. lwrite .or. .not. associated(data)) return
+!
+!  files data/procN/slice*.* are distributed and will be synchronized a-posteriori on I/O error
+!
+      open (lun_output, file=trim(directory)//'/slice_'//trim(label)//'.'//trim(suffix), form='unformatted', position='append')
+      write (lun_output) data, time, grid(pos)
+      close (lun_output)
+!
+    endsubroutine output_slice
+!***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)

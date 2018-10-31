@@ -31,6 +31,7 @@ module HDF5_IO
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
     module procedure output_hdf5_part_2D
+    module procedure output_hdf5_slice_2D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
   endinterface
@@ -1022,6 +1023,93 @@ module HDF5_IO
       enddo
 !
     endsubroutine output_hdf5_part_2D
+!***********************************************************************
+    subroutine output_hdf5_slice_2D(name, data, ldim1, ldim2, gdim1, gdim2, ip1, ip2, lhas_data)
+!
+!  Write HDF5 dataset from a 2D xy-slice.
+!
+!  29-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      real, dimension (:,:), pointer :: data
+      integer, intent(in) :: ldim1, ldim2, gdim1, gdim2, ip1, ip2
+      logical, intent(in) :: lhas_data
+!
+      integer(kind=8), dimension (2) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+!
+      if (.not. lcollective) call fatal_error ('output_hdf5', '2D slice output requires global file "'//trim (name)//'"', .true.)
+!
+      loc_dim(1) = ldim1
+      loc_dim(2) = ldim2
+      glob_dim(1) = gdim1
+      glob_dim(2) = gdim2
+      loc_start(1) = 0
+      loc_start(2) = 0
+      glob_start(1) = ip1 * ldim1
+      glob_start(2) = ip2 * ldim2
+!
+      ! define 'file-space' to indicate the data portion in the global file
+      call h5screate_simple_f (2, glob_dim, h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create global file space "'//trim (name)//'"', .true.)
+!
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_simple_f (2, loc_dim, h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//trim (name)//'"', .true.)
+!
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'open dataset "'//trim (name)//'"', .true.)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//trim (name)//'"', .true.)
+      endif
+      call h5sclose_f (h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//trim (name)//'"', .true.)
+!
+      ! define local 'hyper-slab' in the global file
+      h5_stride(:) = 1
+      h5_count(:) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'get dataset for file space "'//trim (name)//'"', .true.)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glob_start(1:2), h5_count, h5_err, h5_stride, loc_dim(1:2))
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within file "'//trim (name)//'"', .true.)
+      if (.not. lhas_data) then
+        call h5sselect_none_f (h5_fspace, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'set empty hyperslab within file "'//trim (name)//'"', .true.)
+      endif
+!
+      ! define local 'hyper-slab' portion in memory
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, loc_start(1:2), h5_count, h5_err, h5_stride, loc_dim(1:2))
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within memory "'//trim (name)//'"', .true.)
+      if (.not. lhas_data) then
+        call h5sselect_none_f (h5_mspace, h5_err)
+        if (h5_err /= 0) call fatal_error ('output_hdf5', 'set empty hyperslab within memory "'//trim (name)//'"', .true.)
+      endif
+!
+      ! prepare data transfer
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'set data transfer properties "'//trim (name)//'"', .true.)
+      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select collective IO "'//trim (name)//'"', .true.)
+!
+      ! collectively write the data
+      call h5dwrite_f (h5_dset, h5_ntype, data, &
+          glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write dataset "'//trim (name)//'"', .true.)
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close file space "'//trim (name)//'"', .true.)
+      call h5sclose_f (h5_mspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close memory space "'//trim (name)//'"', .true.)
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close dataset "'//trim (name)//'"', .true.)
+      call h5pclose_f (h5_plist, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
+!
+    endsubroutine output_hdf5_slice_2D
 !***********************************************************************
     subroutine output_hdf5_3D(name, data)
 !

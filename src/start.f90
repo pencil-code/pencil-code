@@ -616,7 +616,7 @@ program start
   if (dvid/=0.) then
     call setup_slices
     call wvid_prepare
-    call wvid(f,trim(directory)//'/slice_')
+    call wvid(f)
   endif
 !
 !  Write global variables.

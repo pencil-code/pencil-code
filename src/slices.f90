@@ -12,7 +12,7 @@ module Slices
 !
   implicit none
 !
-  public :: wvid, wvid_prepare, setup_slices, wslice
+  public :: wvid, wvid_prepare, setup_slices
 !
   real, public :: tvid
   integer, public :: nvid
@@ -34,7 +34,7 @@ contains
 !
 !  20-oct-97/axel: coded
 !  08-oct-02/tony: increased size of file to handle datadir//'/tvid.dat'
-!  13-nov-02/axel: added more fields, use wslice.
+!  13-nov-02/axel: added more fields
 !  18-mar-03/axel: added dust velocity
 !
       logical, save :: lfirst_call=.true.
@@ -52,23 +52,25 @@ contains
 !
       call update_snaptime(file,tvid,nvid,dvid,t,lvideo)
 !
-!  Save current time so that the time that is written out in wslice() is not
-!  from the next time step
+!  Save current time so that the time that is written out in
+!  output_slice() is not from the next time step
 !
       if (lvideo) tslice = t
 !
     endsubroutine wvid_prepare
 !***********************************************************************
-    subroutine wvid(f,path)
+    subroutine wvid(f)
 !
 !  Write slices for animation of scalar field
 !  (or one component of a vector field) on the perifery of a box.
 !  Can be visualized in idl using rvid_box.pro.
 !
-!  13-nov-02/axel: added more fields, use wslice.
+!  13-nov-02/axel: added more fields
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
+!  28-oct-18/PABourdin: moved output to IO modules 'output_slice'
 !
       use General,         only: itoa
+      use IO,              only: output_slice
       use Slices_methods,  only: assign_slices_scal
       use Chemistry,       only: get_slices_chemistry
       use Chiral,          only: get_slices_chiral
@@ -92,14 +94,12 @@ contains
       use Testscalar,      only: get_slices_testscalar
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
-      character(len=*)                  , intent(IN) :: path
 !
       logical :: lslices_legacy=.true.
       integer :: inamev
 !
       type (slice_data) :: slices
       character (LEN=labellen) :: sname
-      character (LEN=3*labellen) :: filestem
 !
       slices%index=0
 !
@@ -129,7 +129,7 @@ contains
         if (lchemistry)    call get_slices_chemistry   (f,slices)
         if (lchiral)       call get_slices_chiral      (f,slices)
         if (lcosmicray)    call get_slices_cosmicray   (f,slices)
-        if (ldensity.or.lanelastic)  &
+        if (ldensity .or. lanelastic) &
                            call get_slices_density     (f,slices)
         if (lanelastic)    call get_slices_pressure    (f,slices)
         if (ldustdensity)  call get_slices_dustdensity (f,slices)
@@ -157,26 +157,18 @@ contains
 !  Slice, or component of slice, ready for saving.
 !
         if (slices%ready) then
-          filestem=trim(path)//trim(sname)
           if (slices%index==0) then    ! If this wasn't a multi slice...
             inamev=inamev+1
           else
-            filestem=trim(filestem)//trim(itoa(slices%index))
+            sname=trim(sname)//trim(itoa(slices%index))
           endif
-          if (lwrite_slice_yz.and.associated(slices%yz)) &
-            call wslice(trim(filestem)//'.yz',slices%yz,x(ix_loc),ny,nz) 
-          if (lwrite_slice_xz.and.associated(slices%xz)) &
-            call wslice(trim(filestem)//'.xz',slices%xz,y(iy_loc),nx,nz)
-          if (lwrite_slice_xz2.and.associated(slices%xz2)) &
-            call wslice(trim(filestem)//'.xz2',slices%xz2,y(iy2_loc),nx,nz)
-          if (lwrite_slice_xy.and.associated(slices%xy)) &
-            call wslice(trim(filestem)//'.xy',slices%xy,z(iz_loc),nx,ny) 
-          if (lwrite_slice_xy2.and.associated(slices%xy2)) &
-            call wslice(trim(filestem)//'.xy2',slices%xy2,z(iz2_loc),nx,ny)
-          if (lwrite_slice_xy3.and.associated(slices%xy3)) &
-            call wslice(trim(filestem)//'.xy3',slices%xy3,z(iz3_loc),nx,ny)
-          if (lwrite_slice_xy4.and.associated(slices%xy4)) &
-            call wslice(trim(filestem)//'.xy4',slices%xy4,z(iz4_loc),nx,ny)
+          call output_slice(lwrite_slice_yz, tslice, sname, 'yz', x, ix_loc, ix, slices%yz, ny, nz) 
+          call output_slice(lwrite_slice_xz, tslice, sname, 'xz', y, iy_loc, iy, slices%xz, nx, nz)
+          call output_slice(lwrite_slice_xz2, tslice, sname, 'xz2', y, iy2_loc, iy2, slices%xz2, nx, nz)
+          call output_slice(lwrite_slice_xy, tslice, sname, 'xy', z, iz_loc, iz, slices%xy, nx, ny) 
+          call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z, iz2_loc, iz2, slices%xy2, nx, ny)
+          call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z, iz3_loc, iz3, slices%xy3, nx, ny)
+          call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z, iz4_loc, iz4, slices%xy4, nx, ny)
         else
           if (slices%index/=0) slices%index=0
           inamev=inamev+1
@@ -184,36 +176,6 @@ contains
       enddo
 !
     endsubroutine wvid
-!***********************************************************************
-! *** WORK HERE ***: move to IO modules and provide HDF5 output routine
-    subroutine wslice(filename,a,pos,ndim1,ndim2)
-!
-!  appending to an existing slice file
-!
-!  12-nov-02/axel: coded
-!  26-jun-06/anders: moved from Slices
-!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
-!
-      character (len=*)           , intent(IN) :: filename
-      real                        , intent(IN) :: pos
-      integer                     , intent(IN) :: ndim1,ndim2
-      real, dimension(ndim1,ndim2), intent(IN) :: a
-
-      integer :: iostat
-!
-      open(1,file=filename,form='unformatted',position='append',IOSTAT=iostat)
-!
-!  files data/procN/slice*.* are distributed and will be synchronized on I/O error
-!
-      if (outlog(iostat,'open',filename,dist=1)) return
-!
-      write(1,IOSTAT=iostat) a,tslice,pos
-      if (outlog(iostat,'write a,tslice,pos')) return
-!
-      close(1,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
-!
-    endsubroutine wslice
 !***********************************************************************
     subroutine setup_slices
 !

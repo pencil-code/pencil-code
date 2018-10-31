@@ -809,7 +809,7 @@ program run
 !
 !  Write slices (for animation purposes).
 !
-    if (lvideo.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
+    if (lvideo .and. lwrite_slices) call wvid(f)
 !
 !  Write tracers (for animation purposes).
 !

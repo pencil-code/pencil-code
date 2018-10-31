@@ -436,12 +436,8 @@ module Io
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: pos
-
-      if (pos >= 0) then
-        call create_group_hdf5 (label)
-        call output_hdf5 (trim (label)//'/position', pos)
-        call output_hdf5 (trim (label)//'/number', 0)
-      endif
+!
+!!      if (pos >= 0) call create_group_hdf5 (label)
 !
     endsubroutine initialize_slice
 !***********************************************************************
@@ -449,27 +445,110 @@ module Io
 !
 !  27-Oct-2018/PABourdin: coded
 !
-      use File_io, only: file_exists
+!!      use File_io, only: file_exists
 !
-      logical :: ltrunc
-      character (len=fnlen) :: filename
+!!      logical :: ltrunc
+!!      character (len=fnlen) :: filename
 !
-      if ((iz < 0) .and. (iz2 < 0) .and. (iz3 < 0) .and. (iz4 < 0) .and. (iy < 0) .and. (iy2 < 0) .and. (ix < 0)) return
+!!      if ((iz < 0) .and. (iz2 < 0) .and. (iz3 < 0) .and. (iz4 < 0) .and. (iy < 0) .and. (iy2 < 0) .and. (ix < 0)) return
 !
-      filename = trim(directory_snap)//'/slices.h5'
-      ltrunc = .false.
-      if (lroot) ltrunc = .not. file_exists (filename)
-      call file_open_hdf5 (filename, truncate=ltrunc, global=.false.)
-      call initialize_slice ('z', iz)
-      call initialize_slice ('z2', iz2)
-      call initialize_slice ('z3', iz3)
-      call initialize_slice ('z4', iz4)
-      call initialize_slice ('y', iy)
-      call initialize_slice ('y2', iy2)
-      call initialize_slice ('x', ix)
-      call file_close_hdf5
+!!      filename = trim(directory_snap)//'/slices.h5'
+!!      ltrunc = .false.
+!!      if (lroot) ltrunc = .not. file_exists (filename)
+!!      call file_open_hdf5 (filename, truncate=ltrunc, global=.false.)
+!!      call initialize_slice ('z', iz)
+!!      call initialize_slice ('z2', iz2)
+!!      call initialize_slice ('z3', iz3)
+!!      call initialize_slice ('z4', iz4)
+!!      call initialize_slice ('y', iy)
+!!      call initialize_slice ('y2', iy2)
+!!      call initialize_slice ('x', ix)
+!!      call file_close_hdf5
 !
     endsubroutine output_slice_position
+!***********************************************************************
+    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+!
+!  append to a slice file
+!
+!  12-nov-02/axel: coded
+!  26-jun-06/anders: moved to slices
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
+!  30-Oct-2018/PABourdin: coded
+!
+      use File_io, only: parallel_file_exists
+      use General, only: itoa
+      use Mpicomm, only: mpibcast_int, mpiallreduce_min, MPI_COMM_WORLD
+!
+      logical, intent(in) :: lwrite
+      real, intent(in) :: time
+      character (len=*), intent(in) :: label, suffix
+      real, dimension (:) :: grid
+      integer, intent(in) :: pos, grid_pos
+      integer, intent(in) :: ndim1, ndim2
+      real, dimension (:,:), pointer :: data
+!
+      character (len=fnlen) :: filename, group
+      integer :: last, this_proc, slice_proc
+      real :: time_last, slice_pos
+      logical :: lexists, lhas_data
+!
+      if (grid_pos < 0) return
+!
+      last = 0
+      filename = trim (directory_snap)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
+      lexists = parallel_file_exists (filename)
+      if (lroot .and. lexists) then
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        if (exists_in_hdf5 ('last')) call input_hdf5 ('last', last)
+        do while (last >= 1)
+          call input_hdf5 (trim(itoa(last))//'/time', time_last)
+          if (time > time_last) exit
+          last = last - 1
+        enddo
+        call file_close_hdf5
+      endif
+      last = last + 1
+      call mpibcast_int (last)
+      group = trim(itoa(last))//'/'
+!
+      this_proc = iproc
+      if (.not. lwrite) this_proc = ncpus + 1
+      call mpiallreduce_min (this_proc, slice_proc, MPI_COMM_WORLD)
+      if (slice_proc == iproc) then
+        call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+        call output_hdf5 ('last', last)
+        call create_group_hdf5 (group)
+        call output_hdf5 (trim(group)//'time', time)
+        call output_hdf5 (trim(group)//'position', grid(pos))
+        call output_hdf5 (trim(group)//'coordinate', grid_pos)
+        call file_close_hdf5
+      endif
+!
+      call file_open_hdf5 (filename, truncate=.false.)
+      ! collect data along 'xy', 'xz', or 'yz'
+      lhas_data = lwrite .and. associated(data)
+      select case (suffix)
+      case ('xy')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nx, ny, ipx, ipy, lhas_data)
+      case ('xy2')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nx, ny, ipx, ipy, lhas_data)
+      case ('xy3')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nx, ny, ipx, ipy, lhas_data)
+      case ('xy4')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nx, ny, ipx, ipy, lhas_data)
+      case ('xz')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nx, nz, ipx, ipz, lhas_data)
+      case ('xz2')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nx, nz, ipx, ipz, lhas_data)
+      case ('yz')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, ny, nz, ipy, ipz, lhas_data)
+      case default
+        call fatal_error ('output_hdf5', 'unknown 2D slice "'//trim (suffix)//'"', .true.)
+      endselect
+      call file_close_hdf5
+!
+    endsubroutine output_slice
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode, label)
 !
