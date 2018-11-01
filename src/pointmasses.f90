@@ -60,6 +60,7 @@ module PointMasses
   !logical :: linertial_frame=.true.
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.false.,ldust_gravity=.false.
+  logical :: lcorrect_gravity_lstart=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
@@ -78,10 +79,9 @@ module PointMasses
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, lretrograde, &
-!      linertial_frame,
-      eccentricity, semimajor_axis, & !lcartesian_evolution, &
+      eccentricity, semimajor_axis, & 
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity
+      lgas_gravity,ldust_gravity,lcorrect_gravity_lstart
 !
   namelist /pointmasses_run_pars/ &
       lreset_cm, &
@@ -719,9 +719,15 @@ module PointMasses
 !
         if (iprimary == 2) isecondary=1
         velocity(isecondary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(  iprimary)/totmass
-        velocity(  iprimary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) * pmass(isecondary)/totmass
+!
+!  Correct secondary by gas gravity 
+!
+        if (lcorrect_gravity_lstart) call initcond_correct_selfgravity(f,velocity,isecondary)
+!
+        velocity(  iprimary,2) = velocity(isecondary,2) * pmass(isecondary)/pmass(iprimary)
 !
 !  Revert all velocities if retrograde.
+!
 !
         if (lretrograde) velocity=-velocity
 !
@@ -1674,6 +1680,169 @@ module PointMasses
 !
     endsubroutine add_indirect_term
 !***********************************************************************
+    subroutine initcond_correct_selfgravity(f,velocity,k)
+!
+!  Calculates acceleration on the point (x,y,z)=xxpar
+!  due to the gravity of the gas+dust.
+!
+!  29-aug-18/wlad : coded
+!
+      use Mpicomm
+      use Sub, only: get_radial_distance
+!
+      implicit none
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(nqpar,3), intent(inout) :: velocity
+      real, dimension(3) :: xxpar,sum_loc,accg
+      real, dimension(nx,3) :: dist
+      real, dimension(nx) :: rrp,rp_mn,rpcyl_mn,selfgrav,density
+      real, dimension(nx) :: dv,jac,dqy,tmp
+      real :: vphi,phidot2,OO,rr
+      real :: dqx,dqz,rp0,fac
+      integer :: j,k
+!
+!  Sanity check
+!
+      !if (.not.(lgas_gravity.or.ldust_gravity)) &
+      !     call fatal_error("initcond_correct_selfgravity",&
+      !     "No gas gravity or dust gravity to add. "//&
+      !     "Switch on lgas_gravity or ldust_gravity in n-body parameters")
+!
+      xxpar = fq(k,ixq:izq)
+      rp0=r_smooth(k)
+!      
+      sum_loc=0.
+!      
+      mloop: do m=m1,m2
+      nloop: do n=n1,n2
+
+        if (coord_system=='cartesian') then
+          jac=1.;dqx=dx;dqy=dy;dqz=dz
+          dist(:,1)=x(l1:l2)-xxpar(1)
+          dist(:,2)=y(  m  )-xxpar(2)
+          dist(:,3)=z(  n  )-xxpar(3)
+        elseif (coord_system=='cylindric') then
+          jac=x(l1:l2);dqx=dx;dqy=x(l1:l2)*dy;dqz=dz
+          dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
+          dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
+          dist(:,3)=z(  n  )-xxpar(3)
+        elseif (coord_system=='spherical') then
+          call fatal_error('integrate_selfgravity', &
+               ' not yet implemented for spherical polars')
+           dqx=0.;dqy=0.;dqz=0.
+        else
+          call fatal_error('integrate_selfgravity','wrong coord_system')
+          dqx=0.;dqy=0.;dqz=0.
+        endif
+!
+        if (nzgrid==1) then
+          dv=dqx*dqy
+        else
+          dv=dqx*dqy*dqz
+        endif
+!
+!  The gravity of every single cell - should exclude inner and outer radii...
+!
+!  selfgrav = G*((rho+rhop)*dv)*mass*r*(r**2 + r0**2)**(-1.5)
+!  gx = selfgrav * r\hat dot x\hat
+!  -> gx = selfgrav * (x-x0)/r = G*((rho+rhop)*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
+!
+        density=0.
+        if (ldensity_nolog) then
+           density=f(l1:l2,m,n,irho)
+        else
+           density=exp(f(l1:l2,m,n,ilnrho))
+        endif
+!
+!  Add the particle gravity if npar>mspar (which means dust is being used)
+!
+        !if (ldust.and.ldust_gravity) density=density+f(l1:l2,m,n,irhop)
+!
+        call get_radial_distance(rp_mn,rpcyl_mn,E1_=xxpar(1),E2_=xxpar(1),E3_=xxpar(1))
+        if (lcylindrical_gravity_nbody(k)) then
+           rrp=rpcyl_mn
+        else
+           rrp=rp_mn
+        endif
+!
+        selfgrav = GNewton*density_scale*&
+             density*jac*dv*(rrp**2 + rp0**2)**(-1.5)
+!
+!  Everything inside the accretion radius of the particle should
+!  not exert gravity (numerical problems otherwise)
+!
+        where (rrp<=rp0)
+          selfgrav = 0
+        endwhere
+!
+!  Exclude the frozen zones
+!
+      if (lcartesian_coords) call fatal_error("","")
+!
+!  Integrate the accelerations on this processor
+!  And sum over processors with mpireduce
+!
+      do j=1,3
+        tmp=selfgrav*dist(:,j)
+        !take proper care of the trapezoidal rule
+        !in the case of non-periodic boundaries
+        fac = 1.
+        if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) then
+          if (.not.lperi(2)) fac = .5*fac
+        endif
+!
+        if (lperi(1)) then
+          sum_loc(j) = sum_loc(j)+fac*sum(tmp)
+        else
+          sum_loc(j) = sum_loc(j)+fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
+        endif        
+     enddo
+    enddo nloop
+    enddo mloop
+!
+    do j=1,3
+      call mpireduce_sum(sum_loc(j),accg(j))
+    enddo
+!
+!  Broadcast particle acceleration
+!
+    call mpibcast_real(accg,3)
+!
+!  Correct original velocity by this acceleration
+!      phidot2 = Omegak2 + accg/r
+!
+!  Current azimuthal velocity and azimuthal frequency
+!
+    if (lcylindrical_coords) then
+       vphi = velocity(k,2)
+       rr = fq(k,ixq)
+    elseif (lspherical_coords) then
+       vphi = velocity(k,3)
+       rr = fq(k,ixq)*sin(fq(k,iyq))
+    endif
+!
+    OO = vphi/rr
+!
+!  Update angular velocity by selfgravitational acceleration
+!   
+!  phidot**2 = OmegaK**2 + 1/r (d/dr PHI_sg)
+!
+!  This line assumes axisymmetry
+!
+    phidot2 = OO**2 + accg(1)/rr
+!
+!  Corrected velocity
+!
+    vphi = sqrt(phidot2) * rr
+!
+    if (lcylindrical_coords) then
+       velocity(k,2) = vphi
+    elseif (lspherical_coords) then
+       velocity(k,3) = vphi
+    endif
+!
+    endsubroutine initcond_correct_selfgravity
+!***********************************************************************
     subroutine integrate_selfgravity(p,rrp,xxpar,accg,rp0)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
@@ -1834,24 +2003,43 @@ module PointMasses
       character (len=intlen) :: nsnap_ch
       optional :: flist
 !
-      filename=file
-!
+!  Input is either file=qvar if enum=F or file=QVAR if enum=T.
+!  If the latter, append a number to QVAR.
+!      
       if (enum) then
-        if (lsnap) filename=trim(file)//nsnap_ch
 !
-        if (lfirst_call) then
-          call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
+!  Prepare to read tsnap.dat         
+!
+         call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
+!        
+!  Read the tsnap.dat to find out based on the time, what N should QVARN get (N=nsnap).
+!
+         if (lfirst_call) then
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
           lfirst_call=.false.
         endif
 !
+!  Update the snaptime by defining N in QVARN (N=nsnap_ch).
+!
         call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
-      endif
 !
-!  Write number of massive particles and their data -- only root needs. 
+        if (lsnap) then
+!           
+!  Define the string: QVAR+N
 !
-      call output_pointmass (filename, qvarname, fq, nqpar, mqarray)
-      if (present(flist)) call log_filename_to_file(filename,flist)
+           call safe_character_assign(filename,trim(file)//trim(nsnap_ch))
+!
+!  Write the massive particles snapshot -- only root does it. 
+!          
+           call output_pointmass (filename, qvarname, fq, nqpar, mqarray)
+           if (present(flist)) call log_filename_to_file(filename,flist)
+!
+           lsnap=.false.
+        endif
+     else
+        call output_pointmass (file, qvarname, fq, nqpar, mqarray)
+        if (present(flist)) call log_filename_to_file(file,flist)
+     endif
 !
     endsubroutine pointmasses_write_snapshot
 !***********************************************************************
