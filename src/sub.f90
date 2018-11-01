@@ -3530,8 +3530,8 @@ module Sub
         mzout1=mz
       endif
 !
-!  Only root writes allprocs/dim.dat (with io_mpio.f90),
-!  but everybody writes to their procN/dim.dat (with io_dist.f90).
+!  Only root writes allprocs/dim.dat (for monolithic IO),
+!  but everybody writes to their procN/dim.dat (for non-monolithic IO).
 !
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
