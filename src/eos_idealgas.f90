@@ -2661,10 +2661,6 @@ module EquationOfState
                       +coeffs_1_x(2,2)*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
                       +coeffs_1_x(3,2)*(f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho))
 !
-!          fac=(1./60)*dx_1(l2)
-!          dlnrhodx_yz=fac*(45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
-!                    -       9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
-!                    +           (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density to d rho/d x and divide by total density
@@ -2690,7 +2686,7 @@ module EquationOfState
           if (hcondxtop /= impossible) hcond_Kprof=hcondxtop
           hcond_total=hcond_Kprof+hcond_kramers
 !
-           dsdx_yz=-(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
+          dsdx_yz=-(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
                    (chit_prof2*chi_t*rho_yz+hcond_total/cv)
 !
 !  Substract gradient of reference entropy.
