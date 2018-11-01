@@ -530,7 +530,6 @@ module Testfield
         lpenc_requested(i_bbb)=.true.
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_uu)=.true.
-        if (lugu) lpenc_requested(i_uij)=.true.
 !
         lpenc_diagnos(i_bbb)=.true.
         lpenc_diagnos(i_jj)=.true.
@@ -672,6 +671,13 @@ module Testfield
           do j=1,3
             uufluct(:,j)=p%uu(:,j)-uumz(n,j)
           enddo
+
+          uijm=0.
+          do j=1,3
+            uum(:,j)=uumz(n,j)
+            if (lugu) uijm(:,j,3)=guumz(nl,j)
+          enddo
+
         else
           uufluct=p%uu
         endif
@@ -694,9 +700,9 @@ module Testfield
 !  loop over all fields, but do it backwards,
 !  so we compute the zero field first
 !
-!jtest-loop:
       advec_uu=0.; advec_va2=0.
-
+!
+!jtest-loop:
       do jtest=njtest,1,-1
 !
         iaxtest=iaatest+3*(jtest-1); iaztest=iaxtest+2
@@ -767,12 +773,6 @@ module Testfield
 !  If Ubar is available
 !     
         if (luse_main_run.and.lcalc_uumeanz) then
-
-          uijm=0.
-          do j=1,3
-            uum(:,j)=uumz(n,j)
-            if (lugu) uijm(:,j,3)=guumz(nl,j)
-          enddo
 !
 !  add Ubar x b^0 and Ubar x b^T terms in induction equations
 !
@@ -842,12 +842,12 @@ module Testfield
 !
 !  Add possibility of forcing of reference fields that is not delta-correlated in time.
 !
-          if (lforcing_cont_aatest) &
-            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-                                         +ampl_fcont_aatest*p%fcont(:,:,2)
           if (lforcing_cont_uutest) &
             df(l1:l2,m,n,iuxtest:iuztest)=df(l1:l2,m,n,iuxtest:iuztest) &
                                          +ampl_fcont_uutest*p%fcont(:,:,1)
+          if (lforcing_cont_aatest) &
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+                                         +ampl_fcont_aatest*p%fcont(:,:,2)
         else
 !
 !  Calculate terms with test fields for each test problem (excluding reference one) at a time
@@ -907,9 +907,9 @@ module Testfield
 !  Restore uxbtest and jxbtest from f-array, and compute uxbtestK for alpK
 !  computation for comparison. Do the same for jxb and ugradu.
 !
-        uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
-        jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
-        if (lugu) ugutest=f(l1:l2,m,n,iugutest+3*(jtest-1):iugutest+3*jtest-1)
+        if (luxb_as_aux) uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
+        if (ljxb_as_aux) jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
+        if (lugu.and.lugu_as_aux) ugutest=f(l1:l2,m,n,iugutest+3*(jtest-1):iugutest+3*jtest-1)
 !
 !  evaluate different contributions to <uxb> and <jxb>
 !
@@ -1348,7 +1348,6 @@ module Testfield
 !
 mn:   do n=n1,n2
         nl=n-n1+1
-!
         do m=m1,m2
 
           if (luse_main_run) then
@@ -1486,6 +1485,7 @@ mn:   do n=n1,n2
             uxbtestmz(nl,:,jtest)=uxbtestmz(nl,:,jtest)+fac*sum(uxbtest,1)
             jxbtestmz(nl,:,jtest)=jxbtestmz(nl,:,jtest)+fac*sum(jxbtest,1)
             if (lugu) ugutestmz(nl,:,jtest)=ugutestmz(nl,:,jtest)+fac*sum(ugutest,1)
+!
             headtt=.false.
 !
 !  finish jtest and mn loops
