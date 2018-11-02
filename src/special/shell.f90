@@ -571,7 +571,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Used to advance velocity
 !  Advance the shell model, with dt<deltm
@@ -579,6 +579,7 @@ module Special
 !
       Use Mpicomm, only: mpibcast_cmplx_arr_dbl, mpibcast_real
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_                          !dt_ passed by timestep
@@ -645,6 +646,7 @@ module Special
       endif
 !
       call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************

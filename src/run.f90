@@ -563,7 +563,6 @@ program run
 !
 !  Do loop in time.
 !
-
   Time_loop: do while (it<=nt)
 !
     lout   = (mod(it-1,it1) == 0) .and. (it > it1start)

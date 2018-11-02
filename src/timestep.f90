@@ -142,7 +142,7 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif advec
 !
-        call update_after_timestep(f,df,dtsub)
+        call update_after_timestep(f,df,dtsub,llast)
 !
 !  Increase time.
 !
@@ -181,7 +181,7 @@ module Timestep
 !
     endsubroutine split_update
 !***********************************************************************
-    subroutine update_after_timestep(f,df,dtsub) 
+    subroutine update_after_timestep(f,df,dtsub,llast)
 !
 !   Hooks for modifying f and df after the timestep is performed.
 !
@@ -195,6 +195,7 @@ module Timestep
       use Special,  only: special_after_timestep
       use Particles_main, only: particles_special_after_dtsub
 !
+      logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dtsub
@@ -211,7 +212,7 @@ module Timestep
       if (lenergy)   call energy_after_timestep  (f,df,dtsub)
       if (ldensity)  call density_after_timestep (f,df,dtsub)
       if (lspecial) then
-        call special_after_timestep(f, df, dtsub)
+        call special_after_timestep(f, df, dtsub, llast)
         if (lparticles) call particles_special_after_dtsub(f, dtsub)
       endif
 !

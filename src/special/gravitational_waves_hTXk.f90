@@ -37,10 +37,9 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 4
+! MAUX CONTRIBUTION 18
 !
-! PENCILS PROVIDED stress_ij(6), hijij, gijij
+! PENCILS PROVIDED stress_ij(6)
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -96,12 +95,9 @@ module Special
   character (len=labellen) :: cc_light='1'
   character (len=labellen) :: aux_stress='stress'
   real :: amplhij=0., amplgij=0., dummy=0.
-  real :: kx_hij=0., ky_hij=0., kz_hij=0.
-  real :: kx_gij=0., ky_gij=0., kz_gij=0.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
-  real :: diffhh=0., diffgg=0., diffhh_hyper3=0., diffgg_hyper3=0.
   real :: nscale_factor_conformal=1., tshift=0.
-  logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
+  logical :: lno_transverse_part=.false.
   logical :: lswitch_sign_e_X=.true., ldebug_print=.false., lkinGW=.true.
   logical :: lStress_as_aux=.true., lreynolds=.false.
   logical :: lggTX_as_aux=.true., lhhTX_as_aux=.true.
@@ -113,15 +109,13 @@ module Special
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     inithij, initgij, amplhij, amplgij, lStress_as_aux, &
-    lggTX_as_aux, lhhTX_as_aux, &
-    kx_hij, ky_hij, kz_hij, &
-    kx_gij, ky_gij, kz_gij
+    lggTX_as_aux, lhhTX_as_aux
 !
 ! run parameters
   namelist /special_run_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
-    diffhh, diffgg, lsame_diffgg_as_hh, ldebug_print, lswitch_sign_e_X, &
-    diffhh_hyper3, diffgg_hyper3, nscale_factor_conformal, tshift, cc_light, &
+    ldebug_print, lswitch_sign_e_X, &
+    nscale_factor_conformal, tshift, cc_light, &
     lStress_as_aux, lkinGW, aux_stress, &
     lggTX_as_aux, lhhTX_as_aux, lremove_mean_hij, lremove_mean_gij
 !
@@ -155,8 +149,6 @@ module Special
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
   integer :: idiag_ggTm=0        ! DIAG_DOC: $\bra{g_T}$
   integer :: idiag_ggXm=0        ! DIAG_DOC: $\bra{g_X}$
-  integer :: idiag_hijij2m=0     ! DIAG_DOC: $\bra{h_{ij,ij}^2}$
-  integer :: idiag_gijij2m=0     ! DIAG_DOC: $\bra{g_{ij,ij}^2}$
 !
   contains
 !***********************************************************************
@@ -178,22 +170,22 @@ module Special
       if (lggTX_as_aux) then
         call farray_register_auxiliary('ggT',iggT)
         call farray_register_auxiliary('ggX',iggX)
-        call farray_register_auxiliary('ggTimag',iggTimag)
-        call farray_register_auxiliary('ggXimag',iggXimag)
+        call farray_register_auxiliary('ggTim',iggTim)
+        call farray_register_auxiliary('ggXim',iggXim)
       endif
 !
       if (lhhTX_as_aux) then
         call farray_register_auxiliary('hhT',ihhT)
         call farray_register_auxiliary('hhX',ihhX)
-        call farray_register_auxiliary('hhTimag',ihhTimag)
-        call farray_register_auxiliary('hhXimag',ihhXimag)
+        call farray_register_auxiliary('hhTim',ihhTim)
+        call farray_register_auxiliary('hhXim',ihhXim)
       endif
 !
       if (lStress_as_aux) then
         call farray_register_auxiliary('StT',iStressT)
         call farray_register_auxiliary('StX',iStressX)
-        call farray_register_auxiliary('StTimag',iStressTimag)
-        call farray_register_auxiliary('StXimag',iStressXimag)
+        call farray_register_auxiliary('StTim',iStressTim)
+        call farray_register_auxiliary('StXim',iStressXim)
         call farray_register_auxiliary('Str',iStress_ij,vector=6)
       endif
 !
@@ -211,13 +203,6 @@ module Special
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-!  Check whether diffgg=diffhh (which  is the default)
-!
-      if (lsame_diffgg_as_hh) then
-        diffgg=diffhh
-        diffgg_hyper3=diffhh_hyper3
-      endif
 !
 !  set index table
 !
@@ -323,7 +308,6 @@ module Special
 !
       select case (inithij)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('coswave-kx'); call coswave(amplhij,f,ihij,kx=kx_hij)
         case default
           call fatal_error("init_special: No such value for inithij:" &
               ,trim(inithij))
@@ -333,7 +317,6 @@ module Special
 !
       select case (initgij)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('coswave-kx'); call coswave(amplgij,f,igij,kx=kx_gij)
         case default
           call fatal_error("init_special: No such value for initgij:" &
               ,trim(initgij))
@@ -361,11 +344,6 @@ module Special
         lpenc_requested(i_bb)=.true.
         if (trace_factor/=0.) lpenc_requested(i_b2)=.true.
       endif
-!
-!  diagnostics pencils
-!
-!!    if (idiag_hijij2m/=0) lpenc_diagnos(i_hijij)=.true.
-!!    if (idiag_gijij2m/=0) lpenc_diagnos(i_gijij)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -417,40 +395,6 @@ module Special
       enddo
       enddo
 !
-!  Compute Hessian of hij
-!
-      if (lpencil(i_hijij)) then
-        p%hijij=0.
-        do j=1,3
-        do i=1,j
-          ij=ij_table(i,j)
-          call derij(f,ihij-1+ij,tmp,i,j)
-          if (i==j) then
-            p%hijij=p%hijij+tmp
-          else
-            p%hijij=p%hijij+2.*tmp
-          endif
-        enddo
-        enddo
-      endif
-!
-!  Compute Hessian of gij
-!
-      if (lpencil(i_gijij)) then
-        p%gijij=0.
-        do j=1,3
-        do i=1,j
-          ij=ij_table(i,j)
-          call derij(f,igij-1+ij,tmp,i,j)
-          if (i==j) then
-            p%gijij=p%gijij+tmp
-          else
-            p%gijij=p%gijij+2.*tmp
-          endif
-        enddo
-        enddo
-      endif
-!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -473,12 +417,10 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-!     real, dimension (nx,6) :: del2hij, del2gij
-!     real, dimension (nx) :: del6hij, del6gij, GW_rhs
-!     real :: scale_factor, stress_prefactor2
+      real :: scale_factor, stress_prefactor2
       type (pencil_case) :: p
 !
-!     integer :: ij,jhij,jgij
+      integer :: ij
 !
       intent(in) :: p
       intent(inout) :: f,df
@@ -498,57 +440,17 @@ module Special
       else
         scale_factor=(t+tshift)**nscale_factor_conformal
       endif
-      !stress_prefactor2=stress_prefactor/scale_factor**3
-!AB: correction of Sept 28, 2018
       stress_prefactor2=stress_prefactor/scale_factor
 !
 !  Assemble rhs of GW equations.
 !
-!     do ij=1,6
-!       jhij=ihij-1+ij
-!       jgij=igij-1+ij
-!       call del2(f,jhij,del2hij(:,ij))
-!
-!  Physical terms on RHS.
-!
-!       GW_rhs=c_light2*del2hij(:,ij) &
-!             +stress_prefactor2*p%stress_ij(:,ij)
-!
-!  Update df.
-!
-!       df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-!       df(l1:l2,m,n,jgij)=df(l1:l2,m,n,jgij)+GW_rhs
-!
-!  If lStress_as_aux is requested, we write it into the f-array.
-!  For that, one needs to put ! MAUX CONTRIBUTION 11 into src/cparam.local
-!  For aux_stress='d2hdt2', the stress is replaced by GW_rhs.
-!
-      if (lStress_as_aux) then
-        select case (aux_stress)
-          case ('d2hdt2'); f(l1:l2,m,n,iStress_ij+ij-1)=GW_rhs
-          case ('stress'); f(l1:l2,m,n,iStress_ij+ij-1)=p%stress_ij(:,ij)
-        case default
-          call fatal_error("dspecial_dt: No such value for aux_stress:" &
-              ,trim(ctrace_factor))
-        endselect
-      endif
-!
-!  enddo from do ij=1,6
-!
+      do ij=1,6
+        f(l1:l2,m,n,iStress_ij+ij-1)=stress_prefactor2*p%stress_ij(:,ij)
       enddo
-!
-!  timestep constraint
-!
-      if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
 !
 !  diagnostics
 !
        if (ldiagnos) then
-         if (idiag_hijij2m/=0) call sum_mn_name(p%hijij**2,idiag_hijij2m)
-         if (idiag_gijij2m/=0) call sum_mn_name(p%gijij**2,idiag_gijij2m)
-         if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
-         if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
-         if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
          if (lggTX_as_aux) then
            if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2)*EGWpref,idiag_EEGW)
            if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
@@ -566,12 +468,6 @@ module Special
          endif
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
-           !if (idiag_h11pt/=0) call save_name(f(lpoint,m,n,ihij+1-1),idiag_h11pt)
-           !if (idiag_h22pt/=0) call save_name(f(lpoint,m,n,ihij+2-1),idiag_h22pt)
-           !if (idiag_h33pt/=0) call save_name(f(lpoint,m,n,ihij+3-1),idiag_h33pt)
-           !if (idiag_h12pt/=0) call save_name(f(lpoint,m,n,ihij+4-1),idiag_h12pt)
-           !if (idiag_h23pt/=0) call save_name(f(lpoint,m,n,ihij+5-1),idiag_h23pt)
-           !if (idiag_h31pt/=0) call save_name(f(lpoint,m,n,ihij+6-1),idiag_h31pt)
            if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
            if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
            if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
@@ -663,23 +559,28 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      call compute_gT_and_gX_from_gij(f,'Str')
-!
-!  Do exact solution
-!
-XX
-!
-!     if (.not.lno_transverse_part .and. (&
-!         (lvideo.and.lfirst).or. &
-!         (lspec.and.lfirst).or. &
-!         (lout.and.lfirst) )) then
-!       if (lggTX_as_aux) call compute_gT_and_gX_from_gij(f,'gg')
-!       if (lhhTX_as_aux) call compute_gT_and_gX_from_gij(f,'hh')
-!       if (lStress_as_aux) call compute_gT_and_gX_from_gij(f,'Str')
-!       !call compute_gT_and_gX_from_gij(f,'d2hdt2')
-!     endif
-!
     endsubroutine special_after_boundary
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_,llast)
+!
+!  Possibility to modify the f and df after df is updated.
+!  Used for the Fargo shift, for instance.
+!
+!  27-nov-08/wlad: coded
+!
+      logical, intent(in) :: llast
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+!
+!  Compute the transverse part of the stress tensor by going into Fourier space.
+!
+      if (llast) call compute_gT_and_gX_from_gij(f,'St')
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt_)
+!
+    endsubroutine special_after_timestep
 !***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label)
 !
@@ -695,16 +596,17 @@ XX
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jgij,jhij,jStress_ij
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       logical :: lscale_tobox1=.true.
       real :: scale_factor, fact, k1, k2, k3
+      real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
+      real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
+      real :: cosot, sinot, om12, om1, om, omt1
       intent(inout) :: f
       character (len=2) :: label
 !
 !  Check that the relevant arrays are registered
 !
-      if (.not.lhhTX_as_aux.and.label=='hh') call fatal_error('compute_gT_and_gX_from_gij','lhhTX_as_aux must be true')
-      if (.not.lggTX_as_aux.and.label=='gg') call fatal_error('compute_gT_and_gX_from_gij','lggTX_as_aux must be true')
       if (.not.lStress_as_aux.and.label=='St') call fatal_error('compute_gT_and_gX_from_gij','lStress_as_aux must be true')
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
@@ -783,15 +685,9 @@ XX
       Tpq_re=0.0
       Tpq_im=0.0
       do ij=1,6
-        if (label=='hh') then
-          jhij=ihij-1+ij
-          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jhij)
-        elseif (label=='St') then
+        if (label=='St') then
           jStress_ij=iStress_ij-1+ij
           Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jStress_ij)
-        else
-          jgij=igij-1+ij
-          Tpq_re(:,:,:,ij)=f(l1:l2,m1:m2,n1:n2,jgij)
         endif
       enddo
 !
@@ -922,18 +818,17 @@ XX
 !
             hhTre=f(ikz,ikx,iky,ihhT)
             hhXre=f(ikz,ikx,iky,ihhX)
-            hhTim=f(ikz,ikx,iky,ihhTimag)
-            hhXim=f(ikz,ikx,iky,ihhXimag)
+            hhTim=f(ikz,ikx,iky,ihhTim)
+            hhXim=f(ikz,ikx,iky,ihhXim)
 !
             om12=one_over_k2(ikz,ikx,iky)
-            om1=sqrt(omega12)
-!--         t1=1./t
-            om=1./omega1
-!--         omt1=om1*t1
+            om1=sqrt(om12)
+            om=1./om1
             omt1=1./(om*t)
 !
             cosot=cos(om*dt)
             sinot=sin(om*dt)
+!
             coefAre=(hhTre-om12*S_T_re(ikz,ikx,iky))
             coefAim=(hhTim-om12*S_T_im(ikz,ikx,iky))
             coefBre=ggTre*om1+omt1*om12*S_T_re(ikz,ikx,iky)
@@ -942,20 +837,15 @@ XX
             f(ikz,ikx,iky,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikz,ikx,iky)
             f(ikz,ikx,iky,iggT  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_T_re(ikz,ikx,iky)
             f(ikz,ikx,iky,iggTim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_T_im(ikz,ikx,iky)
-!--
-      if (lggTX_as_aux) then
-        call farray_register_auxiliary('ggT',iggT)
-        call farray_register_auxiliary('ggX',iggX)
-        call farray_register_auxiliary('ggTimag',iggTimag)
-        call farray_register_auxiliary('ggXimag',iggXimag)
-      endif
 !
-      if (lhhTX_as_aux) then
-        call farray_register_auxiliary('hhT',ihhT)
-        call farray_register_auxiliary('hhX',ihhX)
-        call farray_register_auxiliary('hhTimag',ihhTimag)
-        call farray_register_auxiliary('hhXimag',ihhXimag)
-      endif
+            coefAre=(hhXre-om12*S_X_re(ikz,ikx,iky))
+            coefAim=(hhXim-om12*S_X_im(ikz,ikx,iky))
+            coefBre=ggXre*om1+omt1*om12*S_X_re(ikz,ikx,iky)
+            coefBim=ggXim*om1+omt1*om12*S_X_im(ikz,ikx,iky)
+            f(ikz,ikx,iky,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikz,ikx,iky)
+            f(ikz,ikx,iky,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikz,ikx,iky)
+            f(ikz,ikx,iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_X_re(ikz,ikx,iky)
+            f(ikz,ikx,iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_X_im(ikz,ikx,iky)
 !
 !-----------------------------------------------------------------------------
  ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
@@ -1094,8 +984,6 @@ XX
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_hijij2m=0; idiag_gijij2m=0
-        idiag_h22rms=0; idiag_h33rms=0; idiag_h23rms=0; 
         idiag_g11pt=0; idiag_g22pt=0; idiag_g33pt=0
         idiag_g12pt=0; idiag_g23pt=0; idiag_g31pt=0
         idiag_hhTpt=0; idiag_hhXpt=0; idiag_ggTpt=0; idiag_ggXpt=0
@@ -1107,11 +995,6 @@ XX
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'hijij2m',idiag_hijij2m)
-        call parse_name(iname,cname(iname),cform(iname),'gijij2m',idiag_gijij2m)
-        call parse_name(iname,cname(iname),cform(iname),'h22rms',idiag_h22rms)
-        call parse_name(iname,cname(iname),cform(iname),'h33rms',idiag_h33rms)
-        call parse_name(iname,cname(iname),cform(iname),'h23rms',idiag_h23rms)
         call parse_name(iname,cname(iname),cform(iname),'g11pt',idiag_g11pt)
         call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
         call parse_name(iname,cname(iname),cform(iname),'g33pt',idiag_g33pt)

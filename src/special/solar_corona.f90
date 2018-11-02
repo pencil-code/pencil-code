@@ -1232,7 +1232,7 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  induction equation.
@@ -1247,6 +1247,8 @@ module Special
                          finalize_isendrcv_bdry
       use SharedVariables, only: get_shared_variable
       use Sub, only: cross,gij,curl_mn
+!
+      logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(mx,my,mz):: rho_tmp
@@ -1364,7 +1366,6 @@ module Special
 !        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
 !        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
 !      endif
-!
 !
     endsubroutine special_after_timestep
 !***********************************************************************

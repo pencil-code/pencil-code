@@ -605,7 +605,7 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
@@ -617,6 +617,8 @@ module Special
       use Mpicomm, only: mpibcast_double,mpibcast_logical
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn
+!
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
