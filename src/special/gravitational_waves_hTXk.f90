@@ -816,10 +816,10 @@ module Special
 !
 !  Compute exact solution for hT, hX, gT, and gX in Fourier space
 !
-            hhTre=f(ikz,ikx,iky,ihhT)
-            hhXre=f(ikz,ikx,iky,ihhX)
-            hhTim=f(ikz,ikx,iky,ihhTim)
-            hhXim=f(ikz,ikx,iky,ihhXim)
+            hhTre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)
+            hhXre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)
+            hhTim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)
+            hhXim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)
 !
             om12=one_over_k2(ikz,ikx,iky)
             om1=sqrt(om12)
@@ -833,26 +833,38 @@ module Special
             coefAim=(hhTim-om12*S_T_im(ikz,ikx,iky))
             coefBre=ggTre*om1+omt1*om12*S_T_re(ikz,ikx,iky)
             coefBim=ggTim*om1+omt1*om12*S_T_im(ikz,ikx,iky)
-            f(ikz,ikx,iky,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikz,ikx,iky)
-            f(ikz,ikx,iky,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikz,ikx,iky)
-            f(ikz,ikx,iky,iggT  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_T_re(ikz,ikx,iky)
-            f(ikz,ikx,iky,iggTim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_T_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_T_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_T_im(ikz,ikx,iky)
 !
             coefAre=(hhXre-om12*S_X_re(ikz,ikx,iky))
             coefAim=(hhXim-om12*S_X_im(ikz,ikx,iky))
             coefBre=ggXre*om1+omt1*om12*S_X_re(ikz,ikx,iky)
             coefBim=ggXim*om1+omt1*om12*S_X_im(ikz,ikx,iky)
-            f(ikz,ikx,iky,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikz,ikx,iky)
-            f(ikz,ikx,iky,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikz,ikx,iky)
-            f(ikz,ikx,iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_X_re(ikz,ikx,iky)
-            f(ikz,ikx,iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_X_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_X_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_X_im(ikz,ikx,iky)
+!
+!  Set origin to zero
+!
+            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
+            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
+            if (lroot) f(nghost+1,nghost+1,nghost+1,iggT  ) = 0.
+            if (lroot) f(nghost+1,nghost+1,nghost+1,iggTim) = 0.
+!
+            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhX  ) = 0.
+            if (lroot) f(nghost+1,nghost+1,nghost+1,ihhXim) = 0.
+            if (lroot) f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
+            if (lroot) f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
 !
 !  Set stress components
 !
-            f(ikz,ikx,iky,iStressT  )=S_T_re(ikz,ikx,iky)
-            f(ikz,ikx,iky,iStressTim)=S_T_im(ikz,ikx,iky)
-            f(ikz,ikx,iky,iStressX  )=S_X_re(ikz,ikx,iky)
-            f(ikz,ikx,iky,iStressXim)=S_X_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )=S_T_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)=S_T_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )=S_X_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)=S_X_im(ikz,ikx,iky)
 !
 !-----------------------------------------------------------------------------
  ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
