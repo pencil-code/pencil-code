@@ -2252,11 +2252,11 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Chengeng's laptop
 ##
-#FC=gfortran #(Qian)
-#FFLAGS=-O3 -frecord-marker=4 #(Qian)
-#FFLAGS_DOUBLE=-fdefault-real-8
-#CFLAGS=-DFUNDERSC=1 #(Qian)
-#CC=gcc #(Qian)
+#FC=mpif90 #(Qian)
+#FFLAGS=-O3 #(Qian)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(Qian)
+#CC=mpicc #(Qian)
+#CFLAGS=-O3 -DFUNDERSC=1 #(Qian)
 ##
 ## Nordita MacBook
 ##
