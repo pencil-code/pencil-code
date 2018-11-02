@@ -151,7 +151,7 @@ module Timestep
         if (lshear) call advance_shear(f,df,dt_beta_ts(itsub)*ds)
 !
         if (lspecial) &
-            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds,llast)
 !
 !  Increase time.
 !

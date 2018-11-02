@@ -85,7 +85,7 @@ module Timestep
 !
         f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + tau_sts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
-        if (lspecial) call special_after_timestep(f,df,tau_sts(itsub))
+        if (lspecial) call special_after_timestep(f,df,tau_sts(itsub),llast)
 
 !  Increase time.
 !

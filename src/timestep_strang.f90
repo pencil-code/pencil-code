@@ -183,7 +183,7 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif advec
 !
-        if (lspecial) call special_after_timestep(f, df, dtsub)
+        if (lspecial) call special_after_timestep(f, df, dtsub, llast)
 !
 !  Increase time.
 !

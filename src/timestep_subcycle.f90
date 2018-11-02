@@ -120,7 +120,7 @@ module Timestep
 !
         f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
-        if (lspecial) call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+        if (lspecial) call special_after_timestep(f,df,dt_beta_ts(itsub)*ds,llast)
 !
 !  Increase time.
 !

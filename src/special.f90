@@ -617,13 +617,14 @@
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
 !
 !  27-nov-08/wlad: coded
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
@@ -634,7 +635,7 @@
         call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP),3,f,df,dt_)
       enddo
 !
-    endsubroutine  special_after_timestep
+    endsubroutine special_after_timestep
 !*********************************************************************** 
     subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
