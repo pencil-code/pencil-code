@@ -1828,7 +1828,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT, tmp
       real :: unit_lnQ
 !
       unit_lnQ=3*log(real(unit_velocity))+&
@@ -1905,9 +1905,13 @@ module Special
         if (lentropy) then
           rtv_cool=gamma*p%cp1*rtv_cool
         endif
-        dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
+! JW: include time step directly due to rtv_cool normalised by cv T and rho.
+!        dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
+        tmp=max(rtv_cool*p%cVTrho1/cdts,rtv_cool/max(tini,delta_lnTT))
+        dt1_max=max(dt1_max,tmp)
         if (ldiagnos.and.idiag_dtrad /= 0.) then
-          call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
+!          call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
+          call max_mn_name(tmp,idiag_dtrad,l_dt=.true.)
         endif
       endif
 !
