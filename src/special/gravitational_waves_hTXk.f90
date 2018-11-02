@@ -847,6 +847,13 @@ module Special
             f(ikz,ikx,iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_X_re(ikz,ikx,iky)
             f(ikz,ikx,iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_X_im(ikz,ikx,iky)
 !
+!  Set stress components
+!
+            f(ikz,ikx,iky,iStressT  )=S_T_re(ikz,ikx,iky)
+            f(ikz,ikx,iky,iStressTim)=S_T_im(ikz,ikx,iky)
+            f(ikz,ikx,iky,iStressX  )=S_X_re(ikz,ikx,iky)
+            f(ikz,ikx,iky,iStressXim)=S_X_im(ikz,ikx,iky)
+!
 !-----------------------------------------------------------------------------
  ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
           !if (k1==0..and.k2==0..and.abs(k3)==2.) then
@@ -918,28 +925,6 @@ module Special
         print*,'Axel: x2Re=',S_X_re(:,1,1)
         print*,'Axel: x2Im=',S_X_im(:,1,1)
       endif
-!
-!  add (or set) corresponding stress
-!  For the time being, we keep the lswitch_sign_e_X
-!  still as an option. Meaningful results are however
-!  only found for complex values of S_X.
-!
-      if (label=='hh') then
-        f(l1:l2,m1:m2,n1:n2,ihhT)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,ihhX)=S_X_re
-      elseif (label=='gg') then
-        f(l1:l2,m1:m2,n1:n2,iggT)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,iggX)=S_X_re
-      elseif (label=='St') then
-        f(l1:l2,m1:m2,n1:n2,iStressT)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,iStressX)=S_X_re
-      else
-        call fatal_error('compute_gT_and_gX_from_gij','wrong label')
-      endif
-!
-      !if (.not.lswitch_sign_e_X) then
-      !  f(l1:l2,m1:m2,n1:n2,iggX)=S_X_im
-      !endif
 !
 !  debug output (perhaps to be removed)
 !
