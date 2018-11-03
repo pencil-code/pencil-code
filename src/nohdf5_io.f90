@@ -37,6 +37,8 @@ module HDF5_IO
 !
   private
 !
+  integer, parameter :: lun_input = 89, lun_output = 92
+!
   contains
 !***********************************************************************
     subroutine initialize_hdf5
@@ -287,12 +289,12 @@ module HDF5_IO
       integer, intent(in), optional :: array
 !
       if (lroot) then
-        open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+        open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
         if (present (vector) .and. present (array)) then
           ! expand array: iuud => indgen(vector)
-          write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
+          write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
         else
-          write(3,*) trim(varname)//'='//trim(itoa(ivar))
+          write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         endif
         close(3)
       endif
@@ -307,9 +309,9 @@ module HDF5_IO
       integer, intent(in) :: ilabel
 !
       if (lroot) then
-        open(3,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
-        write(3,*) trim(label)//'='//trim(itoa(ilabel))
-        close(3)
+        open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
+        write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
+        close(lun_output)
       endif
 !
     endsubroutine particle_index_append
@@ -319,10 +321,10 @@ module HDF5_IO
 ! 14-oct-18/PAB: coded
 !
       if (lroot) then
-        open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
-        close(3)
-        open(3,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
-        close(3)
+        open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
+        close(lun_output)
+        open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
+        close(lun_output)
       endif
 !
     endsubroutine index_reset
