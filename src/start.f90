@@ -604,8 +604,7 @@ program start
 !  Also write full dimensions to data/.
 !
   if (lroot) then
-    call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
+    call wdim(trim(datadir)//'/dim.dat',mxgrid,mygrid,mzgrid,lglobal=.true.)
     if (lparticles) call write_dim_particles(trim(datadir))
     call pointmasses_write_qdim(trim(datadir)//'/qdim.dat')
   endif
