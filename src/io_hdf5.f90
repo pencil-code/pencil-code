@@ -444,27 +444,7 @@ module Io
 !***********************************************************************
     subroutine output_slice_position
 !
-!  27-Oct-2018/PABourdin: coded
-!
-!!      use File_io, only: file_exists
-!
-!!      logical :: ltrunc
-!!      character (len=fnlen) :: filename
-!
-!!      if ((iz < 0) .and. (iz2 < 0) .and. (iz3 < 0) .and. (iz4 < 0) .and. (iy < 0) .and. (iy2 < 0) .and. (ix < 0)) return
-!
-!!      filename = trim(directory_snap)//'/slices.h5'
-!!      ltrunc = .false.
-!!      if (lroot) ltrunc = .not. file_exists (filename)
-!!      call file_open_hdf5 (filename, truncate=ltrunc, global=.false.)
-!!      call initialize_slice ('z', iz)
-!!      call initialize_slice ('z2', iz2)
-!!      call initialize_slice ('z3', iz3)
-!!      call initialize_slice ('z4', iz4)
-!!      call initialize_slice ('y', iy)
-!!      call initialize_slice ('y2', iy2)
-!!      call initialize_slice ('x', ix)
-!!      call file_close_hdf5
+!  27-Oct-2018/PABourdin: no action required for HDF5 output
 !
     endsubroutine output_slice_position
 !***********************************************************************
