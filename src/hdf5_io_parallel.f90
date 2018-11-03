@@ -1073,7 +1073,7 @@ module HDF5_IO
       h5_count(:) = 1
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'get dataset for file space "'//trim (name)//'"', .true.)
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glob_start(1:2), h5_count, h5_err, h5_stride, loc_dim(1:2))
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glob_start, h5_count, h5_err, h5_stride, loc_dim)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within file "'//trim (name)//'"', .true.)
       if (.not. lhas_data) then
         call h5sselect_none_f (h5_fspace, h5_err)
@@ -1081,7 +1081,7 @@ module HDF5_IO
       endif
 !
       ! define local 'hyper-slab' portion in memory
-      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, loc_start(1:2), h5_count, h5_err, h5_stride, loc_dim(1:2))
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, loc_start, h5_count, h5_err, h5_stride, loc_dim)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within memory "'//trim (name)//'"', .true.)
       if (.not. lhas_data) then
         call h5sselect_none_f (h5_mspace, h5_err)
