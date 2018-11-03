@@ -911,7 +911,7 @@ module power_spectrum
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
-  logical, save :: lwrite_krms=.true.
+  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
 !
 !  passive scalar contributions (hardwired for now)
 !
@@ -921,8 +921,7 @@ module power_spectrum
 !
 !  identify version
 !
-  if (lroot .AND. ip<10) call svn_id( &
-       "$Id$")
+  if (lroot .AND. ip<10) call svn_id("$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -1415,6 +1414,7 @@ module power_spectrum
 !
     use Fourier, only: fft_xyz_parallel, fourier_transform
     use Mpicomm, only: mpireduce_sum
+    use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
@@ -1428,94 +1428,116 @@ module power_spectrum
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(:), pointer :: specGWs   ,specGWh   ,specStr
+  real, dimension(:), pointer :: specGWshel,specGWhhel,specStrhel
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
-  logical, save :: lwrite_krms=.true.
+  logical, save :: lwrite_krms_GWs=.false.
   real :: sign_switch, kk1, kk2, kk3
 !
 !  identify version
 !
-  if (lroot .AND. ip<10) call svn_id( &
-       "$Id$")
-  !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !  Ignore *2*pi/Lx factor, because later we want k to be integers
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
-  !
-  !  initialize power spectrum to zero
-  !
-  k2m=0.
-  nks=0.
-  spectrum=0.
-  spectrum_sum=0.
-  spectrumhel=0.
-  spectrumhel_sum=0.
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! Select cases where spectra are precomputed
+!
+  if (iggXim>0.or.iggTim>0) then
+    if (sp=='GWs') then
+      call get_shared_variable('specGWs   ', specGWs   , caller='powerGWs')
+      call get_shared_variable('specGWshel', specGWshel, caller='powerGWs')
+      spectrum   =specGWs
+      spectrumhel=specGWshel
+    endif
+    if (sp=='GWh') then
+      call get_shared_variable('specGWh   ', specGWh   , caller='powerGWs')
+      call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
+      spectrum   =specGWh
+      spectrumhel=specGWhhel
+    endif
+    if (sp=='Str') then
+      call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
+      call get_shared_variable('specStrhel', specStrhel, caller='powerGWs')
+      spectrum   =specStr
+      spectrumhel=specStrhel
+    endif
+  else
+!
+!  initialize power spectrum to zero
+!
+    k2m=0.
+    nks=0.
+    spectrum=0.
+    spectrumhel=0.
+!
+!  Define wave vector, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers
+!
+    kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+    ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+    kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
 !
 !  Gravitational wave tensor (spectra of g*g^* for gT and gX, where g=hdot)
 !
-  if (sp=='GWs') then
-    if (iggX>0.and.iggT>0) then
-      a_re=f(l1:l2,m1:m2,n1:n2,iggX)
-      b_re=f(l1:l2,m1:m2,n1:n2,iggT)
-    else
-      call fatal_error('powerGWs','must have lggTX_as_aux=T')
-    endif
-    a_im=0.
-    b_im=0.
+    if (sp=='GWs') then
+      if (iggX>0.and.iggT>0.and.iggXim==0.and.iggTim==0) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iggX)
+        b_re=f(l1:l2,m1:m2,n1:n2,iggT)
+      else
+        call fatal_error('powerGWs','must have lggTX_as_aux=T')
+      endif
+      a_im=0.
+      b_im=0.
 !
 !  Gravitational wave tensor (spectra of h*h^* for hT and hX)
 !
-  elseif (sp=='GWh') then
-    if (ihhX>0) then
-      a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
-      b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
-    else
-      call fatal_error('powerGWs','must have lhhTX_as_aux=T')
-    endif
-    a_im=0.
-    b_im=0.
+    elseif (sp=='GWh') then
+      if (ihhX>0.and.ihhXim==0) then
+        a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
+        b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
+      else
+        call fatal_error('powerGWs','must have lhhTX_as_aux=T')
+      endif
+      a_im=0.
+      b_im=0.
 !
 !  Gravitational wave stress tensor (only if lStress_as_aux is requested)
 !  Note: for aux_stress='d2hdt2', the stress is replaced by GW_rhs.
 !
-  elseif (sp=='Str') then
-    if (iStressX>0) then
-      a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
-      b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+    elseif (sp=='Str') then
+      if (iStressX>0.and.iStressXim==0) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
+        b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+      else
+        call fatal_error('powerGWs','must have lStress_as_aux=T')
+      endif
+      a_im=0.
+      b_im=0.
     else
-      call fatal_error('powerGWs','must have lStress_as_aux=T')
+      call fatal_error('powerGWs','no valid spectrum (=sp) chosen')
     endif
-    a_im=0.
-    b_im=0.
-  else
-    call fatal_error('powerGWs','no valid spectrum (=sp) chosen')
-  endif
 !
 !  Doing the Fourier transform
 !
-  !call fft_xyz_parallel(a_re,a_im)
-  !call fft_xyz_parallel(b_re,b_im)
-  call fourier_transform(a_re,a_im)
-  call fourier_transform(b_re,b_im)
+    !call fft_xyz_parallel(a_re,a_im)
+    !call fft_xyz_parallel(b_re,b_im)
+    call fourier_transform(a_re,a_im)
+    call fourier_transform(b_re,b_im)
 !
 !  integration over shells
 !
-  if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
 ! do ikz=1,nz
 !   do iky=1,ny
 !     do ikx=1,nx
-  do iky=1,nz
-    do ikx=1,ny
-      do ikz=1,nx
-        k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
-        k=nint(sqrt(k2))
-        if (k>=0 .and. k<=(nk-1)) then
+    do iky=1,nz
+      do ikx=1,ny
+        do ikz=1,nx
+          k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
 !
 !  Switch sign for the same k vectors for which we also
 !  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
@@ -1545,41 +1567,45 @@ module power_spectrum
 !
 !  sum energy and helicity spectra
 !
-          spectrum(k+1)=spectrum(k+1) &
-             +a_re(ikz,ikx,iky)**2 &
-             +a_im(ikz,ikx,iky)**2 &
-             +b_re(ikz,ikx,iky)**2 &
-             +b_im(ikz,ikx,iky)**2
-          spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*( &
-             +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
-             -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
+            spectrum(k+1)=spectrum(k+1) &
+               +a_re(ikz,ikx,iky)**2 &
+               +a_im(ikz,ikx,iky)**2 &
+               +b_re(ikz,ikx,iky)**2 &
+               +b_im(ikz,ikx,iky)**2
+            spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*( &
+               +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
+               -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
 !
 !  compute krms only once
 !
-          if (lwrite_krms) then
-            k2m(k+1)=k2m(k+1)+k2
-            nks(k+1)=nks(k+1)+1.
-          endif
+            if (lwrite_krms_GWs) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
 !
 !  end of loop through all points
 !
-        endif
+          endif
+        enddo
       enddo
     enddo
-  enddo
+!
+!  end from communicated versus computed spectra
+!
+  endif
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
 !
 !  compute krms only once
 !
-  if (lwrite_krms) then
+  if (lwrite_krms_GWs) then
     call mpireduce_sum(k2m,k2m_sum,nk)
     call mpireduce_sum(nks,nks_sum,nk)
-    if (iproc/=root) lwrite_krms=.false.
+    if (iproc/=root) lwrite_krms_GWs=.false.
   endif
   !
   !  on root processor, write global result to file
@@ -1623,12 +1649,12 @@ module power_spectrum
     endif
     close(1)
     !
-    if (lwrite_krms) then
+    if (lwrite_krms_GWs) then
       krms=sqrt(k2m_sum/nks_sum)
-      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
       write(1,'(1p,8e10.2)') krms
       close(1)
-      lwrite_krms=.false.
+      lwrite_krms_GWs=.false.
     endif
   endif
   !

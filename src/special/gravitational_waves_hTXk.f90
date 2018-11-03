@@ -88,8 +88,6 @@ module Special
   character (len=labellen) :: inithij='nothing'
   character (len=labellen) :: initgij='nothing'
   character (len=labellen) :: ctrace_factor='1/3'
-  !character (len=labellen) :: cstress_prefactor='16pi'
-  !AB: changed on Oct 25
   character (len=labellen) :: cstress_prefactor='6'
   character (len=labellen) :: fourthird_in_stress='4/3'
   character (len=labellen) :: cc_light='1'
@@ -121,9 +119,6 @@ module Special
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_h22rms=0      ! DIAG_DOC: $h_{22}^{\rm rms}$
-  integer :: idiag_h33rms=0      ! DIAG_DOC: $h_{33}^{\rm rms}$
-  integer :: idiag_h23rms=0      ! DIAG_DOC: $h_{23}^{\rm rms}$
   integer :: idiag_g11pt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
   integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
   integer :: idiag_g33pt=0       ! DIAG_DOC: $g_{33}(x_1,y_1,z_1,t)$
@@ -589,16 +584,21 @@ module Special
 !  07-aug-17/axel: coded
 !
       use Fourier, only: fourier_transform, fft_xyz_parallel
+      use SharedVariables, only: put_shared_variable
 !
+      integer, parameter :: nk=nxgrid/2
       real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
-      real, dimension (:,:,:), allocatable :: one_over_k2, S_T_re, S_T_im, S_X_re, S_X_im
+      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      real, dimension(nk) :: specGWs   ,specGWh   ,specStr
+      real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
+      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       logical :: lscale_tobox1=.true.
-      real :: scale_factor, fact, k1, k2, k3
+      real :: scale_factor, fact, sign_switch
+      real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
       real :: cosot, sinot, om12, om1, om, omt1
@@ -613,9 +613,6 @@ module Special
 !  compute the Fourier transform, so we would skip the rest.
 !
 !  Allocate memory for arrays.
-!
-      allocate(one_over_k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for one_over_k2')
 !
       allocate(S_T_re(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('compute_gT_and_gX_from_gij','Could not allocate memory for S_T_re')
@@ -663,23 +660,6 @@ module Special
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
 !
-      do iky=1,nz
-        do ikx=1,ny
-          do ikz=1,nx
-            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2 &
-                                    +ky(iky+ipz*nz)**2 &
-                                    +kz(ikz+ipx*nx)**2
-          enddo
-        enddo
-      enddo
-!
-!  compute 1/k2 for components of unit vector
-!  Avoid division by zero
-!
-      if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
-      one_over_k2=1./one_over_k2
-      if (lroot) one_over_k2(1,1,1) = 0.  ! set origin to zero
-!
 !  Assemble stress, Tpq
 !
       Tpq_re=0.0
@@ -714,6 +694,10 @@ module Special
             k1=kx(ikx+ipy*ny)
             k2=ky(iky+ipz*nz)
             k3=kz(ikz+ipx*nx)
+            k1sqr=k1**2
+            k2sqr=k2**2
+            k3sqr=k3**2
+            ksqr=k1sqr+k2sqr+k3sqr
 !
 !  find two vectors e1 and e2 to compute e_T and e_X
 !
@@ -726,32 +710,34 @@ module Special
               Pij(4)=0.
               Pij(5)=0.
               Pij(6)=0.
+              one_over_k2=0.
             else
+              one_over_k2=1./ksqr
               if(abs(k1)<abs(k2)) then
                 if(abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
-                  e2=(/k2**2+k3**2,-k2*k1,-k3*k1/)
+                  e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
                 else !(k3 is pref dir)
                   e1=(/k2,-k1,0./)
-                  e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                 endif
               else !(k2 smaller than k1)
                 if(abs(k2)<abs(k3)) then !(k2 is pref dir)
                   e1=(/-k3,0.,+k1/)
-                  e2=(/+k1*k2,-(k1**2+k3**2),+k3*k2/)
+                  e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
                 else !(k3 is pref dir)
                   e1=(/k2,-k1,0./)
-                  e2=(/k1*k3,k2*k3,-(k1**2+k2**2)/)
+                  e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                 endif
               endif
               e1=e1/sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
               e2=e2/sqrt(e2(1)**2+e2(2)**2+e2(3)**2)
-              Pij(1)=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              Pij(2)=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
-              Pij(3)=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
-              Pij(4)=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
-              Pij(5)=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
-              Pij(6)=-kz(ikz+ipx*nx)*kx(ikx+ipy*ny)*one_over_k2(ikz,ikx,iky)
+              Pij(1)=1.-k1sqr*one_over_k2
+              Pij(2)=1.-k2sqr*one_over_k2
+              Pij(3)=1.-k3sqr*one_over_k2
+              Pij(4)=-k1*k2*one_over_k2
+              Pij(5)=-k2*k3*one_over_k2
+              Pij(6)=-k3*k1*one_over_k2
             endif
 !
 !  compute e_T and e_X
@@ -766,14 +752,18 @@ module Special
 !
 !  possibility of swapping the sign
 !
+            sign_switch=1.
             if (lswitch_sign_e_X) then
               if (k3<0.) then
+                sign_switch=-1.
                 e_X=-e_X
               elseif (k3==0.) then
                 if (k2<0.) then
+                  sign_switch=-1.
                   e_X=-e_X
                 elseif (k2==0.) then
                   if (k1<0.) then
+                    sign_switch=-1.
                     e_X=-e_X
                   endif
                 endif
@@ -821,7 +811,7 @@ module Special
             hhTim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)
             hhXim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)
 !
-            om12=one_over_k2(ikz,ikx,iky)
+            om12=one_over_k2
             om1=sqrt(om12)
             om=1./om1
             omt1=1./(om*t)
@@ -866,46 +856,61 @@ module Special
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )=S_X_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)=S_X_im(ikz,ikx,iky)
 !
-!-----------------------------------------------------------------------------
- ! Showing results for kz = 0, kz = 2 for testing purpose (Alberto Sayan)
-          !if (k1==0..and.k2==0..and.abs(k3)==2.) then
-          if (abs(k1)==2..and.abs(k2)==2..and.abs(k3)==0.) then
+!  sum energy and helicity spectra
 !
-!  debug output (perhaps to be removed)
+            if (lspec) then
+              ik=1+nint(sqrt(ksqr)/scale_factor)
+              if (ik <= nk) then
 !
-          if (ldebug_print) then
-            print*,'PRINTING RESULTS FOR K = (+/-2, 0, 0)'
-            print*,'Axel k1,k2,k3=',k1,k2,k3
-            print*,'Axel e_1=',e1
-            print*,'Axel e_2=',e2
-            print*,'Axel e_T=',e_T
-            print*,'Axel e_X=',e_X
-            print*,'Axel S_X_re=',S_X_re(ikz,ikx,iky)
-            print*,'Axel S_X_im=',S_X_im(ikz,ikx,iky)
-            print*,'Axel S_T_re=',S_T_re(ikz,ikx,iky)
-            print*,'Axel S_T_im=',S_T_im(ikz,ikx,iky)
-            print*,'Axel Sij_re=',Sij_re
-            print*,'Axel Sij_im=',Sij_im
-            print*,'Axel Tpq_re=',Tpq_re(ikz,ikx,iky,:)
-            print*,'Axel Tpq_im=',Tpq_im(ikz,ikx,iky,:)
-            print*,'Axel Pij=',Pij
-            if (k1==0..and.k2==0..and.k3==0.) then
-              print*,'PRINTING RESULTS FOR K = (0, 0, 0)'
-              print*,'Axel k1,k2,k3=',k1,k2,k3
-              print*,'Axel e_T=',e_T
-              print*,'Axel e_X=',e_X
-              print*,'Axel S_X_re=',S_X_re(ikz,ikx,iky)
-              print*,'Axel S_X_im=',S_X_im(ikz,ikx,iky)
-              print*,'Axel S_T_re=',S_T_re(ikz,ikx,iky)
-              print*,'Axel S_T_im=',S_T_im(ikz,ikx,iky)
-              print*,'Axel Sij_re=',Sij_re
-              print*,'Axel Sij_im=',Sij_im
-              print*,'Axel Tpq_re=',Tpq_re(ikz,ikx,iky,:)
-              print*,'Axel Tpq_im=',Tpq_im(ikz,ikx,iky,:)
-              print*,'Axel Pij=',Pij
+!  Gravitational wave energy spectrum computed from hdot (=g)
+!
+                if (GWs_spec) then
+                  specGWs(ik)=specGWs(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)**2
+                  specGWshel(ik)=specGWshel(ik)+2*sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) )
+                endif
+!
+!  Gravitational wave strain spectrum computed from h
+!
+                if (GWh_spec) then
+                  specGWh(ik)=specGWh(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
+                  specGWhhel(ik)=specGWhhel(ik)+2*sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                endif
+!
+!  Stress spectrum computed from Str
+!
+                if (Str_spec) then
+                  specStr(ik)=specStr(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )**2 &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)**2
+                  specStrhel(ik)=specStrhel(ik)+2*sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                endif
+              endif
+!
+!  end of lspec
+!
             endif
-          endif
-          endif
 !
 !  end of ikx, iky, and ikz loops
 !
@@ -913,13 +918,21 @@ module Special
         enddo
       enddo
 !
-!  debug output (perhaps to be removed)
+!  Communicate as shared variables
 !
-      if (ldebug_print) then
-        print*,'Axel: k3Re=',S_T_re(1,:,1)
-        print*,'Axel: k3Im=',S_T_im(1,:,1)
-        print*,'Axel: k2Re=',S_X_re(1,:,1)
-        print*,'Axel: k2Im=',S_X_im(1,:,1)
+      if (lspec) then
+        if (GWs_spec) then
+          call put_shared_variable('specGWs   ',specGWs   )
+          call put_shared_variable('specGWshel',specGWshel)
+        endif
+        if (GWh_spec) then
+          call put_shared_variable('specGWh   ',specGWh   )
+          call put_shared_variable('specGWhhel',specGWhhel)
+        endif
+        if (Str_spec) then
+          call put_shared_variable('specStr   ',specStr   )
+          call put_shared_variable('specStrhel',specStrhel)
+        endif
       endif
 !
 !  back to real space
@@ -929,28 +942,8 @@ module Special
 !--   call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
 !--   call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
 !
-!  debug output (perhaps to be removed)
-!
-      if (ldebug_print) then
-        print*,'Axel: x3Re=',S_T_re(:,1,1)
-        print*,'Axel: x3Im=',S_T_im(:,1,1)
-        print*,'Axel: x2Re=',S_X_re(:,1,1)
-        print*,'Axel: x2Im=',S_X_im(:,1,1)
-      endif
-!
-!  debug output (perhaps to be removed)
-!
-      if (ldebug_print) then
-        print*,'PRINTING PHYSICAL SPACE S_T AND S_X'
-        print*,'Axel S_T_re=',S_T_re(:,1,1)
-        print*,'Axel S_X_re=',S_X_re(:,1,1)
-        print*,'Axel S_T_im=',S_T_im(:,1,1)
-        print*,'Axel S_X_im=',S_X_im(:,1,1)
-      endif
-!
 !  Deallocate arrays.
 !
-      if (allocated(one_over_k2)) deallocate(one_over_k2)
       if (allocated(S_T_re)) deallocate(S_T_re)
       if (allocated(S_X_im)) deallocate(S_X_im)
       if (allocated(Tpq_re)) deallocate(Tpq_re)
