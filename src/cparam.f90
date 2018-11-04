@@ -50,7 +50,8 @@ module Cparam
   integer, parameter :: mzgrid=nzgrid+2*nghost
   integer, parameter :: mw=mx*my*mz
   integer(KIND=ikind8), parameter :: nwgrid=int(nxgrid,kind=ikind8)* &
-                                     int(nygrid,kind=ikind8)*int(nzgrid,kind=ikind8)
+                                            int(nygrid,kind=ikind8)* &
+                                            int(nzgrid,kind=ikind8)
 !
 !!!  integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
 !!!  integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
