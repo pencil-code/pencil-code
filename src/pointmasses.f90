@@ -1971,7 +1971,7 @@ module PointMasses
 !
       use IO, only: input_pointmass
 !
-      character (len=*) :: filename
+      character (len=*), intent(in) :: filename
 !
       call input_pointmass(filename, qvarname, fq, nqpar, mqarray)
 !
@@ -1994,52 +1994,44 @@ module PointMasses
 !
 !  01-apr-08/wlad: coded
 !
+      character (len=*), intent(in) :: file
+      logical, intent(in) :: enum
+      character (len=*), optional, intent(in) :: flist
+!
       logical, save :: lfirst_call=.true.
       integer, save :: nsnap
       real, save :: tsnap
-      character (len=*) :: file,flist
       character (len=fnlen) :: filename, filename_diag
-      logical :: enum,lsnap
+      logical :: lsnap
       character (len=intlen) :: nsnap_ch
-      optional :: flist
 !
 !  Input is either file=qvar if enum=F or file=QVAR if enum=T.
 !  If the latter, append a number to QVAR.
 !      
+      filename = trim(file)
       if (enum) then
 !
 !  Prepare to read tsnap.dat         
 !
-         call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
+        call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
 !        
-!  Read the tsnap.dat to find out based on the time, what N should QVARN get (N=nsnap).
+!  Read the tsnap.dat to get N for QVARN (N=nsnap).
 !
-         if (lfirst_call) then
+        if (lfirst_call) then
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
           lfirst_call=.false.
         endif
 !
-!  Update the snaptime by defining N in QVARN (N=nsnap_ch).
+!  Update snaptime to set nsnap_ch=N and append N to filename QVARN.
 !
         call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
+        call safe_character_assign(filename,trim(filename)//trim(nsnap_ch))
+      endif
 !
-        if (lsnap) then
-!           
-!  Define the string: QVAR+N
-!
-           call safe_character_assign(filename,trim(file)//trim(nsnap_ch))
-!
-!  Write the massive particles snapshot -- only root does it. 
-!          
-           call output_pointmass (filename, qvarname, fq, nqpar, mqarray)
-           if (present(flist)) call log_filename_to_file(filename,flist)
-!
-           lsnap=.false.
-        endif
-     else
-        call output_pointmass (file, qvarname, fq, nqpar, mqarray)
-        if (present(flist)) call log_filename_to_file(file,flist)
-     endif
+      if (lsnap .or. .not. enum ) then
+        call output_pointmass (filename, qvarname, fq, nqpar, mqarray)
+        if (lroot .and. present(flist)) call log_filename_to_file(file,flist)
+      endif
 !
     endsubroutine pointmasses_write_snapshot
 !***********************************************************************
