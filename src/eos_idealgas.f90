@@ -2677,10 +2677,10 @@ module EquationOfState
 !
           if (lheatc_kramers .or. (hcondxtop /= 0.0)) then
             hcond_total = hcondxtop
-            if (lheatc_kramers) &
-                hcond_total = hcond_total + hcond0_kramers*TT_yz**(6.5*nkramers)*rho_yz**(-2.*nkramers)
+            if (lheatc_kramers) hcond_total = hcond_total + &
+                hcond0_kramers*TT_yz**(6.5*nkramers)*rho_yz**(-2.*nkramers)
 !
-            dsdx_yz = -(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
+            dsdx_yz = -(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz) / &
                 (chit_prof2*chi_t*rho_yz+hcond_total/cv)
 !
 !  Substract gradient of reference entropy.
