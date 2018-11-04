@@ -7,7 +7,7 @@
   lpoint=14, mpoint=4, npoint=4, lpoint2=4, mpoint2=4, npoint2=4
   nt=10, it1=1, isave=1000, itorder=3
   dsnap=.01, dvid=.01, ialive=10
-  dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T, GWd_spec=T
+  dspec=.01, ou_spec=T, ab_spec=T, GWs_spec=T, GWh_spec=T, GWd_spec=F
   !cdt=.7
   !cdt=.2
   dt=.02  !(cCFL=0.05)
