@@ -5,9 +5,9 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2010-06-29 08:00:04 pkapyla Exp $',
   nt=21, it1=2, isave=100, itorder=3
-  dsnap=50., dvid=1,
+  dsnap=50., dvid=1
   cdtv=0.30, cdt=0.40
-  lpencil_check=T
+  lpencil_check=F, lpencil_check_small=F ! possible overcalculation of 'lnrho'
 /
 &eos_run_pars
   sigmaSBt=0.18
