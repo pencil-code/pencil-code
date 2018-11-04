@@ -2682,17 +2682,17 @@ module EquationOfState
 !
             dsdx_yz = -(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
                 (chit_prof2*chi_t*rho_yz+hcond_total/cv)
-          endif
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(TOP,iref_gs)
+            if (lreference_state) dsdx_yz = dsdx_yz - reference_state(TOP,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
-          do i=1,nghost
-            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+dx2_bound(i)*dsdx_yz
-          enddo
+            do i=1,nghost
+              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+dx2_bound(i)*dsdx_yz
+            enddo
+          endif
         endif
 !
 !  capture undefined entries
