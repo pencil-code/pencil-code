@@ -1208,6 +1208,7 @@ module Io
 !
       character (len=*), intent(in) :: file
 !
+      if (file == 'dim.dat') return
       call output_dim (file, mx, my, mz, mxgrid, mygrid, mzgrid, mvar, maux, mglobal)
 !
     endsubroutine wdim_default_grid
