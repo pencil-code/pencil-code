@@ -280,6 +280,46 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_4D
 !***********************************************************************
+    subroutine output_dim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: moved IO parts from wdim to low-level IO modules
+!
+      use General, only: numeric_precision
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal
+!
+      character (len=fnlen) :: filename
+      integer :: iprocz_slowest
+!
+      if (lroot) then
+        ! global dimension file
+        filename = trim(datadir)//'/'//trim(file)
+        open(lun_output,file=filename)
+        write(lun_output,'(3i7,3i7)') mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal
+        write(lun_output,'(a)') numeric_precision()
+        write(lun_output,'(3i5)') nghost, nghost, nghost ! why do we write three always identical numbers?
+        iprocz_slowest = 0
+        if (lprocz_slowest) iprocz_slowest=1
+        write(lun_output,'(4i5)') nprocx, nprocy, nprocz, iprocz_slowest
+        close(lun_output)
+      endif
+!
+      if (.not. lmonolithic_io) then
+        ! write processor dimension files to "proc#/" for distributed IO cases
+        filename = trim(directory)//'/'//trim(file)
+        open(lun_output,file=filename)
+        write(lun_output,'(3i7,3i7)') mx_out, my_out, mz_out, mvar_out, maux_out, mglobal
+        write(lun_output,'(a)') numeric_precision()
+        write(lun_output,'(3i5)') nghost, nghost, nghost ! why do we write three always identical numbers?
+        write(lun_output,'(3i5)') ipx, ipy, ipz
+        close(lun_output)
+      endif
+!
+    endsubroutine output_dim
+!***********************************************************************
     subroutine index_append(varname,ivar,vector,array)
 !
 ! 14-oct-18/PAB: coded

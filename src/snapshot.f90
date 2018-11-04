@@ -38,8 +38,8 @@ module Snapshot
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use General, only: safe_character_assign
-      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid
-      use Sub, only: read_snaptime, update_snaptime, wdim
+      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid, wdim
+      use Sub, only: read_snaptime, update_snaptime
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
 !
@@ -153,13 +153,9 @@ module Snapshot
 !  At first call, write downsampled grid and its global and local dimensions
 !
           call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost)
-          call wdim(trim(directory)//'/dim_down.dat',iex+nghost,iey+nghost,iez+nghost,mvar_down,maux_down)
-          if (lroot) call wdim(trim(datadir)//'/dim_down.dat', &
-                               ceiling(float(nxgrid)/isx)+2*nghost, &
-                               ceiling(float(nygrid)/isy)+2*nghost, &
-                               ceiling(float(nzgrid)/isz)+2*nghost, &
-                               mvar_down,maux_down, &
-                               lglobal=.true.)
+          call wdim('dim_down.dat', iex+nghost, iey+nghost, iez+nghost, &
+              ceiling(float(nxgrid)/isx)+2*nghost, ceiling(float(nygrid)/isy)+2*nghost, ceiling(float(nzgrid)/isz)+2*nghost, &
+              mvar_down, maux_down)
           lfirst_call=.false.
         endif
 !

@@ -521,7 +521,8 @@ module Solid_Cells
 !  XX-feb-17/Jorgen: Coded
 !
       use Initcond, only: gaunoise
-      use Sub,      only: wdim,control_file_exists
+      use IO,       only: wdim
+      use Sub,      only: control_file_exists
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real :: a2, rr2, rr2_low, rr2_high 
@@ -706,13 +707,9 @@ module Solid_Cells
         call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
 !
-!  Write ogdim.dat files, local and global
+!  Write ogdim.dat
 !
-      call wdim(trim(directory)//'/ogdim.dat',mx_ogrid,my_ogrid,mz_ogrid)
-      if (lroot) then
-        call wdim(trim(datadir)//'/ogdim.dat', &
-            mxgrid_ogrid,mygrid_ogrid,mzgrid_ogrid,lglobal=.true.)
-      endif
+      call wdim('ogdim.dat', mx_ogrid, my_ogrid, mz_ogrid, mxgrid_ogrid, mygrid_ogrid, mzgrid_ogrid)
 !
     endsubroutine init_solid_cells
 !***********************************************************************

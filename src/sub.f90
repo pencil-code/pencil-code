@@ -81,7 +81,7 @@ module Sub
 !
   public :: max_for_dt,unit_vector
 !
-  public :: write_dx_general, numeric_precision, wdim, rdim
+  public :: write_dx_general, rdim
   public :: write_prof, write_xprof, write_zprof, remove_zprof
   public :: read_zprof
 !
@@ -3475,88 +3475,6 @@ module Sub
       enddo
 !
     endsubroutine gradf_upw1st
-!***********************************************************************
-    character function numeric_precision()
-!
-!  Return 'S' if running in single, 'D' if running in double precision.
-!
-!  12-jul-06/wolf: extracted from wdim()
-!
-      integer :: real_prec
-!
-      real_prec = precision(1.)
-      if (real_prec==6 .or. real_prec==7) then
-        numeric_precision = 'S'
-      elseif (real_prec == 15) then
-        numeric_precision = 'D'
-      else
-        print*, 'WARNING: encountered unknown precision ', real_prec
-        numeric_precision = '?'
-      endif
-!
-    endfunction numeric_precision
-!***********************************************************************
-    subroutine wdim(file,mxout,myout,mzout,mvar_out,maux_out,lglobal)
-!
-!  Write dimension to file.
-!
-!   8-sep-01/axel: adapted to take myout,mzout
-!  30-sep-14/MR  : added parameter lglobal to be able to output
-!                  dimensions different from mx,my,mz both locally and globally
-!   4-oct-16/MR: added optional parameters mvar_out,maux_out.
-!
-      use General, only: loptest, ioptest
-!
-      character (len=*) :: file
-      character         :: prec
-      integer, optional :: mxout,myout,mzout,mvar_out,maux_out
-      logical, optional :: lglobal
-      integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
-!
-!  Determine whether mxout=mx (as on each processor),
-!  or whether mxout is different (e.g. when writing out full array).
-!
-      if (present(mzout)) then
-        mxout1=mxout
-        myout1=myout
-        mzout1=mzout
-      elseif (lmonolithic_io) then
-        mxout1=nxgrid+2*nghost
-        myout1=nygrid+2*nghost
-        mzout1=nzgrid+2*nghost
-      else
-        mxout1=mx
-        myout1=my
-        mzout1=mz
-      endif
-!
-!  Only root writes allprocs/dim.dat (for monolithic IO),
-!  but everybody writes to their procN/dim.dat (for non-monolithic IO).
-!
-      if (lroot .or. .not. lmonolithic_io) then
-        open(1,file=file)
-        write(1,'(3i7,3i7)') mxout1,myout1,mzout1, &
-                             ioptest(mvar_out,mvar),ioptest(maux_out,maux),mglobal
-!
-!  Check for double precision.
-!
-        prec = numeric_precision()
-        write(1,'(a)') prec
-!
-!  Write number of ghost cells (could be different in x, y and z).
-!
-        write(1,'(3i5)') nghost, nghost, nghost
-        if (loptest(lglobal)) then
-          if (lprocz_slowest) iprocz_slowest=1
-          write(1,'(4i5)') nprocx, nprocy, nprocz, iprocz_slowest
-        else
-          write(1,'(3i5)') ipx, ipy, ipz
-        endif
-!
-        close(1)
-      endif
-!
-    endsubroutine wdim
 !***********************************************************************
     subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
         prec_in,nghost_in,ipx_in, ipy_in, ipz_in)

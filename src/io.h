@@ -10,7 +10,13 @@
   public :: init_write_persist, write_persist, write_persist_id
   public :: init_read_persist, read_persist, read_persist_id
 
-  public :: wgrid, rgrid
+  public :: wgrid, rgrid, wdim
   public :: wproc_bounds, rproc_bounds
   public :: directory_names, log_filename_to_file
+
+  interface wdim
+    module procedure wdim_default_grid
+    module procedure wdim_default
+    module procedure wdim
+  endinterface
 

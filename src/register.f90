@@ -804,7 +804,7 @@ module Register
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
       use Cdata
-      use Sub,             only: numeric_precision
+      use General,         only: numeric_precision
       use Diagnostics
       use Heatflux,        only: rprint_heatflux
       use Hydro,           only: rprint_hydro

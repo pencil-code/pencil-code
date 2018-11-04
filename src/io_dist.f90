@@ -19,6 +19,7 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use File_io, only: delete_file
+  use HDF5_IO, only: output_dim
   use Messages, only: fatal_error, warning, svn_id
 !
   implicit none
@@ -823,15 +824,15 @@ module Io
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
 !
-      open (1, FILE=trim(directory_dist)//'/'//file, FORM='unformatted')
+      open (lun_input, FILE=trim(directory_dist)//'/'//file, FORM='unformatted')
       ! Read number of particles for this processor.
-      read (1) nv
+      read (lun_input) nv
       if (nv > 0) then
         ! Read particle number identifier and then particle data.
-        read (1) ipar(1:nv)
-        read (1) ap(1:nv,:)
+        read (lun_input) ipar(1:nv)
+        read (lun_input) ap(1:nv,:)
       endif
-      close (1)
+      close (lun_input)
       if (ip<=8 .and. lroot) print*, 'input_particles: read ', file
 !
       ! Sum the total number of all particles on the root processor.
@@ -855,12 +856,12 @@ module Io
       integer :: mv_in
 !
       if (lroot) then
+        if (ip<=8) print*, 'read pointmass snapshot', trim (file)
         open(lun_input,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted')
         read(lun_input) mv_in
-        if (mv_in /= mv) call fatal_error("","")
-        if (mv_in /= 0) read(lun_input) fq
+        if (mv_in /= mv) call fatal_error("input_pointmass","dimensions differ between file and 'fq' array")
+        if (mv_in > 0) read(lun_input) fq
         close(lun_input)
-        if (ip<=8) print*, 'read pointmass snapshot', trim (file)
       endif
 !
       call mpibcast_real(fq,(/mv,nc/))
@@ -1400,6 +1401,46 @@ module Io
       endif
 !
     endsubroutine rgrid
+!***********************************************************************
+    subroutine wdim_default_grid(file)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: redesigned
+!
+      character (len=*), intent(in) :: file
+!
+      call output_dim (file, mx, my, mz, mxgrid, mygrid, mzgrid, mvar, maux, mglobal)
+!
+    endsubroutine wdim_default_grid
+!***********************************************************************
+    subroutine wdim_default(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: redesigned
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
+!
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar, maux, mglobal)
+!
+    endsubroutine wdim_default
+!***********************************************************************
+    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
+!
+!  Write dimension to file.
+!
+!   8-sep-01/axel: adapted to take my_out,mz_out
+!   4-oct-16/MR: added optional parameters mvar_out,maux_out
+!  02-Nov-2018/PABourdin: redesigned, moved to IO modules
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
+!
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
+!
+    endsubroutine wdim
 !***********************************************************************
     subroutine wproc_bounds(file)
 !

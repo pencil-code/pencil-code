@@ -71,7 +71,7 @@ program run
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid
+  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid, wdim
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -273,13 +273,11 @@ program run
 !
   if (.not.luse_oldgrid) then
     call wgrid('grid.dat')
-    call wdim(trim(directory)//'/dim.dat')
-    if (lroot) call wdim(trim(datadir)//'/dim.dat',mxgrid,mygrid,mzgrid,lglobal=.true.)
+    call wdim('dim.dat')
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
   elseif (lwrite_dim_again) then
-    call wdim(trim(directory)//'/dim.dat')
-    if (lroot) call wdim(trim(datadir)//'/dim.dat',mxgrid,mygrid,mzgrid,lglobal=.true.)
+    call wdim('dim.dat')
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
   endif

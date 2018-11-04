@@ -45,7 +45,7 @@ module General
   public :: ranges_dimensional
   public :: staggered_mean_scal, staggered_mean_vec
   public :: staggered_max_scal, staggered_max_vec
-  public :: directory_names_std
+  public :: directory_names_std, numeric_precision
   public :: touch_file
   public :: var_is_vec
   public :: transform_cart_spher, transform_spher_cart_yy
@@ -4302,6 +4302,26 @@ module General
 !
     endsubroutine directory_names_std
 !****************************************************************************
+    character function numeric_precision()
+!
+!  Return 'S' if running in single, 'D' if running in double precision.
+!
+!  12-jul-06/wolf: extracted from wdim()
+!
+      integer :: real_prec
+!
+      real_prec = precision(1.)
+      if (real_prec==6 .or. real_prec==7) then
+        numeric_precision = 'S'
+      elseif (real_prec == 15) then
+        numeric_precision = 'D'
+      else
+        print*, 'WARNING: encountered unknown precision ', real_prec
+        numeric_precision = '?'
+      endif
+!
+    endfunction numeric_precision
+!***********************************************************************
     subroutine touch_file(file)
 !
 !  Touches a given file (used for code locking).

@@ -7,7 +7,7 @@ module HDF5_IO
 !
   use Cdata
   use Cparam, only: mvar, maux, labellen
-  use General, only: loptest, itoa
+  use General, only: loptest, itoa, numeric_precision
   use HDF5
   use Messages, only: fatal_error
   use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
@@ -1263,6 +1263,51 @@ module HDF5_IO
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//trim (name)//'"', .true.)
 !
     endsubroutine output_hdf5_4D
+!***********************************************************************
+    subroutine output_dim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: coded
+!
+      use General, only: numeric_precision
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal
+!
+      character (len=fnlen) :: filename
+!
+      filename = trim(datadir)//'/'//trim(file)//'.h5'
+      call file_open_hdf5 (filename, global=.false., truncate=.true.)
+      call output_hdf5 ('nx', mx_out - 2*nghost)
+      call output_hdf5 ('ny', my_out - 2*nghost)
+      call output_hdf5 ('nz', mz_out - 2*nghost)
+      call output_hdf5 ('mx', mx_out)
+      call output_hdf5 ('my', my_out)
+      call output_hdf5 ('mz', mz_out)
+      call output_hdf5 ('nxgrid', mxgrid_out - 2*nghost)
+      call output_hdf5 ('nygrid', mygrid_out - 2*nghost)
+      call output_hdf5 ('nzgrid', mzgrid_out - 2*nghost)
+      call output_hdf5 ('mxgrid', mxgrid_out)
+      call output_hdf5 ('mygrid', mygrid_out)
+      call output_hdf5 ('mzgrid', mzgrid_out)
+      call output_hdf5 ('mvar', mvar_out)
+      call output_hdf5 ('maux', maux_out)
+      call output_hdf5 ('mglobal', mglobal)
+      call output_hdf5 ('precision', numeric_precision())
+      call output_hdf5 ('nghost', nghost)
+      if (lprocz_slowest) then
+        call output_hdf5 ('procz_slowest', 1)
+      else
+        call output_hdf5 ('procz_slowest', 0)
+      endif
+      call output_hdf5 ('nprocx', nprocx)
+      call output_hdf5 ('nprocy', nprocy)
+      call output_hdf5 ('nprocz', nprocz)
+      call output_hdf5 ('ncpus', ncpus)
+      call file_close_hdf5
+!
+    endsubroutine output_dim
 !***********************************************************************
     subroutine index_append(varname,ivar,vector,array)
 !
