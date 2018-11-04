@@ -142,8 +142,6 @@ module Special
   integer :: idiag_ggT2m=0       ! DIAG_DOC: $\bra{g_T^2}$
   integer :: idiag_ggX2m=0       ! DIAG_DOC: $\bra{g_X^2}$
   integer :: idiag_ggTXm=0       ! DIAG_DOC: $\bra{g_T g_X}$
-  integer :: idiag_ggTm=0        ! DIAG_DOC: $\bra{g_T}$
-  integer :: idiag_ggXm=0        ! DIAG_DOC: $\bra{g_X}$
 !
   contains
 !***********************************************************************
@@ -404,15 +402,19 @@ module Special
 !  Several precalculated Pencils of information are passed for
 !  efficiency.
 !
+!  This routine computes various diagnostic quantities, but those
+!  would be more easily done further below when sign_switch is known.
+!  But this only affects the helicities. The values of EEGW and hrms are
+!  however correct and agree with those of gravitational_waves_hij6.
+!
 !  06-oct-03/tony: coded
 !  07-feb-18/axel: added nscale_factor=0 (no expansion), =.5 (radiation era)
 !
       use Diagnostics
-      use Sub, only: del2, del6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: scale_factor, stress_prefactor2
+      real :: scale_factor, stress_prefactor2, sign_switch=0
       type (pencil_case) :: p
 !
       integer :: ij
@@ -447,19 +449,31 @@ module Special
 !
        if (ldiagnos) then
          if (lggTX_as_aux) then
-           if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2)*EGWpref,idiag_EEGW)
-           if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
-           if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
-           if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
-           if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
-           if (idiag_ggTm/=0) call sum_mn_name(f(l1:l2,m,n,iggT),idiag_ggTm)
-           if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
+           if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
+                                               +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+                                               )*nwgrid*EGWpref,idiag_EEGW)
+           if (idiag_gg2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
+                                               +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+                                               )*nwgrid,idiag_gg2m)
+           if (idiag_ggT2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
+                                                )*nwgrid,idiag_ggT2m)
+           if (idiag_ggX2m/=0) call sum_mn_name((f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+                                                )*nwgrid,idiag_ggX2m)
+           if (idiag_ggTXm/=0) call sum_mn_name((f(l1:l2,m,n,iggT  )*f(l1:l2,m,n,iggXim) &
+                                                -f(l1:l2,m,n,iggTim)*f(l1:l2,m,n,iggX  ) &
+                                                )*nwgrid*sign_switch,idiag_ggTXm)
          endif
          if (lhhTX_as_aux) then
-           if (idiag_hrms/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhX)**2,idiag_hrms,lsqrt=.true.)
-           if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
-           if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
-           if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
+           if (idiag_hrms/=0) call sum_mn_name((f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhTim)**2 &
+                                               +f(l1:l2,m,n,ihhX)**2+f(l1:l2,m,n,ihhXim)**2 &
+                                               )*nwgrid,idiag_hrms,lsqrt=.true.)
+           if (idiag_hhT2m/=0) call sum_mn_name((f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhTim)**2 &
+                                                )*nwgrid,idiag_hhT2m)
+           if (idiag_hhX2m/=0) call sum_mn_name((f(l1:l2,m,n,ihhX)**2+f(l1:l2,m,n,ihhXim)**2 &
+                                                )*nwgrid,idiag_hhX2m)
+           if (idiag_hhTXm/=0) call sum_mn_name((f(l1:l2,m,n,ihhT  )*f(l1:l2,m,n,ihhXim) &
+                                                -f(l1:l2,m,n,ihhTim)*f(l1:l2,m,n,ihhX  ) &
+                                                )*nwgrid*sign_switch,idiag_hhTXm)
          endif
 !
          if (lroot.and.m==mpoint.and.n==npoint) then
@@ -678,12 +692,16 @@ module Special
 !--     call fft_xyz_parallel(Tpq_re(:,:,:,ij),Tpq_im(:,:,:,ij))
       enddo
 !
+!  Set ST=SX=0 and reset all spectra.
+!
+      S_T_re=0. ; S_T_im=0.
+      S_X_re=0. ; S_X_im=0.
+      specGWs=0.; specGWshel=0.
+      specGWh=0.; specGWhhel=0.
+      specStr=0.; specStrhel=0.
+!
 !  P11, P22, P33, P12, P23, P31
 !
-      S_T_re=0.
-      S_T_im=0.
-      S_X_re=0.
-      S_X_im=0.
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
@@ -790,7 +808,8 @@ module Special
             enddo
             enddo
 !
-!  compute S_T and S_X
+!  Compute S_T and S_X. Loop over all i and j for simplicity to avoid
+!  special treatments of diagonal and off-diagonal terms,
 !  AB: it looks like one could reuse part of Tpq_re and Tpq_im for S_T_re, ...,
 !  AB: S_X_im to save memory
 !
@@ -804,40 +823,61 @@ module Special
             enddo
             enddo
 !
-!  Compute exact solution for hT, hX, gT, and gX in Fourier space
+!  Compute exact solution for hT, hX, gT, and gX in Fourier space.
 !
-            hhTre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)
-            hhXre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)
+            hhTre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )
+            hhXre=f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )
             hhTim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)
             hhXim=f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)
+!
+            ggTre=f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )
+            ggXre=f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
+            ggTim=f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
+            ggXim=f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)
+!
+!  compute omega (but assume c=1), omega*t, etc.
 !
             om12=one_over_k2
             om1=sqrt(om12)
             om=1./om1
             omt1=1./(om*t)
 !
+!  compute cos(om*dt) and sin(om*dt) to get from one timestep to the next.
+!
             cosot=cos(om*dt)
             sinot=sin(om*dt)
 !
+!  Solve wave equation for hT and gT from one timestep to the next.
+!
             coefAre=(hhTre-om12*S_T_re(ikz,ikx,iky))
             coefAim=(hhTim-om12*S_T_im(ikz,ikx,iky))
-            coefBre=ggTre*om1+omt1*om12*S_T_re(ikz,ikx,iky)
-            coefBim=ggTim*om1+omt1*om12*S_T_im(ikz,ikx,iky)
+            coefBre=ggTre*om1 !+omt1*om12*S_T_re(ikz,ikx,iky)
+            coefBim=ggTim*om1 !+omt1*om12*S_T_im(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  )=coefAre*cosot+coefBre*sinot+om12*S_T_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)=coefAim*cosot+coefBim*sinot+om12*S_T_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_T_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_T_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggT  )=coefBre*cosot*om-coefAre*om*sinot !-omt1*om1*S_T_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)=coefBim*cosot*om-coefAim*om*sinot !-omt1*om1*S_T_im(ikz,ikx,iky)
+!
+!  Debug output
+!
+            if (ldebug_print) then
+              if (nint(k1)==2.and.nint(k2)==0.and.nint(k3)==0) then
+                print*,'AXEL0: ',coefAre,coefBre,hhTre,ggTre
+              endif
+            endif
+!
+!  Solve wave equation for hX and gX from one timestep to the next.
 !
             coefAre=(hhXre-om12*S_X_re(ikz,ikx,iky))
             coefAim=(hhXim-om12*S_X_im(ikz,ikx,iky))
-            coefBre=ggXre*om1+omt1*om12*S_X_re(ikz,ikx,iky)
-            coefBim=ggXim*om1+omt1*om12*S_X_im(ikz,ikx,iky)
+            coefBre=ggXre*om1 !+omt1*om12*S_X_re(ikz,ikx,iky)
+            coefBim=ggXim*om1 !+omt1*om12*S_X_im(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  )=coefAre*cosot+coefBre*sinot+om12*S_X_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)=coefAim*cosot+coefBim*sinot+om12*S_X_im(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot-omt1*om1*S_X_re(ikz,ikx,iky)
-            f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot-omt1*om1*S_X_im(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )=coefBre*cosot*om-coefAre*om*sinot !-omt1*om1*S_X_re(ikz,ikx,iky)
+            f(nghost+ikz,nghost+ikx,nghost+iky,iggXim)=coefBim*cosot*om-coefAim*om*sinot !-omt1*om1*S_X_im(ikz,ikx,iky)
 !
-!  Set origin to zero
+!  Set origin to zero. It is given by (1,1,1) on root processor.
 !
             if (lroot) f(nghost+1,nghost+1,nghost+1,ihhT  ) = 0.
             if (lroot) f(nghost+1,nghost+1,nghost+1,ihhTim) = 0.
@@ -849,14 +889,14 @@ module Special
             if (lroot) f(nghost+1,nghost+1,nghost+1,iggX  ) = 0.
             if (lroot) f(nghost+1,nghost+1,nghost+1,iggXim) = 0.
 !
-!  Set stress components
+!  Set stress components in f-array.
 !
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressT  )=S_T_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressTim)=S_T_im(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )=S_X_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)=S_X_im(ikz,ikx,iky)
 !
-!  sum energy and helicity spectra
+!  Sum up energy and helicity spectra.
 !
             if (lspec) then
               ik=1+nint(sqrt(ksqr)/scale_factor)
@@ -980,7 +1020,7 @@ module Special
         idiag_hhTp2=0; idiag_hhXp2=0; idiag_ggTp2=0; idiag_ggXp2=0
         idiag_hhT2m=0; idiag_hhX2m=0; idiag_hhTXm=0; idiag_hrms=0
         idiag_ggT2m=0; idiag_ggX2m=0; idiag_ggTXm=0; idiag_gg2m=0
-        idiag_ggTm=0; idiag_ggXm=0; idiag_EEGW=0
+        idiag_EEGW=0
         cformv=''
       endif
 !
@@ -1011,8 +1051,6 @@ module Special
           call parse_name(iname,cname(iname),cform(iname),'ggT2m',idiag_ggT2m)
           call parse_name(iname,cname(iname),cform(iname),'ggX2m',idiag_ggX2m)
           call parse_name(iname,cname(iname),cform(iname),'ggTXm',idiag_ggTXm)
-          call parse_name(iname,cname(iname),cform(iname),'ggTm',idiag_ggTm)
-          call parse_name(iname,cname(iname),cform(iname),'ggXm',idiag_ggXm)
         endif
       enddo
 !
