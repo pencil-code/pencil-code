@@ -2052,9 +2052,7 @@ endif
 set subdirs = ("allprocs" "reduced" "averages" "idl")
 set HDF5=`grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`
 if ($HDF5) then
-  # set procdirs = ()
-  # we currently still require the proc directories for additional files:
-  set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
+  set procdirs = ()
   set subdirs = ("allprocs" "allprocs/slices" "reduced" "averages" "idl")
 else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
