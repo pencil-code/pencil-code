@@ -1083,7 +1083,7 @@ module Io
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 !
-      filename = trim (directory_snap)//'/grid.h5'
+      filename = trim (datadir)//'/grid.h5'
       if (lroot) then
         allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
       else
@@ -1155,7 +1155,7 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
 !
-      filename = trim (directory_snap)//'/grid.h5'
+      filename = trim (datadir)//'/grid.h5'
       if (lroot) then
         allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
       else
