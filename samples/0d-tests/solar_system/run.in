@@ -3,12 +3,12 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id$',
-  ip=14,
-  nt=100, it1=10, itorder=3, 
-  cdt=0.4, 
-  cdtv=0.4, 
-  dtmin=1e-6,
+  cvsid='$Id$'
+  ip=14
+  nt=100, it1=10, itorder=3
+  cdt=0.4
+  cdtv=0.4
+  dtmin=1e-6
   dt=1e-2
   dsnap=0.4
 /
