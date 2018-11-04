@@ -78,7 +78,6 @@ my %tests = (
                          backwards-compatible
                          1d-tests/implicit_diffusion
                          2d-tests/chemistry_GrayScott
-                         2d-tests/boussinesq_convection
                          2d-tests/shearwave-dust-par
                          dust-vortex
                          damped_alfven_waves
@@ -142,6 +141,7 @@ my %tests = (
                          2d-tests/bubble
                          2d-tests/conv-slab-MLT
                          2d-tests/2d_methane_flame
+                         2d-tests/boussinesq_convection
                          conv-slab
                          interlocked-fluxrings
                          conv-slab-flat
