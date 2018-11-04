@@ -77,8 +77,8 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
 !
-      call keep_compiler_quiet(name)
       call fatal_error ('create_group_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
 !
     endsubroutine create_group_hdf5
 !***********************************************************************
@@ -86,8 +86,9 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
 !
-      call keep_compiler_quiet(name)
       call fatal_error ('exists_in_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      exists_in_hdf5 = .false.
 !
     endfunction exists_in_hdf5
 !***********************************************************************
