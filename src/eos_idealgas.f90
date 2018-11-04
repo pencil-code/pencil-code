@@ -2529,8 +2529,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
-      real, dimension (size(f,2),size(f,3)) :: hcond_total, hcond_kramers
-      real :: hcond_Kprof
+      real, dimension (size(f,2),size(f,3)) :: hcond_total
       integer :: i
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
@@ -2676,18 +2675,14 @@ module EquationOfState
 !
 !  Compute total heat conductivity
 !
-          if (lheatc_kramers) then
-            hcond_kramers=hcond0_kramers*TT_yz**(6.5*nkramers)*rho_yz**(-2.*nkramers)
-          else
-            hcond_kramers=0.
+          if (lheatc_kramers .or. (hcondxtop /= 0.0)) then
+            hcond_total = hcondxtop
+            if (lheatc_kramers) &
+                hcond_total = hcond_total + hcond0_kramers*TT_yz**(6.5*nkramers)*rho_yz**(-2.*nkramers)
+!
+            dsdx_yz = -(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
+                (chit_prof2*chi_t*rho_yz+hcond_total/cv)
           endif
-!
-          if (hcondxtop == impossible) hcond_Kprof=0.
-          if (hcondxtop /= impossible) hcond_Kprof=hcondxtop
-          hcond_total=hcond_Kprof+hcond_kramers
-!
-          dsdx_yz=-(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz)/ &
-                   (chit_prof2*chi_t*rho_yz+hcond_total/cv)
 !
 !  Substract gradient of reference entropy.
 !

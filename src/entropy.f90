@@ -60,7 +60,7 @@ module Energy
   real, dimension(3) :: chi_hyper3_aniso=0.0
   real, dimension(3) :: gradS0_imposed=(/0.0,0.0,0.0/)
   real, target :: hcond0=impossible, hcond1=impossible
-  real, target :: hcondxbot=impossible, hcondxtop=impossible
+  real, target :: hcondxbot=impossible, hcondxtop=0.0
   real, target :: hcondzbot=impossible, hcondztop=impossible
   real, target :: Fbot=impossible, FbotKbot=0. !set default to 0 vs impossible
   ! FbotKbot normally overwritten, but to remain finite if not
