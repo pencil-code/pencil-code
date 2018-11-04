@@ -79,15 +79,13 @@ my %tests = (
                          1d-tests/implicit_diffusion
                          2d-tests/chemistry_GrayScott
                          2d-tests/boussinesq_convection
-                         2d-tests/selfgravitating-shearwave
                          2d-tests/shearwave-dust-par
-                         0d-tests/heating_ionize
                          dust-vortex
                          damped_alfven_waves
-                         2d-tests/streaming_instability
                      )],
 #                         helical-MHDturb
              2 => [qw(
+                         0d-tests/heating_ionize
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
                          chiral-diffusion
@@ -103,6 +101,8 @@ my %tests = (
                          kin-dynamo
                          meissner
                          conv-slab-noequi
+                         2d-tests/selfgravitating-shearwave
+                         2d-tests/streaming_instability
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
                          2d-tests/planet-disk-fargo
