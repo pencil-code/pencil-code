@@ -2030,7 +2030,7 @@ module PointMasses
 !
       if (lsnap .or. .not. enum ) then
         call output_pointmass (filename, qvarname, fq, nqpar, mqarray)
-        if (lroot .and. present(flist)) call log_filename_to_file(file,flist)
+        if (lroot .and. present(flist)) call log_filename_to_file(filename,flist)
       endif
 !
     endsubroutine pointmasses_write_snapshot
