@@ -425,7 +425,7 @@ contains
       integer, intent(IN) :: izloc
 
       real, dimension(nygrid/2) :: yloc
-      real, dimension(nygrid/2,1) :: thphprime
+      !real, dimension(nygrid/2,1) :: thphprime
 
       if (ipz<=nprocz/3) then
 !
