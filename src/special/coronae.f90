@@ -1907,13 +1907,12 @@ module Special
         if (lentropy) then
           rtv_cool=gamma*p%cp1*rtv_cool
         endif
-! JW: include time step directly due to rtv_cool normalised by cv T and rho.
+! JW: include time step directly due to rtv_cool
 !        dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
-        tmp=max(rtv_cool*p%cVTrho1/cdts,rtv_cool/max(tini,delta_lnTT))
-        dt1_max=max(dt1_max,tmp)
+        dt1_max=max(dt1_max,rtv_cool/cdts)
         if (ldiagnos.and.idiag_dtrad /= 0.) then
 !          call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
-          call max_mn_name(tmp,idiag_dtrad,l_dt=.true.)
+          call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
         endif
       endif
 !
