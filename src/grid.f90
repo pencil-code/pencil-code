@@ -998,7 +998,7 @@ module Grid
 !  10-oct-17/MR: avoided communication in calculation of r_int and r_ext
 !  10-jan-17/MR: moved call construct_serial_arrays to beginning
 !
-      use Sub, only: remove_zprof
+      use Sub, only: remove_prof
       use Mpicomm
       use IO, only: lcollective_IO
 !
@@ -1364,7 +1364,7 @@ module Grid
 !
 !  Clean up profile files.
 !
-      if (lroot.or..not.lcollective_IO) call remove_zprof
+      if (lroot.or..not.lcollective_IO) call remove_prof('z')
       lwrite_prof=.true.
 !
     endsubroutine initialize_grid

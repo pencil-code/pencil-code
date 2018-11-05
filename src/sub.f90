@@ -82,7 +82,7 @@ module Sub
   public :: max_for_dt,unit_vector
 !
   public :: write_dx_general, rdim
-  public :: write_prof, write_xprof, write_zprof, remove_zprof
+  public :: write_prof, write_xprof, write_zprof, remove_prof
   public :: read_zprof
 !
   public :: tensor_diffusion_coef
@@ -5173,20 +5173,23 @@ nameloop: do
 !
     endsubroutine read_zprof
 !***********************************************************************
-    subroutine remove_zprof
+    subroutine remove_prof(type)
 !
-!  Remove z-profile file.
+!  Remove profile file.
 !
 !  10-jul-05/axel: coded
+!  05-Nov-2018/PABourdin: generalized to any direction
 !
       use General, only: safe_character_assign
+!
+      character, intent(in) :: type
 !
       character (len=120) :: fname,wfile,listfile
       integer :: ierr, unit=2
 !
 !  Do this only for the first step.
 !
-      call safe_character_assign(listfile,trim(directory)//'/zprof_list.dat')
+      call safe_character_assign(listfile,trim(directory)//type//'/prof_list.dat')
 !
 !  Read list of file and remove them one by one.
 !
@@ -5196,7 +5199,7 @@ nameloop: do
         read(unit,*,iostat=ierr) fname
         if (ierr == 0) then
           call safe_character_assign(wfile, &
-              trim(directory)//'/zprof_'//trim(fname)//'.dat')
+              trim(directory)//type//'/prof_'//trim(fname)//'.dat')
           call remove_file(wfile)
         endif
       enddo
@@ -5206,7 +5209,7 @@ nameloop: do
 !
       call remove_file(listfile)
 !
-    endsubroutine remove_zprof
+    endsubroutine remove_prof
 !***********************************************************************
     subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
 !
