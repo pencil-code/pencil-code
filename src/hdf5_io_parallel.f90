@@ -1270,8 +1270,6 @@ module HDF5_IO
 !
 !  02-Nov-2018/PABourdin: coded
 !
-      use General, only: numeric_precision
-!
       character (len=*), intent(in) :: file
       integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal
 !
