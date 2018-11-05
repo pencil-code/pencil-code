@@ -81,6 +81,7 @@ my %tests = (
                          2d-tests/shearwave-dust-par
                          dust-vortex
                          damped_alfven_waves
+                         corona
                      )],
 #                         helical-MHDturb
              2 => [qw(
@@ -95,7 +96,6 @@ my %tests = (
                          polymer/forced_3dturbulence
                          testfield_z
                          random_uu_particles
-                         corona
                          1d-tests/solar-atmosphere-temperature
                          kin-dynamo
                          meissner
