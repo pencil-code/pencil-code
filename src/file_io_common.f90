@@ -160,7 +160,7 @@ module File_io
       inquire (file=file, exist=file_exists)
 !
       if (file_exists .and. loptest(delete)) then
-        if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
+        if (ip <= 6) print *, 'file_exists: Removing file <'//trim(file)//'>'
         open (unit, file=file)
         close (unit, status='delete')
       endif
