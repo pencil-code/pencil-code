@@ -5182,6 +5182,7 @@ nameloop: do
 !  10-jul-05/axel: coded
 !  05-Nov-2018/PABourdin: generalized to any direction
 !
+      use File_io, only: file_remove
       use General, only: safe_character_assign
 !
       character, intent(in) :: type
@@ -5197,13 +5198,10 @@ nameloop: do
 !
       open(unit,file=listfile,status='old',iostat=ierr)
       if (ierr /= 0) return
-      do while ((it <= nt) .and. (ierr == 0))
+      do while (it <= nt)
         read(unit,*,iostat=ierr) fname
-        if (ierr == 0) then
-          call safe_character_assign(wfile, &
-              trim(directory)//type//'/prof_'//trim(fname)//'.dat')
-          call remove_file(wfile)
-        endif
+        if (ierr /= 0) exit
+        call file_remove(trim(directory)//type//'/prof_'//trim(fname)//'.dat')
       enddo
       close(unit)
 !
