@@ -5187,7 +5187,7 @@ nameloop: do
 !
       character, intent(in) :: type
 !
-      character (len=120) :: fname,wfile,listfile
+      character (len=120) :: fname,listfile
       integer :: ierr, unit=2
 !
 !  Do this only for the first step.
@@ -5207,7 +5207,7 @@ nameloop: do
 !
 !  Now delete this listfile altogether.
 !
-      call remove_file(listfile)
+      call file_remove(listfile)
 !
     endsubroutine remove_prof
 !***********************************************************************
