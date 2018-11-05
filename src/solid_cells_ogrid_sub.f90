@@ -70,16 +70,15 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: f
       real, dimension (nx_ogrid,3) :: g
-      real, dimension (nx_ogrid) :: tmp
 !
       intent(in) :: f
       intent(out) :: g
 !
 !  Uses overloaded der routine.
 !
-      call der_other_ogrid(f,tmp,1); g(:,1)=tmp
-      call der_other_ogrid(f,tmp,2); g(:,2)=tmp
-      call der_other_ogrid(f,tmp,3); g(:,3)=tmp
+      call der_other_ogrid(f,g(:,1),1); 
+      call der_other_ogrid(f,g(:,2),2);
+      call der_other_ogrid(f,g(:,3),3);
 !
     endsubroutine grad_other_ogrid
 !***********************************************************************
@@ -633,17 +632,29 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  30-sep-16/MR: allow results dimensions > nx
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: f
-      real, dimension (:) :: df
-      integer :: j
+      real, dimension (nx_ogrid) :: df
+      integer :: j,i
 !
       intent(in)  :: f,j
       intent(out) :: df
 
-      real, dimension (size(df)) :: fac
-      integer :: l1_ogrid_, l2_ogrid_, sdf
+      real, dimension (nx_ogrid) :: fac
 !
       if (j==1) then
         if (nxgrid_ogrid/=1) then
+          if(lfirst_proc_x) then
+            if(SBP) then
+              call der_ogrid_SBP(f(l1_ogrid:l1_ogrid+8,m_ogrid,n_ogrid),df(1:6))
+              i=6
+            elseif(BDRY5) then
+              call der_ogrid_bdry5(f(l1_ogrid:l1_ogrid+5,m_ogrid,n_ogrid),df(1:3))
+              i=3
+            else
+              i=0
+            endif
+          else
+            i=0
+          endif
           fac=(1./60)*dx_1_ogrid(l1_ogrid:l2_ogrid)
           df=fac*(+ 45.0*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid)) &
                   -  9.0*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid)) &
@@ -653,18 +664,12 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
           if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
       else
-        sdf=size(df)
-        if (sdf>nx_ogrid) then
-          l1_ogrid_=1; l2_ogrid_=sdf
-        else
-          l1_ogrid_=l1_ogrid; l2_ogrid_=l2_ogrid
-        endif
          if (j==2) then
           if (nygrid_ogrid/=1) then
             fac=(1./60)*dy_1_ogrid(m_ogrid)
-            df=fac*(+ 45.0*(f(l1_ogrid_:l2_ogrid_,m_ogrid+1,n_ogrid)-f(l1_ogrid_:l2_ogrid_,m_ogrid-1,n_ogrid)) &
-                    -  9.0*(f(l1_ogrid_:l2_ogrid_,m_ogrid+2,n_ogrid)-f(l1_ogrid_:l2_ogrid_,m_ogrid-2,n_ogrid)) &
-                    +      (f(l1_ogrid_:l2_ogrid_,m_ogrid+3,n_ogrid)-f(l1_ogrid_:l2_ogrid_,m_ogrid-3,n_ogrid)))
+            df=fac*(+ 45.0*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid)) &
+                    -  9.0*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid)) &
+                    +      (f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid)))
           ! Since we have cylindrical coordinates
             df=df*rcyl_mn1_ogrid
           else
@@ -674,9 +679,9 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
         elseif (j==3) then
           if (nzgrid_ogrid/=1) then
             fac=(1./60)*dz_1_ogrid(n_ogrid)
-            df=fac*(+ 45.0*(f(l1_ogrid_:l2_ogrid_,m_ogrid,n_ogrid+1)-f(l1_ogrid_:l2_ogrid_,m_ogrid,n_ogrid-1)) &
-                    -  9.0*(f(l1_ogrid_:l2_ogrid_,m_ogrid,n_ogrid+2)-f(l1_ogrid_:l2_ogrid_,m_ogrid,n_ogrid-2)) &
-                    +      (f(l1_ogrid_:l2_ogrid_,m_ogrid,n_ogrid+3)-f(l1_ogrid_:l2_ogrid_,m_ogrid,n_ogrid-3)))
+            df=fac*(+ 45.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+1)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1)) &
+                    -  9.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+2)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2)) &
+                    +      (f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+3)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-3)))
           else
             df=0.
             if (ip<=5) print*, 'der_other: Degenerate case in z-direction'

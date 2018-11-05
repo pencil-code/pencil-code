@@ -594,7 +594,6 @@ module Solid_Cells
                 if (lchemistry) then  
                   do k = 1,nchemspec
                     f(i,j,:,ichemspec(k)) = chemspec0(k)
-                    !f(l2,m2,n2,ichemspec(k))*f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)         
                   enddo
                 endif
               else
@@ -666,9 +665,7 @@ module Solid_Cells
 ! TODO: Set initial conditions for chemistry on the ogrid
             if (lchemistry) then  
               do k = 1,nchemspec
-                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)
-!f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ichemspec(k))&
-!*f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)         
+                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)       
               enddo
             endif
           endif
@@ -4573,15 +4570,8 @@ module Solid_Cells
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
-
-!print*,'f_cart(:,130:134,4,iux)',f_cartesian(128,:,4,iux)
-!print*,'f_cart(:,130:134,4,irho)',f_cartesian(128,:,4,irho)
-!print*,'f_cart(:,130:134,4,iTT)',f_cartesian(128,:,4,iTT)
     call update_ghosts(f_cartesian,1,mvar)
     call communicate_ip_cart_to_curv(f_cartesian,1,mvar)
-do j = 1,4
-!print*,'f_og(:,130:134,4,iux)',f_ogrid(:,129+j,4,iux),'i',j
-enddo
 !
     dt_ogrid = dt/timestep_factor
     !print*, 'dt_ogrid', dt_ogrid
@@ -4629,7 +4619,6 @@ enddo
         do itsub=1,itorder
           df_ogrid=alpha_ts_ogrid(itsub)*df_ogrid
           llast_ogrid=(tstep_ogrid==timestep_factor).and.(itsub==itorder)
-
 !
 !  Change df according to the chosen physics modules.
 !
@@ -4693,8 +4682,6 @@ enddo
 !
 !  Call the different evolution equations.
 !
-!     use chemistry, only: calc_for_chem_mixture_ogrid
-!
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
       integer :: nyz_ogrid
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
@@ -4704,14 +4691,14 @@ enddo
       c_dragy=0.
       Nusselt=0.
 !
-! TODO: is it the right place for calc_for_chem_mixture_ogrid?
-!
-  if (lchemistry .and. ldensity) call calc_for_chem_mixture_ogrid(f_og)
-!
 !  Initiate communication and do boundary conditions.
 !
       call boundconds_x_ogrid(f_og)
       call update_ghosts_ogrid(f_og)
+!
+! TODO: is it the right place for calc_for_chem_mixture_ogrid?
+!
+  if (lchemistry .and. ldensity) call calc_for_chem_mixture_ogrid(f_og)
 !
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
@@ -4860,7 +4847,7 @@ enddo
       else
 ! TODO: pressure gradient term when chemistry
           df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)= &
-              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)+p_ogrid%fpres !p_ogrid%rho1gpp
+              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)-p_ogrid%rho1gpp
       endif
 !
 !  Solve Energy equation (in case of non-isothermal equation of state)
@@ -5047,14 +5034,12 @@ enddo
 !
 !  Pencils: fpres (=pressure gradient force)
 !
-! TODO: modifications for chemistry    
-!
       if (iTT .ne. 0) then
         if (lpencil_ogrid(i_og_ugTT)) then
           call u_dot_grad_ogrid(f_og   ,iTT,p_ogrid%gTT,p_ogrid%uu,&
               p_ogrid%ugTT,UPWIND=lupw_lnTT)
         endif
-        if ((lpencil_ogrid(i_og_fpres)) ) then   !.and. (.not. lchemistry)
+        if ((lpencil_ogrid(i_og_fpres)) .and. (.not. lchemistry)) then
           do j=1,3
             p_ogrid%fpres(:,j)=-gamma1*p_ogrid%cs2*&
                 (p_ogrid%glnrho(:,j)+p_ogrid%gTT(:,j)/p_ogrid%TT)
@@ -5080,6 +5065,7 @@ enddo
       use viscosity, only:getnu
       real :: nu
       integer :: j
+      real, dimension (nx_ogrid,3) :: sgradnu
 !      
 !  Viscous force and viscous heating are calculated here (for later use).
 !
@@ -5093,8 +5079,21 @@ enddo
           !p_ogrid%fvisc(:,j) = p_ogrid%fvisc(:,j) + nu*(p_ogrid%del2u(:,j))
         enddo
       else
-          p_ogrid%fvisc(:,j) = p_ogrid%fvisc(:,j) + p_ogrid%nu*(2*p_ogrid%sglnrho(:,j)+p_ogrid%del2u(:,j)&
-                             + 1./3.*p_ogrid%graddivu(:,j))
+        call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%gradnu,sgradnu)
+        do j=1,3
+          p_ogrid%fvisc(:,j)=p_ogrid%nu*(p_ogrid%del2u(:,j)+1./3.*p_ogrid%graddivu(:,j)) + 2.*sgradnu(:,j)
+        enddo
+        if (ldensity) then
+          do j=1,3
+            p_ogrid%fvisc(:,j)=p_ogrid%fvisc(:,j) + 2.*p_ogrid%nu*p_ogrid%sglnrho(:,j)
+          enddo
+        endif
+!
+!  Viscous heating and time step.
+!
+!        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu*p%sij2
+!        if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu
+!
       endif
 !
     end subroutine calc_pencils_viscosity_ogrid
@@ -5926,7 +5925,8 @@ enddo
       call finalize_isendrcv_bdry_ogrid(f_og)
       if (nprocy==1)                  call boundconds_y_ogrid(f_og)
       if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid(f_og)
-
+!
+      if (lchemistry) call chemspec_normalization_N2_og(f_og)
 !
     endsubroutine update_ghosts_ogrid
 !***********************************************************************

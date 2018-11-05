@@ -402,9 +402,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         do k = 1,nchemspec
           if (species_constants(k,imass) > 0.)  then
             do i = 1,3
-!              p_ogrid%ghhk(:,i,k) = p_ogrid%cp*p_ogrid%glnTT(:,i)*p_ogrid%TT
               p_ogrid%ghhk(:,i,k) = cp_R_spec_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k)&
-                                  /species_constants(k,imass)*Rgas*p_ogrid%glnTT(:,i)*p_ogrid%TT
+                                  /species_constants(k,imass)*Rgas*p_ogrid%gTT(:,i)   
             enddo
           endif
         enddo
@@ -581,6 +580,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !  Mean molecular weight
       if (lpencil_ogrid(i_og_mu1)) p_ogrid%mu1=mu1_full_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid)
+!
       if (lpencil_ogrid(i_og_gmu1)) call grad_other_ogrid(mu1_full_og,p_ogrid%gmu1)
 !
 !  Pressure
@@ -591,8 +591,11 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       if (lpencil_ogrid(i_og_rho1gpp)) then
         do i=1,3
-          p_ogrid%rho1gpp(:,i) = p_ogrid%pp/p_ogrid%rho(:) &
-              *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%gmu1(:,i)/p_ogrid%mu1(:))
+          p_ogrid%rho1gpp(:,i) = p_ogrid%pp*p_ogrid%rho1 &
+              *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%gmu1(:,i)/p_ogrid%mu1)
+ ! This actually can be computed without log gradients
+ !         p_ogrid%rho1gpp(:,i) = Rgas*(p_ogrid%mu1*p_ogrid%TT*p_ogrid%rho1*p_ogrid%grho(:,i)&
+ !                              + p_ogrid%mu1*p_ogrid%gTT(:,i)+p_ogrid%TT*p_ogrid%gmu1(:,i))
         enddo
       endif
 !
@@ -1863,8 +1866,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       mu1_full_og=0.
       do k=1,nchemspec
         if (species_constants(k,imass)>0.) then
-          do j2=m1_ogrid,m2_ogrid
-            do j3=n1_ogrid,n2_ogrid
+          do j2=mm1_ogrid,mm2_ogrid
+            do j3=nn1_ogrid,nn2_ogrid
               mu1_full_og(:,j2,j3)= &
                   mu1_full_og(:,j2,j3)+f_og(:,j2,j3,ichemspec(k))/species_constants(k,imass)
             enddo

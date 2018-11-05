@@ -566,7 +566,7 @@ module EquationOfState
 !
       if (lpenc_loc(i_rho1gpp)) then
         do i=1,3
-          p%rho1gpp(:,i) = p%pp/p%rho(:) &
+          p%rho1gpp(:,i) = p%pp*p%rho1(:) &
                *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
         enddo
       endif
