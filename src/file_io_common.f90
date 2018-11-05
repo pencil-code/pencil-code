@@ -152,8 +152,8 @@ module File_io
       use General, only: loptest
 !
       logical :: file_exists
-      character(len=*) :: file
-      logical, optional :: delete
+      character(len=*), intent(in) :: file
+      logical, optional, intent(in) :: delete
 !
       integer, parameter :: unit = 1
 !
@@ -179,7 +179,7 @@ module File_io
 !  23-may-2015/PABourdin: coded
 !
       integer :: file_size
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
 !
       file_size = -2
       if (file_exists(file)) then
