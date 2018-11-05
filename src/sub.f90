@@ -71,7 +71,7 @@ module Sub
   public :: multmv, multmv_mn, multmv_transp
   public :: mult_matrix
 !
-  public :: read_line_from_file, remove_file, control_file_exists
+  public :: read_line_from_file, control_file_exists
   public :: noform
 !
   public :: update_snaptime, read_snaptime
@@ -4821,24 +4821,6 @@ nameloop: do
       endif
 !
     endsubroutine parse_shell
-!***********************************************************************
-    subroutine remove_file(fname)
-!
-!  Remove a file.
-!
-!  5-mar-02/wolf: coded
-!
-      use File_io, only: file_exists
-!
-      character (len=*), intent(in) :: fname
-!
-      logical :: removed
-!
-      removed = file_exists(fname,DELETE=.true.)
-      if (removed .and. (ip<=6)) &
-          print*,'remove_file: Removed file <',trim(fname),'>'
-!
-    endsubroutine remove_file
 !***********************************************************************
     function control_file_exists(fname,delete)
 !
