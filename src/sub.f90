@@ -4830,22 +4830,15 @@ nameloop: do
 !  26-jul-09/wolf: coded
 !
       use File_io, only: parallel_file_exists
+      use General, only: loptest
 !
       logical :: control_file_exists
       character (len=*), intent(in) :: fname
       logical, optional, intent(in) :: delete
 !
-      logical :: ldelete
-!
-      if (present(delete)) then
-        ldelete=delete
-      else
-        ldelete=.false.
-      endif
-!
-      control_file_exists = parallel_file_exists(trim(fname), ldelete)
+      control_file_exists = parallel_file_exists(trim(fname), loptest(delete))
       if (.not. control_file_exists) &
-          control_file_exists = parallel_file_exists(trim("runtime/"//fname), ldelete)
+          control_file_exists = parallel_file_exists(trim("runtime/"//fname), loptest(delete))
 !
     endfunction control_file_exists
 !***********************************************************************
