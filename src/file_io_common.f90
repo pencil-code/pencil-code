@@ -138,6 +138,20 @@ module File_io
 !
     endsubroutine delete_file
 !****************************************************************************
+    subroutine file_remove(file)
+!
+!  Removes a file if it exists.
+!
+!  05-Nov-2018/PABourdin: coded
+!
+      character(len=*), intent(in) :: file
+!
+      logical :: removed
+!
+      removed = file_exists(file, delete=.true.)
+!
+    endsubroutine file_remove
+!***********************************************************************
     function file_exists(file, delete)
 !
 !  Determines if a file exists.
