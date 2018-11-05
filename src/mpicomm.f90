@@ -3701,6 +3701,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !  25-feb-08/wlad: adapted
 !
       use General, only: ioptest
+!
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer, optional :: proc,comm
@@ -4796,7 +4797,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !  6-nov-01/wolf: coded
 !  4-nov-11/MR: optional parameter code added
 !
-      use general, only: itoa
+      use General, only: itoa
 !
       character (len=*) :: msg
       integer, optional :: code
