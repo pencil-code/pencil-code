@@ -82,8 +82,7 @@ module Sub
   public :: max_for_dt,unit_vector
 !
   public :: write_dx_general, rdim
-  public :: write_prof, write_xprof, write_zprof, remove_prof
-  public :: read_zprof
+  public :: write_prof, write_xprof, write_zprof, read_prof, remove_prof
 !
   public :: tensor_diffusion_coef
 !
@@ -5144,34 +5143,37 @@ nameloop: do
 !
     endsubroutine write_prof
 !***********************************************************************
-    subroutine read_zprof(fname,a)
+    subroutine read_prof(fname,type,a,np)
 !
-!  Read z-profile from a file (taken from stratification, for example).
+!  Read profile from a file (taken from stratification, for example).
 !
 !  15-may-15/axel: coded
+!  05-Nov-2018/PABourdin: generalized to any direction
 !
       use General, only: safe_character_assign
 !
-      real, dimension(:) :: a
-      character (len=*) :: fname
+      character (len=*), intent(in) :: fname
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
 !
       integer, parameter :: unit=1
       character (len=fnlen) :: wfile
-      real, dimension(size(a)) :: zloc
+      real, dimension(np) :: coord
 !
 !  Write zprofile file.
 !
       call safe_character_assign(wfile, &
-          trim(directory)//'/zprof_'//trim(fname)//'.dat')
+          trim(directory)//type//'/prof_'//trim(fname)//'.dat')
       open(unit,file=wfile)
-      do n=1,size(a)
-        read(unit,*) zloc(n),a(n)
+      do n=1,np
+        read(unit,*) coord(n),a(n)
       enddo
       close(unit)
 !
-!  Should we check that zloc == z ?
+!  Should we check that coord == z for type == 'z'?
 !
-    endsubroutine read_zprof
+    endsubroutine read_prof
 !***********************************************************************
     subroutine remove_prof(type)
 !

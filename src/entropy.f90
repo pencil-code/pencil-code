@@ -457,7 +457,7 @@ module Energy
       use Initcond
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob, read_zprof, write_prof
+      use Sub, only: blob, read_prof, write_prof
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -815,7 +815,7 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz) call read_zprof('ss_mz',ss_mz)
+      if (lcooling_ss_mz) call read_prof('ss_mz','z',ss_mz,mz)
 !
 !  Initialize heat conduction.
 !
