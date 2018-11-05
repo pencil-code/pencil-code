@@ -6,7 +6,7 @@
 module HDF5_IO
 !
   use Cdata
-  use General, only: keep_compiler_quiet, itoa
+  use General, only: keep_compiler_quiet, itoa, numeric_precision
   use Messages, only: fatal_error
   use Mpicomm, only: lroot
 !
@@ -285,8 +285,6 @@ module HDF5_IO
 !  Write dimension to file.
 !
 !  02-Nov-2018/PABourdin: moved IO parts from wdim to low-level IO modules
-!
-      use General, only: numeric_precision
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal
