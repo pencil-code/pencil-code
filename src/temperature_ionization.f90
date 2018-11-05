@@ -115,7 +115,13 @@ module Energy
 !
       integer :: ierr
 !
-      call farray_register_pde('lnTT',ilnTT)
+      if (ltemperature_nolog) then
+        call farray_register_pde('TT',iTT)
+        ilnTT=iTT
+      else
+        call farray_register_pde('lnTT',ilnTT)
+        iTT = ilnTT
+      endif
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
@@ -154,7 +160,7 @@ module Energy
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
 !
-      if (ltemperature_nolog) iTT=ilnTT
+!      if (ltemperature_nolog) iTT=ilnTT
 !
       if (ltemperature_nolog) then
         call select_eos_variable('TT',iTT)
@@ -197,10 +203,6 @@ module Energy
         call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
         call put_shared_variable('lupw_lnTT',lupw_lnTT)
       endif
-!
-!  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
-!
-      if (ltemperature_nolog) iTT=ilnTT
 !
       do i=1,nheatc_max
         select case (iheatcond(i))
