@@ -189,7 +189,7 @@ module Particles
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
       beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
-      nu_epicycle, rp_int, rp_ext, gravx_profile, gravz_profile, &
+      nu_epicycle, rp_int, rp_ext, rp_ext_width, gravx_profile, gravz_profile, &
       gravr_profile, gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, &
       eps1, lmigration_redo, ldragforce_equi_global_eps, coeff, kx_vvp, &
       ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, &
@@ -284,7 +284,7 @@ module Particles
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       remove_particle_criteria_edtog, &
-      ascalar_ngp, ascalar_cic, rp_int, rp_ext, lnpmin_exclude_zero, &
+      ascalar_ngp, ascalar_cic, rp_int, rp_ext, rp_ext_width, lnpmin_exclude_zero, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, rhoa, &
       G_condensation

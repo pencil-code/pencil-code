@@ -128,6 +128,8 @@ module Particles_sub
       logical, optional :: linsert
 !
       real :: xold, yold, rad, r1old, OO, tmp
+      real, dimension(3) :: vavg
+!      
       integer :: k, ik, k1, k2
 !
       intent (inout) :: fp, ipar, dfp
@@ -139,6 +141,9 @@ module Particles_sub
       else
         k1=1; k2=npar_loc; ik=1
       endif
+!
+      if (bcpx=='flg') &
+           call calc_velocity_averages(fp,k1,k2,ik,vavg)
 !
       do k=k1,k2,ik
 !
@@ -225,7 +230,7 @@ module Particles_sub
                 OO = rp_ext**(-1.5)
                 fp(k,ivpy) = OO*fp(k,ixp)
               endif
-!
+!             
             elseif (lcartesian_coords) then
 !
 ! The Cartesian case has the option cylinder_in_a_box, sphere_in_a_box
@@ -251,6 +256,28 @@ module Particles_sub
             elseif (lspherical_coords) then
               call fatal_error_local('boundconds_particles',&
                    'flush-keplerian not ready for spherical coords')
+            endif
+
+          elseif (bcpx=='flg') then
+!
+!  Flush-average - flush the particle to the outer boundary with velocity given
+!  by the average velocity of nearby particles (taken from a box)
+!
+            if (lcylindrical_coords) then
+              if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+!   Flush to outer boundary
+                fp(k,ixp)  = rp_ext
+!   Random new azimuthal y position
+                call random_number_wrapper(fp(k,iyp))
+                fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
+!
+!   Average of other particles in outer boundary
+!
+                fp(k,ivpx:ivpz) = vavg
+              endif
+            else
+              call fatal_error("bounconds_particles",&
+                   "flg boundary coded only for cylindrical coordinates")
             endif
 !
           elseif (bcpx=='rmv') then
@@ -481,6 +508,43 @@ module Particles_sub
       endif
 !
     endsubroutine boundconds_particles
+!***********************************************************************
+    subroutine calc_velocity_averages(fp,k1,k2,ik,vavg)
+!    
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(3) :: vavg,vavg_count
+      integer :: k, ik, k1, k2
+      real :: rbox_ext,rbox_int,ncount1
+      integer :: j,ncount
+!
+      intent (in) :: fp,k1,k2,ik
+      intent (out) :: vavg
+!
+      rbox_ext   = rp_ext
+      rbox_int   = rp_ext - rp_ext_width
+      vavg_count = 0.
+      ncount     = 0
+!
+      do k=k1,k2,ik
+        if ((fp(k,ixp) >= rbox_int) .and. (fp(k,ixp) <= rbox_ext)) then
+          vavg_count(1) = vavg_count(1) + fp(k,ivpx)
+          vavg_count(2) = vavg_count(2) + fp(k,ivpy)
+          vavg_count(3) = vavg_count(3) + fp(k,ivpz)
+          ncount = ncount + 1
+        endif
+      enddo
+      if (ncount == 0) then
+        vavg(1) = 0.
+        vavg(2) = 1./sqrt(rbox_ext)
+        vavg(3) = 0.
+      else
+        ncount1=1./ncount
+        do j=1,3
+          vavg(j) = vavg_count(j)*ncount1
+        enddo
+      endif
+!
+    endsubroutine calc_velocity_averages
 !***********************************************************************
     subroutine sum_par_name(a,iname,lsqrt,llog10)
 !
