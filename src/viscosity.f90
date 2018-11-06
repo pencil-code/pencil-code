@@ -1106,7 +1106,7 @@ module Viscosity
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
-      real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
+      real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
@@ -1913,8 +1913,8 @@ module Viscosity
           call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu+2.*p%sglnrho,tmp)
           p%fvisc=p%fvisc+tmp
           if (lnusmag_as_aux) then
-            call dot_mn_sm(gradnu,p%sij,tmp5)
-            p%fvisc=p%fvisc+2.*tmp5
+            call multmv(p%sij,gradnu,sgradnu)
+            p%fvisc=p%fvisc+2.*sgradnu
           endif
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
