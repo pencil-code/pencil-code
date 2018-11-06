@@ -120,7 +120,6 @@ module Energy
         ilnTT=iTT
       else
         call farray_register_pde('lnTT',ilnTT)
-        iTT = ilnTT
       endif
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
