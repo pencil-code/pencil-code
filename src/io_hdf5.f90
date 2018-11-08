@@ -1333,8 +1333,8 @@ module Io
         np2 = (ipy + 1) * (np - 2*ng) + 2*ng
       case ('z')
         np_global = (np - 2*ng) * nprocz + 2*ng
-        np1 = 1 + ipy * (np - 2*ng)
-        np2 = (ipy + 1) * (np - 2*ng) + 2*ng
+        np1 = 1 + ipz * (np - 2*ng)
+        np2 = (ipz + 1) * (np - 2*ng) + 2*ng
       case default
         call fatal_error ('input_profile', 'unknown direction "'//type//'"')
       endselect
