@@ -1292,7 +1292,7 @@ module Io
       if (.not. lp2) np2 = np2 - ng
 !
       ! write profile
-      filename = trim(datadir)//'/'//'profile_'//type//'.h5'
+      filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
       lexists = parallel_file_exists (filename)
       call file_open_hdf5 (filename, truncate=(.not. lexists))
       call create_group_hdf5 (trim(name))
@@ -1340,7 +1340,7 @@ module Io
       endselect
 !
       ! read profile
-      filename = trim(datadir)//'/'//'profile_'//type//'.h5'
+      filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
       call file_open_hdf5 (filename, read_only=.true.)
       call input_hdf5 (trim(name)//'/data', a, np, np_global, np1, np2)
       call file_close_hdf5
