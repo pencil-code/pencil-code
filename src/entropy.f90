@@ -455,9 +455,10 @@ module Energy
       use FArrayManager
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
+      use IO, only: input_profile
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: blob, read_prof, write_prof
+      use Sub, only: blob
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -815,7 +816,7 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz) call read_prof('ss_mz','z',ss_mz,mz)
+      if (lcooling_ss_mz) call input_profile('ss_mz','z',ss_mz,mz)
 !
 !  Initialize heat conduction.
 !
@@ -5686,7 +5687,8 @@ module Energy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use Sub, only: step, cubic_step, write_prof
+      use IO, only: output_profile
+      use Sub, only: step, cubic_step
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof
@@ -5752,7 +5754,7 @@ module Energy
 !  Write out cooling profile (during first time step only) and apply.
 !  MR: Later to be moved to initialization!
 !
-      if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z', lsave_name=(n==n1))
+      if (m==m1) call output_profile('cooling_profile',z(n:n),prof(1:1),'z', lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
 !

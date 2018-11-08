@@ -1241,6 +1241,120 @@ module Io
 !
     endsubroutine wdim
 !***********************************************************************
+    subroutine output_profile(name, coord, a, type, lsave_name, lhas_ghost)
+!
+!  Writes a profile along any direction.
+!
+!  07-Nov-2018/PABourdin: coded
+!
+      use General, only: loptest
+      use File_io, only: parallel_file_exists
+!
+      real, dimension(:) :: coord, a
+      character (len=*) :: name
+      character :: type
+      logical, optional :: lsave_name, lhas_ghost
+!
+      character (len=fnlen) :: filename
+      integer :: np, ng, ip, np_global, np1, np2
+      logical :: lexists, lwrite, lp1, lp2
+!
+      if (.not. lwrite_prof) return
+!
+      np = size(coord)
+      ng = 0
+      if (loptest (lhas_ghost)) ng = 3
+      select case (type)
+      case ('x')
+        np_global = (np - 2*ng) * nprocx + 2*ng
+        ip = ipx
+        lp1 = lfirst_proc_x
+        lp2 = llast_proc_x
+        lwrite = lfirst_proc_yz
+      case ('y')
+        np_global = (np - 2*ng) * nprocy + 2*ng
+        ip = ipy
+        lp1 = lfirst_proc_x
+        lp2 = llast_proc_x
+        lwrite = lfirst_proc_xz
+      case ('z')
+        np_global = (np - 2*ng) * nprocz + 2*ng
+        ip = ipz
+        lp1 = lfirst_proc_x
+        lp2 = llast_proc_x
+        lwrite = lfirst_proc_xy
+      case default
+        call fatal_error ('output_profile', 'unknown direction "'//type//'"')
+      endselect
+      np1 = 1 + ip * (np - 2*ng)
+      np2 = (ip + 1) * (np - 2*ng) + 2*ng
+      if (.not. lp1) np1 = np1 + ng
+      if (.not. lp2) np2 = np2 - ng
+!
+      ! write profile
+      filename = trim(datadir)//'/'//'profile_'//type//'.h5'
+      lexists = parallel_file_exists (filename)
+      call file_open_hdf5 (filename, truncate=(.not. lexists))
+      call create_group_hdf5 (trim(name))
+      call output_hdf5 (trim(name)//'/data', a, np, np_global, ip, np1, np2, ng, lwrite)
+      call output_hdf5 (trim(name)//'/position', coord, np, np_global, ip, np1, np2, ng, lwrite)
+      call file_close_hdf5
+!
+    endsubroutine output_profile
+!***********************************************************************
+    subroutine input_profile(name, type, a, np, lhas_ghost)
+!
+!  Reads a profile from a file along any direction.
+!
+!  07-Nov-2018/PABourdin: coded
+!
+      use General, only: loptest
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+!
+      character (len=*), intent(in) :: name
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
+      logical, optional :: lhas_ghost
+!
+      character (len=fnlen) :: filename
+      integer :: np_global, np1, np2, ng, alloc_err
+      real, dimension(:), allocatable :: profile
+!
+      ng = 0
+      if (loptest (lhas_ghost)) ng = 3
+      select case (type)
+      case ('x')
+        np_global = (np - 2*ng) * nprocx + 2*ng
+        np1 = 1 + ipx * (np - 2*ng)
+        np2 = (ipx + 1) * (np - 2*ng) + 2*ng
+      case ('y')
+        np_global = (np - 2*ng) * nprocy + 2*ng
+        np1 = 1 + ipy * (np - 2*ng)
+        np2 = (ipy + 1) * (np - 2*ng) + 2*ng
+      case ('z')
+        np_global = (np - 2*ng) * nprocz + 2*ng
+        np1 = 1 + ipy * (np - 2*ng)
+        np2 = (ipy + 1) * (np - 2*ng) + 2*ng
+      case default
+        call fatal_error ('input_profile', 'unknown direction "'//type//'"')
+      endselect
+      allocate (profile(np_global), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('input_profile', 'allocate memory for profile', .true.)
+!
+      ! read profile
+      filename = trim(datadir)//'/'//'profile_'//type//'.h5'
+      call file_open_hdf5 (filename, read_only=.true., global=.false.)
+      call input_hdf5 (trim(name)//'/data', profile, np_global, lhas_ghost)
+      call file_close_hdf5
+!
+      call mpibcast_real (profile, np_global, comm=MPI_COMM_WORLD)
+      a = profile(np1:np2)
+!
+!  Should we check that coord == z for type == 'z' etc.?
+!
+    endsubroutine input_profile
+!***********************************************************************
     subroutine wproc_bounds(file)
 !
 !   Export processor boundaries to file.

@@ -82,7 +82,7 @@ module Sub
   public :: max_for_dt,unit_vector
 !
   public :: write_dx_general, rdim
-  public :: write_prof, write_xprof, write_zprof, read_prof, remove_prof
+  public :: write_xprof, write_zprof, remove_prof
 !
   public :: tensor_diffusion_coef
 !
@@ -5047,13 +5047,15 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      real, dimension(:) :: a
-      character (len=*) :: fname
+      use IO, only: output_profile
+!
+      real, dimension(:), intent(in) :: a
+      character (len=*), intent(in) :: fname
 
-      if (size(a)==mz) then
-        call write_prof(fname,z,a,'z')
+      if (size(a) == mz) then
+        call output_profile(fname,z,a,'z')
       else
-        call write_prof(fname,z(n1:n2),a,'z')
+        call output_profile(fname,z(n1:n2),a,'z')
       endif
  
     endsubroutine write_zprof
@@ -5064,91 +5066,18 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      real, dimension(:) :: a
-      character (len=*) :: fname
+      use IO, only: output_profile
+!
+      real, dimension(:), intent(in) :: a
+      character (len=*), intent(in) :: fname
 
-      if (size(a)==mx) then
-        call write_prof(fname,x,a,'x')
+      if (size(a) == mx) then
+        call output_profile(fname,x,a,'x')
       else
-        call write_prof(fname,x(l1:l2),a,'x')
+        call output_profile(fname,x(l1:l2),a,'x')
       endif
  
     endsubroutine write_xprof
-!***********************************************************************
-    subroutine write_prof(fname,coor,a,type,lsave_name)
-!
-!  Writes profile to a file.
-!
-!  10-jul-05/axel: coded
-!
-      use General, only: safe_character_assign, loptest
-!
-      real, dimension(:) :: coor, a
-      character (len=*) :: fname
-      character :: type
-      logical, optional :: lsave_name
-!
-      integer, parameter :: unit=1
-      character (len=fnlen) :: wfile
-      integer :: i
-!
-!  If within a loop, do this only for the first step (indicated by lwrite_prof).
-!
-      if (lwrite_prof) then
-!
-!  Write zprofile file.
-!
-        call safe_character_assign(wfile, &
-            trim(directory)//'/'//type//'prof_'//trim(fname)//'.dat')
-        open(unit,file=wfile,position='append')
-        do i=1,size(coor)
-          write(unit,*) coor(i),a(i)
-        enddo
-        close(unit)
-!
-!  Add file name to list of f zprofile files if lsave_name *not* set or true.
-!
-        if (loptest(lsave_name,.true.)) then
-          call safe_character_assign(wfile,trim(directory)//'/'//type//'prof_list.dat')
-          open(unit,file=wfile,position='append')
-          write(unit,*) fname
-          close(unit)
-        endif
-      endif
-!
-    endsubroutine write_prof
-!***********************************************************************
-    subroutine read_prof(fname,type,a,np)
-!
-!  Read profile from a file (taken from stratification, for example).
-!
-!  15-may-15/axel: coded
-!  05-Nov-2018/PABourdin: generalized to any direction
-!
-      use General, only: safe_character_assign
-!
-      character (len=*), intent(in) :: fname
-      character, intent(in) :: type
-      integer, intent(in) :: np
-      real, dimension(np), intent(out) :: a
-!
-      integer, parameter :: unit=1
-      character (len=fnlen) :: wfile
-      real, dimension(np) :: coord
-!
-!  Write zprofile file.
-!
-      call safe_character_assign(wfile, &
-          trim(directory)//type//'/prof_'//trim(fname)//'.dat')
-      open(unit,file=wfile)
-      do n=1,np
-        read(unit,*) coord(n),a(n)
-      enddo
-      close(unit)
-!
-!  Should we check that coord == z for type == 'z'?
-!
-    endsubroutine read_prof
 !***********************************************************************
     subroutine remove_prof(type)
 !
@@ -5165,9 +5094,9 @@ nameloop: do
       character (len=120) :: fname,listfile
       integer :: ierr, unit=2
 !
-!  Do this only for the first step.
+      call file_remove(trim(directory)//'/'//'profile_'//type//'.h5')
 !
-      call safe_character_assign(listfile,trim(directory)//type//'/prof_list.dat')
+      call safe_character_assign(listfile,trim(directory)//'/'//type//'/prof_list.dat')
 !
 !  Read list of file and remove them one by one.
 !
@@ -5176,7 +5105,7 @@ nameloop: do
       do while (it <= nt)
         read(unit,*,iostat=ierr) fname
         if (ierr /= 0) exit
-        call file_remove(trim(directory)//type//'/prof_'//trim(fname)//'.dat')
+        call file_remove(trim(directory)//'/'//type//'/prof_'//trim(fname)//'.dat')
       enddo
       close(unit)
 !

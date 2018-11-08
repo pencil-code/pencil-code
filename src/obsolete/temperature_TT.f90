@@ -643,6 +643,7 @@ module Entropy
 !
       use Diagnostics
       use EquationOfState, only: gamma
+      use IO, only: output_profile
       use Sub
 
       real, dimension(mx,my,mz,mvar) :: df
@@ -667,9 +668,9 @@ module Entropy
 !  Write out hcond z-profile (during first time step only)
 !
       if (m==m1) then
-        call write_prof('hcond',(/z(n)/),(/hcond(1)/),'z', lsave_name=(n==n1))
-        call write_prof('glnhcond',(/z(n)/),(/glnhcond(1,3)/),'z', lsave_name=(n==n1))
-        call write_prof('K_T',(/z(n)/),(/chiT/),'z', lsave_name=(n==n1))
+        call output_profile('hcond',(/z(n)/),(/hcond(1)/),'z', lsave_name=(n==n1))
+        call output_profile('glnhcond',(/z(n)/),(/glnhcond(1,3)/),'z', lsave_name=(n==n1))
+        call output_profile('K_T',(/z(n)/),(/chiT/),'z', lsave_name=(n==n1))
       endif
 !
 !  Add heat conduction to RHS of temperature equation

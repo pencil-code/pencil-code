@@ -1444,6 +1444,70 @@ module Io
 !
     endsubroutine wdim
 !***********************************************************************
+    subroutine output_profile(fname, coord, a, type, lsave_name, lhas_ghost)
+!
+!  Writes a profile to a file.
+!
+!  10-jul-05/axel: coded
+!  07-Nov-2018/PABourdin: moved to IO modules
+!
+      use General, only: loptest
+!
+      real, dimension(:) :: coord, a
+      character (len=*) :: fname
+      character :: type
+      logical, optional :: lsave_name, lhas_ghost
+!
+      integer :: pos, np
+!
+!  If within a loop, do this only for the first step (indicated by lwrite_prof).
+!
+      if (lwrite_prof) then
+        ! Write profile.
+        open(lun_output,file=trim(directory)//'/'//type//'prof_'//trim(fname)//'.dat',position='append')
+        np = size(coord)
+        do pos=1, np
+          write(lun_output,*) coord(pos), a(pos)
+        enddo
+        close(lun_output)
+!
+        ! Add file name to list of profiles if lsave_name *not* set or true.
+        if (loptest(lsave_name,.true.)) then
+          open(lun_output,file=trim(directory)//'/'//type//'prof_list.dat',position='append')
+          write(lun_output,*) fname
+          close(lun_output)
+        endif
+      endif
+!
+    endsubroutine output_profile
+!***********************************************************************
+    subroutine input_profile(fname, type, a, np, lhas_ghost)
+!
+!  Read a profile from a file (taken from stratification, for example).
+!
+!  15-may-15/axel: coded
+!  05-Nov-2018/PABourdin: generalized to any direction and moved to IO module
+!
+      character (len=*), intent(in) :: fname
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
+      logical, optional :: lhas_ghost
+!
+      integer :: pos
+      real, dimension(np) :: coord
+!
+      ! Read profile.
+      open(lun_input,file=trim(directory)//type//'/prof_'//trim(fname)//'.dat')
+      do pos=1, np
+        read(lun_input,*) coord(pos), a(pos)
+      enddo
+      close(lun_input)
+!
+!  Should we check that coord == z for type == 'z'?
+!
+    endsubroutine input_profile
+!***********************************************************************
     subroutine wproc_bounds(file)
 !
 !   Export processor boundaries to file.

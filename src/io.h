@@ -10,7 +10,7 @@
   public :: init_write_persist, write_persist, write_persist_id
   public :: init_read_persist, read_persist, read_persist_id
 
-  public :: wgrid, rgrid, wdim
+  public :: wgrid, rgrid, wdim, output_profile, input_profile
   public :: wproc_bounds, rproc_bounds
   public :: directory_names, log_filename_to_file
 
