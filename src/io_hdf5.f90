@@ -1274,14 +1274,14 @@ module Io
       case ('y')
         np_global = (np - 2*ng) * nprocy + 2*ng
         ip = ipy
-        lp1 = lfirst_proc_x
-        lp2 = llast_proc_x
+        lp1 = lfirst_proc_y
+        lp2 = llast_proc_y
         lwrite = lfirst_proc_xz
       case ('z')
         np_global = (np - 2*ng) * nprocz + 2*ng
         ip = ipz
-        lp1 = lfirst_proc_x
-        lp2 = llast_proc_x
+        lp1 = lfirst_proc_z
+        lp2 = llast_proc_z
         lwrite = lfirst_proc_xy
       case default
         call fatal_error ('output_profile', 'unknown direction "'//type//'"')
