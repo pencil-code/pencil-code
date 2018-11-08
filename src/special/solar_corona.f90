@@ -233,10 +233,13 @@ module Special
       if ((flux_tau > 0.0) .and. (Bz_flux <= 0.0)) &
           call fatal_error ('solar_corona/mag_driver', &
               "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
-      ! Spitzer heat conduction if only implemented for logarithmic temperature
+      ! Check if heat conduction terms are implemented:
       if ((K_spitzer /= 0.0) .and. (lentropy .or. (ltemperature .and. ltemperature_nolog))) &
           call fatal_error('solar_corona/calc_heatcond_tensor', &
               "Heat conduction 'K_spitzer' currently requirees logarithmic temperature.", .true.)
+      if ((K_iso /= 0.0) .and. lentropy) &
+          call fatal_error('solar_corona/calc_heatcond_grad', &
+              "Heat conduction 'K_iso' is currently not implemented for entropy.", .true.)
 !
       if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
