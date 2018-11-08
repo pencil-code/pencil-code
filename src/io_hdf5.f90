@@ -1326,18 +1326,16 @@ module Io
       case ('x')
         np_global = (np - 2*ng) * nprocx + 2*ng
         np1 = 1 + ipx * (np - 2*ng)
-        np2 = (ipx + 1) * (np - 2*ng) + 2*ng
       case ('y')
         np_global = (np - 2*ng) * nprocy + 2*ng
         np1 = 1 + ipy * (np - 2*ng)
-        np2 = (ipy + 1) * (np - 2*ng) + 2*ng
       case ('z')
         np_global = (np - 2*ng) * nprocz + 2*ng
         np1 = 1 + ipz * (np - 2*ng)
-        np2 = (ipz + 1) * (np - 2*ng) + 2*ng
       case default
         call fatal_error ('input_profile', 'unknown direction "'//type//'"')
       endselect
+      np2 = np1 + np - 1
 !
       ! read profile
       filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
