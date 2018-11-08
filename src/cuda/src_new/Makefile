@@ -10,7 +10,15 @@ CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_3
 OPTFLAGS = -O1 
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
+#  Original
 CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -g -G
+
+# MV's adaptation for TIARA cluster. Compiles with: 
+#  1) cuda/9.0   3) openmpi/2.0.1_ic16.0            5) hdf5/1.8.16_openmpi_2.0.1_ic16.0 7) gcc/5.3.0
+#  2) intel/2016 4) fftw/2.1.5_openmpi_2.0.1_ic16.0 6) cuda/9.1
+#CCFLAGS = -ccbin gcc -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
+##CCFLAGS = -ccbin icpc -Xcompiler -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
+
 # Settings for Omer's machine
 #CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
 
