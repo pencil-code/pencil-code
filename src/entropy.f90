@@ -112,7 +112,7 @@ module Energy
   logical :: lheatc_shock=.false., lheatc_shock2=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
-  logical :: lcooling_general=.false., lcooling_ss_mz=.false.
+  logical :: lcooling_general=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
