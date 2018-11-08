@@ -46,6 +46,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       call der_ogrid(f,k,g(:,2),2)
       call der_ogrid(f,k,g(:,3),3)
 
+
       if (lstore_ogTT .and. k == iTT) then
          f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iogTTx) = &
              g(:,1)*curv_cart_transform(m_ogrid,2) - &
@@ -1185,20 +1186,37 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  Only implemented for df/dx_i = 0 at boundary.
 !
 !  16-feb-17/Jorgen: Adapted from deriv.f90
-!
+!  07-nov-18/Jonas: Added treatment for cases with temperature gradient
       integer :: k
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-
+      real, dimension (my_ogrid, mz_ogrid) :: df_surf
+!
       k=l1_ogrid
-      f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
-                              D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
-                              D1_SBP(1,4)*f_og   (k+3,:,:,irho) + &
-                              D1_SBP(1,5)*f_og   (k+4,:,:,irho) + &
-                              D1_SBP(1,6)*f_og   (k+5,:,:,irho) + &
-                              D1_SBP(1,7)*f_og   (k+6,:,:,irho) + &
-                              D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
-                              D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/D1_SBP(1,1)
-
+!
+      if (iTT==0) then
+         f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
+              D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
+              D1_SBP(1,4)*f_og   (k+3,:,:,irho) + &
+              D1_SBP(1,5)*f_og   (k+4,:,:,irho) + &
+              D1_SBP(1,6)*f_og   (k+5,:,:,irho) + &
+              D1_SBP(1,7)*f_og   (k+6,:,:,irho) + &
+              D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
+              D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/D1_SBP(1,1)
+      else if (iTT>0) then
+         call der_ogrid_SBP_surf(f_og,df_surf)
+         f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
+              D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
+              D1_SBP(1,4)*f_og   (k+3,:,:,irho) + &
+              D1_SBP(1,5)*f_og   (k+4,:,:,irho) + &
+              D1_SBP(1,6)*f_og   (k+5,:,:,irho) + &
+              D1_SBP(1,7)*f_og   (k+6,:,:,irho) + &
+              D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
+              D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/ &
+              (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT))
+      else
+         call fatal_error('solid_cells_ogrid','temperature SBP index not found')
+      endif
+!
     endsubroutine bval_from_neumann_SBP
 !***********************************************************************
     subroutine bval_from_neumann_bdry5(f_og)
@@ -1242,6 +1260,31 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       enddo
 
     endsubroutine der_ogrid_SBP
+!***********************************************************************
+    subroutine der_ogrid_SBP_surf(f,df_surf)
+! 
+!  Summation by parts boundary condition for first derivative.
+!  Only implemented in radial direction.
+!
+!  21-mar-17/Jorgen: Coded
+!  06-nov-18/jonas: adapted
+!
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(my_ogrid,mz_ogrid), intent(out) :: df_surf
+      integer :: k
+	  
+      k = l1_ogrid
+      df_surf(:,:) = D1_SBP(1,1)*f(k,:,:,iTT) + &
+           D1_SBP(1,2)*f(k+1,:,:,iTT) + &
+           D1_SBP(1,3)*f(k+2,:,:,iTT) + &
+           D1_SBP(1,4)*f(k+3,:,:,iTT) + &
+           D1_SBP(1,5)*f(k+4,:,:,iTT) + &
+           D1_SBP(1,6)*f(k+5,:,:,iTT) + &
+           D1_SBP(1,7)*f(k+6,:,:,iTT) + &
+           D1_SBP(1,8)*f(k+7,:,:,iTT) + &
+           D1_SBP(1,9)*f(k+8,:,:,iTT)
+      
+    endsubroutine der_ogrid_SBP_surf
 !***********************************************************************
     subroutine der_ogrid_bdry5(f,df)
 ! 

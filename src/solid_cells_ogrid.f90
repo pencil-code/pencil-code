@@ -47,9 +47,9 @@ module Solid_Cells
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
       lrk_tvd, SBP_optimized, &
       particle_interpolate, lparticle_uradonly, &
-      interpol_order_poly, lfilter_solution, af,lspecial_rad_int, &
+      interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
-      lstore_ogTT, init_rho_cyl
+      lstore_ogTT, init_rho_cyl, lfilter_TT
 
 
 !  Read run.in file
@@ -635,7 +635,7 @@ module Solid_Cells
 !  Rotate system if the flow is in y-direction
       flowy=-flowy*pi*0.5
       f_ogrid(:,:,:,iux:iuz)=0.
-      if(iTT.ne.0) then
+      if (iTT .ne. 0) then
         f_ogrid(:,:,:,iTT)=f(l1,m1,n1,iTT)
       endif
       if (lchemistry) then  
@@ -5046,11 +5046,11 @@ module Solid_Cells
           enddo
         endif
       else
-        if (lpencil_ogrid(i_og_fpres)) then
-          do j=1,3
-            p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
-          enddo
-        endif
+         if (lpencil_ogrid(i_og_fpres)) then
+            do j=1,3
+               p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
+            enddo
+         endif
       endif
 !
     endsubroutine calc_pencils_energy_ogrid
@@ -5140,6 +5140,9 @@ module Solid_Cells
           call set_ghosts_onesided_ogrid(iux)
           call set_ghosts_onesided_ogrid(iuy)
           call set_ghosts_onesided_ogrid(iuz)
+          if (lfilter_TT) then
+             call set_ghosts_onesided_ogrid(iTT)
+          endif
           if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
 ! TODO: 
@@ -5168,8 +5171,11 @@ module Solid_Cells
       integer :: m1i_ogrid=m1_ogrid+nghost-1
       integer :: m2i_ogrid=my_ogrid-2*nghost+1
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-!
+      !
+      ! JONAS i did this change
+      !
       ivar1=1; ivar2=min(mcom,size(f_og,4))
+      print*, 'mcom',mcom,'ivar2',ivar2
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
@@ -5195,7 +5201,7 @@ module Solid_Cells
       integer :: n2i_ogrid=mz_ogrid-2*nghost+1
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
 !
-      ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
+      ivar1=1; ivar2=min(mcom,size(f_og,4))
 !
 !  Boundary conditions in z
 !
@@ -5226,6 +5232,7 @@ module Solid_Cells
       intent(inout) :: f_Hloy,f_Hupy
 !
       ivar1=1; ivar2=min(mcom,size(f_og,4))
+      print*, 'IVARs',ivar1, ivar2
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
@@ -5237,7 +5244,6 @@ module Solid_Cells
         f_Hupy(l1_ogrid:l2_ogrid,:,:,j) = f_og(l1_ogrid:l2_ogrid,m1i_ogrid+1:m1i_ogrid+Hsize,n1_ogrid:n2_ogrid,j)
       enddo
     endsubroutine boundconds_y_filter
-
 !***********************************************************************
     subroutine gaunoise_ogrid(ampl,i1,i2)
 !
@@ -5879,11 +5885,7 @@ module Solid_Cells
         if (lsnap) then
           call update_ghosts_ogrid(f_ogrid)
           call safe_character_assign(file,trim(chsnap)//ch)
-          if (lstore_ogTT) then
-             call output_snap_ogrid(f_ogrid(:,:,:,1:mfarray_ogrid-mogaux),file=file)
-          else
-             call output_snap_ogrid(f_ogrid,file=file)
-          endif
+          call output_snap_ogrid(f_ogrid,file=file)
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
         endif
@@ -5894,11 +5896,7 @@ module Solid_Cells
 !
         call update_ghosts_ogrid(f_ogrid)
         call safe_character_assign(file,trim(chsnap))
-        if (lstore_ogTT) then
-           call output_snap_ogrid(f_ogrid(:,:,:,1:mfarray_ogrid-mogaux),file=file)
-        else
-           call output_snap_ogrid(f_ogrid,file=file)
-        endif
+        call output_snap_ogrid(f_ogrid,file=file)
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
@@ -8798,18 +8796,21 @@ module Solid_Cells
     elseif(filter_Hsize<0) then
       call fatal_error('initialize_pade_filter','Negative filter halo size!')
     elseif(filter_Hsize>nghost) then
-      ! Requres a modification of mpi-buffers, not yet implementer
+      ! Requres a modification of mpi-buffers, not yet implemented
       call fatal_error('initialize_pade_filter','Filter halo too large!')
     endif
-    
+    !
     allocate(f_filterH_lowerx(filter_Hsize,my_ogrid,nz_ogrid,mfarray_ogrid))
     allocate(f_filterH_upperx(filter_Hsize,my_ogrid,nz_ogrid,mfarray_ogrid))
     allocate(f_filterH_lowery(mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid))
     allocate(f_filterH_uppery(mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid))
+    !
   endsubroutine initialize_pade_filter
 !***********************************************************************
   subroutine communicate_filter_zones(f_og,f_Hlox,f_Hupx,f_Hloy,f_Hupy)
+    
     use Solid_Cells_Mpicomm, only: initiate_isendrcv_bdry_filter, finalize_isendrcv_bdry_filter
+    
     real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid) ::  f_og
     real, dimension (filter_Hsize,my_ogrid,nz_ogrid,mfarray_ogrid) ::  f_Hlox,f_Hupx
     real, dimension (mx_ogrid,filter_Hsize,nz_ogrid,mfarray_ogrid) ::  f_Hloy,f_Hupy
@@ -8939,12 +8940,18 @@ module Solid_Cells
           call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,2),f_og(i,m1_ogrid:m2_ogrid,4,2),ny_ogrid)
           call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,3),f_og(i,m1_ogrid:m2_ogrid,4,3),ny_ogrid)
         endif
+        if(lfilter_TT) then
+           call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iTT),f_og(i,m1_ogrid:m2_ogrid,4,iTT),ny_ogrid)
+        endif
         call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,4),f_og(i,m1_ogrid:m2_ogrid,4,4),ny_ogrid)
       else
         if(.not. lfilter_rhoonly) then
           call cyclic(aWy,aPy,aEy,af,af,by(:,1),f_og(i,m1_ogrid:m2_ogrid,4,1),ny_ogrid)
           call cyclic(aWy,aPy,aEy,af,af,by(:,2),f_og(i,m1_ogrid:m2_ogrid,4,2),ny_ogrid)
           call cyclic(aWy,aPy,aEy,af,af,by(:,3),f_og(i,m1_ogrid:m2_ogrid,4,3),ny_ogrid)
+        endif
+        if(lfilter_TT) then
+           call cyclic(aWy,aPy,aEy,af,af,by(:,iTT),f_og(i,m1_ogrid:m2_ogrid,4,iTT),ny_ogrid)
         endif
         call cyclic(aWy,aPy,aEy,af,af,by(:,4),f_og(i,m1_ogrid:m2_ogrid,4,4),ny_ogrid)
       endif
@@ -9022,7 +9029,11 @@ module Solid_Cells
           call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,2), &
             f_og(l1_ogrid:l2_ogrid-jj,i,4,2), nx_ogrid-jj)
           call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,3), &
-            f_og(l1_ogrid:l2_ogrid-jj,i,4,3), nx_ogrid-jj)
+               f_og(l1_ogrid:l2_ogrid-jj,i,4,3), nx_ogrid-jj)
+        endif
+        if(lfilter_TT) then
+           call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iTT), &
+                f_og(l1_ogrid:l2_ogrid-jj,i,4,iTT), nx_ogrid-jj)
         endif
         call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,4), &
           f_og(l1_ogrid:l2_ogrid-jj,i,4,4), nx_ogrid-jj)
@@ -9034,6 +9045,10 @@ module Solid_Cells
             bx(1:nx_ogrid-jj,2),f_og(l1_ogrid:l2_ogrid-jj,i,4,2))
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
             bx(1:nx_ogrid-jj,3),f_og(l1_ogrid:l2_ogrid-jj,i,4,3))
+        endif
+        if(lfilter_TT) then
+           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
+                bx(1:nx_ogrid-jj,iTT),f_og(l1_ogrid:l2_ogrid-jj,i,4,iTT))
         endif
         call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), &
           bx(1:nx_ogrid-jj,4),f_og(l1_ogrid:l2_ogrid-jj,i,4,4))
@@ -9432,4 +9447,4 @@ module Solid_Cells
     
   endsubroutine create_curv_cart_transform
   !***********************************************************************
-end module solid_cells
+endmodule solid_cells
