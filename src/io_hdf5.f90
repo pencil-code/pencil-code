@@ -1319,7 +1319,6 @@ module Io
 !
       character (len=fnlen) :: filename
       integer :: np_global, np1, np2, ng, alloc_err
-      real, dimension(:), allocatable :: profile
 !
       ng = 0
       if (loptest (lhas_ghost)) ng = 3
@@ -1339,18 +1338,12 @@ module Io
       case default
         call fatal_error ('input_profile', 'unknown direction "'//type//'"')
       endselect
-      allocate (profile(np_global), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('input_profile', 'allocate memory for profile', .true.)
 !
       ! read profile
       filename = trim(datadir)//'/'//'profile_'//type//'.h5'
-      call file_open_hdf5 (filename, read_only=.true., global=.false.)
-      call input_hdf5 (trim(name)//'/data', profile, np_global, lhas_ghost)
+      call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 (trim(name)//'/data', a, np, np_global, np1, np2)
       call file_close_hdf5
-!
-      call mpibcast_real (profile, np_global, comm=MPI_COMM_WORLD)
-      a = profile(np1:np2)
-      deallocate (profile)
 !
 !  Should we check that coord == z for type == 'z' etc.?
 !
