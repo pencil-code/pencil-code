@@ -1350,6 +1350,7 @@ module Io
 !
       call mpibcast_real (profile, np_global, comm=MPI_COMM_WORLD)
       a = profile(np1:np2)
+      deallocate (profile)
 !
 !  Should we check that coord == z for type == 'z' etc.?
 !
