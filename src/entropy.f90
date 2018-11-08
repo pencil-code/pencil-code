@@ -183,7 +183,7 @@ module Energy
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
-      limpose_heat_ceiling, heat_ceiling
+      limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz
 !
 !  Run parameters.
 !
@@ -191,7 +191,7 @@ module Energy
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
-      lcooling_general, lcooling_ss_mz, gradS0_imposed, &
+      lcooling_general, gradS0_imposed, &
       ss_const, chi_t, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi_shock2, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
