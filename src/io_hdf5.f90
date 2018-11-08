@@ -1286,8 +1286,8 @@ module Io
       case default
         call fatal_error ('output_profile', 'unknown direction "'//type//'"')
       endselect
-      np1 = 1 + ip * (np - 2*ng)
-      np2 = (ip + 1) * (np - 2*ng) + 2*ng
+      np1 = 1
+      np2 = np
       if (.not. lp1) np1 = np1 + ng
       if (.not. lp2) np2 = np2 - ng
 !
