@@ -1042,8 +1042,8 @@ module HDF5_IO
 !
       loc_dim(1) = ldim
       glob_dim(1) = gdim
-      loc_start(1) = np1
-      glob_start(1) = np1 + ip * (ldim - 2*ng)
+      loc_start(1) = np1 - 1
+      glob_start(1) = ip * (ldim - 2*ng) + loc_start(1)
       loc_subdim(1) = np2 - np1 + 1
 !
       ! define 'file-space' to indicate the data portion in the global file
