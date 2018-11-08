@@ -5053,7 +5053,7 @@ nameloop: do
       character (len=*), intent(in) :: fname
 
       if (size(a) == mz) then
-        call output_profile(fname,z,a,'z')
+        call output_profile(fname,z,a,'z',lhas_ghost=.true.)
       else
         call output_profile(fname,z(n1:n2),a,'z')
       endif
@@ -5072,7 +5072,7 @@ nameloop: do
       character (len=*), intent(in) :: fname
 
       if (size(a) == mx) then
-        call output_profile(fname,x,a,'x')
+        call output_profile(fname,x,a,'x',lhas_ghost=.true.)
       else
         call output_profile(fname,x(l1:l2),a,'x')
       endif
