@@ -816,7 +816,11 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz) call input_profile('ss_mz','z',ss_mz,mz)
+      if (lcooling_ss_mz) then
+        if (.not. lentropy .and. .not. ltemperature) &
+            call fatal_error('cooling_ss_mz','ss cooling requires entropy or temperature')
+        call input_profile('ss_mz','z',ss_mz,mz)
+      endif
 !
 !  Initialize heat conduction.
 !
