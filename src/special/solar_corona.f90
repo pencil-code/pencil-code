@@ -968,7 +968,7 @@ module Special
           call del6(f,ilnrho,fdiff,IGNOREDX=.true.)
         else
           call fatal_error('special_calc_density', &
-              'not yet implented for ldensity_nolog')
+              'not yet implemented for ldensity_nolog')
         endif
 !
 !        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
@@ -2644,7 +2644,7 @@ module Special
         delta_lnTT = delta_lnTT + df(l1:l2,m,n,ilnTT)
       else
         if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool_deltaT:lentropy=not implented')
+            call stop_it('solar_corona: calc_heat_cool_deltaT:lentropy=not implemented')
       endif
 !
       if (lfirst .and. ldt) then
@@ -2693,7 +2693,7 @@ module Special
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
       else
         if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool_deltaE:lentropy=not implented')
+            call stop_it('solar_corona: calc_heat_cool_deltaE:lentropy=not implemented')
       endif
 !
       if (lfirst .and. ldt) then
@@ -2742,7 +2742,7 @@ module Special
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
       else
         if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool_E:lentropy=not implented')
+            call stop_it('solar_corona: calc_heat_cool_E:lentropy=not implemented')
       endif
 !
       if (lfirst .and. ldt) then
@@ -2853,7 +2853,7 @@ module Special
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       else
         if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
+            call stop_it('solar_corona: calc_heat_cool:lentropy=not implemented')
       endif
 !
       if (lfirst .and. ldt) then
