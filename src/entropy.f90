@@ -819,7 +819,7 @@ module Energy
       if (lcooling_ss_mz .and. lrun) then
         if (.not. lentropy .and. .not. ltemperature) &
             call fatal_error('cooling_ss_mz','ss cooling requires entropy or temperature')
-        call input_profile('ss_mz','z',ss_mz,mz)
+        call input_profile('ss_mz', 'z', ss_mz, mz, lhas_ghost=.true.)
       endif
 !
 !  Initialize heat conduction.
