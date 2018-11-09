@@ -2474,12 +2474,9 @@ module Hydro
       if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
-        call der6(f,iux,tmp,1)
-        p%del6u_bulk(:,1)=tmp
-        call der6(f,iuy,tmp,2)
-        p%del6u_bulk(:,2)=tmp
-        call der6(f,iuz,tmp,3)
-        p%del6u_bulk(:,3)=tmp
+        call der6(f,iux,p%del6u_bulk(:,1),1)
+        call der6(f,iuy,p%del6u_bulk(:,2),2)
+        call der6(f,iuz,p%del6u_bulk(:,3),3)
       endif
 !
 ! del2u, graddivu
