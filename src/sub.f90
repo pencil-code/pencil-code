@@ -5053,9 +5053,9 @@ nameloop: do
       character (len=*), intent(in) :: fname
 
       if (size(a) == mz) then
-        call output_profile(fname,z,a,'z',lhas_ghost=.true.)
+        call output_profile(fname, z, a, 'z', lsave_name=.true., lhas_ghost=.true.)
       else
-        call output_profile(fname,z(n1:n2),a,'z')
+        call output_profile(fname, z(n1:n2), a, 'z', lsave_name=.true.)
       endif
  
     endsubroutine write_zprof
@@ -5072,9 +5072,9 @@ nameloop: do
       character (len=*), intent(in) :: fname
 
       if (size(a) == mx) then
-        call output_profile(fname,x,a,'x',lhas_ghost=.true.)
+        call output_profile(fname, x, a, 'x', lsave_name=.true., lhas_ghost=.true.)
       else
-        call output_profile(fname,x(l1:l2),a,'x')
+        call output_profile(fname, x(l1:l2), a, 'x', lsave_name=.true.)
       endif
  
     endsubroutine write_xprof

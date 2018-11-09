@@ -1308,8 +1308,8 @@ module Io
         enddo
         close(lun_output)
 !
-        ! Add file name to list of profiles if lsave_name *not* set or true.
-        if (loptest(lsave_name,.true.)) then
+        ! Add file name to list of profiles if lsave_name is true.
+        if (loptest(lsave_name)) then
           open(lun_output,file=trim(directory)//'/'//type//'prof_list.dat',position='append')
           write(lun_output,*) fname
           close(lun_output)
