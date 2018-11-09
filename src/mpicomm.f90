@@ -5883,16 +5883,15 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             partner = px + py*nprocx + ipz*nprocxy
-            if (iproc == partner) then
-              ! data is local
-              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
-            else
+            if (iproc /= partner) then
               ! send to partner
-              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
+              call MPI_SEND (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
+        ! copy local data
+        out = in(ipx*bnx+1:(ipx+1)*bnx,ipy*bny+1:(ipy+1)*bny)
       else
         ! receive from broadcaster
         call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
