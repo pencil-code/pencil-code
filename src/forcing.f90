@@ -1512,6 +1512,337 @@ module Forcing
 
     endsubroutine forcing_coefs_hel
 !***********************************************************************
+    subroutine forcing_coefs_hel_double(coef1,coef2,coef3,fx,fy,fz,fda)
+!
+!  Calculates position-independent and 1D coefficients for helical forcing.
+!
+!  4-oct-17/MR: outsourced from forcing_hel.
+!               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined - nees to be fixed
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Sub
+      use Mpicomm, only: stop_it
+!
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3
+      complex, dimension (mx),intent(out) :: fx
+      complex, dimension (my),intent(out) :: fy
+      complex, dimension (mz),intent(out) :: fz
+      real,    dimension (3), intent(out) :: fda
+!
+      real :: phase,ffnorm
+      real, save :: kav,kavb
+      real, dimension (2) :: fran
+      real, dimension(:), allocatable, save :: kkx,kky,kkz,kkxb,kkyb,kkzb
+      logical, save :: lfirst_call=.true.
+      integer, save :: nk,nkb
+      integer :: ik
+      real :: kx0,kx,ky,kz,k2,k,pi_over_Lx
+      real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
+      real, dimension(3) :: e1,e2,ee,kk
+      real :: norm,phi
+      real :: fd,fd2
+      logical :: lk_dot_dat_exists
+!
+      if (lfirst_call) then
+        if (lroot.and.ip<14) print*,'forcing_coefs_hel: opening k.dat'
+        inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
+        if (lk_dot_dat_exists) then
+          open(9,file='k.dat',status='old')
+          read(9,*) nk,kav
+          if (lroot.and.ip<14) print*,'forcing_coefs_hel: average k=',kav
+          allocate(kkx(nk),kky(nk),kkz(nk))
+          read(9,*) (kkx(ik),ik=1,nk)
+          read(9,*) (kky(ik),ik=1,nk)
+          read(9,*) (kkz(ik),ik=1,nk)
+          close(9)
+        else
+          call inevitably_fatal_error ('forcing_coefs_hel:', &
+              'you must give an input k.dat file')
+        endif
+!
+!  read second file
+!
+        inquire(FILE="kb.dat", EXIST=lk_dot_dat_exists)
+        if (lk_dot_dat_exists) then
+          open(9,file='kb.dat',status='old')
+          read(9,*) nkb,kavb
+          if (lroot.and.ip<14) print*,'forcing_coefs_hel: average kb=',kavb
+          allocate(kkxb(nkb),kkyb(nkb),kkzb(nkb))
+          read(9,*) (kkxb(ik),ik=1,nkb)
+          read(9,*) (kkyb(ik),ik=1,nkb)
+          read(9,*) (kkzb(ik),ik=1,nkb)
+          close(9)
+        else
+          call inevitably_fatal_error ('forcing_coefs_hel:', &
+              'you must give an input kb.dat file')
+        endif
+        lfirst_call=.false.
+!
+!  At the moment, cs0 is used for normalization.
+!
+        if (cs0eff==impossible) then
+          if (cs0==impossible) then
+            cs0eff=1.
+            if (headt) print*,'forcing_coefs_hel: for normalization, use cs0eff=',cs0eff
+          else
+            cs0eff=cs0
+          endif
+        endif
+!
+      endif
+!
+      call fcoefs_hel(kkx,kky,kkz,nk,kav,coef1,coef2,coef3,fx,fy,fz,fda)
+    endsubroutine forcing_coefs_hel_double
+!***********************************************************************
+    subroutine fcoefs_hel(kkx,kky,kkz,nk,kav,coef1,coef2,coef3,fx,fy,fz,fda)
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Sub
+      use Mpicomm, only: stop_it
+!
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3
+      complex, dimension (mx),intent(out) :: fx
+      complex, dimension (my),intent(out) :: fy
+      complex, dimension (mz),intent(out) :: fz
+      real,    dimension (3), intent(out) :: fda
+!
+      real :: phase,ffnorm
+      real :: kav
+      real, dimension (2) :: fran
+      real, dimension(:) :: kkx,kky,kkz
+      integer :: nk
+      integer :: ik
+      real :: kx0,kx,ky,kz,k2,k,pi_over_Lx
+      real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
+      real, dimension(3) :: e1,e2,ee,kk
+      real :: norm,phi
+      real :: fd,fd2
+!
+!  generate random coefficients -1 < fran < 1
+!  ff=force*Re(exp(i(kx+phase)))
+!  |k_i| < akmax
+!
+      do
+        call random_number_wrapper(fran)
+        phase=pi*(2*fran(1)-1.)
+        ik=nk*(.9999*fran(2))+1
+!
+!  if lavoid_xymean=T and wavevector is close enough to [0,0,kz] discard it
+!  and look for a new one
+!
+        if ( lavoid_xymean ) then
+          if ( abs(kkx(ik))>.9*k1xyz(1) .or. abs(kky(ik))>.9*k1xyz(2) ) exit
+        elseif ( lavoid_ymean ) then
+          if ( abs(kky(ik))>.9*k1xyz(2) ) exit
+        elseif ( lavoid_zmean ) then
+          if ( abs(kkz(ik))>.9*k1xyz(3) ) exit
+        else
+          exit
+        endif
+      enddo
+!
+      if (ip<=6) then
+        print*,'forcing_coefs_hel: ik,phase=',ik,phase
+        print*,'forcing_coefs_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+      endif
+!
+!  normally we want to use the wavevectors as they are,
+!  but in some cases, e.g. when the box is bigger than 2pi,
+!  we want to rescale k so that k=1 now corresponds to a smaller value.
+!
+      if (lscale_kvector_fac) then
+        kx0=kkx(ik)*scale_kvectorx
+        ky=kky(ik)*scale_kvectory
+        kz=kkz(ik)*scale_kvectorz
+        pi_over_Lx=0.5
+      elseif (lscale_kvector_tobox) then
+        kx0=kkx(ik)*(2.*pi/Lxyz(1))
+        ky=kky(ik)*(2.*pi/Lxyz(2))
+        kz=kkz(ik)*(2.*pi/Lxyz(3))
+        pi_over_Lx=pi/Lxyz(1)
+      else
+        kx0=kkx(ik)
+        ky=kky(ik)
+        kz=kkz(ik)
+        pi_over_Lx=0.5
+      endif
+!
+!  in the shearing sheet approximation, kx = kx0 - St*k_y.
+!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  integer shifts.
+!
+      if (Sshear==0.) then
+        kx=kx0
+      else
+        if (lshearing_adjust_old) then
+          kx=kx0+ky*deltay/Lx
+        else
+          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+        endif
+      endif
+!
+!  compute k^2 and output wavenumbers
+!
+      k2=kx**2+ky**2+kz**2
+      k=sqrt(k2)
+      if (ip<4) then
+        open(89,file='forcing_hel_output.dat',position='append')
+        write(89,'(6f10.5)') k,kx0,kx,ky,kz,deltay
+        close(89)
+      endif
+!
+!  Find e-vector:
+!  Start with old method (not isotropic) for now.
+!  Pick e1 if kk not parallel to ee1. ee2 else.
+!
+      if ((ky==0).and.(kz==0)) then
+        ex=0; ey=1; ez=0
+      else
+        ex=1; ey=0; ez=0
+      endif
+!
+      if (old_forcing_evector) then
+!!! kk, ee not defined!
+      else
+!
+!  Isotropize ee in the plane perp. to kk by
+!  (1) constructing two basis vectors for the plane perpendicular
+!      to kk, and
+!  (2) choosing a random direction in that plane (angle phi)
+!  Need to do this in order for the forcing to be isotropic.
+!
+        kk = (/kx, ky, kz/)
+        ee = (/ex, ey, ez/)
+        call cross(kk,ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(kk,e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        call random_number_wrapper(phi); phi = phi*2*pi
+        ee = cos(phi)*e1 + sin(phi)*e2
+        ex=ee(1); ey=ee(2); ez=ee(3)
+      endif
+!
+!  k.e
+!
+      call dot(kk,ee,kde)
+!
+!  k x e
+!
+      kex=ky*ez-kz*ey
+      key=kz*ex-kx*ez
+      kez=kx*ey-ky*ex
+!
+!  k x (k x e)
+!
+      kkex=ky*kez-kz*key
+      kkey=kz*kex-kx*kez
+      kkez=kx*key-ky*kex
+!
+!  ik x (k x e) + i*phase
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  This does already include the new sqrt(2) factor (missing in B01).
+!  So, in order to reproduce the 0.1 factor mentioned in B01
+!  we have to set force=0.07.
+!
+!  Furthermore, for |relhel| < 1, sqrt(2) should be replaced by
+!  sqrt(1.+relhel**2). This is done now (9-nov-02).
+!  This means that the previous value of force=0.07 (for relhel=0)
+!  should now be replaced by 0.05.
+!
+!  Note: kav is not to be scaled with k1_ff (forcing should remain
+!  unaffected when changing k1_ff).
+!
+      ffnorm = sqrt(1.+relhel**2) &
+              *k*sqrt(k2-kde**2)/sqrt(kav*cs0eff**3)*(k/kav)**slope_ff
+      if (ip<=9) then
+        print*,'forcing_coefs_hel: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
+        print*,'forcing_cofes_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      endif
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force/ffnorm*sqrt(dt)
+      fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
+      fy=exp(cmplx(0.,ky*k1_ff*y))
+!
+!  symmetry of forcing function about z direction
+!
+      select case (iforcing_zsym)
+        case(0); fz=exp(cmplx(0.,kz*k1_ff*z))
+        case(1); fz=cos(kz*k1_ff*z)
+        case(-1); fz=sin(kz*k1_ff*z)
+        case default; call stop_it('forcing_coefs_hel: incorrect iforcing_zsym')
+      endselect
+!
+!  possibly multiply forcing by z-profile
+!  (This stuff is now supposed to be done in initialize; keep for now)
+!
+!-    if (height_ff/=0.) then
+!-      if (lroot .and. (.not. lfirst_call)) print*,'forcing_hel: include z-profile'
+!-      tmpz=(z/height_ff)**2
+!-      fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
+!-    endif
+!
+! need to discuss with axel
+!
+!  prefactor; treat real and imaginary parts separately (coef1 and coef2),
+!  so they can be multiplied by different profiles below.
+!
+      coef1=k*(/kex,key,kez/)
+      coef2=relhel*(/kkex,kkey,kkez/)
+!
+!  possibly multiply forcing by sgn(z) and radial profile
+!
+      if (rcyl_ff/=0.) then
+!       if (lroot .and. (.not. lfirst_call)) &
+!         print*,'forcing_coefs_hel: applying sgn(z)*xi(r) profile'
+        !
+        ! only z-dependent part can be done here; radial stuff needs to go
+!       ! into the loop
+        !
+        fz = fz*profz_k
+      else
+        coef3=crosshel*k*(/kkex,kkey,kkez/)
+      endif
+!
+      if (ip<=5) then
+        print*,'forcing_coefs_hel: fx=',fx
+        print*,'forcing_coefs_hel: fy=',fy
+        print*,'forcing_coefs_hel: fz=',fz
+        !print*,'forcing_coefs_hel: coef=',coef1,coef2
+     endif
+!
+! An attempt to implement anisotropic forcing using direction
+! dependent forcing amplitude. Activated only if force_strength,
+! describing the anisotropic part of the forcing, is
+! nonzero. force_direction, which is a vector, defines the preferred
+! direction of forcing. The expression for the forcing amplitude used
+! at the moment is:
+!
+!  f(i)=f0*[1+epsilon(delta_ij*(k(i)*fd(j))/(|k||fd|))^2*fd(i)/|fd|]
+!
+! here f0 and fd are shorthand for force and forcing_direction,
+! respectively, and epsilon=force_strength/force.
+!
+      if (force_strength/=0.) then
+        call dot(force_direction,force_direction,fd2)
+        fd=sqrt(fd2)
+        fda = 1. + (force_strength/force) &
+              *(kk*force_direction/(k*fd))**2 * force_direction/fd 
+      else
+        fda = 1.
+      endif
+
+!
+    endsubroutine fcoefs_hel
+!***********************************************************************
     subroutine forcing_hel(f)
 !
 !  Add helical forcing function, using a set of precomputed wavevectors.
@@ -1559,6 +1890,7 @@ module Forcing
       real :: profyz
       real, dimension(3) :: profyz_hel_coef2
 !
+!  XXXX
       call forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
 !
 !  loop the two cases separately, so we don't check for r_ff during
