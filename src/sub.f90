@@ -7210,9 +7210,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       uu=f(l1:l2,m,n,iux:iuz)
 ! divu -> uij2
       call div_mn(uij,sij2,uu)
-! sij -> uij
+! sij
       call traceless_strain(uij,sij2,sij,uu,lshear_rateofstrain)
-! sij2
+! sij^2
       call multm2_sym_mn(sij,sij2)
 
     endsubroutine calc_sij2
