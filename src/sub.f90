@@ -7203,7 +7203,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       logical,                  optional, intent(IN) :: lshear_rateofstrain
 
       real, dimension(nx,3) :: uu
-      real, dimension(nx,3,3) :: uij
+      real, dimension(nx,3,3) :: uij, sij
 
 ! uij from f
       call gij(f,iuu,uij,1)
@@ -7211,9 +7211,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 ! divu -> uij2
       call div_mn(uij,sij2,uu)
 ! sij -> uij
-      call traceless_strain(uij,sij2,uij,uu,lshear_rateofstrain)
+      call traceless_strain(uij,sij2,sij,uu,lshear_rateofstrain)
 ! sij2
-      call multm2_sym_mn(uij,sij2)
+      call multm2_sym_mn(sij,sij2)
 
     endsubroutine calc_sij2
 !***********************************************************************
