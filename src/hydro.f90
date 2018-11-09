@@ -2364,7 +2364,8 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, tmp2
+      real, dimension (nx) :: tmp
+      real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, ij, jj, kk, jk
 !
       intent(in) :: lpenc_loc
@@ -2531,13 +2532,12 @@ module Hydro
 !
       if (lpenc_loc(i_grad5divu)) then
         do i=1,3
-          tmp=0.0
+          p%grad5divu(:,i) = 0.0
           do j=1,3
             ju=iuu+j-1
-            call der5i1j(f,ju,tmp2,i,j)
-            tmp=tmp+tmp2
+            call der5i1j(f,ju,tmp,i,j)
+            p%grad5divu(:,i) = p%grad5divu(:,i) + tmp
           enddo
-          p%grad5divu(:,i)=tmp
         enddo
       endif
 ! transpurho
@@ -2572,7 +2572,8 @@ module Hydro
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
-          call h_dot_grad(p%uu_advec,p%uij(:,j,:),p%uuadvec_guu(:,j))
+          tmp3 = p%uij(:,j,:)
+          call h_dot_grad(p%uu_advec,tmp3,p%uuadvec_guu(:,j))
         enddo
         if (lcylindrical_coords) then
           p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
