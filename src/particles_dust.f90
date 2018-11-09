@@ -4030,10 +4030,7 @@ module Particles
           endif
 !
 !  Loop over all particles in current pencil.
-!
-          open (98,file=trim(datadir)//'/dragforce.dat',position='append')
-          open (97,file=trim(datadir)//'/dragterms.dat',position='append')
-          
+!         
           do k = k1_imn(imn),k2_imn(imn)
 !
 !  Vapour particles acquire same speed as the gas.
@@ -4163,7 +4160,6 @@ module Particles
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
-              write(98,'(I2,2ES15.2)') k, dragforce(1:2)
 !
 ! If we are using the module particles_caustics, then we call for them here:
 !
@@ -4775,8 +4771,6 @@ module Particles
               endif
             endif
          enddo
-         close(98)
-         close(97)
          
 !
 !  Add drag force heating in pencils.
@@ -4856,14 +4850,10 @@ module Particles
 !
       if (lthermophoretic_forces) then
         if (npar_imn(imn) /= 0) then
-          open (99,file=trim(datadir)//'/thermforce.dat',position='append')
           do k = k1_imn(imn),k2_imn(imn)
             call calc_thermophoretic_force(fp,k,ineargrid(k,:),thermforce)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz)+thermforce
-            write(99,'(I2,6ES15.2)') &
-                 k, thermforce(1:2),dfp(k,ivpx:ivpz-1), fp(k,ivpx:ivpz-1)
          enddo
-         close(99)
         endif
       endif
 !
@@ -6316,7 +6306,6 @@ module Particles
 !  Relaxation time:
 !
       tausp1_par = 18.0*cdrag*nu/((rhopmat/interp_rho(k))*stocunn*dia**2)
-      write(97,'(I2,3ES15.3)') k, cdrag, interp_rho(k), stocunn
 !
     endsubroutine calc_draglaw_steadystate
 !***********************************************************************
