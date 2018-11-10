@@ -28,7 +28,7 @@ module Forcing
   include 'record_types.h'
   include 'forcing.h'
 !
-  real :: force=0.,force2=0., force1_scl=1., force2_scl=1.
+  real :: force=0.,force2=0., force_double=0., force1_scl=1., force2_scl=1.
   real :: relhel=1., height_ff=0., r_ff=0., r_ff_hel=0., rcyl_ff=0.
   real :: Bconst=1., Bslope=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
@@ -44,7 +44,7 @@ module Forcing
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
-  real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=1.,qdouble_profile=1.
   integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: kzlarge=1
   integer :: iforcing_zsym=0
@@ -61,7 +61,7 @@ module Forcing
   logical :: lforcing2_same=.false., lforcing2_curl=.false.
   logical :: lff_as_aux = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
-  logical :: old_forcing_evector=.false.
+  logical :: old_forcing_evector=.false., lforcing_coefs_hel_double=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
   character (len=labellen) :: iforce_tprofile='nothing'
@@ -116,7 +116,7 @@ module Forcing
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
-       iforce,force,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
+       iforce,force,force_double,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
        rcyl_ff,width_ff,nexp_ff,lff_as_aux,Bconst,Bslope, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
@@ -129,6 +129,7 @@ module Forcing
        lxxcorr_forcing, lxycorr_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
+       lforcing_coefs_hel_double, &
        iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
        force_direction, force_strength, lhelical_test, &
        lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
@@ -637,6 +638,12 @@ module Forcing
 !
       else
         call fatal_error('initialize_forcing','iforce_profile value does not exist')
+      endif
+!
+!  Turn on forcing intensity for force_double above z=0.
+!
+      if (lforcing_coefs_hel_double) then
+        qdouble_profile=.5*(1.+erfunc((z-r_ff)/width_ff))
       endif
 !
 !  at the first step, the sin and cos functions are calculated for all
@@ -1512,12 +1519,14 @@ module Forcing
 
     endsubroutine forcing_coefs_hel
 !***********************************************************************
-    subroutine forcing_coefs_hel_double(coef1,coef2,coef3,fx,fy,fz,fda)
+    subroutine forcing_coefs_hel2(force_fact,coef1,coef2,coef3,fx,fy,fz,fda)
 !
+!  Modified copy of forcing_coefs_hel
 !  Calculates position-independent and 1D coefficients for helical forcing.
 !
 !  4-oct-17/MR: outsourced from forcing_hel.
 !               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined - nees to be fixed
+!  10-nov-18/axel: adapted from forcing_coefs_hel to read also k_double.dat.
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1530,7 +1539,7 @@ module Forcing
       complex, dimension (mz),intent(out) :: fz
       real,    dimension (3), intent(out) :: fda
 !
-      real :: phase,ffnorm
+      real :: force_fact,phase,ffnorm
       real, save :: kav,kavb
       real, dimension (2) :: fran
       real, dimension(:), allocatable, save :: kkx,kky,kkz,kkxb,kkyb,kkzb
@@ -1544,28 +1553,14 @@ module Forcing
       real :: fd,fd2
       logical :: lk_dot_dat_exists
 !
+!  Read k.dat and k_double.dat once at first call.
+!  Use here the letter b to distinguish kkxb from kkx, etc.
+!
       if (lfirst_call) then
         if (lroot.and.ip<14) print*,'forcing_coefs_hel: opening k.dat'
-        inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
+        inquire(FILE="k_double.dat", EXIST=lk_dot_dat_exists)
         if (lk_dot_dat_exists) then
-          open(9,file='k.dat',status='old')
-          read(9,*) nk,kav
-          if (lroot.and.ip<14) print*,'forcing_coefs_hel: average k=',kav
-          allocate(kkx(nk),kky(nk),kkz(nk))
-          read(9,*) (kkx(ik),ik=1,nk)
-          read(9,*) (kky(ik),ik=1,nk)
-          read(9,*) (kkz(ik),ik=1,nk)
-          close(9)
-        else
-          call inevitably_fatal_error ('forcing_coefs_hel:', &
-              'you must give an input k.dat file')
-        endif
-!
-!  read second file
-!
-        inquire(FILE="kb.dat", EXIST=lk_dot_dat_exists)
-        if (lk_dot_dat_exists) then
-          open(9,file='kb.dat',status='old')
+          open(9,file='k_double.dat',status='old')
           read(9,*) nkb,kavb
           if (lroot.and.ip<14) print*,'forcing_coefs_hel: average kb=',kavb
           allocate(kkxb(nkb),kkyb(nkb),kkzb(nkb))
@@ -1575,11 +1570,12 @@ module Forcing
           close(9)
         else
           call inevitably_fatal_error ('forcing_coefs_hel:', &
-              'you must give an input kb.dat file')
+              'you must give an input k_double.dat file')
         endif
         lfirst_call=.false.
 !
 !  At the moment, cs0 is used for normalization.
+!  It is saved in param2.nml
 !
         if (cs0eff==impossible) then
           if (cs0==impossible) then
@@ -1592,10 +1588,18 @@ module Forcing
 !
       endif
 !
-      call fcoefs_hel(kkx,kky,kkz,nk,kav,coef1,coef2,coef3,fx,fy,fz,fda)
-    endsubroutine forcing_coefs_hel_double
+!  Synthesize the forcing vector in real space separately for
+!  upper (z>0) and lower (z<0) layers.
+!
+      call fcoefs_hel(force_fact,kkxb,kkyb,kkzb,nkb,kavb, &
+          coef1,coef2,coef3,fx,fy,fz,fda)
+!
+    endsubroutine forcing_coefs_hel2
 !***********************************************************************
-    subroutine fcoefs_hel(kkx,kky,kkz,nk,kav,coef1,coef2,coef3,fx,fy,fz,fda)
+    subroutine fcoefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,fx,fy,fz,fda)
+!
+!  This routine is can be called with any values of kkx,kky,kkz
+!  to produce coef1,coef2,coef3,fx,fy,fz, and fda.
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1608,10 +1612,10 @@ module Forcing
       complex, dimension (mz),intent(out) :: fz
       real,    dimension (3), intent(out) :: fda
 !
-      real :: phase,ffnorm
+      real :: force_fact,phase,ffnorm
       real :: kav
       real, dimension (2) :: fran
-      real, dimension(:) :: kkx,kky,kkz
+      real, dimension(nk) :: kkx,kky,kkz
       integer :: nk
       integer :: ik
       real :: kx0,kx,ky,kz,k2,k,pi_over_Lx
@@ -1760,7 +1764,8 @@ module Forcing
       ffnorm = sqrt(1.+relhel**2) &
               *k*sqrt(k2-kde**2)/sqrt(kav*cs0eff**3)*(k/kav)**slope_ff
       if (ip<=9) then
-        print*,'forcing_coefs_hel: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
+        print*,'forcing_coefs_hel: k,kde,kav=',k,kde,kav
+        print*,'forcing_coefs_hel: cs0eff,ffnorm=',cs0eff,ffnorm
         print*,'forcing_cofes_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       endif
 !
@@ -1768,7 +1773,7 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      fact=force/ffnorm*sqrt(dt)
+      fact=force_fact/ffnorm*sqrt(dt)
       fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
       fy=exp(cmplx(0.,ky*k1_ff*y))
 !
@@ -1839,7 +1844,6 @@ module Forcing
       else
         fda = 1.
       endif
-
 !
     endsubroutine fcoefs_hel
 !***********************************************************************
@@ -1880,18 +1884,28 @@ module Forcing
       real, dimension (nx) :: rho1,ruf,rho,force_ampl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: force_all
-      real, dimension (3) :: fda
-      complex, dimension (mx) :: fx
-      complex, dimension (my) :: fy
-      complex, dimension (mz) :: fz
-      real, dimension (3) :: coef1,coef2,coef3
+      real, dimension (3) :: fda, fda2
+      complex, dimension (mx) :: fx, fx2
+      complex, dimension (my) :: fy, fy2
+      complex, dimension (mz) :: fz, fz2
+      real, dimension (3) :: coef1,coef2,coef3,coef1b,coef2b,coef3b
       integer :: j,jf,j2f
-      complex, dimension (nx) :: fxyz
+      complex, dimension (nx) :: fxyz,fxyz2
       real :: profyz
-      real, dimension(3) :: profyz_hel_coef2
+      real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
 !
-!  XXXX
+!  Compute forcing coefficients.
+!
       call forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
+!
+!  Possibility of reading in data for second forcing function and
+!  computing the relevant coefficients (fx2,fy2,fz2,fda2) here.
+!  Unlike coef1-3, where we add the letter b, we add a 2 for the
+!  other coefficients for better readibility.
+!
+      if (lforcing_coefs_hel_double) then
+        call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
+      endif
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
@@ -1899,16 +1913,35 @@ module Forcing
 !
       irufm=0; iruxfxm=0; iruxfym=0; iruyfxm=0; iruyfym=0; iruzfzm=0
 !
-      if (rcyl_ff == 0) then       ! no radial profile
+!  Here standard case. The case rcyl_ff==0 is to be removed sometime.
+!
+      if (rcyl_ff == 0) then
         do n=n1,n2
           do m=m1,m2
-
+!
+!  Compute useful shorthands for primary forcing function.
+!
             profyz=profy_ampl(m)*profz_ampl(n)
             profyz_hel_coef2=profy_hel(m)*profz_hel(n)*coef2
-
+!
+!  Compute the combined complex forcing function fxyz.
+!  If lforcing_coefs_hel_double is set, we also add a
+!  contribution from fxyz2=fx2(l1:l2)*fy2(m)*fz2(n),
+!  which is weighted with factor qdouble_profile(n).
+!  qdouble_profile turns on fxyz2 in the upper parts.
+!
             fxyz=fx(l1:l2)*fy(m)*fz(n)
             force_ampl=profx_ampl*profyz
-
+!
+!  Do the same for secondary forcing function.
+!
+            if (lforcing_coefs_hel_double) then
+              profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*coef2b
+              fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
+            endif
+!
+!  Possibility of compute work done by forcing.
+!
             if (lwork_ff) &
               force_ampl=force_ampl*calc_force_ampl(f,fx,fy,fz,profyz*cmplx(coef1,profyz_hel_coef2))
 !
@@ -1926,13 +1959,21 @@ module Forcing
             do j=1,3
               if (lactive_dimension(j)) then
 !
-!  Primary forcing function.
+!  Primary forcing function: assemble here forcing_rhs(:,j).
 !  Add here possibility of periodic forcing proportional to cos(om*t).
 !  By default, omega_ff=0.
 !
                 forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
                     *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
-
+!
+!  Possibility of adding second forcing function.
+!
+                if (lforcing_coefs_hel_double) then
+                  forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
+                      +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_ff*t) &
+                      *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+                endif
+!
                 ! put force into auxiliary variable, if requested
                 if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = forcing_rhs(:,j)
 !
@@ -1951,6 +1992,7 @@ module Forcing
                 endif
 !
 !  Choice of different possibilities.
+!  Here is the decisive step where forcing is applied.
 !
                 if (ifff/=0) then
                   jf=j+ifff-1
@@ -1996,6 +2038,7 @@ module Forcing
 !
 !  Forcing with enhanced xy correlation.
 !  Can only come outside the previous j loop.
+!  This is apparently not yet applied to testfield or testflow forcing.
 !
             do j=1,3
               if (lactive_dimension(j)) then
