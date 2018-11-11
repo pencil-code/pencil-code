@@ -11,7 +11,6 @@ module HDF5_IO
   use HDF5
   use Messages, only: fatal_error
   use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
-  !use iso_fortran_env, only: int32
 !
   implicit none
 !
