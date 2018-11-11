@@ -11,6 +11,7 @@ module HDF5_IO
   use HDF5
   use Messages, only: fatal_error
   use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
+  use iso_fortran_env, only: int32
 !
   implicit none
 !
@@ -49,6 +50,12 @@ module HDF5_IO
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_start
   logical :: lcollective = .false., lwrite = .false.
+  ! File format version:
+  !   - 0.x are versions using the legacy layout (like io_dist and friends)
+  !   - 1.x is reserved for
+  character (len=*), parameter :: file_version = '0.1'
+  integer(kind=int32), parameter :: file_version_major = 0
+  integer(kind=int32), parameter :: file_version_minor = 1
 !
   type element
     character(len=labellen) :: label
@@ -210,14 +217,95 @@ module HDF5_IO
     subroutine create_group_hdf5(name)
 !
       character (len=*), intent(in) :: name
-!
+      integer(HID_T) :: file_version_attr_space, string_type, &
+          & version_string_attribute, version_string_attribute2, &
+          & version_major_attribute, version_minor_attribute
+      integer(HSIZE_T), dimension(1) :: dims = (/ 1 /)
+      integer(SIZE_T), parameter :: string_length = len(file_version)
+
+
       if (.not. (lcollective .or. lwrite)) return
       if (exists_in_hdf5 (trim (name))) return
 !
-      call h5gcreate_f (h5_file, trim (name), h5_group, h5_err)
-      if (h5_err /= 0) call fatal_error ('create_group_hdf5', 'create group "'//trim (name)//'"', .true.)
+      call h5gcreate_f(h5_file, trim(name), h5_group, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'create group "'//trim(name)//'"', .true.)
+
+      call h5screate_f(H5S_SCALAR_F, file_version_attr_space, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'create attr data space "'//trim(name)//'"', .true.)
+
+      call h5tcopy_f(H5T_C_S1, string_type, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'copy string type "'//trim(name)//'"', .true.)
+
+      call h5tset_size_f(string_type, string_length, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'set string size "'//trim(name)//'"', .true.)
+
+      call h5tset_strpad_f(string_type, H5T_STR_NULLPAD_F, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'set string padding "'//trim(name)//'"', .true.)
+
+      call h5acreate_f( &
+          & h5_group, 'file-format-version', string_type, &
+          & file_version_attr_space, version_string_attribute, &
+          & H5P_DEFAULT_F, H5P_DEFAULT_F, h5_err)
+      if (h5_err /= 0) call fatal_error(&
+          'create_group_hdf5', 'create version_string_attribute "'//trim(name)//'"', .true.)
+      ! For compatibility with PENCIL_HOME/doc/pc_hdf5, duplicate this as 'ver':
+      call h5acreate_f( &
+          & h5_group, 'ver', string_type, &
+          & file_version_attr_space, version_string_attribute2, &
+          & H5P_DEFAULT_F, H5P_DEFAULT_F, h5_err)
+      if (h5_err /= 0) call fatal_error(&
+          'create_group_hdf5', 'create version_string_attribute2 "'//trim(name)//'"', .true.)
+      CALL h5acreate_f( &
+          & h5_group, 'file-format-version-major', H5T_NATIVE_INTEGER, &
+          & file_version_attr_space, version_major_attribute, &
+          & H5P_DEFAULT_F, H5P_DEFAULT_F, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          'create_group_hdf5', 'create version_major_attribute "'//trim(name)//'"', .true.)
+      CALL h5acreate_f( &
+          & h5_group, 'file-format-version-minor', H5T_NATIVE_INTEGER, &
+          & file_version_attr_space, version_minor_attribute, &
+          & H5P_DEFAULT_F, H5P_DEFAULT_F, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'create version_minor_attribute "'//trim(name)//'"', .true.)
+
+      call h5awrite_f(version_string_attribute, string_type, file_version, dims, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'write version_string_attribute "'//trim(name)//'"', .true.)
+      call h5awrite_f(version_string_attribute2, string_type, file_version, dims, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'write version_string_attribute2 "'//trim(name)//'"', .true.)
+
+      call h5awrite_f(version_major_attribute, H5T_NATIVE_INTEGER, file_version_major, dims, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'write version_major_attribute "'//trim(name)//'"', .true.)
+
+      call h5awrite_f(version_minor_attribute, H5T_NATIVE_INTEGER, file_version_minor, dims, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'write version_minor_attribute "'//trim(name)//'"', .true.)
+
+      call h5sclose_f(file_version_attr_space, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'close data space "'//trim(name)//'"', .true.)
+
+      call h5tclose_f(string_type, h5_err)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'close string type "'//trim(name)//'"', .true.)
+
+      call h5aclose_f(version_string_attribute, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'close version_string_attribute "'//trim(name)//'"', .true.)
+      call h5aclose_f(version_string_attribute2, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'close version_string_attribute2 "'//trim(name)//'"', .true.)
+
+      call h5aclose_f(version_major_attribute, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'close version_major_attribute "'//trim(name)//'"', .true.)
+
+      call h5aclose_f(version_minor_attribute, h5_err)
+      if (h5_err /= 0) call fatal_error( &
+          & 'create_group_hdf5', 'close version_minor_attribute "'//trim(name)//'"', .true.)
+
       call h5gclose_f (h5_group, h5_err)
-      if (h5_err /= 0) call fatal_error ('create_group_hdf5', 'close group "'//trim (name)//'"', .true.)
+      if (h5_err /= 0) call fatal_error('create_group_hdf5', 'close group "'//trim(name)//'"', .true.)
 !
     endsubroutine create_group_hdf5
 !***********************************************************************
@@ -928,11 +1016,11 @@ module HDF5_IO
       if (nv <= 1) then
         call h5screate_f (H5S_SCALAR_F, h5_dspace, h5_err)
         if (h5_err /= 0) call fatal_error ('output_hdf5', 'create scalar data space "'//trim (name)//'"', .true.)
-        call h5sset_extent_simple_f (h5_dspace, 0, size(1), size(1), h5_err) 
+        call h5sset_extent_simple_f (h5_dspace, 0, size(1), size(1), h5_err)
       else
         call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
         if (h5_err /= 0) call fatal_error ('output_hdf5', 'create simple data space "'//trim (name)//'"', .true.)
-        call h5sset_extent_simple_f (h5_dspace, 1, size, size, h5_err) 
+        call h5sset_extent_simple_f (h5_dspace, 1, size, size, h5_err)
       endif
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'set data space extent "'//trim (name)//'"', .true.)
       if (exists_in_hdf5 (name)) then
