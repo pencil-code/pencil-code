@@ -1615,8 +1615,8 @@ module Forcing
       real :: force_fact,phase,ffnorm
       real :: kav
       real, dimension (2) :: fran
-      real, dimension(nk) :: kkx,kky,kkz
       integer :: nk
+      real, dimension(nk) :: kkx,kky,kkz
       integer :: ik
       real :: kx0,kx,ky,kz,k2,k,pi_over_Lx
       real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
