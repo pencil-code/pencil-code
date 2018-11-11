@@ -11,7 +11,7 @@ module HDF5_IO
   use HDF5
   use Messages, only: fatal_error
   use Mpicomm, only: lroot, mpi_precision, mpiscan_int, mpibcast_int
-  use iso_fortran_env, only: int32
+  !use iso_fortran_env, only: int32
 !
   implicit none
 !
@@ -56,8 +56,8 @@ module HDF5_IO
   !     $PENCIL_HOME/doc/pc_hdf5
   !   - 1.x is reserved for further versions of the doc/pc_hdf5 layout
   character (len=*), parameter :: file_version = '0.2'
-  integer(kind=int32), parameter :: file_version_major = 0
-  integer(kind=int32), parameter :: file_version_minor = 2
+  integer, parameter :: file_version_major = 0
+  integer, parameter :: file_version_minor = 2
 !
   type element
     character(len=labellen) :: label
