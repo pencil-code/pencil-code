@@ -223,10 +223,9 @@ module Chemistry
         ichemspec(k) = ichemspec_tmp+k-1
       enddo
 !
-!  Register viscosity and cp
+!  Register viscosity 
 !
       call farray_register_auxiliary('viscosity',iviscosity,communicated=.false.)
-      call farray_register_auxiliary('cp',icp,communicated=.false.)
 !
 !  Writing files for use with IDL
 !
@@ -235,6 +234,19 @@ module Chemistry
       aux_count = aux_count+1
       if (lroot) write (4,*) ',visocsity $'
       if (lroot) write (15,*) 'viscosity = fltarr(mx,my,mz)*one'
+
+!
+!  Register viscosity cp
+!
+      call farray_register_auxiliary('cp',icp,communicated=.false.)
+!
+!  Writing files for use with IDL
+!
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',cp $'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',cp'
+      aux_count = aux_count+1
+      if (lroot) write (4,*) ',cp $'
+      if (lroot) write (15,*) 'cp = fltarr(mx,my,mz)*one'
 !
 !  Read species to be used from chem.inp (if the file exists).
 !
