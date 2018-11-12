@@ -267,6 +267,7 @@ module Cdata
   logical :: lenergy=.false.
   logical :: ladv_der_as_aux=.false.
   logical :: lghostfold_usebspline = .false.
+  logical :: lcooling_ss_mz = .false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -325,6 +326,7 @@ module Cdata
   integer :: igu11=0,igu12=0,igu13=0
   integer :: igu21=0,igu22=0,igu23=0
   integer :: igu31=0,igu32=0,igu33=0
+  integer :: iogTTx=0, iogTTy=0, iogTTz=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
   integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0

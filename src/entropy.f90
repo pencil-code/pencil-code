@@ -112,7 +112,7 @@ module Energy
   logical :: lheatc_shock=.false., lheatc_shock2=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
-  logical :: lcooling_general=.false., lcooling_ss_mz=.false.
+  logical :: lcooling_general=.false.
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
@@ -183,7 +183,7 @@ module Energy
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
-      limpose_heat_ceiling, heat_ceiling
+      limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz
 !
 !  Run parameters.
 !
@@ -191,7 +191,7 @@ module Energy
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
-      lcooling_general, lcooling_ss_mz, gradS0_imposed, &
+      lcooling_general, gradS0_imposed, &
       ss_const, chi_t, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi_shock2, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
@@ -816,7 +816,11 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz) call input_profile('ss_mz','z',ss_mz,mz)
+      if (lcooling_ss_mz .and. lrun) then
+        if (.not. lentropy .and. .not. ltemperature) &
+            call fatal_error('cooling_ss_mz','ss cooling requires entropy or temperature')
+        call input_profile('ss_mz', 'z', ss_mz, mz, lhas_ghost=.true.)
+      endif
 !
 !  Initialize heat conduction.
 !

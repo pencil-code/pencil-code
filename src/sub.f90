@@ -5053,9 +5053,9 @@ nameloop: do
       character (len=*), intent(in) :: fname
 
       if (size(a) == mz) then
-        call output_profile(fname,z,a,'z',lhas_ghost=.true.)
+        call output_profile(fname, z, a, 'z', lsave_name=.true., lhas_ghost=.true.)
       else
-        call output_profile(fname,z(n1:n2),a,'z')
+        call output_profile(fname, z(n1:n2), a, 'z', lsave_name=.true.)
       endif
  
     endsubroutine write_zprof
@@ -5072,9 +5072,9 @@ nameloop: do
       character (len=*), intent(in) :: fname
 
       if (size(a) == mx) then
-        call output_profile(fname,x,a,'x',lhas_ghost=.true.)
+        call output_profile(fname, x, a, 'x', lsave_name=.true., lhas_ghost=.true.)
       else
-        call output_profile(fname,x(l1:l2),a,'x')
+        call output_profile(fname, x(l1:l2), a, 'x', lsave_name=.true.)
       endif
  
     endsubroutine write_xprof
@@ -7203,17 +7203,17 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       logical,                  optional, intent(IN) :: lshear_rateofstrain
 
       real, dimension(nx,3) :: uu
-      real, dimension(nx,3,3) :: uij
+      real, dimension(nx,3,3) :: uij, sij
 
 ! uij from f
       call gij(f,iuu,uij,1)
       uu=f(l1:l2,m,n,iux:iuz)
 ! divu -> uij2
       call div_mn(uij,sij2,uu)
-! sij -> uij
-      call traceless_strain(uij,sij2,uij,uu,lshear_rateofstrain)
-! sij2
-      call multm2_sym_mn(uij,sij2)
+! sij
+      call traceless_strain(uij,sij2,sij,uu,lshear_rateofstrain)
+! sij^2
+      call multm2_sym_mn(sij,sij2)
 
     endsubroutine calc_sij2
 !***********************************************************************

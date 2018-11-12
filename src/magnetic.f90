@@ -2964,8 +2964,8 @@ module Magnetic
       type (pencil_case),                 intent(out)  :: p
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
-      real, dimension (nx,3) :: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp
+      real, dimension (nx,3) :: bb_ext_pot, tmp
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
       real, dimension(3) :: B_ext
       real :: c,s
       integer :: i,j,ix
@@ -3096,9 +3096,9 @@ module Magnetic
       if (lpenc_loc(i_uuadvec_gaa)) then
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
-          ! the inertial terms. They will be added here. 
-          call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
-          p%uuadvec_gaa(:,j)=tmp
+          ! the inertial terms. They will be added here.
+          tmp = p%aij(:,j,:)
+          call h_dot_grad(p%uu_advec,tmp,p%uuadvec_gaa(:,j))
         enddo
         if (lcylindrical_coords) then
           p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)

@@ -1292,7 +1292,7 @@ module Io
       if (.not. lp2) np2 = np2 - ng
 !
       ! write profile
-      filename = trim(datadir)//'/'//'profile_'//type//'.h5'
+      filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
       lexists = parallel_file_exists (filename)
       call file_open_hdf5 (filename, truncate=(.not. lexists))
       call create_group_hdf5 (trim(name))
@@ -1319,7 +1319,6 @@ module Io
 !
       character (len=fnlen) :: filename
       integer :: np_global, np1, np2, ng, alloc_err
-      real, dimension(:), allocatable :: profile
 !
       ng = 0
       if (loptest (lhas_ghost)) ng = 3
@@ -1327,29 +1326,22 @@ module Io
       case ('x')
         np_global = (np - 2*ng) * nprocx + 2*ng
         np1 = 1 + ipx * (np - 2*ng)
-        np2 = (ipx + 1) * (np - 2*ng) + 2*ng
       case ('y')
         np_global = (np - 2*ng) * nprocy + 2*ng
         np1 = 1 + ipy * (np - 2*ng)
-        np2 = (ipy + 1) * (np - 2*ng) + 2*ng
       case ('z')
         np_global = (np - 2*ng) * nprocz + 2*ng
-        np1 = 1 + ipy * (np - 2*ng)
-        np2 = (ipy + 1) * (np - 2*ng) + 2*ng
+        np1 = 1 + ipz * (np - 2*ng)
       case default
         call fatal_error ('input_profile', 'unknown direction "'//type//'"')
       endselect
-      allocate (profile(np_global), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('input_profile', 'allocate memory for profile', .true.)
+      np2 = np1 + np - 1
 !
       ! read profile
-      filename = trim(datadir)//'/'//'profile_'//type//'.h5'
-      call file_open_hdf5 (filename, read_only=.true., global=.false.)
-      call input_hdf5 (trim(name)//'/data', profile, np_global, lhas_ghost)
+      filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
+      call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 (trim(name)//'/data', a, np, np_global, np1, np2)
       call file_close_hdf5
-!
-      call mpibcast_real (profile, np_global, comm=MPI_COMM_WORLD)
-      a = profile(np1:np2)
 !
 !  Should we check that coord == z for type == 'z' etc.?
 !

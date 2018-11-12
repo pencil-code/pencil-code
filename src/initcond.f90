@@ -2660,25 +2660,25 @@ module Initcond
 !
 !  occupy profile arrays
 !
-        if (lentropy) then
-          do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n)
-            ss_mz(n)=ss0(ipz*nz+n)
-          enddo
-          call write_zprof('ss_mz',ss_mz)
-        endif
-        if (ltemperature) then
-          do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n)
-            lnTT_mz(n)=lnTT0(ipz*nz+n)
-          enddo
-          call write_zprof('lnTT_mz',lnTT_mz)
-        endif
-        if (.not.lentropy.and..not.ltemperature) then
-          do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n)
-          enddo
-        endif
+      if (lentropy) then
+        do n=1,mz
+          lnrho_mz(n)=lnrho0(ipz*nz+n)
+          ss_mz(n)=ss0(ipz*nz+n)
+        enddo
+        if (lcooling_ss_mz) call write_zprof('ss_mz',ss_mz)
+      endif
+      if (ltemperature) then
+        do n=1,mz
+          lnrho_mz(n)=lnrho0(ipz*nz+n)
+          lnTT_mz(n)=lnTT0(ipz*nz+n)
+        enddo
+        if (lcooling_ss_mz) call write_zprof('lnTT_mz',lnTT_mz)
+      endif
+      if (.not.lentropy.and..not.ltemperature) then
+        do n=1,mz
+          lnrho_mz(n)=lnrho0(ipz*nz+n)
+        enddo
+      endif
 !
       close(19)
 !

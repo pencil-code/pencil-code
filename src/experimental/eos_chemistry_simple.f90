@@ -451,7 +451,6 @@ module EquationOfState
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx,3) :: glnDiff_full_add, glncp
       real, dimension(nx) :: D_th, R_mix
-      real, dimension(nx) :: del2TT, gradTgradT
 !
       intent(in) :: lpenc_loc
       intent(inout) :: p
@@ -497,7 +496,7 @@ module EquationOfState
          endif
 !
          if (minval(p%TT)==0.) then
-   !        call fatal_error('calc_pencils_eos','p%TT=0!')
+           call fatal_error('calc_pencils_eos','p%TT=0!')
          endif         
        endif
 !
@@ -523,11 +522,7 @@ module EquationOfState
       endif
 !
       if (lpenc_loc(i_del2lnTT)) then
-        if (ltemperature_nolog) then
-          call dot2(p%gTT,gradTgradT) 
-          call del2(f,iTT,del2TT)
-          p%del2lnTT = -p%TT1*p%TT1*gradTgradT+p%TT1*del2TT
-        else
+        if (.not. ltemperature_nolog) then
           call del2(f,ilnTT,p%del2lnTT)
         endif
       endif

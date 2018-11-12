@@ -30,6 +30,7 @@ module solid_cells_ogrid_cdata
 !  Filtering
   logical :: lfilter_solution=.false.
   logical :: lfilter_rhoonly=.false.
+  logical :: lfilter_TT=.false.
   real, dimension(:,:,:,:), allocatable ::  f_filterH_lowerx,f_filterH_upperx
   real, dimension(:,:,:,:), allocatable ::  f_filterH_lowery,f_filterH_uppery
 !  Free paramter in filter coefficients:
@@ -337,7 +338,6 @@ module solid_cells_ogrid_cdata
 
   ! Index for auxiliary gradient of temperature on ogrid, as
   ! well as additional variables for thermophoresis cases
-  integer :: iogTTx=0, iogTTy=0, iogTTz=0
   real :: init_rho_cyl = 1.0
   logical :: lstore_ogTT = .false.
   logical, pointer :: lthermophoretic_forces

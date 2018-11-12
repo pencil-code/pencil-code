@@ -475,7 +475,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 
       real, dimension(nx_ogrid,3) :: glnDiff_full_add, glncp
       real, dimension(nx_ogrid) :: D_th, R_mix
-      real, dimension(nx_ogrid) :: gradTgradT
 !
       integer :: i,k,j2,j3
 !
@@ -545,11 +544,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         endif
       endif
 !
-      if (lpencil_ogrid(i_og_del2lnTT)) then
+      if (lpencil_ogrid(i_og_del2lnTT) .or. lpencil_ogrid(i_og_del2TT)) then
         if (ltemperature_nolog) then
-          call dot2_mn_ogrid(p_ogrid%gTT,gradTgradT) 
           call del2_ogrid(f_og   ,iTT,p_ogrid%del2TT)
-          p_ogrid%del2lnTT = -p_ogrid%TT1*p_ogrid%TT1*gradTgradT+p_ogrid%TT1*p_ogrid%del2TT
         else
           call del2_ogrid(f_og,ilnTT,p_ogrid%del2lnTT)
         endif
@@ -731,7 +728,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       real, dimension(nx_ogrid,3) :: gchemspec, dk_D, sum_diff=0.
       real, dimension(nx_ogrid) :: ugchemspec, sum_DYDT, sum_dhhk=0.
       real, dimension(nx_ogrid) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac
-      type (pencil_case_ogrid) :: p_ogrid
       real, dimension(nx_ogrid) :: RHS_T_full!, diffus_chem
 
       integer :: j,k,i
@@ -822,7 +818,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  Sum over all species of diffusion terms
 !
               if (ldiffusion) then
-!                call grad_ogrid(f,ichemspec(k),gchemspec)
                 do i = 1,3
                   dk_D(:,i) = gchemspec(:,i)*p_ogrid%Diff_penc_add(:,k)
                 enddo
@@ -845,7 +840,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
         if (ltemperature_nolog) then
           RHS_T_full = p_ogrid%cv1*((sum_DYDt(:)-Rgas*p_ogrid%mu1*p_ogrid%divu)*p_ogrid%TT &
-                     + sum_dk_ghk*p_ogrid%cv1+sum_hhk_DYDt_reac)
+                     + sum_dk_ghk+sum_hhk_DYDt_reac)
         else
           RHS_T_full = (sum_DYDt(:)-Rgas*p_ogrid%mu1*p_ogrid%divu)*p_ogrid%cv1 &
             + sum_dk_ghk*p_ogrid%TT1(:)*p_ogrid%cv1+sum_hhk_DYDt_reac*p_ogrid%TT1(:)*p_ogrid%cv1
@@ -857,7 +852,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         endif
 !
 !     Heatcond called from denergy_dt so removed here
-!        if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
+!        if (lheatc_chemistry) call calc_heatcond_chemistry_ogrid(f_og,df,p_ogrid)
 !
       endif
 !
@@ -1538,22 +1533,18 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       type (pencil_case_ogrid) :: p_ogrid
       real, dimension(nx_ogrid) :: g2TT, g2TTlambda=0., tmp1
 !
-      if (ltemperature_nolog) then
-        call dot(p_ogrid%gTT,p_ogrid%glambda,g2TTlambda)
-      else
-        call dot(p_ogrid%glnTT,p_ogrid%glambda,g2TTlambda)
-        call dot(p_ogrid%glnTT,p_ogrid%glnTT,g2TT)
-      endif
-!
 !  Add heat conduction to RHS of temperature equation
 !
         if (ltemperature_nolog) then
-          tmp1 = (p_ogrid%lambda(:)*p_ogrid%del2lnTT+g2TTlambda)*p_ogrid%cv1/p_ogrid%rho(:)
+          call dot(p_ogrid%gTT,p_ogrid%glambda,g2TTlambda)
+          tmp1 = (p_ogrid%lambda(:)*p_ogrid%del2TT+g2TTlambda)*p_ogrid%cv1*p_ogrid%rho1(:)
           df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) = &
                  df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT) + tmp1
         else
+          call dot(p_ogrid%glnTT,p_ogrid%glambda,g2TTlambda)
+          call dot(p_ogrid%glnTT,p_ogrid%glnTT,g2TT)
           tmp1 = (p_ogrid%lambda(:)*(p_ogrid%del2lnTT+g2TT)&
-               + g2TTlambda)*p_ogrid%cv1/p_ogrid%rho(:)
+               + g2TTlambda)*p_ogrid%cv1*p_ogrid%rho1(:)
           df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT) = &
                  df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ilnTT) + tmp1
         endif

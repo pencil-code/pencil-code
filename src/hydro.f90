@@ -2364,7 +2364,8 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, tmp2
+      real, dimension (nx) :: tmp
+      real, dimension (nx,3) :: tmp3
       integer :: i, j, ju, ij, jj, kk, jk
 !
       intent(in) :: lpenc_loc
@@ -2473,12 +2474,9 @@ module Hydro
       if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
-        call der6(f,iux,tmp,1)
-        p%del6u_bulk(:,1)=tmp
-        call der6(f,iuy,tmp,2)
-        p%del6u_bulk(:,2)=tmp
-        call der6(f,iuz,tmp,3)
-        p%del6u_bulk(:,3)=tmp
+        call der6(f,iux,p%del6u_bulk(:,1),1)
+        call der6(f,iuy,p%del6u_bulk(:,2),2)
+        call der6(f,iuz,p%del6u_bulk(:,3),3)
       endif
 !
 ! del2u, graddivu
@@ -2531,13 +2529,12 @@ module Hydro
 !
       if (lpenc_loc(i_grad5divu)) then
         do i=1,3
-          tmp=0.0
+          p%grad5divu(:,i) = 0.0
           do j=1,3
             ju=iuu+j-1
-            call der5i1j(f,ju,tmp2,i,j)
-            tmp=tmp+tmp2
+            call der5i1j(f,ju,tmp,i,j)
+            p%grad5divu(:,i) = p%grad5divu(:,i) + tmp
           enddo
-          p%grad5divu(:,i)=tmp
         enddo
       endif
 ! transpurho
@@ -2572,7 +2569,8 @@ module Hydro
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
-          call h_dot_grad(p%uu_advec,p%uij(:,j,:),p%uuadvec_guu(:,j))
+          tmp3 = p%uij(:,j,:)
+          call h_dot_grad(p%uu_advec,tmp3,p%uuadvec_guu(:,j))
         enddo
         if (lcylindrical_coords) then
           p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)

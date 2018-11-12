@@ -36,12 +36,13 @@ module Particles_stalker
   logical :: lstalk_aps=.true.
   logical :: lstalk_sink_particles=.false.
   logical :: lstalk_relvel=.false.
+  logical :: lstalk_gTT=.false.
 !
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
       lstalk_bb, lstalk_ap, lstalk_npswarm, lstalk_rhopswarm, lstalk_potself, &
-      lstalk_aps, lstalk_sink_particles, lstalk_relvel
+      lstalk_aps, lstalk_sink_particles, lstalk_relvel,lstalk_gTT
 !
   namelist /particles_stalker_run_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, lstalk_sink_particles
@@ -81,6 +82,7 @@ module Particles_stalker
       if (iaa==0)        lstalk_bb=.false.
       if (ipotself==0)   lstalk_potself=.false.
       if (iuu==0 .or. ivpx==0) lstalk_relvel=.false.
+      if (iogTTx==0)     lstalk_gTT=.false.
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
@@ -103,6 +105,7 @@ module Particles_stalker
       if (lstalk_bb)        nvar_stalk=nvar_stalk+3
       if (lstalk_potself)   nvar_stalk=nvar_stalk+1
       if (lstalk_relvel)    nvar_stalk=nvar_stalk+1
+      if (lstalk_gTT)       nvar_stalk=nvar_stalk+3
 !
 !  Write information on which variables are stalked to file.
 !
@@ -124,6 +127,7 @@ module Particles_stalker
           if (lstalk_bb)        write(1,'(A)',advance='no') 'bx,by,bz,'
           if (lstalk_potself)   write(1,'(A)',advance='no') 'potself,'
           if (lstalk_relvel)    write(1,'(A)',advance='no') 'relvel,'
+          if (lstalk_gTT)       write(1,'(A)',advance='no') 'dTTdx,dTTdy,dTTdz,'
          close (1)
       endif
 !
@@ -165,6 +169,7 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duxdx, duxdy, duxdz
       real, dimension (npar_stalk) :: duydx, duydy, duydz
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
+      real, dimension (npar_stalk) :: gTTx, gTTy, gTTz
       real, dimension (npar_stalk) :: bx, by, bz, ap, npswarm, rhopswarm
       real, dimension (npar_stalk) :: potself, aps
       real, dimension (npar_stalk) :: relvel
@@ -267,6 +272,17 @@ module Particles_stalker
           call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iuy,uy)
           call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iuz,uz)
         endif
+!
+!  Temperature gradient
+!  Note that when iogTT is already the gradient of the temperature,
+!  calculated and stored for use in another module, so it is stalked
+!  like the local velocity
+!        
+        if (lstalk_gTT) then
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iogTTx,gTTx)
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iogTTy,gTTy)
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,iogTTz,gTTz)
+        endif        
 !
 !  Local gradient of gas velocity.
 !
@@ -399,6 +415,11 @@ module Particles_stalker
             endif
             if (lstalk_relvel) then
               ivalue=ivalue+1; values(ivalue,:)=relvel(1:npar_stalk_loc)
+            endif
+            if (lstalk_gTT) then
+              ivalue=ivalue+1; values(ivalue,:)=gTTx(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=gTTy(1:npar_stalk_loc)
+              ivalue=ivalue+1; values(ivalue,:)=gTTz(1:npar_stalk_loc)
             endif
             write(1) values
             deallocate(values)
