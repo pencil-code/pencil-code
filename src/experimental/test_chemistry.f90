@@ -37,7 +37,7 @@ module Chemistry
 !
   implicit none
 !
-  include 'chemistry.h'
+  include '../chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension(mx,my,mz) :: cp_full, cv_full
@@ -612,10 +612,6 @@ module Chemistry
           call prerun_1D_opp(f,prerun_directory)
         case ('FlameMaster')
           call FlameMaster_ini(f,file_name)
-       !************** test ************************ 
-        case ('flame_front_test')
-          call flame_front_test(f)
-       !************** test ************************ 
         case default
 !
 !  Catch unknown values

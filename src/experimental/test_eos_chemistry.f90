@@ -31,7 +31,7 @@ module EquationOfState
 !
   implicit none
 !
-  include 'eos.h'
+  include '../eos.h'
 !
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
