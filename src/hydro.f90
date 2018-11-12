@@ -791,7 +791,9 @@ module Hydro
           case ('rescale'); f(:,:,:,iux:iuz)=rescale_uu*f(:,:,:,iux:iuz)
           case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
           case ('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)
-          case ('no-uy'); f(l1:l2,m,n,iuy)=0.
+          case ('no-uy'); f(:,:,:,iuy)=0.
+          case ('flip-ux'); f(:,:,:,iux)=-f(:,:,:,iux)
+          case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
           endselect
         enddo
       endif
