@@ -1275,7 +1275,6 @@ module Chemistry
 !  Sum over all species of diffusion terms
 !
               if (ldiffusion) then
-                call grad(f,ichemspec(k),gchemspec)
                 do i = 1,3
                   dk_D(:,i) = gchemspec(:,i)*p%Diff_penc_add(:,k)
                 enddo
@@ -4119,12 +4118,12 @@ module Chemistry
       if (ltemperature_nolog) then
         call dot(p%gTT,p%glambda,g2TTlambda)
         call del2(f,iTT,del2TT)
-        tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
+        tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1*p%rho1(:)
         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
       else
         call dot(p%glnTT,p%glambda,g2TTlambda)
         call dot(p%glnTT,p%glnTT,g2TT)
-        tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
+        tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1*p%rho1(:)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
       endif
 !

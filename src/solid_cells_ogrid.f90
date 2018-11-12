@@ -661,7 +661,11 @@ module Solid_Cells
             f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
               +cylinder_temp*(1-wall_smoothing_temp)
             f_ogrid(i,j,:,irho) = f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,irho) &
-              *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
+              *f(l2,m2,n2,ilnTT)/f_ogrid(i,j,:,ilnTT)
+! EWA: I changed f_ogrid to f_cartesian here (see line above and below
+!      this comment) as it causes my simulations to crash
+!      *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
+!
 ! TODO: Set initial conditions for chemistry on the ogrid
             if (lchemistry) then  
               do k = 1,nchemspec
@@ -5175,7 +5179,6 @@ module Solid_Cells
       ! JONAS i did this change
       !
       ivar1=1; ivar2=min(mcom,size(f_og,4))
-      print*, 'mcom',mcom,'ivar2',ivar2
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
