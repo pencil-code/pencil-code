@@ -387,8 +387,8 @@ module Io
       character (len=*), dimension (mqarray), intent(in) :: labels
       real, dimension (mv,mparray), intent(in) :: fq
 !
-      integer :: pos
-      character (len=fnlen) :: filename
+      integer :: pos, last
+      character (len=fnlen) :: filename, label
 !
       if (.not. lroot) return
 !
@@ -398,10 +398,16 @@ module Io
       if (mv > 0) then
         call create_group_hdf5 ('points')
         do pos=1, nc
-          call output_hdf5 ('points/'//trim(labels(pos)), fq(:,pos), mv)
+          label = trim (labels(pos))
+          if (label(1:1) == 'i') then
+            label = trim (label(2:))
+            last = len (trim (label))
+            if (label(last:last) == 'q') label = trim (label(1:last-1))
+          endif
+          call output_hdf5 ('points/'//trim(label), fq(:,pos), mv)
         enddo
       endif
-      call output_hdf5 ('t', t)
+      call output_hdf5 ('time', t)
       call file_close_hdf5
 !
     endsubroutine output_pointmass
@@ -427,9 +433,6 @@ module Io
 !
 !  append to a slice file
 !
-!  12-nov-02/axel: coded
-!  26-jun-06/anders: moved to slices
-!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !  30-Oct-2018/PABourdin: coded
 !
       use File_io, only: parallel_file_exists
@@ -651,23 +654,29 @@ module Io
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(out) :: fq
 !
-      integer :: pos, mv_in
-      character (len=fnlen) :: filename
+      integer :: pos, mv_in, last
+      character (len=fnlen) :: filename, label
 !
       filename = trim (directory_snap)//'/'//trim(file)//'.h5'
       if (lroot) then
         call file_open_hdf5 (filename, read_only=.true., global=.false.)
         call input_hdf5 ('number', mv_in)
-        if (mv_in /= mv) call fatal_error("","")
-        if (mv_in /= 0) then
+        if (mv_in /= mv) call fatal_error ("input_pointmass", "Number of points seems incorrect.", .true.)
+        if (mv_in > 0) then
           do pos=1, nc
-            call input_hdf5 ('points/'//trim(labels(pos)), fq(:,pos), mv)
+            label = trim (labels(pos))
+            if (label(1:1) == 'i') then
+              label = trim (label(2:))
+              last = len (trim (label))
+              if (label(last:last) == 'q') label = trim (label(1:last-1))
+            endif
+            call input_hdf5 ('points/'//trim(label), fq(:,pos), mv)
           enddo
         endif
         call file_close_hdf5
       endif
 !
-      call mpibcast_real(fq,(/nqpar,mqarray/))
+      if (mv > 0) call mpibcast_real(fq,(/nqpar,mqarray/))
 !
     endsubroutine input_pointmass
 !***********************************************************************
