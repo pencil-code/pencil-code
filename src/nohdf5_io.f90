@@ -355,9 +355,23 @@ module HDF5_IO
 !
     endsubroutine particle_index_append
 !***********************************************************************
+    function index_get(ivar,particle)
+!
+! 13-Nov-2018/PABourdin: coded
+!
+      character (len=labellen) :: index_get
+      integer, intent(in) :: ivar
+      logical, optional, intent(in) :: particle
+!
+      call fatal_error ('index_get', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(ivar)
+      call keep_compiler_quiet(particle)
+!
+    endfunction index_get
+!***********************************************************************
     subroutine index_reset()
 !
-! 14-oct-18/PAB: coded
+! 14-Oct-2018/PABourdin: coded
 !
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
