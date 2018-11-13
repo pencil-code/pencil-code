@@ -1072,11 +1072,6 @@ module HDF5_IO
       if (.not. lcollective) call fatal_error ('output_hdf5', 'particle output requires a global file "'//trim (name)//'"', .true.)
 !
       ! write components of particle data array
-      if (name == 'fp') then
-        call create_group_hdf5 ('proc')
-        call output_hdf5_int_0D ('proc/distribution', nv)
-        call create_group_hdf5 ('part')
-      endif
       do pos=1, nc
         if (name == 'fp') then
           label = 'part/'//trim(index_get(pos, particle=.true.))
@@ -1343,15 +1338,6 @@ module HDF5_IO
       integer :: pos
 !
       if (.not. lcollective) call fatal_error ('output_hdf5', '4D array output requires global file "'//trim (name)//'"', .true.)
-!
-      if (name == 'f') then
-        ! write components of f-array
-        call create_group_hdf5 ('data')
-        do pos=1, nv
-          call output_hdf5_3D ('data/'//index_get(pos), data(:,:,:,pos))
-        enddo
-        return
-      endif
 !
       ! write other 4D array
       global_size(n_dims+1) = nv

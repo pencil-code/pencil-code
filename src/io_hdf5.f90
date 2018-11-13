@@ -202,6 +202,7 @@ module Io
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
+      integer :: pos
       logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
 !
@@ -219,7 +220,16 @@ module Io
 !
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
-      call output_hdf5 (dataset, a, nv)
+      if (dataset == 'f') then
+        call create_group_hdf5 ('data')
+        ! write components of f-array
+        do pos=1, nv
+          call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+        enddo
+      else
+        ! write other type of data array
+        call output_hdf5 (dataset, a, nv)
+      endif
       call file_close_hdf5
 !
       ! write additional settings
@@ -270,8 +280,11 @@ module Io
 !
       ! open global HDF5 file and write particle data
       call file_open_hdf5 (filename, truncate=ltrunc)
+      call create_group_hdf5 ('part')
       call output_hdf5 (dataset, ap, mv, mparray, nv)
       call output_hdf5 ('part/ID', ipar(1:nv), nv)
+      call create_group_hdf5 ('proc')
+      call output_hdf5 ('proc/distribution', nv)
       call file_close_hdf5
 !
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
