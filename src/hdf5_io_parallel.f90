@@ -256,7 +256,7 @@ module HDF5_IO
 !
       integer(HSIZE_T), dimension(1) :: size
 !
-      if (lcollective) call fatal_error ('output_hdf5', 'local output requires local file', .true.)
+      if (lcollective) call fatal_error ('input_hdf5', 'local output requires local file', .true.)
       if (.not. lwrite) return
 !
       size = (/ nv /)
@@ -1516,7 +1516,7 @@ module HDF5_IO
 !
       if (.not. loptest (particle)) then
         ! ignore variables that are not written
-        if ((ivar < 1) .or. (ivar > mvar+maux)) return
+        if ((ivar < 1) .or. (ivar > mfarray)) return
       endif
 !
       ! ignore non-index variables
