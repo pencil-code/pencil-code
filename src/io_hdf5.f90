@@ -350,8 +350,9 @@ module Io
       else
         call output_hdf5 ('settings/precision', 'D')
       endif
-      !  0: experimental
-      !  1: first public release
+      ! versions represent only non-compatible file formats
+      ! 0 : experimental
+      ! 1 : first public release
       call output_hdf5 ('settings/version', 0)
       if (present (time)) call output_hdf5 ('time', time)
       deallocate (gx, gy, gz)
