@@ -355,6 +355,7 @@ module Io
       ! 1 : first public release
       call output_hdf5 ('settings/version', 0)
       if (present (time)) call output_hdf5 ('time', time)
+!
       deallocate (gx, gy, gz)
 !
     endsubroutine output_settings
