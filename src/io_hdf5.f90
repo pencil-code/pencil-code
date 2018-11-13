@@ -220,15 +220,14 @@ module Io
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
       call output_hdf5 (dataset, a, nv)
+      call file_close_hdf5
 !
-      ! write additional data:
-      if (lwrite_add) then
-        call file_close_hdf5
-        call file_open_hdf5 (filename, global=.false., truncate=.false.)
-        call output_settings (t)
-        call file_close_hdf5
-        call file_open_hdf5 (filename, truncate=.false.)
-      endif
+      ! write additional settings
+      call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      call output_settings (t, time_only=(.not. lwrite_add))
+      call file_close_hdf5
+!
+      call file_open_hdf5 (filename, truncate=.false.)
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -277,7 +276,7 @@ module Io
 !
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
       ! write additional data:
-      if (ltrunc .and. (trim (dataset) == 'fp')) call output_settings (t)
+      call output_settings (t, time_only=(.not. (ltrunc .and. (trim (dataset) == 'fp'))))
       ! write processor boundaries
       call output_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
       call output_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
@@ -286,18 +285,23 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
-    subroutine output_settings(time)
+    subroutine output_settings(time, time_only)
 !
 !  Write additional settings and grid.
 !
 !  13-Nov-2018/PABourdin: moved from other functions
 !
+      use General, only: loptest
       use Mpicomm, only: collect_grid, mpi_precision
 !
       real, optional, intent(in) :: time
+      logical, optional, intent(in) :: time_only
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
+!
+      if (present (time)) call output_hdf5 ('time', time)
+      if (loptest (time_only)) return
 !
       if (lroot) then
         allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
@@ -354,7 +358,6 @@ module Io
       ! 0 : experimental
       ! 1 : first public release
       call output_hdf5 ('settings/version', 0)
-      if (present (time)) call output_hdf5 ('time', time)
 !
       deallocate (gx, gy, gz)
 !
