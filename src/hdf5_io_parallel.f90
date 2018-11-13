@@ -506,7 +506,7 @@ module HDF5_IO
           label = trim(name)
           if (nc >= 2) label = trim(label)//'_'//trim(itoa(pos))
         endif
-        call input_hdf5_1D ('part/'//trim(index_get(pos, particle=.true.)), data(1:nv,pos), nv)
+        call input_hdf5_1D (label, data(1:nv,pos), nv)
       enddo
 !
     endsubroutine input_hdf5_part_2D
