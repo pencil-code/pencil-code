@@ -645,14 +645,6 @@ module HDF5_IO
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
       integer :: pos
 !
-      if (name == 'f') then
-        ! write components of f-array
-        do pos=1, nv
-          call input_hdf5_3D ('data/'//index_get(pos), data(:,:,:,pos))
-        enddo
-        return
-      endif
-!
       ! read other 4D array
       global_size(n_dims+1) = nv
       local_size(n_dims+1) = nv

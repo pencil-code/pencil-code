@@ -528,7 +528,7 @@ module Io
 !
       character (len=fnlen) :: filename, dataset
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: alloc_err
+      integer :: pos, alloc_err
       logical :: lread_add
 !
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
@@ -540,7 +540,15 @@ module Io
 !
       ! open existing HDF5 file and read data
       call file_open_hdf5 (filename, read_only=.true.)
-      call input_hdf5 (dataset, a, nv)
+      if (dataset == 'f') then
+        ! read components of f-array
+        do pos=1, nv
+          call input_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+        enddo
+      else
+        ! read other type of data array
+        call input_hdf5 (dataset, a, nv)
+      endif
       call file_close_hdf5
 !
       ! read additional data
