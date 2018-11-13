@@ -391,6 +391,9 @@ module Io
         else
           call output_hdf5 ('dim/precision', 'D')
         endif
+	!  0: experimental
+	!  1: first public release
+        call output_hdf5 ('dim/version', 0)
         call file_close_hdf5
         deallocate (gx, gy, gz)
       endif
@@ -1139,6 +1142,9 @@ module Io
       else
         call output_hdf5 ('dim/precision', 'D')
       endif
+	!  0: experimental
+	!  1: first public release
+        call output_hdf5 ('dim/version', 0)
       call file_close_hdf5
       deallocate (gx, gy, gz)
 !
