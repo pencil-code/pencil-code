@@ -630,6 +630,7 @@ module Io
 !
       ! open global HDF5 file and read particle data
       call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 ('proc/distribution', nv)
       call input_hdf5 (dataset, ap, mv, mparray, nv)
       call input_hdf5 ('part/ID', ipar(1:nv), nv)
       call file_close_hdf5
