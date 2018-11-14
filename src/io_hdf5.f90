@@ -1249,12 +1249,13 @@ module Io
       if (.not. lp2) np2 = np2 - ng
 !
       ! write profile
-      filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
+      filename = trim(directory_snap)//'/'//'profile.h5'
       lexists = parallel_file_exists (filename)
       call file_open_hdf5 (filename, truncate=(.not. lexists))
-      call create_group_hdf5 (trim(name))
-      call output_hdf5 (trim(name)//'/data', a, np, np_global, ip, np1, np2, ng, lwrite)
-      call output_hdf5 (trim(name)//'/position', coord, np, np_global, ip, np1, np2, ng, lwrite)
+      call create_group_hdf5 (type)
+      call create_group_hdf5 (type//'/'//trim(name))
+      call output_hdf5 (type//'/'//trim(name)//'/data', a, np, np_global, ip, np1, np2, ng, lwrite)
+      call output_hdf5 (type//'/'//trim(name)//'/position', coord, np, np_global, ip, np1, np2, ng, lwrite)
       call file_close_hdf5
 !
     endsubroutine output_profile
@@ -1295,9 +1296,9 @@ module Io
       np2 = np1 + np - 1
 !
       ! read profile
-      filename = trim(directory_snap)//'/'//'profile_'//type//'.h5'
+      filename = trim(directory_snap)//'/'//'profile.h5'
       call file_open_hdf5 (filename, read_only=.true.)
-      call input_hdf5 (trim(name)//'/data', a, np, np_global, np1, np2)
+      call input_hdf5 (type//'/'//trim(name)//'/data', a, np, np_global, np1, np2)
       call file_close_hdf5
 !
 !  Should we check that coord == z for type == 'z' etc.?
