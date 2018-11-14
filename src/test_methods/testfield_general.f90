@@ -474,7 +474,7 @@ module Testfield_general
       real, dimension(nx,3,3):: aijtest
 
       call gij(f,iaxt,aijtest,1)
-      call curl_mn(aijtest,bbtest,f(l1:l2,m,n,iaxt:iaxt+2))
+      call curl_mn(aijtest,bbtest,f(:,m,n,iaxt:iaxt+2))
       call cross_mn(p%uu,bbtest,uxb)
 
     endsubroutine calc_uxb

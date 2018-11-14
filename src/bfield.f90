@@ -582,7 +582,7 @@ module Magnetic
 !
       curle: if (lpenc_loc(i_curle)) then
         call gij(f, iee, eij, 1)
-        call curl_mn(eij, p%curle, f(l1:l2,m,n,ieex:ieez))
+        call curl_mn(eij, p%curle, f(:,m,n,ieex:ieez))
       endif curle
 !
       if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))

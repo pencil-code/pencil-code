@@ -781,7 +781,7 @@ module Shock
           bb = f(l1:l2,m,n,ibx:ibz)
         else bfield
           call gij(f, iaa, aij, 1)
-          call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+          call curl_mn(aij, bb, f(:,m,n,iax:iaz))
         endif bfield
         call get_bext(B_ext)
         b2 = sum((bb + spread(B_ext,1,nx))**2, dim=2)

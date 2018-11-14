@@ -2875,7 +2875,7 @@ module Magnetic
           m = mm(imn)
           n = nn(imn)
           call gij(f, iaa, aij, 1)
-          call curl_mn(aij, bb, A=f(l1:l2,m,n,iax:iaz))
+          call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
 !
 !  Add imposed field, if any
 !

@@ -1691,14 +1691,25 @@ module Sub
       use General, only: loptest
 !
       real, dimension (nx,3,3), intent (in) :: aij
-      real, dimension (nx,3), intent (in), optional :: a
+      real, dimension (:,:), intent (in), optional :: a
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (out) :: b
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,a1,a2
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
       b(:,3)=aij(:,2,1)-aij(:,1,2)
+!
+      if (present(a)) then
+        a1 = 1
+        a2 = size(a,1)
+        if (((a2 /= nx) .and. (a2 /= mx)) .or. (size(a,2) /= 3)) &
+            call fatal_error('curl_mn','array "a" has wrong size, must be (nx,3) or (mx,3)')
+        if (a2 == mx) then
+          a1 = l1
+          a2 = l2
+        endif
+      endif
 !
 !  Adjustments for spherical coordinate system.
 !
@@ -1707,9 +1718,9 @@ module Sub
           if (.not. present(a)) then
             call fatal_error('curl_mn','Need a for spherical curl')
           endif
-          b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
-          b(:,2)=b(:,2)-a(:,3)*r1_mn
-          b(:,3)=b(:,3)+a(:,2)*r1_mn
+          b(:,1)=b(:,1)+a(a1:a2,3)*r1_mn*cotth(m)
+          b(:,2)=b(:,2)-a(a1:a2,3)*r1_mn
+          b(:,3)=b(:,3)+a(a1:a2,2)*r1_mn
         endif
       endif
 !
@@ -1718,7 +1729,7 @@ module Sub
 !  We do this here currently up to second order, and only for curl_mn.
 !
       if (lcylindrical_coords.and.present(a)) then
-        if (.not.loptest(lcovariant_derivative)) b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
+        if (.not.loptest(lcovariant_derivative)) b(:,3)=b(:,3)+a(a1:a2,2)*rcyl_mn1
         if (rcyl_mn(1)==0.) b(i1,3)=(360.*b(i2,3)-450.*b(i3,3)+400.*b(i4,3) &
                                     -225.*b(i5,3)+72.*b(i6,3)-10.*b(i7,3))/147.
       endif
