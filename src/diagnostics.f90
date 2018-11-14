@@ -1117,7 +1117,7 @@ module Diagnostics
           else bin
             read(UNIT,*) tavg
             read(UNIT,*,iostat=ios) avg
-if (ios/=0) print*, 'ios, i=', ios, i
+!if (ios/=0) print*, 'ios, i=', ios, i
           endif bin
         enddo forward
         endfile (UNIT)
