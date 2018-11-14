@@ -419,12 +419,6 @@ program run
 !
   call get_nseed(nseed)
 !
-!  Read global variables (if any).
-!
-  if (mglobal/=0) &
-      call input_globals('global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-!
 !  Set initial time to zero if requested.
 !
   if (lini_t_eq_zero) t=0.0
@@ -478,6 +472,11 @@ program run
     if (it1d<it1) call stop_it_if_any(lroot,'run: it1d smaller than it1')
   endif
 !
+!  Read global variables (if any).
+!
+  if (mglobal/=0) call input_globals('global.dat', &
+      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+!
 !  Initialize ionization array.
 !
   if (leos_ionization) call ioninit(f)
@@ -510,8 +509,7 @@ program run
   call choose_pencils
   call write_pencil_info
 !
-  if (mglobal/=0)  &
-      call output_globals('global.dat', &
+  if (mglobal/=0) call output_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Update ghost zones, so rprint works corrected for at the first
