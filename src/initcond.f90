@@ -2595,11 +2595,12 @@ module Initcond
 !
 !  Select the right region for the processor afterwards.
 !
-      select case (n)
+!--   select case (n)
 !
 !  Without ghost zones.
 !
-      case (nzgrid+1)
+!--   case (nzgrid+1)
+      if (n==(nzgrid+1)) then
         if (lentropy) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
@@ -2627,7 +2628,8 @@ module Initcond
 !
 !  With ghost zones.
 !
-      case (mzgrid+1)
+!--   case (mzgrid+1)
+      elseif (n==(mzgrid+1)) then
         if (lentropy) then
           do n=1,mz
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
@@ -2646,7 +2648,8 @@ module Initcond
           enddo
         endif
 !
-      case default
+!--   case default
+      else
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
                 'for this run is allowed to contain either',nzgrid, &
@@ -2656,7 +2659,8 @@ module Initcond
         endif
         call fatal_error('','')
 !
-      endselect
+!--   endselect
+      endif
 !
 !  occupy profile arrays
 !
@@ -2749,11 +2753,12 @@ module Initcond
 !
 !  select the right region for the processor afterwards
 !
-      select case (n)
+!--   select case (n)
   !
   !  without ghost zones
   !
-      case (nxgrid+1)
+!--   case (nxgrid+1)
+      if (n==nxgrid+1) then
         if (lentropy) then
           do n=l1,l2
             f(n,:,:,ilnrho)=lnrho0(ipx*nx+(n-nghost))
@@ -2769,7 +2774,8 @@ module Initcond
   !
   !  with ghost zones
   !
-      case (mxgrid+1)
+!--   case (mxgrid+1)
+      elseif (n==mxgrid+1) then
         if (lentropy) then
           do n=1,mx
             f(n,:,:,ilnrho)=lnrho0(ipx*nx+n)
@@ -2783,7 +2789,8 @@ module Initcond
           enddo
         endif
 !
-      case default
+!--   case default
+      else
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
                 'for this run is allowed to contain either',nxgrid, &
@@ -2793,7 +2800,8 @@ module Initcond
         endif
         call fatal_error('','')
 !
-      endselect
+!--   endselect
+      endif
 !
       close(19)
 !

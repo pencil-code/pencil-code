@@ -5682,16 +5682,29 @@ nameloop: do
 !
 !  Check if this array has size nx or mx.
 !
-      select case (size(rrmn))
-      case (mx)
+!     select case (size(rrmn))
+!     case (mx)
+!       xc=x
+!     case (nx)
+!       xc=x(l1:l2)
+!     case default
+!       print*,'get_radial_distance: '//&
+!            'the array has dimension=',size(rrmn),' is that correct?'
+!       call fatal_error('get_radial_distance','')
+!     endselect
+!
+!AB: the construct above doesn't work if there are no ghostzones,
+!AB: i.e., if mx=nx. User therefore if statement.
+!
+      if (size(rrmn)==mx) then
         xc=x
-      case (nx)
+      elseif (size(rrmn)==nx) then
         xc=x(l1:l2)
-      case default
+      else
         print*,'get_radial_distance: '//&
              'the array has dimension=',size(rrmn),' is that correct?'
         call fatal_error('get_radial_distance','')
-      endselect
+      endif
 !
 !  Calculate the coordinate-free distance relative to the position (e1,e2,e3).
 !
