@@ -152,18 +152,6 @@ module DensityMethods
 
     endsubroutine getrho_2dyz 
 !***********************************************************************
-    subroutine getdlnrho_z(f,in,dlnrho)
-
-      integer,                       intent(in) :: in
-      real, dimension(mx,my,-in:in), intent(in) :: f
-      real, dimension(mx,my),        intent(out):: dlnrho
-
-      dlnrho = 0.
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(in)
-!
-    endsubroutine getdlnrho_z
-!***********************************************************************
     subroutine getdlnrho_x(f,il,ix,rho,dlnrho)
 
       integer,                       intent(in) :: il,ix
@@ -180,9 +168,9 @@ module DensityMethods
 !***********************************************************************
     subroutine getdlnrho_y(f,rm,im,dlnrho)
 
-      integer,                       intent(in) :: rm,im
+      integer,                   intent(in) :: rm,im
       real, dimension(mx,my,mz), intent(in) :: f
-      real, dimension(mx,mz),        intent(out):: dlnrho
+      real, dimension(mx,mz),    intent(out):: dlnrho
 
       dlnrho = 0.
       call keep_compiler_quiet(f)
@@ -190,6 +178,18 @@ module DensityMethods
       call keep_compiler_quiet(im)
 
     endsubroutine getdlnrho_y
+!***********************************************************************
+    subroutine getdlnrho_z(f,in,dlnrho)
+
+      integer,                       intent(in) :: in
+      real, dimension(mx,my,-in:in), intent(in) :: f
+      real, dimension(mx,my),        intent(out):: dlnrho
+
+      dlnrho = 0.
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(in)
+!
+    endsubroutine getdlnrho_z
 !***********************************************************************
    subroutine putrho(f,rho)
 
