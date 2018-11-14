@@ -327,7 +327,7 @@ module Density
 !
 !  Prevent this module when background stratification is on.
 !
-      if (lstratz) call fatal_error('initialize_density', 'lstratz = .true.; use density_stratified instead. ')
+      if (lstratz) call fatal_error('initialize_density', 'lstratz = .true.; use density_stratified instead')
 !
 !  Check the switches.
 !
