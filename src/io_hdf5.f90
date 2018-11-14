@@ -242,7 +242,7 @@ module Io
 !
       ! write additional settings
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
-      call output_settings (t, time_only=(.not. lwrite_add))
+      call output_settings (real (t), time_only=(.not. lwrite_add))
       call file_close_hdf5
 !
       call file_open_hdf5 (filename, truncate=.false.)
@@ -297,7 +297,7 @@ module Io
 !
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
       ! write additional data:
-      call output_settings (t, time_only=(.not. (ltrunc .and. (trim (dataset) == 'fp'))))
+      call output_settings (real (t), time_only=(.not. (ltrunc .and. (trim (dataset) == 'fp'))))
       ! write processor boundaries
       call output_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
       call output_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
@@ -415,7 +415,7 @@ module Io
           call output_hdf5 ('points/'//trim(label), fq(:,pos), mv)
         enddo
       endif
-      call output_hdf5 ('time', t)
+      call output_hdf5 ('time', real (t))
       call file_close_hdf5
 !
     endsubroutine output_pointmass
@@ -534,6 +534,7 @@ module Io
       integer, optional, intent(in) :: mode
       character (len=*), optional :: label
 !
+      real :: time
       character (len=fnlen) :: filename, dataset
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: pos, alloc_err
@@ -576,7 +577,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         call file_open_hdf5 (filename, global=.false., read_only=.true.)
-        call input_hdf5 ('time', t)
+        call input_hdf5 ('time', time)
         call input_hdf5 ('grid/x', gx, mxgrid)
         call input_hdf5 ('grid/y', gy, mygrid)
         call input_hdf5 ('grid/z', gz, mzgrid)
@@ -598,7 +599,8 @@ module Io
         call file_close_hdf5
         deallocate (gx, gy, gz)
 !
-        call mpibcast_real (t, comm=MPI_COMM_WORLD)
+        call mpibcast_real (time, comm=MPI_COMM_WORLD)
+        t = time
         call mpibcast_real (dx, comm=MPI_COMM_WORLD)
         call mpibcast_real (dy, comm=MPI_COMM_WORLD)
         call mpibcast_real (dz, comm=MPI_COMM_WORLD)
@@ -1142,7 +1144,6 @@ module Io
       call file_close_hdf5
       deallocate (gx, gy, gz)
 !
-      call mpibcast_real (t,comm=MPI_COMM_WORLD)
       call mpibcast_real (dx,comm=MPI_COMM_WORLD)
       call mpibcast_real (dy,comm=MPI_COMM_WORLD)
       call mpibcast_real (dz,comm=MPI_COMM_WORLD)
