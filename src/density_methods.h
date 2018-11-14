@@ -1,12 +1,6 @@
   private
 !
-  public :: initialize_density_methods, getrho, getrho1, getlnrho, getdlnrho, getrho_s, getdlnrho_y
+  public :: initialize_density_methods, getrho, getrho1, getlnrho, getrho_s
+  public :: getdlnrho_x, getdlnrho_y, getdlnrho_z
   public :: putrho, putlnrho
-!
-  interface getdlnrho
-    module procedure getdlnrho_x
-!    module procedure getdlnrho_y
-    module procedure getdlnrho_z
-  endinterface
-
   public :: getderlnrho_z
