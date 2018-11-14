@@ -224,7 +224,15 @@ module Io
         call create_group_hdf5 ('data')
         ! write components of f-array
         do pos=1, nv
+          if (index_get(pos) == '') cycle
           call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+        enddo
+      elseif (dataset == 'globals') then
+        call create_group_hdf5 ('data')
+        ! write components of f-array
+        do pos=1, nv
+          if (index_get(mvar_io + pos) == '') cycle
+          call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
         enddo
       else
         ! write other type of data array
@@ -543,7 +551,14 @@ module Io
       if (dataset == 'f') then
         ! read components of f-array
         do pos=1, nv
+          if (index_get(pos) == '') cycle
           call input_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+        enddo
+      elseif (dataset == 'globals') then
+        ! read components of globals array
+        do pos=1, nv
+          if (index_get(mvar_io + pos) == '') cycle
+          call input_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
         enddo
       else
         ! read other type of data array
