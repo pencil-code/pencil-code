@@ -178,14 +178,15 @@ module DensityMethods
 
     endsubroutine getdlnrho_x
 !***********************************************************************
-    subroutine getdlnrho_y(f,im,dlnrho)
+    subroutine getdlnrho_y(f,rm,im,dlnrho)
 
-      integer,                       intent(in) :: im
-      real, dimension(mx,-im:im,mz), intent(in) :: f
+      integer,                       intent(in) :: rm,im
+      real, dimension(mx,my,mz), intent(in) :: f
       real, dimension(mx,mz),        intent(out):: dlnrho
 
       dlnrho = 0.
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rm)
       call keep_compiler_quiet(im)
 
     endsubroutine getdlnrho_y
