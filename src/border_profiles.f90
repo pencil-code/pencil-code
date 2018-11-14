@@ -53,6 +53,7 @@ module BorderProfiles
 !                  because r_int and r_ext are not set until after all
 !                  calls to initialize are done in Register.
 !
+      use IO, only: output_profile
       use SharedVariables, only: get_shared_variable
       use Messages, only: fatal_error
 !
@@ -60,7 +61,7 @@ module BorderProfiles
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
       real :: border_width, lborder, uborder
-      integer :: l,ierr
+      integer :: l, ierr
       real, pointer :: gsum
 !
 !  x-direction
@@ -131,23 +132,32 @@ module BorderProfiles
 !
 !  Write border profiles to file.
 !
-      open(1,file=trim(directory_dist)//'/border_prof_x.dat')
-        do l=1,mx
-          write(1,'(2f15.6)') x(l), border_prof_x(l)
-        enddo
-      close(1)
+      if (lmonolithic_io) then
+        if (lrun) then
+          call output_profile('border', x, border_prof_x, 'x', lhas_ghost=.true.) ! , loverwrite=.true.)
+          call output_profile('border', y, border_prof_y, 'y', lhas_ghost=.true.) ! , loverwrite=.true.)
+          call output_profile('border', z, border_prof_z, 'z', lhas_ghost=.true.) ! , loverwrite=.true.)
+        endif
+      else
+        open(1,file=trim(directory_dist)//'/border_prof_x.dat')
+          do l=1,mx
+            write(1,'(2f15.6)') x(l), border_prof_x(l)
+          enddo
+        close(1)
 !
-      open(1,file=trim(directory_dist)//'/border_prof_y.dat')
-        do m=1,my
-          write(1,'(2f15.6)') y(m), border_prof_y(m)
-        enddo
-      close(1)
+        open(1,file=trim(directory_dist)//'/border_prof_y.dat')
+          do m=1,my
+            write(1,'(2f15.6)') y(m), border_prof_y(m)
+          enddo
+        close(1)
 !
-      open(1,file=trim(directory_dist)//'/border_prof_z.dat')
-        do n=1,mz
-          write(1,'(2f15.6)') z(n), border_prof_z(n)
-        enddo
-      close(1)
+        open(1,file=trim(directory_dist)//'/border_prof_z.dat')
+          do n=1,mz
+            write(1,'(2f15.6)') z(n), border_prof_z(n)
+          enddo
+        close(1)
+      endif
+!
 !
 !  Switch border quenching on if any border frac is non-zero
 !
@@ -195,7 +205,7 @@ module BorderProfiles
 !  25-aug-09/anders: coded
 !  06-mar-11/wlad  : added IC functionality
 !
-      use IO, only: input_globals
+      use IO, only: input_snap, input_snap_finalize
 !
       character (len=labellen) :: border_var
       logical :: lread=.true.
@@ -208,7 +218,8 @@ module BorderProfiles
 !
 !  Read the data into an initial condition array f_init that will be saved
 !
-        call input_globals('VAR0',f_init(:,:,:,1:mvar),mvar)
+        call input_snap ('VAR0', f_init(:,:,:,1:mvar), mvar, mode=0)
+        call input_snap_finalize
         lread=.false.
 !
       endif
