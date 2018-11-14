@@ -3974,7 +3974,7 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
-          call getdlnrho_y(f(:,m1-i:m1+i,:,ilnrho),i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f(:,:,:,ilnrho),m1,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -3984,7 +3984,7 @@ module EquationOfState
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
-          call getdlnrho_y(f(:,m2-i:m2+i,:,ilnrho),i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f(:,:,:,ilnrho),m2,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) - (cp-cv)*dlnrho
         enddo
 !

@@ -346,17 +346,17 @@ module DensityMethods
 !
     endsubroutine getderlnrho_z
 !***********************************************************************
-    subroutine getdlnrho_y(f,im,dlnrho)
+    subroutine getdlnrho_y(f,rm,im,dlnrho)
 
-      integer,                       intent(in) :: im
-      real, dimension(mx,-im:im,mz), intent(in) :: f
-      real, dimension(mx,mz),        intent(out):: dlnrho
+      integer,                   intent(in) :: rm,im
+      real, dimension(mx,my,mz), intent(in) :: f
+      real, dimension(mx,mz),    intent(out):: dlnrho
 
-      dlnrho = f(:,im,:)-f(:,-im,:)
+      dlnrho = f(:,rm+im,:)-f(:,rm-im,:)
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,0,:) &
+          dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,rm,:) &
                            +spread(reference_state(:,iref_rho),2,mz))   !!!
         else
           dlnrho = dlnrho/f(:,0,:)
