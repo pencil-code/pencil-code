@@ -2,8 +2,11 @@
 #
 # Read the time_series.dat and return a TimeSeries object of 1D numpy
 # arrrays
+# For supernova data change file_name to 'sn_series.dat' (Fred Gent)
+#
 #
 # Author: S. Candelaresi (iomsn1@gmail.com).
+#         
 """
 Contains the classes and methods to read the time series file.
 """
