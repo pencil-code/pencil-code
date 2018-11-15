@@ -68,7 +68,7 @@ if (! $?_sourceme) then		# called for the fist time?
     endif
 
     # Set HDF5 path
-    if (! $?HDF5_HOME) setenv HDF5_HOME `which h5fc | sed -e 's/\/bin\/h5fc$//'`
+    if (! $?HDF5_HOME) setenv HDF5_HOME `which h5fc 2>/dev/null | sed -e 's/\/bin\/h5fc$//'`
 
     #  Set PYTHON path
     if ($?PYTHONPATH) then
