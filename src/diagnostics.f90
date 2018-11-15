@@ -1270,9 +1270,9 @@ module Diagnostics
           open (1, file=trim(directory_dist)//'/zaverages.dat', form='unformatted', position='append')
           write(1) t2davgfirst
           if (lcaproot) then
-            write(1) fnamexy_cap(1:nnamexy,:,:)       ! from cap root (Yang)
+            write(1) (fnamexy_cap(i,:,:),i=1,nnamexy)       ! from cap root (Yang)
           else
-            write(1) fnamexy(1:nnamexy,:,:)           ! from z beam root (Yin)
+            write(1) (fnamexy(i,:,:),i=1,nnamexy)           ! from z beam root (Yin)
           endif
           close(1)
         endif
