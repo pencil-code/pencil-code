@@ -8,7 +8,7 @@
   dsnap=60.   ! = 60 sec
   dtmin =1e-10
 !
-  bcz = 's:a' ,'s:a' ,'div:a','fg:s','fg:s','pfe','nil','nil','s','s','a'
+  bcz = 's:a' ,'s:a' ,'div:a','fg:s','fg:s','pfe','nil','nil','a','a','a'
   fbcz_bot= 0.,    0., 0., 0., 0., 0.25
 !
   lpencil_check=F
