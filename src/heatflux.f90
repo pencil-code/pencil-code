@@ -53,13 +53,14 @@ module Heatflux
   integer :: idiag_dtq=0        ! DIAG_DOC: heatflux time step
   integer :: idiag_dtq2=0       ! DIAG_DOC: heatflux time step due to tau
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
+  integer :: idiag_tauqmax=0    ! DIAG_DOC: $\max(|\tau_{\rm Spitzer}|)$
   integer :: idiag_qxmin=0      ! DIAG_DOC: $\min(|q_x|)$
   integer :: idiag_qymin=0      ! DIAG_DOC: $\min(|q_y|)$
   integer :: idiag_qzmin=0      ! DIAG_DOC: $\min(|q_z|)$
   integer :: idiag_qxmax=0      ! DIAG_DOC: $\max(|q_x|)$
   integer :: idiag_qymax=0      ! DIAG_DOC: $\max(|q_y|)$
   integer :: idiag_qzmax=0      ! DIAG_DOC: $\max(|q_z|)$
-  integer :: idiag_qrms=0       ! DIAG_DOC: rms of heat flux vector
+  integer :: idiag_qrms=0       ! DIAG_DOC: $\sqrt(|\qv|^2)$
   integer :: idiag_qsatmin=0    ! DIAG_DOC: minimum of qsat/qabs
   integer :: idiag_qsatrms=0    ! DIAG_DOC: rms of qsat/abs
   integer :: ivid_divq
@@ -367,6 +368,7 @@ contains
       idiag_dtspitzer=0
       idiag_dtq=0
       idiag_dtq2=0
+      idiag_tauqmax=0
       idiag_qsatmin=0
       idiag_qsatrms=0
       ivid_divq=0
@@ -378,6 +380,7 @@ contains
       call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
       call parse_name(iname,cname(iname),cform(iname),'dtq',idiag_dtq)
       call parse_name(iname,cname(iname),cform(iname),'dtq2',idiag_dtq2)
+      call parse_name(iname,cname(iname),cform(iname),'tauqmax',idiag_tauqmax)
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       call parse_name(iname,cname(iname),cform(iname),'qsatmin',idiag_qsatmin)
@@ -473,7 +476,8 @@ contains
     real, dimension(nx) :: rhs,cosgT_b, Kspitzer, K_clight
     real, dimension(nx,3) :: K1,unit_glnTT
     real, dimension(nx,3) :: spitzer_vec
-    real, dimension(nx) :: tmp, tmp2, diffspitz, tau_inv_va
+    real, dimension(nx) :: tmp, diffspitz, tau_inv_va
+    real, dimension(nx) :: c_spitzer, c_spitzer0
     real :: uplim
     integer :: i
 !
@@ -642,25 +646,41 @@ contains
 !
     if (lfirst.and.ldt) then
       if (ltau_spitzer_va) then
-        tmp2 = sqrt(diffspitz*tau_inv_va)
 !
-!       The resulting advection time step should not be larger
-!       than the propogation speed (tmp2). We know maxadvec will
-!       include also the alfven speed Va and tmp2 is set to be sqrt(2) va,
-!       we can estimate (1-sqrt(2)/2.) approx 0.3 to correct for that.
+!       Define propagation speed c_spitzer
+!       c_spitzer0 is upper limit for c_spitzer in the same way as
+!       tau_inv_spitzer is the upper limit for tau_inv_va
 !
-        maxadvec = maxadvec + 0.3*tmp2/dxmin_pencil
+        c_spitzer = sqrt(diffspitz*tau_inv_va)
+        c_spitzer0 = sqrt(diffspitz*tau_inv_spitzer)
+!
+!       The advection time step should include c_spitzer, however, 
+!       we have choosen c_spitzer to be sqrt(2) times Alfven speed (va),
+!       so we can take this into account by multiplying c_spitzer 
+!       by (1-sqrt(2)/2.). To be on the save side we use 0.36 .
+!       If tau_inv_va gets so low that it reaches tau_inv_spitzer,
+!       c_spitzer becomes larger than sqrt(2)*va. For this cases we need
+!       to add the "full" value of c_spitzer to maxadvec.
+!       For incomperating all we use:
+!
+        maxadvec = maxadvec + 0.36*c_spitzer/dxmin_pencil + 0.64*c_spitzer0/dxmin_pencil
+!
+!       In case tau_inv_va > tau_inv_spitzer is c_spitzer > c_spitzer0 and we get:
+!       maxadvec = maxadvec + 0.36*c_spitzer/dxmin_pencil
+!       In case tau_inv_va = tau_inv_spitzer is c_spitzer = c_spitzer0 and we get:
+!       maxadvec = maxadvec + c_spitzer/dxmin_pencil
+!
       else
         call unit_vector(p%glnTT,unit_glnTT)
         call dot(unit_glnTT,p%bunit,cosgT_b)
         diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
                    gamma*p%cp1*abs(cosgT_b)
-        tmp2 = sqrt(diffspitz*tau_inv_spitzer)
-        maxadvec = maxadvec + tmp2/dxmin_pencil
+        c_spitzer = sqrt(diffspitz*tau_inv_spitzer)
+        maxadvec = maxadvec + c_spitzer/dxmin_pencil
       endif
 !
       if (ldiagnos.and.idiag_dtq/=0) then
-        call max_mn_name(tmp2/dxmin_pencil/cdt,idiag_dtq,l_dt=.true.)
+        call max_mn_name(c_spitzer/dxmin_pencil/cdt,idiag_dtq,l_dt=.true.)
       endif
 !
 !     put into dtspitzer, how the time_step would be
@@ -681,6 +701,9 @@ contains
       if (ldiagnos.and.idiag_dtq2/=0) then
         if (ltau_spitzer_va) then
           call max_mn_name(tau_inv_va/cdts,idiag_dtq2,l_dt=.true.)
+          if (idiag_tauqmax/=0) then
+            call max_mn_name(1./tau_inv_va,idiag_tauqmax)
+          endif
         else
           call max_name(tau_inv_spitzer/cdts,idiag_dtq2,l_dt=.true.)
         endif
