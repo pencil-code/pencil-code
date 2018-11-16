@@ -3647,8 +3647,7 @@ module Sub
         lfirstcall=.false.
       endif
 !
-      if (    (t_sp       >= tout)             .or. &
-          (abs(t_sp-tout) <  deltat_threshold)) then
+      if ((t_sp >= tout) .or. (abs(t_sp-tout) <  deltat_threshold)) then
         tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
