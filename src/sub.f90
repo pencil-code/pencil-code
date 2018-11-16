@@ -3657,7 +3657,7 @@ module Sub
 !  the code craches. If the disk is full, however, we need to reset the values
 !  manually.
 !
-        writenext: if (lroot .and. lwrite) then
+        if (lroot .and. lwrite) then
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'
@@ -3666,7 +3666,7 @@ module Sub
           write(lun,*) 'are only read once in the beginning. You may adapt'
           write(lun,*) 'them by hand (eg after a crash).'
           close(lun)
-        endif writenext
+        endif
       else
         lout=.false.
       endif
