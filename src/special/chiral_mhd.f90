@@ -44,7 +44,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED muS; mu5; gmuS(3); gmu5(3); del2mu5
-! PENCILS PROVIDED ugmu5
+! PENCILS PROVIDED ugmu5; ugmuS
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -102,13 +102,15 @@ module Special
    real, dimension (nx) :: diffus_bb_1, diffus_special
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
-   logical :: ldiffus_mu5_1_old=.false., lmuS=.false., lCVE=.false.
+   logical :: ldiffus_mu5_1_old=.false., lmuS=.false.
+   logical :: lmu5adv=.true., lmuSadv=.true.
+   logical :: lCVE=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
       initspecial, mu5_const, &
-      lmuS, lCVE, muS_const, coef_muS, &
+      lmuS, lCVE, lmu5adv, lmuSadv, muS_const, coef_muS, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5
@@ -137,9 +139,9 @@ module Special
   integer :: idiag_dt_mu5_3=0  ! DIAG_DOC: $\delta x^2/D_5$   
   integer :: idiag_dt_bb_1=0   ! DIAG_DOC: $\delta x /(\eta \mathrm{max}(\mu_5))$ 
   integer :: idiag_dt_chiral=0 ! DIAG_DOC: total time-step contribution from chiral MHD
-  integer :: idiag_mu5bxm=0      ! DIAG_DOC: $\left<\mu_5B_x\right>$
-  integer :: idiag_mu5b2m=0      ! DIAG_DOC: $\left<\mu_5B^2\right>$
-  integer :: idiag_jxm = 0      ! DIAG_DOC: $\langle J_x\rangle$
+  integer :: idiag_mu5bxm=0    ! DIAG_DOC: $\left<\mu_5B_x\right>$
+  integer :: idiag_mu5b2m=0    ! DIAG_DOC: $\left<\mu_5B^2\right>$
+  integer :: idiag_jxm = 0     ! DIAG_DOC: $\langle J_x\rangle$
 !
   contains
 !***********************************************************************
@@ -268,6 +270,7 @@ module Special
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_ugmu5)=.true.
+      lpenc_requested(i_ugmuS)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
 !      lpenc_requested(i_jjij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
@@ -314,6 +317,7 @@ module Special
       if (lmuS) then
         if (lpencil(i_muS)) p%muS=f(l1:l2,m,n,imuS)
         if (lpencil(i_gmuS)) call grad(f,imuS,p%gmuS)
+        if (lpencil(i_ugmuS)) call dot(p%uu,p%gmuS,p%ugmuS)
       endif
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
@@ -364,7 +368,10 @@ module Special
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
-        +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5  
+        +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 
+      if (lmu5adv) then
+       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
+      endif
       if (ldiffus_mu5_1_old) then
         diffus_mu5_1 = lambda5*eta*p%b2*sqrt(dxyz_2)/p%mu5
       else
@@ -381,6 +388,9 @@ module Special
         call dot(p%bb,p%gmuS,bdotgmuS)
         df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) &
           -coef_muS*bdotgmu5
+        if (lmuSadv) then
+          df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) - p%ugmuS
+        endif
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
           -coef_mu5*bdotgmuS  
         if (lCVE) then   
@@ -592,27 +602,29 @@ module Special
       use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: fact, meanmu5_tmp
+      real :: fact, meanmu5_tmp, nw1
       intent(inout) :: f
 !
 !  compute meanmu5
 !
       meanmu5=0.
-      do n=n1,n2
-      do m=m1,m2
+      do n=n1,n2; do m=m1,m2
         meanmu5=meanmu5+sum(f(l1:l2,m,n,imu5))
-      enddo
-      enddo
+!        print*, "sum(f(l1:l2,m,n,imu5))", sum(f(l1:l2,m,n,imu5))
+      enddo; enddo
 !
 !  communicate and divide by all mesh meshpoints
 !
-!JEN
-   !  if (nprocxy>1) then
+     if (nprocxy>1) then
    !    call mpiallreduce_sum(meanmu5,meanmu5_tmp,(/nx,ny,nz/))
-   !  endif
-   !  fact=1./ncpus
-!JEN.
-      meanmu5=fact*meanmu5_tmp
+       call mpiallreduce_sum(meanmu5,meanmu5_tmp)
+     endif
+!     fact=1./ncpus
+!
+! number of grid points
+      nw1=1./(nxgrid*nygrid*nzgrid)
+!
+      meanmu5=nw1*meanmu5_tmp
 !      flucmu5=p%mu5-meanmu5
 !
     endsubroutine special_after_boundary
@@ -847,21 +859,19 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_,llast)
+    subroutine special_after_timestep(f,df,dt_)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
 !
 !  27-nov-08/wlad: coded
 !
-      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(dt_)
-      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
