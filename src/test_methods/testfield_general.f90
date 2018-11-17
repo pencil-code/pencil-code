@@ -345,7 +345,7 @@ module Testfield_general
 !
             do j=iaxtest,iaxtest+2
               do nl=n1,n2
-                if (rescale_aatest==0.) then
+                if (rescale_aatest(jtest)==0.) then
                   f(l1:l2,m1:m2,nl,j)=0.
                 else
                   f(l1:l2,m1:m2,nl,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,nl,j)
