@@ -340,9 +340,16 @@ module Testfield_general
 !
             iaxtest=iaatest+3*(jtest-1)
 !
+!  If rescale_aatest=0, we really want to reset to zero,
+!  rather than rescale a NaN, for example, to another NaN.
+!
             do j=iaxtest,iaxtest+2
               do nl=n1,n2
-                f(l1:l2,m1:m2,nl,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,nl,j)
+                if (rescale_aatest==0.) then
+                  f(l1:l2,m1:m2,nl,j)=0.
+                else
+                  f(l1:l2,m1:m2,nl,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,nl,j)
+                endif
               enddo
             enddo
 !
