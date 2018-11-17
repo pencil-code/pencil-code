@@ -45,6 +45,9 @@ module Chemistry
   real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
   real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
 !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
+
+real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
+
 ! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
@@ -1181,9 +1184,9 @@ module Chemistry
       if (lroot) then
         print*, '          init                      final'
         if (lH2 .and. .not. lCH4) print*, 'H2 :', init_H2, 0.
-        if (lCH4) print*, 'CH4 :', init_CH4, 0.
-        if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
-        if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
+        if (lCH4) print*, 'CH4 :',  init_CH4, 0.
+        if (lO2) print*, 'O2 :',    init_O2, final_massfrac_O2
+        if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
       endif
 !
@@ -2307,6 +2310,9 @@ module Chemistry
                         *cp_R_spec/species_constants(k,imass)*Rgas
                     cv_full(:,j2,j3) = cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
                         *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
+
+cp_spec_glo(:,j2,j3,ichemspec(k))=cp_R_spec/species_constants(k,imass)*Rgas
+
                   endif
                 enddo
               enddo
@@ -4141,6 +4147,11 @@ module Chemistry
             lnPr = log10(Pr)
             tmpF = ((lnPr+ccc)/(nnn-ddd*(lnPr+ccc)))**2
             tmpF = 1./(1.+tmpF)
+!print*,'*************'
+!print*,lnPr
+!print*,'============='
+!print*,tmpf
+!print*,'*************'
             FF = tmpF*log10(Fcent)
             FF = FF*l10
             kf = kf+FF
@@ -4213,6 +4224,7 @@ module Chemistry
           print*,'get_reaction_rate: writing react.out file'
       lwrite_first = .false.
 !
+!stop
     endsubroutine get_reaction_rate
 !***********************************************************************
     subroutine roux(f,p,vreact_p,vreact_m)
@@ -4687,31 +4699,35 @@ module Chemistry
 ! The rotational and vibrational contributions are zero for the single
 ! atom molecules but not for the linear or non-linear molecules
 !
-            if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
-              tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
-                  /species_viscosity(:,j2,j3,k)
-              AA = 2.5-tmp_val
-              T_st = tran_data(k,2)/298.
-              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-                  *(T_st)+pi_1_5*(T_st)**1.5
-              ZZ = tran_data(k,6)*FF
-              T_st = tran_data(k,2)/TT_full(:,j2,j3)
-              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-                  *(T_st)+pi_1_5*(T_st)**1.5
-              ZZ = ZZ/FF
-              BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
-              f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
-              f_rot = tmp_val*(1+2./pi*AA/BB)
-              f_vib = tmp_val
-            else
-              f_tran = 2.5
-              f_rot = 0.0
-              f_vib = 0.0
-            endif
-            species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
-                /(species_constants(k,imass)/unit_mass)*Rgas* &
-                (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
-                +f_vib*Cv_vib_R)
+           ! if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
+           !   tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
+           !       /species_viscosity(:,j2,j3,k)
+           !   AA = 2.5-tmp_val
+           !   T_st = tran_data(k,2)/298.
+           !   FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
+           !       *(T_st)+pi_1_5*(T_st)**1.5
+           !   ZZ = tran_data(k,6)*FF
+           !   T_st = tran_data(k,2)/TT_full(:,j2,j3)
+           !   FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
+           !       *(T_st)+pi_1_5*(T_st)**1.5
+           !   ZZ = ZZ/FF
+           !   BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
+           !   f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
+           !   f_rot = tmp_val*(1+2./pi*AA/BB)
+           !   f_vib = tmp_val
+           ! else
+           !   f_tran = 2.5
+           !   f_rot = 0.0
+           !   f_vib = 0.0
+           ! endif
+           ! species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
+           !     /(species_constants(k,imass)/unit_mass)*Rgas* &
+           !     (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
+           !     +f_vib*Cv_vib_R)
+
+            species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k))*&
+            &( cp_spec_glo(:,j2,j3,ichemspec(k)) + 1.25*Rgas/species_constants(k,imass) )
+
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
