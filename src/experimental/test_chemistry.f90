@@ -4674,56 +4674,56 @@ cp_spec_glo(:,j2,j3,ichemspec(k))=cp_R_spec/species_constants(k,imass)*Rgas
           tmp_sum = 0.
           tmp_sum2 = 0.
           do k = 1,nchemspec
-!
-! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
-!
-            if (tran_data(k,1) == 0.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 0.
-              Cv_vib_R = 0.
-            elseif (tran_data(k,1) == 1.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 1.
-              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-2.5
-            elseif (tran_data(k,1) == 2.) then
-              Cv_tran_R = 1.5
-              Cv_rot_R = 1.5
-              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-3.
-            else
-              Cv_tran_R = 0
-              Cv_rot_R = 0
-              Cv_vib_R = 0
-              call fatal_error('calc_therm_diffus_coef','No such tran_data!')
-            endif
-!
-! The rotational and vibrational contributions are zero for the single
-! atom molecules but not for the linear or non-linear molecules
-!
-           ! if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
-           !   tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
-           !       /species_viscosity(:,j2,j3,k)
-           !   AA = 2.5-tmp_val
-           !   T_st = tran_data(k,2)/298.
-           !   FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-           !       *(T_st)+pi_1_5*(T_st)**1.5
-           !   ZZ = tran_data(k,6)*FF
-           !   T_st = tran_data(k,2)/TT_full(:,j2,j3)
-           !   FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
-           !       *(T_st)+pi_1_5*(T_st)**1.5
-           !   ZZ = ZZ/FF
-           !   BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
-           !   f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
-           !   f_rot = tmp_val*(1+2./pi*AA/BB)
-           !   f_vib = tmp_val
-           ! else
-           !   f_tran = 2.5
-           !   f_rot = 0.0
-           !   f_vib = 0.0
-           ! endif
-           ! species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
-           !     /(species_constants(k,imass)/unit_mass)*Rgas* &
-           !     (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
-           !     +f_vib*Cv_vib_R)
+!!
+!! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
+!!
+!            if (tran_data(k,1) == 0.) then
+!              Cv_tran_R = 1.5
+!              Cv_rot_R = 0.
+!              Cv_vib_R = 0.
+!            elseif (tran_data(k,1) == 1.) then
+!              Cv_tran_R = 1.5
+!              Cv_rot_R = 1.
+!              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-2.5
+!            elseif (tran_data(k,1) == 2.) then
+!              Cv_tran_R = 1.5
+!              Cv_rot_R = 1.5
+!              Cv_vib_R = cv_R_spec_full(:,j2,j3,k)-3.
+!            else
+!              Cv_tran_R = 0
+!              Cv_rot_R = 0
+!              Cv_vib_R = 0
+!              call fatal_error('calc_therm_diffus_coef','No such tran_data!')
+!            endif
+!!
+!! The rotational and vibrational contributions are zero for the single
+!! atom molecules but not for the linear or non-linear molecules
+!!
+!            if (tran_data(k,1) > 0. .and. (.not. lfix_Sc)) then
+!              tmp_val = Bin_Diff_coef(:,j2,j3,k,k)*rho_full(:,j2,j3) &
+!                  /species_viscosity(:,j2,j3,k)
+!              AA = 2.5-tmp_val
+!              T_st = tran_data(k,2)/298.
+!              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
+!                  *(T_st)+pi_1_5*(T_st)**1.5
+!              ZZ = tran_data(k,6)*FF
+!              T_st = tran_data(k,2)/TT_full(:,j2,j3)
+!              FF = 1.+pi_1_5/2.*sqrt(T_st)+(pi_2/4.+2.) &
+!                  *(T_st)+pi_1_5*(T_st)**1.5
+!              ZZ = ZZ/FF
+!              BB = ZZ+2./pi*(5./3.*Cv_rot_R+tmp_val)
+!              f_tran = 2.5*(1.- 2./pi*Cv_rot_R/Cv_tran_R*AA/BB)
+!              f_rot = tmp_val*(1+2./pi*AA/BB)
+!              f_vib = tmp_val
+!            else
+!              f_tran = 2.5
+!              f_rot = 0.0
+!              f_vib = 0.0
+!            endif
+!            species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k)) &
+!                /(species_constants(k,imass)/unit_mass)*Rgas* &
+!                (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
+!                +f_vib*Cv_vib_R)
 
             species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k))*&
             &( cp_spec_glo(:,j2,j3,ichemspec(k)) + 1.25*Rgas/species_constants(k,imass) )
