@@ -274,7 +274,7 @@ module Boundcond
                   call bc_sf_x(f,+1,topbot,j)
                 case ('ss')
                   ! BCX_DOC: symmetry, plus function value given
-                  call bc_symset_x(f,+1,topbot,j)
+                  call bc_symset_x(f,+1,topbot,j,val=fbcx(:,k))
                 case ('sds')
                   ! BCY_DOC: symmetric-derivative-set
                   call bc_symderset_x(f,topbot,j,val=fbcx(:,k))
@@ -617,7 +617,7 @@ module Boundcond
                 call bc_sym_y(f,+1,topbot,j)
               case ('ss')
                 ! BCY_DOC: symmetry, plus function value given
-                call bc_symset_y(f,+1,topbot,j)
+                call bc_symset_y(f,+1,topbot,j,val=fbcy(:,k))
               case ('sds')
                 ! BCY_DOC: symmetric-derivative-set
                 call bc_symderset_y(f,topbot,j,val=fbcy(:,k))
