@@ -2311,7 +2311,7 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
                     cv_full(:,j2,j3) = cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
                         *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
 
-cp_spec_glo(:,j2,j3,ichemspec(k))=cp_R_spec/species_constants(k,imass)*Rgas
+cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 
                   endif
                 enddo
@@ -4726,7 +4726,7 @@ cp_spec_glo(:,j2,j3,ichemspec(k))=cp_R_spec/species_constants(k,imass)*Rgas
 !                +f_vib*Cv_vib_R)
 
             species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k))*&
-            &( cp_spec_glo(:,j2,j3,ichemspec(k)) + 1.25*Rgas/species_constants(k,imass) )
+            &( cp_spec_glo(:,j2,j3,k) + 1.25*Rgas/species_constants(k,imass) )
 
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
