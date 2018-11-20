@@ -615,6 +615,9 @@ module Boundcond
                 ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
                 call bc_sym_y(f,+1,topbot,j)
+              case ('sf')
+                ! BCY_DOC: symmetry with respect to interface
+                call bc_sf_y(f,+1,topbot,j)
               case ('ss')
                 ! BCY_DOC: symmetry, plus function value given
                 call bc_symset_y(f,+1,topbot,j,val=fbcy(:,k))
@@ -630,6 +633,9 @@ module Boundcond
               case ('a')
                 ! BCY_DOC: antisymmetry
                 call bc_sym_y(f,-1,topbot,j)
+              case ('af')
+                ! BCY_DOC: antisymmetry with respect to interface
+                call bc_sf_y(f,-1,topbot,j)
               case ('a2')
                 ! BCY_DOC: antisymmetry relative to boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.)
@@ -2709,6 +2715,8 @@ module Boundcond
     subroutine bc_sf_x(f,sgn,topbot,j)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!  i.e. where the reflection plane is between the last mesh point and first
+!  ghost point
 !
 !    sgn = +1  -->  symmetric
 !    sgn = -1  -->  antisymmetric
@@ -2732,9 +2740,39 @@ module Boundcond
 !
     endsubroutine bc_sf_x
 !***********************************************************************
+    subroutine bc_sf_y(f,sgn,topbot,j)
+!
+!  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!  i.e. where the reflection plane is between the last mesh point and first
+!  ghost point
+!
+!    sgn = +1  -->  symmetric
+!    sgn = -1  -->  antisymmetric
+!
+!  12-nov-16/ccyang: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      integer, intent(in) :: sgn, j
+      character(3), intent(in) :: topbot
+!
+      integer :: i
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        forall (i=1:nghost) f(:,m1-i,:,j) = real(sgn) * f(:,m1+i-1,:,j)
+      case('top')               ! top boundary
+        forall (i=1:nghost) f(:,m2+i,:,j) = real(sgn) * f(:,m2-i+1,:,j)
+      case default
+        print *, 'bc_sf_y: unknown input; topbot = ', topbot
+      endselect
+!
+    endsubroutine bc_sf_y
+!***********************************************************************
     subroutine bc_sf_z(f,sgn,topbot,j)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!  i.e. where the reflection plane is between the last mesh point and first
+!  ghost point
 !
 !    sgn = +1  -->  symmetric
 !    sgn = -1  -->  antisymmetric
