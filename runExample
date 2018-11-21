@@ -1,0 +1,42 @@
+#! /bin/bash
+
+# 这个文件在哪里运行不重要，只需要调好以下两个参数再 sudo ./runExample 即可
+
+examplename="geodynamo"
+location="/home/wenyinwei"                      # pencil-code 所在目录 
+
+# 如果弹出权限不够，或者找不到命令，需要直接进入root模式运行 . runExample
+
+
+
+
+# 注意运行前要手动进入原样例代码的src文件夹内的 Makefile.local 和 cparam.local 检查处理器并行情况
+# sudo gedit src/Makefile.local
+# sudo gedit src/cparam.local
+
+
+
+
+# 到 pencil-code 目录下
+cd $location/pencil-code
+# 运行 sourceme 文件 			
+. sourceme.sh
+# 新建一个文件夹，把原本的源码放到这个文件夹内
+sudo mkdir -p $location/pencil-run/$examplename/src
+sudo chmod -R 777 $location/pencil-run/$examplename
+ # 运行的结果都在这个文件夹内不会对原来的造成干扰，现在我们进到这个文件夹内
+cd $location/pencil-run/$examplename           
+# 把样例中的输入条件复制过来
+sudo cp $PENCIL_HOME/samples/$examplename/*.in ./
+# 复制 local 文件夹
+sudo cp $PENCIL_HOME/samples/$examplename/src/*.local src/
+# Setup source
+pc_setupsrc
+# Build
+pc_build
+# 新建文件夹专门用来存数据
+sudo mkdir data
+sudo chmod -R 777 $location/pencil-run/$examplename
+# 运行
+pc_run
+sudo chmod -R 777 $location/pencil-run/$examplename
