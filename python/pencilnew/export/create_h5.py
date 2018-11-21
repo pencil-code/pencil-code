@@ -14,8 +14,8 @@ def create_aver_sph(
     filename,
     dataset,
     fields,
-    (nz, ny, nx, nt),
-    (z, y, x, t),
+    nz, ny, nx, nt,
+    z, y, x, t,
     hdf5dir='data/',
     dgroup='emftensor',
     ):
