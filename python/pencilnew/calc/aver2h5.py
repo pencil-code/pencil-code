@@ -123,8 +123,8 @@ def zav2h5(
         filename,
         dataset,
         fvars,
-        (1, ny, nx, nt, ),
-        [0,grid.y,grid.x,tensor.t],
+        1, ny, nx, nt, 
+        0,grid.y,grid.x,tensor.t,
         hdf5dir=hdf5dir,
         dgroup=dgroup
         )
