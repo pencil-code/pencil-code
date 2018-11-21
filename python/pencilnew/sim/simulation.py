@@ -395,11 +395,12 @@ class __Simulation__(object):
 
         command = []
         command.append('pc_build')
+
         if cleanall: command.append(' --cleanall')
         if fast == True: command.append(' --fast')
-
         if verbose != False: print('! Compiling '+self.path)
-        return self.bash(command=command,
+
+        return self.bash(command=' '.join(command),
                          verbose=verbose,
                          logfile=join(self.pc_dir, 'compilelog_'+timestamp))
 
