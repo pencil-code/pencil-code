@@ -14,8 +14,8 @@ def create_aver_sph(
     filename,
     dataset,
     fields,
-    nz, ny, nx, nt,
-    z, y, x, t,
+    nxyzt,
+    xyzt,
     hdf5dir='data/',
     dgroup='emftensor',
     ):
@@ -23,6 +23,9 @@ def create_aver_sph(
     import os
     import h5py
 
+    # unpack the tuples
+    nz, ny, nx, nt = nzyxt
+    z, y, x, t = zyxt
     #prepare hdf5 directory 
     if not os.path.exists(hdf5dir):
         os.makedirs(hdf5dir)
