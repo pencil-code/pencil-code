@@ -1,0 +1,21 @@
+ ==============================================================================
+ use the function in this folder:
+ 
+ import pencilnew as pcn
+ pcn.mycode.*functionname*
+ 
+ """
+ make sure the file pencilnew/__init__.py has the following words:
+     'from . import mycode  	     # functions in mycode directory'
+ """
+ ==============================================================================
+
+ ==============================================================================
+ if you want to add a function in this folder:
+ 
+ 1. add the .py file in this folder
+ 2. rewrite the __init__.py file which locates in this folder to 
+         import your function like other functions 
+ 3. make sure the file pencilnew/__init__.py has the following codes:
+     'from . import mycode  	     # functions in mycode directory'
+ ==============================================================================

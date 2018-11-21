@@ -1,0 +1,10 @@
+# How to use slicesAnimate 
+
+import pencilnew as pcn
+pcn.mycode.slicesAnimate(field='bb1',  extension='xy',proc=0)
+
+# How to use sliceAnimate3D
+import pencilnew as pcn
+from mpl_toolkits.mplot3d import Axes3D
+文崟的电脑由于Matplotlib版本原因需要加上面这句话
+pcn.mycode.slicesAnimate3D(field='bb1',  proc=0)

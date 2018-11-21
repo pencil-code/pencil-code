@@ -9,7 +9,7 @@ location="/home/wenyinwei"                      # pencil-code 所在目录
 
 
 
-
+# gfortran: Command not found 就是说 gfortran 没有安装
 # 注意运行前要手动进入原样例代码的src文件夹内的 Makefile.local 和 cparam.local 检查处理器并行情况
 # sudo gedit src/Makefile.local
 # sudo gedit src/cparam.local
@@ -18,7 +18,7 @@ location="/home/wenyinwei"                      # pencil-code 所在目录
 
 
 # 到 pencil-code 目录下
-cd $location/pencil-code
+cd $location/pencil-code-1
 # 运行 sourceme 文件 			
 . sourceme.sh
 # 新建一个文件夹，把原本的源码放到这个文件夹内
