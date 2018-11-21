@@ -23,8 +23,7 @@ module Cosmicrayflux
   include 'cosmicrayflux.h'
 
   character(len=labellen) :: initfcr='zero'
-  real :: kpara=0., kperp=0.
-  real, pointer :: k_para, k_perp
+  real, pointer :: K_para, K_perp
   real :: kpara_t=0., kperp_t=0.
   real :: tau=0., tau1=0.
   real :: subgrid_c1=0., subgrid_c2=0.
@@ -40,7 +39,7 @@ module Cosmicrayflux
   logical :: ladvect_fcr=.false., lupw_fcr=.false.
 
   namelist /cosmicrayflux_init_pars/ &
-      tau, kpara, kperp, lsubgrid_cr, &
+      tau, lsubgrid_cr, &
       lcosmicrayflux_diffus_dt, &
       subgrid_brms, subgrid_bmin, &
       subgrid_c1,subgrid_c2, &
@@ -50,7 +49,7 @@ module Cosmicrayflux
 
 
   namelist /cosmicrayflux_run_pars/ &
-      tau, kpara, kperp, lsubgrid_cr, &
+      tau, lsubgrid_cr, &
       lcosmicrayflux_diffus_dt, ladvect_fcr, lupw_fcr, &
       subgrid_brms, subgrid_bmin, &
       subgrid_c1,subgrid_c2, &
@@ -105,16 +104,8 @@ module Cosmicrayflux
       call get_shared_variable('K_para',K_para)
       call get_shared_variable('K_perp',K_perp)
 
-      if (K_para == impossible .or. K_perp == impossible) then
-        call warning('initialize_cosmicrayflux', &
-            'using obsolescent parameters kpara and kperp!' &
-            // 'Please set K_para/K_perp at the Cosmicray module instead.')
-        kpara_t = kpara
-        kperp_t = kperp
-      else
-        kpara_t = K_para * tau1
-        kperp_t = K_perp * tau1
-      endif
+      kpara_t = K_para * tau1
+      kperp_t = K_perp * tau1
 
       call keep_compiler_quiet(f)
 
@@ -278,7 +269,7 @@ module Cosmicrayflux
         call gij(f,ifcr,gfcr,1)
         call u_dot_grad(f,ifcr,gfcr,p%uu,ugfcr,UPWIND=lupw_fcr)
         df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-            - ugfcr(1:nx,1:3)    
+            - ugfcr(1:nx,1:3)
       endif
 
       ! For the timestep calculation, needs maximum diffusion or advection.

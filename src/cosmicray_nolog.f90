@@ -37,7 +37,7 @@ module Cosmicray
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
   logical :: lalfven_advect = .false.
-  real :: cosmicray_diff=0., Kperp=impossible, Kpara=impossible, ampl_Qcr=0.
+  real :: cosmicray_diff=0., ampl_Qcr=0.
   real, target :: K_para=0., K_perp=0.
 !
   namelist /cosmicray_init_pars/ &
@@ -45,8 +45,7 @@ module Cosmicray
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
        gammacr, lnegl, lvariable_tensor_diff,x_pos_cr,y_pos_cr,z_pos_cr, &
        x_pos_cr2, y_pos_cr2, z_pos_cr2, &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para
+       cosmicray_diff, K_perp, K_para
 !
   real :: limiter_cr=1.,blimiter_cr=0.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
@@ -55,8 +54,7 @@ module Cosmicray
   logical :: lcheck_negative_ecr
 !
   namelist /cosmicray_run_pars/ &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para, &
+       cosmicray_diff, K_perp, K_para, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
        limiter_cr,blimiter_cr,ecr_floor, &
@@ -111,20 +109,13 @@ module Cosmicray
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
 !
-!     Checks whether the obsolescent parameter names are being used
-!
-      if (Kpara /= impossible .or. Kperp /= impossible) then
-        if (lroot) call warning('initialize_cosmicray', &
-            'using obsolescent parameters Kpara and Kperp!' &
-            // ' In the future, please use K_para and K_perp instead.')
-        K_para = Kpara
-        K_perp = Kperp
-     endif
-     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
-     call put_shared_variable('K_para', K_para)
-!
 !     Shares diffusivities allowing the cosmicrayflux module to know them
 !
+     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+     call put_shared_variable('K_para', K_para)
+
+     call keep_compiler_quiet(f)
+
     endsubroutine initialize_cosmicray
 !***********************************************************************
     subroutine init_ecr(f)
@@ -254,7 +245,7 @@ module Cosmicray
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
       if (lpencil(i_ugecr)) then
-        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr) 
+        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
       endif
 ! bgecr
       if (lpencil(i_bgecr)) call dot_mn(p%bb,p%gecr,p%bgecr)
@@ -468,7 +459,7 @@ module Cosmicray
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='ecr') cformv='DEFINED'
       endif
 !
@@ -684,7 +675,7 @@ module Cosmicray
     subroutine impose_ecr_floor(f)
 !
 !  Impose a minimum cosmic ray energy density by setting all lower
-!  values to the minimum value (ecr_floor). 
+!  values to the minimum value (ecr_floor).
 !
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
@@ -702,10 +693,10 @@ module Cosmicray
           where (f(l1:l2,m,n,iecr)<ecr_floor) f(l1:l2,m,n,iecr)=ecr_floor
           if (lcosmicrayflux)then
             call div(f,ifcr,divfcr)
-            where (f(l1:l2,m,n,iecr)<ecr_floor .and. divfcr>0.) 
-              f(l1:l2,m,n,ifcr)  =min( f(l1:l2,m,n,ifcr), 0.) 
-              f(l1:l2,m,n,ifcr+1)=min( f(l1:l2,m,n,ifcr+1), 0.) 
-              f(l1:l2,m,n,ifcr+2)=min( f(l1:l2,m,n,ifcr+2), 0.) 
+            where (f(l1:l2,m,n,iecr)<ecr_floor .and. divfcr>0.)
+              f(l1:l2,m,n,ifcr)  =min( f(l1:l2,m,n,ifcr), 0.)
+              f(l1:l2,m,n,ifcr+1)=min( f(l1:l2,m,n,ifcr+1), 0.)
+              f(l1:l2,m,n,ifcr+2)=min( f(l1:l2,m,n,ifcr+2), 0.)
             endwhere
           endif
         enddo; enddo

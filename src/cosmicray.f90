@@ -5,7 +5,7 @@
 !  ZEUS 3D implementation.
 !
 !  NB: This module solves for ln(ecr):  ecr is here used for lnecr.
-!  The alternative module cosmicray_nolog.f90 works with ecr, 
+!  The alternative module cosmicray_nolog.f90 works with ecr,
 !   and the _nolog version has been more heavily used/developed.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -37,10 +37,8 @@ module Cosmicray
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
-  real :: cosmicray_diff=0., Kperp=0., Kpara=0.
-  real, target :: K_perp=impossible, K_para=impossible
-  !real :: cosmicray_diff=0., Kperp=1., Kpara=1.
-  !real, target :: K_perp=1., K_para=1.
+  real :: cosmicray_diff=0.
+  real, target :: K_perp=0., K_para=0.
 !
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
@@ -110,22 +108,13 @@ module Cosmicray
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
 !
-!     Checks whether the obsolescent parameter names are being used
+!     Shares diffusivities allowing the cosmicrayflux module to know them
 !
-      if (Kpara /= impossible .or. Kperp /= impossible) then
-        if (lroot) call warning('initialize_cosmicray', &
-            'using obsolescent parameters Kpara and Kperp!' &
-            // ' In the future, please use K_para and K_perp instead.')
-        K_para = Kpara
-        K_perp = Kperp
-        call put_shared_variable('K_perp', impossible,caller='initialize_cosmicray')
-        call put_shared_variable('K_para', impossible)
-     else
-        call put_shared_variable('K_perp', K_perp,caller='initialize_cosmicray')
-        call put_shared_variable('K_para', K_para)
-     endif
+     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+     call put_shared_variable('K_para', K_para)
+
      call keep_compiler_quiet(f)
-!
+
     endsubroutine initialize_cosmicray
 !***********************************************************************
     subroutine init_ecr(f)
@@ -286,7 +275,7 @@ print*,"init_ecr: initecr = ", initecr
       if (headtt.or.ldebug) print*,'SOLVE decr_dt'
       if (headtt) call identify_bcs('ecr',iecr)
 !
-!  Evolution equation of cosmic ray energy density 
+!  Evolution equation of cosmic ray energy density
 !  (in terms of lnecr, as used in this module):
 !     d lnecr/dt = - u dot grad(ln ecr) - gammacr*(div u) [ + diffusion ]
 !
@@ -421,7 +410,7 @@ print*,"init_ecr: initecr = ", initecr
 !
 !  check for those quantities for which we want video slices
 !
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='ecr') cformv='DEFINED'
       endif
 !
@@ -605,8 +594,8 @@ print*,"init_ecr: initecr = ", initecr
 !***********************************************************************
     subroutine impose_ecr_floor(f)
 !
-!  Impose a minimum cosmic ray energy density by setting all lower 
-!  densities to the minimum value (ecr_floor). 
+!  Impose a minimum cosmic ray energy density by setting all lower
+!  densities to the minimum value (ecr_floor).
 !
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
