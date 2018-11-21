@@ -44,8 +44,7 @@ module Cosmicray
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
        gammacr, lnegl, lvariable_tensor_diff, &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para
+       cosmicray_diff, K_perp, K_para
 !
   real :: limiter_cr=1.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
@@ -53,8 +52,7 @@ module Cosmicray
   logical :: lupw_ecr=.false.
 !
   namelist /cosmicray_run_pars/ &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para, &
+       cosmicray_diff, K_perp, K_para, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,limiter_cr,ecr_floor,lupw_ecr
 !
