@@ -2618,8 +2618,8 @@ module Diagnostics
       logical :: lval
       integer :: ierr, il
       integer :: mcoords_sound
-      integer, allocatable, dimension (:,:) :: temp_sound_coords
-      real    :: xsound, ysound, zsound
+      integer, allocatable, dimension (:,:) :: sound_coords
+      real, dimension(dimensionality) :: coords
       integer :: lsound, msound, nsound
       character (LEN=80) :: line
 !
@@ -2629,9 +2629,9 @@ module Diagnostics
 !  such as computing mean field energies in calc_bmz, for example,
 !
       mcoords_sound = parallel_count_lines(sound_coord_file)
-      allocate(temp_sound_coords(mcoords_sound,3),stat=ierr)
+      allocate(sound_coords(mcoords_sound,3),stat=ierr)
       if (ierr>0) call fatal_error('allocate_sound', &
-            'Could not allocate memory for temp_sound_coords')
+            'Could not allocate memory for sound_coords')
 !
       ncoords_sound = 0
 !
@@ -2639,12 +2639,7 @@ module Diagnostics
 !
       do isound=1,mcoords_sound
 !
-        select case (dimensionality)
-        case (1); read(parallel_unit,*,iostat=ierr) xsound
-        case (2); read(parallel_unit,*,iostat=ierr) xsound, ysound
-        case (3); read(parallel_unit,*,iostat=ierr) xsound, ysound, zsound
-        case default
-        endselect
+        read(parallel_unit,*,iostat=ierr) coords
 !
         if (ierr < 0) exit ! end-of-file
 !
@@ -2658,13 +2653,13 @@ module Diagnostics
           cycle
         endif
 !
-        if (location_in_proc(xsound,ysound,zsound,lsound,msound,nsound)) then
+        if (location_in_proc(coords,lsound,msound,nsound)) then
 !
           lval = .true.
           do il = 1, ncoords_sound
-            if ((temp_sound_coords(il,1) == lsound) .and. &
-                (temp_sound_coords(il,2) == msound) .and. &
-                (temp_sound_coords(il,3) == nsound) ) then
+            if ((sound_coords(il,1) == lsound) .and. &
+                (sound_coords(il,2) == msound) .and. &
+                (sound_coords(il,3) == nsound) ) then
               lval = .false.
               exit
             endif
@@ -2672,14 +2667,14 @@ module Diagnostics
 !
           if (lval) then
             ncoords_sound = ncoords_sound + 1
-            temp_sound_coords(ncoords_sound,1) = lsound
-            temp_sound_coords(ncoords_sound,2) = msound
-            temp_sound_coords(ncoords_sound,3) = nsound
+            sound_coords(ncoords_sound,1) = lsound
+            sound_coords(ncoords_sound,2) = msound
+            sound_coords(ncoords_sound,3) = nsound
           endif
         endif
       enddo
 !
-      call parallel_close(parallel_unit)
+      call parallel_close
 !
       lwrite_sound = ncoords_sound>0
       if (lwrite_sound) then
@@ -2695,7 +2690,7 @@ module Diagnostics
           if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for sound_coords_list')
         endif
-        sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
+        sound_coords_list = sound_coords(1:ncoords_sound,:)
 !
         if (.not. allocated(fname_sound)) then
           allocate(fname_sound(nnamel,ncoords_sound),stat=ierr)
@@ -2718,7 +2713,7 @@ module Diagnostics
 !
 !  Now deallocate the temporary memory.
 !
-      deallocate(temp_sound_coords)
+      deallocate(sound_coords)
 !
     endsubroutine allocate_sound
 !***********************************************************************
