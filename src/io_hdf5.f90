@@ -1306,7 +1306,31 @@ module Io
 !
     endsubroutine input_profile
 !***********************************************************************
-    subroutine output_average_1D(path,label,nc,name,data,time,lbinary,lwrite,header)
+    function trim_label(name, phi)
+!
+!   Trim average label and remove unneeded suffix.
+!
+!   26-Nov-2018/PABourdin: coded
+!
+      use General, only: itoa, loptest
+!
+      character (len=labellen) :: trim_label
+      character (len=labellen), intent(in) :: name
+      logical, optional, intent(in) :: phi
+!
+      integer :: last
+!
+      last = len (trim (name))
+      if (loptest (phi)) then
+        if (name(last-3:last) == 'mphi') last = last - 4
+      else
+        if (name(last:last) == 'm') last = last - 1
+      endif
+      trim_label = trim (name(1:last))
+!
+    endfunction trim_label
+!***********************************************************************
+    subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output 1D average to a file.
 !
@@ -1323,8 +1347,8 @@ module Io
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      character (len=fnlen) :: filename, group, comp_label
-      integer :: last, nl, ia, alloc_err
+      character (len=fnlen) :: filename, group
+      integer :: last, ia, alloc_err
       logical :: lexists
 !
       if (.not. lwrite .or. (nc <= 0)) return
@@ -1344,11 +1368,7 @@ module Io
       call create_group_hdf5 (group)
       call output_hdf5 (trim(group)//'/time', time)
       do ia = 1, nc
-        comp_label = trim(name(ia))
-        nl = len(trim(comp_label))
-        if (comp_label(nl:nl) == 'm') nl = nl - 1
-        if (comp_label(nl-3:nl) == 'mphi') nl = nl - 4
-        call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), data(:,ia), size(data,1))
+        call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,ia), size(data,1))
       enddo
       call output_hdf5 (trim(label)//'/last', last)
       call file_close_hdf5
@@ -1372,8 +1392,8 @@ module Io
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      character (len=fnlen) :: filename, group, comp_label
-      integer :: last, nl, ia, alloc_err
+      character (len=fnlen) :: filename, group
+      integer :: last, ia, alloc_err
       logical :: lexists
       real, dimension (:,:), allocatable :: component
 !
@@ -1398,18 +1418,12 @@ module Io
         if (alloc_err > 0) call fatal_error('output_average_2D', 'Could not allocate memory for component')
         do ia = 1, nc
           component = data(ia,:,:)
-          comp_label = trim(name(ia))
-          nl = len(trim(comp_label))
-          if (comp_label(nl:nl) == 'm') nl = nl - 1
-          call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), component, size(component,1), size(component,2))
+          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), component, size(component,1), size(component,2))
         enddo
         deallocate (component)
       else
         do ia = 1, nc
-          comp_label = trim(name(ia))
-          nl = len(trim(comp_label))
-          if (comp_label(nl:nl) == 'm') nl = nl - 1
-          call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), data(:,:,ia), size(data,1), size(data,2))
+          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,:,ia), size(data,1), size(data,2))
         enddo
       endif
       call output_hdf5 (trim(label)//'/last', last)
@@ -1439,8 +1453,8 @@ module Io
       real, dimension(:), intent(in) :: r
       real, intent(in) :: dr
 !
-      character (len=fnlen) :: filename, group, comp_label
-      integer :: last, nl, ia, alloc_err
+      character (len=fnlen) :: filename, group
+      integer :: last, ia, alloc_err
       logical :: lexists
       real, dimension (:,:,:), allocatable :: component
 !
@@ -1465,10 +1479,7 @@ module Io
       if (alloc_err > 0) call fatal_error('output_average_phi', 'Could not allocate memory for component')
       do ia = 1, nc
         component = data(:,1:nz,:,ia)
-        comp_label = trim(name(ia))
-        nl = len(trim(comp_label))
-        if (comp_label(nl-3:nl) == 'mphi') nl = nl - 4
-        call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), component, size(data,1), nz, size(data,3))
+        call output_hdf5 (trim(group)//'/'//trim_label(name(ia), .true.), component, size(data,1), nz, size(data,3))
       enddo
       deallocate (component)
       call output_hdf5 ('phi/last', last)
