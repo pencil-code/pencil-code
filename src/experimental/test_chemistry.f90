@@ -615,6 +615,10 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
           call prerun_1D_opp(f,prerun_directory)
         case ('FlameMaster')
           call FlameMaster_ini(f,file_name)
+!*******************************
+        case ('flame_front_new')
+          call flame_front_new(f)
+!*******************************
         case default
 !
 !  Catch unknown values
@@ -1323,6 +1327,153 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
       enddo
 !
     endsubroutine flame_front
+!***********************************************************************
+    subroutine flame_front_new(f)
+!
+!  05-jun-09/Nils Erland L. Haugen: adapted from similar
+!                                   routine in special/chem_stream.f90
+!  24-jun-10/Julien Savre: Modifications for lean methane/air combustion
+!  This routine set up the initial profiles used in 1D flame speed measurments
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i, j,k
+!
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: log_inlet_density, del, PP
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
+      real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
+          final_massfrac_H2O, final_massfrac_CO2,final_massfrac_H2
+      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
+      logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
+      logical :: lCH4=.false., lCO2=.false.
+      real :: theta
+!
+      lflame_front = .true.
+!
+      call air_field(f,PP)
+!
+      if (ltemperature_nolog) f(:,:,:,ilnTT) = log(f(:,:,:,ilnTT))
+!
+! Initialize some indexes
+!
+      call find_species_index('H2',i_H2,ichem_H2,lH2)
+      if (lH2) then
+        mH2 = species_constants(ichem_H2,imass)
+        init_H2 = initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2',i_O2,ichem_O2,lO2)
+      if (lO2) then
+        mO2 = species_constants(ichem_O2,imass)
+        init_O2 = initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2',i_N2,ichem_N2,lN2)
+      if (lN2) then
+        mN2 = species_constants(ichem_N2,imass)
+        init_N2 = initial_massfractions(ichem_N2)
+      else
+        init_N2 = 0
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O = species_constants(ichem_H2O,imass)
+        init_H2O = initial_massfractions(ichem_H2O)
+      endif
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+! Warning: These formula are only correct for lean fuel/air mixtures. They
+!          must be modified under rich conditions to account for the excess
+!          of fuel.
+!
+      final_massfrac_O2 = 0.
+      final_massfrac_H2 = 0.
+      if ( lH2 ) then
+        final_massfrac_H2O = mH2O/mH2 * init_H2
+        final_massfrac_O2 = 1. - final_massfrac_H2O- init_N2
+      endif
+!
+      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
+      if (lroot) then
+        print*, '          init                      final'
+        if (lH2 ) print*, 'H2 :' , init_H2,  final_massfrac_H2
+        if (lO2)  print*, 'O2 :' , init_O2,  final_massfrac_O2
+        if (lH2O) print*, 'H2O :', init_H2O, final_massfrac_H2O
+      endif
+!
+!  Initialize temperature and species
+!
+      do k = 1,mx
+!
+!  Initialize temperature
+!
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
+                     
+          if ( x(k)<=init_x1 )then
+             
+          f(k,:,:,ilnTT) = log( init_TT1 )
+          f(k,:,:,i_H2)  = final_massfrac_H2
+          f(k,:,:,i_O2)  = final_massfrac_O2 
+          f(k,:,:,i_H2O) = final_massfrac_H2O
+          f(k,:,:,iux) = 0.0
+          else if ( x(k)>init_x2 )then
+          
+          f(k,:,:,ilnTT) = log( init_TT2 )
+          f(k,:,:,i_H2)  = init_H2
+          f(k,:,:,i_O2)  = init_O2
+          f(k,:,:,i_H2O) = init_H2O
+          f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)
+          else
+          f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
+          f(k,:,:,i_H2)  = init_H2*theta+final_massfrac_H2
+          f(k,:,:,i_O2)  = init_O2*theta+final_massfrac_O2
+          f(k,:,:,i_H2O) = init_H2O*(1.0-theta)+final_massfrac_H2O
+          f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)*theta
+          end if
+      end do
+!
+      if (unit_system == 'cgs') then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas = Rgas_unit_sys/unit_energy
+      endif
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1 = &
+          initial_massfractions(ichem_O2)/(mO2) &
+          +initial_massfractions(ichem_H2O)/(mH2O) &
+          +initial_massfractions(ichem_N2)/(mN2)
+      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
+          initial_massfractions(ichem_H2)/(mH2)
+      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
+      log_inlet_density = &
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+!  Initialize density
+!
+      call getmu_array(f,mu1_full)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+!      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
+!          * (f(l1:l2,m1:m2,n1:n2,iux)+init_ux)
+      !f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i = 1,mx
+        do j = 1,my
+          do k = 1,mz
+            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine flame_front_new
 !***********************************************************************
     subroutine TTD(f)
 !
