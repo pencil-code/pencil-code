@@ -7,23 +7,21 @@ implicit none
 !
   contains
 !
-    subroutine calc_pencils_chemistry_ogrid(f,p)
+    subroutine calc_pencils_chemistry_ogrid(f)
 !
 !   dummy routine
 !
       real, dimension (mx,my,mz,mfarray) ::  f
-      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_chemistry_ogrid
 !***********************************************************************
-    subroutine calc_pencils_eos_ogrid_chem(f,p)
+    subroutine calc_pencils_eos_ogrid_chem(f)
 !
 !   dummy routine
 !
       real, dimension (mx,my,mz,mfarray) ::  f
-      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
 !
@@ -62,13 +60,12 @@ implicit none
 !
     endsubroutine calc_diffusion_term_ogrid
 !***********************************************************************
-    subroutine calc_heatcond_chemistry_ogrid(f,df,p)
+    subroutine calc_heatcond_chemistry_ogrid(f,df)
 !
 !   dummy routine
 !
       real, dimension (mx,my,mz,mfarray) ::  f
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)

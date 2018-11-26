@@ -4699,6 +4699,7 @@ module Solid_Cells
 !
       call boundconds_x_ogrid(f_og)
       call update_ghosts_ogrid(f_og)
+      if (lchemistry) call chemspec_normalization_N2_og(f_og)
 !
 ! TODO: is it the right place for calc_for_chem_mixture_ogrid?
 !
@@ -4728,11 +4729,11 @@ module Solid_Cells
         if(.not. lchemistry) then
           call calc_pencils_eos_ogrid(f_og)
         else
-          call calc_pencils_eos_ogrid_chem(f_og,p_ogrid)
+          call calc_pencils_eos_ogrid_chem(f_og)
         endif
         call calc_pencils_energy_ogrid(f_og)
         call calc_pencils_viscosity_ogrid
-        if (lchemistry) call calc_pencils_chemistry_ogrid(f_og,p_ogrid)
+        if (lchemistry) call calc_pencils_chemistry_ogrid(f_og)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -4883,7 +4884,7 @@ module Solid_Cells
         if (lheatc_chiconst) then
           call calc_heatcond_constchi_ogrid(df,p_ogrid)
         elseif (lheatc_chemistry) then
-          call calc_heatcond_chemistry_ogrid(f_og,df,p_ogrid)
+          call calc_heatcond_chemistry_ogrid(f_og,df)
         else
           call fatal_error('denergy_dt_ogrid','Must use lheatc_chicons=T or lheatc_chemistry=T')
         endif
@@ -5235,7 +5236,6 @@ module Solid_Cells
       intent(inout) :: f_Hloy,f_Hupy
 !
       ivar1=1; ivar2=min(mcom,size(f_og,4))
-      print*, 'IVARs',ivar1, ivar2
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
@@ -5926,8 +5926,6 @@ module Solid_Cells
       call finalize_isendrcv_bdry_ogrid(f_og)
       if (nprocy==1)                  call boundconds_y_ogrid(f_og)
       if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid(f_og)
-!
-      if (lchemistry) call chemspec_normalization_N2_og(f_og)
 !
     endsubroutine update_ghosts_ogrid
 !***********************************************************************

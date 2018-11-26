@@ -194,10 +194,10 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
 !
-!        if (unit_system == 'cgs') then
-!          Rgas_unit_sys = k_B_cgs/m_u_cgs
-!          Rgas = Rgas_unit_sys/unit_energy
-!        endif
+        if (unit_system == 'cgs') then
+          Rgas_unit_sys = k_B_cgs/m_u_cgs
+          Rgas = Rgas_unit_sys/unit_energy
+        endif
 !
       if ((nxgrid_ogrid == 1) .and. (nygrid_ogrid == 1) .and. (nzgrid_ogrid == 1)) then
         ll1_ogrid = 1
@@ -341,14 +341,12 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !    endsubroutine pencil_interdep_chemistry
 !***********************************************************************
-    subroutine calc_pencils_chemistry_ogrid(f_og,p_ogrid)
+    subroutine calc_pencils_chemistry_ogrid(f_og)
 !
 !  Calculate chemistry pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-      type (pencil_case_ogrid) :: p_ogrid
-      intent(inout) :: p_ogrid
 !
       integer :: k,i,j2,j3
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
@@ -466,12 +464,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine calc_pencils_chemistry_ogrid
 !***********************************************************************
-    subroutine calc_pencils_eos_ogrid_chem(f_og,p_ogrid)
+    subroutine calc_pencils_eos_ogrid_chem(f_og)
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
-
-      type (pencil_case_ogrid) :: p_ogrid
-      intent(inout) :: p_ogrid
 
       real, dimension(nx_ogrid,3) :: glnDiff_full_add, glncp
       real, dimension(nx_ogrid) :: D_th, R_mix
@@ -583,6 +578,12 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  Pressure
 !
       if (lpencil_ogrid(i_og_pp)) p_ogrid%pp = Rgas*p_ogrid%TT*p_ogrid%mu1*p_ogrid%rho
+      if (lpencil_ogrid(i_og_cs2)) then
+        if (any(p_ogrid%cv1 == 0.0)) then
+        else
+          p_ogrid%cs2 = p_ogrid%cp*p_ogrid%cv1*p_ogrid%mu1*p_ogrid%TT*Rgas
+        endif
+      endif
 !
 !  pressure gradient
 !
@@ -593,6 +594,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
  ! This actually can be computed without log gradients
  !         p_ogrid%rho1gpp(:,i) = Rgas*(p_ogrid%mu1*p_ogrid%TT*p_ogrid%rho1*p_ogrid%grho(:,i)&
  !                              + p_ogrid%mu1*p_ogrid%gTT(:,i)+p_ogrid%TT*p_ogrid%gmu1(:,i))
+ ! Or
+ !         p_ogrid%rho1gpp(:,i) = p_ogrid%cv*p_ogrid%cp1*p_ogrid%cs2*&
+ !               (p_ogrid%glnrho(:,i)+p_ogrid%gTT(:,i)/p_ogrid%TT+p_ogrid%gmu1(:,i)/p_ogrid%mu1)
         enddo
       endif
 !
@@ -601,13 +605,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !        if (lpencil_ogrid(i_og_ee)) p_ogrid%ee = p_ogrid%cv*p_ogrid%TT
 !
 ! Gradient of lnpp (removed)
-!
-      if (lpencil_ogrid(i_og_cs2)) then
-        if (any(p_ogrid%cv1 == 0.0)) then
-        else
-          p_ogrid%cs2 = p_ogrid%cp*p_ogrid%cv1*p_ogrid%mu1*p_ogrid%TT*Rgas
-        endif
-      endif
 !
     endsubroutine calc_pencils_eos_ogrid_chem
 !***********************************************************************
@@ -1522,7 +1519,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 
     endsubroutine calc_diffusion_term_ogrid
 !***********************************************************************
-    subroutine calc_heatcond_chemistry_ogrid(f_og,df,p_ogrid)
+    subroutine calc_heatcond_chemistry_ogrid(f_og,df)
 !
 !  Calculate gamma*chi*(del2lnT+gradlnTT.grad(lnT+lnrho+lncp+lnchi))
 !
@@ -1530,7 +1527,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
-      type (pencil_case_ogrid) :: p_ogrid
       real, dimension(nx_ogrid) :: g2TT, g2TTlambda=0., tmp1
 !
 !  Add heat conduction to RHS of temperature equation
