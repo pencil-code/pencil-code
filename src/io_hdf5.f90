@@ -1462,7 +1462,7 @@ module Io
 !
       if (.not. lroot .or. (nc <= 0)) return
 !
-      filename = trim(datadir)//'/averages/phi_z_r.h5'
+      filename = trim(datadir)//'/averages/phi.h5'
       lexists = file_exists (filename)
       call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
       if (exists_in_hdf5 ('last')) then
