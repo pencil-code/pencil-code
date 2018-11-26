@@ -14,8 +14,6 @@ module Diagnostics
 !
   implicit none
 !
-  private
-!
   public :: initialize_diagnostics, prints
   public :: diagnostic, initialize_time_integrals,get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
@@ -47,7 +45,7 @@ module Diagnostics
   public :: get_from_fname
   public :: init_xaver
   public :: gen_form_legend
-  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, zsum_mn_name_xy_mpar, yzsum_mn_name_x_mpar
+  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar, yzsum_mn_name_x_mpar
 !
   interface max_name
     module procedure max_name_int
@@ -70,6 +68,18 @@ module Diagnostics
     module procedure sum_mn_name_arr2
     module procedure sum_mn_name_std
   endinterface sum_mn_name
+!
+  interface zsum_mn_name_xy
+    module procedure zsum_mn_name_xy_scal
+    module procedure zsum_mn_name_xy_vec
+  endinterface zsum_mn_name_xy
+
+  interface zsum_mn_name_xy_mpar
+    module procedure zsum_mn_name_xy_mpar_scal
+    module procedure zsum_mn_name_xy_mpar_vec
+  endinterface zsum_mn_name_xy_mpar
+!
+  private
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real :: dVol_rel1
@@ -2451,60 +2461,181 @@ module Diagnostics
 !
     endsubroutine ysum_mn_name_xz_npar
 !***********************************************************************
-    subroutine zsum_mn_name_xy(a,iname,lint)
+    subroutine zsum_mn_name_xy_scal(a,iname,lint)
 !
 !  Successively calculate sum over z of a, which is supplied at each call.
 !  The result fnamexy is xy-dependent.
 !  Start from zero if lfirstpoint=.true.
-!
+!     
 !  19-jun-02/axel: adapted from xysum_mn_name
 !  08-feb-12/ccyang: add option for integration
-!   3-sep-13/MR: derived from zsum_mn_name_xy
-!
+!   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
+!     
       use General, only: loptest
-      use Cdata,   only: n,m
+      use Cdata,   only: n,m,nzgrid_eff 
 !
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname
       logical,   optional, intent(in) :: lint
-!
+
       if (iname==0) return
-!
+!         
 !  Scale factor for integration
-!
+!       
       if (loptest(lint)) then
-        call zsum_mn_name_xy_mpar((real(nzgrid)*zprim(n))*a,m,iname)
+        call zsum_mn_name_xy_mpar((real(nzgrid_eff)*zprim(n))*a,m,iname)
       else
         call zsum_mn_name_xy_mpar(a,m,iname)
+      endif                                                                                                 
+!
+    endsubroutine zsum_mn_name_xy_scal
+!***********************************************************************
+    subroutine zsum_mn_name_xy_vec(avec,iname,powers,scal,lint)
+!
+!  Wrapper for zsum_mn_name_xy_mpar_vec..
+!
+!  19-jun-02/axel: adapted from xysum_mn_name
+!  08-feb-12/ccyang: add option for integration
+!   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
+!  31-mar-16/MR: derived from zsum_mn_name_xy
+!
+      use General, only: loptest
+      use Cdata,   only: n,m
+!
+      real,    dimension(nx,3),        intent(in) :: avec
+      integer,                         intent(in) :: iname
+      integer, dimension(3),           intent(in) :: powers
+      real,    dimension(:), optional, intent(in) :: scal
+      logical,               optional, intent(in) :: lint
+!
+      if (loptest(lint)) then
+!
+!  Mulitply with scale factor for integration.
+!  Not correct for Yin-Yang with non-equidistant z grid (would this happen?). 
+!
+        if (present(scal)) then
+          call zsum_mn_name_xy_mpar(avec,m,iname,powers,(real(nzgrid_eff)*zprim(n))*scal)
+        else
+          call zsum_mn_name_xy_mpar(avec,m,iname,powers,(/real(nzgrid_eff)*zprim(n)/))
+        endif
+      else
+        call zsum_mn_name_xy_mpar(avec,m,iname,powers,scal)
       endif
 !
-    endsubroutine zsum_mn_name_xy
+    endsubroutine zsum_mn_name_xy_vec
 !***********************************************************************
-    subroutine zsum_mn_name_xy_mpar(a,m,iname)
+    subroutine zsum_mn_name_xy_mpar_vec(avec,m,iname,powers,scal)
 !
-!  Initialize to zero, including other parts of the xy-array
+!  Calculates a general tensor component from vector avec as 
+!  avec(1)**power(1)*avec(2)**power(2)*avec(3)**power(3),
+!  optionally the scalar scal (a pencil or one-element vector)
+!  is multiplied finally.
+!  On Yang procs, avec is first transformed properly.
+!
+!  31-mar-16/MR: coded
+!
+      use General, only: transform_thph_yy
+
+      real, dimension(nx,3),        intent(in) :: avec
+      integer,                      intent(in) :: iname, m
+      integer, dimension(3),        intent(in) :: powers
+      real, dimension(:), optional, intent(in) :: scal
+!
+      real, dimension(nx,3) :: work
+      real, dimension(nx) :: quan
+      integer :: i
+      logical :: lfirst
+
+      if (iname==0) return
+
+      if (lyang) then
+!
+! On Yang procs: transform theta and phi components if necessary. 
+!
+        call transform_thph_yy(avec,powers,work)
+      else
+        work=avec
+      endif
+!
+!  Perform product of powers of vector components..
+!
+      lfirst=.true.
+      do i=1,3
+        if (powers(i)/=0) then
+          if (lfirst) then
+            lfirst=.false.
+            if (powers(i)==1) then
+              quan=work(:,i)
+            else
+              quan=work(:,i)**powers(i)
+            endif
+          else
+            if (powers(i)==1) then
+              quan=quan*work(:,i)
+            else
+              quan=quan*work(:,i)**powers(i)
+            endif
+          endif
+        endif
+      enddo
+!
+!  Multiply with scalar if present.
+!
+      if (present(scal)) then
+        if (size(scal)==1) then
+          quan=quan*scal(1)
+        else
+          quan=quan*scal
+        endif
+      endif
+!
+!  Sum up result like a scalar.
+!
+      call zsum_mn_name_xy_mpar(quan,m,iname)
+
+    endsubroutine zsum_mn_name_xy_mpar_vec
+!***********************************************************************
+    subroutine zsum_mn_name_xy_mpar_scal(a,m,iname)
+!
+!  Accumulates contributions to z-sum within an mn-loop
 !  which are later merged with an mpi reduce command.
+!  In the Yang part of a Yin-Yang grid, the contributions
+!  to the sum along a (extended) phi coordinate line of the Yin 
+!  grid are calculated by use of predetermined weights.
+!  Likewise for those coordinate lines of the Yin-phi which lie completely
+!  within the Yang grid (i.e. the polar caps).
 !
-!   3-sep-13/MR: derived from zsum_mn_name_xy, m now parameter
-!                no optional lint because of compiler error in g95 and gfortran
-!                when using the subroutine as an actual parameter
+!   3-apr-16/MR: derived from zsum_mn_name_xy_mpar; extensions for Yin-Yang grid
+!   7-jun-16/MR: outsourced initialize_zaver_yy, reduce_zsum, zsum_y and 
+!                corresponding Yin-Yang specific data to Yinyang_mpi
 !
+      use Cdata, only: n
+      use Yinyang_mpi, only: zsum_yy
+
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname, m
-!
+
       integer :: ml
 !
       if (iname==0) return
 !
       if (lfirstpoint) fnamexy(iname,:,:)=0.
+
+      if (lyang) then
 !
-!  m starts with nghost+1=4, so the correct index is m-nghost.
+!  On Yang grid:
 !
-      ml=m-nghost
+        call zsum_yy(fnamexy,iname,m,n,a)
+      else
 !
-      fnamexy(iname,:,ml)=fnamexy(iname,:,ml)+a
+! Normal summing-up in Yin procs.
+! m starts with nghost+1, so the correct index is m-nghost.
+! 
+        ml=m-nghost
+        fnamexy(iname,:,ml)=fnamexy(iname,:,ml)+a
+      endif
 !
-    endsubroutine zsum_mn_name_xy_mpar
+    endsubroutine zsum_mn_name_xy_mpar_scal
 !***********************************************************************
     subroutine calc_phiavg_profile(p)
 !
