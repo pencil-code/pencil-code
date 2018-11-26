@@ -1106,9 +1106,10 @@ module Register
       use Cdata
       use Diagnostics
       use General, only: loptest
-      use Energy,  only: expand_shands_energy
+      use IO, only: IO_strategy
+      use Energy, only: expand_shands_energy
       use FArrayManager, only: farray_index_append
-      use Hydro,   only: expand_shands_hydro
+      use Hydro, only: expand_shands_hydro
       use Magnetic,only: expand_shands_magnetic
 !
       integer :: iname,irz
@@ -1168,10 +1169,9 @@ module Register
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
 !
-!  Output in phiavg.list the list of fields after the taking into
-!  account of possible shorthands in phiaver.in
-!
-        if (lroot) then
+        if (lroot .and. (IO_strategy /= "HDF5")) then
+          ! output in phiavg.list the list of fields after the taking into
+          ! account of possible shorthands in phiaver.in
           open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
           do irz=1,nnamerz
             write(11,'(A30)') cnamerz(irz)

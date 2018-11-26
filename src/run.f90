@@ -553,7 +553,7 @@ program run
 !
 !  Trim 1D-averages for times past the current time.
 !
-  call trim_1daverages
+  call trim_averages
 !
 !  Do loop in time.
 !

@@ -11,6 +11,7 @@
   public :: init_read_persist, read_persist, read_persist_id
 
   public :: wgrid, rgrid, wdim, output_profile, input_profile
+  public :: output_average, trim_average
   public :: wproc_bounds, rproc_bounds
   public :: directory_names, log_filename_to_file
 
@@ -18,5 +19,11 @@
     module procedure wdim_default_grid
     module procedure wdim_default
     module procedure wdim
+  endinterface
+
+  interface output_average
+    module procedure output_average_1D
+    module procedure output_average_2D
+    module procedure output_average_phi
   endinterface
 

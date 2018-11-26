@@ -35,6 +35,7 @@ module HDF5_IO
     module procedure output_hdf5_profile_1D
     module procedure output_local_hdf5_2D
     module procedure output_hdf5_slice_2D
+    module procedure output_local_hdf5_3D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
   endinterface
@@ -1101,7 +1102,7 @@ module HDF5_IO
 !  08-Nov-2018/PABourdin: adapted from output_hdf5_slice_2D
 !
       character (len=*), intent(in) :: name
-      real, dimension (:) :: data
+      real, dimension (:), intent(in) :: data
       integer, intent(in) :: ldim, gdim, ip, np1, np2, ng
       logical, intent(in) :: lhas_data
 !
@@ -1188,7 +1189,7 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: dim1, dim2
-      real, dimension (dim1,dim2) :: data
+      real, dimension (dim1,dim2), intent(in) :: data
 !
       integer(kind=8), dimension(2) :: size
 !
@@ -1308,6 +1309,48 @@ module HDF5_IO
       call check_error (h5_err, 'output_hdf5_slice_2D', 'close parameter list', name)
 !
     endsubroutine output_hdf5_slice_2D
+!***********************************************************************
+    subroutine output_local_hdf5_3D(name, data, dim1, dim2, dim3)
+!
+!  Write HDF5 dataset from a local 3D array.
+!
+!  26-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: dim1, dim2, dim3
+      real, dimension (dim1,dim2,dim3), intent(in) :: data
+!
+      integer(kind=8), dimension(3) :: size
+!
+      if (lcollective) call check_error (1, 'output_local_hdf5_3D', 'local 3D output requires local file')
+      if (.not. lwrite) return
+!
+      size = (/ dim1, dim2, dim3 /)
+!
+      ! create data space
+      call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
+      call check_error (h5_err, 'output_local_hdf5_3D', 'create simple data space', name)
+      call h5sset_extent_simple_f (h5_dspace, 3, size, size, h5_err)
+      call check_error (h5_err, 'output_local_hdf5_3D', 'set data space extent', name)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'output_local_hdf5_3D', 'open dataset', name)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_dspace, h5_dset, h5_err)
+        call check_error (h5_err, 'output_local_hdf5_3D', 'create dataset', name)
+      endif
+      ! write dataset
+      call h5dwrite_f (h5_dset, h5_ntype, data, size, h5_err)
+      call check_error (h5_err, 'output_local_hdf5_3D', 'write data', name)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'output_local_hdf5_3D', 'close dataset', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'output_local_hdf5_3D', 'close data space', name)
+!
+    endsubroutine output_local_hdf5_3D
 !***********************************************************************
     subroutine output_hdf5_3D(name, data)
 !
@@ -1567,7 +1610,7 @@ module HDF5_IO
         current => current%previous
       enddo
 !
-      if (index_get == '') then
+      if (lroot .and. (index_get == '')) then
         ! known broken MVAR/MAUX contributions:
         ! 'selfgravity_logspirals' without 'particles_selfgravity'
         call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found! '// &

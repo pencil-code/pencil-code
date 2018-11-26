@@ -24,7 +24,7 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
-  use File_io, only: delete_file
+  use File_io, only: file_exists
   use HDF5_IO, only: output_dim
   use Messages, only: fatal_error, svn_id, warning
 !
@@ -359,7 +359,6 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('output', 'commit global type', file)
 !
-      if (lroot) call delete_file (trim (directory_snap)//'/'//file)
       call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
       call check_success ('output', 'open', trim (directory_snap)//'/'//file)
 !
@@ -649,8 +648,7 @@ module Io
         if (filename /= "") then
           if (lroot .and. (ip <= 9)) write (*,*) 'begin write persistent block'
           close (lun_output)
-          call delete_file (trim (directory_snap)//'/'//filename)
-          open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='new')
+          open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='replace')
           filename = ""
         endif
         write (lun_output) id_block_PERSISTENT
@@ -1563,6 +1561,205 @@ module Io
 !
     endsubroutine input_profile
 !***********************************************************************
+    subroutine output_average_1D(path,label,nc,name,data,time,lbinary,lwrite,header)
+!
+!   Output 1D average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      if (lbinary) then
+        open(lun_output, file=filename, form='unformatted', position='append')
+        if (present (header)) write(lun_output) header
+        write(lun_output) time
+        write(lun_output) data(:,1:nc)
+        close(lun_output)
+      else
+        open(lun_output, file=filename, position='append')
+        if (present (header)) write(lun_output,'(1p,8e14.5e3)') header
+        write(lun_output,'(1pe12.5)') time
+        write(lun_output,'(1p,8e14.5e3)') data(:,1:nc)
+        close(lun_output)
+      endif
+!
+    endsubroutine output_average_1D
+!***********************************************************************
+    subroutine output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
+!
+!   Output average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      integer :: ia
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      if (lbinary) then
+        open(lun_output, file=filename, form='unformatted', position='append')
+        if (present (header)) write(lun_output) header
+        write(lun_output) time
+        if (label == 'z') then
+          write(lun_output) ( data(ia,:,:), ia=1, nc )
+        else
+          write(lun_output) data(:,:,1:nc)
+        endif
+        close(lun_output)
+      else
+        open(lun_output, file=filename, position='append')
+        if (present (header)) write(lun_output,'(1p,8e14.5e3)') header
+        write(lun_output,'(1pe12.5)') time
+        if (label == 'z') then
+          write(lun_output,'(1p,8e14.5e3)') ( data(ia,:,:), ia=1, nc )
+        else
+          write(lun_output,'(1p,8e14.5e3)') data(:,:,1:nc)
+        endif
+        close(lun_output)
+      endif
+!
+    endsubroutine output_average_2D
+!***********************************************************************
+    subroutine output_average_phi(path,number,nc,name,data,time,r,dr)
+!
+!   Output phi average to a file with these records:
+!   1) nr_phiavg, nz_phiavg, nvars, nprocz
+!   2) t, r_phiavg, z_phiavg, dr, dz
+!   3) data
+!   4) len(labels),labels
+!
+!   27-Nov-2014/PABourdin: cleaned up code from write_phiaverages
+!   25-Nov-2018/PABourdin: coded
+!
+      use General, only: safe_character_append
+!
+      character (len=*), intent(in) :: path, number
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      real, dimension(:), intent(in) :: r
+      real, intent(in) :: dr
+!
+      character (len=fnlen) :: filename
+      character (len=1024) :: labels
+      integer :: pos
+!
+      if (.not. lroot .or. (nc <= 0)) return
+!
+      filename = 'PHIAVG' // trim(number)
+      open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append')
+      write(lun_output) size (r, 1), nzgrid, nc, nprocz
+      write(lun_output) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
+      ! data has to be repacked to avoid writing an array temporary
+      ! ngrs: writing an array temporary outputs corrupted data on copson
+      write(lun_output) pack(data(:,1:nz,:,1:nc), .true.)
+      labels = trim(name(1))
+      if (nc >= 2) then
+        do pos = 2, nc
+          call safe_character_append (labels, ",", trim(name(pos)))
+        enddo
+      endif
+      write(lun_output) len(labels), labels
+      close(lun_output)
+!
+      ! append filename to list
+      open (lun_output, FILE=trim(datadir)//'/averages/phiavg.files', POSITION='append')
+      write (lun_output,'(A)') trim(filename)
+      close (lun_output)
+!
+    endsubroutine output_average_phi
+!***********************************************************************
+    subroutine trim_average(path, plane, ngrid, nname)
+!
+!  Trim a 1D-average file for times past the current time.
+!
+!  25-apr-16/ccyang: coded
+!  23-Nov-2018/PABourdin: moved to IO module
+!
+      character (len=*), intent(in) :: path
+      character (len=2), intent(in) :: plane
+      integer, intent(in) :: ngrid, nname
+!
+      real, dimension(:), allocatable :: tmp
+      character(len=fnlen) :: filename
+      integer :: pos, num_rec, ioerr, alloc_err
+      integer :: lun_input = 84
+      real :: time
+!
+      if (.not. lroot) return
+      if ((ngrid <= 0) .or. (nname <= 0)) return
+      filename = trim(path) // '/' // plane // 'averages.dat'
+      if (.not. file_exists (filename)) return
+!
+      allocate (tmp(ngrid * nname), stat = alloc_err)
+      if (alloc_err > 0) call fatal_error('trim_average', 'Could not allocate memory for averages')
+!
+      if (lwrite_avg1d_binary) then
+        open(lun_input, file=filename, form='unformatted', action='readwrite')
+      else
+        open(lun_input, file=filename, action='readwrite')
+      endif
+!
+      ! count number of records
+      num_rec = 0
+      ioerr = 0
+      time = 0.0
+      do while ((t > time) .and. (ioerr >= 0))
+        num_rec = num_rec + 1
+        if (lwrite_avg1d_binary) then
+          read(lun_input, iostat=ioerr) time
+          read(lun_input, iostat=ioerr) tmp
+        else
+          read(lun_input, *, iostat=ioerr) time
+          read(lun_input, *, iostat=ioerr) tmp
+        endif
+      enddo
+      if (time == t) num_rec = num_rec - 1
+!
+      if ((time >= t) .and. (ioerr >= 0)) then
+        ! trim excess data at the end of the average file
+        rewind(lun_input)
+        if (num_rec > 0) then
+          do pos = 1, num_rec
+            if (lwrite_avg1d_binary) then
+              read(lun_input, iostat=ioerr) time
+              read(lun_input, iostat=ioerr) tmp
+            else
+              read(lun_input, *, iostat=ioerr) time
+              read(lun_input, *, iostat=ioerr) tmp
+            endif
+          enddo
+        endif
+        endfile (lun_input)
+        if (ip <= 10) print *, 'trim_average: trimmed ', plane, '-averages for t >= ', t
+      endif
+!
+      close (lun_input)
+      deallocate (tmp)
+!
+    endsubroutine trim_average
+!***********************************************************************
     subroutine wproc_bounds(file)
 !
 !   Export processor boundaries to file.
@@ -1575,8 +1772,7 @@ module Io
 !
       integer :: ierr
 !
-      call delete_file (file)
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
       if (ierr /= 0) call stop_it ( &
           'Cannot open "' // trim(file) // '" (or similar) for reading' // &
           ' -- is "data/" visible from all nodes?')

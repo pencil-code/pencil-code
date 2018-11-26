@@ -1306,6 +1306,203 @@ module Io
 !
     endsubroutine input_profile
 !***********************************************************************
+    subroutine output_average_1D(path,label,nc,name,data,time,lbinary,lwrite,header)
+!
+!   Output 1D average to a file.
+!
+!   26-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename, group, comp_label
+      integer :: last, nl, ia, alloc_err
+      logical :: lexists
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(directory_snap)//'/averages.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      call create_group_hdf5 (label)
+      if (exists_in_hdf5 (trim(label)//'/last')) then
+        call input_hdf5 (trim(label)//'/last', last)
+        last = last + 1
+      else
+        if (present (header)) call output_hdf5 (trim(label)//'/r', header, size(header))
+        last = 0
+      endif
+      group = trim(label)//'/'//trim(itoa(last))
+      call create_group_hdf5 (group)
+      call output_hdf5 (trim(group)//'/time', time)
+      do ia = 1, nc
+        comp_label = trim(name(ia))
+        nl = len(trim(comp_label))
+        if (comp_label(nl:nl) == 'm') nl = nl - 1
+        if (comp_label(nl-3:nl) == 'mphi') nl = nl - 4
+        call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), data(:,ia), size(data,1))
+      enddo
+      call output_hdf5 (trim(label)//'/last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_1D
+!***********************************************************************
+    subroutine output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
+!
+!   Output average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename, group, comp_label
+      integer :: last, nl, ia, alloc_err
+      logical :: lexists
+      real, dimension (:,:), allocatable :: component
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(directory_snap)//'/averages.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      call create_group_hdf5 (label)
+      if (exists_in_hdf5 (trim(label)//'/last')) then
+        call input_hdf5 (trim(label)//'/last', last)
+        last = last + 1
+      else
+        if (present (header)) call output_hdf5 (trim(label)//'/r', header, size(header))
+        last = 0
+      endif
+      group = trim(label)//'/'//trim(itoa(last))
+      call create_group_hdf5 (group)
+      call output_hdf5 (trim(group)//'/time', time)
+      if (label == 'z') then
+        allocate (component(size(data,2),size(data,3)), stat = alloc_err)
+        if (alloc_err > 0) call fatal_error('output_average_2D', 'Could not allocate memory for component')
+        do ia = 1, nc
+          component = data(ia,:,:)
+          comp_label = trim(name(ia))
+          nl = len(trim(comp_label))
+          if (comp_label(nl:nl) == 'm') nl = nl - 1
+          call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), component, size(component,1), size(component,2))
+        enddo
+        deallocate (component)
+      else
+        do ia = 1, nc
+          comp_label = trim(name(ia))
+          nl = len(trim(comp_label))
+          if (comp_label(nl:nl) == 'm') nl = nl - 1
+          call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), data(:,:,ia), size(data,1), size(data,2))
+        enddo
+      endif
+      call output_hdf5 (trim(label)//'/last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_2D
+!***********************************************************************
+    subroutine output_average_phi(path,number,nc,name,data,time,r,dr)
+!
+!   Output phi average to a file with these records:
+!   1) nr_phiavg, nz_phiavg, nvars, nprocz
+!   2) t, r_phiavg, z_phiavg, dr, dz
+!   3) data
+!   4) len(labels),labels
+!
+!   27-Nov-2014/PABourdin: cleaned up code from write_phiaverages
+!   25-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, number
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      real, dimension(:), intent(in) :: r
+      real, intent(in) :: dr
+!
+      character (len=fnlen) :: filename, group, comp_label
+      integer :: last, nl, ia, alloc_err
+      logical :: lexists
+      real, dimension (:,:,:), allocatable :: component
+!
+      if (.not. lroot .or. (nc <= 0)) return
+!
+      filename = trim(directory_snap)//'/averages.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      call create_group_hdf5 ('phi')
+      if (exists_in_hdf5 ('phi/last')) then
+        call input_hdf5 ('phi/last', last)
+        last = last + 1
+      else
+        call output_hdf5 ('phi/r', r, size(r))
+        call output_hdf5 ('phi/dr', dr)
+        last = 0
+      endif
+      group = 'phi/'//trim(itoa(last))
+      call create_group_hdf5 (group)
+      call output_hdf5 (trim(group)//'/time', time)
+      allocate (component(size(data,1),nz,size(data,3)), stat = alloc_err)
+      if (alloc_err > 0) call fatal_error('output_average_phi', 'Could not allocate memory for component')
+      do ia = 1, nc
+        component = data(:,1:nz,:,ia)
+        comp_label = trim(name(ia))
+        nl = len(trim(comp_label))
+        if (comp_label(nl-3:nl) == 'mphi') nl = nl - 4
+        call output_hdf5 (trim(group)//'/'//trim(comp_label(1:nl)), component, size(data,1), nz, size(data,3))
+      enddo
+      deallocate (component)
+      call output_hdf5 ('phi/last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_phi
+!***********************************************************************
+    subroutine trim_average(path, plane, ngrid, nname)
+!
+!  Trim a 1D-average file for times past the current time.
+!
+!  25-apr-16/ccyang: coded
+!  23-Nov-2018/PABourdin: moved to IO module
+!
+      use File_io, only: file_exists
+!
+      character (len=*), intent(in) :: path
+      character (len=2), intent(in) :: plane
+      integer, intent(in) :: ngrid, nname
+!
+      character(len=fnlen) :: filename
+      integer :: pos, num_rec, ioerr, alloc_err
+      integer :: lun_input = 84
+      real :: time
+!
+      if (.not. lroot) return
+      if ((ngrid <= 0) .or. (nname <= 0)) return
+!
+      filename = trim(directory_snap)//'/averages.h5'
+      if (.not. file_exists (filename)) return
+      ! *** WORK HERE: set 'plane/last' according to 'plane/#/time'
+!
+    endsubroutine trim_average
+!***********************************************************************
     subroutine wproc_bounds(file)
 !
 !   Export processor boundaries to file.

@@ -21,7 +21,7 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_sound
-  public :: write_2daverages_prepare, write_zaverages
+  public :: write_2daverages_prepare
   public :: name_is_present
   public :: expand_cname, parse_name, fparse_name
 ! GPU-START
@@ -44,7 +44,7 @@ module Diagnostics
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
   public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages, allocate_zaverages_data
-  public :: trim_1daverages
+  public :: trim_averages
   public :: fnames_clean_up, vnames_clean_up, diagnostics_clean_up
   public :: get_from_fname
   public :: init_xaver
@@ -91,11 +91,6 @@ module Diagnostics
 !
   private
 !
-  logical :: lfirst_call_time_series=.true.
-  logical :: lfirst_call_1davs=.true.
-  logical :: lfirst_call_sound=.true.
-!
-
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real :: dVol_rel1
 
@@ -120,10 +115,6 @@ module Diagnostics
       integer :: i
       real :: dxeff,dyeff,dzeff
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
-!
-      lfirst_call_time_series=.true.
-      lfirst_call_sound=.true.
-      lfirst_call_1davs=.true.
 ! 
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
@@ -205,6 +196,7 @@ module Diagnostics
       integer :: iname, nnamel
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
+      logical, save :: lfirst_call = .true.
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -236,7 +228,7 @@ module Diagnostics
 !  This treats all numbers as floating point numbers.  Only those numbers are
 !  given (and computed) that are also listed in print.in.
 !
-        if (lfirst_call_time_series) then
+        if (lfirst_call) then
           write(*,*)
           write(*,'(" ",A)') trim(legend)
 !
@@ -273,9 +265,9 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         open(lun,file=trim(datadir)//'/time_series.dat',position='append')
-        if (lfirst_call_time_series) then
+        if (lfirst_call) then
           write(lun,"('"//comment_char//"',a)") trim(legend)
-          lfirst_call_time_series = .false.
+          lfirst_call = .false.
         endif
         write(lun,'(a)') trim(line)
         !flush(lun)               ! this is a F2003 feature...
@@ -424,22 +416,22 @@ module Diagnostics
 !
     endsubroutine clean_line
 !***********************************************************************
-    subroutine write_sound_append(legend,sublegend,coorlegend,line,lfirst_call)
+    subroutine write_sound_append(legend,sublegend,coorlegend,line,lwrite_legend)
 !
 !  Append to diagnostics file.
 !
 !  27-Nov-2014/Bourdin.KIS: cleaned up code from write_sound
 !
-      character (len=*), intent(in   ) :: legend, sublegend, coorlegend, line
-      logical,           intent(inout) :: lfirst_call
+      character (len=*), intent(in) :: legend, sublegend, coorlegend, line
+      logical, intent(in) :: lwrite_legend
 !
       integer, parameter :: lun=1
       integer :: len_stroke, len_leg
 !
         open(lun,file=trim(directory)//'/sound.dat',position='append')
 !
-        if (lfirst_call) then
-          if (dimensionality>0) then
+        if (lwrite_legend) then
+          if (dimensionality > 0) then
             len_leg=len_trim(legend)
             len_stroke=max(len_leg,len_trim(coorlegend),len_trim(sublegend))
             write(lun,'(a)') trim(legend)//repeat('-',max(0,len_stroke-len_leg))
@@ -449,7 +441,6 @@ module Diagnostics
           else
             write(lun,'(a)') trim(legend)
           endif
-          lfirst_call=.false.
         endif
 !
         write(lun,'(a)') trim(line)
@@ -466,7 +457,7 @@ module Diagnostics
 !  10-jan-11/MR: modified
 !
       use General, only: itoa, safe_character_append, safe_character_prepend,compress
-      use Sub    , only: noform
+      use Sub, only: noform
 !
       implicit none
 !
@@ -480,6 +471,7 @@ module Diagnostics
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
       integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j,len
+      logical, save :: lfirst_call = .true.
 !
 !  Produce the format.
 !
@@ -487,7 +479,7 @@ module Diagnostics
       if ( ncoords_sound>1 ) &
         call safe_character_append(fform, trim(itoa(ncoords_sound))//'(')
 !
-      if (lfirst_call_sound) then
+      if (lfirst_call) then
 !
         legend = comment_char//noform('t'//tform//')')
 !
@@ -528,7 +520,7 @@ module Diagnostics
         if (cform_sound(iname)/=' ') then
 
           ldata=.true.
-          if (lfirst_call_sound) then
+          if (lfirst_call) then
 !
             item = noform(cname_sound(iname))
             if ( ncoords_sound>1 ) then
@@ -569,11 +561,12 @@ module Diagnostics
       endif
 !
       call clean_line(line)
-      call write_sound_append(legend,sublegend,coorlegend,line,lfirst_call_sound)
+      call write_sound_append(legend,sublegend,coorlegend,line,lfirst_call)
 !
       if (ldebug) write(*,*) 'exit write_sound'
 !
-      fname_sound(1:ncoords_sound,1:nname_sound)=0.0
+      fname_sound(1:ncoords_sound,1:nname_sound) = 0.0
+      lfirst_call = .false.
 !
     endsubroutine write_sound
 !***********************************************************************
@@ -960,11 +953,23 @@ module Diagnostics
 !  and appended to their individual files.
 !
 !   7-aug-03/wolf: coded
+!  24-Nov-2018/PABourdin: redesigned
 !
-      call write_xyaverages
-      call write_xzaverages
-      call write_yzaverages
-      call write_phizaverages
+      use IO, only: output_average
+!
+      logical, save :: lfirst_call = .true.
+!
+      if (nnamez > 0) call output_average (datadir, 'xy', nnamez, cnamez, fnamez, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (nnamey > 0) call output_average (datadir, 'xz', nnamey, cnamey, fnamey, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (nnamex > 0) call output_average (datadir, 'yz', nnamex, cnamex, fnamex, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (nnamer > 0) then
+        if (lfirst_call) then
+          call output_average (datadir, 'phiz', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
+          lfirst_call = .false.
+        else
+          call output_average (datadir, 'phiz', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot)
+        endif
+      endif
 !
     endsubroutine write_1daverages
 !***********************************************************************
@@ -1007,343 +1012,46 @@ module Diagnostics
 !  is determined by a parameter (t2davg) in run.in.
 !
 !   7-aug-03/wolf: adapted from wsnap
+!  24-Nov-2018/PABourdin: redesigned
 !
-      if (lwrite_yaverages)   call write_yaverages
-      if (lwrite_zaverages)   call write_zaverages
-      if (lwrite_phiaverages) call write_phiaverages(ch2davg)
+      use IO, only: output_average
 !
-      if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
+      if (lwrite_yaverages) &
+          call output_average (directory_dist, 'y', nnamexz, cnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
+!
+      if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
+        if (lcaproot) then
+          ! cap root (Yang)
+          call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, .true., lfirst_proc_z)
+        else
+          ! z-beam root (Yin)
+          call output_average (directory_dist, 'z', nnamexy, cnamexy, fnamexy, t2davgfirst, .true., lfirst_proc_z)
+        endif
+      endif
+!
+      if (lwrite_phiaverages) then
+        ! normalization is already done in phiaverages_rz
+        call output_average (datadir, ch2davg, nnamerz, cnamerz, fnamerz, t2davgfirst, rcyl, drcyl)
+      endif
+!
+      if (lroot .and. (ip<=10)) write(*,*) 'write_2daverages: wrote averages (xy,xz,phi#'//trim (ch2davg)//')'
 !
     endsubroutine write_2daverages
 !***********************************************************************
-    subroutine trim_1daverages
+    subroutine trim_averages
 !
-!  Trim 1D-averages for times past the current time.
-!
-!  25-apr-16/ccyang: coded
-!
-      if (lroot) then
-        call trim_avg1d('xy')
-        call trim_avg1d('xz')
-        call trim_avg1d('yz')
-      endif
-!
-    endsubroutine trim_1daverages
-!***********************************************************************
-    subroutine trim_avg1d(plane)
-!
-!  Trim a 1D-average file for times past the current time.
+!  Trim averages for times past the current time.
 !
 !  25-apr-16/ccyang: coded
+!  23-Nov-2018/PABourdin: redesigned
 !
-      character(len=2) :: plane
+      use IO, only: trim_average
 !
-      integer, parameter :: UNIT = 18
-      character(len=fnlen) :: file
-      real, dimension(:), allocatable :: avg
-      logical :: flag
-      integer :: navg, nrec, i, ios
-      real :: tavg
+      call trim_average(datadir, 'xy', nzgrid, nnamez)
+      call trim_average(datadir, 'xz', nygrid, nnamey)
+      call trim_average(datadir, 'yz', nxgrid, nnamex)
 !
-!  Check the size of each record.
-!
-      poa: select case (plane)
-      case ("xy") poa
-        navg = nzgrid * nnamez
-      case ("xz") poa
-        navg = nygrid * nnamey
-      case ("yz") poa
-        navg = nxgrid * nnamex
-      endselect poa
-!
-!  Return if no work needs to be done.
-!
-      if (navg <= 0) return
-!
-!  Check file existence.
-!
-      file = trim(datadir) // '/' // plane // 'averages.dat'
-      inquire (file=file, exist=flag)
-      if (.not. flag) return
-!
-!  Allocate working array.
-!
-      allocate (avg(navg))
-!
-!  Open file.
-!
-      if (lwrite_avg1d_binary) then
-        open(UNIT, file=file, form='unformatted', action='readwrite')
-      else
-        open(UNIT, file=file, action='readwrite')
-      endif
-!
-!  Count number of records.
-!
-      nrec = 0
-      flag = .false.
-      count: do while (.true.)
-        if (lwrite_avg1d_binary) then
-          read(UNIT, iostat=i) tavg
-        else
-          read(UNIT,*, iostat=i) tavg
-        endif
-!
-        if (i < 0) then
-          exit count
-        elseif (tavg >= t) then
-          flag = .true.
-          exit count
-        endif
-!
-        if (lwrite_avg1d_binary) then
-          read(UNIT,iostat=i) avg
-        else
-          read(UNIT,*,iostat=i) avg
-!if (i/=0) print*, 'i, nrec=', i, nrec
-        endif
-!
-        nrec = nrec + 1
-      enddo count
-!
-!  Trim the records if needed.
-!
-      trimrec: if (flag) then
-        rewind(UNIT)
-        forward: do i = 1, nrec
-          bin: if (lwrite_avg1d_binary) then
-            read(UNIT) tavg
-            read(UNIT) avg
-          else bin
-            read(UNIT,*) tavg
-            read(UNIT,*,iostat=ios) avg
-!if (ios/=0) print*, 'ios, i=', ios, i
-          endif bin
-        enddo forward
-        endfile (UNIT)
-        print *, 'trim_avg1d: trimmed ', plane, '-averages for t >= ', t
-      endif trimrec
-!
-!  Close file and clean up.
-!
-      close (UNIT)
-      deallocate (avg)
-!
-    endsubroutine trim_avg1d
-!***********************************************************************
-    subroutine write_xyaverages
-!
-!  Write xy-averages (which are 1d data) that have been requested via
-!  `xyaver.in'
-!
-!   6-jun-02/axel: coded
-!  15-nov-15/ccyang: added unformatted writing.
-!
-      integer, parameter :: UNIT = 1
-      character(len=fnlen) :: file
-!
-      xyavg: if (lroot .and. nnamez > 0) then
-        file = trim(datadir) // '/xyaverages.dat'
-        bin: if (lwrite_avg1d_binary) then
-          open(UNIT, file=file, form='unformatted', position='append')
-          write(UNIT) t1ddiagnos
-          write(UNIT) fnamez(:,:,1:nnamez)
-          close(UNIT)
-        else bin
-          open(UNIT, file=file, position='append')
-          write(UNIT,'(1pe12.5)') t1ddiagnos
-          write(UNIT,'(1p,8e14.5e3)') fnamez(:,:,1:nnamez)
-          close(UNIT)
-        endif bin
-      endif xyavg
-!
-    endsubroutine write_xyaverages
-!***********************************************************************
-    subroutine write_xzaverages
-!
-!  Write xz-averages (which are 1d data) that have been requested via
-!  `xzaver.in'
-!
-!  12-oct-05/anders: adapted from write_xyaverages
-!  15-nov-15/ccyang: added unformatted writing.
-!
-      integer, parameter :: UNIT = 1
-      character(len=fnlen) :: file
-!
-      xzavg: if (lroot .and. nnamey > 0) then
-        file = trim(datadir) // '/xzaverages.dat'
-        bin: if (lwrite_avg1d_binary) then
-          open(UNIT, file=file, form='unformatted', position='append')
-          write(UNIT) t1ddiagnos
-          write(UNIT) fnamey(:,:,1:nnamey)
-          close(UNIT)
-        else bin
-          open(UNIT, file=file, position='append')
-          write(UNIT,'(1pe12.5)') t1ddiagnos
-          write(UNIT,'(1p,8e14.5e3)') fnamey(:,:,1:nnamey)
-          close(UNIT)
-        endif bin
-      endif xzavg
-!
-    endsubroutine write_xzaverages
-!***********************************************************************
-    subroutine write_yzaverages
-!
-!  Write yz-averages (which are 1d data) that have been requested via
-!  `yzaver.in'
-!
-!   2-oct-05/anders: adapted from write_xyaverages
-!  15-nov-15/ccyang: added unformatted writing.
-!
-      integer, parameter :: UNIT = 1
-      character(len=fnlen) :: file
-!
-      yzavg: if (lroot .and. nnamex > 0) then
-        file = trim(datadir) // '/yzaverages.dat'
-        bin: if (lwrite_avg1d_binary) then
-          open(UNIT, file=file, form='unformatted', position='append')
-          write(UNIT) t1ddiagnos
-          write(UNIT) fnamex(:,:,1:nnamex)
-          close(UNIT)
-        else bin
-          open(UNIT, file=file, position='append')
-          write(UNIT,'(1pe12.5)') t1ddiagnos
-          write(UNIT,'(1p,8e14.5e3)') fnamex(:,:,1:nnamex)
-          close(UNIT)
-        endif bin
-      endif yzavg
-!
-    endsubroutine write_yzaverages
-!***********************************************************************
-    subroutine write_phizaverages
-!
-!  Write phiz-averages (which are 1d data) that have been requested via
-!  `phizaver.in'
-!
-!  Also write rcyl to the output. It is needed just once, since it will
-!  not change over the simulation. The condition "if (it==1)" is not the
-!  best one, since it is reset upon restarting of a simulation and
-!  therefore one has to manually remove the extra(s) rcyl from
-!  the phizaverages.dat file
-!
-!  29-jan-07/wlad: adapted from write_yzaverages
-!
-      if (lroot.and.nnamer>0) then
-        open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
-        if (lfirst_call_1davs) then
-          write(1,'(1p,8e14.5e3)') rcyl
-          lfirst_call_1davs=.false.
-        endif
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamer(:,1:nnamer)
-        close(1)
-      endif
-!
-    endsubroutine write_phizaverages
-!***********************************************************************
-    subroutine write_yaverages
-!
-!  Write y-averages (which are 2d data) that have been requested via yaver.in.
-!
-!   7-jun-05/axel: adapted from write_zaverages
-!
-      if (lfirst_proc_y.and.nnamexz>0) then
-        open (1, file=trim(directory_dist)//'/yaverages.dat', form='unformatted', position='append')
-        write(1) t2davgfirst
-        write(1) fnamexz(:,:,1:nnamexz)
-        close(1)
-      endif
-!
-    endsubroutine write_yaverages
-!***********************************************************************
-    subroutine write_zaverages
-!
-!  Write z-averages (which are 2d data) that have been requested via zaver.in.
-!
-!  19-jun-02/axel: adapted from write_xyaverages
-!  31-mar-16/MR: extensions for Yin-Yang grid
-!
-      integer :: i
-
-      if (nnamexy>0) then
-        if (.not.lyang.and.lfirst_proc_z .or. lcaproot ) then  ! Output from roots of z beams or cap root.
-          open (1, file=trim(directory_dist)//'/zaverages.dat', form='unformatted', position='append')
-          write(1) t2davgfirst
-          if (lcaproot) then
-            write(1) (fnamexy_cap(i,:,:),i=1,nnamexy)       ! from cap root (Yang)
-          else
-            write(1) (fnamexy(i,:,:),i=1,nnamexy)           ! from z beam root (Yin)
-          endif
-          close(1)
-        endif
-      endif
-!
-    endsubroutine write_zaverages
-!***********************************************************************
-    subroutine write_phiaverages_file(ch)
-!
-!  File format:
-!    1. nr_phiavg, nz_phiavg, nvars, nprocz
-!    2. t, r_phiavg, z_phiavg, dr, dz
-!    3. data
-!    4. len(labels),labels
-!
-!   27-Nov-2014/Bourdin.KIS: cleaned up code from write_phiaverages
-!
-      use General, only: safe_character_append
-!
-      character(len=*), intent(in) :: ch
-!
-      integer, parameter :: lun=1
-      integer :: i
-      character (len=1024) :: labels
-!
-      open(lun,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted')
-      write(lun) nrcyl,nzgrid,nnamerz,nprocz
-      write(lun) t2davgfirst,rcyl,z(n1)+(/(i*dz, i=0,nzgrid-1)/),drcyl,dz
-!
-      !ngrs: use pack to explicitly order the array before writing
-      !     (write was messing up on copson without this...)
-      write(lun) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
-!
-!  Write labels at the end of file.
-!
-      labels = trim(cnamerz(1))
-      do i=2,nnamerz
-        call safe_character_append(labels,",",trim(cnamerz(i)))
-      enddo
-      write(lun) len(labels),labels
-      close(lun)
-!
-    endsubroutine write_phiaverages_file
-!***********************************************************************
-    subroutine write_phiaverages(ch)
-!
-!  Write azimuthal averages (which are 2d data) that have been requested
-!  via `phiaver.in'.
-!  Note: fnamerz still has a third dimension indicating ipz, but the way
-!  we are writing we automatically end up with the full z-direction
-!  written contiguously.
-!
-!   2-jan-03/wolf: adapted from write_zaverages
-!
-      character(len=*), intent(in) :: ch
-!
-      integer, parameter :: lun=1
-!
-      if (.not. lroot .or. (nnamerz <= 0)) return
-!
-!  Write result; normalization is already done in phiaverages_rz.
-!
-      call write_phiaverages_file(ch)
-!
-!  Write file name to file list.
-!
-      open(lun,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append')
-      write(lun,'(A)')'PHIAVG'//trim(ch)
-      close(lun)
-!
-    endsubroutine write_phiaverages
+    endsubroutine trim_averages
 !***********************************************************************
     integer function fparse_name(iname,cname,ctest,itest,cform)
 !
