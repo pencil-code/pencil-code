@@ -277,7 +277,7 @@ module HDF5_IO
 !
       integer(HSIZE_T), dimension(1) :: size
 !
-      if (lcollective) call check_error (1, 'input_local_hdf5_int_1D', 'local output requires local file')
+      if (lcollective) call check_error (1, 'input_local_hdf5_int_1D', 'local input requires local file')
       if (.not. lwrite) return
 !
       size = (/ nv /)
@@ -402,7 +402,7 @@ module HDF5_IO
 !
       integer(HSIZE_T), dimension(1) :: size
 !
-      if (lcollective) call check_error (1, 'input_local_hdf5_1D', 'local output requires local file')
+      if (lcollective) call check_error (1, 'input_local_hdf5_1D', 'local input requires local file')
       if (.not. lwrite) return
 !
       size = (/ nv /)
