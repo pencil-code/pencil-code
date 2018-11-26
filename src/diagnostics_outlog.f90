@@ -660,7 +660,7 @@ module Diagnostics
               if (itype==ilabel_integrate_sqrt)      &
                   vname(iname)=sqrt(fsum(isum_count))
 !
-              if (itype==ilabel_integrate__log10)      &
+              if (itype==ilabel_integrate_log10)      &
                   vname(iname)=log10(fsum(isum_count))
 !
                if (itype==ilabel_surf)          &
