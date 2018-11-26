@@ -1347,30 +1347,31 @@ module Io
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      character (len=fnlen) :: filename, group
+      character (len=fnlen) :: filename
+      character (len=labellen) :: group
       integer :: last, ia, alloc_err
-      logical :: lexists
+      logical :: lexists, lphi
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
-      filename = trim(directory_snap)//'/averages.h5'
+      filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
       lexists = file_exists (filename)
       call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
-      call create_group_hdf5 (label)
-      if (exists_in_hdf5 (trim(label)//'/last')) then
-        call input_hdf5 (trim(label)//'/last', last)
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
         last = last + 1
       else
-        if (present (header)) call output_hdf5 (trim(label)//'/r', header, size(header))
+        if (present (header)) call output_hdf5 ('r', header, size(header))
         last = 0
       endif
-      group = trim(label)//'/'//trim(itoa(last))
+      group = trim (itoa (last))
       call create_group_hdf5 (group)
       call output_hdf5 (trim(group)//'/time', time)
+      lphi = (label(1:3) == 'phi')
       do ia = 1, nc
-        call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,ia), size(data,1))
+        call output_hdf5 (trim(group)//'/'//trim_label(name(ia), lphi), data(:,ia), size(data,1))
       enddo
-      call output_hdf5 (trim(label)//'/last', last)
+      call output_hdf5 ('last', last)
       call file_close_hdf5
 !
     endsubroutine output_average_1D
@@ -1392,25 +1393,25 @@ module Io
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
 !
-      character (len=fnlen) :: filename, group
+      character (len=fnlen) :: filename
+      character (len=labellen) :: group
       integer :: last, ia, alloc_err
       logical :: lexists
       real, dimension (:,:), allocatable :: component
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
-      filename = trim(directory_snap)//'/averages.h5'
+      filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
       lexists = file_exists (filename)
       call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
-      call create_group_hdf5 (label)
-      if (exists_in_hdf5 (trim(label)//'/last')) then
-        call input_hdf5 (trim(label)//'/last', last)
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
         last = last + 1
       else
-        if (present (header)) call output_hdf5 (trim(label)//'/r', header, size(header))
+        if (present (header)) call output_hdf5 ('r', header, size(header))
         last = 0
       endif
-      group = trim(label)//'/'//trim(itoa(last))
+      group = trim(itoa(last))
       call create_group_hdf5 (group)
       call output_hdf5 (trim(group)//'/time', time)
       if (label == 'z') then
@@ -1426,7 +1427,7 @@ module Io
           call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,:,ia), size(data,1), size(data,2))
         enddo
       endif
-      call output_hdf5 (trim(label)//'/last', last)
+      call output_hdf5 ('last', last)
       call file_close_hdf5
 !
     endsubroutine output_average_2D
@@ -1453,26 +1454,26 @@ module Io
       real, dimension(:), intent(in) :: r
       real, intent(in) :: dr
 !
-      character (len=fnlen) :: filename, group
+      character (len=fnlen) :: filename
+      character (len=labellen) :: group
       integer :: last, ia, alloc_err
       logical :: lexists
       real, dimension (:,:,:), allocatable :: component
 !
       if (.not. lroot .or. (nc <= 0)) return
 !
-      filename = trim(directory_snap)//'/averages.h5'
+      filename = trim(datadir)//'/averages/phi_z_r.h5'
       lexists = file_exists (filename)
       call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
-      call create_group_hdf5 ('phi')
-      if (exists_in_hdf5 ('phi/last')) then
-        call input_hdf5 ('phi/last', last)
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
         last = last + 1
       else
-        call output_hdf5 ('phi/r', r, size(r))
-        call output_hdf5 ('phi/dr', dr)
+        call output_hdf5 ('r', r, size(r))
+        call output_hdf5 ('dr', dr)
         last = 0
       endif
-      group = 'phi/'//trim(itoa(last))
+      group = trim (itoa (last))
       call create_group_hdf5 (group)
       call output_hdf5 (trim(group)//'/time', time)
       allocate (component(size(data,1),nz,size(data,3)), stat = alloc_err)
@@ -1482,7 +1483,7 @@ module Io
         call output_hdf5 (trim(group)//'/'//trim_label(name(ia), .true.), component, size(data,1), nz, size(data,3))
       enddo
       deallocate (component)
-      call output_hdf5 ('phi/last', last)
+      call output_hdf5 ('last', last)
       call file_close_hdf5
 !
     endsubroutine output_average_phi

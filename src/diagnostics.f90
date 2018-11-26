@@ -964,10 +964,10 @@ module Diagnostics
       if (nnamex > 0) call output_average (datadir, 'yz', nnamex, cnamex, fnamex, t1ddiagnos, lwrite_avg1d_binary, lroot)
       if (nnamer > 0) then
         if (lfirst_call) then
-          call output_average (datadir, 'phiz', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
+          call output_average (datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
           lfirst_call = .false.
         else
-          call output_average (datadir, 'phiz', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot)
+          call output_average (datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot)
         endif
       endif
 !
