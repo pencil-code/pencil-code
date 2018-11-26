@@ -1502,15 +1502,15 @@ module Io
       integer, intent(in) :: ngrid, nname
 !
       character(len=fnlen) :: filename
-      integer :: pos, num_rec, ioerr, alloc_err
-      integer :: lun_input = 84
-      real :: time
+      real :: time, t_sp
 !
       if (.not. lroot) return
       if ((ngrid <= 0) .or. (nname <= 0)) return
 !
-      filename = trim(directory_snap)//'/averages.h5'
+      filename = trim(directory_snap)//'/averages/'//trim(plane)//'.h5'
       if (.not. file_exists (filename)) return
+!
+      t_sp = real (t)
       ! *** WORK HERE: set 'plane/last' according to 'plane/#/time'
 !
     endsubroutine trim_average
