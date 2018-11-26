@@ -174,6 +174,10 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
   logical :: lchemistry_diag=.false.
 !
+!   Hot spot problem
+!
+  logical :: lhotspot=.false.
+!
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
@@ -188,7 +192,8 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud
+      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
+      lhotspot
 !
 !
 ! run parameters
@@ -1407,29 +1412,41 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
 !
 !  Initialize temperature
 !
-          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
                      
+      if( lhotspot )then
+          if( x(k)<init_x2 )then
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
+          f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
+          else
+          f(k,:,:,ilnTT) = log( init_TT2 )
+          end if
+          f(k,:,:,i_H2)  = init_H2
+          f(k,:,:,i_O2)  = init_O2 
+          f(k,:,:,i_H2O) = init_H2O
+          f(k,:,:,iux) = 0.0
+      else
           if ( x(k)<=init_x1 )then
-             
           f(k,:,:,ilnTT) = log( init_TT1 )
           f(k,:,:,i_H2)  = final_massfrac_H2
           f(k,:,:,i_O2)  = final_massfrac_O2 
           f(k,:,:,i_H2O) = final_massfrac_H2O
           f(k,:,:,iux) = 0.0
           else if ( x(k)>init_x2 )then
-          
           f(k,:,:,ilnTT) = log( init_TT2 )
           f(k,:,:,i_H2)  = init_H2
           f(k,:,:,i_O2)  = init_O2
           f(k,:,:,i_H2O) = init_H2O
           f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)
           else
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
           f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
           f(k,:,:,i_H2)  = init_H2*theta+final_massfrac_H2
           f(k,:,:,i_O2)  = init_O2*theta+final_massfrac_O2
           f(k,:,:,i_H2O) = init_H2O*(1.0-theta)+final_massfrac_H2O
           f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)*theta
           end if
+      end if
+
       end do
 !
       if (unit_system == 'cgs') then
