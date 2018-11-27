@@ -145,7 +145,7 @@ module Io
       integer :: io_err
       logical :: lerror
 !
-      t_sp = t
+      t_sp = real (t)
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize
@@ -230,7 +230,7 @@ module Io
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      t_sp = t
+      t_sp = real (t)
       open(lun_output,FILE=trim(directory_dist)//'/'//file,FORM='unformatted', IOSTAT=io_err, status='new')
       lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_part_snap')
 !
@@ -683,7 +683,7 @@ module Io
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
               call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
-              tstart=t_sgl
+              tstart = t_sgl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,'.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
@@ -691,7 +691,7 @@ module Io
               call stop_it('read_snap_single')
             endif
           else
-            tstart=t_sp
+            tstart = t_sp
           endif
 !
         endif
@@ -828,7 +828,7 @@ module Io
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
               call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
-              tstart=t_dbl
+              tstart = t_dbl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
@@ -836,7 +836,7 @@ module Io
               call stop_it('read_snap_double')
             endif
           else
-            tstart=t_sp
+            tstart = t_sp
           endif
 !
         endif
@@ -1341,7 +1341,7 @@ module Io
         mzout1=mz
       endif
 !
-      t_sp = t
+      t_sp = real (t)
 
       open(lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
       if (io_err /= 0) call fatal_error('wgrid', &
@@ -1369,7 +1369,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = t
+        t_sp = real (t)
       endif
 
       call collect_grid (x, y, z, gx, gy, gz)

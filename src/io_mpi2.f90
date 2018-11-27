@@ -391,7 +391,7 @@ module Io
         call collect_grid (x, y, z, gx, gy, gz)
         if (lroot) then
           open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
-          t_sp = t
+          t_sp = real (t)
           write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
         endif
       endif
@@ -1384,7 +1384,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = t
+        t_sp = real (t)
       endif
 
       call collect_grid (x, y, z, gx, gy, gz)

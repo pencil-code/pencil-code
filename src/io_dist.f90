@@ -144,7 +144,7 @@ module Io
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      t_sp = t
+      t_sp = real (t)
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize
@@ -216,7 +216,7 @@ module Io
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      t_sp = t
+      t_sp = real (t)
       open(lun_output,FILE=trim(directory_dist)//'/'//file,FORM='unformatted')
 !
       ! write the number of particles present at the processor
@@ -617,14 +617,14 @@ module Io
                 if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                        ' Using (max) t=', t_sgl,'with ireset_tstart=', MAXT,'.'
               endif
-              tstart=t_sgl
+              tstart = t_sgl
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
                           ' IS INCONSISTENT: t=', t_sp
               call stop_it('read_snap_single')
             endif
           else
-            tstart=t_sp
+            tstart = t_sp
           endif
 !
         endif
@@ -763,7 +763,7 @@ module Io
                 if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                        ' Using (max) t=', t_dbl,'with ireset_tstart=', MAXT,'.'
               endif
-              tstart=t_dbl
+              tstart = t_dbl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
@@ -771,7 +771,7 @@ module Io
               call stop_it('read_snap_double')
             endif
           else
-            tstart=t_sp
+            tstart = t_sp
           endif
 !
         endif
@@ -1224,7 +1224,7 @@ module Io
       myout1=ioptest(myout,my)
       mzout1=ioptest(mzout,mz)
 !
-      t_sp = t
+      t_sp = real (t)
 
       open (lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
       write(lun_output) t_sp,x(:mxout1),y(:myout1),z(:mzout1),dx,dy,dz
@@ -1248,7 +1248,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = t
+        t_sp = real (t)
       endif
 
       call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
