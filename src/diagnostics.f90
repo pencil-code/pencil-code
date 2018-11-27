@@ -1045,11 +1045,18 @@ module Diagnostics
 !  25-apr-16/ccyang: coded
 !  23-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: trim_average
+      use IO, only: trim_average, IO_strategy
 !
       call trim_average(datadir, 'xy', nzgrid, nnamez)
       call trim_average(datadir, 'xz', nygrid, nnamey)
       call trim_average(datadir, 'yz', nxgrid, nnamex)
+!
+      if (IO_strategy == "HDF5") then
+        call trim_average(datadir, 'y', nxgrid*nzgrid, nnamexz)
+        call trim_average(datadir, 'z', nxgrid*nygrid, nnamexy)
+        call trim_average(datadir, 'phi', size (rcyl)*nzgrid, nnamerz)
+        call trim_average(datadir, 'phi_z', size (rcyl), nnamer)
+      endif
 !
     endsubroutine trim_averages
 !***********************************************************************
