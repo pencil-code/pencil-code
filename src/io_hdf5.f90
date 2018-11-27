@@ -210,6 +210,13 @@ module Io
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
+      if (dataset == 'globals') then
+        if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
+          filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+        else
+          filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+        endif
+      endif
       lexists = parallel_file_exists(filename)
       ltrunc = .true.
       if (present (ltruncate)) ltrunc = ltruncate
@@ -543,6 +550,13 @@ module Io
       filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
+      if (dataset == 'globals') then
+        if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
+          filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+        else
+          filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+        endif
+      endif
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
