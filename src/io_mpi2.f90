@@ -1698,8 +1698,7 @@ module Io
 !  25-apr-16/ccyang: coded
 !  23-Nov-2018/PABourdin: moved to IO module
 !
-      character (len=*), intent(in) :: path
-      character (len=2), intent(in) :: plane
+      character (len=*), intent(in) :: path, plane
       integer, intent(in) :: ngrid, nname
 !
       real, dimension(:), allocatable :: tmp
@@ -1710,7 +1709,7 @@ module Io
 !
       if (.not. lroot) return
       if ((ngrid <= 0) .or. (nname <= 0)) return
-      filename = trim(path) // '/' // plane // 'averages.dat'
+      filename = trim(path) // '/' // trim(plane) // 'averages.dat'
       if (.not. file_exists (filename)) return
 !
       allocate (tmp(ngrid * nname), stat = alloc_err)
@@ -1753,7 +1752,7 @@ module Io
           enddo
         endif
         endfile (lun_input)
-        if (ip <= 10) print *, 'trim_average: trimmed ', plane, '-averages for t >= ', t
+        if (ip <= 10) print *, 'trim_average: trimmed '//trim(plane)//'-averages for t >= ', t
       endif
 !
       close (lun_input)

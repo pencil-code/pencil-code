@@ -1525,8 +1525,7 @@ module Io
 !
       use File_io, only: file_exists
 !
-      character (len=*), intent(in) :: path
-      character (len=2), intent(in) :: plane
+      character (len=*), intent(in) :: path, plane
       integer, intent(in) :: ngrid, nname
 !
       character(len=fnlen) :: filename
@@ -1535,7 +1534,7 @@ module Io
       if (.not. lroot) return
       if ((ngrid <= 0) .or. (nname <= 0)) return
 !
-      filename = trim(directory_snap)//'/averages/'//trim(plane)//'.h5'
+      filename = trim(datadir)//'/averages/'//trim(plane)//'.h5'
       if (.not. file_exists (filename)) return
 !
       t_sp = real (t)
