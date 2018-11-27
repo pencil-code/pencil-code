@@ -1523,13 +1523,15 @@ module Io
 !  25-apr-16/ccyang: coded
 !  23-Nov-2018/PABourdin: moved to IO module
 !
-      use File_io, only: file_exists
+      use File_io, only: file_exists, delete_file
+      use General, only: itoa
 !
       character (len=*), intent(in) :: path, plane
       integer, intent(in) :: ngrid, nname
 !
       character(len=fnlen) :: filename
-      real :: time, t_sp
+      real :: time_file, t_sp
+      integer :: last, pos
 !
       if (.not. lroot) return
       if ((ngrid <= 0) .or. (nname <= 0)) return
@@ -1538,7 +1540,23 @@ module Io
       if (.not. file_exists (filename)) return
 !
       t_sp = real (t)
-      ! *** WORK HERE: set 'plane/last' according to 'plane/#/time'
+      call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
+        call input_hdf5 (trim(itoa(last))//'/time', time_file)
+        if (time_file > t_sp) then
+          do pos = last, 0, -1
+            if (pos < last) call input_hdf5 (trim(itoa(pos))//'/time', time_file)
+            if (time_file < t_sp) then
+              if (pos /= last) call output_hdf5 ('last', pos)
+              call file_close_hdf5
+              return
+            endif
+          enddo
+        endif
+      endif
+      call file_close_hdf5
+      if (t_sp == 0.0) call delete_file (filename)
 !
     endsubroutine trim_average
 !***********************************************************************
