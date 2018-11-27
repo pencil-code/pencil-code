@@ -1614,9 +1614,12 @@ module HDF5_IO
       if (lroot .and. (index_get == '') .and. (max_reported < ivar)) then
         ! known broken MVAR/MAUX contributions:
         ! 'selfgravity_logspirals' without 'particles_selfgravity'
-        call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found! '// &
-            'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup. '// &
-            'Alternatively, some variables may not have been initialized correctly. Both is an error and should be fixed!')
+        call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found!')
+        if (max_reported == -1) then
+          call warning ('index_get', &
+              'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup. '// &
+              'Alternatively, some variables may not have been initialized correctly. Both is an error and should be fixed!')
+        endif
         max_reported = ivar
       endif
 !
