@@ -146,7 +146,7 @@ module HDF5_IO
       ! check for an HDF5 error
       if (code /= 0) then
         if (present (dataset)) then
-          call fatal_error (caller, message//' "'//trim (dataset)//'"@"'//trim (current)//'"', .true.)
+          call fatal_error (caller, message//' '//"'"//trim (dataset)//"'"//' in "'//trim (current)//'"', .true.)
         else
           call fatal_error (caller, message, .true.)
         endif
