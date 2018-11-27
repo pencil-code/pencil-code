@@ -8,7 +8,7 @@
   nt=50, it1=10, isave=200, itorder=3,
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
   dsnap=.2, d2davg=.2, ! time intervals for writing snapshots and phi-averages
-  dvid=0.2, slice_position='m' ! time interval and position for slices
+  iz=11, dvid=0.2, slice_position='m' ! time interval and position for slices
   bcx = 'a','s','s','a2','sT','a','s','s',
   bcy = 's','a','s','a2','sT','s','a','s',
   bcz = 's','s','a','a2','sT','s','s','a',
