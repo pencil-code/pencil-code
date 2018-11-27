@@ -1408,7 +1408,7 @@ module Io
       character (len=*), intent(in) :: path, label
       integer, intent(in) :: nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
-      real, dimension(:,:,:), intent(in) :: data
+      real, dimension(:,:,:), intent(in), target :: data
       real, intent(in) :: time
       logical, intent(in) :: lbinary, lwrite
       real, dimension(:), optional, intent(in) :: header
@@ -1416,14 +1416,16 @@ module Io
       character (len=fnlen) :: filename
       character (len=intlen) :: group
       integer :: last, ia, alloc_err
-      logical :: lexists
-      real, dimension (:,:), allocatable :: component
+      logical :: lexists, lglobal
+      real, dimension (:,:), allocatable, target :: component
+      real, pointer :: local_data(:,:)
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
       filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
       lexists = file_exists (filename)
-      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      lglobal = ((label == 'z') .or. (label == 'y'))
+      call file_open_hdf5 (filename, global=lglobal, truncate=(.not. lexists), write=lwrite)
       if (exists_in_hdf5 ('last')) then
         call input_hdf5 ('last', last)
         last = last + 1
@@ -1439,9 +1441,15 @@ module Io
         if (alloc_err > 0) call fatal_error('output_average_2D', 'Could not allocate memory for component')
         do ia = 1, nc
           component = data(ia,:,:)
-          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), component, size(component,1), size(component,2))
+          local_data => component
+          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, ny, nxgrid, nygrid, ipx, ipy, .true.)
         enddo
         deallocate (component)
+      elseif (label == 'y') then
+        do ia = 1, nc
+          local_data => data(:,:,ia)
+          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, nz, nxgrid, nzgrid, ipx, ipz, .true.)
+        enddo
       else
         do ia = 1, nc
           call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,:,ia), size(data,1), size(data,2))
