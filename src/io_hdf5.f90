@@ -1348,7 +1348,7 @@ module Io
       real, dimension(:), optional, intent(in) :: header
 !
       character (len=fnlen) :: filename
-      character (len=labellen) :: group
+      character (len=intlen) :: group
       integer :: last, ia, alloc_err
       logical :: lexists, lphi
 !
@@ -1394,7 +1394,7 @@ module Io
       real, dimension(:), optional, intent(in) :: header
 !
       character (len=fnlen) :: filename
-      character (len=labellen) :: group
+      character (len=intlen) :: group
       integer :: last, ia, alloc_err
       logical :: lexists
       real, dimension (:,:), allocatable :: component
@@ -1455,7 +1455,7 @@ module Io
       real, intent(in) :: dr
 !
       character (len=fnlen) :: filename
-      character (len=labellen) :: group
+      character (len=intlen) :: group
       integer :: last, ia, alloc_err
       logical :: lexists
       real, dimension (:,:,:), allocatable :: component
