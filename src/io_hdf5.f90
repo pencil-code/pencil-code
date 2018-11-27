@@ -1420,7 +1420,7 @@ module Io
       real, dimension (:,:), allocatable, target :: component
       real, pointer :: local_data(:,:)
 !
-      if (.not. lwrite .or. (nc <= 0)) return
+      if (nc <= 0) return
 !
       filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
       lexists = file_exists (filename)
@@ -1442,13 +1442,13 @@ module Io
         do ia = 1, nc
           component = data(ia,:,:)
           local_data => component
-          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, ny, nxgrid, nygrid, ipx, ipy, .true.)
+          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, ny, nxgrid, nygrid, ipx, ipy, lwrite)
         enddo
         deallocate (component)
       elseif (label == 'y') then
         do ia = 1, nc
           local_data => data(:,:,ia)
-          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, nz, nxgrid, nzgrid, ipx, ipz, .true.)
+          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, nz, nxgrid, nzgrid, ipx, ipz, lwrite)
         enddo
       else
         do ia = 1, nc
