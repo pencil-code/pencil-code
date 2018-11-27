@@ -470,7 +470,7 @@ module Io
       if (grid_pos < 0) return
 !
       last = 0
-      filename = trim (directory_snap)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
+      filename = trim (datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
       lexists = parallel_file_exists (filename)
       if (lroot .and. lexists) then
         call file_open_hdf5 (filename, global=.false., read_only=.true.)
