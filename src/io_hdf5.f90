@@ -1071,7 +1071,13 @@ module Io
       character (len=fnlen) :: dir, fpart
 !
       call parse_filename (filename, dir, fpart)
-      if (dir == '.') call safe_character_assign (dir, directory_snap)
+      if (dir == '.') then
+        if (flist(1:4) == 'tavg') then
+          call safe_character_assign (dir, trim(datadir)//'/averages')
+        else
+          call safe_character_assign (dir, directory_snap)
+        endif
+      endif
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
