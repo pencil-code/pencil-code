@@ -1523,6 +1523,7 @@ module Io
       if (.not. lwrite .or. (nc <= 0)) return
 !
       filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      if (trim (label) == 'phi_z') filename = trim(path) // '/phizaverages.dat'
       if (lbinary) then
         open(lun_output, file=filename, form='unformatted', position='append')
         if (present (header)) write(lun_output) header
