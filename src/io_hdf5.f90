@@ -1326,30 +1326,6 @@ module Io
 !
     endsubroutine input_profile
 !***********************************************************************
-    function trim_label(name, phi)
-!
-!   Trim average label and remove unneeded suffix.
-!
-!   26-Nov-2018/PABourdin: coded
-!
-      use General, only: itoa, loptest
-!
-      character (len=labellen) :: trim_label
-      character (len=labellen), intent(in) :: name
-      logical, optional, intent(in) :: phi
-!
-      integer :: last
-!
-      last = len (trim (name))
-      if (loptest (phi)) then
-        if (name(last-3:last) == 'mphi') last = last - 4
-      else
-        if (name(last:last) == 'm') last = last - 1
-      endif
-      trim_label = trim (name(1:last))
-!
-    endfunction trim_label
-!***********************************************************************
     subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output 1D average to a file.
@@ -1370,7 +1346,7 @@ module Io
       character (len=fnlen) :: filename
       character (len=intlen) :: group
       integer :: last, ia, alloc_err
-      logical :: lexists, lphi
+      logical :: lexists
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
@@ -1386,9 +1362,8 @@ module Io
       endif
       group = trim (itoa (last))
       call create_group_hdf5 (group)
-      lphi = (label(1:3) == 'phi')
       do ia = 1, nc
-        call output_hdf5 (trim(group)//'/'//trim_label(name(ia), lphi), data(:,ia), size(data,1))
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), data(:,ia), size(data,1))
       enddo
       call output_hdf5 (trim(group)//'/time', time)
       call output_hdf5 ('last', last)
@@ -1448,17 +1423,17 @@ module Io
         do ia = 1, nc
           component = data(ia,:,:)
           local_data => component
-          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, ny, nxgrid, nygrid, ipx, ipy, lwrite)
+          call output_hdf5 (trim(group)//'/'//trim(name(ia)), local_data, nx, ny, nxgrid, nygrid, ipx, ipy, lwrite)
         enddo
         deallocate (component)
       elseif (label == 'y') then
         do ia = 1, nc
           local_data => data(:,:,ia)
-          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), local_data, nx, nz, nxgrid, nzgrid, ipx, ipz, lwrite)
+          call output_hdf5 (trim(group)//'/'//trim(name(ia)), local_data, nx, nz, nxgrid, nzgrid, ipx, ipz, lwrite)
         enddo
       else
         do ia = 1, nc
-          call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,:,ia), size(data,1), size(data,2))
+          call output_hdf5 (trim(group)//'/'//trim(name(ia)), data(:,:,ia), size(data,1), size(data,2))
         enddo
       endif
       if (lglobal) then
@@ -1518,7 +1493,7 @@ module Io
       if (alloc_err > 0) call fatal_error('output_average_phi', 'Could not allocate memory for component')
       do ia = 1, nc
         component = data(:,1:nz,:,ia)
-        call output_hdf5 (trim(group)//'/'//trim_label(name(ia), .true.), component, size(data,1), nz, size(data,3))
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), component, size(data,1), nz, size(data,3))
       enddo
       deallocate (component)
       call output_hdf5 (trim(group)//'/time', time)
