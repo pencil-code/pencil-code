@@ -1598,6 +1598,7 @@ module HDF5_IO
       logical, optional, intent(in) :: particle
 !
       type (element), pointer, save :: current => null()
+      integer, save :: max_reported = -1
 !
       index_get = ''
       current => last
@@ -1610,12 +1611,13 @@ module HDF5_IO
         current => current%previous
       enddo
 !
-      if (lroot .and. (index_get == '')) then
+      if (lroot .and. (index_get == '') .and. (max_reported < ivar)) then
         ! known broken MVAR/MAUX contributions:
         ! 'selfgravity_logspirals' without 'particles_selfgravity'
         call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found! '// &
             'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup. '// &
             'Alternatively, some variables may not have been initialized correctly. Both is an error and should be fixed!')
+        max_reported = ivar
       endif
 !
     endfunction index_get
