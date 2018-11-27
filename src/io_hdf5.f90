@@ -1386,11 +1386,11 @@ module Io
       endif
       group = trim (itoa (last))
       call create_group_hdf5 (group)
-      call output_hdf5 (trim(group)//'/time', time)
       lphi = (label(1:3) == 'phi')
       do ia = 1, nc
         call output_hdf5 (trim(group)//'/'//trim_label(name(ia), lphi), data(:,ia), size(data,1))
       enddo
+      call output_hdf5 (trim(group)//'/time', time)
       call output_hdf5 ('last', last)
       call file_close_hdf5
 !
@@ -1402,8 +1402,9 @@ module Io
 !
 !   16-Nov-2018/PABourdin: coded
 !
-      use File_io, only: file_exists
+      use File_io, only: parallel_file_exists
       use General, only: itoa
+      use Mpicomm, only: mpibcast_int
 !
       character (len=*), intent(in) :: path, label
       integer, intent(in) :: nc
@@ -1423,19 +1424,24 @@ module Io
       if (nc <= 0) return
 !
       filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
-      lexists = file_exists (filename)
+      lexists = parallel_file_exists (filename)
       lglobal = ((label == 'z') .or. (label == 'y'))
-      call file_open_hdf5 (filename, global=lglobal, truncate=(.not. lexists), write=lwrite)
-      if (exists_in_hdf5 ('last')) then
-        call input_hdf5 ('last', last)
-        last = last + 1
-      else
-        if (present (header)) call output_hdf5 ('r', header, size(header))
-        last = 0
+!
+      last = 0
+      if (lexists) then
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        if (exists_in_hdf5 ('last')) then
+          call input_hdf5 ('last', last)
+          last = last + 1
+        endif
+        call file_close_hdf5
+        call mpibcast_int (last)
       endif
+!
+      call file_open_hdf5 (filename, global=lglobal, truncate=(.not. lexists), write=lwrite)
+      if ((last == 0) .and. present (header)) call output_hdf5 ('r', header, size(header))
       group = trim(itoa(last))
       call create_group_hdf5 (group)
-      call output_hdf5 (trim(group)//'/time', time)
       if (label == 'z') then
         allocate (component(size(data,2),size(data,3)), stat = alloc_err)
         if (alloc_err > 0) call fatal_error('output_average_2D', 'Could not allocate memory for component')
@@ -1455,6 +1461,11 @@ module Io
           call output_hdf5 (trim(group)//'/'//trim_label(name(ia)), data(:,:,ia), size(data,1), size(data,2))
         enddo
       endif
+      if (lglobal) then
+        call file_close_hdf5
+        call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      endif
+      call output_hdf5 (trim(group)//'/time', time)
       call output_hdf5 ('last', last)
       call file_close_hdf5
 !
@@ -1503,7 +1514,6 @@ module Io
       endif
       group = trim (itoa (last))
       call create_group_hdf5 (group)
-      call output_hdf5 (trim(group)//'/time', time)
       allocate (component(size(data,1),nz,size(data,3)), stat = alloc_err)
       if (alloc_err > 0) call fatal_error('output_average_phi', 'Could not allocate memory for component')
       do ia = 1, nc
@@ -1511,6 +1521,7 @@ module Io
         call output_hdf5 (trim(group)//'/'//trim_label(name(ia), .true.), component, size(data,1), nz, size(data,3))
       enddo
       deallocate (component)
+      call output_hdf5 (trim(group)//'/time', time)
       call output_hdf5 ('last', last)
       call file_close_hdf5
 !

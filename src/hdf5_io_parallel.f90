@@ -247,6 +247,7 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: name
 !
+      exists_in_hdf5 = .false.
       if (.not. (lcollective .or. lwrite)) return
 !
       call h5lexists_f(h5_file, trim (name), exists_in_hdf5, h5_err)
