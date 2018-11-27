@@ -1617,7 +1617,8 @@ module HDF5_IO
         call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found!')
         if (max_reported == -1) then
           call warning ('index_get', &
-              'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup. '// &
+              'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup.')
+          call warning ('index_get', &
               'Alternatively, some variables may not have been initialized correctly. Both is an error and should be fixed!')
         endif
         max_reported = ivar
