@@ -6994,9 +6994,9 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       real :: value
-      integer :: j,l,n
+      integer :: j
 !
-      integer :: i
+      integer :: i,l
 !
       select case (topbot)
 !
