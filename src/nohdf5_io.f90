@@ -374,6 +374,7 @@ module HDF5_IO
 ! 14-Oct-2018/PABourdin: coded
 !
       if (lroot) then
+! write (*,*) '============> replace "index.pro" with empty file'
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
         close(lun_output)
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
