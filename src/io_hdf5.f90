@@ -1298,7 +1298,7 @@ module Io
       logical, optional :: lhas_ghost
 !
       character (len=fnlen) :: filename
-      integer :: np_global, np1, np2, ng, alloc_err
+      integer :: np_global, np1, np2, ng
 !
       ng = 0
       if (loptest (lhas_ghost)) ng = 3
@@ -1519,7 +1519,7 @@ module Io
 !
       character (len=fnlen) :: filename
       character (len=intlen) :: group
-      integer :: last, ia, alloc_err
+      integer :: last, ia
       logical :: lexists
       real, dimension (nr,nzgrid) :: component
 !
