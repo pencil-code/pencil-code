@@ -2354,16 +2354,15 @@ module EquationOfState
 !    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary; 
 !                   added branches for Kramers heat conductivity (using sigmaSBt!)
 !
-      logical, pointer :: lmeanfield_chitB, lheatc_kramers
-      real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop
+      logical, pointer :: lheatc_kramers
+      real, pointer :: chi,chi_t,hcondzbot,hcondztop
       real, pointer :: chit_prof1,chit_prof2,hcond0_kramers, nkramers
       real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,lnrho_xy,rho_xy, &
-        TT_xy,dlnrhodz_xy,chi_xy
-      real, dimension (l2-l1+1) :: quench
+          TT_xy,dlnrhodz_xy,chi_xy
       integer :: i
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
