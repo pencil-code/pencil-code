@@ -167,8 +167,8 @@ indices_aux = [ $
   { name:'iyH', label:'Hydrogen ionization fraction', dims:1 }, $
   { name:'ishock', label:'Shock profile', dims:1 }, $
   { name:'ishock_perp', label:'B-perpendicular shock profile', dims:1 }, $
-  { name:'icooling', label:'Cooling term', dims:1 }, $
-  { name:'icooling2', label:'Applied cooling term', dims:1 }, $
+  { name:'icooling', label:'ISM cooling term', dims:1 }, $
+  { name:'inetheat', label:'Net applied ISM heating term', dims:1 }, $
   { name:'idetonate', label:'Detonation energy', dims:1 }, $
   { name:'inp', label:'Particle number', dims:1 }, $
   { name:'iphiuu', label:'Potential of curl-free part of velocity field', dims:1 }, $
