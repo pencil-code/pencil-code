@@ -489,15 +489,16 @@ module Io
       this_proc = iproc
       if (.not. lwrite) this_proc = ncpus + 1
       call mpiallreduce_min (this_proc, slice_proc, MPI_COMM_WORLD)
-      if (slice_proc == iproc) then
-        call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
-        call output_hdf5 ('last', last)
-        call create_group_hdf5 (group)
+      lhas_data = (slice_proc == iproc)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists), write=lhas_data)
+      call output_hdf5 ('last', last)
+      call create_group_hdf5 (group)
+      if (lhas_data) then
         call output_hdf5 (trim(group)//'time', time)
         call output_hdf5 (trim(group)//'position', grid(pos))
         call output_hdf5 (trim(group)//'coordinate', grid_pos)
-        call file_close_hdf5
       endif
+      call file_close_hdf5
 !
       call file_open_hdf5 (filename, truncate=.false.)
       ! collect data along 'xy', 'xz', or 'yz'

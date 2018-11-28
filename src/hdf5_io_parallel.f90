@@ -1295,8 +1295,13 @@ module HDF5_IO
       call check_error (h5_err, 'output_hdf5_slice_2D', 'select collective IO', name)
 !
       ! collectively write the data
-      call h5dwrite_f (h5_dset, h5_ntype, data, &
-          glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      if (lhas_data) then
+        call h5dwrite_f (h5_dset, h5_ntype, data, &
+            glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      else
+        call h5dwrite_f (h5_dset, h5_ntype, 0, &
+            glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      endif
       call check_error (h5_err, 'output_hdf5_slice_2D', 'write dataset', name)
 !
       ! close data spaces, dataset, and the property list
