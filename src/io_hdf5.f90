@@ -1372,7 +1372,7 @@ module Io
 !
     endsubroutine output_average_1D
 !***********************************************************************
-    subroutine output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
+    subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output average to a file.
 !
@@ -1447,7 +1447,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_average_phi(path,number,nc,name,data,time,r,dr)
+    subroutine output_average_phi(path, number, nc, name, data, time, r, dr)
 !
 !   Output phi average to a file with these records:
 !   1) nr_phiavg, nz_phiavg, nvars, nprocz
