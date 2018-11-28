@@ -1495,7 +1495,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_average_phi(path, number, nc, name, data, time, r, dr)
+    subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
 !
 !   Output phi average to a file with these records:
 !   1) nr_phiavg, nz_phiavg, nvars, nprocz
@@ -1510,18 +1510,18 @@ module Io
       use General, only: itoa
 !
       character (len=*), intent(in) :: path, number
-      integer, intent(in) :: nc
+      integer, intent(in) :: nr, nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
       real, dimension(:,:,:,:), intent(in) :: data
       real, intent(in) :: time
-      real, dimension(:), intent(in) :: r
+      real, dimension(nr), intent(in) :: r
       real, intent(in) :: dr
 !
       character (len=fnlen) :: filename
       character (len=intlen) :: group
       integer :: last, ia, alloc_err
       logical :: lexists
-      real, dimension (:,:,:), allocatable :: component
+      real, dimension (nr,nzgrid) :: component
 !
       if (.not. lroot .or. (nc <= 0)) return
 !
@@ -1532,19 +1532,16 @@ module Io
         call input_hdf5 ('last', last)
         last = last + 1
       else
-        call output_hdf5 ('r', r, size(r))
+        call output_hdf5 ('r', r, nr)
         call output_hdf5 ('dr', dr)
         last = 0
       endif
       group = trim (itoa (last))
       call create_group_hdf5 (group)
-      allocate (component(size(data,1),nz,size(data,3)), stat = alloc_err)
-      if (alloc_err > 0) call fatal_error('output_average_phi', 'Could not allocate memory for component')
       do ia = 1, nc
-        component = data(:,1:nz,:,ia)
-        call output_hdf5 (trim(group)//'/'//trim(name(ia)), component, size(data,1), nz, size(data,3))
+        component = reshape (data(:,1:nz,:,ia), (/ nr, nzgrid /))
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), component, size(data,1), nzgrid)
       enddo
-      deallocate (component)
       call output_hdf5 (trim(group)//'/time', time)
       call output_hdf5 ('last', last)
       call file_close_hdf5

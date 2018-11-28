@@ -1609,7 +1609,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_average_phi(path, number, nc, name, data, time, r, dr)
+    subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
 !
 !   Output phi average to a file with these records:
 !   1) nr_phiavg, nz_phiavg, nvars, nprocz
@@ -1623,11 +1623,11 @@ module Io
       use General, only: safe_character_append
 !
       character (len=*), intent(in) :: path, number
-      integer, intent(in) :: nc
+      integer, intent(in) :: nr, nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
       real, dimension(:,:,:,:), intent(in) :: data
       real, intent(in) :: time
-      real, dimension(:), intent(in) :: r
+      real, dimension(nr), intent(in) :: r
       real, intent(in) :: dr
 !
       character (len=fnlen) :: filename
@@ -1638,7 +1638,7 @@ module Io
 !
       filename = 'PHIAVG' // trim(number)
       open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append')
-      write(lun_output) size (r, 1), nzgrid, nc, nprocz
+      write(lun_output) nr, nzgrid, nc, nprocz
       write(lun_output) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
       ! data has to be repacked to avoid writing an array temporary
       ! ngrs: writing an array temporary outputs corrupted data on copson

@@ -1031,7 +1031,7 @@ module Diagnostics
 !
       if (lwrite_phiaverages) then
         ! normalization is already done in phiaverages_rz
-        call output_average (datadir, ch2davg, nnamerz, cnamerz, fnamerz, t2davgfirst, rcyl, drcyl)
+        call output_average (datadir, ch2davg, nrcyl, nnamerz, cnamerz, fnamerz, t2davgfirst, rcyl, drcyl)
       endif
 !
       if (lroot .and. (ip<=10)) write(*,*) 'write_2daverages: wrote averages (xy,xz,phi#'//trim (ch2davg)//')'

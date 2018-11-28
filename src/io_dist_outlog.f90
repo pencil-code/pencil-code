@@ -1783,7 +1783,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_average_phi(path, number, nc, name, data, time, r, dr)
+    subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
 !
 !   Output phi average to a file with these records:
 !   1) nr_phiavg, nz_phiavg, nvars, nprocz
@@ -1797,11 +1797,11 @@ module Io
       use General, only: safe_character_append
 !
       character (len=*), intent(in) :: path, number
-      integer, intent(in) :: nc
+      integer, intent(in) :: nr, nc
       character (len=fmtlen), dimension(nc), intent(in) :: name
       real, dimension(:,:,:,:), intent(in) :: data
       real, intent(in) :: time
-      real, dimension(:), intent(in) :: r
+      real, dimension(nr), intent(in) :: r
       real, intent(in) :: dr
 !
       character (len=fnlen) :: filename
@@ -1815,7 +1815,7 @@ module Io
       filename = 'PHIAVG' // trim(number)
       open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append', IOSTAT=io_err)
       lerror = outlog(io_err,"openw",trim(path)//'/averages/'//trim(filename),location='output_average_phi')
-      write(lun_output,IOSTAT=io_err) size (r, 1), nzgrid, nc, nprocz
+      write(lun_output,IOSTAT=io_err) nr, nzgrid, nc, nprocz
       lerror = outlog(io_err,'phi-average header')
       write(lun_output,IOSTAT=io_err) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
       lerror = outlog(io_err,'phi-average time')
