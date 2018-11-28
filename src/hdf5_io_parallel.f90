@@ -663,7 +663,6 @@ module HDF5_IO
       real, dimension (mx,my,mz,nv), intent(out) :: data
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
-      integer :: pos
 !
       ! read other 4D array
       global_size(n_dims+1) = nv
@@ -1438,7 +1437,6 @@ module HDF5_IO
       real, dimension (mx,my,mz,nv), intent(in) :: data
 !
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
-      integer :: pos
 !
       if (.not. lcollective) call check_error (1, 'output_hdf5_4D', '4D array output requires global file', name)
 !
