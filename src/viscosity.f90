@@ -2290,7 +2290,7 @@ module Viscosity
           yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name
       use Sub, only: cross, dot2
 !
-      real, dimension (mx,my,mz,mvar) :: f, df
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Reshock,fvisc2
       real, dimension (nx,3) :: nuD2uxb,fluxv
       type (pencil_case) :: p
