@@ -5697,7 +5697,6 @@ module Energy
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof
       real :: zbot,ztop
-      integer :: ix
       intent(in) :: p
 !
 !  Define top and bottom positions of the box.
