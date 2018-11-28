@@ -1479,9 +1479,12 @@ module Io
       open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append')
       write(lun_output) nr, nzgrid, nc, nprocz
       write(lun_output) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
+      ! note: due to passing data as implicit-size array,
+      ! the indices (0:nz) are shifted to (1:nz+1),
+      ! so that we have to write only the portion (2:nz+1).
       ! data has to be repacked to avoid writing an array temporary
       ! ngrs: writing an array temporary outputs corrupted data on copson
-      write(lun_output) pack(data(:,1:nz,:,1:nc), .true.)
+      write(lun_output) pack(data(:,2:nz+1,:,1:nc), .true.)
       labels = trim(name(1))
       if (nc >= 2) then
         do pos = 2, nc

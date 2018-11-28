@@ -1819,9 +1819,12 @@ module Io
       lerror = outlog(io_err,'phi-average header')
       write(lun_output,IOSTAT=io_err) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
       lerror = outlog(io_err,'phi-average time')
+      ! note: due to passing data as implicit-size array,
+      ! the indices (0:nz) are shifted to (1:nz+1),
+      ! so that we have to write only the portion (2:nz+1).
       ! data has to be repacked to avoid writing an array temporary
       ! ngrs: writing an array temporary outputs corrupted data on copson
-      write(lun_output,IOSTAT=io_err) pack(data(:,1:nz,:,1:nc), .true.)
+      write(lun_output,IOSTAT=io_err) pack(data(:,2:nz+1,:,1:nc), .true.)
       lerror = outlog(io_err,'phi-average data')
       labels = trim(name(1))
       if (nc >= 2) then
