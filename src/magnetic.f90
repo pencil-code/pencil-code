@@ -958,7 +958,6 @@ module Magnetic
       !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:,:,:,:), allocatable :: ap
       integer :: i,j,myl,nycap
       real :: J_ext2
 !
@@ -2964,7 +2963,7 @@ module Magnetic
       type (pencil_case),                 intent(out)  :: p
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
-      real, dimension (nx,3) :: bb_ext_pot, tmp
+      real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
       real, dimension(3) :: B_ext
       real :: c,s
@@ -3535,7 +3534,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting,ajiuj
-      real, dimension (nx,3) :: magfric,vmagfric, baroclinic
+      real, dimension (nx,3) :: magfric,vmagfric ! currently unused: baroclinic
       real, dimension (nx,3) :: dAdt, gradeta_shock
       real, dimension (nx) :: exabot,exatop, peta_shock
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
