@@ -761,7 +761,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
-      integer :: j,myl,nycap
+      integer :: j,myl ! currently unused: nycap
 !
 ! set the right point in profile to unity.
 !
