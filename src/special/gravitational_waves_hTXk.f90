@@ -300,7 +300,9 @@ module Special
 !  initial condition for hij
 !
       select case (inithij)
-        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('nothing')
+          if (lroot) print*,'init_special: nothing'
+          f(:,:,:,ihhT:ihhXim)=0.
         case default
           call fatal_error("init_special: No such value for inithij:" &
               ,trim(inithij))
@@ -309,7 +311,9 @@ module Special
 !  initial condition for gij
 !
       select case (initgij)
-        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('nothing')
+          if (lroot) print*,'init_special: nothing'
+          f(:,:,:,iggT:iggXim)=0.
         case default
           call fatal_error("init_special: No such value for initgij:" &
               ,trim(initgij))
