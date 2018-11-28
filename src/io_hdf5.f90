@@ -1346,7 +1346,7 @@ module Io
 !
       character (len=fnlen) :: filename
       character (len=intlen) :: group
-      integer :: last, ia, alloc_err
+      integer :: last, ia
       logical :: lexists
 !
       if (.not. lwrite .or. (nc <= 0)) return
