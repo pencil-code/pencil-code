@@ -1539,7 +1539,10 @@ module Io
       group = trim (itoa (last))
       call create_group_hdf5 (group)
       do ia = 1, nc
-        component = reshape (data(:,1:nz,:,ia), (/ nr, nzgrid /))
+        ! note: due to passing data as implicit-size array,
+        ! the indices (0:nz) are shifted to (1:nz+1),
+        ! so that we have to write only the portion (2:nz+1).
+        component = reshape (data(:,2:nz+1,:,ia), (/ nr, nzgrid /))
         call output_hdf5 (trim(group)//'/'//trim(name(ia)), component, size(data,1), nzgrid)
       enddo
       call output_hdf5 (trim(group)//'/time', time)
