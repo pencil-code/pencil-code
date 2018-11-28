@@ -464,7 +464,7 @@ module Io
 !
       character (len=fnlen) :: filename, group
       integer :: last, this_proc, slice_proc
-      real :: time_last, slice_pos
+      real :: time_last
       logical :: lexists, lhas_data
 !
       if (grid_pos < 0) return
@@ -1393,7 +1393,6 @@ module Io
       character (len=fnlen) :: filename
       character (len=intlen) :: group
       integer :: last, ia
-      integer, dimension(full) :: line
       logical :: lexists
 !
       if (.not. lwrite .or. (nc <= 0)) return
