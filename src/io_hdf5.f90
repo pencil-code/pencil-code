@@ -1372,6 +1372,54 @@ module Io
 !
     endsubroutine output_average_1D
 !***********************************************************************
+    subroutine output_average_1D_chunked(path, label, nc, name, data, full, time, lbinary, lwrite, header)
+!
+!   Output 1D chunked average to a file.
+!
+!   26-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      integer, intent(in) :: full
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      character (len=intlen) :: group
+      integer :: last, ia
+      integer, dimension(full) :: line
+      logical :: lexists
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
+        last = last + 1
+      else
+        if (present (header)) call output_hdf5 ('r', header, size(header))
+        last = 0
+      endif
+      group = trim (itoa (last))
+      call create_group_hdf5 (group)
+!
+      do ia = 1, nc
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), reshape (data(:,:,ia), (/ full /)), full)
+      enddo
+      call output_hdf5 (trim(group)//'/time', time)
+      call output_hdf5 ('last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_1D_chunked
+!***********************************************************************
     subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output average to a file.

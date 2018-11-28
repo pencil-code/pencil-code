@@ -24,6 +24,7 @@
   interface output_average
     module procedure output_average_1D
     module procedure output_average_2D
+    module procedure output_average_1D_chunked
     module procedure output_average_phi
   endinterface
 

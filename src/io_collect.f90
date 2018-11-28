@@ -1540,6 +1540,29 @@ module Io
 !
     endsubroutine output_average_1D
 !***********************************************************************
+    subroutine output_average_1D_chunked(path,label,nc,name,data,full,time,lbinary,lwrite,header)
+!
+!   Output 1D chunked average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      integer, intent(in) :: full
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      if (present (header)) then
+        call output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
+      else
+        call output_average_2D(path,label,nc,name,data,time,lbinary,lwrite)
+      endif
+!
+    endsubroutine output_average_1D_chunked
+!***********************************************************************
     subroutine output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
 !
 !   Output average to a file.
