@@ -1650,7 +1650,7 @@ module Io
 !
     endsubroutine input_profile
 !***********************************************************************
-    subroutine output_average_1D(path,label,nc,name,data,time,lbinary,lwrite,header)
+    subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output 1D average to a file.
 !
@@ -1700,7 +1700,7 @@ module Io
 !
     endsubroutine output_average_1D
 !***********************************************************************
-    subroutine output_average_1D_chunked(path,label,nc,name,data,full,time,lbinary,lwrite,header)
+    subroutine output_average_1D_chunked(path, label, nc, name, data, full, time, lbinary, lwrite, header)
 !
 !   Output 1D chunked average to a file.
 !
@@ -1716,14 +1716,14 @@ module Io
       real, dimension(:), optional, intent(in) :: header
 !
       if (present (header)) then
-        call output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
+        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
       else
-        call output_average_2D(path,label,nc,name,data,time,lbinary,lwrite)
+        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite)
       endif
 !
     endsubroutine output_average_1D_chunked
 !***********************************************************************
-    subroutine output_average_2D(path,label,nc,name,data,time,lbinary,lwrite,header)
+    subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output average to a file.
 !
@@ -1783,7 +1783,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_average_phi(path,number,nc,name,data,time,r,dr)
+    subroutine output_average_phi(path, number, nc, name, data, time, r, dr)
 !
 !   Output phi average to a file with these records:
 !   1) nr_phiavg, nz_phiavg, nvars, nprocz
