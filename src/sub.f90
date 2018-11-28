@@ -6469,8 +6469,6 @@ nameloop: do
       logical, intent(in), optional :: communicated
 !
       integer   :: vec
-      character :: ch
-      character (LEN=max(len(name)-2,2)) :: tail
 !
       vec=-1
 !
