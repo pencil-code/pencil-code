@@ -103,6 +103,13 @@ module Special
   real, dimension(3,3) :: ij_table
   real :: c_light2=1.
 !
+!  Do this here because shared variables for this array doesn't work on Beskow.
+!
+  integer, parameter :: nk=nxgrid/2
+  real, dimension(nk) :: specGWs   ,specGWh   ,specStr
+  real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
+  public :: specGWs, specGWshel, specGWh, specGWhhel, specStr, specStrhel
+!
 ! input parameters
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
@@ -604,15 +611,14 @@ module Special
       use Fourier, only: fourier_transform, fft_xyz_parallel
       use SharedVariables, only: put_shared_variable
 !
-      integer, parameter :: nk=nxgrid/2
       real, dimension (:,:,:,:), allocatable :: Tpq_re, Tpq_im
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: Pij, e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      real, dimension(nk) :: specGWs   ,specGWh   ,specStr
-      real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
+!     real, dimension(nk) :: specGWs   ,specGWh   ,specStr
+!     real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       logical :: lscale_tobox1=.true.
       real :: kscale_factor, fact, sign_switch
@@ -973,21 +979,21 @@ module Special
 !
 !  Communicate as shared variables
 !
-      if (lspec) then
-if (ldebug_print) print*,'AXEL5: iproc,specGWs=',iproc,specGWs
-        if (GWs_spec) then
-          call put_shared_variable('specGWs   ',specGWs   )
-          call put_shared_variable('specGWshel',specGWshel)
-        endif
-        if (GWh_spec) then
-          call put_shared_variable('specGWh   ',specGWh   )
-          call put_shared_variable('specGWhhel',specGWhhel)
-        endif
-        if (Str_spec) then
-          call put_shared_variable('specStr   ',specStr   )
-          call put_shared_variable('specStrhel',specStrhel)
-        endif
-      endif
+!     if (lspec) then
+!if (ldebug_print) print*,'AXEL5: iproc,specGWs=',iproc,specGWs
+!       if (GWs_spec) then
+!         call put_shared_variable('specGWs   ',specGWs   )
+!         call put_shared_variable('specGWshel',specGWshel)
+!       endif
+!       if (GWh_spec) then
+!         call put_shared_variable('specGWh   ',specGWh   )
+!         call put_shared_variable('specGWhhel',specGWhhel)
+!       endif
+!       if (Str_spec) then
+!         call put_shared_variable('specStr   ',specStr   )
+!         call put_shared_variable('specStrhel',specStrhel)
+!       endif
+!     endif
 !
 !  back to real space
 !
