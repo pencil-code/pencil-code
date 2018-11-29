@@ -7,6 +7,7 @@
 !
 !  19-Sep-2012/PABourdin: adapted from io_mpi2.f90
 !  28-Oct-2016/PABourdin: first fully working version
+!  28-Nov-2018/PABourdin: first beta-test version
 !
 module Io
 !
@@ -85,6 +86,7 @@ module Io
 !  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
+!  28-Oct-2016/PABourdin: redesigned
 !
       use General, only: directory_names_std
 !
@@ -192,6 +194,7 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
+!  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: parallel_file_exists
 !
@@ -261,6 +264,7 @@ module Io
 !  Close snapshot file.
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  28-Oct-2016/PABourdin: redesigned
 !
       call file_close_hdf5
       if (persist_initialized) persist_initialized = .false.
@@ -532,6 +536,7 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  10-Mar-2015/MR: avoided use of fseek;
 !                  this subroutine seems not yet to be adapted to HDF5
+!  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: backskip_to_time
       use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
