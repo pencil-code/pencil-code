@@ -6199,7 +6199,7 @@ module Initcond
       if (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
-            rpart = amp*(x(l1)-x(l))*(x(l2)-x(l))
+            rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
             f(l,m,:,ix:ix+1) = 0.
             f(l,m,:,ix+2)    = rpart*sin(y(m))
           enddo
@@ -6224,7 +6224,7 @@ module Initcond
       if (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
-            rpart = amp*(x(l1)-x(l))*(x(l2)-x(l))
+            rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
             f(l,m,:,ix)   = 2.*rpart*cos(y(m))
             f(l,m,:,ix+1) = rpart*sin(y(m))
             f(l,m,:,ix+2) = 0.
