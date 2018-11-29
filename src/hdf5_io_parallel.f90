@@ -1584,10 +1584,12 @@ module HDF5_IO
       character (len=*), intent(in) :: label
       integer, intent(in) :: ilabel
 !
+      integer, parameter :: lun_output = 92
+!
       if (lroot) then
-        open(3,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
-        write(3,*) trim(label)//'='//trim(itoa(ilabel))
-        close(3)
+        open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
+        write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
+        close(lun_output)
       endif
       call index_register (trim(label), ilabel, particle=.true.)
 !
@@ -1602,7 +1604,7 @@ module HDF5_IO
       logical, optional, intent(in) :: particle
 !
       type (element), pointer, save :: current => null()
-      integer, save :: max_reported = -2
+      integer, save :: max_reported = -1
 !
       index_get = ''
       current => last
@@ -1669,12 +1671,13 @@ module HDF5_IO
 ! 14-Oct-2018/PABourdin: coded
 !
       type (element), pointer, save :: current => null()
+      integer, parameter :: lun_output = 92
 !
       if (lroot) then
-        open(3,file=trim(datadir)//'/'//trim(index_pro),status='replace')
-        close(3)
-        open(3,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
-        close(3)
+        open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
+        close(lun_output)
+        open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
+        close(lun_output)
       endif
 !
       do while (associated (last))

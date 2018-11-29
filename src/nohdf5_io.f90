@@ -329,13 +329,15 @@ module HDF5_IO
 !
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+! Axel, please uncomment for debugging on Beskow:
+! write (123,*) '============> append to "index.pro" ivar,varname=', ivar, varname
         if (present (vector) .and. present (array)) then
           ! expand array: iuud => indgen(vector)
           write(lun_output,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
         else
           write(lun_output,*) trim(varname)//'='//trim(itoa(ivar))
         endif
-        close(3)
+        close(lun_output)
       endif
 !
     endsubroutine index_append
@@ -374,7 +376,8 @@ module HDF5_IO
 ! 14-Oct-2018/PABourdin: coded
 !
       if (lroot) then
-! write (*,*) '============> replace "index.pro" with empty file'
+! Axel, please uncomment for debugging on Beskow:
+! write (123,*) '============> replace "index.pro" with empty file'
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
         close(lun_output)
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
