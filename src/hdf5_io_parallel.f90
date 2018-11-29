@@ -1602,7 +1602,7 @@ module HDF5_IO
       logical, optional, intent(in) :: particle
 !
       type (element), pointer, save :: current => null()
-      integer, save :: max_reported = -1
+      integer, save :: max_reported = -2
 !
       index_get = ''
       current => last

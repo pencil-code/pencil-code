@@ -210,15 +210,14 @@ module Io
       character (len=fnlen) :: filename, dataset
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
-      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
       if (dataset == 'globals') then
-        if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
-          filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
-        else
-          filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
-        endif
+        filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+      elseif (dataset == 'timeavg') then
+        filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+      else
+        filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       endif
       lexists = parallel_file_exists(filename)
       ltrunc = .true.
@@ -230,7 +229,7 @@ module Io
 !
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
-      if (dataset == 'f') then
+      if ((dataset == 'f') .or. (dataset == 'timeavg')) then
         call create_group_hdf5 ('data')
         ! write components of f-array
         do pos=1, nv
@@ -239,7 +238,7 @@ module Io
         enddo
       elseif (dataset == 'globals') then
         call create_group_hdf5 ('data')
-        ! write components of f-array
+        ! write components of global array
         do pos=1, nv
           if (index_get(mvar_io + pos) == '') cycle
           call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
@@ -1034,22 +1033,26 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine output_globals(file,a,nv)
+    subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignore time and mesh.
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  29-Nov-2018/PABourdin: extended for output of time averages
+!
+      use General, only : coptest
 !
       character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
+      character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, mode=0, label='globals')
+      call output_snap (a, nv, file, mode=0, label=coptest(label,'globals'))
       call output_snap_finalize
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file,a,nv)
+    subroutine input_globals(file, a, nv)
 !
 !  Read globals snapshot file, ignore time and mesh.
 !
