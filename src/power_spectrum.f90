@@ -1464,7 +1464,8 @@ module power_spectrum
     endif
   else
 !
-!  initialize power spectrum to zero
+!  Initialize power spectrum to zero. The following lines only apply to
+!  the case where special/gravitational_waves_hij6.f90 is used.
 !
     k2m=0.
     nks=0.
@@ -1597,8 +1598,10 @@ module power_spectrum
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
+if (ldebug) print*,'AXEL6: iproc,spec=',iproc,sp,spectrum
   call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+if (ldebug) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !
 !  compute krms only once
 !
