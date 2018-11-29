@@ -1047,7 +1047,7 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine output_globals(file,a,nv)
+    subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignoring mesh.
 !
@@ -1058,6 +1058,7 @@ module Io
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
+      character (len=*), intent(in), optional :: label
 !
       if (lserial_io) call start_serialize
       open(lun_output,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',status='replace')
@@ -1081,7 +1082,7 @@ module Io
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file,a,nv)
+    subroutine input_globals(file, a, nv)
 !
 !  Read globals snapshot file, ignoring mesh.
 !

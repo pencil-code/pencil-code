@@ -1204,7 +1204,7 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine output_globals(file,a,nv)
+    subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignore time and mesh.
 !
@@ -1213,13 +1213,14 @@ module Io
       character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
+      character (len=*), intent(in), optional :: label
 !
       call output_snap (a, nv, file, 0)
       call output_snap_finalize
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file,a,nv)
+    subroutine input_globals(file, a, nv)
 !
 !  Read globals snapshot file, ignore time and mesh.
 !
