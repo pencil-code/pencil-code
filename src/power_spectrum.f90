@@ -1416,6 +1416,7 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
+    use Special, only: specGWs, specGWshel, specGWh, specGWhhel, specStr, specStrhel
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
@@ -1428,8 +1429,8 @@ module power_spectrum
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nk) :: spectrumhel,spectrumhel_sum
-  real, dimension(:), pointer :: specGWs   ,specGWh   ,specStr
-  real, dimension(:), pointer :: specGWshel,specGWhhel,specStrhel
+! real, dimension(:), pointer :: specGWs   ,specGWh   ,specStr
+! real, dimension(:), pointer :: specGWshel,specGWhhel,specStrhel
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
@@ -1445,20 +1446,20 @@ module power_spectrum
 !
   if (iggXim>0.or.iggTim>0) then
     if (sp=='GWs') then
-      call get_shared_variable('specGWs   ', specGWs   , caller='powerGWs')
-      call get_shared_variable('specGWshel', specGWshel, caller='powerGWs')
+!     call get_shared_variable('specGWs   ', specGWs   , caller='powerGWs')
+!     call get_shared_variable('specGWshel', specGWshel, caller='powerGWs')
       spectrum   =specGWs
       spectrumhel=specGWshel
     endif
     if (sp=='GWh') then
-      call get_shared_variable('specGWh   ', specGWh   , caller='powerGWs')
-      call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
+!     call get_shared_variable('specGWh   ', specGWh   , caller='powerGWs')
+!     call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
       spectrum   =specGWh
       spectrumhel=specGWhhel
     endif
     if (sp=='Str') then
-      call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
-      call get_shared_variable('specStrhel', specStrhel, caller='powerGWs')
+!     call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
+!     call get_shared_variable('specStrhel', specStrhel, caller='powerGWs')
       spectrum   =specStr
       spectrumhel=specStrhel
     endif
@@ -1598,10 +1599,10 @@ module power_spectrum
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-if (ldebug) print*,'AXEL6: iproc,spec=',iproc,sp,spectrum
+if (ip<7) print*,'AXEL6: iproc,spec=',iproc,sp,spectrum
   call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
   call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-if (ldebug) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
+if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
 !
 !  compute krms only once
 !
