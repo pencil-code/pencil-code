@@ -1618,7 +1618,6 @@ module HDF5_IO
       if (lroot .and. (index_get == '') .and. (max_reported < ivar)) then
         ! known broken MVAR/MAUX contributions:
         ! 'samples/selfgravity_logspirals' without 'particles_selfgravity'
-        ! 'samples/mdwarf' with 'timeavg'
         call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found!')
         if (max_reported == -1) then
           call warning ('index_get', &
