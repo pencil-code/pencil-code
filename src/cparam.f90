@@ -27,9 +27,9 @@ module Cparam
 !
   integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
   integer, parameter :: mcom=mvar+maux_com
-  integer, parameter :: mparray=mpvar+mpaux  
+  integer, parameter :: mparray=mpvar+mpaux
   integer, parameter :: mpcom=mpvar+mpaux
-  integer, parameter :: mqarray=mqvar+mqaux  
+  integer, parameter :: mqarray=mqvar+mqaux
 !
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
@@ -101,7 +101,7 @@ module Cparam
   real, parameter :: huge_real=huge(0.0)
   double precision, parameter :: huge_double=huge(0.0d0)
   real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
-                                               ! huge(0.) illegal when reading it from a namelist 
+                                               ! huge(0.) illegal when reading it from a namelist
 !
 !  Tiny and huge numbers.
 !
