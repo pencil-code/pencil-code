@@ -82,6 +82,13 @@ module Special
 !
   include 'special.h'
 !
+!  Do this here because shared variables for this array doesn't work on Beskow.
+!
+  integer, parameter :: nk=nxgrid/2
+  real, dimension(nk) :: specGWs   ,specGWh   ,specStr
+  real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
+  public :: specGWs, specGWshel, specGWh, specGWhhel, specStr, specStrhel
+!
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
