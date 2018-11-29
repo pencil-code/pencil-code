@@ -974,6 +974,7 @@ module Special
 !  Communicate as shared variables
 !
       if (lspec) then
+if (ldebug_print) print*,'AXEL5: iproc,specGWs=',iproc,specGWs
         if (GWs_spec) then
           call put_shared_variable('specGWs   ',specGWs   )
           call put_shared_variable('specGWshel',specGWshel)
