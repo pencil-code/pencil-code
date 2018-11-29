@@ -615,7 +615,7 @@ module Special
       real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
       integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
       logical :: lscale_tobox1=.true.
-      real :: scale_factor, fact, sign_switch
+      real :: kscale_factor, fact, sign_switch
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
@@ -662,17 +662,17 @@ module Special
 !
 !  calculate k^2
 !
-      scale_factor=1
-      if (lscale_tobox1) scale_factor=2*pi/Lx
-      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+      kscale_factor=1
+      if (lscale_tobox1) kscale_factor=2*pi/Lx
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*kscale_factor
 !
-      scale_factor=1
-      if (lscale_tobox1) scale_factor=2*pi/Ly
-      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+      kscale_factor=1
+      if (lscale_tobox1) kscale_factor=2*pi/Ly
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*kscale_factor
 !
-      scale_factor=1
-      if (lscale_tobox1) scale_factor=2*pi/Lz
-      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+      kscale_factor=1
+      if (lscale_tobox1) kscale_factor=2*pi/Lz
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*kscale_factor
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
@@ -900,10 +900,19 @@ module Special
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressX  )=S_X_re(ikz,ikx,iky)
             f(nghost+ikz,nghost+ikx,nghost+iky,iStressXim)=S_X_im(ikz,ikx,iky)
 !
-!  Sum up energy and helicity spectra.
+!  Sum up energy and helicity spectra. Divide by kscale_factor to have integers
+!  for the Fortran index ik. Note, however, that 
 !
             if (lspec) then
-              ik=1+nint(sqrt(ksqr)/scale_factor)
+              ik=1+nint(sqrt(ksqr)/kscale_factor)
+!
+!  Debug output
+!
+              if (ldebug_print) then
+                if (ik <= 5) write(*,1000) iproc,ik,k1,k2,k3,f(nghost+ikz,nghost+ikx,nghost+iky,iggX  )
+                1000 format(2i5,1p,4e11.2)
+              endif
+!
               if (ik <= nk) then
 !
 !  Gravitational wave energy spectrum computed from hdot (=g)
