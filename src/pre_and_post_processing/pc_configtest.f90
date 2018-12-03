@@ -2,10 +2,6 @@
 !
 ! $Id$
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
-! CPARAM logical, parameter :: lmpicomm = .false.
-!
 program pc_configtest
 !
   use Cdata

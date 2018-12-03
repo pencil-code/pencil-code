@@ -6,10 +6,6 @@
 !
 ! $Id: pc_tecplot.f90 10000 2014-04-17 22:12:50Z Zhuang $
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
-! CPARAM logical, parameter :: lmpicomm = .false.
-!
 program pc_tecplot_solid
 !
   use Cdata

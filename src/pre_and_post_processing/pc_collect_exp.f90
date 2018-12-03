@@ -2,10 +2,6 @@
 !
 ! $Id: pc_collect.f90 22542 2014-11-18 22:51:03Z Bourdin.KIS $
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
-! CPARAM logical, parameter :: lmpicomm = .false.
-!
 program pc_collect
 !
   use Cdata

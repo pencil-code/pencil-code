@@ -6,10 +6,6 @@
 !
 ! $Id$
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
-! CPARAM logical, parameter :: lmpicomm = .false.
-!
 program pc_tecplot
 !
 ! Zhenya: Who is using this program now?
