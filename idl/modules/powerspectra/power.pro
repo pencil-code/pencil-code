@@ -3,7 +3,8 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
           i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
-          compensate3=compensate3,datatopdir=datatopdir,double=double
+          compensate3=compensate3,datatopdir=datatopdir,double=double, $
+          lkscale=lkscale
 ;
 ;  $Id$
 ;
@@ -39,6 +40,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
 ;  png   : to write png file for making a movie
 ;  yrange: y-range for plot
 ;  compensate: exponent for compensating power spectrum (default=0)
+;  lkscale: apply scaling factor if box is not (2pi)^3
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -56,6 +58,7 @@ default,tot,0
 default,lin,0
 default,dir,''
 default,compensate1,0
+default,lkscale,0
 default,compensate2,compensate1
 default,compensate3,compensate1
 default,compensate,compensate1
@@ -351,7 +354,16 @@ openr,1, datatopdir+'/'+file1
     endif
 close,1
 close,2
-
+;
+;  scale k correctly
+;
+if lkscale then begin
+  pc_read_param,obj=param,/quiet
+  Lx=param.Lxyz[0]
+  kscale_factor=2.*!pi/Lx
+  k=k*kscale_factor
+endif
+;
 !x.title='' 
 !y.title=''
 !p.title=''
