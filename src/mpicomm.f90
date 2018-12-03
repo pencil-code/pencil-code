@@ -451,7 +451,6 @@ module Mpicomm
 !
       use Syscalls, only: sizeof_real
 !
-      lmpicomm = .true.
       call MPI_INIT(mpierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
