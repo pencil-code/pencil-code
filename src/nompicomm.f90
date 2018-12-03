@@ -1,5 +1,9 @@
 ! $Id$
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 !  Dummy module for MPI communication. This allows the code to run on a
 !  single CPU.
 !
@@ -326,8 +330,6 @@ module Mpicomm
         call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2 or nproc[xyz]>=2')
 !
       mpi_precision = -1
-!
-      lmpicomm = .false.
 
     endsubroutine mpicomm_init
 !***********************************************************************
