@@ -1,7 +1,11 @@
 ! This is a tool to collect a distributed data cube and process it.
 !
 ! $Id$
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_extract
 !
   use Cdata
@@ -52,7 +56,6 @@ program pc_extract
   num_components = sum (global_size)
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

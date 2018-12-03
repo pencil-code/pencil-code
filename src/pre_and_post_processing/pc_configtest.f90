@@ -1,7 +1,11 @@
 ! This is a tool to check the correctness on the start.in and run.in file.
 !
 ! $Id$
-!****************************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_configtest
 !
   use Cdata
@@ -25,7 +29,6 @@ program pc_configtest
   real, dimension (mx,my,mz,mfarray) :: f
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

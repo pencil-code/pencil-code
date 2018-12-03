@@ -2,7 +2,11 @@
 ! horzontal directions (x and y), if these are periodic.
 !
 ! $Id$
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_reduce
 !
   use Cdata
@@ -42,7 +46,6 @@ program pc_reduce
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

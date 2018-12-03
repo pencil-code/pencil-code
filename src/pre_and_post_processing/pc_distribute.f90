@@ -1,7 +1,11 @@
 ! This tool distributes a global data cube in into the proc-directories.
 !
 ! $Id$
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_distribute
 !
   use Cdata
@@ -31,7 +35,6 @@ program pc_distribute
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lstart = .false.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

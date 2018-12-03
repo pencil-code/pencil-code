@@ -5,7 +5,11 @@
 ! This file is derived from pc_collect.f90.
 !
 ! $Id$
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_tecplot
 !
 ! Zhenya: Who is using this program now?
@@ -42,7 +46,6 @@ program pc_tecplot
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

@@ -5,7 +5,11 @@
 ! This file is based on the pc_collect.f90 writen by .
 !
 ! $Id: pc_tecplot.f90 10000 2014-04-17 22:12:50Z Zhuang $
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_tecplot_solid
 !
   use Cdata
@@ -39,7 +43,6 @@ program pc_tecplot_solid
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart=.true.
-  lmpicomm = .false.
   iroot = 0
   lroot = .true.
   ipx = 0

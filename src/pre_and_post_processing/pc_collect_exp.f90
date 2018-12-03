@@ -1,7 +1,11 @@
 ! This is a tool to collect a distributed data cube in one file.
 !
 ! $Id: pc_collect.f90 22542 2014-11-18 22:51:03Z Bourdin.KIS $
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_collect
 !
   use Cdata
@@ -32,7 +36,6 @@ program pc_collect
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
-  lmpicomm = .false.
 !
   inquire (IOLENGTH=io_len) 1.0
 !

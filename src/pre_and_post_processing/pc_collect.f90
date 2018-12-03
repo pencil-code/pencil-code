@@ -1,7 +1,11 @@
 ! This is a tool to collect a distributed data cube in one file.
 !
 ! $Id$
-!***********************************************************************
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .false.
+!
 program pc_collect
 !
   use Cdata
@@ -30,7 +34,6 @@ program pc_collect
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
-  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0
