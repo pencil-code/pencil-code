@@ -312,7 +312,7 @@ module Mpicomm
 !
   integer :: mpi_precision
   integer :: MPI_COMM_WORLD=0, MPI_COMM_GRID=0, MPI_COMM_XYPLANE=0, MPI_COMM_YZPLANE=0, &
-             MPI_INFO_NULL=0
+             MPI_ANY_TAG=0, MPI_INFO_NULL=0
 !
   contains
 !***********************************************************************
