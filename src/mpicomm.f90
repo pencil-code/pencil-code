@@ -1,5 +1,9 @@
 ! $Id$
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+!
+! CPARAM logical, parameter :: lmpicomm = .true.
+!
 !  This module takes care of MPI communication.
 !
 !  Data layout for each processor (`-' marks ghost points, `+' real
@@ -4702,7 +4706,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      mpiwtime = MPI_WTIME()
+      !mpiwtime = MPI_WTIME()
+      mpiwtime = 0
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
@@ -4712,7 +4717,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      mpiwtick = MPI_WTICK()
+      !mpiwtick = MPI_WTICK()
+      mpiwtick = 0
 !
     endfunction mpiwtick
 !***********************************************************************
