@@ -102,9 +102,8 @@ module Special
    real, dimension (nx) :: dt1_muS_1, dt1_muS_2, dt1_bb_1, dt1_special
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
-   logical :: lmuS=.false.
+   logical :: lmuS=.false., lCVE=.false.
    logical :: lmu5adv=.true., lmuSadv=.true.
-   logical :: lCVE=.false.
 !
   character (len=labellen) :: initspecial='nothing'
 !
@@ -117,7 +116,7 @@ module Special
 !
   namelist /special_run_pars/ &
       diffmu5, diffmuS, lambda5, cdtchiral, gammaf5, &
-      coef_muS, coef_mu5, Cw
+      coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -130,6 +129,7 @@ module Special
   integer :: idiag_gmu5my=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_y$       
   integer :: idiag_gmu5mz=0    ! DIAG_DOC: $\left<\nabla\mu_5\right>_z$   
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ 
+  integer :: idiag_bgmuSrms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_S)^2\right>^{1/2}$ 
   integer :: idiag_mu5bjm=0    ! DIAG_DOC: $\left<\mu_5 ((\nabla\times\Bv)\cdot\Bv) \right>$
   integer :: idiag_mu5bjrms=0  ! DIAG_DOC: $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$
   integer :: idiag_oogmu5rms=0  
@@ -248,8 +248,13 @@ module Special
           if (lmuS) f(:,:,:,imuS) = muS_const
 !
         case ('sinwave-phase')
-          call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
           call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
+          if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
+!
+        case ('mu5const-muSsin')
+          f(:,:,:,imu5) = mu5_const
+          if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
+
 !
         case default
           call fatal_error("init_special: No such value for initspecial:" &
@@ -269,15 +274,15 @@ module Special
       if (lmuS) then
         lpenc_requested(i_muS)=.true.
         lpenc_requested(i_gmuS)=.true.
+        lpenc_requested(i_ugmuS)=.true.
+        if (diffmuS/=0.) lpenc_requested(i_del2muS)=.true.
       endif
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_ugmu5)=.true.
-      lpenc_requested(i_ugmuS)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
 !      lpenc_requested(i_jjij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
-      if (diffmuS/=0.) lpenc_requested(i_del2muS)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
@@ -408,7 +413,8 @@ module Special
             -2.*Cw*(p%muS*oogmuS+p%mu5*oogmu5)
         endif
 !  Contributions to timestep from muS equation
-        dt1_muS_1 = p%mu5**2*coef_muS*sqrt(p%b2)/p%muS
+!        dt1_muS_1 = p%mu5**2*coef_muS*sqrt(p%b2)/p%muS
+        dt1_muS_1 = p%mu5*coef_muS*sqrt(p%b2)
         dt1_muS_2 = diffmuS*dxyz_2
       endif
 !                          
@@ -471,6 +477,10 @@ module Special
         if (idiag_bgmu5rms/=0) then
           call dot_mn(p%bb,p%gmu5,bgmu5)
           call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
+        endif
+        if (idiag_bgmuSrms/=0) then
+          call dot_mn(p%bb,p%gmuS,bgmuS)
+          call sum_mn_name(bgmuS**2,idiag_bgmuSrms,lsqrt=.true.)
         endif
         if (idiag_mu5bjm/=0) then
           call dot_mn(p%bb,p%jj,bbjj)
@@ -559,7 +569,8 @@ module Special
 !
       if (lreset) then
         idiag_muSm=0; idiag_muSrms=0
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; 
+        idiag_mu5m=0; idiag_mu5rms=0; 
+        idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
         idiag_dt_chiral=0; idiag_dt_bb_1=0;
@@ -578,6 +589,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'gmu5my',idiag_gmu5my)
         call parse_name(iname,cname(iname),cform(iname),'gmu5mz',idiag_gmu5mz)
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'bgmuSrms',idiag_bgmuSrms)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjm',idiag_mu5bjm)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjrms',idiag_mu5bjrms)
         call parse_name(iname,cname(iname),cform(iname),'oogmuSrms',idiag_oogmuSrms)
