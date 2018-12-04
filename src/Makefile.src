@@ -380,6 +380,7 @@ endif
 # default location of HDF5 installation
 #         HDF5_HOME ?= /usr
 #                 # set if undefined
+HDF5_HOME ?= /usr
 HDF5_HOME_SERIAL ?= /usr
 HDF5_HOME_PARALLEL ?= /usr
 HDF5_INC ?= $(HDF5_HOME)/include
