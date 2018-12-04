@@ -943,7 +943,6 @@ endif
 !
       if (ldiagnos) then
 
-        emftmp = p%acoef_emf + p%bcoef_emf + p%utensor_emf
         tmppencil = emftmp - p%emf
         !
         if (idiag_alphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_alphaxmax)
@@ -1220,7 +1219,7 @@ endif
       if (lusecoefs) then
         emftmp=0
         if (lacoef) emftmp = emftmp + p%acoef_emf
-        if (lbcoef) emftmp = emftmp + p%bcoef_emf
+        if (lbcoef) emftmp = emftmp - p%bcoef_emf
         if (lutensor) emftmp = emftmp + p%utensor_emf
       else
         emftmp = p%emf
