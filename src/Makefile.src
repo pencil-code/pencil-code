@@ -376,6 +376,29 @@ ifeq ($(YINYANG),yinyang)
 else
   YINYANG_MPI = noyinyang_mpi
 endif
+
+# default location of HDF5 installation
+#         HDF5_HOME ?= /usr
+#                 # set if undefined
+HDF5_HOME_SERIAL ?= /usr
+HDF5_HOME_PARALLEL ?= /usr
+ifeq ($(MPICOMM),mpicomm)
+  HDF5_HOME=$(HDF5_HOME_PARALLEL)
+else
+  HDF5_HOME=$(HDF5_HOME_SERIAL)
+endif
+HDF5_INC ?= $(HDF5_HOME)/include
+HDF5_LIB ?= $(HDF5_HOME)/lib
+HDF5_BIN ?= $(HDF5_HOME)/bin
+
+ifneq ($(HDF5_IO),nohdf5_io)
+        # add HDF5 library path
+        #         LDFLAGS += -L$(HDF5_LIB)
+        #                 # set HDF5 linker
+        LD := $(HDF5_BIN)/h5fc
+        export HDF5_FLINKER:=$(FC)
+endif
+
 SPECIAL_DEPS =
 SPECIAL_MULT =
 ifeq ($(SPECIAL),nospecial)
@@ -387,16 +410,22 @@ special_message:
 	@echo ";;;    SPECIAL must not been set to special, but to individual module(s) in directory special."
 	exit 1
   else
-    SPECIAL_MODULES := $(SPECIAL)
-    SPECIAL_DEPS = special_preps
-    ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
-      LDFLAGS_MAIN += -dynamic
-      SPECIAL_DEPS += special.dll
-      SPECIAL = special
-      SPECIAL_MULT = 1
+    ifeq ($(SPECIAL),special/meanfield_e_tensor)
+       FFLAGS += -I$(HDF5_INC)
+       LDFLAGS_MAIN += -L$(HDF5_LIB)
+    else
+      SPECIAL_MODULES := $(SPECIAL)
+      SPECIAL_DEPS = special_preps
+      ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
+        LDFLAGS_MAIN += -dynamic
+        SPECIAL_DEPS += special.dll
+        SPECIAL = special
+        SPECIAL_MULT = 1
+      endif
     endif
   endif
 endif
+
 LIBGPU =
 GPU_DEPS =
 ifeq ($(GPU),gpu_astaroth)
@@ -2371,20 +2400,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # LD?=$(FC)
 LD=$(FC)
 
-ifneq ($(HDF5_IO),nohdf5_io)
-	# default location of HDF5 installation
-	HDF5_HOME ?= /usr
-	# set if undefined
-	HDF5_INC ?= $(HDF5_HOME)/include
-	HDF5_LIB ?= $(HDF5_HOME)/lib
-	HDF5_BIN ?= $(HDF5_HOME)/bin
-	# add HDF5 library path
-	LDFLAGS += -L$(HDF5_LIB)
-	# set HDF5 linker
-	LD := $(HDF5_BIN)/h5fc
-	export HDF5_FLINKER:=$(FC)
-endif
-
 #
 #  RULES SECTION
 #
@@ -2398,12 +2413,14 @@ endif
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
+
 special/%.o : special/%.f90
 ifeq ($(SPECIAL_MULT),1)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
 else
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
 endif
+
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
@@ -2418,7 +2435,7 @@ default_to_be: Makefile cparam.inc code buildinfo
 #  Short hand for modules that must be preprocessed with mkcparam.
 #  Please use alphabetical order.
 #
-preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(MPICOMM_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(ASCALAR_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
+preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(ASCALAR_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
 ifeq ($(SPECIAL_MULT),1)
   preprocess += $(SPECIAL_MODULES:=.f90)
 endif
@@ -2515,51 +2532,35 @@ technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute_z.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_configtest.o: pre_and_post_processing/pc_configtest.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_configtest.x: pre_and_post_processing/pc_configtest.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_solid.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
-	@mv cparam.inc cparam.inc.sv; sed -e's/lmpicomm=\.true\./lmpicomm=.false./' < cparam.inc.sv > cparam.inc
 	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x $(LDFLAGS) $(LDFLAGS_HELPER)
-	@mv -f cparam.inc.sv cparam.inc
 #
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -I$(HDF5_INC) -o hdf5_io_parallel.o -c hdf5_io_parallel.f90
