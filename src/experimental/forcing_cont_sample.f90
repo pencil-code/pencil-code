@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED fcont(3)
+! PENCILS PROVIDED fcont(3,n_forcing_cont_max)
 !
 !***************************************************************
 !
@@ -663,6 +663,7 @@ module Forcing
 !  10-sep-01/axel: coded
 !
       use Mpicomm, only: mpifinalize
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl
@@ -752,6 +753,29 @@ module Forcing
       call keep_compiler_quiet(force_ampl)
 !
     endsubroutine forcing_irro
+!***********************************************************************
+    subroutine forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
+!
+!  Calculates position-independent and 1D coefficients for helical forcing.
+!
+!  4-oct-17/MR: outsourced from forcing_hel.
+!               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined - nees to be fixed
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Sub
+      use Mpicomm, only: stop_it
+!
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3
+      complex, dimension (mx),intent(out) :: fx
+      complex, dimension (my),intent(out) :: fy
+      complex, dimension (mz),intent(out) :: fz
+      real,    dimension (3), intent(out) :: fda
+
+      call keep_compiler_quiet(coef1,coef2,coef3)
+      fx=0.;fy=0.;fz=0.;fda=0.
+!
+    endsubroutine forcing_coefs_hel
 !***********************************************************************
     subroutine forcing_hel(f)
 !
@@ -1819,7 +1843,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       use Mpicomm
       use General
-      use Sub
+      use Sub, only: step, gij_psi_etc, gij_psi, curl_mn
       use EquationOfState, only: cs0
 !      use SpecialFunctions
 !
@@ -2005,9 +2029,9 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       use Mpicomm
       use General
-      use Sub
       use EquationOfState, only: cs0
 !      use SpecialFunctions
+      use Sub, only: curl_mn, gij_psi, gij_psi_etc
 !
       integer, save :: ifirst
       real, dimension(3) :: ee
@@ -3328,6 +3352,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
       use Mpicomm
       use Sub
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: force1,force2,force_vec
@@ -3715,7 +3740,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       if (lpencil(i_fcont)) then
 !
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
-        call forcing_cont(p%fcont)
+        call forcing_cont(p%fcont(:,:,1))
 !
       endif
 !
@@ -3776,12 +3801,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       if (ldiagnos) then
         if (idiag_rufm/=0) then
-          call dot_mn(p%uu,p%fcont,uf)
+          call dot_mn(p%uu,p%fcont(:,:,1),uf)
           call sum_mn_name(p%rho*uf,idiag_rufm)
         endif
         if (lmagnetic) then
           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-            call cross(p%fcont,p%bb,fxb)
+            call cross(p%fcont(:,:,1),p%bb,fxb)
             call sum_mn_name(fxb(:,1),idiag_fxbxm)
             call sum_mn_name(fxb(:,2),idiag_fxbym)
             call sum_mn_name(fxb(:,3),idiag_fxbzm)
@@ -3811,48 +3836,52 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine write_forcing_run_pars
 !***********************************************************************
-    subroutine input_persistent_forcing(id,lun,done)
+    subroutine input_persistent_forcing(id,done)
 !
 !  Read in the stored time of the next SNI
 !
 !  21-dec-05/tony: coded
 !
-      integer :: id,lun
+      use IO, only: read_persist
+!
+      integer :: id
       logical :: done
 !
-      if (id==id_record_FORCING_LOCATION) then
-        read (lun) location
-        done=.true.
-      elseif (id==id_record_FORCING_TSFORCE) then
-        read (lun) tsforce
-        done=.true.
-      endif
-      if (lroot) print*,'input_persistent_forcing: ', location,tsforce
+      select case (id)
+        case (id_record_FORCING_LOCATION)
+          if (read_persist ('FORCING_LOCATION', location)) return
+          done = .true.
+        case (id_record_FORCING_TSFORCE)
+          if (read_persist ('FORCING_TSFORCE', tsforce)) return
+          done = .true.
+      endselect
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
-    subroutine output_persistent_forcing(lun)
+    logical function output_persistent_forcing()
 !
 !  Writes out the time of the next SNI
 !  This is used, for example, for forcing functions with temporal
 !  memory, such as in the paper by Mee & Brandenburg (2006, MNRAS)
 !
 !  21-dec-05/tony: coded
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
-      integer :: lun
+      use IO, only: write_persist
 !
-      if (lroot) then
-        if (tsforce>=0.) print*,'output_persistent_forcing: ', location, tsforce
-      endif
+      if (lroot .and. (tsforce>=0.)) &
+          print *, 'output_persistent_forcing: ', location, tsforce
 !
 !  write details
 !
-      write (lun) id_record_FORCING_LOCATION
-      write (lun) location
-      write (lun) id_record_FORCING_TSFORCE
-      write (lun) tsforce
+      output_persistent_forcing = .true.
 !
-    endsubroutine output_persistent_forcing
+      if (write_persist ('FORCING_LOCATION', id_record_FORCING_LOCATION, location)) return
+      if (write_persist ('FORCING_TSFORCE', id_record_FORCING_TSFORCE, tsforce)) return
+!
+      output_persistent_forcing = .false.
+!
+    endfunction output_persistent_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !
@@ -3912,5 +3941,23 @@ call fatal_error('hel_vec','radial profile should be quenched')
       endif
 !
     endsubroutine forcing_clean_up
-!*******************************************************************
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call keep_compiler_quiet(p_par)
+
+    endsubroutine pushpars2c
+ !*******************************************************************
 endmodule Forcing
