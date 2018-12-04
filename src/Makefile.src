@@ -382,11 +382,6 @@ endif
 #                 # set if undefined
 HDF5_HOME_SERIAL ?= /usr
 HDF5_HOME_PARALLEL ?= /usr
-ifeq ($(MPICOMM),mpicomm)
-  HDF5_HOME=$(HDF5_HOME_PARALLEL)
-else
-  HDF5_HOME=$(HDF5_HOME_SERIAL)
-endif
 HDF5_INC ?= $(HDF5_HOME)/include
 HDF5_LIB ?= $(HDF5_HOME)/lib
 HDF5_BIN ?= $(HDF5_HOME)/bin
@@ -411,8 +406,13 @@ special_message:
 	exit 1
   else
     ifeq ($(SPECIAL),special/meanfield_e_tensor)
-       FFLAGS += -I$(HDF5_INC)
-       LDFLAGS_MAIN += -L$(HDF5_LIB)
+      ifeq ($(MPICOMM),mpicomm)
+        HDF5_HOME=$(HDF5_HOME_PARALLEL)
+      else
+        HDF5_HOME=$(HDF5_HOME_SERIAL)
+      endif
+      FFLAGS += -I$(HDF5_INC)
+      LDFLAGS_MAIN += -L$(HDF5_LIB)
     else
       SPECIAL_MODULES := $(SPECIAL)
       SPECIAL_DEPS = special_preps
