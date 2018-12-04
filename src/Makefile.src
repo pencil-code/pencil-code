@@ -377,24 +377,6 @@ else
   YINYANG_MPI = noyinyang_mpi
 endif
 
-# default location of HDF5 installation
-#         HDF5_HOME ?= /usr
-#                 # set if undefined
-HDF5_HOME ?= /usr
-HDF5_HOME_SERIAL ?= /usr
-HDF5_HOME_PARALLEL ?= /usr
-HDF5_INC ?= $(HDF5_HOME)/include
-HDF5_LIB ?= $(HDF5_HOME)/lib
-HDF5_BIN ?= $(HDF5_HOME)/bin
-
-ifneq ($(HDF5_IO),nohdf5_io)
-        # add HDF5 library path
-        #         LDFLAGS += -L$(HDF5_LIB)
-        #                 # set HDF5 linker
-        LD := $(HDF5_BIN)/h5fc
-        export HDF5_FLINKER:=$(FC)
-endif
-
 SPECIAL_DEPS =
 SPECIAL_MULT =
 ifeq ($(SPECIAL),nospecial)
@@ -412,6 +394,9 @@ special_message:
       else
         HDF5_HOME=$(HDF5_HOME_SERIAL)
       endif
+      HDF5_INC ?= $(HDF5_HOME)/include
+      HDF5_LIB ?= $(HDF5_HOME)/lib
+      HDF5_BIN ?= $(HDF5_HOME)/bin
       FFLAGS += -I$(HDF5_INC)
       LDFLAGS_MAIN += -L$(HDF5_LIB)
     else
@@ -2400,7 +2385,19 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
 # LD?=$(FC)
 LD=$(FC)
-
+ifneq ($(HDF5_IO),nohdf5_io)
+	# default location of HDF5 installation
+	HDF5_HOME ?= /usr
+	# set if undefined
+	HDF5_INC ?= $(HDF5_HOME)/include
+	HDF5_LIB ?= $(HDF5_HOME)/lib
+	HDF5_BIN ?= $(HDF5_HOME)/bin
+	# add HDF5 library path
+	LDFLAGS += -L$(HDF5_LIB)
+	# set HDF5 linker
+	LD := $(HDF5_BIN)/h5fc
+	export HDF5_FLINKER:=$(FC)
+endif
 #
 #  RULES SECTION
 #
