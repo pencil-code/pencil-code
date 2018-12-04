@@ -39,6 +39,7 @@ program pc_tecplot_solid
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart=.true.
+  lmpicomm = .false.
   iroot = 0
   lroot = .true.
   ipx = 0

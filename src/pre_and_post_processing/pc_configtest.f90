@@ -25,6 +25,7 @@ program pc_configtest
   real, dimension (mx,my,mz,mfarray) :: f
 !
   lstart = .true.
+  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

@@ -31,6 +31,7 @@ program pc_distribute
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lstart = .false.
+  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

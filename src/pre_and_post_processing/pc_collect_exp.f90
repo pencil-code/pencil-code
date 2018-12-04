@@ -32,6 +32,7 @@ program pc_collect
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
+  lmpicomm = .false.
 !
   inquire (IOLENGTH=io_len) 1.0
 !

@@ -30,6 +30,7 @@ program pc_collect
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lstart = .true.
+  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0

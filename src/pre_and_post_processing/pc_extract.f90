@@ -52,6 +52,7 @@ program pc_extract
   num_components = sum (global_size)
 !
   lstart = .true.
+  lmpicomm = .false.
   lroot = .true.
   ipx = 0
   ipy = 0
