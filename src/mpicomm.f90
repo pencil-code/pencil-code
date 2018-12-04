@@ -1,9 +1,5 @@
 ! $Id$
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
-! CPARAM logical, parameter :: lmpicomm = .true.
-!
 !  This module takes care of MPI communication.
 !
 !  Data layout for each processor (`-' marks ghost points, `+' real
@@ -450,6 +446,8 @@ module Mpicomm
 !  29-jul-2010/anders: separate subroutine
 !
       use Syscalls, only: sizeof_real
+!
+      lmpicomm = .true.
 !
       call MPI_INIT(mpierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
