@@ -43,8 +43,8 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED muS; mu5; gmuS(3); gmu5(3); del2mu5
-! PENCILS PROVIDED ugmu5; ugmuS; del2muS
+! PENCILS PROVIDED muS; mu5; gmuS(3); gmu5(3)
+! PENCILS PROVIDED ugmu5; ugmuS; del2mu5; del2muS
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -363,7 +363,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
+      real, dimension (nx) :: bgmuS, bgmu5, EB, uujj, bbjj, gmu52, bdotgmuS, bdotgmu5
       real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
       real, dimension (nx,3) :: mu5bb, muSmu5oo
       real, parameter :: alpha_fine_structure=1./137.
@@ -413,7 +413,6 @@ module Special
             -2.*Cw*(p%muS*oogmuS+p%mu5*oogmu5)
         endif
 !  Contributions to timestep from muS equation
-!        dt1_muS_1 = p%mu5**2*coef_muS*sqrt(p%b2)/p%muS
         dt1_muS_1 = p%mu5*coef_muS*sqrt(p%b2)
         dt1_muS_2 = diffmuS*dxyz_2
       endif
