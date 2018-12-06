@@ -444,6 +444,8 @@ module Forcing
 !  x,y,z points and are then saved and used for all subsequent steps
 !  and pencils
 !
+      n_forcing_cont=1
+
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
       if (iforcing_cont=='xz') then
         if (lroot) print*,'forcing_cont: xz--calc sinx, cosx, etc'
