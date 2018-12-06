@@ -15,7 +15,7 @@
 !
 ! MAUX CONTRIBUTION  9
 ! COMMUNICATED AUXILIARIES 9
-! MPVAR CONTRIBUTION 9
+! MPVAR CONTRIBUTION 10
 ! MPAUX CONTRIBUTION 4
 !
 !***************************************************************
@@ -45,6 +45,7 @@ module Particles_caustics
 !
   integer :: idiag_TrSigmapm=0      ! DIAG_DOC: $\langle{\rm Tr}\left[\sigma\right]\rangle$
   integer :: idiag_blowupm=0        ! DIAG_DOC: Mean no. of times $\sigma$ falls below cutoff
+  integer :: idiag_lnVpm=0          ! DIAG_DOC: Mean of (logarithm of) Volume around an inertial particle
   integer, dimension(ndustrad)  :: idiag_ncaustics=0
 contains
 !***********************************************************************
@@ -58,7 +59,7 @@ contains
 !
       if (lroot) call svn_id("particles_caustics")
 !
-!  Indices for \deltaX and \deltaV at particle positions
+!  Indices for 9 elements of the sigmap matrix
 !
       call append_npvar('isigmap11',isigmap11)
       call append_npvar('isigmap12',isigmap12)
@@ -69,6 +70,11 @@ contains
       call append_npvar('isigmap31',isigmap31)
       call append_npvar('isigmap32',isigmap32)
       call append_npvar('isigmap33',isigmap33)
+!
+! One extra variable that calculate the evolution
+! of (logarithm of) volume around an inertial particle. 
+!
+      call append_npvar('lnVp',ilnVp)
 !
 ! Now register the particle auxiliaries
 !
@@ -172,12 +178,12 @@ contains
       enddo
 !      
         if (ldiagnos) then
-!
-! No diagnostic is coded yet, but would be.
            if (idiag_TrSigmapm/=0) &
                 call sum_par_name(fp(1:npar_loc,iPPp),idiag_TrSigmapm)
            if (idiag_blowupm/=0) &
                 call sum_par_name(fp(1:npar_loc,iblowup),idiag_blowupm)
+           if (idiag_lnVpm/=0) &
+                call sum_par_name(fp(1:npar_loc,ilnVp),idiag_lnVpm)
            do k=1,ndustrad
               if (idiag_ncaustics(k)/=0) &
                    fname(idiag_ncaustics(k))=blowup_Stdep(k)/np_Stdep(k)
@@ -233,6 +239,10 @@ contains
       dSigmap = taup1*(Sijp-Sigmap) - matmul(Sigmap,Sigmap)
       call matrix2linarray(dSigmap,dSigmap_lin)
       dfp(k,isigmap11:isigmap33) = dSigmap_lin
+!
+! update the (logarithm of) volume
+!
+      dfp(k,ilnVp) = Sigmap(1,1)+Sigmap(2,2)+Sigmap(3,3)
 !
 ! 
     endsubroutine dcaustics_dt_pencil
@@ -306,6 +316,7 @@ contains
         call farray_index_append('isigmap31', isigmap31)
         call farray_index_append('isigmap32', isigmap32)
         call farray_index_append('isigmap33', isigmap33)
+        call farray_index_append('ilnVp', ilnVp)
         call farray_index_append('iPPp', iPPp)
         call farray_index_append('iQQp', iQQp)
         call farray_index_append('iRRp', iRRp)
@@ -318,6 +329,7 @@ contains
          idiag_TrSigmapm=0
          idiag_blowupm=0
          idiag_ncaustics=0
+         idiag_lnVpm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -326,6 +338,7 @@ contains
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'trsigmapm',idiag_TrSigmapm)
         call parse_name(iname,cname(iname),cform(iname),'blowupm',idiag_blowupm)
+        call parse_name(iname,cname(iname),cform(iname),'lnVpm',idiag_lnVpm)
         do k=1,ndustrad
            srad=itoa(k)
            call parse_name(iname,cname(iname),cform(iname), &
@@ -347,6 +360,7 @@ contains
 !
       do ip=1,npar_loc
          fp(ip,isigmap11:isigmap33) = 0.
+         fp(ip,ilnVp) = 0.
          fp(ip,iPPp) = 0.
          fp(ip,iQQp) = 0.
          fp(ip,iRRp) = 0.

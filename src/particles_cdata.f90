@@ -56,6 +56,7 @@ module Particles_cdata
   integer :: isigmap11=0,isigmap12=0,isigmap13=0
   integer :: isigmap21=0,isigmap22=0,isigmap23=0
   integer :: isigmap31=0,isigmap32=0,isigmap33=0
+  integer :: ilnVp=0
   integer :: iblowup=0,iPPp=0,iQQp=0,iRRp=0
   integer :: iTp=0, imp=0, iCOp=0, impinit=0, iapinit=0
   integer :: irhosurf=0
