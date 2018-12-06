@@ -388,18 +388,7 @@ special_message:
 	@echo ";;;    SPECIAL must not been set to special, but to individual module(s) in directory special."
 	exit 1
   else
-    ifeq ($(SPECIAL),special/meanfield_e_tensor)
-      ifeq ($(MPICOMM),mpicomm)
-        HDF5_HOME=$(HDF5_HOME_PARALLEL)
-      else
-        HDF5_HOME=$(HDF5_HOME_SERIAL)
-      endif
-      HDF5_INC ?= $(HDF5_HOME)/include
-      HDF5_LIB ?= $(HDF5_HOME)/lib
-      HDF5_BIN ?= $(HDF5_HOME)/bin
-      FFLAGS += -I$(HDF5_INC)
-      LDFLAGS_MAIN += -L$(HDF5_LIB)
-    else
+    ifneq ($(SPECIAL),special/meanfield_e_tensor)
       SPECIAL_MODULES := $(SPECIAL)
       SPECIAL_DEPS = special_preps
       ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
@@ -2385,6 +2374,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
 # LD?=$(FC)
 LD=$(FC)
+
 ifneq ($(HDF5_IO),nohdf5_io)
 	# default location of HDF5 installation
 	HDF5_HOME ?= /usr
@@ -2398,6 +2388,7 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	LD := $(HDF5_BIN)/h5fc
 	export HDF5_FLINKER:=$(FC)
 endif
+
 #
 #  RULES SECTION
 #
