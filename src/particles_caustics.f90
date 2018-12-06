@@ -26,6 +26,7 @@ module Particles_caustics
   use Particles_cdata
   use Particles_map
   use Particles_mpicomm
+  use Particles_sub
 !
   implicit none
 !
