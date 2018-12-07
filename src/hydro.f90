@@ -194,6 +194,7 @@ module Hydro
   logical :: lremove_mean_flow=.false.
   logical :: lremove_uumeanxy=.false.
   logical :: lremove_uumeanz=.false.
+  logical :: lremove_uumeanz_horizontal=.false.
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.,lcalc_uumean
@@ -229,7 +230,7 @@ module Hydro
       inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
       xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, phase_diffrot, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
-      lremove_uumeanxy,lremove_uumeanz, &
+      lremove_uumeanxy,lremove_uumeanz,lremove_uumeanz_horizontal, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
@@ -3865,6 +3866,14 @@ module Hydro
 !
         if (lremove_uumeanz) then
           do j=1,3
+            do n=1,mz
+              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
+            enddo
+          enddo
+        endif
+!
+        if (lremove_uumeanz_horizontal) then
+          do j=1,2
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
             enddo
