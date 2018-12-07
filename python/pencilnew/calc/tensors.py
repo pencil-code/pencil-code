@@ -269,7 +269,7 @@ class Tensors(object):
         self.gamma[irr,:,:,:,0] = -0.5*(alp[iph,ith,:,:,:]-alp[ith,iph,:,:,:]-eta[ith,irr,iph,:,:,:]/r)
         self.gamma[ith,:,:,:,0] = -0.5*(alp[irr,iph,:,:,:]-alp[iph,irr,:,:,:]-eta[ith,ith,iph,:,:,:]/r)
         self.gamma[iph,:,:,:,0] = -0.5*(alp[ith,irr,:,:,:]-alp[irr,ith,:,:,:]+eta[ith,irr,irr,:,:,:]/r
-                                                                      +eta[ith,ith,ith,:,:,:]/r)
+                                                                             +eta[ith,ith,ith,:,:,:]/r)
         self.gamma=np.swapaxes(self.gamma,-4,-1)
         self.gamma=np.swapaxes(self.gamma,-3,-2)
         # Beta tensor
