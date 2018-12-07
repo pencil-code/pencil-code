@@ -30,11 +30,11 @@ module Interstellar
   endtype
 !
   type RemnantFeature
-    real :: x, y, z, t         ! Time and location
-    real :: MM, EE, CR ! Mass, energy & CR injected
-    real :: rhom   ! Local mean density at explosion time
-    real :: radius             ! Injection radius
-    real :: t_sedov
+    real :: x, y, z, t    ! Time and location
+    real :: MM, EE, CR    ! Mass, energy & CR injected
+    real :: rhom          ! Local mean density at explosion time
+    real :: radius, dr    ! Injection radius and resolution
+    real :: t_sedov, t_SF ! Sedov time shell formation time
   endtype
 !
   type RemnantIndex
@@ -53,7 +53,7 @@ module Interstellar
 !  required for *put_persistant_interstellar, update integer value to match
 !  any changes to number of above types 
 !
-  integer :: nSITE = 7, nFEAT = 10, nINDX = 9
+  integer :: nSITE = 7, nFEAT = 12, nINDX = 9
 !
 !  Enumeration of Supernovae types.
 !
@@ -75,12 +75,12 @@ module Interstellar
 !
 !  04-sep-09/fred: amended xsi_sedov
 !  ref Dyson & Williams Ch7 value = (25/3/pi)**(1/5)=1.215440704 for gamma=5/3
-!  2nd ref Ostriker & McKee 1988 Rev.Mod.Phys 60,1
+!  2nd ref Ostriker & McKee 1988 Rev.Mod.Phys 60,1 1.15166956^5=2.206
 !  Est'd value for similarity variable at shock
 !
 !  real :: xsi_sedov=1.215440704
 !  real :: xsi_sedov=1.15166956, mu
-  real :: xsi_sedov=2.026, mu
+  real :: xsi_sedov=2.026, mu, SFt_norm, SFr_norm, sedov_norm, kfrac_norm
 !
 !  'Current' SN Explosion site parameters
 !
@@ -129,20 +129,20 @@ module Interstellar
              cnorm_quar_SN =       (/  0.,                2.0943951,         0.                 /)
   ! kinetic energy with lmass_SN=F
   real, parameter, dimension(3) :: &
-             vnorm_gaussian_SN =   (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
+             vnormEj_gaussian_SN =  (/ 0.5116633539732443, 1.047197551196598, 1.0716252226356386 /)
   ! kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-             vnorm2_gaussian_SN =  (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
+             vnorm_gaussian_SN =    (/ 0.6266570686577501, 1.570796326794897, 1.9687012432153024 /)
   real, parameter, dimension(3) :: &
-             vnorm_gaussian2_SN =  (/ 0.6887169476297503, 1.607437833953458, 1.6888564123130090 /)
+             vnormEj_gaussian2_SN = (/ 0.6887169476297503, 1.607437833953458, 1.6888564123130090 /)
   ! kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-             vnorm2_gaussian2_SN = (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
+             vnorm_gaussian2_SN =   (/ 0.7621905937330379, 1.968701243215302, 2.2890810569630537 /)
   real, parameter, dimension(3) :: &
-             vnorm_SN =            (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
+             vnormEj_SN =           (/ 0.7724962826996008, 1.945140377302524, 2.1432504452712773 /)
   ! kinetic energy addition lmass_SN=T
   real, parameter, dimension(3) :: &
-             vnorm2_SN =           (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
+             vnorm_SN =           (/ 0.8265039651250117, 2.226629893663761, 2.624934990953737  /)
 !
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -190,9 +190,10 @@ module Interstellar
 !
 !  Some useful constants
 !
-  real, parameter :: kpc_cgs=3.086E+21      ! [cm]
-  real, parameter :: yr_cgs=3.155692E7                  ! [s]
-  real, parameter :: solar_mass_cgs=1.989E33! [g]
+  real, parameter :: kpc_cgs=3.086E+21, pc_cgs=3.086E+18 ! [cm]
+  real, parameter :: yr_cgs=3.155692E7, kyr_cgs=3.155692E10, &
+                     Myr_cgs=3.155692E13 ! [s]
+  real, parameter :: solar_mass_cgs=1.989E33 ! [g]
   real :: solar_mass
 !
 !  Scale heights for SNI/II with Gaussian z distributions
@@ -220,7 +221,7 @@ module Interstellar
 !  SNe composition
 !
   logical :: lSN_eth=.true., lSN_ecr=.false., lSN_mass=.true., &
-      lSN_velocity=.false., lSN_fcr=.false.
+      lSN_velocity=.false., lSN_fcr=.false., lSN_autofrackin=.true.
 !
 !  Total mass added by a SNe
 !
@@ -333,7 +334,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.025, eps_radius=0.001, rfactor_SN=5.
+  real :: N_mass=100.0, eps_mass=0.025, eps_radius=0.001, rfactor_SN=4.5
 !
 !  Requested SNe location (used for test SN)
 !
@@ -390,7 +391,7 @@ module Interstellar
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, &
       frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
-      SNI_factor,SNII_factor, &
+      SNI_factor, SNII_factor, lSN_autofrackin, &
       cooling_select, heating_select, heating_rate, rho0ts, &
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
@@ -404,7 +405,7 @@ module Interstellar
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
-      SNI_factor,SNII_factor, &
+      SNI_factor, SNII_factor, lSN_autofrackin, &
       inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, &
@@ -508,10 +509,30 @@ module Interstellar
             print*,'initialize_interstellar: solar_mass (code) =', solar_mass
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
-        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
 !
 !  set SN parameters self-consistently
 !
+        if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
+!  parameters for energy losses prior to SN initialisation
+!  ref Kim & Ostriker 2015 Eq 7 dimensional norm shell formation time
+        SFt_norm = 4.4e4*yr_cgs/unit_time/(1.4*m_H_cgs/unit_density)**(0.55) &
+              *(unit_energy/ampl_SN_cgs)**(0.22)
+!  ref Kim & Ostriker 2015 Eq 8 dimensional norm shell formation radius
+        SFr_norm = 22.6/unit_length*pc_cgs*&
+                  (ampl_SN_cgs/unit_energy)**0.22/&
+                  (1.4*m_H_cgs/unit_density)**0.55
+!  dimensional norm for Sedov-Taylor relations
+        sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
+!  ref Simpson 15 Eq 16 dimensional norm kinetic energy fraction
+        kfrac_norm=3.97e-6*(kyr_cgs/unit_time)**2*&
+                   m_H_cgs/unit_density*(unit_length/pc_cgs)**5
+        if (lroot.and.lSN_autofrackin) then
+            print*,'initialize_interstellar: SFt_norm =', SFt_norm
+            print*,'initialize_interstellar: SFr_norm =', SFr_norm
+            print*,'initialize_interstellar: sedov_norm =', sedov_norm
+            print*,'initialize_interstellar: kfrac_norm =', kfrac_norm
+        endif
+        if (lSN_autofrackin) lSN_velocity = .true.
         if (lSN_eth) then        
           if (lcosmicray .and. lSN_ecr) then
             if (frac_ecr==0) frac_ecr=0.1
@@ -533,12 +554,12 @@ module Interstellar
           if (frac_kin+frac_ecr>1) call &
             stop_it('initialize_interstellar: energy fractions not to be > 1')
         endif
-        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-        if (T_init == impossible) T_init=T_init_cgs/unit_temperature
-        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (lroot) &
             print*,'initialize_interstellar: eampl_SN, kampl_SN = ', &
             eampl_SN, kampl_SN
+        if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
+        if (T_init == impossible) T_init=T_init_cgs/unit_temperature
+        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
         if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
         if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
@@ -2806,8 +2827,9 @@ module Interstellar
       type (SNRemnant), intent(inout) :: SNR
 !
       real, dimension(nx) :: lnTT
-      real, dimension(6) :: fmpi6
+      real, dimension(7) :: fmpi7
       integer, dimension(4) :: impi4
+      real :: sndx, sndy, sndz
 !
 !  Broadcast position to all processors from root; also broadcast SNR%indx%iproc,
 !  needed for later broadcast of SNR%site%rho.
@@ -2844,9 +2866,20 @@ module Interstellar
         call eoscalc(f,nx,lnTT=lnTT)
         SNR%site%lnTT=lnTT(SNR%indx%l-l1+1)
         SNR%feat%x=0.; SNR%feat%y=0.; SNR%feat%z=0.
-        if (nxgrid/=1) SNR%feat%x=x(SNR%indx%l) +0.5*dx*(-1.)**SNR%indx%l
-        if (nygrid/=1) SNR%feat%y=y(SNR%indx%m) +0.5*dy*(-1.)**SNR%indx%m
-        if (nzgrid/=1) SNR%feat%z=z(SNR%indx%n) +0.5*dz*(-1.)**SNR%indx%n
+        sndx=0.; sndy=0.; sndz=0.
+        if (nxgrid/=1) then
+          SNR%feat%x=x(SNR%indx%l)
+          sndx=x(SNR%indx%l+1)-x(SNR%indx%l)
+        endif
+        if (nygrid/=1) then
+          SNR%feat%y=y(SNR%indx%m)
+          sndy=y(SNR%indx%m+1)-y(SNR%indx%m)
+        endif
+        if (nzgrid/=1) then
+          SNR%feat%z=z(SNR%indx%n)
+          sndz=z(SNR%indx%n+1)-z(SNR%indx%n)
+        endif
+        SNR%feat%dr=max( sndx,sndy,sndz )
         if (center_SN_x/=impossible) SNR%feat%x=center_SN_x
         if (center_SN_y/=impossible) SNR%feat%y=center_SN_y
         if (center_SN_z/=impossible) SNR%feat%z=center_SN_z
@@ -2860,15 +2893,17 @@ module Interstellar
         SNR%feat%y=0.
         SNR%feat%z=0.
         SNR%feat%radius=0.
+        SNR%feat%dr=0.
       endif
 !
 !    Broadcast to all processors.
 !
-      fmpi6=(/ SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%lnrho, SNR%site%lnTT, SNR%feat%radius /)
-      call mpibcast_real(fmpi6,6,SNR%indx%iproc)
+      fmpi7=(/ SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%lnrho, SNR%site%lnTT, SNR%feat%radius, SNR%feat%dr /)
+      call mpibcast_real(fmpi7,7,SNR%indx%iproc)
 !
-      SNR%feat%x=fmpi6(1); SNR%feat%y=fmpi6(2); SNR%feat%z=fmpi6(3);
-      SNR%site%lnrho=fmpi6(4); SNR%site%lnTT=fmpi6(5); SNR%feat%radius=fmpi6(6)
+      SNR%feat%x=fmpi7(1); SNR%feat%y=fmpi7(2); SNR%feat%z=fmpi7(3);
+      SNR%site%lnrho=fmpi7(4); SNR%site%lnTT=fmpi7(5)
+      SNR%feat%radius=fmpi7(6); SNR%feat%dr=fmpi7(7)
 !
       SNR%site%rho=exp(SNR%site%lnrho);
 !
@@ -2877,11 +2912,17 @@ module Interstellar
       SNR%site%TT=exp(SNR%site%lnTT)
 !
       if (lroot.and.ip<14) print*, &
-          'share_SN_parameters: SNR%indx%iproc,x_SN,y_SN,z_SN,SNR%indx%l,SNR%indx%m,SNR%indx%n,=', &
-          SNR%indx%iproc,SNR%feat%x,SNR%feat%y,SNR%feat%z,SNR%indx%l,SNR%indx%m,SNR%indx%n
+          'share_SN_parameters: SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n,=', &
+          SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
       if (lroot.and.ip<14) print*, &
-          'share_SN_parameters: SNR%site%rho,SNR%site%ss,SNR%site%TT,SNR%feat%radius=', &
-          SNR%site%rho,SNR%site%ss,SNR%site%TT,SNR%feat%radius
+          'share_SN_parameters: x_SN,y_SN,z_SN=', &
+          SNR%feat%x,SNR%feat%y,SNR%feat%z
+      if (lroot.and.ip<14) print*, &
+          'share_SN_parameters: SNR%site%rho,SNR%site%ss,SNR%site%TT=', &
+          SNR%site%rho,SNR%site%ss,SNR%site%TT
+      if (lroot.and.ip<14) print*, &
+          'share_SN_parameters: SNR%feat%radius,SNR%feat%dr=', &
+          SNR%feat%radius,SNR%feat%dr
 !
     endsubroutine share_SN_parameters
 !*****************************************************************************
@@ -2915,8 +2956,8 @@ module Interstellar
       real, dimension(3) :: dmpi2, dmpi2_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
-      real :: maxlnTT, site_mass, maxTT=0.,mmpi, mpi_tmp
-      real :: t_interval_SN, SNrate
+      real :: maxlnTT, site_mass, maxTT=0.,mmpi, mpi_tmp, etmp, ktmp
+      real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
       integer :: i
 !
       SNR%indx%state=SNstate_exploding
@@ -2937,7 +2978,7 @@ module Interstellar
       if (lSN_scale_rad) then
         do i=1,25
           SNR%feat%radius=(2.*0.75*solar_mass/(SNR%feat%rhom+rhomin)*pi_1*N_mass)**(1.0/3.0)
-          SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin)
+          SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr)
           call get_properties(f,SNR,rhom,ekintot,rhomin)
           SNR%feat%rhom=0.25*(rhom+3*SNR%feat%rhom)
           if (abs(SNR%feat%radius/old_radius-1.)<eps_radius) exit
@@ -2948,7 +2989,7 @@ module Interstellar
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (SNR%feat%radius>=rfactor_SN*dxmin) then
+        if (SNR%feat%radius>=rfactor_SN*SNR%feat%dr) then
           if (1.-ambient_mass/(N_mass*solar_mass)>eps_mass) then
             ierr=iEXPLOSION_TOO_RARIFIED
             return
@@ -2961,24 +3002,55 @@ module Interstellar
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
-      SNR%feat%t_sedov=sqrt((SNR%feat%radius)**(2+dimensionality)*SNR%feat%rhom/ampl_SN/xsi_sedov)
+      SNR%feat%t_sedov=sqrt(SNR%feat%radius**(2+dimensionality)*&
+                            SNR%feat%rhom/ampl_SN/xsi_sedov*sedov_norm)
       uu_sedov = 2./(2.+dimensionality)*SNR%feat%radius/SNR%feat%t_sedov
 !
       width_energy   = SNR%feat%radius*energy_width_ratio
       width_mass     = SNR%feat%radius*mass_width_ratio
       width_velocity = SNR%feat%radius*velocity_width_ratio
 !
+!  Calculate the end of the Sedov-Taylor phase (shell formation) t_SF
+!  Ref Kim & Ostriker 2015 ApJ 802:99 Eq. 7
+!
+      SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(0.55)*ampl_SN**(0.22)
+!
+      if (lroot.and.ip<14) print*,&
+         'explode_SN: Shell forming start time t_SF', SNR%feat%t_SF
+      if (lroot.and.ip<14) print*,&
+         'explode_SN: Elapsed time since shell formation',&
+         SNR%feat%t_sedov-SNR%feat%t_SF
+!
+!  Calculate the SN kinetic energy fraction for shell formation energy
+!  losses correction ref Simpson et al.
+!  2015 ApJ 809:69 Eq. 16
+!
+      etmp=eampl_SN; ktmp=kampl_SN
+      if (SNR%feat%t_sedov>SNR%feat%t_SF.and.lSN_autofrackin) then
+        RPDS=SFr_norm*ampl_SN**0.22/SNR%feat%rhom**0.55
+        frackin = kfrac_norm*mu*RPDS**7/SNR%feat%t_SF**2/&
+               ampl_SN*SNR%feat%rhom*sedov_norm/SNR%feat%dr**2
+        etmp=(1.-frackin-frac_ecr)*ampl_SN
+        ktmp=frackin*ampl_SN
+        if (lroot.and.ip<14) print*,&
+           'explode_SN: Reset fractions SNE radius RPDS, frackin',&
+        RPDS, frackin
+        if (lroot.and.ip<14) print*,&
+           'explode_SN: SNE fractional energy kampl_SN, eampl_SN',&
+        ktmp, etmp
+      endif
+!
 !  Energy insertion normalization.
 !
       if (thermal_profile=="gaussian3") then
-        c_SN=eampl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
+        c_SN=etmp/(cnorm_SN(dimensionality)*width_energy**dimensionality)
 !
       elseif (thermal_profile=="gaussian2") then
-        c_SN=eampl_SN/(cnorm_gaussian2_SN(dimensionality)* &
+        c_SN=etmp/(cnorm_gaussian2_SN(dimensionality)* &
             width_energy**dimensionality)
 !
       elseif (thermal_profile=="gaussian") then
-        c_SN=eampl_SN/(cnorm_gaussian_SN(dimensionality)* &
+        c_SN=etmp/(cnorm_gaussian_SN(dimensionality)* &
             width_energy**dimensionality)
 !
       endif
@@ -3013,34 +3085,30 @@ module Interstellar
 !  Total energy =  kinetic (kampl_SN) + thermal (eampl_SN).
 !  30-jan-18/fred:
 !  Normalisation only correct for
-!  constant ambient density and zero ambient velocity. Additional term 
-!  implemented for mass of ejecta mass_SN (vnorm2)   
-!
+!  constant ambient density and zero ambient velocity. Additional term
+!  implemented for mass of ejecta mass_SN (vnormEj)
 !
       if (lSN_velocity) then
         if (velocity_profile=="gaussian3") then
-          cvelocity_SN= &
-              sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm2_SN(dimensionality)*width_velocity**dimensionality+&
-                            cmass_SN/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm_SN(dimensionality)*width_velocity**dimensionality)&
-                                     /(SNR%feat%rhom+cmass_SN) )
+          cvelocity_SN=sqrt(2*ktmp/(&
+                            SNR%feat%rhom*vnorm_SN(dimensionality)*&
+                            width_velocity**dimensionality+&
+                            cmass_SN*vnormEj_SN(dimensionality)*&
+                            width_velocity**dimensionality))
 !
         elseif (velocity_profile=="gaussian2") then
-          cvelocity_SN= &
-              sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm2_gaussian2_SN(dimensionality)*width_velocity**dimensionality+&
-                            cmass_SN/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm_gaussian2_SN(dimensionality)*width_velocity**dimensionality)&
-                                     /(SNR%feat%rhom+cmass_SN) )
+          cvelocity_SN=sqrt(2*ktmp/(&
+                            SNR%feat%rhom*vnorm_gaussian2_SN(dimensionality)*&
+                            width_velocity**dimensionality+&
+                            cmass_SN*vnormEj_gaussian2_SN(dimensionality)*&
+                            width_velocity**dimensionality))
 !
         elseif (velocity_profile=="gaussian") then
-          cvelocity_SN= &
-              sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm2_gaussian_SN(dimensionality)*width_velocity**dimensionality+&
-                            cmass_SN/(SNR%feat%rhom+cmass_SN)*&
-                 vnorm_gaussian_SN(dimensionality)*width_velocity**dimensionality)&
-                                     /(SNR%feat%rhom+cmass_SN) )
+          cvelocity_SN=sqrt(2*ktmp/(&
+                            SNR%feat%rhom*vnorm_gaussian_SN(dimensionality)*&
+                            width_velocity**dimensionality+&
+                            cmass_SN*vnormEj_gaussian_SN(dimensionality)*&
+                            width_velocity**dimensionality))
 !
         endif
         if (lroot) print*, &
@@ -3132,12 +3200,12 @@ module Interstellar
 !
       if (lSN_velocity)then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
-        if (ekintot_new-ekintot > 2.5*kampl_SN) then
+        if (ekintot_new-ekintot > 2.5*ktmp) then
           if (present(ierr)) then
             ierr=iEXPLOSION_TOO_UNEVEN
           endif
-        elseif (ekintot_new-ekintot > 0) then 
-          cvelocity_SN = cvelocity_SN * sqrt(kampl_SN/(ekintot_new-ekintot))
+        elseif (ekintot_new-ekintot > 0) then
+          cvelocity_SN = cvelocity_SN * sqrt(ktmp/(ekintot_new-ekintot))
         endif
       endif
 !
@@ -3234,6 +3302,7 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom_new,ekintot_new,rhomin)
       if (lroot) print*,"TOTAL KINETIC ENERGY CHANGE:",ekintot_new-ekintot
+      if (lroot) print*,"cvelocity_SN, c_SN, cmass_SN finally:",cvelocity_SN, c_SN, cmass_SN
 !
 !  Sum and share diagnostics etc. amongst processors.
 !
@@ -3323,11 +3392,11 @@ module Interstellar
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant) :: remnant
+      type (SNRemnant), intent(inout) :: remnant
       integer, optional :: ierr
-      real, intent(out) :: rhomin
+      real, intent(out) :: rhom, ekintot, rhomin
       real :: radius2
-      real :: rhom, ekintot, rhotmp, rhomax
+      real :: rhotmp, rhomax
       real, dimension(nx) :: rho, u2
       real, dimension(nx,3) :: uu
       integer, dimension(nx) :: mask, maxmask, minmask
@@ -3352,7 +3421,7 @@ module Interstellar
         if (lSN_scale_rad) then
           maxmask=0
           minmask=999999
-          where (dr2_SN(1:nx) <= 4*radius2)
+          where (dr2_SN(1:nx) <= radius2)
             maxmask(1:nx)=1
             minmask(1:nx)=1
           endwhere
@@ -3368,7 +3437,7 @@ module Interstellar
         call dot2(uu,u2)
         tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask(1:nx)=1
-        where (dr2_SN(1:nx) > 4*radius2)
+        where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
         endwhere
@@ -3386,7 +3455,7 @@ module Interstellar
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/(2*remnant%feat%radius)**3
+        rhom=tmp2(1)*0.75*pi_1/(remnant%feat%radius)**3
       endif
 !
 !  Determine the density rarification ratio in order to avoid excessive spikes
@@ -3415,7 +3484,7 @@ module Interstellar
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant) :: remnant
+      type (SNRemnant), intent(inout) :: remnant
       real, intent(in) :: cvelocity_SN, cmass_SN
       real :: radius2
       real :: rhom, ekintot
@@ -3492,7 +3561,7 @@ module Interstellar
       use Mpicomm, only: mpiallreduce_max
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant), intent(in) :: SNR
+      type (SNRemnant), intent(inout) :: SNR
       real, intent(in) :: radius
       real, intent(out) :: rho_lowest
       real :: tmp
@@ -3528,7 +3597,7 @@ module Interstellar
 !  20-may-03/tony: extracted from explode_SN code written by grs
 !  22-may-03/tony: pencil formulation
 !
-      type (SNRemnant), intent(in) :: SNR
+      type (SNRemnant), intent(inout) :: SNR
 !
       real,dimension(nx) :: dx_SN, dr_SN
       real :: dy_SN
