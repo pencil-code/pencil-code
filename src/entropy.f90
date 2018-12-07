@@ -4744,7 +4744,11 @@ module Energy
         do j=1,3; gss1(:,j)=p%gss(:,j) ; enddo
         del2ss1=p%del2ss
       endif
-      call dot(p%glnrho+p%glnTT,gss1,g2)
+      if (lchit_noT) then
+        call dot(p%glnrho,gss1,g2)
+      else
+        call dot(p%glnrho+p%glnTT,gss1,g2)
+      endif
       thdiff=Pr_smag1*p%nu_smag*(del2ss1+g2)
 !
       call grad(f,inusmag,gradnu)
@@ -4993,19 +4997,26 @@ module Energy
 !
 !  "Turbulent" entropy diffusion.
 !
-!  Should only be present if g.gradss > 0 (unstable stratification).
-!  But this is not currently being checked.
+!  Traditionally only present if g.gradss > 0 (unstable stratification)
+!  but this is not currently being checked.
 !
       if (chi_t/=0.) then
         if (headtt) then
           print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
           if (hcond0 /= 0) then
             call warning('calc_heatcond', &
-                'hcond0 and chi_t combined does not seem to make sense')
+                'certain combinations of hcond0 and chi_t can be unphysical, you better know what you are doing!')
           endif
         endif
 !
-!  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
+!  'Standard' formulation where the flux contains temperature:
+! 
+!  ... + div(rho*T*chi_t*grads) = ... + chi_t*[del2s + (glnrho+glnTT+glnchi).grads]
+!
+!  Alternative (correct?) formulation where temperature is absent from the flux:
+!
+!  ... + div(rho*chi_t*grads) = ... + chi_t*[del2s + (glnrho+glnchi).grads]
+!
 !  If lcalc_ssmean=T or lcalc_ssmeanxy=T, mean stratification is subtracted.
 !
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
@@ -5015,13 +5026,24 @@ module Energy
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
-          endif  
-          call dot(p%glnrho+p%glnTT,gss1,g2)
+          endif
+!  
+          if (lchit_noT) then
+            call dot(p%glnrho,gss1,g2)
+          else
+            call dot(p%glnrho+p%glnTT,gss1,g2)
+          endif
+!
           thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
           call dot(glnchit_prof,gss1,g2)
           thdiff=thdiff+chi_t*g2
         else
-          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          if (lchit_noT) then
+            call dot(p%glnrho,p%gss,g2)
+          else
+            call dot(p%glnrho+p%glnTT,p%gss,g2)
+          endif
+!
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
           call dot(glnchit_prof,p%gss,g2)
           thdiff=thdiff+chi_t*g2
