@@ -82,6 +82,7 @@ indices = [ $
   { name:'igamma', label:'Ratio of specific heat as auxiliary variable', dims:1 }, $
   { name:'inabad', label:'nabla adiabatic as auxiliary variable', dims:1 }, $
   { name:'idelta', label:'delta as auxiliary variable', dims:1 }, $
+  { name:'iviscosity', label:'viscosity as auxiliary variable', dims:1 }, $
   { name:'ics', label:'Sound speed as auxiliary variable', dims:1 }, $
   { name:'ilnrho', label:'Log density', dims:1 }, $
   { name:'irho', label:'Density', dims:1 }, $
