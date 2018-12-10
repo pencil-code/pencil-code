@@ -515,12 +515,19 @@ module Interstellar
         if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
 !  parameters for energy losses prior to SN initialisation
 !  ref Kim & Ostriker 2015 Eq 7 dimensional norm shell formation time
-        SFt_norm = 4.4e4*yr_cgs/unit_time/(1.4*m_H_cgs/unit_density)**(0.55) &
-              *(unit_energy/ampl_SN_cgs)**(0.22)
+!  ref Simpson et al. 2015 Eq 17 
+        !SFt_norm = 4.4e4*yr_cgs/unit_time*(1.4*m_H_cgs/unit_density)**(0.55) &
+        !      /(unit_energy/ampl_SN_cgs)**(0.22)
+        SFt_norm = 26.5e3*yr_cgs/unit_time*(1.4*m_H_cgs/unit_density)**(4./7) &
+              /(unit_energy/ampl_SN_cgs)**(3./14)
 !  ref Kim & Ostriker 2015 Eq 8 dimensional norm shell formation radius
-        SFr_norm = 22.6/unit_length*pc_cgs*&
-                  (ampl_SN_cgs/unit_energy)**0.22/&
-                  (1.4*m_H_cgs/unit_density)**0.55
+!  ref Simpson et al. 2015 Eq 18 
+        !SFr_norm = 22.6/unit_length*pc_cgs*&
+        !          (ampl_SN_cgs/unit_energy)**0.29/&
+        !          (1.4*m_H_cgs/unit_density)**0.42
+        SFr_norm = 18.5/unit_length*pc_cgs*&
+                  (ampl_SN_cgs/unit_energy)**(2./7)/&
+                  (1.4*m_H_cgs/unit_density)**(3./7)
 !  dimensional norm for Sedov-Taylor relations
         sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
 !  ref Simpson 15 Eq 16 dimensional norm kinetic energy fraction
@@ -3012,8 +3019,10 @@ module Interstellar
 !
 !  Calculate the end of the Sedov-Taylor phase (shell formation) t_SF
 !  Ref Kim & Ostriker 2015 ApJ 802:99 Eq. 7
+!  ref Simpson et al. 2015 ApJ 809:69 Eq. 17
 !
-      SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(0.55)*ampl_SN**(0.22)
+      !SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(0.55)*ampl_SN**(0.22)
+      SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(4./7)*ampl_SN**(3./14)
 !
       if (lroot.and.ip<14) print*,&
          'explode_SN: Shell forming start time t_SF', SNR%feat%t_SF
@@ -3023,11 +3032,12 @@ module Interstellar
 !
 !  Calculate the SN kinetic energy fraction for shell formation energy
 !  losses correction ref Simpson et al.
-!  2015 ApJ 809:69 Eq. 16
+!  2015 ApJ 809:69 Eq. 16, 18
 !
       etmp=eampl_SN; ktmp=kampl_SN
       if (SNR%feat%t_sedov>SNR%feat%t_SF.and.lSN_autofrackin) then
-        RPDS=SFr_norm*ampl_SN**0.22/SNR%feat%rhom**0.55
+        !RPDS=SFr_norm*ampl_SN**0.29/SNR%feat%rhom**0.42
+        RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
         frackin = kfrac_norm*mu*RPDS**7/SNR%feat%t_SF**2/&
                ampl_SN*SNR%feat%rhom*sedov_norm/SNR%feat%dr**2
         etmp=(1.-frackin-frac_ecr)*ampl_SN
