@@ -479,6 +479,7 @@ module Interstellar
       if (lroot.and.luniform_zdist_SNI) then
         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
+      call getmu(f,mu)
 !
       if (unit_system=='cgs') then
 !
@@ -513,26 +514,28 @@ module Interstellar
 !  set SN parameters self-consistently
 !
         if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
+!  dimensional norm for Sedov-Taylor relations
+        sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
 !  parameters for energy losses prior to SN initialisation
 !  ref Kim & Ostriker 2015 Eq 7 dimensional norm shell formation time
 !  ref Simpson et al. 2015 Eq 17 
         !SFt_norm = 4.4e4*yr_cgs/unit_time*(1.4*m_H_cgs/unit_density)**(0.55) &
         !      /(unit_energy/ampl_SN_cgs)**(0.22)
-        SFt_norm = 26.5e3*yr_cgs/unit_time*(1.4*m_H_cgs/unit_density)**(4./7) &
-              /(unit_energy/ampl_SN_cgs)**(3./14)
+        SFt_norm = 26.5*kyr_cgs/unit_time*&
+                   (1.4*m_H_cgs/unit_density)**(4./7)*&
+                   (unit_energy/ampl_SN_cgs)**(3./14)
 !  ref Kim & Ostriker 2015 Eq 8 dimensional norm shell formation radius
 !  ref Simpson et al. 2015 Eq 18 
         !SFr_norm = 22.6/unit_length*pc_cgs*&
         !          (ampl_SN_cgs/unit_energy)**0.29/&
         !          (1.4*m_H_cgs/unit_density)**0.42
-        SFr_norm = 18.5/unit_length*pc_cgs*&
-                  (ampl_SN_cgs/unit_energy)**(2./7)/&
-                  (1.4*m_H_cgs/unit_density)**(3./7)
-!  dimensional norm for Sedov-Taylor relations
-        sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
+        SFr_norm = 18.5*pc_cgs/unit_length*&
+                   (unit_energy/ampl_SN_cgs)**(2./7)*&
+                   (1.4*m_H_cgs/unit_density)**(3./7)
 !  ref Simpson 15 Eq 16 dimensional norm kinetic energy fraction
-        kfrac_norm=3.97e-6*(kyr_cgs/unit_time)**2*&
-                   m_H_cgs/unit_density*(unit_length/pc_cgs)**5
+        kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*&
+                   ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
+                   (kyr_cgs/unit_time)**2
         if (lroot.and.lSN_autofrackin) then
             print*,'initialize_interstellar: SFt_norm =', SFt_norm
             print*,'initialize_interstellar: SFr_norm =', SFr_norm
@@ -583,7 +586,6 @@ module Interstellar
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
 !
-      call getmu(f,mu)
       call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
 !
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
@@ -3019,7 +3021,7 @@ module Interstellar
 !
 !  Calculate the end of the Sedov-Taylor phase (shell formation) t_SF
 !  Ref Kim & Ostriker 2015 ApJ 802:99 Eq. 7
-!  ref Simpson et al. 2015 ApJ 809:69 Eq. 17
+!  ref Simpson et al. 2015 ApJ 809:69 Eq. 17, 18
 !
       !SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(0.55)*ampl_SN**(0.22)
       SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(4./7)*ampl_SN**(3./14)
@@ -3030,21 +3032,29 @@ module Interstellar
          'explode_SN: Elapsed time since shell formation',&
          SNR%feat%t_sedov-SNR%feat%t_SF
 !
+      !RPDS=SFr_norm*ampl_SN**0.29/SNR%feat%rhom**0.42
+      RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
+!
+      if (lroot.and.ip<14) print*,&
+         'explode_SN: Shell forming radius RPDS', RPDS
+!
 !  Calculate the SN kinetic energy fraction for shell formation energy
 !  losses correction ref Simpson et al.
-!  2015 ApJ 809:69 Eq. 16, 18
+!  2015 ApJ 809:69 Eq. 16
 !
       etmp=eampl_SN; ktmp=kampl_SN
-      if (SNR%feat%t_sedov>SNR%feat%t_SF.and.lSN_autofrackin) then
-        !RPDS=SFr_norm*ampl_SN**0.29/SNR%feat%rhom**0.42
-        RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
-        frackin = kfrac_norm*mu*RPDS**7/SNR%feat%t_SF**2/&
-               ampl_SN*SNR%feat%rhom*sedov_norm/SNR%feat%dr**2
+      if (RPDS<SNR%feat%radius.and.lSN_autofrackin) then
+        if (SNR%feat%rhom>m_H_cgs/unit_density.and.&
+            SNR%feat%dr>2*pc_cgs/unit_length) then
+          frackin = kfrac_norm*SNR%feat%rhom*RPDS**7/ampl_SN/&
+                  (SNR%feat%t_SF*SNR%feat%dr)**2
+        else
+          frackin = 0.
+        endif
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip<14) print*,&
-           'explode_SN: Reset fractions SNE radius RPDS, frackin',&
-        RPDS, frackin
+           'explode_SN: Reset fractions SNE frackin', frackin
         if (lroot.and.ip<14) print*,&
            'explode_SN: SNE fractional energy kampl_SN, eampl_SN',&
         ktmp, etmp
