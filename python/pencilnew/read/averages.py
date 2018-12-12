@@ -215,19 +215,20 @@ class Averages(object):
             if plane == 'y':
                 nu = dim.nx
                 nv = dim.nz
-                idx_u = proc_dim.ipx*proc_dim.nx
                 if allprocs:
+                    idx_u = proc_dim.ipx*proc_dim.nx
                     idx_v = proc_dim.ipz*proc_dim.nz
                 else:
-                    idx_v = 0
+                    idx_v = 0; idx_u = 0
             if plane == 'z':
                 nu = dim.nx
                 nv = dim.ny
-                idx_u = proc_dim.ipx*proc_dim.nx
                 if allprocs:
+                    idx_u = proc_dim.ipx*proc_dim.nx
                     idx_v = proc_dim.ipy*proc_dim.ny
                 else:
-                    idx_v = 0
+                    idx_v = 0; idx_u = 0
+
             if not isinstance(raw_data, np.ndarray):
                 # Initialize the raw_data array with the right dimensions.
                 raw_data = np.zeros([len(t), n_vars, nv, nu])
@@ -241,7 +242,7 @@ class Averages(object):
 
     def __read_2d_aver(self, plane, datadir, aver_file_name, n_vars):
         """
-        Read the yaverages.dat, xzaverages.dat, yzaverages.dat
+        Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
         """
 
