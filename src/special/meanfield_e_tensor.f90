@@ -253,12 +253,13 @@ module Special
         if (lroot) write (*,*) 'register_special: setting parallel HDF5 IO for data file reading'   !MR: Why parallel?
         call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)   ! Creates porperty list for HDF5 file.
 
-!        if (lmpicomm) &     !MR: doesn't work for nompicomm
-!          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+        if (lmpicomm) &     !MR: doesn't work for nompicomm
+          call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
         if (lroot) print *, 'register_special: opening emftensors.h5 and loading relevant fields into memory...'
 
         hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
+        !hdf_emftensors_filename = trim(datadir_snap)//'/emftensors_means.h5'
 
         inquire(file=hdf_emftensors_filename, exist=hdf_exists)
 
@@ -441,7 +442,7 @@ module Special
         if (lacoef) then
           if (.not.allocated(acoef_data)) then
             allocate(acoef_data(dataload_len,nx,ny,nz,3,3))
-            call openDataset('acoef', bcoef_id)
+            call openDataset('acoef', acoef_id)
           endif
           acoef_data = 0.
         elseif (allocated(acoef_data)) then
@@ -751,6 +752,7 @@ endif
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bij)=.true.
       lpenc_requested(i_jj)=.true.
+      if (lbcoef.and.lusecoefs) lpenc_requested(i_bijtilde)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -846,6 +848,7 @@ endif
           if (lkappa_arr(i,j,k)) then
             p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
           else
+!if (lfirst.and.lroot.and.n==n1.and.m==m1) print*, 'kappa: ijk=', i,j,k
             p%kappa_coefs(:,i,j,k)=0
           endif
         end do; end do; end do
@@ -897,6 +900,12 @@ endif
         do k=1,3; do j=1,3; do i=1,3
           if (lbcoef_arr(i,j,k)) &
             p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bij(:,j,k)
+        end do; end do; end do
+
+        p%bcoef_emf = 0
+        do k=1,2; do j=1,3; do i=1,3
+          if (lbcoef_arr(i,j,k)) &
+            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bijtilde(:,j,k)
         end do; end do; end do
       end if
 !
@@ -1036,9 +1045,9 @@ endif
       iostat = 0
       call setParameterDefaults
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
-      write (*,*) 'read_special_init_pars parameters read...'
+      if (lroot) write (*,*) 'read_special_init_pars parameters read...'
       call parseParameters
-      write (*,*) 'read_special_init_pars parameters parsed...'
+      if (lroot) write (*,*) 'read_special_init_pars parameters parsed...'
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -1327,7 +1336,7 @@ endif
       ! Get dataspace dimensions in tensor_dims.
       ndims = tensor_ndims(tensor_id)
       call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
-                                       dimsizes, &
+                                       dimsizes(1:ndims), &
                                        maxdimsizes(1:ndims), &
                                        hdferr)                 !MR: hdferr/=0!
 print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
@@ -1547,12 +1556,12 @@ print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
           tensor_memoffsets(tensor_id,ndims)   = mask_j-1
 
           ! Hyperslab for data
-!          print '(a,a,6(1x,i3))', 'tensor offset',name,tensor_offsets(tensor_id,1:ndims)
-!          print '(a,a,6(1x,i3))', 'tensor memoffset',name,tensor_memoffsets(tensor_id,1:ndims)
+          if (mask_i==1.and.mask_j==1) print '(a,i2,a,6(1x,i3))', 'iproc, tensor offset',iproc,name,tensor_offsets(tensor_id,1:ndims-2)
+!          print '(a,i2,a,6(1x,i3))', 'iproc, tensor memoffset',iproc,name,tensor_memoffsets(tensor_id,1:ndims)
 !          print '(a,a,6(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
 !          print '(a,a,6(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
 
-print*, 'before H5Sselect_hyperslab_F for file'
+!print*, 'before H5Sselect_hyperslab_F for file'
           call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
@@ -1562,7 +1571,7 @@ print*, 'before H5Sselect_hyperslab_F for file'
                            'for /grid/'//name)
            end if
           ! Hyperslab for memory
-print*, 'before H5Sselect_hyperslab_F for memory'
+!print*, 'before H5Sselect_hyperslab_F for memory'
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
                                      tensor_memoffsets(tensor_id,1:ndims),        &
                                      tensor_memcounts(tensor_id,1:ndims),         &
@@ -1577,7 +1586,7 @@ print*, 'before H5Sselect_hyperslab_F for memory'
 
       ! Read data into memory
       tensor_dims(tensor_id,ndims-1:ndims)=3
-print*, 'before H5Dread_F'
+!print*, 'before H5Dread_F'
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
@@ -1827,7 +1836,7 @@ print*, 'before H5Dread_F'
         lacoef_arr(3,3) = lacoef_c(6)
         if (any([lalpha,lgamma])) then
           if (lroot) call warning('initialize_special', &
-            'lacoef=T overrides settings of lalpha and lgamma')     
+            'any lacoef_c=T overrides settings of lalpha and lgamma')     
           lalpha=.false.; lgamma=.false.
           lalpha_arr = .false.; lgamma_arr = .false.
         endif
@@ -1852,7 +1861,7 @@ print*, 'before H5Dread_F'
         enddo
         if (any([lbeta,ldelta,lkappa])) then
           if (lroot) call warning('initialize_special', &
-            'lbcoef=T overrides settings of lbeta,ldelta,lkappa')     
+            'any lbcoef_c=T overrides settings of lbeta,ldelta,lkappa')     
           lbeta=.false.; lbeta_arr = .false.
           ldelta=.false.; ldelta_arr = .false.
           lkappa=.false.; lkappa_arr = .false.
