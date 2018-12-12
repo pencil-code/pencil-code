@@ -1400,6 +1400,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(norlx51)
 #CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
+#LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
 #LIBMPISUFFIX= #(norlx51)
 ##
 ## Axel on norlx55 (gfortran)
