@@ -373,7 +373,7 @@ module Sub
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
           enddo
         else
-          res=sum(a*1.D0)     ! sum at double precision to improve accuracy
+          res=sum(dble(a))     ! sum at double precision to improve accuracy
         endif
       else
         if (lspherical_coords) then
@@ -381,7 +381,7 @@ module Sub
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
           enddo
         else
-          res=res+sum(a*1.D0)
+          res=res+sum(dble(a))
         endif
       endif
 !
@@ -1560,7 +1560,6 @@ module Sub
 !
 !  23-jun-18/JW: Adapted from der_4ht_stag
 !
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: df
       integer, intent(in) :: j, k
@@ -2523,29 +2522,41 @@ module Sub
  
       real, dimension (nx,3) :: aa
       real, dimension (nx) :: d2adrdt,tmp,tmp1
-      
+!
+!  d B_r/dr
+!      
       aa=f(l1:l2,m,n,iax:iaz)
-      call derij(f,iaz,d2adrdt,1,2,.true.)     ! d^2 a_phi/dr dtheta
+      call derij(f,iaz,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_phi/dr dtheta
 
-      bijtilde(:,1,1) = (d2adrdt - bb(:,1) - cotth(m)*(bb(:,2)+r1_mn*aa(:,3)))*r1_mn
-      
-      call der2(f,iaz,tmp,2,.true.)            ! d^2 a_phi/dtheta^2
-      bijtilde(:,1,2) = (tmp - aa(:,3)*(cotth(m)*cotth(m) + sin2th(m)))*r1_mn + cotth(m)*bb(:,1)
-
+      bijtilde(:,1,1) = d2adrdt - (bb(:,1) + cotth(m)*(bb(:,2)+r1_mn*aa(:,3)))*r1_mn
+!
+!  (1/r) d B_r/d theta
+!      
+      call der2(f,iaz,tmp,2,.true.)            ! (1/r^2) d^2 a_phi/dtheta^2
+      bijtilde(:,1,2) = tmp - aa(:,3)*(cotth(m)*cotth(m) + sin2th(m))*r2_mn + cotth(m)*bb(:,1)*r1_mn
+!
+!  d B_theta/dr
+!      
       call der2(f,iaz,tmp,1,.true.)            ! d^2 a_phi/dr^2
       bijtilde(:,2,1) = -tmp + (bb(:,2)+2.*r1_mn*aa(:,3))*r1_mn
-
-      bijtilde(:,2,2) = -d2adrdt - (bb(:,1) - cotth(m)*r1_mn*aa(:,3))
-
+!
+!  (1/r) d B_theta/d theta
+!      
+      bijtilde(:,2,2) = -d2adrdt - (bb(:,1) - cotth(m)*r1_mn*aa(:,3))*r1_mn
+!
+!  d B_phi/dr
+!      
       call der2(f,iay,tmp,1,.true.)            ! d^2 a_theta/dr^2
-      call derij(f,iax,d2adrdt,1,2,.true.)     ! d^2 a_r/dr dtheta
-      call der(f,iax,tmp1,2)                   ! d a_r/dtheta/r
-      bijtilde(:,3,1) = tmp + (-d2adrdt + bb(:,3) - 2.*(r1_mn*aa(:,2)-tmp1))*r1_mn
-
-      call der2(f,iax,tmp,2,.true.)            ! d^2 a_r/dtheta^2
-      call derij(f,iay,d2adrdt,1,2,.true.)     ! d^2 a_theta/dr dtheta
-      call der(f,iay,tmp1,2)                   ! d a_theta/dtheta/r
-      bijtilde(:,3,2) = tmp1 - r1_mn*tmp + d2adrdt
+      call derij(f,iax,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_r/dr dtheta
+      call der(f,iax,tmp1,2)                   ! (1/r) d a_r/dtheta
+      bijtilde(:,3,1) = tmp - d2adrdt + (bb(:,3) - 2.*(r1_mn*aa(:,2)-tmp1))*r1_mn
+!
+!  (1/r) d B_phi/d theta
+!      
+      call der2(f,iax,tmp,2,.true.)            ! (1/r^2) d^2 a_r/dtheta^2
+      call derij(f,iay,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_theta/dr dtheta
+      call der(f,iay,tmp1,2)                   ! (1/r) d a_theta/dtheta
+      bijtilde(:,3,2) = tmp1*r1_mn - (tmp - d2adrdt)
    
     endsubroutine bij_tilde 
 !***********************************************************************
@@ -2580,7 +2591,7 @@ module Sub
 !
       iref1=iref-1
 !
-!  Calculate all mixed and non-mixed second derivatives
+!  Calculate all (mixed and non-mixed) second derivatives
 !  of the vector potential (A_k,ij).
 !
 !  Do not calculate both d^2 A_k/(dx dy) and d^2 A_k/(dy dx).
@@ -3563,11 +3574,8 @@ module Sub
         endif
         close(lun)
 !
-      endif
-!
 !  Broadcast tout and nout in one go.
 !
-      if (lroot) then
         bcast_array(1) = tout
         bcast_array(2) = nout
       endif
@@ -3596,7 +3604,7 @@ module Sub
       integer, intent(inout) :: nout
       real, intent(in) :: dtout
       double precision, intent(in) :: t
-      logical, intent(out) :: lout
+      logical, intent(inout) :: lout
       logical, intent(in), optional :: nowrite
       character (len=intlen), intent(out), optional :: ch
 !
@@ -3633,7 +3641,7 @@ module Sub
 !  (otherwise slices are written just to catch up with tt.)
 !
 !  WL: Add possibility that there should be a small threshold in this
-!      comparison. Needed for outputing at the exact tsnap, otherwise
+!      comparison. Needed for outputting at the exact tsnap, otherwise
 !      a difference between tsp and tout to machine precision can be
 !      interpreted as stating that the output is to be done at the next,
 !      not the current, timestep.
@@ -3647,8 +3655,11 @@ module Sub
         lfirstcall=.false.
       endif
 !
-      if ((t_sp >= tout) .or. (abs(t_sp-tout) <  deltat_threshold)) then
+      if ((t_sp >= tout) .or. &
+!      if (lout.or.t_sp    >= tout             .or. &
+          (abs(t_sp-tout) <  deltat_threshold)) then
         tout=tout+abs(dtout)
+!        if (.not.lout) tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
 !
@@ -3660,7 +3671,7 @@ module Sub
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'
-          write(lun,*) 'check_snaptime in sub.f90). The values above give'
+          write(lun,*) 'update_snaptime in sub.f90). The values above give'
           write(lun,*) 'time and number of the *next* snapshot. These values'
           write(lun,*) 'are only read once in the beginning. You may adapt'
           write(lun,*) 'them by hand (eg after a crash).'
@@ -3674,7 +3685,7 @@ module Sub
 !***********************************************************************
     subroutine shift_dt(dt_)
 !
-!  Hack to make the code output the VARN files at EXACTLY the times
+!  Hack to make the code output the VARn files at EXACTLY the times
 !  defined by dsnap, instead of slightly after it.
 !
 !  03-aug-11/wlad: coded
@@ -3715,12 +3726,12 @@ module Sub
 
       dt1_local=dt1_
       ! Timestep growth limiter
-      if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
+      if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
       call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
       dt=1.0/dt1
       if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
       ! Timestep growth limiter
-      if (ddt/=0.) dt1_last=dt1_local/ddt
+      if (ddt > 0.) dt1_last=dt1_local/ddt
 
     endsubroutine set_dt
 !***********************************************************************
@@ -4181,33 +4192,48 @@ module Sub
  1    aemm=iabs(emm)
 
       select case (ell)
-          case (0)
-            sph_har=(0.5)*sqrt(1./pi)
-          case (1)
-            select case(aemm)
-              case (0)
-                sph_har=(0.5)*sqrt(3./pi)*cost
-              case (1) 
-                sph_har=(0.5)*sqrt(3./(2*pi))*sint*cosp
-                if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
-              case default
-                call fatal_error('sub:ylm','l=1 wrong m ')
-              endselect
-         case (2)
-            if (aemm==2) cos2p=2*cosp*cosp-1
-            select case(aemm)
-              case (0)
-                sph_har=(0.25)*sqrt(5./pi)*(3.*cost*cost-1.)
-              case (1) 
-                sph_har=-(0.5)*sqrt(15./(2*pi))*sint*cost*cosp
-                if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
-              case (2)
-                sph_har=(0.25)*sqrt(15./(2*pi))*sint*sint*cos2p
-              case default
-                call fatal_error('sub:ylm','l=2 wrong m ')
-              endselect
-          case default
-            call fatal_error('sub:ylm','your ylm is not implemented')
+        case (0)
+          sph_har=(0.5)*sqrt(1./pi)
+        case (1)
+          select case(aemm)
+            case (0)
+              sph_har=(0.5)*sqrt(3./pi)*cost
+            case (1) 
+              sph_har=(0.5)*sqrt(3./(2*pi))*sint*cosp
+              if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
+            case default
+              call fatal_error('sub:ylm','l=1 wrong m ')
+            endselect
+        case (2)
+          if (aemm==2) cos2p=2*cosp*cosp-1
+          select case(aemm)
+            case (0)
+              sph_har=(0.25)*sqrt(5./pi)*(3.*cost*cost-1.)
+            case (1) 
+              sph_har=-(0.5)*sqrt(15./(2*pi))*sint*cost*cosp
+              if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
+            case (2)
+              sph_har=(0.25)*sqrt(15./(2*pi))*sint*sint*cos2p
+            case default
+              call fatal_error('sub:ylm','l=2 wrong m ')
+            endselect
+        case (9)
+          select case(aemm)
+            case (0)
+              sph_har=sqrt(19./(4*pi))*(12155.*cost**9 - 25740.*cost**7 + 18018.*cost**5 - 4620.*cost**3 + 315.*cost)/128.
+            case default
+              call fatal_error('sub:ylm','l=9 wrong m ')
+          endselect
+        case (10)
+          select case(aemm)
+            case (0)
+              sph_har=sqrt(21./(4*pi)) &
+                      *(46189.*cost**10 - 109395.*cost**8 + 90090.*cost**6 - 30030.*cost**4 + 3465.*cost**2 - 63.)/256.
+            case default
+              call fatal_error('sub:ylm','l=10 wrong m ')
+          endselect
+        case default
+          call fatal_error('sub:ylm','your ylm is not implemented')
       endselect
 
       if (present(der)) then
@@ -6338,8 +6364,8 @@ nameloop: do
     subroutine position(ind,ip,ngrid,ind_loc,flag)
 !
 !  Determines local position ind_loc with respect to processor ip corresponding to global position ind
-!  if grid has global extent ngrid. flag is set if ind_loc lies within the local range.
-!  On return, ind_loc is corrected for ghost zones, thus can be used to index the f array.
+!  if grid has local extent ngrid. flag is set if ind_loc lies within the local range.
+!  On return, ind_loc is corrected for number of ghost zones, thus can be used to index the f array.
 !  ind_loc and flag are not altered if ind <= 0.
 !
 !  21-apr-15/MR: coded
@@ -7400,11 +7426,11 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
                   +f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1)) )*facc
         elseif (lactive_dimension(3)) then
           fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1)) &
-                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)))*facq
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)))*facq 
         else
 !print*, ijk(1, 0),i2( 0),ijk(2,-1),n,f(ijk(1, 0):i2( 0),ijk(2,-1),n)
           fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),n)+f(ijk(1, 0):i2( 0),ijk(2, 0),n) &
-                  +f(ijk(1,-1):i2(-1),ijk(2, 0),n)+f(ijk(1, 0):i2( 0),ijk(2,-1),n))*facq
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),n)+f(ijk(1, 0):i2( 0),ijk(2,-1),n))*facq 
         endif
       endif
 
