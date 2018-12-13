@@ -2390,6 +2390,8 @@ module Magnetic
         lpenc_requested(i_jxbr)=.true.
         if (ambipolar_diffusion=="ionization-equilibrium") &
           lpenc_requested(i_rho1)=.true.
+        if (ambipolar_diffusion=="ionization-yH") &
+          lpenc_requested(i_yH)=.true.
       endif
 !
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
@@ -3453,6 +3455,7 @@ module Magnetic
 !
       case('constant'); p%nu_ni1=nu_ni1
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
+      case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)
       case default
          write(unit=errormsg,fmt=*) &
               'set_ambipolar_diffusion: No such value for ambipolar_diffusion: ', &
@@ -4157,6 +4160,8 @@ module Magnetic
           else
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%nu_ni1*p%jxbr2
           endif
+        elseif (ltemperature .and. lneutralion_heat) then
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+p%nu_ni1*p%va2
       endif
