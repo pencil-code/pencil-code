@@ -243,7 +243,6 @@ module Interstellar
 !  between models
 !
   logical :: lSN_list=.false.
-  real :: t_list,x_list,y_list,z_list
   real, dimension(:,:), allocatable :: SN_list
   integer, dimension(:), allocatable :: SN_type 
   integer :: type_list, nlist
@@ -482,6 +481,7 @@ module Interstellar
       integer :: i, int1_list, stat
       integer, dimension(4) :: int4_list
       real, dimension(9) :: real9_list
+      real :: t_list,x_list,y_list,z_list
       logical :: exist
 !
       f(:,:,:,icooling)=0.0
@@ -697,9 +697,9 @@ module Interstellar
             call fatal_error('initialize_interstellar','error - no sn_series input file')
           endif
         endif
-  !
-  !  Read profiles.
-  !
+!
+!  Read profiles.
+!
         nlist=0
         do while(1==1)
           read(33,*,iostat=stat) 
@@ -708,9 +708,11 @@ module Interstellar
         enddo
         close(33)
         if (lroot) print*,"initialize_interstellar: nlist =",nlist
-        if (.not.allocated(SN_list) ) allocate(SN_list(4,nlist))
-        if (.not.allocated(SN_type) ) allocate(SN_type(  nlist))
-
+        if (allocated(SN_list) ) deallocate(SN_list)
+        allocate(SN_list(4,nlist))
+        if (allocated(SN_type) ) deallocate(SN_type)
+        allocate(SN_type(  nlist))
+!
         open(33,file='sn_series.in')
         do  i=1,nlist
           read(33,*,iostat=stat) &
@@ -1115,11 +1117,7 @@ module Interstellar
           else
             call warning('input_persistent_interstellar','t_next_SNII from run.in '//&
               'overwritten. Set l_persist_overwrite_tSNII=T to update')
-            if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) then
-              if (lSN_list) t_list=t_next_SNI
-              if (lroot) print*,'FRED 1'
-              return
-            endif
+            if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
           endif
           done = .true.
         case (id_record_ISM_X_CLUSTER)
@@ -1190,8 +1188,6 @@ module Interstellar
         print *,'input_persistent_interstellar: ','lSNI', lSNI, 't_next_SNI', t_next_SNI
       if (lroot) &
         print *,'input_persistent_interstellar: ','lSNII',lSNII,'t_next_SNII',t_next_SNII
-      if (lroot.and.lSN_list) &
-        print *,'input_persistent_interstellar: ','time next SN from list',t_list
 !
     endsubroutine input_persistent_interstellar
 !*****************************************************************************
@@ -1838,6 +1834,7 @@ module Interstellar
                 call touch_file('STOP')
               endif
               t_next_SNI=SN_list(1,i+1)
+              if (lroot) print*,'check_SN: t_next_SNI on list =',t_next_SNI
               exit
             endif
           enddo
@@ -3435,9 +3432,7 @@ module Interstellar
 !
       if (lroot.and.ip<14) print*, &
           'explode_SN: SNR%feat%MM=',SNR%feat%MM
-      if (lSN_list) then
-        t_next_SNI=t_list
-      else
+      if (.not. lSN_list) then
         if (SNR%indx%SN_type==1) then
           call set_next_SNI(t_interval_SN)
           SNrate = t_interval_SNI
