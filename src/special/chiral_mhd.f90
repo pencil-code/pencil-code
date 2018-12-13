@@ -91,7 +91,7 @@ module Special
 !
    real :: amplmuS=0., kx_muS=0., ky_muS=0., kz_muS=0., phase_muS=0.
    real :: amplmu5=0., kx_mu5=0., ky_mu5=0., kz_mu5=0., phase_mu5=0.
-   real :: diffmu5, diffmuS, lambda5, mu5_const=0., gammaf5, Cw=0.
+   real :: diffmu5, diffmuS, lambda5, mu5_const=0., gammaf5=0., Cw=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0.
    real :: meanmu5=0., flucmu5=0.
    real, dimension (nx,3) :: aatest, bbtest
@@ -109,7 +109,7 @@ module Special
 !
   namelist /special_init_pars/ &
       initspecial, mu5_const, &
-      lmuS, lCVE, lmu5adv, lmuSadv, muS_const, coef_muS, &
+      lmuS, lCVE, lmu5adv, lmuSadv, muS_const, &
       amplmuS, kx_muS, ky_muS, kz_muS, phase_muS, &
       amplmu5, kx_mu5, ky_mu5, kz_mu5, phase_mu5, &
       coef_muS, coef_mu5
@@ -382,8 +382,9 @@ module Special
       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
         +diffmu5*p%del2mu5+lambda5*EB-gammaf5*p%mu5 
       if (lmu5adv) then
-       df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
       endif
+!
 !  Contributions to timestep from mu5 equation
       dt1_mu5_1 = lambda5*eta*p%b2
       dt1_mu5_2 = diffmu5*dxyz_2
@@ -567,8 +568,8 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_muSm=0; idiag_muSrms=0
-        idiag_mu5m=0; idiag_mu5rms=0; 
+        idiag_muSm=0; idiag_muSrms=0;
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_gmu5rms=0; 
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
