@@ -3541,7 +3541,7 @@ module Interstellar
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-      radius2 = (remnant%feat%radius)**2
+      radius2 = (1.5*remnant%feat%radius)**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
@@ -3636,7 +3636,7 @@ module Interstellar
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = (remnant%feat%radius)**2
+      radius2 = (1.5*remnant%feat%radius)**2
       tmp=0.0
       do n=n1,n2
       do m=m1,m2
@@ -3664,7 +3664,7 @@ module Interstellar
         call dot2(uu,u2)
         tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask=1
-        where (dr2_SN(1:nx) > 4*radius2)
+        where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
           mask(1:nx)=0
         endwhere
