@@ -40,7 +40,8 @@ def interp_var(
                 time=None,
                 deltay=None,
                 arrs=None,
-                nghosts=3
+                innghosts=3,
+                outghosts=3
               ):
     """ load var file to be interpolated from old simulation and var file from
     started new simulation of correct shape and processor layout
@@ -110,8 +111,8 @@ def interp_var(
                 fnew.f[iarr] = tmp
                 iarr += 1
     if hasattr(fold,'deltay'):
-        fnew.deltay = fold.deltay*(fnew.y.size-2*nghosts)/float(
-                                   fold.y.size-2*nghosts)
+        fnew.deltay = fold.deltay*(fnew.y.size-2*innghosts)/float(
+                                   fold.y.size-2*outghosts)
     if not time==None:
         fnew.t=time
     return fnew
