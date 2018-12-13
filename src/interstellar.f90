@@ -708,8 +708,8 @@ module Interstellar
         enddo
         close(33)
         if (lroot) print*,"initialize_interstellar: nlist =",nlist
-        allocate(SN_list(4,nlist))
-        allocate(SN_type(  nlist))
+        if (.not.allocated(SN_list) ) allocate(SN_list(4,nlist))
+        if (.not.allocated(SN_type) ) allocate(SN_type(  nlist))
 
         open(33,file='sn_series.in')
         do  i=1,nlist
