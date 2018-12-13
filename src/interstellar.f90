@@ -220,7 +220,7 @@ module Interstellar
 !
 !  SNe composition
 !
-  logical :: lSN_eth=.true., lSN_ecr=.false., lSN_mass=.true., &
+  logical :: lSN_eth=.true., lSN_ecr=.false., lSN_mass=.false., &
       lSN_velocity=.false., lSN_fcr=.false., lSN_autofrackin=.true.
 !
 !  Total mass added by a SNe
@@ -238,6 +238,15 @@ module Interstellar
   real :: outer_shell_proportion = 1.2
   real :: inner_shell_proportion = 1.
   real :: width_SN=impossible
+!
+!  Set SN by predefined list of time and coordinates for direct comparison
+!  between models
+!
+  logical :: lSN_list=.false.
+  real :: t_list,x_list,y_list,z_list
+  real, dimension(:,:), allocatable :: SN_list
+  integer, dimension(:), allocatable :: SN_type 
+  integer :: type_list, nlist
 !
 !  Parameters for 'averaged'-SN heating
 !
@@ -388,7 +397,7 @@ module Interstellar
       lSN_scale_rad, ampl_SN, mass_SN, width_SN, &
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       t_next_SNI, t_next_SNII, center_SN_x, center_SN_y, center_SN_z, &
-      lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, &
+      lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, lSN_list, &
       frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       SNI_factor, SNII_factor, lSN_autofrackin, &
@@ -401,7 +410,7 @@ module Interstellar
 ! run parameters
 !
   namelist /interstellar_run_pars/ &
-      ampl_SN, mass_SN, t_next_SNI, t_next_SNII, &
+      ampl_SN, mass_SN, t_next_SNI, t_next_SNII, lSN_list, &
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
@@ -470,6 +479,10 @@ module Interstellar
       use EquationOfState , only: getmu
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i, int1_list, stat
+      integer, dimension(4) :: int4_list
+      real, dimension(9) :: real9_list
+      logical :: exist
 !
       f(:,:,:,icooling)=0.0
       f(:,:,:,inetheat)=0.0
@@ -668,6 +681,48 @@ module Interstellar
             '----rho-----------TT-----------EE---------t_sedov----', &
             '--radius-----site_N_sol------maxTT----t_interval---SN_rate-'
         close(1)
+      endif
+!
+!
+!
+      if (lSN_list) then
+        inquire(file='sn_series.in',exist=exist)
+        if (exist) then
+          open(33,file='sn_series.in')
+        else
+          inquire(file=trim(directory)//'/sn_series.ascii',exist=exist)
+          if (exist) then
+            open(33,file=trim(directory)//'/sn_series.ascii')
+          else
+            call fatal_error('initialize_interstellar','error - no sn_series input file')
+          endif
+        endif
+  !
+  !  Read profiles.
+  !
+        nlist=0
+        do while(1==1)
+          read(33,*,iostat=stat) 
+          nlist=nlist+1
+          if (stat<0) exit
+        enddo
+        close(33)
+        if (lroot) print*,"initialize_interstellar: nlist =",nlist
+        allocate(SN_list(4,nlist))
+        allocate(SN_type(  nlist))
+
+        open(33,file='sn_series.in')
+        do  i=1,nlist
+          read(33,*,iostat=stat) &
+              int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real9_list
+          if (stat<0) exit
+          SN_list(1,i)=t_list
+          SN_list(2,i)=x_list
+          SN_list(3,i)=y_list
+          SN_list(4,i)=z_list
+          SN_type(  i)=type_list
+        enddo
+        close(33)
       endif
 !
 !  Write unit_Lambda to pc_constants file
@@ -1060,7 +1115,11 @@ module Interstellar
           else
             call warning('input_persistent_interstellar','t_next_SNII from run.in '//&
               'overwritten. Set l_persist_overwrite_tSNII=T to update')
-            if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
+            if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) then
+              if (lSN_list) t_list=t_next_SNI
+              if (lroot) print*,'FRED 1'
+              return
+            endif
           endif
           done = .true.
         case (id_record_ISM_X_CLUSTER)
@@ -1131,6 +1190,8 @@ module Interstellar
         print *,'input_persistent_interstellar: ','lSNI', lSNI, 't_next_SNI', t_next_SNI
       if (lroot) &
         print *,'input_persistent_interstellar: ','lSNII',lSNII,'t_next_SNII',t_next_SNII
+      if (lroot.and.lSN_list) &
+        print *,'input_persistent_interstellar: ','time next SN from list',t_list
 !
     endsubroutine input_persistent_interstellar
 !*****************************************************************************
@@ -1747,6 +1808,8 @@ module Interstellar
 !  Checks for SNe, and implements appropriately:
 !  relevant subroutines in entropy.f90
 !
+    use General,         only: touch_file
+!
       real, dimension(mx,my,mz,mfarray) :: f
 !
 !  Only allow SNII if no SNI this step (may not be worth keeping).
@@ -1754,21 +1817,45 @@ module Interstellar
       logical :: l_SNI=.false.
 !
       intent(inout) :: f
+      integer :: i
 !
 !  Identifier
 !
       if (headtt) print*,'check_SN: ENTER'
 !
+!  If SN are listed in source file then obtain parameters from list
+!
+      if (lSN_list) then
+        if (t>=t_next_SNI) then
+          do i=1,nlist-1
+            if (SN_list(1,i)>=t_next_SNI) then
+              center_SN_x=SN_list(2,i)
+              center_SN_y=SN_list(3,i)
+              center_SN_z=SN_list(4,i)
+              type_list=SN_type(i)
+              if (i==nlist-1) then
+                call touch_file('ENDTIME')
+                call touch_file('STOP')
+              endif
+              t_next_SNI=SN_list(1,i+1)
+              exit
+            endif
+          enddo
+          call check_SNI(f,l_SNI)
+        endif
+      else
+        if (t < t_settle) return
+        call tidy_SNRs
+        if (lSNI) call check_SNI(f,l_SNI)
+!
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme).
 !
-      if (t < t_settle) return
-      call tidy_SNRs
-      if (lSNI) call check_SNI(f,l_SNI)
-      if (lSNII) then
-        if (lSNII_gaussian) then
-          call check_SNIIb(f,l_SNI)
-        else
-          call check_SNII(f,l_SNI)
+        if (lSNII) then
+          if (lSNII_gaussian) then
+            call check_SNIIb(f,l_SNI)
+          else
+            call check_SNII(f,l_SNI)
+          endif
         endif
       endif
 !
@@ -1788,6 +1875,17 @@ module Interstellar
 !
       if (headtt .and. (ip<14)) print*,'check_SNI: ENTER'
 !
+      if (lSN_list) then
+        iSNR=get_free_SNR()
+        SNRs(iSNR)%site%TT=1E20
+        SNRs(iSNR)%site%rho=0.0
+        SNRs(iSNR)%feat%t=t
+        SNRs(iSNR)%indx%SN_type=type_list
+        SNRs(iSNR)%feat%radius=width_SN
+        call position_SN_testposition(f,SNRs(iSNR))
+        call explode_SN(f,SNRs(iSNR),ierr,preSN)
+        return
+      endif
       if (t >= t_next_SNI) then
         iSNR=get_free_SNR()
         SNRs(iSNR)%site%TT=1E20
@@ -2996,10 +3094,10 @@ module Interstellar
       endif
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
-        if (ierr==iEXPLOSION_TOO_UNEVEN) return
+        if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
         if (SNR%feat%radius>=rfactor_SN*SNR%feat%dr) then
-          if (1.-ambient_mass/(N_mass*solar_mass)>eps_mass) then
+          if (1.-ambient_mass/(N_mass*solar_mass)>eps_mass.and..not.lSN_list) then
             ierr=iEXPLOSION_TOO_RARIFIED
             return
           endif
@@ -3212,7 +3310,7 @@ module Interstellar
 !
       if (present(ierr)) then
         call mpibcast_int(ierr,SNR%indx%iproc)
-        if (ierr==iEXPLOSION_TOO_HOT) return
+        if (ierr==iEXPLOSION_TOO_HOT.and..not.lSN_list) return
       endif
 !
 !  reject site if density distribution yields excessively high kinetic energy or 
@@ -3231,7 +3329,7 @@ module Interstellar
 !
       if (present(ierr)) then
         call mpibcast_int(ierr,SNR%indx%iproc)
-        if (ierr==iEXPLOSION_TOO_UNEVEN) return
+        if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
       endif
 !
       mpi_tmp=site_mass
@@ -3337,12 +3435,16 @@ module Interstellar
 !
       if (lroot.and.ip<14) print*, &
           'explode_SN: SNR%feat%MM=',SNR%feat%MM
-      if (SNR%indx%SN_type==1) then
-        call set_next_SNI(t_interval_SN)
-        SNrate = t_interval_SNI
+      if (lSN_list) then
+        t_next_SNI=t_list
       else
-        call set_next_SNII(f,t_interval_SN)
-        SNrate = t_interval_SNII
+        if (SNR%indx%SN_type==1) then
+          call set_next_SNI(t_interval_SN)
+          SNrate = t_interval_SNI
+        else
+          call set_next_SNII(f,t_interval_SN)
+          SNrate = t_interval_SNII
+        endif
       endif
 !
       if (lOB_cluster) then
@@ -3392,6 +3494,20 @@ module Interstellar
         preSN(4,npreSN)= SNR%indx%iproc
       endif
       SNR%indx%state=SNstate_finished
+!
+      if (present(ierr).and.lSN_list) then
+        select case (ierr)
+          case (iEXPLOSION_TOO_HOT)
+            if (lroot .and. (ip<14)) print*,'explode_SN: TOO HOT, (x,y,z) =',&
+                SNR%feat%x, SNR%feat%y, SNR%feat%z,'rho =', SNR%site%rho
+          case (iEXPLOSION_TOO_UNEVEN) 
+            if (lroot .and. (ip<14)) print*,'explode_SN: TOO UNEVEN, (x,y,z) =',&
+                SNR%feat%x, SNR%feat%y, SNR%feat%z,'rho =', SNR%site%rho
+          case (iEXPLOSION_TOO_RARIFIED)
+            if (lroot .and. (ip<14)) print*,'explode_SN: TOO RARIFIED, (x,y,z) =',&
+                SNR%feat%x, SNR%feat%y, SNR%feat%z,'rho =', SNR%site%rho
+        endselect
+      endif
 !
       if (present(ierr)) then
         ierr=iEXPLOSION_OK
