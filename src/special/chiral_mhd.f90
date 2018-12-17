@@ -251,10 +251,17 @@ module Special
           call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
           if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
 !
+        case ('const_sinwave-phase')
+            call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
+            f(:,:,:,imu5) = f(:,:,:,imu5) + mu5_const
+          if (lmuS) then
+            call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
+            f(:,:,:,imuS) = f(:,:,:,imuS) + muS_const
+          endif
+!
         case ('mu5const-muSsin')
           f(:,:,:,imu5) = mu5_const
           if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
-
 !
         case default
           call fatal_error("init_special: No such value for initspecial:" &
