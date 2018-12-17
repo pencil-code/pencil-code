@@ -3150,6 +3150,7 @@ module Interstellar
         else
           frackin = 0.
         endif
+        frackin=min(0.1,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip<14) print*,&
