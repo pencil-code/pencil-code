@@ -342,7 +342,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.025, eps_radius=0.001, rfactor_SN=4.5
+  real :: N_mass=100.0, eps_mass=0.25, eps_radius=0.001, rfactor_SN=4.5
 !
 !  Requested SNe location (used for test SN)
 !
@@ -3053,6 +3053,7 @@ module Interstellar
       real :: width_energy, width_mass, width_velocity
       real :: rhom, rhomin, ekintot, old_radius
       real ::  rhom_new, ekintot_new, ambient_mass
+      real :: Nsol_ratio, radios_min, radius_max, Nsol_mass
       real :: uu_sedov
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
@@ -3074,35 +3075,38 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
-      old_radius=SNR%feat%radius
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
 !  improve match of mass to radius.
 !
       if (lSN_scale_rad) then
-        do i=1,25
-          SNR%feat%radius=(2.*0.75*solar_mass/(SNR%feat%rhom+rhomin)*pi_1*N_mass)**(1.0/3.0)
-          SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr)
+        radius_min=rfactor_SN*SNR%feat%dr
+        radius_max=200*pc_cgs/unit_length
+        old_radius=radius_min
+        Nsol_mass=solar_mass*N_mass
+        Nsol_ratio=4.*pi/3.*rhom*radius_min**3/Nsol_mass
+        do i=1,15
+          if (Nsol_ratio < 1) then
+            radius_min=SNR%feat%radius
+            SNR%feat%radius=0.5*(SNR%feat%radius+radius_max)
+          else
+            radius_max=SNR%feat%radius
+            SNR%feat%radius=0.5*(SNR%feat%radius+radius_min)
+          endif
           call get_properties(f,SNR,rhom,ekintot,rhomin)
-          SNR%feat%rhom=0.25*(rhom+3*SNR%feat%rhom)
-          if (abs(SNR%feat%radius/old_radius-1.)<eps_radius) exit
-          old_radius=(2.*0.75*solar_mass/(SNR%feat%rhom+rhomin)*pi_1*N_mass)**(1.0/3.0)
+          Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/Nsol_mass
         enddo
       endif
+      SNR%feat%rhom=rhom
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (SNR%feat%radius>=rfactor_SN*SNR%feat%dr) then
-          if (1.-ambient_mass/(N_mass*solar_mass)>eps_mass.and..not.lSN_list) then
-            ierr=iEXPLOSION_TOO_RARIFIED
-            return
-          endif
+        if (ambient_mass/Nsol_mass>eps_mass.and..not.lSN_list) then
+          ierr=iEXPLOSION_TOO_RARIFIED
+          return
         endif
-      else
-        call get_properties(f,SNR,rhom,ekintot,rhomin)
       endif
-      SNR%feat%rhom=rhom
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
