@@ -3053,7 +3053,7 @@ module Interstellar
       real :: width_energy, width_mass, width_velocity
       real :: rhom, rhomin, ekintot, old_radius
       real ::  rhom_new, ekintot_new, ambient_mass
-      real :: Nsol_ratio, radios_min, radius_max, Nsol_mass
+      real :: Nsol_ratio, radius_min, radius_max, Nsol_mass
       real :: uu_sedov
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
