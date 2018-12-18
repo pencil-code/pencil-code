@@ -342,7 +342,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.25, eps_radius=0.001, rfactor_SN=4.5
+  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=4.5
 !
 !  Requested SNe location (used for test SN)
 !
@@ -404,7 +404,7 @@ module Interstellar
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
       average_SNI_heating, SN_rho_ratio, &
-      eps_mass, eps_radius, rfactor_SN
+      eps_mass, rfactor_SN
 !
 ! run parameters
 !
@@ -431,7 +431,7 @@ module Interstellar
       l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
       l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
-      lreset_ism_seed, SN_rho_ratio, eps_mass, eps_radius, &
+      lreset_ism_seed, SN_rho_ratio, eps_mass, &
       lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx
 !
   contains
