@@ -1,3 +1,5 @@
+  !height_eta=.1, eta_out=5e-5, eta_zwidth=.05
+
 ! $Id$
 !
 !  This modules deals with all aspects of magnetic fields; if no
@@ -326,6 +328,7 @@ module Magnetic
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, &
+      height_eta, eta_out, &
       eta_xwidth, eta_ywidth, eta_zwidth, eta_zwidth2, eta_xwidth0, eta_xwidth1, &
       eta_z0, eta_z1, eta_y0, eta_y1, eta_x0, eta_x1, eta_spitzer, borderaa, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
@@ -4423,7 +4426,7 @@ module Magnetic
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
-!  Note that eta_out is total eta in halo (not eta_out+eta).
+!  eta_out is now the diffusivity in the outer halo.
 !
       if (height_eta/=0.0) then
         if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
@@ -4433,7 +4436,9 @@ module Magnetic
             eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
           enddo
         else
-          eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
+          !eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
+!AB: 2018-12-18 changed to produce change *above* height_eta.
+          eta_out1=(eta_out-eta)*.5*(1.+erfunc((z(n)-height_eta)/eta_zwidth))
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
       endif
