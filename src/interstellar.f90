@@ -3102,7 +3102,7 @@ module Interstellar
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (ambient_mass/Nsol_mass>eps_mass.and..not.lSN_list) then
+        if (ambient_mass/Nsol_mass<eps_mass.and..not.lSN_list) then
           ierr=iEXPLOSION_TOO_RARIFIED
           return
         endif
