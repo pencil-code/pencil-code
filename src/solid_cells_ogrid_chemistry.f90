@@ -69,7 +69,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   integer, dimension(:), pointer :: iaa1, iaa2
 !  character(len=30), pointer, dimension(:) :: reaction_name
   real, dimension(:), pointer :: alpha_n, E_an, B_n
-  logical, pointer ::  lcheminp,ldiffusion,ldiff_corr
+  logical, pointer ::  lcheminp,ldiffusion,ldiff_corr, lmech_simple
   logical, pointer ::  tran_exist, lThCond_simple!,lheatc_chemistry,
   logical, pointer :: lfilter_strict, lfilter, ladvection,lt_const
   real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
@@ -304,6 +304,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         call get_shared_variable('stoichio',stoichio)
         call get_shared_variable('iaa1',iaa1)
         call get_shared_variable('iaa2',iaa2)
+        call get_shared_variable('lmech_simple',lmech_simple)
       endif
 !
 !      if (lew_exist) then 
@@ -678,8 +679,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
                         print*,'iproc=',iproc
                         print*,'TT_full(:,j2,j3)=',T_loc
                         print*,'j2,j3=',j2,j3
-                        call inevitably_fatal_error('calc_for_chem_mixture_ogrid', &
-                        'TT_full(:,j2,j3) is outside range', .true.)
+                      !  call inevitably_fatal_error('calc_for_chem_mixture_ogrid', &
+                      !  'TT_full(:,j2,j3) is outside range', .true.)
                       endif
 !
 ! Find cp and cv for the mixture for the full domain
@@ -1202,6 +1203,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       real, dimension(nx_ogrid) :: kf_0, Pr, sum_sp
       real, dimension(nx_ogrid) :: Fcent, ccc, nnn, lnPr, FF, tmpF
       real, dimension(nx_ogrid) :: TT1_loc
+      real, dimension(nchemspec,nreactions) :: orders_m, orders_p
 !
 !  Check which reactions rate method we will use
 !
@@ -1221,6 +1223,11 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         lnp_atm = log(1e6*unit_length**3/unit_energy)
         p_atm = 1e6*(unit_length**3)/unit_energy
 !
+        if (lmech_simple) then
+          orders_p(:,1) = (/ 0.0, 1.0, 0.0, 0.25, 0.5 /)
+          orders_m(:,1) = (/ 0.0, 0.0, 0.0, 0.0, 0.0 /)
+        endif
+!
 !  calculation of the reaction rate
 !
         do reac = 1,nreactions
@@ -1228,34 +1235,45 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  Find the product of the species molar consentrations (where
 !  each molar consentration is taken to the power of the number)
 !
+        if (lmech_simple) then
+          prod1 = 1.
+          prod2 = 1.
+          do k = 1,nchemspec
+              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+                  /species_constants(k,imass))**orders_p(k,reac)          
+              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+                  /species_constants(k,imass))**orders_m(k,reac)
+          enddo
+        else
           prod1 = 1.
           prod2 = 1.
           do k = 1,nchemspec
             if (abs(Sijp(k,reac)) == 1) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))
             elseif (abs(Sijp(k,reac)) == 2) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
+              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+                  /species_constants(k,imass))*(f_og(l1:l2,m,n,ichemspec(k)) &
                   *rho_cgs(:)/species_constants(k,imass))
             elseif (abs(Sijp(k,reac)) > 0) then
-              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**Sijp(k,reac)
             endif
           enddo
           do k = 1,nchemspec
             if (abs(Sijm(k,reac)) == 1.0) then
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))
             elseif (abs(Sijm(k,reac)) == 2.0) then
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
+              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+                  /species_constants(k,imass))*(f_og(l1:l2,m,n,ichemspec(k)) &
                   *rho_cgs(:)/species_constants(k,imass))
             elseif (abs(Sijm(k,reac)) > 0.0) then
-              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**Sijm(k,reac)
             endif
           enddo
+        endif
 !
 !  Find forward rate constant for reaction 'reac'
 !
@@ -1574,7 +1592,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !***********************************************************************
     subroutine air_field_ogr(f_og,PP)
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: sum_Y, tmp
       real :: PP ! (in dynes = 1atm)
 !
@@ -1844,7 +1862,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !  Calculate mean molecular weight
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
       integer :: k,j2,j3
 !
@@ -1885,7 +1903,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !   20-sep-10/Natalia: coded
 !   renormalization of the species
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: sum_Y
       integer :: k
 !
@@ -1901,7 +1919,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !***********************************************************************
     subroutine chemspec_normalization_N2_og(f_og)
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: sum_Y !, sum_Y2
       integer :: k ,isN2, ichemsN2
       logical :: lsN2

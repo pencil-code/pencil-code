@@ -386,10 +386,6 @@ module Solid_Cells
 !
 !  Set up necessary units for equation of state
 !
-! TODO: ogrid works only with no-log density and temperature
-!       check if that option is correctly implememnted in chemistry_simple
-! TODO: check units... (chemistry only works with cgs, remember!)
-
       if (.not. lchemistry) then
         call initialize_eos_ogr
       else
@@ -669,7 +665,12 @@ module Solid_Cells
 ! TODO: Set initial conditions for chemistry on the ogrid
             if (lchemistry) then  
               do k = 1,nchemspec
-                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)       
+         !       if (ichemspec(k) == 7) then
+         !         f_ogrid(i,j,:,ichemspec(k)) = (1-wall_smoothing) 
+         !       else
+         !         f_ogrid(i,j,:,ichemspec(k)) = (1-f_ogrid(i,j,:,7))*chemspec0(k)       
+         !       endif
+                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k) 
               enddo
             endif
           endif
@@ -4545,7 +4546,7 @@ module Solid_Cells
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
     real :: dt_ogrid
     integer :: tstep_ogrid
-    integer :: j
+    integer :: j,jj=0
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
 !   integer :: ii,jj,kk
 
@@ -5150,12 +5151,12 @@ module Solid_Cells
           endif
           if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
-! TODO: 
+! TODO:  
           if (lchemistry) then
             do k = 1,nchemspec
               call set_ghosts_onesided_ogrid(ichemspec(k))
             enddo
-          endif 
+          endif
         endif
         !if(lupw_lnrho) then
         !  if(lexpl_rho) call bval_from_neumann_upw_ogrid
@@ -8937,24 +8938,24 @@ module Solid_Cells
                + a5*0.5*(f_og(i,m2_ogrid-5,4,:) + f_filterH_uppery(i,2,1,:))
       if(nprocy>1) then
         if(.not. lfilter_rhoonly) then
-          call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,1),f_og(i,m1_ogrid:m2_ogrid,4,1),ny_ogrid)
-          call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,2),f_og(i,m1_ogrid:m2_ogrid,4,2),ny_ogrid)
-          call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,3),f_og(i,m1_ogrid:m2_ogrid,4,3),ny_ogrid)
+          call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iux),f_og(i,m1_ogrid:m2_ogrid,4,iux),ny_ogrid)
+          call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iuy),f_og(i,m1_ogrid:m2_ogrid,4,iuy),ny_ogrid)
+          call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iuz),f_og(i,m1_ogrid:m2_ogrid,4,iuz),ny_ogrid)
         endif
         if(lfilter_TT) then
            call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,iTT),f_og(i,m1_ogrid:m2_ogrid,4,iTT),ny_ogrid)
         endif
-        call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,4),f_og(i,m1_ogrid:m2_ogrid,4,4),ny_ogrid)
+        call cyclic_parallel_y(aWy,aPy,aEy,af,af,by(:,irho),f_og(i,m1_ogrid:m2_ogrid,4,irho),ny_ogrid)
       else
         if(.not. lfilter_rhoonly) then
-          call cyclic(aWy,aPy,aEy,af,af,by(:,1),f_og(i,m1_ogrid:m2_ogrid,4,1),ny_ogrid)
-          call cyclic(aWy,aPy,aEy,af,af,by(:,2),f_og(i,m1_ogrid:m2_ogrid,4,2),ny_ogrid)
-          call cyclic(aWy,aPy,aEy,af,af,by(:,3),f_og(i,m1_ogrid:m2_ogrid,4,3),ny_ogrid)
+          call cyclic(aWy,aPy,aEy,af,af,by(:,iux),f_og(i,m1_ogrid:m2_ogrid,4,iux),ny_ogrid)
+          call cyclic(aWy,aPy,aEy,af,af,by(:,iuy),f_og(i,m1_ogrid:m2_ogrid,4,iuy),ny_ogrid)
+          call cyclic(aWy,aPy,aEy,af,af,by(:,iuz),f_og(i,m1_ogrid:m2_ogrid,4,iuz),ny_ogrid)
         endif
         if(lfilter_TT) then
            call cyclic(aWy,aPy,aEy,af,af,by(:,iTT),f_og(i,m1_ogrid:m2_ogrid,4,iTT),ny_ogrid)
         endif
-        call cyclic(aWy,aPy,aEy,af,af,by(:,4),f_og(i,m1_ogrid:m2_ogrid,4,4),ny_ogrid)
+        call cyclic(aWy,aPy,aEy,af,af,by(:,irho),f_og(i,m1_ogrid:m2_ogrid,4,irho),ny_ogrid)
       endif
     enddo
 ! 
@@ -9025,34 +9026,34 @@ module Solid_Cells
       endif
       if(nprocx>1) then
         if(.not. lfilter_rhoonly) then
-          call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,1), &
-            f_og(l1_ogrid:l2_ogrid-jj,i,4,1), nx_ogrid-jj)
-          call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,2), &
-            f_og(l1_ogrid:l2_ogrid-jj,i,4,2), nx_ogrid-jj)
-          call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,3), &
-               f_og(l1_ogrid:l2_ogrid-jj,i,4,3), nx_ogrid-jj)
+          call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iux), &
+            f_og(l1_ogrid:l2_ogrid-jj,i,4,iux), nx_ogrid-jj)
+          call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iuy), &
+            f_og(l1_ogrid:l2_ogrid-jj,i,4,iuy), nx_ogrid-jj)
+          call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iuz), &
+               f_og(l1_ogrid:l2_ogrid-jj,i,4,iuz), nx_ogrid-jj)
         endif
         if(lfilter_TT) then
            call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,iTT), &
                 f_og(l1_ogrid:l2_ogrid-jj,i,4,iTT), nx_ogrid-jj)
         endif
-        call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,4), &
-          f_og(l1_ogrid:l2_ogrid-jj,i,4,4), nx_ogrid-jj)
+        call tridag_parallel_x(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj),bx(1:nx_ogrid-jj,irho), &
+          f_og(l1_ogrid:l2_ogrid-jj,i,4,irho), nx_ogrid-jj)
       else
         if(.not. lfilter_rhoonly) then
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
-            bx(1:nx_ogrid-jj,1),f_og(l1_ogrid:l2_ogrid-jj,i,4,1))
+            bx(1:nx_ogrid-jj,iux),f_og(l1_ogrid:l2_ogrid-jj,i,4,iux))
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
-            bx(1:nx_ogrid-jj,2),f_og(l1_ogrid:l2_ogrid-jj,i,4,2))
+            bx(1:nx_ogrid-jj,iuy),f_og(l1_ogrid:l2_ogrid-jj,i,4,iuy))
           call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
-            bx(1:nx_ogrid-jj,3),f_og(l1_ogrid:l2_ogrid-jj,i,4,3))
+            bx(1:nx_ogrid-jj,iuz),f_og(l1_ogrid:l2_ogrid-jj,i,4,iuz))
         endif
         if(lfilter_TT) then
            call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), & 
                 bx(1:nx_ogrid-jj,iTT),f_og(l1_ogrid:l2_ogrid-jj,i,4,iTT))
         endif
         call tridag(aWx(1:nx_ogrid-jj),aPx(1:nx_ogrid-jj),aEx(1:nx_ogrid-jj), &
-          bx(1:nx_ogrid-jj,4),f_og(l1_ogrid:l2_ogrid-jj,i,4,4))
+          bx(1:nx_ogrid-jj,irho),f_og(l1_ogrid:l2_ogrid-jj,i,4,irho))
       endif
     enddo
 !
