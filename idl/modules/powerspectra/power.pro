@@ -134,7 +134,7 @@ if  keyword_set(v1) then begin
        OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
        OR (v1 EQ "_phib") OR (v1 EQ "_phi_mag") ) then begin
      nx=mz-nghostz*2
-     pc_read_grid,o=grid,/quiet
+     pc_read_grid,o=grid,/quiet,datadir=datatopdir
      size=grid.Lz
   end
 end
@@ -358,7 +358,7 @@ close,2
 ;  scale k correctly
 ;
 if lkscale then begin
-  pc_read_param,obj=param,/quiet
+  pc_read_param,obj=param,/quiet,datadir=datatopdir
   Lx=param.Lxyz[0]
   kscale_factor=2.*!pi/Lx
   k=k*kscale_factor
