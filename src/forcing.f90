@@ -309,6 +309,16 @@ module Forcing
 !
 !  cosine profile of helicity about z=0
 !
+      elseif (iforce_profile=='cos(z)') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)=cos(z(n))
+        enddo
+!
+!  cosine profile of helicity about z=0
+!
       elseif (iforce_profile=='cos(z/2)') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
