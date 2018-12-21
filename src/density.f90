@@ -199,6 +199,9 @@ module Density
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
+  integer :: idiag_inertiaxx=0  !
+  integer :: idiag_inertiayy=0  !
+  integer :: idiag_inertiazz=0  !
   integer :: idiag_vol=0        ! DIAG_DOC: $\int\,dV$ (volume)
   integer :: idiag_grhomax=0    ! DIAG_DOC: $\max (|\nabla \varrho|)$
 !
@@ -2011,6 +2014,7 @@ module Density
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
            idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
+           idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0.or.idiag_lnrhomin/=0.or.idiag_lnrhomax/=0) lpenc_diagnos(i_lnrho)=.true.
@@ -2722,6 +2726,9 @@ module Density
         if (idiag_rhomzmask/=0)call sum_mn_name(p%rho*zmask_den(n-n1+1),idiag_rhomzmask)
         if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
         if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
+        if (idiag_inertiaxx/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*cos(z(n))**2,idiag_inertiaxx)
+        if (idiag_inertiayy/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*sin(y(m))**2*sin(z(n))**2,idiag_inertiayy)
+        if (idiag_inertiazz/=0)call integrate_mn_name(p%rho*x(l1:l2)**2*cos(z(n))**2,idiag_inertiazz)
         if (idiag_vol/=0)      call integrate_mn_name(unitpencil,idiag_vol)
         if (idiag_rhomin/=0)   call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
@@ -3268,8 +3275,8 @@ module Density
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
         idiag_gzlnrhomz=0; idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
-        idiag_rhomxz=0; idiag_grhomax=0
-        idiag_rhomxmask=0; idiag_rhomzmask=0
+        idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
+        idiag_inertiazz=0; idiag_rhomxmask=0; idiag_rhomzmask=0
         idiag_sigma=0
       endif
 !
@@ -3294,6 +3301,9 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
+        call parse_name(iname,cname(iname),cform(iname),'inertiaxx',idiag_inertiaxx)
+        call parse_name(iname,cname(iname),cform(iname),'inertiayy',idiag_inertiayy)
+        call parse_name(iname,cname(iname),cform(iname),'inertiazz',idiag_inertiazz)
         call parse_name(iname,cname(iname),cform(iname),'vol',idiag_vol)
         call parse_name(iname,cname(iname),cform(iname),'grhomax',idiag_grhomax)
       enddo
