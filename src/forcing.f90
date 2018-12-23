@@ -1906,15 +1906,23 @@ module Forcing
 !
 !  Compute forcing coefficients.
 !
-      call forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
+      if (t>tsforce) then
+        call forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
 !
 !  Possibility of reading in data for second forcing function and
 !  computing the relevant coefficients (fx2,fy2,fz2,fda2) here.
 !  Unlike coef1-3, where we add the letter b, we add a 2 for the
 !  other coefficients for better readibility.
 !
-      if (lforcing_coefs_hel_double) then
-        call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
+        if (lforcing_coefs_hel_double) then
+          call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
+        endif
+!
+!  By default, dtforce=0, so new forcing is applied at every time step.
+!  Alternatively, it can be set to any other time, so the forcing is
+!  updated every dtforce.
+!
+        tsforce=t+dtforce
       endif
 !
 !  loop the two cases separately, so we don't check for r_ff during
@@ -4683,6 +4691,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       use Sub
 !
 !  06-dec-13/nishant: made kkx etc allocatable
+!  23-dec-18/axel: forcing_helicity has now similar capabilities
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: force1,force2,force_vec
@@ -4733,7 +4742,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       kx02=kkx(ik2)
       ky2=kky(ik2)
       kz2=kkz(ik2)
-!
 !
 !  Calculate forcing function
 !
@@ -4786,7 +4794,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       else
         mulforce_vec = 1.0
       endif
-!
 !
 !  Add forcing
 !
