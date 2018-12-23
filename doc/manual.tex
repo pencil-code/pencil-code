@@ -1414,7 +1414,9 @@ and lists
 \item the mean density, \var{rhom}$\,=\left<\rho\right>$;
 \item the mean entropy, \var{ssm}$\,=\left<s\right>/c_p$;
 \item the time step in units of the acoustic Courant step,
-  \var{dtc}$\,=\delta t/({\cs}_0\,\delta x_{\rm min})$;
+  %\var{dtc}$\,=\delta t/({\cs}_0\,\delta x_{\rm min})$;
+%AB: error pointed out by Jennifer
+  \var{dtc}$\,=\delta t \, {\cs}_0 /\delta x_{\rm min}$;
 \item the time step in units of the advective time step,
   \var{dtu}$\,=\delta t/(c_{\delta t}\,\delta x/\max|\mathbf{u}|)$;
 \item the time step in units of viscous time step,
