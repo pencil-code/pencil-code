@@ -1894,11 +1894,11 @@ module Forcing
       real, dimension (nx) :: rho1,ruf,rho,force_ampl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: force_all
-      real, dimension (3) :: fda, fda2
-      complex, dimension (mx) :: fx, fx2
-      complex, dimension (my) :: fy, fy2
-      complex, dimension (mz) :: fz, fz2
-      real, dimension (3) :: coef1,coef2,coef3,coef1b,coef2b,coef3b
+      real, dimension (3), save :: fda, fda2
+      complex, dimension (mx), save :: fx, fx2
+      complex, dimension (my), save :: fy, fy2
+      complex, dimension (mz), save :: fz, fz2
+      real, dimension (3), save :: coef1,coef2,coef3,coef1b,coef2b,coef3b
       integer :: j,jf,j2f
       complex, dimension (nx) :: fxyz,fxyz2
       real :: profyz
