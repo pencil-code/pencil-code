@@ -1893,20 +1893,24 @@ module Forcing
       real :: irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm,fsum_tmp,fsum
       real, dimension (nx) :: rho1,ruf,rho,force_ampl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
+      real, dimension (nx,3) :: forcing_rhs_old,forcing_rhs2_old
       real, dimension (nx,3) :: force_all
-      real, dimension (3), save :: fda, fda2
-      complex, dimension (mx), save :: fx, fx2
-      complex, dimension (my), save :: fy, fy2
-      complex, dimension (mz), save :: fz, fz2
+      real, dimension (3), save :: fda, fda2, fda_old, fda2_old
+      complex, dimension (mx), save :: fx=0., fx2=0., fx_old=0., fx2_old=0.
+      complex, dimension (my), save :: fy=0., fy2=0., fy_old=0., fy2_old=0.
+      complex, dimension (mz), save :: fz=0., fz2=0., fz_old=0., fz2_old=0.
       real, dimension (3), save :: coef1,coef2,coef3,coef1b,coef2b,coef3b
       integer :: j,jf,j2f
-      complex, dimension (nx) :: fxyz,fxyz2
-      real :: profyz
+      complex, dimension (nx) :: fxyz, fxyz2, fxyz_old, fxyz2_old
+      real :: profyz, pforce, qforce
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
 !
 !  Compute forcing coefficients.
 !
       if (t>tsforce) then
+        fx_old=fx
+        fy_old=fy
+        fz_old=fz
         call forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
 !
 !  Possibility of reading in data for second forcing function and
@@ -1915,6 +1919,10 @@ module Forcing
 !  other coefficients for better readibility.
 !
         if (lforcing_coefs_hel_double) then
+          fx2_old=fx2
+          fy2_old=fy2
+          fz2_old=fz2
+          fda2_old=fda2
           call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
         endif
 !
@@ -1923,6 +1931,18 @@ module Forcing
 !  updated every dtforce.
 !
         tsforce=t+dtforce
+      endif
+!
+!  weight factor, pforce is the factor for the new term,
+!  and qforce is that for the outgoing term.
+!  If no outphasing is involved, pforce=1. and qforce=0.
+!
+      if (dtforce==0.) then
+        pforce=1.
+        qforce=0.
+      else
+        pforce=cos(.5*pi*(tsforce-t)/dtforce)**2
+        qforce=sin(.5*pi*(tsforce-t)/dtforce)**2
       endif
 !
 !  loop the two cases separately, so we don't check for r_ff during
@@ -1949,6 +1969,7 @@ module Forcing
 !  qdouble_profile turns on fxyz2 in the upper parts.
 !
             fxyz=fx(l1:l2)*fy(m)*fz(n)
+            fxyz_old=fx_old(l1:l2)*fy_old(m)*fz_old(n)
             force_ampl=profx_ampl*profyz
 !
 !  Do the same for secondary forcing function.
@@ -1956,6 +1977,7 @@ module Forcing
             if (lforcing_coefs_hel_double) then
               profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*coef2b
               fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
+              fxyz2_old=fx2_old(l1:l2)*fy2_old(m)*fz2_old(n)
             endif
 !
 !  Possibility of compute work done by forcing.
@@ -1984,15 +2006,28 @@ module Forcing
                 forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
                     *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
 !
+                forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
+                    *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
+!
 !  Possibility of adding second forcing function.
 !
                 if (lforcing_coefs_hel_double) then
                   forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
                       +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_ff*t) &
                       *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+!
+                  forcing_rhs_old(:,j) = (1.-qdouble_profile(n))*forcing_rhs_old(:,j) &
+                      +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_ff*t) &
+                      *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
+!
                 endif
 !
-                ! put force into auxiliary variable, if requested
+!  assemble new combination
+!
+                forcing_rhs(:,j) = pforce*forcing_rhs(:,j) + qforce*forcing_rhs_old(:,j)
+!
+! put force into auxiliary variable, if requested
+!
                 if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = forcing_rhs(:,j)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
