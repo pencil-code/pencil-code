@@ -98,8 +98,8 @@ module Special
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
    real :: cdtchiral=1.
-   real, dimension (nx) :: dt1_mu5_1, dt1_mu5_2, dt1_mu5_3, dt1_mu5_4
-   real, dimension (nx) :: dt1_muS_1, dt1_muS_2, dt1_bb_1, dt1_special
+   real, dimension (nx) :: dt1_lambda5, dt1_D5, dt1_gammaf5
+   real, dimension (nx) :: dt1_CMW, dt1_Dmu, dt1_vmu, dt1_special
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
    logical :: lmuS=.false., lCVE=.false.
@@ -134,13 +134,12 @@ module Special
   integer :: idiag_mu5bjrms=0  ! DIAG_DOC: $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$
   integer :: idiag_oogmu5rms=0  
   integer :: idiag_oogmuSrms=0  
-  integer :: idiag_dt_mu5_1=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
-  integer :: idiag_dt_mu5_2=0  ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
-  integer :: idiag_dt_mu5_3=0  ! DIAG_DOC: $\delta x^2/D_5$   
-  integer :: idiag_dt_mu5_4=0  ! DIAG_DOC: $\delta x^2/D_5$   
-  integer :: idiag_dt_muS_1=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
-  integer :: idiag_dt_muS_2=0  ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
-  integer :: idiag_dt_bb_1=0   ! DIAG_DOC: $\delta x /(\eta \mathrm{max}(\mu_5))$ 
+  integer :: idiag_dt_lambda5=0  ! DIAG_DOC: $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ 
+  integer :: idiag_dt_D5=0     ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
+  integer :: idiag_dt_gammaf5=0  ! DIAG_DOC: $1/\Gamma_\mathrm{f}$   
+  integer :: idiag_dt_CMW=0    ! DIAG_DOC: $\delta x/((C_\mu C_5)^{1/2} \mathrm{max}(|\Bv|))$ 
+  integer :: idiag_dt_Dmu=0    ! DIAG_DOC: $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ 
+  integer :: idiag_dt_vmu=0    ! DIAG_DOC: $\delta x /(\eta \mathrm{max}(|\mu_5 |))$ 
   integer :: idiag_dt_chiral=0 ! DIAG_DOC: total time-step contribution from chiral MHD
   integer :: idiag_mu5bxm=0    ! DIAG_DOC: $\left<\mu_5B_x\right>$
   integer :: idiag_mu5b2m=0    ! DIAG_DOC: $\left<\mu_5B^2\right>$
@@ -393,12 +392,12 @@ module Special
       endif
 !
 !  Contributions to timestep from mu5 equation
-      dt1_mu5_1 = lambda5*eta*p%b2
-      dt1_mu5_2 = diffmu5*dxyz_2
-      if (lmuS) then
-        dt1_mu5_3 = p%muS*coef_muS*sqrt(p%b2)
-      endif
-      dt1_mu5_4 = gammaf5
+      dt1_lambda5 = lambda5*eta*p%b2
+      dt1_D5 = diffmu5*dxyz_2
+!      if (lmuS) then
+!        dt1_mu5_3 = p%muS*coef_mu5*sqrt(p%b2)
+!      endif
+      dt1_gammaf5 = gammaf5
 !
 !  Evolution of muS
 !
@@ -421,8 +420,8 @@ module Special
             -2.*Cw*(p%muS*oogmuS+p%mu5*oogmu5)
         endif
 !  Contributions to timestep from muS equation
-        dt1_muS_1 = p%mu5*coef_muS*sqrt(p%b2)
-        dt1_muS_2 = diffmuS*dxyz_2
+        dt1_CMW = coef_mu5*coef_muS*sqrt(p%b2)*dxyz_2
+        dt1_Dmu = diffmuS*dxyz_2
       endif
 !                          
 !  Additions to evolution of bb
@@ -436,7 +435,7 @@ module Special
         endif
       endif
 !  Contributions to timestep from bb equation
-      dt1_bb_1 = eta*p%mu5*sqrt(dxyz_2)
+      dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
 !
 !  Additions to evolution of uu
 !
@@ -457,14 +456,14 @@ module Special
 !
       if (lfirst.and.ldt) then
         if (lmuS) then
-          dt1_special = cdtchiral*max(dt1_mu5_1, dt1_mu5_2, &
-                          dt1_mu5_3, dt1_mu5_4, dt1_bb_1, &
-                          dt1_muS_1, dt1_muS_2) 
+          dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
+                          dt1_gammaf5, dt1_vmu, &
+                          dt1_CMW, dt1_Dmu) 
         else
-          dt1_special = cdtchiral*max(dt1_mu5_1, dt1_mu5_2, &
-                          dt1_mu5_3, dt1_mu5_4, dt1_bb_1)
+          dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
+                          dt1_gammaf5, dt1_vmu)
         endif
-        maxdiffus=max(maxdiffus,dt1_special)
+        dt1_max=max(dt1_max,dt1_special)  
       endif
 !
 !  diagnostics
@@ -499,13 +498,12 @@ module Special
         endif
         if (idiag_oogmu5rms/=0) call sum_mn_name(oogmu5**2,idiag_oogmu5rms,lsqrt=.true.)
         if (idiag_oogmuSrms/=0) call sum_mn_name(oogmuS**2,idiag_oogmuSrms,lsqrt=.true.)
-        if (idiag_dt_mu5_1/=0) call max_mn_name(-(1./dt1_mu5_1),idiag_dt_mu5_1,lneg=.true.)
-        if (idiag_dt_mu5_2/=0) call max_mn_name(-(1./dt1_mu5_2),idiag_dt_mu5_2,lneg=.true.)
-        if (idiag_dt_mu5_3/=0) call max_mn_name(-(1./dt1_mu5_3),idiag_dt_mu5_3,lneg=.true.)
-        if (idiag_dt_mu5_4/=0) call max_mn_name(-(1./dt1_mu5_4),idiag_dt_mu5_4,lneg=.true.)
-        if (idiag_dt_bb_1/=0) call max_mn_name(-(1./dt1_bb_1),idiag_dt_bb_1,lneg=.true.)
-        if (idiag_dt_muS_1/=0) call max_mn_name(-(1./dt1_muS_1),idiag_dt_muS_1,lneg=.true.)
-        if (idiag_dt_muS_2/=0) call max_mn_name(-(1./dt1_muS_2),idiag_dt_muS_2,lneg=.true.)
+        if (idiag_dt_lambda5/=0) call max_mn_name(-(1./dt1_lambda5),idiag_dt_lambda5,lneg=.true.)
+        if (idiag_dt_D5/=0) call max_mn_name(-(1./dt1_D5),idiag_dt_D5,lneg=.true.)
+        if (idiag_dt_gammaf5/=0) call max_mn_name(-(1./dt1_gammaf5),idiag_dt_gammaf5,lneg=.true.)
+        if (idiag_dt_vmu/=0) call max_mn_name(-(1./dt1_vmu),idiag_dt_vmu,lneg=.true.)
+        if (idiag_dt_CMW/=0) call max_mn_name(-(1./dt1_CMW),idiag_dt_CMW,lneg=.true.)
+        if (idiag_dt_Dmu/=0) call max_mn_name(-(1./dt1_Dmu),idiag_dt_Dmu,lneg=.true.)
         if (idiag_dt_chiral/=0) call max_mn_name(-(1./dt1_special),idiag_dt_chiral,lneg=.true.)
         if (idiag_mu5bxm/=0) call sum_mn_name(p%mu5*p%bb(:,1),idiag_mu5bxm)
         if (idiag_mu5b2m/=0) call sum_mn_name(p%mu5*p%b2,idiag_mu5b2m)
@@ -580,9 +578,9 @@ module Special
         idiag_bgmu5rms=0; idiag_bgmuSrms=0;
         idiag_mu5bjm=0; idiag_mu5bjrms=0; idiag_gmu5rms=0;
         idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
-        idiag_dt_chiral=0; idiag_dt_bb_1=0;
-        idiag_dt_mu5_1=0; idiag_dt_mu5_2=0; idiag_dt_mu5_3=0;
-        idiag_dt_mu5_4=0; idiag_dt_muS_1=0; idiag_dt_muS_2=0;
+        idiag_dt_chiral=0; idiag_dt_vmu=0;
+        idiag_dt_lambda5=0; idiag_dt_D5=0;
+        idiag_dt_gammaf5=0; idiag_dt_CMW=0; idiag_dt_Dmu=0;
         idiag_jxm=0; idiag_oogmuSrms=0; idiag_oogmu5rms=0
       endif
 !
@@ -601,13 +599,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mu5bjrms',idiag_mu5bjrms)
         call parse_name(iname,cname(iname),cform(iname),'oogmuSrms',idiag_oogmuSrms)
         call parse_name(iname,cname(iname),cform(iname),'oogmu5rms',idiag_oogmu5rms)
-        call parse_name(iname,cname(iname),cform(iname),'dt_mu5_1',idiag_dt_mu5_1)
-        call parse_name(iname,cname(iname),cform(iname),'dt_mu5_2',idiag_dt_mu5_2)
-        call parse_name(iname,cname(iname),cform(iname),'dt_mu5_3',idiag_dt_mu5_3)
-        call parse_name(iname,cname(iname),cform(iname),'dt_mu5_4',idiag_dt_mu5_4)
-        call parse_name(iname,cname(iname),cform(iname),'dt_muS_1',idiag_dt_muS_1)
-        call parse_name(iname,cname(iname),cform(iname),'dt_muS_2',idiag_dt_muS_2)
-        call parse_name(iname,cname(iname),cform(iname),'dt_bb_1',idiag_dt_bb_1)
+        call parse_name(iname,cname(iname),cform(iname),'dt_lambda5',idiag_dt_lambda5)
+        call parse_name(iname,cname(iname),cform(iname),'dt_D5',idiag_dt_D5)
+        call parse_name(iname,cname(iname),cform(iname),'dt_gammaf5',idiag_dt_gammaf5)
+        call parse_name(iname,cname(iname),cform(iname),'dt_CMW',idiag_dt_CMW)
+        call parse_name(iname,cname(iname),cform(iname),'dt_Dmu',idiag_dt_Dmu)
+        call parse_name(iname,cname(iname),cform(iname),'dt_vmu',idiag_dt_vmu)
         call parse_name(iname,cname(iname),cform(iname),'dt_chiral',idiag_dt_chiral)
         call parse_name(iname,cname(iname),cform(iname),'mu5bxm',idiag_mu5bxm)
         call parse_name(iname,cname(iname),cform(iname),'mu5b2m',idiag_mu5b2m)
