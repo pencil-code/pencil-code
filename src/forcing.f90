@@ -39,7 +39,7 @@ module Forcing
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
   real :: wff2_ampl=0.,zff2_ampl=0.
-  real :: dtforce=0., dtforce_duration=-1.0, force_strength=0.
+  real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
@@ -129,7 +129,7 @@ module Forcing
        lxxcorr_forcing, lxycorr_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
-       lforcing_coefs_hel_double, &
+       lforcing_coefs_hel_double, dtforce_ampl, &
        iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
        force_direction, force_strength, lhelical_test, &
        lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
@@ -1902,12 +1902,12 @@ module Forcing
       real, dimension (3), save :: coef1,coef2,coef3,coef1b,coef2b,coef3b
       integer :: j,jf,j2f
       complex, dimension (nx) :: fxyz, fxyz2, fxyz_old, fxyz2_old
-      real :: profyz, pforce, qforce
+      real :: profyz, pforce, qforce, aforce
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
 !
 !  Compute forcing coefficients.
 !
-      if (t>tsforce) then
+      if (t>=tsforce) then
         fx_old=fx
         fy_old=fy
         fz_old=fz
@@ -1941,8 +1941,9 @@ module Forcing
         pforce=1.
         qforce=0.
       else
-        pforce=cos(.5*pi*(tsforce-t)/dtforce)**2
-        qforce=sin(.5*pi*(tsforce-t)/dtforce)**2
+        aforce=sin(   pi*(tsforce-t)/dtforce)**2*dtforce_ampl+(1.-dtforce_ampl)
+        pforce=cos(.5*pi*(tsforce-t)/dtforce)**2*aforce
+        qforce=sin(.5*pi*(tsforce-t)/dtforce)**2*aforce
       endif
 !
 !  loop the two cases separately, so we don't check for r_ff during
