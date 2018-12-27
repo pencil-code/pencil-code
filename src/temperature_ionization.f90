@@ -57,7 +57,7 @@ module Energy
       kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT,ladvection_temperature, &
+      lupw_lnTT, ladvection_temperature, lviscosity_heat, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
