@@ -46,6 +46,7 @@ module EquationOfState
   real :: mu=1.
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
+  logical :: lpp_as_aux=.false.
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
   real :: gamma_m1    !(=gamma-1)
@@ -73,15 +74,17 @@ module EquationOfState
 !MR: Is now allocated only once.
  real, dimension(mx,my,mz), target :: mu1_full
 !
-  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp
+  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
 !
-  namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp
+  namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
 !
   contains
 !***********************************************************************
     subroutine register_eos
 !
 !  14-jun-03/axel: adapted from register_eos
+!
+      use Sub, only: register_report_aux
 !
       leos_chemistry=.true.
 !
@@ -91,6 +94,10 @@ module EquationOfState
 !
       if (lroot) call svn_id( &
           '$Id$')
+!
+!  pressure as optional auxiliary variable
+!
+      if (lpp_as_aux) call register_report_aux('pp',ipp)
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -414,6 +421,10 @@ module EquationOfState
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_rho1gpp)=.true.
 !
+!  pp pencil if lpp_as_aux
+!
+      if (lpp_as_aux) lpenc_requested(i_pp)=.true.
+!
     endsubroutine pencil_criteria_eos
 !***********************************************************************
     subroutine pencil_interdep_eos(lpencil_in)
@@ -486,7 +497,7 @@ module EquationOfState
       real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
       real, dimension(nx) :: del2TT, gradTgradT
 !
-      intent(in) :: f, lpenc_loc
+      intent(inout) :: f, lpenc_loc
       intent(inout) :: p
 !
       integer :: i
@@ -602,7 +613,9 @@ module EquationOfState
 !
       !if (lpenc_loc(i_ee)) p%ee = p%cv*p%TT
 !
-!      endif
+!  pressure and cp as optional auxiliary pencils
+!
+      if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
