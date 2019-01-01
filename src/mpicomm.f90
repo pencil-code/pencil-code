@@ -4703,8 +4703,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      !mpiwtime = MPI_WTIME()
-      mpiwtime = 0
+      mpiwtime = MPI_WTIME()
+      !mpiwtime = 0
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
