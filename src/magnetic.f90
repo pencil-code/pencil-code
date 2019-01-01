@@ -31,7 +31,7 @@
 ! PENCILS PROVIDED cosub; bunit(3)
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
-! PENCILS PROVIDED gamma_A2;clight2
+! PENCILS PROVIDED gamma_A2; clight2; gva(3)
 !***************************************************************
 module Magnetic
 !
@@ -193,6 +193,7 @@ module Magnetic
   logical :: lresi_anomalous=.false.
   logical :: lresi_spitzer=.false.
   logical :: lresi_cspeed=.false.
+  logical :: lresi_vAspeed=.false.,lalfven_as_aux=.false.
   logical :: lresi_magfield=.false.
   logical :: lresi_eta_proptouz=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
@@ -349,7 +350,7 @@ module Magnetic
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
-      ampl_eta_uz
+      ampl_eta_uz, lalfven_as_aux
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -965,6 +966,10 @@ module Magnetic
       integer :: i,j,myl,nycap
       real :: J_ext2
 !
+!  Set initial value for alfven speed in farray if used
+!
+      if (lalfven_as_aux) f(:,:,:,ialfven)=0.0
+!
 !  Share lbb_as_comaux with gravitational wave module.
 !
       call put_shared_variable('lbb_as_comaux', lbb_as_comaux, caller='initialize_magnetic')
@@ -1168,6 +1173,7 @@ module Magnetic
       lresi_anomalous=.false.
       lresi_spitzer=.false.
       lresi_cspeed=.false.
+      lresi_vAspeed=.false.
       lresi_eta_proptouz=.false.
 !
       do i=1,nresi_max
@@ -1290,8 +1296,14 @@ module Magnetic
           if (lroot) print*, 'resistivity: temperature dependent (Spitzer 1969)'
           lresi_spitzer=.true.
         case ('eta-cspeed')
-          if (lroot) print*, 'resistivity: sound speed dependent SN driven ISM'
+          if (lroot) print*, 'resistivity: sound speed dependent e.g. SN driven ISM'
           lresi_cspeed=.true.
+        case ('eta-vAspeed')
+          if (lroot) print*, 'resistivity: Alfven speed dependent e.g. SN driven ISM'
+          if (.not. lalfven_as_aux) &
+              call fatal_error('initialize_magnetic', &
+              'Alfven speed dependent resistivity, but not lalfven_as_aux=.true.')
+          lresi_vAspeed=.true.
         case ('magfield')
           if (lroot) print*, 'resistivity: magnetic field dependent'
           lresi_magfield=.true.
@@ -1372,7 +1384,7 @@ module Magnetic
         if (lresi_eta_shock_perp.and.eta_shock==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_shock is zero!')
-        if (lresi_etava .and. eta_va==0.0) &
+        if ((lresi_etava.or.lresi_vAspeed).and.eta_va==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_va is zero!')
         if (lresi_etaj .and. eta_j==0.0) &
@@ -1516,6 +1528,13 @@ module Magnetic
 !
       if (lua_as_aux ) call register_report_aux('ua',iua)
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
+!
+!  Register va as auxilliary array if asked for also requires
+!  MAUX CONTRIBUTION 1
+!  COMMUNICATED AUXILIARIES 1
+!  in cparam.local
+!
+      if (lalfven_as_aux) call register_report_aux('alfven',ialfven,communicated=.true.)
 !
 !  Initialize individual modules, but need to do this only if
 !  lmagn_mf is true.
@@ -2260,7 +2279,7 @@ module Magnetic
           lresi_eta_shock.or.lresi_smagorinsky.or.lresi_smagorinsky_nusmag.or. &
           lresi_eta_shock2.or.lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_eta_shock_profz.or.lresi_eta_shock_profr.or. &
-          lresi_smagorinsky_cross.or.lresi_spitzer.or.lresi_cspeed.or. &
+          lresi_smagorinsky_cross.or.lresi_spitzer.or. &
           lresi_eta_proptouz)) &
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_proptouz)) &
@@ -2318,6 +2337,17 @@ module Magnetic
           lpenc_requested(i_jj)=.true.
         else
           lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2a)=.true.
+          lpenc_requested(i_diva)=.true.
+        endif
+      endif
+      if (lresi_vAspeed) then
+        lpenc_requested(i_etava)=.true.
+        lpenc_requested(i_va2)=.true.
+        if (lweyl_gauge) then
+          lpenc_requested(i_jj)=.true.
+        else
+          lpenc_requested(i_gva)=.true.
           lpenc_requested(i_del2a)=.true.
           lpenc_requested(i_diva)=.true.
         endif
@@ -2837,6 +2867,8 @@ module Magnetic
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
 !
+      if (lpencil_in(i_gva)) lpencil_in(i_va2)=.true.
+!
 ! Interdependencies for Boris Correction
 !
       if (lpencil_in(i_gamma_A2)) then
@@ -2864,18 +2896,19 @@ module Magnetic
 !  30-may-14/ccyang: coded
 !
       use Boundcond, only: update_ghosts, zero_ghosts
-      use Sub, only: gij, curl_mn
+      use Sub, only: gij, curl_mn, dot2_mn
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
       real, dimension(nx,3,3) :: aij
       real, dimension(nx,3) :: bb
+      real, dimension(nx) :: rho1, b2, tmp
       real, dimension(3) :: b_ext
       integer :: j
 !
 !  Find bb if as communicated auxiliary.
 !
-      getbb: if (lbb_as_comaux) then
+      getbb: if (lbb_as_comaux.or.lalfven_as_aux) then
         call zero_ghosts(f, iax, iaz)
         call update_ghosts(f, iax, iaz)
         mn_loop: do imn = 1, ny * nz
@@ -2891,7 +2924,26 @@ module Magnetic
             forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
             if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', b_ext
           endif bext
-          f(l1:l2,m,n,ibx:ibz) = bb
+          if (lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = bb
+!
+!  Find alfven speed as communicated auxiliary
+!
+          if (lalfven_as_aux) then
+            if (ldensity_nolog) then
+              rho1=1./f(l1:l2,m,n,irho)
+            else
+              rho1=1./exp(f(l1:l2,m,n,ilnrho))
+            endif
+            call dot2_mn(bb,b2)
+            tmp= b2*mu01*rho1
+            if (lcheck_positive_va2 .and. minval(tmp)<0.0) then
+              print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
+              print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc_world
+              print*, 'calc_pencils_magnetic: m, y(m), n, z(n)=', m, y(m), n, z(n)
+              tmp=abs(tmp)
+            endif
+            f(l1:l2,m,n,ialfven)= tmp
+          endif
         enddo mn_loop
       endif getbb
 !
@@ -2935,7 +2987,6 @@ module Magnetic
 !
         !call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
         call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
-
       endif
 !
     endsubroutine update_char_vel_magnetic
@@ -3209,7 +3260,6 @@ module Magnetic
       if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
 ! jb
       if (lpenc_loc(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
-!
 ! va2
       if (lpenc_loc(i_va2)) then
         p%va2=p%b2*mu01*p%rho1
@@ -3220,6 +3270,8 @@ module Magnetic
           p%va2=abs(p%va2)
         endif
       endif
+! gradient of va
+      if (lpenc_loc(i_gva)) call grad(f,ialfven,p%gva)
 ! eta_va
       if (lpenc_loc(i_etava)) then
         p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
@@ -3956,6 +4008,21 @@ module Magnetic
         endif
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
         etatotal = etatotal + p%etava
+      endif
+!
+!  Generalised alfven speed dependent resistivity
+!
+      if (lresi_vAspeed) then
+        etatotal = etatotal + eta_va * dxmax * sqrt(p%va2)
+        if (lweyl_gauge) then
+          forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+        else
+          do i=1,3
+            fres(:,i)=fres(:,i)+eta_va*dxmax* &
+                (sqrt(p%va2)*p%del2a(:,i)+p%diva*p%gva(:,i))
+          enddo
+        endif
+        if (lfirst.and.ldt) diffus_eta = diffus_eta + eta_va*dxmax*sqrt(p%va2)
       endif
 !
       if (lresi_etaj) then
@@ -8796,6 +8863,7 @@ module Magnetic
 !
       if (lwr) then
         call farray_index_append('ihypres',ihypres)
+        call farray_index_append('ialfven',ialfven)
       endif
 !
 !  call corresponding mean-field routine
