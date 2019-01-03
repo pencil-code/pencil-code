@@ -2412,9 +2412,9 @@ module Interstellar
 !
 !  Calculate the global (nzgrid) lower z-coordinate.
 !
-    if (lperi(1)) then; x00=xyz0(1)-.5*dx; else; x00=xyz0(1); endif
-    if (lperi(2)) then; y00=xyz0(2)-.5*dy; else; y00=xyz0(2); endif
-    if (lperi(3)) then; z00=xyz0(3)-.5*dz; else; z00=xyz0(3); endif
+    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
+    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
+    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
