@@ -3530,7 +3530,7 @@ module Interstellar
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant), intent(in) :: remnant
+      type (SNRemnant), intent(inout) :: remnant
       integer, optional :: ierr
       real, intent(out) :: rhom, ekintot, rhomin
       real :: radius2
@@ -3623,7 +3623,7 @@ module Interstellar
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: remnant
-      real, intent(in) :: cvelocity_SN, cmass_SN
+      real, intent(inout) :: cvelocity_SN, cmass_SN
       real :: radius2
       real :: rhom, ekintot
       real :: width_mass, width_velocity
