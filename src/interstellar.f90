@@ -2955,16 +2955,6 @@ module Interstellar
         endif
         SNR%site%rho=exp(SNR%site%lnrho);
 !
-!  10-Jun-10/fred:
-!  Adjust radius according to density of explosion site to concentrate energy
-!  when locations are dense.
-!
-        SNR%feat%radius=width_SN
-        if (lSN_scale_rad) then
-            SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-            SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*dxmin) ! minimum grid resolution
-        endif
-!
         m=SNR%indx%m
         n=SNR%indx%n
         call eoscalc(f,nx,lnTT=lnTT)
@@ -2987,6 +2977,16 @@ module Interstellar
         if (center_SN_x/=impossible) SNR%feat%x=center_SN_x
         if (center_SN_y/=impossible) SNR%feat%y=center_SN_y
         if (center_SN_z/=impossible) SNR%feat%z=center_SN_z
+!
+!  10-Jun-10/fred:
+!  Adjust radius according to density of explosion site to concentrate energy
+!  when locations are dense.
+!
+        SNR%feat%radius=width_SN
+        if (lSN_scale_rad) then
+            SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
+            SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr) ! minimum grid resolution
+        endif
 !
 !  Better initialise these to something on the other processors
 !
@@ -3053,7 +3053,7 @@ module Interstellar
       real :: width_energy, width_mass, width_velocity
       real :: rhom, rhomin, ekintot, old_radius
       real ::  rhom_new, ekintot_new, ambient_mass
-      real :: Nsol_ratio, radius_min, radius_max, Nsol_mass
+      real :: Nsol_ratio, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
@@ -3082,9 +3082,9 @@ module Interstellar
       if (lSN_scale_rad) then
         radius_min=rfactor_SN*SNR%feat%dr
         radius_max=200*pc_cgs/unit_length
-        old_radius=radius_min
-        Nsol_mass=solar_mass*N_mass
-        Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/Nsol_mass
+        old_radius=SNR%feat%radius
+        sol_mass_tot=solar_mass*N_mass
+        Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/sol_mass_tot
         do i=1,15
           if (Nsol_ratio < 1) then
             radius_min=SNR%feat%radius
@@ -3096,7 +3096,7 @@ module Interstellar
             old_radius=SNR%feat%radius
           endif
           call get_properties(f,SNR,rhom,ekintot,rhomin)
-          Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/Nsol_mass
+          Nsol_ratio=4./3.*pi*rhom*SNR%feat%radius**3/sol_mass_tot
         enddo
       endif
       SNR%feat%rhom=rhom
@@ -3104,7 +3104,7 @@ module Interstellar
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (ambient_mass/Nsol_mass<eps_mass.and..not.lSN_list) then
+        if (ambient_mass/sol_mass_tot<eps_mass.and..not.lSN_list) then
           ierr=iEXPLOSION_TOO_RARIFIED
           return
         endif
@@ -3261,7 +3261,7 @@ module Interstellar
 !
         if (ldensity_nolog) then
           lnrho=log(f(l1:l2,m,n,irho))
-          rho_old=exp(lnrho)
+          rho_old=f(l1:l2,m,n,irho)
         else
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
@@ -3273,7 +3273,7 @@ module Interstellar
 !
 !  Calculate the ambient mass for the remnant.
 !
-        where (dr2_SN > SNR%feat%radius**2.0) site_rho = 0.0
+        where (dr2_SN > SNR%feat%radius**2) site_rho = 0.0
         site_mass=site_mass+sum(site_rho)
         deltarho=0.
 !
@@ -3292,7 +3292,7 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN > 4*SNR%feat%radius**2.0) lnTT=-10.0
+          where (dr2_SN > SNR%feat%radius**2) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
           call mpibcast_real(maxlnTT,SNR%indx%iproc)
@@ -3355,7 +3355,7 @@ module Interstellar
 !  Get the old energy.
         if (ldensity_nolog) then
           lnrho=log(f(l1:l2,m,n,irho))
-          rho_old=exp(lnrho)
+          rho_old=f(l1:l2,m,n,irho)
         else
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
@@ -3530,7 +3530,7 @@ module Interstellar
       use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
-      type (SNRemnant), intent(inout) :: remnant
+      type (SNRemnant), intent(in) :: remnant
       integer, optional :: ierr
       real, intent(out) :: rhom, ekintot, rhomin
       real :: radius2
@@ -3543,7 +3543,7 @@ module Interstellar
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-      radius2 = (1.5*remnant%feat%radius)**2
+      radius2 = remnant%feat%radius**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
@@ -3593,7 +3593,7 @@ module Interstellar
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/(remnant%feat%radius)**3
+        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
 !  Determine the density rarification ratio in order to avoid excessive spikes
@@ -3638,7 +3638,7 @@ module Interstellar
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = (1.5*remnant%feat%radius)**2
+      radius2 = remnant%feat%radius**2
       tmp=0.0
       do n=n1,n2
       do m=m1,m2
@@ -3685,7 +3685,7 @@ module Interstellar
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/(2*remnant%feat%radius)**3
+        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
     endsubroutine get_props_check
