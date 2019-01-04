@@ -250,6 +250,9 @@ module Special
           call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
           if (lmuS) call sinwave_phase(f,imuS,amplmuS,kx_muS,ky_muS,kz_muS,phase_muS)
 !
+        case ('gaussian-noise')
+          call gaunoise(amplmu5,f,imu5)
+!
         case ('const_sinwave-phase')
             call sinwave_phase(f,imu5,amplmu5,kx_mu5,ky_mu5,kz_mu5,phase_mu5)
             f(:,:,:,imu5) = f(:,:,:,imu5) + mu5_const
