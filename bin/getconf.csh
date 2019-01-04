@@ -28,6 +28,9 @@ if (-e "LOCK" || -e "data/LOCK") then
   echo ""
   echo "Will *not* start in this directory, as code may already be running."
   echo "(create an empty file NEVERLOCK to tell the code not to write a LOCK file)"
+  echo ""
+  echo "  rm LOCK; touch NEVERLOCK"
+  echo ""
   echo "Checking for NEWDIR file to tell us to run somewhere else:"
   if (-e "NEWDIR") then
     if (-s "NEWDIR") then
