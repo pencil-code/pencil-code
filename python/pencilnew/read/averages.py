@@ -160,12 +160,27 @@ class Averages(object):
         from scipy.io import FortranFile
         from .. import read
 
+        globdim = read.dim(datadir)
+        if plane == 'y':
+            nu = globdim.nx
+            nv = globdim.nz
+        if plane == 'z':
+            nu = globdim.nx
+            nv = globdim.ny
+
         if proc < 0:
-            proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
-                                                   os.listdir(datadir)))
+            offset = globdim.nprocx*globdim.nprocy
+            if plane == 'z':
+            	procs = range(offset)
+            if plane == 'y': 
+                procs = [] 
+                xr = range(globdim.nprocx)
+                for iz in range(globdim.nprocz):
+                    procs.extend(xr)
+                    xr = [x+offset for x in xr]
             allprocs=True
         else:
-            proc_dirs = ['proc' + str(proc)]
+            procs = [proc]
             allprocs=False
 
         dim = read.dim(datadir, proc)
@@ -177,17 +192,17 @@ class Averages(object):
         # Prepare the raw data.
         # This will be reformatted at the end.
         raw_data = []
-        for directory in proc_dirs:
-            proc = int(directory[4:])
+        for proc in procs:
+            proc_dir = 'proc'+str(proc)
             proc_dim = read.dim(datadir, proc)
-
             # Read the data.
             t = []
             proc_data = []
             try:
-                file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
+                file_id = FortranFile(os.path.join(datadir, proc_dir, aver_file_name))
             except:
                 # Not all proc dirs have a [yz]averages.dat.
+                print("Averages of processor"+str(proc)+"missing!")
                 break
             while True:
                 try:
@@ -197,7 +212,6 @@ class Averages(object):
                     # Finished reading.
                     break
             file_id.close()
-
             # Reshape the proc data into [len(t), pnu, pnv].
             if plane == 'y':
                 pnu = proc_dim.nx
@@ -208,21 +222,17 @@ class Averages(object):
             proc_data = np.array(proc_data)
             proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
-            if allprocs:
-                return np.array(t), proc_data.swapaxes(proc_data,2,3)
+            if not allprocs:
+                return np.array(t), proc_data.swapaxes(2,3)
 
             # Add the proc_data (one proc) to the raw_data (all procs)
             if plane == 'y':
-                nu = dim.nx
-                nv = dim.nz
                 if allprocs:
                     idx_u = proc_dim.ipx*proc_dim.nx
                     idx_v = proc_dim.ipz*proc_dim.nz
                 else:
                     idx_v = 0; idx_u = 0
             if plane == 'z':
-                nu = dim.nx
-                nv = dim.ny
                 if allprocs:
                     idx_u = proc_dim.ipx*proc_dim.nx
                     idx_v = proc_dim.ipy*proc_dim.ny
@@ -232,7 +242,7 @@ class Averages(object):
             if not isinstance(raw_data, np.ndarray):
                 # Initialize the raw_data array with the right dimensions.
                 raw_data = np.zeros([len(t), n_vars, nv, nu])
-            raw_data[:, :, idx_v:idx_v+nv, idx_u:idx_u+nu] = proc_data.copy()
+            raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = proc_data.copy()
 
         t = np.array(t)
         raw_data = np.swapaxes(raw_data, 2, 3)
