@@ -701,8 +701,9 @@ module Interstellar
 !  Read profiles.
 !
         nlist=0
+        read(33,*,iostat=stat)
         do while(1==1)
-          read(33,*,iostat=stat) 
+          read(33,*,iostat=stat)
           nlist=nlist+1
           if (stat<0) exit
         enddo
@@ -714,6 +715,7 @@ module Interstellar
         allocate(SN_type(  nlist))
 !
         open(33,file='sn_series.in')
+        read(33,*,iostat=stat)
         do  i=1,nlist
           read(33,*,iostat=stat) &
               int1_list,t_list,type_list,int4_list,x_list,y_list,z_list,real9_list
