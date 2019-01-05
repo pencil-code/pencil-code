@@ -37,6 +37,8 @@ def zav2h5(
     from ..export import fvars, create_aver_sph 
     from ..calc import tensors_sph 
     import h5py
+    import copy
+
     timereducers= { 
                   'mean': lambda x,args:  np.mean(x,axis=-3,keepdims=True),
                                            #np.std(x,axis=-3)),
@@ -96,7 +98,7 @@ def zav2h5(
         proc=proc_chunks[rank]
     else:
         proc=aprocs
-    print('proc.size',proc.size)
+
     """Set up hdf5 file and create datasets in which to save the tensors
     """
     lskip_zeros   = rmfzeros+rmbzeros > 0
@@ -122,7 +124,6 @@ def zav2h5(
             nt=1
         else:
             nt=tensor.t.size
-
         create_aver_sph(
         hdf5dir+filename,
         dataset,
@@ -146,11 +147,10 @@ def zav2h5(
             iproc=dim.nprocx*ipy+ipx         # proc rank of the PC run (0 ... nprocx*nprocy-1)
             yndx=yndx_tmp[ipy]-ipy*(dim.nygrid/dim.nprocy)
 
-            print('yndx {} from yindex {}'.format(yndx,yndx_tmp[ipy]))
             zav=pcn.read.aver(proc=iproc,plane_list=['z'])     # read averages from proc iproc
 
             print('calculating tensors on proc {0} rank {1}'.format(iproc,rank))
-            
+            """
             if iproc==1:             # as there is corrupted data on proc 1
                 with open('zaver.in', 'r') as f: 
                     zavers = f.read().splitlines() 
@@ -160,7 +160,7 @@ def zav2h5(
                             0.5*(zav.z.__getattribute__(zaver)[3766]+
                             zav.z.__getattribute__(zaver)[3767]),axis=0))
                     zav.t=np.insert(zav.t,3766,0.5*(zav.t[3766]+zav.t[3767]),axis=0)
-           
+            """
             tensor_buf=tensors_sph(   # calculate tensors
                                aver=zav,
                                proc=iproc,
@@ -178,10 +178,12 @@ def zav2h5(
                                imask=imask
                                )
             if ipx==0:
-                tensor=tensor_buf
+                tensor=copy.deepcopy(tensor_buf)
             else:
                 for field, comp in fvars:
-                    np.concatenate(tensor.__getattribute__(field),tensor_buf.__getattribute__(field),axis=len(comp)+2)
+                    setattr(tensor,field,np.concatenate((tensor.__getattribute__(field),
+                                                         tensor_buf.__getattribute__(field)),
+                                                         axis=len(comp)+2))
 
         if l_mpi:
             comm.barrier()
@@ -190,13 +192,14 @@ def zav2h5(
             ds=h5py.File(hdf5dir+filename, 'a')     # open HDF5 file
 
         for field, comp in fvars:
-            print('writing {0} from rank {1} for proc {2}'.format(
-                      field, rank, iproc))
+
+            print('writing {0} from rank {1} for proc {2}'.format(field, rank, iproc))
+
    	    dsname='{0}/{1}/{2}'.format(dgroup,field,dataset)
             if len(comp)==1:
-                ds[dsname][:,:,yndx_tmp[ipy],:]=tensor_buf.__getattribute__(field)
+                ds[dsname][:,:,yndx_tmp[ipy],:]=tensor.__getattribute__(field)
             elif len(comp)==2:
-                ds[dsname][:,:,:,yndx_tmp[ipy],:]=tensor_buf.__getattribute__(field)
+                ds[dsname][:,:,:,yndx_tmp[ipy],:]=tensor.__getattribute__(field)
             else:
-                ds[dsname][:,:,:,:,yndx_tmp[ipy],:]=tensor_buf.__getattribute__(field)
+                ds[dsname][:,:,:,:,yndx_tmp[ipy],:]=tensor.__getattribute__(field)
         ds.close()
