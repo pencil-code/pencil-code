@@ -179,7 +179,7 @@ module Io
 !  At some good moment we may want to treat deltay like with
 !  other modules and call a corresponding i/o parameter module.
 !
-      if (lshear.and..not.lread_oldsnap_noshear) then
+      if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
         lerror = outlog(io_err, 'additional data and deltay')
       else
