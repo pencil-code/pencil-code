@@ -267,6 +267,7 @@ module Magnetic
   real :: numag=0.0, B0_magfric=1.0
   real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
   real :: ampl_eta_uz=0.0
+  real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -288,7 +289,7 @@ module Magnetic
   logical :: lignore_Bext_in_b2=.false., luse_Bext_in_b2=.true.
   logical :: lmean_friction=.false.,llocal_friction=.false.
   logical :: lambipolar_strong_coupling=.false.
-  logical :: lhalox=.false.
+  logical :: lhalox=.false., lno_ohmic_heat_bound_z=.false.
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
@@ -351,7 +352,8 @@ module Magnetic
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
-      ampl_eta_uz, lalfven_as_aux
+      ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
+      no_ohmic_heat_z0, no_ohmic_heat_zwidth
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4275,6 +4277,17 @@ module Magnetic
 !  Special contributions to this module are called here.
 !
       if (lspecial) call special_calc_magnetic(f,df,p)
+! 
+! possibility to reduce ohmic heating near the boundary
+! currently implemented only for a profile in z above
+! a value no_ohmic_heat_z0
+! with the width no_ohmic_heat_zwidth
+! for reduction, width has to tbe negative.
+!
+      if (lno_ohmic_heat_bound_z.and.lohmic_heat) then
+         etatotal=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+      endif
+
 !
 !  Add Ohmic heat to entropy or temperature equation.
 !
