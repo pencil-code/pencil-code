@@ -893,16 +893,16 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i, j,k
 !
-      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0., mCO=0.
       real :: log_inlet_density, del, PP
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
-      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
+      integer :: i_CH4=0, i_CO2=0, i_CO=0, ichem_CH4=0, ichem_CO2=0, ichem_CO=0
       real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2
-      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
+          final_massfrac_H2O, final_massfrac_CO2, final_massfrac_CO
+      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4, init_CO
       logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
-      logical :: lCH4=.false., lCO2=.false.
+      logical :: lCH4=.false., lCO2=.false., lCO=.false.
 !
       lflame_front = .true.
 !
@@ -948,6 +948,11 @@ module Chemistry
         init_CO2 = 0
         final_massfrac_CO2 = init_CO2
       endif
+      call find_species_index('CO',i_CO,ichem_CO,lCO)
+      if (lCO) then
+        mCO = species_constants(ichem_CO,imass)
+        init_CO = initial_massfractions(ichem_CO)
+      endif
 !
 ! Find approximate value for the mass fraction of O2 after the flame front
 ! Warning: These formula are only correct for lean fuel/air mixtures. They
@@ -965,6 +970,12 @@ module Chemistry
         final_massfrac_O2 = &
             1. - final_massfrac_CO2 - final_massfrac_H2O  &
             - init_N2
+      elseif (lCO .and. .not. lH2 .and. .not. lCH4) then
+        final_massfrac_H2O = init_H2O
+        final_massfrac_CO2 = mCO2/mCO * init_CO
+        final_massfrac_O2 = &
+            1. - final_massfrac_CO2 - final_massfrac_H2O  &
+            - init_N2        
       endif
 !
       if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
@@ -975,6 +986,7 @@ module Chemistry
         if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
         if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
+        if (lCO .and. .not. lH2 .and. .not. lCH4)  print*, 'CO :', init_CO, 0.
       endif
 !
 !  Initialize temperature and species
@@ -1014,6 +1026,10 @@ module Chemistry
                 (exp(f(k,:,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
             if (lCH4) f(k,:,:,i_CH4) = init_CH4*(exp(f(k,:,:,ilnTT))-init_TT2) &
                 /(init_TT1-init_TT2)
+            if (lCO .and. .not. lH2 .and. .not. lCH4) then
+              f(k,:,:,i_CO) = init_CO*(exp(f(k,:,:,ilnTT))-init_TT2) &
+                /(init_TT1-init_TT2)
+            endif
           endif
         endif
 !
@@ -1052,6 +1068,9 @@ module Chemistry
           if (x(k) >= init_x1 .and. x(k) < init_x2) then
             f(k,:,:,i_H2O) = (x(k)-init_x1)/(init_x2-init_x1) &
                 *final_massfrac_H2O
+            if (lCO .and. .not. lH2 .and. .not. lCH4) then
+              f(k,:,:,i_H2O) = final_massfrac_H2O
+            endif
             if (lCO2) f(k,:,:,i_CO2) = (x(k)-init_x1)/(init_x2-init_x1) &
                 *final_massfrac_CO2
           elseif (x(k) >= init_x2) then
@@ -1075,6 +1094,7 @@ module Chemistry
       if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
           initial_massfractions(ichem_H2)/(mH2)
       if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+      if (lCO .and. .not. lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+init_CO/(mCO)
       if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
       log_inlet_density = &
           log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
@@ -3905,7 +3925,7 @@ module Chemistry
       real, dimension(nx) :: kf_0, Pr, sum_sp
       real, dimension(nx) :: Fcent, ccc, nnn, lnPr, FF, tmpF
       real, dimension(nx) :: TT1_loc
-      real, dimension(nchemspec,nreactions) :: orders_m, orders_p
+      real, dimension(5,nreactions) :: orders_m, orders_p
 !
 !  Check which reactions rate method we will use
 !
