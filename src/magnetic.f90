@@ -3276,8 +3276,6 @@ module Magnetic
           p%va2=abs(p%va2)
         endif
       endif
-! gradient of va
-      if (lpenc_loc(i_gva).and.lalfven_as_aux) call grad(f,ialfven,p%gva)
 ! eta_va
       if (lpenc_loc(i_etava)) then
         if (lresi_vAspeed) then
@@ -3286,6 +3284,15 @@ module Magnetic
         else
           p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
           if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
+        endif
+      endif
+! gradient of va
+      if (lpenc_loc(i_gva).and.lalfven_as_aux) then
+        call grad(f,ialfven,p%gva)
+        if (lresi_vAspeed) then
+          do i=1,3
+            if (va_min > 0.) where (p%etava < va_min) p%gva(:,i) = 0.
+          enddo
         endif
       endif
 ! eta_j
