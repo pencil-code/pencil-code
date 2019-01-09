@@ -1002,24 +1002,22 @@ module Interstellar
                         tiny(0.) /)
         ncool=10
 !    
-!  As above but with higher minimum temperature 90K instead of 10K
+!  As above but with cooling truncated below 2e4 K for Cioffi comparison
 !
       else if (cooling_select == 'WSWr') then
         if (lroot) print*,'initialize_interstellar: WSWr cooling fct'
-        coolT_cgs = (/  90.0,                 &
-                        141.0,                &
-                        313.0,                &
-                        6102.0,               &
+        coolT_cgs = (/  2E2,                  &
+                        1.2E4,                &
                         1E5,                  &
                         2.88E5,               &
                         4.73E5,               &
                         2.11E6,               &
                         3.98E6,               &
                         2.0E7,                &
-                        1.0E17      /)
-        coolH_cgs = (/  3.703109927416290D16, &
-                        9.455658188464892D18, &
-                        1.185035244783337D20, &
+                        1E17,                 &
+                        2E17,                 &
+                        2E17      /)
+        coolH_cgs = (/  7.762822459260039D-19,&
                         1.102120336D10,       &
                         1.236602671D27,       &
                         2.390722374D42,       &
@@ -1027,10 +1025,10 @@ module Interstellar
                         1.527286104D44,       &
                         1.608087849D22,       &
                         9.228575532D20,       &
+                        tiny(0D0),            &
+                        tiny(0D0),            &
                         tiny(0D0) /)
-        coolB =     (/  2.12,                 &
-                        1.0,                  &
-                        0.56,                 &
+        coolB =     (/  10.0,                 &
                         3.21,                 &
                        -0.20,                 &
                        -3.0,                  &
@@ -1038,6 +1036,8 @@ module Interstellar
                        -3.00,                 &
                         0.33,                 &
                         0.5,                  &
+                        tiny(0.),             &
+                        tiny(0.),             &
                         tiny(0.) /)
         ncool=10
       else if (cooling_select == 'off') then
@@ -3146,15 +3146,15 @@ module Interstellar
 !  2015 ApJ 809:69 Eq. 16
 !
       etmp=eampl_SN; ktmp=kampl_SN
-      if (RPDS<SNR%feat%radius.and.lSN_autofrackin) then
-        if (SNR%feat%rhom>m_H_cgs/unit_density.and.&
+      if (RPDS<1.25*SNR%feat%radius.and.lSN_autofrackin) then
+        if (SNR%feat%rhom>0.8*m_H_cgs/unit_density.and.&
             SNR%feat%dr>2*pc_cgs/unit_length) then
           frackin = kfrac_norm*SNR%feat%rhom*RPDS**7/ampl_SN/&
                   (SNR%feat%t_SF*SNR%feat%dr)**2
         else
           frackin = 0.
         endif
-        frackin=min(0.1,frackin)
+        frackin=min(0.75,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip<14) print*,&
