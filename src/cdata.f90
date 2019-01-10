@@ -130,6 +130,7 @@ module Cdata
   integer:: ireset_tstart=2
 !
   logical :: lini_t_eq_zero=.false.
+  logical :: lini_t_eq_zero_once=.false.
   real, dimension (nx) :: advec_cs2=0.
   real, dimension (nx) :: maxadvec=0., advec2=0., advec2_hypermesh=0.
   real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
@@ -516,7 +517,7 @@ module Cdata
   logical :: sp_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
-  logical :: ub_spec=.false., Lor_spec=.false.
+  logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., Str_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false.
   logical :: GWf_spec=.false., GWg_spec=.false.
