@@ -118,7 +118,7 @@ module Param_IO
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
-      Lor_spec, GWs_spec, GWh_spec, Str_spec, &
+      Lor_spec, EMF_spec, GWs_spec, GWh_spec, Str_spec, &
       GWd_spec,GWe_spec,GWf_spec,   GWg_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
@@ -157,7 +157,8 @@ module Param_IO
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
       crash_file_dtmin_factor, ltestperturb, eps_rkf, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
-      lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
+      lini_t_eq_zero, lini_t_eq_zero_once, &
+      lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, &
       lread_less, lread_nogrid, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
