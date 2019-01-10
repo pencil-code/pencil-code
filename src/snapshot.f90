@@ -526,6 +526,7 @@ module Snapshot
         if (j_spec)   call power_vec(f,'j')
 !         if (jb_spec)   call powerhel(f,'jb')
         if (Lor_spec) call powerLor(f,'Lor')
+        if (EMF_spec) call powerEMF(f,'EMF')
         if (GWs_spec) call powerGWs(f,'GWs')
         if (GWh_spec) call powerGWs(f,'GWh')
         if (GWd_spec) call powerhel(f,'GWd')
