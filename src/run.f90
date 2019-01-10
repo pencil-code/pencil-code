@@ -109,6 +109,7 @@ program run
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
+  logical :: lnoreset_tzero=.false.
   logical :: lonemorestep = .false.
 !
   lrun = .true.
@@ -419,9 +420,21 @@ program run
 !
   call get_nseed(nseed)
 !
-!  Set initial time to zero if requested.
+!  Set initial time to zero if requested. This is dangerous, however!
+!  One may forget removing this entry after having set this once.
+!  It is therefore safer to say lini_t_eq_zero_once=.true.,
+!  which does the reset once once, unless NORESET_TZERO is removed.
 !
   if (lini_t_eq_zero) t=0.0
+!
+!  Set initial time to zero if requested, but blocks further resets.
+!  See detailed comment above.
+!
+  lnoreset_tzero=control_file_exists('NORESET_TZERO')
+  if (lini_t_eq_zero_once.and..not.lnoreset_tzero) then
+    call touch_file('NORESET_TZERO')
+    t=0.0
+  endif
 !
 !  Set last tsound output time
 !
