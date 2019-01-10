@@ -549,6 +549,7 @@ module Viscosity
 !
 !  Write out viscosity z-profile.
 !  At present only correct for Cartesian geometry
+!  The actually profile is generated below and stored in pnu.
 !
         call write_zprof('visc', nu + (nu*(nu_jump-1.))*step(z(n1:n2),znu,-widthnu))
       endif
@@ -1487,6 +1488,8 @@ module Viscosity
 !
 !  viscous force: nu(z)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  -- here the nu viscosity depends on z; nu_jump=nu2/nu1
+!  When widthnu is negative, the viscosity increases with height.
+!  Otherwise, for positive widthnu, it *decreases* with height.
 !
       if (lvisc_nu_prof) then
         pnu = nu + (nu*(nu_jump-1.))*step(p%z_mn,znu,-widthnu)
