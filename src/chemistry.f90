@@ -81,7 +81,7 @@ module Chemistry
 !  logical :: lnospec_eqns=.true.
 !
   logical :: lheatc_chemistry=.true.
-  logical :: lspecies_cond_simplified=.true.
+  logical :: lspecies_cond_simplified=.false.
   logical :: lDiff_simple=.false.
   logical :: lDiff_lewis=.false.
   logical :: lThCond_simple=.false.
