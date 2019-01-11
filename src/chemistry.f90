@@ -173,6 +173,7 @@ module Chemistry
 !   Diagnostics
 !
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  real, dimension(nchemspec) :: Ythresh=0.
   logical :: lchemistry_diag=.false.
 !
 !   Hot spot problem
@@ -201,16 +202,18 @@ module Chemistry
   namelist /chemistry_run_pars/ &
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
+      lreactions, lchem_cdtc, lheatc_chemistry, lspecies_cond_simplified, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lFlux_simple, &
       lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
-      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
+      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
+      Ythresh
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
   integer, dimension(nchemspec) :: idiag_Ym=0      ! DIAG_DOC: $\left<Y_x\right>$
+  integer, dimension(nchemspec) :: idiag_TYm=0     ! DIAG_DOC: $\left<Y_{\rm thresh}-Y_x\right>$
   integer, dimension(nchemspec) :: idiag_dYm=0     ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_dYmax=0   ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_Ymax=0    ! DIAG_DOC: $\left<Y_{x,max}\right>$
@@ -3229,6 +3232,9 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           if (idiag_Ymin(ii)/= 0) then
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           endif
+          if (idiag_TYm(ii)/= 0) then
+            call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
+          endif
           if (idiag_diffm(ii)/= 0) then
             call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
           endif
@@ -3312,6 +3318,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       character(len=6) :: diagn_Ymax
       character(len=6) :: diagn_Ymin
       character(len=7) :: diagn_dYmax
+      character(len=6) :: diagn_TYm
       character(len=6) :: diagn_dYm
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
@@ -3327,6 +3334,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
       if (lreset) then
         idiag_dtchem = 0
         idiag_Ym = 0
+        idiag_TYm = 0
         idiag_dYm = 0
         idiag_Ymax = 0
         idiag_Ymin = 0
@@ -3358,6 +3366,8 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ymin),idiag_Ymin(ii))
           diagn_dYm = 'dY'//trim(adjustl(number))//'m'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYm),idiag_dYm(ii))
+          diagn_TYm = 'TY'//trim(adjustl(number))//'m'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_TYm),idiag_TYm(ii))
           diagn_dYmax = 'dY'//trim(adjustl(number))//'max'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYmax),idiag_dYmax(ii))
           diagn_hm = 'h'//trim(adjustl(number))//'m'
