@@ -208,7 +208,7 @@ module Chemistry
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
-      Ythresh
+      Ythresh, lspecies_cond_simplified
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
