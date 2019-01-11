@@ -1096,7 +1096,7 @@ module Chemistry
       if (ldensity_nolog) &
           f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
       if (ltemperature_nolog) &
-          f(l1:l2,m1:m2,n1:n2,iTT) = exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
+          f(:,:,:,iTT) = exp(f(:,:,:,ilnTT))
 !
 ! Renormalize all species to be sure that the sum of all mass fractions
 ! are unity
@@ -3905,7 +3905,7 @@ module Chemistry
       real, dimension(nx) :: kf_0, Pr, sum_sp
       real, dimension(nx) :: Fcent, ccc, nnn, lnPr, FF, tmpF
       real, dimension(nx) :: TT1_loc
-      real, dimension(nchemspec,nreactions) :: orders_m, orders_p
+      real, dimension(5,nreactions) :: orders_m, orders_p
 !
 !  Check which reactions rate method we will use
 !
