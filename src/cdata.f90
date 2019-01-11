@@ -175,6 +175,7 @@ module Cdata
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.false.
   logical :: lseparate_persist=.false., ldistribute_persist=.false., lpersist=.true.
+  logical :: lomit_add_data=.false.
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
   logical :: ltec=.false.
