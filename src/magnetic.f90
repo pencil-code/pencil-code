@@ -123,7 +123,8 @@ module Magnetic
   real :: relhel_aa=1.
   real :: bthresh=0.0, bthresh_per_brms=0.0, brms=0.0, bthresh_scl=1.0
   real :: eta_shock=0.0, eta_shock2=0.0
-  real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., etaj20=0.
+  real :: eta_va=0., eta_j=0., eta_j2=0., eta_jrho=0., eta_min=0., &
+          etaj20=0., va_min=0., vArms=1.
   real :: rhomin_jxb=0.0, va2max_jxb=0.0, va2max_boris=0.0,cmin=0.0
   real :: omega_Bz_ext=0.0
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
@@ -266,6 +267,7 @@ module Magnetic
   real :: numag=0.0, B0_magfric=1.0
   real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
   real :: ampl_eta_uz=0.0
+  real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -287,7 +289,7 @@ module Magnetic
   logical :: lignore_Bext_in_b2=.false., luse_Bext_in_b2=.true.
   logical :: lmean_friction=.false.,llocal_friction=.false.
   logical :: lambipolar_strong_coupling=.false.
-  logical :: lhalox=.false.
+  logical :: lhalox=.false., lno_ohmic_heat_bound_z=.false.
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
@@ -325,7 +327,7 @@ module Magnetic
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, va2max_boris, &
-      cmin,va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
+      va_min, cmin,va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, &
@@ -350,7 +352,8 @@ module Magnetic
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
-      ampl_eta_uz, lalfven_as_aux
+      ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
+      no_ohmic_heat_z0, no_ohmic_heat_zwidth
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1387,6 +1390,9 @@ module Magnetic
         if ((lresi_etava.or.lresi_vAspeed).and.eta_va==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_va is zero!')
+        if (lresi_vAspeed.and.idiag_vArms==0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity requires vArms be included in print.in!')
         if (lresi_etaj .and. eta_j==0.0) &
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_j is zero!')
@@ -3270,12 +3276,24 @@ module Magnetic
           p%va2=abs(p%va2)
         endif
       endif
-! gradient of va
-      if (lpenc_loc(i_gva)) call grad(f,ialfven,p%gva)
 ! eta_va
       if (lpenc_loc(i_etava)) then
-        p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
-        if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
+        if (lresi_vAspeed) then
+          p%etava = eta_va * sqrt(p%va2)/vArms
+          if (va_min > 0.) where (p%etava < va_min) p%etava = va_min
+        else
+          p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
+          if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
+        endif
+      endif
+! gradient of va
+      if (lpenc_loc(i_gva).and.lalfven_as_aux) then
+        call grad(f,ialfven,p%gva)
+        if (lresi_vAspeed) then
+          do i=1,3
+            if (va_min > 0.) where (p%etava < va_min) p%gva(:,i) = 0.
+          enddo
+        endif
       endif
 ! eta_j
       if (lpenc_loc(i_etaj)) then
@@ -4013,16 +4031,16 @@ module Magnetic
 !  Generalised alfven speed dependent resistivity
 !
       if (lresi_vAspeed) then
-        etatotal = etatotal + eta_va * dxmax * sqrt(p%va2)
+        etatotal = etatotal + p%etava
         if (lweyl_gauge) then
           forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+eta_va*dxmax* &
-                (sqrt(p%va2)*p%del2a(:,i)+p%diva*p%gva(:,i))
+            fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + &
+                        eta_va/vArms * p%diva * p%gva(:,i)
           enddo
         endif
-        if (lfirst.and.ldt) diffus_eta = diffus_eta + eta_va*dxmax*sqrt(p%va2)
+        if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
       endif
 !
       if (lresi_etaj) then
@@ -4266,6 +4284,17 @@ module Magnetic
 !  Special contributions to this module are called here.
 !
       if (lspecial) call special_calc_magnetic(f,df,p)
+! 
+! possibility to reduce ohmic heating near the boundary
+! currently implemented only for a profile in z above
+! a value no_ohmic_heat_z0
+! with the width no_ohmic_heat_zwidth
+! for reduction, width has to tbe negative.
+!
+      if (lno_ohmic_heat_bound_z.and.lohmic_heat) then
+         etatotal=etatotal*cubic_step(z(n),no_ohmic_heat_z0,no_ohmic_heat_zwidth)
+      endif
+
 !
 !  Add Ohmic heat to entropy or temperature equation.
 !
@@ -4858,7 +4887,7 @@ module Magnetic
 !  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
         if (idiag_vA2m/=0)  call sum_mn_name(p%va2,idiag_vA2m)
-        if (idiag_vArms/=0) call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
+        if (idiag_vArms/=0)  call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
         if (idiag_vAmax/=0) call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
         if (idiag_dtb/=0) &
             call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
@@ -8910,6 +8939,8 @@ module Magnetic
 !***********************************************************************
    subroutine magnetic_after_timestep(f,df,dtsub)
 !
+      use Mpicomm , only: mpibcast_real
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
@@ -8918,7 +8949,14 @@ module Magnetic
         if (lkeplerian_gauge)       call keplerian_gauge(f)
         if (lremove_volume_average) call remove_volume_average(f)
       endif
-
+!
+      if (lresi_vAspeed) then
+        if (lroot) then
+          if (fname(idiag_vArms)/=0.0) vArms=fname(idiag_vArms)
+        endif
+        call mpibcast_real(vArms)
+      endif
+!
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dtsub)
 !

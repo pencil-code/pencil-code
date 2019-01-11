@@ -727,7 +727,7 @@ module Io
 !
 !  Check whether we want to read deltay from snapshot.
 !
-        if (lshear) then
+        if (lshear.and..not.lread_oldsnap_noshear) then
           read (lun_input) t_sp, x, y, z, dx, dy, dz, deltay
         else
           if (nghost_read_fewer==0) then

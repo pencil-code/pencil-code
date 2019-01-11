@@ -36,6 +36,7 @@ module Energy
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: zheat_uniform_range=0.
   real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
+  real :: pthresh=0., pbackground=0., pthreshnorm
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -61,7 +62,8 @@ module Energy
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
-      heat_source_sigma, heat_source, lheat_source
+      heat_source_sigma, heat_source, lheat_source, &
+      pthresh, pbackground
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -80,6 +82,7 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> $
                               ! DIAG_DOC: \quad(mean internal energy)
   integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right> $
+  integer :: idiag_Tppm=0     ! DIAG_DOC: $\left<\max(p_{\rm thresh}-p,0)_{\rm norm}\right> $
   integer :: idiag_csm=0
   integer :: idiag_mum=0      ! DIAG_DOC:
   integer :: idiag_ppmax=0    ! DIAG_DOC:
@@ -252,6 +255,16 @@ module Energy
            call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=energy in src/Makefile.local')
+!
+!  For diagnostics of pressure shock propagation
+!  Tppm = max(pthresh-p,0)/(pthresh-pbackground)
+!
+      pthreshnorm=pthresh-pbackground
+      if (pthreshnorm==0.) then
+        pthreshnorm=1.
+      else
+        pthreshnorm=1./pthreshnorm
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -492,6 +505,7 @@ module Energy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_Tppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmax/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmin/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_mum/=0 .or. idiag_mumz/=0) lpenc_diagnos(i_mu1)=.true.
@@ -714,6 +728,7 @@ module Energy
         endif
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_Tppm/=0) call sum_mn_name(max(pthresh-p%pp,0.)*pthreshnorm,idiag_Tppm)
         if (idiag_ppmax/=0) call max_mn_name(p%pp,idiag_ppmax)
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
@@ -886,7 +901,7 @@ module Energy
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
+        idiag_eem=0; idiag_ppm=0; idiag_Tppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
         idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
         idiag_eemz=0; idiag_ppmz=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
@@ -909,6 +924,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
+        call parse_name(iname,cname(iname),cform(iname),'Tppm',idiag_Tppm)
         call parse_name(iname,cname(iname),cform(iname),'ppmax',idiag_ppmax)
         call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)

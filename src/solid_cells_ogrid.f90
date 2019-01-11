@@ -665,12 +665,12 @@ module Solid_Cells
 ! TODO: Set initial conditions for chemistry on the ogrid
             if (lchemistry) then  
               do k = 1,nchemspec
-         !       if (ichemspec(k) == 7) then
-         !         f_ogrid(i,j,:,ichemspec(k)) = (1-wall_smoothing) 
-         !       else
-         !         f_ogrid(i,j,:,ichemspec(k)) = (1-f_ogrid(i,j,:,7))*chemspec0(k)       
-         !       endif
-                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k) 
+                if (ichemspec(k) == 7) then
+                  f_ogrid(i,j,:,ichemspec(k)) = (1-wall_smoothing) 
+                else
+                  f_ogrid(i,j,:,ichemspec(k)) = (1-f_ogrid(i,j,:,7))*chemspec0(k)       
+                endif
+             !   f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k) 
               enddo
             endif
           endif
@@ -5138,9 +5138,12 @@ module Solid_Cells
 !
       if(lfirst_proc_x) then
         if(SBP) then
+          ! chemistry BCs are taken care of here
           if(lexpl_rho) call bval_from_neumann_SBP(f_og)
         elseif(BDRY5) then
           if(lexpl_rho) call bval_from_neumann_bdry5(f_og)
+          if (lchemistry) call fatal_error('boundconds_x_ogrid', &
+          'chemistry BC not set when BDRY5, use SBP instead!')
         else
           !TODO set f_og as input
           call set_ghosts_onesided_ogrid(iux)
@@ -5149,9 +5152,9 @@ module Solid_Cells
           if (lfilter_TT) then
              call set_ghosts_onesided_ogrid(iTT)
           endif
+          ! chemistry BCs are taken care of here
           if(lexpl_rho) call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
-! TODO:  
           if (lchemistry) then
             do k = 1,nchemspec
               call set_ghosts_onesided_ogrid(ichemspec(k))

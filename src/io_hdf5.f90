@@ -251,7 +251,7 @@ module Io
 !
       ! write additional settings
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
-      call output_settings (real (t), time_only=(.not. lwrite_add))
+      call output_settings (real (t), time_only=((.not. lwrite_add) .or. lomit_add_data))
       call file_close_hdf5
 !
       call file_open_hdf5 (filename, truncate=.false.)
@@ -306,8 +306,8 @@ module Io
       call file_close_hdf5
 !
       call file_open_hdf5 (filename, global=.false., truncate=.false.)
-      ! write additional data:
-      call output_settings (real (t), time_only=(.not. (ltrunc .and. (trim (dataset) == 'fp'))))
+      ! write additional data
+      call output_settings (real (t), time_only=((.not. (ltrunc .and. (trim (dataset) == 'fp'))) .or. lomit_add_data))
       ! write processor boundaries
       call output_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
       call output_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
@@ -587,7 +587,14 @@ module Io
       call file_close_hdf5
 !
       ! read additional data
-      if (lread_add) then
+      if (lread_add .and. lomit_add_data) then
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call input_hdf5 ('time', time)
+        call file_close_hdf5
+!
+        call mpibcast_real (time, comm=MPI_COMM_WORLD)
+        t = time
+      elseif (lread_add) then
         if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
         else

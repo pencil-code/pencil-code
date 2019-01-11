@@ -4714,8 +4714,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      !mpiwtick = MPI_WTICK()
-      mpiwtick = 0
+      mpiwtick = MPI_WTICK()
+      !mpiwtick = 0
 !
     endfunction mpiwtick
 !***********************************************************************

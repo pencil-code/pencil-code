@@ -1903,9 +1903,9 @@ module Radiation
                 (TT/ref_temp_opa)**expo_temp_opa
             kappa2=kappa20_cst(inu)+kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo2_rho_opa* &
-                (TT/ref_temp_opa)**expo2_temp_opa* &
-                (1.+ampl_bump*exp(-.5*((TT-TT_bump)/sigma_bump)**2))
-            f(:,m,n,ikapparho)=kapparho_floor+rho/(1./kappa1+1./kappa2)
+                (TT/ref_temp_opa)**expo2_temp_opa
+            f(:,m,n,ikapparho)=kapparho_floor+rho/(1./kappa1+1./kappa2) &
+                *(1.+ampl_bump*exp(-.5*((TT-TT_bump)/sigma_bump)**2))
         enddo; enddo
 !
 !AB: the following looks suspicious with *_cgs

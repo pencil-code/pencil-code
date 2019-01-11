@@ -1166,9 +1166,10 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  one-sided difference formulae. val depends on x,y.
 !
 !  16-feb-17/Jorgen: Adapted from deriv.f90
+!  jan-19/Eva: added BC for chemistry
 !
       real :: val=0.
-      integer :: k
+      integer :: k,j
 
       k=l1_ogrid
       f_ogrid(k,:,:,irho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,irho) &
@@ -1177,6 +1178,17 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                                                - 225.*f_ogrid(k+4,:,:,irho) &
                                                +  72.*f_ogrid(k+5,:,:,irho) &
                                                -  10.*f_ogrid(k+6,:,:,irho) )/147.
+      if (lchemistry) then
+        do j = 1,nchemspec
+          f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
+                                               - 450.*f_ogrid(k+2,:,:,ichemspec(j)) &
+                                               + 400.*f_ogrid(k+3,:,:,ichemspec(j)) &
+                                               - 225.*f_ogrid(k+4,:,:,ichemspec(j)) &
+                                               +  72.*f_ogrid(k+5,:,:,ichemspec(j)) &
+                                               -  10.*f_ogrid(k+6,:,:,ichemspec(j)) )/147.
+        enddo
+      endif
+
     endsubroutine bval_from_neumann_arr_ogrid
 !***********************************************************************
     subroutine bval_from_neumann_SBP(f_og)
@@ -1187,6 +1199,8 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
 !  16-feb-17/Jorgen: Adapted from deriv.f90
 !  07-nov-18/Jonas: Added treatment for cases with temperature gradient
+!  jan-19/Eva: added BC for chemistry
+!
       integer :: k, j
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       real, dimension (my_ogrid, mz_ogrid) :: df_surf, dM1
@@ -1214,10 +1228,20 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/ &
               (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT))
-        if (lchemistry) then
- !          call der_ogrid_SBP_R(f_og,dM1,mu1_bond_og)
- !          f_og   (k,:,:,irho) = f_og(k,:,:,irho) + dM1/mu1_bond_og(k,:,:)
-        endif
+         if (lchemistry) then
+           call der_ogrid_SBP_R(f_og,dM1,mu1_bond_og)
+           f_og(k,:,:,irho) = f_og(k,:,:,irho) + dM1/mu1_bond_og(k,:,:)
+           do j = 1,nchemspec
+              f_og   (k,:,:,ichemspec(j)) = -(D1_SBP(1,2)*f_og   (k+1,:,:,ichemspec(j)) + &
+                D1_SBP(1,3)*f_og   (k+2,:,:,ichemspec(j)) + &
+                D1_SBP(1,4)*f_og   (k+3,:,:,ichemspec(j)) + &
+                D1_SBP(1,5)*f_og   (k+4,:,:,ichemspec(j)) + &
+                D1_SBP(1,6)*f_og   (k+5,:,:,ichemspec(j)) + &
+                D1_SBP(1,7)*f_og   (k+6,:,:,ichemspec(j)) + &
+                D1_SBP(1,8)*f_og   (k+7,:,:,ichemspec(j)) + &
+                D1_SBP(1,9)*f_og   (k+8,:,:,ichemspec(j)) )/D1_SBP(1,1)
+           enddo  
+         endif
       else
          call fatal_error('solid_cells_ogrid','temperature SBP index not found')
       endif
@@ -1305,7 +1329,6 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       real, dimension(my_ogrid,mz_ogrid), intent(out) :: dM1
       real, dimension (l1_ogrid+8,my_ogrid,mz_ogrid), intent(out) :: mu1_bond_og
       integer :: k, j2, j3
-!      real, dimension(nchemspec) :: species_mass
       real, pointer, dimension(:,:) :: species_constants
       integer, pointer :: imass
 !

@@ -98,6 +98,16 @@ module power_spectrum
 !
     endsubroutine powerLor
 !***********************************************************************
+    subroutine powerEMF(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerEMF
+!***********************************************************************
     subroutine powerGWs(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f

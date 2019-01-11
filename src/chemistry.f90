@@ -45,6 +45,9 @@ module Chemistry
   real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
   real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
 !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
+
+  real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
+
 ! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
@@ -78,6 +81,7 @@ module Chemistry
 !  logical :: lnospec_eqns=.true.
 !
   logical :: lheatc_chemistry=.true.
+  logical :: lspecies_cond_simplified=.false.
   logical :: lDiff_simple=.false.
   logical :: lDiff_lewis=.false.
   logical :: lThCond_simple=.false.
@@ -169,7 +173,12 @@ module Chemistry
 !   Diagnostics
 !
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  real, dimension(nchemspec) :: Ythresh=0.
   logical :: lchemistry_diag=.false.
+!
+!   Hot spot problem
+!
+  logical :: lhotspot=.false.
 !
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -180,28 +189,31 @@ module Chemistry
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
       init_TT2,init_rho, &
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
-      str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
+      str_thick,lfix_Pr, lT_tanh,lT_const, lheatc_chemistry, lspecies_cond_simplified, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud
+      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
+      lhotspot
 !
 !
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
+      lreactions, lchem_cdtc, lheatc_chemistry, lspecies_cond_simplified, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lFlux_simple, &
       lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
-      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
+      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
+      Ythresh, lspecies_cond_simplified
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
   integer, dimension(nchemspec) :: idiag_Ym=0      ! DIAG_DOC: $\left<Y_x\right>$
+  integer, dimension(nchemspec) :: idiag_TYm=0     ! DIAG_DOC: $\left<Y_{\rm thresh}-Y_x\right>$
   integer, dimension(nchemspec) :: idiag_dYm=0     ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_dYmax=0   ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_Ymax=0    ! DIAG_DOC: $\left<Y_{x,max}\right>$
@@ -612,6 +624,8 @@ module Chemistry
           call prerun_1D_opp(f,prerun_directory)
         case ('FlameMaster')
           call FlameMaster_ini(f,file_name)
+        case ('flame_front_new')
+          call flame_front_new(f)
         case default
 !
 !  Catch unknown values
@@ -1181,9 +1195,9 @@ module Chemistry
       if (lroot) then
         print*, '          init                      final'
         if (lH2 .and. .not. lCH4) print*, 'H2 :', init_H2, 0.
-        if (lCH4) print*, 'CH4 :', init_CH4, 0.
-        if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
-        if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
+        if (lCH4) print*, 'CH4 :',  init_CH4, 0.
+        if (lO2) print*, 'O2 :',    init_O2, final_massfrac_O2
+        if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
       endif
 !
@@ -1320,6 +1334,166 @@ module Chemistry
       enddo
 !
     endsubroutine flame_front
+!***********************************************************************
+    subroutine flame_front_new(f)
+!
+!  10-nov-18/chengeng: adapted from flame_front, but flame front on the left,
+!                      and added initial condition for hotspot problem.
+!                      This version replaces experimental/test_chemistry.
+!
+!  This routine set up the initial profiles used in 1D flame speed measurments
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i, j,k
+!
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: log_inlet_density, del, PP
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
+      real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
+          final_massfrac_H2O, final_massfrac_CO2,final_massfrac_H2
+      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
+      logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
+      logical :: lCH4=.false., lCO2=.false.
+      real :: theta
+!
+      lflame_front = .true.
+!
+      call air_field(f,PP)
+!
+      if (ltemperature_nolog) f(:,:,:,ilnTT) = log(f(:,:,:,ilnTT))
+!
+! Initialize some indexes
+!
+      call find_species_index('H2',i_H2,ichem_H2,lH2)
+      if (lH2) then
+        mH2 = species_constants(ichem_H2,imass)
+        init_H2 = initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2',i_O2,ichem_O2,lO2)
+      if (lO2) then
+        mO2 = species_constants(ichem_O2,imass)
+        init_O2 = initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2',i_N2,ichem_N2,lN2)
+      if (lN2) then
+        mN2 = species_constants(ichem_N2,imass)
+        init_N2 = initial_massfractions(ichem_N2)
+      else
+        init_N2 = 0
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O = species_constants(ichem_H2O,imass)
+        init_H2O = initial_massfractions(ichem_H2O)
+      endif
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+! Warning: These formula are only correct for lean fuel/air mixtures. They
+!          must be modified under rich conditions to account for the excess
+!          of fuel.
+!
+      final_massfrac_O2 = 0.
+      final_massfrac_H2 = 0.
+      if ( lH2 ) then
+        final_massfrac_H2O = mH2O/mH2 * init_H2
+        final_massfrac_O2 = 1. - final_massfrac_H2O- init_N2
+      endif
+!
+      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
+      if (lroot) then
+        print*, '          init                      final'
+        if (lH2 ) print*, 'H2 :' , init_H2,  final_massfrac_H2
+        if (lO2)  print*, 'O2 :' , init_O2,  final_massfrac_O2
+        if (lH2O) print*, 'H2O :', init_H2O, final_massfrac_H2O
+      endif
+!
+!  Initialize temperature and species
+!
+      do k = 1,mx
+!
+!  Initialize temperature
+!
+                     
+      if( lhotspot )then
+          if( x(k)<init_x2 )then
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
+          f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
+          else
+          f(k,:,:,ilnTT) = log( init_TT2 )
+          end if
+          f(k,:,:,i_H2)  = init_H2
+          f(k,:,:,i_O2)  = init_O2 
+          f(k,:,:,i_H2O) = init_H2O
+          f(k,:,:,iux) = 0.0
+      else
+          if ( x(k)<=init_x1 )then
+          f(k,:,:,ilnTT) = log( init_TT1 )
+          f(k,:,:,i_H2)  = final_massfrac_H2
+          f(k,:,:,i_O2)  = final_massfrac_O2 
+          f(k,:,:,i_H2O) = final_massfrac_H2O
+          f(k,:,:,iux) = 0.0
+          else if ( x(k)>init_x2 )then
+          f(k,:,:,ilnTT) = log( init_TT2 )
+          f(k,:,:,i_H2)  = init_H2
+          f(k,:,:,i_O2)  = init_O2
+          f(k,:,:,i_H2O) = init_H2O
+          f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)
+          else
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
+          f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
+          f(k,:,:,i_H2)  = init_H2*theta+final_massfrac_H2
+          f(k,:,:,i_O2)  = init_O2*theta+final_massfrac_O2
+          f(k,:,:,i_H2O) = init_H2O*(1.0-theta)+final_massfrac_H2O
+          f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)*theta
+          end if
+      end if
+
+      end do
+!
+      if (unit_system == 'cgs') then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas = Rgas_unit_sys/unit_energy
+      endif
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1 = &
+          initial_massfractions(ichem_O2)/(mO2) &
+          +initial_massfractions(ichem_H2O)/(mH2O) &
+          +initial_massfractions(ichem_N2)/(mN2)
+      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
+          initial_massfractions(ichem_H2)/(mH2)
+      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
+      log_inlet_density = &
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+!  Initialize density
+!
+      call getmu_array(f,mu1_full)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+!      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
+!          * (f(l1:l2,m1:m2,n1:n2,iux)+init_ux)
+      !f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i = 1,mx
+        do j = 1,my
+          do k = 1,mz
+            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine flame_front_new
 !***********************************************************************
     subroutine TTD(f)
 !
@@ -2307,6 +2481,9 @@ module Chemistry
                         *cp_R_spec/species_constants(k,imass)*Rgas
                     cv_full(:,j2,j3) = cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
                         *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
+
+cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
+
                   endif
                 enddo
               enddo
@@ -3055,6 +3232,9 @@ module Chemistry
           if (idiag_Ymin(ii)/= 0) then
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           endif
+          if (idiag_TYm(ii)/= 0) then
+            call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
+          endif
           if (idiag_diffm(ii)/= 0) then
             call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
           endif
@@ -3138,6 +3318,7 @@ module Chemistry
       character(len=6) :: diagn_Ymax
       character(len=6) :: diagn_Ymin
       character(len=7) :: diagn_dYmax
+      character(len=6) :: diagn_TYm
       character(len=6) :: diagn_dYm
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
@@ -3153,6 +3334,7 @@ module Chemistry
       if (lreset) then
         idiag_dtchem = 0
         idiag_Ym = 0
+        idiag_TYm = 0
         idiag_dYm = 0
         idiag_Ymax = 0
         idiag_Ymin = 0
@@ -3184,6 +3366,8 @@ module Chemistry
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ymin),idiag_Ymin(ii))
           diagn_dYm = 'dY'//trim(adjustl(number))//'m'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYm),idiag_dYm(ii))
+          diagn_TYm = 'TY'//trim(adjustl(number))//'m'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_TYm),idiag_TYm(ii))
           diagn_dYmax = 'dY'//trim(adjustl(number))//'max'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYmax),idiag_dYmax(ii))
           diagn_hm = 'h'//trim(adjustl(number))//'m'
@@ -4657,11 +4841,19 @@ module Chemistry
       pi_2 = pi*pi
       pi_1_5 = pi*sqrt(pi)
 !
+!  With lspecies_cond_simplified, species conduction is calculated
+!  according to the book "Transport phenomena" by Bird, Warren, & Lightfoot
+!  page 276, Eq.(9.3-15).
+!
       do j3 = nn1,nn2
         do j2 = mm1,mm2
           tmp_sum = 0.
           tmp_sum2 = 0.
           do k = 1,nchemspec
+            if (lspecies_cond_simplified) then
+              species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k))*&
+                ( cp_spec_glo(:,j2,j3,k) + 1.25*Rgas/species_constants(k,imass) )
+            else
 !
 ! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
 !
@@ -4712,6 +4904,8 @@ module Chemistry
                 /(species_constants(k,imass)/unit_mass)*Rgas* &
                 (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
                 +f_vib*Cv_vib_R)
+            endif
+
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
