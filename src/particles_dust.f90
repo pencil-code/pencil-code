@@ -342,6 +342,7 @@ module Particles
 !
       use FArrayManager, only: farray_register_auxiliary
       use Particles_caustics, only: register_particles_caustics
+      use Particles_tetrad, only: register_particles_tetrad
       use Particles_potential, only: register_particles_potential
 !
       if (lroot) call svn_id( &
@@ -418,6 +419,10 @@ module Particles
 !
       if (lparticles_caustics) call register_particles_caustics()
 !
+!  If we are using tetrad, here we should call the correspoding register equation:
+!
+      if (lparticles_tetrad) call register_particles_tetrad()
+!
 !  If we are using particles_potential, here we should call the correspoding register equation:
 !
       if (lparticles_potential) call register_particles_potential()
@@ -436,6 +441,7 @@ module Particles
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Density, only: mean_density
       use Particles_caustics, only: initialize_particles_caustics
+      use Particles_tetrad, only: initialize_particles_tetrad
       use Particles_potential, only: initialize_particles_potential
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -918,7 +924,11 @@ module Particles
 !
 !  if we are using caustics:
 !
-      if (lparticles_caustics) call initialize_particles_caustics(f)
+     if (lparticles_caustics) call initialize_particles_caustics(f)
+!
+!  if we are using tetrad:
+!
+      if (lparticles_tetrad) call initialize_particles_tetrad(f)
 !
 !  if we are using particles_potential:
 !
@@ -967,6 +977,7 @@ module Particles
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
       use Particles_caustics, only: init_particles_caustics
+      use Particles_tetrad, only: init_particles_tetrad
 !
       real, dimension(mx,my,mz,mfarray), intent(out) :: f
       real, dimension(mpar_loc,mparray), intent(out) :: fp
@@ -2036,6 +2047,10 @@ module Particles
 !
       if (lparticles_caustics) call init_particles_caustics(f,fp,ineargrid)
 !
+!  If we are solving for tetrad, then we call their initial condition here:
+!
+      if (lparticles_tetrad) call init_particles_tetrad(f,fp,ineargrid)
+!
 !  Set the initial auxiliary array for the passive scalar to zero
 !
       if (ldiffuse_passive) f(:,:,:,idlncc) = 0.0
@@ -3097,6 +3112,7 @@ module Particles
       use Diagnostics
       use EquationOfState, only: cs20
       use Particles_caustics, only: dcaustics_dt
+      use Particles_tetrad, only: dtetrad_dt
       use Particles_potential, only: dvvp_dt_potential
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -3403,6 +3419,10 @@ module Particles
 !  If we are using caustics :
 !
       if (lparticles_caustics) call dcaustics_dt(f,df,fp,dfp,ineargrid)
+!
+!  If we are using tetrad :
+!
+      if (lparticles_tetrad) call dtetrad_dt(f,df,fp,dfp,ineargrid)
 !
 ! and potential
 !
@@ -3881,6 +3901,7 @@ module Particles
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
       use Particles_caustics, only: dcaustics_dt_pencil
+      use Particles_tetrad, only: dtetrad_dt_pencil
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -4164,7 +4185,12 @@ module Particles
 ! If we are using the module particles_caustics, then we call for them here:
 !
               if (lparticles_caustics) &
-                  call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)
+                   call dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)
+!
+! If we are using the module particles_tetrad, then we call for them here:
+!
+              if (lparticles_tetrad) &
+                  call dtetrad_dt_pencil(f,df,fp,dfp,p,ineargrid,k,tausp1_par)
 !
 !  Account for added mass term beta
 !  JONAS: The advective derivative of velocity is interpolated for each
@@ -6553,6 +6579,7 @@ module Particles
       use FArrayManager, only: farray_index_append
       use General,   only: itoa
       use Particles_caustics, only: rprint_particles_caustics
+      use Particles_tetrad, only: rprint_particles_tetrad
       use Particles_potential, only: rprint_particles_potential
 !
       logical :: lreset
@@ -6871,6 +6898,10 @@ module Particles
 !    If we are using caustics
 !
       if (lparticles_caustics) call rprint_particles_caustics(lreset,lwrite)
+!
+!    If we are using tetrad
+!
+      if (lparticles_tetrad) call rprint_particles_tetrad(lreset,lwrite)
 !
 ! ... and potential
 !

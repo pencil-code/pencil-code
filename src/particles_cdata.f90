@@ -49,9 +49,11 @@ module Particles_cdata
   integer :: npvar=0, npar_loc=0, npar_total=0, npaux=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0, irpbeta=0
   integer :: ixp0=0, iyp0=0, izp0=0,ippersist=0
-  integer :: idXp1=0, idXp2=0, idXp3=0, idVp1=0, idVp2=0, idVp3=0
+  integer :: idR11=0, idR12=0, idR13=0, idV11=0, idV12=0, idV13=0
+  integer :: idR21=0, idR22=0, idR23=0, idV21=0, idV22=0, idV23=0
+  integer :: idR31=0, idR32=0, idR33=0, idV31=0, idV32=0, idV33=0
+  integer :: iVolp
   integer :: idXpo1=0, idXpo2=0, idXpo3=0
-  integer :: icaustics
   integer :: iuf=0,iufx=0,iufy=0,iufz=0
   integer :: isigmap11=0,isigmap12=0,isigmap13=0
   integer :: isigmap21=0,isigmap22=0,isigmap23=0

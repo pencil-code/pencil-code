@@ -35,6 +35,7 @@ module Particles_main
   use Particles_temperature
   use Particles_lyapunov
   use Particles_caustics
+  use Particles_tetrad
 !
   implicit none
 !
@@ -292,6 +293,7 @@ module Particles_main
       call particles_read_snapshot('pvar.dat')
       if (lparticles_lyapunov)      call init_particles_lyapunov(fp)
       if (lparticles_caustics)      call reinitialize_caustics(fp)
+      if (lparticles_tetrad)        call reinitialize_tetrad(fp)
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************

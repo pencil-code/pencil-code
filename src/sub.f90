@@ -57,6 +57,7 @@ module Sub
   public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
+  public :: ScalarTripleProduct
   public :: det3X3mat,Inv2_3X3mat
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
@@ -701,9 +702,20 @@ module Sub
       
     endsubroutine Inv2_3X3mat
 !***********************************************************************
+    subroutine ScalarTripleProduct(A,B,C,product)
+      real, dimension(3), intent(in) :: A,B,C
+      real :: product
+      real,dimension(3,3) :: Mat
+      Mat(:,1) = A
+      Mat(:,2) = B
+      Mat(:,3) = C
+      call det3X3mat(Mat,product)
+!        
+    endsubroutine ScalarTripleProduct
+!***********************************************************************
     subroutine det3X3mat(A,det)
 !
-! calcualates determinant of a 3X3 matrix directly
+! calculates determinant of a 3X3 matrix directly
 !
       real,dimension(3,3), intent(in) :: A
       real, intent(out) :: det

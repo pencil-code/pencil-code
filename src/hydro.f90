@@ -2051,7 +2051,7 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
-      if (lparticles_lyapunov .or. lparticles_caustics) & 
+      if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) & 
         lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
         if (lweno_transport) then
@@ -2381,7 +2381,7 @@ module Hydro
 ! uij
       if (lpenc_loc(i_uij)) then
         call gij(f,iuu,p%uij,1)
-        if (lparticles_lyapunov .or. lparticles_caustics) then
+        if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
           jk=0
           do jj=1,3; do kk=1,3
             jk=jk+1
