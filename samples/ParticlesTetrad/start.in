@@ -1,0 +1,44 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for forced helical MHD turbulence
+!
+&init_pars
+  cvsid='$Id$',
+  !random_gen='system'  !(these commented lines are other possible options)
+  !random_gen='min_std'
+  random_gen='nr_f90'
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&particles_init_pars
+  initxxp='random-box'
+  initvvp='constant'
+  vpx0=0.
+  vpy0=0.
+  vpz0=0.
+  bcpx='p'
+  bcpy='p'
+  bcpz='p'
+  xp0 =-3.14  
+  yp0 =-3.14  
+  zp0 =-3.14
+  Lx0=6.28
+  Ly0=6.28
+  Lz0=6.28
+  interp_pol_rho='cic'
+  interp_pol_TT='cic'
+  interp_pol_uu='cic'
+  eps_dtog=1.0
+/
+&particles_radius_init_pars
+  initap='constant'
+  ap0=4.e-4,6.e-4,8.e-4,10.e-4,12.e-4
+  lsweepup_par=F
+  rhopmat=1e3
+  lfixed_particles_radius=T
+/
