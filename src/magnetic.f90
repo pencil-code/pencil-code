@@ -2433,6 +2433,7 @@ module Magnetic
           lpenc_requested(i_rho1)=.true.
         if (ambipolar_diffusion=="ionization-yH") &
           lpenc_requested(i_yH)=.true.
+          lpenc_requested(i_rho1)=.true.
       endif
 !
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
