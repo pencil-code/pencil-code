@@ -107,6 +107,8 @@ module Viscosity
   logical :: lvisc_smag_Ma=.false.
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
+  logical :: lno_visc_heat_zbound=.false.
+  real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0.
   real :: h_slope_limited=0.
   character (LEN=labellen) :: islope_limiter=''
@@ -123,7 +125,8 @@ module Viscosity
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
       lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
-      lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed
+      lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
+      no_visc_heat_z0,no_visc_heat_zwidth
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -2247,6 +2250,7 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !
+      use Sub, only: cubic_step
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx),intent(inout) :: Hmax
@@ -2265,7 +2269,12 @@ module Viscosity
         if (ltemperature_nolog) then
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + p%cv1*p%visc_heat
         else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
+          if (lno_visc_heat_zbound) then
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+              p%cv1*p%TT1*p%visc_heat*cubic_step(z(n),no_visc_heat_z0,no_visc_heat_zwidth)
+          else
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
+          endif
         endif
       else if (lthermal_energy) then
         if (lstratz) then
