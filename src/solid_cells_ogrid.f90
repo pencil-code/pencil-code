@@ -114,7 +114,7 @@ module Solid_Cells
       endif
       if(r_ogrid <= 0) r_ogrid=3.*cylinder_radius
 !
-      if (r_int_inner_vid <= cylinder_radius) then &
+      if (r_int_inner_vid <= cylinder_radius) &
           r_int_inner_vid = cylinder_radius+0.05*cylinder_radius
 !
       if (lroot) then
