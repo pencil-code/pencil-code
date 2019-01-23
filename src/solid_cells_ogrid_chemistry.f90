@@ -1203,7 +1203,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       real, dimension(nx_ogrid) :: kf_0, Pr, sum_sp
       real, dimension(nx_ogrid) :: Fcent, ccc, nnn, lnPr, FF, tmpF
       real, dimension(nx_ogrid) :: TT1_loc
-      real, dimension(nchemspec,nreactions) :: orders_m, orders_p
+      real, dimension(5,nreactions) :: orders_m, orders_p
 !
 !  Check which reactions rate method we will use
 !

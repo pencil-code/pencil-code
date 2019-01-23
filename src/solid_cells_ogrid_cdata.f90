@@ -236,7 +236,7 @@ module solid_cells_ogrid_cdata
   integer :: max_send_ip_cart_to_curv                 ! Maximum number of ip sent
   integer :: max_recv_ip_cart_to_curv                 ! Maximum number of ip recv
   !
-  real :: r_int_outer, r_int_inner, r_int_inner_poly
+  real :: r_int_outer, r_int_inner, r_int_inner_poly, r_int_inner_vid=0.
   logical :: lbidiagonal_derij_ogrid=.false.
 !***************************************************
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 

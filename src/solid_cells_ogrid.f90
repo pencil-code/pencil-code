@@ -49,7 +49,7 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
-      lstore_ogTT, init_rho_cyl, lfilter_TT
+      lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid
 
 
 !  Read run.in file
@@ -113,7 +113,10 @@ module Solid_Cells
             'All cylinders must have non-zero radii!')
       endif
       if(r_ogrid <= 0) r_ogrid=3.*cylinder_radius
-
+!
+      if (r_int_inner_vid <= cylinder_radius) then &
+          r_int_inner_vid = cylinder_radius+0.05*cylinder_radius
+!
       if (lroot) then
         print*, 'nxgrid_ogrid, nygrid_ogrid, nzgrid_ogrid=', nxgrid_ogrid, nygrid_ogrid, nzgrid_ogrid
         print*, 'Cylidner radius=',cylinder_radius
@@ -665,12 +668,12 @@ module Solid_Cells
 ! TODO: Set initial conditions for chemistry on the ogrid
             if (lchemistry) then  
               do k = 1,nchemspec
-                if (ichemspec(k) == 7) then
-                  f_ogrid(i,j,:,ichemspec(k)) = (1-wall_smoothing) 
-                else
-                  f_ogrid(i,j,:,ichemspec(k)) = (1-f_ogrid(i,j,:,7))*chemspec0(k)       
-                endif
-             !   f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k) 
+      !          if (ichemspec(k) == 7) then
+      !            f_ogrid(i,j,:,ichemspec(k)) = (1-wall_smoothing)
+      !          else
+      !            f_ogrid(i,j,:,ichemspec(k)) = (1-f_ogrid(i,j,:,7))*chemspec0(k)
+      !          endif
+                f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
             endif
           endif
@@ -927,12 +930,13 @@ module Solid_Cells
         do j=m1,m2
           do i=l1,l2
             rthz(1)=radius_ogrid(x(i),y(j))
-            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then 
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner_vid) then
               n_ip_curv_to_cart=n_ip_curv_to_cart+1
             endif
           enddo
         enddo
       enddo
+
       allocate(curvilinear_to_cartesian(n_ip_curv_to_cart))
 !
       ii=0
@@ -940,7 +944,7 @@ module Solid_Cells
         do j=m1,m2
           do i=l1,l2
             call get_polar_coords(x(i),y(j),z(k),rthz)
-            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then 
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner_vid) then
               ii=ii+1
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
               curvilinear_to_cartesian(ii)%xyz = rthz
@@ -2800,6 +2804,17 @@ module Solid_Cells
             f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))
             f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
             f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
+          endif
+          if (lwrite_slices) then
+            if((rthz(1)<=r_int_outer) .and.(rthz(1)>r_int_inner_vid)) then
+              call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)
+              if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
+                call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
+              endif
+              f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))
+              f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
+              f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
+            endif
           endif
         enddo
       enddo
