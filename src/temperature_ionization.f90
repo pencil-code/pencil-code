@@ -980,7 +980,11 @@ module Energy
 !
 !  Temperature.
 !
-        if (trim(slices%name)=='TT') call process_slices(slices,exp2d)
+        if (.not. ltemperature_nolog) then
+          if (trim(slices%name)=='TT') call process_slices(slices,exp2d)
+        else
+          call process_slices(slices,1.)
+        endif 
 !
       endif
 !
