@@ -48,10 +48,10 @@ module General
   public :: directory_names_std, numeric_precision
   public :: touch_file
   public :: var_is_vec
-  public :: transform_cart_spher, transform_spher_cart_yy
+  public :: transform_cart_spher, transform_cart_spher_other, transform_spher_cart_yy
   public :: yy_transform_strip, yy_transform_strip_other, yin2yang_coors
   public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
-  public :: copy_with_shift
+  public :: copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
   public :: transpose_mn
   public :: notanumber, notanumber_0d
   public :: reduce_grad_dim
@@ -191,7 +191,9 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip
+      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip, &
+                       lyinyang,lcutoff_corners,nycut,nzcut, &
+                       lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z, iproc
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -211,6 +213,10 @@ module General
           enddo
         enddo
       else
+!
+!  For parallelized runs:
+!  Do inner rectangle.
+!
         imn=1
         do n=n1i+2,n2i-2
           do m=m1i+2,m2i-2
@@ -279,6 +285,17 @@ module General
           enddo
         enddo
       endif
+
+      if (lyinyang.and.lcutoff_corners) then
+        if (lfirst_proc_y) then
+          if (lfirst_proc_z) call reset_triangle_inds(1,my-nycut+nghost, 1,mz-nzcut+nghost,imn_array)  ! lower left corner
+          if (llast_proc_z ) call reset_triangle_inds(1,my-nycut+nghost,mz,nzcut+1-nghost ,imn_array)  ! upper left
+        endif
+        if (llast_proc_y) then
+          if (lfirst_proc_z) call reset_triangle_inds(my,nycut+1-nghost,  1,mz-nzcut+nghost,imn_array) ! lower right
+          if (llast_proc_z ) call reset_triangle_inds(my,nycut+1-nghost, mz,nzcut+1-nghost ,imn_array) ! upper right
+        endif
+      endif
 !
 !  Debugging output to be analysed with $PENCIL_HOME/utils/check-mm-nn.
 !
@@ -290,6 +307,7 @@ module General
           enddo
         endif
       endif
+      !if (iproc==0) write(100,'(30(i3,1x))') imn_array
 !
     endsubroutine setup_mm_nn
 !***********************************************************************
@@ -4387,6 +4405,26 @@ module General
 
     endsubroutine transform_cart_spher
 !***********************************************************************
+    subroutine transform_cart_spher_other(arr,th,ph)
+!
+!  Transforms a vector given in f array in slots j to j+2 on the rectangle
+!  ith1:ith2 x iph1:iph2 from Cartesian to spherical basis. Works in-place.
+!
+! 4-dec-2015/MR: coded
+!
+      real, dimension(nx,3), intent(INOUT) :: arr
+      real,                  intent(IN)    :: th,ph
+
+      real, dimension(nx) :: tmp12, tmp3
+
+        tmp12=cos(ph)*arr(:,1)+sin(ph)*arr(:,2)
+        tmp3 =arr(:,3)
+        arr(:,3) = -sin(ph)*arr(:,1)+ cos(ph)*arr(:,2)
+        arr(:,1) =  sin(th)*tmp12   + cos(th)*tmp3
+        arr(:,2) =  cos(th)*tmp12   - sin(th)*tmp3
+
+    endsubroutine transform_cart_spher_other
+!***********************************************************************
     subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,lyy)
 !
 !  Transforms a vector given on the rectangle ith1:ith2 x iph1:ip2 from spherical
@@ -4463,9 +4501,12 @@ module General
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
           ii=i+ishift
-          sth=sinth(ii); cth=costh(ii)
+          if (ii<1.or.ii>my) cycle
 
           jj=j+jshift
+          if (jj<1.or.jj>mz) cycle
+
+          sth=sinth(ii); cth=costh(ii)
           xprime = -cosph(jj)*sth
           zprime = -sinph(jj)*sth
           yprime = -cth
@@ -4482,11 +4523,11 @@ module General
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
           if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
 !
-          !thphprime(1,itp,jtp) = ii
-          !thphprime(2,itp,jtp) = jj
+          !thphprime(1,itp,jtp) = y(ii)   !!!
+          !thphprime(2,itp,jtp) = z(jj)   !!!
 !
 !if (iproc_world==0.and.size(thphprime,3)==41) &
-!  print'(4(f7.4,1x),4(i2,1x))', y(i), z(j), thphprime(:,itp,jtp), i,j,itp,jtp
+!  print'(4(f7.4,1x),4(i2,1x))', y(ii), z(jj), thphprime(:,itp,jtp), i,j,itp,jtp
           if (ishift/=0) ishift=ishift+ith_shift
         enddo
         if (jshift/=0) jshift=jshift+iph_shift
@@ -4561,38 +4602,193 @@ module General
 
     endsubroutine yy_transform_strip_other
 !***********************************************************************
-    subroutine copy_with_shift(i1, i2, j1, j2, source, dest, ishift_, jshift_)
+    subroutine copy_kinked_strip_z(len_cut,jstart_,source,dest,j,shift,leftright,ladd_)
+
+      use Cdata, only: iproc, iproc_world
+      use Cdata, only: lyang,lroot
+
+      real, dimension(:,:,:,:), intent(IN)   :: source
+      real, dimension(:,:,:,:), intent(INOUT):: dest
+      integer,                  intent(IN)   :: len_cut,jstart_,j,shift
+      logical,                  intent(IN)   :: leftright
+      logical, optional,        intent(IN)   :: ladd_
+
+      integer :: istart,iend,jstart,jend
+      logical :: ladd
+!return !!!
+      jstart=jstart_
+      jend=jstart+nghost-1
+      ladd=loptest(ladd_)
+
+      if (leftright) then   !upper and lower left
+        istart=1; iend=my-len_cut
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd)
+!if (lroot.and..not.lyang) print*, 'jstart:jend=', jstart,jend
+        if (ladd) then
+          dest(:,my-len_cut+1:my,jstart:jend,j) = dest  (:,my-len_cut+1:my,jstart:jend,j) &
+                                                 +source(:,my-len_cut+1:my,1:nghost,j)
+        else
+          dest(:,my-len_cut+1:my,jstart:jend,j) = source(:,my-len_cut+1:my,1:nghost,j)
+        endif
+!if (notanumber(source(:,my-len_cut+1:my,1:nghost,j))) print*, 'source(:,my-len_cut+1:my,1:nghost,j): iproc,j=', iproc, iproc_world, j
+      else                  !upper and lower right
+        istart=len_cut+1; iend=my
+!if (.not.lyang.and.j==4) print*, 'iproc,istart:iend,jstart:jend=', iproc,istart,iend,jstart,jend
+!if (.not.lyang.and.j==4) print*, 'max(dest(lnrho))=', maxval(abs(dest(:,1:len_cut,jstart:jend,j)))
+        if (ladd) then
+          dest(:,:len_cut,jstart:jend,j) = dest  (:,:len_cut,jstart:jend,j) &
+                                          +source(:,:len_cut,1:nghost,j)
+        else
+          dest(:,:len_cut,jstart:jend,j) = source(:,:len_cut,1:nghost,j)
+        endif
+!if (.not.lyang.and.j==4) print*, 'max(source(nrho))=', maxval(abs(source(:,1:len_cut,1:nghost,j)))
+if (notanumber(source(:,1:len_cut,1:nghost,j))) print*, 'source(:,1:len_cut,1:nghost,j): iproc,j=', iproc, iproc_world, j
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd)
+      endif
+
+    endsubroutine copy_kinked_strip_z
+!***********************************************************************
+    subroutine copy_kinked_strip_y(len_cut,istart_,source,dest,j,shift,leftright,ladd_)
+
+      use Cdata, only: iproc, iproc_world
+      use Cdata, only: lyang,lroot
+
+      real, dimension(:,:,:,:), intent(IN)   :: source
+      real, dimension(:,:,:,:), intent(INOUT):: dest
+      integer,                  intent(IN)   :: len_cut,istart_,j,shift
+      logical,                  intent(IN)   :: leftright
+      logical, optional,        intent(IN)   :: ladd_
+
+      integer :: istart,iend,jstart,jend
+      logical :: ladd
+!return !!!
+      istart=istart_
+      iend=istart+nghost-1
+      ladd=loptest(ladd_)
+      
+      if (leftright) then   !upper and lower left
+        jstart=1; jend=mz-len_cut
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)
+!if (lroot.and..not.lyang) print*, 'istart:iend=', istart,iend
+        if (ladd) then
+          dest(:,istart:iend,mz-len_cut+1:mz,j) = dest  (:,istart:iend,mz-len_cut+1:mz,j) &
+                                                 +source(:,1:nghost,mz-len_cut+1:mz,j)
+        else
+          dest(:,istart:iend,mz-len_cut+1:mz,j) = source(:,1:nghost,mz-len_cut+1:mz,j)
+        endif
+!if (notanumber(source(:,1:nghost,mz-len_cut+1:mz,j))) print*, 'source(:,1:nghost,mz-len_cut+1:mz,j): iproc,j=', iproc, iproc_world, j
+      else                  !upper and lower right
+        jstart=len_cut+1; jend=mz
+!if (.not.lyang.and.j==4) print*, 'iproc,istart:iend,jstart:jend=', iproc,istart,iend,jstart,jend
+!if (.not.lyang.and.j==4) print*, 'max(dest(lnrho))=', maxval(abs(dest(:,istart:iend,1:len_cut,j)))
+        if (ladd) then
+          dest(:,istart:iend,1:len_cut,j) = dest  (:,istart:iend,1:len_cut,j) &
+                                           +source(:,1:nghost,1:len_cut,j)
+        else
+          dest(:,istart:iend,1:len_cut,j) = source(:,1:nghost,1:len_cut,j)
+        endif
+!if (.not.lyang.and.j==4) print*, 'max(source(nrho))=', maxval(abs(source(:,1:nghost,1:len_cut,j)))
+if (notanumber(source(:,1:nghost,1:len_cut,j))) print*, 'source(:,1:nghost,1:len_cut,j): iproc,j=', iproc, iproc_world,j
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)
+      endif
+
+    endsubroutine copy_kinked_strip_y
+!***********************************************************************
+    subroutine copy_with_shift(i1, i2, j1, j2, source, dest, ishift_, jshift_,ladd_)
 !
-! 20-sep-18/MR: copies into slanted strip
+! copies (optionally cumulatively) into slanted strip
 !
-      real, dimension(:,:) :: source, dest
-      integer :: ishift_, jshift_
-      integer :: i1, i2, j1, j2, ishift, jshift, i, j, ii, jj
+! 20-sep-18/MR: coded
+!
+      use Cdata, only: lyang,lroot
+      use Cdata, only: iproc, iproc_world
+
+      real, dimension(:,:,:), intent(IN)   :: source
+      real, dimension(:,:,:), intent(INOUT):: dest
+      integer,                intent(INOUT):: i1, i2, j1, j2
+      integer,                intent(IN)   :: ishift_, jshift_
+      logical, optional,      intent(IN)   :: ladd_
+
+      integer :: ishift, jshift, i, j, ii, jj, id, jd, is, js
+      logical :: ladd
+!if (jshift_==0) return !!!
+!if (.not.lyang.and.lroot) print*, 'i1, i2, j1, j2, ishift_, jshift_=', i1, i2, j1, j2, ishift_, jshift_
+
+      ladd=loptest(ladd_)
 
       jshift=jshift_
+      if (ishift_/=0) then; is=1; else; is=i1; endif
+
       do i=i1,i2
         ishift=ishift_
+
+        if (jshift_/=0) then; js=1; else; js=j1; endif
+
         do j=j1,j2
 !
           ii=i+ishift
           jj=j+jshift
-
-!          if (ltransp) then
-!            jtp = i-ith1+1; itp = j-iph1+1
-!          else
-!            itp = i-ith1+1; jtp = j-iph1+1
-!          endif
-!
-          !thphprime(1,itp,jtp) = ii
-          !thphprime(2,itp,jtp) = jj
-          dest(ii,jj) = source(i,j)
+          if (ladd) then
+            dest(:,ii,jj) = dest(:,ii,jj) + source(:,is,js)
+          else
+            dest(:,ii,jj) = source(:,is,js)
+          endif
+if (jshift_/=0.and..not.lyang.and.lroot) write(110,*) 'ii,jj,is,js=', ii,jj,is, js
+if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, iproc_world, j
+          js=js+1
 !
           if (ishift/=0) ishift=ishift+ishift_
         enddo
+        is=is+1
         if (jshift/=0) jshift=jshift+jshift_
       enddo
+
+      if (ishift_/=0) then; id=i2-i1; i2=ii+ishift_; i1=i2-id; endif 
+      if (jshift_/=0) then; jd=j2-j1; j2=jj+jshift_; j1=j2-jd; endif 
 !
     endsubroutine copy_with_shift
+!***********************************************************************
+    subroutine reset_triangle(i1,i2,j1,j2,f)
+
+    use Cdata, only: lyang,lroot,lfirst,ldiagnos,iproc
+
+    integer,                intent(IN) :: i1,i2,j1,j2
+    real, dimension(:,:,:), intent(OUT):: f
+
+    integer :: istep, jstep, i, j
+
+      istep = sign(1,i2-i1); jstep = sign(1,j2-j1)
+
+      do i=i1,i2,istep
+        do j=j1,j2,jstep
+          if ( jstep*(j-j2)+istep*(i-i1) <= 0 ) then
+            f(:,i,j)=0.
+          endif
+        enddo
+      enddo
+
+    endsubroutine reset_triangle
+!***********************************************************************
+    subroutine reset_triangle_inds(i1,i2,j1,j2,inds_arr)
+
+    use Cdata, only: lyang,lroot,lfirst,ldiagnos,iproc
+
+    integer,                 intent(IN) :: i1,i2,j1,j2
+    integer, dimension(:,:), intent(OUT):: inds_arr
+
+    integer :: istep, jstep, i, j
+
+      istep = sign(1,i2-i1); jstep = sign(1,j2-j1)
+
+      do i=i1,i2,istep
+        do j=j1,j2,jstep
+          if ( jstep*(j-j2)+istep*(i-i1) <= 0 ) then
+            inds_arr(i,j)=0
+          endif
+        enddo
+      enddo
+
+    endsubroutine reset_triangle_inds
 !***********************************************************************
     subroutine transform_thph_yy( vec, powers, transformed, theta, phi )
 !
@@ -4647,7 +4843,7 @@ module General
 
     endsubroutine transform_thph_yy
 !***********************************************************************
-    subroutine transform_thph_yy_other( vec, vec_transformed )
+    subroutine transform_thph_yy_other( vec,indthl,indthu,indphl,indphu,transformed )
 !
 !  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
@@ -4660,15 +4856,17 @@ module General
       use Cdata, only: costh, sinth, cosph, sinph
 
       real, dimension(:,:,:,:), intent(IN) :: vec
-      real, dimension(:,:,:,:), intent(OUT):: vec_transformed
+      integer,                  intent(IN) :: indthl,indthu,indphl,indphu
+      real, dimension(:,:,:,:), intent(OUT):: transformed
 
-      integer :: i,j,ig,jg
+      integer :: ig,jg
       real :: sisisq,sinth1,a,b
+      
+      transformed(:,:,:,1)=vec(:,indthl:indthu,indphl:indphu,1)
 
-      do i=1,size(vec,3)
-        do j=1,size(vec,2)
+      do ig=indphl,indphu
+        do jg=indthl,indthu
 
-          ig=i+nghost; jg=j+nghost
           sisisq=sqrt(1.-(sinth(jg)*sinph(ig))**2)
           if (sisisq==0.) then                     ! i.e. at pole of other grid -> theta and phi components indefined
             a=0.; b=0.
@@ -4677,8 +4875,8 @@ module General
             a=cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
           endif
 
-          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) + a*vec(:,j,i,2)
-          vec_transformed(:,j,i,2) =-a*vec(:,j,i,1) + b*vec(:,j,i,2)
+          transformed(:,jg-indthl+1,ig-indphl+1,2) = b*vec(:,jg,ig,2) + a*vec(:,jg,ig,3)
+          transformed(:,jg-indthl+1,ig-indphl+1,3) =-a*vec(:,jg,ig,2) + b*vec(:,jg,ig,3)
 
         enddo
       enddo
