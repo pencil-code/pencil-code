@@ -304,7 +304,7 @@ module Shear
 !
       if (.not. lshearadvection_as_shift) then
         do j = 1, nvar
-          ! bfield and testfield modules may handle their own shearing.
+          ! bfield and testflow modules may handle their own shearing.
           if (lbfield .and. (j >= ibx) .and. (j <= ibz)) cycle
           if (ltestflow .and. (j >= iuutest) .and. (j <= iuutest+ntestflow-1)) cycle
           call der(f,j,dfdy,2)
@@ -366,7 +366,7 @@ module Shear
         endif
       endif
 !
-!  Meanfield stretching term.
+!  Mean magnetic field stretching term.
 !  Loop through all the dax/dt equations and add -S*ay contribution.
 !
       if (iam/=0) then
