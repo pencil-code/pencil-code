@@ -368,10 +368,12 @@ module HDF5_IO
       call fatal_error ('index_get', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(ivar)
       call keep_compiler_quiet(particle)
+
+      index_get=' '
 !
     endfunction index_get
 !***********************************************************************
-    subroutine index_reset()
+    subroutine index_reset
 !
 ! 14-Oct-2018/PABourdin: coded
 !
