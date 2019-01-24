@@ -18,7 +18,7 @@ COMPILE_OPT IDL2,HIDDEN
   for iv=0L,n_elements(tags)-1 do begin
     res=execute("pc_variable_stats,object." + tags[iv] + $
                 ",varname=tags[iv],TRIM=TRIM,NOVECTORS=NOVECTORS," + $
-                  "dim=dim,NOHEADER=donefirst,YINYANG=yinyang")
+                "dim=dim,NOHEADER=donefirst,YINYANG=yinyang")
     donefirst=1
   endfor
 ;
