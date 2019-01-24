@@ -967,7 +967,7 @@ module Energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
-      use Slices_methods, only: assign_slices_scal, process_slices, exp2d
+      use Slices_methods, only: assign_slices_scal, process_slices, exp2d, log2d
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -975,15 +975,15 @@ module Energy
 !  Loop over slices
 !
       if (trim(slices%name)=='TT'.or.trim(slices%name)=='lnTT') then 
-
-        call assign_slices_scal(slices,f,ilnTT)
 !
 !  Temperature.
 !
-        if (.not. ltemperature_nolog) then
-          if (trim(slices%name)=='TT') call process_slices(slices,exp2d)
+        call assign_slices_scal(slices,f,ilnTT)     ! index ilnTT is always valid
+
+        if (ltemperature_nolog) then
+          if (trim(slices%name)=='lnTT') call process_slices(slices,log2d)
         else
-          call process_slices(slices,1.)
+          if (trim(slices%name)=='TT') call process_slices(slices,exp2d)
         endif 
 !
       endif
