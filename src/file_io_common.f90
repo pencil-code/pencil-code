@@ -203,7 +203,7 @@ module File_io
 !
     endfunction file_size
 !***********************************************************************
-    function count_lines(file,ignore_comments)
+    function count_lines(file,ignore_comments,lbinary)
 !
 !  Determines the number of lines in a file.
 !
@@ -214,26 +214,37 @@ module File_io
 !  23-mar-10/PABourdin: implemented
 !  26-aug-13/MR: optional parameter ignore_comments added
 !  28-May-2015/PABourdin: reworked
+!   1-Dec-2017/MR: option for binary files added
 !
       use Cdata, only: comment_char
       use General, only: loptest, operator (.in.)
 !
       integer :: count_lines
       character (len=*), intent(in) :: file
-      logical, optional, intent(in) :: ignore_comments
+      logical, optional, intent(in) :: ignore_comments, lbinary
 !
-      integer :: ierr
+      integer :: ierr, idum
       integer, parameter :: unit = 1
       character :: ch
+      logical :: lbin
 !
       count_lines = -1
       if (.not. file_exists(file)) return
 !
-      open (unit, file=file, status='old', iostat=ierr)
+      lbin=loptest(lbinary)
+      if (lbin) then
+        open (unit, file=file, status='old', iostat=ierr, form='unformatted')
+      else
+        open (unit, file=file, status='old', iostat=ierr)
+      endif
       if (ierr /= 0) return
       count_lines = 0
       do while (ierr == 0)
-        read (unit,'(a)',iostat=ierr) ch
+        if (lbin) then
+          read (unit,iostat=ierr) idum
+        else
+          read (unit,'(a)',iostat=ierr) ch
+        endif
         if (ierr == 0) then
           if (loptest(ignore_comments) .and. (ch .in. (/ '!', comment_char /))) cycle
           count_lines = count_lines + 1
@@ -360,15 +371,16 @@ module File_io
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       call find_namelist (trim(name)//trim(type)//trim(suffix),found)
 !
-      if (.not. found) then
-        if (.not. lparam_nml) lnamelist_error = .true.
-        return
-      endif
-!
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
 !
       if (ierr /= 0) then
+      
+        if (.not.found) then
+          if (.not. lparam_nml) lnamelist_error = .true.
+          return
+        endif
+!
         lnamelist_error = .true.
         if (lroot) then
           if (ierr == -1) then
