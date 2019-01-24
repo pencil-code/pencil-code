@@ -151,8 +151,8 @@ module Slices_methods
 !  (phi component is saved in transformed for use in next call.
 !
           if (slices%index==2) then
-            if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
-            call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,ind+1:ind+2),transformed)
+            if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,3))
+            call transform_thph_yy_other(f(ix_loc:ix_loc,:,:,ind+1:ind+2),m1,m2,n1,n2,transformed)
           endif
 !
 !  theta component is used immediately, phi component with next call.

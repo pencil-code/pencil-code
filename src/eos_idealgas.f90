@@ -2410,7 +2410,7 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)            ! here rho_xy=log(rho)
+        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
         cs2_xy=gamma_m1*(lnrho_xy-lnrho0)+cv1*f(:,:,n1,iss)
         if (lreference_state) &
           cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*spread(reference_state(:,iref_s),2,my)
