@@ -170,24 +170,6 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine register_particles_special(npvar)
-!
-!  Set up indices for particle variables in special modules.
-!
-!  4-jan-14/tony: coded
-!
-      integer :: npvar
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-      call keep_compiler_quiet(npvar)
-!
-!
-!!      iqp=npvar+1
-!!      npvar=npvar+1
-!
-    endsubroutine register_particles_special
-!***********************************************************************
     subroutine initialize_special(f)
 !
 !  Called after reading parameters, but before the time loop.
@@ -208,18 +190,6 @@ module Special
       endif
 !
     endsubroutine initialize_special
-!***********************************************************************
-    subroutine finalize_special(f)
-!
-!  Called right before exiting.
-!
-!  14-aug-2011/Bourdin.KIS: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine finalize_special
 !***********************************************************************
     subroutine init_special(f)
 !
@@ -440,13 +410,8 @@ module Special
 !  Contributions to timestep from bb equation
       dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
 !
-!  Additions to evolution of uu
-!
-      if (lhydro) then
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)
-      endif  
-!
 !  Additions to the test-field equations
+!
       if (ltestfield) then
         aatest=f(l1:l2,m,n,iaxtest:iaztest)
         call gij(f,iaxtest,aijtest,1)
@@ -550,7 +515,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -672,279 +637,14 @@ module Special
 !
     endsubroutine special_after_boundary
 !***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  momentum equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  continuity equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_dustdensity(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  continuity equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_dustdensity
-!***********************************************************************
-    subroutine special_calc_energy(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  energy equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_energy
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  induction equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!***********************************************************************
-    subroutine special_calc_pscalar(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  passive scalar equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  15-jun-09/anders: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_pscalar
-!***********************************************************************
-    subroutine special_particles_bfre_bdary(f,fp,ineargrid)
-!
-!  Called before the loop, in case some particle value is needed
-!  for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (:,:), intent(in) :: fp
-      integer, dimension(:,:) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine special_particles_bfre_bdary
-!***********************************************************************
-    subroutine special_calc_particles(f,fp,ineargrid)
-!
-!  Called before the loop, in case some particle value is needed
-!  for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (:,:), intent(in) :: fp
-      integer, dimension(:,:) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine special_calc_particles
-!***********************************************************************
-    subroutine special_calc_chemistry(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  induction equation.
-!
-!
-!  15-sep-10/natalia: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_chemistry
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!  Possibility to modify the f array before the boundaries are
-!  communicated.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!  Some precalculated pencils of data are passed in for efficiency,
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(in) :: bc
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
-!
-    endsubroutine special_boundconds
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_,llast)
-!
-!  Possibility to modify the f and df after df is updated.
-!  Used for the Fargo shift, for instance.
-!
-!  27-nov-08/wlad: coded
-!
-      logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dt_)
-      call keep_compiler_quiet(llast)
-!
-    endsubroutine  special_after_timestep
-!***********************************************************************
-    subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
-!
-!  Possibility to modify the f and df after df is updated.
-!  Used for the Fargo shift, for instance.
-!
-!  27-nov-08/wlad: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(ndustspec) :: dsize,init_distr,init_distr2
-      real :: Ntot
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(dsize,init_distr,init_distr2)
-      call keep_compiler_quiet(Ntot)
-!
-    endsubroutine  set_init_parameters
-!***********************************************************************
-  subroutine initialize_mult_special
-          
-  endsubroutine initialize_mult_special
-
-!***********************************************************************
-  subroutine finalize_mult_special
-        
-
-  endsubroutine finalize_mult_special
+!********************************************************************
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING        *************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include '../special_dummies.inc'
 !*********************************************************************** 
 endmodule Special
