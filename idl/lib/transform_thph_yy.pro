@@ -1,7 +1,7 @@
     function transform_thph_yy, y, z, arr
 ;
-;  Transforms theta and phi components of a vector arr defined with the Yang grid basis
-;  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+;  Transforms theta and phi components of a vector arr defined with the Yang(Yin) grid basis
+;  to the Yin(Yang) grid basis using theta and phi grid coordinates y and z of the Yang(Yin) grid.
 ;
       result=arr
 

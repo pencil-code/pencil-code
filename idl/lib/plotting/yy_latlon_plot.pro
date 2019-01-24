@@ -1,8 +1,8 @@
-   pro yy_latlon_plot, v, quan, ir, lat=lat, lon=lon, interface=interface, _extra=extra
+   pro yy_latlon_plot, v, quan, ir, colat=colat, lat=lat, lon=lon, interface=interface, oplot=oplot, _extra=extra
 ;
 ;  For Yin-Yang grids, plots quantity quan (string of the form <name>_[xyz] for vectors or <name> for scalars, 
 ;  with <name> a structure element of the output of pc_read_var, v)
-;  along a parallel (lat present) or a meridian (lon present) on sphere with index ir. If both lat and lon are defined, lon is ignored.
+;  along a parallel (colat/lat present) or a meridian (lon present) on sphere with index ir. If both lat and lon are defined, lon is ignored.
 ;  'rho' can be used for quan even if v contains merely lnrho.
 ;   _extra parameters are handed over to plot.
 ;
@@ -49,37 +49,47 @@
       
       if strmid(quan_,0,1) eq strmid(quan_,1,1) then quan_=strmid(quan_,1)
 
-      llat=is_defined(lat) 
-      if llat then begin
-
-        if (lat le 0) or (lat ge !pi) then begin
-          print, 'lat <= 0 or lat >= Pi'
-          return
-        endif
+      lcolat=is_defined(colat) or is_defined(lat) 
+      if lcolat then begin
+        if is_defined(colat) then begin
+          if (colat lt 0) or (colat ge 180) then begin
+            print, 'Error: colatitude < 0 or >= 180!!!'
+            return
+          endif
+          colat *=!dtor
+        endif else begin
+          if is_defined(lat) then begin
+            if (lat lt -90) or (lat ge 90) then begin
+              print, 'Error: colatitude < -90 or >= +90!!!'
+              return
+            endif
+            colat=!pi/2-lat*!dtor
+          endif
+        endelse
 
         zintu=reverse(v.z[n1]-dz*(indgen(d.nz/6-1)+1))
         zinto=v.z[n2]+dz*(indgen(d.nz/6-1)+1)
         xplt=[zintu,v.z[n1:n2],zinto]
 
-        ilat=(where(v.y[m1:m2] gt lat))[0]
+        icolat=(where(v.y[m1:m2] gt colat))[0]
 
-        if ilat le 0 then begin
+        if icolat le 0 then begin
           cmd1='yplt=reform(yindat)'
           yout=xplt
         endif else begin
-          if abs(v.y[m1+1+ilat]-lat) > abs(v.y[m1+ilat]-lat) then ilat-=1
-          cmd1='yplt=[(reform(yindat))[0:d.nz/6-2],reform('+quanv+'[ir_full,ilat,n1:n2'+comp+',0]'+cbrack+'),(reform(yindat))[d.nz/6-1:*]]'
+          if abs(v.y[m1+1+icolat]-colat) > abs(v.y[m1+icolat]-colat) then icolat-=1
+          cmd1='yplt=[(reform(yindat))[0:d.nz/6-2],reform('+quanv+'[ir_full,icolat,n1:n2'+comp+',0]'+cbrack+'),(reform(yindat))[d.nz/6-1:*]]'
           yout=[zintu,zinto]
         endelse
-        cmd='yindat=griddata(reform(v.yz(0,*)),reform(v.yz(1,*)),reform('+quanv+'_merge[ir,*'+comp+'])'+cbrack+',xout=[lat],yout=yout,triangles=v.triangles,/linear,/grid)'
+        cmd='yindat=griddata(reform(v.yz(0,*)),reform(v.yz(1,*)),reform('+quanv+'_merge[ir,*'+comp+'])'+cbrack+',xout=[colat],yout=yout,triangles=v.triangles,/linear,/grid)'
 
       endif else if is_defined(lon) then begin
 
         if lon lt 0 then lon+=2*!pi $
         else if lon gt 2*!pi then lon = lon mod 2*!pi
 
-        yintu=reverse(v.y[m1]-dy*(indgen(d.ny/2-1)+1))
-        yinto=v.y[m2]+dy*(indgen(d.ny/2-1)+1)
+        yintu=reverse(v.y[m1]-dy*(indgen(d.ny/2-2)+1))
+        yinto=v.y[m2]+dy*(indgen(d.ny/2-2)+1)
         xplt=[yintu,v.y[m1:m2],yinto]
 
         ilon=(where(v.z[n1:n2] gt lon))[0]
@@ -89,10 +99,12 @@
           xout=xplt
         endif else begin
           if abs(v.z[n1+1+ilon]-lon) > abs(v.z[n1+ilon]-lon) then ilon-=1
-          cmd1='yplt=[(reform(yindat))[0:d.ny/2-2],reform('+quanv+'[ir_full,m1:m2,ilon'+comp+',0])'+cbrack+',(reform(yindat))[d.ny/2-1:*]]'
+          cmd1='yplt=[(reform(yindat))[0:d.ny/2-2],reform('+quanv+'[ir_full,m1:m2,ilon'+comp+',0])' $
+               +cbrack+',(reform(yindat))[d.ny/2-1:*]]'
           xout=[yintu,yinto]
         endelse
-        cmd='yindat=griddata(reform(v.yz(0,*)),reform(v.yz(1,*)),reform('+quanv+'_merge[ir,*'+comp+'])'+cbrack+',yout=[lon],xout=xout,triangles=v.triangles,/linear,/grid)'
+        cmd='yindat=griddata(reform(v.yz(0,*)),reform(v.yz(1,*)),reform('+quanv+'_merge[ir,*'+comp+'])' $
+            +cbrack+',yout=[lon],xout=xout,triangles=v.triangles,/linear,/grid)'
 
       endif else begin
         print, 'No interpolation specified.'
@@ -114,24 +126,36 @@
 
       if ok and ok1 then begin
 
-        if n_elements(extra) gt 0 then begin
-          if not has_tag(extra,'title') then $
-            title=quan_+'!D'+qcomp+'!N at'+ $
-             (llat ? ' latitude='+strtrim(string(lat),2) : ' longitude='+strtrim(string(lon),2))$
-          else $
-            title=extra.title
+        if keyword_set(oplot) then $
+          oplot, xplt/!dtor, yplt, _extra=extra $
+        else begin
+
+          title=quan_+'!D'+qcomp+'!N at'+ $
+                (lcolat ? (is_defined(lat) ? ' latitude='+strtrim(string(lat),2) : ' colatitude=' $
+                +strtrim(string(colat/!dtor),2)) : ' longitude='+strtrim(string(lon/!dtor),2)) $
+                +'!Uo!N'
+          xtitle=(lcolat ? 'longitude' : 'colatitude') + ' [!Uo!N]'
+          yrange=[min(yplt),max(yplt)]
+
+          if n_elements(extra) gt 0 then begin
+            if has_tag(extra,'title') then $
+              title=extra.title
+              
+            if has_tag(extra,'xtitle') then $
+              xtitle=extra.xtitle 
             
-          if not has_tag(extra,'xtitle') then $
-            xtitle=(llat ? 'longitude' : 'latitude') $
-          else $
-            xtitle=extra.xtitle 
-        endif
-        yrange=[min(yplt),max(yplt)]
-        plot, xplt, yplt, title=title, xtitle=xtitle, _extra=extra
+            if has_tag(extra,'yrange') then $
+              yrange=extra.yrange 
+          endif
+
+          plot, xplt/!dtor, yplt, title=title, xtitle=xtitle, yrange=yrange, _extra=extra
+
+        endelse
+
         if keyword_set(interface) then begin
-          plots, [1./4,1./4]*!pi, !y.crange, linest=1
-          if llat then $
-            plots, [7./4,7./4]*!pi, !y.crange, linest=1 $
+          plots, [1./4,1./4]*!pi/!dtor, !y.crange, linest=1
+          if lcolat then $
+            plots, [7./4,7./4]*!pi/!dtor, !y.crange, linest=1 $
           else $
             plots, [3./4,3./4]*!pi, !y.crange, linest=1
         endif
