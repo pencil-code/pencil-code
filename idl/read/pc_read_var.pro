@@ -102,6 +102,7 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords,coord_system
+  common corn, llcorn, lucorn, ulcorn, uucorn
 ;
 ; Default settings.
 ;
@@ -209,8 +210,19 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; We know from param whether we have a Yin-Yang grid.
 ;
   default, yinyang, 0
-  if tag_exists(param,'LYINYANG') then $
+  if tag_exists(param,'LYINYANG') then begin
+
+    default, cutoff_corners, 0
+    default, nycut, 0
+    default, nzcut, 0
+
     if (param.lyinyang) then yinyang=1
+    if yinyang then begin
+      if (param.lcutoff_corners) then cutoff_corners=1
+      nycut=param.nycut & nzcut=param.nzcut
+    endif
+
+  endif
 ;
   if yinyang then begin
     print, 'This is a Yin-Yang grid run. Data are retrieved both in separate and in merged arrays.'
@@ -682,6 +694,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
               + varcontent[iv].idlvarloc $
               +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"
         endelse
+
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
 ;
@@ -727,7 +740,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Check variables one at a time and skip the ones that give errors.
 ; This way the program can still return the other variables, instead
-; of dying with an error. One can turn off this option off to decrease
+; of dying with an error. One can turn this option off to decrease
 ; execution time.
 ;
   if (validate_variables) then begin
@@ -768,7 +781,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Merge Yang and Yin grids; yz[2,*] is merged coordinate array; inds is index vector for Yang points outside Yin into its *1D* coordinate vectors
 ;
     merge_yin_yang, dim.m1, dim.m2, dim.n1, dim.n2, y, z, dy, dz, yz, inds, yghosts=yghosts, zghosts=zghosts
-;
+
     if keyword_set(sphere) then begin    ; not operational
       ;lon=reform(yz[1,*]) & lat=reform(yz[0,*]) & fval=indgen((size(lon))[1])
       ;triangulate, lon, lat, triangles, sphere=sphere_data, fval=fval
@@ -777,8 +790,64 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     endif else $
       triangulate, yz[0,*], yz[1,*], triangles
 ;
-;  Merge data. Variables have names "*_merge"
+    if cutoff_corners then begin
+; 
+;  Fill the cutaway corners of both grids with interpolated data from other grid.
 ;
+      ncornup_y=procdim.my-nycut+dim.nghosty-1 & ncornup_z=procdim.mz-nzcut+dim.nghostz-1
+      ncornlo_y=my-(procdim.my-nycut)-dim.nghosty & ncornlo_z=mz-(procdim.mz-nzcut)-dim.nghostz
+      scaly=(my-1)/(y[my-1]-y[0]) & scalz=(mz-1)/(z[mz-1]-z[0])
+;
+;  Determine first transformed coordinates of the corners.
+;
+      yin2yang_coors_tri, 0,ncornup_y,0,ncornup_z, y, z, llcorn
+      yz_llcorn=llcorn
+      yz_llcorn[0,*] = (llcorn[0,*]-y[0])*scaly & yz_llcorn[1,*] = (llcorn[1,*]-z[0])*scalz 
+
+      yin2yang_coors_tri, my-1,ncornlo_y,0,ncornup_z, y, z, ulcorn
+      yz_ulcorn=ulcorn
+      yz_ulcorn[0,*] = (ulcorn[0,*]-y[0])*scaly & yz_ulcorn[1,*] = (ulcorn[1,*]-z[0])*scalz 
+
+      yin2yang_coors_tri, 0,ncornup_y,mz-1,ncornlo_z, y, z, lucorn
+      yz_lucorn=lucorn
+      yz_lucorn[0,*] = (lucorn[0,*]-y[0])*scaly & yz_lucorn[1,*] = (lucorn[1,*]-z[0])*scalz 
+
+      yin2yang_coors_tri, my-1,ncornlo_y,mz-1,ncornlo_z, y, z, uucorn
+      yz_uucorn=uucorn
+      yz_uucorn[0,*] = (uucorn[0,*]-y[0])*scaly & yz_uucorn[1,*] = (uucorn[1,*]-z[0])*scalz 
+;
+      values=fltarr((size(yz_llcorn))[2])
+
+      for i=0,n_elements(tags)-1 do begin
+
+        idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
+        inds_other='[*,*,*'+(isvec ? ',icomp' : '')+',1-iyy]' & inds_val=(isvec ? '[*,*,icomp]' : '')
+        if isvec then values=fltarr(dim.mx,n_elements(yz_llcorn[0,*]),3)*one 
+        ncomp=(isvec ? 2 : 0)
+;
+;  Interpolate and fill in both grids.
+;
+        for iyy=0,1 do begin
+          for icomp=0,ncomp do $
+            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_llcorn[0,*], yz_llcorn[1,*] )')
+          idum=execute( 'set_triangle, 0,ncornup_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, llcorn' ) 
+
+          for icomp=0,ncomp do $
+            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_ulcorn[0,*], yz_ulcorn[1,*] )')
+          idum=execute( 'set_triangle, my-1,ncornlo_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, ulcorn' ) 
+
+          for icomp=0,ncomp do $
+            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_lucorn[0,*], yz_lucorn[1,*] )')
+          idum=execute( 'set_triangle, 0,ncornup_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, lucorn' ) 
+
+          for icomp=0,ncomp do $
+            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_uucorn[0,*], yz_uucorn[1,*] )')
+          idum=execute( 'set_triangle, my-1,ncornlo_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, uucorn' )
+
+        endfor
+      endfor
+    endif
+
     for iyy=0,1 do $
       for i=0,n_elements(tags)-1 do begin
 ;
@@ -795,14 +864,18 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
             idum=execute( tags[i]+'='+tags[i]+'_tmp' )
             idum=execute('undefine,'+tags[i]+'_tmp' )
           endelse
+
         endif
       endfor
+;
+;  Merge data. Variables have names "*_merge"
 ;
     for i=0,n_elements(tags)-1 do begin
 
       if (total(variables[i] eq varcontent.idlvar) eq 0) then variables[i] = tags[i]
 
       idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
+
       if isvec then begin
 ;
 ;  Transformation of theta and phi components in Yang grid.
