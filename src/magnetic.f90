@@ -294,7 +294,8 @@ module Magnetic
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   logical :: lpropagate_borderaa=.true.
-  logical :: lremove_meanaz=.false., lremove_meanaxy=.false.
+  logical :: lremove_meanaz=.false., lremove_meanax=.false., &
+             lremove_meanaxy=.false.,lremove_meanaxz=.false.
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
   logical :: lboris_correction=.false.
@@ -346,7 +347,8 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       lax_ext_global,lay_ext_global,laz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
-      lpropagate_borderaa, lremove_meanaz, lremove_meanaxy, eta_jump_shock, eta_zshock, &
+      lpropagate_borderaa, lremove_meanaz, lremove_meanax, lremove_meanaxy, lremove_meanaxz, &
+      eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
@@ -999,7 +1001,8 @@ module Magnetic
 !
 !  Shear of B_ext,x is not implemented.
 !
-      if (lshear .and. B_ext(1) /= 0.0) call fatal_error('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
+      if (lshear .and. B_ext(1) /= 0.0) &
+        call fatal_error('initialize_magnetic', 'B_ext,x /= 0 with shear is not implemented.')
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain
@@ -5638,13 +5641,33 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real :: fact
-      integer :: n,j,ml,nl
+      integer :: l,n,j,ml,nl
       real, dimension(nz,3) :: gaamz,d2aamz
       real, dimension(:,:,:), allocatable :: buffer
       real, dimension(nx) :: tmp
+      real, dimension(mx,3) :: aamx
+      real, dimension(mx,mz) :: aamxz
 !
 !  Compute mean field (xy verage) for each component. Include the ghost zones,
 !  because they have just been set.
+!
+      if (lremove_meanax) then
+
+        fact=1./nyzgrid
+        do j=1,3
+          do l=1,mx
+            aamx(l,j)=fact*sum(f(l,m1:m2,n1:n2,iax+j-1))
+          enddo
+        enddo
+        call finalize_aver(nprocyz,23,aamx)
+!
+        do j=1,3
+          do l=1,mx
+            f(l,:,:,iax+j-1) = f(l,:,:,iax+j-1)-aamx(l,j)
+          enddo
+        enddo
+
+      endif
 !
       if (lcalc_aameanz.or.lremove_meanaz) then
 !
@@ -5682,6 +5705,23 @@ module Magnetic
           jjmz(:,2)=-d2aamz(:,2)
           jjmz(:,3)=0.
         endif
+      endif
+!
+!  Remove mean field (y average).
+!
+      if (lremove_meanaxz) then
+!
+        fact=1./nygrid
+        do j=1,3
+
+          aamxz=fact*sum(f(:,m1:m2,:,iaa+j-1),2)  ! requires equidistant grid
+          call finalize_aver(nprocy,2,aamxz)
+!
+          do m=1,my
+            f(:,m,:,iaa+j-1) = f(:,m,:,iaa+j-1)-aamxz
+          enddo
+
+        enddo
       endif
 !
 !  Remove mean field (z average).

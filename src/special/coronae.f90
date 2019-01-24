@@ -201,8 +201,7 @@ module Special
 !
 !  transform density_min from SI to code units and lnrho
 !
-
-      if (ldensity_floor) lnrho_min=alog(real(density_min)/unit_density)
+      if (ldensity_floor) lnrho_min=alog(real(density_min/unit_density))
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then

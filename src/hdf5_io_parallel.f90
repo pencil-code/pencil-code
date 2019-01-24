@@ -156,6 +156,8 @@ module HDF5_IO
 !***********************************************************************
     subroutine file_open_hdf5(file, truncate, global, read_only, write)
 !
+      use General, only: loptest
+!
       character (len=*), intent(inout) :: file
       logical, optional, intent(in) :: truncate
       logical, optional, intent(in) :: global
@@ -167,19 +169,15 @@ module HDF5_IO
 !
       if (lcollective .or. lwrite) call file_close_hdf5 ()
 !
-      lread_only = .false.
-      if (present (read_only)) lread_only = read_only
+      lread_only = loptest(read_only)
       h5_read_mode = H5F_ACC_RDWR_F
       if (lread_only) h5_read_mode = H5F_ACC_RDONLY_F
 !
-      ltrunc = .true.
-      if (present (truncate)) ltrunc = truncate
+      ltrunc = loptest(truncate,.true.)
       if (lread_only) ltrunc = .false.
 !
-      lcollective = .true.
-      if (present (global)) lcollective = global
-      lwrite = lroot
-      if (present (write)) lwrite = write
+      lcollective = loptest(global,.true.)
+      lwrite = loptest(write,lroot)
 !
       pos = index (file, '.dat.h5')
       if (pos > 1) file = file(1:pos-1)//'.h5'
