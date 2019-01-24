@@ -416,17 +416,14 @@ pro pc_magic_var, variables, tags, $
       endelse
 ; Logarithm of temperature
     endif else if (variables[iv] eq 'lntt') then begin
-      if (lionization and not lionization_fixed) then begin
-        variables[iv]='lnTT[*,*,*,iyy]'
-      endif else begin
+      if not (lionization and not lionization_fixed) then $
         variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/lntt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
-      endelse
 ; Entropy ss
     endif else if (variables[iv] eq 'ss') then begin
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss[*,*,*,iyy]'
+        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure
     endif else if (variables[iv] eq 'pp') then begin
