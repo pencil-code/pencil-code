@@ -89,7 +89,7 @@ module Chemistry
   logical :: linit_temperature=.false., linit_density=.false.
   logical :: lreac_as_aux=.false.
 !
-  logical :: lflame_front=.false.
+  logical :: lflame_front=.false., lflame_front_2D=.false.
 !
 !  hydro-related parameters
 !
@@ -586,6 +586,7 @@ module Chemistry
       call put_shared_variable('lmech_simple',lmech_simple)
       call put_shared_variable('species_constants',species_constants)
       call put_shared_variable('imass',imass)
+      call put_shared_variable('lflame_front_2D',lflame_front_2D)
 !
    endif 
 !
@@ -681,6 +682,8 @@ module Chemistry
           endif
         case ('flame_front')
           call flame_front(f)
+        case ('flame_front_2D')
+          call flame_front_2D(f)
         case default
 !
 !  Catch unknown values
@@ -975,7 +978,7 @@ module Chemistry
         final_massfrac_CO2 = mCO2/mCO * init_CO
         final_massfrac_O2 = &
             1. - final_massfrac_CO2 - final_massfrac_H2O  &
-            - init_N2        
+            - init_N2
       endif
 !
       if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
@@ -1130,6 +1133,210 @@ module Chemistry
       enddo
 !
     endsubroutine flame_front
+!***********************************************************************
+    subroutine flame_front_2D(f)
+!
+!   Flame_front adjusted to 2D. Sets T, rho and species field but not u.
+!   U field is set in the ogrid module.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i, j,k
+!
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0., mCO=0.
+      real :: log_inlet_density, del, PP
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_CH4=0, i_CO2=0, i_CO=0, ichem_CH4=0, ichem_CO2=0, ichem_CO=0
+      real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
+          final_massfrac_H2O, final_massfrac_CO2, final_massfrac_CO
+      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4, init_CO
+      logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
+      logical :: lCH4=.false., lCO2=.false., lCO=.false.
+!
+      lflame_front_2D = .true.
+!
+      call air_field(f,PP)
+!
+      if (ltemperature_nolog) f(:,:,:,ilnTT) = log(f(:,:,:,ilnTT))
+!
+! Initialize some indexes
+!
+      call find_species_index('H2',i_H2,ichem_H2,lH2)
+      if (lH2) then
+        mH2 = species_constants(ichem_H2,imass)
+        init_H2 = initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2',i_O2,ichem_O2,lO2)
+      if (lO2) then
+        mO2 = species_constants(ichem_O2,imass)
+        init_O2 = initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2',i_N2,ichem_N2,lN2)
+      if (lN2) then
+        mN2 = species_constants(ichem_N2,imass)
+        init_N2 = initial_massfractions(ichem_N2)
+      else
+        init_N2 = 0
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O = species_constants(ichem_H2O,imass)
+        init_H2O = initial_massfractions(ichem_H2O)
+      endif
+      call find_species_index('CH4',i_CH4,ichem_CH4,lCH4)
+      if (lCH4) then
+        mCH4 = species_constants(ichem_CH4,imass)
+        init_CH4 = initial_massfractions(ichem_CH4)
+      endif
+      call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
+      if (lCO2) then
+        mCO2 = species_constants(ichem_CO2,imass)
+        init_CO2 = initial_massfractions(ichem_CO2)
+        final_massfrac_CO2 = init_CO2
+      else
+        init_CO2 = 0
+        final_massfrac_CO2 = init_CO2
+      endif
+      call find_species_index('CO',i_CO,ichem_CO,lCO)
+      if (lCO) then
+        mCO = species_constants(ichem_CO,imass)
+        init_CO = initial_massfractions(ichem_CO)
+      endif
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+! Warning: These formula are only correct for lean fuel/air mixtures. They
+!          must be modified under rich conditions to account for the excess
+!          of fuel.
+!
+      final_massfrac_O2 = 0.
+      if (lH2 .and. .not. lCH4) then
+        final_massfrac_H2O = mH2O/mH2 * init_H2
+        final_massfrac_O2 = 1. - final_massfrac_H2O- init_N2
+      elseif (lCH4) then
+        final_massfrac_CH4 = 0.
+        final_massfrac_H2O = 2.*mH2O/mCH4 * init_CH4
+        final_massfrac_CO2 = mCO2/mCH4 * init_CH4
+        final_massfrac_O2 = &
+            1. - final_massfrac_CO2 - final_massfrac_H2O  &
+            - init_N2
+      elseif (lCO .and. .not. lH2 .and. .not. lCH4) then
+        final_massfrac_H2O = init_H2O
+        final_massfrac_CO2 = mCO2/mCO * init_CO
+        final_massfrac_O2 = &
+            1. - final_massfrac_CO2 - final_massfrac_H2O  &
+            - init_N2
+      endif
+!
+      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
+      if (lroot) then
+        print*, '          init                      final'
+        if (lH2 .and. .not. lCH4) print*, 'H2 :', init_H2, 0.
+        if (lCH4) print*, 'CH4 :', init_CH4, 0.
+        if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
+        if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
+        if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
+        if (lCO .and. .not. lH2 .and. .not. lCH4)  print*, 'CO :', init_CO, 0.
+      endif
+!
+!  Initialize temperature and species
+!
+      do k = 1,my
+!
+!  Initialize temperature
+!
+          if (y(k) <= init_x1) f(:,k,:,ilnTT) = log(init_TT1)
+          if (y(k) >= init_x2) f(:,k,:,ilnTT) = log(init_TT2)
+          if (y(k) > init_x1 .and. y(k) < init_x2) &
+              f(:,k,:,ilnTT) = log((y(k)-init_x1)/(init_x2-init_x1) &
+              *(init_TT2-init_TT1)+init_TT1)
+!
+!  Initialize fuel
+!
+          if (y(k) > init_x1) then
+            if (lH2 .and. .not. lCH4) f(:,k,:,i_H2) = init_H2* &
+                (exp(f(:,k,:,ilnTT))-init_TT2)/(init_TT1-init_TT2)
+            if (lCH4) f(:,k,:,i_CH4) = init_CH4*(exp(f(:,k,:,ilnTT))-init_TT2) &
+                /(init_TT1-init_TT2)
+            if (lCO .and. .not. lH2 .and. .not. lCH4) then
+              f(:,k,:,i_CO) = init_CO*(exp(f(:,k,:,ilnTT))-init_TT2) &
+                /(init_TT1-init_TT2)
+            endif
+          endif
+!
+!  Initialize oxygen
+!
+          if (y(k) > init_x2) f(:,k,:,i_O2) = final_massfrac_O2
+          if (y(k) > init_x1 .and. y(k) <= init_x2) &
+              f(:,k,:,i_O2) = (y(k)-init_x1)/(init_x2-init_x1) &
+              *(final_massfrac_O2-init_O2)+init_O2
+      enddo
+!
+! Initialize products
+!
+        do k = 1,my
+          if (y(k) >= init_x1 .and. y(k) < init_x2) then
+            f(:,k,:,i_H2O) = (y(k)-init_x1)/(init_x2-init_x1) &
+                *final_massfrac_H2O
+            if (lCO .and. .not. lH2 .and. .not. lCH4) then
+              f(:,k,:,i_H2O) = final_massfrac_H2O
+            endif
+            if (lCO2) f(:,k,:,i_CO2) = (y(k)-init_x1)/(init_x2-init_x1) &
+                *final_massfrac_CO2
+          elseif (y(k) >= init_x2) then
+            if (lCO2) f(:,k,:,i_CO2) = final_massfrac_CO2
+            if (lH2O) f(:,k,:,i_H2O) = final_massfrac_H2O
+          endif
+        enddo
+!
+      if (unit_system == 'cgs') then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas = Rgas_unit_sys/unit_energy
+      endif
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1 = &
+          initial_massfractions(ichem_O2)/(mO2) &
+          +initial_massfractions(ichem_H2O)/(mH2O) &
+          +initial_massfractions(ichem_N2)/(mN2)
+      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
+          initial_massfractions(ichem_H2)/(mH2)
+      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+      if (lCO .and. .not. lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+init_CO/(mCO)
+      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
+      log_inlet_density = &
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+!  Initialize density
+!
+      call getmu_array(f,mu1_full)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+      f(:,:,:,iuy) = 0
+      f(:,:,:,iux) = 0
+!
+!  Check if we want nolog of density or nolog of temperature
+!
+      if (ldensity_nolog) &
+          f(l1:l2,m1:m2,n1:n2,irho) = exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ltemperature_nolog) &
+          f(:,:,:,iTT) = exp(f(:,:,:,ilnTT))
+!
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i = 1,mx
+        do j = 1,my
+          do k = 1,mz
+            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine flame_front_2D
 !***********************************************************************
     subroutine calc_for_chem_mixture(f)
 !
@@ -4857,7 +5064,7 @@ module Chemistry
       endif
 
       if (.not. reinitialize_chemistry) then
-      if (.not.lflame_front)  then
+      if (.not.lflame_front .or. .not.lflame_front_2D)  then
         if (ltemperature_nolog) then
           f(:,:,:,iTT)=TT
         else

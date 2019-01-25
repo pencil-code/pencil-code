@@ -51,7 +51,6 @@ module Solid_Cells
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
       lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid
 
-
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
       flow_dir_set, lset_flow_dir, interpolation_method, lcheck_interpolation, &
@@ -480,6 +479,7 @@ module Solid_Cells
 !
       if (lchemistry) then
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
+        call get_shared_variable('lflame_front_2D',lflame_front_2D)
         call initialize_chemistry_og(f_ogrid)
       endif
 !
@@ -582,18 +582,17 @@ module Solid_Cells
                   2*flow_r*orth_r*a2/rr2**2*wall_smoothing
                 f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
                   (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
-                if (ilnTT /= 0) then
+                if (ilnTT /= 0 .and. .not. lflame_front_2D) then
                   wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
                   f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
                     +cylinder_temp*(1-wall_smoothing_temp)
                   f(i,j,:,irho) = f(l2,m2,n2,irho) &
                     *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
-! TODO: what to set for chemistry?
-                if (lchemistry) then  
-                  do k = 1,nchemspec
-                    f(i,j,:,ichemspec(k)) = chemspec0(k)
-                  enddo
+                if (lchemistry .and. .not. lflame_front_2D) then
+                    do k = 1,nchemspec
+                      f(i,j,:,ichemspec(k)) = chemspec0(k)
+                    enddo
                 endif
               else
                 shift_orth = cyl*Lorth
@@ -612,12 +611,12 @@ module Solid_Cells
           else
 !  Velocities inside the solid objects are set to zero 
             f(i,j,:,iux:iuz)=0.
-            if (ilnTT /= 0) then
+            if (ilnTT /= 0 .and. .not. lflame_front_2D) then
               f(i,j,:,ilnTT) = cylinder_temp
               f(i,j,:,irho) = f(l2,m2,n2,irho) &
                 *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
-            if (lchemistry) then  
+            if (lchemistry .and. .not. lflame_front_2D) then
               do k = 1,nchemspec
                 f(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
@@ -696,6 +695,14 @@ module Solid_Cells
 !  Force no-slip condition on the cylinder surface
         f_ogrid(i,:,:,iux:iuy)=f_ogrid(i,:,:,iux:iuy)*wall_smoothing
       enddo
+!
+      if (lflame_front_2D) then
+        f_ogrid(:,:,:,irho) = f(l2,m2,n2,irho)
+        f_ogrid(:,:,:,iTT) = f(l2,m2,n2,iTT)
+        do k = 1,nchemspec
+          f_ogrid(:,:,:,ichemspec(k)) = f(l2,m2,n2,ichemspec(k))
+        enddo
+      endif
 !
 !  Write initial condition to disk.
 !
