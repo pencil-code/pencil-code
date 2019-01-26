@@ -82,8 +82,8 @@ module Radiation
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
-  real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.8
-  real :: scalefactor_cooling=1.0
+  real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.25, cdtrad_cgam=0.25
+  real :: scalefactor_cooling=1.0, scalefactor_radpressure=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: expo2_rho_opa=0.0, expo2_temp_opa=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
@@ -116,6 +116,7 @@ module Radiation
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false., lread_source_function=.false.
   logical :: lcutoff_opticallythin=.false.,lcutoff_zconst=.false.
+  logical :: lcdtrad_old=.true.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -161,13 +162,15 @@ module Radiation
       kx_Srad, ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
-      Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, &
-      cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, scalefactor_kappa, &
+      Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, lcdtrad_old, &
+      cdtrad, cdtrad_thin, cdtrad_thick, cdtrad_cgam, &
+      scalefactor_Srad, scalefactor_kappa, &
       angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
-      width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
+      width_temp_opa, ampl_Isurf, radius_Isurf, &
+      scalefactor_cooling, scalefactor_radpressure, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
       zclip_up, TT_bump, sigma_bump, ampl_bump
@@ -380,7 +383,9 @@ module Radiation
         open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
         write (1,*) 'arad_normal=',arad_normal
         write (1,*) 'arad=',arad
+        write (1,*) 'c_light=',c_light
         write (1,*) 'sigmaSB=',sigmaSB
+        write (1,*) 'kappa_es=',kappa_es
         close (1)
       endif
 !
@@ -1484,6 +1489,8 @@ module Radiation
       type (pencil_case) :: p
 !
       real, dimension (nx) :: cooling, kappa, dt1_rad, Qrad2
+      real, dimension (nx) :: cgam, ell, chi, dtrad_thick, dtrad_thin
+      real, dimension (nx) :: dt1rad_cgam
       integer :: l
 !
 !  Add radiative cooling, either from the intensity or in the diffusion
@@ -1519,7 +1526,7 @@ module Radiation
 !
 !  Time-step contribution from cooling.
 !
-        if (lfirst.and.ldt) then
+        !if (lfirst.and.ldt) then
 !
 !  Choose less stringent time-scale of optically thin or thick cooling.
 !  This is currently not correct in the non-gray case!
@@ -1530,20 +1537,32 @@ module Radiation
 !  In the optically thin regime: no constraint for z > z_cutoff.
 !
           kappa=f(l1:l2,m,n,ikapparho)*p%rho1
-          do l=1,nx
-            if (f(l1-1+l,m,n,ikapparho)**2>dxyz_2(l)) then
-              dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
-                  dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
-              if (z_cutoff/=impossible .and. cool_wid/=impossible) &
-              dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
-            else
-              dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
-              if (z_cutoff/=impossible .and. cool_wid/=impossible) &
-              dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
-            endif
-          enddo
+          if (lcdtrad_old) then
+            do l=1,nx
+              if (f(l1-1+l,m,n,ikapparho)**2>dxyz_2(l)) then
+                dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
+                    dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
+                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+              else
+                dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
+                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+              endif
+            enddo
+          else
+            cgam=16.*sigmaSB*p%TT**3*p%rho1*p%cp1
+            ell=1./f(l1:l2,m,n,ikapparho)
+            chi=cgam*ell/3.
+            dtrad_thick=cdtrad_thick/(dxyz_2*chi*dimensionality)
+            !dtrad_cgam=cdtrad_cgam/(sqrt(dxyz_2)*cgam)
+            dt1rad_cgam=sqrt(dxyz_2)*cgam/cdtrad_cgam
+            dtrad_thin=cdtrad_thin*ell/cgam
+            dt1_rad=1./(dtrad_thick+dtrad_thin)
+          endif
           dt1_max=max(dt1_max,dt1_rad)
-        endif
+          !dt1_max=max(dt1_max,dt1_rad,dt1rad_cgam)
+        !endif
       endif
       if (lfirst.and.ldt) then
         if (idiag_dtrad/=0) &
@@ -1589,7 +1608,7 @@ module Radiation
       if (lradpressure) then
         do j=1,3
           k=iKR_Frad+(j-1)
-          radpressure(:,j)=p%rho1*f(l1:l2,m,n,k)/c_light
+          radpressure(:,j)=scalefactor_radpressure*p%rho1*f(l1:l2,m,n,k)/c_light
         enddo
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
       endif
@@ -2188,8 +2207,11 @@ module Radiation
       if (lcooling) then
         if (ldt) then
           lpenc_requested(i_rho1)=.true.
-          lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_cp1)=.true.
           lpenc_requested(i_cv1)=.true.
+          lpenc_requested(i_cp)=.true.
+          lpenc_requested(i_cv)=.true.
+          lpenc_requested(i_TT)=.true.
         endif
         if (lrad_cool_diffus.or.lrad_pres_diffus) then
           lpenc_requested(i_glnrho)=.true.
