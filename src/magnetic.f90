@@ -1775,6 +1775,7 @@ module Magnetic
         case ('random_isotropic_shell')
           call random_isotropic_shell(f,iax,amplaa(j),z1_aa,z2_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
+        case ('gaussian-noise-z'); call gaunoise(amplaa(j),f,iaz,iaz)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)
         case ('gaussian-noise-zprof')
