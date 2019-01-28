@@ -4261,10 +4261,10 @@ module Special
       case ('bot')               ! bottom boundary
         print*, "bc_emf_z: ", topbot, " should be 'top'"
       case ('top')               ! top boundary
-        if (lborder_profiles) then
+        if (lborder_profiles .and. border_frac_z(2)/=0) then
           border_width=border_frac_z(2)*Lxyz(3)/2
           uborder=xyz1(3)-border_width
-          zeta=1-max(z(n1:n2)-uborder,0.0)/border_width
+          zeta=1.0-max(z(n1:n2)-uborder,0.0)/border_width
           border_prof_z_aa(n1:n2)=min(border_prof_z_aa(n1:n2),zeta**2*(3-2*zeta))
           do n=n1,n2
             if (abs(z(n)-uborder)*dz_1(n) .le. 0.5) iz_sl=n
