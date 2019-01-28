@@ -160,7 +160,7 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   logical, pointer :: lrelativistic_eos
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
-  logical :: lpress_equil_alt=.false.
+  logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: ladd_global_field=.false. 
@@ -224,7 +224,8 @@ module Magnetic
       RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
       initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
-      lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
+      lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, &
+      mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
@@ -2158,6 +2159,17 @@ module Magnetic
 !  Interface for user's own initial condition.
 !
       if (linitial_condition) call initial_condition_aa(f)
+!
+!  In 2-D with nz=1, setting Ax=Ay=0 makes sense, but shouldn't
+!  be compulsory, so allow for this possibility in 2-D.
+!
+      if (lset_AxAy_zero) then
+        if (nz==1) then
+          f(:,:,:,iax:iay)=0.0
+        else
+          call fatal_error("init_aa","lset_AxAy_zero=T only allowed with nz=1")
+        endif
+      endif
 !
 !  Allow for pressure equilibrium (for isothermal tube)
 !  assume that ghost zones have already been set.
