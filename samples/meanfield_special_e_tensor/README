@@ -28,7 +28,7 @@ Comments:
     A typical workflow using the special module is as follows:
     1) setup src with pc_setupsrc and build
     2) run pc_start to create grid for create_emftensors.py
-    3) run create_emftensors.py <pencil directory> to create initial tensors
+    3) run python create_emftensors.py <pencil directory> to create initial tensors
     4) run the simulation
 
     The input tensors are loaded during runtime, so they can be swapped and 
