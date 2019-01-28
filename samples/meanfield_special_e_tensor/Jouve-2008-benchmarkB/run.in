@@ -1,0 +1,28 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Benchmark B case by Jouve et al.
+!
+&run_pars
+  cvsid='$Id$'
+  nt=50001, it1=1000, dt=2.5e-5, isave=50000, itorder=3
+  d2davg=1e-2, 
+  slice_position='s', xtop_slice=0.98, ytop_slice=1.57
+/
+&eos_run_pars
+/
+&magnetic_run_pars
+  eta=0.0
+  llorentzforce=F
+  lweyl_gauge=T
+/
+&special_run_pars
+  lalpha=T
+  lbeta=T
+  lutensor=T
+  alpha_name='Jouve-2008-benchmark'
+  alpha_scale=0.387e-1
+  beta_name='Jouve-2008-benchmark'
+  beta_scale=1.0e-1
+  utensor_name='Jouve-2008-benchmark'
+  utensor_scale=140000.0e-1
+/

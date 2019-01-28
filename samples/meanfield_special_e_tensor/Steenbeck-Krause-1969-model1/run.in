@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Model 1 case by Steenbeck and Krause.
+!
+&run_pars
+  cvsid='$Id$'
+  nt=50001, it1=1000, dt=2.5e-5, isave=50000, itorder=3
+  d2davg=5.0e-2, 
+  slice_position='s', xtop_slice=0.98, ytop_slice=1.57
+/
+&eos_run_pars
+/
+&magnetic_run_pars
+  eta=1.0e-1
+  llorentzforce=F
+  lweyl_gauge=T
+/
+
+&special_run_pars
+  lalpha=T
+  lutensor=T
+  alpha_name='Steenbeck-Krause-1969-model1'
+  alpha_scale=0.4e-1
+  utensor_name='Steenbeck-Krause-1969-model1'
+  utensor_scale=51750e-1
+/
