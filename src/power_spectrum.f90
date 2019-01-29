@@ -1422,9 +1422,9 @@ module power_spectrum
   integer :: i,k,ikx,iky,ikz,im,in,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my,mz,3) :: EMF,JJJ
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx,3) :: uu,aa,bb,jj,uxb
+  real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
+  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im, d_re,d_im
+  real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
@@ -1469,8 +1469,11 @@ module power_spectrum
      call curl_mn(aij,bb,aa)
      call curl_mn(bij,jj,bb)
      call cross_mn(uu,bb,uxb)
+     call cross_mn(uu,jj,uxj)
      EMF(l1:l2,m,n,:)=uxb
+     EMB(l1:l2,m,n,:)=uxj
      JJJ(l1:l2,m,n,:)=jj
+     BBB(l1:l2,m,n,:)=bb
   enddo
   enddo
   !
@@ -1481,16 +1484,14 @@ module power_spectrum
 !  Electromotive force spectra (spectra of L*L^*)
 !
     if (sp=='EMF') then
-      do n=n1,n2
-        do m=m1,m2
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=JJJ(l1:l2,m,n,ivec)
-        enddo
-      enddo
       a_re=EMF(l1:l2,m1:m2,n1:n2,ivec)
+      b_re=JJJ(l1:l2,m1:m2,n1:n2,ivec)
+      c_re=EMB(l1:l2,m1:m2,n1:n2,ivec)
+      d_re=BBB(l1:l2,m1:m2,n1:n2,ivec)
       a_im=0.
       b_im=0.
+      c_im=0.
+      d_im=0.
 !
     endif
 !
@@ -1498,6 +1499,8 @@ module power_spectrum
 !
     call fft_xyz_parallel(a_re,a_im)
     call fft_xyz_parallel(b_re,b_im)
+    call fft_xyz_parallel(c_re,c_im)
+    call fft_xyz_parallel(d_re,d_im)
 !
 !  integration over shells
 !
@@ -1512,8 +1515,8 @@ module power_spectrum
 !  sum energy and helicity spectra
 !
             spectrum(k+1)=spectrum(k+1) &
-               +b_re(ikx,iky,ikz)**2 &
-               +b_im(ikx,iky,ikz)**2
+               +c_re(ikx,iky,ikz)*d_re(ikx,iky,ikz) &
+               +c_im(ikx,iky,ikz)*d_im(ikx,iky,ikz)
             spectrumhel(k+1)=spectrumhel(k+1) &
                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
