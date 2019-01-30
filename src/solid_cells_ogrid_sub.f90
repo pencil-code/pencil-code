@@ -1203,7 +1203,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
       integer :: k, j
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-      real, dimension (my_ogrid, mz_ogrid) :: df_surf, dM1
+      real, dimension (my_ogrid, mz_ogrid) :: df_surf, dM1, grad_lnR
       real, dimension (l1_ogrid+8,my_ogrid, mz_ogrid) :: mu1_bond_og
 !
       k=l1_ogrid
@@ -1219,6 +1219,12 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/D1_SBP(1,1)
       else if (iTT>0) then
          call der_ogrid_SBP_surf(f_og,df_surf)
+         if (lchemistry) then
+           call der_ogrid_SBP_R(f_og,dM1,mu1_bond_og)
+           grad_lnR = dM1/mu1_bond_og(k,:,:)
+         else
+           grad_lnR = 0   
+         endif
          f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
               D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
               D1_SBP(1,4)*f_og   (k+3,:,:,irho) + &
@@ -1227,10 +1233,8 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,7)*f_og   (k+6,:,:,irho) + &
               D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/ &
-              (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT))
+              (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT) + grad_lnR)
          if (lchemistry) then
-           call der_ogrid_SBP_R(f_og,dM1,mu1_bond_og)
-           f_og(k,:,:,irho) = f_og(k,:,:,irho) + dM1/mu1_bond_og(k,:,:)
            do j = 1,nchemspec
               f_og   (k,:,:,ichemspec(j)) = -(D1_SBP(1,2)*f_og   (k+1,:,:,ichemspec(j)) + &
                 D1_SBP(1,3)*f_og   (k+2,:,:,ichemspec(j)) + &

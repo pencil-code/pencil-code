@@ -1239,9 +1239,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
           prod1 = 1.
           prod2 = 1.
           do k = 1,nchemspec
-              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**orders_p(k,reac)          
-              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**orders_m(k,reac)
           enddo
         else
@@ -1249,27 +1249,27 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
           prod2 = 1.
           do k = 1,nchemspec
             if (abs(Sijp(k,reac)) == 1) then
-              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))
             elseif (abs(Sijp(k,reac)) == 2) then
-              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f_og(l1:l2,m,n,ichemspec(k)) &
+              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                  /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
                   *rho_cgs(:)/species_constants(k,imass))
             elseif (abs(Sijp(k,reac)) > 0) then
-              prod1 = prod1*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+              prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**Sijp(k,reac)
             endif
           enddo
           do k = 1,nchemspec
             if (abs(Sijm(k,reac)) == 1.0) then
-              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))
             elseif (abs(Sijm(k,reac)) == 2.0) then
-              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))*(f_og(l1:l2,m,n,ichemspec(k)) &
+              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
+                  /species_constants(k,imass))*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) &
                   *rho_cgs(:)/species_constants(k,imass))
             elseif (abs(Sijm(k,reac)) > 0.0) then
-              prod2 = prod2*(f_og(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
+              prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**Sijm(k,reac)
             endif
           enddo
