@@ -79,7 +79,9 @@ module Special
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
-!!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
+  integer :: idiag_etamin=0
+  integer :: idiag_etamax=0
+  integer :: idiag_etam=0
 !
   contains
 !***********************************************************************
@@ -137,7 +139,7 @@ module Special
 !  Read the lookup table into a local 3D array. All processors should have it
 !
       sdust=itoa(nint(-log10(dust_to_gas)))
-      tablefile=trim('./table/table.eta.a0p1um.d2gmr1em'//trim(sdust)//&
+      tablefile=trim('../ResistivityTables/table.eta.a0p1um.d2gmr1em'//trim(sdust)//&
            '.mgeps1em4.within2.dat')
       print*,'reading table ',tablefile
       if (.not. parallel_file_exists(tablefile)) &
@@ -293,9 +295,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Diagnostics
       use FArrayManager, only: farray_index_append
 !
-!      integer :: iname
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -306,14 +309,17 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!        i_SPECIAL_DIAGNOSTIC=0
+       idiag_etam=0
+       idiag_etamin=0
+       idiag_etamax=0
       endif
 !
-!      do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),&
-!            'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
-!      enddo
-!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'etam',idiag_etam)
+        call parse_name(iname,cname(iname),cform(iname),'etamin',idiag_etamin)
+        call parse_name(iname,cname(iname),cform(iname),'etamax',idiag_etamax)
+      enddo
+
 !  write column where which magnetic variable is stored
       if (lwr) then
         call farray_index_append('ieta' ,ieta)
@@ -346,6 +352,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Diagnostics
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -364,6 +372,13 @@ module Special
 !  Contribution to the timestep
 !
       if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta)
+!
+      if (ldiagnos) then
+        if (idiag_etam /= 0) call sum_mn_name(eta, idiag_etam)
+        if (idiag_etamax /= 0) call max_mn_name(eta, idiag_etamax)
+        if (idiag_etamin /= 0) call max_mn_name(-eta, idiag_etamin, lneg=.true.)
+      endif
+!
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
