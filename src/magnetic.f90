@@ -2567,7 +2567,9 @@ module Magnetic
           lpenc_diagnos(i_j2)=.true.
 !
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
-      if (idiag_epsAD/=0) lpenc_diagnos(i_jxbr2)=.true.
+      if (idiag_epsAD/=0 .and. &
+          .not. (lambipolar_strong_coupling.and.tauAD/=0.0)) &
+          lpenc_diagnos(i_jxbr2)=.true.
       if (idiag_jb_int/=0 .or. idiag_jbm/=0 .or. idiag_jbmz/=0 &
           .or. idiag_jbrms/=0 &
          ) lpenc_diagnos(i_jb)=.true.
@@ -3644,7 +3646,7 @@ module Magnetic
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
-      real, dimension (nx) :: vdrift
+      real, dimension (nx) :: vdrift, epsAD
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa,advec_va2
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
@@ -4521,14 +4523,14 @@ module Magnetic
 !  Add ambipolar diffusion in strong coupling approximation
 !
       if (lambipolar_strong_coupling.and.tauAD/=0.0) then
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+tauAD*p%b2
-        dAdt=dAdt+tauAD*mu0*p%jxbxb
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+tauAD*mu01*p%b2
+        dAdt=dAdt+tauAD*p%jxbxb
       endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
 !  Note that this is similar to lambipolar_strong_coupling, but here
 !  there is a division by b^2.
-!AB: Piyali, I think the mu01 should be replaced by mu0.
+!AB: Piyali, I think the mu01 should be removed
 !
       if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
          B0_magfric=B0_magfric/unit_magnetic**2
@@ -4971,7 +4973,14 @@ module Magnetic
 !
 !  Heating by ion-neutrals friction.
 !
-        if (idiag_epsAD/=0) call sum_mn_name(p%nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
+        if (idiag_epsAD/=0) then
+          if (lambipolar_strong_coupling.and.tauAD/=0.0) then
+            call dot(p%jj,p%jxbxb,epsAD)
+            call sum_mn_name(-tauAD*epsAD,idiag_epsAD)
+          else
+            call sum_mn_name(p%nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
+          endif
+        endif
 !
 !  <A>'s, <A^2> and A^2|max
 !
