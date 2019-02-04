@@ -546,7 +546,7 @@ module Interstellar
                    (unit_energy/ampl_SN_cgs)**(2./7)*&
                    (1.4*m_H_cgs/unit_density)**(3./7)
 !  ref Simpson 15 Eq 16 dimensional norm kinetic energy fraction
-        kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*&
+        kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*& !RPDS 
                    ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
                    (kyr_cgs/unit_time)**2
         if (lroot.and.lSN_autofrackin) then
@@ -1883,6 +1883,11 @@ module Interstellar
         SNRs(iSNR)%feat%radius=width_SN
         call position_SN_testposition(f,SNRs(iSNR))
         call explode_SN(f,SNRs(iSNR),ierr,preSN)
+!
+!  Free up slots in case loop fails repeatedly over many time steps.
+!
+        call free_SNR(iSNR)
+        ierr=iEXPLOSION_OK
         return
       endif
       if (t >= t_next_SNI) then
@@ -3053,9 +3058,9 @@ module Interstellar
 !
       real :: c_SN,cmass_SN,cvelocity_SN
       real :: width_energy, width_mass, width_velocity
-      real :: rhom, rhomin, ekintot, old_radius
+      real :: rhom, rhomin, ekintot, radius_best
       real ::  rhom_new, ekintot_new, ambient_mass
-      real :: Nsol_ratio, radius_min, radius_max, sol_mass_tot
+      real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
@@ -3063,7 +3068,7 @@ module Interstellar
       real, dimension(3) :: dmpi2, dmpi2_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
-      real :: maxlnTT, site_mass, maxTT=0.,mmpi, mpi_tmp, etmp, ktmp
+      real :: maxlnTT, site_mass, maxTT=0., mmpi, mpi_tmp, etmp, ktmp
       real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
       integer :: i
 !
@@ -3071,7 +3076,7 @@ module Interstellar
 !
 !  identifier
 !
-      if (lroot.and.ip<12) print*,'explode_SN: SN type =',SNR%indx%SN_type
+      if (lroot.and.ip<14) print*,'explode_SN: SN type =',SNR%indx%SN_type
 !
 !  Calculate explosion site mean density.
 !
@@ -3084,22 +3089,32 @@ module Interstellar
       if (lSN_scale_rad) then
         radius_min=rfactor_SN*SNR%feat%dr
         radius_max=200*pc_cgs/unit_length
-        old_radius=SNR%feat%radius
+        radius_best=SNR%feat%radius
         sol_mass_tot=solar_mass*N_mass
         Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/sol_mass_tot
+        Nsol_ratio_best = abs(Nsol_ratio-1)
         do i=1,15
           if (Nsol_ratio < 1) then
             radius_min=SNR%feat%radius
-            SNR%feat%radius=0.5*(old_radius+radius_max)
-            old_radius=SNR%feat%radius
           else
             radius_max=SNR%feat%radius
-            SNR%feat%radius=0.5*(old_radius+radius_min)
-            old_radius=SNR%feat%radius
           endif
+          SNR%feat%radius=0.5*(radius_min+radius_max)
           call get_properties(f,SNR,rhom,ekintot,rhomin)
           Nsol_ratio=4./3.*pi*rhom*SNR%feat%radius**3/sol_mass_tot
+          if (abs(Nsol_ratio-1)<Nsol_ratio_best) then
+            Nsol_ratio_best=Nsol_ratio
+            radius_best=SNR%feat%radius
+          endif
+          if (lroot.and.ip<14) then
+            print*,'explode_SN: i',i
+            print*,'explode_SN: radius_min',radius_min
+            print*,'explode_SN: radius_max',radius_max
+            print*,'explode_SN: radius_best',radius_best
+          endif
         enddo
+        SNR%feat%radius=radius_best
+        call get_properties(f,SNR,rhom,ekintot,rhomin)
       endif
       SNR%feat%rhom=rhom
       if (present(ierr)) then
@@ -3135,26 +3150,25 @@ module Interstellar
          'explode_SN: Elapsed time since shell formation',&
          SNR%feat%t_sedov-SNR%feat%t_SF
 !
-      !RPDS=SFr_norm*ampl_SN**0.29/SNR%feat%rhom**0.42
       RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
 !
       if (lroot.and.ip<14) print*,&
-         'explode_SN: Shell forming radius RPDS', RPDS
+        'explode_SN: Shell forming radius RPDS', RPDS
 !
 !  Calculate the SN kinetic energy fraction for shell formation energy
 !  losses correction ref Simpson et al.
 !  2015 ApJ 809:69 Eq. 16
 !
       etmp=eampl_SN; ktmp=kampl_SN
-      if (RPDS<1.25*SNR%feat%radius.and.lSN_autofrackin) then
+      if (RPDS<1.5*SNR%feat%radius.and.lSN_autofrackin) then
         if (SNR%feat%rhom>0.8*m_H_cgs/unit_density.and.&
-            SNR%feat%dr>2*pc_cgs/unit_length) then
+            SNR%feat%dr>pc_cgs/unit_length) then
           frackin = kfrac_norm*SNR%feat%rhom*RPDS**7/ampl_SN/&
                   (SNR%feat%t_SF*SNR%feat%dr)**2
         else
           frackin = 0.
         endif
-        frackin=min(0.75,frackin)
+        frackin=min(0.75-frac_ecr,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip<14) print*,&
