@@ -262,7 +262,10 @@ module Special
       if (ldt) lpenc_requested(i_rho1)=.true.
 !      lpenc_requested(i_jjij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
-      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
+      if (lhydro.or.lhydro_kinematic) then
+         lpenc_requested(i_uu)=.true.
+         lpenc_requested(i_oo)=.true.
+      endif
       if (lmagnetic) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
@@ -363,6 +366,11 @@ module Special
       if (lmu5adv) then
         df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - p%ugmu5 
       endif
+      if (lCVE) then
+        call dot(p%oo,p%gmu5,oogmu5)
+        df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) &
+          -2.*Cw*p%mu5*oogmu5
+      endif
 !
 !  Contributions to timestep from mu5 equation
       dt1_lambda5 = lambda5*eta*p%b2
@@ -390,7 +398,7 @@ module Special
           call dot(p%oo,p%gmuS,oogmuS)
           call dot(p%oo,p%gmu5,oogmu5)
           df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb &
-            -2.*Cw*(p%muS*oogmuS+p%mu5*oogmu5)
+            -2.*Cw*p%muS*oogmuS
         endif
 !  Contributions to timestep from muS equation
         dt1_CMW = coef_mu5*coef_muS*sqrt(p%b2)*dxyz_2
