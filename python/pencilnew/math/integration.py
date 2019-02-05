@@ -44,6 +44,7 @@ def integrate(quantity, dx=1.0, dy=1.0, dz=1.0, x=None, y=None, z=None,
 
     import numpy as np
     import scipy as sc
+    import scipy.integrate
 
     # Perform basic checks on the inputs.
     if quantity.ndim != 3:
