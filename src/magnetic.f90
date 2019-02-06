@@ -2314,7 +2314,10 @@ module Magnetic
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_rho1)=.true.
-        if (.not.lweyl_gauge) lpenc_requested(i_del2a)=.true.
+        if (.not.lweyl_gauge) then
+          lpenc_requested(i_del2a)=.true.
+          lpenc_requested(i_glnrho)=.true.
+        endif
       endif
       if (lresi_eta_shock.or.lresi_eta_shock_profz.or. &
           lresi_eta_shock2.or.lresi_eta_shock_profr) then
@@ -3796,9 +3799,10 @@ module Magnetic
           do j=1,3
             fres(:,j)=fres(:,j)-eta*sqrt(p%rho1)*mu0*p%jj(:,j)
           enddo
-        else         !MR: term \propto grad(eta) div(A) missing here!
+        else
           do j=1,3
-            fres(:,j)=fres(:,j)+eta*sqrt(p%rho1)*p%del2a(:,j)
+            fres(:,j)=fres(:,j)+eta*sqrt(p%rho1)*&
+                      (p%del2a(:,j)-0.5*p%diva*p%glnrho(:,j))
           enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*sqrt(p%rho1)
