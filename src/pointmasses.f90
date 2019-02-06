@@ -1172,7 +1172,7 @@ module PointMasses
                  dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
           endif
 !
-          if (ladd_dragforce) call dragforce_pointmasses()
+          if (ladd_dragforce) call dragforce_pointmasses(k)
 !
           if (lcoriolis_force) then
             dfq(k,ivxq) = dfq(k,ivxq) + 2*Omega_Coriolis*fq(k,ivyq)
