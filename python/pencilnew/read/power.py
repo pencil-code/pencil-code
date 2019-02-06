@@ -64,7 +64,10 @@ class Power(object):
         file_list = []
         for file_name in os.listdir(datadir):
             if file_name[:5] == 'power' and file_name[-4:] == '.dat':
-                power_list.append(file_name.split('.')[0][5:])
+                if file_name[:6] == 'power_':
+                    power_list.append(file_name.split('.')[0][6:])
+                else:
+                    power_list.append(file_name.split('.')[0][5:])
                 file_list.append(file_name)
 
         # Determine the file and data structure.
@@ -75,8 +78,7 @@ class Power(object):
         for power_idx, file_name in enumerate(file_list):
             # For the moment, exclude some incompatible files.
             if file_name == 'powero.dat' or file_name == 'poweru.dat' or \
-                file_name == 'powerb.dat' or file_name == 'powera.dat' or \
-                file_name == 'power_krms.dat':
+                file_name == 'powerb.dat' or file_name == 'powera.dat':
                 continue
             print(file_name)
 
@@ -87,20 +89,28 @@ class Power(object):
 
             # Extract the numbers from the file strings.
             n_blocks = int(len(line_list)/block_size)
-            time = []
-            power = []
-            for line_idx, line in enumerate(line_list):
-                if np.mod(line_idx, block_size) == 0:
-                    time.append(float(line.strip()))
-                else:
-                    for value_string in line.strip().split():
-                        power.append(float(value_string))
+            if not file_name == 'power_krms.dat':
+                time = []
+                power = []
+                for line_idx, line in enumerate(line_list):
+                    if np.mod(line_idx, block_size) == 0:
+                        time.append(float(line.strip()))
+                    else:
+                        for value_string in line.strip().split():
+                            power.append(float(value_string))
 
-            # Reformat into arrays.
-            time = np.array(time)
-            power = np.array(power).reshape([n_blocks, int(dim.nxgrid/2)]).astype(np.float32)
+                # Reformat into arrays.
+                time = np.array(time)
+                power = np.array(power).reshape([n_blocks, int(dim.nxgrid/2)]).astype(np.float32)
 
-            self.t = time.astype(np.float32)
-            setattr(self, power_list[power_idx], power)
-
+                self.t = time.astype(np.float32)
+                setattr(self, power_list[power_idx], power)
+            else:
+                power = []
+                for line_idx, line in enumerate(line_list):
+                    if line_idx < block_size-1:
+                        for value_string in line.strip().split():
+                            power.append(float(value_string))
+                power = np.array(power).reshape([int(dim.nxgrid/2)]).astype(np.float32)
+                setattr(self, power_list[power_idx], power)
 
