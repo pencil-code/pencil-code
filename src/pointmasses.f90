@@ -1203,6 +1203,7 @@ module PointMasses
     subroutine dragforce_pointmasses(k)
 !
 !  Adds dragforce on massive particles.
+!  06-feb-18/wlad: coded
 !
       real, dimension (3) :: uup
       integer, intent(in) :: k
