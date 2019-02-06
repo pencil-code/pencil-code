@@ -1202,13 +1202,15 @@ module PointMasses
 !**********************************************************
     subroutine dragforce_pointmasses(k)
 !
+!  Adds dragforce on massive particles.
+!
       real, dimension (3) :: uup
       integer, intent(in) :: k
 !
-!  Supports only Cartesian with ugas=uy so far.       
+!  Supports only Cartesian with ugas=uy so far.
 !
       uup=(/0.,ugas,0./)
-      if (llinear_drag) then 
+      if (llinear_drag) then
         dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - (fq(k,ivxq:ivzq)-uup)/StokesNumber(k)
       else if (lquadratic_drag) then
         dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - &
