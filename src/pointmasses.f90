@@ -1,4 +1,4 @@
-! $Id$
+! $Id: pointmasses.f90,v 1.1 2019/02/02 03:54:41 wlyra Exp $
 !
 !  This module takes care of direct N-body gravity between point masses.
 !
@@ -59,12 +59,17 @@ module PointMasses
   logical :: lretrograde=.false.
   !logical :: linertial_frame=.true.
   logical :: lnoselfgrav_primary=.true.
-  logical :: lgas_gravity=.false.,ldust_gravity=.false.
+  logical :: lgas_gravity=.true.,ldust_gravity=.false.
   logical :: lcorrect_gravity_lstart=.false.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newton'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
+!
+  logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
+  logical :: lcoriolis_force=.false.
+  real :: ugas=0.0,Omega_coriolis=0.0
+  real, dimension(nqpar) :: StokesNumber=1.
 !
   type IndexDustParticles
     integer :: ixw=0,iyw=0,izw=0
@@ -91,7 +96,9 @@ module PointMasses
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
       ltempering, & !linertial_frame, & !lcartesian_evolution,
       ipotential_pointmass, density_scale,&
-      lgas_gravity,ldust_gravity
+      lgas_gravity,ldust_gravity,&
+      ladd_dragforce,ugas,StokesNumber,&
+      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -112,7 +119,7 @@ module PointMasses
       integer :: iqvar
 !
       if (lroot) call svn_id( &
-          "$Id$")
+          "$Id: pointmasses.f90,v 1.1 2019/02/02 03:54:41 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !
@@ -852,6 +859,7 @@ module PointMasses
 !  Add it to its dfp
 !
             dfq(ks,ivxq:ivzq) = dfq(ks,ivxq:ivzq) + accg(1:3)
+!
           endif diskgravity
         enddo pointmasses1
 !
@@ -1164,6 +1172,13 @@ module PointMasses
                  dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
           endif
 !
+          if (ladd_dragforce) call dragforce_pointmasses()
+!
+          if (lcoriolis_force) then
+            dfq(k,ivxq) = dfq(k,ivxq) + 2*Omega_Coriolis*fq(k,ivyq)
+            dfq(k,ivyq) = dfq(k,ivyq) - 2*Omega_Coriolis*fq(k,ivxq)
+          endif
+!
 !  Time-step constraint from N-body particles. We use both the criterion
 !  that the distance to the N-body particle must not change too much in
 !  one time-step and additionally we use the free-fall time-scale.
@@ -1184,6 +1199,25 @@ module PointMasses
      enddo !nbody loop
 !
     endsubroutine gravity_pointmasses
+!**********************************************************
+    subroutine dragforce_pointmasses(k)
+!
+      real, dimension (3) :: uup
+      integer, intent(in) :: k
+!
+!  Supports only Cartesian with ugas=uy so far.       
+!
+      uup=(/0.,ugas,0./)
+      if (llinear_drag) then 
+        dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - (fq(k,ivxq:ivzq)-uup)/StokesNumber(k)
+      else if (lquadratic_drag) then
+        dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - &
+             abs(fq(k,ivxq:ivzq)-uup)*(fq(k,ivxq:ivzq)-uup)/StokesNumber(k)
+      else
+        call fatal_error("drag should be linear or quadratic","")
+      endif
+!
+    endsubroutine dragforce_pointmasses
 !**********************************************************
     subroutine get_evr(xxp,xxq,evr_output)
 !
