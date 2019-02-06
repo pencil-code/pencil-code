@@ -6452,7 +6452,14 @@ module Hydro
         endif
       else if (lcartesian_coords) then
         if (.not.lcalc_uumeanz) then
-          call fatal_error("damp_corona","you need to set lcalc_uumean=T in hydro_run_pars")
+!          call fatal_error("damp_corona","you need to set lcalc_uumean=T in hydro_run_pars")
+!  Piyali: commented the fatal_error so that lcalc_uumean=F can work as below
+!  for Cartesian coord
+! 
+          prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iux)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iuy)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(f(l1:l2,m,n,iuz)-0.)
         else
           prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumz(n,1)-0.)
