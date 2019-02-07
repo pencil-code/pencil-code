@@ -700,7 +700,7 @@ module Interstellar
 !
 !  Read profiles.
 !
-        nlist=0
+        nlist=-1
         read(33,*,iostat=stat)
         do while(1==1)
           read(33,*,iostat=stat)
@@ -1833,7 +1833,9 @@ module Interstellar
               type_list=SN_type(i)
               if (i==nlist-1) then
                 call touch_file('ENDTIME')
-                call touch_file('STOP')
+                nt=it+1
+                if (lroot) print*, 'check_SN: sn_series.in list needs',&
+                             ' extending or set lSN_list=F to continue'
               endif
               t_next_SNI=SN_list(1,i+1)
               if (lroot) print*,'check_SN: t_next_SNI on list =',t_next_SNI
