@@ -566,6 +566,9 @@ module Magnetic
   integer :: idiag_bx2m=0       ! DIAG_DOC: $\left< B_x^2 \right>$
   integer :: idiag_by2m=0       ! DIAG_DOC: $\left< B_y^2 \right>$
   integer :: idiag_bz2m=0       ! DIAG_DOC: $\left< B_z^2 \right>$
+  integer :: idiag_bx4m=0       ! DIAG_DOC: $\left< B_x^4 \right>$
+  integer :: idiag_by4m=0       ! DIAG_DOC: $\left< B_y^4 \right>$
+  integer :: idiag_bz4m=0       ! DIAG_DOC: $\left< B_z^4 \right>$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_vmagfricmax=0 ! DIAG_DOC: $\max(1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|)$
@@ -4896,6 +4899,9 @@ module Magnetic
         if (idiag_bx2m/=0) call sum_mn_name(p%bbb(:,1)**2,idiag_bx2m)
         if (idiag_by2m/=0) call sum_mn_name(p%bbb(:,2)**2,idiag_by2m)
         if (idiag_bz2m/=0) call sum_mn_name(p%bbb(:,3)**2,idiag_bz2m)
+        if (idiag_bx4m/=0) call sum_mn_name(p%bbb(:,1)**4,idiag_bx4m)
+        if (idiag_by4m/=0) call sum_mn_name(p%bbb(:,2)**4,idiag_by4m)
+        if (idiag_bz4m/=0) call sum_mn_name(p%bbb(:,3)**4,idiag_bz4m)
         if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
         if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
         if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
@@ -8333,7 +8339,9 @@ module Magnetic
         idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
         idiag_betamz = 0; idiag_beta2mz = 0
         idiag_betamx = 0; idiag_beta2mx = 0
-        idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
+        idiag_aym=0; idiag_azm=0
+        idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
+        idiag_bx4m=0; idiag_by4m=0; idiag_bz4m=0
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
         idiag_bxbzmz=0; idiag_bybzmz=0
@@ -8528,6 +8536,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
         call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
         call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
+        call parse_name(iname,cname(iname),cform(iname),'bx4m',idiag_bx4m)
+        call parse_name(iname,cname(iname),cform(iname),'by4m',idiag_by4m)
+        call parse_name(iname,cname(iname),cform(iname),'bz4m',idiag_bz4m)
         call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
         call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
         call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
