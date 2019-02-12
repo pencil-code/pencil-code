@@ -3340,13 +3340,8 @@ module Interstellar
 !
       if (lSN_velocity)then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
-        if (ekintot_new-ekintot > 2.5*ktmp) then
-          if (present(ierr)) then
-            ierr=iEXPLOSION_TOO_UNEVEN
-          endif
-        elseif (ekintot_new-ekintot > 0) then
-          cvelocity_SN = cvelocity_SN * sqrt(ktmp/(ekintot_new-ekintot))
-        endif
+        if (ekintot_new-ekintot > ktmp) &
+          cvelocity_SN = cvelocity_SN * ktmp/(ekintot_new-ekintot)
       endif
 !
       if (present(ierr)) then
