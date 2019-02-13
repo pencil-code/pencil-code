@@ -63,6 +63,7 @@ module EquationOfState
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
+  logical, pointer :: lpres_grad
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
@@ -136,7 +137,7 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos
 !
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
@@ -175,10 +176,6 @@ module EquationOfState
         nn1=1;  nn2=mz
       endif
 
-!      if (.not.ldensity) then
-!        call put_shared_variable('rho0',rho0,caller='initialize_eos')
-!        call put_shared_variable('lnrho0',lnrho0)
-!      endif
       if (lchemistry) call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
 !
     endsubroutine initialize_eos
@@ -346,23 +343,41 @@ module EquationOfState
 !
         case ('lnTT'); call assign_slices_scal(slices,f,ilnTT)
         case ('pp')
-          if (ldensity_nolog .or. ltemperature_nolog) &
-              call fatal_error('get_slices_eos',&
-              'pp not implemented for ldensity_nolog .or. ltemperature_nolog')
-          if (lwrite_slice_yz) slices%yz=Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho)) &
+          if (ldensity_nolog .or. ltemperature_nolog) then
+            if (lwrite_slice_yz) slices%yz=Rgas*(f(ix_loc,m1:m2,n1:n2,iTT)*f(ix_loc,m1:m2,n1:n2,irho)) &
                                              *mu1_full(ix_loc,m1:m2,n1:n2)
-          if (lwrite_slice_xz) slices%xz=Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho)) &
+            if (lwrite_slice_xz) slices%xz=Rgas*(f(l1:l2,iy_loc,n1:n2,iTT)*f(l1:l2,iy_loc,n1:n2,irho)) &
                                              *mu1_full(l1:l2,iy_loc,n1:n2)
-          if (lwrite_slice_xz2) slices%xz=Rgas*exp(f(l1:l2,iy2_loc,n1:n2,ilnTT)+f(l1:l2,iy2_loc,n1:n2,ilnrho)) &
+            if (lwrite_slice_xz2) slices%xz=Rgas*(f(l1:l2,iy2_loc,n1:n2,iTT)*f(l1:l2,iy2_loc,n1:n2,irho)) &
                                               *mu1_full(l1:l2,iy2_loc,n1:n2)
-          if (lwrite_slice_xy) slices%xy=Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho)) &
+            if (lwrite_slice_xy) slices%xy=Rgas*(f(l1:l2,m1:m2,iz_loc,iTT)*f(l1:l2,m1:m2,iz_loc,irho)) &
                                              *mu1_full(l1:l2,m1:m2,iz_loc)
-          if (lwrite_slice_xy2) slices%xy2=Rgas*exp(f(l1:l2,m1:m2,iz2_loc,ilnTT)+f(l1:l2,m1:m2,iz2_loc,ilnrho)) &
+            if (lwrite_slice_xy2) slices%xy2=Rgas*(f(l1:l2,m1:m2,iz2_loc,iTT)*f(l1:l2,m1:m2,iz2_loc,irho)) &
                                                *mu1_full(l1:l2,m1:m2,iz2_loc)
-          if (lwrite_slice_xy3) slices%xy3=Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)+f(l1:l2,m1:m2,iz3_loc,ilnrho)) &
+            if (lwrite_slice_xy3) slices%xy3=Rgas*(f(l1:l2,m1:m2,iz3_loc,iTT)*f(l1:l2,m1:m2,iz3_loc,irho)) &
                                                *mu1_full(l1:l2,m1:m2,iz3_loc)
-          if (lwrite_slice_xy4) slices%xy4=Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)+f(l1:l2,m1:m2,iz4_loc,ilnrho)) &
+            if (lwrite_slice_xy4) slices%xy4=Rgas*(f(l1:l2,m1:m2,iz4_loc,iTT)*f(l1:l2,m1:m2,iz4_loc,irho)) &
                                                *mu1_full(l1:l2,m1:m2,iz4_loc)
+          else
+            if (lwrite_slice_yz) slices%yz=Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho)) &
+                                             *mu1_full(ix_loc,m1:m2,n1:n2)
+            if (lwrite_slice_xz) slices%xz=Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho)) &
+                                             *mu1_full(l1:l2,iy_loc,n1:n2)
+            if (lwrite_slice_xz2) slices%xz=Rgas*exp(f(l1:l2,iy2_loc,n1:n2,ilnTT)+f(l1:l2,iy2_loc,n1:n2,ilnrho)) &
+                                              *mu1_full(l1:l2,iy2_loc,n1:n2)
+            if (lwrite_slice_xy) slices%xy=Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho)) &
+                                             *mu1_full(l1:l2,m1:m2,iz_loc)
+            if (lwrite_slice_xy2) slices%xy2=Rgas*exp(f(l1:l2,m1:m2,iz2_loc,ilnTT)+f(l1:l2,m1:m2,iz2_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz2_loc)
+            if (lwrite_slice_xy3) slices%xy3=Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)+f(l1:l2,m1:m2,iz3_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz3_loc)
+            if (lwrite_slice_xy4) slices%xy4=Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)+f(l1:l2,m1:m2,iz4_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz4_loc)
+          endif
+        case ('cp'); call assign_slices_scal(slices,f,icp)
+        case ('viscosity'); call assign_slices_scal(slices,f,iviscosity)
+        case ('gpx'); if (lpres_grad) call assign_slices_scal(slices,f,igpx)
+        case ('gpy'); if (lpres_grad) call assign_slices_scal(slices,f,igpy)
           slices%ready=.true.
 !
       endselect
@@ -378,6 +393,10 @@ module EquationOfState
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
 !
+      use SharedVariables, only: get_shared_variable
+!
+      call get_shared_variable('lpres_grad',lpres_grad)
+
       lpenc_requested(i_cv) = .true.
       lpenc_requested(i_cp) = .true.
       lpenc_requested(i_cv1) = .true.
@@ -564,6 +583,10 @@ module EquationOfState
           p%rho1gpp(:,i) = p%pp*p%rho1(:) &
                *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
         enddo
+      endif
+      if (lpres_grad) then
+        f(l1:l2,m,n,igpx) = p%rho1gpp(:,1)*f(l1:l2,m,n,irho)
+        f(l1:l2,m,n,igpy) = p%rho1gpp(:,2)*f(l1:l2,m,n,irho)
       endif
 !
 !  Energy per unit mass (this is not used now)

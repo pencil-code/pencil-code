@@ -480,6 +480,7 @@ module Solid_Cells
       if (lchemistry) then
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
+        call get_shared_variable('lpres_grad',lpres_grad)
         call initialize_chemistry_og(f_ogrid)
       endif
 !
@@ -589,7 +590,8 @@ module Solid_Cells
                   f(i,j,:,irho) = f(l2,m2,n2,irho) &
                     *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
-                if (lchemistry .and. .not. lflame_front_2D) then
+                !if (lchemistry .and. .not. lflame_front_2D) then
+                if (lchemistry) then
                     do k = 1,nchemspec
                       f(i,j,:,ichemspec(k)) = chemspec0(k)
                     enddo
@@ -616,7 +618,8 @@ module Solid_Cells
               f(i,j,:,irho) = f(l2,m2,n2,irho) &
                 *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
-            if (lchemistry .and. .not. lflame_front_2D) then
+         !   if (lchemistry .and. .not. lflame_front_2D) then
+            if (lchemistry) then
               do k = 1,nchemspec
                 f(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
@@ -2497,7 +2500,13 @@ module Solid_Cells
     k=curvilinear_to_cartesian(id)%i_xyz(3)
     f_cartesian(i,j,k,iux)=f_ip(iux)*cos(xyz_ip(2))-f_ip(iuy)*sin(xyz_ip(2))
     f_cartesian(i,j,k,iuy)=f_ip(iux)*sin(xyz_ip(2))+f_ip(iuy)*cos(xyz_ip(2))
-    f_cartesian(i,j,k,iuz:ivar2)=f_ip(iuz:ivar2)
+    if (lchemistry .and. lpres_grad) then
+      f_cartesian(i,j,k,iuz:ivar2-2)=f_ip(iuz:ivar2-2)
+      f_cartesian(i,j,k,igpx)=f_ip(igpx)*cos(xyz_ip(2))-f_ip(igpy)*sin(xyz_ip(2))
+      f_cartesian(i,j,k,igpy)=f_ip(igpx)*sin(xyz_ip(2))+f_ip(igpy)*cos(xyz_ip(2))
+    else
+      f_cartesian(i,j,k,iuz:ivar2)=f_ip(iuz:ivar2)
+    endif
 !
   endsubroutine interpolate_point_curv_to_cart
 !***********************************************************************
@@ -2813,7 +2822,7 @@ module Solid_Cells
             f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
           endif
           if (lwrite_slices) then
-            if((rthz(1)<=r_int_outer) .and.(rthz(1)>r_int_inner_vid)) then
+            if((rthz(1)<=r_ogrid) .and.(rthz(1)>r_int_inner_vid)) then
               call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)
               if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
                 call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
@@ -4681,7 +4690,11 @@ module Solid_Cells
       call update_ghosts_ogrid(f_ogrid)
     endif
 
-    call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
+    if (.not. lpres_grad) then
+      call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
+    else
+      call communicate_ip_curv_to_cart(f_cartesian,1,mfarray)
+    endif
 ! 
 !     !TODO: Should use the particle flow info in the interpolation point
 !     !      computation above
@@ -4869,14 +4882,14 @@ module Solid_Cells
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (.not. lchemistry) then
+   !   if (.not. lchemistry) then
           df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)= &
               df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)+p_ogrid%fpres
-      else
+    !  else
 ! TODO: pressure gradient term when chemistry
-          df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)= &
-              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)-p_ogrid%rho1gpp
-      endif
+     !     df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)= &
+     !         df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)-p_ogrid%rho1gpp
+     ! endif
 !
 !  Solve Energy equation (in case of non-isothermal equation of state)
 !
@@ -7857,7 +7870,8 @@ module Solid_Cells
             print*, 'interpolate_quadratic_spline: f(ix0  ,iy0-1:iy0+1,4,i)=', f(ix0  ,iy0-1:iy0+1,4,i)
             print*, 'interpolate_quadratic_spline: f(ix0+1,iy0-1:iy0+1,4,i)=', f(ix0+1,iy0-1:iy0+1,4,i)
             print*, '------------------'
-            call fatal_error('interpolate_quadratic_spline','interpolation error, quadratic spline')
+! Commented out the line below for the moment since it is too sensitive when lchemistry
+!            call fatal_error('interpolate_quadratic_spline','interpolation error, quadratic spline')
           endif
         enddo
       endif

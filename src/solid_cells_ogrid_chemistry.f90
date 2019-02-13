@@ -75,6 +75,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
   real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   logical, pointer, dimension(:) :: photochem_case, Mplus_case, back
+  logical, pointer :: lpres_grad
 !
 !  character(len=30), allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
@@ -275,7 +276,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !        endif
 !      endif
 !
-      if (lchemistry) then
         call get_shared_variable('ldiffusion',ldiffusion)
         call get_shared_variable('ldiff_corr',ldiff_corr)
         call get_shared_variable('lcheminp',lcheminp)
@@ -305,7 +305,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         call get_shared_variable('iaa1',iaa1)
         call get_shared_variable('iaa2',iaa2)
         call get_shared_variable('lmech_simple',lmech_simple)
-      endif
+        call get_shared_variable('lpres_grad',lpres_grad)
 !
 !      if (lew_exist) then 
 !        Lewis_coef1 = 1./Lewis_coef
@@ -590,7 +590,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       if (lpencil_ogrid(i_og_rho1gpp)) then
         do i=1,3
-          p_ogrid%rho1gpp(:,i) = p_ogrid%pp*p_ogrid%rho1 &
+          p_ogrid%fpres(:,i) = -p_ogrid%pp*p_ogrid%rho1 &
               *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%gmu1(:,i)/p_ogrid%mu1)
  ! This actually can be computed without log gradients
  !         p_ogrid%rho1gpp(:,i) = Rgas*(p_ogrid%mu1*p_ogrid%TT*p_ogrid%rho1*p_ogrid%grho(:,i)&
@@ -599,6 +599,11 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
  !         p_ogrid%rho1gpp(:,i) = p_ogrid%cv*p_ogrid%cp1*p_ogrid%cs2*&
  !               (p_ogrid%glnrho(:,i)+p_ogrid%gTT(:,i)/p_ogrid%TT+p_ogrid%gmu1(:,i)/p_ogrid%mu1)
         enddo
+      endif
+!
+      if (lpres_grad) then
+        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpx) = -p_ogrid%fpres(:,1)*p_ogrid%rho
+        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpy) = -p_ogrid%fpres(:,2)*p_ogrid%rho
       endif
 !
 !  Energy per unit mass 
