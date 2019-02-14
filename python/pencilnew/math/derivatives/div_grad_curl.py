@@ -183,10 +183,20 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
     return curl_value
 
 
-def curl2(f, dx, dy, dz):
+def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
     Take the double curl of a pencil code vector array f.
-    CARTESIAN COORDINATES ONLY!!
+
+    *x, y*:
+      Radial (x) and polar (y) coordinates, 1d arrays.
+
+    *run2D*:
+      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+      !Only for Cartesian grids at the moment!
+
+    *coordinate_system*:
+      Coordinate system under which to take the divergence.
+      Takes 'cartesian' and 'cylindrical'.
     """
 
     import numpy as np
@@ -196,14 +206,31 @@ def curl2(f, dx, dy, dz):
         print("curl2: must have vector 4-D array f[3, mz, my, mx] for curl2.")
         raise ValueError
 
+    if coordinate_system == 'spherical':
+        print('ERROR: curl2 currently not implemented for spherical coordinates.')
+
     curl2_value = np.empty(f.shape)
-    
-    curl2_value[0] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
-                          -yder2(f[0], dy) - zder2(f[0], dz)
-    curl2_value[1] = yder(xder(f[0], dx) + zder(f[2], dz), dy) \
-                          -xder2(f[1], dx) - zder2(f[1], dz)
-    curl2_value[2] = zder(xder(f[0], dx) + yder(f[1], dy), dz) \
-                          -xder2(f[2], dx) - yder2(f[2], dy)
+
+    if coordinate_system == 'cartesian':
+        curl2_value[0] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
+                              -yder2(f[0], dy) - zder2(f[0], dz)
+        curl2_value[1] = yder(xder(f[0], dx) + zder(f[2], dz), dy) \
+                              -xder2(f[1], dx) - zder2(f[1], dz)
+        curl2_value[2] = zder(xder(f[0], dx) + yder(f[1], dy), dz) \
+                              -xder2(f[2], dx) - yder2(f[2], dy)
+    if coordinate_system == 'cylindrical':
+        if x is None:
+            print('ERROR: need to specify x (radius) for cylindrical coordinates.')
+            raise ValueError
+        # Make sure x has compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        curl2_value[0] = yder(f[1], dy)/x**2 + xder(yder(f[1], dy), dx)/x \
+                         - yder2(f[0], dy)/x**2 - zder2(f[0], dz) + xder(zder(f[2], dz), dx)
+        curl2_value[1] = yder(zder(f[2], dz), dy)/x - zder2(f[1], dz) + f[1]/x**2 \
+                         - xder(f[1], dx)/x - xder2(f[1], dx) + xder(yder(f[0], dy), dx)/x \
+                         - yder(f[0], dy)/x**2
+        curl2_value[2] = zder(f[0], dz)/x + xder(zder(f[0], dz), dx) - zder(f[2], dx)/x \
+                         - xder2(f[2], dx) - yder2(f[2], dy)/x**2 + yder(zder(f[1], dz), dy)/x
 
     return curl2_value
 
