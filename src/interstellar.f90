@@ -519,7 +519,7 @@ module Interstellar
         SNII_mass_rate=SNII_mass_rate_cgs*unit_time
         SNI_mass_rate=SNI_mass_rate_cgs*unit_time
         solar_mass=solar_mass_cgs / unit_mass
-        if (lroot) &
+        if (lroot.and.ip==1963) &
             print*,'initialize_interstellar: solar_mass (code) =', solar_mass
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
@@ -549,7 +549,7 @@ module Interstellar
         kfrac_norm=3.97e-6*mu/1.4/m_H_cgs*unit_density*& !RPDS 
                    ampl_SN_cgs/unit_energy*(unit_length/pc_cgs)**5*&
                    (kyr_cgs/unit_time)**2
-        if (lroot.and.lSN_autofrackin) then
+        if (lroot.and.lSN_autofrackin.and.ip==1963) then
             print*,'initialize_interstellar: SFt_norm =', SFt_norm
             print*,'initialize_interstellar: SFr_norm =', SFr_norm
             print*,'initialize_interstellar: sedov_norm =', sedov_norm
@@ -634,38 +634,38 @@ module Interstellar
           r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
       if (average_SNII_heating == impossible) average_SNII_heating = &
           r_SNII*ampl_SN/(sqrt(2*pi)*h_SNII*SN_interval_rhom)
-      if (lroot) print*,'initialize_interstellar: t_interval_SNI, SNI rate =', &
+      if (lroot.and.ip==1963) print*,'initialize_interstellar: t_interval_SNI, SNI rate =', &
           t_interval_SNI,SNI_factor*SNI_area_rate
       if (laverage_SNI_heating) then
         if (lSNI.or.lSNII) then
-          if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
+          if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNI_heating =', &
               average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
               t_interval_SNI/(t_interval_SNI+t*heatingfunction_fadefactor)* &
               heatingfunction_scalefactor
         else
-          if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
+          if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNI_heating =', &
               average_SNI_heating*sqrt(2*pi)*h_SNI*SN_interval_rhom* &
               heatingfunction_scalefactor
         endif
       else
-        if (lroot) print*,'initialize_interstellar: average_SNI_heating = 0'
+        if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNI_heating = 0'
       endif
       if (laverage_SNII_heating) then
         if (lSNI.or.lSNII) then
-          if (lroot) print*,'initialize_interstellar: average_SNII_heating =', &
+          if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =', &
               average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
               t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)* &
               heatingfunction_scalefactor
         else
-          if (lroot) print*,'initialize_interstellar: average_SNII_heating =', &
+          if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =', &
               average_SNII_heating*sqrt(2*pi)*h_SNII*SN_interval_rhom* &
               heatingfunction_scalefactor
         endif
       else
-        if (lroot) print*,'initialize_interstellar: average_SNII_heating =0'
+        if (lroot.and.ip==1963) print*,'initialize_interstellar: average_SNII_heating =0'
       endif
 !
-      if (lroot .and. (ip<14)) then
+      if (lroot.and.ip==1963) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
       endif
@@ -1531,9 +1531,9 @@ module Interstellar
 !
 !  Identifier
 !
-      if (lroot.and.headtt.and.ip<14) print*,'heat_interstellar: ENTER'
+      if (lroot.and.headtt.and.ip==1963) print*,'heat_interstellar: ENTER'
 !
-      if (lroot) print*, &
+      if (lroot.and.ip==1963) print*, &
          'heat_interstellar: calculating z-dependent uv-heating'// &
          'function for initial hydrostatic and thermal equilibrium'
 !
@@ -1874,7 +1874,7 @@ module Interstellar
 !
 !  Identifier
 !
-      if (headtt .and. (ip<14)) print*,'check_SNI: ENTER'
+      if (headtt.and.ip==1963) print*,'check_SNI: ENTER'
 !
       if (lSN_list) then
         iSNR=get_free_SNR()
@@ -1933,22 +1933,22 @@ module Interstellar
             l_SNI=.true.
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
-            if (lroot .and. (ip<14)) print*,'check_SNI: TOO HOT, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'check_SNI: TOO HOT, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-            if (lroot .and. (ip<14)) print*,'check_SNI: TOO UNEVEN, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'check_SNI: TOO UNEVEN, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-            if (lroot .and. (ip<14)) print*,'check_SNI: TOO RARIFIED, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'check_SNI: TOO RARIFIED, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           endif
         enddo
 !
         if (try_count==0) then
-          if (lroot .and. (ip<14)) print*, &
+          if (lroot.and.ip==1963) print*, &
               "check_SNI: 10 RETRIES OCCURED - skipping SNI insertion"
         endif
 !
@@ -1976,7 +1976,7 @@ module Interstellar
 !
 !  Identifier
 !
-      if (headtt .and. (ip<14)) print*,'check_SNIIb: ENTER'
+      if (headtt.and.ip==1963) print*,'check_SNIIb: ENTER'
 !
       if (t >= t_next_SNII) then
         iSNR=get_free_SNR()
@@ -2019,22 +2019,22 @@ module Interstellar
           if (ierr==iEXPLOSION_OK) then
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
-            if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-            if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO UNEVEN, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'check_SNIIb: TOO UNEVEN, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-            if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO RARIFIED, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'check_SNIIb: TOO RARIFIED, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           endif
         enddo
 !
         if (try_count==0) then
-          if (lroot .and. (ip<14)) print*, &
+          if (lroot.and.ip==1963) print*, &
               "check_SNIIb: 10 RETRIES OCCURED - skipping SNII insertion"
         endif
 !
@@ -2230,11 +2230,11 @@ module Interstellar
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/ &
 !            surface_massII/mu
         t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
-        if (lroot.and.ip<14) print*, &
+        if (lroot.and.ip==1963) print*, &
             'set_interval: expected interval for SNI  =',t_interval
       else
         t_interval=solar_mass/surface_massII/SNII_mass_rate/mu
-        if (lroot.and.ip<14) print*, &
+        if (lroot.and.ip==1963) print*, &
             'set_interval: expected interval for SNII  =',t_interval
       endif
 !
@@ -2264,7 +2264,7 @@ module Interstellar
 !
 !  Identifier
 !
-      if (lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
+      if (lroot.and.headtt.and.ip==1963) print*,'check_SNII: ENTER'
 !
       if (l_SNI) return         ! Only do if no SNI this step.
 !
@@ -2316,10 +2316,10 @@ module Interstellar
         call mpibcast_real(fsum1)
         cloud_mass_dim=fsum1
 !
-        if (ip<14) print*, &
+        if (ip==1963) print*, &
             'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !
-        if (lroot .and. ip < 14) &
+        if (lroot .and. ip ==1963) &
             print*, 'check_SNII: cloud_mass_dim,fsum(1):', &
             cloud_mass_dim,fsum1
 !
@@ -2341,14 +2341,14 @@ module Interstellar
         endif
         call random_number_wrapper(franSN)
 !
-        if (lroot.and.ip<14) then
-        if (cloud_mass_dim>0.0.and.franSN<=2.0*prob_SNII) then
-          print*,'check_SNII: freq,prob,rnd,dtsn:', &
-              freq_SNII,prob_SNII,franSN,dtsn
-          print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,', &
-              'mass_SN,cloud_tau',&
-              frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
-        endif
+        if (lroot.and.ip==1963) then
+          if (cloud_mass_dim>0.0.and.franSN<=2.0*prob_SNII) then
+            print*,'check_SNII: freq,prob,rnd,dtsn:', &
+                freq_SNII,prob_SNII,franSN,dtsn
+            print*,'check_SNII: frac_heavy,frac_converted,cloud_mass_dim,', &
+                'mass_SN,cloud_tau',&
+                frac_heavy,frac_converted,cloud_mass_dim,mass_SN,cloud_tau
+          endif
         endif
 !
 !  If likelihood of SNII greater than random number locate SNII.
@@ -2370,7 +2370,7 @@ module Interstellar
 !
 !  Locate the next explosion.
 !
-          if (lroot.and.ip<14) print*, &
+          if (lroot.and.ip==1963) print*, &
               'check_SNII: cloud_mass_byproc:',cloud_mass_byproc
           call position_SN_bycloudmass&
               (f,cloud_mass_byproc,SNRs(iSNR),preSN,ierr)
@@ -2491,7 +2491,7 @@ module Interstellar
     real, dimension(3) :: fran3
     integer :: i, nzskip=10 !prevent SN from being too close to boundaries
 !
-    if (headtt .and. (ip<14)) print*,'position_SN_gaussianz: ENTER'
+    if (headtt.and.ip==1963) print*,'position_SN_gaussianz: ENTER'
 !
 !  The disk oscillates. to keep the random dist centred at the disk find
 !  zmode where the peak mean density(z) resides and shift gaussian up/down
@@ -2547,7 +2547,7 @@ module Interstellar
       call mpibcast_real(mpiz,xyproc(1))
       zdisk = mpiz
     endif
-    if (lroot .and. (ip<14)) print*,'position_SN_gaussianz: zdisk =',zdisk
+    if (lroot.and.ip==1963) print*,'position_SN_gaussianz: zdisk =',zdisk
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
@@ -2806,7 +2806,7 @@ module Interstellar
 !
 !  identifier
 !
-      if (lroot.and.ip<14) print*,'position_SN_bycloudmass: ENTER'
+      if (lroot.and.ip==1963) print*,'position_SN_bycloudmass: ENTER'
 !
 !  Construct cumulative distribution function, using cloud_mass_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] ).
@@ -2819,7 +2819,7 @@ module Interstellar
         cum_prob_byproc(icpu)=cum_prob_byproc(icpu-1)+cloud_mass_byproc(icpu)
       enddo
       cum_prob_byproc(:)=cum_prob_byproc(:)/cum_prob_byproc(ncpus)
-      if (lroot.and.ip<14) then
+      if (lroot.and.ip==1963) then
         print*,'position_SN_bycloudmass: cloud_mass_byproc=',cloud_mass_byproc
         print*,'position_SN_bycloudmass: cum_prob_byproc=',cum_prob_byproc
         print*,'position_SN_bycloudmass: cloud_mass=',cloud_mass
@@ -2841,7 +2841,7 @@ module Interstellar
           exit
         endif
       enddo
-      if (lroot.and.ip<14) &
+      if (lroot.and.ip==1963) &
             print*, 'position_SN_bycloudmass: franSN(1),SNR%indx%iproc=',&
                                               franSN(1),SNR%indx%iproc
 !
@@ -2873,7 +2873,7 @@ module Interstellar
               if (franSN(1) <= cum_prob_onproc) then
                 SNR%indx%l=l+l1-1; SNR%indx%m=m; SNR%indx%n=n
                 tmpsite=(/SNR%indx%l,SNR%indx%m,SNR%indx%n,SNR%indx%iproc/)
-                if (ip<14) print*, &
+                if (ip==1963) print*, &
                     'position_SN_bycloudmass: tmpsite,iproc,it =',&
                     tmpsite,iproc,it
 !
@@ -2881,7 +2881,7 @@ module Interstellar
 !  skip and get a new random number next time step.
 !
                 do ipsn=1,npreSN
-                  if (lroot .and. ip<14) &
+                  if (lroot.and.ip==1963) &
                       print*,'position_by_cloudmass: preSN,iproc,it =',&
                       preSN,iproc,it
                   if ((SNR%indx%l==preSN(1,ipsn)) .and. &
@@ -2889,12 +2889,12 @@ module Interstellar
                       (SNR%indx%n==preSN(3,ipsn)) .and. &
                       (SNR%indx%iproc==preSN(4,ipsn))) then
                     ierr=iEXPLOSION_TOO_HOT
-                    if (ip<14) print*, &
+                    if (ip==1963) print*, &
                         'position_by_cloudmass: iEXPLOSION_TOO_HOT ='&
                         ,preSN,iproc,it
                   endif
                 enddo
-                if (lroot.and.(ip<14)) print*, &
+                if (lroot.and.ip==1963) print*, &
                     'position_SN_bycloudmass:cum_mass,cum_prob_onproc,franSN(1),l,m,n=', &
                     cum_mass,cum_prob_onproc,franSN(1),l,m,n
                 exit find_SN
@@ -2907,7 +2907,7 @@ module Interstellar
 !
       call mpibcast_int(ierr,SNR%indx%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
-        if (ip<14) print*, &
+        if (ip==1963) print*, &
           'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
         return
       endif
@@ -2915,10 +2915,10 @@ module Interstellar
       call mpibcast_int(tmpsite,4,SNR%indx%iproc)
       SNR%indx%l=tmpsite(1);SNR%indx%m=tmpsite(2)
       SNR%indx%n=tmpsite(3);SNR%indx%iproc=tmpsite(4)
-      if (ip<14) print*, &
+      if (ip==1963) print*, &
           'position_SN_bycloudmass: MPI tmpsite,iproc,it =',tmpsite,iproc,it
       call share_SN_parameters(f,SNR)
-      if (ip<14) print*,'position_SN_bycloudmass: SN_param,iproc,it =', &
+      if (ip==1963) print*,'position_SN_bycloudmass: SN_param,iproc,it =', &
           SNR%indx%l,SNR%indx%m,SNR%indx%n,SNR%indx%iproc,iproc,it
 !
 !  Reset status for next explosion.
@@ -3024,16 +3024,16 @@ module Interstellar
           yH=SNR%site%yH,ss=SNR%site%ss,ee=SNR%site%ee)
       SNR%site%TT=exp(SNR%site%lnTT)
 !
-      if (lroot.and.ip<14) print*, &
+      if (lroot.and.ip==1963) print*, &
           'share_SN_parameters: SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n,=', &
           SNR%indx%iproc,SNR%indx%l,SNR%indx%m,SNR%indx%n
-      if (lroot.and.ip<14) print*, &
+      if (lroot.and.ip==1963) print*, &
           'share_SN_parameters: x_SN,y_SN,z_SN=', &
           SNR%feat%x,SNR%feat%y,SNR%feat%z
-      if (lroot.and.ip<14) print*, &
+      if (lroot.and.ip==1963) print*, &
           'share_SN_parameters: SNR%site%rho,SNR%site%ss,SNR%site%TT=', &
           SNR%site%rho,SNR%site%ss,SNR%site%TT
-      if (lroot.and.ip<14) print*, &
+      if (lroot.and.ip==1963) print*, &
           'share_SN_parameters: SNR%feat%radius,SNR%feat%dr=', &
           SNR%feat%radius,SNR%feat%dr
 !
@@ -3078,7 +3078,7 @@ module Interstellar
 !
 !  identifier
 !
-      if (lroot.and.ip<14) print*,'explode_SN: SN type =',SNR%indx%SN_type
+      if (lroot.and.ip==1963) print*,'explode_SN: SN type =',SNR%indx%SN_type
 !
 !  Calculate explosion site mean density.
 !
@@ -3108,7 +3108,7 @@ module Interstellar
             Nsol_ratio_best=Nsol_ratio
             radius_best=SNR%feat%radius
           endif
-          if (lroot.and.ip<14) then
+          if (lroot.and.ip==1963) then
             print*,'explode_SN: i',i
             print*,'explode_SN: radius_min',radius_min
             print*,'explode_SN: radius_max',radius_max
@@ -3146,15 +3146,15 @@ module Interstellar
       !SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(0.55)*ampl_SN**(0.22)
       SNR%feat%t_SF = SFt_norm/SNR%feat%rhom**(4./7)*ampl_SN**(3./14)
 !
-      if (lroot.and.ip<14) print*,&
+      if (lroot.and.ip==1963) print*,&
          'explode_SN: Shell forming start time t_SF', SNR%feat%t_SF
-      if (lroot.and.ip<14) print*,&
+      if (lroot.and.ip==1963) print*,&
          'explode_SN: Elapsed time since shell formation',&
          SNR%feat%t_sedov-SNR%feat%t_SF
 !
       RPDS=SFr_norm*ampl_SN**(2./7)/SNR%feat%rhom**(3./7)
 !
-      if (lroot.and.ip<14) print*,&
+      if (lroot.and.ip==1963) print*,&
         'explode_SN: Shell forming radius RPDS', RPDS
 !
 !  Calculate the SN kinetic energy fraction for shell formation energy
@@ -3173,9 +3173,9 @@ module Interstellar
         frackin=min(0.75-frac_ecr,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
-        if (lroot.and.ip<14) print*,&
+        if (lroot.and.ip==1963) print*,&
            'explode_SN: Reset fractions SNE frackin', frackin
-        if (lroot.and.ip<14) print*,&
+        if (lroot.and.ip==1963) print*,&
            'explode_SN: SNE fractional energy kampl_SN, eampl_SN',&
         ktmp, etmp
       endif
@@ -3195,7 +3195,7 @@ module Interstellar
 !
       endif
 !
-      if (lroot.and.ip<14) print*,'explode_SN: c_SN =',c_SN
+      if (lroot.and.ip==1963) print*,'explode_SN: c_SN =',c_SN
 !
 !  Mass insertion normalization.
 !
@@ -3214,7 +3214,7 @@ module Interstellar
 !
         endif
 !
-        if (lroot.and.ip<14) print*,'explode_SN: cmass_SN  =',cmass_SN
+        if (lroot.and.ip==1963) print*,'explode_SN: cmass_SN  =',cmass_SN
       else
         cmass_SN=0.
       endif
@@ -3255,7 +3255,7 @@ module Interstellar
             'explode_SN: cvelocity_SN is uu_sedov, velocity profile = ', &
             velocity_profile
 !
-        if (lroot.and.ip<14) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
+        if (lroot.and.ip==1963) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
 !
       else
         cvelocity_SN=0.
@@ -3450,7 +3450,7 @@ module Interstellar
 ! FAG need to consider effect of CR and fcr on total energy for data collection
 ! and the energy budget applied to the SNR similar to kinetic energy?
 !
-      if (lroot.and.ip<14) print*, &
+      if (lroot.and.ip==1963) print*, &
           'explode_SN: SNR%feat%MM=',SNR%feat%MM
       if (.not. lSN_list) then
         if (SNR%indx%SN_type==1) then
@@ -3513,13 +3513,13 @@ module Interstellar
       if (present(ierr).and.lSN_list) then
         select case (ierr)
           case (iEXPLOSION_TOO_HOT)
-            if (lroot .and. (ip<14)) print*,'explode_SN: TOO HOT, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'explode_SN: TOO HOT, (x,y,z) =',&
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,'rho =', SNR%site%rho
           case (iEXPLOSION_TOO_UNEVEN) 
-            if (lroot .and. (ip<14)) print*,'explode_SN: TOO UNEVEN, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'explode_SN: TOO UNEVEN, (x,y,z) =',&
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,'rho =', SNR%site%rho
           case (iEXPLOSION_TOO_RARIFIED)
-            if (lroot .and. (ip<14)) print*,'explode_SN: TOO RARIFIED, (x,y,z) =',&
+            if (lroot.and.ip==1963) print*,'explode_SN: TOO RARIFIED, (x,y,z) =',&
                 SNR%feat%x, SNR%feat%y, SNR%feat%z,'rho =', SNR%site%rho
         endselect
       endif
@@ -3617,7 +3617,7 @@ module Interstellar
       call mpiallreduce_max(rhotmp,rhomax)
       if (present(ierr)) then
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
-        if (lroot .and. (ip<14)) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
+        if (lroot.and.ip==1963) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
                                    rhomax, rhomin, ierr, remnant%feat%radius
       endif
 !
