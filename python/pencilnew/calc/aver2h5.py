@@ -195,7 +195,7 @@ def zav2h5(
 
             print('writing {0} from rank {1} for proc {2}'.format(field, rank, iproc))
 
-   	        dsname='{0}/{1}/{2}'.format(dgroup,field,dataset)
+            dsname='{0}/{1}/{2}'.format(dgroup,field,dataset)
             if len(comp)==1:
                 ds[dsname][:,:,yndx_tmp[ipy],:]=tensor.__getattribute__(field)
             elif len(comp)==2:
