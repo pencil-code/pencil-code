@@ -12,7 +12,7 @@ if [[ $1 == par ]]; then
   headerdir=common
   modinit=$modheader
   modecs=../../$modname'_par_decs_c.h'
-  rm $modecs
+  rm -f $modecs
 else
   ptype=int
   headerdir=diagnostics
