@@ -32,9 +32,11 @@ gpu/cuda/core/cuda_core.o: gpu/cuda/core/cuda_core.cu gpu/cuda/core/cuda_core.cu
 #
 ../../cparam_c.h: ../../cparam.f90 ../../cparam.inc ../../cparam.local ../../scripts/cparam2c ../../scripts/cparam.sed
 	@cd ../..; cparam2c
-../../cdata_c.h: ../../cdata.f90 ../../scripts/cdata2c ../../scripts/cdata.sed
+../../cdata_c.h: ../../defines_cdata.h ../../cdata.f90 ../../scripts/cdata2c ../../scripts/cdata.sed
 	@cd ../..; cdata2c
-../../diagnostics_c.h: ../../diagnostics.f90 ../../scripts/diagnostics2c ../../scripts/diags.sed
+../../defines_cdata.h: ../../cdata.f90 ../../scripts/cdata2c ../../scripts/cdata.sed
+	@cd ../..; cdata2c
+../../diagnostics_c.h: ../../diagnostics.f90 ../../scripts/diagnostics2c
 	@cd ../..; diagnostics2c
 ../../forcing_c.h: ../../forcing.f90 ../../scripts/forcing2c
 	@cd ../..; forcing2c

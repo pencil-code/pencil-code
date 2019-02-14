@@ -6,7 +6,8 @@ MAIN_OBJ = gpu_astaroth.o
 OBJECTS = $(CUSOURCES:.cu=.o) $(CCSOURCES:.cc=.o)
 
 # Settings for taito-gpu
-CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
+CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
+#-gencode arch=compute_60,code=sm_60 --expt-relaxed-constexpr
 OPTFLAGS = -O1 
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
@@ -65,3 +66,12 @@ clean:
 	@rm -f $(OBJECTS) $(MAIN_OBJ)
 	@rm -f *.so .sentinel
 #	@rm -f $(CHEADERS)
+
+# Deep cleaning, e.g. necessary with Compiler change
+#
+cleann: clean
+	@rm -f ../../defines_cdata.h ../../diagnostics_c.h ../../forcing_c.h ../../forcing_pars_c.h ../../sub_c.h
+	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags.h | xargs rm -f
+	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags_init.h | xargs rm -f
+	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < common/PC_modulepardecs.h | xargs rm -f
+	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < common/PC_modulepars.h | xargs rm -f
