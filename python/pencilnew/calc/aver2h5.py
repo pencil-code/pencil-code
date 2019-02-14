@@ -34,12 +34,12 @@ def zav2h5(
     import pencilnew as pcn
     from .. import read
     from ..read import averages
-    from ..export import fvars, create_aver_sph 
-    from ..calc import tensors_sph 
+    from ..export import fvars, create_aver_sph
+    from ..calc import tensors_sph
     import h5py
     import copy
 
-    timereducers= { 
+    timereducers= {
                   'mean': lambda x,args:  np.mean(x,axis=-3,keepdims=True),
                                            #np.std(x,axis=-3)),
                   'mean_last': lambda x,args:  np.mean(np.take(
@@ -60,10 +60,10 @@ def zav2h5(
     """
     try:
         from mpi4py import MPI
-    
+
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()    # rank of processor on which this script runs
-        size = comm.Get_size()    # number of  ~  ~  ~  ~ 
+        size = comm.Get_size()    # number of  ~  ~  ~  ~
 
         l_mpi = True
         l_mpi = l_mpi and (size != 1)
@@ -74,7 +74,7 @@ def zav2h5(
         comm=None
     dim=read.dim()
     nx, nny = dim.nx, dim.ny
-    ayindex=np.arange(nny) 
+    ayindex=np.arange(nny)
     if l_mpi:
         y_chunks = np.array_split(ayindex,size, axis=0)
         yindex   = y_chunks[rank]
@@ -128,7 +128,7 @@ def zav2h5(
         hdf5dir+filename,
         dataset,
         fvars,
-        (1, ny, nx, nt), 
+        (1, ny, nx, nt),
         (0,grid.y,grid.x,tensor.t),
         hdf5dir=hdf5dir,
         dgroup=dgroup
@@ -138,7 +138,7 @@ def zav2h5(
     else:
         imask=tensor.imask
 
-    yndx_tmp = np.array_split(yindex, dim.nprocy)    
+    yndx_tmp = np.array_split(yindex, dim.nprocy)
     # list of vectors ipy*ny/nprocy ... (ipy+1)*ny/nprocy - 1, ipy=0,nprocy-1
 
     for ipy in range(dim.nprocy):            # over all y processors of the PC run
@@ -152,8 +152,8 @@ def zav2h5(
             print('calculating tensors on proc {0} rank {1}'.format(iproc,rank))
             """
             if iproc==1:             # as there is corrupted data on proc 1
-                with open('zaver.in', 'r') as f: 
-                    zavers = f.read().splitlines() 
+                with open('zaver.in', 'r') as f:
+                    zavers = f.read().splitlines()
                 for zaver in  zavers:
                     zav.z.__setattr__(zaver,np.insert(
                             zav.z.__getattribute__(zaver),3766,
@@ -195,7 +195,7 @@ def zav2h5(
 
             print('writing {0} from rank {1} for proc {2}'.format(field, rank, iproc))
 
-   	    dsname='{0}/{1}/{2}'.format(dgroup,field,dataset)
+   	        dsname='{0}/{1}/{2}'.format(dgroup,field,dataset)
             if len(comp)==1:
                 ds[dsname][:,:,yndx_tmp[ipy],:]=tensor.__getattribute__(field)
             elif len(comp)==2:
