@@ -61,6 +61,7 @@ module Cdata
   integer :: nzgrid_eff=nzgrid
   real, dimension(4) :: yy_biquad_weights=impossible
   integer :: nycut=my, nzcut=mz
+  real :: rel_dang=0.
 !
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
