@@ -106,7 +106,7 @@ module Param_IO
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
       ldirect_access, ltolerate_namelist_errors, &
-      lyinyang, cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut
+      lyinyang, cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -170,7 +170,7 @@ module Param_IO
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
-      cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, &
+      cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
       lignore_nonequi
 !
   namelist /IO_pars/ &
@@ -354,7 +354,8 @@ module Param_IO
         if (lroot.and..not.lrun) &
           call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
         lperi(2:3) = .false.; lpole = .false.
-        bcy='yy'; bcz='yy'
+        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
+        bcy='nil'; bcz='nil'
       endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
@@ -494,7 +495,8 @@ module Param_IO
       if (lyinyang) then
         if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
         lperi(2:3) = .false.; lpole = .false.
-        bcy='yy'; bcz='yy'
+        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
+        bcy='nil'; bcz='nil'
       endif
 !
 !  Print SVN id from first line.
