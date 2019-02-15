@@ -12,7 +12,7 @@ OPTFLAGS = -O1
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
 #  Original
-CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -g -G
+CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -g -G -lm
 
 # MV's adaptation for TIARA cluster. Compiles with: 
 #  1) cuda/9.0   3) openmpi/2.0.1_ic16.0            5) hdf5/1.8.16_openmpi_2.0.1_ic16.0 7) gcc/5.3.0
@@ -70,7 +70,7 @@ clean:
 # Deep cleaning, e.g. necessary with Compiler change
 #
 cleann: clean
-	@rm -f ../../defines_cdata.h ../../diagnostics_c.h ../../forcing_c.h ../../forcing_pars_c.h ../../sub_c.h
+	@rm -f ../../cparam_c.h ../../defines_cdata.h ../../diagnostics_c.h ../../forcing_c.h ../../forcing_pars_c.h ../../sub_c.h
 	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags.h | xargs rm -f
 	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags_init.h | xargs rm -f
 	@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < common/PC_modulepardecs.h | xargs rm -f
