@@ -1086,6 +1086,8 @@ module PointMasses
       real, dimension (mpvar), optional :: dfp_pt
       logical, optional :: flag_pt
 !
+      real, dimension (3) :: uup
+!
       if (lcallpointmass) then
         positions    =  fq(k,ixq:izq)
       else
