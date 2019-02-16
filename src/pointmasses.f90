@@ -57,7 +57,6 @@ module PointMasses
   logical :: ldust=.false.
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
-  !logical :: linertial_frame=.true.
   logical :: lnoselfgrav_primary=.true.
   logical :: lgas_gravity=.true.,ldust_gravity=.false.
   logical :: lcorrect_gravity_lstart=.false.
@@ -94,7 +93,7 @@ module PointMasses
       GNewton, bcqx, bcqy, bcqz, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, iprimary, &
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
-      ltempering, & !linertial_frame, & !lcartesian_evolution,
+      ltempering, & 
       ipotential_pointmass, density_scale,&
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
@@ -1086,8 +1085,6 @@ module PointMasses
       real, dimension (mpvar), optional :: dfp_pt
       logical, optional :: flag_pt
 !
-      real, dimension (3) :: uup
-!
       if (lcallpointmass) then
         positions    =  fq(k,ixq:izq)
       else
@@ -1099,13 +1096,8 @@ module PointMasses
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !
-          !if (lcartesian_evolution) then 
           call get_evr(positions,fq(ks,ixq:izq),evr_cart)!,.true.)
           rr2=sum(evr_cart**2)
-          !else
-          !  call get_evr(positions,fq(ks,ixq:izq),evr,.false.)
-          !  rr2=sum(evr**2)
-          !endif
           rsmooth2=r_smooth(ks)**2
 !
 !  Particles relative distance from each other:
@@ -1693,31 +1685,9 @@ module PointMasses
 !
 !  Add indirect term if the star is fixed at the center
 !
-        !if (.not.linertial_frame) call add_indirect_term(ks,ggt)
-!
       enddo
 !
     endsubroutine get_total_gravity
-!***********************************************************************
-    subroutine add_indirect_term(ks,ggt)
-!
-!  Add the terms due to the reference frame being away from the baricenter.
-!  So far, only for one perturber (two massive bodies), and in Cartesian coordinates.
-!
-!  23-jun-14/wlad: coded
-!
-      real, dimension(mx,3) :: ggt
-      real :: rr1_3
-      integer, intent(in) :: ks
-!
-      if (ks/=iprimary) then
-        rr1_3=(fq(ks,ixq)**2 + fq(ks,iyq)**2 + fq(ks,izq)**2)**(-1.5)
-        ggt(:,1) = ggt(:,1) - GNewton*pmass(ks)*fq(ks,ixq)*rr1_3
-        ggt(:,2) = ggt(:,2) - GNewton*pmass(ks)*fq(ks,iyq)*rr1_3
-        ggt(:,3) = ggt(:,3) - GNewton*pmass(ks)*fq(ks,izq)*rr1_3
-      endif
-!
-    endsubroutine add_indirect_term
 !***********************************************************************
     subroutine initcond_correct_selfgravity(f,velocity,k)
 !
@@ -2364,12 +2334,10 @@ module PointMasses
       if (lroot) then
         if (itsub==1) then
           dfq(1:nqpar,:) = 0.0
-          !if (lcartesian_evolution) &
-               dfq_cart(1:nqpar,:)=0.0
+          dfq_cart(1:nqpar,:)=0.0
         else
           dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
-          !if (lcartesian_evolution) & 
-               dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
+          dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
         endif
       endif
 !
