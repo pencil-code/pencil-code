@@ -1006,6 +1006,9 @@ module Density
               ky_lnrho(j),kz_lnrho(j))
         case ('blob')
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
+        case ('blob_normalized')
+          call blob(ampllnrho(j)/(sqrt2pi*radius_lnrho(j))**3,f,ilnrho, &
+              radius_lnrho(j)*sqrt2,xblob,yblob,zblob)
         case ('blob_hs')
           print*, 'init_lnrho: put a blob in hydrostatic equilibrium:'// &
           'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
