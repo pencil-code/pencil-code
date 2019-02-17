@@ -106,9 +106,10 @@ module Special
 !  Do this here because shared variables for this array doesn't work on Beskow.
 !
   integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs   ,specGWh   ,specStr
-  real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specStr, specStrhel
+  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm   ,specStr
+  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
+  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
+  public :: specStr, specStrhel
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -246,8 +247,10 @@ module Special
 !
       select case (cstress_prefactor)
         case ('1'); stress_prefactor=1.; EGWpref=8.*pi
-        case ('6'); stress_prefactor=6.; EGWpref=1./(32.*pi)
+        case ('6'); stress_prefactor=6.; EGWpref=1./6.
+        case ('6old'); stress_prefactor=6.; EGWpref=1./(32.*pi)
         case ('16pi'); stress_prefactor=16.*pi; EGWpref=1./(32.*pi)
+        case ('16pi_corr'); stress_prefactor=16.*pi; EGWpref=1./(16.*pi)
         case ('16piG/c^2'); stress_prefactor=16.*pi*G_Newton_cgs/c_light_cgs**2;
           EGWpref=c_light_cgs**2/(32.*pi*G_Newton_cgs)
         case default
@@ -708,6 +711,7 @@ module Special
       S_X_re=0. ; S_X_im=0.
       specGWs=0.; specGWshel=0.
       specGWh=0.; specGWhhel=0.
+      specGWm=0.; specGWmhel=0.
       specStr=0.; specStrhel=0.
 !
 !  P11, P22, P33, P12, P23, P31
@@ -948,6 +952,25 @@ module Special
                      +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
                      *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
                      -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
+                endif
+!
+!  Gravitational wave mixed spectrum computed from h and g
+!
+                if (GWm_spec) then
+                  specGWm(ik)=specGWm(ik) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhX)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhT)  *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim)*f(nghost+ikz,nghost+ikx,nghost+iky,iggTim)
+                  specGWmhel(ik)=specGWmhel(ik)-sign_switch*( &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,ihhXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggT  ) &
+                     +f(nghost+ikz,nghost+ikx,nghost+iky,iggXim) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,ihhT  ) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,ihhX  ) &
+                     *f(nghost+ikz,nghost+ikx,nghost+iky,iggTim) &
+                     -f(nghost+ikz,nghost+ikx,nghost+iky,iggX  ) &
                      *f(nghost+ikz,nghost+ikx,nghost+iky,ihhTim) )
                 endif
 !
