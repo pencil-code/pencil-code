@@ -85,9 +85,10 @@ module Special
 !  Do this here because shared variables for this array doesn't work on Beskow.
 !
   integer, parameter :: nk=nxgrid/2
-  real, dimension(nk) :: specGWs   ,specGWh   ,specStr
-  real, dimension(nk) :: specGWshel,specGWhhel,specStrhel
-  public :: specGWs, specGWshel, specGWh, specGWhhel, specStr, specStrhel
+  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm,   specStr
+  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
+  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
+  public :: specStr, specStrhel
 !
 ! Declare index of new variables in f array (if any).
 !
