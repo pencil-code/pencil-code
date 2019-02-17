@@ -565,8 +565,10 @@ program start
 !
 !  Set random seed independent of processor after initial conditions.
 !  Do this only if seed0 is not already changed from its original value.
+!  This seems to be a bug. If we want to set seed0 globally, why should it
+!  then always be 1812? If added "lseed_global.and." so we can turn it off.
 !
-  if (seed0==1812) then
+  if (lseed_global.and.seed0==1812) then
     seed(1)=seed0
     call random_seed_wrapper(PUT=seed)
   endif
