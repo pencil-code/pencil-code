@@ -529,6 +529,7 @@ module Snapshot
         if (EMF_spec) call powerEMF(f,'EMF')
         if (GWs_spec) call powerGWs(f,'GWs')
         if (GWh_spec) call powerGWs(f,'GWh')
+        if (GWm_spec) call powerGWs(f,'GWm')
         if (GWd_spec) call powerhel(f,'GWd')
         if (GWe_spec) call powerhel(f,'GWe')
         if (GWf_spec) call powerhel(f,'GWf')
