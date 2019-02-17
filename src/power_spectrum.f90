@@ -1561,7 +1561,7 @@ module power_spectrum
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
-    spectrum_sum=.5*spectrum_sum
+    !spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     if (lformat) then
       do k = 1, nk
@@ -1610,7 +1610,8 @@ module power_spectrum
     use Mpicomm, only: mpireduce_sum
     use SharedVariables, only: get_shared_variable
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
-    use Special, only: specGWs, specGWshel, specGWh, specGWhhel, specStr, specStrhel
+    use Special, only: specGWs, specGWshel, specGWh, specGWhhel, &
+                       specGWm, specGWmhel, specStr, specStrhel
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
@@ -1650,6 +1651,12 @@ module power_spectrum
 !     call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
       spectrum   =specGWh
       spectrumhel=specGWhhel
+    endif
+    if (sp=='GWm') then
+!     call get_shared_variable('specGWm   ', specGWm   , caller='powerGWs')
+!     call get_shared_variable('specGWmhel', specGWmhel, caller='powerGWs')
+      spectrum   =specGWm
+      spectrumhel=specGWmhel
     endif
     if (sp=='Str') then
 !     call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
