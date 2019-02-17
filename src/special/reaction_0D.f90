@@ -37,13 +37,16 @@ module Special
     init_qq, AA0
 !
   ! run parameters
-  real :: kp=.1, km=.1, kC=.8, kX=.8
+  real :: kp=.1, km=.1, kC=0., kX=.1
   namelist /special_run_pars/ &
     kp, km, kC, kX
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_AAm=0, idiag_DDm=0, idiag_LLm=0
+  integer :: idiag_AAm=0  ! DIAG_DOC: $\langle [A] \rangle$
+  integer :: idiag_DDm=0  ! DIAG_DOC: $\langle [D] \rangle$
+  integer :: idiag_LLm=0  ! DIAG_DOC: $\langle [L] \rangle$
+  integer :: idiag_kC=0   ! DIAG_DOC: $k_C$
 !
   contains
 !
@@ -75,6 +78,10 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
+!  Cannot have kp+km+kX > 1.
+!
+      if ((kp+km+kX)>1.) call fatal_error('reaction_0D','initialize_special')
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -173,9 +180,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rrr, dqA, dqD, dqL
-      real :: d1, d2, d3, d4, d5, d6, d7, Dm, Lm
-      real :: r1, r2, r3, r4, r5, r6, r7
+      real, dimension (nx) :: rrr
+      real ::     d1, d2, d3, d4, d5, d6, d7
+      real :: r0, r1, r2, r3, r4, r5, r6, r7
+      real :: Dm, Lm, Dm_per_proc,Lm_per_proc
+      integer, dimension (nx) :: dqA, dqD, dqL
       integer, dimension (nx) :: qA, qD, qL
       type (pencil_case) :: p
 !
@@ -188,8 +197,26 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
-      Dm=0.
-      Lm=0.
+!  Define state vector
+!
+      qA=f(l1:l2,m,n,1)
+      qD=f(l1:l2,m,n,2)
+      qL=f(l1:l2,m,n,3)
+!
+!  For autocatalysis, need to know the mean number of molecules.
+!
+      if (kC/=0.) then
+        Dm_per_proc=sum(qD)
+        Lm_per_proc=sum(qL)
+        call mpireduce_sum(Dm_per_proc,Dm,1)
+        call mpireduce_sum(Lm_per_proc,Lm,1)
+        call mpibcast_real(Dm)
+        call mpibcast_real(Lm)
+      endif
+!
+!  Recompute kC
+!
+      if (kC/=0..and.(Dm+Lm)/=0.) kC=(1.-(kp+km+kX))*nx/(Dm+Lm)
 !
 !  Determine boundary points
 !
@@ -201,37 +228,67 @@ module Special
       d6=   kC*Lm/nx
       d7=   kX
 !
+      r0=0.
       r1=   d1
       r2=r1+d2
       r3=r2+d3
       r4=r3+d4
       r5=r4+d5
       r6=r5+d6
-      r7=r6+d7
+      r7=r6+d7  !(Enantiomeric cross inhibition)
 !
-!  Define state vector
+!  Produce random numbers
 !
-      qA=f(l1:l2,m,n,1)
-      qD=f(l1:l2,m,n,2)
-      qL=f(l1:l2,m,n,3)
       call random_number_wrapper(rrr)
-      where     (                rrr < r1 .and. qA > 0)
-        dqA=-1.
-        dqD=+1.
-        dqL= 0.
-      elsewhere (rrr >= r1 .and. rrr < r2 .and. qA > 0)
-        dqA=-1.
-        dqD= 0.
-        dqL=+1.
-      elsewhere (rrr >= r2 .and. rrr < r3 .and. qD > 0 .and. qL > 0)
-        dqA=+2.
-        dqD=-1.
-        dqL=-1.
+print*,'AXEL-: ',r4, r5, r6, r7
+print*,'AXEL0: ',rrr
+!
+!  Spontaneous formation of chiral molecule *or*
+!  autocatalysis of D. 
+!
+      where (( (rrr >= r0 .and. rrr < r1) .or. &
+                   (rrr >= r4 .and. rrr < r5) ) .and. qA /= 0)
+        dqA=-1
+        dqD=+1
+        dqL= 0
+      endwhere
+!
+!  Spontaneous formation of chiral molecule *or*
+!  autocatalysis of L. 
+!
+      where (( (rrr >= r1 .and. rrr < r2) .or. &
+                   (rrr >= r5 .and. rrr < r6) ) .and. qA /= 0)
+        dqA=-1
+        dqD= 0
+        dqL=+1
+      endwhere
+!
+      where ((rrr >= r2 .and. rrr < r3) .and. qD > 0)
+        dqA= 1
+        dqD=-1
+        dqL= 0
+      endwhere
+!
+      where ((rrr >= r3 .and. rrr < r4) .and. qL > 0)
+        dqA= 1
+        dqD= 0
+        dqL=-1
+      endwhere
+!
+!  Enantiomeric cross inhibition
+!
+      where (rrr >= r6 .and. rrr < r7 .and. qD > 0 .and. qL > 0)
+        dqA=+2
+        dqD=-1
+        dqL=-1
       endwhere
 !
       df(l1:l2,m,n,1)=df(l1:l2,m,n,1)+dqA
       df(l1:l2,m,n,2)=df(l1:l2,m,n,2)+dqD
       df(l1:l2,m,n,3)=df(l1:l2,m,n,3)+dqL
+print*,'AXEL1: ',qA
+print*,'AXEL2: ',dqA
+print*
 !
 !  diagnostics
 !
@@ -239,6 +296,7 @@ module Special
         if (idiag_AAm/=0) call sum_mn_name(f(l1:l2,m,n,1),idiag_AAm)
         if (idiag_DDm/=0) call sum_mn_name(f(l1:l2,m,n,2),idiag_DDm)
         if (idiag_LLm/=0) call sum_mn_name(f(l1:l2,m,n,3),idiag_LLm)
+        if (idiag_kC /=0) call   save_name(kC            ,idiag_kC)
       endif
 !
     endsubroutine dspecial_dt
@@ -302,13 +360,14 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_AAm=0; idiag_DDm=0; idiag_LLm=0
+        idiag_AAm=0; idiag_DDm=0; idiag_LLm=0; idiag_kC=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'AAm',idiag_AAm)
         call parse_name(iname,cname(iname),cform(iname),'DDm',idiag_DDm)
         call parse_name(iname,cname(iname),cform(iname),'LLm',idiag_LLm)
+        call parse_name(iname,cname(iname),cform(iname),'kC',idiag_kC)
       enddo
 !
     endsubroutine rprint_special
