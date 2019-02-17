@@ -222,6 +222,7 @@ module Cdata
   integer :: nseed=0, seed0=1812
   integer, parameter :: ndustspec0=8
   real, dimension (2) :: fran1,fran2
+  logical :: lseed_global=.true.
 !
 !  Module flags.
 !
@@ -521,7 +522,7 @@ module Cdata
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false.
-  logical :: GWs_spec=.false., GWh_spec=.false., Str_spec=.false.
+  logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false.
   logical :: GWf_spec=.false., GWg_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
