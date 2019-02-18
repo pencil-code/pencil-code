@@ -4500,11 +4500,13 @@ module General
 !  Rotate by Pi about z axis, then by Pi/2 about x axis.
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
-          ii=i+ishift
-          if (ii<1.or.ii>my) cycle
-
           jj=j+jshift
           if (jj<1.or.jj>mz) cycle
+
+          ii=i+ishift
+          if (ishift/=0) ishift=ishift+ith_shift
+
+          if (ii<1.or.ii>my) cycle
 
           sth=sinth(ii); cth=costh(ii)
           xprime = -cosph(jj)*sth
@@ -4523,12 +4525,9 @@ module General
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
           if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
 !
-          !thphprime(1,itp,jtp) = y(ii)   !!!
-          !thphprime(2,itp,jtp) = z(jj)   !!!
+          !thphprime(1,itp,jtp) = ii   !!!
+          !thphprime(2,itp,jtp) = jj   !!!
 !
-!if (iproc_world==0.and.size(thphprime,3)==41) &
-!  print'(4(f7.4,1x),4(i2,1x))', y(ii), z(jj), thphprime(:,itp,jtp), i,j,itp,jtp
-          if (ishift/=0) ishift=ishift+ith_shift
         enddo
         if (jshift/=0) jshift=jshift+iph_shift
       enddo
@@ -4590,11 +4589,9 @@ module General
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
           if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
 !
-          !thphprime(1,itp,jtp) = ii
-          !thphprime(2,itp,jtp) = jj
+          !thphprime(1,itp,jtp) = ii   !!!
+          !thphprime(2,itp,jtp) = jj   !!!
 !
-!if (iproc_world==0.and.size(thphprime,3)==41) &
-!  print'(4(f7.4,1x),4(i2,1x))', y(i), z(j), thphprime(:,itp,jtp), i,j,itp,jtp
           if (ishift/=0) ishift=ishift+ith_shift
         enddo
         if (jshift/=0) jshift=jshift+iph_shift
@@ -4603,7 +4600,13 @@ module General
     endsubroutine yy_transform_strip_other
 !***********************************************************************
     subroutine copy_kinked_strip_z(len_cut,jstart_,source,dest,j,shift,leftright,ladd_)
-
+!
+! Copies (optionally cumulatively) variable j from rectangular strip source into variable j of kinked strip
+! in dest, consisting of a horizontal (y-aligned) part with 
+! length len_cut and width nghost and a slanted part with width 2*nghost.
+!
+! 20-jan-19/MR: coded
+!
       use Cdata, only: iproc, iproc_world
       use Cdata, only: lyang,lroot
 
@@ -4615,43 +4618,50 @@ module General
 
       integer :: istart,iend,jstart,jend
       logical :: ladd
-!return !!!
+
       jstart=jstart_
       jend=jstart+nghost-1
       ladd=loptest(ladd_)
 
       if (leftright) then   !upper and lower left
         istart=1; iend=my-len_cut
-        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd)
-!if (lroot.and..not.lyang) print*, 'jstart:jend=', jstart,jend
+        jstart=jstart_+shift*nghost; jend=jstart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,my-len_cut+1:,:,j),dest(:,:,:,j),0,shift,ladd) ! outer skew band
+        jstart=jstart_; jend=jstart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd) ! main skew band
+
         if (ladd) then
-          dest(:,my-len_cut+1:my,jstart:jend,j) = dest  (:,my-len_cut+1:my,jstart:jend,j) &
-                                                 +source(:,my-len_cut+1:my,1:nghost,j)
+          dest(:,my-len_cut+1:my,jstart:jend,j) = dest  (:,my-len_cut+1:my,jstart:jend,j) &      ! horizonzal band 
+                                                 +source(:,2*(my-len_cut)+1:my,1:nghost,j)
         else
-          dest(:,my-len_cut+1:my,jstart:jend,j) = source(:,my-len_cut+1:my,1:nghost,j)
+          dest(:,my-len_cut+1:my,jstart:jend,j) = source(:,2*(my-len_cut)+1:my,1:nghost,j)
         endif
 !if (notanumber(source(:,my-len_cut+1:my,1:nghost,j))) print*, 'source(:,my-len_cut+1:my,1:nghost,j): iproc,j=', iproc, iproc_world, j
       else                  !upper and lower right
-        istart=len_cut+1; iend=my
-!if (.not.lyang.and.j==4) print*, 'iproc,istart:iend,jstart:jend=', iproc,istart,iend,jstart,jend
-!if (.not.lyang.and.j==4) print*, 'max(dest(lnrho))=', maxval(abs(dest(:,1:len_cut,jstart:jend,j)))
         if (ladd) then
-          dest(:,:len_cut,jstart:jend,j) = dest  (:,:len_cut,jstart:jend,j) &
+          dest(:,:len_cut,jstart:jend,j) = dest  (:,:len_cut,jstart:jend,j) &                    ! horizonzal band 
                                           +source(:,:len_cut,1:nghost,j)
         else
           dest(:,:len_cut,jstart:jend,j) = source(:,:len_cut,1:nghost,j)
         endif
-!if (.not.lyang.and.j==4) print*, 'max(source(nrho))=', maxval(abs(source(:,1:len_cut,1:nghost,j)))
 if (notanumber(source(:,1:len_cut,1:nghost,j))) print*, 'source(:,1:len_cut,1:nghost,j): iproc,j=', iproc, iproc_world, j
-        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd)
+        istart=len_cut+1; iend=my
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd) ! main skew band
+        jstart=jstart_-shift*nghost; jend=jstart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,my-len_cut+1:,:,j),dest(:,:,:,j),0,shift,ladd) ! outer skew band
       endif
 
     endsubroutine copy_kinked_strip_z
 !***********************************************************************
     subroutine copy_kinked_strip_y(len_cut,istart_,source,dest,j,shift,leftright,ladd_)
-
+!
+! Copies (optionally cumulatively) variable j from rectangular strip source into variable j of kinked strip
+! in dest, consisting of a vertical (z-aligned) part with 
+! length len_cut and width nghost and a slanted part with width 2*nghost.
+!
+! 20-jan-19/MR: coded
+!
       use Cdata, only: iproc, iproc_world
-      use Cdata, only: lyang,lroot
 
       real, dimension(:,:,:,:), intent(IN)   :: source
       real, dimension(:,:,:,:), intent(INOUT):: dest
@@ -4661,60 +4671,59 @@ if (notanumber(source(:,1:len_cut,1:nghost,j))) print*, 'source(:,1:len_cut,1:ng
 
       integer :: istart,iend,jstart,jend
       logical :: ladd
-!return !!!
+
       istart=istart_
       iend=istart+nghost-1
       ladd=loptest(ladd_)
       
       if (leftright) then   !upper and lower left
         jstart=1; jend=mz-len_cut
-        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)
-!if (lroot.and..not.lyang) print*, 'istart:iend=', istart,iend
-        if (ladd) then
+        istart=istart_+shift*nghost; iend=istart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,mz-len_cut+1:,j),dest(:,:,:,j),shift,0,ladd)   ! outer skew band
+        istart=istart_; iend=istart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)   ! main skew band
+        if (ladd) then                                                                             ! vertical band
           dest(:,istart:iend,mz-len_cut+1:mz,j) = dest  (:,istart:iend,mz-len_cut+1:mz,j) &
-                                                 +source(:,1:nghost,mz-len_cut+1:mz,j)
+                                                 +source(:,1:nghost,2*(mz-len_cut)+1:mz,j)
         else
-          dest(:,istart:iend,mz-len_cut+1:mz,j) = source(:,1:nghost,mz-len_cut+1:mz,j)
+          dest(:,istart:iend,mz-len_cut+1:mz,j) = source(:,1:nghost,2*(mz-len_cut)+1:mz,j)
         endif
 !if (notanumber(source(:,1:nghost,mz-len_cut+1:mz,j))) print*, 'source(:,1:nghost,mz-len_cut+1:mz,j): iproc,j=', iproc, iproc_world, j
       else                  !upper and lower right
         jstart=len_cut+1; jend=mz
-!if (.not.lyang.and.j==4) print*, 'iproc,istart:iend,jstart:jend=', iproc,istart,iend,jstart,jend
-!if (.not.lyang.and.j==4) print*, 'max(dest(lnrho))=', maxval(abs(dest(:,istart:iend,1:len_cut,j)))
         if (ladd) then
-          dest(:,istart:iend,1:len_cut,j) = dest  (:,istart:iend,1:len_cut,j) &
+          dest(:,istart:iend,1:len_cut,j) = dest  (:,istart:iend,1:len_cut,j) &                    ! vertical band
                                            +source(:,1:nghost,1:len_cut,j)
         else
           dest(:,istart:iend,1:len_cut,j) = source(:,1:nghost,1:len_cut,j)
         endif
-!if (.not.lyang.and.j==4) print*, 'max(source(nrho))=', maxval(abs(source(:,1:nghost,1:len_cut,j)))
 if (notanumber(source(:,1:nghost,1:len_cut,j))) print*, 'source(:,1:nghost,1:len_cut,j): iproc,j=', iproc, iproc_world,j
-        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)
+        jstart=len_cut+1; jend=mz
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)   ! main skew band
+        istart=istart_-shift*nghost; iend=istart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,mz-len_cut+1:,j),dest(:,:,:,j),shift,0,ladd)   ! outer skew band
       endif
 
     endsubroutine copy_kinked_strip_y
 !***********************************************************************
-    subroutine copy_with_shift(i1, i2, j1, j2, source, dest, ishift_, jshift_,ladd_)
+    subroutine copy_with_shift(i1, i2, j1, j2, source, dest, ishift_, jshift_,ladd)
 !
-! copies (optionally cumulatively) into slanted strip
+! Copies (optionally cumulatively) into slanted strip.
+! Sets i1,i2 (or j1,j2) to last interval with shift.
 !
 ! 20-sep-18/MR: coded
 !
-      use Cdata, only: lyang,lroot
       use Cdata, only: iproc, iproc_world
 
       real, dimension(:,:,:), intent(IN)   :: source
       real, dimension(:,:,:), intent(INOUT):: dest
       integer,                intent(INOUT):: i1, i2, j1, j2
       integer,                intent(IN)   :: ishift_, jshift_
-      logical, optional,      intent(IN)   :: ladd_
+      logical, optional,      intent(IN)   :: ladd
 
-      integer :: ishift, jshift, i, j, ii, jj, id, jd, is, js
-      logical :: ladd
-!if (jshift_==0) return !!!
-!if (.not.lyang.and.lroot) print*, 'i1, i2, j1, j2, ishift_, jshift_=', i1, i2, j1, j2, ishift_, jshift_
+      integer :: ishift, jshift, i, j, ii, jj, id, jd, is, js, iimax, jjmax
 
-      ladd=loptest(ladd_)
+      iimax=size(dest,2); jjmax=size(dest,3)
 
       jshift=jshift_
       if (ishift_/=0) then; is=1; else; is=i1; endif
@@ -4728,12 +4737,14 @@ if (notanumber(source(:,1:nghost,1:len_cut,j))) print*, 'source(:,1:nghost,1:len
 !
           ii=i+ishift
           jj=j+jshift
-          if (ladd) then
-            dest(:,ii,jj) = dest(:,ii,jj) + source(:,is,js)
-          else
-            dest(:,ii,jj) = source(:,is,js)
+
+          if (ii>=1.and.jj>=1.and.ii<=iimax.and.jj<=jjmax) then
+            if (loptest(ladd)) then
+              dest(:,ii,jj) = dest(:,ii,jj) + source(:,is,js)
+            else
+              dest(:,ii,jj) = source(:,is,js)
+            endif
           endif
-if (jshift_/=0.and..not.lyang.and.lroot) write(110,*) 'ii,jj,is,js=', ii,jj,is, js
 if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, iproc_world, j
           js=js+1
 !
@@ -4749,9 +4760,12 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
     endsubroutine copy_with_shift
 !***********************************************************************
     subroutine reset_triangle(i1,i2,j1,j2,f)
-
-    use Cdata, only: lyang,lroot,lfirst,ldiagnos,iproc
-
+!
+!  Sets triangular area of float array f, defined by i1,i2,j1,j2, to zero.
+!  "Right angle" of triangle is at (i1,j1).
+! 
+!  28-jan-2019/MR: coded
+!
     integer,                intent(IN) :: i1,i2,j1,j2
     real, dimension(:,:,:), intent(OUT):: f
 
@@ -4770,9 +4784,12 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
     endsubroutine reset_triangle
 !***********************************************************************
     subroutine reset_triangle_inds(i1,i2,j1,j2,inds_arr)
-
-    use Cdata, only: lyang,lroot,lfirst,ldiagnos,iproc
-
+!
+!  Sets triangular area of integer array inds_arr, defined by i1,i2,j1,j2, to zero.
+!  "Right angle" of triangle is at (i1,j1).
+! 
+!  28-jan-2019/MR: coded
+!
     integer,                 intent(IN) :: i1,i2,j1,j2
     integer, dimension(:,:), intent(OUT):: inds_arr
 
@@ -4847,11 +4864,13 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 !
 !  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
-!  Both vec and vec_transformed must have shape (dimx,ny,nz,2).
+!  The r component is transfered unaltered.
+!  Both vec and vec_transformed must have shape (dimx,ny,nz,3).
 !  For use outside mn-loop.
 !
 ! 30-mar-2016/MR: coded
 ! 28-aug-2017/MR: cared for singularity at pole
+! 30-jan-2019/MR: index bounds now parameters; transferes r component unaltered
 !
       use Cdata, only: costh, sinth, cosph, sinph
 
@@ -4859,13 +4878,13 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
       integer,                  intent(IN) :: indthl,indthu,indphl,indphu
       real, dimension(:,:,:,:), intent(OUT):: transformed
 
-      integer :: ig,jg
+      integer :: ig,jg,jl,ju
       real :: sisisq,sinth1,a,b
-      
-      transformed(:,:,:,1)=vec(:,indthl:indthu,indphl:indphu,1)
 
-      do ig=indphl,indphu
-        do jg=indthl,indthu
+      jl=max(m1,indthl); ju=min(m2,indthu)
+
+      do ig=max(n1,indphl),min(n2,indphu)
+        do jg=jl,ju
 
           sisisq=sqrt(1.-(sinth(jg)*sinph(ig))**2)
           if (sisisq==0.) then                     ! i.e. at pole of other grid -> theta and phi components indefined
@@ -4875,6 +4894,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
             a=cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
           endif
 
+          transformed(:,jg-indthl+1,ig-indphl+1,1) =   vec(:,jg,ig,1)
           transformed(:,jg-indthl+1,ig-indphl+1,2) = b*vec(:,jg,ig,2) + a*vec(:,jg,ig,3)
           transformed(:,jg-indthl+1,ig-indphl+1,3) =-a*vec(:,jg,ig,2) + b*vec(:,jg,ig,3)
 
