@@ -254,6 +254,7 @@ module Equ
 !
       if (lslope_limit_diff.and.lfirst) then
         f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
+!print*,'vor magnetic:', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
         call update_char_vel_energy(f)
         call update_char_vel_magnetic(f)
         call update_char_vel_hydro(f)
@@ -411,6 +412,7 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
+        !if (imn_array(m,n)==0) cycle
 !
 !  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
 !  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
@@ -721,6 +723,8 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
         llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
+
+        !if (imn_array(m,n)==0) cycle
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -756,7 +760,8 @@ module Equ
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
           advec_cs2=0.0
           maxadvec=0.
-          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
+          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
+              (ltestfield_z.and.iuutest>0)) &
             advec2=0.
           if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy) &
             advec2_hypermesh=0.0
@@ -979,7 +984,8 @@ module Equ
 !  (lmaxadvec_sum=.false. by default)
 !
           advec2=advec2+advec_cs2
-          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
+          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray.or. &
+              (ltestfield_z.and.iuutest>0)) &
             maxadvec=maxadvec+sqrt(advec2)
 
           if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
