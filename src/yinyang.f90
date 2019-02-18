@@ -7,7 +7,7 @@
 !
 module Yinyang
 !
-  use Cparam, only: impossible, nygrid
+  use Cparam, only: impossible, nygrid, nx, pi
   use Cdata, only: iproc_world, lroot, yy_biquad_weights, iproc, lyang
 
   implicit none
@@ -48,7 +48,8 @@ module Yinyang
 !
 !  20-dec-15/MR: coded
 ! 
-      use General, only: transform_spher_cart_yy, notanumber,transform_cart_spher,transform_thph_yy_other
+      use General, only: transform_spher_cart_yy, notanumber,transform_cart_spher, &
+                         transform_thph_yy_other, yy_transform_strip_other,transform_cart_spher_other
       use Cdata, only: iproc_world, itsub, m1, m2, n1, n2, lrun
 
       type(ind_coeffs),         intent(IN) :: indcoeffs
@@ -60,6 +61,8 @@ module Yinyang
       real, dimension(:,:,:,:), allocatable :: tmp
       real, dimension(size(buffer,1)) :: fmi, fmx, dist
       logical :: l0
+      real, dimension(2,1,1) :: thphprime
+      real, dimension(nx,3) :: tmp2
 
       indthl=indcoeffs%inds(ith,iph,1); 
       if (indthl<-1) return
@@ -73,16 +76,9 @@ module Yinyang
 !  Vector field, is transformed to Cartesian basis of *other* grid before being interpolated 
 !
         allocate (tmp(size(buffer,1),nthrng,nphrng,3)); tmp=0.
-        call transform_spher_cart_yy(f,indthl,indthu,indphl,indphu,tmp,lyy=.true.)
-        !call transform_thph_yy_other(f(:,indthl:indthu,indphl:indphu,2:3),tmp(:,:,:,2:3))
-        !tmp(:,:,:,1)=f(:,indthl:indthu,indphl:indphu,1)
-if (.false.) then
-!if (.not.lyang.and.iproc==1.and.ith<3.and.iph<3) then
-  print*, '------'
-  print'(16(e10.3,1x))', f(31,indthl:indthu,indphl:indphu,2)**2+f(31,indthl:indthu,indphl:indphu,3)**2
-  print'(16(e10.3,1x))', tmp(31,:,:,2)**2+tmp(31,:,:,3)**2
-  print*, '------'
-endif
+        !call transform_spher_cart_yy(f,indthl,indthu,indphl,indphu,tmp,lyy=.true.)
+        call transform_thph_yy_other(f,indthl,indthu,indphl,indphu,tmp)
+
         do igp=1,nphrng; do igt=1,nthrng
           if (indcoeffs%coeffs2(ith,iph,igt,igp)/=0.) then
           buffer(:,i2buf,i3buf,:) = buffer(:,i2buf,i3buf,:)+indcoeffs%coeffs2(ith,iph,igt,igp)*tmp(:,igt,igp,:)
@@ -90,6 +86,11 @@ endif
           endif
         enddo; enddo
 
+        ! the following tb used when interpolation is done with the Cartesian components: transformed to spherical ones
+        !!call yy_transform_strip_other([indcoeffs%pcoors(ith,iph,1)],[indcoeffs%pcoors(ith,iph,2)],thphprime)
+        !!tmp2=buffer(:,i2buf,i3buf,:)
+        !!call transform_cart_spher_other(tmp2,thphprime(1,1,1),thphprime(2,1,1))
+        !!buffer(:,i2buf,i3buf,:)=tmp2
 if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indphl, i2buf,i3buf=', indthl,indphl, i2buf,i3buf
       else
 !
@@ -714,7 +715,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !  20-jan-18/MR: biquintic interpolation added: now on each side five situations
 !                exist in which two processors contribute to interpoland.
 !
-      use General, only: find_index_range_hill, notanumber
+      use General, only: find_index_range_hill, notanumber, itoa
       use Cdata,   only: ny, nz, y, z, dy, dz, lfirst_proc_y, lfirst_proc_z, nghost, &
                          llast_proc_y, llast_proc_z, lroot, iproc, lyang, lstart
       use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD, BICUB, QUADSPLINE, BIQUIN
@@ -731,6 +732,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
       real :: dth, dph, dthp, dphp, qth1, qth2, qph1, qph2
       logical :: okt, okp
       integer :: igapt, igapp
+      character(LEN=240) :: txt
 
       if (lyang) then
         if (.not.allocated(overlap_thrngs)) then
@@ -893,7 +895,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
             if (present(ngap)) then
               if (igapt/=NOGAP .neqv. igapp/=NOGAP) then
 !
-! If the position of the point is special w.r.t. exatcly one direction, it is
+! If the position of the point is special w.r.t. exactly one direction, it is
 ! detected by two processors (finally a division by four is performed by the
 ! caller!).
 !
@@ -903,6 +905,7 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 ! If the position of the point is special w.r.t. both directions, it would be
 ! detected by four processors, but this can only happen if in the theta direction
 ! there are only two processors.
+print*, 'DOUBLE GAP: iproc=', iproc
 !
                 ngap=ngap+1
               endif
@@ -970,16 +973,24 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
               endif
               
             endif
+            !if (iproc_world>=30.and.iproc_world<=50) write(iproc_world,*) thphprime(:,ip,jp)
           endif
 
         enddo
       enddo
 
-      if (.not.lyang.and.(nasym_th/=0 .or. nasym_ph/=0)) then
-        if (nasym_th/=0) print'(a,i4,a,i4,a)', 'Warning: in processor ',iproc, ', ', nasym_th, &
-                              ' points subject to asymmetric interpolation in theta direction!'
-        if (nasym_ph/=0) print'(a,i4,a,i4,a)', 'Warning: in processor ',iproc, ', ', nasym_ph, &
-                              ' points subject to asymmetric interpolation in phi direction!'
+      if (.false.) then
+      !if (.not.lyang.and.(nasym_th/=0 .or. nasym_ph/=0)) then
+        txt='Warning: in processor '//trim(itoa(iproc))//','
+        if (nasym_th/=0) txt=trim(txt)//' '//trim(itoa(nasym_th))
+        if (nasym_th/=0.and.nasym_ph/=0) txt=trim(txt)//' and'
+        if (nasym_ph/=0) txt=trim(txt)//' '//trim(itoa(nasym_ph))
+        txt=trim(txt)//' points subject to asymmetric interpolation in'
+        if (nasym_th/=0) txt=trim(txt)//' theta'
+        if (nasym_th/=0.and.nasym_ph/=0) txt=trim(txt)//' and'
+        if (nasym_ph/=0) txt=trim(txt)//' phi'
+        txt=trim(txt)//' direction!'
+        print*, trim(txt)
         print*, '        Consider increasing overlap of grids by making dang (more) negative in start.f90!'
       endif
 
