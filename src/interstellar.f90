@@ -3113,7 +3113,9 @@ module Interstellar
             print*,'explode_SN: radius_min',radius_min
             print*,'explode_SN: radius_max',radius_max
             print*,'explode_SN: radius_best',radius_best
+            print*,'explode_SN: N_sol',Nsol_ratio*sol_mass_tot
           endif
+          if (radius_max-radius_min<radius_min*SNR%feat%dr*0.01) exit
         enddo
         SNR%feat%radius=radius_best
         call get_properties(f,SNR,rhom,ekintot,rhomin)
@@ -3170,7 +3172,7 @@ module Interstellar
         else
           frackin = 0.
         endif
-        frackin=min(0.75-frac_ecr,frackin)
+        frackin=min(0.15,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip==1963) print*,&
@@ -3485,7 +3487,7 @@ module Interstellar
         print*, 'explode_SN:       rho, TT = ', SNR%site%rho,SNR%site%TT
         print*, 'explode_SN:    maximum TT = ', maxTT
         print*, 'explode_SN:  Mean density = ', SNR%feat%rhom
-        print*, 'explode_SN:  Total energy = ', SNR%feat%EE
+        print*, 'explode_SN:  Total energy = ', SNR%feat%EE+SNR%feat%CR
         print*, 'explode_SN:    CR energy  = ', SNR%feat%CR
         print*, 'explode_SN:    Added mass = ', SNR%feat%MM
         print*, 'explode_SN: Ambient N_sol = ', site_mass/solar_mass
@@ -3493,7 +3495,7 @@ module Interstellar
         print*, 'explode_SN:   Shell speed = ', uu_sedov
         write(1,'(i10,E13.5,5i6,12E13.5)')  &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, SNR%indx%n, &
-            SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, SNR%site%TT, SNR%feat%EE,&
+            SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, SNR%site%TT, SNR%feat%EE+SNR%feat%CR,&
             SNR%feat%t_sedov, SNR%feat%radius, site_mass/solar_mass, maxTT, t_interval_SN, SNrate
         close(1)
       endif
