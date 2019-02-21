@@ -479,15 +479,15 @@ module Viscosity
 !
       if (lrun) then
         if (lroot) then
-        if ((lvisc_simplified.or.lvisc_rho_nu_const.or. &
-             lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or. &
-             lvisc_nu_tdep.or.lvisc_nu_cspeed.or.&
-             lvisc_mu_cspeed).and.nu==0.0) &
+          if ((lvisc_simplified.or.lvisc_rho_nu_const.or. &
+               lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or. &
+               lvisc_nu_tdep.or.lvisc_nu_cspeed.or.&
+               lvisc_mu_cspeed).and.nu==0.0) &
+              call warning('initialize_viscosity', &
+                           'Viscosity coefficient nu is zero!')
+          if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
             call warning('initialize_viscosity', &
-            'Viscosity coefficient nu is zero!')
-        if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
-            call warning('initialize_viscosity', &
-            'Viscosity coefficient zeta is zero!')
+                         'Viscosity coefficient zeta is zero!')
         endif
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
             call fatal_error('initialize_viscosity', &
