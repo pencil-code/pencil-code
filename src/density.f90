@@ -279,16 +279,14 @@ module Density
       if (lroot) call svn_id( &
           "$Id$")
 !
-! mpoly needs to be put here as it initialize_density it were
-! to late for other modules (especially the nomodule noentropy).
+! mpoly needs to be put here as in initialize_density it were
+! too late for other modules (especially the nomodule noentropy).
 !
-      call put_shared_variable('mpoly', &
-          mpoly, caller='register_density')
+      call put_shared_variable('mpoly',mpoly,caller='register_density') 
 !
 !  Communicate lrelativistic_eos to entropy too.
 !
-      call put_shared_variable('lrelativistic_eos', &
-          lrelativistic_eos, caller='register_density')
+      call put_shared_variable('lrelativistic_eos',lrelativistic_eos) 
 
     endsubroutine register_density
 !***********************************************************************
@@ -346,7 +344,8 @@ module Density
 !
       if (.not.ldensity_nolog.and.lweno_transport) then
         lweno_transport=.false.
-        call warning('initialize_density','disabled WENO transport for log density')
+        !call warning('initialize_density','disabled WENO transport for logarithmic density')
+        call fatal_error('initialize_density','can not do WENO transport for logarithmic density!')
       endif
 
       lreference_state = ireference_state/='nothing'
@@ -889,10 +888,10 @@ module Density
 !
 !  Find the total mass for later use if lconserve_total_mass = .true.
 !
-      mtot: if (lrun .and. total_mass < 0.0) then
+      if (lrun .and. total_mass < 0.0) then
         total_mass = mean_density(f) * box_volume
         if (lreference_state) total_mass = total_mass + reference_state_mass
-      endif mtot
+      endif
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -2365,99 +2364,90 @@ module Density
 !
 !  Continuity equation.
 !
-      if (lcontinuity_gas .and. .not. lweno_transport .and. &
-          .not. lffree .and. .not. lreduced_sound_speed .and. &
-          ieos_profile=='nothing' .and. .not. lfargo_advection) then
-        if (ldensity_nolog) then
-          density_rhs= - p%ugrho - p%rho*p%divu
-        else
-          if (lrelativistic_eos) then
-            density_rhs=-fourthird*(p%uglnrho+p%divu)
-            if (lhydro) then
-              call multvs(p%uu,p%uglnrho+p%divu,tmpv)
-              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+onethird*tmpv
-            endif
+      if (lcontinuity_gas) then
+        if (.not. lweno_transport .and. &
+            .not. lffree .and. .not. lreduced_sound_speed .and. &
+            ieos_profile=='nothing' .and. .not. lfargo_advection) then
+          if (ldensity_nolog) then
+            density_rhs= - p%ugrho  - p%rho*p%divu
           else
-            density_rhs= - p%uglnrho - p%divu
+            density_rhs= - p%uglnrho- p%divu
+            if (lrelativistic_eos) then
+              if (lhydro) then
+                call multvs(p%uu,density_rhs,tmpv)
+                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
+              endif
+              density_rhs=fourthird*density_rhs
+            endif
           endif
+        else
+          density_rhs=0.
         endif
-      else
-        density_rhs=0.
-      endif
 !
 !  WENO transport.
 !
-      if (lcontinuity_gas .and. lweno_transport) then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - p%transprho
-        else
-          call fatal_error('dlnrho_dt','can not do WENO transport for '// &
-              'logarithmic density!')
-        endif
-      endif
+        if (lweno_transport) density_rhs= density_rhs - p%transprho
 !
 !  Choice of vertical profile in front of density evolution.
 !  Default is off. This is useful to simulate outer halo regions.
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
-      if (lcontinuity_gas .and. ieos_profile=='surface_z') then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-          if (ldensity_profile_masscons) &
-              density_rhs= density_rhs -dprofz_eos(n)*p%rho*p%uu(:,3)
-        else
-          density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
-          if (ldensity_profile_masscons) &
-              density_rhs= density_rhs -dprofz_eos(n)*p%uu(:,3)
+        if (ieos_profile=='surface_z') then
+          if (ldensity_nolog) then
+            density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+            if (ldensity_profile_masscons) &
+                density_rhs= density_rhs -dprofz_eos(n)*p%rho*p%uu(:,3)
+          else
+            density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
+            if (ldensity_profile_masscons) &
+                density_rhs= density_rhs -dprofz_eos(n)*p%uu(:,3)
+          endif
         endif
-      endif
 !
 !  If we are solving the force-free equation in parts of our domain.
 !
-      if (lcontinuity_gas .and. lffree) then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                       *(p%ugrho + p%rho*p%divu)
-          if (ldensity_profile_masscons) &
-               density_rhs=density_rhs - dprofx_ffree   *p%rho*p%uu(:,1) &
-                                       - dprofy_ffree(m)*p%rho*p%uu(:,2) &
-                                       - dprofz_ffree(n)*p%rho*p%uu(:,3)
-        else
-          density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n)) &
-                       *(p%uglnrho + p%divu)
-          if (ldensity_profile_masscons) &
-               density_rhs=density_rhs -dprofx_ffree   *p%uu(:,1) &
-                                       -dprofy_ffree(m)*p%uu(:,2) &
-                                       -dprofz_ffree(n)*p%uu(:,3)
+        if (lffree) then
+          if (ldensity_nolog) then
+            density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+                                       *(p%ugrho + p%rho*p%divu)
+            if (ldensity_profile_masscons) &
+                 density_rhs=density_rhs - p%rho*(  dprofx_ffree   *p%uu(:,1) &
+                                                  + dprofy_ffree(m)*p%uu(:,2) &
+                                                  + dprofz_ffree(n)*p%uu(:,3))
+          else
+            density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n)) &
+                         *(p%uglnrho + p%divu)
+            if (ldensity_profile_masscons) &
+                 density_rhs=density_rhs -dprofx_ffree   *p%uu(:,1) &
+                                         -dprofy_ffree(m)*p%uu(:,2) &
+                                         -dprofz_ffree(n)*p%uu(:,3)
+          endif
         endif
-      endif
 !
 !  Use reduced sound speed according to Rempel (2005), ApJ, 622, 1320;
 !  see also Hotta et al. (2012), A&A, 539, A30.
 !
-      if (lcontinuity_gas .and. lreduced_sound_speed) then
-        if (ldensity_nolog) then
-          density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
-        else
-          density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
+        if (lreduced_sound_speed) then
+          if (ldensity_nolog) then
+            density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
+          else
+            density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
+          endif
         endif
-      endif
 !
-      if (lcontinuity_gas .and. lfargo_advection) then
-        if (ldensity_nolog) then
-          density_rhs = density_rhs - p%uuadvec_grho   - p%rho*p%divu
-        else
-          density_rhs = density_rhs - p%uuadvec_glnrho - p%divu
+        if (lfargo_advection) then
+          if (ldensity_nolog) then
+            density_rhs = density_rhs - p%uuadvec_grho   - p%rho*p%divu
+          else
+            density_rhs = density_rhs - p%uuadvec_glnrho - p%divu
+          endif
         endif
-      endif
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + density_rhs
-      else
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
+
       endif
 !
 !  Mass sources and sinks.
