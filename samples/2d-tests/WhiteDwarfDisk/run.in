@@ -22,7 +22,7 @@
 !
   max_walltime=85500
 !
-  tmax=376992 ! 6000                                                                             
+  tmax=376992 ! 6000 orbits
 !
   lwrite_dvar=T
   lread_aux=T
@@ -49,8 +49,8 @@
 /
 &special_run_pars
   ldust_pressureforce=T
-  factor_photoelectric=1.0    ! photo heating                                                    
-  factor_localiso=0.5         ! isothermal                                                       
+  factor_photoelectric=1.0    ! photo heating
+  factor_localiso=0.5         ! isothermal
 /
 &shock_run_pars
 /

@@ -1,23 +1,24 @@
-!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)                                
-!                                                                                                
-! Initialisation parameters for shocktube problem                                                
-!                                                                                                
+!
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for white dwarf disk problem
+!
 &init_pars
   cvsid='$Id: start.in,v 1.2 2019/02/11 21:08:12 wlyra Exp $',
-  ip=6,                        ! debugging parameter                                            
-  xyz0  =  0.4,-3.141592,-0.048,       ! first corner of box                                     
+  ip=14,                        ! debugging parameter
+  xyz0  =  0.4,-3.141592,-0.048,       ! first corner of box
   xyz1  =  2.5, 3.141592, 0.048
-!                                                                                                
-  lperi = F  , T  , T,         ! periodic direction?!                                            
+!
+  lperi = F  , T  , T,         ! periodic direction?
   bcx = 'a:out','a2','s','a2','s'
-!                                                                                                
+!
   lwrite_ic=T
   coord_system='cylindric'
   lcylindrical_gravity=T
-!                                                                                                
+!
   lwrite_aux=T
   llocal_iso=T
-!                                                                                                
+!
 /
 &initial_condition_pars
   density_power_law=0.0
