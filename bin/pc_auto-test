@@ -129,6 +129,7 @@ my %tests = (
                          cylindrical-globaldisk-dzone
                          2d-tests/selfgravdisk-logspirals
                          2d-tests/turbulent_potential
+                         2d-tests/WhiteDwarfDisk
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
