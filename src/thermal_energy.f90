@@ -113,7 +113,7 @@ module Energy
 ! variables for slices given in video.in
 !
   integer :: ivid_pp=0
-  real, dimension(:,:), allocatable :: pp_xz,pp_yz,pp_xy,pp_xy2,pp_xy3,pp_xy4
+  real, dimension(:,:), allocatable :: pp_xz,pp_yz,pp_xy,pp_xy2,pp_xy3,pp_xy4,pp_xz2
 !
 ! General variables for operator split terms.
 !
@@ -835,7 +835,7 @@ module Energy
           if (lwrite_slice_yz) then
             do n = n1, n2
               do m = m1, m2
-                call eoscalc(ieosvars, f(ix_loc,m,n,idensity), f(ix_loc,m,n,ieth), iz=n, lnTT=slices%yz(m-nghost,n-nghost)
+                call eoscalc(ieosvars, f(ix_loc,m,n,ilnrho), f(ix_loc,m,n,ieth), iz=n, lnTT=slices%yz(m-nghost,n-nghost))
               enddo
             enddo
           endif

@@ -2384,8 +2384,8 @@ module Hydro
         if (lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
           jk=0
           do jj=1,3; do kk=1,3
+            f(l1:l2,m,n,iguij+jk) = p%uij(:,jj,kk)
             jk=jk+1
-            f(l1:l2,m,n,iguij+jk-1) = p%uij(:,jj,kk)
           enddo;enddo
         endif
       endif
@@ -2453,8 +2453,9 @@ module Hydro
 !
         if (ldensity) then
           if (lffree) then
+            tmp=profx_ffree*profy_ffree(m)*profz_ffree(n)
             do j=1,3
-              p%ugu(:,j)=p%ugu(:,j)*profx_ffree*profy_ffree(m)*profz_ffree(n)
+              p%ugu(:,j)=p%ugu(:,j)*tmp
             enddo
           endif
         endif
@@ -2887,19 +2888,19 @@ module Hydro
 !
 !  Advection term.
 !
-      if (ladvection_velocity .and. .not. lweno_transport .and. &
-          .not. lno_meridional_flow .and. .not. lfargo_advection) then
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-      endif
+      if (ladvection_velocity) then
+        if (.not. lweno_transport .and. &
+            .not. lno_meridional_flow .and. .not. lfargo_advection) &
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
 !
 !  WENO transport.
 !
-      if (ladvection_velocity .and. lweno_transport) then
-        do j=1,3
-          df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j) &
-              - p%transpurho(:,j)*p%rho1 + p%uu(:,j)*p%rho1*p%transprho
-        enddo
-      endif
+        if (lweno_transport) then
+          do j=1,3
+            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j) &
+                - (p%transpurho(:,j) - p%uu(:,j)*p%transprho)*p%rho1
+          enddo
+        endif
 !
 !  No meridional flow : turn off the meridional flow (in spherical)
 !  useful for debugging.
@@ -2907,13 +2908,15 @@ module Hydro
 !  18-Mar-2010/AJ: this should probably go in a special module.
 !  12-Mar-2017/WL: Agree, looks very specific.
 !
-      if (ladvection_velocity .and. lno_meridional_flow) then
-        f(l1:l2,m,n,iux:iuy)=0.0
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
-      endif
+        if (lno_meridional_flow) then
+          f(l1:l2,m,n,iux:iuy)=0.0
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
+        endif
 !
-      if (ladvection_velocity .and. lfargo_advection) &
-           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
+        if (lfargo_advection) &
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
+
+      endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -2983,9 +2986,6 @@ module Hydro
 !                   abs(p%uu(:,2))*dy_1(  m  )+ &
 !                   abs(p%uu(:,3))*dz_1(  n  )
 !        endif
-      else
-        advec_uu=0.0
-      endif
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
 !  into account for computing the time step. It is not clear why.
@@ -2994,13 +2994,10 @@ module Hydro
 !  largest velocity (like a 2D rz slice of a Keplerian disk that rotates
 !  on the phi direction).
 !
-      if (lisotropic_advection) then
-         if (lfirst.and.ldt) then
-            if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
-                 advec_uu=sqrt(p%u2*dxyz_2)
-         endif
-      endif
-      if (lfirst.and.ldt) then
+        if (lisotropic_advection) then
+          if (dimensionality<3) advec_uu=sqrt(p%u2*dxyz_2)
+        endif
+
         if (notanumber(advec_uu)) print*, 'advec_uu   =',advec_uu
         maxadvec=maxadvec+advec_uu
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
@@ -3032,7 +3029,7 @@ module Hydro
 !
       if (lforcing_cont_uu) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
-            ampl_fcont_uu*p%fcont(:,:,1)
+                              ampl_fcont_uu*p%fcont(:,:,1)
 !
 !  Damp motions in some regions for some time spans if desired.
 !  For geodynamo: addition of dampuint evaluation.
@@ -3046,10 +3043,10 @@ module Hydro
 !
 !  impose velocity ceiling
 !
-      if (velocity_ceiling/=0.) &
-        call impose_velocity_ceiling(f)
+      if (velocity_ceiling/=0.) call impose_velocity_ceiling(f)
 !
-!  Save the advective derivative as an auxiliary
+!  Save the advective derivative as an auxiliary.
+!  MR: not the full story if there is a Lorentz force
 !
       if (ladv_der_as_aux) then
         f(l1:l2,m,n,i_adv_derx:i_adv_derz) = p%fpres + p%fvisc
@@ -3104,7 +3101,7 @@ module Hydro
       call timing('duu_dt','just before ldiagnos',mnloop=.true.)
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
+        if (ladvection_velocity.and.idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0) call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
