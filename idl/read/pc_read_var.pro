@@ -789,7 +789,24 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       sphere_data=0 & fval=0
     endif else $
       triangulate, yz[0,*], yz[1,*], triangles
+
+    for iyy=0,1 do $
+      for i=0,n_elements(tags)-1 do begin
 ;
+; Calculate derived variables before interpolating and merging.
+;
+        if (total(variables[i] eq varcontent.idlvar) eq 0) then begin
+          if iyy eq 1 then begin 
+            idum=execute( tags[i]+'_tmp = '+tags[i] )
+            idum=execute( 'sz=size('+tags[i]+')')
+            idum=execute( tags[i]+' = make_array([sz[1:sz[0]],2], /float, /nozero)')
+            idum=execute( tags[i]+'['+strjoin(replicate('*,',sz[0]),/single)+'0] ='+tags[i]+'_tmp' )
+            idum=execute( tags[i]+'['+strjoin(replicate('*,',sz[0]),/single)+'1] ='+variables[i] )
+            idum=execute('undefine,'+tags[i]+'_tmp' )
+          endif
+        endif
+      endfor
+
     if cutoff_corners then begin
 ; 
 ;  Fill the cutaway corners of both grids with interpolated data from other grid.
@@ -847,26 +864,6 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         endfor
       endfor
     endif
-
-    for iyy=0,1 do $
-      for i=0,n_elements(tags)-1 do begin
-;
-; Calculate derived variables before merging.
-;
-        if (total(variables[i] eq varcontent.idlvar) eq 0) then begin
-          if iyy eq 0 then $
-            idum=execute( tags[i]+'='+variables[i] ) $
-          else begin
-            idum=execute( 'sz=size('+tags[i]+')')
-            idum=execute( tags[i]+'_tmp = make_array([sz[1:sz[0]],2], /float, /nozero)')
-            idum=execute( tags[i]+'_tmp['+strjoin(replicate('*,',sz[0]),/single)+'0] ='+tags[i] )
-            idum=execute( tags[i]+'_tmp['+strjoin(replicate('*,',sz[0]),/single)+'1] ='+variables[i] )
-            idum=execute( tags[i]+'='+tags[i]+'_tmp' )
-            idum=execute('undefine,'+tags[i]+'_tmp' )
-          endelse
-
-        endif
-      endfor
 ;
 ;  Merge data. Variables have names "*_merge"
 ;
