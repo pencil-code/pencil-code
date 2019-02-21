@@ -175,9 +175,8 @@ module FArrayManager
       integer :: ncomponents
 !
       if (vartype==iFARRAY_TYPE_SCRATCH) then
-        print*,"Registering f-array variable: ",varname
         call fatal_error("farray_register_variable", &
-          "To allocate a scratch variable in the f-array, you must use the"// &
+          "Registering "//trim(varname)//" as scratch variable fails. Use the"// &
           "farray_acquire_scratch_area routine.")
       endif
 !
@@ -196,9 +195,8 @@ module FArrayManager
             ivar=0
             return
           endif
-          print*,"Registering f-array variable: ",varname
           call fatal_error("farray_register_variable", &
-            "f array variable name already exists but with a different "//&
+            "Registering "//trim(varname)//" fails: Name already exists but with a different "//&
             "number of components!")
         endif
         if (item%vartype/=vartype) then
@@ -207,9 +205,8 @@ module FArrayManager
             ivar=0
             return
           endif
-          print*,"Registering f-array variable: ",varname
           call fatal_error("farray_register_variable", &
-                           "f array variable name already exists but with a different variable type!")
+                           "Registering "//trim(varname)//" fails: Name already exists but with a different variable type!")
         endif
         if (.not.lreloading) then
           if (present(ierr)) then
@@ -217,8 +214,7 @@ module FArrayManager
             ivar=0
             return
           endif
-          print*,"Registering f-array variable: ",varname
-          call fatal_error("farray_register_variable","f-array variable name already exists!")
+          call fatal_error("farray_register_variable","Registering "//trim(varname)//" fails: Name already exists!")
         endif
       else
 !
@@ -232,11 +228,10 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array pde variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient mvar variables allocated.  This probably means "//&
+            "Registering "//trim(varname)//" fails: Insufficient mvar variables allocated.  This probably means "//&
             "the MVAR CONTRIBUTION header is incorrect in one of the physics "// &
-            "modules. ")
+            "modules or in cparam.local.")
             endif
           case (iFARRAY_TYPE_AUXILIARY)
             if (naux+ncomponents>maux) then
@@ -245,9 +240,8 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array auxiliary variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient maux variables allocated.  This either means "//&
+            "Registering "//trim(varname)//" fails: Insufficient maux variables allocated.  This either means "//&
             "the MAUX CONTRIBUTION header is incorrect in one of the physics "// &
             "modules. Or that there you are using some code that can, depending "// &
             "on runtime parameters, require extra auxiliary variables.  For the "// &
@@ -260,9 +254,8 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array communicated auxiliary variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient maux_com variables allocated.  This either means "//&
+            "Registering "//trim(varname)//" fails: Insufficient maux_com variables allocated.  This either means "//&
             "the COMMUNICATED AUXILIARIES header is incorrect in one of the physics "// &
             "modules. Or that there you are using some code that can, depending "// &
             "on runtime parameters, require extra auxiliary variables.  For the "// &
@@ -276,18 +269,16 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array global variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient mglobal variables allocated.  This either means "//&
+            "Registering "//trim(varname)//" fails: Insufficient mglobal variables allocated.  This either means "//&
             "the MGLOBAL CONTRIBUTION header is incorrect in one of the physics "// &
             "modules. Or that there you are using some code that can, depending "// &
             "on runtime parameters, require extra global variables.  For the "// &
             "latter try adding an MGLOBAL CONTRIBUTION header to cparam.local.")
             endif
           case default
-            print*,"Registering f-array variable: ",varname
             call fatal_error("farray_register_variable", &
-            "Invalid vartype set")
+            "Registering "//trim(varname)//" fails: Invalid vartype set")
         endselect
 !
         call new_item_atstart(thelist,new=new)
