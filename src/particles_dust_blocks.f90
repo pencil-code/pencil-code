@@ -41,7 +41,7 @@ module Particles
   include 'particles_common.h'
 !
   real, dimension(mz) :: rho0z = 1.0
-  real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0, rpbeta_species=0.0
+  real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
   real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
   real, dimension (3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
@@ -49,7 +49,7 @@ module Particles
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, tausp01=0.0, rpbeta=0.0
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, tausp01=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: epsp_friction_increase=0.0
@@ -63,13 +63,6 @@ module Particles
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
-  real :: particles_insert_rate=0.
-  real :: avg_n_insert, remaining_particles=0.0
-  real :: max_particle_insert_time=huge1
-  real :: frac_init_particles=1.0, particles_insert_ramp_time=0.0
-  real :: tstart_insert_particles=0.0
-  real :: birthring_r=1.0, birthring_width=0.1
-  real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   real :: rad_sphere=0.0
   real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
   real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
@@ -89,9 +82,6 @@ module Particles
   logical :: lcylindrical_gravity_par=.false.
   logical :: lreassign_strat_rhom=.true.
   logical :: lcompensate_sedimentation=.false.
-  logical :: linsert_as_many_as_possible=.false.
-  logical :: lwithhold_init_particles=.false.
-  logical :: lgaussian_birthring=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -127,9 +117,7 @@ module Particles
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       xp1, yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lreassign_strat_rhom, &
-      ldraglaw_eps_stk_transonic, luse_tau_ap, mean_free_path_gas, &
-      lwithhold_init_particles, frac_init_particles, &
-      birthring_r, birthring_width, lgaussian_birthring, lignore_rhop_swarm
+      ldraglaw_eps_stk_transonic, luse_tau_ap, mean_free_path_gas
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -150,11 +138,7 @@ module Particles
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       lcylindrical_gravity_par, lcommunicate_rhop, lcommunicate_np, &
       lcompensate_sedimentation,compensate_sedimentation, &
-      ldraglaw_eps_stk_transonic, luse_tau_ap, mean_free_path_gas, &
-      rpbeta_species, rpbeta, gab_width, initxxp, initvvp, &
-      particles_insert_ramp_time, tstart_insert_particles, birthring_r, &
-      birthring_width, lgaussian_birthring, tstart_rpbeta, &
-      linsert_as_many_as_possible, lignore_rhop_swarm, particles_insert_rate
+      ldraglaw_eps_stk_transonic, luse_tau_ap, mean_free_path_gas
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -443,7 +427,7 @@ module Particles
 !
       use Density, only: beta_glnrho_global
       use EquationOfState, only: gamma, cs20
-      use General, only: random_number_wrapper, normal_deviate
+      use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use Sub
       use InitialCondition, only: initial_condition_xxp,&
@@ -454,7 +438,6 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
-      real, dimension (mpar_loc) :: rr_tmp, az_tmp
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
@@ -993,37 +976,6 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,iyp)= yp0*sqrt(-2*alog(r))*cos(2*pi*p)*sin(2*pi*q)
           enddo
 !
-        case ('birthring')
-          if (birthring_width>tini) then
-            if (lgaussian_birthring) then
-              do k=1,npar_loc
-                call normal_deviate(rr_tmp(k))
-              enddo
-            else
-              call random_number_wrapper(rr_tmp(1:npar_loc))
-            endif
-            rr_tmp(1:npar_loc) = birthring_r+rr_tmp(1:npar_loc)*birthring_width
-          else
-            rr_tmp(1:npar_loc) = birthring_r
-          endif
-          call random_number_wrapper(az_tmp(1:npar_loc))
-          az_tmp(1:npar_loc) = -pi+az_tmp(1:npar_loc)*2.0*pi
-          if (lcartesian_coords) then
-            fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)*cos(az_tmp(1:npar_loc))
-            fp(1:npar_loc,iyp) = rr_tmp(1:npar_loc)*sin(az_tmp(1:npar_loc))
-            fp(1:npar_loc,izp) = 0.0
-          else
-            fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)
-            if (lcylindrical_coords) then
-              fp(1:npar_loc,iyp) = az_tmp(1:npar_loc)
-              fp(1:npar_loc,izp) = 0.0
-            elseif (lspherical_coords) then
-              fp(1:npar_loc,iyp) = pi/2.0
-              fp(1:npar_loc,izp) = az_tmp(1:npar_loc)
-            endif
-          endif
-          if (lroot .and. nzgrid/=0) print*,"Warning, birthring only implemented for 2D"
-!
         case default
           if (lroot) &
               print*, 'init_particles: No such such value for initxxp: ', &
@@ -1384,294 +1336,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine insert_particles(f,fp,ineargrid)
 !
-! Insert particles continuously (when linsert_particles_continuously == T),
-! i.e. in each timestep. If number of particles to be inserted are less
-! than unity, accumulate number over several timesteps until the integer value
-! is larger than one. Keep the remainder and accumulate this to the next insert.
-!
-! Works only for particles_dust - add neccessary variable
-! declarations in particles_tracers to make it work here.
-!
-      use General, only: random_number_wrapper, normal_deviate
-      use Particles_diagnos_state, only: insert_particles_diagnos_state
-      use SharedVariables, only: get_shared_variable
-      use Mpicomm, only: mpireduce_sum_int
-      use Particles_number, only: set_particle_number
-!
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray), intent (inout) :: fp
-      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
-      real, dimension (mpar_loc) :: rr_tmp, az_tmp, OO_tmp
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, tmp
-      integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
-      real, pointer :: gravr
-!
-! Insertion of particles is stopped when maximum number of particles is reached,
-! unless linsert_as_many_as_possible is set.
-! Maximum numer of particles allowed in system is defined by max_particles,
-! initialized to npar. Note that this may cause errors at a processor further
-! downstream, if particles accumulate and mpar_loc is too small.
-! Since root inserts all new particles, make sure
-! npar_loc + n_insert < mpar_loc
-! so that a processor can not exceed its maximum number of particles.
-!
-      if (t>tstart_insert_particles+particles_insert_ramp_time) then
-        particles_insert_rate_tmp = particles_insert_rate
-      else
-        particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
-      endif
-      call mpireduce_sum_int(npar_loc,npar_total)
-!
-      if (lroot) then
-        avg_n_insert=particles_insert_rate_tmp*dt
-        n_insert=int(avg_n_insert + remaining_particles)
-! Remaining particles saved for subsequent timestep:
-        remaining_particles=avg_n_insert + remaining_particles - n_insert
-!
-! Insert particles if maximum count is not reached
-!
-        if ((n_insert+npar_loc <= mpar_loc) .and. (npar_inserted_tot+n_insert <= max_particles) &
-            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
-          linsertmore=.true.
-        else
-          linsertmore=.false.
-        endif
-!
-! Continue inserting even if  max_particles is reached, if linsert_as_many_as_possible
-! is set.
-!
-        if (linsert_as_many_as_possible) then
-          n_insert=min((mpar_loc-npar_loc),n_insert)
-          if ((n_insert+npar_loc <= mpar_loc)  &
-            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
-            linsertmore=.true.
-          endif
-        endif
-!
-        if (linsertmore) then
-! Actual (integer) number of particles to be inserted at this timestep:
-          do iii=npar_loc+1,npar_loc+n_insert
-            ipar(iii)=npar_inserted_tot+iii-npar_loc
-          enddo
-          npar_loc_old=npar_loc
-          npar_loc=npar_loc + n_insert
-!
-! Update total number of inserted particles, npar_inserted_tot.
-! Not the same as npar_total, which is the number of particles in the system,
-! without couting removed particles
-!
-          npar_inserted_tot = n_insert + npar_inserted_tot
-!
-! Insert particles in chosen position (as in init_particles).
-!
-          do j=1,ninit
-            select case (initxxp(j))
-            case ('random-box')
-!
-              do k=npar_loc_old+1,npar_loc
-                if (nxgrid/=1) then
-                  call random_number_wrapper(r)
-                  fp(k,ixp)=r
-                endif
-                if (nygrid/=1) then
-                  call random_number_wrapper(r)
-                  fp(k,iyp)=r
-                endif
-                if (nzgrid/=1) then
-                  call random_number_wrapper(r)
-                  fp(k,izp)=r
-                endif
-                if (lcylindrical_coords) then
-                  xx0=xp0+fp(k,ixp)*Lx0
-                  yy0=yp0+fp(k,iyp)*Ly0
-                  r2=xx0**2+yy0**2
-                  if (nxgrid/=1) fp(k,ixp)=sqrt(r2)
-                  if (nygrid/=1) fp(k,iyp)=atan(yy0/xx0)+pi*(xx0/abs(xx0)-1)*0.5
-                  if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
-                else
-                  if (nxgrid/=1) fp(k,ixp)=xp0+fp(k,ixp)*Lx0
-                  if (nygrid/=1) fp(k,iyp)=yp0+fp(k,iyp)*Ly0
-                  if (nzgrid/=1) fp(k,izp)=zp0+fp(k,izp)*Lz0
-                endif
-              enddo
-!
-! Maybe random-cylindrical case should be combined with normal initxxp case
-!
-            case ('random-cylindrical','random-cyl')
-              if (lcylindrical_coords.or.lcartesian_coords) then
-                tmp=2-dustdensity_powerlaw
-              elseif (lspherical_coords) then
-                tmp=3-dustdensity_powerlaw
-              else
-                call fatal_error("init_particles",&
-                     "The world is flat, and we never got here")
-              endif
-  !
-              call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
-              rr_tmp(npar_loc_old+1:npar_loc) = rp_int**tmp + &
-                rr_tmp(npar_loc_old+1:npar_loc)*(rp_ext**tmp-rp_int**tmp)
-              rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
-              if ((lcartesian_coords) .or. (lcylindrical_coords .and. nygrid/=1) .or. (lspherical_coords .and. nzgrid/=1)) then
-                call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
-                az_tmp(npar_loc_old+1:npar_loc) = -pi + 2.0*pi*az_tmp(npar_loc_old+1:npar_loc)
-              endif
-              if ((lcartesian_coords) .or. (lcylindrical_coords .and. nzgrid/=1) .or. (lspherical_coords .and. nygrid/=1)) then
-                call random_number_wrapper(fp(npar_loc_old+1:npar_loc,izp))
-              endif
-
-              if (lcartesian_coords) then
-                fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
-                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc) &
-                  *cos(az_tmp(npar_loc_old+1:npar_loc))
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc) &
-                  *sin(az_tmp(npar_loc_old+1:npar_loc))
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
-              elseif (lcylindrical_coords) then
-                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
-              elseif (lspherical_coords) then
-                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
-              endif
-!
-            case ('birthring')
-              if (birthring_width>tini) then
-                if (lgaussian_birthring) then
-                  do k=npar_loc_old+1,npar_loc
-                    call normal_deviate(rr_tmp(k))
-                  enddo
-                else
-                  call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
-                endif
-                rr_tmp(npar_loc_old+1:npar_loc) = birthring_r+rr_tmp(npar_loc_old+1:npar_loc)*birthring_width
-              else
-                rr_tmp(npar_loc_old+1:npar_loc) = birthring_r
-              endif
-              call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
-              az_tmp(npar_loc_old+1:npar_loc) = -pi+az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
-              if (lcartesian_coords) then
-                fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)*cos(az_tmp(npar_loc_old+1:npar_loc))
-                fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc)*sin(az_tmp(npar_loc_old+1:npar_loc))
-                fp(npar_loc_old+1:npar_loc,izp) = 0.0
-              else
-                fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (lcylindrical_coords) then
-                  fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)
-                  fp(npar_loc_old+1:npar_loc,izp) = 0.0
-                elseif (lspherical_coords) then
-                  fp(npar_loc_old+1:npar_loc,iyp) = pi/2.0
-                  fp(npar_loc_old+1:npar_loc,izp) = az_tmp(npar_loc_old+1:npar_loc)
-                endif
-              endif
-!
-            case ('nothing')
-              if (j==1) print*, 'init_particles: nothing'
-!
-            case default
-              call fatal_error_local('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
-!
-            endselect
-          enddo
-!
-!  Initial particle velocity.
-!
-          do j=1,ninit
-            select case (initvvp(j))
-            case ('nothing')
-              if (j==1) print*, 'init_particles: No particle velocity set'
-!
-            case ('Keplerian','keplerian')
-              call get_shared_variable('gravr',gravr)
-              if (lcartesian_coords) then
-                rr_tmp(npar_loc_old+1:npar_loc)=sqrt(fp(npar_loc_old+1:npar_loc,ixp)**2+ &
-                  fp(npar_loc_old+1:npar_loc,iyp)**2+fp(npar_loc_old+1:npar_loc,izp)**2)
-                OO_tmp(npar_loc_old+1:npar_loc)=sqrt(gravr)*rr_tmp(npar_loc_old+1:npar_loc)**(-1.5)
-                fp(npar_loc_old+1:npar_loc,ivpx) = -OO_tmp(npar_loc_old+1:npar_loc)*fp(npar_loc_old+1:npar_loc,iyp)
-                fp(npar_loc_old+1:npar_loc,ivpy) =  OO_tmp(npar_loc_old+1:npar_loc)*fp(npar_loc_old+1:npar_loc,ixp)
-                fp(npar_loc_old+1:npar_loc,ivpz) =  0.0
-              elseif (lcylindrical_coords) then
-                rr_tmp(npar_loc_old+1:npar_loc)=fp(npar_loc_old+1:npar_loc,ixp)
-                OO_tmp(npar_loc_old+1:npar_loc)=sqrt(gravr)*rr_tmp(npar_loc_old+1:npar_loc)**(-1.5)
-                fp(npar_loc_old+1:npar_loc,ivpx) =  0.0
-                fp(npar_loc_old+1:npar_loc,ivpy) =  OO_tmp(npar_loc_old+1:npar_loc)*rr_tmp(npar_loc_old+1:npar_loc)
-                fp(npar_loc_old+1:npar_loc,ivpz) =  0.0
-              elseif (lspherical_coords) then
-                rr_tmp(npar_loc_old+1:npar_loc)=fp(npar_loc_old+1:npar_loc,ixp)*sin(fp(npar_loc_old+1:npar_loc,iyp))
-                OO_tmp(npar_loc_old+1:npar_loc)=sqrt(gravr)*rr_tmp(npar_loc_old+1:npar_loc)**(-1.5)
-                fp(npar_loc_old+1:npar_loc,ivpx) =  0.0
-                fp(npar_loc_old+1:npar_loc,ivpy) =  0.0
-                fp(npar_loc_old+1:npar_loc,ivpz) =  OO_tmp(npar_loc_old+1:npar_loc)*rr_tmp(npar_loc_old+1:npar_loc)
-              endif
-!
-            case ('constant')
-              if (lcylindrical_coords) then
-                fp(npar_loc_old+1:npar_loc,ivpx)&
-                    =vpx0*cos(fp(npar_loc_old+1:npar_loc,iyp))&
-                    +vpy0*sin(fp(npar_loc_old+1:npar_loc,iyp))
-                fp(npar_loc_old+1:npar_loc,ivpy)&
-                    =vpy0*cos(fp(npar_loc_old+1:npar_loc,iyp))&
-                    -vpx0*sin(fp(npar_loc_old+1:npar_loc,iyp))
-                fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
-              else
-                fp(npar_loc_old+1:npar_loc,ivpx)=vpx0
-                fp(npar_loc_old+1:npar_loc,ivpy)=vpy0
-                fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
-              endif
-!
-            case default
-              call fatal_error_local('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
-!
-            endselect
-!
-          enddo ! do j=1,ninit
-!
-!  Initialize particle radius
-!
-          if (lparticles_radius) call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
-          if (lparticles_number) call set_particle_number(f,fp,npar_loc_old+1,npar_loc)
-!
-!  Particles are not allowed to be present in non-existing dimensions.
-!  This would give huge problems with interpolation later.
-!
-          if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
-          if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
-          if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
-!
-          if (lparticles_diagnos_state) &
-              call insert_particles_diagnos_state(fp, npar_loc_old)
-!
-        endif
-      endif ! if (lroot) then
-!
-!  Redistribute particles only when t < max_particle_insert_time
-!  and t>tstart_insert_particles.
-!  Could have included some other tests here aswell......
-!
-      if (t<max_particle_insert_time .and. t>tstart_insert_particles) then
-!
-!  Redistribute particles among processors.
-!
-        call boundconds_particles(fp,ipar,linsert=.true.)
-!
-!  Map particle position on the grid.
-!
-        call map_nearest_grid(fp,ineargrid)
-        call map_xxp_grid(f,fp,ineargrid)
-!
-!  Map particle velocity on the grid.
-!
-        call map_vvp_grid(f,fp,ineargrid)
-!
-!  Sort particles (must happen at the end of the subroutine so that random
-!  positions and velocities are not displaced relative to when there is no
-!  sorting).
-!
-!        call sort_particles_imn(fp,ineargrid,ipar) ! this doesn't work for block domain decomposition
-      endif
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine insert_particles
 !***********************************************************************
@@ -1872,8 +1543,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
-      real, dimension (mpar_loc) :: rpbeta_tmp_arr, OO2_arr, rr_arr, vv_arr, jspec_arr
-      real, dimension(mpar_loc,3) :: gpp_arr
       integer, dimension (mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
 !
@@ -2030,81 +1699,59 @@ k_loop:   do while (.not. (k>npar_loc))
               'gravr_profile=''newtonian'' on particles_init')
           if (lheader) &
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
-          if (t>=tstart_rpbeta) then
-            if (lparticles_radius .and. lparticles_radius_rpbeta) then
-              rpbeta_tmp_arr(1:npar_loc)=fp(1:npar_loc,irpbeta)
-            elseif (npar_species>1) then
-              jspec_arr(1:npar_loc)=npar_species*(ipar(1:npar_loc)-1)/npar+1
-            else
-              rpbeta_tmp_arr(1:npar_loc)=rpbeta
-            endif
-          else
-            rpbeta_tmp_arr(1:npar_loc)=0.0
-          endif
-          if (lcartesian_coords) then
-            if (lcylindrical_gravity_par) then
-              rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+fp(1:npar_loc,iyp)**2+gravsmooth2)
-            else
-              rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2+gravsmooth2)
-            endif
-            OO2_arr(1:npar_loc)=rr_arr(1:npar_loc)**(-3.)*gravr*(1.0-rpbeta_tmp_arr(1:npar_loc))
-            gpp_arr(1:npar_loc,1) = -fp(1:npar_loc,ixp)*OO2_arr(1:npar_loc)
-            gpp_arr(1:npar_loc,2) = -fp(1:npar_loc,iyp)*OO2_arr(1:npar_loc)
-            if (lcylindrical_gravity_par) then
-              gpp_arr(1:npar_loc,3) = 0.
-            else
-              gpp_arr(1:npar_loc,3) = -fp(1:npar_loc,izp)*OO2_arr(1:npar_loc)
-            endif
-            dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
-          elseif (lcylindrical_coords) then
-            if (lcylindrical_gravity_par) then
-              rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+gravsmooth2)
-            else
-              rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+fp(1:npar_loc,izp)**2+gravsmooth2)
-            endif
-            OO2_arr(1:npar_loc)=rr_arr(1:npar_loc)**(-3.)*gravr*(1.0-rpbeta_tmp_arr(1:npar_loc))
-            gpp_arr(1:npar_loc,1) = -fp(1:npar_loc,ixp)*OO2_arr(1:npar_loc)
-            gpp_arr(1:npar_loc,2) = 0.0
-            if (lcylindrical_gravity_par) then
-              gpp_arr(1:npar_loc,3) = 0.
-            else
-              gpp_arr(1:npar_loc,3) = -fp(1:npar_loc,izp)*OO2_arr(1:npar_loc)
-            endif
-            dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
-          elseif (lspherical_coords) then
-            rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+gravsmooth2)
-            OO2_arr(1:npar_loc)=rr_arr(1:npar_loc)**(-3)*gravr*(1.0-rpbeta_tmp_arr(1:npar_loc))
-            gpp_arr(1:npar_loc,1) = -fp(1:npar_loc,ixp)*OO2_arr(1:npar_loc)
-            gpp_arr(1:npar_loc,2) = 0.0; gpp_arr(1:npar_loc,3) = 0.0
-            if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
-                 "No cylindrical gravity in spherical coordinates.")
-            dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
-          endif
-!  Limit time-step if particles close to gravity source.
-          if (ldt_grav_par.and.(lfirst.and.ldt)) then
+          do k=1,npar_loc
             if (lcartesian_coords) then
-              vv_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ivpx)**2+fp(1:npar_loc,ivpy)**2+fp(1:npar_loc,ivpz)**2)
+              if (lcylindrical_gravity_par) then
+                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
+              else
+                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+              endif
+              OO2=rr**(-3.)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = -fp(k,iyp)*OO2
+              if (lcylindrical_gravity_par) then
+                ggp(3) = 0.
+              else
+                ggp(3) = -fp(k,izp)*OO2
+              endif
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lcylindrical_coords) then
-              vv_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ivpx)**2+fp(1:npar_loc,ivpz)**2)
+              if (lcylindrical_gravity_par) then
+                rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+              else
+                rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+              endif
+              OO2=rr**(-3.)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0
+              if (lcylindrical_gravity_par) then
+                ggp(3) = 0.
+              else
+                ggp(3) = -fp(k,izp)*OO2
+              endif
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lspherical_coords) then
-              vv_arr(1:npar_loc)=abs(fp(1:npar_loc,ivpx))
+              rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+              OO2=rr**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0; ggp(3) = 0.0
+              if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
+                   "No cylindrical gravity in spherical coordinates.")
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             endif
-            do k=1,npar_loc
-              dt1_max(ineargrid(k,1)-nghost) = max(dt1_max(ineargrid(k,1)-nghost),vv_arr(k)/rr_arr(k)/cdtpgrav)
-            enddo
-          endif
 !  Limit time-step if particles close to gravity source.
-          if (ldt_grav_par.and.(lfirst.and.ldt)) then
-            if (lcartesian_coords) then
-              vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-            elseif (lcylindrical_coords) then
-              vv=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
-            elseif (lspherical_coords) then
-              vv=abs(fp(k,ivpx))
+            if (ldt_grav_par.and.(lfirst.and.ldt)) then
+              if (lcartesian_coords) then
+                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+              elseif (lcylindrical_coords) then
+                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+              elseif (lspherical_coords) then
+                vv=abs(fp(k,ivpx))
+              endif
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost),vv/rr/cdtpgrav)
             endif
-            dt1_max(ineargrid(k,1)-nghost)= &
-                max(dt1_max(ineargrid(k,1)-nghost),vv/rr/cdtpgrav)
-          endif
+          enddo
 !
         case default
           call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
