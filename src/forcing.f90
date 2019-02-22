@@ -192,6 +192,7 @@ module Forcing
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
       use Sub, only: step,erfunc,stepdown,register_report_aux
+      use EquationOfState, only: cs0
 !
       real :: zstar
       integer :: l,i
@@ -515,7 +516,6 @@ module Forcing
         do n=1,mz
           profz_hel(n)=z(n)/max(-xyz0(3),xyz1(3))
         enddo
-
 !
 ! turn on forcing in the bulk of the convection zone
 !
@@ -652,9 +652,8 @@ module Forcing
 !
 !  Turn on forcing intensity for force_double above z=0.
 !
-      if (lforcing_coefs_hel_double) then
+      if (lforcing_coefs_hel_double) &
         qdouble_profile=.5*(1.+erfunc((z-r_ff)/width_ff))
-      endif
 !
 !  at the first step, the sin and cos functions are calculated for all
 !  x,y,z points and are then saved and used for all subsequent steps
@@ -675,6 +674,18 @@ module Forcing
 !    
       ltestfield_forcing = ltestfield_forcing.and.iaatest>0
       ltestflow_forcing = ltestflow_forcing.and.iuutest>0
+!
+!  At the moment, cs0 is used for normalization.
+!  It is saved in param2.nml.
+!
+      if (cs0eff==impossible) then
+        if (cs0==impossible) then
+          cs0eff=1.
+          if (headt) print*,'initialize_forcing: for normalization, use cs0eff=',cs0eff
+        else
+          cs0eff=cs0
+        endif
+      endif
 
       if (.not.lforcing_cont) return
       
@@ -794,7 +805,7 @@ module Forcing
       where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
 !
       if (r_ff /=0. .or. rcyl_ff/=0.) profz_k = tanh(z/width_ff)
-!
+
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -1250,10 +1261,7 @@ module Forcing
 !  4-oct-17/MR: outsourced from forcing_hel.
 !               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined - nees to be fixed
 !
-      use EquationOfState, only: cs0
-      use General, only: random_number_wrapper
       use Sub
-      use Mpicomm, only: stop_it
 !
       real,    dimension (3), intent(out) :: coef1,coef2,coef3,fda
       complex, dimension (mx),intent(out) :: fx
@@ -1262,16 +1270,9 @@ module Forcing
 !
       real :: phase,ffnorm
       real, save :: kav
-      real, dimension (2) :: fran
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik
-      real :: kx0,kx,ky,kz,k2,k,pi_over_Lx
-      real :: ex,ey,ez,kde,fact,kex,key,kez,kkex,kkey,kkez
-      real, dimension(3) :: e1,e2,ee,kk
-      real :: norm,phi
-      real :: fd,fd2
       logical :: lk_dot_dat_exists
 !
       if (lfirst_call) then
@@ -1282,27 +1283,16 @@ module Forcing
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'forcing_coefs_hel: average k=',kav
           allocate(kkx(nk),kky(nk),kkz(nk))
-          read(9,*) (kkx(ik),ik=1,nk)
-          read(9,*) (kky(ik),ik=1,nk)
-          read(9,*) (kkz(ik),ik=1,nk)
+          read(9,*) kkx 
+          read(9,*) kky
+          read(9,*) kkz
           close(9)
         else
-          call inevitably_fatal_error ('forcing_coefs_hel:', &
+          call inevitably_fatal_error ('forcing_coefs_hel', &
               'you must give an input k.dat file')
         endif
         lfirst_call=.false.
-!
-!  At the moment, cs0 is used for normalization.
-!
-        if (cs0eff==impossible) then
-          if (cs0==impossible) then
-            cs0eff=1.
-            if (headt) print*,'forcing_coefs_hel: for normalization, use cs0eff=',cs0eff
-          else
-            cs0eff=cs0
-          endif
-        endif
-!
+
       endif
 
       call fcoefs_hel(force,kkx,kky,kkz,nk,kav, &
@@ -1317,7 +1307,6 @@ module Forcing
 !
 !  10-nov-18/axel: adapted from forcing_coefs_hel to read also k_double.dat.
 !
-      use EquationOfState, only: cs0
       use Sub
 !
       real,                   intent(in ) :: force_fact
@@ -1330,7 +1319,6 @@ module Forcing
       real, dimension(:), allocatable, save :: kkx,kky,kkz
       logical, save :: lfirst_call=.true.
       integer, save :: nk
-      integer :: ik
       logical :: lk_dot_dat_exists
 !
 !  Read k_double.dat once at first call.
@@ -1343,27 +1331,15 @@ module Forcing
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'forcing_coefs_hel: average k=',kav
           allocate(kkx(nk),kky(nk),kkz(nk))
-          read(9,*) (kkx(ik),ik=1,nk)
-          read(9,*) (kky(ik),ik=1,nk)
-          read(9,*) (kkz(ik),ik=1,nk)
+          read(9,*) kkx
+          read(9,*) kky
+          read(9,*) kkz
           close(9)
         else
-          call inevitably_fatal_error ('forcing_coefs_hel:', &
+          call inevitably_fatal_error ('forcing_coefs_hel', &
               'you must give an input k_double.dat file')
         endif
         lfirst_call=.false.
-!
-!  At the moment, cs0 is used for normalization.
-!  It is saved in param2.nml
-!
-        if (cs0eff==impossible) then
-          if (cs0==impossible) then
-            cs0eff=1.
-            if (headt) print*,'forcing_coefs_hel: for normalization, use cs0eff=',cs0eff
-          else
-            cs0eff=cs0
-          endif
-        endif
 !
       endif
 !
