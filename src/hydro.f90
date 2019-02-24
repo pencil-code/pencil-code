@@ -1439,10 +1439,18 @@ module Hydro
           if (headtt) print*,'ABC flow'
 ! uu
           do n=n1,n2; do m=m1,m2
-!!!            f(l1:l2,m,n,iux)=ampluu(j)*(ABC_A*sin(kz_uu*z(n)) +ABC_C*cos(ky_uu*y(m))&
-            f(l1:l2,m,n,iux)=ampluu(j)*ABC_B*sin(kx_uu*x(l1:l2))*cos(kz_uu*z(n)) 
-!!!            f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*cos(kz_uu*z(n)))
-!!!            f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
+            f(l1:l2,m,n,iux)=ampluu(j)*(ABC_A*sin(kz_uu*z(n))    +ABC_C*cos(ky_uu*y(m))    )
+            f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*cos(kz_uu*z(n))    )
+            f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*cos(kx_uu*x(l1:l2)))
+          enddo; enddo
+!
+        case ('double_sine')
+          if (headtt) print*,'double sine flow'
+! uu
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=ampluu(j)*(ABC_A*sin(kz_uu*z(n))    +ABC_C*sin(ky_uu*y(m))    )
+            f(l1:l2,m,n,iuy)=ampluu(j)*(ABC_B*sin(kx_uu*x(l1:l2))+ABC_A*sin(kz_uu*z(n))    )
+            f(l1:l2,m,n,iuz)=ampluu(j)*(ABC_C*sin(ky_uu*y(m))    +ABC_B*sin(kx_uu*x(l1:l2)))
           enddo; enddo
 !
         case ('shock-tube', '13')
@@ -2851,7 +2859,6 @@ module Hydro
 !  27-jun-07/dhruba: differential rotation as subroutine call
 !  12-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
 !  22-apr-16/MR: Changed calls to zsum_mn_name_xy for compatibility with Yin-Yang grid.
-!
 !
       use Diagnostics
       use Special, only: special_calc_hydro
