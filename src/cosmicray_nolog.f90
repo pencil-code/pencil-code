@@ -60,7 +60,7 @@ module Cosmicray
        limiter_cr,blimiter_cr,ecr_floor, &
        lalfven_advect,lupw_ecr,lcheck_negative_ecr
 !
-  integer :: idiag_ecrm=0,idiag_ecrmax=0,idiag_ecrpt=0
+  integer :: idiag_ecrm=0,idiag_ecrmin=0,idiag_ecrmax=0,idiag_ecrpt=0
   integer :: idiag_ecrdivum=0
   integer :: idiag_kmax=0
 !
@@ -373,6 +373,7 @@ module Cosmicray
       if (ldiagnos) then
         if (idiag_ecrdivum/=0) call sum_mn_name(p%ecr*p%divu,idiag_ecrdivum)
         if (idiag_ecrm/=0) call sum_mn_name(p%ecr,idiag_ecrm)
+        if (idiag_ecrmin/=0)   call max_mn_name(-p%ecr,idiag_ecrmin,lneg=.true.)
         if (idiag_ecrmax/=0) call max_mn_name(p%ecr,idiag_ecrmax)
         if (idiag_ecrpt/=0) call save_name(p%ecr(lpoint-nghost),idiag_ecrpt)
         if (idiag_kmax/=0) call max_mn_name(vKperp,idiag_kmax)
@@ -437,7 +438,7 @@ module Cosmicray
 !
       if (lreset) then
         idiag_ecrm=0; idiag_ecrdivum=0; idiag_ecrmax=0; idiag_kmax=0
-        idiag_ecrpt=0
+        idiag_ecrpt=0; idiag_ecrmin=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -446,6 +447,7 @@ module Cosmicray
         call parse_name(iname,cname(iname),cform(iname),'ecrm',idiag_ecrm)
         call parse_name(iname,cname(iname),cform(iname),&
             'ecrdivum',idiag_ecrdivum)
+        call parse_name(iname,cname(iname),cform(iname),'ecrmin',idiag_ecrmin)
         call parse_name(iname,cname(iname),cform(iname),'ecrmax',idiag_ecrmax)
         call parse_name(iname,cname(iname),cform(iname),'ecrpt',idiag_ecrpt)
         call parse_name(iname,cname(iname),cform(iname),'kmax',idiag_kmax)
