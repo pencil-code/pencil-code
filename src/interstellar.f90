@@ -1831,6 +1831,7 @@ module Interstellar
               center_SN_y=SN_list(3,i)
               center_SN_z=SN_list(4,i)
               type_list=SN_type(i)
+              SN_list(1,i)=0.
               if (i==nlist-1) then
                 call touch_file('ENDTIME')
                 nt=it+1
@@ -3172,7 +3173,7 @@ module Interstellar
         else
           frackin = 0.
         endif
-        frackin=min(0.15,frackin)
+        frackin=min(0.1,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip==1963) print*,&
