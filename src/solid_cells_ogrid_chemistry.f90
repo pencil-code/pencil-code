@@ -75,7 +75,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
   real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   logical, pointer, dimension(:) :: photochem_case, Mplus_case, back
-  logical, pointer :: lpres_grad
 !
 !  character(len=30), allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.

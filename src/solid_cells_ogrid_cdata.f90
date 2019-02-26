@@ -348,6 +348,7 @@ module solid_cells_ogrid_cdata
 !  For equation of state
   logical :: leos_isothermal
   logical :: leos_isentropic
+  logical, pointer :: lpres_grad
 !  Read start.in file
 !***********************************************************************
 endmodule solid_cells_ogrid_cdata

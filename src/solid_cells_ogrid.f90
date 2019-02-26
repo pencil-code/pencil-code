@@ -482,6 +482,8 @@ module Solid_Cells
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
         call get_shared_variable('lpres_grad',lpres_grad)
         call initialize_chemistry_og(f_ogrid)
+      else
+        lpres_grad = .false.
       endif
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
