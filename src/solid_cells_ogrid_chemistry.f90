@@ -1230,7 +1230,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
         if (lmech_simple) then
           orders_p(:,1) = (/ 0.0, 1.0, 0.0, 0.25, 0.5 /)
-          orders_m(:,1) = (/ 0.0, 0.0, 0.0, 0.0, 0.0 /)
+          orders_m(:,1) = (/ 1.0, 0.0, 0.0, 0.0, 0.0 /)
         endif
 !
 !  calculation of the reaction rate
@@ -1244,10 +1244,14 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
           prod1 = 1.
           prod2 = 1.
           do k = 1,nchemspec
+            if (abs(orders_p(k,reac)) > 0.0) then
               prod1 = prod1*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
-                  /species_constants(k,imass))**orders_p(k,reac)          
+                  /species_constants(k,imass))**orders_p(k,reac)   
+            endif
+            if (abs(orders_m(k,reac)) > 0.0) then       
               prod2 = prod2*(f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**orders_m(k,reac)
+            endif
           enddo
         else
           prod1 = 1.
@@ -1286,6 +1290,12 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 !  Find backward rate constant for reaction 'reac'
 !
+        if (lmech_simple) then
+          !! 20.0301186564 = ln(5*10e8) !!
+          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+          sum_sp = 1.
+        else
+
           dSR = 0.
           dHRT = 0.
           sum_tmp = 0.
@@ -1355,6 +1365,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  (vreact_p - vreact_m) is labeled q in the chemkin manual
 !
             kr = kf-Kc
+!
+        endif
 !
           if (Mplus_case (reac)) then
             where (prod1 > 0.)

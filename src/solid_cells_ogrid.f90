@@ -590,8 +590,8 @@ module Solid_Cells
                   f(i,j,:,irho) = f(l2,m2,n2,irho) &
                     *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
-                !if (lchemistry .and. .not. lflame_front_2D) then
-                if (lchemistry) then
+                if (lchemistry .and. .not. lflame_front_2D) then
+                !if (lchemistry) then
                     do k = 1,nchemspec
                       f(i,j,:,ichemspec(k)) = chemspec0(k)
                     enddo
@@ -618,8 +618,8 @@ module Solid_Cells
               f(i,j,:,irho) = f(l2,m2,n2,irho) &
                 *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
-         !   if (lchemistry .and. .not. lflame_front_2D) then
-            if (lchemistry) then
+            if (lchemistry .and. .not. lflame_front_2D) then
+            !if (lchemistry) then
               do k = 1,nchemspec
                 f(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
@@ -4823,6 +4823,7 @@ module Solid_Cells
           n_ogrid=nn_ogrid(imn_ogrid)
           m_ogrid=mm_ogrid(imn_ogrid)
           df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
+          if (lexpl_rho) df(l1_ogrid,m_ogrid,n_ogrid,irho) = 0.
         enddo
         if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
       endif
@@ -5174,7 +5175,7 @@ module Solid_Cells
       if(lfirst_proc_x) then
         if(SBP) then
           ! chemistry BCs are taken care of here
-          if(lexpl_rho) call bval_from_neumann_SBP(f_og)
+          call bval_from_neumann_SBP(f_og)
         elseif(BDRY5) then
           if(lexpl_rho) call bval_from_neumann_bdry5(f_og)
           if (lchemistry) call fatal_error('boundconds_x_ogrid', &
@@ -5188,7 +5189,7 @@ module Solid_Cells
              call set_ghosts_onesided_ogrid(iTT)
           endif
           ! chemistry BCs are taken care of here
-          if(lexpl_rho) call bval_from_neumann_arr_ogrid
+          call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
           if (lchemistry) then
             do k = 1,nchemspec

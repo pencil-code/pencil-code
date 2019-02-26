@@ -1172,12 +1172,14 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       integer :: k,j
 
       k=l1_ogrid
-      f_ogrid(k,:,:,irho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,irho) &
-                                               - 450.*f_ogrid(k+2,:,:,irho) &
-                                               + 400.*f_ogrid(k+3,:,:,irho) &
-                                               - 225.*f_ogrid(k+4,:,:,irho) &
-                                               +  72.*f_ogrid(k+5,:,:,irho) &
-                                               -  10.*f_ogrid(k+6,:,:,irho) )/147.
+      if (lexpl_rho) then
+        f_ogrid(k,:,:,irho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,irho) &
+                                                 - 450.*f_ogrid(k+2,:,:,irho) &
+                                                 + 400.*f_ogrid(k+3,:,:,irho) &
+                                                 - 225.*f_ogrid(k+4,:,:,irho) &
+                                                 +  72.*f_ogrid(k+5,:,:,irho) &
+                                                 -  10.*f_ogrid(k+6,:,:,irho) )/147.
+      endif
       if (lchemistry) then
         do j = 1,nchemspec
           f_ogrid(k,:,:,ichemspec(j)) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ichemspec(j)) &
@@ -1204,10 +1206,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       integer :: k, j
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       real, dimension (my_ogrid, mz_ogrid) :: df_surf, dM1, grad_lnR
-      real, dimension (l1_ogrid+8,my_ogrid, mz_ogrid) :: mu1_bond_og
+      real, dimension (l1_ogrid+8,my_ogrid, mz_ogrid) :: mu1_bond_og=0
 !
       k=l1_ogrid
 !
+    if (lexpl_rho) then
       if (iTT==0) then
          f_og   (k,:,:,irho) = -(D1_SBP(1,2)*f_og   (k+1,:,:,irho) + &
               D1_SBP(1,3)*f_og   (k+2,:,:,irho) + &
@@ -1234,9 +1237,14 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/ &
               (D1_SBP(1,1)+ df_surf / f_og(k,:,:,iTT) + grad_lnR)
-         if (lchemistry) then
-           do j = 1,nchemspec
-              f_og   (k,:,:,ichemspec(j)) = -(D1_SBP(1,2)*f_og   (k+1,:,:,ichemspec(j)) + &
+      else
+         call fatal_error('solid_cells_ogrid','temperature SBP index not found')
+      endif
+    endif
+!
+    if (lchemistry) then
+      do j = 1,nchemspec
+         f_og   (k,:,:,ichemspec(j)) = -(D1_SBP(1,2)*f_og   (k+1,:,:,ichemspec(j)) + &
                 D1_SBP(1,3)*f_og   (k+2,:,:,ichemspec(j)) + &
                 D1_SBP(1,4)*f_og   (k+3,:,:,ichemspec(j)) + &
                 D1_SBP(1,5)*f_og   (k+4,:,:,ichemspec(j)) + &
@@ -1244,11 +1252,8 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                 D1_SBP(1,7)*f_og   (k+6,:,:,ichemspec(j)) + &
                 D1_SBP(1,8)*f_og   (k+7,:,:,ichemspec(j)) + &
                 D1_SBP(1,9)*f_og   (k+8,:,:,ichemspec(j)) )/D1_SBP(1,1)
-           enddo  
-         endif
-      else
-         call fatal_error('solid_cells_ogrid','temperature SBP index not found')
-      endif
+      enddo  
+    endif
 !
     endsubroutine bval_from_neumann_SBP
 !***********************************************************************

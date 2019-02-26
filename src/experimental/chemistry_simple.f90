@@ -579,6 +579,7 @@ module Chemistry
 !
 !  Needed by ogrid_chemistry 
 !
+   call put_shared_variable('lpres_grad',lpres_grad)
    if (lsolid_cells) then
 !
       call put_shared_variable('lheatc_chemistry', lheatc_chemistry)
@@ -615,7 +616,6 @@ module Chemistry
       call put_shared_variable('species_constants',species_constants)
       call put_shared_variable('imass',imass)
       call put_shared_variable('lflame_front_2D',lflame_front_2D)
-      call put_shared_variable('lpres_grad',lpres_grad)
 !
    endif 
 !
@@ -2331,13 +2331,13 @@ module Chemistry
 !
       Sijp(:,1) = (/ &
         0.0000000000000000      ,&
-        2.0000000000000000      ,&
+        1.0000000000000000      ,&
         0.0000000000000000E+000 ,&
-        1.0000000000000000E+000 ,&
+        0.5000000000000000E+000 ,&
         0.0000000000000000      /)
 !
       Sijm(:,1) = (/ &
-        2.0000000000000000      ,&
+        1.0000000000000000      ,&
         0.0000000000000000E+000 ,&
         0.0000000000000000E+000 ,&
         0.0000000000000000E+000 ,&
@@ -2345,9 +2345,10 @@ module Chemistry
 !
       B_n = 33.6174731212
       alpha_n = 0.0
-      E_an = 40700.
+      !! E_an in CAL !!
+      E_an = 40700 
 !
-      back(:) = .false.
+      back(:) = .true.
       Mplus_case(:) = .false.
       photochem_case(:) = .false.
 !
@@ -4193,7 +4194,7 @@ module Chemistry
 
         if (lmech_simple) then
           orders_p(:,1) = (/ 0.0, 1.0, 0.0, 0.25, 0.5 /)
-          orders_m(:,1) = (/ 0.0, 0.0, 0.0, 0.0, 0.0 /)
+          orders_m(:,1) = (/ 1.0, 0.0, 0.0, 0.0, 0.0 /)
         endif
 !
 !  calculation of the reaction rate
@@ -4207,10 +4208,14 @@ module Chemistry
           prod1 = 1.
           prod2 = 1.
           do k = 1,nchemspec
+            if (abs(orders_p(k,reac)) > 0.0) then
               prod1 = prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**orders_p(k,reac)
+            endif
+            if (abs(orders_m(k,reac)) > 0.0) then
               prod2 = prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:) &
                   /species_constants(k,imass))**orders_m(k,reac)
+            endif
           enddo
         else
           prod1 = 1.
@@ -4245,10 +4250,16 @@ module Chemistry
 !
 !  Find forward rate constant for reaction 'reac'
 !
-          kf = B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
+        kf = B_n(reac)+alpha_n(reac)*p%lnTT-E_an(reac)*Rcal1*TT1_loc
 !
 !  Find backward rate constant for reaction 'reac'
 !
+        if (lmech_simple) then
+          !! 20.0301186564 = ln(5*10e8) !!
+          kr = 20.0301186564-E_an(reac)*Rcal1*TT1_loc
+          sum_sp = 1.
+        else
+
           dSR = 0.
           dHRT = 0.
           sum_tmp = 0.
@@ -4257,6 +4268,7 @@ module Chemistry
             dHRT = dHRT+(Sijm(k,reac)-Sijp(k,reac))*p%H0_RT(:,k)
             sum_tmp = sum_tmp+(Sijm(k,reac)-Sijp(k,reac))
           enddo
+
           Kp = dSR-dHRT
 !
           if (sum_tmp == 0.) then
@@ -4319,6 +4331,8 @@ module Chemistry
 !
             kr = kf-Kc
 !
+        endif
+
           if (Mplus_case (reac)) then
             where (prod1 > 0.)
               vreact_p(:,reac) = prod1*exp(kf)
