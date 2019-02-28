@@ -53,7 +53,7 @@ module Special
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
-  real :: lnrho_min=-max_real, lnrho_min_tau=1.0
+  real :: lnrho_min=-max_real, lnrho_min_tau=1.0, uu_tau1_quench=0.0
   real, dimension(2) :: nwave,w_ff,z_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
@@ -104,7 +104,7 @@ module Special
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
-      lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf
+      lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -4250,7 +4250,7 @@ module Special
       character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
-      real, dimension(mz) :: border_prof_z_aa=1.0
+      real, dimension(mz) :: border_prof_z_uu=1.0
       real, dimension(nz) :: zeta
       real, intent(in) :: dt_
       real :: uborder, border_width
@@ -4261,6 +4261,18 @@ module Special
       case ('bot')               ! bottom boundary
         print*, "bc_emf_z: ", topbot, " should be 'top'"
       case ('top')               ! top boundary
+        if (border_frac_z(2) /= 0) then 
+          border_width=border_frac_z(2)*Lxyz(3)/2
+          uborder=xyz1(3)-border_width
+          zeta=1-max(z(n1:n2)-uborder,0.0)/border_width
+          border_prof_z_uu(n1:n2)=min(border_prof_z_uu(n1:n2),zeta**2*(3-2*zeta))
+          do n=n1, n2
+            do i=0, 2
+              f(l1:l2,m,n,iuu+i) = f(l1:l2,m,n,iuu+i) - &
+              f(l1:l2,m,n,iuu+i)*(1.-border_prof_z_uu(n))*uu_tau1_quench*dt_
+            enddo
+          enddo
+        endif
         if (llast_proc_z) then
           do i=1,nghost
             f(l1:l2,m,n2+i,j)=f(l1:l2,m,n2+i,j)+df(l1:l2,m,n2,j)*dt_

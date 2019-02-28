@@ -92,7 +92,7 @@ module Radiation
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
   real :: TT_bump=0.0, sigma_bump=1.0, ampl_bump=0.0
   real :: z_cutoff=impossible,cool_wid=impossible, qrad_max=0.0,  &
-          zclip_dwn=-max_real,zclip_up=max_real
+          zclip_dwn=-max_real,zclip_up=max_real,kappa_ceiling=max_real
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -152,7 +152,8 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
-      lcutoff_zconst,z_cutoff,cool_wid, TT_bump, sigma_bump, ampl_bump
+      lcutoff_zconst,z_cutoff,cool_wid, TT_bump, sigma_bump, ampl_bump, &
+      kappa_ceiling
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -173,7 +174,7 @@ module Radiation
       scalefactor_cooling, scalefactor_radpressure, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
       lcutoff_zconst,z_cutoff,cool_wid,lno_rad_heating,qrad_max,zclip_dwn, &
-      zclip_up, TT_bump, sigma_bump, ampl_bump
+      zclip_up, TT_bump, sigma_bump, ampl_bump, kappa_ceiling
 !
   contains
 !***********************************************************************
@@ -1841,6 +1842,9 @@ module Radiation
           if (lcutoff_opticallythin) & 
             kappa_tot=0.5*(1.-tanh((z(n)-2*z_cutoff)/cool_wid))/ &
                       (1./kappa_rad+1./kappa_cond)
+          do i=1,mx 
+            kappa_tot(i)=min(kappa_tot(i),kappa_ceiling)
+          enddo
           f(:,m,n,ikapparho)=exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
         enddo
         enddo
