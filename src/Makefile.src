@@ -1303,12 +1303,12 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LIBMPISUFFIX=#(nova
 ##
 #####Sahel on CRAY ####################
-FC=ftn #(login*)
-F90=$(FC) #(login*)
-CC=cc #(login*)
-FFLAGS=-O3 -free #(login*)
-#FFLAGS_DOUBLE=-s default64 #(login*)
-CFLAGS=-DFUNDERSC=1 -O3 #(login*)
+#FC=ftn #(elogin*)
+#F90=$(FC) #(elogin*)
+#CC=cc #(elogin*)
+#FFLAGS=-O2 -free #(elogin*)
+##FFLAGS_DOUBLE=-s default64 #(elogin*)
+#CFLAGS=-DFUNDERSC=1 -O2 #(elogin*)
 ##
 ## Axel on LCD
 ##
