@@ -318,6 +318,7 @@ class DataCube(object):
                 # Compute the vorticity field before doing trimall.
                 uu = f[index.ux-1:index.uz, ...]
                 # TODO: Specify coordinate system.
+                # WL: The curl subroutine should take care of it. 
                 self.vort = curl(uu, dx, dy, dz, run2D=run2D)
                 if trimall:
                     if run2D:
