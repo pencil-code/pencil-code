@@ -17,7 +17,7 @@ import sys
 from pencil.files.param import read_param
 from pencil.files.index import read_index
 from pencil.files.dim import read_dim
-from pencil.math.derivatives import curl, curl2
+from pencil.math.derivatives import curl, curl2, div
 import re
 
 
@@ -330,7 +330,21 @@ class DataCube(object):
                     else:
                         self.vort=self.vort[:, dim.n1:dim.n2+1,
                         dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+            if ('divu' in magic):
+                # Compute the divergence before doing trimall.
+                uu = f[index['ux']-1:index['uz'],...]
+                self.divu = div(uu,dx,dy,dz,x,y,z,param=param,dim=dim)
+                if (trimall):
+                    if (param.lwrite_2d):
+                        if (dim.nz == 1):
+                            self.divu=self.divu[dim.m1:dim.m2+1,dim.l1:dim.l2+1]
+                        else:
+                            self.divu=self.divu[dim.n1:dim.n2+1,dim.l1:dim.l2+1]
+                    else:
+                        self.divu=self.divu[dim.n1:dim.n2+1,dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
+
+                        
         # Trim the ghost zones of the global f-array if asked.
         if trimall:
             self.x = x[dim.l1:dim.l2+1]
