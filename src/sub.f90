@@ -47,7 +47,7 @@ module Sub
   public :: symmetrise3x3_ut2lt
   public :: der_step
   public :: der6_step
-  public :: u_dot_grad, h_dot_grad
+  public :: u_dot_grad, h_dot_grad, h_dot_grad_vec
   public :: u_dot_grad_alt
   public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
@@ -5172,7 +5172,7 @@ nameloop: do
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
-      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+      real :: ampl,radius,x01=0.,y01=0.,z01=0.,fact
 !
 !  Single  blob.
 !
@@ -5183,10 +5183,11 @@ nameloop: do
         if (lroot) print*,'ampl=0 in blob'
       else
         if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(&
-           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
-          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
-          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+        fact=1./radius**2
+        f(:,:,:,i)=f(:,:,:,i)+ampl*( &
+           spread(spread(exp(-fact*(x-x01)**2),2,my),3,mz) &
+          *spread(spread(exp(-fact*(y-y01)**2),1,mx),3,mz) &
+          *spread(spread(exp(-fact*(z-z01)**2),1,mx),2,my))
       endif
 !
     endsubroutine blob
