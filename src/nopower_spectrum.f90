@@ -108,6 +108,16 @@ module power_spectrum
 !
     endsubroutine powerEMF
 !***********************************************************************
+    subroutine powerTra(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerTra
+!***********************************************************************
     subroutine powerGWs(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
