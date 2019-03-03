@@ -527,6 +527,7 @@ module Snapshot
 !         if (jb_spec)   call powerhel(f,'jb')
         if (Lor_spec) call powerLor(f,'Lor')
         if (EMF_spec) call powerEMF(f,'EMF')
+        if (Tra_spec) call powerTra(f,'Tra')
         if (GWs_spec) call powerGWs(f,'GWs')
         if (GWh_spec) call powerGWs(f,'GWh')
         if (GWm_spec) call powerGWs(f,'GWm')
