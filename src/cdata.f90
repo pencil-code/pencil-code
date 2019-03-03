@@ -209,6 +209,11 @@ module Cdata
   double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible
   real :: mu0=1., mu01=0. !  magnetic permeability [should be in Magnetic]
 !
+!  Derived units
+!
+  double precision :: sigmaSB_set=1., c_light_set=1.
+  double precision :: k_B_set=1., m_u_set=1.
+!
 !  Rotation and shear parameters.
 !
   real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
@@ -521,7 +526,7 @@ module Cdata
   logical :: sp_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
-  logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false.
+  logical :: ub_spec=.false., Lor_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false.
   logical :: GWd_spec=.false., GWe_spec=.false.
   logical :: GWf_spec=.false., GWg_spec=.false.
