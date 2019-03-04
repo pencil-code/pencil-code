@@ -237,7 +237,7 @@ module Yinyang_mpi
       integer, dimension(2) :: rng
       logical :: lwith_ghosts
       logical, save :: lcalled=.false.
-
+return !!!
       if (lcalled) then
         nycap_=nycap
         return                    ! routine has already been called
