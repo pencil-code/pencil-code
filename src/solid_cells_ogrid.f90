@@ -434,12 +434,14 @@ module Solid_Cells
           print*, 'interpolation_method==3: Fourth order Lagrangian interpolation used'
           print*, 'WARNING: Interpolation method is not working for parallel runs at the moment'
         elseif(interpolation_method==4) then
-          print*, 'interpolation_method==4: Quadratic spline interpolation for velocities'
+          print*, 'interpolation_method==4: Quadratic spline interpolation for velocities, T and species'
           print*, '                       : Linear interpolation for density'
-          print*, 'WARNING                : NOT IMPLEMENTED FOR TEMPERATURE YET!'
         elseif(interpolation_method==5) then
           print*, 'interpolation_method==5: Polynomial interpolation'
           print*, 'WARNING                : ONLY SERIAL AT THE MOMENT!!'
+        elseif(interpolation_method==6) then
+          print*, 'interpolation_method==6: Sixth order Lagrangian interpolation used'
+          print*, 'WARNING: Interpolation method is not working for parallel runs at the moment'
         endif
         if(lparticles) then
             print*, ''
@@ -480,7 +482,7 @@ module Solid_Cells
       if (lchemistry) then
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
-        call get_shared_variable('lpres_grad',lpres_grad)
+  !      call get_shared_variable('lpres_grad',lpres_grad)
         call initialize_chemistry_og(f_ogrid)
       else
         lpres_grad = .false.
@@ -585,7 +587,7 @@ module Solid_Cells
                   2*flow_r*orth_r*a2/rr2**2*wall_smoothing
                 f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
                   (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
-                if (ilnTT /= 0 .and. .not. lflame_front_2D) then
+               if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
                   wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
                   f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
                     +cylinder_temp*(1-wall_smoothing_temp)
@@ -593,7 +595,6 @@ module Solid_Cells
                     *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
                 if (lchemistry .and. .not. lflame_front_2D) then
-                !if (lchemistry) then
                     do k = 1,nchemspec
                       f(i,j,:,ichemspec(k)) = chemspec0(k)
                     enddo
@@ -615,13 +616,12 @@ module Solid_Cells
           else
 !  Velocities inside the solid objects are set to zero 
             f(i,j,:,iux:iuz)=0.
-            if (ilnTT /= 0 .and. .not. lflame_front_2D) then
+            if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
               f(i,j,:,ilnTT) = cylinder_temp
               f(i,j,:,irho) = f(l2,m2,n2,irho) &
                 *f(l2,m2,n2,ilnTT)/cylinder_temp
             endif
             if (lchemistry .and. .not. lflame_front_2D) then
-            !if (lchemistry) then
               do k = 1,nchemspec
                 f(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
@@ -701,7 +701,7 @@ module Solid_Cells
         f_ogrid(i,:,:,iux:iuy)=f_ogrid(i,:,:,iux:iuy)*wall_smoothing
       enddo
 !
-      if (lflame_front_2D) then
+      if (lchemistry .and. lflame_front_2D) then
         f_ogrid(:,:,:,irho) = f(l2,m2,n2,irho)
         f_ogrid(:,:,:,iTT) = f(l2,m2,n2,iTT)
         do k = 1,nchemspec
@@ -881,6 +881,8 @@ module Solid_Cells
         inter_len=5
       elseif(interpolation_method==5) then
         inter_len=interpol_order_poly
+      elseif(interpolation_method==6) then
+        inter_len=7
       else
         call fatal_error('initialize_interpolate_points','selected interpolation method does not exist!')
       endif
@@ -2010,6 +2012,9 @@ module Solid_Cells
     elseif(interpolation_method==3) then
       nbuf_farr(1:3)=5
       ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    elseif(interpolation_method==6) then
+      nbuf_farr(1:3)=7
+      ii1=3; ii2=3; jj1=3; jj2=3; kk1=3; kk2=3
     elseif(interpolation_method==5) then
       nbuf_farr(1:3)=interpol_order_poly
       ipoly=floor((interpol_order_poly)*0.5)
@@ -2076,7 +2081,7 @@ module Solid_Cells
       ind_send_first=ind_send_last+1
     enddo
 !
-!  Recieve from processors with proc < iproc
+!  Recieve from processors with proc > iproc
 !
     do iter=n_procs_recv_cart_to_curv,1,-1
       recv_from=procs_recv_cart_to_curv(iter)
@@ -2136,6 +2141,9 @@ module Solid_Cells
     elseif(interpolation_method>=3) then
       nbuf_farr(1:3)=5
       ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    elseif(interpolation_method==6) then
+      nbuf_farr(1:3)=7
+      ii1=3; ii2=3; jj1=3; jj2=3; kk1=3; kk2=3
     elseif(interpolation_method==5) then
       nbuf_farr(1:3)=interpol_order_poly
       ipoly=floor((interpol_order_poly)*0.5)
@@ -2268,6 +2276,8 @@ module Solid_Cells
       ii1=1; ii2=1; jj1=1; jj2=1; kk1=1; kk2=1
     elseif(interpolation_method==3) then
       ii1=2; ii2=2; jj1=2; jj2=2; kk1=2; kk2=2
+    elseif(interpolation_method==6) then
+      ii1=3; ii2=3; jj1=3; jj2=3; kk1=3; kk2=3
     elseif(interpolation_method==5) then
       ipoly=floor((interpol_order_poly)*0.5)
       ii1=ipoly; ii2=ipoly; jj1=ipoly; jj2=ipoly; kk1=ipoly; kk2=ipoly
@@ -2363,6 +2373,10 @@ module Solid_Cells
       if(.not. interp_lagrange4(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange4','interpolation from cartesian to curvilinear')
       endif
+    elseif(interpolation_method==6) then
+      if(.not. interp_lagrange6(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.true.,.false.,lcheck_interpolation)) then
+        call fatal_error('interp_lagrange6','interpolation from cartesian to curvilinear')
+      endif
     elseif(interpolation_method==4) then
       call interpolate_quadratic_spline(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
       !call interpolate_quadratic_spline(farr(:,:,:,iux:iuz),iux,iuz,xyz_ip,f_ip(iux:iuz),inear_glob)
@@ -2430,6 +2444,10 @@ module Solid_Cells
     elseif(interpolation_method==3) then
       if(.not. interp_lagrange4(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange4','interpolation from curvilinear to cartesian')
+      endif
+    elseif(interpolation_method==6) then
+      if(.not. interp_lagrange6(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+        call fatal_error('interp_lagrange6','interpolation from curvilinear to cartesian')
       endif
     elseif(interpolation_method==4) then
       call interpolate_quadratic_sp_og(farr,ivar1,ivar2,xyz_ip,f_ip,inear_glob)
@@ -2502,7 +2520,7 @@ module Solid_Cells
     k=curvilinear_to_cartesian(id)%i_xyz(3)
     f_cartesian(i,j,k,iux)=f_ip(iux)*cos(xyz_ip(2))-f_ip(iuy)*sin(xyz_ip(2))
     f_cartesian(i,j,k,iuy)=f_ip(iux)*sin(xyz_ip(2))+f_ip(iuy)*cos(xyz_ip(2))
-    if (lchemistry .and. lpres_grad) then
+    if (lpres_grad) then
       f_cartesian(i,j,k,iuz:ivar2-2)=f_ip(iuz:ivar2-2)
       f_cartesian(i,j,k,igpx)=f_ip(igpx)*cos(xyz_ip(2))-f_ip(igpy)*sin(xyz_ip(2))
       f_cartesian(i,j,k,igpy)=f_ip(igpx)*sin(xyz_ip(2))+f_ip(igpy)*cos(xyz_ip(2))
@@ -2532,6 +2550,10 @@ module Solid_Cells
     elseif(interpolation_method==3) then
       if(.not. interp_lagrange4(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
         call fatal_error('interp_lagrange4','interpolation from curvilinear to cartesian')
+      endif
+    elseif(interpolation_method==6) then
+      if(.not. interp_lagrange6(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,.false.,.true.,lcheck_interpolation)) then
+        call fatal_error('interp_lagrange6','interpolation from curvilinear to cartesian')
       endif
     endif
 !
@@ -3357,6 +3379,175 @@ module Solid_Cells
       endif
 !
   endfunction interp_lagrange4
+!***********************************************************************
+  logical function interp_lagrange6(farr_in,ivar1,ivar2,xxp,inear_glob,fp,lcart_to_curv,lcurv_to_cart,lcheck)
+!
+!  Interpolate the value of f to (xp, yp) CURVILINEAR coordinate
+!  using the fourth-order lagrangian interpolation.
+! 
+!  TODO: Extend to 3D
+!  TODO: Adjust nearest point to be ACTUALLY NEAREST, not bottom left corner
+!        Needed due to asymetric stencil
+!
+!  The coefficients are determined by the 7x7 grid points surrounding the
+!  interpolation point.
+!  Global coordinates are used for the interpolation, to allow interpolation of 
+!  values outside this processors domain.
+!
+!  1-mar-19/Eva: Coded
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (7,7,7,ivar2-ivar1+1) :: farr_in
+      !TODO
+      real, dimension (-3:3,-3:3,ivar2-ivar1+1) :: farr
+      real, dimension (ivar2-ivar1+1) :: fp
+      integer, dimension (3) :: inear_glob
+      logical :: lcart_to_curv, lcurv_to_cart, lcheck 
+!
+      intent(in)  :: farr_in, ivar1, ivar2, xxp, inear_glob, lcheck, lcart_to_curv, lcurv_to_cart
+      intent(out) :: fp
+
+      real, dimension(-3:3) :: xglob, yglob, deltax, deltay, x_i, y_i
+      real, dimension(-3:3,-3:3) :: dx_ij, dy_ij
+      real, dimension(-3:3) :: lag
+      real, dimension(-3:3,ivar2-ivar1+1) :: gp
+      integer :: i,j,ix0,ix1,iy0,iy1
+!
+      interp_lagrange6= .true.
+      farr(:,:,:) = farr_in(:,:,4,:)
+!
+!  Get grid points
+!
+      if(lcart_to_curv) then
+        xglob(-3:3) = xglobal(inear_glob(1)-3:inear_glob(1)+3)
+        yglob(-3:3) = yglobal(inear_glob(2)-3:inear_glob(2)+3)
+      elseif(lcurv_to_cart) then
+        xglob(-3:3) = xglobal_ogrid(inear_glob(1)-3:inear_glob(1)+3)
+        yglob(-3:3) = yglobal_ogrid(inear_glob(2)-3:inear_glob(2)+3)
+      else
+        print*,'interp_lagrange6: Not interpolated to any specific grid!'
+        interp_lagrange6= .false.
+        return
+      endif
+!
+!  Compute distance from xxp to surrounding grid points
+!  Needed for checking that inear_glob is correct, and for lagrange polynomials
+!
+      x_i(:) = xxp(1)
+      y_i(:) = xxp(2)
+      deltax = x_i - xglob
+      deltay = y_i - yglob
+!
+!  Check that inear_glob actually points to the grid point closest to xxp
+!
+      if(lcheck) then
+        if ((any(abs(deltax)<abs(deltax(0)))) .or. (any(abs(deltay)<abs(deltay(0))))) then 
+          print*, 'interp_lagrange4: Interpolation point does not lie closest to center grid point.' 
+          print*, 'ix0, iy0, iz0 = ', inear_glob(1:3)
+          print*, 'xp, xglob(-3:3) = ', xxp(1), xglob
+          print*, 'yp, yglob(-3:3) = ', xxp(2), yglob
+          interp_lagrange6 = .false.
+          return
+        endif
+      endif
+!
+!  Interpolate in x-direction
+! 
+!  Compute distances
+!
+      do i = -3,3
+        do j = i+1,3
+            dx_ij(i,j) = xglob(i)-xglob(j)
+            dx_ij(j,i) = -dx_ij(i,j)
+            dy_ij(i,j) = yglob(i)-yglob(j)
+            dy_ij(j,i) = -dy_ij(i,j)
+        enddo
+          dx_ij(i,i) = 0
+          dy_ij(i,i) = 0
+      enddo
+!
+!  Compute products of x-x_k/(x_i-x_k) for (i!=k)
+!
+      lag(:)=1
+      do i = -3,3
+        do j = -3,3
+          if (i .ne. j) then
+            lag(i) = lag(i)*deltax(j)/dx_ij(i,j)
+          endif
+        enddo
+      enddo
+!
+!  Interpolate points in x-direction
+!
+      gp(:,:) = 0
+      do i=ivar1,ivar2
+        do j = -3,3
+          gp(:,i) = gp(:,i)+lag(j)*farr(j,:,i)  
+        enddo
+      enddo
+!
+!  Interpolate in y-direction
+! 
+!  Compute distances
+!
+      lag(:)=1
+      do i = -3,3
+        do j = -3,3
+          if (i .ne. j) then
+            lag(i) = lag(i)*deltay(j)/dy_ij(i,j)
+          endif
+        enddo
+      enddo
+!
+!  Interpolate points in y-direction
+!
+      do i=ivar1,ivar2
+        do j=-3,3
+        fp(i) = sum(lag(:)*gp(:,i))
+        enddo
+      enddo
+
+      if (lcheck .and. 4==5) then
+        do i=1,ivar2-ivar1+1
+          if ((fp(i)>maxval(farr(:,:,i)).and.i/=3) .or. (fp(i)<minval(farr(:,:,i)).and.i/=3)) then
+!
+!  Compensate for overshoots by linear interpolation
+!
+            ix0=0; ix1=1; iy0=0; iy1=1
+            if(xglob(0)>xxp(1)) then
+              ix0=2; ix1=3
+            else
+              ix0=3; ix1=4
+            endif
+            if(yglob(0)>xxp(2)) then
+              iy0=2; iy1=3
+            else
+              iy0=3; iy1=4
+            endif
+            if(lcart_to_curv) then
+              interp_lagrange6= linear_interpolate_cartesian(farr_in(ix0:ix1,iy0:iy1,3:4,i),i,i,xxp, &
+                                           (/inear_glob(1)+ix0-3,inear_glob(2)+iy0-3,inear_glob(3)/),&
+                                           gp(0,i),lcheck_interpolation)
+            else
+              interp_lagrange6= linear_interpolate_curvilinear(farr_in(ix0:ix1,iy0:iy1,3:4,i),i,i,xxp, &
+                                           (/inear_glob(1)+ix0-3,inear_glob(2)+iy0-3,inear_glob(3)/),&
+                                           gp(0,i),lcheck_interpolation)
+            endif
+!
+            fp(i)=gp(0,i)
+          endif
+          if (fp(i)/=fp(i)) then
+            print*, 'interp_interpolate: interpolated value is NaN'
+            print*, 'interp_interpolate: xxp=', xxp
+            print*, 'interp_interpolate: i, fp(i)=', i, fp(i)
+            print*, '------------------'
+            interp_lagrange6=.false.
+          endif
+        enddo
+      endif
+!
+  endfunction interp_lagrange6
 !***********************************************************************
   logical function linear_interpolate_cart_HO(farr,ivar1,ivar2,xxp,inear_glob,fp,lcheck,order)
 !
@@ -4692,10 +4883,10 @@ module Solid_Cells
       call update_ghosts_ogrid(f_ogrid)
     endif
 
-    if (.not. lpres_grad) then
-      call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
-    else
+    if (lpres_grad) then
       call communicate_ip_curv_to_cart(f_cartesian,1,mfarray)
+    else
+      call communicate_ip_curv_to_cart(f_cartesian,1,mvar)
     endif
 ! 
 !     !TODO: Should use the particle flow info in the interpolation point
@@ -8280,8 +8471,15 @@ module Solid_Cells
               print*, '         Zone adjusted.'
               r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interpol_filter
             endif
+          elseif (interpolation_method==6) then
+            r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interpol_filter
+            if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
+              print*, 'WARNING: An error occured when setting interpolation zone.'
+              print*, '         Zone adjusted.'
+              r_int_outer=r_ogrid-dx_outer*2.51-dx_outer*interpol_filter
+            endif
           else
-            call fatal_error('initialize_solid_cells','interpolation method > 4 does not exist')
+            call fatal_error('initialize_solid_cells','interpolation method does not exist')
           endif
         endif
 !
@@ -8291,12 +8489,14 @@ module Solid_Cells
 !
 !  Set limit of the interpolation zone, r_int_inner
 !
-        if(interpolation_method<5) then
+        if(interpolation_method<5 .or. interpolation_method==6) then
           min_rad=r_int_outer
           do ii = l1,l2
             do jj = m1,m2
               tmp_rad = radius_ogrid(x(ii),y(jj))
-              if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
+    !          if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
+! TODO: Should there be 7 as below when int method = 6?
+              if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+7*dxmax)) then
                 do i3=-3,3
                   do j3=-3,3
                     min_tmp_rad = radius_ogrid(x(ii+i3),y(jj+j3))

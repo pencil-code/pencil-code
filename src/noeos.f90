@@ -44,6 +44,7 @@ module EquationOfState
   real, dimension(nchemspec,18) :: species_constants
   real :: Cp_const=impossible
   real :: Pr_number=0.7
+  logical :: lpres_grad=.false.
 !
   contains
 !***********************************************************************

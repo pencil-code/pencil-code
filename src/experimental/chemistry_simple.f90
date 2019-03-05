@@ -13,8 +13,7 @@
 ! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 4
-! COMMUNICATED AUXILIARIES 4
+! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3)
 ! PENCILS PROVIDED nu; gradnu(3)
@@ -73,7 +72,7 @@ module Chemistry
   logical, save :: tran_exist=.false.
   logical, save :: lew_exist=.false.
   logical :: lmech_simple=.false.
-  logical :: lpres_grad=.false.
+ ! logical, pointer :: lpres_grad
 !
   logical :: lfilter=.false.
   integer :: nreactions=0, nreactions1=0, nreactions2=0
@@ -144,7 +143,7 @@ module Chemistry
       prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
-      file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, lpres_grad, &
+      file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef, lmech_simple !ldamp_zone_for_NSCBC,
 !
 !
@@ -228,54 +227,11 @@ module Chemistry
 !
 !  Register viscosity 
 !
-      call farray_register_auxiliary('viscosity',iviscosity,communicated=.true.)
-!
-!  Writing files for use with IDL
-!
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',viscosity $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',viscosity'
-      aux_count = aux_count+1
-      if (lroot) write (4,*) ',visocsity $'
-      if (lroot) write (15,*) 'viscosity = fltarr(mx,my,mz)*one'
-
+      call farray_register_auxiliary('viscosity',iviscosity)
 !
 !  Register cp
 !
-      call farray_register_auxiliary('cp',icp,communicated=.true.)
-!
-!  Writing files for use with IDL
-!
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',cp $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',cp'
-      aux_count = aux_count+1
-      if (lroot) write (4,*) ',cp $'
-      if (lroot) write (15,*) 'cp = fltarr(mx,my,mz)*one'
-
-      if (lpres_grad) then
-!
-!  Register gradient of pressure
-!
-        call farray_register_auxiliary('gpx',igpx,communicated=.true.)
-!
-!  Writing files for use with IDL
-!
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',gpx $'
-        if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',gpx'
-        aux_count = aux_count+1
-        if (lroot) write (4,*) ',gpx $'
-        if (lroot) write (15,*) 'gpx = fltarr(mx,my,mz)*one'
-!
-        call farray_register_auxiliary('gpy',igpy,communicated=.true.)
-!
-!  Writing files for use with IDL
-!
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',gpy $'
-        if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',gpy'
-        aux_count = aux_count+1
-        if (lroot) write (4,*) ',gpy $'
-        if (lroot) write (15,*) 'gpy = fltarr(mx,my,mz)*one'
-!
-      endif
+      call farray_register_auxiliary('cp',icp)
 !
 !  Read species to be used from chem.inp (if the file exists).
 !
@@ -579,7 +535,7 @@ module Chemistry
 !
 !  Needed by ogrid_chemistry 
 !
-   call put_shared_variable('lpres_grad',lpres_grad)
+!   call get_shared_variable('lpres_grad',lpres_grad)
    if (lsolid_cells) then
 !
       call put_shared_variable('lheatc_chemistry', lheatc_chemistry)
@@ -1865,9 +1821,6 @@ module Chemistry
         endif
         if (sname(1:9)=='viscosity') cformv(iname)='DEFINED'
         if (sname(1:2)=='cp') cformv(iname)='DEFINED'
-        if (sname(1:3)=='gpy') cformv(iname)='DEFINED'
-        if (sname(1:3)=='gpx') cformv(iname)='DEFINED'
-        if (sname(1:3)=='pp') cformv(iname)='DEFINED'
       enddo
 !
 !  Write chemistry index in short notation
@@ -1875,10 +1828,6 @@ module Chemistry
       if (lwr) then
         call farray_index_append('nchemspec',nchemspec)
         call farray_index_append('ichemspec',ichemspec(1),1,nchemspec)
- !       call farray_index_append('iviscosity',iviscosity)
- !       call farray_index_append('icp',icp)
- !       call farray_index_append('igpx',igpx)
- !       call farray_index_append('igpy',igpy)
       endif
 !
     endsubroutine rprint_chemistry

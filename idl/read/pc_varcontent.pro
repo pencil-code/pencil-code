@@ -154,7 +154,9 @@ indices = [ $
   { name:'imi', label:'Dust mi ?something?', dims:1 }, $
   { name:'ilnTT', label:'Log temperature', dims:1 }, $
   { name:'iTT', label:'Temperature', dims:1 }, $
-  { name:'ieth', label:'Thermal energy', dims:1 } $
+  { name:'ieth', label:'Thermal energy', dims:1 }, $
+  { name:'igpx', label:'Pressure gradient x', dims:1 }, $
+  { name:'igpy', label:'Pressure gradient y', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 

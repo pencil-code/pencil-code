@@ -69,6 +69,7 @@ module EquationOfState
 !
   real :: Cp_const=impossible
   real :: Pr_number=0.7
+  logical :: lpres_grad = .false.
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
 !MR: Is now allocated only once.

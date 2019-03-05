@@ -63,10 +63,9 @@ module EquationOfState
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
-  logical, pointer :: lpres_grad
-!
   real :: Cp_const=impossible
   real :: Pr_number=0.7
+  logical :: lpres_grad = .false.
 !
  real, dimension(nchemspec,18) :: species_constants
 !
@@ -74,9 +73,9 @@ module EquationOfState
 !MR: Is now allocated only once.
  real, dimension(mx,my,mz), target :: mu1_full
 !
-  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const
+  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const, lpres_grad
 !
-  namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, Cp_const
+  namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, Cp_const, Pr_number
 !
   contains
 !***********************************************************************
@@ -84,9 +83,22 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
+      use FArrayManager
+!
       leos_chemistry=.true.
 !
       ilnTT = 0
+!
+      if (lpres_grad) then
+!
+!  Register gradient of pressure
+!
+        call farray_register_auxiliary('gpx',igpx)
+!
+        call farray_register_auxiliary('gpy',igpy)
+!
+      endif
+!
 !
 !  Identify version number.
 !
@@ -176,7 +188,8 @@ module EquationOfState
         nn1=1;  nn2=mz
       endif
 
-      if (lchemistry) call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
+      call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
+      call put_shared_variable('lpres_grad',lpres_grad)
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -319,8 +332,12 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+      if (lwrite_slices) then 
+  !      if (lpres_grad) then
+          where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
+          where(cnamev=='pp') cformv='DEFINED'
+  !      endif
+      endif
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -395,8 +412,6 @@ module EquationOfState
 !
       use SharedVariables, only: get_shared_variable
 !
-      call get_shared_variable('lpres_grad',lpres_grad)
-
       lpenc_requested(i_cv) = .true.
       lpenc_requested(i_cp) = .true.
       lpenc_requested(i_cv1) = .true.
