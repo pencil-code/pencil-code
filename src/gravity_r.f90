@@ -44,8 +44,9 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
-  real, target :: g1=0.,rp1,rp1_pot=0.
+  real, target :: g1=0.,rp1,rp1_pot=impossible
   real, target :: gsum=0.
+  real :: rp1_smooth,rp1_smooth1,frac_smooth=1.0
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
@@ -78,14 +79,14 @@ module Gravity
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass,&
       ipotential_secondary,lsecondary_wait,t_start_secondary, &
-      lcoriolis_force_gravity,lcentrifugal_force_gravity
+      lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
       ipotential_secondary,lsecondary_wait,t_start_secondary, &
-      lcoriolis_force_gravity,lcentrifugal_force_gravity
+      lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   contains
 !***********************************************************************
@@ -138,6 +139,13 @@ module Gravity
         gsum=g0
         if (g1/=0) call fatal_error("initialize_gravity",&
              "companion gravity coded only for corotational frame")
+      endif
+!
+!  Smoothing radius
+!
+      if (rp1_pot == impossible) then
+         rp1_smooth   = frac_smooth * rp1 * (g1/3.)**(1./3)
+         rp1_smooth1  = 1./rp1_smooth
       endif
 !
 !  Share variables related to corotational frame to modules that may need it
@@ -1047,12 +1055,9 @@ module Gravity
 !
       real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
-      real :: rhill,rhill1
+      real :: rhill,rhill1,rp1_pot1
       integer :: i
 !
-      rhill  = rp1*(g1/3.)**(1./3)
-      rhill1 = 1./rhill
-!      
       if (lcylindrical_coords) then
         if (lcylindrical_gravity) then
           rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m))
@@ -1072,15 +1077,15 @@ module Gravity
       case ('plummer')
         gp = -g1*(rr2_pm+rp1_pot**2)**(-1.5)
 !           
-      case ('boley')
+     case ('boley')
 !
-!  Correct potential outside Hill sphere
+!  Correct potential outside a sphere of radius rsmooth. Default to Hill sphere.
 !
         do i=1,nx
-          if (rr2_pm(i) .gt. rhill**2) then 
-            gp(i) = -g1*rr2_pm(i)**(-1.5) 
+          if (rr2_pm(i) .gt. rp1_smooth**2) then
+            gp(i) = -g1*rr2_pm(i)**(-1.5)
           else
-            gp(i) =  g1*(3*sqrt(rr2_pm(i))*rhill1 - 4)*rhill1**3
+            gp(i) =  g1*(3*sqrt(rr2_pm(i))*rp1_smooth1 - 4)*rp1_smooth1**3
           endif
         enddo
 !           
