@@ -102,6 +102,7 @@ module Solid_Cells
 !
       use Solid_Cells_Mpicomm, only: initialize_mpicomm_ogrid
       use SharedVariables, only: get_shared_variable
+      use EquationOfState, only: lpres_grad
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer :: i, ndims, k
@@ -2421,6 +2422,8 @@ module Solid_Cells
 !
 !  Use linear interpolation routine to interpolate the values on the cartesian 
 !  grid to the interpolation point on the curvilinear grid
+!
+    use EquationOfState, only: lpres_grad
 !
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f_cartesian
     integer, intent(in) :: id,ivar1,ivar2
@@ -4764,6 +4767,7 @@ module Solid_Cells
 !
     use Mpicomm, only: mpifinalize, mpiallreduce_max
     use Boundcond, only: update_ghosts
+    use EquationOfState, only: lpres_grad
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
