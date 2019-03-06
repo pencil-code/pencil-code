@@ -2,6 +2,7 @@ module solid_cells_ogrid_chemistry
 !
   use Cdata
   use General, only: keep_compiler_quiet
+  use Solid_cells_ogrid_cdata
 !
 implicit none
 !
@@ -11,7 +12,7 @@ implicit none
 !
 !   dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) ::  f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
 !
       call keep_compiler_quiet(f)
 !
@@ -21,7 +22,7 @@ implicit none
 !
 !   dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) ::  f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
 !
       call keep_compiler_quiet(f)
 !
@@ -31,7 +32,7 @@ implicit none
 !
 !   dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) ::  f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
 !
       call keep_compiler_quiet(f)
 !
@@ -41,8 +42,8 @@ implicit none
 !
 !   dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) ::  f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -53,7 +54,7 @@ implicit none
 !
 !   dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) ::  f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
@@ -64,8 +65,8 @@ implicit none
 !
 !   dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) ::  f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
