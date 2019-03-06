@@ -189,7 +189,6 @@ module EquationOfState
       endif
 
       call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
-      call put_shared_variable('lpres_grad',lpres_grad)
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -333,10 +332,8 @@ module EquationOfState
       logical, optional :: lwrite
 !
       if (lwrite_slices) then 
-  !      if (lpres_grad) then
-          where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
-          where(cnamev=='pp') cformv='DEFINED'
-  !      endif
+        if (lpres_grad) where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
+        where(cnamev=='pp') cformv='DEFINED'
       endif
 !
     endsubroutine rprint_eos

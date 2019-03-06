@@ -482,7 +482,6 @@ module Solid_Cells
       if (lchemistry) then
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
-  !      call get_shared_variable('lpres_grad',lpres_grad)
         call initialize_chemistry_og(f_ogrid)
       else
         lpres_grad = .false.

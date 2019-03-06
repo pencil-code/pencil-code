@@ -304,7 +304,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         call get_shared_variable('iaa1',iaa1)
         call get_shared_variable('iaa2',iaa2)
         call get_shared_variable('lmech_simple',lmech_simple)
-!        call get_shared_variable('lpres_grad',lpres_grad)
 !
 !      if (lew_exist) then 
 !        Lewis_coef1 = 1./Lewis_coef

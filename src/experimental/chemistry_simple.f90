@@ -535,7 +535,6 @@ module Chemistry
 !
 !  Needed by ogrid_chemistry 
 !
-!   call get_shared_variable('lpres_grad',lpres_grad)
    if (lsolid_cells) then
 !
       call put_shared_variable('lheatc_chemistry', lheatc_chemistry)
