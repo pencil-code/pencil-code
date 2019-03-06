@@ -44,7 +44,7 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
-  real, target :: g1=0.,rp1,rp1_pot=impossible
+  real, target :: g1=0.,rp1=1.0,rp1_pot=impossible
   real, target :: gsum=0.
   real :: rp1_smooth,rp1_smooth1,frac_smooth=1.0
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
@@ -145,7 +145,11 @@ module Gravity
 !
       if (rp1_pot == impossible) then
          rp1_smooth   = frac_smooth * rp1 * (g1/3.)**(1./3)
-         rp1_smooth1  = 1./rp1_smooth
+         if (rp1_smooth /= 0) then
+           rp1_smooth1  = 1./rp1_smooth
+         else
+           rp1_smooth1 = 0.
+         endif
       endif
 !
 !  Share variables related to corotational frame to modules that may need it
