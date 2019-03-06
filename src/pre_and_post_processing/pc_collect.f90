@@ -140,6 +140,8 @@ program pc_collect
   t_test = huge(1.0)
 !
   call read_and_combine(filename,f(:,:,:,1:mvar_io),mvar_in,.false.)
+  if (mglobal>0) &
+    call read_and_combine('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal,.true.)
 
   if (IO_strategy == 'dist') then
     ! write global grid:
@@ -151,8 +153,6 @@ program pc_collect
     write(lun_output) gdx_tilde, gdy_tilde, gdz_tilde
     close(lun_output)
   endif
-  if (mglobal>0) &
-    call read_and_combine('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal,.true.)
 !
   print *, 'Writing snapshot for time t =', t
 !
