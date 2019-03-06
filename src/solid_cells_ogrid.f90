@@ -484,8 +484,6 @@ module Solid_Cells
         call get_shared_variable('lheatc_chemistry',lheatc_chemistry)
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
         call initialize_chemistry_og(f_ogrid)
-      else
-        lpres_grad = .false.
       endif
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
@@ -500,7 +498,8 @@ module Solid_Cells
          iogTTx = iTT + 1
          iogTTy = iogTTx + 1
          iogTTz = iogTTy + 1
-         if (mogaux .ne. 3) then
+! NILS: This test should be made more generic!!!!!!
+         if (mogaux .ne. 3 .and. (.not. lpres_grad)) then
             call fatal_error('solid_cells_ogrid','mogaux .ne. ndims. Mogaux increased?')
          endif
          allocate(curv_cart_transform(my_ogrid,2))
@@ -5257,6 +5256,7 @@ module Solid_Cells
         endif
       endif
 
+     
 
     endsubroutine calc_pencils_eos_ogrid
 !***********************************************************************
@@ -5265,7 +5265,7 @@ module Solid_Cells
 !  Calculate Energy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use EquationOfState, only: gamma1
+      use EquationOfState, only: gamma1, lpres_grad
 !
       integer :: j
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
@@ -5289,6 +5289,16 @@ module Solid_Cells
                p_ogrid%fpres(:,j)=-p_ogrid%cs2*p_ogrid%glnrho(:,j)
             enddo
          endif
+      endif
+!
+! Store pressure gradient as auxillary if requsted (this is done elswhere
+! for cases with chemistry).
+!
+      if (lpres_grad .and. (.not. lchemistry)) then
+        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpx) = &
+            -p_ogrid%fpres(:,1)*p_ogrid%rho
+        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpy) = &
+            -p_ogrid%fpres(:,2)*p_ogrid%rho
       endif
 !
     endsubroutine calc_pencils_energy_ogrid

@@ -9,7 +9,6 @@
 ! CPARAM logical, parameter :: leos = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
@@ -80,7 +79,7 @@ module EquationOfState
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
-      fac_cs,isothmid, lstratz, gztype, gz_coeff
+      fac_cs,isothmid, lstratz, gztype, gz_coeff, lpres_grad
 !
 !  Run parameters.
 !
@@ -242,6 +241,7 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos
 !
+      use FArrayManager
       use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
@@ -292,6 +292,22 @@ module EquationOfState
       if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
           call fatal_error("initialize_eos","fargo advection not "//&
           "implemented for the temperature equation")
+!
+!  Register gradient of pressure
+!
+      if (lpres_grad) then
+        call farray_register_auxiliary('gpx',igpx)
+!
+!  Writing files for use with IDL
+!
+        aux_count = aux_count+1
+!
+        call farray_register_auxiliary('gpy',igpy)
+!
+!  Writing files for use with IDL
+!
+        aux_count = aux_count+1
+      endif
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -458,18 +474,29 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+
+      if (lwrite_slices) then 
+        where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
+      endif
 !
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine get_slices_eos(f,slices)
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+!  Loop over slices.
+!
+      select case (trim(slices%name))
+!
+        case ('gpx'); if (lpres_grad) call assign_slices_scal(slices,f,igpx)
+        case ('gpy'); if (lpres_grad) call assign_slices_scal(slices,f,igpy)
+        slices%ready=.true.
+!
+      endselect
 !
     endsubroutine get_slices_eos
 !***********************************************************************

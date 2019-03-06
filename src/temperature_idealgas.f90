@@ -1108,7 +1108,7 @@ module Energy
 !
       use Deriv, only: der6
       use Diagnostics
-      use EquationOfState, only: gamma_m1
+      use EquationOfState, only: gamma_m1, lpres_grad
       use ImplicitPhysics, only: heatcond_TT
       use Special, only: special_calc_energy
       use Sub, only: dot2,identify_bcs, dot, dot_mn
@@ -1284,6 +1284,13 @@ module Energy
 !
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*f(l1:l2,m,n,iuz)
         endif
+      endif
+!
+! Store  pressure gradient in f-array if requested
+!
+      if (lpres_grad) then
+        f(l1:l2,m,n,igpx) = -p%fpres(:,1)*f(l1:l2,m,n,irho)
+        f(l1:l2,m,n,igpy) = -p%fpres(:,2)*f(l1:l2,m,n,irho)
       endif
 !
 !  Information on the timescales.
