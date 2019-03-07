@@ -50,8 +50,11 @@
 ;   /nostats: Suppress only summary statistics.
 ;     /stats: Force printing of summary statistics even if /quiet is set.
 ;      /help: Display this usage information, and exit.
-;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere.
 ;    /single: enforces single precision of returned data.
+;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere. (inactive)
+;    /toyang: Provides merged data on basis of Yang grid (default: on Yin grid).a
+;    /cubint: Interpolation parameter for corners of Yin-Yang grid; 0: linear interp, default: -0.5.
+;             Identical with "cubic" keyword parameter of IDL routine "interpolate".
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
@@ -91,7 +94,7 @@ pro pc_read_var,                                                  $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status, sphere=sphere,single=single,         $
-    toyang=toyang, ogrid=ogrid
+    toyang=toyang,cubint=cubint,ogrid=ogrid
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -118,6 +121,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, validate_variables, 1
   default, single, 0
   default, toyang, 0
+  default, cubint, -.5
 ;
   if (arg_present(exit_status)) then exit_status=0
   default, reduced, 0
@@ -860,20 +864,20 @@ if (keyword_set(ogrid)) then logrid=1
 ;
         for iyy=0,1 do begin
           for icomp=0,ncomp do $
-            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_llcorn[0,*], yz_llcorn[1,*] )')
-          idum=execute( 'set_triangle, 0,ncornup_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, llcorn' ) 
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_llcorn[0,*],yz_llcorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, 0,ncornup_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, llcorn') 
 
           for icomp=0,ncomp do $
-            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_ulcorn[0,*], yz_ulcorn[1,*] )')
-          idum=execute( 'set_triangle, my-1,ncornlo_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, ulcorn' ) 
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_ulcorn[0,*],yz_ulcorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, my-1,ncornlo_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, ulcorn') 
 
           for icomp=0,ncomp do $
-            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_lucorn[0,*], yz_lucorn[1,*] )')
-          idum=execute( 'set_triangle, 0,ncornup_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, lucorn' ) 
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_lucorn[0,*],yz_lucorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, 0,ncornup_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, lucorn') 
 
           for icomp=0,ncomp do $
-            idum=execute( 'values'+inds_val+' = interpolate('+tags[i]+inds_other+', yz_uucorn[0,*], yz_uucorn[1,*] )')
-          idum=execute( 'set_triangle, my-1,ncornlo_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, uucorn' )
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_uucorn[0,*],yz_uucorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, my-1,ncornlo_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, uucorn')
 
         endfor
       endfor
