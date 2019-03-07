@@ -19,7 +19,7 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mw=mw, mvar=mvar, $
     ipx=ipx,ipy=ipy,ipz=ipz, $
     l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $
     object=object, datadir=datadir, proc=proc, reduced=reduced, $
-    print=print, quiet=quiet, help=help, down=down
+    print=print, quiet=quiet, help=help, down=down, ogrid=ogrid
 ;
 COMPILE_OPT IDL2, HIDDEN
 ;
@@ -112,6 +112,7 @@ COMPILE_OPT IDL2, HIDDEN
 ;
   default, dimfile, 'dim.dat'
   if (keyword_set(down)) then dimfile = 'dim_down.dat'
+  if (keyword_set(ogrid)) then dimfile = 'ogdim.dat'
 ;
 ;  Build the full path and filename.
 ;

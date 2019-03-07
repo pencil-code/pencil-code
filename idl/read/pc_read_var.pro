@@ -90,7 +90,8 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status, sphere=sphere,single=single,toyang=toyang
+    exit_status=exit_status, sphere=sphere,single=single,         $
+    toyang=toyang, ogrid=ogrid
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -168,13 +169,24 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Name and path of varfile to read.
 ;
-  if (n_elements(ivar) eq 1) then begin
-    default, varfile_, 'VAR'
-    varfile=varfile_+strcompress(string(ivar),/remove_all)
+  if (keyword_set(ogrid)) then begin
+    if (n_elements(ivar) eq 1) then begin
+      default, varfile_, 'OGVAR'
+      varfile=varfile_+strcompress(string(ivar),/remove_all)
+    endif else begin
+      default, varfile_, 'ogvar.dat'
+      varfile=varfile_
+      ivar=-1
+    endelse
   endif else begin
-    default, varfile_, 'var.dat'
-    varfile=varfile_
-    ivar=-1
+    if (n_elements(ivar) eq 1) then begin
+      default, varfile_, 'VAR'
+      varfile=varfile_+strcompress(string(ivar),/remove_all)
+    endif else begin
+      default, varfile_, 'var.dat'
+      varfile=varfile_
+      ivar=-1
+    endelse
   endelse
 ;
 ; Downsampled snapshot?
@@ -183,8 +195,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Get necessary dimensions quietly.
 ;
+logrid=0
+if (keyword_set(ogrid)) then logrid=1  
   if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled
+      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
