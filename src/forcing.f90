@@ -37,8 +37,9 @@ module Forcing
   real :: slope_ff=0., work_ff=0., omega_ff=0., n_equator_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
-  real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
-  real :: wff2_ampl=0.,zff2_ampl=0.
+  real :: wff_ampl=0.,  xff_ampl=0.,  yff_ampl=0.,  zff_ampl=0.
+  real :: wff2_ampl=0., xff2_ampl=0., yff2_ampl=0., zff2_ampl=0.
+  real :: zff_hel=0.,max_force=impossible
   real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
@@ -123,8 +124,8 @@ module Forcing
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff, n_equator_ff, location_fixed, lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
-       wff_ampl,xff_ampl,zff_ampl,zff_hel, &
-       wff2_ampl,zff2_ampl, &
+       wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
+       wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
        lxxcorr_forcing, lxycorr_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
@@ -503,6 +504,19 @@ module Forcing
           profy_hel(m)= -1.+2.*step(y(m),0.,width_ff)
         enddo
         profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
+        profz_hel=1.
+!
+! turn on forcing in a certain layer (generalization of 'forced_convection')
+!
+      elseif (iforce_profile=='xyzbox') then
+        profx_ampl=.5*(1.+erfunc((x(l1:l2)-xff_ampl)/wff_ampl)) &
+                  -.5*(1.+erfunc((x(l1:l2)-xff2_ampl)/wff2_ampl))
+        profy_ampl=.5*(1.+erfunc((y-yff_ampl)/wff_ampl)) &
+                  -.5*(1.+erfunc((y-yff2_ampl)/wff2_ampl))
+        profz_ampl=.5*(1.+erfunc((z-zff_ampl)/wff_ampl)) &
+                  -.5*(1.+erfunc((z-zff2_ampl)/wff2_ampl))
+        profx_hel=1.
+        profy_hel=1.
         profz_hel=1.
 !
 ! turn on forcing in a certain layer (generalization of 'forced_convection')
