@@ -325,7 +325,7 @@ module Special
           ee=0.
         endwhere
         ee1=abs(ee)
-        if (idiag_ee1m/=0) call sum_mn_name(ee   ,idiag_eem)
+        if (idiag_eem /=0) call sum_mn_name(ee   ,idiag_eem)
         if (idiag_ee1m/=0) call sum_mn_name(ee1  ,idiag_ee1m)
         if (idiag_ee2m/=0) call sum_mn_name(ee**2,idiag_ee2m)
         if (idiag_ee3m/=0) call sum_mn_name(ee**3,idiag_ee3m)
