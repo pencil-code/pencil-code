@@ -357,17 +357,17 @@ if (keyword_set(ogrid)) then logrid=1
 
   totalvars=(size(varcontent))[1]
 ;
-  if (n_elements(variables) ne 0) then begin
-    if (keyword_set(additional)) then begin
-      filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
-      variables=[filevars,variables]
-      if (n_elements(tags) ne 0) then begin
-        tags=[filevars,tags]
+  filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
+  if (n_elements(variables) ne 0 and keyword_set(additional)) then begin
+    for iv=0,n_elements(variables)-1 do $
+      if ~any(strmatch(varcontent.idlvar, variables[iv])) then begin
+        magic=1
+        filevars=[filevars,variables[iv]]
       endif
-    endif
-  endif else begin
-    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
-  endelse
+    variables=filevars
+    if (n_elements(tags) ne 0) then tags=[filevars,tags]
+  endif else $
+    variables=filevars
 ;
 ; Shortcut for getting magnetic field bb.
 ;
