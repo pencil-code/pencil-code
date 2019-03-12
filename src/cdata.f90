@@ -301,6 +301,7 @@ module Cdata
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0, &
              ijxb=0, ijxbx=0, ijxby=0, ijxbz=0
+  integer :: ibxf=0,ibyf=0,ibzf=0,ibbf=0
   integer :: igg=0,igx=0,igy=0,igz=0,ipotself=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ispx=0,ispy=0,ispz=0

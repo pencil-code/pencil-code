@@ -1435,6 +1435,11 @@ module Particles_map
                 endif
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+                if (lparticles_lyapunov) then
+                   if (ibbf/=0) then
+                        f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+weight*fp(k,ibpx:ibpz) 
+                   endif
+                endif
 !
                 if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
                   if (lparticles_number) then
@@ -1529,6 +1534,11 @@ module Particles_map
                 if (nzgrid/=1) weight=weight*weight_z
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+                if (lparticles_lyapunov) then
+                   if (ibbf/=0) then
+                        f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+weight*fp(k,ibpx:ibpz) 
+                   endif
+                endif
 !
                 if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
                   if (lparticles_number) then
@@ -1570,6 +1580,11 @@ module Particles_map
                 endif
 !
                 f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
+                if (lparticles_lyapunov) then
+                   if (ibbf/=0) then
+                        f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+weight0*fp(k,ibpx:ibpz) 
+                   endif
+                endif
 !
                 if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
                   if (lparticles_number) then
@@ -1584,12 +1599,22 @@ module Particles_map
             enddo
           else
             f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
+            if (lparticles_lyapunov) then
+              if (ibbf/=0) then
+                 f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+fp(k,ibpx:ibpz) 
+              endif
+            endif
           endif
         endif
 !
 !  Fold first ghost zone of f.
 !
-        if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) then 
+          call fold_f(f,irhop,irhop)
+          call fold_f(f,ibxf,ibxf)
+          call fold_f(f,ibyf,ibyf)
+          call fold_f(f,ibzf,ibzf)
+        endif
         if (.not.(lparticles_radius.or.lparticles_number.or. &
             lparticles_density)) then
           do m=m1,m2; do n=n1,n2

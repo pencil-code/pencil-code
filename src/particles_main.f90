@@ -741,6 +741,7 @@ module Particles_main
       type (pencil_case) :: p
 !
       if (lparticles)             call calc_pencils_particles(f,p)
+      if (lparticles_lyapunov)    call calc_pencils_par_lyapunov(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
       if (lparticles_chemistry)   call calc_pencils_par_chem(f,p)
 !

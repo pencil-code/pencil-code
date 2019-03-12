@@ -163,4 +163,21 @@ module Particles_lyapunov
 !    
     endsubroutine rprint_particles_lyapunov
 !***********************************************************************
+    subroutine calc_pencils_par_lyapunov(f,p)
+!
+      use Sub, only: grad
+!
+!  This calculates the bbf data to a pencil.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  16-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_par_lyapunov
+!***********************************************************************
 endmodule Particles_lyapunov

@@ -8,3 +8,4 @@
   public :: particles_stochastic_lyapunov
   public :: rprint_particles_lyapunov
   public :: dlyapunov_dt,dlyapunov_dt_pencil
+  public :: calc_pencils_par_lyapunov

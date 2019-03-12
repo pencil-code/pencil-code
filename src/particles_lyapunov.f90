@@ -10,9 +10,10 @@
 !
 ! CPARAM logical, parameter :: lparticles_lyapunov=.true.
 !
-! MAUX CONTRIBUTION 9
-! COMMUNICATED AUXILIARIES 9
+! MAUX CONTRIBUTION 12
+! COMMUNICATED AUXILIARIES 12
 ! MPVAR CONTRIBUTION 12
+! PENCILS PROVIDED bbf(3)
 !
 !***************************************************************
 module Particles_lyapunov
@@ -27,12 +28,12 @@ module Particles_lyapunov
 !
   include 'particles_lyapunov.h'
 !
-  logical :: lnoise2pvector=.false.
-  real :: fake_eta=0.,bamp=0.
+  logical :: lnoise2pvector=.false.,linit_largeb=.false.
+  real :: fake_eta=0.,bamp=1e-2,kmode_forb=3
   integer :: idiag_bx2pm=0,idiag_by2pm=0,idiag_bz2pm=0
 !
   namelist /particles_lyapunov_init_pars/ &
-    bamp
+    bamp,linit_largeb,kmode_forb
 !
   namelist /particles_lyapunov_run_pars/ &
   lnoise2pvector,fake_eta
@@ -75,6 +76,18 @@ module Particles_lyapunov
       igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
       igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
 !
+!  Set indices for bp data mapped back on grid; this is auxilliary variable 
+!
+      call farray_register_auxiliary('bbf',ibbf,communicated=.true.,vector=3)
+      ibxf=ibbf; ibyf=ibbf+1; ibzf=ibbf+2
+!
+!  Check that the fp and dfp arrays are big enough.
+!
+      if (npvar > mpvar) then
+        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
+        call fatal_error('register_particles','npvar > mpvar')
+      endif
+!
     endsubroutine register_particles_lyapunov
 !***********************************************************************
     subroutine initialize_particles_lyapunov(f)
@@ -106,9 +119,13 @@ module Particles_lyapunov
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
       integer, dimension (ncpus) :: my_particles=0,all_particles=0
-      real :: random_number
+      real :: random_number,xcoord
       integer :: ipzero,ik,ii,jj,ij
 !
+      if (lroot) then 
+         write(*,*) 'init_particles_lyapunov:'
+         write(*,*) 'linit_largeb=',linit_largeb
+      endif
       do ip=1,npar_loc
 !
 ! Initialize the gradU matrix at particle position
@@ -122,10 +139,15 @@ module Particles_lyapunov
 !
 ! Assign random initial value for the passive vector 
 !
-        do ik=1,3
-          call random_number_wrapper(random_number)
-          fp(ip,ibpx+ik-1)= random_number
-        enddo
+        if (linit_largeb) then
+          xcoord=fp(ip,ixp)
+          fp(ip,ibpx+ik-1) = bamp*sin(kmode_forb*xcoord)
+        else
+          do ik=1,3
+            call random_number_wrapper(random_number)
+            fp(ip,ibpx+ik-1)= bamp*random_number
+          enddo
+        endif
       enddo
 !
     endsubroutine init_particles_lyapunov
@@ -264,14 +286,36 @@ module Particles_lyapunov
       integer :: ip,ik
       real,dimension(2) :: grandom
 !
-      do ik=1,3
-        do ip=1,npar_loc
+      do ip=1,npar_loc
+        do ik=1,3
           call gaunoise_number(grandom)
           fp(ip,ibpx+ik-1) = fp(ip,ibpx+ik-1)+sqrt(fake_eta)*grandom(2)*sqrt(dt)
         enddo
       enddo
 !    
     endsubroutine particles_stochastic_lyapunov
+!***********************************************************************
+    subroutine calc_pencils_par_lyapunov(f,p)
+!
+      use Sub, only: grad
+!
+!  This calculates the bbf data to a pencil.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  16-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_bbf)) then
+        if (ibbf/=0) then
+          p%bbf=f(l1:l2,m,n,ibxf:ibzf)
+        else
+          p%bbf=0.0
+        endif
+      endif
+!
+    endsubroutine calc_pencils_par_lyapunov
 !***********************************************************************
     subroutine rprint_particles_lyapunov(lreset,lwrite)
 !
