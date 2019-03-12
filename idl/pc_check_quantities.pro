@@ -211,6 +211,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		forcing_y:'forcing function y', $
 		forcing_z:'forcing function z', $
 		forcing_abs:'forcing function', $
+		q_abs:'isotropic heatflux', $
 		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_q_parallel:'field-aligned Spitzer heatflux', $
@@ -424,6 +425,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		forcing_y:'forcing', $
 		forcing_z:'forcing', $
 		forcing_abs:'forcing', $
+		q_abs:['Temp'], $
 		q_sat:['Temp', 'rho'], $
 		Spitzer_K_parallel:'Temp', $
 		Spitzer_q:['Temp'], $

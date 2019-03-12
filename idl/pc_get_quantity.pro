@@ -302,6 +302,11 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end
 	end
 
+	if (strcmp (quantity, 'q_abs', /fold_case)) then begin
+		; Absolute value of the heat flux density vector q [W / m^2] = [kg / s^3]
+		chi = pc_get_parameter ('chi', label=quantity)
+		return, chi * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * unit.density / (unit.length^2 * unit.time^3 * unit.temperature)
+	end
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
 		; Absolute value of the saturation heat flux density vector q [W / m^2] = [kg / s^3]
 		K_sat = pc_get_parameter ('K_sat', label=quantity)
@@ -319,6 +324,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'Spitzer_K_parallel', /fold_case)) then begin
 		; Field-aligned Spitzer heat flux coefficient, not including T^2.5 [W / (m * K^3.5)] = [kg * m / (s^3 * K^3.5)]
 		K_Spitzer = pc_get_parameter ('K_Spitzer', label=quantity)
+		; TODO: check units consistency
 		return, K_Spitzer * (unit.density * unit.velocity^3 * unit.length / unit.temperature)
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
