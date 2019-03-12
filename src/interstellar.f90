@@ -1835,8 +1835,6 @@ module Interstellar
               if (i==nlist-1) then
                 call touch_file('ENDTIME')
                 nt=it+1
-                if (lroot) print*, 'check_SN: sn_series.in list needs',&
-                             ' extending or set lSN_list=F to continue'
               endif
               t_next_SNI=SN_list(1,i+1)
               if (lroot) print*,'check_SN: t_next_SNI on list =',t_next_SNI
@@ -1844,6 +1842,10 @@ module Interstellar
             endif
           enddo
           call check_SNI(f,l_SNI)
+          if (nt==it+1) then
+            if (lroot) print*, 'check_SN: sn_series.in list needs',&
+                             ' extending or set lSN_list=F to continue'
+          endif
         endif
       else
         if (t < t_settle) return
@@ -3059,7 +3061,7 @@ module Interstellar
       integer, intent(inout), optional, dimension(4,npreSN) :: preSN
       integer, optional :: ierr
 !
-      real :: c_SN,cmass_SN,cvelocity_SN
+      real :: c_SN,cmass_SN,cvelocity_SN,ecr_SN
       real :: width_energy, width_mass, width_velocity
       real :: rhom, rhomin, ekintot, radius_best
       real ::  rhom_new, ekintot_new, ambient_mass
@@ -3085,6 +3087,7 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
+      Nsol_ratio=1.
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
 !  improve match of mass to radius.
@@ -3187,13 +3190,21 @@ module Interstellar
 !
       if (thermal_profile=="gaussian3") then
         c_SN=etmp/(cnorm_SN(dimensionality)*width_energy**dimensionality)
+        if (frac_ecr>0.) &
+            ecr_SN=campl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
 !
       elseif (thermal_profile=="gaussian2") then
         c_SN=etmp/(cnorm_gaussian2_SN(dimensionality)* &
             width_energy**dimensionality)
+        if (frac_ecr>0.) &
+            ecr_SN=campl_SN/(cnorm_gaussian2_SN(dimensionality)* &
+            width_energy**dimensionality)
 !
       elseif (thermal_profile=="gaussian") then
         c_SN=etmp/(cnorm_gaussian_SN(dimensionality)* &
+            width_energy**dimensionality)
+        if (frac_ecr>0.) &
+            ecr_SN=campl_SN/(cnorm_gaussian_SN(dimensionality)* &
             width_energy**dimensionality)
 !
       endif
@@ -3313,16 +3324,18 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN > SNR%feat%radius**2) lnTT=-10.0
+          where (dr2_SN > 4*SNR%feat%radius**2) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
-          call mpibcast_real(maxlnTT,SNR%indx%iproc)
+          mmpi=maxlnTT
+!Fred: check max value everywhere not just SN proc
+          call mpiallreduce_max(mmpi,maxlnTT)
           maxTT=exp(maxlnTT)
 !
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-          if (maxTT>TT_SN_max) then
+          if (maxTT>TT_SN_max.and.SNR%feat%radius<=rfactor_SN*SNR%feat%dr) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
             endif
@@ -3399,16 +3412,14 @@ module Interstellar
         TT=exp(lnTT)
 !
         if (lcosmicray.and.lSN_ecr) then
-          call injectenergy_SN(deltaCR,width_energy, &
-                               c_SN*campl_SN/eampl_SN,SNR%feat%CR)
+          call injectenergy_SN(deltaCR,width_energy,ecr_SN,SNR%feat%CR)
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + deltaCR
           ! Optionally add cosmicray flux, consistent with addition to ecr, via
           !    delta fcr = -K grad (delta ecr) .
           ! Still experimental/in testing.
           if (lcosmicrayflux .and. lSN_fcr) then
             fcr=f(l1:l2,m,n,ifcr:ifcr+2)
-            call injectfcr_SN(deltafcr,width_energy, &
-                              c_SN*campl_SN/eampl_SN)
+            call injectfcr_SN(deltafcr,width_energy,ecr_SN)
             f(l1:l2,m,n,ifcr:ifcr+2)=fcr + deltafcr
           endif
         endif
