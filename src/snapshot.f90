@@ -427,6 +427,16 @@ module Snapshot
           f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
       endif
 !
+!  Read data using rho, and now convert to lnrho.
+!  This assumes that one is now using ldensity_nolog=F.
+!  NB: require lupw_rho->lupw_lnrho and diagnostics ..grho..->..glnrho..
+!
+      if (lread_oldsnap_rho2lnrho) then
+        print*,'convert rho -> lnrho',irho,ilnrho
+        if (ilnrho>0) &
+          f(:,:,:,ilnrho)=log(f(:,:,:,ilnrho))
+      endif
+!
       if (lsubstract_reference_state) then
         call get_shared_variable('reference_state',reference_state,caller='rsnap')
         do n=n1,n2
