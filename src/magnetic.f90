@@ -252,7 +252,7 @@ module Magnetic
           eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.5
-  real :: tau_aa_exterior=0.0, tauAD=0.0
+  real :: tau_aa_exterior=0.0, tauAD=0.0, alev=1.0
   real :: sigma_ratio=1.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0, eta_ywidth=0.0, eta_zwidth=0.0, eta_zwidth2=0.0
   real :: eta_width_shock=0.0, eta_zshock=1.0, eta_jump_shock=1.0
@@ -302,6 +302,7 @@ module Magnetic
   logical :: lboris_correction=.false.
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
+  logical :: lrhs_max=.false.
   real :: h_slope_limited=0.
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
@@ -356,7 +357,7 @@ module Magnetic
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
-      no_ohmic_heat_z0, no_ohmic_heat_zwidth
+      no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -490,6 +491,9 @@ module Magnetic
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   resistive time step;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dtHr=0       ! DIAG_DOC:
+  integer :: idiag_dtFr=0       ! DIAG_DOC:
+  integer :: idiag_dtBr=0       ! DIAG_DOC:
   integer :: idiag_axm=0        ! DIAG_DOC:
   integer :: idiag_aym=0        ! DIAG_DOC:
   integer :: idiag_azm=0        ! DIAG_DOC:
@@ -2437,6 +2441,7 @@ module Magnetic
 !
       if (lentropy .or. ltemperature .or. lhydro) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
+      if (lrhs_max.and.lentropy) lpenc_requested(i_cv1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
       if (lenergy .and. .not. lkinematic .and. lohmic_heat) then
         lpenc_requested(i_j2)=.true.
@@ -3642,6 +3647,7 @@ module Magnetic
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting,ajiuj
       real, dimension (nx,3) :: magfric,vmagfric ! currently unused: baroclinic
       real, dimension (nx,3) :: dAdt, gradeta_shock
+      real, dimension (nx) :: Fmax, dAmax, ftot, dAtot, ss0
       real, dimension (nx) :: exabot,exatop, peta_shock
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -3674,6 +3680,8 @@ module Magnetic
 ! set dAdt to zero at the beginning of each execution of this routine
 !
       dAdt=0.
+      Fmax=tini
+      dAmax=tini
 !
 !  Replace B_ext locally to accommodate its time dependence.
 !
@@ -4674,6 +4682,23 @@ module Magnetic
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
+!  Option to constrain timestep for large forces and heat sources to include
+!  Lorentz force and Ohmic heating terms 
+!  can set in entropy lthdiff_Hmax=F & in hydro lcdt_tauf=F as included here
+!
+      if (lfirst.and.ldt.and.lrhs_max) then
+        do j=1,3
+          dAtot=abs(dAdt(:,j))
+          dt1_max=max(dt1_max,dAtot/(cdts*alev))
+          dAmax=max(dAmax,dAtot/alev)
+          ftot=abs(df(l1:l2,m,n,iux+j-1))
+          dt1_max=max(dt1_max,ftot/(cdts*alev))
+          Fmax=max(Fmax,ftot/alev)
+        enddo
+        ss0 = abs(df(l1:l2,m,n,iss))
+        dt1_max=max(dt1_max,ss0*p%cv1/cdts)
+      endif
+!
 ! Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !
       if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -dAdt
@@ -4718,6 +4743,11 @@ module Magnetic
 !  Calculate diagnostic quantities.
 !
       if (ldiagnos) then
+        if (lrhs_max) then
+          if (idiag_dtHr/=0) call max_mn_name(ss0*p%cv1/cdts,idiag_dtHr,l_dt=.true.)
+          if (idiag_dtFr/=0) call max_mn_name(Fmax/cdts,idiag_dtFr,l_dt=.true.)
+          if (idiag_dtBr/=0) call max_mn_name(dAmax/cdts,idiag_dtBr,l_dt=.true.)
+        endif
         if (idiag_eta_tdep/=0) call sum_mn_name(spread(eta_tdep,1,nx),idiag_eta_tdep)
         if (idiag_beta1m/=0) call sum_mn_name(p%beta1,idiag_beta1m)
         if (idiag_beta1max/=0) call max_mn_name(p%beta1,idiag_beta1max)
@@ -8331,6 +8361,7 @@ module Magnetic
         idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
+        idiag_dtFr=0;idiag_dtHr=0;idiag_dtBr=0;
         idiag_bbxmax=0; idiag_bbymax=0; idiag_bbzmax=0
         idiag_jxmax=0; idiag_jymax=0; idiag_jzmax=0
         idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
@@ -8530,6 +8561,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'betamax',idiag_betamax)
         call parse_name(iname,cname(iname),cform(iname),'betamin',idiag_betamin)
         call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
+        call parse_name(iname,cname(iname),cform(iname),'dtHr',idiag_dtHr)
+        call parse_name(iname,cname(iname),cform(iname),'dtFr',idiag_dtFr)
+        call parse_name(iname,cname(iname),cform(iname),'dtBr',idiag_dtBr)
         call parse_name(iname,cname(iname),cform(iname),'bxm',idiag_bxm)
         call parse_name(iname,cname(iname),cform(iname),'bym',idiag_bym)
         call parse_name(iname,cname(iname),cform(iname),'bzm',idiag_bzm)
