@@ -3385,13 +3385,13 @@ module Solid_Cells
   logical function interp_lagrange(farr_in,ivar1,ivar2,xxp,inear_glob,fp,lcart_to_curv,lcurv_to_cart,lcheck)
 !
 !  Interpolate the value of f to (xp, yp) CURVILINEAR coordinate
-!  using the fourth-order lagrangian interpolation.
+!  using the Nth-order lagrangian interpolation.
 ! 
 !  TODO: Extend to 3D
 !  TODO: Adjust nearest point to be ACTUALLY NEAREST, not bottom left corner
 !        Needed due to asymetric stencil
 !
-!  The coefficients are determined by the 7x7 grid points surrounding the
+!  The coefficients are determined by the (N+1)x(N+1) grid points surrounding the
 !  interpolation point.
 !  Global coordinates are used for the interpolation, to allow interpolation of 
 !  values outside this processors domain.
@@ -3455,11 +3455,13 @@ module Solid_Cells
           interp_lagrange = .false.
           return
         endif
-      !  if (lcurv_to_cart .and. any(abs(xglob) >= r_ogrid)) then
-      !    print*,'interpolation point on curv. grid is outside the ogrid!'
-      !    interp_lagrange = .false.
-      !    return  
-      !  endif      
+        if (lcurv_to_cart .and. any(abs(xglob) > r_ogrid)) then
+          print*,'Ghost point was used as interpolation point on curv. grid!'
+          print*,'Shift the interpolation zone inside.'
+          interp_lagrange = .false.
+          print*,'xglob',xglob
+          return
+        endif
       endif
 !
 !  Interpolate in x-direction
@@ -8496,11 +8498,11 @@ module Solid_Cells
  !             r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interpol_filter
  !           endif
           elseif (mod(interpolation_method,2)==0) then
-            r_int_outer=r_ogrid-dx_outer*((interpolation_method/4+0.5)+0.01)-dx_outer*interpol_filter
+            r_int_outer=r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01)-dx_outer*interpol_filter
             if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
-              r_int_outer=r_ogrid-dx_outer*((interpolation_method/4+1)+0.01)-dx_outer*interpol_filter
+              r_int_outer=r_ogrid-dx_outer*((interpolation_method/2)+0.01)-dx_outer*interpol_filter
             endif
           else
             call fatal_error('initialize_solid_cells','interpolation method does not exist')
@@ -8518,9 +8520,8 @@ module Solid_Cells
           do ii = l1,l2
             do jj = m1,m2
               tmp_rad = radius_ogrid(x(ii),y(jj))
-    !          if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
-! TODO: Should there be 7 as below when int method = 6?
-              if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+(interpolation_method+1)*dxmax)) then
+
+              if(tmp_rad>r_int_outer.and.tmp_rad<(r_int_outer+5*dxmax)) then
                 do i3=-3,3
                   do j3=-3,3
                     min_tmp_rad = radius_ogrid(x(ii+i3),y(jj+j3))
