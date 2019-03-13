@@ -66,7 +66,7 @@ def var(*args, **kwargs):
         #else:
         #    print('!! ERROR: No simulation of path specified..')
 
-    if not started:
+    if not started and kwargs['ivar'] != 0:
         print('ERROR: Simulation has not jet started. There are no var files.')
         return False
 

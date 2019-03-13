@@ -61,7 +61,7 @@ def ogvar(*args, **kwargs):
             from os.path import join, exists
             if exists(join(kwargs['datadir'], 'time_series.dat')): started = True
 
-    if started == False:
+    if started == False and ivar != 0:
         print('!! ERROR: Simulation has not jet started. There are not ogvar files.')
         return False
 
