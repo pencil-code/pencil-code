@@ -324,6 +324,8 @@ module solid_cells_ogrid_cdata
 !  Energy parameters
   real, pointer :: chi
   logical, pointer :: ladvection_temperature, lheatc_chiconst, lupw_lnTT
+  logical :: TT_square_fit = .false.
+  real :: Tgrad_stretch=1
 
 ! Eos_chemistry + chemistry parameters
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0

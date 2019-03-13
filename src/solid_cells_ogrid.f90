@@ -49,7 +49,8 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
-      lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid
+      lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, &
+      TT_square_fit, Tgrad_stretch
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -534,6 +535,7 @@ module Solid_Cells
       real :: shift_top,shift_bot,r_k_top,r_k_bot,theta_k_top,theta_k_bot
       real :: ur_k_top ,ur_k_bot ,uth_k_top,uth_k_bot
       logical :: lnoerase=.false.
+      real :: coef1, coef2, coef0, r_gradT
 !
 !  Cartesian array f:
 !
@@ -571,6 +573,13 @@ module Solid_Cells
       f(:,:,:,iflow) = f(:,:,:,iflow)+init_uu
       shift_flow = 0
       a2=xyz0_ogrid(1)**2
+      if (TT_square_fit) then
+         r_gradT = Tgrad_stretch*r_ogrid
+         coef2 = (cylinder_temp-f(l2,m2,n2,ilnTT))/ &
+                 (a2-2*r_gradT*xyz0_ogrid(1)+r_gradT**2)
+         coef1 = -2*coef2*r_gradT
+         coef0 = f(l2,m2,n2,ilnTT) + coef2*r_gradT**2
+      endif
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
@@ -585,12 +594,16 @@ module Solid_Cells
                   2*flow_r*orth_r*a2/rr2**2*wall_smoothing
                 f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
                   (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
-               if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
-                  wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
-                  f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
-                    +cylinder_temp*(1-wall_smoothing_temp)
+                if ((ilnTT /= 0 .and. .not. lchemistry) .or. (lchemistry .and. .not. lflame_front_2D)) then
+                  if (TT_square_fit .and. sqrt(rr2) .le. r_gradT) then
+                    f(i,j,:,ilnTT) = coef2*rr2 + coef1*sqrt(rr2) + coef0
+                  else
+                    wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2)*Tgrad_stretch)**2)
+                    f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
+                      +cylinder_temp*(1-wall_smoothing_temp)
+                  endif
                   f(i,j,:,irho) = f(l2,m2,n2,irho) &
-                    *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
+                                * f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
                 if (lchemistry .and. .not. lflame_front_2D) then
                     do k = 1,nchemspec
@@ -658,9 +671,14 @@ module Solid_Cells
           f_ogrid(i,j,:,iux) = +init_uu*(1-a2/rr2)*cos(y_ogrid(j)+flowy)
           f_ogrid(i,j,:,iuy) = -init_uu*(1+a2/rr2)*sin(y_ogrid(j)+flowy)
           if (ilnTT /= 0) then
-            wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
-            f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
-              +cylinder_temp*(1-wall_smoothing_temp)
+            if (TT_square_fit) then
+              f_ogrid(i,j,:,ilnTT) = coef2*rr2 + coef1*sqrt(rr2) + coef0
+            else
+              wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2)*Tgrad_stretch)**2)
+              f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
+                                   + cylinder_temp*(1-wall_smoothing_temp)
+            endif
+           ! wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
             f_ogrid(i,j,:,irho) = f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,irho) &
               *f(l2,m2,n2,ilnTT)/f_ogrid(i,j,:,ilnTT)
 ! EWA: I changed f_ogrid to f_cartesian here (see line above and below
@@ -3475,8 +3493,8 @@ module Solid_Cells
             dy_ij(i,j) = yglob(i)-yglob(j)
             dy_ij(j,i) = -dy_ij(i,j)
         enddo
-          dx_ij(i,i) = 0
-          dy_ij(i,i) = 0
+        dx_ij(i,i) = 0
+        dy_ij(i,i) = 0
       enddo
 !
 !  Compute products of x-x_k/(x_i-x_k) for (i!=k)
@@ -3516,7 +3534,7 @@ module Solid_Cells
 !
       do i=ivar1,ivar2
         do j=-half_order,half_order
-        fp(i) = sum(lag(:)*gp(:,i))
+          fp(i) = sum(lag(:)*gp(:,i))
         enddo
       enddo
 
