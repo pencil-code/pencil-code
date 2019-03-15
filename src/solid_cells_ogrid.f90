@@ -974,7 +974,39 @@ module Solid_Cells
         do j=m1,m2
           do i=l1,l2
             call get_polar_coords(x(i),y(j),z(k),rthz)
-            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner_vid) then
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then
+              ii=ii+1
+              curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
+              curvilinear_to_cartesian(ii)%xyz = rthz
+              call find_near_ind_global_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
+                  rthz,lcheck_init_interpolation)
+!
+!  If higher order interpolation is used, adjust nearest index to be the index to point actually nearest
+!  the interpolation point, NOT the index of bottom left point in cell containing interpolation point
+!  Also, make sure that no interpolation points try to use points inside the cylinder
+!
+              if(interpolation_method>1) then
+                call adjust_inear_curv_glob(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
+              endif
+!
+              rthz_neigh= (/ xglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(1)), &
+                             yglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(2)), &
+                             zglobal_ogrid(curvilinear_to_cartesian(ii)%ind_global_neighbour(3)) /)
+              call find_proc_curvilinear(rthz_neigh,curvilinear_to_cartesian(ii)%from_proc)
+              if(curvilinear_to_cartesian(ii)%from_proc==iproc) then
+                call ind_global_to_local_curv(curvilinear_to_cartesian(ii)%ind_global_neighbour, &
+                      curvilinear_to_cartesian(ii)%ind_local_neighbour,lcheck_init_interpolation)
+              endif
+            endif
+          enddo
+        enddo
+      enddo
+      interpol_max = ii
+      do k=n1,n2
+        do j=m1,m2
+          do i=l1,l2
+            call get_polar_coords(x(i),y(j),z(k),rthz)
+            if((rthz(1)<r_int_inner) .and. rthz(1)>=r_int_inner_vid) then
               ii=ii+1
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
               curvilinear_to_cartesian(ii)%xyz = rthz
@@ -2243,15 +2275,26 @@ module Solid_Cells
 !
 !  Interpolate remaining points 
 !
-    do id=1,n_ip_curv_to_cart
-    ! TODO: Make more efficient
-      if(curvilinear_to_cartesian(id)%from_proc==iproc) then
-        inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-        farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
-          inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
-        call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
-      endif
-    enddo
+    if (lvideo .and. lwrite_slices) then
+      do id=1,n_ip_curv_to_cart
+      ! TODO: Make more efficient
+        if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+          inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+          farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+            inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
+          call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
+        endif
+      enddo
+    else
+      do id=1,interpol_max
+        if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+          inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+          farr(:,:,:,:)=f_ogrid(inear_loc(1)-ii1:inear_loc(1)+ii2, &
+            inear_loc(2)-jj1:inear_loc(2)+jj2,inear_loc(3)-kk1:inear_loc(3)+kk2,ivar1:ivar2)
+          call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
+        endif
+      enddo
+    endif
 !
   endsubroutine communicate_ip_curv_to_cart
 !***********************************************************************
@@ -2864,17 +2907,6 @@ module Solid_Cells
             f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))
             f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
             f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
-          endif
-          if (lwrite_slices) then
-            if((rthz(1)<=r_ogrid) .and.(rthz(1)>r_int_inner_vid)) then
-              call find_near_ind_local_curv(inear,rthz,lcheck_interpolation)
-              if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck_interpolation) ) then
-                call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
-              endif
-              f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))
-              f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
-              f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
-            endif
           endif
         enddo
       enddo

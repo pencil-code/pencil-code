@@ -238,6 +238,7 @@ module solid_cells_ogrid_cdata
   !
   real :: r_int_outer, r_int_inner, r_int_inner_poly, r_int_inner_vid=0.
   logical :: lbidiagonal_derij_ogrid=.false.
+  integer :: interpol_max                             ! # of interpolated points when not writing video
 !***************************************************
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 !  Global ogrid
