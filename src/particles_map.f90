@@ -1611,9 +1611,11 @@ module Particles_map
 !
         if (lparticlemesh_cic.or.lparticlemesh_tsc) then 
           call fold_f(f,irhop,irhop)
-          call fold_f(f,ibxf,ibxf)
-          call fold_f(f,ibyf,ibyf)
-          call fold_f(f,ibzf,ibzf)
+          if (lparticles_lyapunov.and.ibbf/=0) then
+            call fold_f(f,ibxf,ibxf)
+            call fold_f(f,ibyf,ibyf)
+            call fold_f(f,ibzf,ibzf)
+          endif
         endif
         if (.not.(lparticles_radius.or.lparticles_number.or. &
             lparticles_density)) then
