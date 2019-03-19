@@ -165,10 +165,10 @@ module Interstellar
 !  fred: max rho intended to avoid explosion sites that are difficult to
 !  resolve, but can lead to persistent high density structures that cannot be 
 !  destroyed by SN, so may be better to allow unrestricted 
-  real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=1E9
+  real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=4E7
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4
+  real :: SN_rho_ratio=1e4, SN_TT_ratio=5e2
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -403,7 +403,7 @@ module Interstellar
       cooling_select, heating_select, heating_rate, rho0ts, &
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
-      average_SNI_heating, SN_rho_ratio, &
+      average_SNI_heating, SN_rho_ratio, SN_TT_ratio, &
       eps_mass, rfactor_SN
 !
 ! run parameters
@@ -431,7 +431,7 @@ module Interstellar
       l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
       l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
-      lreset_ism_seed, SN_rho_ratio, eps_mass, &
+      lreset_ism_seed, SN_rho_ratio, SN_TT_ratio, eps_mass, &
       lscale_SN_interval, SN_interval_rhom, rfactor_SN, iSNdx
 !
   contains
@@ -678,7 +678,8 @@ module Interstellar
         write(1,'("#",4A)')  &
             '---it----------t-------itype---iproc---l-----m-----n--', &
             '-----x------------y------------z-------', &
-            '----rho-----------TT-----------EE---------t_sedov----', &
+            '----rho---------rhom----------TT-----------EE-----',&
+            '---Ekin-------Ecr-------t_sedov----', &
             '--radius-----site_N_sol------maxTT----t_interval---SN_rate-'
         close(1)
       endif
@@ -1825,6 +1826,7 @@ module Interstellar
 !
       if (lSN_list) then
         if (t>=t_next_SNI) then
+          call tidy_SNRs
           do i=1,nlist-1
             if (SN_list(1,i)>=t_next_SNI) then
               center_SN_x=SN_list(2,i)
@@ -3067,6 +3069,7 @@ module Interstellar
       real ::  rhom_new, ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov
+      real :: radius2
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
       real, dimension(nx,3) :: deltauu, deltafcr=0.
@@ -3117,7 +3120,7 @@ module Interstellar
             print*,'explode_SN: radius_min',radius_min
             print*,'explode_SN: radius_max',radius_max
             print*,'explode_SN: radius_best',radius_best
-            print*,'explode_SN: N_sol',Nsol_ratio*sol_mass_tot
+            print*,'explode_SN: N_sol',Nsol_ratio*sol_mass_tot/solar_mass
           endif
           if (radius_max-radius_min<radius_min*SNR%feat%dr*0.01) exit
         enddo
@@ -3134,6 +3137,7 @@ module Interstellar
           return
         endif
       endif
+      radius2 = SNR%feat%radius**2
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
@@ -3298,6 +3302,12 @@ module Interstellar
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
         endif
+        if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+          where (dr2_SN(1:nx) <= radius2) 
+            rho_old(:)=SNR%feat%rhom
+            lnrho(:)=log(SNR%feat%rhom)
+          endwhere
+        endif
 !
 !  multiply by volume element to derive site mass
 !
@@ -3305,7 +3315,7 @@ module Interstellar
 !
 !  Calculate the ambient mass for the remnant.
 !
-        where (dr2_SN > SNR%feat%radius**2) site_rho = 0.0
+        where (dr2_SN > radius2) site_rho = 0.0
         site_mass=site_mass+sum(site_rho)
         deltarho=0.
 !
@@ -3324,7 +3334,7 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN > 4*SNR%feat%radius**2) lnTT=-10.0
+          where (dr2_SN > 4*radius2) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
           mmpi=maxlnTT
@@ -3335,7 +3345,12 @@ module Interstellar
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-          if (maxTT>TT_SN_max.and.SNR%feat%radius<=rfactor_SN*SNR%feat%dr) then
+          if (maxTT>TT_SN_max.and.SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+            if (present(ierr)) then
+              ierr=iEXPLOSION_TOO_HOT
+            endif
+            return
+          elseif (maxTT>SN_TT_ratio*TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
             endif
@@ -3381,7 +3396,6 @@ module Interstellar
 !  pencil and store in the dr2_SN global array.
 !
         call proximity_SN(SNR)
-!  Get the old energy.
         if (ldensity_nolog) then
           lnrho=log(f(l1:l2,m,n,irho))
           rho_old=f(l1:l2,m,n,irho)
@@ -3390,6 +3404,14 @@ module Interstellar
           rho_old=exp(lnrho)
         endif
         deltarho=0.
+        if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+          where (dr2_SN(1:nx) <= radius2) 
+            rho_old(:)=SNR%feat%rhom
+            lnrho(:)=log(SNR%feat%rhom)
+          endwhere
+        endif
+!
+!  Get the old energy.
 !
         call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
             yH=yH,lnTT=lnTT,ee=ee_old)
@@ -3408,8 +3430,6 @@ module Interstellar
           call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN)
           f(l1:l2,m,n,iux:iuz)=uu+deltauu
         endif
-!
-        TT=exp(lnTT)
 !
         if (lcosmicray.and.lSN_ecr) then
           call injectenergy_SN(deltaCR,width_energy,ecr_SN,SNR%feat%CR)
@@ -3505,9 +3525,10 @@ module Interstellar
         print*, 'explode_SN: Ambient N_sol = ', site_mass/solar_mass
         print*, 'explode_SN:    Sedov time = ', SNR%feat%t_sedov
         print*, 'explode_SN:   Shell speed = ', uu_sedov
-        write(1,'(i10,E13.5,5i6,12E13.5)')  &
+        write(1,'(i10,E13.5,5i6,15E13.5)')  &
             it, t, SNR%indx%SN_type, SNR%indx%iproc, SNR%indx%l, SNR%indx%m, SNR%indx%n, &
-            SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, SNR%site%TT, SNR%feat%EE+SNR%feat%CR,&
+            SNR%feat%x, SNR%feat%y, SNR%feat%z, SNR%site%rho, SNR%feat%rhom, SNR%site%TT, &
+            SNR%feat%EE+SNR%feat%CR, ekintot_new-ekintot, SNR%feat%CR,&
             SNR%feat%t_sedov, SNR%feat%radius, site_mass/solar_mass, maxTT, t_interval_SN, SNrate
         close(1)
       endif
@@ -3582,6 +3603,11 @@ module Interstellar
           rho=f(l1:l2,m,n,irho)
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
+        endif
+        if (remnant%feat%radius<=1.01*rfactor_SN*remnant%feat%dr) then
+          where (dr2_SN(1:nx) <= radius2) 
+            rho(:)=remnant%feat%rhom
+          endwhere
         endif
         if (lSN_scale_rad) then
           maxmask=0
@@ -3675,6 +3701,11 @@ module Interstellar
           rho=f(l1:l2,m,n,irho)
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
+        endif
+        if (remnant%feat%radius<=1.01*rfactor_SN*remnant%feat%dr) then
+          where (dr2_SN(1:nx) <= radius2) 
+            rho(:)=remnant%feat%rhom
+          endwhere
         endif
         if (lSN_mass) then
           call injectmass_SN(deltarho,width_mass,cmass_SN,remnant%feat%MM)
