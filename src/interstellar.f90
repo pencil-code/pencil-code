@@ -3101,17 +3101,22 @@ module Interstellar
         radius_best=SNR%feat%radius
         sol_mass_tot=solar_mass*N_mass
         Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/sol_mass_tot
-        Nsol_ratio_best = abs(Nsol_ratio-1)
+        if (Nsol_ratio>1) then
+          Nsol_ratio_best = abs(Nsol_ratio-1)
+        else
+          Nsol_ratio_best = 1
+        endif
         do i=1,15
           if (Nsol_ratio < 1) then
             radius_min=SNR%feat%radius
+            SNR%feat%radius=0.25*(radius_min+3*radius_max)
           else
             radius_max=SNR%feat%radius
+            SNR%feat%radius=0.25*(3*radius_min+radius_max)
           endif
-          SNR%feat%radius=0.5*(radius_min+radius_max)
           call get_properties(f,SNR,rhom,ekintot,rhomin)
           Nsol_ratio=4./3.*pi*rhom*SNR%feat%radius**3/sol_mass_tot
-          if (abs(Nsol_ratio-1)<Nsol_ratio_best) then
+          if (Nsol_ratio>=1.and.abs(Nsol_ratio-1)<Nsol_ratio_best) then
             Nsol_ratio_best=Nsol_ratio
             radius_best=SNR%feat%radius
           endif
