@@ -165,7 +165,7 @@ module Interstellar
 !  fred: max rho intended to avoid explosion sites that are difficult to
 !  resolve, but can lead to persistent high density structures that cannot be 
 !  destroyed by SN, so may be better to allow unrestricted 
-  real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=4E7
+  real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=2E7
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
   real :: SN_rho_ratio=1e4, SN_TT_ratio=5e2
@@ -3104,16 +3104,15 @@ module Interstellar
         if (Nsol_ratio>1) then
           Nsol_ratio_best = abs(Nsol_ratio-1)
         else
-          Nsol_ratio_best = 1
+          Nsol_ratio_best = 1e6
         endif
         do i=1,15
           if (Nsol_ratio < 1) then
             radius_min=SNR%feat%radius
-            SNR%feat%radius=0.25*(radius_min+3*radius_max)
           else
             radius_max=SNR%feat%radius
-            SNR%feat%radius=0.25*(3*radius_min+radius_max)
           endif
+          SNR%feat%radius=0.5*(radius_min+radius_max)
           call get_properties(f,SNR,rhom,ekintot,rhomin)
           Nsol_ratio=4./3.*pi*rhom*SNR%feat%radius**3/sol_mass_tot
           if (Nsol_ratio>=1.and.abs(Nsol_ratio-1)<Nsol_ratio_best) then
