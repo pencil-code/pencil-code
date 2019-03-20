@@ -3306,7 +3306,7 @@ module Interstellar
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
         endif
-        if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+        if (SNR%feat%radius<=1.05*rfactor_SN*SNR%feat%dr) then
           where (dr2_SN(1:nx) <= radius2) 
             rho_old(:)=SNR%feat%rhom
             lnrho(:)=log(SNR%feat%rhom)
@@ -3349,7 +3349,7 @@ module Interstellar
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-          if (maxTT>TT_SN_max.and.SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+          if (maxTT>TT_SN_max.and.SNR%feat%radius<=1.05*rfactor_SN*SNR%feat%dr) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
             endif
@@ -3408,7 +3408,7 @@ module Interstellar
           rho_old=exp(lnrho)
         endif
         deltarho=0.
-        if (SNR%feat%radius<=1.01*rfactor_SN*SNR%feat%dr) then
+        if (SNR%feat%radius<=1.05*rfactor_SN*SNR%feat%dr) then
           where (dr2_SN(1:nx) <= radius2) 
             rho_old(:)=SNR%feat%rhom
             lnrho(:)=log(SNR%feat%rhom)
@@ -3514,6 +3514,9 @@ module Interstellar
         if (lfirst_warning) &
             call warning('sn_series.dat','new column SN_rate added 19.10.17 '//&
             'continuation of old data may need header and extra column appended')
+        if (lfirst_warning) &
+            call warning('sn_series.dat','new columns rhom, Ekin, Ecr 20.03.19 '//&
+            'continuation of old data may need header and extra columns appended')
         print*, 'explode_SN:    step, time = ', it,t
         print*, 'explode_SN:          dVol = ', dVol(1)
         print*, 'explode_SN:       SN type = ', SNR%indx%SN_type
@@ -3608,7 +3611,7 @@ module Interstellar
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        if (remnant%feat%radius<=1.01*rfactor_SN*remnant%feat%dr) then
+        if (remnant%feat%radius<=1.05*rfactor_SN*remnant%feat%dr) then
           where (dr2_SN(1:nx) <= radius2) 
             rho(:)=remnant%feat%rhom
           endwhere
@@ -3706,7 +3709,7 @@ module Interstellar
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
-        if (remnant%feat%radius<=1.01*rfactor_SN*remnant%feat%dr) then
+        if (remnant%feat%radius<=1.05*rfactor_SN*remnant%feat%dr) then
           where (dr2_SN(1:nx) <= radius2) 
             rho(:)=remnant%feat%rhom
           endwhere
