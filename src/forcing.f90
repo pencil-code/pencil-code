@@ -41,6 +41,7 @@ module Forcing
   real :: wff2_ampl=0., xff2_ampl=0., yff2_ampl=0., zff2_ampl=0.
   real :: zff_hel=0.,max_force=impossible
   real :: dtforce=0., dtforce_ampl=.5, dtforce_duration=-1.0, force_strength=0.
+  real :: tforce_ramp_down=1.1, tauforce_ramp_down=1.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
@@ -53,8 +54,8 @@ module Forcing
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lxxcorr_forcing=.false., lxycorr_forcing=.false.
-  logical :: lhelical_test=.false.,lrandom_location=.true.
-  logical :: lwrite_psi=.false.
+  logical :: lhelical_test=.false., lrandom_location=.true.
+  logical :: lwrite_psi=.false., lforce_ramp_down=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lwrite_gausspot_to_file_always=.false.
   logical :: lscale_kvector_fac=.false.
@@ -120,7 +121,7 @@ module Forcing
        iforce,force,force_double,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
        rcyl_ff,width_ff,nexp_ff,lff_as_aux,Bconst,Bslope, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
-       kfountain,fountain,tforce_stop,tforce_stop2, &
+       kfountain, fountain, tforce_stop, tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff, n_equator_ff, location_fixed, lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
@@ -146,6 +147,7 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
        lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
+       lforce_ramp_down, tforce_ramp_down, tauforce_ramp_down, &
        n_hel_sin_pow, kzlarge, cs0eff
 !
 ! other variables (needs to be consistent with reset list below)
@@ -1659,7 +1661,7 @@ module Forcing
       real, dimension (3), save :: coef1,coef2,coef3,coef1b,coef2b,coef3b
       integer :: j,jf,j2f
       complex, dimension (nx) :: fxyz, fxyz2, fxyz_old, fxyz2_old
-      real :: profyz, pforce, qforce, aforce
+      real :: profyz, pforce, qforce, aforce, tmp
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
 !
 !  Compute forcing coefficients.
@@ -1808,6 +1810,7 @@ module Forcing
 !
 !  Choice of different possibilities.
 !  Here is the decisive step where forcing is applied.
+!  Added possibility of linearly ramping down the forcing in time.
 !
                 if (ifff/=0) then
                   jf=j+ifff-1
@@ -1816,7 +1819,12 @@ module Forcing
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
+                    if (lforce_ramp_down) then
+                      tmp=max(0.,1.+min(0.,(tforce_ramp_down-t)/tauforce_ramp_down))
+                      f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl*tmp
+                    else
+                      f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
+                    endif
 !
 !  Allow here for forcing both in u and in b=curla. In that case one sets
 !  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
