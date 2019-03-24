@@ -46,7 +46,7 @@ module Hydro
   real :: tphase_kinflow=-1., phase1=0., phase2=0., tsforce=0.
   real ::  dtforce=impossible
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
-  logical :: lupw_uu=.false.
+  logical :: lupw_uu=.false., lkinflow_as_uudat=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.
   logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
 !
@@ -91,6 +91,7 @@ module Hydro
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
       lrandom_location,lwrite_random_location,location_fixed,dtforce, &
+      lkinflow_as_uudat, &
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
@@ -217,6 +218,18 @@ module Hydro
           iux=iuu
           iuy=iuu+1
           iuz=iuu+2
+!
+!  Possibility to read uu.dat, but currently only for one processor.
+!  However, this can be useful when a periodic kinematic flow is to
+!  to be used in test-field analyses at subharmic wavenumbers,
+!  because then each processor uses the same flow on each pressor.
+!  Note, however, that lkinflow_as_uudat=.false. by default.
+!
+          if (lkinflow_as_uudat) then
+            open(1,file='uu.dat',form='unformatted')
+            read(1) f(l1:l2,m1:m2,n1:n2,iux:iuz)
+            close(1)
+          endif
         else
 ! set the initial velocity to zero
           if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
