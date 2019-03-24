@@ -1820,7 +1820,7 @@ module Forcing
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
                     if (lforce_ramp_down) then
-                      tmp=max(0.,1.+min(0.,(tforce_ramp_down-t)/tauforce_ramp_down))
+                      tmp=max(0d0,1d0+min(0d0,(tforce_ramp_down-t)/tauforce_ramp_down))
                       f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl*tmp
                     else
                       f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
