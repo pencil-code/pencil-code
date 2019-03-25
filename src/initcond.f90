@@ -3874,10 +3874,10 @@ module Initcond
       else
         print*,'uniform_x: uniform x-field ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
-        do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,i  )=0.0
-          f(l1:l2,m,n,i+1)=-ampl*z(n)
-          f(l1:l2,m,n,i+2)=0.0
+        do n=1,mz; do m=1,my
+          f(:,m,n,i  )=0.0
+          f(:,m,n,i+1)=-ampl*z(n)
+          f(:,m,n,i+2)=0.0
         enddo; enddo
       endif
 !
