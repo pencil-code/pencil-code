@@ -4623,6 +4623,10 @@ module Magnetic
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
           endif
+          if (lboris_correction .and. cmin>0) then
+            rho1_jxb = rho1_jxb &
+                     * (1+(p%va2/p%clight2)**2.)**(-1.0/2.0)
+          endif
           if (lspherical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                        (p%bb(:,2)*dy_1(  m  )*r1_mn)**2+ &
