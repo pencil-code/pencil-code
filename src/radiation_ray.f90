@@ -1840,7 +1840,7 @@ module Radiation
           kappa_rad=kapparho_floor+1./(1./(kappa1+kappae)+1./kappa2)
           kappa_tot=1./(1./kappa_rad+1./kappa_cond)
           if (lcutoff_opticallythin) & 
-            kappa_tot=0.5*(1.-tanh((z(n)-2*z_cutoff)/cool_wid))/ &
+            kappa_tot=0.5*(1.-tanh((z(n)-0.5*z_cutoff)/(2*cool_wid)))/ &
                       (1./kappa_rad+1./kappa_cond)
           do i=1,mx 
             kappa_tot(i)=min(kappa_tot(i),kappa_ceiling)
