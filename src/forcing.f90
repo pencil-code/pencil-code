@@ -127,9 +127,9 @@ module Forcing
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
        wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
-       lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
+       lhydro_forcing,lmagnetic_forcing,ltestfield_forcing, ltestflow_forcing, &
        lxxcorr_forcing, lxycorr_forcing, &
-       ltestflow_forcing,jtest_aa0,jtest_uu0, &
+       jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        lforcing_coefs_hel_double, dtforce_ampl, &
        iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
@@ -206,16 +206,23 @@ module Forcing
 !
 !  check whether we want ordinary hydro forcing or magnetic forcing
 !
+        lcrosshel_forcing=lmagnetic_forcing.and.lhydro_forcing .or. &
+                          ltestfield_forcing.and.ltestflow_forcing
+
         if (lmagnetic_forcing) then
           ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
-        elseif (lhydro_forcing) then
-          ifff=iuu; iffx=iux; iffy=iuy; iffz=iuz
-        elseif (lcrosshel_forcing) then
-          ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
-          i2fff=iuu; i2ffx=iux; i2ffy=iuy; i2ffz=iuz
-        else
-          call stop_it("initialize_forcing: No forcing function set")
+        endif 
+        if (lhydro_forcing) then
+          if (lmagnetic_forcing) then
+            i2fff=iuu; i2ffx=iux; i2ffy=iuy; i2ffz=iuz
+          else
+            ifff=iuu; iffx=iux; iffy=iuy; iffz=iuz
+          endif
         endif
+        if (.not.(lmagnetic_forcing.or.lhydro_forcing.or. &
+                  ltestfield_forcing.or.ltestflow_forcing)) &
+          call stop_it("initialize_forcing: No forcing function set")
+        
         if (ldebug) print*,'initialize_forcing: ifff=',ifff
 !
 !  check whether we want constant forcing at each timestep,
@@ -1684,7 +1691,7 @@ module Forcing
           fz2_old=fz2
           fda2_old=fda2
           call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
-        elseif (lcrosshel_forcing.or.ltestfield_forcing.and.ltestflow_forcing) then
+        elseif (lcrosshel_forcing) then
           fx2_old=fx2
           fy2_old=fy2
           fz2_old=fz2
@@ -1741,8 +1748,7 @@ module Forcing
 !
 !  Do the same for secondary forcing function.
 !
-            if (lforcing_coefs_hel_double.or.lcrosshel_forcing.or. &
-                ltestfield_forcing.and.ltestflow_forcing) then
+            if (lforcing_coefs_hel_double.or.lcrosshel_forcing) then
               profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*coef2b
               fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
               fxyz2_old=fx2_old(l1:l2)*fy2_old(m)*fz2_old(n)
@@ -1778,7 +1784,7 @@ module Forcing
                   forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
                                         *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
 
-                if (lcrosshel_forcing.or.ltestfield_forcing.and.ltestflow_forcing) then
+                if (lcrosshel_forcing) then
                   forcing_rhs2(:,j) = force_ampl*fda2(j)*cos(omega_ff*t) & 
                                      *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
                   if (qforce/=0.) &
@@ -1843,7 +1849,7 @@ module Forcing
                     endif
 !
 !  Allow here for forcing both in u and in b=curla. In that case one sets
-!  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
+!  lhydro_forcing=T and lmagnetic_forcing=T.
 !
                     if (lcrosshel_forcing)  &
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
@@ -2342,13 +2348,13 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
 !
 !  allow here for forcing both in u and in b=curla. In that case one sets
-!  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
+!  lhydro_forcing=T and lmagnetic_forcing=T.
 !
                     if (lcrosshel_forcing) &
-                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
+                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
                     
                   endif
 !
@@ -2362,11 +2368,15 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !
                 if (ltestfield_forcing) then
                   jf=j+iaatest-1+3*(jtest_aa0-1)
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
                 endif
                 if (ltestflow_forcing) then
                   jf=j+iuutest-1+3*(jtest_uu0-1)
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  if (ltestfield_forcing) then
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs2(:,j)*force2_scl
+                  else
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force2_scl
+                  endif
                 endif
               endif
             enddo
