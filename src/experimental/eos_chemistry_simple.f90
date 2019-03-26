@@ -12,8 +12,9 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3); glnmu(3)
+! PENCILS PROVIDED pp; del2pp; glnmu(3)
 ! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
+! PENCILS PROVIDED glnRR(3), RRmix
 !
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
 ! PENCILS PROVIDED yH; ee; ss; delta; glnmumol(3); ppvap; csvap2; cs2
@@ -66,14 +67,11 @@ module EquationOfState
   real :: Cp_const=impossible
   real :: Pr_number=0.7
   logical :: lpres_grad = .false.
+  logical :: linterp_pressure=.false. !This is only used when ogrid to interpolate pressure instead of temperature
 !
  real, dimension(nchemspec,18) :: species_constants
 !
-!NILS: Why do we spend a lot of memory allocating these variables here????
-!MR: Is now allocated only once.
- real, dimension(mx,my,mz), target :: mu1_full
-!
-  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const, lpres_grad
+  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, Cp_const, lpres_grad, linterp_pressure
 !
   namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, Cp_const, Pr_number
 !
@@ -99,6 +97,7 @@ module EquationOfState
 !
       endif
 !
+      if (linterp_pressure) call farray_register_auxiliary('pp',ipp)
 !
 !  Identify version number.
 !
@@ -149,7 +148,7 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos
 !
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: put_shared_variable
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
@@ -188,7 +187,7 @@ module EquationOfState
         nn1=1;  nn2=mz
       endif
 
-      call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
+      call put_shared_variable('linterp_pressure',linterp_pressure)
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -353,46 +352,46 @@ module EquationOfState
 !
       select case (trim(slices%name))
 !
-!  Temperature.
-!
         case ('lnTT'); call assign_slices_scal(slices,f,ilnTT)
-        case ('pp')
-          if (ldensity_nolog .or. ltemperature_nolog) then
-            if (lwrite_slice_yz) slices%yz=Rgas*(f(ix_loc,m1:m2,n1:n2,iTT)*f(ix_loc,m1:m2,n1:n2,irho)) &
-                                             *mu1_full(ix_loc,m1:m2,n1:n2)
-            if (lwrite_slice_xz) slices%xz=Rgas*(f(l1:l2,iy_loc,n1:n2,iTT)*f(l1:l2,iy_loc,n1:n2,irho)) &
-                                             *mu1_full(l1:l2,iy_loc,n1:n2)
-            if (lwrite_slice_xz2) slices%xz=Rgas*(f(l1:l2,iy2_loc,n1:n2,iTT)*f(l1:l2,iy2_loc,n1:n2,irho)) &
-                                              *mu1_full(l1:l2,iy2_loc,n1:n2)
-            if (lwrite_slice_xy) slices%xy=Rgas*(f(l1:l2,m1:m2,iz_loc,iTT)*f(l1:l2,m1:m2,iz_loc,irho)) &
-                                             *mu1_full(l1:l2,m1:m2,iz_loc)
-            if (lwrite_slice_xy2) slices%xy2=Rgas*(f(l1:l2,m1:m2,iz2_loc,iTT)*f(l1:l2,m1:m2,iz2_loc,irho)) &
-                                               *mu1_full(l1:l2,m1:m2,iz2_loc)
-            if (lwrite_slice_xy3) slices%xy3=Rgas*(f(l1:l2,m1:m2,iz3_loc,iTT)*f(l1:l2,m1:m2,iz3_loc,irho)) &
-                                               *mu1_full(l1:l2,m1:m2,iz3_loc)
-            if (lwrite_slice_xy4) slices%xy4=Rgas*(f(l1:l2,m1:m2,iz4_loc,iTT)*f(l1:l2,m1:m2,iz4_loc,irho)) &
-                                               *mu1_full(l1:l2,m1:m2,iz4_loc)
-          else
-            if (lwrite_slice_yz) slices%yz=Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho)) &
-                                             *mu1_full(ix_loc,m1:m2,n1:n2)
-            if (lwrite_slice_xz) slices%xz=Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho)) &
-                                             *mu1_full(l1:l2,iy_loc,n1:n2)
-            if (lwrite_slice_xz2) slices%xz=Rgas*exp(f(l1:l2,iy2_loc,n1:n2,ilnTT)+f(l1:l2,iy2_loc,n1:n2,ilnrho)) &
-                                              *mu1_full(l1:l2,iy2_loc,n1:n2)
-            if (lwrite_slice_xy) slices%xy=Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho)) &
-                                             *mu1_full(l1:l2,m1:m2,iz_loc)
-            if (lwrite_slice_xy2) slices%xy2=Rgas*exp(f(l1:l2,m1:m2,iz2_loc,ilnTT)+f(l1:l2,m1:m2,iz2_loc,ilnrho)) &
-                                               *mu1_full(l1:l2,m1:m2,iz2_loc)
-            if (lwrite_slice_xy3) slices%xy3=Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)+f(l1:l2,m1:m2,iz3_loc,ilnrho)) &
-                                               *mu1_full(l1:l2,m1:m2,iz3_loc)
-            if (lwrite_slice_xy4) slices%xy4=Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)+f(l1:l2,m1:m2,iz4_loc,ilnrho)) &
-                                               *mu1_full(l1:l2,m1:m2,iz4_loc)
-          endif
         case ('cp'); call assign_slices_scal(slices,f,icp)
         case ('viscosity'); call assign_slices_scal(slices,f,iviscosity)
         case ('gpx'); if (lpres_grad) call assign_slices_scal(slices,f,igpx)
         case ('gpy'); if (lpres_grad) call assign_slices_scal(slices,f,igpy)
-          slices%ready=.true.
+        case ('pp')
+          if (linterp_pressure) then
+            call assign_slices_scal(slices,f,ipp)
+          elseif (ldensity_nolog .or. ltemperature_nolog) then
+            if (lwrite_slice_yz) slices%yz=(f(ix_loc,m1:m2,n1:n2,iTT)*f(ix_loc,m1:m2,n1:n2,irho)) &
+                                           *f(ix_loc,m1:m2,n1:n2,iRR)
+            if (lwrite_slice_xz) slices%xz=(f(l1:l2,iy_loc,n1:n2,iTT)*f(l1:l2,iy_loc,n1:n2,irho)) &
+                                           *f(l1:l2,iy_loc,n1:n2,iRR)
+            if (lwrite_slice_xz2) slices%xz=(f(l1:l2,iy2_loc,n1:n2,iTT)*f(l1:l2,iy2_loc,n1:n2,irho)) &
+                                            *f(l1:l2,iy2_loc,n1:n2,iRR)
+            if (lwrite_slice_xy) slices%xy=(f(l1:l2,m1:m2,iz_loc,iTT)*f(l1:l2,m1:m2,iz_loc,irho)) &
+                                           *f(l1:l2,m1:m2,iz_loc,iRR)
+            if (lwrite_slice_xy2) slices%xy2=(f(l1:l2,m1:m2,iz2_loc,iTT)*f(l1:l2,m1:m2,iz2_loc,irho)) &
+                                             *f(l1:l2,m1:m2,iz2_loc,iRR)
+            if (lwrite_slice_xy3) slices%xy3=(f(l1:l2,m1:m2,iz3_loc,iTT)*f(l1:l2,m1:m2,iz3_loc,irho)) &
+                                             *f(l1:l2,m1:m2,iz3_loc,iRR)
+            if (lwrite_slice_xy4) slices%xy4=(f(l1:l2,m1:m2,iz4_loc,iTT)*f(l1:l2,m1:m2,iz4_loc,irho)) &
+                                             *f(l1:l2,m1:m2,iz4_loc,iRR)
+          else
+            if (lwrite_slice_yz) slices%yz=exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho)) &
+                                              *f(ix_loc,m1:m2,n1:n2,iRR)
+            if (lwrite_slice_xz) slices%xz=exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho)) &
+                                              *f(l1:l2,iy_loc,n1:n2,iRR)
+            if (lwrite_slice_xz2) slices%xz=exp(f(l1:l2,iy2_loc,n1:n2,ilnTT)+f(l1:l2,iy2_loc,n1:n2,ilnrho)) &
+                                               *f(l1:l2,iy2_loc,n1:n2,iRR)
+            if (lwrite_slice_xy) slices%xy=exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho)) &
+                                              *f(l1:l2,m1:m2,iz_loc,iRR)
+            if (lwrite_slice_xy2) slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnTT)+f(l1:l2,m1:m2,iz2_loc,ilnrho)) &
+                                                *f(l1:l2,m1:m2,iz2_loc,iRR)
+            if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)+f(l1:l2,m1:m2,iz3_loc,ilnrho)) &
+                                                *f(l1:l2,m1:m2,iz3_loc,iRR)
+            if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)+f(l1:l2,m1:m2,iz4_loc,ilnrho)) &
+                                                *f(l1:l2,m1:m2,iz4_loc,iRR)
+          endif
+        slices%ready=.true.
 !
       endselect
 !
@@ -406,8 +405,6 @@ module EquationOfState
 !
 !  EOS is a pencil provider but evolves nothing so it is unlokely that
 !  it will require any pencils for it's own use.
-!
-      use SharedVariables, only: get_shared_variable
 !
       lpenc_requested(i_cv) = .true.
       lpenc_requested(i_cp) = .true.
@@ -433,13 +430,12 @@ module EquationOfState
       lpenc_requested(i_glnrho)=.true.
 !
       lpenc_requested(i_rho1gpp)=.true.
-      lpenc_requested(i_mu1)=.true.
-      lpenc_requested(i_gmu1)=.true.
+      lpenc_requested(i_RRmix)=.true.
+      lpenc_requested(i_glnRR)=.true.
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_glnTT)=.true.
 !
       lpenc_requested(i_cs2) = .true.
-!      lpenc_requested(i_ee) = .true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -581,19 +577,28 @@ module EquationOfState
       endif
 !
 !  Mean molecular weight
-        if (lpenc_loc(i_mu1)) p%mu1=mu1_full(l1:l2,m,n)
-        if (lpenc_loc(i_gmu1)) call grad(mu1_full,p%gmu1)
+!
+        if (lpenc_loc(i_RRmix)) p%RRmix = f(l1:l2,m,n,iRR)
+        if (lpenc_loc(i_glnRR)) then
+          call grad(f(:,:,:,iRR),p%glnRR)
+          do i=1,3
+            p%glnRR(:,i) = p%glnRR(:,i)/p%RRmix
+          enddo
+        endif
 !
 !  Pressure
 !
-      if (lpenc_loc(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
+      if (lpenc_loc(i_pp)) p%pp = p%TT*p%rho*p%RRmix
+      if (linterp_pressure) then
+        f(l1:l2,m,n,ipp) = p%pp
+      endif
 !
 !  Logarithmic pressure gradient
 !
       if (lpenc_loc(i_rho1gpp)) then
         do i=1,3
           p%rho1gpp(:,i) = p%pp*p%rho1(:) &
-               *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
+               *(p%glnrho(:,i)+p%glnTT(:,i)+p%glnRR(:,i))
         enddo
       endif
       if (lpres_grad) then
@@ -612,7 +617,7 @@ module EquationOfState
       if (lpencil(i_cs2)) then
         if (any(p%cv1 == 0.0)) then
         else
-          p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
+          p%cs2 = p%cp*p%cv1*p%TT*p%RRmix
         endif
       endif
 !

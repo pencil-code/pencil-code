@@ -348,7 +348,7 @@ module Cdata
   integer, dimension(3) :: iglobal_jext=0, iglobal_eext
   integer :: icooling=0, inetheat=0
   integer :: iglobal_lnrho0=0, iglobal_ss0=0
-  integer :: icp=0, igpx=0, igpy=0
+  integer :: icp=0, igpx=0, igpy=0, iRR=0
 !
 !  Parameters related to message passing.
 !

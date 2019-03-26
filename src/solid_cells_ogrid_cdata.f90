@@ -33,6 +33,7 @@ module solid_cells_ogrid_cdata
   logical :: lfilter_TT=.false.
   real, dimension(:,:,:,:), allocatable ::  f_filterH_lowerx,f_filterH_upperx
   real, dimension(:,:,:,:), allocatable ::  f_filterH_lowery,f_filterH_uppery
+  integer :: filter_frequency = 1
 !  Free paramter in filter coefficients:
   real :: af=0.1
   integer, parameter :: filter_Hsize = 10/2-nghost
@@ -108,10 +109,10 @@ module solid_cells_ogrid_cdata
     real, dimension (nx_ogrid)      :: cp1           
     real, dimension (nx_ogrid,3)    :: glnTT         
     real, dimension (nx_ogrid)      :: del2lnTT      
-    real, dimension (nx_ogrid,3)    :: gmu1  
     real, dimension (nx_ogrid,3)    :: rho1gpp    
-    real, dimension (nx_ogrid)      :: mu1
     real, dimension (nx_ogrid)      :: TT1
+    real, dimension (nx_ogrid)      :: RR
+    real, dimension (nx_ogrid,3)    :: glnRR  
   endtype pencil_case_ogrid
 !  
   integer :: i_og_x_mn    =1
@@ -164,9 +165,9 @@ module solid_cells_ogrid_cdata
   integer :: i_og_cp1           =48
   integer :: i_og_glnTT         =49
   integer :: i_og_del2lnTT      =50
-  integer :: i_og_gmu1          =51
+  integer :: i_og_glnRR         =51
   integer :: i_og_rho1gpp       =52
-  integer :: i_og_mu1           =53
+  integer :: i_og_RR            =53
   integer :: i_og_TT1           =54
   integer :: i_og_S0_R          =55
 !
@@ -239,6 +240,7 @@ module solid_cells_ogrid_cdata
   real :: r_int_outer, r_int_inner, r_int_inner_poly, r_int_inner_vid=0.
   logical :: lbidiagonal_derij_ogrid=.false.
   integer :: interpol_max                             ! # of interpolated points when not writing video
+  logical, pointer :: linterp_pressure                 ! interpolate pressure, recover TT from eos
 !***************************************************
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 !  Global ogrid
@@ -326,7 +328,7 @@ module solid_cells_ogrid_cdata
   real, pointer :: chi
   logical, pointer :: ladvection_temperature, lheatc_chiconst, lupw_lnTT
   logical :: TT_square_fit = .false.
-  real :: Tgrad_stretch=1
+  real :: Tgrad_stretch=1.
 
 ! Eos_chemistry + chemistry parameters
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0

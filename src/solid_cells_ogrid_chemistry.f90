@@ -42,7 +42,6 @@ public :: initialize_eos_chemistry, calc_for_chem_mixture_ogrid, calc_pencils_eo
 public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
   real :: Rgas_unit_sys=1.
-  real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
   real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: cp_R_spec_ogrid
 ! parameters for simplified cases
   logical :: init_from_file, reinitialize_chemistry=.false.
@@ -70,7 +69,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  character(len=30), pointer, dimension(:) :: reaction_name
   real, dimension(:), pointer :: alpha_n, E_an, B_n
   logical, pointer ::  lcheminp,ldiffusion,ldiff_corr, lmech_simple
-  logical, pointer ::  tran_exist, lThCond_simple!,lheatc_chemistry,
+  logical, pointer ::  tran_exist, lThCond_simple !,lheatc_chemistry,
   logical, pointer :: lfilter_strict, lfilter, ladvection,lt_const
   real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
   real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
@@ -304,6 +303,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         call get_shared_variable('iaa1',iaa1)
         call get_shared_variable('iaa2',iaa2)
         call get_shared_variable('lmech_simple',lmech_simple)
+        call get_shared_variable('linterp_pressure',linterp_pressure)
 !
 !      if (lew_exist) then 
 !        Lewis_coef1 = 1./Lewis_coef
@@ -570,17 +570,18 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       endif
 !
 !  Mean molecular weight
-      if (lpencil_ogrid(i_og_mu1)) p_ogrid%mu1=mu1_full_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid)
 !
-      if (lpencil_ogrid(i_og_gmu1)) call grad_other_ogrid(mu1_full_og,p_ogrid%gmu1)
+      if (lpencil_ogrid(i_og_RR)) p_ogrid%RR=f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iRR)
+!
+      if (lpencil_ogrid(i_og_glnRR)) call grad_ogrid(f_og,iRR,p_ogrid%glnRR)
 !
 !  Pressure
 !
-      if (lpencil_ogrid(i_og_pp)) p_ogrid%pp = Rgas*p_ogrid%TT*p_ogrid%mu1*p_ogrid%rho
+      if (lpencil_ogrid(i_og_pp)) p_ogrid%pp = p_ogrid%TT*p_ogrid%RR*p_ogrid%rho
       if (lpencil_ogrid(i_og_cs2)) then
         if (any(p_ogrid%cv1 == 0.0)) then
         else
-          p_ogrid%cs2 = p_ogrid%cp*p_ogrid%cv1*p_ogrid%mu1*p_ogrid%TT*Rgas
+          p_ogrid%cs2 = p_ogrid%cp*p_ogrid%cv1*p_ogrid%RR*p_ogrid%TT
         endif
       endif
 !
@@ -589,7 +590,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       if (lpencil_ogrid(i_og_rho1gpp)) then
         do i=1,3
           p_ogrid%fpres(:,i) = -p_ogrid%pp*p_ogrid%rho1 &
-              *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%gmu1(:,i)/p_ogrid%mu1)
+              *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%glnRR(:,i))
+!              *(p_ogrid%glnrho(:,i)+p_ogrid%glnTT(:,i)+p_ogrid%gmu1(:,i)/p_ogrid%mu1)
  ! This actually can be computed without log gradients
  !         p_ogrid%rho1gpp(:,i) = Rgas*(p_ogrid%mu1*p_ogrid%TT*p_ogrid%rho1*p_ogrid%grho(:,i)&
  !                              + p_ogrid%mu1*p_ogrid%gTT(:,i)+p_ogrid%TT*p_ogrid%gmu1(:,i))
@@ -602,6 +604,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       if (lpres_grad) then
         f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpx) = -p_ogrid%fpres(:,1)*p_ogrid%rho
         f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,igpy) = -p_ogrid%fpres(:,2)*p_ogrid%rho
+      endif
+      if (linterp_pressure) then
+        f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ipp ) =  p_ogrid%pp
       endif
 !
 !  Energy per unit mass 
@@ -621,14 +626,16 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  Calculate quantities for a mixture
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
       real, dimension(mx_ogrid) ::  nu_dyn
 ! lambda_Suth in cgs [g/(cm*s*K^0.5)]
       real :: lambda_Suth = 1.5e-5, Suth_const = 200.
       integer :: j2,j3, k
-      real, dimension(mx_ogrid) :: T_loc, T_loc_2, T_loc_3, T_loc_4 !,cp_R_spec_ogrid
+      real, dimension(mx_ogrid) :: T_loc, T_loc_2, T_loc_3, T_loc_4
       real :: T_up, T_mid, T_low
 !
             call getmu_array_ogrid(f_og,mu1_full_og)
+            f_og(:,:,:,iRR) = mu1_full_og*Rgas
 !
             f_og(:,:,:,icp) = 0.
             if (Cp_const < impossible) then
@@ -840,10 +847,10 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
           endif
 !
         if (ltemperature_nolog) then
-          RHS_T_full = p_ogrid%cv1*((sum_DYDt(:)-Rgas*p_ogrid%mu1*p_ogrid%divu)*p_ogrid%TT &
+          RHS_T_full = p_ogrid%cv1*((sum_DYDt(:)-p_ogrid%RR*p_ogrid%divu)*p_ogrid%TT &
                      + sum_dk_ghk+sum_hhk_DYDt_reac)
         else
-          RHS_T_full = (sum_DYDt(:)-Rgas*p_ogrid%mu1*p_ogrid%divu)*p_ogrid%cv1 &
+          RHS_T_full = (sum_DYDt(:)-p_ogrid%RR*p_ogrid%divu)*p_ogrid%cv1 &
             + sum_dk_ghk*p_ogrid%TT1(:)*p_ogrid%cv1+sum_hhk_DYDt_reac*p_ogrid%TT1(:)*p_ogrid%cv1
         endif
 !
@@ -1321,7 +1328,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
             mix_conc = sum_sp
           else
             sum_sp = 1.
-            mix_conc = rho_cgs(:)*p_ogrid%mu1(:)/unit_mass
+            mix_conc = rho_cgs(:)*(p_ogrid%RR(:)/Rgas)/unit_mass
+            !mix_conc = rho_cgs(:)*p_ogrid%mu1(:)/unit_mass
           endif
 !
 !  The Lindeman approach to the fall of reactions
