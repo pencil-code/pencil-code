@@ -1675,7 +1675,7 @@ module Forcing
 !
 !  Possibility of reading in data for second forcing function and
 !  computing the relevant coefficients (fx2,fy2,fz2,fda2) here.
-!  Unlike coef1-3, where we add the letter b, we add a 2 for the
+!  Unlike coef[1-3], where we add the letter b, we add a 2 for the
 !  other coefficients for better readibility.
 !
         if (lforcing_coefs_hel_double) then
@@ -1684,6 +1684,12 @@ module Forcing
           fz2_old=fz2
           fda2_old=fda2
           call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
+        elseif (lcrosshel_forcing.or.ltestfield_forcing.and.ltestflow_forcing) then
+          fx2_old=fx2
+          fy2_old=fy2
+          fz2_old=fz2
+          fda2_old=fda2
+          call forcing_coefs_hel(coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
         endif
 !
 !  By default, dtforce=0, so new forcing is applied at every time step.
@@ -1735,7 +1741,8 @@ module Forcing
 !
 !  Do the same for secondary forcing function.
 !
-            if (lforcing_coefs_hel_double) then
+            if (lforcing_coefs_hel_double.or.lcrosshel_forcing.or. &
+                ltestfield_forcing.and.ltestflow_forcing) then
               profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*coef2b
               fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
               fxyz2_old=fx2_old(l1:l2)*fy2_old(m)*fz2_old(n)
@@ -1765,24 +1772,32 @@ module Forcing
 !  By default, omega_ff=0.
 !
                 forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
-                    *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
-!
+                                  *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
+
                 if (qforce/=0.) &
                   forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
-                                         *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
+                                        *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
+
+                if (lcrosshel_forcing.or.ltestfield_forcing.and.ltestflow_forcing) then
+                  forcing_rhs2(:,j) = force_ampl*fda2(j)*cos(omega_ff*t) & 
+                                     *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+                  if (qforce/=0.) &
+                    forcing_rhs2_old(:,j) = force_ampl*fda2_old(j)*cos(omega_ff*t) &
+                                           *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
+                endif
+!
 !
 !  Possibility of adding second forcing function.
-!
+! 
                 if (lforcing_coefs_hel_double) then
                   forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
-                      +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_ff*t) &
-                      *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+                                    +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_ff*t) &
+                                    *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
 !
                   if (qforce/=0.) &
                     forcing_rhs_old(:,j) = (1.-qdouble_profile(n))*forcing_rhs_old(:,j) &
-                        +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_ff*t) &
-                        *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
-!
+                                          +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_ff*t) &
+                                          *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
                 endif
 !
 !  assemble new combination
@@ -1813,6 +1828,7 @@ module Forcing
 !  Added possibility of linearly ramping down the forcing in time.
 !
                 if (ifff/=0) then
+
                   jf=j+ifff-1
                   j2f=j+i2fff-1
 !
@@ -1848,11 +1864,15 @@ module Forcing
 !
                 if (ltestfield_forcing) then
                   jf=j+iaatest-1+3*(jtest_aa0-1)
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
                 endif
                 if (ltestflow_forcing) then
                   jf=j+iuutest-1+3*(jtest_uu0-1)
-                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                  if (ltestfield_forcing) then
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs2(:,j)*force2_scl
+                  else
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force2_scl
+                  endif
                 endif
               endif
             enddo
@@ -2327,9 +2347,9 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  allow here for forcing both in u and in b=curla. In that case one sets
 !  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
 !
-                    if (lcrosshel_forcing) then
+                    if (lcrosshel_forcing) &
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
-                    endif
+                    
                   endif
 !
                 endif
