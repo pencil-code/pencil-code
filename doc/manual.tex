@@ -10570,6 +10570,18 @@ and more can be prepared in \cmd{IDL} with the procedure
 \file[generate_kvectors.pro]{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}
 There is also more help in the \file{README} file in \file{helical-MHDturb}.
 
+%AB: added based on Matthias's check-in message of 27-mar-19.
+In \code{forcing_hel}: if \code{lcrosshel_forcing=T} and if
+\code{ltestfield_forcing=T.and.ltestflow_forcing=T}, \var{uu and} \var{aa}
+(\var{uu0} and \var{aa0} for \code{testfield*}) are simultaneously forced,
+using the same file{k.dat}.
+Relative scaling by \code{force1_scl} for vector potentials and \code{force2_scl}
+for velocities (default: 1).
+Simplified ``cross helicity forcing'' is now activated by
+\code{lhydro_forcing.and.lmagnetic_forcing=.true.}
+or by \code{ltestfield_forcing.and.ltestflow_forcing=.true.};
+\code{lcrosshel_forcing} is now obsolete.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Three-layered convection model}
