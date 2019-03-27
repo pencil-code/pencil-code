@@ -3940,7 +3940,6 @@ module Solid_Cells
 !  Filter solution if this option is set
 !
     if(mod(tss,filter_frequency)==0 .and. lfilter_solution) then
-      print*,'filter'
       call communicate_filter_zones(f_ogrid,f_filterH_lowerx,f_filterH_upperx,f_filterH_lowery,f_filterH_uppery)
       call pade_filter(f_ogrid)
       call update_ghosts_ogrid(f_ogrid)

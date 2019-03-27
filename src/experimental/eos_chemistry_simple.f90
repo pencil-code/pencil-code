@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED pp; del2pp; glnmu(3)
+! PENCILS PROVIDED mu1; pp; del2pp; glnmu(3)
 ! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
 ! PENCILS PROVIDED glnRR(3), RRmix
 !
