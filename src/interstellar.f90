@@ -215,7 +215,7 @@ module Interstellar
 !  Total SNe energy
 !
   double precision, parameter :: ampl_SN_cgs=1D51
-  real :: frac_ecr=0.0, frac_eth=1.0, frac_kin=0.0
+  real :: frac_ecr=0.0, frac_eth=1.0, frac_kin=0.0, kin_max=0.075
   real :: ampl_SN=impossible, campl_SN=0.0, eampl_SN=0.0, kampl_SN=0.0, kperp=0.05, kpara=0.025
 !
 !  SNe composition
@@ -342,7 +342,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=4.5
+  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=5.0, rad2_factor=0.8
 !
 !  Requested SNe location (used for test SN)
 !
@@ -399,7 +399,7 @@ module Interstellar
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, lSN_list, &
       frac_ecr, frac_kin, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
-      SNI_factor, SNII_factor, lSN_autofrackin, &
+      SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
       cooling_select, heating_select, heating_rate, rho0ts, &
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
@@ -413,7 +413,7 @@ module Interstellar
       mass_width_ratio, energy_width_ratio, velocity_width_ratio, &
       lSN_eth, lSN_ecr, lSN_fcr, lSN_mass, width_SN, lSNI, lSNII, &
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
-      SNI_factor, SNII_factor, lSN_autofrackin, &
+      SNI_factor, SNII_factor, lSN_autofrackin, kin_max, &
       inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_kin, thermal_profile,velocity_profile, mass_profile, &
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, &
@@ -670,17 +670,17 @@ module Interstellar
         print*,'initialize_interstellar: finished'
       endif
 !
-!  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_N_sol
+!  Fred: 06-Nov-17 added SN_rate column and changed site_mass to site_Nsol
 !        Note changes may affect reading/meaning of pre-existing file contents
 !
       if (lroot .and. lstart) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-        write(1,'("#",4A)')  &
-            '---it----------t-------itype---iproc---l-----m-----n--', &
+        write(1,'("#",5A)')  &
+            '---it----------t---------itype-iproc---l-----m-----n--', &
             '-----x------------y------------z-------', &
             '----rho---------rhom----------TT-----------EE-----',&
-            '---Ekin-------Ecr-------t_sedov----', &
-            '--radius-----site_N_sol------maxTT----t_interval---SN_rate-'
+            '-----Ekin----------Ecr--------t_sedov------radius-', &
+            '-----site_Nsol------maxTT------t_interval----SN_rate--'
         close(1)
       endif
 !
@@ -2148,11 +2148,11 @@ module Interstellar
         endif
         mpirho=rhom/box_volume
         call mpiallreduce_sum(mpirho,rhom)
-        if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
-          scaled_interval=t_interval_SNII!*(SN_interval_rhom/rhom)
-        else
+        !if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
+        !  scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)
+        !else
           scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
-        endif
+        !endif
         old_rhom=rhom
       else
         scaled_interval=t_interval_SNII
@@ -3069,7 +3069,7 @@ module Interstellar
       real ::  rhom_new, ekintot_new, ambient_mass
       real :: Nsol_ratio, Nsol_ratio_best, radius_min, radius_max, sol_mass_tot
       real :: uu_sedov
-      real :: radius2
+      real :: radius2, SNvol
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
       real, dimension(nx,3) :: deltauu, deltafcr=0.
@@ -3090,23 +3090,24 @@ module Interstellar
 !
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
-      Nsol_ratio=1.
+      sol_mass_tot=solar_mass*N_mass
+      SNvol=4.*pi/3.*rad2_factor**1.5/sol_mass_tot
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
 !  improve match of mass to radius.
 !
       if (lSN_scale_rad) then
+        Nsol_ratio=1.
         radius_min=rfactor_SN*SNR%feat%dr
         radius_max=200*pc_cgs/unit_length
         radius_best=SNR%feat%radius
-        sol_mass_tot=solar_mass*N_mass
-        Nsol_ratio=4.*pi/3.*rhom*SNR%feat%radius**3/sol_mass_tot
-        if (Nsol_ratio>1) then
+        Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
+        if (Nsol_ratio>0.99) then
           Nsol_ratio_best = abs(Nsol_ratio-1)
         else
           Nsol_ratio_best = 1e6
         endif
-        do i=1,15
+        do i=1,25
           if (Nsol_ratio < 1) then
             radius_min=SNR%feat%radius
           else
@@ -3114,8 +3115,8 @@ module Interstellar
           endif
           SNR%feat%radius=0.5*(radius_min+radius_max)
           call get_properties(f,SNR,rhom,ekintot,rhomin)
-          Nsol_ratio=4./3.*pi*rhom*SNR%feat%radius**3/sol_mass_tot
-          if (Nsol_ratio>=1.and.abs(Nsol_ratio-1)<Nsol_ratio_best) then
+          Nsol_ratio=SNvol*rhom*SNR%feat%radius**3
+          if ((Nsol_ratio>=0.99).and.(abs(Nsol_ratio-1)<Nsol_ratio_best)) then
             Nsol_ratio_best=Nsol_ratio
             radius_best=SNR%feat%radius
           endif
@@ -3123,10 +3124,12 @@ module Interstellar
             print*,'explode_SN: i',i
             print*,'explode_SN: radius_min',radius_min
             print*,'explode_SN: radius_max',radius_max
+            print*,'explode_SN: Rmax-Rmin',radius_max-radius_min
             print*,'explode_SN: radius_best',radius_best
-            print*,'explode_SN: N_sol',Nsol_ratio*sol_mass_tot/solar_mass
+            print*,'explode_SN: Nsol',Nsol_ratio*sol_mass_tot/solar_mass
           endif
-          if (radius_max-radius_min<radius_min*SNR%feat%dr*0.01) exit
+          !if (radius_max-radius_min<radius_min*SNR%feat%dr*0.01) exit
+          if (radius_max-radius_min<SNR%feat%dr*0.04) exit
         enddo
         SNR%feat%radius=radius_best
         call get_properties(f,SNR,rhom,ekintot,rhomin)
@@ -3135,13 +3138,13 @@ module Interstellar
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,rhomin,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
-        ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
+        ambient_mass=SNvol*rhom*SNR%feat%radius**3
         if (ambient_mass/sol_mass_tot<eps_mass.and..not.lSN_list) then
           ierr=iEXPLOSION_TOO_RARIFIED
           return
         endif
       endif
-      radius2 = SNR%feat%radius**2
+      radius2 = rad2_factor*SNR%feat%radius**2
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
@@ -3184,7 +3187,7 @@ module Interstellar
         else
           frackin = 0.
         endif
-        frackin=min(0.1,frackin)
+        frackin=min(kin_max,frackin)
         etmp=(1.-frackin-frac_ecr)*ampl_SN
         ktmp=frackin*ampl_SN
         if (lroot.and.ip==1963) print*,&
@@ -3338,7 +3341,7 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN > 4*radius2) lnTT=-10.0
+          where (dr2_SN > 2.5*radius2) lnTT=-10.0
           maxTT=maxval(exp(lnTT))
           maxlnTT=max(log(maxTT),maxlnTT)
           mmpi=maxlnTT
@@ -3529,7 +3532,7 @@ module Interstellar
         print*, 'explode_SN:  Total energy = ', SNR%feat%EE+SNR%feat%CR
         print*, 'explode_SN:    CR energy  = ', SNR%feat%CR
         print*, 'explode_SN:    Added mass = ', SNR%feat%MM
-        print*, 'explode_SN: Ambient N_sol = ', site_mass/solar_mass
+        print*, 'explode_SN: Ambient Nsol = ', site_mass/solar_mass
         print*, 'explode_SN:    Sedov time = ', SNR%feat%t_sedov
         print*, 'explode_SN:   Shell speed = ', uu_sedov
         write(1,'(i10,E13.5,5i6,15E13.5)')  &
@@ -3588,8 +3591,7 @@ module Interstellar
       type (SNRemnant), intent(inout) :: remnant
       integer, optional :: ierr
       real, intent(out) :: rhom, ekintot, rhomin
-      real :: radius2
-      real :: rhotmp, rhomax
+      real :: rhotmp, rhomax, radius2
       real, dimension(nx) :: rho, u2
       real, dimension(nx,3) :: uu
       integer, dimension(nx) :: mask, maxmask, minmask
@@ -3598,7 +3600,7 @@ module Interstellar
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
 !
-      radius2 = remnant%feat%radius**2
+      radius2 = rad2_factor*remnant%feat%radius**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
@@ -3653,7 +3655,7 @@ module Interstellar
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
+        rhom=tmp2(1)*0.75*pi_1/radius2**1.5
       endif
 !
 !  Determine the density rarification ratio in order to avoid excessive spikes
@@ -3698,7 +3700,7 @@ module Interstellar
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = remnant%feat%radius**2
+      radius2 = rad2_factor*remnant%feat%radius**2
       tmp=0.0
       do n=n1,n2
       do m=m1,m2
@@ -3750,7 +3752,7 @@ module Interstellar
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
-        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
+        rhom=tmp2(1)*0.75*pi_1/radius2**1.5
       endif
 !
     endsubroutine get_props_check
@@ -3774,7 +3776,7 @@ module Interstellar
 !  Find lowest rho value in the surronding cavity.
 !
       rho_lowest=1E10
-      radius2 = radius**2
+      radius2 = rad2_factor*radius**2
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(SNR)
