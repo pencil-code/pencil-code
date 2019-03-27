@@ -6120,7 +6120,10 @@ module Solid_Cells
     real :: dxx0,dxx1,dyy0,dyy1
     ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
     ind_proc = ip_proc_pointer(proc+1)
-    if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+    if(ind_proc<1) then
+       print*, 'ERROR: Pointing to f_array that does not exist'
+       print*, 'This can be due to too many processors in parralelization'
+    endif
 !
 !  Check if the grid point interval is really correct.
 !
@@ -6267,7 +6270,10 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+      if(ind_proc<1) then
+         print*, 'ERROR: Pointing to f_array that does not exist'
+         print*, 'This may be due to too many processors in parallel'
+      endif
 !
 !  Check if the grid point interval is really correct.
 !
@@ -6406,7 +6412,10 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+      if(ind_proc<1) then
+         print*, 'ERROR: Pointing to f_array that does not exist'
+         print*, 'This can be due to too many processors in parralelization'
+      endif
 !
 !  Check if the grid point interval is really correct.
 !
@@ -6546,7 +6555,10 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+      if(ind_proc<1) then
+         print*, 'ERROR: Pointing to f_array that does not exist'
+         print*, 'This can be due to too many processors in parralelization'
+      endif
 !
 !  Check if the grid point interval is really correct.
 !
@@ -6688,7 +6700,10 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+      if(ind_proc<1) then
+         print*, 'ERROR: Pointing to f_array that does not exist'
+         print*, 'This can be due to too many processors in parralelization'
+      endif
 !
 !  Check if the grid point interval is really correct.
 !
@@ -6861,7 +6876,10 @@ module Solid_Cells
 !
       ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
       ind_proc = ip_proc_pointer(proc+1)
-      if(ind_proc<1) print*, 'ERROR: Pointing to f_array that does not exist'
+      if(ind_proc<1) then
+         print*, 'ERROR: Pointing to f_array that does not exist'
+         print*, 'This may be due to too many processors in parallel'
+      endif
 !
 !  Check if the grid point interval is really correct.
 !
