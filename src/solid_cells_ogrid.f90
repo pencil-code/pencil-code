@@ -3989,15 +3989,13 @@ module Solid_Cells
       c_dragy=0.
       Nusselt=0.
 !
+      if (lchemistry) call calc_for_chem_mixture_ogrid(f_og)
+!
 !  Initiate communication and do boundary conditions.
 !
       call boundconds_x_ogrid(f_og)
       call update_ghosts_ogrid(f_og)
       if (lchemistry) call chemspec_normalization_N2_og(f_og)
-!
-! TODO: is it the right place for calc_for_chem_mixture_ogrid?
-!
-  if (lchemistry .and. ldensity) call calc_for_chem_mixture_ogrid(f_og)
 !
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
