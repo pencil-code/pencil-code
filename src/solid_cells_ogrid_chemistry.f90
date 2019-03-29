@@ -578,6 +578,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       if (lpencil_ogrid(i_og_RR)) p_ogrid%RR=f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iRR)
 !
       if (lpencil_ogrid(i_og_glnRR)) call grad_ogrid(f_og,iRR,p_ogrid%glnRR)
+      do i = 1,3
+        p_ogrid%glnRR(:,i) = p_ogrid%glnRR(:,i)/p_ogrid%RR
+      enddo
 !
 !  Pressure
 !
