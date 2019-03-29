@@ -188,6 +188,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
       integer :: i
 
 !  calculate universal gas constant based on Boltzmann constant
@@ -237,6 +238,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
           call fatal_error('initialize_chemistry_og', &
               'Reinitialize chemistry - not implemented on th ogrid!')
       endif
+!
+      call getmu_array_ogrid(f_og,mu1_full_og)
+      f_og(:,:,:,iRR) = mu1_full_og*Rgas
 !
 !  allocate memory for net_reaction diagnostics
 !
