@@ -2472,7 +2472,7 @@ module Density
           endif
         endif
         if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho
-        if (headtt) print*,'dlnrho_dt: normal diffrho=', diffrho
+        if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
       if (ldiff_cspeed) then  ! Normal diffusion operator
@@ -2485,8 +2485,8 @@ module Density
             fdiff = fdiff + diffrho*p%TT**diff_cspeed*(p%del2lnrho+p%glnrho2)
           endif
         endif
-        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho
-        if (headtt) print*,'dlnrho_dt: cspeed diffrho=', diffrho
+        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
+        if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
 !  Shock diffusion
@@ -2523,6 +2523,44 @@ module Density
         if (ldt) then
           chi_sld=abs(f(l1:l2,m,n,iFF_div_rho))/dxyz_2
           !!!diffus_diffrho=diffus_diffrho+chi_sld
+        endif
+      endif
+!
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_density(f,df,p)
+!
+!  Add diffusion term to continuity equation
+!
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
+      else
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+      endif
+!
+!  Improve energy and momentum conservation by compensating for mass diffusion
+!
+      if (lmassdiff_fix) then
+        if (ldensity_nolog) then
+          tmp = fdiff*p%rho1
+        else
+          tmp = fdiff
+        endif
+
+        if (lhydro) then
+          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
+        endif
+
+        if (lentropy.and.(.not.pretend_lnTT)) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
+        elseif (lentropy.and.pretend_lnTT) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+        elseif (ltemperature.and.(.not. ltemperature_nolog)) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+        elseif (ltemperature.and.ltemperature_nolog) then
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
+        elseif (lthermal_energy) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
         endif
       endif
 !
@@ -2624,47 +2662,9 @@ module Density
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
-!  Interface for your personal subroutines calls
-!
-      if (lspecial) call special_calc_density(f,df,p)
-!
-!  Add diffusion term to continuity equation
-!
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
-      else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
-      endif
-!
-!  Improve energy and momentum conservation by compensating for mass diffusion
-!
-      if (lmassdiff_fix) then
-        if (ldensity_nolog) then
-          tmp = fdiff*p%rho1
-        else
-          tmp = fdiff
-        endif
-
-        if (lhydro) then
-          forall(j = iux:iuz) df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - p%uu(:,j-iuu+1) * tmp
-        endif
-
-        if (lentropy.and.(.not.pretend_lnTT)) then
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
-        elseif (lentropy.and.pretend_lnTT) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.(.not. ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.ltemperature_nolog) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
-        elseif (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
-        endif
-      endif
-      if (ldt_up) then
-!
 !  Multiply diffusion coefficient by Nyquist scale.
 !
+      if (ldt_up) then
         diffus_diffrho = diffus_diffrho*dxyz_2
         if (ldynamical_diffusion .and. ldiff_hyper3_mesh) then
           diffus_diffrho3 = diffus_diffrho3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
