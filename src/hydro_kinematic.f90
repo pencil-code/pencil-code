@@ -82,6 +82,7 @@ module Hydro
   integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
+  logical :: lkinflow_as_comaux=.false.
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -91,7 +92,7 @@ module Hydro
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
       lrandom_location,lwrite_random_location,location_fixed,dtforce, &
-      lkinflow_as_uudat, &
+      lkinflow_as_comaux, lkinflow_as_uudat, &
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
@@ -151,6 +152,7 @@ module Hydro
 !
       use FArrayManager
       use Sub, only: erfunc, ylm, ylm_other
+      use Boundcond, only: update_ghosts
       use General
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -212,9 +214,13 @@ module Hydro
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (lkinflow_as_aux) then
+      if (lkinflow_as_aux.or.lkinflow_as_comaux) then
         if (iuu==0) then
-          call farray_register_auxiliary('uu',iuu,vector=3)
+          if (lkinflow_as_comaux) then
+            call farray_register_auxiliary('uu',iuu,vector=3,communicated=.true.)
+          else
+            call farray_register_auxiliary('uu',iuu,vector=3)
+          endif
           iux=iuu
           iuy=iuu+1
           iuz=iuu+2
@@ -229,6 +235,7 @@ module Hydro
             open(1,file='uu.dat',form='unformatted')
             read(1) f(l1:l2,m1:m2,n1:n2,iux:iuz)
             close(1)
+            if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz)
           endif
         else
 ! set the initial velocity to zero
@@ -426,6 +433,8 @@ module Hydro
         lpencil_in(i_uu)=.true.
         lpencil_in(i_oo)=.true.
       endif
+      if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
+      if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
 !  ugu
       if (lpencil_in(i_ugu)) then
         lpencil_in(i_uu)=.true.
@@ -1972,8 +1981,19 @@ module Hydro
         call inevitably_fatal_error('hydro_kinematic', 'kinflow not found')
       end select
 !
-! kinflows end here
+!  kinflows end here.
+!  Note: in some parts above, p%oo and p%divu are already computed.
+!  However, when lkinflow_as_comaux then ghost zones are computed
+!  and p%uij, p%oo, and p%divu can be computed numerically.
 !
+      if (lkinflow_as_comaux) then
+! uij
+        if (lpenc_loc(i_uij)) call gij(f,iuu,p%uij,1)
+! oo (=curlu)
+        if (lpenc_loc(i_oo)) call curl_mn(p%uij,p%oo,p%uu)
+! divu
+        if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+      endif
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! o2
