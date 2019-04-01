@@ -756,7 +756,7 @@ module Io
         filename = ""
       endif
 !
-      if (.not. exists_in_hdf5 ('persist')) call create_group_hdf5 ('persist')
+      call create_group_hdf5 ('persist')
 !
       init_write_persist = .false.
       persist_initialized = .true.
