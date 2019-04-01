@@ -1040,6 +1040,42 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
+    subroutine output_timeseries(data, data_im)
+!
+!  Append diagnostic data to 'time_series.dat' file.
+!
+!  01-Apr-2019/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      real, dimension(2*nname), intent(in) :: data, data_im
+!
+      integer :: pos
+      character (len=fmtlen) label, iteration
+      character (len=fnlen) :: filename, dataset
+      logical :: lexists
+
+      iteration = itoa(it-1)
+      filename = trim(datadir)//'/'//'time_series.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+      do pos = 1, nname
+        label = cname(pos)
+        label = label(1:min(index(label,' '), index(label,'('))-1)
+        call create_group_hdf5 (label)
+        call output_hdf5 (trim(label)//'/'//iteration, data(pos))
+        if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
+          label = trim(label)//'/imaginary_part'
+          call create_group_hdf5 (label)
+          call output_hdf5 (trim(label)//'/'//iteration, data_im(pos))
+        endif
+      enddo
+      call output_hdf5 ('last', it-1)
+      call file_close_hdf5
+!
+    endsubroutine output_timeseries
+!***********************************************************************
     subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignore time and mesh.

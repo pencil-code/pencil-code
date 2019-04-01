@@ -1129,6 +1129,18 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
+    subroutine output_timeseries(data, data_im)
+!
+!  Append diagnostic data to 'time_series.dat' file.
+!
+!  01-Apr-2019/PABourdin: coded
+!
+      real, dimension(2*nname), intent(in) :: data, data_im
+!
+      ! dummy routine
+!
+    endsubroutine output_timeseries
+!***********************************************************************
     subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignoring mesh.

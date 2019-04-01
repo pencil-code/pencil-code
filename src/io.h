@@ -9,6 +9,7 @@
   public :: output_globals, input_globals, output_slice_position, output_slice
   public :: init_write_persist, write_persist, write_persist_id
   public :: init_read_persist, read_persist, read_persist_id
+  public :: output_timeseries
 
   public :: wgrid, rgrid, wdim, output_profile, input_profile
   public :: output_average, trim_average

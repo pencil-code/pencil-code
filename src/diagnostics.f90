@@ -190,6 +190,7 @@ module Diagnostics
 !
       use General, only: safe_character_append, compress
       use Cparam, only: max_col_width
+      use IO, only: output_timeseries, IO_strategy
       use Sub, only: insert
 !
       character (len=1000) :: fform,legend,line
@@ -247,6 +248,10 @@ module Diagnostics
         where( fname_keep(1:nname) /= impossible .and. &
                itype_name(1:nname)<ilabel_complex ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
+!
+!  Write 'time_series.h5' if output format is HDF5
+!
+      if (IO_strategy == "HDF5") call output_timeseries (buffer, fname_keep)
 !
 !  Insert imaginary parts behind real ones if quantity is complex.
 !
