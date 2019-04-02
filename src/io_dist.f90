@@ -1049,7 +1049,7 @@ module Io
 !***********************************************************************
     subroutine output_timeseries(data, data_im)
 !
-!  Append diagnostic data to 'time_series.dat' file.
+!  Append diagnostic data to a binary file.
 !
 !  01-Apr-2019/PABourdin: coded
 !

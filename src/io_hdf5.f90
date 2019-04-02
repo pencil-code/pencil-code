@@ -1042,7 +1042,7 @@ module Io
 !***********************************************************************
     subroutine output_timeseries(data, data_im)
 !
-!  Append diagnostic data to 'time_series.dat' file.
+!  Append diagnostic data to 'time_series.h5' file.
 !
 !  01-Apr-2019/PABourdin: coded
 !
@@ -1057,7 +1057,7 @@ module Io
       logical :: lexists
 
       iteration = itoa(it-1)
-      filename = trim(datadir)//'/'//'time_series.h5'
+      filename = trim(datadir)//'/time_series.h5'
       lexists = file_exists (filename)
       call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
       do pos = 1, nname
