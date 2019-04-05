@@ -26,7 +26,7 @@ if (not quiet) then $
 ;
 nlines = file_lines (fullvarfile)
 if (not quiet) then $
-    print, 'Data file contains ' + nlines,2) + ' lines.'
+    print, 'Data file contains ' + strtrim(nlines,2) + ' lines.'
 array=strarr(nlines)
 varnames=strarr(nlines)
 values=strarr(nlines)

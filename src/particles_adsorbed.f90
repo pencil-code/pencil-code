@@ -1,6 +1,7 @@
 ! $Id: particles_adsorbed.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
 !
-!  This module takes care of everything related to reactive particles.
+!  MODULE_DOC: This module takes care of the evolution of adsorbed
+!  MODULE_DOC: species on the particle surface for reactive particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -90,8 +91,8 @@ module Particles_adsorbed
 !  check if enough storage was reserved in fp and dfp to store
 !  the adsorbed species surface and gas phase surface concentrations
 !
-      if (nadsspec /= (N_adsorbed_species-1) .and. N_adsorbed_species > 1) then
-        print*,'N_adsorbed_species: ',N_adsorbed_species-1
+      if (nadsspec /= (N_adsorbed_species) .and. N_adsorbed_species > 1) then
+        print*,'N_adsorbed_species: ',N_adsorbed_species
         print*,'nadsspec: ',nadsspec
         call fatal_error('register_particles_ads', &
             'wrong size of storage for adsorbed species allocated.')
@@ -117,10 +118,8 @@ module Particles_adsorbed
 !  Indices of adsorbed species mole fraction
 !
       if (N_adsorbed_species > 1) then
-        iads = npvar+1
-!
         do i = 1,N_adsorbed_species
-          pvarname(iads+i-1) = 'i'//adsorbed_species_names(i)
+          call append_npvar('i'//adsorbed_species_names(i),iads)
         enddo
 !
         call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
@@ -129,15 +128,7 @@ module Particles_adsorbed
 !  The -1 is there to account for Cf being in adsorbed_species_names
 !  but not in the calculation
 !
-        npvar = npvar+N_adsorbed_species
-        iads_end = iads+N_adsorbed_species-1
-      endif
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_ads','npvar > mpvar')
+        iads_end = iads-1
       endif
 !
 !  Allocate only if adsorbed species in mechanism
@@ -261,6 +252,9 @@ module Particles_adsorbed
             call fatal_error('init_particles_ads','')
           endselect
         enddo
+        do i = 1,mpar_loc
+          fp(i,iads_end) = 1.0 - sum(fp(i,iads:iads_end-1))
+        enddo
       endif
 !
     endsubroutine init_particles_ads
@@ -335,7 +329,7 @@ module Particles_adsorbed
             mod_surf_area = 0.0
             allocate(R_c_hat(k1:k2))
             R_c_hat = 0.0
-            allocate(R_j_hat(k1:k2,1:n_ads))
+            allocate(R_j_hat(k1:k2,1:N_adsorbed_species))
             R_j_hat = 0.0
             call calc_get_mod_surf_area(mod_surf_area,fp)
             call get_adsorbed_chemistry(R_j_hat,R_c_hat)
@@ -420,6 +414,7 @@ module Particles_adsorbed
 !  06-oct-14/jonas: adapted
 !
       use Diagnostics
+!     use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -432,7 +427,7 @@ module Particles_adsorbed
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-!     if (lwr) write (3,*) 'iads=', iads
+!     if (lwr) call farray_index_append('iads', iads)
 !
       if (lreset) then
         idiag_ads = 0

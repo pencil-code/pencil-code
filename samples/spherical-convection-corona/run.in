@@ -7,7 +7,7 @@
   nt=14, it1=1, isave=100, itorder=3
   dsnap=50., dvid=1,
   cdtv=0.30, cdt=0.40
-  lpencil_check=T
+  lpencil_check=F
 /
 &eos_run_pars
   sigmaSBt=0.18

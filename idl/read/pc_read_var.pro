@@ -50,7 +50,11 @@
 ;   /nostats: Suppress only summary statistics.
 ;     /stats: Force printing of summary statistics even if /quiet is set.
 ;      /help: Display this usage information, and exit.
-;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere
+;    /single: enforces single precision of returned data.
+;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere. (inactive)
+;    /toyang: Provides merged data on basis of Yang grid (default: on Yin grid).a
+;    /cubint: Interpolation parameter for corners of Yin-Yang grid; 0: linear interp, default: -0.5.
+;             Identical with "cubic" keyword parameter of IDL routine "interpolate".
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
@@ -78,7 +82,7 @@
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
-    bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo,           $
+    bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo, pptoo=pptoo, $
     allprocs=allprocs, reduced=reduced,                           $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
@@ -89,7 +93,8 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status, sphere=sphere
+    exit_status=exit_status, sphere=sphere,single=single,         $
+    toyang=toyang,cubint=cubint,ogrid=ogrid
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -101,6 +106,7 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords,coord_system
+  common corn, llcorn, lucorn, ulcorn, uucorn
 ;
 ; Default settings.
 ;
@@ -113,6 +119,10 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcy, 'none'
   default, bcz, 'none'
   default, validate_variables, 1
+  default, single, 0
+  default, toyang, 0
+  default, cubint, -.5
+;
   if (arg_present(exit_status)) then exit_status=0
   default, reduced, 0
   if (keyword_set(reduced)) then allprocs=1
@@ -163,13 +173,24 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Name and path of varfile to read.
 ;
-  if (n_elements(ivar) eq 1) then begin
-    default, varfile_, 'VAR'
-    varfile=varfile_+strcompress(string(ivar),/remove_all)
+  if (keyword_set(ogrid)) then begin
+    if (n_elements(ivar) eq 1) then begin
+      default, varfile_, 'OGVAR'
+      varfile=varfile_+strcompress(string(ivar),/remove_all)
+    endif else begin
+      default, varfile_, 'ogvar.dat'
+      varfile=varfile_
+      ivar=-1
+    endelse
   endif else begin
-    default, varfile_, 'var.dat'
-    varfile=varfile_
-    ivar=-1
+    if (n_elements(ivar) eq 1) then begin
+      default, varfile_, 'VAR'
+      varfile=varfile_+strcompress(string(ivar),/remove_all)
+    endif else begin
+      default, varfile_, 'var.dat'
+      varfile=varfile_
+      ivar=-1
+    endelse
   endelse
 ;
 ; Downsampled snapshot?
@@ -178,8 +199,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Get necessary dimensions quietly.
 ;
+logrid=0
+if (keyword_set(ogrid)) then logrid=1  
   if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled
+      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet, down=ldownsampled, ogrid=logrid
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
@@ -191,6 +214,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       undefine, par2
     endelse
   endif
+
   if (n_elements(grid) eq 0) then $
       pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
       proc=proc, allprocs=allprocs, reduced=reduced, $
@@ -204,11 +228,24 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; We know from param whether we have a Yin-Yang grid.
 ;
   default, yinyang, 0
-  if tag_exists(param,'LYINYANG') then $
+  if tag_exists(param,'LYINYANG') then begin
+
+    default, cutoff_corners, 0
+    default, nycut, 0
+    default, nzcut, 0
+
     if (param.lyinyang) then yinyang=1
+    if yinyang then begin
+      if (param.lcutoff_corners) then cutoff_corners=1
+      nycut=param.nycut & nzcut=param.nzcut
+    endif
+
+  endif
 ;
-  if yinyang then $
+  if yinyang then begin
     print, 'This is a Yin-Yang grid run. Data are retrieved both in separate and in merged arrays.'
+    print, 'Merged data refer to the basis of the '+(toyang ? 'Yang':'Yin')+' grid.'
+  endif
 ;
 ; Set the coordinate system.
 ;
@@ -252,6 +289,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   mvar=dim.mvar
   mvar_io=mvar
   if (param.lwrite_aux) then mvar_io+=dim.maux
+
   precision=dim.precision
   if (precision eq 'D') then bytes=8 else bytes=4
   mxloc=procdim.mx
@@ -310,26 +348,28 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Read meta data and set up variable/tag lists.
 ;
   if (is_defined(par2)) then begin
-    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
-      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled)
+    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
+      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
   endif else begin
-    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
-      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled)
+    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
+      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
   endelse
 
   totalvars=(size(varcontent))[1]
 ;
+  filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
   if (n_elements(variables) ne 0) then begin
     if (keyword_set(additional)) then begin
-      filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
-      variables=[filevars,variables]
-      if (n_elements(tags) ne 0) then begin
-        tags=[filevars,tags]
-      endif
-    endif
-  endif else begin
-    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
-  endelse
+      for iv=0,n_elements(variables)-1 do $
+        if ~any(strmatch(varcontent.idlvar, variables[iv])) then begin
+          magic=1
+          filevars=[filevars,variables[iv]]
+        endif
+      variables=filevars
+      if (n_elements(tags) ne 0) then tags=[filevars,tags]
+    endif else magic=1
+  endif else $
+    variables=filevars
 ;
 ; Shortcut for getting magnetic field bb.
 ;
@@ -360,6 +400,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   default, TTtoo, 0
   if (TTtoo) then begin
     variables=[variables,'tt']
+    magic=1
+  endif
+;
+; Shortcut for getting pressure.
+;
+  default, pptoo, 0
+  if (pptoo) then begin
+    variables=[variables,'pp']
     magic=1
   endif
 ;
@@ -396,9 +444,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   res=''
   content=''
+
   for iv=0L,totalvars-1L do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
-    if (nprocs eq 1 and allprocs ne 2) then begin
+    if (nprocs eq 1 and allprocs ne 2 and not run2D) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
       res=res+','+varcontent[iv].idlvarloc
@@ -426,10 +475,18 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   content = strmid(content,2)
   if (not keyword_set(quiet)) then begin
+    dmx = dim.mx
+    dmy = dim.my
+    dmz = dim.mz
+    if (run2D) then begin
+      if (nx eq 1) then dmx = 1
+      if (ny eq 1) then dmy = 1
+      if (nz eq 1) then dmz = 1
+    endif
     print, ''
     print, 'The file '+varfile+' contains: ', content
     print, ''
-    print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
+    print, 'The grid dimension is ', dmx, dmy, dmz
     print, ''
   endif
 ;
@@ -478,7 +535,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Setup the coordinates mappings from the processor to the full domain.
 ;
-    if (nprocs gt 1 or allprocs eq 2) then begin
+    if (nprocs gt 1 or run2D or allprocs eq 2) then begin
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
@@ -555,6 +612,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
     close, file
     openr, file, filename, f77=f77, swap_endian=swap_endian
+
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
@@ -568,7 +626,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         idum=0L & readu, file, idum   ; read Fortran record marker as next record is sequentially written
       endif
       readu, file, t, x, y, z, dx, dy, dz
-    endif else if (allprocs ne 2 and nprocs eq 1) then begin
+    endif else if (allprocs ne 2 and nprocs eq 1 and not run2D) then begin
       ; single processor distributed file
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay
@@ -656,6 +714,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
               + varcontent[iv].idlvarloc $
               +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"
         endelse
+
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
 ;
@@ -701,7 +760,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Check variables one at a time and skip the ones that give errors.
 ; This way the program can still return the other variables, instead
-; of dying with an error. One can turn off this option off to decrease
+; of dying with an error. One can turn this option off to decrease
 ; execution time.
 ;
   if (validate_variables) then begin
@@ -741,51 +800,110 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ;  Merge Yang and Yin grids; yz[2,*] is merged coordinate array; inds is index vector for Yang points outside Yin into its *1D* coordinate vectors
 ;
-    merge_yin_yang, y[m1:m2], z[n1:n2], dy, dz, yz, inds
-;
-    if keyword_set(sphere) then begin
-      triangulate, yz[0,*], yz[1,*], triangles ;, sphere=sphere_data $  ; not operational, IDL bug?
-      sphere_data=''
+    merge_yin_yang, dim.m1, dim.m2, dim.n1, dim.n2, y, z, dy, dz, yz, inds, yghosts=yghosts, zghosts=zghosts
+
+    if keyword_set(sphere) then begin    ; not operational
+      ;lon=reform(yz[1,*]) & lat=reform(yz[0,*]) & fval=indgen((size(lon))[1])
+      ;triangulate, lon, lat, triangles, sphere=sphere_data, fval=fval
+      triangulate, yz[0,*], yz[1,*], triangles
+      sphere_data=0 & fval=0
     endif else $
       triangulate, yz[0,*], yz[1,*], triangles
-;
-;  Merge data. Variables have names "*_merge"
-;
+
     for iyy=0,1 do $
       for i=0,n_elements(tags)-1 do begin
 ;
-; Calculate derived variables before merging.
+; Calculate derived variables before interpolating and merging.
 ;
         if (total(variables[i] eq varcontent.idlvar) eq 0) then begin
-          if iyy eq 0 then $
-            idum=execute( tags[i]+'='+variables[i] ) $
-          else begin
+          if iyy eq 1 then begin 
+            idum=execute( tags[i]+'_tmp = '+tags[i] )
             idum=execute( 'sz=size('+tags[i]+')')
-            idum=execute( tags[i]+'_tmp = make_array([sz[1:sz[0]],2], /float, /nozero)')
-            idum=execute( tags[i]+'_tmp['+strjoin(replicate('*,',sz[0]),/single)+'0] ='+tags[i] )
-            idum=execute( tags[i]+'_tmp['+strjoin(replicate('*,',sz[0]),/single)+'1] ='+variables[i] )
-            idum=execute( tags[i]+'='+tags[i]+'_tmp' )
+            idum=execute( tags[i]+' = make_array([sz[1:sz[0]],2], /float, /nozero)')
+            idum=execute( tags[i]+'['+strjoin(replicate('*,',sz[0]),/single)+'0] ='+tags[i]+'_tmp' )
+            idum=execute( tags[i]+'['+strjoin(replicate('*,',sz[0]),/single)+'1] ='+variables[i] )
             idum=execute('undefine,'+tags[i]+'_tmp' )
-          endelse
+          endif
         endif
       endfor
+
+    if cutoff_corners then begin
+; 
+;  Fill the cutaway corners of both grids with interpolated data from other grid.
+;
+      ncornup_y=procdim.my-nycut+dim.nghosty-1 & ncornup_z=procdim.mz-nzcut+dim.nghostz-1
+      ncornlo_y=my-(procdim.my-nycut)-dim.nghosty & ncornlo_z=mz-(procdim.mz-nzcut)-dim.nghostz
+      scaly=(my-1)/(y[my-1]-y[0]) & scalz=(mz-1)/(z[mz-1]-z[0])
+;
+;  Determine first transformed coordinates of the corners.
+;
+      yin2yang_coors_tri, 0,ncornup_y,0,ncornup_z, y, z, llcorn
+      yz_llcorn=llcorn
+      yz_llcorn[0,*] = (llcorn[0,*]-y[0])*scaly & yz_llcorn[1,*] = (llcorn[1,*]-z[0])*scalz 
+
+      yin2yang_coors_tri, my-1,ncornlo_y,0,ncornup_z, y, z, ulcorn
+      yz_ulcorn=ulcorn
+      yz_ulcorn[0,*] = (ulcorn[0,*]-y[0])*scaly & yz_ulcorn[1,*] = (ulcorn[1,*]-z[0])*scalz 
+
+      yin2yang_coors_tri, 0,ncornup_y,mz-1,ncornlo_z, y, z, lucorn
+      yz_lucorn=lucorn
+      yz_lucorn[0,*] = (lucorn[0,*]-y[0])*scaly & yz_lucorn[1,*] = (lucorn[1,*]-z[0])*scalz 
+
+      yin2yang_coors_tri, my-1,ncornlo_y,mz-1,ncornlo_z, y, z, uucorn
+      yz_uucorn=uucorn
+      yz_uucorn[0,*] = (uucorn[0,*]-y[0])*scaly & yz_uucorn[1,*] = (uucorn[1,*]-z[0])*scalz 
+;
+      values=fltarr((size(yz_llcorn))[2])
+
+      for i=0,n_elements(tags)-1 do begin
+
+        idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
+        inds_other='[*,*,*'+(isvec ? ',icomp' : '')+',1-iyy]' & inds_val=(isvec ? '[*,*,icomp]' : '')
+        if isvec then values=fltarr(dim.mx,n_elements(yz_llcorn[0,*]),3)*one 
+        ncomp=(isvec ? 2 : 0)
+;
+;  Interpolate and fill in both grids.
+;
+        for iyy=0,1 do begin
+          for icomp=0,ncomp do $
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_llcorn[0,*],yz_llcorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, 0,ncornup_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, llcorn') 
+
+          for icomp=0,ncomp do $
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_ulcorn[0,*],yz_ulcorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, my-1,ncornlo_y,0,ncornup_z, reform(values),'+tags[i]+',iyy, ulcorn') 
+
+          for icomp=0,ncomp do $
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_lucorn[0,*],yz_lucorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, 0,ncornup_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, lucorn') 
+
+          for icomp=0,ncomp do $
+            idum=execute('values'+inds_val+'=interpolate('+tags[i]+inds_other+',yz_uucorn[0,*],yz_uucorn[1,*],cubic=cubint)')
+          idum=execute('set_triangle, my-1,ncornlo_y,mz-1,ncornlo_z, reform(values),'+tags[i]+',iyy, uucorn')
+
+        endfor
+      endfor
+    endif
+;
+;  Merge data. Variables have names "*_merge"
 ;
     for i=0,n_elements(tags)-1 do begin
 
       if (total(variables[i] eq varcontent.idlvar) eq 0) then variables[i] = tags[i]
 
       idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
+
       if isvec then begin
 ;
 ;  Transformation of theta and phi components in Yang grid.
 ;  Merged variables are fully trimmmed.
 ;
-        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1])' )
-        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,0],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
+        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1-toyang])' )
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,toyang],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
                                       '[(reform(transpose(trformed,[0,2,1,3]),nx,ny*nz,3))[*,inds,*]]]' ) 
       endif else $
-        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,0],[0,2,1]),nx,ny*nz)],'+ $ 
-                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1],[0,2,1]),nx,ny*nz))[*,inds]]]' )
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,toyang],[0,2,1]),nx,ny*nz)],'+ $ 
+                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1-toyang],[0,2,1]),nx,ny*nz))[*,inds]]]' )
     endfor
   endif
 ;
@@ -798,7 +916,9 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   if yinyang then begin
     tagnames += ",'yz','triangles'" 
-    if keyword_set(sphere) then tagnames += ",'sphere_data'"
+    if is_defined(yghosts) then tagnames += ",'yghosts'"
+    if is_defined(zghosts) then tagnames += ",'zghosts'"
+    if keyword_set(sphere) then tagnames += ",'sphere_data', 'fval'"
   endif 
   tagnames += arraytostring(tags,QUOTE="'") 
 ;
@@ -812,7 +932,9 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if (param.lshear) then makeobject+=",deltay"
   if yinyang then begin
     makeobject += ",yz,triangles"
-    if keyword_set(sphere) then makeobject += ",sphere_data"
+    if is_defined(yghosts) then makeobject += ",yghosts"
+    if is_defined(zghosts) then makeobject += ",zghosts"
+    if keyword_set(sphere) then makeobject += ",sphere_data,fval"
     mergevars=arraytostring(variables+'_merge')
   endif
 ;

@@ -28,14 +28,15 @@ module Special
   real :: tanh_newton=0.,cubic_newton=0.
   real :: width_newton=0.,width_RTV=0.,hyper3_chi=0.
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
-  real :: hcond_grad_iso=0.
+  real :: hcond_grad_iso=0.,chi_aniso=0.
   real :: tau_inv_spitzer=0.
   real :: bullets_x0=0.,bullets_dx=0.
   real :: bullets_t0=0.,bullets_dt=0.
   real :: bullets_h0=0.,hyper3_diffrho=0.
   logical :: lfilter_farray=.false.,lrad_loss=.false.
   real, dimension(mvar) :: filter_strength=0.01
-  real :: Ltot,R_hyper3
+  real :: Ltot,R_hyper3=0.
+  real, dimension (nx) :: diffus_chi
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   character (len=labellen) :: loop_frac='full'
@@ -53,7 +54,7 @@ module Special
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
       bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
       lfilter_farray,filter_strength,loop_frac,&
-      heat_par_vandoors,R_hyper3,lrad_loss
+      heat_par_vandoors,R_hyper3,lrad_loss,chi_aniso
 !
 ! variables for print.in
 !
@@ -69,16 +70,14 @@ module Special
 !
 ! variables for video.in
 !
-  real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2
-  real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
-  real, target, dimension (nx,nz) :: spitzer_xz
-  real, target, dimension (ny,nz) :: spitzer_yz
-  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension (nx,nz) :: rtv_xz
-  real, target, dimension (ny,nz) :: rtv_yz
-  real, target, dimension (nx,ny) :: logQ_xy,logQ_xy2,logQ_xy3,logQ_xy4
-  real, target, dimension (nx,nz) :: logQ_xz
-  real, target, dimension (ny,nz) :: logQ_yz
+  integer :: ivid_logQ=0; ivid_rtv=0; ivid_spitzer=0
+
+  real, target, dimension(:,:), allocatable :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
+  real, target, dimension(:,:), allocatable :: rtv_xz, rtv_yz, rtv_xz2
+  real, target, dimension(:,:), allocatable :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
+  real, target, dimension(:,:), allocatable :: logQ_xz, logQ_xz2, logQ_yz
+  real, target, dimension(:,:), allocatable :: spitzer_xy, spitzer_xy2, spitzer_xy3, spitzer_xy4
+  real, target, dimension(:,:), allocatable :: spitzer_xz, spitzer_xz2, spitzer_yz
 !
 !  miscellaneous variables
 !
@@ -139,6 +138,36 @@ module Special
         Ltot = 0.
       endselect
 !
+      if (ivid_rtv/=0) then
+        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
+      endif
+      if (ivid_logQ/=0) then
+        !call alloc_slice_buffers(logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+        if (lwrite_slice_xy .and..not.allocated(logQ_xy) ) allocate(logQ_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(logQ_xz) ) allocate(logQ_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(logQ_yz) ) allocate(logQ_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(logQ_xy2)) allocate(logQ_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(logQ_xy3)) allocate(logQ_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(logQ_xy4)) allocate(logQ_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(logQ_xz2)) allocate(logQ_xz2(nx,nz))
+      endif
+      if (ivid_spitzer/=0) then
+        if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(spitzer_xy2)) allocate(spitzer_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(spitzer_xy3)) allocate(spitzer_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(spitzer_xy4)) allocate(spitzer_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(spitzer_xz2)) allocate(spitzer_xz2(nx,nz))
+      endif
+!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
@@ -173,6 +202,14 @@ module Special
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
+      endif
+!
+      if (chi_aniso/=0.) then
+         lpenc_requested(i_bij)=.true.
+         lpenc_requested(i_bunit)=.true.
+         lpenc_requested(i_glnTT)=.true.
+         lpenc_requested(i_hlnTT)=.true.
+         lpenc_requested(i_glnrho)=.true.
       endif
 !
       if (Kpara/=0.) then
@@ -256,6 +293,7 @@ module Special
 !  04-sep-10/bing: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -275,6 +313,7 @@ module Special
         idiag_dtspitzer=0
         idiag_qmax=0
         idiag_qrms=0
+        ivid_logQ=0; ivid_rtv=0; ivid_spitzer=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -289,16 +328,24 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do iname = 1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'logQ',ivid_logQ)
+        call parse_name(iname,cnamev(iname),cformv(iname),'rtv',ivid_rtv)
+        call parse_name(iname,cnamev(iname),cformv(iname),'spitzer',ivid_spitzer)
+      enddo
+!
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtchi2=',idiag_dtchi2
-        write(3,*) 'i_dthyper3=',idiag_dthyper3
-        write(3,*) 'i_dtrad=',idiag_dtrad
-        write(3,*) 'i_dtnewt=',idiag_dtnewt
-        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
-        write(3,*) 'i_qmax=',idiag_qmax
-        write(3,*) 'i_qrms=',idiag_qrms
+        call farray_index_append('i_dtchi2',idiag_dtchi2)
+        call farray_index_append('i_dthyper3',idiag_dthyper3)
+        call farray_index_append('i_dtrad',idiag_dtrad)
+        call farray_index_append('i_dtnewt',idiag_dtnewt)
+        call farray_index_append('i_dtspitzer',idiag_dtspitzer)
+        call farray_index_append('i_qmax',idiag_qmax)
+        call farray_index_append('i_qrms',idiag_qrms)
       endif
 !
     endsubroutine rprint_special
@@ -354,6 +401,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -361,45 +410,28 @@ module Special
 !
       select case (trim(slices%name))
 !
+      case ('rtv'); call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
+                                            rtv_xy3,rtv_xy4,rtv_xz2)
+!
+      case ('logQ'); call assign_slices_scal(slices,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
+                                             logQ_xy3,logQ_xy4,logQ_xz2)
+!
       case ('spitzer')
-        slices%yz => spitzer_yz
-        slices%xz => spitzer_xz
-        slices%xy => spitzer_xy
-        slices%xy2=> spitzer_xy2
-        if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
-        if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
-        slices%ready=.true.
-!
-      case ('rtv')
-        slices%yz =>rtv_yz
-        slices%xz =>rtv_xz
-        slices%xy =>rtv_xy
-        slices%xy2=>rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3=>rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4=>rtv_xy4
-        slices%ready=.true.
-!
-      case ('logQ')
-        slices%yz =>logQ_yz
-        slices%xz =>logQ_xz
-        slices%xy =>logQ_xy
-        slices%xy2=>logQ_xy2
-        if (lwrite_slice_xy3) slices%xy3=>logQ_xy3
-        if (lwrite_slice_xy4) slices%xy4=>logQ_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2, &
+                                spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endselect
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  10-oct-12/bing: coded
 !
       use EquationOfState, only: gamma
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
@@ -494,6 +526,7 @@ module Special
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -516,6 +549,8 @@ module Special
       real, dimension (nx) :: hc
       integer :: itmp
 !
+      diffus_chi=0.
+!
       if (hcond_grad_iso/=0.) call calc_heatcond_glnTT_iso(df,p)
       if (Kpara/=0.) call calc_heatcond_spitzer(f,df,p)
       if (cool_RTV/=0.) call calc_heat_cool_RTV(df,p)
@@ -523,6 +558,7 @@ module Special
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
       if (Kchrom/=0.) call calc_heatcond_kchrom(df,p)
       if (bullets_h0/=0.) call calc_bullets_heating(df,p)
+      if (chi_aniso/=0.) call calc_heatcond_constchi(df,p)
 !
       if (ltemperature) then
         itmp = ilnTT
@@ -539,6 +575,10 @@ module Special
 !  due to ignoredx hyper3_chi has [1/s]
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+      endif
+!
+      if (lfirst.and.ldt) then
+         maxdiffus=max(maxdiffus,diffus_chi)
       endif
 !
     endsubroutine special_calc_energy
@@ -579,6 +619,7 @@ module Special
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot2,dot,cubic_step
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -589,8 +630,9 @@ module Special
       real :: Ksatb,Kcb
       integer :: i,j
 !
-      chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
-          cubic_step(real(t),init_time,init_time)*p%cp1
+      chi=Kpara*exp(p%lnTT*2.5-p%lnrho)*p%cp1
+!
+      if (init_time /= 0.) chi=chi*cubic_step(real(t),init_time,init_time)
 !
 !      do i=1,3
 !        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
@@ -671,12 +713,9 @@ module Special
       if (lvideo) then
 !
 ! slices
-        spitzer_yz(m-m1+1,n-n1+1)=1./chi(ix_loc-l1+1)
-        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= 1./chi
-        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= 1./chi
-        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= 1./chi
-        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= 1./chi
-        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= 1./chi
+!
+        if (ivid_spitzer/=0) &
+          call store_slices(1./chi,spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endif
 !
     endsubroutine calc_heatcond_spitzer
@@ -749,6 +788,7 @@ module Special
     use Diagnostics,     only: max_mn_name
     use Messages, only: warning
     use Sub, only: cubic_step
+    use Slices_methods, only: store_slices
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -783,7 +823,7 @@ module Special
 !
     endif
 !
-    rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_time)
+    if (init_time /= 0.) rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_time)
 !
 !     add to temperature equation
 !
@@ -816,12 +856,12 @@ module Special
 !
 ! fill video slices
 !
-      logQ_yz(m-m1+1,n-n1+1)=lnQ(ix_loc-l1+1)*0.43429448
-      if (m==iy_loc)  logQ_xz(:,n-n1+1)= lnQ*0.43429448
-      if (n==iz_loc)  logQ_xy(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz2_loc) logQ_xy2(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz3_loc) logQ_xy3(:,m-m1+1)= lnQ*0.43429448
-      if (n==iz4_loc) logQ_xy4(:,m-m1+1)= lnQ*0.43429448
+    if (lvideo) then
+      if (ivid_rtv/=0) &
+        call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+      if (ivid_logQ/=0) &
+        call store_slices(lnQ*0.43429448,logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+    endif
 !
   endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -924,7 +964,7 @@ module Special
       endif
 !
 !  Adjust time scale by the initialization time
-      tau_inv_tmp =  tau_inv_tmp * cubic_step(real(t),init_time,init_time)
+      if (init_time /= 0.) tau_inv_tmp =  tau_inv_tmp * cubic_step(real(t),init_time,init_time)
 !
       newton  = newton * tau_inv_tmp
 !
@@ -1228,8 +1268,8 @@ module Special
 !
 ! Add to energy equation
 !
-      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-          cubic_step(real(t),init_time,init_time)
+      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
+      if (init_time /=0.) rhs=rhs*cubic_step(real(t),init_time,init_time)
 !
       if (ltemperature .and. (.not. ltemperature_nolog)) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
@@ -1297,6 +1337,63 @@ module Special
       endif
 !
     endsubroutine calc_heatcond_glnTT_iso
+!***********************************************************************
+    subroutine calc_heatcond_constchi(df,p)
+!
+! field-aligned heat conduction that is proportional to rho
+! L = Div (b K rho b*Grad(T))
+! K = chi [m^2/s] * cV [J/kg/K] = hcond1 [m^4/s^3/K]
+! Define chi = K_0/rho
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: rhs, glnrho_b, fdiff
+      real, dimension(nx) :: glnTT_H,tmp,hlnTT_Bij,glnTT_b
+      real, dimension(nx,3) :: hhh,tmpv
+      integer :: i,j,k
+!
+      call dot(p%glnrho,p%bunit,glnrho_b)
+      call dot(p%glnTT,p%bunit,glnTT_b)
+!
+      do i = 1,3
+         hhh(:,i) = 0.
+         do j = 1,3
+            tmp(:) = 0.
+            do k = 1,3
+               tmp(:) = tmp(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
+            enddo
+            hhh(:,i) = hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmp(:))
+         enddo
+      enddo
+      call dot(hhh,p%glnTT,glnTT_H)
+!
+      call multmv(p%hlnTT,p%bunit,tmpv)
+      call dot(tmpv,p%bunit,hlnTT_Bij)
+!
+      rhs = (glnTT_H + hlnTT_Bij + (glnrho_b + glnTT_b)*glnTT_b)*chi_aniso*gamma
+!
+      if (ltemperature) then
+         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      else
+        call fatal_error('calc_heatcond_constchi special','only for ltemperature')
+      endif
+!
+! ANISOTROPIC PART NOT INCLUDED IN THE TIMESTEP CALCULATION
+      if (lfirst .and. ldt) then
+         advec_cs2 = max(advec_cs2,chi_aniso*maxval(dxyz_2))
+         fdiff = gamma * chi_aniso * dxyz_2
+         diffus_chi = diffus_chi+fdiff
+         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
+            call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
+         endif
+      endif
+!
+    endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine der_upwind(f,uu,k,df,j)
 !

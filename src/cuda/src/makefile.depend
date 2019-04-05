@@ -1,0 +1,31 @@
+CHEADERS = ../cparam_c.h ../cparam.inc_c.h ../cparam.local_c.h ../cdata_c.h ../density_c.h ../diagnostics_c.h ../eos_c.h ../forcing_c.h ../hydro_c.h ../viscosity_c.h ../sub_c.h
+
+copyHalosConcur.o: copyHalosConcur.cu ../cparam_c.h ../cdata_c.h dconsts.cuh
+
+timestep.o: timestep.cu ../cparam_c.h ../cdata_c.h ../density_c.h ../diagnostics_c.h ../hydro_c.h defines_PC.h
+
+gpu_astaroth.o: gpu_astaroth.cu ../cparam_c.h ../cdata_c.h ../diagnostics_c.h ../density_c.h ../hydro_c.h ../viscosity_c.h ../eos_c.h ../forcing_c.h ../sub_c.h defines_PC.h dconsts.cuh
+
+diagnostics.o: diagnostics.cu ../cparam_c.h ../cdata_c.h defines_PC.h ../viscosity_c.h ../eos_c.h ../forcing_c.h
+
+integrators_v5s.o: integrators_v5s.cu dconsts.cuh
+integrators_v5.o: integrators_v5.cu dconsts.cuh
+
+../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam.local ../scripts/cparam2c
+	@cd ..; cparam2c
+../cdata_c.h: ../cdata.f90 ../scripts/cdata2c
+	@cd ..; cdata2c
+../density_c.h: ../density.f90 ../scripts/density2c
+	@cd ..; density2c
+../diagnostics_c.h: ../diagnostics.f90 ../scripts/diagnostics2c
+	@cd ..; diagnostics2c
+../eos_c.h: ../eos_idealgas.f90 ../scripts/eos2c
+	@cd ..; eos2c
+../forcing_c.h: ../forcing.f90 ../scripts/forcing2c
+	@cd ..; forcing2c
+../hydro_c.h: ../hydro.f90 ../scripts/hydro2c
+	@cd ..; hydro2c
+../viscosity_c.h: ../viscosity.f90 ../scripts/viscosity2c
+	@cd ..; viscosity2c
+../sub_c.h: ../sub.f90 ../scripts/sub2c
+	@cd ..; sub2c

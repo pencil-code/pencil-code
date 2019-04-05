@@ -1,4 +1,4 @@
-def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False, filepath=False, DEBUG=False, silent=False):
+def get_value_from_file(filename, quantity, change_quantity_to=None, sim=False, filepath=False, DEBUG=False, silent=False):
     """ Use to read in a quantity from
         - *.in
         - *.local
@@ -13,6 +13,9 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         filepath:   normally not needed, specify here where to find the file with filename, can be a list of paths if unshure
         DEBUG:      make dry run, tell me what you would do but dont change anything!
         silent:     suppress certain output by setting True
+
+    Return:
+        Returns None if not successful
     """
 
     import os, pencilnew
@@ -53,10 +56,10 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     q_type = False                                                          # q_type will store the type of the quantity value once found and identified
 
     split_filename = split(filename)
-    if sim == False and split_filename[0] != '' and filepath == False: 
+    if sim == False and split_filename[0] != '' and filepath == False:
         filepath = split_filename[0]
         filename = split_filename[1]
- 
+
     ######## find correct file
     # prepare search_path list to search filename in
     if filepath == False:
@@ -74,7 +77,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         search_paths = filepath
 
     else:
-        print('! ERROR: Filename '+str(filename)+' could not be interprated or found!'); return False
+        print('! ERROR: Filename '+str(filename)+' could not be interprated or found!'); return None
 
     absolute_filepath = None
     for search_path in search_paths:
@@ -85,16 +88,16 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     # Traps the case of not being able to find the file
     if absolute_filepath is None:
-        if DEBUG: 
+        if DEBUG:
             print('~ DEBUG: File {0} not found in {1}!'.format(filename, search_paths))
         return None
-    
-    
+
+
     ######## open file
-    # now having absolute filepath to file, lets check that file and find quantity inside!    
-    if DEBUG: print('~ DEBUG: Found suiting file {0} in {1}'.format(filename,filepath))
-        
-    with open(absolute_filepath, 'r') as f: 
+    # now having absolute filepath to file, lets check that file and find quantity inside!
+    if DEBUG: print('~ DEBUG: Found file {0} in {1}'.format(filename,filepath))
+
+    with open(absolute_filepath, 'r') as f:
         data_raw = f.readlines()
 
 
@@ -128,6 +131,8 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         if silent == False: print('! ERROR: Found no line with keyword "'+quantity+'" inside '+join(filepath, filename)+'!')
         return None
 
+    filename = os.path.basename(filename)
+
 
     ######## get line with quantity inside
     line = data_raw[line_matches[0]]
@@ -151,7 +156,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     qs = list(qs)
     q = qs[2]
-    
+
     while q.endswith('\t'): q = q[:-1]; comment = '\t'+comment                  # take care of trailing tabulator
     while q.endswith(','): q = q[:-1]                                           # remove trailing ,
 
@@ -169,38 +174,43 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         q = q.strip().replace('"','').replace("'", '')
         q_type = 'STRING'
 
-    elif is_float(q):
-        q = float(q)
+    try:
+        float(q)
         q_type = 'FLOAT'
         if is_int(q):
             q = int(q)
             q_type = 'INT'
+    except:
+        if type(q) == type('string') and ',' in q:
+            q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
 
-    if type(q) == type('string') and ',' in q:
-        q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
+        if type(q) == type('string') and q in ['F', 'f']:                            # q is BOOL
+            q = False
+            q_type = 'BOOL'
 
-    if type(q) == type('string') and q in ['F', 'f']:                            # q is BOOL
-        q = False
-        q_type = 'BOOL'
+        if type(q)== type('string') and q in ['T', 't']:
+            q = True
+            q_type = 'BOOL'
 
-    if type(q)== type('string') and q in ['T', 't']:
-        q = True
-        q_type = 'BOOL'
+        if type(q) == type('string'):
+            if is_number(q[0]):
+                q_type = 'STRING'
 
-    if type(q) == type('string'):
-        if is_number(q[0]):
-            q_type = 'STRING'
-
-    if q_type == False:                                                         # catch if type of q was not recognized
+    if q_type == False:       # catch if type of q was not recognized
         print('! ERROR: Couldnt identify the data type of the quantity value: '+str(q))
         DEBUG = True
         debug_breakpoint()
     elif DEBUG:
         print('~ DEBUG: q_type = '+q_type)
+    if q_type == 'FLOAT':
+        q = float(q)
+    elif q_type == 'INT':
+        q = int(q)
 
 
     ######## if value of quantity has to be changed do:
-    if change_quantity_to != False:
+    if change_quantity_to != None:
+
 
         ####### prepare change_quantity_to for string injection
         if q_type == 'STRING':
@@ -238,7 +248,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         qs[2] = str(change_quantity_to)
 
         ######## further formatting
-        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t\t'+comment    # create new line and add comment stripped away before
+        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t'+comment    # create new line and add comment stripped away before
         if not (FILE_IS == 'SUBMIT' or filename == 'cparam.local'): new_line = '  '+new_line
         new_line = new_line.rstrip()    # clean empty spaces on the right, no one needs that...
         if new_line[-1] != '\n': new_line = new_line+'\n'

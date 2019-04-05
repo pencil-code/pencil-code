@@ -240,6 +240,7 @@ module Chiral
       real, dimension (nx) :: RRYY_chiral,YY2_chiral
       real, dimension (nx) :: RR21_chiral
       real, dimension (nx) :: QQ_chiral,QQ21_chiral,QQ21QQ_chiral
+      real, dimension (nx) :: diffus_chiral
       real :: pp,qq,lamchiral
       integer :: j
 !
@@ -358,9 +359,12 @@ module Chiral
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (lfirst.and.ldt) diffus_chiral=diffus_chiral+chiral_diff*dxyz_2
-      if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
-                                    maxval(diffus_chiral)
+      if (lfirst.and.ldt) then
+        diffus_chiral=chiral_diff*dxyz_2
+        if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
+                                      maxval(diffus_chiral)
+        maxdiffus=max(maxdiffus,diffus_chiral)
+      endif
 !
 !  diagnostics
 !
@@ -525,6 +529,7 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -574,11 +579,18 @@ module Chiral
             'jbmEP',idiag_jbmEP)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='XX_chiral'.or.cnamev=='YY_chiral'.or.cnamev=='DQ_chiral') &
+          cformv='DEFINED'
+      endif
+!
 !  write column where which chiral variable is stored
 !
       if (lwr) then
-        write(3,*) 'iXX_chiral=',iXX_chiral
-        write(3,*) 'iYY_chiral=',iYY_chiral
+        call farray_index_append('iXX_chiral',iXX_chiral)
+        call farray_index_append('iYY_chiral',iYY_chiral)
       endif
 !
     endsubroutine rprint_chiral
@@ -589,12 +601,10 @@ module Chiral
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only:assign_slices_scal
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-      real, dimension (nx,ny) :: QQ_chiral_xy
-      real, dimension (nx,ny) :: QQ_chiral_xy2
-      real, dimension (nx,nz) :: QQ_chiral_xz
-      real, dimension (ny,nz) :: QQ_chiral_yz
 !
 !  Loop over slices
 !
@@ -602,37 +612,43 @@ module Chiral
 !
 !  Chirality fields: XX
 !
-        case ('XX_chiral')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iXX_chiral)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iXX_chiral)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iXX_chiral)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
-          slices%ready=.true.
+        case ('XX_chiral'); call assign_slices_scal(slices,f,iXX_chiral)
 !
 !  Chirality fields: YY
 !
-        case ('YY_chiral')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iYY_chiral)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iYY_chiral)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iYY_chiral)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
-          slices%ready=.true.
+        case ('YY_chiral'); call assign_slices_scal(slices,f,iYY_chiral)
 !
 !  Chirality fields: DQ
 !
         case ('DQ_chiral')
-          QQ_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)-f(ix_loc,m1:m2,n1:n2,iYY_chiral)
-          QQ_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)-f(l1:l2,iy_loc,n1:n2,iYY_chiral)
-          QQ_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)-f(l1:l2,m1:m2,iz_loc,iYY_chiral)
-          QQ_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)-f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
-          slices%yz =QQ_chiral_yz*(1.-QQ_chiral_yz**2)/(1.+QQ_chiral_yz**2)
-          slices%xz =QQ_chiral_xz*(1.-QQ_chiral_xz**2)/(1.+QQ_chiral_xz**2)
-          slices%xy =QQ_chiral_xy*(1.-QQ_chiral_xy**2)/(1.+QQ_chiral_xy**2)
-          slices%xy2=QQ_chiral_xy2*(1.-QQ_chiral_xy2**2)/(1.+QQ_chiral_xy2**2)
+          if (lwrite_slice_yz ) &
+            call QQ_chiral(f(ix_loc,m1:m2,n1:n2,iXX_chiral)-f(ix_loc,m1:m2,n1:n2,iYY_chiral),slices%yz)
+          if (lwrite_slice_xz ) &
+            call QQ_chiral(f(l1:l2,iy_loc,n1:n2,iXX_chiral)-f(l1:l2,iy_loc,n1:n2,iYY_chiral),slices%xz)
+          if (lwrite_slice_xy ) &
+            call QQ_chiral(f(l1:l2,m1:m2,iz_loc,iXX_chiral)-f(l1:l2,m1:m2,iz_loc,iYY_chiral),slices%xy)
+          if (lwrite_slice_xy2) &
+            call QQ_chiral(f(l1:l2,m1:m2,iz2_loc,iXX_chiral)-f(l1:l2,m1:m2,iz2_loc,iYY_chiral),slices%xy2)
+          if (lwrite_slice_xy3) &
+            call QQ_chiral(f(l1:l2,m1:m2,iz3_loc,iXX_chiral)-f(l1:l2,m1:m2,iz3_loc,iYY_chiral),slices%xy3)
+          if (lwrite_slice_xy4) &
+            call QQ_chiral(f(l1:l2,m1:m2,iz4_loc,iXX_chiral)-f(l1:l2,m1:m2,iz4_loc,iYY_chiral),slices%xy4)
+          if (lwrite_slice_xz2) &
+            call QQ_chiral(f(l1:l2,iy2_loc,n1:n2,iXX_chiral)-f(l1:l2,iy2_loc,n1:n2,iYY_chiral),slices%xz2)
           slices%ready=.true.
 !
       endselect
 !
+contains
+      subroutine QQ_chiral(source,dest)
+!
+        real, dimension(:,:) :: source,dest
+!
+        dest=source**2 
+        dest=source*(1.-dest)/(1.+dest)
+!
+      endsubroutine QQ_chiral
+
     endsubroutine get_slices_chiral
 !***********************************************************************
 endmodule Chiral

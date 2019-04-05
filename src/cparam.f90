@@ -17,18 +17,20 @@ module Cparam
   character, dimension(3), parameter :: coornames=(/'x','y','z'/)
   logical, dimension(3), parameter :: lactive_dimension = (/ nxgrid > 1, nygrid > 1, nzgrid > 1 /)
   integer, parameter :: dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+  integer, dimension(3), parameter :: grid_dims=(/nx,ny,nz/)
 !
   include 'cparam.inc'
 !
+  integer, parameter :: penc_name_len=16
   include 'cparam_pencils.inc'
 !
 !  Derived and fixed parameters.
 !
   integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
   integer, parameter :: mcom=mvar+maux_com
-  integer, parameter :: mparray=mpvar+mpaux  
+  integer, parameter :: mparray=mpvar+mpaux
   integer, parameter :: mpcom=mpvar+mpaux
-  integer, parameter :: mqarray=mqvar+mqaux  
+  integer, parameter :: mqarray=mqvar+mqaux
 !
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
@@ -49,7 +51,8 @@ module Cparam
   integer, parameter :: mzgrid=nzgrid+2*nghost
   integer, parameter :: mw=mx*my*mz
   integer(KIND=ikind8), parameter :: nwgrid=int(nxgrid,kind=ikind8)* &
-                                     int(nygrid,kind=ikind8)*int(nzgrid,kind=ikind8)
+                                            int(nygrid,kind=ikind8)* &
+                                            int(nzgrid,kind=ikind8)
 !
 !!!  integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
 !!!  integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
@@ -68,7 +71,6 @@ module Cparam
 !  Use here symbol mreduce, use nreduce in call.
 !
   integer, parameter :: mreduce=6
-  integer :: ip=14
 !
 !  Number of slots in initlnrho etc.
 !
@@ -86,7 +88,7 @@ module Cparam
 !  nscbc_len      ?
 !
   integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=25,linelen=256
-  integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24
+  integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24,fmtlen=30
 !
 !  Significant length of random number generator state.
 !  Different compilers have different lengths:
@@ -97,8 +99,16 @@ module Cparam
 !  Predefine maximum possible numbers.
 !
   integer, parameter :: max_int=huge(0)
+  real, parameter :: huge_real=huge(0.0)
+  double precision, parameter :: huge_double=huge(0.0d0)
   real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
-                                               ! huge(0.) illegal when reading it from a namelist 
+                                               ! huge(0.) illegal when reading it from a namelist
+!
+!  Tiny and huge numbers.
+!
+  real, parameter :: one_real=1.0
+  real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
+  real, parameter :: huge1=0.2*huge_real
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.
@@ -117,7 +127,7 @@ module Cparam
 !
 ! MPI
 !
-   integer, parameter :: root=0
+  integer, parameter :: root=0
 !
 !  Diagnostic variable types.
 !
@@ -132,20 +142,26 @@ module Cparam
   integer, parameter :: ilabel_sum_log10=10
   integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
   integer, parameter :: ilabel_max_reciprocal=-5
-  integer, parameter :: ilabel_integrate=3,ilabel_surf=4
-  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
+  integer, parameter :: ilabel_integrate=3,ilabel_integrate_sqrt=30, ilabel_integrate_log10=40
+  integer, parameter :: ilabel_surf=4
+  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6, ilabel_sum_log10_par=20
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
   integer, parameter :: ilabel_sum_lim=9,ilabel_complex=100
 !
 !  pi and its derivatives.
 !
-  real, parameter :: pi=3.14159265358979323846264338327950D0
+  real, parameter :: pi=3.14159265358979323846264338327950
   real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
-  real, parameter :: sqrtpi=1.77245385090551602729816748334115D0
-  real, parameter :: sqrt2=1.41421356237309504880168872420970D0
-  real, parameter :: four_pi_over_three=4.0/3.0*pi,onethird=1./3.
+  real, parameter :: sqrtpi=1.77245385090551602729816748334115
+  real, parameter :: sqrt2=1.41421356237309504880168872420970
+  real, parameter :: sqrt2pi=sqrt2*sqrtpi
+  real, parameter :: four_pi_over_three=4.0/3.0*pi
+  real, parameter :: onethird=1./3., fourthird=4./3.
+  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958
   real, parameter :: twopi = 6.2831853071795864769252867665590
   real, parameter :: dtor = pi/180.
+!
+  real, parameter :: lntwo=0.69314718055995
 !
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0
@@ -220,5 +236,6 @@ module Cparam
 !
 !  Symbolic constants for Yin-Yang grid.
 !
-  integer, parameter :: BILIN=1, BIQUAD=2
+  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3, QUADSPLINE=4, BIQUIN=5
+!
 endmodule Cparam

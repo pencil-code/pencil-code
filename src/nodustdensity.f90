@@ -27,7 +27,7 @@ module Dustdensity
 !
   contains
 !***********************************************************************
-    subroutine register_dustdensity()
+    subroutine register_dustdensity
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -39,6 +39,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
+!
     endsubroutine initialize_dustdensity
 !***********************************************************************
     subroutine init_nd(f)
@@ -49,7 +50,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine pencil_criteria_dustdensity()
+    subroutine pencil_criteria_dustdensity
 !
     endsubroutine pencil_criteria_dustdensity
 !***********************************************************************
@@ -135,17 +136,10 @@ module Dustdensity
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        write(3,*) 'ind=',ind
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_dustdensity
 !***********************************************************************
@@ -158,14 +152,6 @@ module Dustdensity
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_dustdensity
-!***********************************************************************
-  subroutine dustspec_normalization(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-   endsubroutine dustspec_normalization
 !***********************************************************************
    subroutine impose_dustdensity_floor(f)
 !

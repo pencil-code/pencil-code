@@ -16,6 +16,9 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ltemperature = .false.
+! CPARAM logical, parameter :: lthermal_energy = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -44,6 +47,7 @@ module Energy
   logical :: lcalc_heatcond_constchi=.false.
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -137,17 +141,17 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
       call keep_compiler_quiet(f)
 
       if (lenergy_slope_limited) &
-        call fatal_error('calc_lenergy_pars', &
+        call fatal_error('energy_after_boundary', &
                          'Slope-limited diffusion not implemented')
 
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine denergy_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
@@ -213,7 +217,7 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  dummy routine
 !
@@ -222,7 +226,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine rprint_energy(lreset,lwrite)
 !
@@ -232,6 +236,7 @@ module Energy
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,irz
       logical :: lreset,lwr
@@ -270,8 +275,10 @@ module Energy
 !  write column where which energy variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iss=',iss
+        call farray_index_append('iss',iss)
+        call farray_index_append('iyH',iyH)
+        call farray_index_append('ilnTT',ilnTT)
+        call farray_index_append('iTT',iTT)
       endif
 !
     endsubroutine rprint_energy
@@ -322,6 +329,17 @@ module Energy
 !
     endsubroutine expand_shands_energy
 !***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
+!***********************************************************************    
     subroutine update_char_vel_energy(f)
 !
 ! TB implemented.

@@ -2,7 +2,7 @@
 ! horzontal directions (x and y), if these are periodic.
 !
 ! $Id$
-!***********************************************************************
+!
 program pc_reduce
 !
   use Cdata
@@ -10,7 +10,8 @@ program pc_reduce
   use Diagnostics
   use File_io, only: backskip_to_time, delete_file
   use Filter
-  use Grid, only: initialize_grid
+  use General, only: numeric_precision
+  use Grid, only: initialize_grid, construct_grid, set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO
@@ -91,6 +92,8 @@ program pc_reduce
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
+  lstart=.false.; lrun=.true.
 !
 !  Read parameters and output parameter list.
 !
@@ -166,7 +169,7 @@ program pc_reduce
   if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  iproc = 0
+  iproc_world = 0
   call directory_names
   inquire (file=trim(directory_snap)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//filename, .true.)
@@ -177,6 +180,7 @@ program pc_reduce
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules (f)
 !
 ! Loop over processors
@@ -194,8 +198,8 @@ program pc_reduce
 !
     rf = huge(1.0)
 !
-    iproc = ipz * nprocx*nprocy
-    lroot = (iproc==root)
+    iproc_world = ipz * nprocx*nprocy
+    lroot = (iproc_world==root)
     lfirst_proc_z = (ipz == 0)
     llast_proc_z = (ipz == nprocz-1)
 !
@@ -350,8 +354,8 @@ program pc_reduce
       do ipy = 0, nprocy-1
         do ipx = 0, nprocx-1
 !
-          iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-          lroot = (iproc==root)
+          iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+          lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -409,7 +413,7 @@ program pc_reduce
 !
 !  Need to re-initialize the local grid for each processor.
 !
-          call initialize_grid
+          call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -438,7 +442,7 @@ program pc_reduce
             do px = 0, nx-1, reduce
               rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) * inv_reduce
               rdx_1(nghost+1+(px+ipx*nx)/reduce) = 1.0 / sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
-              rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
+              rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_tilde(nghost+1+px:nghost+px+reduce))
             enddo
           endif
 !
@@ -447,7 +451,7 @@ program pc_reduce
             do py = 0, ny-1, reduce
               ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) * inv_reduce
               rdy_1(nghost+1+(py+ipy*ny)/reduce) = 1.0 / sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
-              rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
+              rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_tilde(nghost+1+py:nghost+py+reduce))
             enddo
           endif
 !

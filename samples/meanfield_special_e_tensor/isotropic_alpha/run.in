@@ -1,0 +1,22 @@
+!
+!  isotropic alpha
+!
+&run_pars
+  cvsid='$Id$'
+  nt=50001, it1=1000, dt=2.5e-5, isave=50000, itorder=3
+  d2davg=5e-2, 
+  slice_position='s', xtop_slice=0.98, ytop_slice=1.57
+  lproper_averages=T
+  lreset_seed=T
+/
+&magnetic_run_pars
+  eta=1.0e-1
+  llorentzforce=F
+  lweyl_gauge=T
+  lcovariant_magnetic=T
+/
+&special_run_pars
+  lalpha=T
+  alpha_name='isotropic'
+  alpha_scale=5.5e-1
+/

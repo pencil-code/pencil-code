@@ -13,14 +13,15 @@ module InitialCondition
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet  
-  use Mpicomm
+  use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   use Messages
-  use Streamlines
-  use Fixed_point ! module includes declaration of array 'fixed_points'
+  use Streamlines, only: trace_field, int_q, trace_streamlines
   use Boundcond ! for the core boundary communication
+  use Fixed_point, only: fixed_points_all, trace_sub, merge_fixed, fixed_points, fidx_all, fidx, buffer_tmp, get_fixed_points
 !
   implicit none
 !
+  include 'mpif.h'
   include '../initial_condition.h'
 !
 ! ampl = amplitude of the magnetic field

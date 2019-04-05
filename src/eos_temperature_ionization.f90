@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED yH; del2ss; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
+! PENCILS PROVIDED yH; del2ss; del2lnTT; del2TT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
 ! PENCILS PROVIDED mu1; hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2; rho_anel
 !
@@ -35,7 +35,8 @@ module EquationOfState
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: icp, icv, ics, idelta, igamma, inabad
+  integer :: icv, ics, idelta, igamma, inabad
+!  integer :: icp, icv, ics, idelta, igamma, inabad
   integer :: imass = 1
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
@@ -82,23 +83,15 @@ module EquationOfState
   logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
   logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
   real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=impossible
-  real :: mpoly=impossible, mpoly0=impossible
-  real :: mpoly1=impossible, mpoly2=impossible
-  integer :: isothtop=0
-  real, dimension (3) :: beta_glnrho_global=impossible
-  real, dimension (3) :: beta_glnrho_scaled=impossible
 ! Allocatable 3D-array for cp
   real, dimension (:,:,:), allocatable :: cp_full
 !
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
-!
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+  logical :: lpres_grad=.false.
 !
   contains
 !***********************************************************************
@@ -320,6 +313,12 @@ module EquationOfState
         lpencil_in(i_glnTT)=.true.
       endif
 !
+      if (lpencil_in(i_del2TT)) then
+        lpencil_in(i_TT)=.true.
+        lpencil_in(i_glnTT)=.true.
+        lpencil_in(i_del2lnTT)=.true.
+      endif
+!
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos_std(f,p)
@@ -365,6 +364,14 @@ module EquationOfState
       if (lpenc_loc(i_glnTT)) call grad(f,ilnTT,p%glnTT)
       if (lpenc_loc(i_hlnTT)) call g2ij(f,ilnTT,p%hlnTT)
       if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+      if (lpenc_loc(i_del2TT)) then
+        tmp=0.0
+        do i=1,3
+          tmp=tmp+p%glnTT(:,i)**2
+        enddo
+        p%del2TT=(p%del2lnTT+tmp)*p%TT
+      endif
+!
       if (lpenc_loc(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
       if (lpenc_loc(i_gTT)) then
         do i=1,3
@@ -503,20 +510,6 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
-!***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
@@ -2296,10 +2289,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -2344,12 +2333,6 @@ module EquationOfState
 !
      endsubroutine find_mass
 !***********************************************************************
-    subroutine read_Lewis
-!
-!  Dummy routine
-!
-    endsubroutine read_Lewis
-!***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
 !  Get background stratification in z direction.
@@ -2367,5 +2350,23 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule EquationOfState

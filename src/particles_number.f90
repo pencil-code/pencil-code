@@ -25,7 +25,7 @@ module Particles_number
 !
   include 'particles_number.h'
 !
-  real :: np_swarm0=1.0, rhop_swarm0=1.0
+  real :: np_swarm0=1.0, rhop_swarm0=1.0, np_swarm0_luck=1.0
   real :: vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   real :: birthring_inner=0.0, birthring_outer=huge1
@@ -38,16 +38,18 @@ module Particles_number
   integer :: idiag_dtfragp=0, idiag_npsm=0
   integer, parameter :: mmom=24
   integer, dimension(0:mmom) :: idiag_admom=0
+  logical :: llog10_for_admom_above10=.true.
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
-      deltavp22_floor, lfragmentation_par, tstart_fragmentation_par, cdtpf
+      deltavp22_floor, lfragmentation_par, tstart_fragmentation_par, cdtpf, &
+      np_swarm0_luck
 !
   namelist /particles_number_run_pars/ &
       initnpswarm, vthresh_coagulation, deltavp22_floor, &
       lfragmentation_par, tstart_fragmentation_par, cdtpf, &
       lbirthring_depletion, birthring_inner, birthring_outer, &
-      depletion_rate
+      depletion_rate, llog10_for_admom_above10
 !
   contains
 !***********************************************************************
@@ -62,19 +64,7 @@ module Particles_number
 !
 !  Index for particle internal number.
 !
-      inpswarm=npvar+1
-      pvarname(npvar+1)='inpswarm'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles: npvar > mpvar','')
-      endif
+      call append_npvar('inpswarm',inpswarm)
 !
     endsubroutine register_particles_number
 !***********************************************************************
@@ -154,6 +144,19 @@ module Particles_number
           endif
           fp(npar_low:npar_high,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
               (four_pi_rhopmat_over_three*fp(npar_low:npar_high,iap)**3)
+        case ('constant_luck')
+          if (lroot.and.initial) then
+            print*, 'init_particles_number: constant internal number, luck'
+            print*, 'init_particles_number: np_swarm0=', np_swarm0
+            print*, 'init_particles_number: np_swarm0_luck=', np_swarm0_luck
+          endif
+          do k = npar_low,npar_high
+            if (ipar(k) == 1) then
+              fp(k,inpswarm) = np_swarm0_luck
+            else
+              fp(k,inpswarm) = np_swarm0
+            endif
+          enddo
         endselect
       enddo
 !
@@ -377,15 +380,20 @@ module Particles_number
         if (idiag_npswarmm/=0) &
             call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm)
         if (idiag_npsm/=0) &
-            call sum_par_name(fp(1:npar_loc,inpswarm)*npar/nwgrid,idiag_npsm)
+            call integrate_par_name(fp(1:npar_loc,inpswarm)/nwgrid,idiag_npsm)
       endif
 
       if (ldiagnos) then
-           do k=0,mmom
-              if(idiag_admom(k)/=0) then 
-                call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k))
-              endif
-           enddo
+        do k=0,mmom
+          if(idiag_admom(k)/=0) then
+            if (llog10_for_admom_above10 .and. k>=24) then
+              call integrate_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k/nwgrid,idiag_admom(k),llog10=.true.)
+!              call integrate_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k/nwgrid,idiag_admom(k))
+            else
+              call integrate_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k/nwgrid,idiag_admom(k))
+            endif
+          endif
+        enddo
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -437,6 +445,7 @@ module Particles_number
 !  24-aug-05/anders: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -448,7 +457,7 @@ module Particles_number
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'inpswarm=', inpswarm
+      if (lwr) call farray_index_append('inpswarm', inpswarm)
 !
 !  Reset everything in case of reset.
 !

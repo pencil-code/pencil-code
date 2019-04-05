@@ -21,6 +21,7 @@ package Test::NumericFileComparator;
 use warnings;
 use strict;
 use Carp;
+use Cwd;
 use Math::Complex;
 use Test::NumberComparator;
 
@@ -234,11 +235,24 @@ sub compare {
     my %reference = %{$self->{VALUES}};
     my %actual = %$val_ref;
     VAR: foreach my $var (@{$self->{VARS}}) {
-        my @column_ref = @{$reference{$var}};
-        my @column_act = @{$actual{$var}};
+        my $ref = $reference{$var};
+        my $act = $actual{$var};
+        if (! defined $act) {
+            push @{$problems{$var}}, "Column $var not found in $file\n";
+            next;
+        }
+        if (! defined $ref) {
+            die "Column $var not found in reference data file\n";
+            next;
+        }
+        my @column_ref = @{$ref};
+        my @column_act = @{$act};
         if (@column_act < @column_ref) {
             push @{$problems{$var}},
-                sprintf("Expected %d values, got %d", );
+                sprintf(
+                    "Expected %d values, got %d",
+                    (scalar @column_ref), (scalar @column_act)
+                );
             next VAR;
         }
 
@@ -394,7 +408,7 @@ sub _read_file_in_column_format {
             @variables = _create_var_names(@items) unless @variables;
             if ($#items != $#variables) {
                 croak(
-                    "Inconsistent column count:",
+                    "Wrong column count in ".getcwd."/$file:",
                     " expected ", 0 + @variables,
                     ", found ", 0 + @items,
                     " in line <$line>\n"
@@ -406,7 +420,7 @@ sub _read_file_in_column_format {
                 push @{$columns[$i]}, $items[$i];
             }
         } else {
-            croak "File $file: Unexpected line $linenum in column format: <$line>\n";
+            croak "Malformed file ".getcwd."/$file: Unexpected line $linenum in column format: <$line>\n";
         }
     }
     close $fh;

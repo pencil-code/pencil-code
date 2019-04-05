@@ -482,6 +482,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -508,9 +509,9 @@ module Special
 !!
 !!!  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'i_uuGOY=',idiag_uuGOY
-        write(3,*) 'i_deltM=',idiag_deltM
-        write(3,*) 'i_eddy_time=',idiag_eddy_time
+        call farray_index_append('i_uuGOY',idiag_uuGOY)
+        call farray_index_append('i_deltM',idiag_deltM)
+        call farray_index_append('i_eddy_time',idiag_eddy_time)
       endif
 !!
     endsubroutine rprint_special
@@ -570,7 +571,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Used to advance velocity
 !  Advance the shell model, with dt<deltm
@@ -578,6 +579,7 @@ module Special
 !
       Use Mpicomm, only: mpibcast_cmplx_arr_dbl, mpibcast_real
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_                          !dt_ passed by timestep
@@ -644,6 +646,7 @@ module Special
       endif
 !
       call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************

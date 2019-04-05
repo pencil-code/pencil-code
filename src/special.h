@@ -22,8 +22,6 @@
   public :: pencil_criteria_special
   public :: pencil_interdep_special
 
-  public :: calc_lspecial_pars
-
   public :: special_calc_hydro
   public :: special_calc_density
   public :: special_calc_dustdensity
@@ -38,6 +36,7 @@
   public :: special_after_boundary
   public :: special_after_timestep
   public :: special_particles_bfre_bdary
+  public :: special_particles_after_dtsub
   
   public :: set_init_parameters   
 

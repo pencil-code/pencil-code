@@ -37,7 +37,6 @@ module Shock
 !
   logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
-  logical :: ldivu_perp=.false.
   logical :: lgauss_integral=.false.
   logical :: lgauss_integral_comm_uu=.false.
   logical :: lcommunicate_uu=.true.
@@ -206,6 +205,7 @@ module Shock
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -229,11 +229,17 @@ module Shock
             'shockmax',idiag_shockmax)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='shock') cformv='DEFINED'
+      endif
+!
 !  write column where which shock variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'ishock=',ishock
+          call farray_index_append('ishock',ishock)
         endif
       endif
 !
@@ -245,6 +251,8 @@ module Shock
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data) :: slices
 !
@@ -254,16 +262,7 @@ module Shock
 !
 !  Shock profile
 !
-        case ('shock')
-          slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,ishock)
-          slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,ishock)
-          slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,ishock)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock)
-          if (lwrite_slice_xy3) &
-              slices%xy3=f(l1:l2,m1:m2,iz3_loc,ishock)
-          if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,iz4_loc,ishock)
-          slices%ready=.true.
+        case ('shock'); call assign_slices_scal(slices,f,ishock)
 !
       endselect
 !
@@ -373,7 +372,7 @@ module Shock
      f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
 !
 !debug only line:-
-! if (ip=0) call output(trim(directory_dist)//'/shockvisc.dat',f(:,:,:,ishock),1)
+! if (ip==0) call output(trim(directory_dist)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile_simple
 !***********************************************************************
     subroutine calc_shock_profile(f)
@@ -710,11 +709,14 @@ module Shock
 !  Scale with min(dx,dy,dz)**2
 !
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
+          if (ldivu_perp) then
+            f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
+          endif
         endif
       endif
 !
 !debug only line:-
-! if (ip=0) call output(trim(directory_dist)//'/shockvisc.dat',f(:,:,:,ishock),1)
+! if (ip==0) call output(trim(directory_dist)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile
 !***********************************************************************
 !Utility routines - poss need moving elsewhere

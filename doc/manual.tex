@@ -74,7 +74,7 @@
 %\usepackage{ae}                 % To get good PDF with the T1 encoding
 \usepackage{newcent,helvet}
 \renewcommand{\ttdefault}{cmtt} % Courier is too broad
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,bm}
 
 \usepackage[it,footnotesize]{caption2}
 \setlength{\abovecaptionskip}{5pt} % Space before caption
@@ -120,7 +120,7 @@
 \frenchspacing
 \sloppy
 
-%%% Multiple, three-column indexes
+%%% Multiple indexes
 \makeindex
 \newindex{var}{vidx}{vind}{Variable Index}
 \newindex{file}{fidx}{find}{File Index}
@@ -143,31 +143,6 @@
       \fi
     }%
   }{}
-\makeatother
-%% Redefine index to be in three columns (adapted from `index.sty'):
-\makeatletter
-\renewenvironment{theindex}{%
-  \edef\indexname{\the\@nameuse{idxtitle@\@indextype}}%
-  \if@twocolumn\@restonecolfalse
-  \else\@restonecoltrue
-  \fi
-  \columnseprule \z@
-  \columnsep 35\p@
-  \begin{multicols}{3}[\section*{\indexname}%
-    \ifx\index@prologue\@empty%
-    \else\index@prologue\bigskip
-    \fi
-  ]%
-  \@mkboth{\MakeUppercase\indexname}%
-          {\MakeUppercase\indexname}%
-  \thispagestyle{plain}%
-  \parindent\z@
-  \parskip\z@ \@plus .3\p@\relax
-  \let\item\@idxitem
-}
-{ \end{multicols}
-  \if@restonecol\onecolumn\else\clearpage\fi
-}
 \makeatother
 
 
@@ -319,6 +294,7 @@
 \newcommand{\jv}            {\vec{j}}
 \newcommand{\kv}            {\vec{k}}
 \newcommand{\uv}            {\vec{u}}
+\newcommand{\vv}            {\vec{v}}
 \newcommand{\qv}            {\vec{q}}
 \newcommand{\bv}            {\vec{b}}
 \newcommand{\xv}            {\vec{x}}
@@ -415,7 +391,8 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date$ $,~ $ $Revision$ $}\\
+  %\emph{$ $Date$ $,~ $ $Revision$ $}\\
+  \today\\
   \url{http://www.nordita.org/software/pencil-code/}\\
   \url{https://github.com/pencil-code/pencil-code}
 
@@ -506,7 +483,7 @@ An up to date list of Pencil Code contributors can be found at
 
 \vfill
 
-Copyright \copyright{} 2001--2014 Wolfgang Dobler \& Axel Brandenburg
+Copyright \copyright{} 2001--2017 Wolfgang Dobler \& Axel Brandenburg
 \bigskip
 
 Permission is granted to make and distribute verbatim copies of
@@ -1146,7 +1123,7 @@ NOTE: The functionality of the head of the trunk should be preserved
 at all times. However, accidents do happen. For the benefit of all
 other developers, any errors should be corrected within 1-2 hours.
 This is the reason why the code comes with a file
-\file{pencil-code/license/developers.txt},
+\file[developers.txt]{pencil-code/license/developers.txt},
 which should contain contact details of all developers.
 The \cmd{pc_svnup -val} option allows all other people to stay away
 from any trouble.
@@ -1242,6 +1219,7 @@ outputs a few lines of diagnostics for each sub-shell, which will break
 many applications.
 To suppress all output, follow the instructions given in the header
 documentation of \file{sourceme.csh} and \file{sourceme.sh}.
+Likewise, output from other files invoked by \code{source} should also be suppressed.  
 
 \paragraph{Note 4}
 The second time you source \file{sourceme}, it will not add
@@ -1436,7 +1414,9 @@ and lists
 \item the mean density, \var{rhom}$\,=\left<\rho\right>$;
 \item the mean entropy, \var{ssm}$\,=\left<s\right>/c_p$;
 \item the time step in units of the acoustic Courant step,
-  \var{dtc}$\,=\delta t/({\cs}_0\,\delta x_{\rm min})$;
+  %\var{dtc}$\,=\delta t/({\cs}_0\,\delta x_{\rm min})$;
+%AB: error pointed out by Jennifer
+  \var{dtc}$\,=\delta t \, {\cs}_0 /\delta x_{\rm min}$;
 \item the time step in units of the advective time step,
   \var{dtu}$\,=\delta t/(c_{\delta t}\,\delta x/\max|\mathbf{u}|)$;
 \item the time step in units of viscous time step,
@@ -1857,15 +1837,17 @@ You may compile with a default compiler-specific configuration:
 \end{alltt}
 \end{enumerate}
 Many compilers are supported already, please refer to the available config
-files in \file{\$PENCIL_HOME/config/compilers/*.conf}, e.g. \file{Intel.conf} and \file{Intel_MPI.conf}.
+files in \file[compilers]{\$PENCIL_HOME/config/compilers/*.conf}, e.g.
+\file{Intel.conf} and \file{Intel_MPI.conf}.
 
 If you have to set up some compiler options specific to a certain host system you work on,
 or if you like to create a host-specific configuration file so that you can
 simply execute \code{pc_build} without any options,
 you can clone an existing host-file, just include an existing
 compiler configuration, and simply only add the options you need.
-A good example of a host-file is \file{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
-You may save a clone under \file{\$PENCIL_HOME/config/hosts/<ID>.conf},
+A good example of a host-file is
+\file[hosts]{\$PENCIL_HOME/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf}.
+You may save a clone under \file[hosts]{\$PENCIL_HOME/config/hosts/<ID>.conf},
 where \file{<ID>} is to be replaced by the output of \code{pc_build -i}.
 This will be the new default for \code{pc_build}.
 
@@ -1890,11 +1872,11 @@ Commands like \cmd{pc_build} and \cmd{pc_run} use the Perl module
 and \file{Pencil::ConfigParser} to read and interpret it.
 When you use \file{ConfigFinder} on a given computer, it constructs a
 \emph{host ID} for the system it is running on, and looks for a file
-\file{host_ID.conf} in any subdirectory of \file{\$PENCIL_HOME/config/hosts}.
+\file{host_ID.conf} in any subdirectory of \file[hosts]{\$PENCIL_HOME/config/hosts}.
 
 E.g., if the host ID is ``workhorse.pencil.org'', \file{ConfigFinder} would
 consider the file
-\file{\$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf}.
+\file[hosts]{\$PENCIL_HOME/config/hosts/pencil.org/workhorse.pencil.org.conf}.
 
 \subparagraph{Note 1:}
 The location in the tree under \file{hosts/} is irrelevant, which allows
@@ -1903,10 +1885,10 @@ you to group related hosts by institution, owner, hardware, etc.
 \subparagraph{Note 2:}
 \file{ConfigFinder} actually uses the following search path:
 \begin{enumerate}
-\item \file{./config}
-\item \file{\$PENCIL_HOME/config-local}
-\item \file{\$HOME/.pencil/config-local}
-\item \file{\$PENCIL_HOME/config}
+\item \file[config]{./config}
+\item \file[config-local]{\$PENCIL_HOME/config-local}
+\item \file[config-local]{\$HOME/.pencil/config-local}
+\item \file[config]{\$PENCIL_HOME/config}
 \end{enumerate}
 This allows you to override part of the \file{config/} tree globally on
 the given file system, or locally for a particular run directory, or for
@@ -1926,9 +1908,9 @@ The algorithm is as follows:
 \item If the environment variable \var{PENCIL_HOST_ID} is set, its value
   is used.
 \item If any of the files
-  \file{./host-ID},
-  \file{\$PENCIL_HOME/host-ID},
-  \file{\$HOME/.pencil/host-ID},
+  \file[host-ID]{./host-ID},
+  \file[host-ID]{\$PENCIL_HOME/host-ID},
+  \file[host-ID]{\$HOME/.pencil/host-ID},
   exists, its first line is used.
 \item If \file{ConfigFinder} can get hold of a \name{fully qualified host
     name}, that is used as host ID.
@@ -2023,7 +2005,7 @@ The \file{.conf} files consist of the following elements:
   %include os/Unix
 \end{verbatim}
    will include the file \file{os/Unix.conf} in the search path listed
-   above (typically from \file{\$PENCIL_HOME/config}).
+   above (typically from \file[config]{\$PENCIL_HOME/config}).
    However, if the included path starts with a dot, it is a relative path,
    so
 \begin{verbatim}
@@ -2371,7 +2353,7 @@ gives practically identical results.
 \subparagraph{Example:}
 To apply the \code{sinh} profile, you can set the following in
 \file{start.in} (this example is from
-\file[sound-spherical-noequi]{samples/sound-spherical-noequi}):
+\file[sound-spherical-noequi/]{samples/sound-spherical-noequi}):
 \begin{Verbatim}
   &init_pars
     [...]
@@ -2461,8 +2443,8 @@ I/O, in particular for large jobs; too low a frequency makes it
 difficult to follow the evolution interactively during test runs.
 There is also the \var{ialive} parameter.
 Setting this to 1 or 10 gives an updated timestep in the files
-\file{data/proc*/alive.info}.
-You can put \var{ialive=0} to turn this off to limit the I/O
+\file[alive.info]{data/proc*/alive.info}.
+You can put \var[ialive]{ialive=0} to turn this off to limit the I/O
 on your machine.
 
 The \emph{permanent snapshots} \file[VAR$N$]{data/proc*/VAR$N$} are
@@ -2549,7 +2531,7 @@ This is done by running \file{src/read_videofiles.x}, which will prompt
 for the variable name, read the individual sub-slices and write global
 slices to \file{data/}
 Once all global slices have been assembled you may want to remove the
-local slices \file[]{data/proc*/slice*}.
+local slices \file[slize*]{data/proc*/slice*}.
 
 To read all sub-slices demanded in \file{video.in} at once use
 \file{src/read_all_videofiles.x}. This program doesn't expect any
@@ -2886,7 +2868,7 @@ Here is a list of the more important ones.
 
 \begin{description}
 \item[adapt-mkfile] Activate the settings in a \file{Makefile} that apply
-  to the given computer, see \S\ref{adapt-mkfile}.
+  to the given computer, see \S~\ref{adapt-mkfile}.
 \item[auto-test] Verify that the code compiles and runs in a set of run
   directories and compare the results to the reference output.
   These tests are carried out routinely to ensure that the \name{svn}
@@ -2894,7 +2876,7 @@ Here is a list of the more important ones.
 \item[cleanf95] Can be use to clean up the output from the Intel x86 Fortran
   95 compiler (ifc).
 \item[copy-proc-to-proc] Used for restarting in a different directory.
-  Example \cmd{copy-proc-to-proc seed.dat ../hydro256e}.
+  Example \cmd[copy-proc-to-proc]{copy-proc-to-proc seed.dat ../hydro256e}.
 \item[copy-snapshots] Copy snapshots from a processor-local directory to
   the global directory.
   To be started in the background before \file{run.x} is invoked.
@@ -3111,7 +3093,7 @@ Before starting a simulation run, you may want to execute the command \code{pc_c
 in order to test the correctness of your changes to these configuration files.
 
 As an example, we give here the start parameters for
-\file[helical-MHDturb]{samples/helical-MHDturb}
+\file[helical-MHDturb/]{samples/helical-MHDturb}
 \begin{alltt}
   &init_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
@@ -3141,7 +3123,7 @@ The magnetic vector potential is initialized with uncorrelated, normally
 distributed random noise of amplitude $10^{-4}$.
 
 
-The run parameters for \file[helical-MHDturb]{samples/helical-MHDturb} are
+The run parameters for \file[helical-MHDturb/]{samples/helical-MHDturb} are
 \begin{alltt}
   &run_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
@@ -3271,7 +3253,7 @@ ionization energies), the corresponding routines in the code need to know
 the units you are using.
 This information is specified in \file{start.in} or \file{run.in} through
 the parameters \var{unit_system},
-\var{unit_length},  \var{unit_velocity},  \var{unit_density} and
+\var{unit_length},  \var{unit_velocity}, \var{unit_density} and
 \var{unit_temperature}\footnote{
   Note: the parameter \var{unit_temperature} is currently only used in
   connection with \name{ionization.f90}.
@@ -3426,8 +3408,9 @@ In order to make this work, you need to compile with
 TIMESTEP  =   timestep_rkf
 \end{verbatim}
 in \file{src/Makefile.local}.
-In addition, you must put \cmd{itorder=5} in \file{run.in}.
-An example application is \file{samples/1d-tests/H2_flamespeed}.
+In addition, you must put \var[itorder]{itorder=5} in \file{run.in}.
+An example application is
+\file[H2_flamespeed/]{samples/1d-tests/H2_flamespeed}.
 This procedure is still experimental.
 
 % ---------------------------------------------------------------------- %
@@ -3532,7 +3515,7 @@ sheet boundary conditions and have stress-free instead).
 
 When a run stops at the end of a simulation, you can just resubmit
 the job again, and it will start from the latest snapshot saved in
-\file{data/proc*/var.dat}. The value of the latest time is saved in a
+\file[var.dat]{data/proc*/var.dat}. The value of the latest time is saved in a
 separate file, \file[time.dat]{data/proc*/time.dat}.
 On parallel machines it is possible that some (or just one) of the
 \file{var.dat} are corrupt; for example after a system crash.
@@ -3673,7 +3656,7 @@ So the first call after starting \name{GDL} should be
 There are mainly two possibilities for visualization: using a simple GUI
 or loading the data with \code{pc_read} and work with it interactively.
 Please note that the GUI was written and tested only with IDL, see
-\S\ref{S-IDL-visualization}.
+\S~\ref{S-IDL-visualization}.
 
 Here, the \code{pc_read} family of IDL routines to read the data is described.
 Try
@@ -3927,26 +3910,26 @@ One can access the individual variables by typing \cmd{ff.varname}, e.g.
   <Expression>    FLOAT     = Array[32, 32, 32, 3]
 \end{alltt}
 There are a number of files that read different data into structures. They are
-placed in the directory \cmd{\$PENCIL_HOME/idl/files}. Here is a list of files
-(including suggested options to call them with)
+placed in the directory \path{\$PENCIL_HOME/idl/files}.
+Here is a list of files (including suggested options to call them with)
 \begin{itemize}
-  \item \cmd{pc_read_var_raw, obj=var, tags=tags} \\
+  \item \cmd[pc_read_var_raw]{pc_read_var_raw, obj=var, tags=tags} \\
       Efficiently read a snapshot into an array.
-  \item \cmd{pc_read_var, obj=ff, /trimall} \\
+  \item \cmd[pc_read_var]{pc_read_var, obj=ff, /trimall} \\
       Read a snapshot into a structure.
-  \item \cmd{pc_read_ts, obj=ts} \\
+  \item \cmd[pc_read_t]{pc_read_ts, obj=ts} \\
       Read the time series into a structure.
-  \item \cmd{pc_read_xyaver, obj=xya} \\
-      \cmd{pc_read_xzaver, obj=xza} \\
-      \cmd{pc_read_yzaver, obj=yza} \\
+  \item \cmd[pc_read_xyaver]{pc_read_xyaver, obj=xya} \\
+      \cmd[pc_read_xzaver]{pc_read_xzaver, obj=xza} \\
+      \cmd[pc_read_yzaver]{pc_read_yzaver, obj=yza} \\
       Read 1-D time series into a structure.
-  \item \cmd{pc_read_const, obj=cst} \\
+  \item \cmd[pc_read_const]{pc_read_const, obj=cst} \\
       Read code constants into a structure.
-  \item \cmd{pc_read_pvar, obj=fp} \\
+  \item \cmd[pc_read_pvar]{pc_read_pvar, obj=fp} \\
       Read particle data into a structure.
-  \item \cmd{pc_read_param, obj=par} \\
+  \item \cmd[pc_read_param]{pc_read_param, obj=par} \\
       Read startup parameters into a structure.
-  \item \cmd{pc_read_param, obj=par2, /param2} \\
+  \item \cmd[pc_read_param]{pc_read_param, obj=par2, /param2} \\
       Read runtime parameters into a structure.
 \end{itemize}
 Other options are documented in the source code of the files.
@@ -4344,7 +4327,7 @@ often seem to work fine at single precision).
 %AB: /wkspace/brandenb/pencil-google/postproc/src/realtodouble.f90
 To continue working in double precision, you just say
 \code{lread_from_other_prec=T} in \code{run_pars}; see
-Section~\ref{After-changing-REALPRECISION}.
+Sect.~\ref{After-changing-REALPRECISION}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4504,7 +4487,18 @@ In addition one must edit
   \begin{alltt}
   STRUCT_FUNC = struct_func
   \end{alltt}
-You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
+
+In \file[cparam.local]{src/cparam.local}, define \var{lb_nxgrid} and make
+sure that
+\begin{alltt}
+  nxgrid = nygrid = nzgrid = 2**lb_nxgrid
+\end{alltt}
+E.g.
+\begin{alltt}
+  integer, parameter :: lb_nxgrid=5
+  integer, parameter :: nxgrid=2**lb_nxgrid,nygrid=nxgrid,nzgrid=nxgrid
+\end{alltt}
+
 
 Running the code will now create the files: \\
 \file{sfu-1.dat},
@@ -4619,7 +4613,7 @@ The logical \code{ldragforce_gas_par} determines whether the dust particles
 influence the gas with a drag force. \code{cdtp} tells the code how many
 friction times should be resolved in a minimum time-step.
 
-The sample run \file{samples/sedimentation/} contains the latest setup for dust
+The sample run \file[sedimentation/]{samples/sedimentation/} contains the latest setup for dust
 particles.
 
 \subsubsection{Particles in parallel}
@@ -4735,24 +4729,100 @@ of blocks any processor may adopt. This should not be so low that there is not
 room for all the bricks with particles, nor so high that the code runs out of
 memory.
 
+\subsubsection{Large number of particles}
+
+When dealing with large number of particles, one needs to make sure that the
+number of particles \code{npar} is less than the maximum integer that the
+compiler can handle with. The maximum integer can be checked by the Fortran
+intrinsic function \code{huge},
+\begin{verbatim}
+program huge_integers
+  print *, huge(0_4) ! for default Fortran integer (32 Bit) 
+  print *, huge(0_8) ! for 64 Bit integer in Fortran
+end program huge_integers
+\end{verbatim}
+If the number of particles \code{npar} is larger than default maximum integer,
+one can promote the maximum integer to 64 Bit by setting
+\begin{verbatim}
+integer(kind=8), parameter :: npar=4294967296
+\end{verbatim}
+in the \code{cparam.local} file. This works because the data type of \code{npar}
+is only set here. It is worth noting that one \textit{should not} use the flag
+\begin{verbatim}
+FFLAGS += -integer-size 64
+\end{verbatim}
+to promote all the integers to 64 Bit. This will break the Fortran-C interface.
+One should also make sure that \code{npar_mig<=npar/ncpus}. It is also beneficial
+to set \code{mpar_loc=2*npar/ncpus}.
+
+\subsubsection{Random number generator}
+
+There are several methods to generate random number in the code.
+It is worth noting that when simulating coagulation with the
+super-particle approach, one should use the intrinsic random number
+generator of FORTRAN instead of the one implemented in the code.
+When invoking \code{random_number_wrapper}, there will be back-reaction
+to the gas flow. This unexpected back-reaction can be tracked by
+inspecting the power spectra, which exhibits the oscillation at the tail.
+To avoid this, one should set \code{luser_random_number_wrapper=F} under
+the module \code{particles_coag_run_pars} in \code{run.in}.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Non-cartesian coordinate systems}
+\index{Curvilinear coordinates}
+\index{Coordinate systems}
+\label{Coordinate-systems}
 
-Since the spring of 2007 spherical and cylindrical polar coordinates
-have been implemented, although this development is not yet completed.
 Spherical coordinates are invoked by adding the following line
 in the file \file{start.in}
 \begin{verbatim}
 &init_pars
   coord_system='spherical_coords'
 \end{verbatim}
-Another possibility is to put \code{cylindrical_coords} instead.
+One can also invoke cylindrical coordinates by saying
+\code{cylindrical_coords} instead.
 In practice, the names $(x,y,z)$ are still used, but they refer then
 to $(r,\theta,\phi)$ or $(r,\phi,z)$ instead.
 
-Bug reports, corrections, and improvements on these are appreciated.
-
+When working with curvilinear coordinates it is convenient to use
+differential operators in the non-coordinate basis, so the derivatives
+are taken with respect to length, and not in a mixed fashion
+with respect to length for $\partial/\partial r$ and with respect
+to angle for $\partial/\partial\theta$ and $\partial/\partial\phi$.
+The components in the non-coordinate basis are denoted by hats, see, e.g.,
+\cite{MTW}, p.~213; see also Appendix~B of \cite{MTBM09}.
+For spherical polar coordinates the only nonvanishing Christoffel
+symbols (or connection coefficients) are
+\begin{eqnarray}
+{\Gamma^{\hat\theta}}_{{\hat r}{\hat\theta}}
+={\Gamma^{\hat\phi}}_{{\hat r}{\hat\phi}}
+=-{\Gamma^{\hat r}}_{{\hat\theta}{\hat\theta}}
+=-{\Gamma^{\hat r}}_{{\hat\phi}{\hat\phi}}
+=1/r,
+\end{eqnarray}
+\begin{eqnarray}
+{\Gamma^{\hat\phi}}_{{\hat\theta}{\hat\phi}}
+=-{\Gamma^{\hat\theta}}_{{\hat\phi}{\hat\phi}}
+=\cot\theta/r.
+\end{eqnarray}
+The Christoffel symbols enter as correction terms for the various
+differential operators in addition to a term calculated straightforwardly
+in the non-coordinate basis.
+The derivatives of some relevant Christoffel symbols are
+\begin{equation}
+{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat\theta}
+={\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat\phi}
+={\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\phi}=0
+\end{equation}
+\begin{equation}
+{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat r}
+={\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat r}=-r^{-2}
+\end{equation}
+\begin{equation}
+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\theta}=-r^{-2}\sin^{-2}\!\theta
+\end{equation}
+Further details are given in Appendix~\ref{Curvilinear-coordinates}.
 
 % ====================================================================== %
 
@@ -5217,6 +5287,31 @@ ions and neutrals.
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Combustion}
+\index{Combustion}
+
+The easiest entry into the subject of simulating combustion is through
+\path{samples/0d-tests/chemistry_H2_ignition_rkf}
+or \path{samples/1d-tests/H2_flamespeed}.
+The former case is studying H2 ignition delay, while the second one
+is focusing on H2 flame-speed.
+If you want to study turbulent premixed flames, the recommended cases are
+\path{samples/2d-tests/2d_methane_flame} and \path{samples/turbulent_flame}.
+Here, the first of these examples is not really realistic since its only 2D,
+but this does of course make it faster to try out.
+Also, this case is easier to set up. The most realistic test case is
+\path{samples/turbulent_flame}, which studies a full 3D hydrogen flame.
+This test case requires that a set of smaller pre-runs are finalized
+before the main simulation can be run (see the associated README file
+for more details).
+
+The \path{chemistry_H2_ignition_rkf} directory, for example, has the file
+\file{tran.dat}, which contains the parameters characterizing the transport
+properties, and \file{chem.inp}, which contains the NASA polynomials;
+see Eq.~(18) of Ref.~\cite{BHB11}.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Radiative transfer}
 \index{Radiative transfer}
 
@@ -5237,9 +5332,9 @@ is the optical depth ($s$ is the geometrical coordinate along the ray).
 
 Note that radiative transfer is called also in \file{start.csh},
 and again each time a snapshot is being written, provided the output
-of auxiliary variables is being requested \cmd{lwrite_aux=T}.
+of auxiliary variables is being requested \var[lwrite_aux]{lwrite_aux=T}.
 (Also, of course, the pencil check runs radiative transfer 7 times,
-unless you put \cmd{pencil_check_small=F}.)
+unless you put \cmd[pencil_check_small]{pencil_check_small=F}.)
 
 % ---------------------------------------------------------------------- %
 
@@ -5419,7 +5514,88 @@ a divergence of a flux that in turn obeys the equation
 \end{equation}
 where $K_{ij}=\tau\tilde{K}_{ij}$ would be the original diffusion tensor
 of \Eq{Difftensor}, if the time derivative were negligible.
-Further details are described in Snodin et al.\ (2005).
+Further details are described in Snodin et al.\ (2006).
+
+%JS added (Is this too long?):
+\subsection{Chiral MHD}
+\index{Chiral MHD}
+
+At high energies, $k_{\rm B} T \gtrsim 10~\mathrm{MeV}$, a quantum effect called the 
+\textit{chiral magnetic effect} (CME) can modify the MHD equations. 
+The CME occurs in magnetized relativistic plasmas, in
+which the number density of left-handed fermions,
+$n_{_{\rm L}}$, differs from the one of right-handed
+fermions, $n_{_{\rm R}}$ (see e.g., Kharzeev et al.\ (2013) for a review).
+This asymmetry is described by the chiral chemical potential
+$\mu_5 \equiv 6\,(n_{_{\rm L}}-n_{_{\rm R}})\,{(\hbar c)^3/(k_{\rm B}  T)^2}$, 
+where $T$ is the temperature, $k_{\rm B}$ is the Boltzmann constant,
+$c$ is the speed of light, and $\hbar$ is the reduced Planck constant.
+In the presence of a magnetic field, $\mu_5$ leads to the occurrence of the current
+\begin{eqnarray}
+   \bm{J}_{\rm CME} = \frac{\alpha_\mathrm{em}}{\pi \hbar} \mu_5 \bm{B} ,
+  \label{CME}
+\end{eqnarray}
+where $\alpha_\mathrm{em} \approx 1/137$ is the fine structure constant.
+
+The chiral current~(\ref{CME}) adds to the classical Ohmic current, leading
+to a modification of the Maxwell equations.
+As a result, the induction equation is extended by one 
+additional term:
+\begin{eqnarray}
+  \frac{\partial \bm{A}}{\partial t} = {\bm{U}} \times   {\bm{B}}
+  - \eta \, \left(\nab   \times   {\bm{B}}
+  - \mu {\bm{B}} \right), 
+\label{ind-DNS}
+\end{eqnarray}
+where the chiral chemical potential $\mu_5$ is normalized such that
+$\mu = (4 \alpha_\mathrm{em} /\hbar c) \mu_5$.
+The latter is determined by the evolution equation
+\begin{eqnarray}
+  \frac{D \mu}{D t} = D_5 \, \Delta \mu
+  + \lambda \, \eta \, \left[{\bm{B}} {\bm \cdot} (\nab   \times   {\bm{B}})
+  - \mu {\bm{B}}^2\right]
+  -\Gamma_{\rm\!f}\mu,
+\label{mu-DNS}
+\end{eqnarray}
+where $D_5$ is a chiral diffusion coefficient, $\lambda$ the chiral feedback parameter, and $\Gamma_{\rm\!f}$ the rate of chiral flipping reactions.
+All remaining evolution equations are the same as in classical MHD. 
+Details on the derivation of the chiral MHD equations can be found in 
+Boyarsky et al.\ (2015) and Rogachevskii et al.\ (2017).
+
+In the Pencil Code, the chiral MHD equations can be solved by adding the line
+\begin{verbatim}
+SPECIAL        =    special/chiral_mhd 
+\end{verbatim}
+to \texttt{src/Makefile.local}.
+Further, for running the chiral MHD module, one needs to add
+\begin{verbatim}
+   &special_init_pars
+   initspecial='const', mu5_const=10.
+\end{verbatim}
+to \texttt{start.in} and
+\begin{verbatim}
+   &special_run_pars
+   diffmu5=1e-4, lambda5=1e3, cdtchiral=1.0
+\end{verbatim}
+to \texttt{run.in}, where we have chosen exemplary values for the chiral
+parameters.
+
+Caution should be taken when solving the chiral MHD equations
+numerically, since the evolution of the plasma can be strongly affected by 
+the CME. 
+In particular, the initial value of $\mu$ is related to 
+a small-scale dynamo instability. 
+In order to resolve this instability in a domain of size $(2\pi)^3$, 
+the minimum number of grid points is given as:
+\begin{equation}
+  N_\mathrm{grid} \gtrsim \left(\frac{\mu_0}{\lambda}\right)^{1/2} \frac{2\pi}{\nu \mbox{Re}_{\rm mesh, crit}}.
+\end{equation}
+Also the value of $\lambda$ should not be chosen too small, since it scales 
+inversely with the saturation magnetic helicity produced by a chiral dynamo. 
+Hence, for a very small $\lambda$ parameter, the Alfv\'en time step becomes extremely small in the non-linear stage which can lead to a code crash.    
+More details on the numerical modeling of chiral MHD can be found in
+Schober et al.\ (2018).
+%JS.
 
 
 \subsection{Particles}
@@ -5444,7 +5620,7 @@ and a second order spline interpolation scheme (set
 \code{lquadratic_interpolation=T} in \code{\&particles_init_pars}) to
 calculate the gas velocity at the position of a tracer particle.
 
-The sample run \file{samples/dust-vortex} contains the latest setup for
+The sample run \file[dust-vortex/]{samples/dust-vortex} contains the latest setup for
 tracer particles.
 
 \subsubsection{Dust particles}
@@ -5571,7 +5747,208 @@ for magnetohydrodynamics.
 This is a rapidly evolving field and we refer the interested reader to
 recent papers in this field, e.g.\ by Sur et al.\ (2008) or
 Brandenburg et al.\ (2008).
-For technical details, see also Sect.~\ref{RestartingFromLessPhysics}.
+For technical details; see also Sect.~\ref{RestartingFromLessPhysics}.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Gravitational wave equations}
+\index{Gravitational Waves}
+
+\def\SX{S_\times}
+\def\ST{S_+}
+\def\hX{h_\times}
+\def\hT{h_+}
+\def\hX{h_\times}
+\def\thT{\tilde{h}_+}
+\def\thX{\tilde{h}_\times}
+\def\dhT{\dot{h}_+}
+\def\dhX{\dot{h}_\times}
+\def\dthT{\dot{\tilde{h}}_+}
+\def\dthX{\dot{\tilde{h}}_\times}
+\def\hrms{h_{\rm rms}}
+\def\dhrms{\dot{h}_{\rm rms}}
+\def\kGW{k_{\rm GW}}
+\def\Sh{S_{h}}
+\def\Ah{A_{h}}
+\def\Shdot{S_{\dot{h}}}
+\def\Ahdot{A_{\dot{h}}}
+\def\EEGW{{\cal E}_{\rm GW}}
+\def\EGW{E_{\rm GW}}
+\def\HGW{H_{\rm GW}}
+\def\Imag{\mbox{\rm Im}}
+\def\DD{\rm D}
+\def\ii{\rm i}
+\newcommand{\SSSS}{\mbox{\boldmath ${\sf S}$} {}}
+\def\onethird{{\textstyle{1\over3}}}
+\def\half{{\textstyle{1\over2}}}
+
+The expansion of the universe with time is described by the scale
+factor $a(\tau)$, where $\tau$ is the physical time.
+Using conformal time, $t(\tau)=\int_0^\tau\dd\tau'/a(\tau')$, and
+dependent variables that are appropriately scaled with powers of $a$,
+the hydromagnetic equations can be expressed completely without scale
+factor \cite{BEO96,Dur08}.
+This is not true, however, for the gravitational wave (GW) equations,
+where a dependence on $a$ remains \cite{Dur08}.
+The time dependence of $a$ can be modeled as a power law,
+$a\propto\tau^n$, where $n=1/2$ applies to the radiation-dominated era;
+see Table~\ref{ScaleFactor} the general relationship.
+To compare with cases where the expansion is ignored, we put $n=0$.
+
+\begin{table}[t!]\caption{
+Scale factor and conformal Hubble parameter for different values of $n$.
+}\vspace{12pt}\centerline{\begin{tabular}{cccc}
+$n$ & $a$ & ${\cal H}$ & $H$ \\
+\hline
+$0$   & $1$        & $0$      & $0$ \\
+$1/2$ & $\eta/2$   & $1/\eta$ & $1/\eta$ \\
+$2/3$ & $\eta^2/3$ & $2/\eta$ & $6/\eta^2$ \\
+\label{ScaleFactor}\end{tabular}}\end{table}
+
+In the transverse traceless (TT) gauge, the six components of the
+spatial part of the symmetric tensor characterizing the linearized
+evolution of the metric perturbations $h_{ij}$,
+reduce to two components which, in the linear polarization
+basis, are the $+$ and $\times$ polarizations.
+However, the projection onto that basis is computationally intensive,
+because it requires nonlocal operations involving Fourier transformations.
+It is therefore advantageous to evolve instead the perturbation of the metric
+tensor, $h_{ij}$, in an arbitrary gauge, compute then $h_{ij}^{\rm TT}$ in
+the TT gauge, and perform then the decomposition into the linear polarization
+basis whenever we compute diagnostic quantities such as averages or spectra.
+Thus, we solve the linearized GW equation in the form \cite{Dur08}
+\begin{equation}
+{\partial^2h_{ij}\over\partial t^2}
+=-2{\cal H}{\partial h_{ij}\over\partial t}
++c^2\nabla^2h_{ij}+{16\pi G\over a^2 c^2} T_{ij}
+\label{d2hdt}
+\end{equation}
+for the six components $1\leq i\leq j\leq3$, where $t$ is comoving time,
+$a$ is the scale factor, ${\cal H}=\dot{a}/a$ is the comoving Hubble
+parameter, $T_{ij}$ is the source term, $c$ is the speed of light,
+and $G$ is Newton's constant.
+For $n=0$, when the cosmic expansion is ignored, we have $a=1$ and
+${\cal H}=0$.
+In practice, we solve the GW equation for the scaled variable
+$\tilde{h}_{ij}=ah_{ij}$,
+\begin{equation}
+{\partial^2\tilde{h}_{ij}\over\partial t^2}
+=c^2\nabla^2\tilde{h}_{ij}+{16\pi G\over a c^2} T_{ij}.
+\label{d2hdt}
+\end{equation}
+For the numerical treatment of \Eq{d2hdt} and
+equations~(\ref{dlnrhodt})--(\ref{mhd3}).
+
+The source term is chosen to be the traceless part of the stress tensor,
+\begin{equation}
+T_{ij}(\xv,t)=\rho u_i u_j - B_i B_j
+- \onethird\delta_{ij}(\rho\uv^2-\Bv^2).
+\end{equation}
+The removal of the trace is in principle not necessary, but it helps
+preventing a continuous build-up of a large trace, which would be
+numerically disadvantageous.
+We have ignored here the viscous stress, which is usually small.
+
+We compute $T_{ij}$ by solving the energy, momentum, and induction
+equations for an ultrarelativistic gas in the
+form \cite{BEO96,BKMRPTV17}
+\begin{equation}
+{\partial\ln\rho\over\partial t}=
+-\frac{4}{3}\left(\nab\cdot\uv+\uv\cdot\nab\ln\rho\right)
++{1\over\rho}\left[\uv\cdot(\Jv\times\Bv)+\eta\Jv^2\right],
+\label{dlnrhodt}
+\end{equation}
+\vspace{-6mm}
+\begin{eqnarray}
+{\DD\uv\over\DD t}\!\!&=&\!\!
+{\uv\over3}\left(\nab\cdot\uv+\uv\cdot\nab\ln\rho\right)
+-{\uv\over\rho}\left[\uv\cdot(\Jv\times\Bv)+\eta\Jv^2\right]
+\nonumber
+\\
+&&-{1\over4}\nab\ln\rho
++{3\over4\rho}\Jv\times\Bv+{2\over\rho}\nab\cdot\left(\rho\nu\SSSS\right)+\fv,
+\label{dudt}
+\end{eqnarray}
+\vspace{-6mm}
+\begin{equation}
+{\partial\Bv\over\partial t}=\nabla\times(\uv\times\Bv-\eta\Jv),
+\label{mhd3}
+\end{equation}
+where ${\bm B}=\nabla \times {\bm A}$ is the magnetic field expressed
+in terms of the magnetic vector potential to ensure that $\nab\cdot\Bv=0$,
+$\bm{J}=\bm{\nabla}\times\bm{B}$ is the current density,
+$\DD/\DD t=\partial/\partial t +\bm{u}\cdot\bm{\nabla}$
+is the advective derivative,
+${\sf S}_{ij}=\frac{1}{2}(u_{i,j}+u_{j,i})-\frac{1}{3}\delta_{ij}u_{k,k}$
+is the trace-free rate of strain tensor, and $p=\rho\cs^2$ is the pressure,
+where $\cs=c/\sqrt{3}$ is the sound speed for an ultra-relativistic gas.
+Lorentz-Heaviside units for the magnetic field are used.
+
+We are interested in the rms value of the metric tensor perturbations
+and the GW energy density in the linear polarization basis.
+To compute $h_{ij}^{\rm TT}$ from $h_{ij}$, we Fourier transform the
+six components of $h_{ij}$ and $\dot{h}_{ij}$,
+\begin{equation}
+\tilde{h}_{ij}(\kv,t)=\int h_{ij}(\xv,t)\,e^{-\ii\kv\cdot\vv} d^3x
+\quad\mbox{for $1\leq i\leq j\leq3$}
+\end{equation}
+and compute the components in the TT gauge as
+\begin{equation}
+\tilde{h}_{ij}^{\rm TT}(\kv,t)=(P_{il}P_{jm}-\half P_{ij}P_{lm})\,
+\tilde{h}_{lm}(\kv,t),
+\end{equation}
+where $P_{ij}=\delta_{ij}-\hat k_i\hat k_j$ is the projection operator,
+and $\hat{\kv}=\kv/k$ is the unit vector of $\kv$, with
+$k=|\kv|$ being the modulus.
+Next, we compute the linear polarization bases
+\begin{eqnarray}
+e^+_{ij}=e_i^1 e_j^1 - e_i^2 e_j^2,\quad
+e^\times_{ij}=e_i^1 e_j^2 + e_i^2 e_j^1,
+\end{eqnarray}
+where $e^1$ and $e^2$ are unit vectors perpendicular to $\kv$.
+Thus
+\begin{eqnarray}
+\tilde{h}_+(\kv,t) \!\!&=&\!\! \half e^+_{ij}(\kv) \, \tilde{h}_{ij}(\kv,t),\\
+\tilde\hX(\kv,t) \!\!&=&\!\! \half e^\times_{ij}(\kv) \, \tilde{h}_{ij}(\kv,t).
+\end{eqnarray}
+We then return into real space and compute
+\begin{equation}
+h_{+/\times}(\xv,t)=\int \tilde{h}_{+/\times}(\kv,t)\,e^{\ii\kv\cdot\xv}
+\, d^3k/(2\pi)^3.
+\end{equation}
+Analogous calculations are performed for $\dot{h}_{+/\times}(\xv,t)$,
+which are used to compute the GW energy via
+\begin{equation}
+\EEGW(t)={c^2\over32\pi G}\left(\bra{\dhT^2}+\bra{\dhX^2}\right),
+\label{EEGWdef}
+\end{equation}
+where angle brackets denote volume averages.
+
+Analogously to kinetic and magnetic energy and helicity spectra, it is
+convenient to compute the GW energy and polarization spectra integrated
+over concentric shells of surface $\int_{4\pi}k^2\dd\Omega_{\kv}$ in $\kv$
+space, defined by
+\begin{eqnarray}
+\Shdot(k)\!\!&=&\!\!\int_{4\pi}\left(|\dthT|^2+|\dthX|^2\right)\,k^2\dd\Omega_{\kv},\\
+\Ahdot(k)\!\!&=&\!\!\int_{4\pi}2\,\Imag\left(\dthT{{\dthX}}^\ast\right)\,k^2\dd\Omega_{\kv},
+\end{eqnarray}
+and normalized such that $\int_0^\infty\Shdot(k)\,\dd k=\bra{\dhT^2}+\bra{\dhX^2}$
+is proportional to the energy density and $\int_0^\infty \Ahdot(k)\,\dd k$
+is proportional to the polarized energy density.
+The $\Ahdot(k)$ spectra are not to be confused with the magnetic vector
+potential $\Av(\xv,t)$.
+The corresponding GW energy spectra are noted by
+\begin{eqnarray}
+\EGW(k)\!\!&=&\!\!(c^2/32\pi G)\,\Shdot(k),\\
+\HGW(k)\!\!&=&\!\!(c^2/32\pi G)\,\Ahdot(k).
+\end{eqnarray}
+We also define spectra for the metric tensor perturbation,
+\begin{eqnarray}
+\Sh(k)\!\!&=&\!\!\int_{4\pi}\left(|\tilde\hT|^2+|\tilde\hX|^2\right)\,k^2\dd\Omega_{\kv},\\
+\Ah(k)\!\!&=&\!\!\int_{4\pi}2\,\Imag\left(\tilde\hT\tilde\hX^\ast\right)\,k^2\dd\Omega_{\kv},
+\end{eqnarray}
+which are normalized such that $\int_0^\infty\Sh(k)\,\dd k=\hrms^2$ is the
+mean squared metric tensor perturbation.
 
 % ====================================================================== %
 
@@ -5809,7 +6186,7 @@ What is the problem?
   examples that work.
 
 \item One of the variables for \name{make} has a space appended to it,
-  e.\,g.~if you use the line
+  e.g.\ if you use the line
   \begin{quote}
     \upshape\ttfamily
     MPICOMM = mpicomm_\textvisiblespace
@@ -5820,8 +6197,9 @@ What is the problem?
   This problem can also occur if you added a new
   module (and have an empty space after the module
   name in \file[Makefile.src]{src/Makefile.src}, i.e.\
-  \cmd{CHIRAL=nochiral\textvisiblespace}), in which case the compiler
-  will talk about ``circular dependence'' for the file \file{nochiral}.
+  \var[CHIRAL]{CHIRAL=nochiral\textvisiblespace}), in which case the
+  compiler will talk about ``circular dependence'' for the file
+  \file{nochiral}.
 
 \end{enumerate}
 
@@ -6008,12 +6386,12 @@ When I say \cmd{locate mpif.h} I only get things like
 \begin{Verbatim}
    /scratch/ntest/1.2.7p1-intel/include/mpif.h
 \end{Verbatim}
-But since I use \cmd{FC=mpif90} I thought I don't need to worry.
+But since I use \var[FC]{FC=mpif90} I thought I don't need to worry.
 
 \medskip
 
-{\bf A}: Since you use \cmd{FC=mpif90} there must definitely be something
-wrong with their setup.
+{\bf A}: Since you use \var[FC]{FC=mpif90} there must definitely be
+something wrong with their setup.
 Try \cmd{mpif90 -showme} or \cmd{mpif90 -show}; the `-I' option
 should say where it looks for 'mpif.h'.
 If those directories don't exist, it's no wonder that it doesn't work,
@@ -6216,8 +6594,8 @@ tree.
 {\bf A}:
 You are running on a RedHat 8 or 9 system, right?
 
-Set \cmd{LANG=POSIX} in your shell's startup script and life will be much
-better.
+Set \var[LANG]{LANG=POSIX} in your shell's startup script and life will be
+much better.
 
 \subsubsection{Can I restart with a different number of cpus?}
 
@@ -6492,6 +6870,32 @@ and in sed (but that's harder to read)
 \end{Verbatim}
 
 
+\subsubsection{Problems with \code{pc_varcontent.pro}}
+
+{\bf Q}:
+
+\begin{Verbatim}
+  % Subscript range values of the form low:high must be >= 0, < size, with low
+  <= high: VARCONTENT.
+% Error occurred at: PC_VARCONTENT     391
+  /home/brandenb/pencil-code/idl/read/pc_varcontent.pro
+%                    PC_READ_VAR       318
+  /home/brandenb/pencil-code/idl/read/pc_read_var.pro
+%                    $MAIN$          
+\end{Verbatim}
+
+\medskip
+
+{\bf A}:
+Make sure you don't have any unused items in your
+\code{src/cparam.local} such as
+\begin{Verbatim}
+! MAUX CONTRIBUTION 3
+! COMMUNICATED AUXILIARIES 3
+\end{Verbatim}
+They would leave gaps in the counting of entries in your
+\code{data/index.pro} file.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{General questions}
@@ -6656,7 +7060,7 @@ It would be a good idea to add this useful information in the manual, no?
 \medskip
 
 {\bf A}: When you have added new stuff to the code, don't forget to mention
-this in the \file{pencil-code/doc/manual.tex} file.
+this in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
 Again, the answer is yes; just go to:
 \begin{Verbatim}
@@ -6673,17 +7077,18 @@ Again, the answer is yes; just go to:
 \index{Check-in details}
 \index{h-index}
 
-All developers are supposed to have an up-to-date an entry in the file
-\file{pencil-code/license/developers.txt} so that they can be contacted in
-the case a code change breaks an auto-test or other code functionality.
+All developers are supposed to have an up-to-date entry in the file
+\file[developers.txt]{pencil-code/license/developers.txt} so that they can
+be contacted in case a code change breaks an auto-test or other code
+functionality.
 
 Several {\sc Pencil Code} committers have done several hundred check-ins,
-but many of the currently 98 registered people on the repository have
+but many of the currently 68 registered people on the repository have
 hardly done anything.
 To put a number to this, one can define an $h$ index, which gives the
-number of users, who have done at least as many as that number of check ins.
-This $h$ index is currently 28, i.e., 28 users have done at least
-28 check ins; see Figure~\ref{pencil-hindex}.
+number of users, who have done at least as many as that number of check-ins.
+This $h$ index is currently 32, i.e., 32 users have done at least
+32 check-ins; see Figure~\ref{pencil-hindex}.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -6733,7 +7138,7 @@ has not changed much.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-Before making changes the to the code, it is important that you
+Before making changes to the code, it is important that you
 verify that you can run the \cmd{pc_auto-test} successfully.
 Don't do this when you have already modified the code, because
 then you cannot be sure that any problems are caused by your changes,
@@ -6788,9 +7193,14 @@ your needs.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-The Pencil Code check ins occur regularly all the time.
+The Pencil Code check-ins occur regularly all the time.
 By the Pencil Code User Meeting 2010 we have arrived at a revision
 number of 15,000.
+In February 2017, the number of check-ins has risen to 26,804; see
+\url{https://github.com/pencil-code/pencil-code}.
+Major code changes are nowadays being discussed by the
+Pencil Code Steering Committee
+(\url{https://www.nordita.org/~brandenb/pencil-code/PCSC/}).
 The increase of the revision number with time is depicted in
 Figure~\ref{CheckIns}.
 The number of Pencil Code developers increases too
@@ -6798,7 +7208,7 @@ The number of Pencil Code developers increases too
 This may indicate that new users can produce new science with the
 code as it is, but it may also indicate that it is getting harder
 to understand the code.
-This will be discussed in the next section.
+How to understand the code will be discussed in the next section.
 
 \section{Understanding the code}
 
@@ -7138,9 +7548,9 @@ integer, parameter :: nxgrid=16,nygrid=nxgrid,nzgrid=nxgrid
 This way such a change does not affect the memory usage for other
 applications where this addition to \file{cparam.local} is not made.
 In order to output this part of the f-array, one must write
-\code{lwrite_aux=T} in the \code{init_pars} of \file{start.in}.
-(Technically, \code{lwrite_aux=T} can also be invoked in \code{run_pars}
-of \file{run.in}, but this does not work at the moment.)
+\var[lwrite_aux]{lwrite_aux=T} in the \code{init_pars} of \file{start.in}.
+(Technically, \code[lwrite_aux]{lwrite_aux=T} can also be invoked in
+\code{run_pars} of \file{run.in}, but this does not work at the moment.)
 
 \subsection{The df-array}
 \label{df-array}
@@ -7351,7 +7761,7 @@ You are encouraged to submit/commit your special modules to the Pencil Code
 source.
 \index{Manual}
 When you have added new stuff to the code, don't forget to mention this
-in the \file{pencil-code/doc/manual.tex} file.
+in the \file[manual.tex]{pencil-code/doc/manual.tex} file.
 
 \subsection{Adding switchable modules}
 
@@ -7380,13 +7790,13 @@ most of them. The recommended course of action is to make use of
 the InitialCondition module.
 
 InitialCondition works pretty much like the Special module. To implement your
-own custom initial conditions, create a \file{src/initial\_condition} directory
-either in the main \path{PENCIL_HOME} or in one specific of your run directories,
-and copy the file \file{noinitial_condition.f90} from the
-\path{src/} to it, with a new, descriptive, name.
+own custom initial conditions,
+copy the file \file{noinitial_condition.f90} from the
+\path{src/} to \path{src/initial_condition}, with a new, descriptive, name.
 
 The first thing to do in your new module is to change the
 linitialcondition=.false. header to say linitialcondition=.true.
+Also, don't forget to add \path{../} in front of the file names in \code{include} statements.
 
 This file has hooks to implement a custom initial condition to
 most variables. After implementing your initial condition,
@@ -7438,8 +7848,9 @@ For a complete list of options, run \cmd{pc_auto-test --help} and/or
 
 
 %%%
-\subsection{How to set up periodic tests}
+\subsection{How to set up periodic tests (auto-tests)}
 \label{S-nightly-tests}
+\index{Auto-tests}
 
 To set up a nightly test of the \textsc{Pencil Code}, carry out the
 following steps.
@@ -7472,7 +7883,7 @@ following steps.
   give explicit example]
 
   Remember that you can set up a custom host ID file for your auto-test
-  tree under \file{\$\{PENCIL_HOME\}/config-local/hosts/}.
+  tree under \file[hosts]{\$\{PENCIL_HOME\}/config-local/hosts/}.
 
 \item On the scheduling host, use \cmd{crontab -e} to set up a \name
   {cron} job similar to the following:
@@ -7497,35 +7908,35 @@ following steps.
   You will have to adapt some parameters listed here and may want to
   modify a few more:
   \begin{description}
-  \item[\option{-D \textsl{<dir>}}:]
+  \item[\protect{\option[-D]{-D \textsl{<dir>}}}:]
     Sets the directory (on the work host) to run in.
-  \item[\option{-T \textsl{<file>}}:]
+  \item[\protect{\option[-T]{-T \textsl{<file>}}}:]
     If this option is given, append a timing statistics line for each test
     to the given \emph{file}.
   \item[\option{--use-pc}:]
     You want this option (and at some point, it will be the default).
-  \item[\option{-t 15m}:]
+  \item[\protect{\option[-t]{-t 15m}}:]
     Limit the time for \file{start.x} and \file{run.x} to 15 minutes.
-  \item[\option{-N 15}:]
+  \item[\protect{\option[-N]{-N 15}}:]
     Run the tests at nice level 15 (may not have an effect for MPI tests).
   \item[\option{-Uc}:]
     Do \cmd{svn update} and \cmd{pc_build --cleanall} before compiling.
-  \item[\option{-m \textsl{<email-list>}}:]
+  \item[\protect{\option[-m]{-m \textsl{<email-list>}}}:]
     If this option is given, send e-mails to everybody in the
     (comma-separated) list of e-mail addresses if any test fails.
     As soon as this option is set, the maintainers (as specified in the
     \file{README} file) of failed tests will also receive an e-mail.
-  \item[\option{work-host.inter.net|-l}:]
+  \item[\code{work-host.inter.net|-l}:]
     Replace this with the remote host that is to run the tests.
     If you want to run locally, write \code{-l} instead.
   \item[\option{-H}:]
     Output HTML.
-  \item[\option{> \$HOME/public_html/pencil-code/tests/nightly-tests.html}:]
+  \item[\code{> \$HOME/public_html/pencil-code/tests/nightly-tests.html}:]
     Write output to the given file.
   \end{description}
 
   If you want to run fewer or more tests, you can use the
-  \option{-Wa,--max-level} option:
+  \option[--max-level]{-Wa,--max-level} option:
 \begin{alltt}
       -Wa,--max-level=3
 \end{alltt}
@@ -7829,7 +8240,9 @@ where \code{nw=nx*ny*nz}.
   16 &Triolith&0.075& $128^3$ & magn/noentro & 2x2x4  &  1-mar-14 & AB \\
   16 &Triolith&0.065& $128^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
   16 &Triolith&0.054& $256^3$ & magn/noentro & 1x4x4  &  1-mar-14 & AB \\
+  16 &Coma & 0.603 & $128^3$ & GW/magn/noentro & 1x4x4  & 27-jul-17 & SM \\
   24 &Gardar & 0.44 & $128^2\times48$ & magn/noentro &        & 6-nov-13 & AB \\
+  24 &Summit & 0.041& $144^3$ & magn/noentro &        & 28-jul-17 & AB \\
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -7848,6 +8261,7 @@ where \code{nw=nx*ny*nz}.
   36 &Kraken&0.177&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&3x6x2&12-jan-12&WL\\
   36 &scylla &0.096&  $72^3$ & magn/noentro & 1x6x6  &  8-may-16 & AB \\
   48 & janus & 0.028 & $72^2*216$ & magn/noentro &  4x12   &  28-mar-16 & AB \\
+  64 &Coma & 0.573 & $128^3$ & GW/magn/noentro & 1x8x8  & 7-aug-17 & SM \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
@@ -7870,6 +8284,7 @@ where \code{nw=nx*ny*nz}.
   72 & Kraken& 0.151  &$96{\!\times\!}192{\!\times\!}16$ &magn/noentro & 6x12 &17-jan-12 & WL\\
   72 & Kraken& 0.091  &$192{\!\times\!}384{\!\times\!}32$ & magn/noentro & 6x12 &17-jan-12 & WL\\
   72 & Kraken& 0.071  &$384{\!\times\!}768{\!\times\!}64$ & magn/noentro & 6x12 &17-jan-12 & WL\\
+  72 &Summit &0.0128& $576^3$ & magn/noentro &        &  7-aug-17 & AB \\
  128 & fe1   & 0.44 & $256^3$ &nomag/entro/rad8/ion&4x32&10-mar-04& TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -7886,6 +8301,7 @@ where \code{nw=nx*ny*nz}.
  144 & Kraken& 0.058  &$192{\!\times\!}384{\!\times\!}64$ & magn/noentro & 6x12x2 &17-jan-12 & WL\\
  144 & Kraken& 0.044  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
  144 & Gardar& 2.19&  $288{\!\times\!}1{\!\times\!}288$ & coag43&8x1x18 & 13-sep-15& AB \\
+ 144 &Summit &0.0064& $576^3$ & magn/noentro &        &  7-aug-17 & AB \\
  192 &Janus&0.0123&$144{\!\times\!}288{\!\times\!}72$&magn/noentro/sph&1x24x32& 24-jul-16 & AB \\
  256 &Hermit&0.0328&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 &Hermit&0.0285&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
@@ -7903,7 +8319,8 @@ where \code{nw=nx*ny*nz}.
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
  288 & Kraken& 0.0201  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
- 288 & Janus & 0.0360  &$288^3$ & magn/entro/rad & 1x16x18 &22-feb-16 & AB\\
+ 288 & Janus &0.0360& $288^3$ &magn/entro/rad& 1x16x18 &22-feb-16 & AB \\
+ 288 &Summit &0.0033& $576^3$ & magn/noentro & 1x16x18&  7-aug-17 & AB \\ %that's less than Beskow with 1152
  512 &Hermit&0.01717&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  512 &Hermit&0.0166&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  512 &Hermit&0.0142&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&2x16x16&22-aug-13&PJK\\
@@ -7920,6 +8337,7 @@ where \code{nw=nx*ny*nz}.
  576 &Kraken&0.0257&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x24x4&12-jan-12&WL\\
  576 &Kraken& 0.0317  &$192^2{\!\times\!}64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
  576 &Kraken& 0.0116  &$768^2{\!\times\!}256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
+ 576&Summit&0.00183&$576^3$&magn/noentro&1x24x48&29-jul-17& AB \\
  576&Beskow&0.00174&$576^3$&magn/noentro&1x24x48&23-may-16& AB \\
  768 &Lindgren&0.0049&$256{\!\times\!}1152^2$&magn/noentro/sph&1x24x32& 17-oct-14 & SJ \\
 1024&Hermit&0.00943&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x32&22-aug-13&PJK\\
@@ -7936,8 +8354,12 @@ where \code{nw=nx*ny*nz}.
 1152&Kraken& 0.00549  &$768{\!\times\!}1536{\!\times\!}256$ & magn/noentro & 12x24x4 &17-jan-12 & WL\\
 1152&Lindgren&0.016&$512^2{\!\times\!}512$&magn/rad&1x36x32&17-mar-14& AB \\
 1152&Lindgren&0.0066&$1152^3$&magn/noentro&1x32x36&25-nov-14& AB \\
+1152&Beskow&0.0055&$1152^3$&magn/noentro/GW&1x32x36&27-aug-17& AB \\
 1152&Beskow&0.0024&$1152^3$&magn/noentro&1x32x36&20-jan-15& AB \\
 1152&Beskow&0.00098&$1152^3$&magn/noentro&1x32x36&18-jan-16& AB-gnu \\
+1152&Beskow&0.00090&$1152^3$&magn/noentro&1x32x36&30-mar-17& AB \\
+1152&Beskow&0.0060 &$1152^3$&magn/noentro/GW&1x32x36 &31-mar-18 & AB \\
+1152&Beskow&0.0063 &$ 576^3$&magn/entro/rad&1x32x36 &17-feb-18 & AB \\
 1536&Lindgren&0.00171&$512^2{\!\times\!}384$&magn/noentro&2x32x24&15-jul-13& AB \\
 2048&Hermit&0.00451&$1024{\!\times\!}2048{\!\times\!}1024$&spherical conv/magn&2x32x32&22-aug-13&PJK\\
 2048&Hermit&0.00380&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&8x16x16&22-aug-13&PJK\\
@@ -8054,6 +8476,9 @@ Each node has two 2.6 GHz six-core AMD Opteron processors (Istanbul), 12 cores, 
 Connection via Cray SeaStar2+ router.
 \item[Hermit:] Cray XE6 with 7104 2.3 GHz AMD Interlagos 16 core processors (113,664 cores in total), nodes with either 1 or 2 GB of memory per core.
 \item[Sisu:] Cray XC30 with 1472 2.6 GHz Intel (Xeon) Sandy Bridge 8 core (E5-2670) processors (11,776 cores in total), 2 GB of memory per core.
+\item[Beskow:] Cray XC40 with 2.3 GHz Intel (Xeon) Haswell 16 core
+(E5-2698v3) processors (67,456 cores in total), 2 GB of memory per core.
+Theoretical peak performance 2.43 pflops.
 
 \end{description}
 
@@ -8152,6 +8577,144 @@ in Fig~\ref{cvsstat}.
   \end{center}
 \end{table}
 % ---------------------------------------------------------------------- %
+
+\subsection{Test case}
+
+In the following test samples, we run isothermal magnetohydrodynamics
+in a periodic domain\footnote{Run directories are available on
+\url{http://norlx51.nordita.org/~brandenb/pencil-code/timings/bforced/}}.
+Power spectra are computed during the run, but our
+current parallelization of the Fourier transform
+requires that the meshpoint number is an integer multiple
+of the product of processor numbers in the $y$ and $z$ directions
+and the product of processor numbers in the $x$ and $y$ directions.
+In addition, the number of processors in one direction should not
+be so large that the number of mesh points per processor becomes
+comparable to or less than the number of ghost zones (which is 6).
+
+\subsection{Running the code}
+
+To run the code, get one of the sample run directories, e.g.,
+\url{http://norlx51.nordita.org/~brandenb/pencil-code/timings/bforced/512_4x16x32}.
+The relevant file to be changed is \url{src/cparam.local}
+\scriptsize
+\begin{verbatim}
+ncpus=2048,nprocx=4,nprocy=16,nprocz=ncpus/(nprocx*nprocy)
+nxgrid=512,nygrid=nxgrid,nzgrid=nxgrid
+\end{verbatim}
+\normalsize
+in particular the values of ncpus, nprocx, nprocy, and nxgrid.
+Once they are chosen, say make, and submit
+start\_run.csh.
+
+% ---------------------------------------------------------------------- %
+%cp ~/tex/pencil-code/performance/fig/ptriolith-strong.ps figs/
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {ptriolith-strong}
+  \caption{Strong scaling on Triolith (2014).}
+  \label{ptriolith-strong}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+\subsection{Triolith}
+
+On Triolith, strong scaling tests have been performed
+for three mesh sizes.
+The time per time step and mesh point is given for
+different processor numbers and layouts.
+Generally, it is advantageous to keep the number
+of processors in the $x$ direction small.
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{Triolith timings}
+    \label{Tsummary-Triolith}
+    \begin{tabular}{rccc}
+    \toprule
+proc & $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$ & resol. & layout \\
+    \midrule
+  16 &0.075& $128^3$ & 2x2x4  \\
+  16 &0.065& $128^3$ & 1x4x4  \\
+  16 &0.0544& $256^3$ & 1x4x4  \\  %256_1x4x4
+  64 &0.0146& $256^3$ & 1x8x8  \\  %256_1x8x8
+  64 &0.0164& $256^3$ & 2x4x8  \\
+ 256 &0.0049& $256^3$ & 1x16x16 \\ %256_1x16x16
+ 512 &0.0035& $256^3$ & 2x16x16 \\ %256_2x16x16
+1024 &0.00236 &$256^3$ & 2x16x32 \\ %256_2x16x32
+1024 &0.00127 &$512^3$ & 2x16x32 \\ %512_2x16x32
+1024 &0.00129 &$512^3$ & 4x16x16 \\
+2048 & $9.34{\times}10^{-4}$ &$ 512^3$&4x16x32 \\ %512_4x16x32
+2304 & 0.00107 &$ 576^3$&4x18x32 \\  %576_4x18x32
+4096 &$3.6{\times}10^{-4}$&$1024^3$&4x32x32 \\
+4096 &$3.8{\times}10^{-4}$&$1024^3$&8x16x32 \\
+4096 &$4.2{\times}10^{-4}$&$1024^3$&4x16x64 \\
+4608 &$7.38{\times}10^{-4}$&$ 576^3$&8x18x32 \\ %576_8x18x32
+4608 &$2.66{\times}10^{-4}$&$1152^3$&4x32x36 \\ %1152_4x32x36
+4608 &$3.03{\times}10^{-4}$&$1152^3$&4x36x32 \\ %1152_4x36x32
+4608 &$3.12{\times}10^{-4}$&$1152^3$&4x18x64 \\ %1152_4x18x64
+4608 &$2.36{\times}10^{-4}$&$2304^3$&2x32x72 \\ %2304_2x32x72
+8192 &$1.475{\times}10^{-4}$&$2048^3$&4x32x64 \\ %short2048pm1_kf60b
+9216 & 0.00104 &$ 576^3$&16x18x32 \\ %576_16x18x32
+9216 &$1.276{\times}10^{-4}$&$2304^3$&4x36x64 \\ %short2304pm1_kf60c
+9216 &$1.30{\times}10^{-4}$&$2304^3$&4x32x72 \\ %2304_4x32x72
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
+{\em Comments}.~
+Although on Triolith the number of processors per node is 16,
+resolutions with one or two powers of 3 (such as 576) still work well.
+Furthermore, the number of processors above which the scaling becomes
+poor increases quadratically with the number of mesh points.
+This implies that the RAM per processor increases linearly with
+the problem size per direction.
+However, this will not be a limitation, because even for $2304^3$
+meshes, the required RAM is still below 100 MB.
+%    256     512    1152    2304
+%    256    1152    4608   18432
+%    7.3    13.0    37.2   74.32
+
+\subsection{Lindgren}
+
+On Lindgren, we have performed weak scaling tests and compare
+with weak scaling results for Triolith.
+Triolith is about twice as fast as Lindgren.
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{Lindgren timings}
+    \label{Tsummary-Lindgren}
+    \begin{tabular}{rccc}
+    \toprule
+proc & $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$ & resol. & layout \\
+    \midrule
+1536&0.00171&$512^2{\times}384$& 2x32x24 \\
+2048&0.00129&$512^2{\times}1024$&1x32x64 \\
+2048&0.00129&$1024^2{\times}2048$&1x32x64 \\
+4096&$4.6{\times}10^{-4}$&$2048^3$&4x16x64 \\
+9216&$2.36{\times}10^{-4}$&$2304^3$&4x48x48 \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
+% ---------------------------------------------------------------------- %
+%cp ~/tex/pencil-code/performance/fig/pcomp.ps figs/pcomp-lindgren.ps
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {pcomp-lindgren}
+    \caption{Comparison Triolith (black, plus signs)
+    and Lindgren (red, triangles). Weak scaling (2014).}
+  \label{pcomp-lindgren}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
 % ====================================================================== %
 \section{Coding standard}
 \index{Coding standards}
@@ -8431,7 +8994,7 @@ Before doing such changes it is therefore useful to contact the people
 who have contributed to the latest developments on that module.
 If it is not functional or otherwise in bad shape, it should be
 moved to \file{experimental}, i.e.\ one says
-\cmd{svn mv file.f90 experimental/file.f90}.
+\code{svn mv file.f90 experimental/file.f90}.
 However, any such directory change constitutes a major change in
 itself and should be performed in agreement with those involved in
 the development.
@@ -8493,25 +9056,29 @@ By default it is $0$, which means it is nonhelical.
 
 The spectral indices \var{initpower} and \var{initpower2} refer to
 energy spectral indices.
-By default, \var{initpower2=-5/3}, corresponding to a Kolmogorov spectrum.
-For a delta-correlated spectrum, we have to put \var{initpower=2},
+By default, \var[initpower2]{initpower2=-5/3}, corresponding to a
+Kolmogorov spectrum.
+For a delta-correlated spectrum, we have to put
+\var[initpower]{initpower=2},
 corresponding to a $k^2$ energy spectrum for kinetic energy.
 This would be suitable for the subinertial range from $k=1$ to
 $k=k_{\rm p}$ (corresponding to the variable \var{kpeak}).
 
-If \var{cutoff=0}, no cutoff will be imposed.
+If \var[cutoff]{cutoff=0}, no cutoff will be imposed.
 Otherwise, the spectrum will be multiplied by an exponential
 function with $\exp(-k^{2n})$, where $n=\mbox{'ncutoff=1'}$
 by default.
 
-Example, for \var{ampluu=1e-1}, \var{initpower=4.}, and \var{kpeak=3.},
-we get \var{urms=3.981E-01} when \var{relhel_uu=1} and
-\var{urms=3.981E-01} when \var{relhel_uu=0} and
-\var{urms=5.560E-01} when \var{relhel_uu=1}.
+Example, for \var[initpower]{ampluu=1e-1}, \var[initpower]{initpower=4.},
+and \var[kpeak]{kpeak=3.},
+we get \var[urms]{urms=3.981E-01} when \var[relhel_uu]{relhel_uu=1} and
+\var[urms]{urms=3.981E-01} when \var[relhel_uu]{relhel_uu=0} and
+\var[urms]{urms=5.560E-01} when \var[relhel_uu]{relhel_uu=1}.
 The \var{urms} values scale linearly with \var{ampluu} and for
-\var{initpower=2} also approximately linearly with \var{kpeak}.
+\var[initpower]{initpower=2} also approximately linearly with \var{kpeak}.
 For the magnetic field, we initialize the magnetic vector potential,
-so to get a $k^4$ spectrum, we have to put \var{initpower_aa=2.}
+so to get a $k^4$ spectrum, we have to put
+\var[initpower]{initpower_aa=2.}
 Everything else is analogous; see, e.g.,
 \begin{verbatim}
 &hydro_init_pars
@@ -8523,7 +9090,7 @@ Everything else is analogous; see, e.g.,
   relhel_aa=0., cutoff_aa=30.
 /
 \end{verbatim}
-for which we get \var{urms=3.981E-01} and \var{brms=3.871E-01}.
+for which we get \var[urms]{urms=3.981E-01} and \var[brms]{brms=3.871E-01}.
 
 % ---------------------------------------------------------------------- %
 
@@ -9496,12 +10063,12 @@ viscosity by a factor of about $2^5=32$ (Haugen \& Brandenburg 2004).
 This shows that hyperviscosity can allow
 a dramatic increase of the Reynolds number based on the scale of the box.
 
-By choosing \cmd{idiff='hyper3_mesh'} in \code{density_run_pars}
+By choosing \var[idiff]{idiff='hyper3_mesh'} in \code{density_run_pars}
 the hyperdiffusion for density is being set automatically in a
 mesh-independent way.
 A hyper-mesh Reynolds number of 30 corresponds to a coefficient
-\cmd{diffrho_hyper3_mesh=2} if \var{maxadvec} is about 1, but in
-practice we need a bit more (5 is currently the default).
+\var[diffrho_hyper3_mesh]{diffrho_hyper3_mesh=2} if \var{maxadvec} is
+about 1, but in practice we need a bit more (5 is currently the default).
 
 \subsubsection{Turbulence with hyperviscosity}
 \index{Hyperviscosity}
@@ -9611,7 +10178,7 @@ of the velocity or magnetic potential), we can write
   \includegraphics%
     [width=0.8\textwidth,keepaspectratio]%
     {BurgersShock}
-  \caption{Left: Burgers shock from \cmd{teach/PencilCode/material/BurgersShock}
+  \caption{Left: Burgers shock from \code{teach/PencilCode/material/BurgersShock}
   (in the teaching material) with $-20\leq x\leq 20$, $n_x=64$ mesh points,
   $u_x=\mp1$ on the two ends, $\nu=0.4$ and either $\nu_3=0$ (solid line)
   or $\nu_3=0.05$ (dashed line).
@@ -9661,11 +10228,12 @@ $N_0=$\var{ny}$\times$\var{nz}=$2\times1$ CPUs) that you want to
 continue from \file{VAR1} at $128^3$ (on
 \var{ny}$\times$\var{nz}=$4\times4$ CPUs).
 \begin{enumerate}
-\item Get the remeshing stuff from repository:
-  \begin{alltt}
-  \prompt{unix> } cd $PENCIL_HOME; cvs co -d remesh pencil-remesh
-  \prompt{unix> } setenv PATH $\{PATH\}:$PENCIL_HOME/remesh/bin
-  \end{alltt}
+\item
+The remeshing code is part of the {\sc Pencil Code} repository.
+  %\begin{alltt}
+  %\prompt{unix> } cd $PENCIL_HOME; cvs co -d remesh pencil-remesh
+  %\prompt{unix> } setenv PATH $\{PATH\}:$PENCIL_HOME/remesh/bin
+  %\end{alltt}
   % a $ for font-lock
 
 \item Create another run directory with current \file{VAR1} as
@@ -9833,6 +10401,47 @@ This is done by setting linit\_aatest=T. Note that daainit=100 sets the
 reset interval to 100.
 
 % ====================================================================== %
+\subsection{Restarting with particles from a run without them}
+\label{RestartingWithParticles}
+\index{Restarting}
+\index{Particles}
+
+If you want to restart from a run without particles to a run with
+them, you need to 
+
+\noindent (1) Compile a run with particles, 
+
+\code{RunWithParticles\$ pc\_build}
+
+\noindent (2) Copy a VARN
+or var.dat into this new run directory. Say the old run is at the
+directory OldRun and you want to copy the var.dat of that run and
+restart with particles. You do 
+
+\code{RunWithParticles\$ pc\_copyvar v v ../OldRun . -e }
+
+\noindent (3) In the start.in init\_pars of the new run, add the lines 
+
+\code{lread\_oldsnap = T}\\
+\code{ireset\_tstart = 0}
+
+\noindent (4) Remove all calls to initial conditions (make all
+initlnrho, inituu, initss, initaa, etc `nothing'), and  
+
+\noindent 5) Run \code{pc\_start}. 
+
+The variable \code{lread\_oldsnap} makes the code on start time read
+from the f-array of the snapshot, instead of the default, which is to
+initialize it with zeros. The necessity in step (4) to remove all calls to
+initial conditions is because otherwise the code would rewrite the
+content of the f-array with these initial conditions, or add them on
+top of the existing values of the snapshot. 
+
+The variable \code{ireset\_tstart} when set to zero makes it read the timestamp of
+the old snapshot and restart from that time. The default is 2, which
+sets the timestamp back to zero. 
+
+% ====================================================================== %
 
 \section{Runs and reference data}
 \label{S-ref-data}
@@ -9960,6 +10569,18 @@ there are several such files prepared:
 and more can be prepared in \cmd{IDL} with the procedure
 \file[generate_kvectors.pro]{\${PENCIL_HOME}/samples/helical-MHDturb/idl/generate_kvectors.pro}
 There is also more help in the \file{README} file in \file{helical-MHDturb}.
+
+%AB: added based on Matthias's check-in message of 27-mar-19.
+In \code{forcing_hel}: if \code{lcrosshel_forcing=T} and if
+\code{ltestfield_forcing=T.and.ltestflow_forcing=T}, \var{uu and} \var{aa}
+(\var{uu0} and \var{aa0} for \code{testfield*}) are simultaneously forced,
+using the same file{k.dat}.
+Relative scaling by \code{force1_scl} for vector potentials and \code{force2_scl}
+for velocities (default: 1).
+Simplified ``cross helicity forcing'' is now activated by
+\code{lhydro_forcing.and.lmagnetic_forcing=.true.}
+or by \code{ltestfield_forcing.and.ltestflow_forcing=.true.};
+\code{lcrosshel_forcing} is now obsolete.
 
 % ---------------------------------------------------------------------- %
 
@@ -10732,8 +11353,7 @@ $\sqrt{4\pi}Y_l^m(\theta_i,\phi_i)$ over special sets of directions
 $(\theta_i,\phi_i)$.
 Using these numbers and requiring that angular integration is exact for
 $l\le l_{\rm max}$, we find the following weights $w_i$ for different sets
-of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
-
+of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65).\footnote{
 \begin{enumerate}
 \item \emph{Axes}
 
@@ -10818,12 +11438,967 @@ of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
   $l_{\rm max} = 5$
 
 \end{enumerate}
+}
 
+Cooling times have been determined numerically in \cite{BB14}.
+Comparing with analytic expressions obtained in the Eddington
+approximation, the proposed suitable switches in 1-D and 2-D problems.
 
 % ====================================================================== %
 
+\section{Curvilinear coordinates}
+\index{Curvilinear coordinates}
+\label{Curvilinear-coordinates}
+
+The use and implementation of non-cartesian coordinate systems
+is briefly explained in Section~\ref{Coordinate-systems}.
+All differential operators look like their cartesian counterparts,
+except that all derivatives are now replaced by covariant derivatives.
+The relevant reference for the {\sc Pencil Code} is \cite{MTBM09};
+see their Appendix~B.
+Here some details.
+
+\subsection{Covariant derivatives}
+\index{Covariant derivatives}
+\label{Covariant-derivatives}
+
+\begin{equation}
+A_{\hat\alpha;\hat\beta}=A_{\hat\alpha,\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,A_{\hat\sigma},
+\end{equation}
+\begin{equation}
+A_{\hat\alpha\hat\beta;\hat\gamma}=A_{\hat\alpha\hat\beta,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,A_{\hat\alpha\hat\sigma}.
+\end{equation}
+Second derivative tensor
+\begin{eqnarray}
+A_{\hat\alpha;\hat\beta\hat\gamma}
+&=&A_{\hat\alpha;\hat\beta,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma;\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,A_{\hat\alpha;\hat\sigma}
+\cr
+&=&A_{\hat\alpha,\hat\beta\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,A_{\hat\sigma,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta,\hat\gamma}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma,\hat\beta}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\beta}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}.
+\nonumber
+\end{eqnarray}
+Elements of the first derivative tensor
+\begin{equation}
+A_{\hat r;\hat r}=A_{\hat r,\hat r},
+\quad\quad
+A_{\hat\theta;\hat\theta}=A_{\hat\theta,\hat\theta}
++r^{-1}\,A_{\hat r},
+\quad\quad
+A_{\hat\phi;\hat\phi}=A_{\hat\phi,\hat\phi}
++r^{-1}\,A_{\hat r}
++r^{-1}\!\cot\!\theta\,A_{\hat\theta}.
+\label{DiagonalElements}
+\end{equation}
+\begin{eqnarray}
+\begin{array}{lll}
+A_{\hat\phi;\hat\theta}=A_{\hat\phi,\hat\theta}
+\quad&
+A_{\hat\theta;\hat\phi}=A_{\hat\theta,\hat\phi}
+-r^{-1}\!\cot\!\theta\,A_{\hat\phi}
+\\
+A_{\hat r;\hat\phi}=A_{\hat r,\hat\phi}
+-r^{-1}\,A_{\hat\phi}
+\quad&
+A_{\hat\phi;\hat r}=A_{\hat\phi,\hat r}
+\\
+A_{\hat\theta;\hat r}=A_{\hat\theta,\hat r}
+\quad&
+A_{\hat r;\hat\theta}=A_{\hat r,\hat\theta}
+-r^{-1}\,A_{\hat\theta}
+\end{array}
+\label{OffDiagonalElements}
+\end{eqnarray}
+
+\subsection{Differential operators}
+
+All differential operators look like their cartesian counterparts,
+except that all derivatives are now replaced by covariant derivatives.
+
+\subsubsection{Gradient}
+\newcommand{\rrrr}{r}
+\newcommand{\zzzz}{z}
+\newcommand{\ddr}{\partial_{\hat r}}
+\newcommand{\ddt}{\partial_{\hat\theta}}
+\newcommand{\ddp}{\partial_{\hat\phi}}
+\newcommand{\DDr}{{\rm D}_r {}}
+\newcommand{\DDDr}{{\cal D}_r {}}
+\newcommand{\DDDDr}{{\rm D}^{-1}_r {}}
+\newcommand{\DDt}{{\rm D}_\theta {}}
+\newcommand{\Ddt}{{\rm D}_\theta^2 {}}
+\newcommand{\DDDDt}{{\rm D}^{-1}_\theta {}}
+\newcommand{\dDt}{{\cal D}_\theta^2 {}}
+\newcommand{\drr}{{\rm d}_r^2 {}}
+\newcommand{\dtt}{{\rm d}_\theta^2 {}}
+\newcommand{\dpp}{{\rm d}_\phi^2 {}}
+\newcommand{\Drr}{{\rm D}_r^2 {}}
+\newcommand{\DDrr}{{\cal D}_r^2 {}}
+
+For the gradient operator the covariant and partial derivatives are
+the same, i.e.\
+\begin{equation}
+\nab\Psi={\Psi}_{;{\hat\alpha}}={\Psi}_{,{\hat\alpha}}=
+\begin{pmatrix}
+\ddr\Psi\cr\ddt\Psi\cr\ddp\Psi
+\end{pmatrix}
+\end{equation}
+where
+\begin{eqnarray}
+\ddr&=&\partial_r\\
+\ddt&=&r^{-1}\partial_\theta\\
+\ddp&=&\varpi^{-1}\partial_\phi
+\end{eqnarray}
+and $\varpi=r\sin\theta$ is the cylindrical radius.
+Thus,
+\begin{equation}
+\nab\Psi=\left(\nab\Psi\right)^{(0)},
+\end{equation}
+where the superscript $(0)$ indicated the straightforward
+calculation in the non-coordinate basis.
+The coordinate and non-coordinate bases are related to each other via
+\begin{equation}
+\left(\nab\Psi\right)^{0}
+\equiv
+\begin{pmatrix}
+\Psi_{,\hat r}\cr\Psi_{,\hat\theta}\cr\Psi_{,\hat\phi}
+\end{pmatrix}
+\begin{pmatrix}
+1 & 0 & 0\cr 0 & r^{-1} & 0 \cr 0 & 0 & \varpi^{-1}
+\end{pmatrix}
+\left(\nab\Psi\right)^{(\rm coord)}.
+\end{equation}
+Here, the result in the coordinate basis is just what one would
+get by computing as if one had cartesian coordinates.
+In the {\sc Pencil Code} the output or the subroutine {\sf der} is
+now in this non-coordinate basis.
+
+\subsubsection{Divergence}
+
+For the divergence operator we have a `correction term', i.e.\
+\begin{eqnarray}
+\nab\cdot\Av&=&{A^{\hat\alpha}}_{;{\hat\alpha}}
+\\
+             &=&{A^{\hat\alpha}}_{,{\hat\alpha}}
++{\Gamma^{\hat\alpha}}_{{\hat\beta}{\hat\alpha}}A^{\hat\beta},
+\end{eqnarray}
+where the only non-vanishing contributions to
+the last term are
+\begin{eqnarray}
+{\Gamma^{\hat\alpha}}_{{\hat\beta}{\hat\alpha}}A^{\hat\beta}
+&=&{\Gamma^{\hat\theta}}_{{\hat r}{\hat\theta}}A^{\hat r}
++{\Gamma^{\hat\phi}}_{{\hat r}{\hat\phi}}A^{\hat r}
++{\Gamma^{\hat\phi}}_{{\hat\theta}{\hat\phi}}A^{\hat\theta}
+\\
+&=&2r^{-1}A^{\hat r}+r^{-1}\!\cot\!\theta\; A^{\hat\theta}.
+\end{eqnarray}
+Thus,
+\begin{equation}
+\nab\cdot\Av=\left(\nab\cdot\Av\right)^{(0)}
++M^{\rm(div)}_{\hat\alpha}A_{\hat\alpha},
+\end{equation}
+where
+\begin{equation}
+M^{\rm(div)}_{\hat\alpha}=
+\begin{pmatrix}
+2r^{-1}\cr r^{-1}\!\cot\!\theta\cr 0\cr
+\end{pmatrix}
+\end{equation}
+represents the correction term.
+
+Alternatively:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha}&=&A_{\hat\alpha,\hat\alpha}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma}
+\\
+&=&A_{\hat\alpha,\hat\alpha}
++2r^{-1}A_{\hat r}+r^{-1}\!\cot\!\theta\; A_{\hat\theta}.
+\end{eqnarray}
+
+\subsubsection{Curl}
+
+The curl operator is given by
+\begin{equation}
+(\nab\times\Bv)^{\hat\alpha}
+=\epsilon^{\hat\alpha\hat\beta\hat\gamma}B_{\hat\gamma,\hat\beta}.
+\end{equation}
+So
+\begin{equation}
+\nab\times\Av=
+\begin{pmatrix}
+A_{\hat\phi;\hat\theta}-A_{\hat\theta;\hat\phi}\cr
+A_{\hat r;\hat\phi}-A_{\hat\phi;\hat r}\cr
+A_{\hat\theta;\hat r}-A_{\hat r;\hat\theta}
+\end{pmatrix}
+\end{equation}
+\begin{equation}
+\nab\times\Av=
+\begin{pmatrix}
+A_{\hat\phi,\hat\theta}-A_{\hat\theta,\hat\phi}
+  +{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi}\cr
+A_{\hat r,\hat\phi}-A_{\hat\phi,\hat r}
+  -{\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi}\cr
+A_{\hat\theta,\hat r}-A_{\hat r,\hat\theta}
+  +{\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta}
+\end{pmatrix}
+\end{equation}
+Thus,
+\begin{equation}
+\nab\times\Av=\left(\nab\times\Av\right)^{(0)}
++M^{\rm(curl)}_{\hat\alpha\hat\beta}A_{\hat\beta},
+\end{equation}
+where
+\begin{equation}
+M^{\rm(curl)}_{\hat\alpha\hat\beta}=
+\begin{pmatrix}
+0 & 0 & r^{-1}\!\cot\!\theta\cr 0 & 0 & -r^{-1}\cr 0 & r^{-1} & 0\cr
+\end{pmatrix}
+\end{equation}
+is the correction term.
+In the {\sc Pencil Code} we use the subroutine {\sf curl\_mn(aij,bb,aa)},
+which uses {\sf aij}$=A_{\hat\alpha,\hat\beta}$ and {\sf aa}$=A_{\hat\alpha}$
+as input pencils and produces {\sf bb}$=B_{\hat\alpha}$ as output.
+
+%\subsubsection{$\uv\cdot\nab\uv$ operator} XX
+\subsubsection{Advection operator}
+
+[The usage of roman indices here is insignificant.]
+
+\begin{equation}
+\uv\cdot\nab\uv=\omv\times\uv+\half\nab\uv^2=-\uv\times\omv+\half\nab\uv^2
+\end{equation}
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_i
+&=&-\epsilon_{ijk}\epsilon_{klm}u_ju_{m;l}+u_ju_{j,i}
+\cr
+&=&(-\delta_{il}\delta_{jm}+\delta_{im}\delta_{jl})u_ju_{m;l}+u_ju_{j,i}
+\cr
+&=&-u_ju_{j;i}+u_ju_{i;j}+u_ju_{j,i}
+\cr
+&=&u_ju_{i;j}+{\Gamma^k}_{ji}u_ju_{k}
+\cr
+&=&u_ju_{i,j}+(-{\Gamma^k}_{ij}+{\Gamma^k}_{ji})u_ju_{k}
+\end{eqnarray}
+Note that the terms with
+${\Gamma^{\hat r}}_{{\hat\theta}{\hat\theta}}$,
+${\Gamma^{\hat r}}_{{\hat\phi}{\hat\phi}}$, and
+${\Gamma^{\hat\theta}}_{{\hat\phi}{\hat\phi}}$ drop out.
+Thus, we have
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_{\hat r}
+&=&u_ju_{\hat r,j}+(-{\Gamma^k}_{\hat rj}+{\Gamma^k}_{j\hat r})\,u_ju_{k}
+\cr
+&=&u_ju_{\hat r,j}-{\Gamma^{\hat\theta}}_{\hat r\hat\theta}\,u_{\hat\theta}^2-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}\,u_{\hat\phi}^2
+\cr
+&=&u_ju_{\hat r,j}-r^{-1}(u_{\hat\theta}^2+u_{\hat\phi}^2)
+\end{eqnarray}
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_{\hat\theta}
+&=&u_ju_{\hat\theta,j}+(-{\Gamma^k}_{\hat\theta j}+{\Gamma^k}_{j\hat\theta})\,u_ju_{k}
+\cr
+&=&u_ju_{\hat\theta,j}-{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,u_{\hat\phi}^2+{\Gamma^{\hat\theta}}_{\hat r\hat\theta}\,u_{\hat r}u_{\hat\theta}
+\cr
+&=&u_ju_{\hat\theta,j}-r^{-1}\cot\!\theta\,u_{\hat\phi}^2+r^{-1}u_{\hat r}u_{\hat\theta}
+\end{eqnarray}
+\begin{eqnarray}
+(\uv\cdot\nab\uv)_{\hat\phi}
+&=&u_ju_{\hat\phi,j}+(-{\Gamma^k}_{\hat\phi j}+{\Gamma^k}_{j\hat\phi})\,u_ju_{k}
+\cr
+&=&u_ju_{\hat\phi,j}+{\Gamma^{\hat\phi}}_{\hat r\hat\phi}\,u_{\hat r}u_{\hat\phi}+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,u_{\hat\theta}u_{\hat\phi}
+\cr
+&=&u_ju_{\hat\phi,j}+r^{-1}u_{\hat r}u_{\hat\phi}+r^{-1}\cot\!\theta\,u_{\hat\theta}u_{\hat\phi}
+\end{eqnarray}
+
+Note that the formulation above is slightly misleading, because
+\begin{equation}
+{\Gamma^k}_{j\hat\theta}\,u_ju_{k}
+={\Gamma^{\hat r}}_{\hat\theta\hat\theta}\,u_{\hat\theta}u_{\hat r}
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta}\,u_{\hat r}u_{\hat\theta}
+=0
+\end{equation}
+\begin{equation}
+{\Gamma^k}_{j\hat\phi}\,u_ju_{k}
+={\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,u_{\hat\phi}u_{\hat r}
++{\Gamma^{\hat\phi}}_{\hat r\hat\phi}\,u_{\hat r}u_{\hat\phi}
++{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,u_{\hat\phi}u_{\hat\theta}
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,u_{\hat\theta}u_{\hat\phi}
+=0
+\end{equation}
+
+%\subsubsection{$\uv\times\Bv$ term} XX
+\subsubsection{Mixed advection operator}
+
+\begin{equation}
+\uv\times\Bv=\uv\times\nab\Bv
+=u_j\epsilon_{ijk}\epsilon_{klm}A_{m;l}
+=u_j(\delta_{il}\delta_{jm}-\delta_{im}\delta_{jl})A_{m;l}
+=u_jA_{j;i}-u_jA_{i;j}
+\end{equation}
+
+%\subsubsection{Shear term, $u_jA_{j;i}$} XX
+\subsubsection{Shear term}
+
+\begin{equation}
+u_jA_{j;i}
+=(u_jA_j)_{;i}-u_{j;i}A_j
+=(u_jA_j)_{,i}-u_{j;i}A_j
+\end{equation}
+\begin{equation}
+u_{j;i}A_j=u_{j,i}A_j-\Gamma^k_{ji}u_kA_j
+\end{equation}
+So
+\begin{equation}
+u_{\hat\phi;\hat r}A_{\hat\phi}
+=u_{\hat\phi,\hat r}A_{\hat\phi}
+-\Gamma^k_{\hat\phi\hat r}u_kA_{\hat\phi}
+=u_{\hat\phi,\hat r}A_{\hat\phi}
+\end{equation}
+\begin{equation}
+u_{\hat r;\hat\phi}A_{\hat r}
+=u_{\hat r,\hat\phi}A_{\hat r}
+-\Gamma^{\hat\phi}_{\hat r\hat\phi}u_{\hat\phi}A_{\hat r}
+\end{equation}
+
+%\subsubsection{$\uv\cdot\nab\Av$ operator} XX
+\subsubsection{Another mixed advection operator}
+
+\begin{equation}
+u_{\hat\beta} A_{\hat\alpha;\hat\beta}=u_{\hat\beta} A_{\hat\alpha,\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\beta}\,u_{\hat\beta} A_{\hat\sigma},
+\end{equation}
+Write out
+\begin{eqnarray}
+(\uv\cdot\nab\Av)_{\hat r}=
+u_{\hat r}A_{\hat r;\hat r}
++u_{\hat\theta}A_{\hat r;\hat\theta}
++u_{\hat\phi}A_{\hat r;\hat\phi}
+&=&u_{\hat r}A_{\hat r,\hat r},
++u_{\hat\theta}A_{\hat r,\hat\theta}-r^{-1}\,u_{\hat\theta}A_{\hat\theta}
++u_{\hat\phi}A_{\hat r,\hat\phi}-r^{-1}\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\theta}=
+u_{\hat r}A_{\hat\theta;\hat r}
++u_{\hat\theta}A_{\hat\theta;\hat\theta}
++u_{\hat\phi}A_{\hat\theta;\hat\phi}
+&=&u_{\hat r}A_{\hat\theta,\hat r}
++u_{\hat\theta}A_{\hat\theta,\hat\theta}+r^{-1}\,u_{\hat\theta}A_{\hat r},
++u_{\hat\phi}A_{\hat\theta,\hat\phi}-r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\phi}=
+u_{\hat r}A_{\hat\phi;\hat r}
++u_{\hat\theta}A_{\hat\phi;\hat\theta}
++u_{\hat\phi}A_{\hat\phi;\hat\phi}
+&=&u_{\hat r}A_{\hat\phi,\hat r}
++u_{\hat\theta}A_{\hat\phi,\hat\theta}
++u_{\hat\phi}A_{\hat\phi,\hat\phi}+r^{-1}\,u_{\hat\phi}A_{\hat r}+r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\theta}.
+\nonumber
+\end{eqnarray}
+Reorder
+\begin{eqnarray}
+(\uv\cdot\nab\Av)_{\hat r}
+&=&u_{\hat r}A_{\hat r,\hat r}+u_{\hat\theta}A_{\hat r,\hat\theta}+u_{\hat\phi}A_{\hat r,\hat\phi}
+-r^{-1}\,u_{\hat\theta}A_{\hat\theta}-r^{-1}\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\theta}
+&=&u_{\hat r}A_{\hat\theta,\hat r}+u_{\hat\theta}A_{\hat\theta,\hat\theta}+u_{\hat\phi}A_{\hat\theta,\hat\phi}
++r^{-1}\,u_{\hat\theta}A_{\hat r}-r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\phi}
+\cr
+(\uv\cdot\nab\Av)_{\hat\phi}
+&=&u_{\hat r}A_{\hat\phi,\hat r}+u_{\hat\theta}A_{\hat\phi,\hat\theta}+u_{\hat\phi}A_{\hat\phi,\hat\phi}
++r^{-1}\,u_{\hat\phi}A_{\hat r}+r^{-1}\!\cot\!\theta\,u_{\hat\phi}A_{\hat\theta}.
+\end{eqnarray}
+
+\subsubsection{Strain Matrix}
+
+The strain matrix takes the form
+$2{\sf s}_{\hat\alpha\hat\beta}=
+u_{\hat\alpha;\hat\beta}+u_{\hat\beta;\hat\alpha}$.
+The components of the covariant derivative tensor were given in
+Eqs.~(\ref{DiagonalElements}) and (\ref{OffDiagonalElements}),
+so the final result reads
+\begin{equation}
+2{\sf s}
+\equiv
+\begin{pmatrix}
+2u_{\hat r,\hat r}&
+  u_{\hat r,\hat\theta}+u_{\hat\theta,\hat r}-u_{\hat\theta}/r&
+    u_{\hat r,\hat\phi}+u_{\hat\phi,\hat r}-u_{\hat\phi}/r\cr
+u_{\hat r,\hat\theta}+u_{\hat\theta,\hat r}-u_{\hat\theta}/r&
+  2u_{\hat\theta,\hat\theta}+2u_{\hat r}/r&
+    u_{\hat\theta,\hat\phi}+u_{\hat\phi,\hat\theta}-
+                              u_{\hat\phi}\frac{\cot\!\theta}{r}\cr
+u_{\hat r,\hat\phi}+u_{\hat\phi,\hat r}-u_{\hat\phi}/r&
+  u_{\hat\theta,\hat\phi}+u_{\hat\phi,\hat\theta}-
+                              u_{\hat\phi}\frac{\cot\!\theta}{r}&
+    2u_{\hat\phi,\hat\phi}+2u_{\hat r}/r+
+                               2u_{\hat\theta}\frac{\cot\!\theta}{r}
+\end{pmatrix}
+\end{equation}
+The trace-less rate of strain matrix is given by
+\begin{equation}
+{\sf S}_{ij}={\sf s}_{ij}-\onethird\delta_{ij}\nab\cdot\uv.
+\end{equation}
+
+\subsubsection{Lambda effect}
+
+\begin{equation}
+Q_{ij}=
+\begin{pmatrix}
+0 & 0 & \Lambda_V\Omega \cr
+0 & 0 & \Lambda_H\Omega \cr
+\Lambda_V\Omega & \Lambda_H\Omega & 0
+\end{pmatrix}
+\end{equation}
+where $\Omega=u_{\hat\phi}/r\sin\theta$.
+Next, compute $Q_{ij;j}$.
+\begin{eqnarray}
+Q_{\hat\alpha\hat\beta;\hat\gamma}
+&=&Q_{\hat\alpha\hat\beta,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,Q_{\hat\sigma\hat\beta}
+-{\Gamma^{\hat\sigma}}_{\hat\beta\hat\gamma}\,Q_{\hat\alpha\hat\sigma}.
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\theta\hat\rrrr;\hat\rrrr}
+&=&Q_{\hat\theta\hat\rrrr,\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\rrrr}\,Q_{\hat\sigma\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\theta\hat\sigma}.
+\cr
+&=&0
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\theta\hat\theta;\hat\theta}
+&=&Q_{\hat\theta\hat\theta,\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\sigma\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\sigma}.
+\cr
+&=&
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\theta}
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\theta}\,Q_{\hat\theta\hat\phi}.
+\cr
+&=&0
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\theta\hat\phi;\hat\phi}
+&=&Q_{\hat\theta\hat\phi,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\phi}\,Q_{\hat\sigma\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\sigma}.
+\cr
+&=&Q_{\hat\theta\hat\phi,\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,Q_{\hat\phi\hat\phi}
+-{\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat r}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\theta}.
+\cr
+&=&0
+\end{eqnarray}
+%--------------------------------------------------------------------
+$\phi$ terms
+\begin{eqnarray}
+Q_{\hat\phi\hat\rrrr;\hat\rrrr}
+&=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\rrrr}\,Q_{\hat\sigma\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,Q_{\hat\phi\hat\sigma}.
+\cr
+&=&Q_{\hat\phi\hat\rrrr,\hat\rrrr}
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\phi\hat\theta;\hat\theta}
+&=&Q_{\hat\phi\hat\theta,\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\theta}\,Q_{\hat\sigma\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\sigma}
+\cr
+&=&Q_{\hat\phi\hat\theta,\hat\theta}
+-{\Gamma^{\hat\rrrr}}_{\hat\theta\hat\theta}\,Q_{\hat\phi\hat\rrrr}
+\cr
+&=&Q_{\hat\phi\hat\theta,\hat\theta}
++r^{-1}\,Q_{\hat\phi\hat\rrrr}
+\end{eqnarray}
+\begin{eqnarray}
+Q_{\hat\phi\hat\phi;\hat\phi}
+&=&Q_{\hat\phi\hat\phi,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\sigma\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\sigma}
+\cr
+&=&
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\sigma\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\sigma}
+\cr
+\cr
+&=&
+-{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,Q_{\hat\rrrr\hat\phi}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\theta\hat\phi}
+-{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\rrrr}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,Q_{\hat\phi\hat\theta}
+\cr
+&=&
++r^{-1}\,Q_{\hat\rrrr\hat\phi}
++\cot\theta\,r^{-1}\,Q_{\hat\theta\hat\phi}
++r^{-1}\,Q_{\hat\phi\hat\rrrr}
++\cot\theta\,r^{-1}\,Q_{\hat\phi\hat\theta}
+\cr
+&=&
++2r^{-1}\,\Lambda_{\rm V}\Omega
++2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega
+\end{eqnarray}
+So, the $\phi$ component of the divergence of the Lambda tensor is then
+\begin{equation}
+Q_{\hat\phi\hat\sigma;\hat\sigma}=
+Q_{\hat\phi\hat\rrrr,\hat\rrrr}
++Q_{\hat\phi\hat\theta,\hat\theta}
++3r^{-1}\,\Lambda_{\rm V}\Omega
++2\cot\theta\,r^{-1}\,\Lambda_{\rm H}\Omega
+\end{equation}
+
+\subsubsection{Laplacian of a scalar}
+Let
+$E_{\hat \alpha}\equiv (\nab\Psi)_{\hat\alpha} = \partial_{\hat\alpha}\Psi$
+Then
+\begin{equation}
+\Delta\Psi = E_{\hat\beta;\hat\beta}
+= (\partial_{\hat\beta}\Psi)_{,\hat\beta} +
+  \frac{2}{r}\Psi_{,\hat r} + \frac{\cot\!\theta}{r}\Psi_{,\hat\theta}
+\end{equation}
+
+\subsubsection{Hessian of a scalar}
+
+\begin{equation}
+s_{;\hat\alpha}=s_{,\hat\alpha}
+\end{equation}
+\begin{equation}
+s_{;\hat\rrrr\hat\rrrr}
+=s_{,\hat\rrrr\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\rrrr\hat\rrrr}\,s_{,\hat\sigma},
+=s_{,\hat\rrrr\hat\rrrr}
+\end{equation}
+\begin{equation}
+s_{;\hat\theta\hat\theta}
+=s_{,\hat\theta\hat\theta}
+-{\Gamma^{\hat\rrrr}}_{\hat\theta\hat\theta}\,s_{,\hat\rrrr},
+=s_{,\hat\theta\hat\theta}
++r^{-1}\,s_{,\hat\rrrr},
+\end{equation}
+\begin{equation}
+s_{;\hat\phi\hat\phi}
+=s_{,\hat\phi\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\phi}\,s_{,\hat\sigma},
+=s_{,\hat\phi\hat\phi}
+-{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,s_{,\hat\rrrr},
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,s_{,\hat\theta},
+=s_{,\hat\phi\hat\phi}
++r^{-1}\,s_{,\hat\rrrr},
++r^{-1}\cot\theta\,s_{,\hat\theta},
+\end{equation}
+\begin{equation}
+s_{;\hat\rrrr\hat\theta}
+=s_{,\hat\rrrr\hat\theta}
+-{\Gamma^{\hat\theta}}_{\hat\rrrr\hat\theta}\,s_{,\hat\theta},
+=s_{,\hat\rrrr\hat\theta}
+-r^{-1}\,s_{,\hat\theta},
+\end{equation}
+\begin{equation}
+s_{;\hat\rrrr\hat\phi}
+=s_{,\hat\rrrr\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat\rrrr\hat\phi}\,s_{,\hat\phi},
+=s_{,\hat\rrrr\hat\phi}-r^{-1}\,s_{,\hat\phi}
+\end{equation}
+\begin{equation}
+s_{;\hat\theta\hat\rrrr}
+=s_{,\hat\theta\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\theta\hat\rrrr}\,s_{,\hat\sigma},
+=s_{,\hat\theta\hat\rrrr}
+\end{equation}
+\begin{equation}
+s_{;\hat\phi\hat\rrrr}
+=s_{,\hat\phi\hat\rrrr}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\rrrr}\,s_{,\hat\sigma},
+=s_{,\hat\phi\hat\rrrr}
+\end{equation}
+\begin{equation}
+s_{;\hat\theta\hat\phi}
+=s_{,\hat\theta\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}\,s_{,\hat\phi},
+=s_{,\hat\theta\hat\phi}
+-r^{-1}\cot\theta\,s_{,\hat\phi}
+\end{equation}
+\begin{equation}
+s_{;\hat\phi\hat\theta}
+=s_{,\hat\phi\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\phi\hat\theta}\,s_{,\hat\sigma},
+=s_{,\hat\phi\hat\theta}
+\end{equation}
+So,
+\begin{equation}
+s_{;\hat\alpha\hat\beta}=s_{,\hat\alpha\hat\beta}+
+\begin{pmatrix}
+0 & -r^{-1}\,s_{,\hat\theta} & -r^{-1}\,s_{,\hat\phi} \cr
+0 & +r^{-1}\,s_{,\hat\rrrr}  & -r^{-1}\cot\theta\,s_{,\hat\phi} \cr
+0 & 0 & -{\Gamma^{\hat\rrrr}}_{\hat\phi\hat\phi}\,s_{,\hat\rrrr}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,s_{,\hat\theta}
+\end{pmatrix}
+\end{equation}
+
+\subsubsection{Double curl}
+
+For the calculation of $\Jv=\nab\times\Bv$ we use the same
+curl routine, but with different arguments,
+{\sf bij}$=B_{\hat\alpha,\hat\beta}$ and {\sf bb}$=B_{\hat\alpha}$
+as input pencils and {\sf jj}$=J_{\hat\alpha}$ as output,
+i.e.\ {\sf curl\_mn(bij,jj,bb)}, so that
+\begin{equation}
+\Jv=
+\begin{pmatrix}
+B_{\hat\phi,\hat\theta}-B_{\hat\theta,\hat\phi}
+  +{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}B^{\hat\phi}\cr
+B_{\hat r,\hat\phi}-B_{\hat\phi,\hat r}
+  -{\Gamma^{\hat\phi}}_{\hat r\hat\phi}B^{\hat\phi}\cr
+B_{\hat\theta,\hat r}-B_{\hat r,\hat\theta}
+  +{\Gamma^{\hat\theta}}_{\hat r\hat\theta}B^{\hat\theta}
+\end{pmatrix}
+=\left(\nab\times\Bv\right)^{(0)}
++M^{\rm(curl)}_{\hat\alpha\hat\beta}B_{\hat\beta},
+\end{equation}
+where
+\begin{equation}
+(\nab\times\Bv)^{(0) \hat\alpha}
+=\epsilon^{\hat\alpha\hat\beta\hat\gamma}B_{\hat\gamma,\hat\beta}.
+\end{equation}
+Expressing the components of $\left(\nab\times\Bv\right)^{(0)}$ in terms
+of $A_{\hat\alpha}$ we have
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=
+(A_{\hat\theta,\hat r}-A_{\hat r,\hat\theta}+{\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=
+(A_{\hat r,\hat\phi}-A_{\hat\phi,\hat r}-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\\
+B_{\hat r,\hat\phi}=
+(A_{\hat\phi,\hat\theta}-A_{\hat\theta,\hat\phi}+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=
+(A_{\hat\theta,\hat r}-A_{\hat r,\hat\theta}+{\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat r}
+\\
+B_{\hat\theta,\hat r}=
+(A_{\hat r,\hat\phi}-A_{\hat\phi,\hat r}-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat r}
+\quad&
+B_{\hat r,\hat\theta}=
+(A_{\hat\phi,\hat\theta}-A_{\hat\theta,\hat\phi}+{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\theta}
+\end{array}
+\end{eqnarray}
+or
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=
+A_{\hat\theta,\hat r\hat\theta}-A_{\hat r,\hat\theta\hat\theta}+({\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=
+A_{\hat r,\hat\phi\hat\phi}-A_{\hat\phi,\hat r\hat\phi}-({\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\\
+B_{\hat r,\hat\phi}=
+A_{\hat\phi,\hat\theta\hat\phi}-A_{\hat\theta,\hat\phi\hat\phi}+({\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=
+A_{\hat\theta,\hat r\hat r}-A_{\hat r,\hat\theta\hat r}+({\Gamma^{\hat\theta}}_{\hat r\hat\theta}A^{\hat\theta})_{,\hat r}
+\\
+B_{\hat\theta,\hat r}=
+A_{\hat r,\hat\phi\hat r}-A_{\hat\phi,\hat r\hat r}-({\Gamma^{\hat\phi}}_{\hat r\hat\phi}A^{\hat\phi})_{,\hat r}
+\quad&
+B_{\hat r,\hat\theta}=
+A_{\hat\phi,\hat\theta\hat\theta}-A_{\hat\theta,\hat\phi\hat\theta}+({\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}A^{\hat\phi})_{,\hat\theta}
+\end{array}
+\end{eqnarray}
+Thus,
+\begin{equation}
+B_{\hat\alpha,\hat\beta}
+=(B_{\hat\alpha,\hat\beta})^{(0)}
++M^{\rm(2curl2)}_{\hat\alpha\hat\beta\hat\gamma\hat\delta}
+A_{\hat\gamma,\hat\delta}
++M^{\rm(1curl2)}_{\hat\alpha\hat\beta\hat\gamma}A_{\hat\gamma},
+\end{equation}
+where
+\begin{equation}
+(B_{\hat\alpha,\hat\delta})^{(0)}
+=\epsilon_{\hat\alpha\hat\beta\hat\gamma}A_{\hat\gamma,\hat\beta\hat\delta}
+\end{equation}
+with
+\begin{eqnarray}
+\Psi_{,\hat r\hat r}&=&\Psi_{,rr}
+\\
+\Psi_{,\hat\theta\hat\theta}&=&\Psi_{,\theta\theta}\;r^{-2}
+\\
+\Psi_{,\hat\phi\hat\phi}&=&\Psi_{,\phi\phi}\;r^{-2}\sin^{-2}\!\theta
+\\
+\Psi_{,\hat r\hat\theta}&=&\Psi_{,r\theta}\;r^{-1}
+\\
+\Psi_{,\hat\theta\hat r}&=&\Psi_{,\theta r}\;r^{-1}
+-\Psi_{,\hat\theta}\;r^{-1}
+\\
+\Psi_{,\hat r\hat\phi}&=&\Psi_{,r\phi}\;r^{-1}\sin^{-1}\!\theta
+\\
+\Psi_{,\hat\phi\hat r}&=&\Psi_{,\phi r}\;r^{-1}\sin^{-1}\!\theta
+-\Psi_{,\hat\phi}\;r^{-1}
+\\
+\Psi_{,\hat\theta\hat\phi}&=&\Psi_{,\theta\phi}\;r^{-2}\sin^{-1}\!\theta
+\end{eqnarray}
+and
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=...
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta}{A^{\hat\theta}}_{,\hat\theta}
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat\theta}A^{\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=...
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}{A^{\hat\phi}}_{,\hat\phi}
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat\phi}A^{\hat\phi}
+\\
+B_{\hat r,\hat\phi}=...
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}{A^{\hat\phi}}_{,\hat\phi}
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\phi}A^{\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=...
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta}{A^{\hat\theta}}_{,\hat r}
++{\Gamma^{\hat\theta}}_{\hat r\hat\theta,\hat r}A^{\hat\theta}
+\\
+B_{\hat\theta,\hat r}=...
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi}{A^{\hat\phi}}_{,\hat r}
+-{\Gamma^{\hat\phi}}_{\hat r\hat\phi,\hat r}A^{\hat\phi}
+\quad&
+B_{\hat r,\hat\theta}=...
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}{A^{\hat\phi}}_{,\hat\theta}
++{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi,\hat\theta}A^{\hat\phi}
+\end{array}
+\end{eqnarray}
+Note that some derivatives of Christoffel symbols vanish, so
+we are left with
+\begin{eqnarray}
+\begin{array}{lll}
+B_{\hat\phi,\hat\theta}=...
++r^{-1}{A^{\hat\theta}}_{,\hat\theta}
+\quad&
+B_{\hat\theta,\hat\phi}=...
+-r^{-1}{A^{\hat\phi}}_{,\hat\phi}
+\\
+B_{\hat r,\hat\phi}=...
++r^{-1} \cot\!\theta {A^{\hat\phi}}_{,\hat\phi}
+\quad&
+B_{\hat\phi,\hat r}=...
++r^{-1}{A^{\hat\theta}}_{,\hat r}
+-r^{-2}A^{\hat\theta}
+\\
+B_{\hat\theta,\hat r}=...
+-r^{-1}{A^{\hat\phi}}_{,\hat r}
++r^{-2}A^{\hat\phi}
+\quad&
+B_{\hat r,\hat\theta}=...
++r^{-1} \cot\!\theta\, {A^{\hat\phi}}_{,\hat\theta}
+-r^{-2}\sin^{-2}\!\theta\, A^{\hat\phi}
+\end{array}
+\end{eqnarray}
+
+%\subsubsection{The $\grad\dive$ operator} XX
+\subsubsection{Gradient of a divergence}
+
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat\gamma}
+&=&A_{\hat\alpha,\hat\alpha\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\gamma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\gamma}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\gamma}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}.
+\nonumber
+\end{eqnarray}
+$\hat r$ component:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat r}
+&=&A_{\hat\alpha,\hat\alpha\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat r}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat r}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat r}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat r}\,A_{\hat\sigma}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat r}
++2r^{-1}\,A_{\hat r,\hat r}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat r}
+-2r^{-2}\,A_{\hat r}
+-r^{-2}\cot\!\theta A_{\hat\theta}
+\end{eqnarray}
+$\hat\theta$ component:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat\theta}
+&=&A_{\hat\alpha,\hat\alpha\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\theta}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\theta}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\theta}
++2r^{-1}\,A_{\hat r,\hat\theta}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\theta}
+-r^{-2}\sin\!^{-2}\theta A_{\hat\theta}
+\end{eqnarray}
+Note that the last four terms in the above expression canceled, because
+\begin{eqnarray}
+&&-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\theta}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&
+-r^{-1}\,A_{\hat\theta,\hat r}
++r^{-1}\,A_{\hat r,\hat\theta}
+-r^{-2}\,A_{\hat\theta}
+-r^{-1}\,A_{\hat r,\hat\theta}
++r^{-1}\,A_{\hat\theta,\hat r}
++r^{-2}\,A_{\hat\theta}
+=0
+\end{eqnarray}
+$\hat\phi$ component:
+\begin{eqnarray}
+A_{\hat\alpha;\hat\alpha\hat\phi}
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\phi}\,A_{\hat\sigma}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}.
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha,\hat\phi}\,A_{\hat\sigma}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\alpha}\,A_{\hat\sigma,\hat\phi}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
+-{\Gamma^{\hat r}}_{\hat\theta\hat\theta}\,A_{\hat r,\hat\phi}
+-{\Gamma^{\hat r}}_{\hat\phi\hat\phi}\,A_{\hat r,\hat\phi}
+-{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}\,A_{\hat\theta,\hat\phi}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
++r^{-1}A_{\hat r,\hat\phi}
++r^{-1}A_{\hat r,\hat\phi}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\phi}
+\cr
+&=&A_{\hat\alpha,\hat\alpha\hat\phi}
++2r^{-1}A_{\hat r,\hat\phi}
++r^{-1}\cot\!\theta A_{\hat\theta,\hat\phi}
+\end{eqnarray}
+In the first line of the expression above, the last four terms vanish\footnote{
+The following four terms vanish because
+\begin{eqnarray}
+&&-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}\,A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu}
+\cr
+&=&{\Gamma^{\hat\sigma}}_{\hat\alpha\hat\phi}(
+-A_{\hat\sigma,\hat\alpha}
++{\Gamma^{\hat\nu}}_{\hat\sigma\hat\alpha}\,A_{\hat\nu}
+-A_{\hat\alpha,\hat\sigma}
++{\Gamma^{\hat\nu}}_{\hat\alpha\hat\sigma}\,A_{\hat\nu})
+\cr
+&=&{\Gamma^{\hat\phi}}_{\hat r\hat\phi}(
+-A_{\hat\phi,\hat r}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu}
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat r}}_{\hat\phi\hat\phi}(
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat r}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}(
+-A_{\hat\phi,\hat\theta}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu}
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}(
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat\theta}
++{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu})
+\cr
+&=&{\Gamma^{\hat\phi}}_{\hat r\hat\phi}(
+-A_{\hat\phi,\hat r}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu}
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat r}}_{\hat\phi\hat\phi}(
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat r}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat r}\,A_{\hat\nu})
+)
+\cr
+&+&{\Gamma^{\hat\phi}}_{\hat\theta\hat\phi}(
+-A_{\hat\phi,\hat\theta}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu}
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu})
+\cr
+&+&{\Gamma^{\hat\theta}}_{\hat\phi\hat\phi}(
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu}
+-A_{\hat\phi,\hat\theta}
+%+{\Gamma^{\hat\nu}}_{\hat\phi\hat\theta}\,A_{\hat\nu})
+)
+\cr
+&=&r^{-1}(
+-A_{\hat\phi,\hat r}
+-A_{\hat r,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu})
+\cr
+&-&r^{-1}(
+-A_{\hat r,\hat\phi}
+-A_{\hat\phi,\hat r}
++{\Gamma^{\hat\nu}}_{\hat r\hat\phi}\,A_{\hat\nu}
+)
+\cr
+&+&r^{-1}\cot\!\theta(
+-A_{\hat\phi,\hat\theta}
+-A_{\hat\theta,\hat\phi}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu})
+\cr
+&-&r^{-1}\cot\!\theta(
+-A_{\hat\theta,\hat\phi}
+-A_{\hat\phi,\hat\theta}
++{\Gamma^{\hat\nu}}_{\hat\theta\hat\phi}\,A_{\hat\nu}
+)=0
+\end{eqnarray}
+} and the $\phi$ derivative of any Christoffel symbol (term before that)
+also vanishes.
+
+%====================================================================== %
+
 \section{Switchable modules}
   \label{Tab-modules}
+
+The material in this section is being assembled from the file
+\file{inlinedoc-modules.tex}, which is automatically assembled.
+However, it is currently incomplete and contains only a small
+number of the available modules.
 
 \input{inlinedoc-modules.tex}
 
@@ -10929,7 +12504,7 @@ of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
 
 
 
-% % ====================================================================== %
+% ====================================================================== %
 
 \section{Startup and run-time parameters}
 \label{S-all-parameters}
@@ -11475,10 +13050,10 @@ these configuration files, before you apply them in an active simulation run.
                & write averages every \var{it1d} time steps
                  (see Sect.~\ref{S-1d-averages}). \var{it1d} has to be
                  greater than or equal to \var{it1}.\\
-  \var{cdt} [$0.4$]
+  \var{cdt} [$0.9$]
                & Courant coefficient for advective time step; see
                  \S\ref{time-step}. \\
-  \var{cdtv} [$0.08$]
+  \var{cdtv} [$0.25$]
                & Courant coefficient for diffusive time step; see
                  \S\ref{time-step}. \\
   \var{dt} [$0.$]
@@ -12372,6 +13947,14 @@ initial condition.
   \emph{Pocketbook of Mathematical Functions\/},
   Harri Deutsch, Frankfurt (1984)
 
+\bibitem{BHB11} Babkovskaia, N., Haugen, N. E. L., Brandenburg, A.\yjour{2011}{J.\ Comp.\ Phys.}{230}{1}
+{12}{A high-order public domain code for direct numerical simulations of turbulent combustion}
+(\arXiv{1005.5301})
+
+\bibitem{BB14} Barekat, A., \& Brandenburg, A.,
+  \emph{Astron. Astrophys.} \textbf{571}, A68 (2014)
+  ``Near-polytropic stellar simulations with a radiative surface''
+
 \bibitem{Ref-2} Brandenburg, A.,
   \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
   ``The inverse cascade and nonlinear alpha-effect in simulations
@@ -12399,10 +13982,21 @@ initial condition.
   \emph{Astron. Nachr.} \textbf{323}, 99--122 (2002)
   ``Magnetic helicity in stellar dynamos: new numerical experiments''
 
+\bibitem{BEO96}
+Brandenburg, A., Enqvist, K., \& Olesen, P.,
+  \emph{Phys. Rev. D} \textbf{54}, 1291--1300 (1996)
+  ``Large-scale magnetic fields from hydromagnetic turbulence
+in the very early universe''
+
 \bibitem{BJNRST96} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
   Rieutord, M., Stein, R. F., \& Tuominen, I.,
   \emph{J. Fluid Mech.} \textbf{306}, 325--352 (1996)
   ``Magnetic structures in a dynamo simulation''
+
+\bibitem{BKMRPTV17}
+A. Brandenburg, T. Kahniashvili, S. Mandal, A. Roper Pol, A. G. Tevzadze, and T. Vachaspati, 
+  \emph{Phys. Rev. D} \textbf{96}, 123528 (2017)
+  ``Evolution of hydromagnetic turbulence from the electroweak phase transition''
 
 \bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.,
   \emph{MNRAS} \textbf{276}, 651--662 (1995)
@@ -12421,6 +14015,10 @@ initial condition.
 \bibitem{Dobler06}
   Dobler, W., Stix, M., \& Brandenburg, A.\yapj{2006}{638}{336}
   {347}{Convection and magnetic field generation in fully convective spheres}
+
+\bibitem{Dur08}
+Durrer, R., ``The Cosmic Microwave Background,''
+Cambridge University Press (2008)
 
 \bibitem{Gammie2001}Gammie, C.~F.,
   \emph{Astrophys. J.} \textbf{553}, 174--183 (2001)
@@ -12459,6 +14057,13 @@ initial condition.
   \emph{J. Comp. Phys.} \textbf{103}, 16--42 (1992)
   ``Compact finite difference schemes with spectral-like resolution''
 
+\bibitem{MTW} Misner, C. W., Thorne, K. S. \& Wheeler, J. A.
+  \emph{Gravitation},
+  San Francisco: W.H. Freeman and Co. (1973), p.~213.
+
+\bibitem{MTBM09} Mitra, D., Tavakol, R., Brandenburg, A., \& Moss, D.\yapj{2009}{697}{923}
+{933}{Turbulent dynamos in spherical shell segments of varying geometrical extent} (\arXiv{0812.3106})
+
 \bibitem{NG95} Nordlund, \AA., \& Galsgaard, K.,
 {\it A 3D MHD code for Parallel Computers},
 {\url{http://www.astro.ku.dk/~aake/NumericalAstro/papers/kg/mhd.ps.gz}}
@@ -12470,11 +14075,6 @@ initial condition.
 
 \bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
   \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
-
-\bibitem{Snodin}
-Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
-{Cosmic ray confinement in the diffusion approximation}
-(\astroph{0507176})
 
 \bibitem{SH88} Stanescu, D., Habashi, W. G.,
   \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
@@ -12513,7 +14113,7 @@ $ $Id$ $}
 % LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
 % LocalWords:  tarball unix somewhere cd gunzip xf mhd passwd CVSROOT cshrc sh
 % LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp struct Weyl vidx
-% LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
+% LocalWords:  keepaspectratio spher gravz README cparam idl dx nograv
 % LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
 % LocalWords:  nofft dist mpicomm nompicomm DFUNDERSCORE nodebug mkfile var dat
 % LocalWords:  interoperability rall bb aa jj Pvwave param nml param nml param

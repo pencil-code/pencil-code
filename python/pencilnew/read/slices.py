@@ -15,7 +15,7 @@ def slices(*args, **kwargs):
     call signature:
 
     read(self. field='uu1', extension='xz', datadir='data', proc=-1,
-         old_file=False, precision='f')
+         old_file=False, precision='f', verbose=False)
 
     Keyword arguments:
 
@@ -36,6 +36,9 @@ def slices(*args, **kwargs):
 
     *precision*:
       Precision of the data. Either float 'f' or double 'd'.
+
+    *verbose*:
+      Print progress
     """
 
     slices_tmp = SliceSeries()
@@ -59,14 +62,14 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f'):
+             old_file=False, precision='f', verbose=False):
         """
         Read Pencil Code slice data.
 
         call signature:
 
         read(self. field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f')
+             old_file=False, precision='f', verbose=False)
 
         Keyword arguments:
 
@@ -87,12 +90,15 @@ class SliceSeries(object):
 
         *precision*:
           Precision of the data. Either float 'f' or double 'd'.
+
+        *verbose*:
+          Print progress
         """
 
         import os
         import numpy as np
         from scipy.io import FortranFile
-        from pencilnew import read
+        from .. import read
 
         # Define the directory that contains the slice files.
         if proc < 0:
@@ -110,10 +116,14 @@ class SliceSeries(object):
             # Find the existing fields.
             field_list = []
             for file_name in os.listdir(slice_dir):
-                if (file_name[:6] == 'slice_'):
+                if file_name[:6] == 'slice_':
                     field_list.append(file_name.split('.')[0][6:])
             # Remove duplicates.
             field_list = list(set(field_list))
+            try:
+                field_list.remove('position')
+            except:
+                pass
 
         # Initialize the extensions list.
         if extension:
@@ -125,19 +135,27 @@ class SliceSeries(object):
             # Find the existing extensions.
             extension_list = []
             for file_name in os.listdir(slice_dir):
-                if (file_name[:6] == 'slice_'):
+                if file_name[:6] == 'slice_':
                     extension_list.append(file_name.split('.')[1])
             # Remove duplicates.
             extension_list = list(set(extension_list))
+            try:
+                extension_list.remove('dat')
+            except:
+                pass
 
-        class Foo():
+        class Foo(object):
             pass
 
         for extension in extension_list:
+            if verbose:
+                print('Extension: ' + str(extension))
             # This one will store the data.
             ext_object = Foo()
 
             for field in field_list:
+                if verbose:
+                    print('  -> Field: ' + str(field))
                 # Compose the file name according to field and extension.
                 datadir = os.path.expanduser(datadir)
                 if proc < 0:
@@ -153,24 +171,30 @@ class SliceSeries(object):
                     precision = 'f'
 
                 # Set up slice plane.
-                if (extension == 'xy' or extension == 'Xy'):
+                if extension == 'xy' or extension == 'Xy' or  extension == 'xy2':
                     hsize = dim.nx
                     vsize = dim.ny
-                if (extension == 'xz'):
+                if extension == 'xz':
                     hsize = dim.nx
                     vsize = dim.nz
-                if (extension == 'yz'):
+                if extension == 'yz':
                     hsize = dim.ny
                     vsize = dim.nz
 
-                infile = FortranFile(file_name)
+                try:
+                    infile = FortranFile(file_name)
+                except:
+                    continue
 
                 islice = 0
                 self.t = np.zeros(1, dtype=precision)
-                slice_series = np.zeros(1, dtype=precision)
+                self.t = [0]
+                slice_series = [0]
 
                 while True:
                     try:
+                        if verbose:
+                            print('  -> Reading... ')
                         raw_data = infile.read_record(dtype=precision)
                     except ValueError:
                         break
@@ -178,17 +202,21 @@ class SliceSeries(object):
                         break
 
                     if old_file:
-                        self.t = np.concatenate((self.t, raw_data[-1:]))
-                        slice_series = np.concatenate((slice_series, raw_data[:-1]))
+                        self.t.append(list(raw_data[-1]))
+                        slice_series.extend(list(raw_data[:-1]))
                     else:
-                        self.t = np.concatenate((self.t, raw_data[-2:-1]))
-                        slice_series = np.concatenate((slice_series, raw_data[:-2]))
+                        self.t.append(list(raw_data[-2:-1]))
+                        slice_series.extend(list(raw_data[:-2]))
                     islice += 1
+                    if verbose:
+                        print('  -> Done')
 
                 # Reshape and remove first entry.
-                self.t = self.t[1:]
+                if verbose:
+                    print('Reshaping array')
+                self.t = np.array(self.t[1:], dtype=precision)[:, 0]
+                slice_series = np.array(slice_series, dtype=precision)
                 slice_series = slice_series[1:].reshape(islice, vsize, hsize)
                 setattr(ext_object, field, slice_series)
 
             setattr(self, extension, ext_object)
-

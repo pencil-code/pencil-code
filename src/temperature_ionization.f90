@@ -35,9 +35,12 @@ module Energy
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: zheat_uniform_range=0.
+  real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
+  real :: pthresh=0., pbackground=0., pthreshnorm
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
+  logical :: lheat_source
   logical :: ladvection_temperature=.true.
   logical :: lviscosity_heat=.false.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lcalc_TTmean=.false.
@@ -55,10 +58,12 @@ module Energy
       kx_lnTT,ky_lnTT,kz_lnTT,ltemperature_nolog
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT,ladvection_temperature, &
+      lupw_lnTT, ladvection_temperature, lviscosity_heat, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
-      iheatcond, zheat_uniform_range
+      iheatcond, zheat_uniform_range, heat_source_offset, &
+      heat_source_sigma, heat_source, lheat_source, &
+      pthresh, pbackground
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -77,6 +82,7 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> $
                               ! DIAG_DOC: \quad(mean internal energy)
   integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right> $
+  integer :: idiag_Tppm=0     ! DIAG_DOC: $\left<\max(p_{\rm thresh}-p,0)_{\rm norm}\right> $
   integer :: idiag_csm=0
   integer :: idiag_mum=0      ! DIAG_DOC:
   integer :: idiag_ppmax=0    ! DIAG_DOC:
@@ -94,6 +100,10 @@ module Energy
   integer :: idiag_eemz=0     ! XYAVG_DOC: $\left< e \right>_{xy}$
   integer :: idiag_ppmz=0     ! XYAVG_DOC: $\left< p \right>_{xy}$
 !
+! Auxiliaries
+!
+      real, dimension (nx) :: diffus_chi,diffus_chi3
+!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -108,7 +118,12 @@ module Energy
 !
       integer :: ierr
 !
-      call farray_register_pde('lnTT',ilnTT)
+      if (ltemperature_nolog) then
+        call farray_register_pde('TT',iTT)
+        ilnTT=iTT
+      else
+        call farray_register_pde('lnTT',ilnTT)
+      endif
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
@@ -147,7 +162,7 @@ module Energy
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
 !
-      if (ltemperature_nolog) iTT=ilnTT
+!      if (ltemperature_nolog) iTT=ilnTT
 !
       if (ltemperature_nolog) then
         call select_eos_variable('TT',iTT)
@@ -167,7 +182,7 @@ module Energy
 !
 !  Check whether we want heating/cooling
 !
-      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0)
+      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0.or.lheat_source)
 !
 !  Define bottom and top z positions
 !  (TH: This should really be global variables IMHO)
@@ -185,10 +200,11 @@ module Energy
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
-!
-!  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
-!
-      if (ltemperature_nolog) iTT=ilnTT
+      if (lsolid_cells) then
+        call put_shared_variable('ladvection_temperature',ladvection_temperature)
+        call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
+        call put_shared_variable('lupw_lnTT',lupw_lnTT)
+      endif
 !
       do i=1,nheatc_max
         select case (iheatcond(i))
@@ -239,6 +255,16 @@ module Energy
            call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=energy in src/Makefile.local')
+!
+!  For diagnostics of pressure shock propagation
+!  Tppm = max(pthresh-p,0)/(pthresh-pbackground)
+!
+      pthreshnorm=pthresh-pbackground
+      if (pthreshnorm==0.) then
+        pthreshnorm=1.
+      else
+        pthreshnorm=1./pthreshnorm
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -479,6 +505,7 @@ module Energy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_Tppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmax/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmin/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_mum/=0 .or. idiag_mumz/=0) lpenc_diagnos(i_mu1)=.true.
@@ -648,6 +675,7 @@ module Energy
 !
 !  Thermal conduction
 !
+      diffus_chi=0.; diffus_chi3=0.
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_hyper3) call calc_heatcond_hyper3(df,p)
 !
@@ -677,6 +705,11 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
+      if (lfirst.and.ldt) then
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
+!
 !  Calculate temperature related diagnostics
 !
       if (ldiagnos) then
@@ -695,6 +728,7 @@ module Energy
         endif
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_Tppm/=0) call sum_mn_name(max(pthresh-p%pp,0.)*pthreshnorm,idiag_Tppm)
         if (idiag_ppmax/=0) call max_mn_name(p%pp,idiag_ppmax)
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
@@ -717,7 +751,7 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  dummy routine
 !
@@ -727,10 +761,10 @@ module Energy
       call keep_compiler_quiet(f)
 !
       if (lenergy_slope_limited) &
-        call fatal_error('calc_lenergy_pars', &
+        call fatal_error('energy_after_boundary', &
                          'Slope-limited diffusion not implemented')
 
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
@@ -804,6 +838,7 @@ module Energy
 !
       real, dimension (nx) :: heat
       real :: prof
+      real :: fnorm
 !
 !  Initialize
 !
@@ -817,6 +852,13 @@ module Energy
         else
           heat=heat+heat_uniform
         endif
+      endif
+!
+!  Add heat profile
+!
+      if (lheat_source) then
+        fnorm=(2.*pi*heat_source_sigma**2)**1.5
+        heat=heat+(heat_source/fnorm)*exp(-.5*((x(l1:l2)-heat_source_offset)/heat_source_sigma)**2)
       endif
 !
 !  add "coronal" heating (to simulate a hot corona)
@@ -842,6 +884,7 @@ module Energy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname, inamez
       logical :: lreset,lwr
@@ -858,7 +901,7 @@ module Energy
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
-        idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
+        idiag_eem=0; idiag_ppm=0; idiag_Tppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
         idiag_mum=0; idiag_mumz=0; idiag_TTmz=0; idiag_ssmz=0
         idiag_eemz=0; idiag_ppmz=0
         idiag_puzmz=0; idiag_pr1mz=0; idiag_eruzmz=0; idiag_ffakez=0
@@ -881,6 +924,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
+        call parse_name(iname,cname(iname),cform(iname),'Tppm',idiag_Tppm)
         call parse_name(iname,cname(iname),cform(iname),'ppmax',idiag_ppmax)
         call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
@@ -901,53 +945,48 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ppmz',idiag_ppmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!       
+      if (lwrite_slices) then 
+        where(cnamev=='TT'.or.cnamev=='lnTT') cformv='DEFINED'
+      endif
+!       
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         if (ltemperature_nolog) then
-          write(3,*) 'ilnTT=0'
-          write(3,*) 'iTT=', iTT
+          call farray_index_append('ilnTT', 0)
         else
-          write(3,*) 'ilnTT=', ilnTT
-          write(3,*) 'iTT=0'
+          call farray_index_append('iTT', 0)
         endif
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'iss=',iss
+        call farray_index_append('iyH', iyH)
+        call farray_index_append('iss', iss)
       endif
 !
     endsubroutine rprint_energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
+      use Slices_methods, only: assign_slices_scal, process_slices, exp2d, log2d
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+      if (trim(slices%name)=='TT'.or.trim(slices%name)=='lnTT') then 
 !
 !  Temperature.
 !
-        case ('TT')
-          slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilnTT))
-          slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilnTT))
-          slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilnTT))
-          slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilnTT))
-          if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilnTT))
-          if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilnTT))
-          slices%ready=.true.
-!  lnTT
-        case ('lnTT')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
-          slices%ready=.true.
+        call assign_slices_scal(slices,f,ilnTT)     ! index ilnTT is always valid
+
+        if (ltemperature_nolog) then
+          if (trim(slices%name)=='lnTT') call process_slices(slices,log2d)
+        else
+          if (trim(slices%name)=='TT') call process_slices(slices,exp2d)
+        endif 
 !
-      endselect
+      endif
 !
     endsubroutine get_slices_energy
 !***********************************************************************
@@ -998,6 +1037,17 @@ module Energy
 !
     endsubroutine expand_shands_energy
 !***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
+!***********************************************************************    
     subroutine update_char_vel_energy(f)
 !
 ! TB implemented.
@@ -1012,5 +1062,23 @@ module Energy
            'characteristic velocity not yet implemented for temperature_ionization')
 
     endsubroutine update_char_vel_energy
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(chi,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Energy

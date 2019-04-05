@@ -7,12 +7,17 @@ doc/www
 src/experimental/test_f2003
 .*.swp
 host-ID
+#
 # Generated files
 .run_directories.log
 revision.txt
+*-eps-converted-to.pdf
+#
 # left-over files from auto-test and samples
-.pc_build_history 
+.pc_build_history
 .run_directories.log
+pc_build_tmp_*
+#
 # first directory level
 samples/*/src/*
 !samples/*/src/*.local
@@ -26,6 +31,7 @@ samples/*/KEEP_RELOADING
 samples/*/runtime
 samples/*/fort.*
 samples/*/data
+#
 # second directory level
 samples/*/*/src/*
 !samples/*/*/src/*.local
@@ -39,6 +45,7 @@ samples/*/*/KEEP_RELOADING
 samples/*/*/runtime
 samples/*/*/fort.*
 samples/*/*/data
+#
 # third directory level
 samples/*/*/*/src/*
 !samples/*/*/*/src/*.local
@@ -52,7 +59,8 @@ samples/*/*/*/KEEP_RELOADING
 samples/*/*/*/runtime
 samples/*/*/*/fort.*
 samples/*/*/*/data
-# exceptions for indivudual samples
+#
+# exceptions for individual samples
 samples/corona/driver
 !samples/backwards-compatible/data/param.nml
 !samples/backwards-compatible/data/proc0/var.dat

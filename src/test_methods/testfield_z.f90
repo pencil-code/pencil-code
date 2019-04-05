@@ -50,23 +50,26 @@ module Testfield
   logical :: lphase_adjust=.false.
   real :: ktestfield=1., ktestfield1=1.
   real :: kdamp_2ndord=0., kdamp_iter=0., dt_iter=0., reduce_iter=1.
+  real :: chiraltest=0.
   logical :: ltestfield_newz=.true.
   logical :: llorentzforce_testfield=.false.
+  logical :: ltest_uxb=.false.,ltest_jxb=.false.
 
   !!!! new input pars
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,lsoca,lsoca_jxb, &
        etatest,etatest1,etatest_hyper3,iresistivity_test, &
-       itestfield,ktestfield, &
+       chiraltest, itestfield,ktestfield, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust, &
        ltestfield_taver,llorentzforce_testfield, &
        ltestfield_profile_eta_z, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
+       ltest_uxb,ltest_jxb, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
-       rescale_aatest,tau_aatest, &  
-!   
+       rescale_aatest,tau_aatest, &
+!
 !                                         the following parameter relevant for artificically introduced 2nd order in time equation for a_test for suppressing
 !                                         unstable eigenmodes of the homogeneous equations
 !
@@ -156,6 +159,18 @@ module Testfield
   integer :: idiag_eta21z=0     ! DIAG_DOC: $\eta_{21}(z,t)$
   integer :: idiag_eta12z=0     ! DIAG_DOC: $\eta_{12}(z,t)$
   integer :: idiag_eta22z=0     ! DIAG_DOC: $\eta_{22}(z,t)$
+  integer :: idiag_uzjx1z=0     ! DIAG_DOC: $u_z j^{11}_x$
+  integer :: idiag_uzjy1z=0     ! DIAG_DOC: $u_z j^{11}_y$
+  integer :: idiag_uzjz1z=0     ! DIAG_DOC: $u_z j^{11}_z$
+  integer :: idiag_uzjx2z=0     ! DIAG_DOC: $u_z j^{21}_x$
+  integer :: idiag_uzjy2z=0     ! DIAG_DOC: $u_z j^{21}_y$
+  integer :: idiag_uzjz2z=0     ! DIAG_DOC: $u_z j^{21}_z$
+  integer :: idiag_uzjx3z=0     ! DIAG_DOC: $u_z j^{12}_x$
+  integer :: idiag_uzjy3z=0     ! DIAG_DOC: $u_z j^{12}_y$
+  integer :: idiag_uzjz3z=0     ! DIAG_DOC: $u_z j^{12}_z$
+  integer :: idiag_uzjx4z=0     ! DIAG_DOC: $u_z j^{22}_x$
+  integer :: idiag_uzjy4z=0     ! DIAG_DOC: $u_z j^{22}_y$
+  integer :: idiag_uzjz4z=0     ! DIAG_DOC: $u_z j^{22}_z$
   integer :: idiag_E111z=0      ! DIAG_DOC: ${\cal E}_1^{11}$
   integer :: idiag_E211z=0      ! DIAG_DOC: ${\cal E}_2^{11}$
   integer :: idiag_E311z=0      ! DIAG_DOC: ${\cal E}_3^{11}$
@@ -204,7 +219,7 @@ module Testfield
 !
       use Diagnostics, only: gen_form_legend
       use Cdata
-      use FarrayManager, only: farray_register_auxiliary
+      use FarrayManager, only: farray_register_auxiliary, farray_index_append
       use General, only: operator(.in.)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -356,14 +371,11 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtestl)
-        endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_testfield: iuxb = ', iuxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
-          close(3)
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtestl)
+        else
+          if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          call farray_index_append('iuxbtest',iuxbtest)
         endif
       endif
 !
@@ -371,14 +383,11 @@ module Testfield
 !  used in connection with testflow method)
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtestl)
-        endif
-        if (ijxb/=0.and.lroot) then
-          print*, 'initialize_testfield: ijxb = ', ijxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxb=',ijxb
-          close(3)
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtestl)
+        else
+          if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          call farray_index_append('ijxbtest',ijxbtest)
         endif
       endif
 !
@@ -446,7 +455,7 @@ module Testfield
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
 !  19-nov-13/MR: complex p=(lam_testfield,om_testfield) in complex calculation branch enabled
-!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0 
+!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0
 !
       use Diagnostics
       use Cdata
@@ -470,7 +479,8 @@ module Testfield
       real, dimension (nx,3) :: uufluct,daatest
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
+      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,diffus_eta
+      real, dimension (nx), parameter :: unity=1.
       real, dimension (:,:,:,:), allocatable :: Eipq
 !
 !  auxiliary arrays for imaginary parts
@@ -479,9 +489,7 @@ module Testfield
 !
       integer :: jtest, j, iuxtest, iuztest
       integer :: i1=1, i2=2, i3=3, i4=4, i5=5, iaxtest2, iaztest2
-
-      logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
-      integer      :: iswitch_iter=0, nl
+      integer :: iswitch_iter=0, nl
 !
 !  identify module and boundary conditions
 !
@@ -592,8 +600,8 @@ module Testfield
 !
 !  put diffusion into daatest
 !
-        call calc_diffusive_part(f,iaxtest,daatest)
-        if (lcomplex) call calc_diffusive_part(f,iaxtest2,daatest2)
+        call calc_diffusive_part(f,p,iaxtest,daatest)
+        if (lcomplex) call calc_diffusive_part(f,p,iaxtest2,daatest2)
 !
 !  add u' \times Btest (in iterative procedure only for first problem)
 !
@@ -608,8 +616,8 @@ module Testfield
 !
         if (.not.lsoca) then
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
-            uxb=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+          if ((iuxbtest/=0.and..not.ltest_uxb).and.chiraltest==0.) then
+            uxb=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
           else
             call calc_uxb(f,p,iaxtest,uxb,bbtest)
           endif
@@ -650,6 +658,11 @@ module Testfield
 !
           endif
         endif
+!
+!  add chiral effect term
+!  (if lsoca/=T, it may not work!)
+!
+        if (chiraltest/=0.) daatest=daatest+chiraltest*bbtest
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
@@ -808,8 +821,8 @@ module Testfield
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_jxb=.false.)
 !
-            if (ijxb/=0.and..not.ltest_jxb) then
-              jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+            if (ijxbtest/=0.and..not.ltest_jxb) then
+              jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
             else
               call cross_mn(jjtest,bbtest,jxbrtest)
             endif
@@ -858,9 +871,22 @@ module Testfield
 !
 !  only real part saved here (imaginary is in bbtest2)
 !
-          bpq (:,:,jtest)=bbtest
+          bpq(:,:,jtest)=bbtest
 !
           if (idiag_jb0m/=0) jpq(:,:,jtest)=jjtest
+!
+          if (idiag_uzjx1z/=0.or.idiag_uzjy1z/=0.or.idiag_uzjz1z/=0.or. &
+              idiag_uzjx2z/=0.or.idiag_uzjy2z/=0.or.idiag_uzjz2z/=0.or. &
+              idiag_uzjx3z/=0.or.idiag_uzjy3z/=0.or.idiag_uzjz3z/=0) then
+!
+            call gij_etc(f,iaxtest,aatest,aijtest,bijtest,del2Atest2,graddivatest)
+            call curl_mn(aijtest,bbtest,aatest)
+            call curl_mn(bijtest,jjtest,bbtest)
+!
+            jpq(:,:,jtest)=jjtest
+!
+          endif
+!
         endif
 !
       enddo    ! end loop over njtestl testfields
@@ -885,7 +911,10 @@ module Testfield
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
 !
-      if (lfirst.and.ldt) diffus_eta=max(diffus_eta,etatest*dxyz_2)
+      if (lfirst.and.ldt) then
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
+      endif
 !
       if (ldiagnos) then
 !
@@ -924,6 +953,18 @@ module Testfield
         if (iE0>0) call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
         if (iE0>0) call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
         if (iE0>0) call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i1),idiag_uzjx1z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i1),idiag_uzjy1z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i1),idiag_uzjz1z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i2),idiag_uzjx2z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i2),idiag_uzjy2z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i2),idiag_uzjz2z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i3),idiag_uzjx3z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i3),idiag_uzjy3z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i3),idiag_uzjz3z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,1,i4),idiag_uzjx4z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,2,i4),idiag_uzjy4z)
+        call xysum_mn_name_z(p%uu(:,3)*jpq(:,3,i4),idiag_uzjz4z)
         call xysum_mn_name_z(Eipq(1,:,1,i1),idiag_E111z)
         call xysum_mn_name_z(Eipq(1,:,2,i1),idiag_E211z)
         call xysum_mn_name_z(Eipq(1,:,3,i1),idiag_E311z)
@@ -1268,6 +1309,18 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
+    subroutine testfield_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!    4-oct-18/axel+nishant: adapted from testflow
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine testfield_before_boundary
+!***********************************************************************
     subroutine testfield_after_boundary(f)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
@@ -1350,14 +1403,14 @@ module Testfield
               call calc_pencils_hydro(f,p(1),lpenc_loc)
               call calc_uxb(f,p(1),iaxtest,uxbtest,bbtest)
 !
-              juxb=iuxb+3*(jtest-1)
+              juxb=iuxbtest+3*(jtest-1)
               if (ltestfield_taver) then
                 if (llast) then
-                  if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)= &
+                  if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)= &
                           fac1*f(l1:l2,m,n,juxb:juxb+2)+fac2*uxbtest
                 endif
               else
-                if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+                if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
               uxbtestm(nl,:,jtest)=uxbtestm(nl,:,jtest)+fac*sum(uxbtest,1)
               headtt=.false.
@@ -1399,8 +1452,8 @@ module Testfield
               call curl_mn(aijtest,bbtest,aatest)
               call curl_mn(bijtest,jjtest,bbtest)
               call cross_mn(jjtest,bbtest,jxbtest)
-              jjxb=ijxb+3*(jtest-1)
-              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+              jjxb=ijxbtest+3*(jtest-1)
+              if (ijxbtest/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
               jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)
               headtt=.false.
             enddo
@@ -1578,6 +1631,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamez
@@ -1589,6 +1643,10 @@ module Testfield
 !
       if (lreset) then
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
+        idiag_uzjx1z=0; idiag_uzjy1z=0; idiag_uzjz1z=0
+        idiag_uzjx2z=0; idiag_uzjy2z=0; idiag_uzjz2z=0
+        idiag_uzjx3z=0; idiag_uzjy3z=0; idiag_uzjz3z=0
+        idiag_uzjx4z=0; idiag_uzjy4z=0; idiag_uzjz4z=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
         idiag_alp11z=0; idiag_alp21z=0; idiag_alp12z=0; idiag_alp22z=0; idiag_alp13z=0; idiag_alp23z=0
@@ -1693,6 +1751,18 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bx0mz',idiag_bx0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'by0mz',idiag_by0mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bz0mz',idiag_bz0mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx1z',idiag_uzjx1z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy1z',idiag_uzjy1z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz1z',idiag_uzjz1z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx2z',idiag_uzjx2z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy2z',idiag_uzjy2z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz2z',idiag_uzjz2z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx3z',idiag_uzjx3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy3z',idiag_uzjy3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz3z',idiag_uzjz3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjx4z',idiag_uzjx4z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjy4z',idiag_uzjy4z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzjz4z',idiag_uzjz4z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E111z',idiag_E111z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E211z',idiag_E211z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E311z',idiag_E311z)
@@ -1726,11 +1796,8 @@ module Testfield
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (loptest(lwrite)) then
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'ntestfield=',ntestfield
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('ntestfield',ntestfield)
       endif
 !
     endsubroutine rprint_testfield

@@ -1,0 +1,16 @@
+language: c
+sudo: required
+
+git:
+  depth: 3
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install gfortran
+  - sudo apt-get install libopenmpi-dev openmpi-bin libhdf5-openmpi-dev
+  - sudo apt-get install python-matplotlib
+  - gfortran --version
+
+script:
+  - source sourceme.sh
+  - pc_auto-test --host-id travis-ci -t --max-level 1 --script-tests=python

@@ -1,6 +1,6 @@
 # dim.py
 #
-# Read the dimensions of the simulationp.
+# Read the dimensions of the simulation.
 #
 # Authors:
 # J. Oishi (joishi@amnh.org)
@@ -41,7 +41,7 @@ class Dim(object):
 
     def __init__(self):
         """
-        Fille members with default values.
+        Fill members with default values.
         """
 
         self.mx = self.my = self.mz = 0
@@ -67,7 +67,7 @@ class Dim(object):
         self.mxgrid = self.mygrid = self.mzgrid = 0
 
 
-    def read(self, datadir='data', proc=-1):
+    def read(self, datadir='data', proc=-1, ogrid=False):
         """
         Read the dim.dat file.
 
@@ -88,10 +88,15 @@ class Dim(object):
 
         import os
 
-        if proc < 0:
-            file_name = os.path.join(datadir, 'dim.dat')
+        if not ogrid:
+            file_name = 'dim.dat'
         else:
-            file_name = os.path.join(datadir, 'proc{0}'.format(proc), 'dim.dat')
+            file_name = 'ogdim.dat'
+
+        if proc < 0:
+            file_name = os.path.join(datadir, file_name)
+        else:
+            file_name = os.path.join(datadir, 'proc{0}'.format(proc), file_name)
 
         try:
             file_name = os.path.expanduser(file_name)

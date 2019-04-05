@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/WhiteDwarfDisk
+SVN Id:
+    $Id: README 13517 2019-02-21 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+Added:
+     21-feb-2019
+Status:
+    works since 21-feb-2019
+Recommended resolution:
+    256x256x1 (same hyperdiffusion as in sample)
+    500000 particles 
+Comments:
+    A white dwarf debris disk in a uniform cylindrical grid in r-phi, 
+    subject to photoelectric instability. 
+Reference:
+    Unpublished (Manser et al, upcoming)

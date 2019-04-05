@@ -5,7 +5,7 @@
 ;;
 ;;  Author: Anders Johansen
 ;;
-function pc_particles_to_density, xxp, x, y, z, $
+function pc_particles_to_density, xxp, x, y, z, rhopswarm=rhopswarm, $
     cic=cic, tsc=tsc, fine=fine, ghost=ghost, normalize=normalize, $
     density=density, datadir=datadir, quiet=quiet
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
@@ -27,6 +27,7 @@ pc_read_param, obj=param, datadir=datadir, /quiet
 ;;  Read rhopswarm from data directory.
 ;;
 pc_read_const, obj=cst, datadir=datadir, /quiet
+if (n_elements(rhopswarm) eq 0) then rhopswarm=cst.rhopswarm
 ;
 npar=0L
 npar=n_elements(xxp[*,0])
@@ -138,10 +139,15 @@ case interpolation_scheme of
       if (ix eq l1-1) then ix=ix+1
       if (iy eq m1-1) then iy=iy+1
       if (iz eq n1-1) then iz=iz+1
+      if (density) then begin
+        if (n_elements(rhopswarm) eq 1) then weight=rhopswarm else weight=rhopswarm[k]
+      endif else begin
+        weight=1.0
+      endelse
 ;;
 ;;  Particles are assigned to the nearest grid point.
 ;;
-      np[ix,iy,iz]=np[ix,iy,iz]+1.0
+      np[ix,iy,iz]=np[ix,iy,iz]+weight
 ;
     endfor ; loop over particles
 ;
@@ -174,7 +180,11 @@ case interpolation_scheme of
       iz1=iz0 & if (nz ne 1) then iz1=iz0+1
 ;;  Calculate weight of each particle on the grid.
       for ixx=ix0,ix1 do begin & for iyy=iy0,iy1 do begin & for izz=iz0,iz1 do begin
-        weight=1.0
+        if (density) then begin
+          if (n_elements(rhopswarm) eq 1) then weight=rhopswarm else weight=rhopswarm[k]
+        endif else begin
+          weight=1.0
+        endelse
         if (nx ne 1) then weight=weight*( 1.0d - abs(xxp[k,0]-x[ixx])*dx_1 )
         if (ny ne 1) then weight=weight*( 1.0d - abs(xxp[k,1]-y[iyy])*dy_1 )
         if (nz ne 1) then weight=weight*( 1.0d - abs(xxp[k,2]-z[izz])*dz_1 )
@@ -244,7 +254,11 @@ case interpolation_scheme of
           weight_z = 0.75d  -         (xxp[k,2]-z[izz])^2*dz_2
         endelse
 ;
-        weight=1.0
+        if (density) then begin
+          if (n_elements(rhopswarm) eq 1) then weight=rhopswarm else weight=rhopswarm[k]
+        endif else begin
+          weight=1.0
+        endelse
         if (nx ne 1) then weight=weight*weight_x
         if (ny ne 1) then weight=weight*weight_y
         if (nz ne 1) then weight=weight*weight_z
@@ -293,10 +307,6 @@ x=x[l1:l2]
 y=y[m1:m2]
 z=z[n1:n2]
 np=np[l1:l2,m1:m2,n1:n2]
-;;
-;;  Convert from count to density.
-;;
-if (density) then np=np*cst.rhop_swarm
 ;;
 ;;  Normalize the density to have an average of one.
 ;;

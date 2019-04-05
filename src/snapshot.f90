@@ -11,6 +11,7 @@ module Snapshot
   use Cdata
   use Cparam
   use Messages
+  use Gpu, only: copy_farray_from_GPU
 !
   implicit none
 !
@@ -20,8 +21,7 @@ module Snapshot
     module procedure output_form_int_0D
   endinterface
 !
-  public :: rsnap, wsnap, wsnap_down, powersnap, output_form
-  public :: shift_dt
+  public :: rsnap, wsnap, wsnap_down, powersnap, output_form, powersnap_prepare
 !
   contains
 !***********************************************************************
@@ -38,8 +38,8 @@ module Snapshot
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use General, only: safe_character_assign
-      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid
-      use Sub, only: read_snaptime, update_snaptime, wdim
+      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid, wdim
+      use Sub, only: read_snaptime, update_snaptime
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
 !
@@ -49,7 +49,6 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: lsnap
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 
@@ -70,9 +69,10 @@ module Snapshot
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
-      call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap,ch)
-      if (lsnap) then
+      call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap_down,ch)
+      if (lsnap_down) then
 !
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (maux_down>0) call update_auxiliaries(a)
 !
 !  Number of downsampled data points on local processor in each direction
@@ -153,13 +153,9 @@ module Snapshot
 !  At first call, write downsampled grid and its global and local dimensions
 !
           call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost)
-          call wdim(trim(directory)//'/dim_down.dat',iex+nghost,iey+nghost,iez+nghost,mvar_down,maux_down)
-          if (lroot) call wdim(trim(datadir)//'/dim_down.dat', &
-                               ceiling(float(nxgrid)/isx)+2*nghost, &
-                               ceiling(float(nygrid)/isy)+2*nghost, &
-                               ceiling(float(nzgrid)/isz)+2*nghost, &
-                               mvar_down,maux_down, &
-                               lglobal=.true.)
+          call wdim('dim_down.dat', iex+nghost, iey+nghost, iez+nghost, &
+              ceiling(float(nxgrid)/isx)+2*nghost, ceiling(float(nygrid)/isy)+2*nghost, ceiling(float(nzgrid)/isz)+2*nghost, &
+              mvar_down, maux_down)
           lfirst_call=.false.
         endif
 !
@@ -204,6 +200,7 @@ module Snapshot
 !
         if (present(flist)) call log_filename_to_file(file,flist)
 !
+        lsnap_down=.false.
       endif
 !
     endsubroutine wsnap_down
@@ -238,7 +235,7 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: enum_, lsnap
+      logical :: enum_
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 !
@@ -267,6 +264,7 @@ module Snapshot
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
+          if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
@@ -275,6 +273,7 @@ module Snapshot
           call output_snap_finalize()
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
+          lsnap=.false.
         endif
 !
       else
@@ -282,6 +281,7 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (msnap==mfarray) then
           if (.not. loptest(noghost)) call update_ghosts(a)
           call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -415,6 +415,9 @@ module Snapshot
         call input_snap_finalize()
       endif
 !
+!AB: I think we can move the repeated lines with lpersist and
+!AB: input_snap_finalize to here.
+!
 !  Read data using lnrho, and now convert to rho.
 !  This assumes that one is now using ldensity_nolog=T.
 !
@@ -422,6 +425,16 @@ module Snapshot
         print*,'convert lnrho -> rho',ilnrho,irho
         if (irho>0) &
           f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+      endif
+!
+!  Read data using rho, and now convert to lnrho.
+!  This assumes that one is now using ldensity_nolog=F.
+!  NB: require lupw_rho->lupw_lnrho and diagnostics ..grho..->..glnrho..
+!
+      if (lread_oldsnap_rho2lnrho) then
+        print*,'convert rho -> lnrho',irho,ilnrho
+        if (ilnrho>0) &
+          f(:,:,:,ilnrho)=log(f(:,:,:,ilnrho))
       endif
 !
       if (lsubstract_reference_state) then
@@ -436,7 +449,37 @@ module Snapshot
 !
     endsubroutine rsnap
 !***********************************************************************
-   subroutine powersnap(f,lwrite_only)
+    subroutine powersnap_prepare
+!
+!  Routine called from run.f90 to determime when spectra are needed
+!
+!   7-aug-02/axel: added
+!
+      use Sub, only: read_snaptime, update_snaptime
+!
+      logical, save :: lfirst_call=.true.
+      character (len=fnlen) :: file
+      integer, save :: nspec
+      real, save :: tspec
+!
+!  Output snapshot in 'tpower' time intervals.
+!  File keeps the information about time of last snapshot.
+!
+      file=trim(datadir)//'/tspec.dat'
+!
+!  At first call, need to initialize tspec.
+!  tspec calculated in read_snaptime, but only available to root processor.
+!
+      if (lfirst_call) then
+        call read_snaptime(file,tspec,nspec,dspec,t)
+        lfirst_call=.false.
+      endif
+!
+      call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+!
+    endsubroutine powersnap_prepare
+!***********************************************************************
+    subroutine powersnap(f,lwrite_only)
 !
 !  Write a snapshot of power spectrum.
 !
@@ -451,17 +494,18 @@ module Snapshot
       use Power_spectrum
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
-      use Sub, only: update_snaptime, read_snaptime, curli
+!AXEL use Sub, only: update_snaptime, read_snaptime, curli
+      use Sub, only: update_snaptime, curli
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lwrite_only
 !
       real, dimension (:,:,:), allocatable :: b_vec
-      character (len=fnlen) :: file
-      logical :: lspec,llwrite_only=.false.,ldo_all
-      integer, save :: nspec
-      logical, save :: lfirst_call=.true.
-      real, save :: tspec
+!AXEL character (len=fnlen) :: file
+      logical :: llwrite_only=.false.,ldo_all
+!AXEL integer, save :: nspec
+!AXEL logical, save :: lfirst_call=.true.
+!AXEL real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
       character (LEN=40) :: str,sp1,sp2
@@ -476,27 +520,12 @@ module Snapshot
 !
       if (present(lwrite_only)) llwrite_only=lwrite_only
       ldo_all=.not.llwrite_only
-      lspec=.true.
-!
-!  Output snapshot in 'tpower' time intervals.
-!  File keeps the information about time of last snapshot.
-!
-      file=trim(datadir)//'/tspec.dat'
-!
-!  At first call, need to initialize tspec.
-!  tspec calculated in read_snaptime, but only available to root processor.
-!
-      if (ldo_all .and. lfirst_call) then
-        call read_snaptime(file,tspec,nspec,dspec,t)
-        lfirst_call=.false.
-      endif
 !
 !  Check whether we want to output power snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
-      if (ldo_all) &
-           call update_snaptime(file,tspec,nspec,dspec,t,lspec)
       if (lspec.or.llwrite_only) then
+        if (.not.lstart.and.lgpu) call copy_farray_from_GPU(f)
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')
@@ -507,11 +536,22 @@ module Snapshot
         if (j_spec)   call power_vec(f,'j')
 !         if (jb_spec)   call powerhel(f,'jb')
         if (Lor_spec) call powerLor(f,'Lor')
+        if (EMF_spec) call powerEMF(f,'EMF')
+        if (Tra_spec) call powerTra(f,'Tra')
+        if (GWs_spec) call powerGWs(f,'GWs')
+        if (GWh_spec) call powerGWs(f,'GWh')
+        if (GWm_spec) call powerGWs(f,'GWm')
+        if (GWd_spec) call powerhel(f,'GWd')
+        if (GWe_spec) call powerhel(f,'GWe')
+        if (GWf_spec) call powerhel(f,'GWf')
+        if (GWg_spec) call powerhel(f,'GWg')
+        if (Str_spec) call powerGWs(f,'Str')
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
         if (ab_spec)  call powerhel(f,'mag')
-        if (azbz_spec)call powerhel(f,'mgz')
         if (ub_spec)  call powerhel(f,'u.b')
+        if (azbz_spec)call powerhel(f,'mgz')
+        if (uzs_spec) call powerhel(f,'uzs')
         if (EP_spec)  call powerhel(f,'bEP')
         if (ro_spec)  call powerscl(f,'ro')
         if (lr_spec)  call powerscl(f,'lr')
@@ -614,6 +654,7 @@ module Snapshot
         if (gcc_pdf)   call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
         if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
 !
+        lspec=.false.
       endif
 !
       deallocate(b_vec)
@@ -640,40 +681,6 @@ module Snapshot
       endif
 !
     endsubroutine update_auxiliaries
-!***********************************************************************
-    subroutine shift_dt(dt_)
-!
-!  Hack to make the code output the VARN files at EXACTLY the times
-!  defined by dsnap, instead of slightly after it.
-!
-!  03-aug-11/wlad: coded
-!
-      use Sub, only: read_snaptime
-      use General, only: safe_character_assign
-!
-      real, intent(inout) :: dt_
-      real, save :: tsnap
-      integer, save :: nsnap
-      character (len=fnlen) :: file
-      logical, save :: lfirst_call=.true.
-!
-!  Read the output time defined by dsnap.
-!
-      if (lfirst_call) then
-        call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
-        call read_snaptime(file,tsnap,nsnap,dsnap,t)
-        lfirst_call=.false.
-      endif
-!
-!  Adjust the time-step accordingly, so that the next timestepping
-!  lands the simulation at the precise time defined by dsnap.
-!
-      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
-        dt_=tsnap-t
-        lfirst_call=.true.
-      endif
-!
-    endsubroutine shift_dt
 !***********************************************************************
     subroutine output_form_int_0D(file,data,lappend)
 !

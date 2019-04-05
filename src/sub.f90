@@ -47,16 +47,18 @@ module Sub
   public :: symmetrise3x3_ut2lt
   public :: der_step
   public :: der6_step
-  public :: u_dot_grad, h_dot_grad
+  public :: u_dot_grad, h_dot_grad, h_dot_grad_vec
   public :: u_dot_grad_alt
   public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc, del2fj,d2fi_dxj,del2fi_dxjk
   public :: del2m3x3_sym
-  public :: del4v, del4, del2vi_etc
-  public :: del6v, del6, del6_other, del6fj, del6fjv
+  public :: del4v, del4, del2vi_etc, del4graddiv
+  public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
+  public :: ScalarTripleProduct
+  public :: det3X3mat,Inv2_3X3mat
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
@@ -70,18 +72,18 @@ module Sub
   public :: multmv, multmv_mn, multmv_transp
   public :: mult_matrix
 !
-  public :: read_line_from_file, remove_file, control_file_exists
+  public :: read_line_from_file, control_file_exists
   public :: noform
 !
   public :: update_snaptime, read_snaptime
+  public :: shift_dt, set_dt
   public :: parse_shell
   public :: get_radial_distance, power_law
 !
   public :: max_for_dt,unit_vector
 !
-  public :: write_dx_general, numeric_precision, wdim, rdim
-  public :: write_prof, write_xprof, write_zprof, remove_zprof
-  public :: read_zprof
+  public :: write_dx_general, rdim
+  public :: write_xprof, write_zprof, remove_prof
 !
   public :: tensor_diffusion_coef
 !
@@ -106,6 +108,10 @@ module Sub
 !
   public :: vec_dot_3tensor
   public :: traceless_strain,calc_sij2
+  public :: calc_del6_for_upwind
+!
+  public :: remove_mean_value
+  public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -368,7 +374,7 @@ module Sub
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
           enddo
         else
-          res=sum(a*1.D0)     ! sum at double precision to improve accuracy
+          res=sum(dble(a))     ! sum at double precision to improve accuracy
         endif
       else
         if (lspherical_coords) then
@@ -376,7 +382,7 @@ module Sub
             res = res+x(isum)*x(isum)*sinth(m)*a(isum)*a(isum)
           enddo
         else
-          res=res+sum(a*1.D0)
+          res=res+sum(dble(a))
         endif
       endif
 !
@@ -679,6 +685,49 @@ module Sub
       enddo
 !
     endsubroutine linarray2matrix
+!***********************************************************************
+    subroutine Inv2_3X3mat(A,QQ)
+!
+! calcualates the second invariant of a 3X3 matrix directly
+!
+      real,dimension(3,3), intent(in) :: A
+      real, intent(out) :: QQ
+!
+      QQ =   A(1,1)*A(2,2)  &
+            + A(2,2)*A(3,3)  &
+            + A(1,1)*A(3,2)  &
+            - A(1,2)*A(2,1)  &
+            - A(2,3)*A(3,2)  &
+            - A(1,3)*A(3,1)
+      
+    endsubroutine Inv2_3X3mat
+!***********************************************************************
+    subroutine ScalarTripleProduct(A,B,C,product)
+      real, dimension(3), intent(in) :: A,B,C
+      real :: product
+      real,dimension(3,3) :: Mat
+      Mat(:,1) = A
+      Mat(:,2) = B
+      Mat(:,3) = C
+      call det3X3mat(Mat,product)
+!        
+    endsubroutine ScalarTripleProduct
+!***********************************************************************
+    subroutine det3X3mat(A,det)
+!
+! calculates determinant of a 3X3 matrix directly
+!
+      real,dimension(3,3), intent(in) :: A
+      real, intent(out) :: det
+
+      det =   A(1,1)*A(2,2)*A(3,3)  &
+            - A(1,1)*A(2,3)*A(3,2)  &
+            - A(1,2)*A(2,1)*A(3,3)  &
+            + A(1,2)*A(2,3)*A(3,1)  &
+            + A(1,3)*A(2,1)*A(3,2)  &
+            - A(1,3)*A(2,2)*A(3,1)
+
+    endsubroutine det3X3mat
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
@@ -1405,6 +1454,7 @@ module Sub
         g=0.
         do i=1,dimensionality
           call der_4th_stag(f,k1+i,tmp,dim_mask(i))
+!          call der_2nd_stag(f,k1+i,tmp,dim_mask(i))
           g=g+tmp
         enddo
 
@@ -1514,6 +1564,46 @@ module Sub
 
     endsubroutine der_4th_stag
 !***********************************************************************
+    subroutine der_2nd_stag(f,k,df,j)
+!
+!  Calculates 1st order derivative by a 2nd order difference scheme from
+!  data given on a grid shifted by half a grid step w.r.t. the point looked at.
+!  Only valid for equidistant grids!
+!
+!  23-jun-18/JW: Adapted from der_4ht_stag
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=( f(l1:l2,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k))/(2*dy)
+          if (lspherical_coords  ) df = df * r1_mn
+          if (lcylindrical_coords) df = df * rcyl_mn1
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+          if (lspherical_coords) df = df * r1_mn * sin1th(m)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in z-direction'
+        endif
+      endif
+
+    endsubroutine der_2nd_stag
+!***********************************************************************
     subroutine div_other(f,g)
 !
       use Deriv, only: der
@@ -1612,14 +1702,25 @@ module Sub
       use General, only: loptest
 !
       real, dimension (nx,3,3), intent (in) :: aij
-      real, dimension (nx,3), intent (in), optional :: a
+      real, dimension (:,:), intent (in), optional :: a
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (out) :: b
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,a1,a2
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
       b(:,3)=aij(:,2,1)-aij(:,1,2)
+!
+      if (present(a)) then
+        a1 = 1
+        a2 = size(a,1)
+        if (((a2 /= nx) .and. (a2 /= mx)) .or. (size(a,2) /= 3)) &
+            call fatal_error('curl_mn','array "a" has wrong size, must be (nx,3) or (mx,3)')
+        if (a2 == mx) then
+          a1 = l1
+          a2 = l2
+        endif
+      endif
 !
 !  Adjustments for spherical coordinate system.
 !
@@ -1628,9 +1729,9 @@ module Sub
           if (.not. present(a)) then
             call fatal_error('curl_mn','Need a for spherical curl')
           endif
-          b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
-          b(:,2)=b(:,2)-a(:,3)*r1_mn
-          b(:,3)=b(:,3)+a(:,2)*r1_mn
+          b(:,1)=b(:,1)+a(a1:a2,3)*r1_mn*cotth(m)
+          b(:,2)=b(:,2)-a(a1:a2,3)*r1_mn
+          b(:,3)=b(:,3)+a(a1:a2,2)*r1_mn
         endif
       endif
 !
@@ -1639,7 +1740,7 @@ module Sub
 !  We do this here currently up to second order, and only for curl_mn.
 !
       if (lcylindrical_coords.and.present(a)) then
-        if (.not.loptest(lcovariant_derivative)) b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
+        if (.not.loptest(lcovariant_derivative)) b(:,3)=b(:,3)+a(a1:a2,2)*rcyl_mn1
         if (rcyl_mn(1)==0.) b(i1,3)=(360.*b(i2,3)-450.*b(i3,3)+400.*b(i4,3) &
                                     -225.*b(i5,3)+72.*b(i6,3)-10.*b(i7,3))/147.
       endif
@@ -1679,9 +1780,10 @@ module Sub
         g(:,2)=g(:,2)-f(l1:l2,m,n,k)*r1_mn
       endif
 !
-!     if (lcylindrical_coords) then
+      if (lcylindrical_coords) then
+        call fatal_error("curl_horizontal","not implemented for cylindrical coords")
 !--     g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
-!     endif
+      endif
 !
     endsubroutine curl_horizontal
 !***********************************************************************
@@ -2057,7 +2159,6 @@ module Sub
 !
 !  Calculate \partial^2f/\partial x_j\partial x_k of a vector, get a 9 dimensional object
 !
-!
       use Deriv, only: der2,derij
 !
       intent(in) :: f,k
@@ -2381,17 +2482,20 @@ module Sub
 !
     endsubroutine del4v
 !***********************************************************************
-    subroutine del6v(f,k,del6f)
+    subroutine del6v(f,k,del6f,lstrict)
 !
 !  Calculate del6 of a vector, get vector.
 !
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
 !
+      use General, only : loptest
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del6f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
+      logical, optional :: lstrict
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2400,7 +2504,11 @@ module Sub
 !
       k1=k-1
       do i=1,3
-        call del6(f,k1+i,tmp)
+        if (loptest(lstrict)) then
+          call del6_strict(f,k1+i,tmp)
+        else
+          call del6(f,k1+i,tmp)
+        endif
         del6f(:,i)=tmp
       enddo
 !
@@ -2426,29 +2534,41 @@ module Sub
  
       real, dimension (nx,3) :: aa
       real, dimension (nx) :: d2adrdt,tmp,tmp1
-      
+!
+!  d B_r/dr
+!      
       aa=f(l1:l2,m,n,iax:iaz)
-      call derij(f,iaz,d2adrdt,1,2,.true.)     ! d^2 a_phi/dr dtheta
+      call derij(f,iaz,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_phi/dr dtheta
 
-      bijtilde(:,1,1) = (d2adrdt - bb(:,1) - cotth(m)*(bb(:,2)+r1_mn*aa(:,3)))*r1_mn
-      
-      call der2(f,iaz,tmp,2,.true.)            ! d^2 a_phi/dtheta^2
-      bijtilde(:,1,2) = (tmp - aa(:,3)*(cotth(m)*cotth(m) + sin2th(m)))*r1_mn + cotth(m)*bb(:,1)
-
+      bijtilde(:,1,1) = d2adrdt - (bb(:,1) + cotth(m)*(bb(:,2)+r1_mn*aa(:,3)))*r1_mn
+!
+!  (1/r) d B_r/d theta
+!      
+      call der2(f,iaz,tmp,2,.true.)            ! (1/r^2) d^2 a_phi/dtheta^2
+      bijtilde(:,1,2) = tmp - aa(:,3)*(cotth(m)*cotth(m) + sin2th(m))*r2_mn + cotth(m)*bb(:,1)*r1_mn
+!
+!  d B_theta/dr
+!      
       call der2(f,iaz,tmp,1,.true.)            ! d^2 a_phi/dr^2
       bijtilde(:,2,1) = -tmp + (bb(:,2)+2.*r1_mn*aa(:,3))*r1_mn
-
-      bijtilde(:,2,2) = -d2adrdt - (bb(:,1) - cotth(m)*r1_mn*aa(:,3))
-
+!
+!  (1/r) d B_theta/d theta
+!      
+      bijtilde(:,2,2) = -d2adrdt - (bb(:,1) - cotth(m)*r1_mn*aa(:,3))*r1_mn
+!
+!  d B_phi/dr
+!      
       call der2(f,iay,tmp,1,.true.)            ! d^2 a_theta/dr^2
-      call derij(f,iax,d2adrdt,1,2,.true.)     ! d^2 a_r/dr dtheta
-      call der(f,iax,tmp1,2)                   ! d a_r/dtheta/r
-      bijtilde(:,3,1) = tmp + (-d2adrdt + bb(:,3) - 2.*(r1_mn*aa(:,2)-tmp1))*r1_mn
-
-      call der2(f,iax,tmp,2,.true.)            ! d^2 a_r/dtheta^2
-      call derij(f,iay,d2adrdt,1,2,.true.)     ! d^2 a_theta/dr dtheta
-      call der(f,iay,tmp1,2)                   ! d a_theta/dtheta/r
-      bijtilde(:,3,2) = tmp1 - r1_mn*tmp + d2adrdt
+      call derij(f,iax,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_r/dr dtheta
+      call der(f,iax,tmp1,2)                   ! (1/r) d a_r/dtheta
+      bijtilde(:,3,1) = tmp - d2adrdt + (bb(:,3) - 2.*(r1_mn*aa(:,2)-tmp1))*r1_mn
+!
+!  (1/r) d B_phi/d theta
+!      
+      call der2(f,iax,tmp,2,.true.)            ! (1/r^2) d^2 a_r/dtheta^2
+      call derij(f,iay,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_theta/dr dtheta
+      call der(f,iay,tmp1,2)                   ! (1/r) d a_theta/dtheta
+      bijtilde(:,3,2) = tmp1*r1_mn - (tmp - d2adrdt)
    
     endsubroutine bij_tilde 
 !***********************************************************************
@@ -2483,7 +2603,7 @@ module Sub
 !
       iref1=iref-1
 !
-!  Calculate all mixed and non-mixed second derivatives
+!  Calculate all (mixed and non-mixed) second derivatives
 !  of the vector potential (A_k,ij).
 !
 !  Do not calculate both d^2 A_k/(dx dy) and d^2 A_k/(dy dx).
@@ -2738,6 +2858,133 @@ module Sub
 !
     endsubroutine del6
 !***********************************************************************
+    subroutine del6_strict(f,k,del6)
+!
+!   Calculates del6rho=del2(del2(del2(rho))), with del2=div(grad). The routine is
+!   strictly accurate for Cartesian coordinates, and retains all the leading dx1**6
+!   terms in cylindrical. The subroutine is small enough and memory-cheap enough
+!   that it could be in dlnrhodt. Yet, writing it as a subroutine allows
+!   not only for encapsulation but also better documentation.
+!
+!          d6a    d6a   d6a     / d4d2a    d4d2a    d4d2a    d4d2a    d4d2a    d4d2a  \      d2d2d2a
+!   del6 = --- +  --- + --- + 3 | ------ + ------ + ------ + ------ + ------ + ------ | + 6 ---------
+!          dx6    dy6   dz6     \ dx4dy2   dx4dz2   dx2dy4   dx2dz4   d4ydz2   dz4dy2 /     dx2dy2dz2
+!
+!   02-apr-17/wlad: coded
+!
+      use Deriv, only: der6,der4i2j,der2i2j2k
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: del6,tmp
+      integer :: k,i,j
+!      
+      intent(in) :: f,k
+      intent(out) :: del6
+!
+      del6=0.
+      do i=1,3
+        call der6(f,k,tmp,i)
+        del6 = del6 + tmp
+        do j=1,3
+          if (j/=i) then
+            call der4i2j(f,k,tmp,i,j)
+            del6 = del6 + 3*tmp
+          endif
+        enddo
+      enddo
+      call der2i2j2k(f,k,tmp)
+      del6 = del6 + 6*tmp
+!
+    endsubroutine del6_strict
+!***********************************************************************
+    subroutine del4graddiv(f,ikk,del4graddivu)
+!
+!  Calculate del4(grad(div())), which enters in the formulation of strict
+!  hyperviscosity. This is strictly accurate for Cartesian, and retains all
+!  the leading (dx1**6) terms for polar coordinates. For the x-component of
+!  del4(grad(div())), the result of sympy is
+!
+!               [del4(grad(div(u)))]_x = f(ux) + g(uy) + g(uz)
+!
+!   where f(ux) = der6x(ux)
+!               + 2*(der4x2y(ux)+der4x2z(ux)+der4y2x(ux)+der4z2x(ux))
+!               + 4*der2x2y2z(ux)
+!
+!         g(uy) =   der5x1y(uy) + der1x5y(uy) + 3*der3x3y(uy)
+!               + 2*der3x1y2z(uy) + 3*der1x3y2z(uy) + der1x1y4z(uy)
+!
+!   and similary
+!
+!         h(uz) =  der5x1z(uz) + der1x5z(uz) + 3*der3x3z(uz)
+!               + 2*der3x2y1z(uz) + 3*der1x2y3z(uz) + der1x4y1z(uz)
+!
+!   Per symmetry, the formulation for the y and z components are
+!   identical under the permutation [xyz].
+!
+!   09-apr-17/wlad: coded
+!
+      use Deriv, only: der6,der4i2j,der2i2j2k,der5i1j,der3i3j,der3i2j1k,der4i1j1k
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3) :: del4graddivu
+      real, dimension(nx) :: tmp
+      integer :: ikk,ki,kj
+      integer :: i,j,k
+!
+      intent(in) :: f,ikk
+      intent(out) :: del4graddivu
+!
+      if (ikk .ne. iuu) call fatal_error("del4graddiv",&
+           "del4graddiv only coded for velocity")
+!
+!  The f(ui) part
+!
+      do i=1,3
+        ki = ikk + (i-1)
+        del4graddivu(:,i) = 0.
+        call der6(f,ki,tmp,i);          del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+        do j=1,3
+          if (j/=i) then
+            call der4i2j(f,ki,tmp,i,j); del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+            call der4i2j(f,ki,tmp,j,i); del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+          endif
+        enddo
+        call der2i2j2k(f,ki,tmp) ;      del4graddivu(:,i) =  del4graddivu(:,i) + 4*tmp
+!
+!  The g(uj) and h(uk) parts
+!
+        do j=1,3
+          if (j/=i) then
+            if ((i==1).and.(j==2)) k=3
+            if ((i==1).and.(j==3)) k=2
+            if ((i==2).and.(j==1)) k=3
+            if ((i==2).and.(j==3)) k=1
+            if ((i==3).and.(j==1)) k=2
+            if ((i==3).and.(j==2)) k=1
+!
+            kj = ikk+(j-1)
+            call der5i1j(f,kj,tmp,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+            call der5i1j(f,kj,tmp,j,i)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+!
+            call der3i3j(f,kj,tmp,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 3*tmp
+!
+            call der3i2j1k(f,kj,tmp,i,k,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+!
+            call der3i2j1k(f,kj,tmp,j,k,i)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 3*tmp
+!
+            call der4i1j1k(f,kj,tmp,k,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+          endif
+        enddo
+      enddo
+!
+    endsubroutine del4graddiv
+!***********************************************************************
     subroutine del6_other(f,del6f)
 !
 !  Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
@@ -2856,7 +3103,7 @@ module Sub
       do j=1,3
 !
         grad_f_tmp = gradf(:,j,:)
-        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=upwind)
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -2880,7 +3127,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec
@@ -2939,7 +3186,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec_alt
@@ -3031,13 +3278,11 @@ module Sub
         return
       endif
 !
-      call dot_mn(uu,gradf,ugradf,loptest(ladd))
+      call dot_mn(uu,gradf,ugradf,ladd)
 !
 !  Upwind correction
 !
-      if (present(upwind)) then
-        if (upwind) call doupwind(f,k,uu,ugradf)
-      endif
+      if (loptest(upwind)) call doupwind(f,k,uu,ugradf)
 !
     endsubroutine u_dot_grad_scl
 !***********************************************************************
@@ -3194,6 +3439,8 @@ module Sub
 !
 !  23-mar-08/axel: adapted from u_dot_grad_vec
 !
+      use General, only: loptest
+!
       intent(in) :: hh,gradf,ff
       intent(out) :: hgradf
 !
@@ -3222,7 +3469,7 @@ module Sub
 !
       if (lcylindrical_coords) then
         hgradf(:,1)=hgradf(:,1)-rcyl_mn1*(hh(:,2)*ff(:,2))
-        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,1)*ff(:,2))
+        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,2)*ff(:,1))
       endif
 !
     endsubroutine h_dot_grad_vec
@@ -3261,88 +3508,6 @@ module Sub
       enddo
 !
     endsubroutine gradf_upw1st
-!***********************************************************************
-    character function numeric_precision()
-!
-!  Return 'S' if running in single, 'D' if running in double precision.
-!
-!  12-jul-06/wolf: extracted from wdim()
-!
-      integer :: real_prec
-!
-      real_prec = precision(1.)
-      if (real_prec==6 .or. real_prec==7) then
-        numeric_precision = 'S'
-      elseif (real_prec == 15) then
-        numeric_precision = 'D'
-      else
-        print*, 'WARNING: encountered unknown precision ', real_prec
-        numeric_precision = '?'
-      endif
-!
-    endfunction numeric_precision
-!***********************************************************************
-    subroutine wdim(file,mxout,myout,mzout,mvar_out,maux_out,lglobal)
-!
-!  Write dimension to file.
-!
-!   8-sep-01/axel: adapted to take myout,mzout
-!  30-sep-14/MR  : added parameter lglobal to be able to output
-!                  dimensions different from mx,my,mz both locally and globally
-!   4-oct-16/MR: added optional parameters mvar_out,maux_out.
-!
-      use General, only: loptest, ioptest
-!
-      character (len=*) :: file
-      character         :: prec
-      integer, optional :: mxout,myout,mzout,mvar_out,maux_out
-      logical, optional :: lglobal
-      integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
-!
-!  Determine whether mxout=mx (as on each processor),
-!  or whether mxout is different (e.g. when writing out full array).
-!
-      if (present(mzout)) then
-        mxout1=mxout
-        myout1=myout
-        mzout1=mzout
-      elseif (lmonolithic_io) then
-        mxout1=nxgrid+2*nghost
-        myout1=nygrid+2*nghost
-        mzout1=nzgrid+2*nghost
-      else
-        mxout1=mx
-        myout1=my
-        mzout1=mz
-      endif
-!
-!  Only root writes allprocs/dim.dat (with io_mpio.f90),
-!  but everybody writes to their procN/dim.dat (with io_dist.f90).
-!
-      if (lroot .or. .not. lmonolithic_io) then
-        open(1,file=file)
-        write(1,'(3i7,3i7)') mxout1,myout1,mzout1, &
-                             ioptest(mvar_out,mvar),ioptest(maux_out,maux),mglobal
-!
-!  Check for double precision.
-!
-        prec = numeric_precision()
-        write(1,'(a)') prec
-!
-!  Write number of ghost cells (could be different in x, y and z).
-!
-        write(1,'(3i5)') nghost, nghost, nghost
-        if (loptest(lglobal)) then
-          if (lprocz_slowest) iprocz_slowest=1
-          write(1,'(4i5)') nprocx, nprocy, nprocz, iprocz_slowest
-        else
-          write(1,'(3i5)') ipx, ipy, ipz
-        endif
-!
-        close(1)
-      endif
-!
-    endsubroutine wdim
 !***********************************************************************
     subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
         prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
@@ -3421,11 +3586,8 @@ module Sub
         endif
         close(lun)
 !
-      endif
-!
 !  Broadcast tout and nout in one go.
 !
-      if (lroot) then
         bcast_array(1) = tout
         bcast_array(2) = nout
       endif
@@ -3454,7 +3616,7 @@ module Sub
       integer, intent(inout) :: nout
       real, intent(in) :: dtout
       double precision, intent(in) :: t
-      logical, intent(out) :: lout
+      logical, intent(inout) :: lout
       logical, intent(in), optional :: nowrite
       character (len=intlen), intent(out), optional :: ch
 !
@@ -3491,7 +3653,7 @@ module Sub
 !  (otherwise slices are written just to catch up with tt.)
 !
 !  WL: Add possibility that there should be a small threshold in this
-!      comparison. Needed for outputing at the exact tsnap, otherwise
+!      comparison. Needed for outputting at the exact tsnap, otherwise
 !      a difference between tsp and tout to machine precision can be
 !      interpreted as stating that the output is to be done at the next,
 !      not the current, timestep.
@@ -3505,9 +3667,11 @@ module Sub
         lfirstcall=.false.
       endif
 !
-      if (    (t_sp       >= tout)             .or. &
+      if ((t_sp >= tout) .or. &
+!      if (lout.or.t_sp    >= tout             .or. &
           (abs(t_sp-tout) <  deltat_threshold)) then
         tout=tout+abs(dtout)
+!        if (.not.lout) tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
 !
@@ -3515,21 +3679,73 @@ module Sub
 !  the code craches. If the disk is full, however, we need to reset the values
 !  manually.
 !
-        writenext: if (lroot .and. lwrite) then
+        if (lroot .and. lwrite) then
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'
-          write(lun,*) 'check_snaptime in sub.f90). The values above give'
+          write(lun,*) 'update_snaptime in sub.f90). The values above give'
           write(lun,*) 'time and number of the *next* snapshot. These values'
           write(lun,*) 'are only read once in the beginning. You may adapt'
           write(lun,*) 'them by hand (eg after a crash).'
           close(lun)
-        endif writenext
+        endif
       else
         lout=.false.
       endif
 !
     endsubroutine update_snaptime
+!***********************************************************************
+    subroutine shift_dt(dt_)
+!
+!  Hack to make the code output the VARn files at EXACTLY the times
+!  defined by dsnap, instead of slightly after it.
+!
+!  03-aug-11/wlad: coded
+!
+      use General, only: safe_character_assign
+!
+      real, intent(inout) :: dt_
+      real, save :: tsnap
+      integer, save :: nsnap
+      character (len=fnlen) :: file
+      logical, save :: lfirst_call=.true.
+!
+!  Read the output time defined by dsnap.
+!
+      if (lfirst_call) then
+        call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
+        call read_snaptime(file,tsnap,nsnap,dsnap,t)
+        lfirst_call=.false.
+      endif
+!
+!  Adjust the time-step accordingly, so that the next timestepping
+!  lands the simulation at the precise time defined by dsnap.
+!
+      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
+        dt_=tsnap-t
+        lfirst_call=.true.
+      endif
+!
+    endsubroutine shift_dt
+!***********************************************************************
+    subroutine set_dt(dt1_)
+
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
+
+      real :: dt1_
+      real :: dt1, dt1_local
+      real, save :: dt1_last=0.0
+
+      dt1_local=dt1_
+      ! Timestep growth limiter
+      if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
+      call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
+      dt=1.0/dt1
+      if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
+      ! Timestep growth limiter
+      if (ddt > 0.) dt1_last=dt1_local/ddt
+
+    endsubroutine set_dt
 !***********************************************************************
     subroutine vecout(lun,file,vv,thresh,nvec)
 !
@@ -3963,6 +4179,7 @@ module Sub
 !  Spherical harmonic
 !
 !   24-nov-14/dhruba: copied from step
+!   15-jun-17/MR: corrected  derivative
 !
       real :: sph_har
       real :: theta,phi
@@ -3985,43 +4202,62 @@ module Sub
       cost=cos(theta); sint=sin(theta); cosp=cos(phi); sinp=sin(phi)
       
  1    aemm=iabs(emm)
+
       select case (ell)
-          case (0)
-            sph_har=(0.5)*sqrt(1./pi)
-          case (1)
-            select case(aemm)
-              case (0)
-                sph_har=(0.5)*sqrt(3./pi)*cost
-              case (1) 
-                sph_har=(0.5)*sqrt(3./(2*pi))*sint*cosp
-                if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
-              case default
-                call fatal_error('sub:ylm','l=1 wrong m ')
-              endselect
-         case (2)
-            if (aemm==2) cos2p=2*cosp*cosp-1
-            select case(aemm)
-              case (0)
-                sph_har=(0.25)*sqrt(5./pi)*(3.*cost*cost-1.)
-              case (1) 
-                sph_har=-(0.5)*sqrt(15./(2*pi))*sint*cost*cosp
-                if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
-              case (2)
-                sph_har=(0.25)*sqrt(15./(2*pi))*sint*sint*cos2p
-              case default
-                call fatal_error('sub:ylm','l=2 wrong m ')
-              endselect
-          case default
-            call fatal_error('sub:ylm','your ylm is not implemented')
+        case (0)
+          sph_har=(0.5)*sqrt(1./pi)
+        case (1)
+          select case(aemm)
+            case (0)
+              sph_har=(0.5)*sqrt(3./pi)*cost
+            case (1) 
+              sph_har=(0.5)*sqrt(3./(2*pi))*sint*cosp
+              if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
+            case default
+              call fatal_error('sub:ylm','l=1 wrong m ')
+            endselect
+        case (2)
+          if (aemm==2) cos2p=2*cosp*cosp-1
+          select case(aemm)
+            case (0)
+              sph_har=(0.25)*sqrt(5./pi)*(3.*cost*cost-1.)
+            case (1) 
+              sph_har=-(0.5)*sqrt(15./(2*pi))*sint*cost*cosp
+              if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
+            case (2)
+              sph_har=(0.25)*sqrt(15./(2*pi))*sint*sint*cos2p
+            case default
+              call fatal_error('sub:ylm','l=2 wrong m ')
+            endselect
+        case (9)
+          select case(aemm)
+            case (0)
+              sph_har=sqrt(19./(4*pi))*(12155.*cost**9 - 25740.*cost**7 + 18018.*cost**5 - 4620.*cost**3 + 315.*cost)/128.
+            case default
+              call fatal_error('sub:ylm','l=9 wrong m ')
+          endselect
+        case (10)
+          select case(aemm)
+            case (0)
+              sph_har=sqrt(21./(4*pi)) &
+                      *(46189.*cost**10 - 109395.*cost**8 + 90090.*cost**6 - 30030.*cost**4 + 3465.*cost**2 - 63.)/256.
+            case default
+              call fatal_error('sub:ylm','l=10 wrong m ')
+          endselect
+        case default
+          call fatal_error('sub:ylm','your ylm is not implemented')
       endselect
 
       if (present(der)) then
-        if (lother) then
-          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                  ylm_other(theta,phi,ell-1,emm) )/sint
-        else
-          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                  ylm(ell-1,emm) )/sint
+        der = ell*cost*sph_har/sint
+        if (emm<ell) then
+          if (lother) then
+            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                    ylm_other(theta,phi,ell-1,emm)/sint
+          else
+            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                    ylm(ell-1,emm)/sint
+          endif
         endif
       endif
 !
@@ -4634,24 +4870,6 @@ nameloop: do
 !
     endsubroutine parse_shell
 !***********************************************************************
-    subroutine remove_file(fname)
-!
-!  Remove a file.
-!
-!  5-mar-02/wolf: coded
-!
-      use File_io, only: file_exists
-!
-      character (len=*), intent(in) :: fname
-!
-      logical :: removed
-!
-      removed = file_exists(fname,DELETE=.true.)
-      if (removed .and. (ip<=6)) &
-          print*,'remove_file: Removed file <',trim(fname),'>'
-!
-    endsubroutine remove_file
-!***********************************************************************
     function control_file_exists(fname,delete)
 !
 !  Does the given control file exist in either ./ or ./runtime/ ?
@@ -4660,22 +4878,15 @@ nameloop: do
 !  26-jul-09/wolf: coded
 !
       use File_io, only: parallel_file_exists
+      use General, only: loptest
 !
       logical :: control_file_exists
       character (len=*), intent(in) :: fname
       logical, optional, intent(in) :: delete
 !
-      logical :: ldelete
-!
-      if (present(delete)) then
-        ldelete=delete
-      else
-        ldelete=.false.
-      endif
-!
-      control_file_exists = parallel_file_exists(trim(fname), ldelete)
+      control_file_exists = parallel_file_exists(trim(fname), loptest(delete))
       if (.not. control_file_exists) &
-          control_file_exists = parallel_file_exists(trim("runtime/"//fname), ldelete)
+          control_file_exists = parallel_file_exists(trim("runtime/"//fname), loptest(delete))
 !
     endfunction control_file_exists
 !***********************************************************************
@@ -4809,8 +5020,20 @@ nameloop: do
         call safe_character_append(type,   'float, '    )
         call safe_character_append(dep,    'positions, ')
       endif
+      if (ltemperature .and. (.not. ltemperature_nolog) ) then
+        call safe_character_append(field,  'lnTT, '       )
+        call safe_character_append(struct, 'scalar, '   )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
+      endif
       if (lmagnetic ) then
         call safe_character_append(field,  'aa, '       )
+        call safe_character_append(struct, '3-vector, ' )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
+      endif
+      if (lheatflux ) then
+        call safe_character_append(field,  'qq, '       )
         call safe_character_append(struct, '3-vector, ' )
         call safe_character_append(type,   'float, '    )
         call safe_character_append(dep,    'positions, ')
@@ -4872,13 +5095,15 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      real, dimension(:) :: a
-      character (len=*) :: fname
+      use IO, only: output_profile
+!
+      real, dimension(:), intent(in) :: a
+      character (len=*), intent(in) :: fname
 
-      if (size(a)==mz) then
-        call write_prof(fname,z,a,'z')
+      if (size(a) == mz) then
+        call output_profile(fname, z, a, 'z', lsave_name=.true., lhas_ghost=.true.)
       else
-        call write_prof(fname,z(n1:n2),a,'z')
+        call output_profile(fname, z(n1:n2), a, 'z', lsave_name=.true.)
       endif
  
     endsubroutine write_zprof
@@ -4889,123 +5114,54 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      real, dimension(:) :: a
-      character (len=*) :: fname
+      use IO, only: output_profile
+!
+      real, dimension(:), intent(in) :: a
+      character (len=*), intent(in) :: fname
 
-      if (size(a)==mx) then
-        call write_prof(fname,x,a,'x')
+      if (size(a) == mx) then
+        call output_profile(fname, x, a, 'x', lsave_name=.true., lhas_ghost=.true.)
       else
-        call write_prof(fname,x(l1:l2),a,'x')
+        call output_profile(fname, x(l1:l2), a, 'x', lsave_name=.true.)
       endif
  
     endsubroutine write_xprof
 !***********************************************************************
-    subroutine write_prof(fname,coor,a,type,lsave_name)
+    subroutine remove_prof(type)
 !
-!  Writes profile to a file.
-!
-!  10-jul-05/axel: coded
-!
-      use General, only: safe_character_assign, loptest
-!
-      real, dimension(:) :: coor, a
-      character (len=*) :: fname
-      character :: type
-      logical, optional :: lsave_name
-!
-      integer, parameter :: unit=1
-      character (len=fnlen) :: wfile
-      integer :: i
-!
-!  If within a loop, do this only for the first step (indicated by lwrite_prof).
-!
-      if (lwrite_prof) then
-!
-!  Write zprofile file.
-!
-        call safe_character_assign(wfile, &
-            trim(directory)//'/'//type//'prof_'//trim(fname)//'.dat')
-        open(unit,file=wfile,position='append')
-        do i=1,size(coor)
-          write(unit,*) coor(i),a(i)
-        enddo
-        close(unit)
-!
-!  Add file name to list of f zprofile files if lsave_name *not* set or true.
-!
-        if (loptest(lsave_name,.true.)) then
-          call safe_character_assign(wfile,trim(directory)//'/'//type//'prof_list.dat')
-          open(unit,file=wfile,position='append')
-          write(unit,*) fname
-          close(unit)
-        endif
-      endif
-!
-    endsubroutine write_prof
-!***********************************************************************
-    subroutine read_zprof(fname,a)
-!
-!  Read z-profile from a file (taken from stratification, for example).
-!
-!  15-may-15/axel: coded
-!
-      use General, only: safe_character_assign
-!
-      real, dimension(:) :: a
-      character (len=*) :: fname
-!
-      integer, parameter :: unit=1
-      character (len=fnlen) :: wfile
-      real, dimension(size(a)) :: zloc
-!
-!  Write zprofile file.
-!
-      call safe_character_assign(wfile, &
-          trim(directory)//'/zprof_'//trim(fname)//'.dat')
-      open(unit,file=wfile)
-      do n=1,size(a)
-        read(unit,*) zloc(n),a(n)
-      enddo
-      close(unit)
-!
-!  Should we check that zloc == z ?
-!
-    endsubroutine read_zprof
-!***********************************************************************
-    subroutine remove_zprof
-!
-!  Remove z-profile file.
+!  Remove profile file.
 !
 !  10-jul-05/axel: coded
+!  05-Nov-2018/PABourdin: generalized to any direction
 !
+      use File_io, only: file_remove
       use General, only: safe_character_assign
 !
-      character (len=120) :: fname,wfile,listfile
+      character, intent(in) :: type
+!
+      character (len=120) :: fname,listfile
       integer :: ierr, unit=2
 !
-!  Do this only for the first step.
+      call file_remove(trim(directory)//'/'//'profile_'//type//'.h5')
 !
-      call safe_character_assign(listfile,trim(directory)//'/zprof_list.dat')
+      call safe_character_assign(listfile,trim(directory)//'/'//type//'/prof_list.dat')
 !
 !  Read list of file and remove them one by one.
 !
       open(unit,file=listfile,status='old',iostat=ierr)
       if (ierr /= 0) return
-      do while ((it <= nt) .and. (ierr == 0))
+      do while (it <= nt)
         read(unit,*,iostat=ierr) fname
-        if (ierr == 0) then
-          call safe_character_assign(wfile, &
-              trim(directory)//'/zprof_'//trim(fname)//'.dat')
-          call remove_file(wfile)
-        endif
+        if (ierr /= 0) exit
+        call file_remove(trim(directory)//'/'//type//'/prof_'//trim(fname)//'.dat')
       enddo
       close(unit)
 !
 !  Now delete this listfile altogether.
 !
-      call remove_file(listfile)
+      call file_remove(listfile)
 !
-    endsubroutine remove_zprof
+    endsubroutine remove_prof
 !***********************************************************************
     subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
 !
@@ -5016,7 +5172,7 @@ nameloop: do
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
-      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+      real :: ampl,radius,x01=0.,y01=0.,z01=0.,fact
 !
 !  Single  blob.
 !
@@ -5027,10 +5183,11 @@ nameloop: do
         if (lroot) print*,'ampl=0 in blob'
       else
         if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(&
-           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
-          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
-          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+        fact=1./radius**2
+        f(:,:,:,i)=f(:,:,:,i)+ampl*( &
+           spread(spread(exp(-fact*(x-x01)**2),2,my),3,mz) &
+          *spread(spread(exp(-fact*(y-y01)**2),1,mx),3,mz) &
+          *spread(spread(exp(-fact*(z-z01)**2),1,mx),2,my))
       endif
 !
     endsubroutine blob
@@ -5574,16 +5731,29 @@ nameloop: do
 !
 !  Check if this array has size nx or mx.
 !
-      select case (size(rrmn))
-      case (mx)
+!     select case (size(rrmn))
+!     case (mx)
+!       xc=x
+!     case (nx)
+!       xc=x(l1:l2)
+!     case default
+!       print*,'get_radial_distance: '//&
+!            'the array has dimension=',size(rrmn),' is that correct?'
+!       call fatal_error('get_radial_distance','')
+!     endselect
+!
+!AB: the construct above doesn't work if there are no ghostzones,
+!AB: i.e., if mx=nx. User therefore if statement.
+!
+      if (size(rrmn)==mx) then
         xc=x
-      case (nx)
+      elseif (size(rrmn)==nx) then
         xc=x(l1:l2)
-      case default
+      else
         print*,'get_radial_distance: '//&
              'the array has dimension=',size(rrmn),' is that correct?'
         call fatal_error('get_radial_distance','')
-      endselect
+      endif
 !
 !  Calculate the coordinate-free distance relative to the position (e1,e2,e3).
 !
@@ -6207,11 +6377,12 @@ nameloop: do
     subroutine position(ind,ip,ngrid,ind_loc,flag)
 !
 !  Determines local position ind_loc with respect to processor ip corresponding to global position ind
-!  if grid has global extent ngrid. flag is set if ind_loc lies within the local range.
-!  On return, ind_loc is corrected for ghost zones, thus can be used to index the f array.
+!  if grid has local extent ngrid. flag is set if ind_loc lies within the local range.
+!  On return, ind_loc is corrected for number of ghost zones, thus can be used to index the f array.
 !  ind_loc and flag are not altered if ind <= 0.
 !
 !  21-apr-15/MR: coded
+!  27-may-18/MR: added ind_loc=-1 when ind outside proc range
 !
       integer, intent(in) :: ind,ip,ngrid
       integer, intent(out):: ind_loc
@@ -6224,6 +6395,7 @@ nameloop: do
           ind_loc=ind_loc+nghost
         else
           flag=.false.
+          ind_loc=-1
         endif
       endif
 
@@ -6326,7 +6498,7 @@ nameloop: do
 !  13-jan-11/MR: coded
 !  29-may-14/ccyang: add optional argument communicated
 !
-      use FArrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary, farray_index_append
 !
       implicit none
 !
@@ -6336,8 +6508,6 @@ nameloop: do
       logical, intent(in), optional :: communicated
 !
       integer   :: vec
-      character :: ch
-      character (LEN=max(len(name)-2,2)) :: tail
 !
       vec=-1
 !
@@ -6352,10 +6522,8 @@ nameloop: do
         endif
       endif
 !
-      if (index==0) then
-!
+      if (index == 0) then
         call farray_register_auxiliary(trim(name), index, vector=abs(vec), communicated=communicated)
-!
         if (vec>=1) then
           ind_aux1=index
           if (vec>=2) then
@@ -6363,31 +6531,9 @@ nameloop: do
             if (vec==3) ind_aux3=index+2
           endif
         endif
-!
-      endif
-!
-      if (index/=0.and.lroot) then
-!
-        print*, 'register_report_aux: i'//trim(name)//' =', index
-        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) 'i'//trim(name)//' =',index
-!
-        if ( vec>=1 ) then
-          tail=' ='
-          ch = name(1:1)
-          if ( ch==name(2:2) ) then
-            if ( len_trim(name)>2 ) tail = trim(name(3:))//' ='
-          endif
-!
-          write(3,*) 'i'//ch//'x'//trim(tail),ind_aux1
-          if ( vec>=2 ) then
-            write(3,*) 'i'//ch//'y'//trim(tail),ind_aux2
-            if ( vec==3 ) write(3,*) 'i'//ch//'z'//trim(tail),ind_aux3
-          endif
-        endif
-!
-        close(3)
-!
+      else
+        if (lroot) print*, 'register_report_aux: i'//trim(name)//' =', index
+        call farray_index_append('i'//trim(name),index,vec)
       endif
 !
     endsubroutine register_report_aux
@@ -6439,49 +6585,41 @@ nameloop: do
 !
     endsubroutine unit_vector
 !***********************************************************************
-    subroutine doupwind(f,k,uu,ugradf,mask)
-!
-!  Calculates upwind correction, works incrementally on ugradf
-!
-!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
-!   9-apr-12/MR: optional parameter plus added
-!  12-apr-12/MR: optional parameter modified
+    subroutine calc_del6_for_upwind(f,k,hh,del6f_upwind,mask)
 !
       use Deriv, only: der6, deri_3d_inds
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
-      integer                                           :: k
-      real, dimension (nx,3),             intent(IN)    :: uu
-      real, dimension (nx),               intent(INOUT) :: ugradf
-      integer,                            intent(IN), optional :: mask
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3)             :: del6f, hh
+      real, dimension(nx)               :: del6f_upwind
+      integer, dimension(nx)            :: indxs
+      integer, intent(in), optional     :: mask
+      integer                           :: j, k, msk
 !
-      real, dimension (nx,3) :: del6f
-      integer                :: ii,msk
-      integer, dimension(nx) :: indxs
+      intent(in) :: f,k,hh 
+      intent(out) :: del6f_upwind
 !
       msk=0
-      if (present(mask)) then
-        if ( mask>=1 .and. mask <=3 ) msk=mask
-      endif
+      if (present(mask)) msk=mask
 !
-      do ii=1,3
+      do j=1,3
 !
-        if (ii==msk) then
-          del6f(:,ii) = 0.
+        if (j==msk) then
+          del6f(:,j) = 0.
         else
 !
-          if ( lequidist(ii) ) then
-            call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
+          if (lequidist(j) .or. lignore_nonequi) then
+            call der6(f,k,del6f(1,j),j,UPWIND=.true.)
           else
-            where( uu(:,ii)>=0 )
+            where(hh(:,j)>=0)
               indxs = 7
             elsewhere
               indxs = 8
             endwhere
-            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
+            call deri_3d_inds(f(1,1,1,k),del6f(1,j),indxs,j,lnometric=.true.)
           endif
 !
-          del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)
+          del6f(:,j) = abs(hh(:,j))*del6f(:,j)
 !
         endif
       enddo
@@ -6494,10 +6632,38 @@ nameloop: do
         del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
       endif
 !
+      del6f_upwind = sum(del6f,2)
+!
+    endsubroutine calc_del6_for_upwind
+!***********************************************************************    
+    subroutine doupwind(f,k,uu,ugradf,mask)
+!
+!  Calculates upwind correction, works incrementally on ugradf
+!
+!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
+!   9-apr-12/MR: optional parameter plus added
+!  12-apr-12/MR: optional parameter modified
+!   8-apr-17/wlyra: encapsulated the calculation of del6     
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
+      integer                                           :: k
+      real, dimension (nx,3),             intent(IN)    :: uu
+      real, dimension (nx),               intent(INOUT) :: ugradf
+      integer,                            intent(IN), optional :: mask
+      real, dimension (nx) :: del6f_upwind
+      integer                :: msk
+!
+      msk=0
+      if (present(mask)) then
+        if ( mask>=1 .and. mask <=3 ) msk=mask
+      endif
+!
+      call calc_del6_for_upwind(f,k,uu,del6f_upwind,msk)
+!
       if (msk>0) then
-        ugradf = ugradf+sum(del6f,2)
+        ugradf = ugradf+del6f_upwind
       else
-        ugradf = ugradf-sum(del6f,2)
+        ugradf = ugradf-del6f_upwind
       endif
 !
     endsubroutine doupwind
@@ -7097,17 +7263,17 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       logical,                  optional, intent(IN) :: lshear_rateofstrain
 
       real, dimension(nx,3) :: uu
-      real, dimension(nx,3,3) :: uij
+      real, dimension(nx,3,3) :: uij, sij
 
 ! uij from f
       call gij(f,iuu,uij,1)
       uu=f(l1:l2,m,n,iux:iuz)
 ! divu -> uij2
       call div_mn(uij,sij2,uu)
-! sij -> uij
-      call traceless_strain(uij,sij2,uij,uu,lshear_rateofstrain)
-! sij2
-      call multm2_sym_mn(uij,sij2)
+! sij
+      call traceless_strain(uij,sij2,sij,uu,lshear_rateofstrain)
+! sij^2
+      call multm2_sym_mn(sij,sij2)
 
     endsubroutine calc_sij2
 !***********************************************************************
@@ -7175,5 +7341,213 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
     endif
 !
     endsubroutine traceless_strain
+!***********************************************************************
+    subroutine remove_mean_value(f,ind1,ind2)
+!
+!  Substract mean x-flow from the x-velocity field.
+!  Useful to avoid unphysical winds in shearing box simulations.
+!  Note: this is possibly not useful when there is rotation, because
+!  then epicyclic motions don't usually grow catastrophically.
+!
+!  22-may-07/axel: adapted from remove_mean_momenta
+!  15-dec-10/MR  : added parameters indux to make applicable to other ...
+!  13-may-18/axel: moved to general, renamed, added end index
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer,                            intent (in)    :: ind1,ind2
+!
+      real, dimension (nx) :: uu
+      real, dimension (ind1:ind2) :: um, um_tmp
+      integer :: m,n,j
+      real    :: fac
+!
+!  initialize um and compute normalization factor fac
+!
+        um = 0.0
+        fac = 1.0/nwgrid
+!
+!  Go through all pencils.
+!
+        do n = n1,n2
+        do m = m1,m2
+!
+!  Compute mean flow in each of the 3 directions.
+!
+          do j=ind1,ind2
+            uu = f(l1:l2,m,n,j)
+            um(j) = um(j) + fac*sum(uu)
+          enddo
+        enddo
+        enddo
+!
+!  Compute total sum for all processors
+!
+        call mpiallreduce_sum(um,um_tmp,ind2-ind1+1)
+        um = um_tmp
+!
+!  Go through all pencils and subtract out the mean value
+!  separately for each direction.
+!
+        do n = n1,n2
+        do m = m1,m2
+          do j=ind1,ind2
+            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - um(j)
+          enddo
+        enddo
+        enddo
+!
+    endsubroutine remove_mean_value
+!***********************************************************************
+    subroutine stagger_to_base_interp_1st(f,m,n,fint)
+!
+!  Performs first-order interpolation from the staggered grid to the original one.
+!  The interpolation point is the center of the cuboid defined by the intervals 
+!  (i1-1,i1), (j1-1,j1), (k1-1,k1) of the staggered grid.
+!
+!  10-jul-18/MR: coded
+! 
+      real, dimension(mx,my,mz), intent(IN) :: f      ! values on staggered grid
+      integer,                   intent(IN) :: m,n    ! position in mn-loop at which interpolation is performed
+      real, dimension(nx),       intent(OUT):: fint   ! interpoland
+!
+      real :: fac, facq, facc
+      integer, dimension( 3,-1:0) :: ijk
+      integer, dimension(-1:0) :: i2
+      integer, dimension(-1:0), parameter :: shifts=(/-1,0/)
+      integer :: k
+
+      ijk(1,:)=l1; ijk(2,:)=m; ijk(3,:)=n
+
+      fac=1./2.
+      do k=1,3
+        if (lactive_dimension(k)) ijk(k,:)=ijk(k,:)+shifts
+!print*, 'k,ijk(k,:)=', k, ijk(k,:)
+      enddo
+      i2 = ijk(1,:)+nx-1
+
+      if (dimensionality==1) then
+        fint = (f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1,0):i2(0),ijk(2,0),ijk(3,0)))*fac
+      else
+        facq=fac*fac
+        if (dimensionality==3) then
+          facc=facq*fac
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0))+f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,-1)) &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,-1))+f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3, 0)) &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1)) )*facc
+        elseif (lactive_dimension(3)) then
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)))*facq 
+        else
+!print*, ijk(1, 0),i2( 0),ijk(2,-1),n,f(ijk(1, 0):i2( 0),ijk(2,-1),n)
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),n)+f(ijk(1, 0):i2( 0),ijk(2, 0),n) &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),n)+f(ijk(1, 0):i2( 0),ijk(2,-1),n))*facq 
+        endif
+      endif
+
+      endsubroutine stagger_to_base_interp_1st
+!***********************************************************************
+    subroutine stagger_to_base_interp_3rd(f,m,n,fint)
+!
+!  Performs third-order interpolation from the staggered grid to the original one.
+!  The interpolation point is the center of the cuboid defined by the intervals 
+!  (i1-1,i1), (j1-1,j1), (k1-1,k1) of the staggered grid.
+!
+!  10-jul-18/MR: coded
+! 
+      real, dimension(mx,my,mz), intent(IN) :: f      ! values on staggered grid
+      integer,                   intent(IN) :: m,n    ! position in mn-loop at which interpolation is performed
+      real, dimension(nx),       intent(OUT):: fint   ! interpoland
+!
+      real :: facm, facp, facmq, facpq, facpm, facpc, facpqm, facpmq, facmc
+      integer, dimension( 3,-2:1) :: ijk
+      integer, dimension(-2:1) :: i2
+      integer, dimension(-2:1), parameter :: shifts=(/-2,-1,0,1/)
+      integer :: k
+
+      ijk(1,:)=l1; ijk(2,:)=m; ijk(3,:)=n
+
+      facm=1./16.; facp=9./16.
+      do k=1,3
+        if (lactive_dimension(k)) ijk(k,:)=ijk(k,:)+shifts
+!print*, 'k,ijk(k,:)=', k, ijk(k,:)
+      enddo
+      i2 = ijk(1,:)+nx-1
+
+      if (dimensionality==1) then
+        fint = (f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1,0):i2(0),ijk(2,0),ijk(3,0)))*facp &
+              -(f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-2))+f(ijk(1,1):i2(1),ijk(2,1),ijk(3,1)))*facm
+      else
+        facmq=facm*facm; facpq=facp*facp; facpm=facp*facm
+        if (dimensionality==2) then
+          if (lactive_dimension(3)) then
+            fint =  ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0))         &
+                     +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1))+f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0)) )*facpq &
+!
+                   -( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-1))         &
+                     +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-2))+f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-1))         &
+                     +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-2))+f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3, 0))         &
+                     +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3, 0)) )*facpm &
+!
+                   +( f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,+1))         &
+                     +f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-2)) )*facmq
+          else
+            fint =  ( f(ijk(1,-1):i2(-1),ijk(2,-1),n)+f(ijk(1, 0):i2( 0),ijk(2, 0),n)         &
+                     +f(ijk(1,-1):i2(-1),ijk(2, 0),n)+f(ijk(1, 0):i2( 0),ijk(2,-1),n) )*facpq &
+!
+                   -( f(ijk(1,-1):i2(-1),ijk(2,+1),n)+f(ijk(1,+1):i2(+1),ijk(2,-1),n)         &
+                     +f(ijk(1,-1):i2(-1),ijk(2,-2),n)+f(ijk(1,-2):i2(-2),ijk(2,-1),n)         &
+                     +f(ijk(1, 0):i2( 0),ijk(2,-2),n)+f(ijk(1,-2):i2(-2),ijk(2, 0),n)         &
+                     +f(ijk(1, 0):i2( 0),ijk(2,+1),n)+f(ijk(1,+1):i2(+1),ijk(2, 0),n) )*facpm &
+!
+                   +( f(ijk(1,-2):i2(-2),ijk(2,-2),n)+f(ijk(1,+1):i2(+1),ijk(2,+1),n)         &
+                     +f(ijk(1,-2):i2(-2),ijk(2,+1),n)+f(ijk(1,+1):i2(+1),ijk(2,-2),n) )*facmq
+          endif
+        else
+          facpc =facpq*facp
+          facpqm=facpq*facm
+          facpmq=facp*facmq
+          facmc =facmq*facm
+          fint = ( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,-1)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,-1))+f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3, 0)) &
+                  +f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3, 0)) &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3, 0)) )*facpc &  ! 8 terms
+!
+                -( f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,-2))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,-2))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,-2))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,-2))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-1),ijk(3,+1))+f(ijk(1, 0):i2( 0),ijk(2,-1),ijk(3,+1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2, 0),ijk(3,+1))+f(ijk(1, 0):i2( 0),ijk(2, 0),ijk(3,+1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3,-1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3, 0))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3,-1))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3,-1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3, 0))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3, 0))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3,-1))+f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3,-1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3, 0))+f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3, 0))     &
+                  +f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3,-1))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3,-1))     &
+                  +f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3, 0))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3, 0)) )*facpqm & ! 24 terms
+!
+                +( f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-1))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3,-1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3,-1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3, 0))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3, 0))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3, 0))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3, 0))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3,-2))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,-1),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,-1),ijk(3,+1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3,-2))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2, 0),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2, 0),ijk(3,+1))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3,-2))+f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3,-2))     &
+                  +f(ijk(1,-1):i2(-1),ijk(2,-2),ijk(3,+1))+f(ijk(1,-1):i2(-1),ijk(2,+1),ijk(3,+1))     &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3,-2))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3,-2))     &
+                  +f(ijk(1, 0):i2( 0),ijk(2,-2),ijk(3,+1))+f(ijk(1, 0):i2( 0),ijk(2,+1),ijk(3,+1)) )*facpmq & ! 24 terms
+!
+                -( f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3,-2))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3,-2))+f(ijk(1,-2):i2(-2),ijk(2,-2),ijk(3,+1))     &
+                  +f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,-2))+f(ijk(1,+1):i2(+1),ijk(2,-2),ijk(3,+1))     &
+                  +f(ijk(1,-2):i2(-2),ijk(2,+1),ijk(3,+1))+f(ijk(1,+1):i2(+1),ijk(2,+1),ijk(3,+1)) )*facmc    ! 8 terms
+        endif
+      endif
+
+    endsubroutine stagger_to_base_interp_3rd
 !***********************************************************************
 endmodule Sub

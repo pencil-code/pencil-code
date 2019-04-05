@@ -10,8 +10,6 @@
 ! CPARAM logical, parameter :: lparticles_sink=.true.
 !
 ! MPVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
-! COMMUNICATED AUXILIARIES 1
 !
 !***************************************************************
 module Particles_sink
@@ -75,16 +73,7 @@ module Particles_sink
 !
 !  Index for sink particle radius.
 !
-      iaps=npvar+1
-      pvarname(npvar+1)='iaps'
-      npvar=npvar+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_sink_particles','npvar > mpvar')
-      endif
+      call append_npvar('iaps',iaps)
 !
     endsubroutine register_particles_sink
 !***********************************************************************
@@ -1573,6 +1562,7 @@ module Particles_sink
 !  11-aug-12/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -1587,7 +1577,7 @@ module Particles_sink
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iaps=', iaps
+      if (lwr) call farray_index_append('iaps', iaps)
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparsink', &

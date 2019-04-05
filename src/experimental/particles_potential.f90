@@ -7,7 +7,6 @@
 !
 ! CPARAM logical, parameter :: lparticles_potential=.true.
 !
-!
 !***************************************************************
 module Particles_potential
 !
@@ -16,7 +15,7 @@ module Particles_potential
   use Messages
   use Particles_cdata
   use Particles_sub
-  use Particles_radius
+!  use Particles_radius
 !
   implicit none
 !
@@ -31,11 +30,7 @@ module Particles_potential
   real :: rescale_diameter=1.
   logical :: lpotential
   integer :: mom_max,mpface,mpedge,mpcorner
-  real, allocatable, dimension(:,:) :: fpx0,fpy0,fpz0,fpxL,fpyL,fpzL,&
-    fpx0y0,fpx0z0,fpy0z0,fpx0yL,fpx0zL,fpy0zL,&
-    fpxLyL,fpxLzL,fpyLzL,fpxLy0,fpxLz0,fpyLz0,&
-    fpx0y0z0, fpx0y0zL,fpx0yLz0,fpxLy0z0, &
-    fpx0yLzL,fpxLy0zL,fpxLyLz0,fpxLyLzL
+  integer :: npbufl,npbufu
 ! 
 !
 ! ----------- About Potential ----------------------
@@ -61,7 +56,9 @@ module Particles_potential
 ! due to other particles which are within a distance of skin_factor*psigma. Particles
 ! within this distance are included in the neighbourlist.
 !
+  integer :: ncell=0
   integer :: mcellx=0,mcelly=0,mcellz=0
+  integer :: arb_factor=10
   logical :: lhead_allocated=.false.
   integer, allocatable, dimension(:,:,:) :: head
   integer, allocatable,dimension(:) :: link_list
@@ -69,7 +66,7 @@ module Particles_potential
   real, allocatable,dimension(:,:,:) :: MomJntPDF,MomColJntPDF
   integer :: ysteps_int,zsteps_int
   namelist /particles_potential_init_pars/ &
-    ppotential, cell_in_grid, psigma_by_dx,  skin_factor, &
+    arb_factor,ppotential, cell_in_grid, psigma_by_dx,  skin_factor, &
       sigma_in_grid,fampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter,lpotential
 !
   namelist /particles_potential_run_pars/ &
@@ -90,30 +87,74 @@ module Particles_potential
 
     endsubroutine register_particles_potential
 !***********************************************************************
-    subroutine initialize_particles_potential(f)
+    subroutine initialize_particles_potential(fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      use particles_radius, only: get_maxrad
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
       integer :: mom_tmp,imom
+      real :: rmax
 !
 ! assume isotropy 
 !
       Rcutoff=Rcutoff_in_grid*dx
       cell_length=cell_in_grid*dx
       dRbin=Rcutoff/real(Nbin_in_Rcutoff)
-      mcellx=int(abs(x(l2)-x(l1))/cell_length)+1
-      mcelly=int(abs(y(m2)-y(m1))/cell_length)+1
-      mcellz=int(abs(z(n2)-z(n1))/cell_length)+1
+!
+! The size of a cell is twice the radius of the biggest particle. This assumes that
+! the size of the particles are NOT going to change over time. Otherwise the input      
+! parameter cell_length, if not equal to zero, sets the size of the cell. 
+!
+      call get_maxrad(rmax)
+      if (cell_length.eq.0.) then 
+         cell_length=4.*rmax
+      endif
+!
+! the following line assumes that the domain is roughly size in all three      
+! directions. If not, we need to code some more
+!      
+      ncell=int((x(l2)-x(l1))/cell_length)+1
+      cell_length=(x(l2)-x(l1))/ncell
+!
+! Assuming uniform distribution we can estimate the number of particles
+! in a slab. These number are then multiplied
+! an arbitrary factor (arb_factor) for which the default value is 10        
+!
+      nslab=arb_factor*(npar/ncpus)/ncell
+!
+! If we are using many processors then our domain effectively includes
+! three (two ?) neighbouring processors in each directions.
+!
+      mcellx=ncell;mcelly=ncell;mcellz=ncell
+!
+! Allocate the arrays head and link_list (only if they have
+! not been allocated before)      
 !
       if(.not.lhead_allocated) then
-        allocate(head(0:mcellx+1,0:mcelly+1,0:mcellz+1))
-        allocate(link_list(mpar_loc))
+         if (lmpicomm) then
+            lpar_max=max(arb_factor*(npar/ncpus)+6*nslab,mpar_loc)
+            allocate(fp_buffer_in(nslab,mparray))
+            allocate(fp_buffer_out(nslab,mparray))
+         else
+           lpar_max=mpar_loc         
+        endif
+        allocate(head(-1:mcellx,-1:mcelly,-1:mcellz))
+        allocate(link_list(lpar_max))
+!
+! We also need to allocate a larger array in case of parallel communications
+!
+        allocate(fpwn(lpar_max,mparray))
         lhead_allocated=.true.
+        fpwn=0.
         head=0
         link_list=0
       endif
+!
+! The following are necessary to calculate the moments
+! of the joint PDF on the fly.
+!
       mom_max=int((pmom_max-pmom_min)/mom_step)+1
       allocate(mom_array(mom_max))
       mom_array=0.
@@ -128,40 +169,25 @@ module Particles_potential
       enddo
     write(*,*) mom_array
 !
-!
-!
-    mpface=mpar_loc/6
-    allocate(fpx0(mpface,mparray),fpxL(mpface,mparray))
-    allocate(fpy0(mpface,mparray),fpyL(mpface,mparray))
-    allocate(fpz0(mpface,mparray),fpzL(mpface,mparray))
-    mpedge=mpar_loc/12
-    allocate(fpx0y0(mpedge,mparray),fpx0yL(mpedge,mparray),fpxLy0(mpedge,mparray),fpxLyL(mpedge,mparray))
-    allocate(fpx0z0(mpedge,mparray),fpx0zL(mpedge,mparray),fpxLz0(mpedge,mparray),fpxLzL(mpedge,mparray))
-    allocate(fpy0z0(mpedge,mparray),fpy0zL(mpedge,mparray),fpyLz0(mpedge,mparray),fpyLzL(mpedge,mparray))
-    mpcorner=mpar_loc/27
-    allocate(fpx0y0z0(mpcorner,mparray),fpx0y0zL(mpcorner,mparray))
-    allocate(fpx0yLz0(mpcorner,mparray),fpx0yLzL(mpcorner,mparray))
-    allocate(fpxLyLz0(mpcorner,mparray),fpxLyLzL(mpcorner,mparray))
-    allocate(fpxLy0z0(mpcorner,mparray),fpxLy0zL(mpcorner,mparray))
-!
-! write out this array such that it can be read
-!
-      allocate(MomJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
-      MomJntPDF=0.
-     allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
-     MomColJntPDF=0.
-!
-      call keep_compiler_quiet(f)
+    allocate(MomJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+    MomJntPDF=0.
+    allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+    MomColJntPDF=0.
 !
     endsubroutine initialize_particles_potential
 !***********************************************************************
-    subroutine particles_potential_clean_up
+    subroutine particles_potential_clean_up()
 !
 !  cleanup after the particles_potential module
 !
       if(lhead_allocated) then
         deallocate(head)
         deallocate(link_list)
+        deallocate(fpwn)
+        if (lmpicomm) then
+           deallocate(fp_buffer_in)
+           deallocate(fp_buffer_out)
+        endif
         lhead_allocated=.false.
       endif
       deallocate(MomJntPDF)
@@ -182,221 +208,23 @@ module Particles_potential
 !
     endsubroutine init_particles_potential
 !***********************************************************************
-    subroutine construct_link_list(fp)
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: ipx0,ipy0,ipz0,ipxL,ipyL,ipzL,& 
-        ipx0y0,ipx0z0,ipy0z0,ipx0yL,ipx0zL,ipy0zL,&
-        ipxLyL,ipxLzL,ipyLzL,ipxLy0,ipxLz0,ipyLz0,&
-        ipx0y0z0, ipx0y0zL,ipx0yLz0,ipxLy0z0, &
-        ipx0yLzL,ipxLy0zL,ipxLyLz0,ipxLyLzL
+    subroutine construct_link_list(plist_min,plist_max)
       integer :: ip,imom
+      integer, intent(in) :: plist_min,plist_max
       integer,dimension(3) :: cell_vec
-      real,dimension(3) :: xxi
+      real,dimension(3) :: xxip,my_origin
 !
-      do ip=1,npar_loc
-        xxi=fp(ip,ixp:izp)
-        cell_vec=floor((xxi-xyz0)/cell_length)+1
+      do ip=plist_min,plist_max
+        xxip=fpwn(ip,ixp:izp)
+        my_origin(1)=x(l1); my_origin(2)=y(m1); my_origin(3)=z(n1)
+        cell_vec=floor((xxip-my_origin)/cell_length)
         link_list(ip)=head(cell_vec(1),cell_vec(2),cell_vec(3))
         head(cell_vec(1),cell_vec(2),cell_vec(3))=ip
       enddo
 !
-!  Now load the particles to planes 
-!        
-! two planes perpendicular to x direction:
-      do iz=1,mcellz;do iy=1,mcelly
-!Plane x=0
-        ix=1
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpx0(ipx0,:) = fp(ip,:)
-          ipx0=ipx0+1
-! Line x=0,y=0
-          if (iy .eq. 1) then
-            fpx0y0(ipx0y0,:) = fp(ip,:)
-            ipx0y0=ipx0y0+1
-! cell x=0,y=0,z=0
-            if(iz .eq. 1) then
-              fpx0y0z0(ipx0y0z0,:) = fp(ip,:)
-              ipx0y0z0=ipx0y0z0+1
-            endif
-! cell x=0,y=0,z=Lz
-            if(iz .eq. mcellz) then
-              fpx0y0zL(ipx0y0zL,:) = fp(ip,:)
-              ipx0y0zL=ipx0y0zL+1
-            endif
-          endif
-! Line x=0,y=Ly
-          if (iy .eq. mcelly) then
-            fpx0yL(ipx0yL,:) = fp(ip,:)
-            ipx0yL=ipx0yL+1
-! cell x=0,y=Ly,z=0
-            if(iz .eq. 1) then
-              fpx0yLz0(ipx0yLz0,:) = fp(ip,:)
-              ipx0yLz0=ipx0yLz0+1
-            endif
-! cell x=0,y=Ly,z=Lz
-            if(iz .eq. Lz) then
-              fpx0yLzL(ipx0yLzL,:) = fp(ip,:)
-              ipx0yLzL=ipx0yLzL+1
-            endif
-          endif
-!Line x=0,z=0
-          if (iz .eq. 1) then
-            fpx0z0(ipx0z0,:) = fp(ip,:)
-            ipx0z0=ipx0z0+1
-! cell x=0,z=0,y=0 is already done
-! cell x=0,z=0,y=Ly is already done
-          endif
-!Line x=0,z=Lz
-          if (iz .eq. mcellz) then
-            fpx0zL(ipx0zL,:) = fp(ip,:)
-            ipx0zL=ipx0zL+1
-! cell x=0,z=Lz,y=0 is already done
-! cell x=0,z=Lz,y=Lz is already done 
-          endif
-          ip=link_list(ip)
-        enddo
-! Plane x=Lx
-        ix=mcellx
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpxL(ipxL,:) = fp(ip,:)
-          ipxL=ipxL+1
-! Line x=L,y=0
-          if (iy .eq. 1) then
-            fpxLy0(ipxLy0,:) = fp(ip,:)
-            ipxLy0=ipxLy0+1
-! cell x=L,y=0,z=0
-            if(iz .eq. 1) then
-              fpxLy0z0(ipxLy0z0,:) = fp(ip,:)
-              ipxLy0z0=ipxLy0z0+1
-            endif
-! cell x=L,y=0,z=Lz
-            if(iz .eq. mcellz) then
-              fpxLy0zL(ipxLy0zL,:) = fp(ip,:)
-              ipxLy0zL=ipxLy0zL+1
-            endif
-          endif
-! Line x=L,y=Ly
-          if (iy .eq. mcelly) then
-            fpxLyL(ipxLyL,:) = fp(ip,:)
-            ipxLyL=ipxLyL+1
-! cell x=L,y=Ly,z=0
-            if(iz .eq. 1) then
-              fpxLyLz0(ipxLyLz0,:) = fp(ip,:)
-              ipxLyLz0=ipxLyLz0+1
-            endif
-! cell x=L,y=Ly,z=Lz
-            if(iz .eq. Lz) then
-              fpxLyLzL(ipxLyLzL,:) = fp(ip,:)
-              ipxLyLzL=ipxLyLzL+1
-            endif
-          endif
-!Line x=L,z=0
-          if (iz .eq. 1) then
-            fpxLz0(ipxLz0,:) = fp(ip,:)
-            ipxLz0=ipxLz0+1
-! cell x=0,z=0,y=0 is already done
-! cell x=0,z=0,y=Ly is already done
-          endif
-!Line x=0,z=Lz
-          if (iz .eq. mcellz) then
-            fpxLzL(ipxLzL,:) = fp(ip,:)
-            ipxLzL=ipxLzL+1
-! cell x=0,z=Lz,y=0 is already done
-! cell x=0,z=Lz,y=Lz is already done 
-          endif
-          ip=link_list(ip)
-        enddo !while loop over ip ends
-      enddo;enddo
-!        
-! two planes perpendicular to y direction:
-!
-      do iz=1,mcellz;do ix=1,mcellx
-!Plane y=0
-        iy=1
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpy0(ipy0,:) = fp(ip,:)
-          ipy0=ipy0+1
-! Line x=0,y=0 is already done
-! cell x=0,y=0,z=0 is already done
-! cell x=0,y=0,z=Lz is already done
-! Line y=0,z=0
-          if (iz .eq. 1) then
-            fpy0z0(ipy0z0,:) = fp(ip,:)
-            ipy0z0=ipy0z0+1
-          endif
-! Line y=0,z=Lz
-          if (iz .eq. mcellz) then
-            fpy0zL(ipy0zL,:) = fp(ip,:)
-            ipy0zL=ipy0zL+1
-          endif
-          ip=link_list(ip)
-        enddo
-!Plane y=Ly
-        iy=mcelly
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpyL(ipyL,:) = fp(ip,:)
-          ipyL=ipyL+1
-! Line x=0,y=L is already done
-! cell x=0,y=L,z=0 is already done
-! cell x=0,y=L,z=Lz is already done
-! Line y=L,z=0
-          if (iz .eq. 1) then
-            fpyLz0(ipyLz0,:) = fp(ip,:)
-            ipyLz0=ipyLz0+1
-          endif
-! Line y=L,z=Lz
-          if (iz .eq. mcellz) then
-            fpyLzL(ipyLzL,:) = fp(ip,:)
-            ipyLzL=ipyLzL+1
-          endif
-          ip=link_list(ip)
-        enddo
-      enddo;enddo
-!        
-! two planes perpendicular to z direction:
-!
-      do iy=1,mcelly;do ix=1,mcellx
-!Plane z=0
-        iz=1
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpz0(ipz0,:) = fp(ip,:)
-          ipz0=ipz0+1
-! Line x=0,z=0 is already done
-! cell x=0,y=0,z=0 is already done
-! Line y=0,z=0 is already done
-          ip=link_list(ip)
-        enddo
-!Plane z=Lz
-        iz=mcellz
-        ip=head(ix,iy,iz)
-        do while (ip .ne. 0)
-          fpzL(ipzL,:) = fp(ip,:)
-          ipzL=ipzL+1
-! Line x=0,z=L is already done
-! cell x=0,y=0,z=L is already done
-! Line y=0,z=L is already done
-          ip=link_list(ip)
-        enddo
-      enddo;enddo
-!
-! Now the boundaries must be exchanged
-! then the new particles on the boundaries 
-! moved into the fp array and then
-! another segregation into the head and link_list
-! must be done
     endsubroutine construct_link_list
 !***********************************************************************
     subroutine dxxp_dt_potential(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of dust particle position.
-!
-!  02-jan-05/anders: coded
-!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -417,15 +245,14 @@ module Particles_potential
 !***********************************************************************
     subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !
-!  Dummy module
 !
-!  21-nov-06/anders: dummy
+!  Jan-2017/dhruba: dummy 
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -435,48 +262,203 @@ module Particles_potential
 !
     endsubroutine dvvp_dt_potential_pencil
 !***********************************************************************
-    subroutine dvvp_dt_potential(fp,dfp,ineargrid)
+    subroutine dvvp_dt_potential(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
-!  29-dec-04/anders: coded
+!  Jan-2017/dhruba: coded
 !
       use Diagnostics
       use EquationOfState, only: cs20
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: fp, ineargrid
-      intent (inout) :: dfp
 !
 ! We need to calculate pairwise quantities only if we are calculating
 ! pairwise diagnostic or if we actually have a potential of interaction
 !
-      if (ldiagnos.or.lpotential) & 
-        call calculate_potential (fp,dfp,ineargrid)
+      if (ldiagnos.or.lparticles_potential) then
 !
+! first fill up fpwn with particles in local fp (do this even 
+! in the serial case )
+! 
+         lpar_loc=npar_loc
+         fpwn(1:npar_loc,:) = fp(1:npar_loc,:)
 !
-      endsubroutine dvvp_dt_potential
+! Now make the linked list for the local particles         
+! but set head to zero before you begin
+         head = 0 
+         call construct_link_list(1,npar_loc)
+!
+! Now load the data from boundaries to buffers (this is
+! different in the serial and parallel case.          
+!         
+         call particles_neighbour_proc()
+!
+         call calculate_potential (dfp,ineargrid)
+!
+      endif
+    endsubroutine dvvp_dt_potential
 !***********************************************************************
-    subroutine calculate_potential(fp,dfp,ineargrid)
+    subroutine assimilate_incoming(npbuf)
+      integer,intent(in) :: npbuf
+      fpwn(lpar_loc+1:lpar_loc+npbuf,:)=fp_buffer_in(1:npbuf,:)
+      call construct_link_list(lpar_loc+1,lpar_loc+npbuf)
+      lpar_loc=lpar_loc+npbuf
 !
-!  particle velocity due to particle-particle interaction
+    endsubroutine assimilate_incoming
+!***********************************************************************
+    subroutine get_boundary_particles(idirn,porm,npbuf)
+!
+! fp_buffer in known globally
+!
+      integer, intent(in) :: idirn,porm
+      integer, intent(out) :: npbuf
+!
+      select case(idirn)
+      case(3)
+         if (porm.eq.1) then
+            call make_fpbuffer(mcellz-1,mcellz-1,-1,mcelly,-1,mcellx,npbuf)
+         else
+            call make_fpbuffer(0,0,-1,mcelly,-1,mcellx,npbuf)
+         endif
+      case(2)
+         if (porm.eq.1) then
+            call make_fpbuffer(-1,mcellz,mcelly-1,mcelly-1,-1,mcellx,npbuf)
+         else
+            call make_fpbuffer(-1,mcellz,0,0,-1,mcellx,npbuf)
+         endif
+      case(1)
+         if (porm.eq.1) then
+            call make_fpbuffer(-1,mcellz,-1,mcelly,mcellx-1,mcellx-1,npbuf)
+         else
+            call make_fpbuffer(-1,mcellz,-1,mcelly,0,0,npbuf)
+         endif
+         case default
+          !
+          !  Catch unknown values
+          !
+          call fatal_error("particles_potential", &
+              "get_boundary_particles is called with wrong idirn")
+!
+        endselect
+!
+      endsubroutine get_boundary_particles
+!***********************************************************************
+    subroutine make_fpbuffer(izmin,izmax,iymin,iymax,ixmin,ixmax,npbuf)
+!
+! fp_buffer is known globally
+!
+      integer, intent(in) :: izmin,izmax,iymin,iymax,ixmin,ixmax
+      integer, intent(out) :: npbuf
+      integer :: ipbuf
+      fp_buffer_out=0.
+      npbuf=0
+      ipbuf=0
+      do iz=izmin,izmax
+         do iy=iymin,iymax
+            do ix=ixmin,ixmax
+               ip = head(ix,iy,iz)
+               do while (ip.ne.0)
+                  ipbuf=ipbuf+1
+                  fp_buffer_out(ipbuf,:)=fpwn(ip,:)
+                  ip = link_list(ip)
+               enddo ! loop all the particles in a cell ends
+            enddo
+         enddo
+      enddo
+      npbuf=ipbuf
+      endsubroutine make_fpbuffer
+!***********************************************************************
+    subroutine particles_neighbour_proc()
+!
+! calls the same subroutine 3 times for each direction.
+! The sequence of calls is crucial, the inner coding assumes
+! this sequence and the results will go wrong if the order
+! is changed.
+!
+      if (nprocz > 1) &
+         call particles_neighbour_proc_dirn(3)
+      if (nprocy > 1) &
+         call particles_neighbour_proc_dirn(2)
+      if (nprocx > 1) &
+         call particles_neighbour_proc_dirn(1)
+
+    endsubroutine particles_neighbour_proc
+!***********************************************************************
+    subroutine particles_neighbour_proc_dirn(idirn)
+
+!      use Mpicomm
+!      use Particles
+      integer, intent(in) :: idirn
+      integer :: uneigh,lneigh
+      integer :: npbuf,my_npbuf,her_npbuf
+!---------
+      select case(idirn)
+      case(3)
+         uneigh=zuneigh;lneigh=zlneigh
+      case(2)
+         uneigh=yuneigh;lneigh=ylneigh
+      case(1)
+         uneigh=xuneigh;lneigh=xlneigh
+      case default
+!
+!  Catch unknown values
+!
+         call fatal_error("particles_mpicomm", &
+              "wrong value of idirn")
+!
+      endselect
+!
+! buffer for UPPER boundary
+!      
+      call get_boundary_particles(idirn,1,npbuf)
+      my_npbuf=npbuf
+!
+! send and receive buffers      
+!
+      call communicate_fpbuf(uneigh,lneigh,her_npbuf,my_npbuf)
+!
+! Now my buffer size is changed      
+!
+      npbuf=her_npbuf
+      call assimilate_incoming(npbuf)
+!
+! buffer for LOWER boundary
+!      
+      call get_boundary_particles(idirn,-1,npbuf)
+      my_npbuf=npbuf
+!
+! send and receive buffers      
+!
+      call communicate_fpbuf(lneigh,uneigh)
+!
+! Now my buffer size is changed      
+!
+      npbuf=her_npbuf
+      call assimilate_incoming(npbuf)
+!
+    endsubroutine particles_neighbour_proc_dirn 
+!***********************************************************************
+    subroutine calculate_potential(dfp,ineargrid)
+!
+!  contribution particle acceleration due to particle-particle interaction
 !
 !
       use Diagnostics
       use Sub, only: periodic_fold_back
 !
-      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: fp, ineargrid
+      intent (in) :: ineargrid
       intent (inout) :: dfp
 !----------------------------------
       integer :: ix,iy,iz,ip,jp,kp
@@ -491,7 +473,6 @@ module Particles_potential
       if (lheader) then
         print*,'dvvp_dt: Calculate dvvp_dt_potential'
       endif
-      
 !
 ! At this stage we know the linked list so we access by particles
 ! by it. 
@@ -500,7 +481,7 @@ module Particles_potential
       if (.not.lhead_allocated) &
         call fatal_error('dvvp_dt_potential', 'The linked list is not allocated; ABORTING') 
 !    
-      do iz=1,mcellz;do iy=1,mcelly;do ix=1,mcellx
+      do iz=0,mcellz-1;do iy=0,mcelly-1;do ix=0,mcellx-1
         ip = head(ix,iy,iz)
 !
 ! within the same cell 
@@ -508,9 +489,9 @@ module Particles_potential
         do while (ip.ne.0) 
           jp = link_list(ip)
           do while (jp.ne.0)
-            xxij= fp(jp,ixp:izp)-fp(ip,ixp:izp)
-            vvij=fp(jp,ivpx:ivpz)-fp(ip,ivpx:ivpz)
-            call two_particle_int(fp,dfp,ip,jp,xxij,vvij)
+            xxij= fpwn(jp,ixp:izp)-fpwn(ip,ixp:izp)
+            vvij=fpwn(jp,ivpx:ivpz)-fpwn(ip,ivpx:ivpz)
+            call two_particle_int(dfp,ip,jp,xxij,vvij)
             jp = link_list(jp)
           enddo
           ip = link_list(ip)
@@ -527,10 +508,10 @@ module Particles_potential
             iz2 = neighbours(inab,3)
             jp = head(ix2,iy2,iz2)
             do while (jp.ne.0) 
-              xxij= fp(jp,ixp:izp)-fp(ip,ixp:izp)
+              xxij= fpwn(jp,ixp:izp)-fpwn(ip,ixp:izp)
               call periodic_fold_back(xxij, Lxyz)
-              vvij=fp(jp,ivpx:ivpz)-fp(ip,ivpx:ivpz)
-              call two_particle_int(fp,dfp,ip,jp,xxij,vvij)
+              vvij=fpwn(jp,ivpx:ivpz)-fpwn(ip,ivpx:ivpz)
+              call two_particle_int(dfp,ip,jp,xxij,vvij)
               jp = link_list(jp)       
             enddo
           enddo
@@ -547,24 +528,24 @@ module Particles_potential
 !
     endsubroutine calculate_potential
 !***********************************************************************
-    subroutine two_particle_int(fp,dfp,ip,jp,xxij,vvij)
+    subroutine two_particle_int(dfp,ip,jp,xxij,vvij)
 !
+      use particles_radius, only: get_stbin
       use Diagnostics
       use Sub, only: lower_triangular_index
 !
-      real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
 !
       integer,intent(in) :: ip,jp
       real, dimension(3),intent(in) :: xxij,vvij
       real,dimension(3) :: accni,accnj
-      real :: Rsqr,Vsqr,Vparallel,pmom,RR
+      real :: Rsqr,Vsqr,Vparallel,pmom,RR,api,apj
       integer :: iStbin,jStbin,ijSt,iRbin,jmom
 !!---------------------------------
       Rsqr=xxij(1)*xxij(1)+xxij(2)*xxij(2)+xxij(3)*xxij(3)
       RR = sqrt(Rsqr)
       if (lpotential) then
-        call get_interparticle_accn(accni,accnj,ip,jp,fp,xxij)
+        call get_interparticle_accn(accni,accnj,ip,jp,xxij)
         dfp(ip,ivpx:ivpz) = dfp(ip,ivpx:ivpz)+accni
 !
 ! The other(jp) particle may be in a different processor. If that is the
@@ -578,8 +559,10 @@ module Particles_potential
           Vsqr=vvij(1)*vvij(1)+vvij(2)*vvij(2)+vvij(3)*vvij(3)
           Vparallel=dot_product(xxij,vvij)/RR
           iRbin=floor(RR/dRbin)
-          call get_stbin(iStbin,fp,ip)
-          call get_stbin(jStbin,fp,jp)
+          api = fpwn(ip,iap)
+          call get_stbin(api,iStbin)
+          apj = fpwn(jp,iap)
+          call get_stbin(apj,jStbin)
           call lower_triangular_index(ijSt,iStbin,jStbin)
           if (idiag_gr) &
             MomJntPDF(1,iRbin,ijSt) = MomJntPDF(1,iRbin,ijSt)+1.
@@ -658,8 +641,9 @@ module Particles_potential
 	neighbours(13,3) = iz
 endsubroutine get_cell_neighbours
 !***********************************************************************
-    subroutine get_interparticle_accn(accni,accnj,ip,jp,fp,RR)
+    subroutine get_interparticle_accn(accni,accnj,ip,jp,RR)
       
+      use particles_radius, only: get_mass_from_radius
       integer,intent(in) :: ip,jp
       real, dimension(3),intent(in) :: RR
       real,dimension(3), intent(out) :: accni,accnj
@@ -668,16 +652,15 @@ endsubroutine get_cell_neighbours
       real,dimension(3) :: force_ij
       real :: mp_i,mp_j
 !
-      call get_interaction_force(force_ij,RR,fp,ip,jp)
-      call get_mass_from_radius(mp_i,fp,ip)
+      call get_interaction_force(force_ij,RR,ip,jp)
+      call get_mass_from_radius(mp_i,fpwn,ip)
       accni=force_ij/mp_i
-      call get_mass_from_radius(mp_j,fp,jp)
+      call get_mass_from_radius(mp_j,fpwn,jp)
       accnj=-force_ij/mp_j
 !
     endsubroutine get_interparticle_accn
 !***********************************************************************
-    subroutine get_interaction_force(force_ij,RR,fp,ip,jp)
-      real, dimension (mpar_loc,mparray), intent(in) :: fp
+    subroutine get_interaction_force(force_ij,RR,ip,jp)
       integer, intent(in) :: ip,jp
       real,dimension(3),intent(in) :: RR
       real,dimension(3),intent(out) :: force_ij
@@ -692,8 +675,8 @@ endsubroutine get_cell_neighbours
 !
         RR_mod=sqrt(RR(1)*RR(1)+RR(2)*RR(2)+RR(3)*RR(3))
         Rcap=RR/RR_mod
-        radiusi=fp(ip,iap)
-        radiusj=fp(jp,iap)
+        radiusi=fpwn(ip,iap)
+        radiusj=fpwn(jp,iap)
         diameter_ij=rescale_diameter*(radiusi+radiusj)
         if (RR_mod .gt. diameter_ij) then
           force_ij=0.

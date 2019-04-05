@@ -146,7 +146,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: rho,TT
-      real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs
+      real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs,TTdim,rhodim
       integer :: i,j      
 !
       call get_cp1(cp1)
@@ -171,9 +171,9 @@ module Special
 !
         do i=1,nx 
            ! spits out opacity in cgs units
-           call calc_opacity(TT(i)*unit_temperature,&
-                rho(i)*unit_density,&
-                kappa_cgs)
+           TTdim=TT(i)*unit_temperature
+           rhodim=rho(i)*unit_density
+           call calc_opacity(TTdim,rhodim,kappa_cgs)
 !
 ! kappa_code = kappa_cgs/ unit_kappa
 ! unit_kappa = 1/(unit_density*unit_length)
@@ -468,6 +468,7 @@ module Special
     subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  reads and registers print parameters relevant to special
 !
@@ -507,19 +508,19 @@ module Special
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_dts=',idiag_dts
+        call farray_index_append('i_dts',idiag_dts)
 !
-        write(3,*) 'i_kappam=',idiag_kappam
-        write(3,*) 'i_kappamax=',idiag_kappamax
-        write(3,*) 'i_kappamin=',idiag_kappamin
+        call farray_index_append('i_kappam',idiag_kappam)
+        call farray_index_append('i_kappamax',idiag_kappamax)
+        call farray_index_append('i_kappamin',idiag_kappamin)
 !
-        write(3,*) 'i_taum=',idiag_taum
-        write(3,*) 'i_taumax=',idiag_taumax
-        write(3,*) 'i_taumin=',idiag_taumin
+        call farray_index_append('i_taum',idiag_taum)
+        call farray_index_append('i_taumax',idiag_taumax)
+        call farray_index_append('i_taumin',idiag_taumin)
 !
-        write(3,*) 'i_taucoolm=',idiag_taucoolm
-        write(3,*) 'i_taucoolmax=',idiag_taucoolmax
-        write(3,*) 'i_taucoolmin=',idiag_taucoolmin
+        call farray_index_append('i_taucoolm',idiag_taucoolm)
+        call farray_index_append('i_taucoolmax',idiag_taucoolmax)
+        call farray_index_append('i_taucoolmin',idiag_taucoolmin)
       endif
 !
     endsubroutine rprint_special

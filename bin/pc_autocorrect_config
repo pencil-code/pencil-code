@@ -16,6 +16,12 @@ my %translation = (
 		"Kgpara2" => "K_iso",
 		# 2013:
 		"bmdi" => "b_tau",
+		# 2018:
+		"nvor" => "vorticity_factor",
+		"tdown" => "nc_tau",
+		"tdownr" => "nc_tau_rho",
+		"allp" => "nc_alt",
+		"allpr" => "nc_alt_rho",
 	},
 	# please extend here...
 );

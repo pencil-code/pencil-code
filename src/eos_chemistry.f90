@@ -46,17 +46,13 @@ module EquationOfState
   real :: mu=1.
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
+  logical :: lpp_as_aux=.false.
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
   real :: gamma_m1    !(=gamma-1)
   real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
-  real :: cs2cool=0.
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
-  integer :: isothtop=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
   logical :: leos_isothermal=.false., leos_isentropic=.false.
@@ -69,26 +65,27 @@ module EquationOfState
   logical :: l_cp=.false.
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
 !
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
+  real, dimension(nchemspec,18) :: species_constants
 !
- real, dimension(nchemspec,18) :: species_constants
- real, dimension(nchemspec,7)     :: tran_data
- real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
-!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+  logical :: lpres_grad = .false.
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
- real, dimension (mx,my,mz), SAVE :: mu1_full
+!MR: Is now allocated only once.
+ real, dimension(mx,my,mz), target :: mu1_full
 !
-  namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp
+  namelist /eos_init_pars/ mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
 !
-  namelist /eos_run_pars/   mu, cp, cs0, rho0, gamma, error_cp
+  namelist /eos_run_pars/  mu, cp, cs0, rho0, gamma, error_cp, lpp_as_aux
 !
   contains
 !***********************************************************************
     subroutine register_eos
 !
 !  14-jun-03/axel: adapted from register_eos
+!
+      use Sub, only: register_report_aux
 !
       leos_chemistry=.true.
 !
@@ -98,6 +95,10 @@ module EquationOfState
 !
       if (lroot) call svn_id( &
           '$Id$')
+!
+!  pressure as optional auxiliary variable
+!
+      if (lpp_as_aux) call register_report_aux('pp',ipp)
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -146,7 +147,7 @@ module EquationOfState
         call fatal_error('initialize_eos',&
                         'chem.imp is not found!')
        else
-        print*,'initialize_eos: chem.imp is found! Now cp, cv, gamma, mu are pencils ONLY!'
+        print*,'units_eos: chem.imp is found! Now cp, cv, gamma, mu are pencils ONLY!'
        endif
       endif
 !
@@ -174,31 +175,30 @@ module EquationOfState
       endif
 !
       if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
-       ll1=1; ll2=mx; mm1=m1; mm2=m2; nn1=n1; nn2=n2
+        ll1=1; ll2=mx; mm1=m1; mm2=m2; nn1=n1; nn2=n2
+      elseif (nxgrid==1) then
+        ll1=l1; ll2=l2
       else
-      if (nxgrid==1) then
-       ll1=l1; ll2=l2
-      else
-       ll1=1; ll2=mx
+        ll1=1; ll2=mx
       endif
 !
       if (nygrid==1) then
-       mm1=m1; mm2=m2
+        mm1=m1; mm2=m2
       else
-       mm1=1; mm2=my
+        mm1=1; mm2=my
       endif
 !
       if (nzgrid==1) then
-       nn1=n1; nn2=n2
+        nn1=n1; nn2=n2
       else
-       nn1=1;  nn2=mz
+        nn1=1;  nn2=mz
       endif
-     endif
 
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
       endif
+      if (lchemistry) call put_shared_variable('mu1_full',mu1_full,caller='initialize_eos')
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -333,34 +333,6 @@ module EquationOfState
 !
     endsubroutine getmu
 !***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  Calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-      integer :: k,j2,j3
-!
-!  Mean molecular weight
-!
-      mu1_full_tmp=0.
-      do k=1,nchemspec
-        if (species_constants(k,imass)>0.) then
-          do j2=mm1,mm2
-            do j3=nn1,nn2
-              mu1_full_tmp(:,j2,j3)= &
-                  mu1_full_tmp(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
-                  /species_constants(k,imass)
-            enddo
-          enddo
-        endif
-      enddo
-      mu1_full=mu1_full_tmp
-!
-    endsubroutine getmu_array
-!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
       logical :: lreset
@@ -369,6 +341,12 @@ module EquationOfState
       call keep_compiler_quiet(lreset)
       call keep_compiler_quiet(present(lwrite))
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='lnTT'.or.cnamev=='pp') cformv='DEFINED'
+      endif
+!
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine get_slices_eos(f,slices)
@@ -376,6 +354,8 @@ module EquationOfState
 !  Write slices for animation of Eos variables.
 !
 !  26-jul-06/tony: coded
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -386,28 +366,25 @@ module EquationOfState
 !
 !  Temperature.
 !
-        case ('lnTT')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
-          slices%ready=.true.
+        case ('lnTT'); call assign_slices_scal(slices,f,ilnTT)
         case ('pp')
           if (ldensity_nolog .or. ltemperature_nolog) &
               call fatal_error('get_slices_eos',&
-              'pp not implemented for ldensity_nolot .or. ltemperature_nolog')
-          slices%yz =Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho))&
-              *mu1_full(ix_loc,m1:m2,n1:n2)
-          slices%xz =Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho))&
-              *mu1_full(l1:l2,iy_loc,n1:n2)
-          slices%xy =Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho))&
-              *mu1_full(l1:l2,m1:m2,iz_loc)
-          if (lwrite_slice_xy4) slices%xy3 =Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)&
-              +f(l1:l2,m1:m2,iz3_loc,ilnrho))*mu1_full(l1:l2,m1:m2,iz3_loc)
-          if (lwrite_slice_xy3) slices%xy4 =Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)&
-              +f(l1:l2,m1:m2,iz4_loc,ilnrho))*mu1_full(l1:l2,m1:m2,iz4_loc)
+              'pp not implemented for ldensity_nolog .or. ltemperature_nolog')
+          if (lwrite_slice_yz) slices%yz=Rgas*exp(f(ix_loc,m1:m2,n1:n2,ilnTT)+f(ix_loc,m1:m2,n1:n2,ilnrho)) &
+                                             *mu1_full(ix_loc,m1:m2,n1:n2)
+          if (lwrite_slice_xz) slices%xz=Rgas*exp(f(l1:l2,iy_loc,n1:n2,ilnTT)+f(l1:l2,iy_loc,n1:n2,ilnrho)) &
+                                             *mu1_full(l1:l2,iy_loc,n1:n2)
+          if (lwrite_slice_xz2) slices%xz=Rgas*exp(f(l1:l2,iy2_loc,n1:n2,ilnTT)+f(l1:l2,iy2_loc,n1:n2,ilnrho)) &
+                                              *mu1_full(l1:l2,iy2_loc,n1:n2)
+          if (lwrite_slice_xy) slices%xy=Rgas*exp(f(l1:l2,m1:m2,iz_loc,ilnTT)+f(l1:l2,m1:m2,iz_loc,ilnrho)) &
+                                             *mu1_full(l1:l2,m1:m2,iz_loc)
+          if (lwrite_slice_xy2) slices%xy2=Rgas*exp(f(l1:l2,m1:m2,iz2_loc,ilnTT)+f(l1:l2,m1:m2,iz2_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz2_loc)
+          if (lwrite_slice_xy3) slices%xy3=Rgas*exp(f(l1:l2,m1:m2,iz3_loc,ilnTT)+f(l1:l2,m1:m2,iz3_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz3_loc)
+          if (lwrite_slice_xy4) slices%xy4=Rgas*exp(f(l1:l2,m1:m2,iz4_loc,ilnTT)+f(l1:l2,m1:m2,iz4_loc,ilnrho)) &
+                                               *mu1_full(l1:l2,m1:m2,iz4_loc)
           slices%ready=.true.
 !
       endselect
@@ -444,6 +421,10 @@ module EquationOfState
       lpenc_requested(i_gmu1)=.true.
       lpenc_requested(i_pp)=.true.
       lpenc_requested(i_rho1gpp)=.true.
+!
+!  pp pencil if lpp_as_aux
+!
+      if (lpp_as_aux) lpenc_requested(i_pp)=.true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -515,8 +496,9 @@ module EquationOfState
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
       real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
+      real, dimension(nx) :: del2TT, gradTgradT
 !
-      intent(in) :: f, lpenc_loc
+      intent(inout) :: f, lpenc_loc
       intent(inout) :: p
 !
       integer :: i
@@ -566,13 +548,16 @@ module EquationOfState
 !
         if (ltemperature_nolog) then
           if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
+            call dot2(p%gTT,gradTgradT) 
+            call del2(f,iTT,del2TT)
+            p%del2lnTT = -p%TT1*p%TT1*gradTgradT+p%TT1*del2TT
          !NILS: The call below does not yield del2lnTT but rather del2TT,
          !NILS: this should be fixed before used. One should also look
          !NILS: through the chemistry module to make sure del2lnTT is used
          !NILS: corectly.
-          if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
-          call fatal_error('calc_pencils_eos',&
-              'del2lnTT is not correctly implemented - this must be fixed!')
+ !         if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+ !         call fatal_error('calc_pencils_eos',&
+ !             'del2lnTT is not correctly implemented - this must be fixed!')
         else
           if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
@@ -629,7 +614,9 @@ module EquationOfState
 !
       !if (lpenc_loc(i_ee)) p%ee = p%cv*p%TT
 !
-!      endif
+!  pressure and cp as optional auxiliary pencils
+!
+      if (lpp_as_aux) f(l1:l2,m,n,ipp)=p%pp
 !
     endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
@@ -1735,156 +1722,6 @@ module EquationOfState
 !
     endsubroutine write_thermodyn
 !***********************************************************************
-   subroutine read_transport_data
-!
-!  Reading of the chemkin transport data
-!
-!  01-apr-08/natalia: coded
-!
-     use Mpicomm, only: stop_it
-!
-      logical :: emptyfile
-      logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem
-      character (len=80) :: ChemInpLine
-      character (len=10) :: specie_string
-      integer :: VarNumber
-      integer :: StartInd,StopInd,StartInd_1,StopInd_1
-      logical :: tranin=.false.
-      logical :: trandat=.false.
-!
-      emptyFile=.true.
-!
-      StartInd_1=1; StopInd_1 =0
-      
-      inquire (file='tran.dat',exist=trandat)
-      inquire (file='tran.in',exist=tranin)
-      if (tranin .and. trandat) then
-        call fatal_error('eos_chemistry',&
-            'tran.in and tran.dat found. Please decide which one to use.')
-      endif
-
-      if (tranin) open(file_id,file='tran.in')
-      if (trandat) open(file_id,file='tran.dat')
-!
-      if (lroot) print*, 'the following species are found '//&
-          'in tran.in/dat: beginning of the list:'
-!
-      dataloop: do
-!
-        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
-        emptyFile=.false.
-!
-        StopInd_1=index(ChemInpLine,' ')
-        specie_string=trim(ChemInpLine(1:StopInd_1-1))
-!
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-!
-        if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
-!
-          VarNumber=1; StartInd=1; StopInd =0
-          stringloop: do while (VarNumber<7)
-!
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-!
-            if (StopInd==StartInd) then
-              StartInd=StartInd+1
-            else
-              if (VarNumber==1) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
-                    tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==2) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==3) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==4) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==5) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
-              elseif (VarNumber==6) then
-                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
-                    tran_data(ind_chem,VarNumber)
-              else
-                call stop_it("No such VarNumber!")
-              endif
-!
-              VarNumber=VarNumber+1
-              StartInd=StopInd
-            endif
-            if (StartInd==80) exit
-          enddo stringloop
-!
-        endif
-      enddo dataloop
-!
-! Stop if tran.dat is empty
-!
-!
-1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
-!
-      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
-!
-      close(file_id)
-!
-    endsubroutine read_transport_data
-!***********************************************************************
-   subroutine read_Lewis
-!
-!  Reading of the species Lewis numbers in an input file
-!
-!  21-jun-10/julien: coded
-!
-     use Mpicomm, only: stop_it
-!
-      logical :: emptyfile
-      logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem, i
-      real    :: lewisk
-      character (len=10) :: specie_string
-!
-      emptyFile=.true.
-!
-      open(file_id,file="lewis.dat")
-!
-      if (lroot) print*, 'lewis.dat: beginning of the list:'
-!
-      i=0
-      dataloop: do
-        read(file_id,*,end=1000) specie_string, lewisk
-        emptyFile=.false.
-!
-        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-!
-        if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' Lewis=', lewisk
-          Lewis_coef(ind_chem) = lewisk
-          Lewis_coef1(ind_chem) = 1./lewisk
-          i=i+1
-        endif
-      enddo dataloop
-!
-! Stop if lewis.dat is empty
-!
-!
-1000  if (emptyFile)  call stop_it('End of the file!')
-!
-      if (lroot) then
-        print*, 'lewis.dat: end of the list:'
-        if (i == 0) &
-            print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
-      endif
-!
-      close(file_id)
-!
-    endsubroutine read_Lewis
-!***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
 !  Get background stratification in z direction.
@@ -1902,5 +1739,23 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule EquationOfState

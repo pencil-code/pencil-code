@@ -26,7 +26,7 @@ module Syscalls
 !
 !  23-mar-10/Bourdin.KIS: implemented
 !
-      use Cparam, only: ip
+      use Cdata, only: ip
 !
       logical :: file_exists
       character(len=*) :: file
@@ -38,7 +38,7 @@ module Syscalls
 !
       if (file_exists .and. present(delete)) then
         if (delete) then
-          if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
+          if (ip <= 6) print *, 'file_exists: Removing file <'//trim(file)//'>'
           open(unit,FILE=file)
           close(unit,STATUS='DELETE')
         endif

@@ -655,8 +655,29 @@ module Poisson
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(phi)
-      call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian_semispectral
+!***********************************************************************
+    subroutine inverse_laplacian_fft_z(phi)
+!
+!  15-may-2006/anders+jeff: dummy
+!
+      use General, only: keep_compiler_quiet
+!
+      real, dimension(nx,ny,nz), intent(in) :: phi
+!
+      call keep_compiler_quiet(phi)
+!
+    endsubroutine inverse_laplacian_fft_z
+!***********************************************************************
+    subroutine get_acceleration(acceleration)
+!
+      use General, only: keep_compiler_quiet
+!
+      real, dimension(nx,ny,nz,3), intent(out) :: acceleration           !should I (CAN I?) make this allocatable?
+!
+      call keep_compiler_quiet(acceleration)
+!
+    endsubroutine get_acceleration
 !***********************************************************************
 endmodule Poisson

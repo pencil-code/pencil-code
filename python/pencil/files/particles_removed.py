@@ -25,18 +25,32 @@ class par_rmv:
     def __init__(self, index, time, pardata):
         self.i = index
         self.t = time
-        self.xp = pardata[:,0]
-        self.yp = pardata[:,1]
-        self.zp = pardata[:,2]
-        if(pardata.shape[1] == 8):
-            self.vpx = pardata[:,3]
-            self.vpy = pardata[:,4]
-            self.vpz = pardata[:,5]
-            self.ap = pardata[:,6]
-            self.effp = pardata[:,7]
+#        self.xp = #pardata[:,0]
+#        self.yp = #pardata[:,1]
+#        self.zp = #pardata[:,2]
+        if(pardata.ndim>1):
+            self.xp = pardata[:,0]
+            self.yp = pardata[:,1]
+            self.zp = pardata[:,2]
+            if(pardata.shape[1] >= 7):
+                self.vpx = pardata[:,3]
+                self.vpy = pardata[:,4]
+                self.vpz = pardata[:,5]
+                self.ap = pardata[:,6]
+                #self.effp = pardata[:,7]
+            else:
+                self.ap = pardata[:,3]
+                #self.effp = pardata[:,4]
         else:
-            self.ap = pardata[:,3]
-            self.effp = pardata[:,4]
+            ii=int(pardata.size/time.size)
+            self.xp =  pardata[0::ii]
+            self.yp =  pardata[1::ii]
+            self.zp =  pardata[2::ii]
+            self.vpx = pardata[3::ii]
+            self.vpy = pardata[4::ii]
+            self.vpz = pardata[5::ii]
+            self.ap =  pardata[6::ii]
+            #self.pardata=pardata
 
 
 def read_rmv_par(datadir='data/', dims=[], pdims=[], read_parameters = True):
@@ -73,6 +87,7 @@ def fetch_particle_data(datadir, dims, pdims):
     ncpus = dims.nprocx*dims.nprocy*dims.nprocz
 
     # Loop over processors
+    first=True
     for iproc in range(ncpus):
 
         filename_irmv = datadir + '/proc' + str(iproc) + '/rmv_ipar.dat'
@@ -86,8 +101,13 @@ def fetch_particle_data(datadir, dims, pdims):
         # Read indecies and removal times of particles on current processor
         # Indecies are converted from float to int
         file_irmv = np.loadtxt(filename_irmv)
-        index_rmv_local = file_irmv[:,0].astype(int)
-        time_rmv_local = file_irmv[:,1]
+        if(file_irmv.size>2):
+            index_rmv_local = file_irmv[:,0].astype(int)
+            time_rmv_local = file_irmv[:,1]
+        else:
+            index_rmv_local = file_irmv[0].astype(int)
+            time_rmv_local = file_irmv[1]
+        
 
         # Count number of particles removed on current processor
         npart_rmv_local = index_rmv_local.size
@@ -97,14 +117,15 @@ def fetch_particle_data(datadir, dims, pdims):
         part_rmv_local = read_rmv_binary(nvars, npart_rmv_local, filename_prmv)
 
         # Build global arrays
-        if(iproc == 0):
+        if(first):
             index_rmv = index_rmv_local
             time_rmv = time_rmv_local
             part_rmv = part_rmv_local
+            first=False
         else:
-            index_rmv = np.hstack(index_rmv_local)
-            time_rmv = np.hstack(time_rmv_local)
-            part_rmv = np.hstack(part_rmv_local)
+            index_rmv = np.append(index_rmv,index_rmv_local)
+            time_rmv = np.append(time_rmv,time_rmv_local)
+            part_rmv = np.append(part_rmv,part_rmv_local)
 
     # TODO: Chek if all particles are found exactly once.
     # Allow for particles not being found if particles are inserted continously.

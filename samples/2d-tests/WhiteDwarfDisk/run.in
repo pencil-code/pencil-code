@@ -1,0 +1,67 @@
+!                           -*-f90-*-     (for Emacs)                                            
+!                                                                                                
+!  Run parameters                                                                                
+!                                                                                                
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2019/02/11 21:08:12 wlyra Exp $',
+  ip=14,
+  nt=100, it1=10, isave=5000, itorder=3
+  cdt=0.4,
+  cdtv=0.4,
+  cdtv3=0.4
+  dtmin=1e-6,
+  dsnap=6.28318530718,dvid=1.0
+!                                                                                                
+  wborder_int=0.05
+  wborder_ext=0.075
+!                                                                                                
+  lpencil_check=F
+  lpencil_check_small=F
+!                                                                                                
+  tborder=0.1
+!
+  max_walltime=85500
+!
+  tmax=376992 ! 6000 orbits
+!
+  lwrite_dvar=T
+  lread_aux=T
+  lfargo_advection=F
+/
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+  lpressuregradient_gas=F
+/
+&density_run_pars
+  borderlnrho='initial-condition'
+  idiff='hyper3-mesh' ,'shock'
+  diffrho_hyper3_mesh=5 ,diffrho_shock=10.
+  density_floor=1e-3
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh' ,'nu-shock','simplified'
+  nu_hyper3_mesh=5 ,nu_shock=10.,nu=1e-4
+/
+&special_run_pars
+  ldust_pressureforce=T
+  factor_photoelectric=1.0    ! photo heating
+  factor_localiso=0.5         ! isothermal
+/
+&shock_run_pars
+/
+&particles_run_pars
+  ldragforce_dust_par=T
+  ldragforce_gas_par=T
+  lmigration_redo=T
+  lcheck_exact_frontier=T
+  lparticlemesh_tsc=T
+  ldraglaw_variable=T
+  gravr_profile='newtonian'
+  lcylindrical_gravity_par=T
+  lcommunicate_rhop=T
+/

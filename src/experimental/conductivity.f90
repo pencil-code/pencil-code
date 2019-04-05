@@ -50,6 +50,10 @@ module Conductivity
   integer :: idiag_fradz_kprof=0, idiag_fturbmx=0, idiag_fturbrxy=0
   integer :: idiag_fturbthxy=0, idiag_fturbxy=0, idiag_fturbz=0
 !
+!  Auxiliaries
+!
+  real, dimension(nx) :: diffus_chi, diffus_chi3
+!
   contains
 !***********************************************************************
     subroutine register_conductivity()
@@ -235,6 +239,7 @@ module Conductivity
       intent(inout) :: df
       intent(inout) :: p
 !
+      diffus_chi=0.; diffus_chi3=0.
       !if (lheatc_Kprof)    call calc_heatcond_Kprof(f,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(p)
       if (lheatc_chiconst) call calc_heatcond_constchi(p)
@@ -243,6 +248,8 @@ module Conductivity
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%hcond
 !
       if (lfirst.and.ldt) then
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
         if (ldiagnos.and.idiag_dtchi/=0) then
 !          call max_mn_name(p%diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

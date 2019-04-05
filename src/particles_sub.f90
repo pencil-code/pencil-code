@@ -16,8 +16,9 @@ module Particles_sub
 !
   private
 !
-  public :: input_particles, output_particles, boundconds_particles
-  public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
+  public :: input_particles, output_particles
+  public :: append_npvar, append_npaux, boundconds_particles
+  public :: sum_par_name, max_par_name, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
@@ -38,45 +39,17 @@ module Particles_sub
 !
 !  Read snapshot file with particle data.
 !
-!  29-dec-04/anders: adapted from input
+!  24-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpireduce_max_scl_int
+      use IO, only: input_part_snap
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      character (len=*) :: filename
-      integer, dimension (mpar_loc) :: ipar
+      character(len=*), intent(in) :: filename
+      real, dimension (mpar_loc,mparray), intent(out) :: fp
+      integer, dimension(mpar_loc), intent(out) :: ipar
 !
-      intent (in) :: filename
-      intent (out) :: fp,ipar
+      if (ip<=8.and.lroot) print*,'input_particles: reading snapshot file '//filename
 !
-      open(1,FILE=filename,FORM='unformatted')
-!
-!  First read the number of particles present at the processor and the index
-!  numbers of the particles.
-!
-        read(1) npar_loc
-        if (npar_loc/=0) read(1) ipar(1:npar_loc)
-!
-!  Then read particle data.
-!
-        if (npar_loc/=0) read(1) fp(1:npar_loc,:)
-!
-!  Read snapshot time.
-!
-!        read(1) t
-!
-        if (ip<=8) print*, 'input_particles: read ', filename
-!
-      close(1)
-!
-!  If we are inserting particles contiuously during the run root must
-!  know the total number of particles in the simulation.
-!
-      if (npar_loc/=0) then
-        call mpireduce_max_scl_int(maxval(ipar(1:npar_loc)),npar_total)
-      else
-        call mpireduce_max_scl_int(npar_loc,npar_total)
-      endif
+      call input_part_snap (ipar, fp, mpar_loc, npar_loc, npar_total, filename)
 !
     endsubroutine input_particles
 !***********************************************************************
@@ -84,38 +57,59 @@ module Particles_sub
 !
 !  Write snapshot file with particle data.
 !
-!  29-dec-04/anders: adapted from output
+!  24-Oct-2018/PABourdin: coded
 !
-      character(len=*) :: filename
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension(mpar_loc) :: ipar
-      real :: t_sp   ! t in single precision for backwards compatibility
+      use IO, only: output_part_snap
 !
-      intent (in) :: filename, ipar
+      character(len=*), intent(in) :: filename
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, dimension(mpar_loc), intent(in) :: ipar
 !
-      t_sp = t
-      if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '// &
-          filename
+      if (ip<=8.and.lroot) print*,'output_particles: writing snapshot file '//filename
 !
-      open(lun_output,FILE=filename,FORM='unformatted')
-!
-!  First write the number of particles present at the processor and the index
-!  numbers of the particles.
-!
-        write(lun_output) npar_loc
-        if (npar_loc/=0) write(lun_output) ipar(1:npar_loc)
-!
-!  Then write particle data.
-!
-        if (npar_loc/=0) write(lun_output) fp(1:npar_loc,:)
-!
-!  Write time and grid parameters.
-!
-        write(lun_output) t_sp, x, y, z, dx, dy, dz
-!
-      close(lun_output)
+      call output_part_snap (ipar, fp, mpar_loc, npar_loc, filename, ltruncate=.true.)
 !
     endsubroutine output_particles
+!***********************************************************************
+    subroutine append_npvar(label,ilabel)
+!
+      use General, only: itoa
+      use HDF5_IO, only: particle_index_append
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      npvar = npvar + 1
+      ilabel = npvar
+      pvarname(ilabel) = trim(label)
+      call particle_index_append(label,ilabel)
+!
+      if (npvar > mpvar) then
+        ! fp and dfp arrays are too small
+        call fatal_error('append_npvar', 'npvar('//trim(itoa(npvar))//') > mpvar('//trim(itoa(mpvar))//') @ "'//trim(label)//'"')
+      endif
+!
+    endsubroutine append_npvar
+!***********************************************************************
+    subroutine append_npaux(label,ilabel)
+!
+      use General, only: itoa
+      use HDF5_IO, only: particle_index_append
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      npaux = npaux + 1
+      ilabel = mpvar + npaux
+      pvarname(ilabel) = trim(label)
+      call particle_index_append(label,ilabel)
+!
+      if (npaux > mpaux) then
+        ! fp and dfp arrays are too small
+        call fatal_error('append_npaux', 'npaux('//trim(itoa(npaux))//') > mpaux('//trim(itoa(mpaux))//') @ "'//trim(label)//'"')
+      endif
+!
+    endsubroutine append_npaux
 !***********************************************************************
     subroutine boundconds_particles(fp,ipar,dfp,linsert)
 !
@@ -134,6 +128,8 @@ module Particles_sub
       logical, optional :: linsert
 !
       real :: xold, yold, rad, r1old, OO, tmp
+      real, dimension(3) :: vavg
+!      
       integer :: k, ik, k1, k2
 !
       intent (inout) :: fp, ipar, dfp
@@ -145,6 +141,9 @@ module Particles_sub
       else
         k1=1; k2=npar_loc; ik=1
       endif
+!
+      if (bcpx=='flg') &
+           call calc_velocity_averages(fp,k1,k2,ik,vavg)
 !
       do k=k1,k2,ik
 !
@@ -161,7 +160,7 @@ module Particles_sub
 !    y \in [y0,y1[
 !    z \in [z0,z1[
 !
-        if (nxgrid/=1) then
+        if (nxgrid/=1 .or. lnocollapse_xdir_onecell) then
           if (bcpx=='p') then
 !  xp < x0
             if (fp(k,ixp)< xyz0(1)) then
@@ -228,9 +227,10 @@ module Particles_sub
 !   Zero radial, Keplerian azimuthal, velocities
                 fp(k,ivpx) = 0.
 !   Keplerian azimuthal velocity
-                fp(k,ivpy) = fp(k,ixp)**(-1.5)
+                OO = rp_ext**(-1.5)
+                fp(k,ivpy) = OO*fp(k,ixp)
               endif
-!
+!             
             elseif (lcartesian_coords) then
 !
 ! The Cartesian case has the option cylinder_in_a_box, sphere_in_a_box
@@ -256,6 +256,28 @@ module Particles_sub
             elseif (lspherical_coords) then
               call fatal_error_local('boundconds_particles',&
                    'flush-keplerian not ready for spherical coords')
+            endif
+
+          elseif (bcpx=='flg') then
+!
+!  Flush-average - flush the particle to the outer boundary with velocity given
+!  by the average velocity of nearby particles (taken from a box)
+!
+            if (lcylindrical_coords) then
+              if ((fp(k,ixp)< rp_int).or.(fp(k,ixp)>= rp_ext)) then
+!   Flush to outer boundary
+                fp(k,ixp)  = rp_ext
+!   Random new azimuthal y position
+                call random_number_wrapper(fp(k,iyp))
+                fp(k,iyp)=xyz0_loc(2)+fp(k,iyp)*Lxyz_loc(2)
+!
+!   Average of other particles in outer boundary
+!
+                fp(k,ivpx:ivpz) = vavg
+              endif
+            else
+              call fatal_error("bounconds_particles",&
+                   "flg boundary coded only for cylindrical coordinates")
             endif
 !
           elseif (bcpx=='rmv') then
@@ -337,7 +359,7 @@ module Particles_sub
 !
 !  Boundary condition in the y-direction.
 !
-        if (nygrid/=1) then
+        if (nygrid/=1 .or. lnocollapse_ydir_onecell) then
           if (bcpy=='p') then
 !  yp < y0
             if (fp(k,iyp)< xyz0(2)) then
@@ -394,7 +416,7 @@ module Particles_sub
 !
 !  Boundary condition in the z-direction.
 !
-        if (nzgrid/=1) then
+        if (nzgrid/=1 .or. lnocollapse_zdir_onecell) then
           if (bcpz=='p') then
 !  zp < z0
             if (fp(k,izp)< xyz0(3)) then
@@ -487,7 +509,44 @@ module Particles_sub
 !
     endsubroutine boundconds_particles
 !***********************************************************************
-    subroutine sum_par_name(a,iname,lsqrt)
+    subroutine calc_velocity_averages(fp,k1,k2,ik,vavg)
+!    
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(3) :: vavg,vavg_count
+      integer :: k, ik, k1, k2
+      real :: rbox_ext,rbox_int,ncount1
+      integer :: j,ncount
+!
+      intent (in) :: fp,k1,k2,ik
+      intent (out) :: vavg
+!
+      rbox_ext   = rp_ext
+      rbox_int   = rp_ext - rp_ext_width
+      vavg_count = 0.
+      ncount     = 0
+!
+      do k=k1,k2,ik
+        if ((fp(k,ixp) >= rbox_int) .and. (fp(k,ixp) <= rbox_ext)) then
+          vavg_count(1) = vavg_count(1) + fp(k,ivpx)
+          vavg_count(2) = vavg_count(2) + fp(k,ivpy)
+          vavg_count(3) = vavg_count(3) + fp(k,ivpz)
+          ncount = ncount + 1
+        endif
+      enddo
+      if (ncount == 0) then
+        vavg(1) = 0.
+        vavg(2) = 1./sqrt(rbox_ext)
+        vavg(3) = 0.
+      else
+        ncount1=1./ncount
+        do j=1,3
+          vavg(j) = vavg_count(j)*ncount1
+        enddo
+      endif
+!
+    endsubroutine calc_velocity_averages
+!***********************************************************************
+    subroutine sum_par_name(a,iname,lsqrt,llog10)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  Works for particle diagnostics. The number of particles is stored as
@@ -503,7 +562,7 @@ module Particles_sub
 !
       real, dimension (:) :: a
       integer :: iname
-      logical, optional :: lsqrt
+      logical, optional :: lsqrt, llog10
 !
       integer, dimension(mname), save :: icount=0
 !
@@ -521,6 +580,8 @@ module Particles_sub
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt_par
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_sum_log10_par
         else
           itype_name(iname)=ilabel_sum_par
         endif
@@ -539,46 +600,6 @@ module Particles_sub
       endif
 !
     endsubroutine sum_par_name
-!***********************************************************************
-    subroutine sum_par_name_nw(a,iname,lsqrt)
-!
-!  successively calculate sum of a, which is supplied at each call.
-!  Works for particle diagnostics.
-!
-!  22-aug-05/anders: adapted from sum_par_name
-!
-      real, dimension (:) :: a
-      integer :: iname
-      logical, optional :: lsqrt
-!
-      integer, save :: icount=0
-!
-      if (iname/=0) then
-!
-        if (icount==0) fname(iname)=0
-!
-        fname(iname)=fname(iname)+sum(a)
-!
-!  Set corresponding entry in itype_name
-!
-        if (present(lsqrt)) then
-          itype_name(iname)=ilabel_sum_sqrt
-        else
-          itype_name(iname)=ilabel_sum
-        endif
-!
-        icount=icount+size(a)
-        if (icount==nw) then
-          icount=0
-        elseif (icount>=nw) then
-          print*, 'sum_par_name_nw: Too many grid points entered this sub.'
-          print*, 'sum_par_name_nw: Can only do statistics on nw grid points!'
-          call fatal_error('sum_par_name_nw','')
-        endif
-!
-      endif
-!
-    endsubroutine sum_par_name_nw
 !***********************************************************************
     subroutine max_par_name(a,iname,lneg)
 !
@@ -608,7 +629,8 @@ module Particles_sub
 !
     endsubroutine max_par_name
 !***********************************************************************
-    subroutine integrate_par_name(a,iname)
+!    subroutine integrate_par_name(a,iname)
+    subroutine integrate_par_name(a,iname, lsqrt, llog10)
 !
 !  Calculate integral of a, which is supplied at each call.
 !  Works for particle diagnostics.
@@ -616,6 +638,7 @@ module Particles_sub
 !  29-nov-05/anders: adapted from sum_par_name
 !
       real, dimension (:) :: a
+      logical, optional :: lsqrt, llog10
       integer :: iname
 !
       integer, save :: icount=0
@@ -628,7 +651,16 @@ module Particles_sub
 !
 !  Set corresponding entry in itype_name.
 !
-        itype_name(iname)=ilabel_integrate
+!        itype_name(iname)=ilabel_integrate
+        
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_integrate_sqrt
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_integrate_log10
+        else
+          itype_name(iname)=ilabel_integrate
+        endif
+
 !
 !  Reset sum when npar_loc particles have been considered.
 !
@@ -747,13 +779,14 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine remove_particle(fp,ipar,k,dfp,ineargrid)
+    subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       integer :: k
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc,3), optional :: ineargrid
+      integer, intent(in), optional :: ks
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -769,12 +802,20 @@ module Particles_sub
 !  conversion problems when reading t_rmv with pc_read_pvar.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      write(20,*) ipar(k), t_sp
+      if (present(ks)) then
+        write(20,*) ipar(k), t_sp, ipar(ks)
+      else
+        write(20,*) ipar(k), t_sp
+      endif
       close(20)
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &
           position='append',form='unformatted')
-      write(20) fp(k,:)
+      if (present(ks)) then
+        write(20) fp(k,:), fp(ks,:)
+      else
+        write(20) fp(k,:)
+      endif
       close(20)
 !
       if (ip<=8) print*, 'removed particle ', ipar(k)
@@ -1396,7 +1437,7 @@ module Particles_sub
     subroutine find_weight_array_dims(ndimx,ndimy,ndimz)
 !
       integer :: ndimx,ndimy,ndimz
-      integer :: npgl=1,cicl=2,tscl=3,gabl=7
+      integer :: cicl=2,tscl=3,gabl=7
 !
 !  ngp case and the cases where we have lower dimensions
 !
@@ -1551,7 +1592,6 @@ module Particles_sub
       integer :: l,m,n
       logical :: lexp
       real :: rdiffconst
-      character(len=20) :: formatstring
 !
       
       intent(inout)  :: domain

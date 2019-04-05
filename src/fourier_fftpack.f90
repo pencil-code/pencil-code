@@ -218,7 +218,7 @@ module Fourier
 !
 !  19-dec-06/anders: adapted from fourier_transform
 !
-      real, dimension (nx,ny,nz) :: a_re,a_im
+      real, dimension (:,:,:) :: a_re,a_im
       logical, optional :: linv
 !
       complex, dimension (nx) :: ax
@@ -302,8 +302,8 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-        a_re=a_re/(nxgrid*nygrid)
-        a_im=a_im/(nxgrid*nygrid)
+        a_re=a_re/nxygrid
+        a_im=a_im/nxygrid
       endif
 !
       if (lroot .and. ip<10) print*, 'fourier_transform_xy: fft has finished'
@@ -3604,21 +3604,17 @@ module Fourier
 !
       ! Setup fourier coefficients factor for extrapolation/intrapolation
       factor(:,:,onz) = exp (sqrt (k_2))
+      if (kx_start == 0) then
+        ! Special case for kx=0 and ky=0
+        factor(1,1,onz) = 1.0
+      endif
       do pos_z = 1, onz
         delta_z = ref_z - z(pos_z)
         ! delta_z negative => decay of contrast
         ! delta_z positive => enhancement of contrast (can be reduced)
         if (present (reduce) .and. (delta_z > 0.0)) delta_z = delta_z * reduce
         ! Include normalization of FFT: 1/(nxgrid*nygrid)
-        if (kx_start == 0) then
-          ! Special case for kx=0 and ky=0
-          factor(1,1,pos_z) = 1.0 / (nxgrid*nygrid)
-          factor(2:,1,pos_z) = factor(2:,1,onz) ** delta_z / (k_2(2:,1) * nxgrid*nygrid)
-          factor(:,2:,pos_z) = factor(:,2:,onz) ** delta_z / (k_2(:,2:) * nxgrid*nygrid)
-        else
-          ! General case for k/=0
-          factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
-        endif
+        factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
       enddo
 !
       deallocate (k_2)
@@ -4032,6 +4028,7 @@ module Fourier
       real, dimension (nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
       integer :: nprocy_used
+      real, dimension (:,:), allocatable :: buffer
       integer, parameter :: itag=666
 !
 !  Fourier transform of the subdivided y-interval is done by collecting
@@ -4098,12 +4095,14 @@ module Fourier
             nprocy_used=nz
           endif
 !
+          allocate (buffer(ny,nz_new))
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy*nprocx+ipy_from*nprocx+ipx
             if (ipy/=ipy_from) then
-              if (ipy<nprocy_used) call mpirecv_real( &
-                  a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
-                  (/ny,nz_new/),iproc_from,itag)
+              if (ipy<nprocy_used) then
+                call mpirecv_real(buffer,(/ny,nz_new/),iproc_from,itag)
+                a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:) = buffer
+              endif
             else
               if (ipy<nprocy_used) a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
                   a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
@@ -4170,12 +4169,14 @@ module Fourier
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
               do ipy_to=0,nprocy-1
                 iproc_to=ipz*nprocy*nprocx+ipy_to*nprocx+ipx
-                if (ipy/=ipy_to) call mpisend_real( &
-                    a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
-                    (/ny,nz_new/),iproc_to,itag+100)
+                if (ipy/=ipy_to) then
+                  buffer = a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:)
+                  call mpisend_real(buffer,(/ny,nz_new/),iproc_to,itag+100)
+                endif
               enddo
             endif
           enddo
+          deallocate (buffer)
         endif
       else
 !  Only parallelization along z (or not at all).

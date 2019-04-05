@@ -441,12 +441,9 @@ module Testflow
       if (lugu_as_aux) then
         if (iugu==0) then
           call farray_register_auxiliary('ugu',iugu,vector=3*njtestflow)
-        endif
-        if (iugu/=0.and.lroot) then
-          print*, 'initialize_magnetic: iugu = ', iugu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iugu=',iugu
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testflow: iugu = ', iugu
+          call farray_index_append('iugu',iugu)
         endif
       endif
 !
@@ -651,7 +648,7 @@ module Testflow
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
       real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-quantities
-      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct
+      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct,diffus_nu
 !
       logical :: ltestflow_out
 !
@@ -939,7 +936,8 @@ module Testflow
 !
       if (lfirst.and.ldt) then
         advec_cs2=max(advec_cs2,cs2test*dxyz_2)
-        diffus_nu=max(diffus_nu,nutest*dxyz_2)
+        diffus_nu=nutest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_nu)
       endif
 !
       call xysum_mn_name_z(f(l1:l2,m,n,iuutest  ),idiag_ux0mz)!MR: only testflow # 0
@@ -1977,6 +1975,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Cdata
+      use FArrayManager, only: farray_index_append
+      use General, only: loptest
 !
       logical           :: lreset
       logical, optional :: lwrite
@@ -1986,10 +1986,6 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       character(len=2)  :: cind2
       character(len=1)  :: cind1
       character(len=20) :: name
-      logical           :: lwr
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -2151,73 +2147,9 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (lwr) then
-!
-        do i=1,3
-          do j=1,3
-!
-            cind2 = gen_ind(i,j)
-            write(3,*) 'idiag_gal'//cind2//'=',idiag_galij(i,j)
-            if (j<3) write(3,*) 'idiag_aklam'//cind2//'=',idiag_aklamij(i,j)
-            write(3,*) 'idiag_nu'//cind2//'=',idiag_nuij(i,j)
-!
-          enddo
-
-          cind1 = gen_ind(i)
-
-          write(3,*) 'idiag_gamma'//cind1//'=',idiag_gammai(i)
-          write(3,*) 'idiag_zeta'//cind1//'=',idiag_zetai(i)
-          write(3,*) 'idiag_xi'//cind1//'=',idiag_xii(i)
-
-          if (i<3) write(3,*) 'idiag_aklamQ'//cind1//'=',idiag_aklamQi(i)
-          write(3,*) 'idiag_nuQ'//cind1//'=',idiag_nuQi(i)
-
-        enddo
-
-        write(3,*) 'idiag_gammaQ=',idiag_gammaQ
-        write(3,*) 'idiag_zetaQ=',idiag_zetaQ
-        write(3,*) 'idiag_xiQ=',idiag_xiQ
-
-        do j=1,njtestflow
-!
-          do i=1,3
-
-            cind2 = gen_ind(i,j)
-            write(3,*) 'idiag_Fipq'//cind2//'=',idiag_Fipq(i,j)
-!
-          enddo
-!
-          write(cind,'(i1)') j
-          write(3,*) 'idiag_Qpq'//cind//'=',idiag_Qpq(j)
-!
-        enddo
-!
-        p=1
-        do j=0,njtestflow
-!
-          if (j==0) then
-            name = '0rms='
-          else
-!
-            name = gen_ind(p,floor((j+1)/2.))//'rms='
-            p=3-p
-!
-          endif
-!
-          write(3,*) 'idiag_u'//name,idiag_upqrms(j)
-          write(3,*) 'idiag_h'//name,idiag_hpqrms(j)
-!
-        enddo
-!
-        write(3,*) 'idiag_ux0mz=',idiag_ux0mz
-        write(3,*) 'idiag_uy0mz=',idiag_uy0mz
-        write(3,*) 'idiag_uz0mz=',idiag_uz0mz
-!
-        write(3,*) 'iuutest=',iuutest
-!
-        write(3,*) 'ntestflow=',ntestflow
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
+      if (loptest(lwrite)) then
+        call farray_index_append('iuutest',iuutest)
+        call farray_index_append('ntestflow',ntestflow)
       endif
 !
     endsubroutine rprint_testflow

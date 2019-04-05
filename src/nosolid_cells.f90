@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lsolid_cells = .false.
+! CPARAM logical, parameter :: lsolid_ogrid = .false.
 !
 !***************************************************************
 module Solid_Cells
@@ -21,13 +22,13 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
-  integer :: idiag_c_dragx=0       ! DIAG_DOC:
-  integer :: idiag_c_dragy=0       ! DIAG_DOC:
-  integer :: idiag_c_dragz=0       ! DIAG_DOC:
+  real :: r_ogrid
+  real :: r_int_outer
+  real, dimension(3) :: xorigo_ogrid
 !
   contains
 !***********************************************************************
-    subroutine register_solid_cells()
+    subroutine register_solid_cells
 !
 !  Dummy routine
 !
@@ -168,40 +169,14 @@ module Solid_Cells
 !
 !   mar-2009/kragset: coded
 !
-      use Diagnostics, only: parse_name
-!
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-      integer :: iname
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Reset everything in case of reset
-!
-      if (lreset) then
-        idiag_c_dragx=0
-        idiag_c_dragy=0
-        idiag_c_dragz=0
-      endif
-!
-!  check for those quantities that we want to evaluate online
-!
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
-        call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
-        call parse_name(iname,cname(iname),cform(iname),'c_dragz',idiag_c_dragz)
-      enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) then
-!
-      endif
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_solid_cells
 !***********************************************************************
-    subroutine pencil_criteria_solid_cells()
+    subroutine pencil_criteria_solid_cells
 !
 !  All pencils that the Solid_Cells module depends on are specified here.
 !
@@ -261,5 +236,65 @@ module Solid_Cells
       call keep_compiler_quiet(int_ds)
 !
     endsubroutine solid_cells_timestep_second
+!***********************************************************************
+    subroutine time_step_ogrid(f)
+!
+!  Dummy routine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    end subroutine time_step_ogrid
+!***********************************************************************
+    subroutine wsnap_ogrid(chsnap,enum,flist)
+!
+!  Dummy routine
+!
+      character(len=*), intent(in) :: chsnap
+      character(len=*), intent(in), optional :: flist
+      logical, intent(in), optional :: enum
+!
+      if (ALWAYS_FALSE) print*, chsnap
+      if (ALWAYS_FALSE) then 
+        if (present(enum)) print*, enum
+        if (present(enum)) print*, flist
+      endif
+    endsubroutine wsnap_ogrid
+!***********************************************************************
+    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid,rthz)
+!
+!  Dummy routine
+!
+      real, dimension (3) :: xxp,rthz
+      integer, dimension (4) :: ineargrid_ogrid
+!
+      intent(in)  :: xxp,rthz
+      intent(out) :: ineargrid_ogrid
+!      
+      if(ALWAYS_FALSE) print*, xxp,rthz
+      ineargrid_ogrid=0
+!      
+    endsubroutine map_nearest_grid_ogrid
+!***********************************************************************
+    subroutine interpolate_particles_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+!
+!  Dummy routine
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (4) :: inear_glob
+!
+      intent(in)  :: ivar1, ivar2, xxp, inear_glob
+      intent(out) :: gp
+!
+      if (ALWAYS_FALSE) then
+        print*, ivar1,ivar2,xxp
+        print*, inear_glob
+      endif
+      gp=0.
+!
+    endsubroutine interpolate_particles_ogrid
 !***********************************************************************
 endmodule Solid_Cells

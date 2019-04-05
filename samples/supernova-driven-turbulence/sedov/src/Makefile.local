@@ -7,7 +7,7 @@ MPICOMM      = nompicomm
 IO           =   io_dist
 
 HYDRO        =   hydro
-SHOCK        =   shock
+SHOCK        =   shock_highorder
 DENSITY      =   density
 ENTROPY      =   entropy
 MAGNETIC     = nomagnetic

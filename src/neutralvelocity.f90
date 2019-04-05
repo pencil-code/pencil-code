@@ -81,7 +81,6 @@ module NeutralVelocity
   integer :: idiag_unmz=0,idiag_unxmxy=0,idiag_unymxy=0,idiag_unzmxy=0
   integer :: idiag_unxmx=0,idiag_unymx=0,idiag_unzmx=0
   integer :: idiag_unrmphi=0,idiag_unpmphi=0,idiag_unzmphi=0,idiag_un2mphi=0
-  integer :: idiag_unr2m=0,idiag_unp2m=0,idiag_unzz2m=0
   integer :: idiag_neutralangmom=0
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
@@ -214,8 +213,6 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
-      use EquationOfState, only: cs20, gamma
-      use Gravity, only: z1
       use Initcond
       use InitialCondition, only: initial_condition_uun
       use Mpicomm, only: stop_it
@@ -437,12 +434,13 @@ module NeutralVelocity
       use Diagnostics
       use Mpicomm, only: stop_it
       use Sub, only: identify_bcs
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: ionization,recombination,cions,cneut
+      real, dimension (nx) :: ionization,recombination,cions,cneut,advec_csn2,advec_uun
       real :: c2,s2
       integer :: j,jn,ji
 !
@@ -556,15 +554,21 @@ module NeutralVelocity
 !
       endif
 !
-      if (lfirst.and.ldt) advec_csn2=csn20*dxyz_2
-      if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
+      if (lfirst.and.ldt) then
+        advec_csn2=csn20*dxyz_2
+        if (notanumber(advec_csn2)) print*, 'advec_csn2 =',advec_csn2
+        advec2=advec2+advec_csn2
+        if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
 !
 !  ``uun/dx'' for timestep
 !
-      if (lfirst.and.ldt) advec_uun=abs(p%uun(:,1))*dx_1(l1:l2)+ &
-                                    abs(p%uun(:,2))*dy_1(  m  )+ &
-                                    abs(p%uun(:,3))*dz_1(  n  )
-      if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
+        advec_uun=abs(p%uun(:,1))*dx_1(l1:l2)+ &
+                  abs(p%uun(:,2))*dy_1(  m  )+ &
+                  abs(p%uun(:,3))*dz_1(  n  )
+        if (notanumber(advec_uun)) print*, 'advec_uun  =',advec_uun
+        maxadvec=maxadvec+advec_uun
+        if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
+      endif
 !
 !  Apply border profiles
 !
@@ -735,7 +739,7 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: fvisc,unij5glnrhon
-      real, dimension(nx) :: munrhon1,tmp
+      real, dimension(nx) :: munrhon1,tmp,diffus_nun,diffus_nun3
       integer :: i,j,jj,ju
       type (pencil_case) :: p
 !
@@ -744,6 +748,7 @@ module NeutralVelocity
 !
       fvisc=0.
       diffus_nun=0.
+      diffus_nun3=0.
 !
       do j=1,ninit
          select case (iviscn(j))
@@ -798,7 +803,7 @@ module NeutralVelocity
                fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1*tmp*dline_1(:,i)**2
              enddo
              if (lfirst.and.ldt) &
-                  diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxyz_2
+                  diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxmin_pencil**4
            enddo
 !
      !    case ('shock','nun-shock')
@@ -827,6 +832,10 @@ module NeutralVelocity
             call stop_it('calc_viscous_forcing')
          endselect
       enddo
+      if (lfirst.and.ldt) then
+        maxdiffus=max(maxdiffus,diffus_nun)
+        maxdiffus3=max(maxdiffus3,diffus_nun3)
+      endif
 !
 ! Add viscosity to the equation of motion
 !
@@ -846,6 +855,7 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
       logical :: lreset,lwr
@@ -1002,11 +1012,10 @@ module NeutralVelocity
 !  write column where which neutralvelocity variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuun=',iuun
-        write(3,*) 'iunx=',iunx
-        write(3,*) 'iuny=',iuny
-        write(3,*) 'iunz=',iunz
+        call farray_index_append('iuun',iuun)
+        call farray_index_append('iunx',iunx)
+        call farray_index_append('iuny',iuny)
+        call farray_index_append('iunz',iunz)
       endif
 !
     endsubroutine rprint_neutralvelocity

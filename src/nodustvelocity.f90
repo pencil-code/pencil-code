@@ -138,22 +138,10 @@ module Dustvelocity
 !***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-       if (lmdvar .and. lmice ) then
-        write(3,*) 'iuud=',iuud
-        write(3,*) 'iudx=',iudx
-        write(3,*) 'iudy=',iudy
-        write(3,*) 'iudz=',iudz
-       endif
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_dustvelocity
 !***********************************************************************

@@ -10,11 +10,13 @@ module Fixed_point
 !
   use Cdata
   use Cparam
-  use Mpicomm
+!  use Mpicomm
   use Messages
-  use Streamlines
+  use Streamlines, only: ntracers, l_max, trace_sub, trace_single, send_vec
 !
   implicit none
+!
+  include 'mpif.h'
 !
 ! a few constants
   integer :: MERGE_FIXED = 97

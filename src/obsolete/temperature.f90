@@ -621,6 +621,7 @@ endif
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -644,10 +645,10 @@ endif
 !  write column where which entropy variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnTT=',ilnTT
+        call farray_index_append('i_ssm',idiag_ssm)
+        call farray_index_append('i_ugradpm',idiag_ugradpm)
+        call farray_index_append('nname',nname)
+        call farray_index_append('ilnTT',ilnTT)
       endif
 !
     endsubroutine rprint_entropy

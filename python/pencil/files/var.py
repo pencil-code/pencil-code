@@ -17,7 +17,7 @@ import sys
 from pencil.files.param import read_param
 from pencil.files.index import read_index
 from pencil.files.dim import read_dim
-from pencil.math.derivatives import curl, curl2
+from pencil.math.derivatives import curl, curl2, div
 import re
 
 
@@ -106,7 +106,7 @@ class DataCube(object):
             if param is None:
                 param = read_param(datadir=datadir, quiet=quiet)
             if index is None:
-                index = read_index(datadir=datadir,down=ldownsampled)
+                index = read_index(datadir=datadir,param=param,down=ldownsampled)
 
         if dim.precision == 'D':
             precision = 'd'
@@ -150,121 +150,165 @@ class DataCube(object):
         x = np.zeros(dim.mx, dtype=precision)
         y = np.zeros(dim.my, dtype=precision)
         z = np.zeros(dim.mz, dtype=precision)
-        for directory in procdirs:
 
-            proc = int(directory[4:])
-            procdim = read_dim(datadir,proc,down=ldownsampled)
-            if (not quiet):
-                #print "reading data from processor %i of %i ..." \ # Python 2
-                      #% (proc, len(procdirs)) # Python 2
-                print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
+        if (param.io_strategy != 'MPI-IO'):
+            for directory in procdirs:
 
-            mxloc = procdim.mx
-            myloc = procdim.my
-            mzloc = procdim.mz
+                proc = int(directory[4:])
+                procdim = read_dim(datadir,proc,down=ldownsampled)
+                if (not quiet):
+                    #print "reading data from processor %i of %i ..." \ # Python 2
+                          #% (proc, len(procdirs)) # Python 2
+                    print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
 
-            #read data
-            filename = os.path.join(datadir,directory,varfile)
-            infile = npfile(filename, endian=format)
-            if (not run2D):
-                f_loc = infile.fort_read(precision,
-                                         shape=(-1, mzloc, myloc, mxloc))
-            else:
-                if dim.ny == 1:
-                    f_loc = infile.fort_read(precision, shape=(-1, mzloc, mxloc))
-                else:
-                    f_loc = infile.fort_read(precision, shape=(-1, myloc, mxloc))
-            raw_etc = infile.fort_read(precision)
-            infile.close()
+                mxloc = procdim.mx
+                myloc = procdim.my
+                mzloc = procdim.mz
 
-            t = raw_etc[0]
-            x_loc = raw_etc[1:mxloc+1]
-            y_loc = raw_etc[mxloc+1:mxloc+myloc+1]
-            z_loc = raw_etc[mxloc+myloc+1:mxloc+myloc+mzloc+1]
-            if (param.lshear):
-                shear_offset = 1
-                deltay = raw_etc[-1]
-            else:
-                shear_offset = 0
-
-            dx = raw_etc[-3-shear_offset]
-            dy = raw_etc[-2-shear_offset]
-            dz = raw_etc[-1-shear_offset]
-
-            if len(procdirs) > 1:
-                # Calculate where the local processor will go in
-                # the global array.
-
-                # Don't overwrite ghost zones of processor to the left (and
-                # accordingly in y and z direction--makes a difference on the
-                # diagonals).
-                #
-                # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
-                # ie, x[0:4] will slice all of a 4-digit array, not produce
-                # an error like in idl.
-
-                if procdim.ipx == 0:
-                    i0x = 0
-                    i1x = i0x+procdim.mx
-                    i0xloc = 0
-                    i1xloc = procdim.mx
-                else:
-                    i0x = procdim.ipx*procdim.nx+procdim.nghostx
-                    i1x = i0x+procdim.mx-procdim.nghostx
-                    i0xloc = procdim.nghostx
-                    i1xloc = procdim.mx
-
-                if procdim.ipy == 0:
-                    i0y = 0
-                    i1y = i0y+procdim.my
-                    i0yloc = 0
-                    i1yloc = procdim.my
-                else:
-                    i0y = procdim.ipy*procdim.ny+procdim.nghosty
-                    i1y = i0y+procdim.my-procdim.nghosty
-                    i0yloc = procdim.nghosty
-                    i1yloc = procdim.my
-
-                if procdim.ipz == 0:
-                    i0z = 0
-                    i1z = i0z+procdim.mz
-                    i0zloc = 0
-                    i1zloc = procdim.mz
-                else:
-                    i0z = procdim.ipz*procdim.nz+procdim.nghostz
-                    i1z = i0z+procdim.mz-procdim.nghostz
-                    i0zloc = procdim.nghostz
-                    i1zloc = procdim.mz
-
-                x[i0x:i1x] = x_loc[i0xloc:i1xloc]
-                y[i0y:i1y] = y_loc[i0yloc:i1yloc]
-                z[i0z:i1z] = z_loc[i0zloc:i1zloc]
-
+                #read data
+                filename = os.path.join(datadir,directory,varfile)
+                infile = npfile(filename, endian=format)
                 if (not run2D):
-                    f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
-                        f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                    f_loc = infile.fort_read(precision,
+                                             shape=(-1, mzloc, myloc, mxloc))
                 else:
                     if dim.ny == 1:
-                        f[:, i0z:i1z, i0x:i1x] = \
-                              f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                        f_loc = infile.fort_read(precision, shape=(-1, mzloc, mxloc))
                     else:
-                        f[:, i0y:i1y, i0x:i1x] = \
-                              f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
+                        f_loc = infile.fort_read(precision, shape=(-1, myloc, mxloc))
+                raw_etc = infile.fort_read(precision)
+                infile.close()
+
+                t = raw_etc[0]
+                x_loc = raw_etc[1:mxloc+1]
+                y_loc = raw_etc[mxloc+1:mxloc+myloc+1]
+                z_loc = raw_etc[mxloc+myloc+1:mxloc+myloc+mzloc+1]
+                if (param.lshear):
+                    shear_offset = 1
+                    deltay = raw_etc[-1]
+                else:
+                    shear_offset = 0
+
+                dx = raw_etc[-3-shear_offset]
+                dy = raw_etc[-2-shear_offset]
+                dz = raw_etc[-1-shear_offset]
+
+                if len(procdirs) > 1:
+                    # Calculate where the local processor will go in
+                    # the global array.
+
+                    # Don't overwrite ghost zones of processor to the left (and
+                    # accordingly in y and z direction--makes a difference on the
+                    # diagonals).
+                    #
+                    # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
+                    # ie, x[0:4] will slice all of a 4-digit array, not produce
+                    # an error like in idl.
+
+                    if procdim.ipx == 0:
+                        i0x = 0
+                        i1x = i0x+procdim.mx
+                        i0xloc = 0
+                        i1xloc = procdim.mx
+                    else:
+                        i0x = procdim.ipx*procdim.nx+procdim.nghostx
+                        i1x = i0x+procdim.mx-procdim.nghostx
+                        i0xloc = procdim.nghostx
+                        i1xloc = procdim.mx
+
+                    if procdim.ipy == 0:
+                        i0y = 0
+                        i1y = i0y+procdim.my
+                        i0yloc = 0
+                        i1yloc = procdim.my
+                    else:
+                        i0y = procdim.ipy*procdim.ny+procdim.nghosty
+                        i1y = i0y+procdim.my-procdim.nghosty
+                        i0yloc = procdim.nghosty
+                        i1yloc = procdim.my
+
+                    if procdim.ipz == 0:
+                        i0z = 0
+                        i1z = i0z+procdim.mz
+                        i0zloc = 0
+                        i1zloc = procdim.mz
+                    else:
+                        i0z = procdim.ipz*procdim.nz+procdim.nghostz
+                        i1z = i0z+procdim.mz-procdim.nghostz
+                        i0zloc = procdim.nghostz
+                        i1zloc = procdim.mz
+
+                    x[i0x:i1x] = x_loc[i0xloc:i1xloc]
+                    y[i0y:i1y] = y_loc[i0yloc:i1yloc]
+                    z[i0z:i1z] = z_loc[i0zloc:i1zloc]
+
+                    if (not run2D):
+                        f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
+                            f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                    else:
+                        if dim.ny == 1:
+                            f[:, i0z:i1z, i0x:i1x] = \
+                                  f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                        else:
+                            f[:, i0y:i1y, i0x:i1x] = \
+                                  f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
+                else:
+                    f = f_loc
+                    x = x_loc
+                    y = y_loc
+                    z = z_loc
+                #endif MPI run
+            #endfor directories loop
+        else:
+            filename = os.path.join(datadir,'allprocs/',varfile)
+            if (param.lwrite_2d):
+                if (dim.ny == 1):
+                    ntot=dim.mvar*dim.mx*dim.mz
+                else:
+                    ntot=dim.mvar*dim.mx*dim.my
             else:
-                f = f_loc
-                x = x_loc
-                y = y_loc
-                z = z_loc
-            #endif MPI run
-        #endfor directories loop
+                ntot=dim.mvar*dim.mx*dim.my*dim.mz
+            with open(filename,'rb') as f:
+                data = np.fromfile(f, dtype=precision, count=ntot)
+                if (dim.precision == 'D'):
+                    f.seek(4+ntot*8)
+                else:
+                    f.seek(4+ntot*4)
+                raw_etc = np.fromfile(f, dtype=precision)
+            if (param.lwrite_2d):
+                if (dim.ny == 1):
+                    f = np.reshape(data,(dim.mvar,dim.mz,dim.mx))
+                else:
+                    f = np.reshape(data,(dim.mvar,dim.my,dim.mx))
+            else:
+                    f = np.reshape(data,(dim.mvar,dim.mz,dim.my,dim.mx))
+            t  = raw_etc[0]
+            x  = raw_etc[1:dim.mx+1]
+            y  = raw_etc[dim.mx+1:dim.mx+dim.my+1]
+            z  = raw_etc[dim.mx+dim.my+1:dim.mx+dim.my+dim.mz+1]
+            dx = raw_etc[-3]
+            dy = raw_etc[-2]
+            dz = raw_etc[-1]
 
         if (magic is not None):
             if ('bb' in magic):
-                # Compute the magnetic field before doing trimall.
-                aa = f[index['ax']-1:index['az'],...]
-                self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
-                if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1,
-                dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                if 'bb' in index.keys():
+                    pass
+                else:
+                    # Compute the magnetic field before doing trimall.
+                    aa = f[index['ax']-1:index['az'],...]
+                    self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param,dim=dim)
+                    if (trimall):
+                        if (param.lwrite_2d):
+                            if (dim.nz == 1):
+                                self.bb=self.bb[:, dim.m1:dim.m2+1,
+                                dim.l1:dim.l2+1]
+                            else:
+                                self.bb=self.bb[:, dim.n1:dim.n2+1,
+                                dim.l1:dim.l2+1]
+                        else:
+                            self.bb=self.bb[:, dim.n1:dim.n2+1,
+                            dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
                 # Compute the electric current field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
@@ -274,7 +318,7 @@ class DataCube(object):
             if ('vort' in magic):
                 # Compute the vorticity field before doing trimall.
                 uu = f[index['ux']-1:index['uz'],...]
-                self.vort = curl(uu,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param)
+                self.vort = curl(uu,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param,dim=dim)
                 if (trimall):
                     if (param.lwrite_2d):
                         if (dim.nz == 1):
@@ -286,19 +330,33 @@ class DataCube(object):
                     else:
                         self.vort=self.vort[:, dim.n1:dim.n2+1,
                         dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+            if ('divu' in magic):
+                # Compute the divergence before doing trimall.
+                uu = f[index['ux']-1:index['uz'],...]
+                self.divu = div(uu,dx,dy,dz,x,y,z,param=param,dim=dim)
+                if (trimall):
+                    if (param.lwrite_2d):
+                        if (dim.nz == 1):
+                            self.divu=self.divu[dim.m1:dim.m2+1,dim.l1:dim.l2+1]
+                        else:
+                            self.divu=self.divu[dim.n1:dim.n2+1,dim.l1:dim.l2+1]
+                    else:
+                        self.divu=self.divu[dim.n1:dim.n2+1,dim.m1:dim.m2+1, dim.l1:dim.l2+1]
 
+
+                        
         # Trim the ghost zones of the global f-array if asked.
         if trimall:
             self.x = x[dim.l1:dim.l2+1]
             self.y = y[dim.m1:dim.m2+1]
             self.z = z[dim.n1:dim.n2+1]
             if (not run2D):
-                self.f = f[:, dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                self.f = f[:, dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1].squeeze()
             else:
                if dim.ny == 1:
-                   self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1]
+                   self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1].squeeze()
                else:
-                   self.f = f[:, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                   self.f = f[:, dim.m1:dim.m2+1, dim.l1:dim.l2+1].squeeze()
         else:
             self.x = x
             self.y = y
@@ -314,14 +372,19 @@ class DataCube(object):
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity.
         for key,value in index.items():
-            # print key,value.
+#            print key,value
             if key != 'global_gg':
-                setattr(self,key,self.f[value-1,...])
+                if self.f.ndim!=1:
+                    setattr(self,key,self.f[value-1,...])
+                else:
+                    setattr(self,key,self.f)
         # special treatment for vector quantities
         if 'uu' in index.keys():
             self.uu = self.f[index['ux']-1:index['uz'],...]
         if 'aa' in index.keys():
             self.aa = self.f[index['ax']-1:index['az'],...]
+        if 'bb' in index.keys():
+            self.bb = self.f[index['bx']-1:index['bz'],...]
         # Also treat Fcr (from cosmicrayflux) as a vector.
         if 'fcr' in index.keys():
             self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
@@ -349,10 +412,10 @@ class DataCube(object):
                 else:
                     sys.exit("pb in magic!")
 
-            if (field == 'tt' and not hasattr(self,'tt')):
+            if (field == 'TT' and not hasattr(self,'TT')):
                 if hasattr(self, 'lnTT'):
-                    tt = np.exp(self.lnTT)
-                    setattr(self, 'tt', tt)
+                    TT = np.exp(self.lnTT)
+                    setattr(self, 'TT', TT)
                 else:
                     if hasattr(self, 'ss'):
                         if hasattr(self,'lnrho'):
@@ -368,7 +431,7 @@ class DataCube(object):
                         lnTT0 = np.log(cs20/(cp*(gamma-1.)))
                         lnTT = lnTT0+gamma/cp*self.ss+(gamma-1.)* \
                                (lnrho-lnrho0)
-                        setattr(self, 'tt', np.exp(lnTT))
+                        setattr(self, 'TT', np.exp(lnTT))
                     else:
                         sys.exit("pb in magic!")
 
@@ -381,8 +444,8 @@ class DataCube(object):
                 if hasattr(self, 'lnTT'):
                     self.ss = cp/gamma*(self.lnTT-lnTT0- \
                               (gamma-1.)*(self.lnrho-lnrho0))
-                elif hasattr(self, 'tt'):
-                    self.ss = cp/gamma*(np.log(self.tt)- \
+                elif hasattr(self, 'TT'):
+                    self.ss = cp/gamma*(np.log(self.TT)- \
                               lnTT0-(gamma-1.)*(self.lnrho-lnrho0))
                 else:
                     sys.exit("pb in magic!")
@@ -391,6 +454,7 @@ class DataCube(object):
                 cp = param.cp
                 gamma = param.gamma
                 cv = cp/gamma
+                Rstar = cp-cv
                 if hasattr(self,'lnrho'):
                     lnrho = self.lnrho
                 elif hasattr(self,'rho'):
@@ -398,10 +462,19 @@ class DataCube(object):
                 else:
                     sys.exit("pb in magic: missing rho or lnrho variable")
                 if hasattr(self, 'ss'):
-                    self.pp = np.exp(gamma*(self.ss+lnrho))
-                elif hasattr(self, 'lntt'):
-                    self.pp = (cp-cv)*np.exp(self.lntt+lnrho)
-                elif hasattr(self, 'tt'):
-                    self.pp = (cp-cv)*self.tt*np.exp(lnrho)
+                    cs20 = param.cs0**2
+                    lnrho0 = np.log(param.rho0)
+                    lnTT0 = np.log(cs20/(cp*(gamma-1.)))
+                    lnTT = lnTT0+gamma/cp*self.ss+(gamma-1.)* \
+                               (lnrho-lnrho0)
+                    self.pp = np.exp(np.log(Rstar)+lnrho+lnTT)
+                elif hasattr(self, 'lnTT'):
+                    self.pp = (cp-cv)*np.exp(self.lnTT+lnrho)
+                elif hasattr(self, 'TT'):
+                    self.pp = (cp-cv)*self.TT*np.exp(lnrho)
                 else:
                     sys.exit("pb in magic!")
+
+            if (field == 'u2' and not hasattr(self, 'u2')):
+                self.u2=self.ux**2+self.uy**2+self.uz**2
+

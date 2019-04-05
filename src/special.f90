@@ -34,23 +34,22 @@
                           I_CALC_PENCILS_SPECIAL=13,  &
                           I_PENCIL_CRITERIA_SPECIAL=14,  &
                           I_PENCIL_INTERDEP_SPECIAL=15,  &
-                          I_CALC_LSPECIAL_PARS=16,  &
-                          I_SPECIAL_CALC_HYDRO=17, &
-                          I_SPECIAL_CALC_DENSITY=18, &
-                          I_SPECIAL_CALC_DUSTDENSITY=19, &
-                          I_SPECIAL_CALC_ENERGY=20, &
-                          I_SPECIAL_CALC_MAGNETIC=21, &
-                          I_SPECIAL_CALC_PSCALAR=22, &
-                          I_SPECIAL_CALC_PARTICLES=23, &
-                          I_SPECIAL_CALC_PARTICLES_BFRE_BDARY=24,  &
-                          I_SPECIAL_CALC_CHEMISTRY=25, &
-                          I_SPECIAL_BOUNDCONDS=26,  &
-                          I_SPECIAL_BEFORE_BOUNDARY=27,  &
-                          I_SPECIAL_AFTER_BOUNDARY=28,  &
-                          I_SPECIAL_AFTER_TIMESTEP=29,  &
-                          I_SET_INIT_PARAMETERS=30   
+                          I_SPECIAL_CALC_HYDRO=16, &
+                          I_SPECIAL_CALC_DENSITY=17, &
+                          I_SPECIAL_CALC_DUSTDENSITY=18, &
+                          I_SPECIAL_CALC_ENERGY=19, &
+                          I_SPECIAL_CALC_MAGNETIC=20, &
+                          I_SPECIAL_CALC_PSCALAR=21, &
+                          I_SPECIAL_CALC_PARTICLES=22, &
+                          I_SPECIAL_CALC_PARTICLES_BFRE_BDARY=23,  &
+                          I_SPECIAL_CALC_CHEMISTRY=24, &
+                          I_SPECIAL_BOUNDCONDS=25,  &
+                          I_SPECIAL_BEFORE_BOUNDARY=26,  &
+                          I_SPECIAL_AFTER_BOUNDARY=27,  &
+                          I_SPECIAL_AFTER_TIMESTEP=28,  &
+                          I_SET_INIT_PARAMETERS=29  
     
-    integer, parameter :: n_subroutines=30
+    integer, parameter :: n_subroutines=29
     integer, parameter :: n_special_modules_max=50
 !
     integer :: n_special_modules
@@ -71,7 +70,6 @@
                            'calc_pencils_special        ', &
                            'pencil_criteria_special     ', &
                            'pencil_interdep_special     ', &
-                           'calc_lspecial_pars          ', &
                            'special_calc_hydro          ', &
                            'special_calc_density        ', &
                            'special_calc_dustdensity    ', &
@@ -376,23 +374,6 @@
 !
     endsubroutine get_slices_special
 !*********************************************************************** 
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      integer :: i
-!
-      do i=1,n_special_modules
-        call caller(special_sub_handles(i,I_CALC_SPECIAL_PARS),1,f)
-      enddo
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -636,13 +617,14 @@
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
 !
 !  27-nov-08/wlad: coded
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
@@ -653,7 +635,7 @@
         call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP),3,f,df,dt_)
       enddo
 !
-    endsubroutine  special_after_timestep
+    endsubroutine special_after_timestep
 !*********************************************************************** 
     subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !

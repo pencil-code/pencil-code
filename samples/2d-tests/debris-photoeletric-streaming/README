@@ -10,6 +10,7 @@ Status:
     works since 17-jun-2013
 Recommended resolution:
     768x1x32 (same hyperdiffusion as in sample)
+    250000 particles 
 Comments:
     Debris disk in cylindrical coordinates in r-z and logarithmic spacing in r, 
     resolving the radial wavelength of the streaming instability with 20 grid points.  	

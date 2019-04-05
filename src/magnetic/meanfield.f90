@@ -31,7 +31,7 @@ module Magnetic_meanfield
 !  array for inputting alpha profile
 !
   real, dimension (mx,my) :: alpha_input
-  real, pointer :: kf_alpm, B_ext2
+  real, pointer :: B_ext2
   logical, pointer :: lweyl_gauge
 !
   real, dimension (nx) :: kf_x, kf_x1
@@ -55,9 +55,9 @@ module Magnetic_meanfield
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
   real :: meanfield_etat_exp=1.0, uturb=.1
-  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width, qpx_width
+  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width=impossible, qpx_width=impossible
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
-  real :: alpha_rmin
+  real :: alpha_rmin=0.
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0, meanfield_qa=0.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0, meanfield_Ba=1.0
@@ -81,14 +81,14 @@ module Magnetic_meanfield
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
-  real :: mf_qJ2=0.0
+  real :: mf_qJ2=0.0, qp_aniso_factor=1.0
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0.
   real, dimension(my,3,3) :: alpha_tensor_y=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
-  real, dimension(mz) :: etat_z, detat_z, qp_profile, qp_profder
+  real, dimension(mz) :: etat_z, detat_z, qp_profile, qp_profder !, qe_profder
   real, dimension(nx) :: qpx_profile, qpx_profder
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
@@ -96,6 +96,8 @@ module Magnetic_meanfield
   logical :: ldelta_profile=.false., lalpha_tensor=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
   logical :: lqpcurrent=.false., lNEMPI_correction=.true.
+  logical :: lNEMPI_correction_qp_profile=.true.
+  logical :: lqp_aniso_factor=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
@@ -119,7 +121,8 @@ module Magnetic_meanfield
       lturb_temp_diff, lignore_gradB2_inchiB, &
       meanfield_qs, meanfield_qp, meanfield_qe, meanfield_qa, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_Ba, &
-      lqpcurrent,mf_qJ2, lNEMPI_correction, &
+      lqpcurrent,mf_qJ2, lNEMPI_correction, lNEMPI_correction_qp_profile, &
+      lqp_aniso_factor, qp_aniso_factor, &
       alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -379,6 +382,13 @@ module Magnetic_meanfield
           detat_x=0.
           detat_y=meanfield_etat_exp*sin(y)**(meanfield_etat_exp-1.)*cos(y)
           detat_z=0.
+        case ('Jouve-2008-benchmark')
+          etat_x = meanfield_etat*(0.01 + 0.5*(1.-0.01)*(1.0+erfunc((x(l1:l2)-0.7)/0.02)))
+          etat_y = 1.
+          etat_z = 1.
+          detat_x= meanfield_etat*0.5*(1.-0.01)*exp(-((x(l1:l2)-0.7)/0.02)**2)
+          detat_y= 0.
+          detat_z= 0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
           'no such meanfield_etat_profile profile')
@@ -437,7 +447,9 @@ module Magnetic_meanfield
 !
       if (lqp_profile) then
         qp_profile=0.5*(1.-erfunc((z-z_surface)/qp_width))
+        !qe_profile=0.5*(1.-erfunc((z-z_surface)/qe_width))
         qp_profder=-exp(-((z-z_surface)/qp_width)**2)/(qp_width*sqrtpi)
+        !qe_profder=-exp(-((z-z_surface)/qe_width)**2)/(qe_width*sqrtpi)
       else
         qp_profile=1.
         qp_profder=0.
@@ -794,8 +806,14 @@ module Magnetic_meanfield
 !
 !  Allow for qp profile
 !
-            p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*mu01*qp_profder(n)*meanfield_qp_func*p%b2
+            if (lNEMPI_correction_qp_profile) then
+              p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*mu01*qp_profder(n)*meanfield_qp_func*p%b2
+            endif
           endif
+!
+!  Allow for simple-minded anisotropy
+!
+          if (lqp_aniso_factor) p%jxb_mf(:,3)=p%jxb_mf(:,3)*qp_aniso_factor
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
 !
@@ -804,8 +822,12 @@ module Magnetic_meanfield
           call multsv_mn_add(-2.*mu01*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
 !
 !  Add e_z*grad(qe*B^2). This has not yet been found to promote instability.
+!  Added below (in commented out form, how I think it should be if used)
 !
           p%jxb_mf(:,3)=p%jxb_mf(:,3)+2.*mu01*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
+          !p%jxb_mf(:,3)=p%jxb_mf(:,3)+mu01*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3) &
+          !                        -.5*mu01*p%b2**2*meanfield_qe_der,p%glnrho(:,3) &
+          !                        +.5*mu01*qe_profder(n)*meanfield_qe_func*p%b2
 !
 !  Add div[qa*Bz*(Bi*gj+Bj*gi)]
 !  Begin by initializing auxiliary vector X_j (see notes)
@@ -897,6 +919,8 @@ module Magnetic_meanfield
           alpha_tmp=z(n)/alpha_width*exp(-.5*(z(n)/alpha_width)**2)*spiral
         case ('z/H*erfunc(H-z)'); alpha_tmp=z(n)/xyz1(3)*erfunc((xyz1(3)-abs(z(n)))/alpha_width)
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
+        case ('Jouve-2008-benchmark')
+          alpha_tmp=(3.*sqrt(3.)/4.)*(sin(y(m)))**2*cos(y(m))*(1.0+erfunc((x(l1:l2)-0.7)/0.02))
         case ('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'alpha_profile="nothing" has been renamed to "const", please update your run.in')
@@ -911,6 +935,7 @@ module Magnetic_meanfield
         case ('const'); delta_tmp=1.
         case ('cos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)
         case ('sincos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)*sin(.5*z(n))
+        case ('cos(theta)'); delta_tmp=cos(y(m))
         case default;
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'delta_profile no such delta profile')
@@ -1236,7 +1261,7 @@ module Magnetic_meanfield
       intent(in) :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: Beq21
+      real, dimension(nx) :: diffus_eta
 !
 !  Identify module and boundary conditions.
 !
@@ -1261,10 +1286,10 @@ module Magnetic_meanfield
 !  Allow for variable etat (mean field theory).
 !
       if (lfirst.and.ldt) then
-        diffus_eta=diffus_eta+meanfield_etat*dxyz_2
-        if (headtt.or.ldebug) then
+        diffus_eta=meanfield_etat*dxyz_2
+        if (headtt.or.ldebug) &
           print*, 'daa_dt_meanfield: max(diffus_eta)  =', maxval(diffus_eta)
-        endif
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  Alpha effect.

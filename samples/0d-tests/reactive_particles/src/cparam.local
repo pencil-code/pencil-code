@@ -8,7 +8,7 @@
 !
 ! NCHEMSPEC CONTRIBUTION 7*1
 ! NSURFREACSPEC CONTRIBUTION 3
-! NADSSPEC CONTRIBUTION 3
+! NADSSPEC CONTRIBUTION 4
 !
 !*******************************************************
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1

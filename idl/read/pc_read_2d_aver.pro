@@ -3,6 +3,15 @@
 ;
 ;  Read 2D-averages from file.
 ;
+;  1-mar-17/MR: added new keyword parameter write: allows to write the averages,
+;               just read in, to destination write; if write eq '.' or write eq './'
+;               the averages in the cirrent working directory will be overwritten - 
+;               meaningful to reduce their size, when reading was for restricted time
+;               interval/coarser grained/with less variables. In the latter case the *aver.in
+;               has to be adjusted by hand.
+;               If write is another working directory, the individual processor subdirectories
+;               of data must exist.
+;
 pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, iplot=iplot, min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
     ipxread=ipxread, ipyread=ipyread, $
@@ -16,7 +25,7 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write, single=single
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -141,7 +150,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read variables from '*aver.in' file
 ;
 ;  run_dir = stregex ('./'+datadir, '^(.*)data\/', /extract)
-  rd=strsplit('./'+datadir,'data',/extract)
+  rd=strsplit('./'+datadir,'data',/extract,/regex)
   run_dir=rd[0]
   variables_all = strarr(file_lines(run_dir+in_file))
   openr, lun, run_dir+in_file, /get_lun
@@ -202,7 +211,7 @@ COMPILE_OPT IDL2,HIDDEN
       ipxarray = indgen(nprocx*nprocz) mod nprocx
       ipyarray = (indgen(nprocx*nprocz)/nprocx) mod nprocz
       iproc = ipxarray+ipyarray*nprocx*nprocy
-      nyg = nzgrid
+      nyg = nygrid
     end else begin
       ipxarray = indgen(nprocx*nprocy) mod nprocx
       ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
@@ -285,7 +294,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Define axes (default to indices if no axes are supplied).
 ;
-  if (n_elements(par) ne 0) then begin
+  if (n_elements(par) gt 1) then begin
     x0=par.xyz0[0]
     x1=par.xyz1[0]
     Lx=par.Lxyz[0]
@@ -327,7 +336,12 @@ COMPILE_OPT IDL2,HIDDEN
   if (iplot lt 0) then begin
 ;
     array_local=fltarr(nx,ny,nvar_all)*one
-    array_global=fltarr(nxg,nyg,nret,nvar)*one
+    if keyword_set(single) then $
+      array_global=fltarr(nxg,nyg,nret,nvar) $
+    else $
+      array_global=fltarr(nxg,nyg,nret,nvar)*one
+    type_as_on_disk=not keyword_set(single) or size(one,/type) eq 4
+
     t=zero
     if njump gt 1 then incr=njump*(double(n_elements(array_local))*data_bytes+8L + data_bytes+8L)
 ;
@@ -395,6 +409,56 @@ COMPILE_OPT IDL2,HIDDEN
         print, 'Returned averages at '+strtrim(nread,2)+' times.'
     endif else $
       message, 'No averages found for t>='+strtrim(tmin,2)+'.'
+
+    if nread gt 0 and is_defined(write) then begin
+
+      if write ne '' then begin
+; 
+;  If a path for writing the averages is given.
+;
+        if yinyang then $
+          print, 'Warning: writing of averages not implemented for Yin-Yang grid!' $
+        else begin
+
+          warn=0
+          if write eq '.' or write eq './' then begin
+            warn=1 & write='.'
+          endif else begin
+            cd, current=wdr
+            len=strlen(strtrim(write,2))
+            if strmid(strtrim(write,2),len,1) eq '/' then len-=1
+            if wdr eq strmid(write,0,len) then warn=1
+          endelse
+
+          if warn then begin
+            yn=''
+            read, prompt='Do you really want to overwrite the averages (yes/no)?', yn 
+            if yn eq 'yes' and not type_as_on_disk then $
+              read, prompt='Data was read in in single precision, so you loose precision in overwriting. Continue (yes/no)?', yn
+          endif else $
+            yn='yes'
+
+          if yn eq 'yes' then begin
+              
+            for ip=0, num_files-1 do begin
+              ipx=ipxarray[ip]
+              iya=ipyarray[ip]*ny
+              iye=iya+ny-1
+              openw, lun, write+'/'+filename[ip], /f77, swap_endian=swap_endian, /get_lun
+              for itt=0,nread-1 do begin
+                writeu, lun, tt[itt], tt[itt]
+                if type_as_on_disk then $
+                  writeu, lun, array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,itt,*] $
+                else $
+                  writeu, lun, double(array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,itt,*])
+              endfor
+              close, lun
+              free_lun, lun
+            endfor
+          endif
+        endelse
+      endif
+    endif
 ;
 ;  Diagnostics.
 ;

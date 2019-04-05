@@ -21,6 +21,7 @@ module Particles_cdata
   integer(KIND=ikind8), parameter :: npar_maxp=npar*maxp
   integer, parameter :: max_par_per_grid=int(npar_maxp/nwgrid)+1  ! ceiling needed?
   real :: rp_int=-impossible, rp_ext=-impossible
+  real :: rp_ext_width=-impossible
   real :: dsnap_par_minor=0.0, dsnap_par=0.0
   real :: rhopmat=1.0, rhopmat1=1.0, mpmat=0.0
   real :: eps_dtog = 0.01
@@ -37,6 +38,7 @@ module Particles_cdata
   real :: gab_width=3.0
 
   real :: remove_particle_at_time=-1.0, remove_particle_criteria_size=0.0
+  real :: remove_particle_criteria_edtog=impossible
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
   integer, dimension (nx) :: kshepherd
@@ -46,9 +48,18 @@ module Particles_cdata
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, npar_total=0, npaux=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0, irpbeta=0
+  integer :: ixp0=0, iyp0=0, izp0=0,ippersist=0
+  integer :: idR11=0, idR12=0, idR13=0, idV11=0, idV12=0, idV13=0
+  integer :: idR21=0, idR22=0, idR23=0, idV21=0, idV22=0, idV23=0
+  integer :: idR31=0, idR32=0, idR33=0, idV31=0, idV32=0, idV33=0
+  integer :: iVolp
+  integer :: idXpo1=0, idXpo2=0, idXpo3=0
+  integer :: iuf=0,iufx=0,iufy=0,iufz=0
   integer :: isigmap11=0,isigmap12=0,isigmap13=0
   integer :: isigmap21=0,isigmap22=0,isigmap23=0
   integer :: isigmap31=0,isigmap32=0,isigmap33=0
+  integer :: ilnVp=0
+  integer :: iblowup=0,iPPp=0,iQQp=0,iRRp=0
   integer :: iTp=0, imp=0, iCOp=0, impinit=0, iapinit=0
   integer :: irhosurf=0
   integer :: ivpx_cart,ivpy_cart,ivpz_cart
@@ -69,10 +80,9 @@ module Particles_cdata
   integer :: ieffp=0
   integer :: idlncc=0
   integer :: idfg=0,idfx=0,idfy=0,idfz=0
+  integer :: ivpxt=0, ivpzt=0
 
   integer :: npar_inserted_tot=0
-! Define maximum number of inserted particles in total
-! Stop inserting after max_particles is reached
   integer :: max_particles=npar
 !
   logical :: linterpolate_spline=.true.
@@ -94,10 +104,13 @@ module Particles_cdata
   logical :: lcommunicate_np=.false.
   logical :: lparticles_radius_rpbeta=.false.
   logical :: lignore_rhop_swarm=.false.
+  logical :: lnocollapse_xdir_onecell=.false.
+  logical :: lnocollapse_ydir_onecell=.false.
+  logical :: lnocollapse_zdir_onecell=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
-  character (len=10), dimension(mparray) :: pvarname
-  character(len=labellen) :: particle_mesh = ''
+  character (len=labellen), dimension(mparray) :: pvarname
+  character (len=labellen) :: particle_mesh = ''
   character (len=labellen) :: remove_particle_criteria='all'
 !
   type quant_interp_penc
@@ -134,6 +147,21 @@ module Particles_cdata
   integer, parameter :: ngp=2
 !
   real :: t_nextcol=0. !collision diagnostic times, set to turn-over of largest eddies
+!
+! The following in necessary for particle-particle interaction. If it is used,
+! the array fpwn in allocated in the module particles_potential and its
+! dimensions are lpar_max and mparray respectively.
+! The array fpwn contains fp of this processor with the neighbours
+!  
+!
+! Notation: lpar_max is the maximum number of particles that
+! can be accommodated in the array fpwn which includes the   
+! the particles from this processors and its neighbours.
+! lpar_loc is the number upto which the array fpwn is actually 
+! filled, all the rest of the elements should be zero.
+!
+  integer :: lpar_max=0,lpar_loc=0,nslab=0
+  real, allocatable, dimension(:,:) :: fpwn,fp_buffer_in,fp_buffer_out
 !
 ! Number of grid points that are considered neighbouring grids. This is determined by
 ! the grid resolution and the number psigma which determines that range of interaction of

@@ -36,14 +36,14 @@ module Dustvelocity
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
 !
   integer, parameter :: nvisc_max=4
-  complex, dimension (7) :: coeff
+  complex, dimension (7) :: coeff=0.
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
-  real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad
+  real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad=0.
   real, dimension(ndustspec) :: surfd, mi, rhodsad1
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
   real :: betad0=0.
-  real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0
+  real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0, nud_hyper3_mesh=5.0
   real :: uudx0=0.0, uudy0=0.0, uudz0=0.0
   real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
@@ -56,7 +56,7 @@ module Dustvelocity
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: gravx_dust=0.0
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
-  real :: mucube_graind=1., dust_pressure_factor=1.
+  real :: dust_pressure_factor=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
   logical :: llin_radiusbins=.false., llog_massbins=.true.
@@ -71,6 +71,7 @@ module Dustvelocity
   logical :: lviscd_hyper3_rhod_nud_const=.false.
   logical :: lviscd_hyper3_nud_const=.false.
   logical :: lviscd_hyper3_polar=.false.
+  logical :: lviscd_hyper3_mesh=.false.
   logical :: lstokes_highspeed_corr=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: borderuud='nothing'
@@ -98,7 +99,7 @@ module Dustvelocity
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
-      nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
+      nud_hyper3, nud_hyper3_mesh, scaleHtaus, z0taus, widthtaus, shorttauslimit,&
       lstokes_highspeed_corr
 !
   integer :: idiag_ekintot_dust=0
@@ -134,29 +135,38 @@ module Dustvelocity
       integer :: k, uud_tmp
       character(len=intlen) :: sdust
 !
+!  Identify version number (generated automatically by SVN).
+!
+      if (lroot) call svn_id( &
+          "$Id$")
+!
+!  Write dust index in short notation
+!
+      if (ndustspec >= 1) then
+        call farray_index_append('nuud',ndustspec)
+      endif
+!
       do k=1,ndustspec
-        sdust='['//trim(itoa(k-1))//']'
-        if (ndustspec==1) sdust=''
-        call farray_register_pde('uud'//sdust,uud_tmp,vector=3)
+        sdust = ''
+        if (ndustspec > 1) sdust = itoa(k-1)
+        call farray_register_pde('uud'//trim(sdust),uud_tmp,vector=3)
         iuud(k) = uud_tmp
         iudx(k) = iuud(k)
         iudy(k) = iuud(k)+1
         iudz(k) = iuud(k)+2
       enddo
 !
-!  Write dust index in short notation
+!  Writing files for use with IDL.
 !
-      if (lroot .and. ndustspec/=1) then
-        open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'nuud=',ndustspec
-        write(3,*) 'iuud=indgen('//trim(itoa(ndustspec))//')*3 + '//trim(itoa(iuud(1)))
-        close(3)
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',uud $'
+          if (nvar == mvar) write(4,*) ',uud'
+        else
+          write(4,*) ',uud $'
+        endif
+        write(15,*) 'uud = fltarr(mx,my,mz,3)*one'
       endif
-!
-!  Identify version number (generated automatically by SVN).
-!
-      if (lroot) call svn_id( &
-          "$Id$")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -413,6 +423,9 @@ module Dustvelocity
         case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
           if (lroot) print*,'viscous force: nud_hyper3/pi^4 *(Deltav)^6/Deltaq^2'
           lviscd_hyper3_polar=.true.
+       case ('hyper3-mesh')
+          if (lroot) print*,'viscous force: nud_hyper3_mesh/pi^5 *(Deltav)^6/Deltaq'
+          lviscd_hyper3_mesh=.true.
         case default
           if (lroot) print*, 'No such value for iviscd: ', trim(iviscd(i))
           call fatal_error('initialize_dustvelocity','')
@@ -501,7 +514,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !  21-jan-15/MR: changes for use for reference state.
 !
-      use EquationOfState, only: gamma, beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Gravity
       use Initcond
@@ -1022,7 +1035,6 @@ module Dustvelocity
 !
       use Debug_IO
       use Diagnostics
-      use EquationOfState, only: gamma
       use General
       use Sub
       use Deriv, only: der6
@@ -1033,6 +1045,7 @@ module Dustvelocity
 !
       real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
       real, dimension (nx) :: tausg1, mudrhod1, tmp3
+      real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud,advec_hypermesh_uud
       real :: c2, s2
       integer :: i, j, k, ju
 !
@@ -1180,6 +1193,7 @@ module Dustvelocity
 !
           fviscd=0.0
           diffus_nud=0.0
+          diffus_nud3=0.0
 !
 !  Viscous force: nud*del2ud
 !     -- not physically correct (no momentum conservation)
@@ -1247,9 +1261,27 @@ module Dustvelocity
                      nud_hyper3(k)*pi4_1*tmp3*dline_1(:,i)**2
               enddo
               if (lfirst.and.ldt) &
-                   diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1/dxyz_4
+                   diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
             enddo
           endif
+!
+!  Viscous force: Axel's mesh formulation
+!
+          if (lviscd_hyper3_mesh) then
+            do j=1,3
+              ju=j+iuud(k)-1
+              do i=1,3
+                call der6(f,ju,tmp3,i,IGNOREDX=.true.)
+                fviscd(:,j) = fviscd(:,j) + &
+                     nud_hyper3_mesh(k)*pi5_1/60.*tmp3*dline_1(:,i)
+              enddo
+            enddo
+            if (lfirst .and. ldt) then
+               advec_hypermesh_uud=nud_hyper3_mesh(k)*pi5_1*sqrt(dxyz_2)
+               advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2
+             endif
+          endif
+
 !
 !  Viscous force: mud/rhod*del6ud
 !
@@ -1260,6 +1292,10 @@ module Dustvelocity
             enddo
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
           endif
+          if (lfirst.and.ldt) then
+            maxdiffus3=max(maxdiffus3,diffus_nud3)
+            maxdiffus=max(maxdiffus,diffus_nud)
+          endif
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
@@ -1267,7 +1303,6 @@ module Dustvelocity
           if (lviscd_hyper3_nud_const) then
             fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
-
           endif
 !
 !  Add to dust equation of motion.
@@ -1277,17 +1312,18 @@ module Dustvelocity
 !  ``uud/dx'' for timestep
 !
           if (lfirst .and. ldt) then
-            advec_uud=max(advec_uud,abs(p%uud(:,1,k))*dx_1(l1:l2)+ &
-                                    abs(p%uud(:,2,k))*dy_1(  m  )+ &
-                                    abs(p%uud(:,3,k))*dz_1(  n  ))
+            advec_uud=abs(p%uud(:,1,k))*dx_1(l1:l2)+ &
+                      abs(p%uud(:,2,k))*dy_1(  m  )+ &
+                      abs(p%uud(:,3,k))*dz_1(  n  )
+            maxadvec=maxadvec+advec_uud
             if (idiag_dtud(k)/=0) &
                 call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
             if (idiag_dtnud(k)/=0) &
                  call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
-          endif
-          if ((headtt.or.ldebug) .and. (ip<6)) then
-            print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
-            print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+            if ((headtt.or.ldebug) .and. (ip<6)) then
+              print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
+              print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+            endif
           endif
 !
 !  Short friction time switch.
@@ -1587,7 +1623,6 @@ module Dustvelocity
       real, dimension (nx,3) :: uud
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
       integer :: k
-      real :: stokes_prefactor
 !
       select case (draglaw)
 
@@ -1675,18 +1710,7 @@ module Dustvelocity
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamexy, k
-      logical :: lwr
       character (len=intlen) :: sdust
-!
-!  Write information to index.pro that should not be repeated for i.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        write(3,*) 'ndustspec=',ndustspec
-        write(3,*) 'nname=',nname
-      endif
 !
 !  Reset everything in case of reset.
 !
@@ -1800,6 +1824,12 @@ module Dustvelocity
 !
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='uud') cformv='DEFINED'
+      endif
+!
     endsubroutine rprint_dustvelocity
 !***********************************************************************
     subroutine get_slices_dustvelocity(f,slices)
@@ -1808,6 +1838,8 @@ module Dustvelocity
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_vec
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -1817,21 +1849,8 @@ module Dustvelocity
 !
 !  Dustvelocity.
 !
-        case ('uud')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iudx(1)-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iudx(1)-1+slices%index)
-            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iudx(1)-1+slices%index)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iudx(1)-1+slices%index)
-            if (lwrite_slice_xy3) &
-                slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,iudx(1)-1+slices%index)
-            if (lwrite_slice_xy4) &
-                slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,iudx(1)-1+slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+        case ('uud'); call assign_slices_vec(slices,f,iudx(1))
+!
       endselect
 !
     endsubroutine get_slices_dustvelocity

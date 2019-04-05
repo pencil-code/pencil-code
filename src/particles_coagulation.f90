@@ -36,6 +36,8 @@ module Particles_coagulation
   real :: critical_mass_ratio_sticking=1.0
   real :: minimum_particle_mass=0.0, minimum_particle_radius=0.0
   real, pointer :: rhs_poisson_const
+  real :: tstart_droplet_coagulation=impossible
+  logical :: ldroplet_coagulation_runtime=.false.
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
   logical :: lshear_in_vp=.true.
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
@@ -44,9 +46,12 @@ module Particles_coagulation
   logical :: lzsomdullemond=.false.     ! use Zsom and Dullemond method
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
-  logical :: ldroplet_coagulation=.false.
-  logical :: lcollision_output=.false., luser_random_number_wrapper=.true.
+  logical :: ldroplet_coagulation=.false., normal_coagulation=.false.
+  logical :: lcollision_output=.false., lcollision_output_swapped=.false.,luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
+  logical :: kernel_output=.false., radius_output=.false.
+  logical :: sphericalKernel=.false.
+  logical :: lremove_particle=.false., lremove_particle2=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -60,6 +65,19 @@ module Particles_coagulation
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
              
 !
+  real :: deltad = 1., a0 = 1.
+  real :: r1, r2, r3, r4, r5, r6, r7, r8, r_diff
+  integer :: idiag_k100_100, idiag_k100_80, idiag_k100_60, idiag_k100_50, &
+             idiag_k100_40, idiag_k100_30, idiag_k100_20, idiag_k100_10, &
+             idiag_k80_80, idiag_k80_60, idiag_k80_50, idiag_k80_40, &
+             idiag_k80_30, idiag_k80_20, idiag_k80_10, idiag_k60_60, &
+             idiag_k60_50, idiag_k60_40, idiag_k60_30, idiag_k60_20, &
+             idiag_k60_10, idiag_k50_50, idiag_k50_40, idiag_k50_30, &
+             idiag_k50_20, idiag_k50_10, idiag_k40_40, idiag_k40_30, &
+             idiag_k40_20, idiag_k40_10, idiag_k30_30, idiag_k30_20, &
+             idiag_k30_10, idiag_k20_20, idiag_k20_10, idiag_k10_10
+  integer :: rbin = 0
+!
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
@@ -68,7 +86,12 @@ module Particles_coagulation
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
-      luser_random_number_wrapper, lrelabelling, rdifference
+      luser_random_number_wrapper, lrelabelling, rdifference, &
+      kernel_output, deltad, a0, rbin, &
+      radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
+      sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
+      lremove_particle, lremove_particle2, &
+      lcollision_output_swapped
 !
   contains
 !***********************************************************************
@@ -144,6 +167,7 @@ module Particles_coagulation
         allocate(cum_func_sec_ik(mpar_loc,mpar_loc))
       end if
 !
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_coag
@@ -282,6 +306,29 @@ module Particles_coagulation
       intent (in) :: ineargrid
       intent (inout) :: fp
 !
+      real, dimension (10,10) :: kernel_array
+      real, dimension (10) :: radius_all
+      real, dimension (10) :: radius_ratio
+      real :: rmin, rmax
+      integer :: ibin, ik, ij, ikernel, row
+      integer, parameter :: max_rows = 10
+      real, parameter :: radius_diff=5.e-6
+      real, dimension (rbin) :: adplus, adminus, ad
+      character(len=50) :: itn,filename
+      real :: r100p, r100m, r80p, r80m, r60p, r60m, r50p, r50m, r40p, r40m, r30p, r30m, &
+              r20p, r20m, r10p, r10m 
+      integer :: k100_100, k100_80, k100_60, k100_50, k100_40, k100_30, k100_20, k100_10, &
+              k80_80, k80_60, k80_50, k80_40, k80_30, k80_20, k80_10, &
+              k60_60, k60_50, k60_40, k60_30, k60_20, k60_10, &
+              k50_50, k50_40, k50_30, k50_20, k50_10, &
+              k40_40, k40_30, k40_20, k40_10, &
+              k30_30, k30_20, k30_10, &
+              k20_20, k20_10, &
+              k10_10
+!
+! a flag to start collision on the fly
+      if (t >= tstart_droplet_coagulation) ldroplet_coagulation=.true. 
+!
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
       if(lzsomdullemond) then
@@ -316,6 +363,16 @@ module Particles_coagulation
               endif
               npart_par=0
               ncoll_par=0
+!17-06-30:Xiang-Yu coded.              
+              k100_100=0; k100_80=0; k100_60=0; k100_50=0; k100_40=0; k100_30=0; k100_20=0; k100_10=0; &
+              k80_80=0; k80_60=0; k80_50=0; k80_40=0; k80_30=0; k80_20=0; k80_10=0; &
+              k60_60=0; k60_50=0; k60_40=0; k60_30=0; k60_20=0; k60_10=0; &
+              k50_50=0; k50_40=0; k50_30=0; k50_20=0; k50_10=0; &
+              k40_40=0; k40_30=0; k40_20=0; k40_10=0; &
+              k30_30=0; k30_20=0; k30_10=0; &
+              k20_20=0; k20_10=0; &
+              k10_10=0
+!Xiang-Yu              
 !
               if (lparticles_number) then
                 npswarmk=fp(k,inpswarm)
@@ -367,7 +424,11 @@ module Particles_coagulation
 !
 !  Relative particle speed.
 !
-                  deltavjk=sqrt(sum((vpk-vpj)**2))
+                  if (sphericalKernel) then
+                    deltavjk=2*sqrt(sum(((vpk-vpj)*(xpk-xpj))**2))/sqrt(sum((xpk-xpj)**2))
+                  else
+                    deltavjk=sqrt(sum((vpk-vpj)**2))
+                  endif
 !
 ! Check for consistensy
 !
@@ -431,9 +492,11 @@ module Particles_coagulation
                             droplet_coagulation_model=='shima') then
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                           max(npswarmj,npswarmk)
-                    else
+                    elseif (normal_coagulation) then 
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                           min(npswarmj,npswarmk)
+                    else
+                      tau_coll1=0     
                       if (lgravitational_cross_section) then
                         tau_coll1=tau_coll1*(1.0+2*GNewton* &
                             four_pi_rhopmat_over_three* &
@@ -480,6 +543,204 @@ module Particles_coagulation
                       ncoll=ncoll+1
                       ncoll_par=ncoll_par+1
 !
+!17-06-21: Xiang-Yu coded: kernel of ri rj, diagnostics as time series
+                      if (radius_output) then
+                        !logorithmic binning
+                        do ibin = 1,rbin
+                          ad(ibin) = a0*deltad**ibin
+                        enddo
+                        do ibin = 1,rbin
+                          if (abs(ad(ibin)-r1) == minval(abs(ad-r1))) then
+                            r100p = ad(ibin+1)
+                            r100m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r2) == minval(abs(ad-r2))) then
+                            r80p = ad(ibin+1)
+                            r80m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r3) == minval(abs(ad-r3))) then
+                            r60p = ad(ibin+1)
+                            r60m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r4) == minval(abs(ad-r4))) then
+                            r50p = ad(ibin+1)
+                            r50m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r5) == minval(abs(ad-r5))) then
+                            r40p = ad(ibin+1)
+                            r40m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r6) == minval(abs(ad-r6))) then
+                            r30p = ad(ibin+1)
+                            r30m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r7) == minval(abs(ad-r7))) then
+                            r20p = ad(ibin+1)
+                            r20m = ad(ibin-1)
+                          endif
+                          if (abs(ad(ibin)-r8) == minval(abs(ad-r8))) then
+                            r10p = ad(ibin+1)
+                            r10m = ad(ibin-1)
+                          endif
+                        enddo
+                        if (fp(j,iap)>=fp(k,iap)) then
+                          !r1=100 mum
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r100m &
+                             .and. fp(k,iap)<=r100p) k100_100 = k100_100 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r80m &
+                             .and. fp(k,iap)<=r80p) k100_80 = k100_80 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r60m &
+                             .and. fp(k,iap)<=r60p) k100_60 = k100_60 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r50m &
+                             .and. fp(k,iap)<=r50p) k100_50 = k100_50 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r40m &
+                             .and. fp(k,iap)<=r40p) k100_40 = k100_40 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r30m &
+                             .and. fp(k,iap)<=r30p) k100_30 = k100_30 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r20m &
+                             .and. fp(k,iap)<=r20p) k100_20 = k100_20 + 1
+                          if (fp(j,iap)>=r100m .and. fp(j,iap)<=r100p .and. fp(k,iap)>=r10m &
+                             .and. fp(k,iap)<=r10p) k100_10 = k100_10 + 1
+                          !r2=80 mum
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r80m .and. fp(k,iap)<=r80p) k80_80 = k80_80 + 1
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r60m .and. fp(k,iap)<=r60p) k80_60 = k80_60 + 1
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r50m .and. fp(k,iap)<=r50p) k80_50 = k80_50 + 1
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r40m .and. fp(k,iap)<=r40p) k80_40 = k80_40 + 1
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r30m .and. fp(k,iap)<=r30p) k80_30 = k80_30 + 1
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r20m .and. fp(k,iap)<=r20p) k80_20 = k80_20 + 1
+                          if (fp(j,iap)>=r80m .and. fp(j,iap)<=r80p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k80_10 = k80_10 + 1
+                          !r3=60 mum
+                          if (fp(j,iap)>=r60m .and. fp(j,iap)<=r60p .and. fp(k,iap)>=r60m .and. fp(k,iap)<=r60p) k60_60 = k60_60 + 1
+                          if (fp(j,iap)>=r60m .and. fp(j,iap)<=r60p .and. fp(k,iap)>=r50m .and. fp(k,iap)<=r50p) k60_50 = k60_50 + 1
+                          if (fp(j,iap)>=r60m .and. fp(j,iap)<=r60p .and. fp(k,iap)>=r40m .and. fp(k,iap)<=r40p) k60_40 = k60_40 + 1
+                          if (fp(j,iap)>=r60m .and. fp(j,iap)<=r60p .and. fp(k,iap)>=r30m .and. fp(k,iap)<=r30p) k60_30 = k60_30 + 1
+                          if (fp(j,iap)>=r60m .and. fp(j,iap)<=r60p .and. fp(k,iap)>=r20m .and. fp(k,iap)<=r20p) k60_20 = k60_20 + 1
+                          if (fp(j,iap)>=r60m .and. fp(j,iap)<=r60p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k60_10 = k60_10 + 1
+                          !r4=50 mum                                                                           
+                          if (fp(j,iap)>=r50m .and. fp(j,iap)<=r50p .and. fp(k,iap)>=r50m .and. fp(k,iap)<=r50p) k50_50 = k50_50 + 1
+                          if (fp(j,iap)>=r50m .and. fp(j,iap)<=r50p .and. fp(k,iap)>=r40m .and. fp(k,iap)<=r40p) k50_40 = k50_40 + 1
+                          if (fp(j,iap)>=r50m .and. fp(j,iap)<=r50p .and. fp(k,iap)>=r30m .and. fp(k,iap)<=r30p) k50_30 = k50_30 + 1
+                          if (fp(j,iap)>=r50m .and. fp(j,iap)<=r50p .and. fp(k,iap)>=r20m .and. fp(k,iap)<=r20p) k50_20 = k50_20 + 1
+                          if (fp(j,iap)>=r50m .and. fp(j,iap)<=r50p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k50_10 = k50_10 + 1
+                          !r5=40 mum                                                                           
+                          if (fp(j,iap)>=r40m .and. fp(j,iap)<=r40p .and. fp(k,iap)>=r40m .and. fp(k,iap)<=r40p) k40_40 = k40_40 + 1
+                          if (fp(j,iap)>=r40m .and. fp(j,iap)<=r40p .and. fp(k,iap)>=r30m .and. fp(k,iap)<=r30p) k40_30 = k40_30 + 1
+                          if (fp(j,iap)>=r40m .and. fp(j,iap)<=r40p .and. fp(k,iap)>=r20m .and. fp(k,iap)<=r20p) k40_20 = k40_20 + 1
+                          if (fp(j,iap)>=r40m .and. fp(j,iap)<=r40p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k40_10 = k40_10 + 1
+                          !r6=30 mum                                                                           
+                          if (fp(j,iap)>=r30m .and. fp(j,iap)<=r30p .and. fp(k,iap)>=r30m .and. fp(k,iap)<=r30p) k30_30 = k30_30 + 1
+                          if (fp(j,iap)>=r30m .and. fp(j,iap)<=r30p .and. fp(k,iap)>=r20m .and. fp(k,iap)<=r20p) k30_20 = k30_20 + 1
+                          if (fp(j,iap)>=r30m .and. fp(j,iap)<=r30p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k30_10 = k30_10 + 1
+                          !r7=20 mum
+                          if (fp(j,iap)>=r20m .and. fp(j,iap)<=r20p .and. fp(k,iap)>=r20m .and. fp(k,iap)<=r20p) k20_20 = k20_20 + 1
+                          if (fp(j,iap)>=r20m .and. fp(j,iap)<=r20p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k20_10 = k20_10 + 1
+                          !r7=10 mum
+                          if (fp(j,iap)>=r10m .and. fp(j,iap)<=r10p .and. fp(k,iap)>=r10m .and. fp(k,iap)<=r10p) k10_10 = k10_10 + 1
+                        else
+                          !r1=100 mum
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r100m &
+                             .and. fp(j,iap)<=r100p) k100_100 = k100_100 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r80m &
+                             .and. fp(j,iap)<=r80p) k100_80 = k100_80 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r60m &
+                             .and. fp(j,iap)<=r60p) k100_60 = k100_60 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r50m &
+                             .and. fp(j,iap)<=r50p) k100_50 = k100_50 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r40m &
+                             .and. fp(j,iap)<=r40p) k100_40 = k100_40 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r30m &
+                             .and. fp(j,iap)<=r30p) k100_30 = k100_30 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r20m &
+                             .and. fp(j,iap)<=r20p) k100_20 = k100_20 + 1
+                          if (fp(k,iap)>=r100m .and. fp(k,iap)<=r100p .and. fp(j,iap)>=r10m &
+                             .and. fp(j,iap)<=r10p) k100_10 = k100_10 + 1
+                          !r2=80 mum
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r80m .and. fp(j,iap)<=r80p) k80_80 = k80_80 + 1
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r60m .and. fp(j,iap)<=r60p) k80_60 = k80_60 + 1
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r50m .and. fp(j,iap)<=r50p) k80_50 = k80_50 + 1
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r40m .and. fp(j,iap)<=r40p) k80_40 = k80_40 + 1
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r30m .and. fp(j,iap)<=r30p) k80_30 = k80_30 + 1
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r20m .and. fp(j,iap)<=r20p) k80_20 = k80_20 + 1
+                          if (fp(k,iap)>=r80m .and. fp(k,iap)<=r80p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k80_10 = k80_10 + 1
+                          !r3=60 mum
+                          if (fp(k,iap)>=r60m .and. fp(k,iap)<=r60p .and. fp(j,iap)>=r60m .and. fp(j,iap)<=r60p) k60_60 = k60_60 + 1
+                          if (fp(k,iap)>=r60m .and. fp(k,iap)<=r60p .and. fp(j,iap)>=r50m .and. fp(j,iap)<=r50p) k60_50 = k60_50 + 1
+                          if (fp(k,iap)>=r60m .and. fp(k,iap)<=r60p .and. fp(j,iap)>=r40m .and. fp(j,iap)<=r40p) k60_40 = k60_40 + 1
+                          if (fp(k,iap)>=r60m .and. fp(k,iap)<=r60p .and. fp(j,iap)>=r30m .and. fp(j,iap)<=r30p) k60_30 = k60_30 + 1
+                          if (fp(k,iap)>=r60m .and. fp(k,iap)<=r60p .and. fp(j,iap)>=r20m .and. fp(j,iap)<=r20p) k60_20 = k60_20 + 1
+                          if (fp(k,iap)>=r60m .and. fp(k,iap)<=r60p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k60_10 = k60_10 + 1
+                          !r4=50 mum                                                                           
+                          if (fp(k,iap)>=r50m .and. fp(k,iap)<=r50p .and. fp(j,iap)>=r50m .and. fp(j,iap)<=r50p) k50_50 = k50_50 + 1
+                          if (fp(k,iap)>=r50m .and. fp(k,iap)<=r50p .and. fp(j,iap)>=r40m .and. fp(j,iap)<=r40p) k50_40 = k50_40 + 1
+                          if (fp(k,iap)>=r50m .and. fp(k,iap)<=r50p .and. fp(j,iap)>=r30m .and. fp(j,iap)<=r30p) k50_30 = k50_30 + 1
+                          if (fp(k,iap)>=r50m .and. fp(k,iap)<=r50p .and. fp(j,iap)>=r20m .and. fp(j,iap)<=r20p) k50_20 = k50_20 + 1
+                          if (fp(k,iap)>=r50m .and. fp(k,iap)<=r50p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k50_10 = k50_10 + 1
+                          !r5=40 mum                                                                           
+                          if (fp(k,iap)>=r40m .and. fp(k,iap)<=r40p .and. fp(j,iap)>=r40m .and. fp(j,iap)<=r40p) k40_40 = k40_40 + 1
+                          if (fp(k,iap)>=r40m .and. fp(k,iap)<=r40p .and. fp(j,iap)>=r30m .and. fp(j,iap)<=r30p) k40_30 = k40_30 + 1
+                          if (fp(k,iap)>=r40m .and. fp(k,iap)<=r40p .and. fp(j,iap)>=r20m .and. fp(j,iap)<=r20p) k40_20 = k40_20 + 1
+                          if (fp(k,iap)>=r40m .and. fp(k,iap)<=r40p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k40_10 = k40_10 + 1
+                          !r6=30 mum                                                                           
+                          if (fp(k,iap)>=r30m .and. fp(k,iap)<=r30p .and. fp(j,iap)>=r30m .and. fp(j,iap)<=r30p) k30_30 = k30_30 + 1
+                          if (fp(k,iap)>=r30m .and. fp(k,iap)<=r30p .and. fp(j,iap)>=r20m .and. fp(j,iap)<=r20p) k30_20 = k30_20 + 1
+                          if (fp(k,iap)>=r30m .and. fp(k,iap)<=r30p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k30_10 = k30_10 + 1
+                          !r7=20 mum
+                          if (fp(k,iap)>=r20m .and. fp(k,iap)<=r20p .and. fp(j,iap)>=r20m .and. fp(j,iap)<=r20p) k20_20 = k20_20 + 1
+                          if (fp(k,iap)>=r20m .and. fp(k,iap)<=r20p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k20_10 = k20_10 + 1
+                          !r7=10 mum
+                          if (fp(k,iap)>=r10m .and. fp(k,iap)<=r10p .and. fp(j,iap)>=r10m .and. fp(j,iap)<=r10p) k10_10 = k10_10 + 1
+                        endif 
+                      endif
+!17-06-21: Xiang-Yu
+
+!17-06-18: Xiang-Yu coded: kernel of ri rj, diagnostics as 2-D matrix
+                      if (kernel_output) then
+! read radius and radius ratio
+                        open(unit=11,file="radius.txt")
+                        do row = 1, max_rows
+                        read(11,*) radius_all(row)
+                        enddo
+                        close(unit=11)
+                        rmin = minval(radius_all)
+                        rmax = maxval(radius_all)
+                        !open(unit=12,file="ratio.txt")
+                        !do row = 1, max_rows
+                        !        read(12,*) radius_ratio(row)
+                        !enddo
+                        !close(unit=12)
+                        !logorithmic binning
+                        do ibin = 1,rbin
+                          adminus(ibin) = a0*deltad**(ibin-1)
+                          adplus(ibin) = a0*deltad**ibin
+                          ad(ibin) = (adminus(ibin)+adplus(ibin))*.5
+                        enddo
+                        ! search for collector and collected particles and bin them in the kernel
+                        if (fp(k,iap) >= rmin .and. fp(k,iap) <= rmax) then
+                        !       ikernel=0
+                          do ibin=1,rbin 
+                            if (abs(fp(k,iap)-radius_all(ibin)) == minval(abs(fp(k,iap)-radius_all))) then
+                            ik=ibin
+                            endif
+                          enddo
+                          do ibin=1,rbin
+                            if (abs(fp(j,iap)-radius_all(ibin)) == minval(abs(fp(j,iap)-radius_all))) then
+                            ij=ibin
+                            endif
+                          enddo
+                          ! ikernel=ikernel+1
+                          !kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
+                          kernel_array(ik,ij) = tau_coll1
+                          ! output the kernel             
+                          write(itn,'(I5)') it  ! convert  integer to char
+                          filename = adjustl(trim(adjustr(itn)))
+                          open(13, file=trim(directory_dist)//'/'//trim(filename)//'.dat')
+                          write(13,"(10e11.3)") kernel_array
+                          close(13)
+                          !       print*,'kernel_array=',kernel_array
+                          !       print*,'tau_coll1=',tau_coll1
+                        endif
+                      endif
+!17-06-18:XY
                     endif
                   endif
                 endif
@@ -505,6 +766,50 @@ module Particles_coagulation
                     call sum_par_name((/real(npart_par)/),idiag_ncoagpartpm)
                 if (idiag_dt1_coag_par/=0) &
                     call sum_par_name((/real(ncoll_par)/),idiag_dt1_coag_par)
+                if (idiag_k100_100/=0) &        
+                          call sum_par_name((/real(k100_100)/),idiag_k100_100) 
+                if (idiag_k100_80/=0) & 
+                          call sum_par_name((/real(k100_80)/),idiag_k100_80) 
+                if (idiag_k100_60/=0) & 
+                          call sum_par_name((/real(k100_60)/),idiag_k100_60) 
+                if (idiag_k100_50/=0) & 
+                          call sum_par_name((/real(k100_50)/),idiag_k100_50) 
+                if (idiag_k100_40/=0) & 
+                          call sum_par_name((/real(k100_40)/),idiag_k100_40) 
+                if (idiag_k100_30/=0) & 
+                          call sum_par_name((/real(k100_30)/),idiag_k100_30) 
+                if (idiag_k100_20/=0) & 
+                          call sum_par_name((/real(k100_20)/),idiag_k100_20) 
+                if (idiag_k100_10/=0) & 
+                          call sum_par_name((/real(k100_10)/),idiag_k100_10) 
+                if (idiag_k80_80/=0) call sum_par_name((/real(k80_80)/),idiag_k80_80) 
+                if (idiag_k80_60/=0) call sum_par_name((/real(k80_60)/),idiag_k80_60) 
+                if (idiag_k80_50/=0) call sum_par_name((/real(k80_50)/),idiag_k80_50) 
+                if (idiag_k80_40/=0) call sum_par_name((/real(k80_40)/),idiag_k80_40) 
+                if (idiag_k80_30/=0) call sum_par_name((/real(k80_30)/),idiag_k80_30) 
+                if (idiag_k80_20/=0) call sum_par_name((/real(k80_20)/),idiag_k80_20) 
+                if (idiag_k80_10/=0) call sum_par_name((/real(k80_10)/),idiag_k80_10) 
+                if (idiag_k60_60/=0) call sum_par_name((/real(k60_60)/),idiag_k60_60) 
+                if (idiag_k60_50/=0) call sum_par_name((/real(k60_50)/),idiag_k60_50) 
+                if (idiag_k60_40/=0) call sum_par_name((/real(k60_40)/),idiag_k60_40) 
+                if (idiag_k60_30/=0) call sum_par_name((/real(k60_30)/),idiag_k60_30) 
+                if (idiag_k60_20/=0) call sum_par_name((/real(k60_20)/),idiag_k60_20) 
+                if (idiag_k60_10/=0) call sum_par_name((/real(k60_10)/),idiag_k60_10) 
+                if (idiag_k50_50/=0) call sum_par_name((/real(k50_50)/),idiag_k50_50) 
+                if (idiag_k50_40/=0) call sum_par_name((/real(k50_40)/),idiag_k50_40) 
+                if (idiag_k50_30/=0) call sum_par_name((/real(k50_30)/),idiag_k50_30) 
+                if (idiag_k50_20/=0) call sum_par_name((/real(k50_20)/),idiag_k50_20) 
+                if (idiag_k50_10/=0) call sum_par_name((/real(k50_10)/),idiag_k50_10) 
+                if (idiag_k40_40/=0) call sum_par_name((/real(k40_40)/),idiag_k40_40) 
+                if (idiag_k40_30/=0) call sum_par_name((/real(k40_30)/),idiag_k40_30) 
+                if (idiag_k40_20/=0) call sum_par_name((/real(k40_20)/),idiag_k40_20) 
+                if (idiag_k40_10/=0) call sum_par_name((/real(k40_10)/),idiag_k40_10) 
+                if (idiag_k30_30/=0) call sum_par_name((/real(k30_30)/),idiag_k30_30) 
+                if (idiag_k30_20/=0) call sum_par_name((/real(k30_20)/),idiag_k30_20) 
+                if (idiag_k30_10/=0) call sum_par_name((/real(k30_10)/),idiag_k30_10) 
+                if (idiag_k20_20/=0) call sum_par_name((/real(k20_20)/),idiag_k20_20) 
+                if (idiag_k20_10/=0) call sum_par_name((/real(k20_10)/),idiag_k20_10) 
+                if (idiag_k10_10/=0) call sum_par_name((/real(k10_10)/),idiag_k10_10) 
               endif
 !
 !  Move to next particle in the grid cell.
@@ -599,6 +904,7 @@ module Particles_coagulation
       real :: apj,mpj,npj,apk,mpk,npk
       logical :: lswap
 !
+!
       if (lparticles_number) then
 !
 !  Physical particles in the two swarms collide simultaneously.
@@ -644,12 +950,6 @@ module Particles_coagulation
               fp(k,inpswarm)=npnew
               fp(j,ivpx:ivpz)=vpnew
               fp(k,ivpx:ivpz)=vpnew
-!             if (lcollision_output) then
-!               open(99,POSITION='append', &
-!                 FILE=trim(directory_dist)//'/collisions.dat')
-!               write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-!               close(99)
-!             endif
             else if (droplet_coagulation_model=='shima') then
               mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
               npj = fp(j,inpswarm)
@@ -670,7 +970,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f14.6,2i8,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -679,16 +979,36 @@ module Particles_coagulation
 !  a simulation.
 !
               if (npk == npj) then
-                fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
-                fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
-                mpnew=mpj+mpk
-                fp(swarm_index1,iap)&
-                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-                fp(swarm_index2,iap)&
-                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
-                fp(swarm_index1,ivpx:ivpz)=vpnew
-                fp(swarm_index2,ivpx:ivpz)=vpnew
+! 13-June-18/Xiang-Yu: coded
+                if (npk*dx*dy*dz<1.0 .and. lremove_particle) then
+                  if (fp(swarm_index1,iap)>=fp(swarm_index2,iap)) then
+                    fp(swarm_index1,ivpx:ivpz)=(rhopbig*fp(swarm_index1,ivpx:ivpz) + &
+                        rhopsma*fp(swarm_index2,ivpx:ivpz))/(rhopsma+rhopbig)
+!                    fp(swarm_index1,inpswarm)=1.0/(dx*dy*dz)
+                    fp(swarm_index1,iap)=((rhopsma+rhopbig)/fp(swarm_index1,inpswarm)/ &
+                        four_pi_rhopmat_over_three)**(1.0/3.0)
+                    fp(swarm_index2,iap)=-fp(swarm_index2,iap)
+                  else
+                    fp(swarm_index2,ivpx:ivpz)=(rhopbig*fp(swarm_index2,ivpx:ivpz) + &
+                        rhopsma*fp(swarm_index1,ivpx:ivpz))/(rhopsma+rhopbig)
+!                    fp(swarm_index2,inpswarm)=1.0/(dx*dy*dz)
+                    fp(swarm_index2,iap)=((rhopsma+rhopbig)/fp(swarm_index2,inpswarm)/ &
+                        four_pi_rhopmat_over_three)**(1.0/3.0)
+                    fp(swarm_index1,iap)=-fp(swarm_index1,iap)
+                  endif
+                else
+! 13-June-18/Xiang-Yu.
+                  fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                  fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                  mpnew=mpj+mpk
+                  fp(swarm_index1,iap)&
+                      =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                  fp(swarm_index2,iap)&
+                      =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                  vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                  fp(swarm_index1,ivpx:ivpz)=vpnew
+                  fp(swarm_index2,ivpx:ivpz)=vpnew
+                endif
               else
 !
 !  Set particle radius. The radius of the swarm with the highes particle 
@@ -710,6 +1030,22 @@ module Particles_coagulation
                 fp(swarm_index1,ivpx:ivpz)=vpnew
               endif
 !
+! 10-July-18/Xiang-Yu coded: remove superparticle containing less than one droplet.
+              if (npnew*dx*dy*dz<1.0 .and. lremove_particle2) then
+                if (fp(j,iap)<fp(k,iap)) then
+                  fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
+                      rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+                else
+                  fp(k,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
+                      rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+                endif
+                fp(j,iap)=-fp(j,iap)
+                fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
+                    four_pi_rhopmat_over_three)**(1.0/3.0)
+                fp(k,inpswarm)=1/(dx*dy*dz)
+              endif
+! 10-July-18/Xiang-Yu.
+!
 !  swap names ipar to follow lucky droplets
 !
               if (lrelabelling) then
@@ -723,11 +1059,12 @@ module Particles_coagulation
                   iswap=0
                 endif
               endif
+
 !
-              if (lcollision_output) then
+              if (lcollision_output_swapped) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions_swapped.dat')
-                  write(99,"(f14.6,2i8,2f12.8,1p,2e11.3,i3)") &
+                  write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") &
                     t,ipar(j),ipar(k),fp(j,iap),fp(k,iap), &
                     fp(j,inpswarm),fp(k,inpswarm),iswap
                 close(99)
@@ -801,8 +1138,6 @@ module Particles_coagulation
               fp(k,iap)=apnew
               fp(j,inpswarm)=npnew
               fp(k,inpswarm)=npnew
-!            fp(j,ivpx:ivpz)=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
-!            fp(k,ivpx:ivpz)=fp(j,ivpx:ivpz)
             endif
           endif ! if (ldroplet_coagulation)
         else
@@ -819,6 +1154,12 @@ module Particles_coagulation
             mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
             npk = fp(k,inpswarm)
             if (droplet_coagulation_model=='standard') then
+              if (lcollision_output) then
+                open(99,POSITION='append', &
+                  FILE=trim(directory_dist)//'/collisions.dat')
+                write(99,"(f18.6,2i10,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                close(99)
+              endif
               mpnew=mpj+mpk
               apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
 !            npnew=(mpj*npk+mpk*npk)/(2.*mpnew)
@@ -838,12 +1179,6 @@ module Particles_coagulation
                 swarm_index1=j
                 swarm_index2=k
               endif
-!             if (lcollision_output) then
-!               open(99,POSITION='append', &
-!                 FILE=trim(directory_dist)//'/collisions.dat')
-!               write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-!               close(99)
-!             endif
 !
 !  Check if we have the special case where the particle number 
 !  densities are equal. This will typically be the case in the beginning of 
@@ -928,7 +1263,8 @@ module Particles_coagulation
       use General, only: random_number_wrapper
       ! Get all variables
 !NILS: Shouldn't npar be mpar_loc?
-      real, dimension (npar,mparray) :: fp
+!      real, dimension (npar,mparray) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real :: r, kernel, dt1_coag_par
       integer :: j, l
@@ -1006,7 +1342,8 @@ module Particles_coagulation
       use General, only: random_number_wrapper
       ! Get all variables
 !NILS: Shouldn't npar be mpar_loc?
-      real, dimension (npar,mparray) :: fp
+!      real, dimension (npar,mparray) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real :: r, r_i_old, kernel
       integer :: i, j, k, l
@@ -1264,6 +1601,17 @@ module Particles_coagulation
 !
       if (lreset) then
         idiag_ncoagpm=0; idiag_ncoagpartpm=0; idiag_dt1_coag_par=0
+        idiag_k100_100=0; idiag_k100_80=0; idiag_k100_60=0; idiag_k100_50=0
+        idiag_k100_40=0; idiag_k100_30=0; idiag_k100_20=0; idiag_k100_10=0
+        idiag_k80_80=0; idiag_k80_60=0; idiag_k80_50=0; idiag_k80_40=0
+        idiag_k80_30=0; idiag_k80_20=0; idiag_k80_10=0
+        idiag_k60_60=0; idiag_k60_50=0; idiag_k60_40=0
+        idiag_k60_30=0; idiag_k60_20=0; idiag_k60_10=0
+        idiag_k50_50=0; idiag_k50_40=0; idiag_k50_30=0
+        idiag_k50_20=0; idiag_k50_10=0; idiag_k40_40=0
+        idiag_k40_30=0; idiag_k40_20=0; idiag_k40_10=0
+        idiag_k30_30=0; idiag_k30_20=0; idiag_k30_10=0
+        idiag_k20_20=0; idiag_k20_10=0; idiag_k10_10=0
       endif
 !
       do iname=1,nname
@@ -1271,6 +1619,43 @@ module Particles_coagulation
         call parse_name(iname,cname(iname),cform(iname), &
             'ncoagpartpm',idiag_ncoagpartpm)
         call parse_name(iname,cname(iname),cform(iname),'dt1_coag_par',idiag_dt1_coag_par)
+        call parse_name(iname,cname(iname),cform(iname),'k100_100',idiag_k100_100)
+        call parse_name(iname,cname(iname),cform(iname),'k100_80',idiag_k100_80)
+        call parse_name(iname,cname(iname),cform(iname),'k100_60',idiag_k100_60)
+        call parse_name(iname,cname(iname),cform(iname),'k100_50',idiag_k100_50)
+        call parse_name(iname,cname(iname),cform(iname),'k100_40',idiag_k100_40)
+        call parse_name(iname,cname(iname),cform(iname),'k100_30',idiag_k100_30)
+        call parse_name(iname,cname(iname),cform(iname),'k100_20',idiag_k100_20)
+        call parse_name(iname,cname(iname),cform(iname),'k100_10',idiag_k100_10)
+        call parse_name(iname,cname(iname),cform(iname),'k80_80',idiag_k80_80)
+        call parse_name(iname,cname(iname),cform(iname),'k80_60',idiag_k80_60)
+        call parse_name(iname,cname(iname),cform(iname),'k80_50',idiag_k80_50)
+        call parse_name(iname,cname(iname),cform(iname),'k80_40',idiag_k80_40)
+        call parse_name(iname,cname(iname),cform(iname),'k80_30',idiag_k80_30)
+        call parse_name(iname,cname(iname),cform(iname),'k80_20',idiag_k80_20)
+        call parse_name(iname,cname(iname),cform(iname),'k80_10',idiag_k80_10)
+        call parse_name(iname,cname(iname),cform(iname),'k60_60',idiag_k60_60)
+        call parse_name(iname,cname(iname),cform(iname),'k60_50',idiag_k60_50)
+        call parse_name(iname,cname(iname),cform(iname),'k60_40',idiag_k60_40)
+        call parse_name(iname,cname(iname),cform(iname),'k60_30',idiag_k60_30)
+        call parse_name(iname,cname(iname),cform(iname),'k60_20',idiag_k60_20)
+        call parse_name(iname,cname(iname),cform(iname),'k60_10',idiag_k60_10)
+        call parse_name(iname,cname(iname),cform(iname),'k60_10',idiag_k60_10)
+        call parse_name(iname,cname(iname),cform(iname),'k50_50',idiag_k50_50)
+        call parse_name(iname,cname(iname),cform(iname),'k50_40',idiag_k50_40)
+        call parse_name(iname,cname(iname),cform(iname),'k50_30',idiag_k50_30)
+        call parse_name(iname,cname(iname),cform(iname),'k50_20',idiag_k50_20)
+        call parse_name(iname,cname(iname),cform(iname),'k50_10',idiag_k50_10)
+        call parse_name(iname,cname(iname),cform(iname),'k40_40',idiag_k40_40)
+        call parse_name(iname,cname(iname),cform(iname),'k40_30',idiag_k40_30)
+        call parse_name(iname,cname(iname),cform(iname),'k40_20',idiag_k40_20)
+        call parse_name(iname,cname(iname),cform(iname),'k40_10',idiag_k40_10)
+        call parse_name(iname,cname(iname),cform(iname),'k30_30',idiag_k30_30)
+        call parse_name(iname,cname(iname),cform(iname),'k30_20',idiag_k30_20)
+        call parse_name(iname,cname(iname),cform(iname),'k30_10',idiag_k30_10)
+        call parse_name(iname,cname(iname),cform(iname),'k20_20',idiag_k20_20)
+        call parse_name(iname,cname(iname),cform(iname),'k20_10',idiag_k20_10)
+        call parse_name(iname,cname(iname),cform(iname),'k10_10',idiag_k10_10)
       enddo
 !
       if (present(lwrite)) call keep_compiler_quiet(lwrite)

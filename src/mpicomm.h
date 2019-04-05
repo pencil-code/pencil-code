@@ -13,10 +13,10 @@
   public :: die_gracefully, die_immediately
   public :: check_emergency_brake
 
-  public :: mpirecv_logical, mpirecv_real, mpirecv_int
-  public :: mpisend_logical, mpisend_real, mpisend_int
+  public :: mpirecv_logical, mpirecv_real, mpirecv_int   !, mpirecv_cmplx
+  public :: mpisend_logical, mpisend_real, mpiscan_int, mpisend_int   !, mpisend_cmplx
   public :: mpisendrecv_real
-  public :: mpireduce_sum_int, mpireduce_sum
+  public :: mpireduce_sum_int, mpireduce_sum             !, mpireduce_sum_double
   public :: mpireduce_max, mpireduce_max_int, mpireduce_min
   public :: mpiallreduce_max, mpiallreduce_min
   public :: mpiallreduce_sum, mpiallreduce_sum_int
@@ -62,6 +62,7 @@
   public :: report_clean_output
   public :: mpiwait
 
+  
 ! Radiation ray routines
   public :: radboundary_xy_recv, radboundary_xy_send
   public :: radboundary_zx_recv, radboundary_zx_send
@@ -72,7 +73,7 @@
   public :: ipx, ipy, ipz, lroot, iproc, mpi_precision
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
-  public :: MPI_COMM_WORLD, lyang
+  public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_XYPLANE, MPI_COMM_YZPLANE, MPI_INFO_NULL, MPI_ANY_TAG, lyang
   integer, parameter, public :: IXBEAM=1, IYBEAM=2, IZBEAM=3, IXYPLANE=12, IXZPLANE=13, I_YZPLANE=23
 
   character(LEN=4), public :: cyinyang=' '

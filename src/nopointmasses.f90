@@ -22,7 +22,7 @@ module PointMasses
 !
   contains
 !***********************************************************************
-    subroutine register_pointmasses()
+    subroutine register_pointmasses
 !
 !  Set up indices for access to the f and fq.
 !
@@ -41,7 +41,7 @@ module PointMasses
 !
     endsubroutine initialize_pointmasses
 !***********************************************************************
-    subroutine pencil_criteria_pointmasses()
+    subroutine pencil_criteria_pointmasses
 !
     endsubroutine pencil_criteria_pointmasses
 !***********************************************************************
@@ -97,8 +97,7 @@ module PointMasses
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine pointmasses_pde_pencil
@@ -108,8 +107,7 @@ module PointMasses
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
 !
     endsubroutine  pointmasses_pde
 !***********************************************************************
@@ -146,39 +144,41 @@ module PointMasses
     subroutine get_totalmass(tmass)
 !
       real :: tmass
+      call keep_compiler_quiet(tmass)
 !
     endsubroutine get_totalmass
 !***********************************************************************
     subroutine pointmasses_read_snapshot(filename)
 !
       character (len=*) :: filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine pointmasses_read_snapshot
 !***********************************************************************
-    subroutine pointmasses_write_snapshot(snapbase,enum,flist)
+    subroutine pointmasses_write_snapshot(file,enum,flist)
 !
-      character (len=*) :: snapbase,flist
+      character (len=*) :: file,flist
       logical :: enum
       optional :: flist
 !
-      call keep_compiler_quiet(flist)
+      call keep_compiler_quiet(file,flist)
+      call keep_compiler_quiet(enum)
 !
     endsubroutine pointmasses_write_snapshot
 !***********************************************************************
     subroutine pointmasses_write_qdim(filename)
 !
       character (len=*) :: filename
+      call keep_compiler_quiet(filename)
 !
     endsubroutine pointmasses_write_qdim
 !***********************************************************************
     subroutine rprint_pointmasses(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_pointmasses
 !***********************************************************************
@@ -189,12 +189,14 @@ module PointMasses
     subroutine pointmasses_timestep_first(f)
 !    
       real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
 !
    endsubroutine pointmasses_timestep_first
 !***********************************************************************
     subroutine pointmasses_timestep_second(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      call keep_compiler_quiet(f)
 !
     endsubroutine pointmasses_timestep_second
 !***********************************************************************

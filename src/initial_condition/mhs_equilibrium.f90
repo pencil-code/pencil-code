@@ -25,7 +25,9 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: g0=1,qgshear=1.5,density_power_law=1.5,temperature_power_law=1.0,plasma_beta=25.
+  real :: g0=1, qgshear=1.5
+  real :: density_power_law=1.5,temperature_power_law=1.0,plasma_beta=25.
+  real :: dustdensity_powerlaw=1.5,edtog=0.01
   real :: rm_int=0.0,rm_ext=impossible
   real :: tm_bot=0.0,tm_top=impossible
   real :: ampluu_cs_factor=0.01
@@ -33,13 +35,14 @@ module InitialCondition
   logical :: lintegrate_potential=.true.
   logical :: lcap_field=.false.,lcap_field_radius=.false.,lcap_field_theta=.false.
   logical :: ladd_noise_propto_cs=.false. 
-  logical :: ladd_field=.true.
+  logical :: ladd_field=.true.,ladd_field_azimuthal=.true.,ladd_field_vertical=.false.
 !
   namelist /initial_condition_pars/ &
       g0,qgshear,density_power_law,temperature_power_law,plasma_beta,&
       lnumerical_mhsequilibrium,lintegrate_potential,&
       rm_int,rm_ext,tm_bot,tm_top,lcap_field_radius,lcap_field_theta, &
-      ladd_noise_propto_cs, ampluu_cs_factor, ladd_field
+      ladd_noise_propto_cs, ampluu_cs_factor, ladd_field,&
+      dustdensity_powerlaw,edtog,ladd_field_azimuthal,ladd_field_vertical
 !
   real :: ksi=1.
 !
@@ -71,6 +74,15 @@ module InitialCondition
 !
         if (lmagnetic) then 
           ksi=(1.+plasma_beta)/plasma_beta
+          if (ladd_field) then 
+            if (ladd_field_azimuthal.and.ladd_field_vertical) then 
+              call fatal_error("initialize_initial_condition",&
+                   "Both ladd_field_azimuthal and ladd_field_vertical are true. Choose one.")
+            else if ((.not.ladd_field_azimuthal).and.(.not.ladd_field_vertical)) then 
+              call fatal_error("initialize_initial_condition",&
+                   "Both ladd_field_azimuthal and ladd_field_vertical are false. Choose one.")
+            endif
+          endif
         else
           ksi=1.
         endif
@@ -252,6 +264,44 @@ module InitialCondition
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
+    subroutine initial_condition_nd(f)
+!
+!  Initialize logarithmic density. init_lnrho 
+!  will take care of converting it to linear 
+!  density if you use ldensity_nolog
+!
+!  20-sep-17/wlad: coded
+!
+      use EquationOfState, only: rho0
+      use Sub, only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl
+      real, dimension (mx) :: lnrhomid
+      real    :: p
+      integer :: k
+!
+      p=-dustdensity_powerlaw 
+      if (lroot) print*,'Radial dust density stratification with power law=',p
+!
+!  Pencilize the density allocation.
+!
+      do n=1,mz
+        do m=1,my
+!
+!  Midplane density
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          lnrhomid=log(edtog*rho0)+p*log(rr_cyl/r_ref)
+          do k=1,ndustspec
+             f(:,m,n,ind(k)) = f(:,m,n,ind(k))+exp(lnrhomid)
+          enddo
+!
+        enddo
+      enddo
+!
+    endsubroutine initial_condition_nd
+!***********************************************************************
     subroutine initial_condition_aa(f)
 !
 !  Initialize the magnetic vector potential. Constant plasma 
@@ -262,6 +312,7 @@ module InitialCondition
       use FArrayManager, only: farray_use_global
       use Sub, only: gij,curl_mn,get_radial_distance
       use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
+      use EquationOfState, only: cs0,rho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: pressure,Bphi,Atheta,BB
@@ -273,115 +324,231 @@ module InitialCondition
       integer :: i,ics2,irho,iprocx,iprocy,iserial_xy
       real, dimension(ny,nprocx*nprocy) :: procsum
       real, dimension(ny) :: procsum_loc,tmpy
-!      
-      if (ladd_field) then 
+
+      addfield: if (ladd_field) then 
 !
 !  Get the sound speed globals 
 !
-        nullify(iglobal_cs2)
-        call farray_use_global('cs2',iglobal_cs2)
-        ics2=iglobal_cs2 
+         nullify(iglobal_cs2)
+         call farray_use_global('cs2',iglobal_cs2)
+         ics2=iglobal_cs2 
 !
 !  Density is already in linear after init_lnrho, so
 !
-        irho=ilnrho
+         irho=ilnrho
 !
-        do m=m1,m2
+         azimuthal_field: if (ladd_field_azimuthal) then 
 !
-          pressure=f(l1:l2,m,npoint,irho)*f(l1:l2,m,npoint,ics2)
+           do m=m1,m2
+!
+             pressure=f(l1:l2,m,npoint,irho)*f(l1:l2,m,npoint,ics2)
 !
 !  The following line assumes mu0=1
 !
-          BB = sqrt(2*pressure/plasma_beta)
-          if (lcap_field) then 
-            call cap_field(BB,Bphi)
-          else
-            Bphi=BB
-          endif
+             BB = sqrt(2*pressure/plasma_beta)
+             if (lcap_field) then 
+               call cap_field(BB,Bphi)
+             else
+               Bphi=BB
+             endif
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
-          call get_radial_distance(rr_sph,rr_cyl)
-          !dr=rr_sph(2)-rr_sph(1)
-          tmp=Bphi*rr_sph(l1:l2)
+             call get_radial_distance(rr_sph,rr_cyl)
+             !dr=rr_sph(2)-rr_sph(1)
+             tmp=Bphi*rr_sph(l1:l2)
 !
-          iserial_xy=ipx+nprocx*ipy+1
-          tmp2(0)=0.
-          do i=1,nx
-            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-            tmp2(i)=tmp2(i-1)+tmp(i)*dr
-          enddo
-          procsum_loc(m-m1+1)=tmp2(nx)
-        enddo
+             iserial_xy=ipx+nprocx*ipy+1
+             tmp2(0)=0.
+             do i=1,nx
+               dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+               tmp2(i)=tmp2(i-1)+tmp(i)*dr
+             enddo
+             procsum_loc(m-m1+1)=tmp2(nx)
+           enddo
 !
-        if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
+            if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
 !
-        if (lroot) then 
-          procsum(:,1)=procsum_loc
-          do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-            iserial_xy=iprocx+nprocx*iprocy+1
-            if (iserial_xy/=1) then
-              call mpirecv_real(tmpy,ny,iserial_xy-1,111)
-              procsum(:,iserial_xy)=tmpy
+            if (lroot) then 
+              procsum(:,1)=procsum_loc
+              do iprocx=0,nprocx-1
+                do iprocy=0,nprocy-1
+                  iserial_xy=iprocx+nprocx*iprocy+1
+                  if (iserial_xy/=1) then
+                    call mpirecv_real(tmpy,ny,iserial_xy-1,111)
+                    procsum(:,iserial_xy)=tmpy
+                  endif
+                  if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
+                enddo
+              enddo
+            else
+              call mpisend_real(procsum_loc,ny,0,111)
             endif
-            if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
-          enddo; enddo
-        else
-          call mpisend_real(procsum_loc,ny,0,111)
-        endif
 !
-        call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
+            call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
 !
-        do m=m1,m2; do n=n1,n2
+            do m=m1,m2
+              do n=n1,n2
 !
-          pressure=f(l1:l2,m,n,irho)*f(l1:l2,m,n,ics2)
+                pressure=f(l1:l2,m,n,irho)*f(l1:l2,m,n,ics2)
 !
 !  The following line assumes mu0=1
 !
-          BB = sqrt(2*pressure/plasma_beta)
-          call cap_field(BB,Bphi)
+                BB = sqrt(2*pressure/plasma_beta)
+                call cap_field(BB,Bphi)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
-          call get_radial_distance(rr_sph,rr_cyl)
-          !dr=rr_sph(2)-rr_sph(1)
-          tmp=Bphi*rr_sph(l1:l2)
+                call get_radial_distance(rr_sph,rr_cyl)
+                !dr=rr_sph(2)-rr_sph(1)
+                tmp=Bphi*rr_sph(l1:l2)
 !
-          if (nprocx==1) then 
-            tmp2(0)=0.
-            do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
-              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                if (nprocx==1) then 
+                  tmp2(0)=0.
+                  do i=1,nx
+                    dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
+                    tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                  enddo
+                else
+                  if (lfirst_proc_x) then 
+                    tmp2(0)=0.
+                    do i=1,nx
+                      dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+                      tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                    enddo
+                  else 
+                    psum=0.
+                    do iprocx=0,ipx-1
+                      iserial_xy=iprocx+nprocx*ipy+1
+                      psum=psum+procsum(m-m1+1,iserial_xy)
+                    enddo
+                    tmp2(0)=psum
+                    do i=1,nx
+                      dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+                      tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                    enddo
+                  endif
+                endif
+                Atheta=tmp2(1:nx)/rr_sph(l1:l2)
+                f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
+              enddo
             enddo
-          else
-            if (lfirst_proc_x) then 
-              tmp2(0)=0.
-              do i=1,nx
-                dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-                tmp2(i)=tmp2(i-1)+tmp(i)*dr
-              enddo
-            else 
-              psum=0.
-              do iprocx=0,ipx-1
-                iserial_xy=iprocx+nprocx*ipy+1
-                psum=psum+procsum(m-m1+1,iserial_xy)
-              enddo
-              tmp2(0)=psum
-              do i=1,nx
-                dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-                tmp2(i)=tmp2(i-1)+tmp(i)*dr
-              enddo
-            endif
-          endif
-          Atheta=tmp2(1:nx)/rr_sph(l1:l2)
-          if (ladd_field) f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
-        enddo; enddo
-      endif
+
+         else if (ladd_field_vertical) then 
+           do m=m1,m2
+!
+             !pressure=f(l1:l2,mpoint,npoint,irho)*f(l1:l2,mpoint,npoint,ics2)
+             call get_radial_distance(rr_sph,rr_cyl)
+             pressure=rho0*cs0**2/rr_cyl(l1:l2)**(density_power_law+temperature_power_law)
+!
+!  The following line assumes mu0=1
+!
+             BB = sqrt(2*pressure/plasma_beta)
+             if (lcap_field) then 
+               call cap_field(BB,Bphi)
+             else
+               Bphi=BB
+             endif
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+             call get_radial_distance(rr_sph,rr_cyl)
+             !dr=rr_sph(2)-rr_sph(1)
+             tmp=Bphi*rr_cyl(l1:l2)
+!
+             iserial_xy=ipx+nprocx*ipy+1
+             tmp2(0)=0.
+             do i=1,nx
+               dr=rr_cyl(i+l1-1)-rr_cyl(i+l1-2) 
+               tmp2(i)=tmp2(i-1)+tmp(i)*dr
+             enddo
+             procsum_loc(m-m1+1)=tmp2(nx)
+           enddo
+!
+           if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
+!
+           if (lroot) then 
+             procsum(:,1)=procsum_loc
+             do iprocx=0,nprocx-1
+               do iprocy=0,nprocy-1
+                 iserial_xy=iprocx+nprocx*iprocy+1
+                 if (iserial_xy/=1) then
+                   call mpirecv_real(tmpy,ny,iserial_xy-1,111)
+                   procsum(:,iserial_xy)=tmpy
+                 endif
+                 if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
+               enddo
+             enddo
+           else
+             call mpisend_real(procsum_loc,ny,0,111)
+           endif
+!
+           call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
+!
+           do m=m1,m2
+             do n=n1,n2
+!
+               !pressure=f(l1:l2,mpoint,npoint,irho)*f(l1:l2,mpoint,npoint,ics2)
+               call get_radial_distance(rr_sph,rr_cyl)
+               pressure=rho0*cs0**2/rr_cyl(l1:l2)**(density_power_law+temperature_power_law)
+!
+!  The following line assumes mu0=1
+!
+               BB = sqrt(2*pressure/plasma_beta)
+               call cap_field(BB,Bphi)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+               call get_radial_distance(rr_sph,rr_cyl)
+               !dr=rr_sph(2)-rr_sph(1)
+               tmp=Bphi*rr_cyl(l1:l2)
+!
+               if (nprocx==1) then 
+                 tmp2(0)=0.
+                 do i=1,nx
+                   dr=rr_cyl(i+l1-1)-rr_cyl(i+l1-2)
+                   tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                 enddo
+               else
+                 if (lfirst_proc_x) then 
+                   tmp2(0)=0.
+                   do i=1,nx
+                     dr=rr_cyl(i+l1-1)-rr_cyl(i+l1-2) 
+                     tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                   enddo
+                 else 
+                   psum=0.
+                   do iprocx=0,ipx-1
+                     iserial_xy=iprocx+nprocx*ipy+1
+                     psum=psum+procsum(m-m1+1,iserial_xy)
+                   enddo
+                   tmp2(0)=psum
+                   do i=1,nx
+                     dr=rr_cyl(i+l1-1)-rr_cyl(i+l1-2) 
+                     tmp2(i)=tmp2(i-1)+tmp(i)*dr
+                   enddo
+                 endif
+               endif
+               Atheta=tmp2(1:nx)/rr_cyl(l1:l2)
+               f(l1:l2,m,n,iaz)=f(l1:l2,m,n,iaz)+Atheta
+             enddo
+           enddo
+
+         else
+!
+!  No field configuration chosen
+!
+           call fatal_error("initial_conditon_aa",&
+                "The world is flat, and we never got here.")
+
+         endif azimuthal_field
 !
 !  All quantities are set. Enforce numerical equilibrium.
 !
-      if (lnumerical_mhsequilibrium) &
-           call enforce_numerical_equilibrium(f,lhd=.false.)
+         if (lnumerical_mhsequilibrium) &
+              call enforce_numerical_equilibrium(f,lhd=.false.)
+!         
+       endif addfield
 !
     endsubroutine initial_condition_aa
 !***********************************************************************

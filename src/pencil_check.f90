@@ -56,7 +56,7 @@ module Pencil_check
       logical, dimension (mfarray) :: lfound_nan_loc=.false.
       logical :: lconsistent=.true., lconsistent_allproc=.false.
       logical :: ldie=.false.
-      integer :: mem_stat1, mem_stat2, mem_stat3
+      integer :: mem_stat1, mem_stat2
 !
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
       lpencil_check_at_work=.true.
@@ -69,8 +69,7 @@ module Pencil_check
 !
       allocate(f_other(mx,my,mz,mfarray)  ,stat=mem_stat1)
       allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
-      allocate(fname_ref(nname)           ,stat=mem_stat3)
-      if ((mem_stat1>0).or.(mem_stat2>0).or.(mem_stat3>0)) then
+      if ((mem_stat1>0).or.(mem_stat2>0)) then
         if (lroot) then
           print*, '  Large buffers are needed to perform these tests'
           print*, '  rigourously. For that reason it may only be  '
@@ -80,6 +79,7 @@ module Pencil_check
         endif
       endif
       call stop_it_if_any(.false.,'')
+      allocate(fname_ref(nname))
 !
 !  Check requested pencils.
 !

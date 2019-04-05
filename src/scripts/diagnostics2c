@@ -1,0 +1,10 @@
+export DIAG_PREFIX="$MODULE_PREFIX"diagnostics"$MODULE_INFIX"
+rm -f diagnostics_c.h
+sed -e'/GPU-START/,/GPU-END/ !d' -e'/GPU-END/ d' \
+    -e's/public *:: */extern "C" void *'$DIAG_PREFIX'/'  \
+    -e's/ *, */'$MODULE_SUFFIX', *'$DIAG_PREFIX'/g' -e's/ *$/'$MODULE_SUFFIX';/' \
+    -e's/save_name'$MODULE_SUFFIX';/save_name'$MODULE_SUFFIX'(REAL \& a, FINT \& iname);/' \
+    -e's/^.*GPU-START.*$/#include "headers_c.h"/' < diagnostics.f90 > diagnostics_c.h
+
+# -e's/^ *! *GPU-START; *$/\n{/' -e's/^ *! *GPU-END; *$/}/'
+

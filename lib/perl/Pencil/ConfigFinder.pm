@@ -70,8 +70,10 @@ sub find_config_file {
 
 sub locate_config_files {
 #
-# Return the full path to each of the config files given, searching in
-# the @config_path.
+# Return the full path to each of the config files given, searching
+# (a) for files by absolute or relative filenames:
+# and then (if nothing was found)
+# (b) in the @config_path.
 # If any of the config files is not found, croak.
 #
     my (@files) = @_;
@@ -79,7 +81,7 @@ sub locate_config_files {
     my @config_files;
     file: for my $file (@files) {
         $file =~ s/\.conf$//is;
-        if ($file =~ m{^/}) {   # absolute path
+        if ($file =~ m{^\.?/}) {   # absolute path or relative to cwd
             if (-e $file) {
                 push @config_files, $file;
             } elsif (-e $file.'.conf') {

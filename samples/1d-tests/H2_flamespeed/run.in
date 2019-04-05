@@ -17,6 +17,7 @@
   lupw_lnrho=T
 /
 &entropy_run_pars
+  lviscosity_heat=T
   lupw_lnTT=T
 /
 &chemistry_run_pars

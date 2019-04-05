@@ -38,14 +38,13 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
-  real :: g0=0.,r0_pot=0.,qgshear=1.5
-  integer :: n_pot=10
+  real :: g0=0.
   logical :: lnumerical_equilibrium=.false.
   character (len=labellen) :: gravz_profile='zero'
 !
   contains
 !***********************************************************************
-    subroutine register_gravity()
+    subroutine register_gravity
 !
 !  Initialise gravity flags.
 !
@@ -119,7 +118,7 @@ module Gravity
 !
     endsubroutine init_gg
 !***********************************************************************
-    subroutine pencil_criteria_gravity()
+    subroutine pencil_criteria_gravity
 !
 !  All pencils that the Gravity module depends on are specified here.
 !
@@ -316,23 +315,10 @@ module Gravity
 !
 !  26-apr-03/axel: dummy
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write column, idiag_XYZ, where our variable XYZ is stored.
-!  IDL needs this even if everything is zero.
-!
-      if (lwr) then
-        write(3,*) 'igg=',igg
-        write(3,*) 'igx=',igx
-        write(3,*) 'igy=',igy
-        write(3,*) 'igz=',igz
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_gravity
 !***********************************************************************
@@ -379,16 +365,6 @@ module Gravity
 ! gravity parameters set consistently.
 !
     endsubroutine set_consistent_gravity
-!***********************************************************************
-    subroutine get_zgravity(gravz)
-!
-!  Dummy routine
-!
-      real, dimension(mz) :: gravz
-!
-      call keep_compiler_quiet(gravz)
-!
-    endsubroutine get_zgravity
 !***********************************************************************
     logical function is_constant_zgrav()
 

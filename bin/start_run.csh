@@ -264,10 +264,10 @@ endif
 
 # Write $PBS_JOBID or $LOADL_STEP_ID to file
 # (important when run is migrated within the same job)
-if ($?PBS_JOBID) then
-  echo $PBS_JOBID "  # RUN STARTED on "$PBS_O_QUEUE `date` \
-    >> $datadir/jobid.dat
-endif
+#if ($?PBS_JOBID) then
+#  echo $PBS_JOBID "  # RUN STARTED on "$PBS_O_QUEUE `date` \
+#    >> $datadir/jobid.dat
+#endif
 if ($?LOADL_STEP_ID) then
   echo $LOADL_STEP_ID "  # RUN STARTED on "$LOADL_STEP_CLASS `date` \
     >> $datadir/jobid.dat
@@ -301,9 +301,9 @@ date
 pc_deprecated_slice_links
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
-if ($?PBS_JOBID) then
-  echo $PBS_JOBID " # RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
-endif
+#if ($?PBS_JOBID) then
+#  echo $PBS_JOBID " # RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
+#endif
 if ($?SLURM_JOBID) then
   echo $SLURM_JOBID " # RUN FINISHED on "$SLURMD_NODENAME `date` >> $datadir/jobid.dat
 endif

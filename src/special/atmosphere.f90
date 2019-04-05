@@ -76,7 +76,7 @@ module Special
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false.
   logical :: lbuffer_zone_uy=.false., lbuffer_zone_uz=.false.
   logical :: llognormal=.false., lACTOS=.false.
-  logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
+  logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false.
   logical :: laverage=.false., lgrav_LES=.false.
   logical :: lboundary_layer=.false., lLES=.false.
 !
@@ -87,7 +87,7 @@ module Special
   real :: uz_ref_top=0., uz_ref_bot=0., uz_bc=0.
   real :: ux_ref_top=0., uy_ref_top=0., T_ampl
   real :: bc_lnrho_aver_final, bc_qv_aver_final
-  real :: rotat_position=0. 
+  real :: rotat_position=0.
   real :: rotat_ux=0., rotat_uy=0., ux_bot=0., uy_bot=0.
 !
 ! Keep some over used pencils
@@ -98,10 +98,10 @@ module Special
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
       lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
-      laverage, lbuffer_zone_uz, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, & 
+      laverage, lbuffer_zone_uz, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, &
       t_final, logrho_ref_bot, logrho_ref2_bot, lgrav_LES, uz_ref_bot,uz_ref_top, uz_bc, &
       ux_ref_top, uy_ref_top, bc_lnrho_aver_final, bc_qv_aver_final, T_ampl, &
-      lboundary_layer, rotat_position, rotat_ux, rotat_uy, ux_bot, uy_bot, lLES 
+      lboundary_layer, rotat_position, rotat_ux, rotat_uy, ux_bot, uy_bot, lLES
 
 ! run parameters
   namelist /special_run_pars/  &
@@ -286,6 +286,8 @@ module Special
 !
       intent(in) :: f,p
       intent(inout) :: df
+
+      real, dimension(nx) :: diffus_chi
 !
 !  identify module and boundary conditions
 !
@@ -298,11 +300,12 @@ module Special
       if (ldiagnos) then
         if (idiag_dtcrad/=0) &
           call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
-        if (idiag_dtchi/=0) &
+        if (idiag_dtchi/=0) & !! diffus_chi not calculated here
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -352,6 +355,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  define diagnostics variable
 !
@@ -378,24 +382,11 @@ module Special
 !
 !  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'i_dtcrad=',idiag_dtcrad
-        write(3,*) 'i_dtchi=',idiag_dtchi
+        call farray_index_append('i_dtcrad',idiag_dtcrad)
+        call farray_index_append('i_dtchi',idiag_dtchi)
       endif
 !
     endsubroutine rprint_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
@@ -443,7 +434,7 @@ module Special
 
       if (lgrav_LES) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) - gg
-      endif     
+      endif
 
        const_tmp=4./3.*PI*rho_water
       if (lbuoyancy_z) then
@@ -470,7 +461,7 @@ module Special
              + gg*((p%TT(:)-TT0)/TT0 &
              + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:)*aerosol_present &
-            )      
+            )
       endif
 !
        dt1=1./(5.*dt)
@@ -508,7 +499,7 @@ module Special
 !
         enddo
         endif
-        
+
         if (lbuffer_zone_uz .and. (nzgrid/=1)) then
 
         sz_z=int(del*nzgrid)
@@ -542,7 +533,7 @@ module Special
            if (lzone_left) then
 
 !              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
-!!!!!!!!!!!!!!!!!!!!!!!!!!   
+!!!!!!!!!!!!!!!!!!!!!!!!!!
 !              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-ux_bot)*dt1
 !              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-uy_bot)*dt1
 !
@@ -550,8 +541,8 @@ module Special
 !                 -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
 !
 !
-            do k=1, nchemspec   
-            do i=l1,l2 
+            do k=1, nchemspec
+            do i=l1,l2
 
                df(i,m,n,ichemspec(k))=df(i,m,n,ichemspec(k))  &
                      -(f(i,m,n,ichemspec(k)) &
@@ -565,14 +556,14 @@ module Special
 !           endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+
       !             call dot(p%glnTT,p%glnTT,g2TT)
  !             df(l1:l2,m,n,ilnTT)=  &
  !              1e-4*(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*(p%del2lnTT+g2TT)
 
 !
            endif
-             
+
          endif
 !
         enddo
@@ -800,7 +791,7 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
-   subroutine special_after_timestep(f,df,dt_)
+   subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
@@ -812,13 +803,13 @@ module Special
 
 !      use Dustdensity
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       integer :: k,i,i1,i2,i3
       integer :: j
       real, dimension (ndustspec) :: S,x2
-!
 !
       if (.not. ldustdensity_log) then
       do i1=l1,l2
@@ -839,7 +830,6 @@ module Special
       enddo
       endif
 !
-
      if (lACTOS) then
        call dustspec_normalization_(f)
      endif
@@ -893,7 +883,7 @@ module Special
            f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt2(ndustspec)
          enddo
  !
-        elseif (lLES) then 
+        elseif (lLES) then
           if (.not. ldustdensity_log) then
             do k=1,ndustspec
               ff_tmp(k)=f(i1,i2,i3,ind(k))
@@ -1238,11 +1228,11 @@ subroutine bc_satur_x(f,bc)
                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
                   + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !
-      psf_1=psat1 
+      psf_1=psat1
       if (r0/=0.) then
        psf_2=psat2
       else
-       psf_2=psat2 
+       psf_2=psat2
       endif
 !
 !
@@ -1368,7 +1358,7 @@ subroutine bc_satur_x(f,bc)
       real, dimension (ndustspec) ::  lnds, ttt
       real, dimension (9) ::  X,Y
       real, dimension (5) ::  X_tmp, Y_tmp
-       real, dimension (1) ::   x2, s 
+       real, dimension (1) ::   x2, s
        real, dimension (6) ::   coeff
        real, dimension (76) :: nd_data,dsize_data
       integer :: i,k
@@ -1399,7 +1389,7 @@ subroutine bc_satur_x(f,bc)
                  690.48152050471, 617.249743920501,   540.8694284355, 455.712062357517, &
                 380.996905959608, 70.8851122528869, 83.3072413129704, 74.3453450822443, &
                 72.6488698200733,  61.894807937821,  47.697600795739, 36.9683158893019, &
-                27.8160000556516, 16.0116934313036,  10.575710375307, 7.62746384792302, & 
+                27.8160000556516, 16.0116934313036,  10.575710375307, 7.62746384792302, &
                 4.37655374527983, 2.21561698388422, 1.92235157186522, 0.654667507529657]
 
          dsize_data=[5.43, 5.77, 6.14, 6.54, 6.96, 7.4, 7.88, 8.38, 8.92, 9.49, 10.1, 10.75, &
@@ -1415,10 +1405,10 @@ subroutine bc_satur_x(f,bc)
 !
            do k=1,ndustspec
              do i=2,76
-               if ((dsize(k)>=dsize_data(i-1)) .and. (dsize(k)<dsize_data(i))) then 
+               if ((dsize(k)>=dsize_data(i-1)) .and. (dsize(k)<dsize_data(i))) then
                  init_distr2(k)=((nd_data(i)-nd_data(i-1))&
                           /(dsize_data(i)-dsize_data(i-1))*(dsize(k)-dsize_data(i-1))+nd_data(i-1))/dsize(k)
-               endif  
+               endif
              enddo
                init_distr(:,k)=init_distr2(k)
            enddo
@@ -1447,12 +1437,12 @@ subroutine bc_satur_x(f,bc)
                  init_distr2(k)=Ntot_input/(2.*pi)**0.5/dsize(k)/alog(delta) &
                      *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
                enddo
-             endif  
+             endif
            endif
 !
 !  no ACTOS
 !
-       else  
+       else
          if (r0 /= 0.) then
            do k=1,ndustspec
              init_distr(:,k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
@@ -1460,7 +1450,7 @@ subroutine bc_satur_x(f,bc)
            enddo
          endif
        endif
-!            
+!
         if (lACTOS) then
             ttt=spline_integral(dsize,init_distr2)
             Ntot_=ttt(ndustspec)
@@ -1499,17 +1489,17 @@ subroutine bc_satur_x(f,bc)
       do i = 1,60
         time_bot(i)=(i-1)*1800.
         time_top(i)=(i-1)*7200.
-      enddo 
+      enddo
 
 !      endif
 
-    
+
       vr=bc%ivar
 !
      if (bc%location==iBC_Z_BOT) then
-     
+
        do i = 1,60
-!      
+!
          t1=time_bot(i)
          t2=time_bot(i+1)
          if ((t>=t1) .and. (t<t2)) then
@@ -1518,7 +1508,7 @@ subroutine bc_satur_x(f,bc)
 !        if (t>=time_top(i)) .and. (t<time_top(i+1)) then
 !          time_position=i
 !        endif
-!      
+!
        enddo
 !
         if (lbc_file_bot) then
@@ -1527,8 +1517,8 @@ subroutine bc_satur_x(f,bc)
             print*,'opening *1.dat'
             open(9,file='T1.dat')
             open(99,file='w1.dat')
-            open(999,file='qv.dat') 
-!          
+            open(999,file='qv.dat')
+!
             do i = 1,37
              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
@@ -1537,7 +1527,7 @@ subroutine bc_satur_x(f,bc)
              bc_u_array_bot(i)=tmp2(2)
              bc_qv_array_bot(i)=tmp3(2)
             enddo
-!          
+!
             close(9)
             close(99)
             close(999)
@@ -1545,7 +1535,7 @@ subroutine bc_satur_x(f,bc)
 !          endif
           lbc_file_bot=.false.
         endif
-!          
+!
            do i = 1,37
             if (i==time_position_bot) then
               bc_T_aver_bot=bc_T_array_bot(i)
@@ -1564,9 +1554,9 @@ subroutine bc_satur_x(f,bc)
                 +(t-time_bot(time_position_bot)) &
                 /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
                 *(bc_T_aver2_bot-bc_T_aver_bot)
-   
+
 !           bc_T_aver_final=bc_T_aver_bot
-            
+
          bc_u_aver_final=bc_u_aver_bot  &
                +(t-time_bot(time_position_bot)) &
                /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
@@ -1600,9 +1590,9 @@ subroutine bc_satur_x(f,bc)
 !             f(j,i,n1,vr)=alog(bc_T_aver_final*(1e6/pp_tmp)**0.286)
           enddo
           enddo
-!           
+!
           do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
-!   
+!
 
         elseif (vr==ichemspec(ind_H2O)) then
 !
@@ -1625,7 +1615,7 @@ subroutine bc_satur_x(f,bc)
            do i=m1,m2
 !              f(j,i,n1,vr)=bc_u_aver_final &
 !                  *bc_T_aver_final/exp(f(j,i,n1,ilnTT))
- 
+
            if (nxgrid>1) then
                f(j,i,n1,vr)=sin(Period*PI*x(j)/Lxyz(1))*uz_bc
            else
@@ -1636,7 +1626,7 @@ subroutine bc_satur_x(f,bc)
            enddo
 !
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
-!           
+!
           do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
       elseif (vr==iux) then
 !
@@ -1684,23 +1674,23 @@ subroutine bc_satur_x(f,bc)
          print*,'opening *_top.dat'
          open(9,file='T_top.dat')
          open(99,file='w_top.dat')
-!          
+!
          do i = 1,37
            read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
            read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
            bc_T_array_top(i)=tmp(2)
            bc_u_array_top(i)=tmp2(2)
          enddo
-!          
+!
           close(9)
           close(99)
           print*,'closing file'
-          
-!       endif   
+
+!       endif
         lbc_file_top=.false.
-! 
+!
        endif
-!       
+!
           do i = 1,37
             if (i==time_position_top) then
               bc_T_aver_top=bc_T_array_top(i)
@@ -1709,21 +1699,21 @@ subroutine bc_satur_x(f,bc)
               bc_u_aver2_top=bc_u_array_top(i+1)
             endif
            enddo
-!       
+!
         bc_T_final_top=bc_T_aver_top  &
                +(t-time_top(time_position_top)) &
                /(time_top(time_position_top+1)-time_top(time_position_top))    &
                *(bc_T_aver2_top-bc_T_aver_top)
-!               
+!
         bc_u_final_top=bc_u_aver_top  &
                +(t-time_top(time_position_top)) &
                /(time_top(time_position_top+1)-time_top(time_position_top))    &
                *(bc_u_aver2_top-bc_u_aver_top)
-               
-!    print*, time_position_top    
+
+!    print*, time_position_top
 !    print*,time_top(time_position_top-1),t,time_top(time_position_top)
 !    print*, bc_T_aver_top,bc_T_final_top, bc_T_aver2_top
-!        
+!
 !
        if (vr==ilnTT) then
 !
@@ -1739,11 +1729,11 @@ subroutine bc_satur_x(f,bc)
             f(j,i,n2,vr)=alog(bc_T_final_top)
           enddo
           enddo
-          
+
 !          print*,'bc_T_aver_top=',bc_T_aver_top
-!           
+!
           do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
-!   
+!
         elseif (vr==iuz) then
 !
            ll1=(x(l1)-xyz0(1))/dx+1
@@ -1765,10 +1755,10 @@ subroutine bc_satur_x(f,bc)
 
 !
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
-!           
+!
           do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
         endif
-!        
+!
       else
       endif
     endsubroutine bc_file_z_special

@@ -7,6 +7,7 @@
 !
 !  19-Sep-2012/PABourdin: adapted from io_mpi2.f90
 !  28-Oct-2016/PABourdin: first fully working version
+!  28-Nov-2018/PABourdin: first beta-test version
 !
 module Io
 !
@@ -21,7 +22,6 @@ module Io
   include 'hdf5_io.h'
   include 'io.h'
   include 'mpif.h'
-  include 'record_types.h'
 !
   interface write_persist
     module procedure write_persist_logical_0D
@@ -50,8 +50,8 @@ module Io
   logical :: lcollective_IO = .true.
   character (len=labellen) :: IO_strategy = "HDF5"
 !
+  character (len=fnlen) :: last_snapshot = ""
   logical :: persist_initialized = .false.
-  integer :: persist_last_id = -max_int
 !
   contains
 !***********************************************************************
@@ -63,19 +63,12 @@ module Io
 !
 !  04-Jul-2011/Boudin.KIS: coded
 !
-      use Mpicomm, only: mpi_precision, stop_it_if_any
-!
-!  identify version number
-!
       if (lroot) call svn_id ("$Id$")
-      if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
-          "This module only works with the setting lseparate_persist=.true.")
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
 !
-      ! open the HDF5 library
-      call initialize_hdf5
+      lmonolithic_io = .true.
 !
     endsubroutine register_io
 !***********************************************************************
@@ -93,6 +86,7 @@ module Io
 !  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
+!  28-Oct-2016/PABourdin: redesigned
 !
       use General, only: directory_names_std
 !
@@ -200,9 +194,9 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
+!  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: parallel_file_exists
-      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -211,17 +205,20 @@ module Io
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
-      logical :: ltrunc, lexists
+      integer :: pos
+      logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
-      real, dimension (:), allocatable :: gx, gy, gz
-      integer :: alloc_err
-      logical :: lwrite_add
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
-      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
+      if (dataset == 'globals') then
+        filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+      elseif (dataset == 'timeavg') then
+        filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+      else
+        filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+      endif
       lexists = parallel_file_exists(filename)
       ltrunc = .true.
       if (present (ltruncate)) ltrunc = ltruncate
@@ -232,70 +229,32 @@ module Io
 !
       ! open global HDF5 file and write main data
       call file_open_hdf5 (filename, truncate=ltrunc)
-      call output_hdf5 (dataset, a, nv)
+      if ((dataset == 'f') .or. (dataset == 'timeavg')) then
+        call create_group_hdf5 ('data')
+        ! write components of f-array
+        do pos=1, nv
+          if (index_get(pos) == '') cycle
+          call output_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+        enddo
+      elseif (dataset == 'globals') then
+        call create_group_hdf5 ('data')
+        ! write components of global array
+        do pos=1, nv
+          if (index_get(mvar_io + pos) == '') cycle
+          call output_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
+        enddo
+      else
+        ! write other type of data array
+        call output_hdf5 (dataset, a, nv)
+      endif
       call file_close_hdf5
 !
-      ! write additional data:
-      if (lwrite_add) then
-        if (lroot) then
-          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('output_snap', 'allocate memory for gx,gy,gz', .true.)
-        endif
-        call collect_grid (x, y, z, gx, gy, gz)
-        if (lroot) then
-          call file_open_hdf5 (filename, truncate=.false., global=.false.)
-          t_sp = t
-          call output_hdf5 ('t', t)
-          call create_group_hdf5 ('grid')
-          call output_hdf5 ('grid/x', gx, mxgrid)
-          call output_hdf5 ('grid/y', gy, mygrid)
-          call output_hdf5 ('grid/z', gz, mzgrid)
-          call output_hdf5 ('grid/dx', dx)
-          call output_hdf5 ('grid/dy', dy)
-          call output_hdf5 ('grid/dz', dz)
-          call output_hdf5 ('grid/Lx', Lx)
-          call output_hdf5 ('grid/Ly', Ly)
-          call output_hdf5 ('grid/Lz', Lz)
-        endif
-        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        if (lroot) then
-          call output_hdf5 ('grid/dx_1', gx, mxgrid)
-          call output_hdf5 ('grid/dy_1', gy, mygrid)
-          call output_hdf5 ('grid/dz_1', gz, mzgrid)
-        endif
-        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-        if (lroot) then
-          call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
-          call output_hdf5 ('grid/dy_tilde', gy, mygrid)
-          call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
-          call create_group_hdf5 ('dim')
-          call output_hdf5 ('dim/mx', nxgrid+2*nghost)
-          call output_hdf5 ('dim/my', nxgrid+2*nghost)
-          call output_hdf5 ('dim/mz', nxgrid+2*nghost)
-          call output_hdf5 ('dim/nx', nxgrid)
-          call output_hdf5 ('dim/ny', nygrid)
-          call output_hdf5 ('dim/nz', nzgrid)
-          call output_hdf5 ('dim/l1', nghost)
-          call output_hdf5 ('dim/m1', nghost)
-          call output_hdf5 ('dim/n1', nghost)
-          call output_hdf5 ('dim/l2', nghost+nxgrid-1)
-          call output_hdf5 ('dim/m2', nghost+nygrid-1)
-          call output_hdf5 ('dim/n2', nghost+nzgrid-1)
-          call output_hdf5 ('dim/nghost', nghost)
-          call output_hdf5 ('dim/mvar', mvar)
-          call output_hdf5 ('dim/maux', maux)
-          call output_hdf5 ('dim/mglobal', mglobal)
-          call output_hdf5 ('dim/nprocx', nprocx)
-          call output_hdf5 ('dim/nprocy', nprocy)
-          call output_hdf5 ('dim/nprocz', nprocz)
-          if (mpi_precision == MPI_REAL) then
-            call output_hdf5 ('dim/precision', 'S')
-          else
-            call output_hdf5 ('dim/precision', 'D')
-          endif
-          call file_close_hdf5
-        endif
-      endif
+      ! write additional settings
+      call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      call output_settings (real (t), time_only=((.not. lwrite_add) .or. lomit_add_data))
+      call file_close_hdf5
+!
+      call file_open_hdf5 (filename, truncate=.false.)
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -304,17 +263,270 @@ module Io
 !  Close snapshot file.
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  28-Oct-2016/PABourdin: redesigned
 !
-      use Mpicomm, only: stop_it_if_any
-!
-      if (persist_initialized) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
-        write (lun_output) id_block_PERSISTENT
-        persist_initialized = .false.
-        close (lun_input)
-      endif
+      call file_close_hdf5
+      if (persist_initialized) persist_initialized = .false.
 !
     endsubroutine output_snap_finalize
+!***********************************************************************
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
+!
+!  Write particle snapshot file, always write mesh and time.
+!
+!  22-Oct-2018/PABourdin: adapted from output_snap
+!
+      use File_io, only: parallel_file_exists
+!
+      integer, intent(in) :: mv, nv
+      integer, dimension (mv), intent(in) :: ipar
+      real, dimension (mv,mparray), intent(in) :: ap
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+      logical, optional, intent(in) :: ltruncate
+!
+      logical :: ltrunc, lexists
+      character (len=fnlen) :: filename, dataset
+!
+      dataset = 'fp'
+      if (present (label)) dataset = label
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+      lexists = parallel_file_exists(filename)
+      ltrunc = .true.
+      if (present (ltruncate)) ltrunc = ltruncate
+      if (.not. lexists) ltrunc = .true.
+!
+      ! open global HDF5 file and write particle data
+      call file_open_hdf5 (filename, truncate=ltrunc)
+      call create_group_hdf5 ('part')
+      call output_hdf5 (dataset, ap, mv, mparray, nv)
+      call output_hdf5 ('part/ID', ipar(1:nv), nv)
+      call create_group_hdf5 ('proc')
+      call output_hdf5 ('proc/distribution', nv)
+      call file_close_hdf5
+!
+      call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      ! write additional data
+      call output_settings (real (t), time_only=((.not. (ltrunc .and. (trim (dataset) == 'fp'))) .or. lomit_add_data))
+      ! write processor boundaries
+      call output_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
+      call output_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
+      call output_hdf5 ('proc/bounds_z', procz_bounds(0:nprocz), nprocz+1)
+      call file_close_hdf5
+!
+    endsubroutine output_part_snap
+!***********************************************************************
+    subroutine output_settings(time, time_only)
+!
+!  Write additional settings and grid.
+!
+!  13-Nov-2018/PABourdin: moved from other functions
+!
+      use General, only: loptest
+      use Mpicomm, only: collect_grid, mpi_precision
+!
+      real, optional, intent(in) :: time
+      logical, optional, intent(in) :: time_only
+!
+      real, dimension (:), allocatable :: gx, gy, gz
+      integer :: alloc_err
+!
+      if (present (time)) call output_hdf5 ('time', time)
+      if (loptest (time_only)) return
+!
+      if (lroot) then
+        allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+      else
+        allocate (gx(1), gy(1), gz(1), stat=alloc_err)
+      endif
+      if (alloc_err > 0) call fatal_error ('output_settings', 'allocate memory for gx,gy,gz', .true.)
+!
+      call create_group_hdf5 ('grid')
+      call collect_grid (x, y, z, gx, gy, gz)
+      call output_hdf5 ('grid/x', gx, mxgrid)
+      call output_hdf5 ('grid/y', gy, mygrid)
+      call output_hdf5 ('grid/z', gz, mzgrid)
+      call output_hdf5 ('grid/dx', dx)
+      call output_hdf5 ('grid/dy', dy)
+      call output_hdf5 ('grid/dz', dz)
+      call output_hdf5 ('grid/Lx', Lx)
+      call output_hdf5 ('grid/Ly', Ly)
+      call output_hdf5 ('grid/Lz', Lz)
+      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+      call output_hdf5 ('grid/dx_1', gx, mxgrid)
+      call output_hdf5 ('grid/dy_1', gy, mygrid)
+      call output_hdf5 ('grid/dz_1', gz, mzgrid)
+      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
+      call output_hdf5 ('grid/dy_tilde', gy, mygrid)
+      call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
+      call create_group_hdf5 ('settings')
+      call output_hdf5 ('settings/mx', nxgrid+2*nghost)
+      call output_hdf5 ('settings/my', nygrid+2*nghost)
+      call output_hdf5 ('settings/mz', nzgrid+2*nghost)
+      call output_hdf5 ('settings/nx', nxgrid)
+      call output_hdf5 ('settings/ny', nygrid)
+      call output_hdf5 ('settings/nz', nzgrid)
+      call output_hdf5 ('settings/l1', nghost)
+      call output_hdf5 ('settings/m1', nghost)
+      call output_hdf5 ('settings/n1', nghost)
+      call output_hdf5 ('settings/l2', nghost+nxgrid-1)
+      call output_hdf5 ('settings/m2', nghost+nygrid-1)
+      call output_hdf5 ('settings/n2', nghost+nzgrid-1)
+      call output_hdf5 ('settings/nghost', nghost)
+      call output_hdf5 ('settings/mvar', mvar)
+      call output_hdf5 ('settings/maux', maux)
+      call output_hdf5 ('settings/mglobal', mglobal)
+      call output_hdf5 ('settings/nprocx', nprocx)
+      call output_hdf5 ('settings/nprocy', nprocy)
+      call output_hdf5 ('settings/nprocz', nprocz)
+      if (mpi_precision == MPI_REAL) then
+        call output_hdf5 ('settings/precision', 'S')
+      else
+        call output_hdf5 ('settings/precision', 'D')
+      endif
+      ! versions represent only non-compatible file formats
+      ! 0 : experimental
+      ! 1 : first public release
+      call output_hdf5 ('settings/version', 0)
+!
+      deallocate (gx, gy, gz)
+!
+    endsubroutine output_settings
+!***********************************************************************
+    subroutine output_pointmass(file, labels, fq, mv, nc)
+!
+!  Write pointmass snapshot file with time.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (mqarray), intent(in) :: labels
+      real, dimension (mv,mparray), intent(in) :: fq
+!
+      integer :: pos, last
+      character (len=fnlen) :: filename, label
+!
+      if (.not. lroot) return
+!
+      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      call file_open_hdf5 (filename, global=.false.)
+      call output_hdf5 ('number', mv)
+      if (mv > 0) then
+        call create_group_hdf5 ('points')
+        do pos=1, nc
+          label = trim (labels(pos))
+          if (label(1:1) == 'i') then
+            label = trim (label(2:))
+            last = len (trim (label))
+            if (label(last:last) == 'q') label = trim (label(1:last-1))
+          endif
+          call output_hdf5 ('points/'//trim(label), fq(:,pos), mv)
+        enddo
+      endif
+      call output_hdf5 ('time', real (t))
+      call file_close_hdf5
+!
+    endsubroutine output_pointmass
+!***********************************************************************
+    subroutine initialize_slice(label, pos)
+!
+!  27-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: pos
+!
+!!      if (pos >= 0) call create_group_hdf5 (label)
+!
+    endsubroutine initialize_slice
+!***********************************************************************
+    subroutine output_slice_position
+!
+!  27-Oct-2018/PABourdin: no action required for HDF5 output
+!
+    endsubroutine output_slice_position
+!***********************************************************************
+    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+!
+!  append to a slice file
+!
+!  30-Oct-2018/PABourdin: coded
+!
+      use File_io, only: parallel_file_exists
+      use General, only: itoa
+      use Mpicomm, only: mpibcast_int, mpiallreduce_min, MPI_COMM_WORLD
+!
+      logical, intent(in) :: lwrite
+      real, intent(in) :: time
+      character (len=*), intent(in) :: label, suffix
+      real, dimension (:) :: grid
+      integer, intent(in) :: pos, grid_pos
+      integer, intent(in) :: ndim1, ndim2
+      real, dimension (:,:), pointer :: data
+!
+      character (len=fnlen) :: filename, group
+      integer :: last, this_proc, slice_proc
+      real :: time_last
+      logical :: lexists, lhas_data
+!
+      if (grid_pos < 0) return
+!
+      last = 0
+      filename = trim (datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
+      lexists = parallel_file_exists (filename)
+      if (lroot .and. lexists) then
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        if (exists_in_hdf5 ('last')) call input_hdf5 ('last', last)
+        do while (last >= 1)
+          call input_hdf5 (trim(itoa(last))//'/time', time_last)
+          if (time > time_last) exit
+          last = last - 1
+        enddo
+        call file_close_hdf5
+      endif
+      last = last + 1
+      call mpibcast_int (last)
+      group = trim(itoa(last))//'/'
+!
+      this_proc = iproc
+      if (.not. lwrite) this_proc = ncpus + 1
+      call mpiallreduce_min (this_proc, slice_proc, MPI_COMM_WORLD)
+      lhas_data = (slice_proc == iproc)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists), write=lhas_data)
+      call output_hdf5 ('last', last)
+      call create_group_hdf5 (group)
+      if (lhas_data) then
+        call output_hdf5 (trim(group)//'time', time)
+        call output_hdf5 (trim(group)//'position', grid(pos))
+        call output_hdf5 (trim(group)//'coordinate', grid_pos)
+      endif
+      call file_close_hdf5
+!
+      call file_open_hdf5 (filename, truncate=.false.)
+      ! collect data along 'xy', 'xz', or 'yz'
+      lhas_data = lwrite .and. associated(data)
+      select case (suffix)
+      case ('xy')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
+      case ('xy2')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
+      case ('xy3')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
+      case ('xy4')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
+      case ('xz')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nzgrid, ipx, ipz, lhas_data)
+      case ('xz2')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nzgrid, ipx, ipz, lhas_data)
+      case ('yz')
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nygrid, nzgrid, ipy, ipz, lhas_data)
+      case default
+        call fatal_error ('output_hdf5', 'unknown 2D slice "'//trim (suffix)//'"', .true.)
+      endselect
+      call file_close_hdf5
+!
+    endsubroutine output_slice
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode, label)
 !
@@ -323,9 +535,10 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  10-Mar-2015/MR: avoided use of fseek;
 !                  this subroutine seems not yet to be adapted to HDF5
+!  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: backskip_to_time
-      use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -333,68 +546,93 @@ module Io
       integer, optional, intent(in) :: mode
       character (len=*), optional :: label
 !
+      real :: time
       character (len=fnlen) :: filename, dataset
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
-      integer, dimension(MPI_STATUS_SIZE) :: status
+      integer :: pos, alloc_err
       logical :: lread_add
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
-      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
+      if (dataset == 'globals') then
+        if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
+          filename = trim(datadir)//'/averages/'//trim(file)//'.h5'
+        else
+          filename = trim(datadir_snap)//'/'//trim(file)//'.h5'
+        endif
+      endif
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
 !
       ! open existing HDF5 file and read data
       call file_open_hdf5 (filename, read_only=.true.)
-      call input_hdf5 (dataset, a, nv)
+      if (dataset == 'f') then
+        ! read components of f-array
+        do pos=1, nv
+          if (index_get(pos) == '') cycle
+          call input_hdf5 ('data/'//index_get(pos), a(:,:,:,pos))
+        enddo
+      elseif (dataset == 'globals') then
+        ! read components of globals array
+        do pos=1, nv
+          if (index_get(mvar_io + pos) == '') cycle
+          call input_hdf5 ('data/'//index_get(mvar_io + pos), a(:,:,:,pos))
+        enddo
+      else
+        ! read other type of data array
+        call input_hdf5 (dataset, a, nv)
+      endif
       call file_close_hdf5
 !
       ! read additional data
-      if (lread_add) then
+      if (lread_add .and. lomit_add_data) then
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call input_hdf5 ('time', time)
+        call file_close_hdf5
+!
+        call mpibcast_real (time, comm=MPI_COMM_WORLD)
+        t = time
+      elseif (lread_add) then
         if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
+        else
+          allocate (gx(1), gy(1), gz(1), stat=alloc_err)
+        endif
+        if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-          call file_open_hdf5 (filename, global=.false., read_only=.true.)
-          call input_hdf5 ('t', t_sp)
-          call input_hdf5 ('grid/x', gx, mxgrid)
-          call input_hdf5 ('grid/y', gy, mygrid)
-          call input_hdf5 ('grid/z', gz, mzgrid)
-        endif
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        call input_hdf5 ('time', time)
+        call input_hdf5 ('grid/x', gx, mxgrid)
+        call input_hdf5 ('grid/y', gy, mygrid)
+        call input_hdf5 ('grid/z', gz, mzgrid)
         call distribute_grid (x, y, z, gx, gy, gz)
-        if (lroot) then
-          call input_hdf5 ('grid/dx', dx)
-          call input_hdf5 ('grid/dy', dy)
-          call input_hdf5 ('grid/dz', dz)
-          call input_hdf5 ('grid/Lx', Lx)
-          call input_hdf5 ('grid/Ly', Ly)
-          call input_hdf5 ('grid/Lz', Lz)
-          call input_hdf5 ('grid/dx_1', gx, mxgrid)
-          call input_hdf5 ('grid/dy_1', gy, mygrid)
-          call input_hdf5 ('grid/dz_1', gz, mzgrid)
-        endif
+        call input_hdf5 ('grid/dx', dx)
+        call input_hdf5 ('grid/dy', dy)
+        call input_hdf5 ('grid/dz', dz)
+        call input_hdf5 ('grid/Lx', Lx)
+        call input_hdf5 ('grid/Ly', Ly)
+        call input_hdf5 ('grid/Lz', Lz)
+        call input_hdf5 ('grid/dx_1', gx, mxgrid)
+        call input_hdf5 ('grid/dy_1', gy, mygrid)
+        call input_hdf5 ('grid/dz_1', gz, mzgrid)
         call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        if (lroot) then
-          call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
-          call input_hdf5 ('grid/dy_tilde', gy, mygrid)
-          call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
-        endif
+        call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
+        call input_hdf5 ('grid/dy_tilde', gy, mygrid)
+        call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-        if (lroot) then
-          deallocate (gx, gy, gz)
-          call file_close_hdf5
-        endif
-        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
-        t = t_sp
-        call mpibcast_real (dx,comm=MPI_COMM_WORLD)
-        call mpibcast_real (dy,comm=MPI_COMM_WORLD)
-        call mpibcast_real (dz,comm=MPI_COMM_WORLD)
-        call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
-        call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
-        call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
+        call file_close_hdf5
+        deallocate (gx, gy, gz)
+!
+        call mpibcast_real (time, comm=MPI_COMM_WORLD)
+        t = time
+        call mpibcast_real (dx, comm=MPI_COMM_WORLD)
+        call mpibcast_real (dy, comm=MPI_COMM_WORLD)
+        call mpibcast_real (dz, comm=MPI_COMM_WORLD)
+        call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
+        call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
+        call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
       endif
 !
     endsubroutine input_snap
@@ -406,39 +644,119 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
       if (persist_initialized) then
-        close (lun_input)
+        call file_close_hdf5
         persist_initialized = .false.
-        persist_last_id = -max_int
       endif
 !
     endsubroutine input_snap_finalize
+!***********************************************************************
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+!
+!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!
+!  24-Oct-2018/PABourdin: coded
+!
+      use Mpicomm, only: mpireduce_sum_int, mpibcast
+!
+      integer, intent(in) :: mv
+      integer, dimension (mv), intent(out) :: ipar
+      real, dimension (mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_total
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+!
+      character (len=fnlen) :: filename, dataset
+!
+      dataset = 'fp'
+      if (present (label)) dataset = label
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+!
+      ! open global HDF5 file and read particle data
+      call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 ('proc/distribution', nv)
+      call input_hdf5 (dataset, ap, mv, mparray, nv)
+      call input_hdf5 ('part/ID', ipar(1:nv), nv)
+      call file_close_hdf5
+!
+      ! Sum the total number of all particles on the root processor.
+      call mpireduce_sum_int (nv, npar_total)
+!
+      ! read processor boundaries
+      call file_open_hdf5 (filename, global=.false., read_only=.true.)
+      call input_hdf5 ('proc/bounds_x', procx_bounds(0:nprocx), nprocx+1)
+      call input_hdf5 ('proc/bounds_y', procy_bounds(0:nprocy), nprocy+1)
+      call input_hdf5 ('proc/bounds_z', procz_bounds(0:nprocz), nprocz+1)
+      call mpibcast (procx_bounds, nprocx+1)
+      call mpibcast (procy_bounds, nprocy+1)
+      call mpibcast (procz_bounds, nprocz+1)
+      call file_close_hdf5
+!
+    endsubroutine input_part_snap
+!***********************************************************************
+    subroutine input_pointmass(file, labels, fq, mv, nc)
+!
+!  Read pointmass snapshot file.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      use Mpicomm, only: mpibcast_real
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(out) :: fq
+!
+      integer :: pos, mv_in, last
+      character (len=fnlen) :: filename, label
+!
+      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      if (lroot) then
+        call file_open_hdf5 (filename, read_only=.true., global=.false.)
+        call input_hdf5 ('number', mv_in)
+        if (mv_in /= mv) call fatal_error ("input_pointmass", "Number of points seems incorrect.", .true.)
+        if (mv_in > 0) then
+          do pos=1, nc
+            label = trim (labels(pos))
+            if (label(1:1) == 'i') then
+              label = trim (label(2:))
+              last = len (trim (label))
+              if (label(last:last) == 'q') label = trim (label(1:last-1))
+            endif
+            call input_hdf5 ('points/'//trim(label), fq(:,pos), mv)
+          enddo
+        endif
+        call file_close_hdf5
+      endif
+!
+      if (mv > 0) call mpibcast_real(fq,(/nqpar,mqarray/))
+!
+    endsubroutine input_pointmass
 !***********************************************************************
     logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to persistent file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in), optional :: file
 !
       character (len=fnlen), save :: filename=""
 !
-      persist_last_id = -max_int
       init_write_persist = .false.
 !
       if (present (file)) then
-        filename = file
+        filename = trim(directory_snap)//'/'//trim(file)//'.h5'
         persist_initialized = .false.
         return
       endif
 !
       if (filename /= "") then
-        call delete_file(trim(directory_dist)//'/'//filename)
-        open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
-        if (ip <= 9) write (*,*) 'begin persistent block'
-        write (lun_output) id_block_PERSISTENT
+        call file_close_hdf5
+        call file_open_hdf5 (filename)
         filename = ""
       endif
+!
+      call create_group_hdf5 ('persist')
 !
       init_write_persist = .false.
       persist_initialized = .true.
@@ -457,15 +775,6 @@ module Io
       write_persist_id = .true.
       if (.not. persist_initialized) write_persist_id = init_write_persist ()
       if (.not. persist_initialized) return
-!
-      if (persist_last_id /= id) then
-        if (lroot) then
-          if (ip <= 9) write (*,*) 'write persistent ID '//trim (label)
-          write (lun_output) id
-        endif
-        persist_last_id = id
-      endif
-!
       write_persist_id = .false.
 !
     endfunction write_persist_id
@@ -474,47 +783,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_log_0D = 700
-      logical, dimension (:,:,:), allocatable :: global
-      logical :: buffer
+      logical, dimension(1) :: out
 !
-      write_persist_logical_0D = .true.
-      if (write_persist_id (label, id)) return
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_logical_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_logical (buffer, partner, tag_log_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global)
-      else
-        call mpisend_logical (value, 0, tag_log_0D)
-      endif
-!
-      write_persist_logical_0D = .false.
+      out(1) = value
+      write_persist_logical_0D = write_persist_logical_1D (label, id, out)
 !
     endfunction write_persist_logical_0D
 !***********************************************************************
@@ -522,47 +800,20 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, dimension(:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_log_1D = 701
-      logical, dimension (:,:,:,:), allocatable :: global
-      logical, dimension (:), allocatable :: buffer
+      integer, dimension(size (value)) :: value_int
 !
       write_persist_logical_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_logical_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1,:) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_logical (buffer, nv, partner, tag_log_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global, buffer)
-      else
-        call mpisend_logical (value, nv, 0, tag_log_1D)
-      endif
+      value_int = 0
+      where (value) value_int = 1
+      call output_hdf5 ('persist/'//label, value_int, size (value), same_size=.true.)
 !
       write_persist_logical_1D = .false.
 !
@@ -572,47 +823,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       integer, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_int_0D = 702
-      integer, dimension (:,:,:), allocatable :: global
-      integer :: buffer
+      integer, dimension(1) :: out
 !
-      write_persist_int_0D = .true.
-      if (write_persist_id (label, id)) return
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_int_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_int (buffer, partner, tag_int_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global)
-      else
-        call mpisend_int (value, 0, tag_int_0D)
-      endif
-!
-      write_persist_int_0D = .false.
+      out(1) = value
+      write_persist_int_0D = write_persist_int_1D (label, id, out)
 !
     endfunction write_persist_int_0D
 !***********************************************************************
@@ -620,7 +840,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  26-Oct-2018/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -628,39 +848,10 @@ module Io
       integer, intent(in) :: id
       integer, dimension (:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_int_1D = 703
-      integer, dimension (:,:,:,:), allocatable :: global
-      integer, dimension (:), allocatable :: buffer
-!
       write_persist_int_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_int_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1,:) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_int (buffer, nv, partner, tag_int_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global, buffer)
-      else
-        call mpisend_int (value, nv, 0, tag_int_1D)
-      endif
+      call output_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       write_persist_int_1D = .false.
 !
@@ -670,47 +861,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_real_0D = 704
-      real, dimension (:,:,:), allocatable :: global
-      real :: buffer
+      real, dimension(1) :: out
 !
-      write_persist_real_0D = .true.
-      if (write_persist_id (label, id)) return
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_real_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_real (buffer, partner, tag_real_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global)
-      else
-        call mpisend_real (value, 0, tag_real_0D)
-      endif
-!
-      write_persist_real_0D = .false.
+      out(1) = value
+      write_persist_real_0D = write_persist_real_1D (label, id, out)
 !
     endfunction write_persist_real_0D
 !***********************************************************************
@@ -718,47 +878,16 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  26-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, dimension (:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_real_1D = 705
-      real, dimension (:,:,:,:), allocatable :: global
-      real, dimension (:), allocatable :: buffer
-!
       write_persist_real_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('write_persist_real_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        global(ipx+1,ipy+1,ipz+1,:) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_real (buffer, nv, partner, tag_real_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
-        write (lun_output) global
-!
-        deallocate (global, buffer)
-      else
-        call mpisend_real (value, nv, 0, tag_real_1D)
-      endif
+      call output_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       write_persist_real_1D = .false.
 !
@@ -768,24 +897,21 @@ module Io
 !
 !  Initialize reading of persistent data from persistent file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  27-Oct-2018/PABourdin: coded
 !
-      use File_io, only: file_exists
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use File_io, only: parallel_file_exists
 !
       character (len=*), intent(in), optional :: file
+!
+      character (len=fnlen) :: filename
 !
       init_read_persist = .true.
 !
       if (present (file)) then
-        if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
+        filename = trim (directory_snap)//'/'//trim (file)//'.h5'
+        init_read_persist = .not. parallel_file_exists (filename)
         if (init_read_persist) return
-      endif
-!
-      if (present (file)) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
-        open (lun_input, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='old')
+        call file_open_hdf5 (filename, read_only=.true.)
       endif
 !
       init_read_persist = .false.
@@ -797,31 +923,20 @@ module Io
 !
 !  Read persistent block ID from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
       logical, intent(in), optional :: lerror_prone
 !
-      logical :: lcatch_error
-      integer :: io_err
+      logical :: lcatch_error, lexists
 !
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
-      if (lroot) then
-        if (ip <= 9) write (*,*) 'read persistent ID '//trim (label)
-        if (lcatch_error) then
-          read (lun_input, iostat=io_err) id
-          if (io_err /= 0) id = -max_int
-        else
-          read (lun_input) id
-        endif
-      endif
-!
-      call mpibcast_int (id,comm=MPI_COMM_WORLD)
+      lexists = exists_in_hdf5('persist')
+      if (lexists) lexists = exists_in_hdf5('persist/'//trim (label))
+      if (lcatch_error .and. .not. lexists) id = -max_int
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -832,41 +947,15 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_log_0D = 706
-      logical, dimension (:,:,:), allocatable :: global
+      logical, dimension(1) :: read
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_logical_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1), partner, tag_log_0D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_logical (value, 0, tag_log_0D)
-      endif
-!
-      read_persist_logical_0D = .false.
+      read_persist_logical_0D = read_persist_logical_1D(label, read)
+      value = read(1)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -874,41 +963,16 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_logical, mpirecv_logical
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_log_1D = 707
-      logical, dimension (:,:,:,:), allocatable :: global
+      integer, dimension(size (value)) :: value_int
 !
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_logical_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1,:), nv, partner, tag_log_1D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_logical (value, nv, 0, tag_log_1D)
-      endif
+      call input_hdf5 ('persist/'//label, value_int, size (value), same_size=.true.)
+      value = .false.
+      where (value_int > 0) value = .true.
 !
       read_persist_logical_1D = .false.
 !
@@ -918,41 +982,15 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_int_0D = 708
-      integer, dimension (:,:,:), allocatable :: global
+      integer, dimension(1) :: read
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_int_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1), partner, tag_int_0D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_int (value, 0, tag_int_0D)
-      endif
-!
-      read_persist_int_0D = .false.
+      read_persist_int_0D = read_persist_int_1D(label, read)
+      value = read(1)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -960,41 +998,12 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_int_1D = 709
-      integer, dimension (:,:,:,:), allocatable :: global
-!
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_int_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1,:), nv, partner, tag_int_1D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_int (value, nv, 0, tag_int_1D)
-      endif
+      call input_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       read_persist_int_1D = .false.
 !
@@ -1004,41 +1013,15 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
-      integer, parameter :: tag_real_0D = 710
-      real, dimension (:,:,:), allocatable :: global
+      real, dimension(1) :: read
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_real_0D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1), partner, tag_real_0D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_real (value, 0, tag_real_0D)
-      endif
-!
-      read_persist_real_0D = .false.
+      read_persist_real_0D = read_persist_real_1D(label, read)
+      value = read(1)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
@@ -1046,62 +1029,73 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
+!  27-Oct-2018/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
-      integer, parameter :: tag_real_1D = 711
-      real, dimension (:,:,:,:), allocatable :: global
-!
-      nv = size (value)
-!
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_persist_real_1D', &
-            'Could not allocate memory for global buffer', .true.)
-!
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
-        read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1,:), nv, partner, tag_real_1D)
-            enddo
-          enddo
-        enddo
-!
-        deallocate (global)
-      else
-        call mpirecv_real (value, nv, 0, tag_real_1D)
-      endif
+      call input_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
 !
       read_persist_real_1D = .false.
 !
     endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine output_globals(file,a,nv)
+    subroutine output_timeseries(data, data_im)
+!
+!  Append diagnostic data to 'time_series.h5' file.
+!
+!  01-Apr-2019/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      real, dimension(2*nname), intent(in) :: data, data_im
+!
+      integer :: pos
+      character (len=fmtlen) label, iteration
+      character (len=fnlen) :: filename, dataset
+      logical :: lexists
+
+      iteration = itoa(it-1)
+      filename = trim(datadir)//'/time_series.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+      do pos = 1, nname
+        label = cname(pos)
+        label = label(1:min(index(label,' '), index(label,'('))-1)
+        call create_group_hdf5 (label)
+        call output_hdf5 (trim(label)//'/'//iteration, data(pos))
+        if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
+          label = trim(label)//'/imaginary_part'
+          call create_group_hdf5 (label)
+          call output_hdf5 (trim(label)//'/'//iteration, data_im(pos))
+        endif
+      enddo
+      call output_hdf5 ('last', it-1)
+      call file_close_hdf5
+!
+    endsubroutine output_timeseries
+!***********************************************************************
+    subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignore time and mesh.
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  29-Nov-2018/PABourdin: extended for output of time averages
+!
+      use General, only : coptest
 !
       character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
+      character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, mode=0, label='globals')
+      call output_snap (a, nv, file, mode=0, label=coptest(label,'globals'))
       call output_snap_finalize
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file,a,nv)
+    subroutine input_globals(file, a, nv)
 !
 !  Read globals snapshot file, ignore time and mesh.
 !
@@ -1129,7 +1123,13 @@ module Io
       character (len=fnlen) :: dir, fpart
 !
       call parse_filename (filename, dir, fpart)
-      if (dir == '.') call safe_character_assign (dir, directory_snap)
+      if (dir == '.') then
+        if (flist(1:4) == 'tavg') then
+          call safe_character_assign (dir, trim(datadir)//'/averages')
+        else
+          call safe_character_assign (dir, directory_snap)
+        endif
+      endif
 !
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
@@ -1152,42 +1152,23 @@ module Io
 !
 !  Write grid coordinates.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: collect_grid
+      use File_io, only: file_exists
 !
-      character (len=*) :: file
-      integer, optional :: mxout,myout,mzout
+      character (len=*), intent(in) :: file
+      integer, intent(in), optional :: mxout,myout,mzout
 !
-      real, dimension (:), allocatable :: gx, gy, gz
-      integer :: alloc_err
-      real :: t_sp   ! t in single precision for backwards compatibility
+      character (len=fnlen) :: filename
+      logical :: lexists
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
-
-      if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = t
-      endif
-
-      call collect_grid (x, y, z, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-        write (lun_output) dx, dy, dz
-        write (lun_output) Lx, Ly, Lz
-      endif
-
-      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-      if (lroot) write (lun_output) gx, gy, gz
-
-      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      if (lroot) then
-        write (lun_output) gx, gy, gz
-        close (lun_output)
-      endif
+      filename = trim (datadir)//'/grid.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+      call output_settings
+      call file_close_hdf5
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -1195,37 +1176,45 @@ module Io
 !
 !  Read grid coordinates.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!  27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
 !
+      character (len=fnlen) :: filename
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
+      filename = trim (datadir)//'/grid.h5'
       if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-!
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-        read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
-        call distribute_grid (x, y, z, gx, gy, gz)
-        read (lun_input) dx, dy, dz
-        read (lun_input) Lx, Ly, Lz
-        read (lun_input) gx, gy, gz
-        call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        read (lun_input) gx, gy, gz
-        call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-        close (lun_input)
-!
-        deallocate (gx, gy, gz)
+        allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
       else
-        call distribute_grid (x, y, z)
-        call distribute_grid (dx_1, dy_1, dz_1)
-        call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
+        allocate (gx(1), gy(1), gz(1), stat=alloc_err)
       endif
+      if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+!
+      call file_open_hdf5 (filename, global=.false., read_only=.true.)
+      call input_hdf5 ('grid/x', gx, mxgrid)
+      call input_hdf5 ('grid/y', gy, mygrid)
+      call input_hdf5 ('grid/z', gz, mzgrid)
+      call distribute_grid (x, y, z, gx, gy, gz)
+      call input_hdf5 ('grid/dx', dx)
+      call input_hdf5 ('grid/dy', dy)
+      call input_hdf5 ('grid/dz', dz)
+      call input_hdf5 ('grid/Lx', Lx)
+      call input_hdf5 ('grid/Ly', Ly)
+      call input_hdf5 ('grid/Lz', Lz)
+      call input_hdf5 ('grid/dx_1', gx, mxgrid)
+      call input_hdf5 ('grid/dy_1', gy, mygrid)
+      call input_hdf5 ('grid/dz_1', gz, mzgrid)
+      call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+      call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
+      call input_hdf5 ('grid/dy_tilde', gy, mygrid)
+      call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
+      call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      call file_close_hdf5
+      deallocate (gx, gy, gz)
 !
       call mpibcast_real (dx,comm=MPI_COMM_WORLD)
       call mpibcast_real (dy,comm=MPI_COMM_WORLD)
@@ -1241,26 +1230,430 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
+    subroutine wdim_default_grid(file)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: redesigned
+!
+      character (len=*), intent(in) :: file
+!
+      if (file == 'dim.dat') return
+      call output_dim (file, mx, my, mz, mxgrid, mygrid, mzgrid, mvar, maux, mglobal)
+!
+    endsubroutine wdim_default_grid
+!***********************************************************************
+    subroutine wdim_default(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: redesigned
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
+!
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar, maux, mglobal)
+!
+    endsubroutine wdim_default
+!***********************************************************************
+    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
+!
+!  Write dimension to file.
+!
+!   8-sep-01/axel: adapted to take my_out,mz_out
+!   4-oct-16/MR: added optional parameters mvar_out,maux_out
+!  02-Nov-2018/PABourdin: redesigned, moved to IO modules
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
+!
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
+!
+    endsubroutine wdim
+!***********************************************************************
+    subroutine output_profile(name, coord, a, type, lsave_name, lhas_ghost)
+!
+!  Writes a profile along any direction.
+!
+!  07-Nov-2018/PABourdin: coded
+!
+      use General, only: loptest
+      use File_io, only: parallel_file_exists
+!
+      real, dimension(:) :: coord, a
+      character (len=*) :: name
+      character :: type
+      logical, optional :: lsave_name, lhas_ghost
+!
+      character (len=fnlen) :: filename
+      integer :: np, ng, ip, np_global, np1, np2
+      logical :: lexists, lwrite, lp1, lp2
+!
+      if (.not. lwrite_prof) return
+!
+      np = size(coord)
+      ng = 0
+      if (loptest (lhas_ghost)) ng = 3
+      select case (type)
+      case ('x')
+        np_global = (np - 2*ng) * nprocx + 2*ng
+        ip = ipx
+        lp1 = lfirst_proc_x
+        lp2 = llast_proc_x
+        lwrite = lfirst_proc_yz
+      case ('y')
+        np_global = (np - 2*ng) * nprocy + 2*ng
+        ip = ipy
+        lp1 = lfirst_proc_y
+        lp2 = llast_proc_y
+        lwrite = lfirst_proc_xz
+      case ('z')
+        np_global = (np - 2*ng) * nprocz + 2*ng
+        ip = ipz
+        lp1 = lfirst_proc_z
+        lp2 = llast_proc_z
+        lwrite = lfirst_proc_xy
+      case default
+        call fatal_error ('output_profile', 'unknown direction "'//type//'"')
+      endselect
+      np1 = 1
+      np2 = np
+      if (.not. lp1) np1 = np1 + ng
+      if (.not. lp2) np2 = np2 - ng
+!
+      ! write profile
+      filename = trim(directory_snap)//'/'//'profile.h5'
+      lexists = parallel_file_exists (filename)
+      call file_open_hdf5 (filename, truncate=(.not. lexists))
+      call create_group_hdf5 (type)
+      call create_group_hdf5 (type//'/'//trim(name))
+      call output_hdf5 (type//'/'//trim(name)//'/data', a, np, np_global, ip, np1, np2, ng, lwrite)
+      call output_hdf5 (type//'/'//trim(name)//'/position', coord, np, np_global, ip, np1, np2, ng, lwrite)
+      call file_close_hdf5
+!
+    endsubroutine output_profile
+!***********************************************************************
+    subroutine input_profile(name, type, a, np, lhas_ghost)
+!
+!  Reads a profile from a file along any direction.
+!
+!  07-Nov-2018/PABourdin: coded
+!
+      use General, only: loptest
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
+!
+      character (len=*), intent(in) :: name
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
+      logical, optional :: lhas_ghost
+!
+      character (len=fnlen) :: filename
+      integer :: np_global, np1, np2, ng
+!
+      ng = 0
+      if (loptest (lhas_ghost)) ng = 3
+      select case (type)
+      case ('x')
+        np_global = (np - 2*ng) * nprocx + 2*ng
+        np1 = 1 + ipx * (np - 2*ng)
+      case ('y')
+        np_global = (np - 2*ng) * nprocy + 2*ng
+        np1 = 1 + ipy * (np - 2*ng)
+      case ('z')
+        np_global = (np - 2*ng) * nprocz + 2*ng
+        np1 = 1 + ipz * (np - 2*ng)
+      case default
+        call fatal_error ('input_profile', 'unknown direction "'//type//'"')
+      endselect
+      np2 = np1 + np - 1
+!
+      ! read profile
+      filename = trim(directory_snap)//'/'//'profile.h5'
+      call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 (type//'/'//trim(name)//'/data', a, np, np_global, np1, np2)
+      call file_close_hdf5
+!
+!  Should we check that coord == z for type == 'z' etc.?
+!
+    endsubroutine input_profile
+!***********************************************************************
+    subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
+!
+!   Output 1D average to a file.
+!
+!   26-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      character (len=intlen) :: group
+      integer :: last, ia
+      logical :: lexists
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
+        last = last + 1
+      else
+        if (present (header)) call output_hdf5 ('r', header, size(header))
+        last = 0
+      endif
+      group = trim (itoa (last))
+      call create_group_hdf5 (group)
+      do ia = 1, nc
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), data(:,ia), size(data,1))
+      enddo
+      call output_hdf5 (trim(group)//'/time', time)
+      call output_hdf5 ('last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_1D
+!***********************************************************************
+    subroutine output_average_1D_chunked(path, label, nc, name, data, full, time, lbinary, lwrite, header)
+!
+!   Output 1D chunked average to a file.
+!
+!   26-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      integer, intent(in) :: full
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      character (len=intlen) :: group
+      integer :: last, ia
+      logical :: lexists
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
+        last = last + 1
+      else
+        if (present (header)) call output_hdf5 ('r', header, size(header))
+        last = 0
+      endif
+      group = trim (itoa (last))
+      call create_group_hdf5 (group)
+!
+      do ia = 1, nc
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), reshape (data(:,:,ia), (/ full /)), full)
+      enddo
+      call output_hdf5 (trim(group)//'/time', time)
+      call output_hdf5 ('last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_1D_chunked
+!***********************************************************************
+    subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
+!
+!   Output average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      use File_io, only: parallel_file_exists
+      use General, only: itoa
+      use Mpicomm, only: mpibcast_int
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in), target :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      character (len=intlen) :: group
+      integer :: last, ia, alloc_err
+      logical :: lexists, lglobal
+      real, dimension (:,:), allocatable, target :: component
+      real, pointer :: local_data(:,:)
+!
+      if (nc <= 0) return
+!
+      filename = trim(datadir)//'/averages/'//trim(label)//'.h5'
+      lexists = parallel_file_exists (filename)
+      lglobal = ((label == 'z') .or. (label == 'y'))
+!
+      last = 0
+      if (lexists) then
+        call file_open_hdf5 (filename, global=.false., read_only=.true.)
+        if (exists_in_hdf5 ('last')) then
+          call input_hdf5 ('last', last)
+          last = last + 1
+        endif
+        call file_close_hdf5
+        call mpibcast_int (last)
+      endif
+!
+      call file_open_hdf5 (filename, global=lglobal, truncate=(.not. lexists), write=lwrite)
+      if ((last == 0) .and. present (header)) call output_hdf5 ('r', header, size(header))
+      group = trim(itoa(last))
+      call create_group_hdf5 (group)
+      if (label == 'z') then
+        allocate (component(size(data,2),size(data,3)), stat = alloc_err)
+        if (alloc_err > 0) call fatal_error('output_average_2D', 'Could not allocate memory for component')
+        do ia = 1, nc
+          component = data(ia,:,:)
+          local_data => component
+          call output_hdf5 (trim(group)//'/'//trim(name(ia)), local_data, nx, ny, nxgrid, nygrid, ipx, ipy, lwrite)
+        enddo
+        deallocate (component)
+      elseif (label == 'y') then
+        do ia = 1, nc
+          local_data => data(:,:,ia)
+          call output_hdf5 (trim(group)//'/'//trim(name(ia)), local_data, nx, nz, nxgrid, nzgrid, ipx, ipz, lwrite)
+        enddo
+      else
+        do ia = 1, nc
+          call output_hdf5 (trim(group)//'/'//trim(name(ia)), data(:,:,ia), size(data,1), size(data,2))
+        enddo
+      endif
+      if (lglobal) then
+        call file_close_hdf5
+        call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      endif
+      call output_hdf5 (trim(group)//'/time', time)
+      call output_hdf5 ('last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_2D
+!***********************************************************************
+    subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
+!
+!   Output phi average to a file with these records:
+!   1) nr_phiavg, nz_phiavg, nvars, nprocz
+!   2) t, r_phiavg, z_phiavg, dr, dz
+!   3) data
+!   4) len(labels),labels
+!
+!   27-Nov-2014/PABourdin: cleaned up code from write_phiaverages
+!   25-Nov-2018/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, number
+      integer, intent(in) :: nr, nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      real, dimension(nr), intent(in) :: r
+      real, intent(in) :: dr
+!
+      character (len=fnlen) :: filename
+      character (len=intlen) :: group
+      integer :: last, ia
+      logical :: lexists
+      real, dimension (nr,nzgrid) :: component
+!
+      if (.not. lroot .or. (nc <= 0)) return
+!
+      filename = trim(datadir)//'/averages/phi.h5'
+      lexists = file_exists (filename)
+      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists))
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
+        last = last + 1
+      else
+        call output_hdf5 ('r', r, nr)
+        call output_hdf5 ('dr', dr)
+        last = 0
+      endif
+      group = trim (itoa (last))
+      call create_group_hdf5 (group)
+      do ia = 1, nc
+        ! note: due to passing data as implicit-size array,
+        ! the indices (0:nz) are shifted to (1:nz+1),
+        ! so that we have to write only the portion (2:nz+1).
+        component = reshape (data(:,2:nz+1,:,ia), (/ nr, nzgrid /))
+        call output_hdf5 (trim(group)//'/'//trim(name(ia)), component, size(data,1), nzgrid)
+      enddo
+      call output_hdf5 (trim(group)//'/time', time)
+      call output_hdf5 ('last', last)
+      call file_close_hdf5
+!
+    endsubroutine output_average_phi
+!***********************************************************************
+    subroutine trim_average(path, plane, ngrid, nname)
+!
+!  Trim a 1D-average file for times past the current time.
+!
+!  25-apr-16/ccyang: coded
+!  23-Nov-2018/PABourdin: moved to IO module
+!
+      use File_io, only: file_exists, delete_file
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: path, plane
+      integer, intent(in) :: ngrid, nname
+!
+      character(len=fnlen) :: filename
+      real :: time_file, t_sp
+      integer :: last, pos
+!
+      if (.not. lroot) return
+      if ((ngrid <= 0) .or. (nname <= 0)) return
+!
+      filename = trim(datadir)//'/averages/'//trim(plane)//'.h5'
+      if (.not. file_exists (filename)) return
+!
+      t_sp = real (t)
+      call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      if (exists_in_hdf5 ('last')) then
+        call input_hdf5 ('last', last)
+        call input_hdf5 (trim(itoa(last))//'/time', time_file)
+        if (time_file > t_sp) then
+          do pos = last, 0, -1
+            if (pos < last) call input_hdf5 (trim(itoa(pos))//'/time', time_file)
+            if (time_file < t_sp) then
+              if (pos /= last) call output_hdf5 ('last', pos)
+              call file_close_hdf5
+              return
+            endif
+          enddo
+        endif
+      endif
+      call file_close_hdf5
+      if (t_sp == 0.0) call delete_file (filename)
+!
+    endsubroutine trim_average
+!***********************************************************************
     subroutine wproc_bounds(file)
 !
 !   Export processor boundaries to file.
 !
-!   19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!   27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: stop_it
+      character (len=*), intent(in) :: file
 !
-      character (len=*) :: file
-!
-      integer :: ierr
-!
-      call delete_file(file)
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
-      write (lun_output) procy_bounds
-      write (lun_output) procz_bounds
-      close (lun_output)
+      ! already written in particle snapshot
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -1268,21 +1661,11 @@ module Io
 !
 !   Import processor boundaries from file.
 !
-!   19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!   27-Oct-2018/PABourdin: coded
 !
-      use Mpicomm, only: stop_it
+      character (len=*), intent(in) :: file
 !
-      character (len=*) :: file
-!
-      integer :: ierr
-!
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
-      if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read (lun_input) procy_bounds
-      read (lun_input) procz_bounds
-      close (lun_input)
+      ! already read with particle snapshot
 !
     endsubroutine rproc_bounds
 !***********************************************************************

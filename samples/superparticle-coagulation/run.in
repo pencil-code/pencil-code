@@ -1,0 +1,50 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters for coagulation run.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2016/04/06 21:39:26 xiangyu Exp $',
+  nt=500000, it1=50, isave=10000, itorder=3
+  dsnap=10., dvid=500.
+  lpencil_check_small=F
+  dtmax=2e-3
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&grav_run_pars
+  lgravx_gas=F
+/
+&forcing_run_pars
+/
+&viscosity_run_pars
+  nu=2e-4
+/
+&particles_run_pars
+  gravx_profile='const'
+  gravx=-9.81
+  cdtp=0.2
+  cdtp_drag=2.
+  ldragforce_dust_par=T, ldragforce_gas_par=F
+  ldraglaw_steadystate=T, lnostore_uu=F
+  ldragforce_heat=F, lnu_draglaw=T, nu_draglaw=1e-5
+/
+&particles_radius_run_pars
+  lcondensation_simplified=F, GS_condensation=5e-11! 100 times larger
+  lcondensation_par=F
+/
+&particles_number_run_pars
+/
+&particles_coag_run_pars
+  lcoag_simultaneous=T
+  lconstant_kernel_test=F
+  lnoselfcollision=T, cdtpcoag=0.3
+  ldroplet_coagulation=T
+  droplet_coagulation_model='shima'
+/
+&particles_stalker_run_pars
+  dstalk=1.
+/

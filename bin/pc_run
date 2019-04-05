@@ -35,6 +35,19 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                   Use the given <files> (a comma-separated list) as
 #                   configuration files, rather than trying to find a
 #                   config file based on a host ID.
+#                   If the file name starts with '/' or with './', the
+#                   file name will be treated as absolute (/) or relative
+#                   to the current working directory (./).
+#                   Otherwise, search the standard configuration path
+#                   (something like
+#                     ./config
+#                     $PENCIL_HOME/config-local
+#                     $HOME/.pencil/config
+#                     $PENCIL_HOME/config
+#                     $PENCIL_HOME/config/compilers
+#                     $PENCIL_HOME/config/compilers/extensions
+#                   )
+#                   The suffix '.conf' may be omitted.
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
@@ -70,7 +83,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
 #   or Pencil::Util).
 
-# Copyright (C) 2009-2012 The Pencil Code Team
+# Copyright (C) 2009-2017 The Pencil Code Team
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the same conditions as Perl or under the GNU General Public
@@ -359,7 +372,7 @@ sub mpi_run_cmd {
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
-        dump_parameters(undef, undef, 1) if $debug;
+        dump_parameters(undef, undef, 1, '') if $debug;
         time_system_cmd(@cmd_line, @extra_opts);
     }
 
@@ -889,8 +902,13 @@ sub setup_datadir {
 sub subdir_list {
 # Return list of directories below data/ that must exist
     my @subdirs = qw/ allprocs averages idl /;
-    for my $i (1..$Ncpus) {
-        push @subdirs, 'proc' . ($i - 1);
+    my $HDF5 = `grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`;
+    if ($HDF5 > 0) {
+        push @subdirs, 'slices';
+    } else {
+        for my $i (1..$Ncpus) {
+            push @subdirs, 'proc' . ($i - 1);
+        }
     }
     return @subdirs;
 }
@@ -1502,7 +1520,7 @@ sub usage {
         last;                        # ignore body
     }
     close $fh;
-    return $_ or "<No usage information found>\n";
+    return $_ || "<No usage information found>\n";
 }
 # ---------------------------------------------------------------------- #
 sub version {

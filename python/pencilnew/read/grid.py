@@ -104,9 +104,9 @@ class Grid(object):
             precision = 'f'
 
         if proc < 0:
-            proc_dirs = filter(lambda s: s.startswith('proc'), os.listdir(datadir))
+            proc_dirs = list(filter(lambda string: string.startswith('proc'), os.listdir(datadir)))
         else:
-            proc_dirs = ['proc'+str(proc)]
+            proc_dirs = ['proc' + str(proc)]
 
         # Define the global arrays.
         x = np.zeros(dim.mx, dtype=precision)
@@ -234,4 +234,3 @@ class Grid(object):
         self.Lx = Lx
         self.Ly = Ly
         self.Lz = Lz
-

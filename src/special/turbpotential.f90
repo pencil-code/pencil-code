@@ -679,6 +679,7 @@ module Special
     subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  reads and registers print parameters relevant to special
 !
@@ -696,6 +697,7 @@ module Special
       if (lreset) then
         idiag_potturbm=0;idiag_potturbmax=0;idiag_potturbmin=0 
         idiag_gpotturbx2m=0;idiag_gpotturby2m=0;idiag_gpotturbz2m=0
+        cformv=''
       endif
 !
       do iname=1,nname
@@ -707,13 +709,19 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'gpotturbz2m',idiag_gpotturbz2m)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='potturb') cformv='DEFINED'
+      endif
+!
       if (lwr) then
-        write(3,*) 'i_potturbm=',idiag_potturbm
-        write(3,*) 'i_potturbmax=',idiag_potturbmax
-        write(3,*) 'i_potturbmin=',idiag_potturbmin
-        write(3,*) 'i_gpotturbx2m=',idiag_gpotturbx2m
-        write(3,*) 'i_gpotturby2m=',idiag_gpotturby2m
-        write(3,*) 'i_gpotturbz2m=',idiag_gpotturbz2m
+        call farray_index_append('i_potturbm',idiag_potturbm)
+        call farray_index_append('i_potturbmax',idiag_potturbmax)
+        call farray_index_append('i_potturbmin',idiag_potturbmin)
+        call farray_index_append('i_gpotturbx2m',idiag_gpotturbx2m)
+        call farray_index_append('i_gpotturby2m',idiag_gpotturby2m)
+        call farray_index_append('i_gpotturbz2m',idiag_gpotturbz2m)
       endif
 !
     endsubroutine rprint_special
@@ -757,8 +765,9 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_
@@ -768,10 +777,13 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine special_after_timestep
 !***********************************************************************
     subroutine get_slices_special(f,slices)
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -782,13 +794,9 @@ module Special
 !
 !  Potential
 !
-        case('potturb')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,ipotturb)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,ipotturb)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,ipotturb)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipotturb)
-          slices%ready = .true.
-        endselect
+        case('potturb'); call assign_slices_scal(slices,f,ipotturb)
+
+      endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************

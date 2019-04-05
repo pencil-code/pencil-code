@@ -63,13 +63,14 @@ program start
   use Filter
   use Gravity,          only: init_gg
   use Grid
+  use HDF5_IO,          only: initialize_hdf5
   use Hydro,            only: init_uu
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
   use Initcond
   use InitialCondition, only: initial_condition_all, initial_condition_clean_up
   use Interstellar,     only: init_interstellar
-  use IO,               only: wgrid, directory_names, wproc_bounds, output_globals
+  use IO,               only: wgrid, wdim, directory_names, wproc_bounds, output_globals
   use Lorenz_gauge,     only: init_lorenz_gauge
   use Magnetic,         only: init_aa
   use Messages
@@ -85,11 +86,12 @@ program start
   use Register
   use Selfgravity,      only: calc_selfpotential
   use SharedVariables,  only: sharedvars_clean_up
+  use Slices,           only: setup_slices, wvid_prepare, wvid
   use Snapshot
   use Solid_Cells,      only: init_solid_cells
   use Special,          only: init_special, initialize_mult_special
   use Sub
-  use Supersat,         only: init_ssat
+  use Ascalar,          only: init_acc
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
 !
@@ -154,17 +156,14 @@ program start
 !
   call initialize_mpicomm
 !
+!  Initialise HDF5 communication.
+!
+  call initialize_hdf5
+!
 !  Register variables in the f array.
 !
   call register_modules
   if (lparticles) call particles_register_modules
-!
-!  Call rprint_list to initialize diagnostics and write indices to file.
-!
-  call rprint_list(.false.)
-  if (lparticles) call particles_rprint_list(.false.)
-!
-  call report_undefined_diagnostics
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
@@ -205,7 +204,7 @@ program start
           Lxyz(i)=2*pi*real(nzgrid)/real(nxgrid)
           xyz0(i)=-pi*real(nzgrid)/real(nxgrid)
 !
-!  FG: force theta coordinate to spam 0:pi for periodic across pole 
+!  FG: force theta coordinate to span 0:pi for periodic across pole 
 !
         elseif (lpole(i)) then
           if (lperi(i)) call fatal_error('start',&
@@ -226,7 +225,7 @@ program start
           Lxyz(i)=2.*pi    ! default value
         endif
       else
-        if (lpole(i)) then ! overwirte xyz0 and xyz1 to 0:pi 
+        if (lpole(i)) then ! overwrite xyz0 and xyz1 to 0:pi 
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
           if (.not. lspherical_coords) call fatal_error('start',&
@@ -256,8 +255,11 @@ program start
       print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
 !
 ! Min(dy,dz) put between Yin and Yang grid at closest distance to minimize overlap.
-!
-    dang=.999*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+!   
+    dang=rel_dang*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi
+    !dang=.99*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
+    !dang=-1.8*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
+    !dang=-2.8*min(1./max(1,(nygrid-1)),3./max(1,(nzgrid-1)))*0.5*pi      ! only valid for equidistant grid!!
     xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
     Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
@@ -278,10 +280,6 @@ program start
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
-!  Set up limits of averaging if needed.
-!
-  if (lav_smallx) call init_xaver
-!
 !  Check consistency.
 !
   if (.not.lperi(1).and.nxgrid<2) &
@@ -291,24 +289,25 @@ program start
   if (.not.lperi(3).and.nzgrid<2) &
       call fatal_error('start','for lperi(3)=F: must have nzgrid>1')
 !
-!  Initialise random number generator in processor-dependent fashion for
-!  random initial data.
-!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
-!  would produce very short-period random numbers with the Intel compiler;
-!  so we need to retain most of the initial entropy of the generator.
+!  Initialise random number generator in processor-independent fashion
 !
   call get_nseed(nseed)   ! get state length of random number generator
   call random_seed_wrapper(GET=seed)
 !
-!  Different initial seed (seed0) and random numbers on different CPUs
-!  The default is seed0=1812 for some obscure Napoleonic reason
-!
-  seed(1)=-((seed0-1812+1)*10+iproc_world)
-  call random_seed_wrapper(PUT=seed)
-!
 !  Generate grid and initialize specific grid variables.
 !
   call construct_grid(x,y,z,dx,dy,dz)
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(.false.)
+  if (lparticles) call particles_rprint_list(.false.)
+!
+  call report_undefined_diagnostics
+!
+!  Set up limits of averaging if needed.
+!
+  if (lav_smallx) call init_xaver
 !
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
@@ -414,14 +413,6 @@ program start
     kz_nyq=0.0
   endif
 !
-!  Set random seed independent of processor prior to initial conditions.
-!  Do this only if seed0 is modified from its original value.
-!
-  if (seed0/=1812) then
-    seed(1)=seed0
-    call random_seed_wrapper(PUT=seed)
-  endif
-!
 !  Parameter dependent initialization of module variables and final
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
@@ -447,12 +438,34 @@ program start
   endif
 !
   if (lyinyang.and.lroot) &
-    call warning('start','Any initial condition depending on y or z will be set correctly only on Yin grid.')
+    call warning('start','Most initial conditions depending on y or z will be set correctly only on Yin grid.')
+!
+!  Initialise random number generator in processor-dependent fashion for
+!  random initial data.
+!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
+!  would produce very short-period random numbers with the Intel compiler;
+!  so we need to retain most of the initial entropy of the generator.
+!  Different initial seed (seed0) and random numbers on different CPUs
+!  The default is seed0=1812 for some obscure Napoleonic reason
+!  Fred: NB, when using persistent variables take care whether seeds need
+!        to be synchronous or not for init_*
+!
+  seed(1)=-((seed0-1812+1)*10+iproc_world)
+  call random_seed_wrapper(PUT=seed)
+!
+!  Set random seed independent of processor prior to initial conditions.
+!  Do this only if seed0 is modified from its original value.
+!  NB Default is proc dependent seed during init_* then reverts proc independ
+!     seed0\=1812 proc independent seed throughout
+!
+  if (seed0/=1812) then
+    seed(1)=seed0
+    call random_seed_wrapper(PUT=seed)
+  endif
 !
 !  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??
 !
-  if (lroot) print*
   do i=1,init_loops
     if (lroot .and. init_loops/=1) &
         print '(A33,i3,A25)', 'start: -- performing loop number', i, &
@@ -482,7 +495,7 @@ program start
     call init_uutest(f)
     call init_rad(f)
     call init_lncc(f)
-    call init_ssat(f)
+    call init_acc(f)
     call init_chiral(f)
     call init_chemistry(f)
     call init_uud(f)
@@ -552,8 +565,10 @@ program start
 !
 !  Set random seed independent of processor after initial conditions.
 !  Do this only if seed0 is not already changed from its original value.
+!  This seems to be a bug. If we want to set seed0 globally, why should it
+!  then always be 1812? If added "lseed_global.and." so we can turn it off.
 !
-  if (seed0==1812) then
+  if (lseed_global.and.seed0==1812) then
     seed(1)=seed0
     call random_seed_wrapper(PUT=seed)
   endif
@@ -566,10 +581,10 @@ program start
 !
   if (lwrite_ic) then
     if (lparticles) &
-        call write_snapshot_particles(directory_dist,f,ENUM=.false.,snapnum=0)
+        call write_snapshot_particles(f,ENUM=.false.,snapnum=0)
 !
     call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list')
-    call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR0',ENUM=.false.,FLIST='qvarN.list')
+    call pointmasses_write_snapshot('QVAR0',ENUM=.false.,FLIST='qvarN.list')
   endif
 !
 !  The option lnowrite writes everything except the actual var.dat file.
@@ -580,21 +595,25 @@ program start
   if (.not.lnowrite .and. .not.lnoerase) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
-        call write_snapshot_particles(directory_dist,f,ENUM=.false.)
-    call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+        call write_snapshot_particles(f,ENUM=.false.)
+    call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
     call wsnap('var.dat',f,mvar_io,ENUM=.false.)
   elseif (lmodify) then
     call wsnap(modify_filename,f,mvar_io,ENUM=.false.)
   endif
-  call wdim(trim(directory)//'/dim.dat')
-!
-!  Also write full dimensions to data/.
-!
+  call wdim('dim.dat')
   if (lroot) then
-    call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
     if (lparticles) call write_dim_particles(trim(datadir))
     call pointmasses_write_qdim(trim(datadir)//'/qdim.dat')
+  endif
+!
+!  Added here possibility two write slice file from start.
+!  This is possible for the radiation module, for example.
+!
+  if (dvid/=0.) then
+    call setup_slices
+    call wvid_prepare
+    call wvid(f)
   endif
 !
 !  Write global variables.

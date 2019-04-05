@@ -65,11 +65,13 @@ program run
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
   use General,         only: random_seed_wrapper, touch_file, itoa
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays
+  use Gpu,             only: gpu_init, register_gpu
+  use HDF5_IO,         only: initialize_hdf5
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid
+  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid, wdim
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -83,7 +85,7 @@ program run
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
   use Snapshot
-  use Solid_Cells,     only: solid_cells_clean_up
+  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
@@ -92,7 +94,7 @@ program run
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
-  use Timestep,        only: time_step
+  use Timestep,        only: time_step, initialize_timestep
 !
   implicit none
 !
@@ -107,12 +109,18 @@ program run
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
+  logical :: lnoreset_tzero=.false.
+  logical :: lonemorestep = .false.
 !
   lrun = .true.
 !
 !  Get processor numbers and define whether we are root.
 !
   call mpicomm_init
+!
+!  Initialize GPU use.
+!
+  call gpu_init
 !
 !  Identify version.
 !
@@ -138,13 +146,15 @@ program run
 !
   call read_all_run_pars
 !
-  call set_coorsys_dimmask
-!
 !  Initialise MPI communication.
 !
   call initialize_mpicomm
 !
-  if (any(downsampl>1)) then
+!  Initialise HDF5 communication.
+!
+  call initialize_hdf5
+!
+  if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
 !  If downsampling, calculate local start indices and number of data in
 !  output for each direction; inner ghost zones are here disregarded
@@ -152,20 +162,14 @@ program run
     ldownsampl = .true.
     if (dsnap_down<=0.) dsnap_down=dsnap
 !
-      call get_downpars(1,nx,ipx)
-      call get_downpars(2,ny,ipy)
-      call get_downpars(3,nz,ipz)
+    call get_downpars(1,nx,ipx)
+    call get_downpars(2,ny,ipy)
+    call get_downpars(3,nz,ipz)
 !
-      if (any(ndown==0)) &
-        call fatal_error('run','zero points in processor ' &
-                         //trim(itoa(iproc))//' in downsampling')
-    endif
-!
-!  Derived parameters (that may still be overwritten).
-!  [might better be put into another routine, possibly in 'read_all_run_pars']
-!
-  x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
-  Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+    if (any(ndown==0)) &
+      call fatal_error('run','zero points in processor ' &
+                       //trim(itoa(iproc))//' for downsampling')
+  endif
 !
 !  Set up directory names.
 !
@@ -175,15 +179,25 @@ program run
 !  luse_oldgrid=T can be useful if nghost_read_fewer > 0,
 !  i.e. if one is changing the order of spatial derivatives.
 !  Also write dim.dat (important when reading smaller meshes, for example)
+!  luse_oldgrid=.true. by default, and the values written at the end of
+!  each var.dat file are ignored anyway and only used for postprocessing.
+!
+  call set_coorsys_dimmask
 !
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
+    call construct_serial_arrays
     call grid_bound_data
   else
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
   endif
+!
+!  Shorthands (global).
+!
+  x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
+  Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !  
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
@@ -253,20 +267,18 @@ program run
   call register_modules
   if (lparticles) call particles_register_modules
 !
+  call register_gpu(f) 
+!
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
 !
   if (.not.luse_oldgrid) then
     call wgrid('grid.dat')
-    call wdim(trim(directory)//'/dim.dat')
-    if (lroot) call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
+    call wdim('dim.dat')
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
   elseif (lwrite_dim_again) then
-    call wdim(trim(directory)//'/dim.dat')
-    if (lroot) call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
+    call wdim('dim.dat')
     if (ip<11) print*,'Lz=',Lz
     if (ip<11) print*,'z=',z
   endif
@@ -274,12 +286,6 @@ program run
 !  Inform about verbose level.
 !
   if (lroot) print*, 'The verbose level is ip=', ip, ' (ldebug=', ldebug, ')'
-!
-!  Call rprint_list to initialize diagnostics and write indices to file.
-!
-  call rprint_list(LRESET=.false.)
-  if (lparticles) call particles_rprint_list(.false.)
-  call report_undefined_diagnostics
 !
 !  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
 !
@@ -401,22 +407,34 @@ program run
   f=0.
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
 !
-  if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)
+  if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz) !MR: already called
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(LRESET=.false.)
+  if (lparticles) call particles_rprint_list(.false.)
+  call report_undefined_diagnostics
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
-  if (lpointmasses) call pointmasses_read_snapshot(trim(directory_snap)//'/qvar.dat')
+  if (lpointmasses) call pointmasses_read_snapshot('qvar.dat')
 !
   call get_nseed(nseed)
 !
-!  Read global variables (if any).
-!
-  if (mglobal/=0) &
-      call input_globals('global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-!
-!  Set initial time to zero if requested.
+!  Set initial time to zero if requested. This is dangerous, however!
+!  One may forget removing this entry after having set this once.
+!  It is therefore safer to say lini_t_eq_zero_once=.true.,
+!  which does the reset once once, unless NORESET_TZERO is removed.
 !
   if (lini_t_eq_zero) t=0.0
+!
+!  Set initial time to zero if requested, but blocks further resets.
+!  See detailed comment above.
+!
+  lnoreset_tzero=control_file_exists('NORESET_TZERO')
+  if (lini_t_eq_zero_once.and..not.lnoreset_tzero) then
+    call touch_file('NORESET_TZERO')
+    t=0.0
+  endif
 !
 !  Set last tsound output time
 !
@@ -458,6 +476,7 @@ program run
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call initialize_timestep
   call initialize_modules(f)
 !
   if (it1d==impossible_int) then
@@ -466,10 +485,10 @@ program run
     if (it1d<it1) call stop_it_if_any(lroot,'run: it1d smaller than it1')
   endif
 !
-!  Write parameters to log file (done after reading var.dat, since we
-!  want to output time t.
+!  Read global variables (if any).
 !
-  call write_all_run_pars
+  if (mglobal/=0) call input_globals('global.dat', &
+      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Initialize ionization array.
 !
@@ -479,13 +498,18 @@ program run
 !  Prepare particles.
 !
   if (lparticles) then
-    call particles_rprint_list(.false.)
+    !!!call particles_rprint_list(.false.) ! already done
     call particles_initialize_modules(f)
   endif
 !
 !  Write data to file for IDL.
 !
   call write_all_run_pars('IDL')
+!
+!  Write parameters to log file (done after reading var.dat, since we
+!  want to output time t.
+!
+  call write_all_run_pars
 !
 !  Possible debug output (can only be done after "directory" is set).
 !  Check whether mn array is correct.
@@ -498,8 +522,7 @@ program run
   call choose_pencils
   call write_pencil_info
 !
-  if (mglobal/=0)  &
-      call output_globals('global.dat', &
+  if (mglobal/=0) call output_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Update ghost zones, so rprint works corrected for at the first
@@ -543,14 +566,14 @@ program run
 !
 !  Trim 1D-averages for times past the current time.
 !
-  call trim_1daverages
+  call trim_averages
 !
 !  Do loop in time.
 !
   Time_loop: do while (it<=nt)
 !
-    lout   = mod(it-1,it1) ==0
-    l1davg = mod(it-1,it1d)==0
+    lout   = (mod(it-1,it1) == 0) .and. (it > it1start)
+    l1davg = (mod(it-1,it1d) == 0)
 !
     if (lwrite_sound) then
       if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
@@ -559,19 +582,16 @@ program run
       endif
     endif
 !
-    if (t >= tmax) lout = .true.
-!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
 !
       lstop=control_file_exists('STOP',DELETE=.true.)
-      if (lstop .or. t>=tmax .or. emergency_stop) then
+      if (lstop .or. emergency_stop) then
         if (lroot) then
           print*
           if (emergency_stop) print*, 'Emergency stop requested'
           if (lstop) print*, 'Found STOP file'
-          if (t>=tmax) print*, 'Maximum simulation time exceeded'
         endif
         resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
         if (resubmit) print*, 'Cannot be resubmitted'
@@ -604,15 +624,18 @@ program run
         if (lforcing)            call forcing_clean_up
         if (lhydro_kinematic)    call hydro_clean_up
         if (lsolid_cells)        call solid_cells_clean_up
+
         call rprint_list(LRESET=.true.) !(Re-read output list)
-        call initialize_modules(f)
-        if (lparticles) then
-          call particles_rprint_list(.false.)
-          call particles_initialize_modules(f)
-        endif
+        if (lparticles) call particles_rprint_list(.false.) !MR: shouldn't this be called with lreset=.true.?                                    
         call report_undefined_diagnostics
+
+        call initialize_timestep
+        call initialize_modules(f)
+        if (lparticles) call particles_initialize_modules(f)
+
         call choose_pencils
-        call write_all_run_pars('IDL')
+        call write_all_run_pars('IDL')       ! data to param2.nml
+        call write_all_run_pars              ! diff data to params.log
 !
         lreload_file=control_file_exists('RELOAD', DELETE=.true.)
         lreload_file        = .false.
@@ -644,10 +667,27 @@ program run
 !  If we want to write out video data, wvid_prepare sets lvideo=.true.
 !  This allows pde to prepare some of the data.
 !
-    if (lwrite_slices) call wvid_prepare
-    if (lwrite_2daverages) call write_2daverages_prepare
+    if (lwrite_slices) then
+      call wvid_prepare
+      if (t == 0.0 .and. lwrite_ic) lvideo = .true.
+    endif
 !
-!   Prepare for the writing of the trcers and the fixed points.
+    if (lwrite_2daverages) &
+      call write_2daverages_prepare(t == 0.0 .and. lwrite_ic)
+!
+!  Exit do loop if maximum simulation time is reached; allow one extra
+!  step if any diagnostic output needs to be produced.
+!
+    overtmax: if (t >= tmax) then
+      onemorestep: if (lonemorestep .or. &
+                       .not. (lout .or. lvideo .or. l2davg)) then
+        if (lroot) print *, 'Maximum simulation time exceeded'
+        exit Time_loop
+      endif onemorestep
+      lonemorestep = .true.
+    endif overtmax
+!
+!   Prepare for the writing of the tracers and the fixed points.
 !
     if (lwrite_tracers) call tracers_prepare
     if (lwrite_fixed_points) call fixed_points_prepare
@@ -655,13 +695,14 @@ program run
 !  Find out which pencils to calculate at current time-step.
 !
     lpencil = lpenc_requested
+!  MR: the following should only be done in the first substep, shouldn't it?
     if (lout)   lpencil=lpencil .or. lpenc_diagnos
     if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
     if (lvideo) lpencil=lpencil .or. lpenc_video
 !
 !  Save state vector prior to update for the (implicit) ADI scheme.
 !
-    if (lADI) f(:,:,:,iTTold)=f(:,:,:,ilnTT)
+    if (lADI) f(:,:,:,iTTold)=f(:,:,:,iTT)
 !
     if (ltestperturb) call testperturb_begin(f,df)
 !
@@ -669,9 +710,21 @@ program run
 !
     if (lhydro_kinematic) call kinematic_random_phase
 !
+!  Decide here whether or not we will need a power spectrum.
+!  At least for the graviational wave spectra, this requires
+!  advance warning so the relevant components of the f-array
+!  can be filled.
+!
+    call powersnap_prepare
+!
 !  Time advance.
 !
     call time_step(f,df,p)
+!
+!  If overlapping grids are used to get body-confined grid around the solids
+!  in the flow, call time step on these grids. 
+! 
+    if (lsolid_cells) call time_step_ogrid(f)
 !
 !  Print diagnostic averages to screen and file.
 !
@@ -730,7 +783,7 @@ program run
 !
     if (lroot.and.(idiag_walltime/=0.or.max_walltime/=0.0)) then
       time2=mpiwtime()
-      wall_clock_time=(time2-time1)
+      wall_clock_time=time2-time1
       if (lout) call save_name(wall_clock_time,idiag_walltime)
     endif
 !
@@ -752,9 +805,9 @@ program run
       if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
     if (lparticles) &
-        call write_snapshot_particles(directory_dist,f,ENUM=.true.)
+        call write_snapshot_particles(f,ENUM=.true.)
     if (lpointmasses) &
-        call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR',ENUM=.true.,FLIST='qvarN.list')
+        call pointmasses_write_snapshot('QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list')
     if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
@@ -762,7 +815,7 @@ program run
 !
 !  Write slices (for animation purposes).
 !
-    if (lvideo.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
+    if (lvideo .and. lwrite_slices) call wvid(f)
 !
 !  Write tracers (for animation purposes).
 !
@@ -781,9 +834,10 @@ program run
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &
-            call write_snapshot_particles(directory_dist,f,ENUM=.false.)
-        if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+            call write_snapshot_particles(f,ENUM=.false.)
+        if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
+        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
     endif
 !
@@ -852,8 +906,9 @@ program run
   if (.not.lnowrite) then
     if (save_lastsnap) then
       if (lparticles) &
-          call write_snapshot_particles(directory_dist,f,ENUM=.false.)
-      if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+          call write_snapshot_particles(f,ENUM=.false.)
+      if (lpointmasses) call pointmasses_write_snapshot('qvar.dat',ENUM=.false.)
+      if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !
       call wsnap('var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
@@ -862,7 +917,7 @@ program run
 !
       if (ip<=11 .or. lwrite_dvar) then
         call wsnap('dvar.dat',df,mvar,ENUM=.false.,noghost=.true.)
-        call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
+        call particles_write_dsnapshot('dpvar.dat',f)
       endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
@@ -909,6 +964,7 @@ program run
 !  Write success file, if the requested simulation is complete.
 !
   if ((it > nt) .or. (t > tmax)) call touch_file('COMPLETED')
+  if (t > tmax) call touch_file('ENDTIME')
 !
 !  Stop MPI.
 !

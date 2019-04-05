@@ -1,0 +1,106 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+&init_pars
+  ip = 14
+  xyz0 =-0.3, 0.0, -0.05
+  xyz1 = 0.3, 0.6, 0.05
+  fbcy1 = 0.0,1.0,0.,1.0,273.
+  lperi=T,F,T
+  bcy = 'e2','e2','e2','e2','e2'
+/
+&eos_init_pars
+  cs0=10
+  cp=8.0
+!  gamma=1.0
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_rho'
+  rho_const=1.0
+/
+&entropy_init_pars
+  ltemperature_nolog=T
+  initlnTT='const_TT'
+  TT_const=273.
+/
+&solid_cells_init_pars
+  ncylinders=1
+  cylinder_radius=50.0e-3
+  cylinder_xpos=0.0
+  cylinder_ypos=0.3
+  cylinder_zpos=0.0
+  cylinder_temp=250.
+  skin_depth_solid=4e-3
+  initsolid_cells='cylinderstream_y'
+  init_uu=1.0
+  grid_func_ogrid = 'sinh', , ! Grid stretching in radial direction
+  xyz_star_ogrid=50.0e-3      ! Smallest cells at solid surface
+  coeff_grid_o=18, ,          ! Streching paramater
+  interpolation_method=2      ! Linear interoplation between grids
+  lcheck_interpolation=.true.
+  SBP=.true.                  ! Use summation-by-parts operators
+  lfilter_solution=.true.     ! Use Padé filtering
+  lfilter_rhoonly=.true.     ! Switch to true to only filter rho-component
+  particle_interpolate=1      ! Quadratic interpolation of velocities to particle positions
+  lparticle_uradonly=.false.  ! Quadratic interpolation for ur and uth
+  lspecial_rad_int=.true.     ! Special particle interpolation near solid surface
+  ivar1_part=1
+  ivar2_part=7
+  lstore_ogTT=T
+/
+&NSCBC_init_pars
+  nscbc_bc = '','part_ref_inlet:part_ref_outlet',''
+  nscbc_sigma_in=4.0
+  nscbc_sigma_out=0.28
+  p_infty=873.6
+/
+&particles_init_pars
+  initxxp='random-box'
+  initvvp='constant'
+  vpx0=0.
+  vpy0=1.0
+  vpz0=0.
+  bcpx='p'
+  bcpy='rmv'
+  bcpz='p'
+!  rp_int=0.01
+  xp0=-0.1
+  yp0=0.1
+  zp0=-0.01
+  Lx0=0.2
+  Ly0=0.01
+  Lz0=0.02
+  lthermophoretic_forces=T
+  thermophoretic_eq='near_continuum'
+  cond_ratio=10.0
+!  thermophoretic_T0=270
+  mean_free_path_gas=67e-9
+  interp_pol_rho='cic'
+  interp_pol_TT='cic'
+  interp_pol_uu='cic'
+  linsert_particles_continuously=T
+  lnostore_uu=F
+/
+&particles_radius_init_pars
+  initap='specify'    ! Specified distribution of particles
+  radii_distribution=0.25,0.25,0.25,0.25
+  ap0 = 7.5E-6,! St = 0.1
+        7.5E-5,
+        7.5E-4,
+        7.5E-3
+  lsweepup_par=F
+  rhopmat=1e3
+/
+&particles_stalker_init_pars
+  dstalk=5e-3
+  lstalk_xx=T 
+  lstalk_vv=T
+  lstalk_uu=F
+  lstalk_guu=F
+  lstalk_rho=F
+  lstalk_grho=F
+  lstalk_bb=F
+/

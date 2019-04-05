@@ -449,8 +449,9 @@ module Radiation
 !  16-jul-02/nils: adapted from rprint_hydro
 !
       use Cdata
-      use Sub
       use Diagnostics
+      use FArrayManager, only: farray_index_append
+      use Sub
 !
       integer :: iname
       logical :: lreset,lwr
@@ -486,17 +487,17 @@ module Radiation
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_frms=',idiag_frms
-        write(3,*) 'i_fmax=',idiag_fmax
-        write(3,*) 'i_Erad_rms=',idiag_Erad_rms
-        write(3,*) 'i_Erad_max=',idiag_Erad_max
-        write(3,*) 'i_Egas_rms=',idiag_Egas_rms
-        write(3,*) 'i_Egas_max=',idiag_Egas_max
-        write(3,*) 'nname=',nname
-        write(3,*) 'iErad=',iErad
-        write(3,*) 'iKR_Fradx=',iKR_Fradx
-        write(3,*) 'iKR_Frady=',iKR_Frady
-        write(3,*) 'iKR_Fradz=',iKR_Fradz
+        call farray_index_append('i_frms',idiag_frms)
+        call farray_index_append('i_fmax',idiag_fmax)
+        call farray_index_append('i_Erad_rms',idiag_Erad_rms)
+        call farray_index_append('i_Erad_max',idiag_Erad_max)
+        call farray_index_append('i_Egas_rms',idiag_Egas_rms)
+        call farray_index_append('i_Egas_max',idiag_Egas_max)
+        call farray_index_append('nname',nname)
+        call farray_index_append('iErad',iErad)
+        call farray_index_append('iKR_Fradx',iKR_Fradx)
+        call farray_index_append('iKR_Frady',iKR_Frady)
+        call farray_index_append('iKR_Fradz',iKR_Fradz)
       endif
 !
     endsubroutine rprint_radiation

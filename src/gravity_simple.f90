@@ -54,11 +54,10 @@ module Gravity
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
   real :: xinfty=0.0, yinfty=0.0, zinfty=impossible, zclip=impossible
-  real :: dgravx=0.0, pot_ratio=1.0, qgshear=1.5
+  real :: dgravx=0.0, pot_ratio=1.0
   real :: z1=0.0, z2=1.0, xref=0.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
-  real :: r0_pot=0.0
   real :: g_A, g_C, g_A_factor=1.0, g_C_factor=1.0
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
@@ -111,7 +110,7 @@ module Gravity
   integer :: idiag_epottot=0       ! DIAG_DOC: $\int_V\varrho \Phi_{\rm grav}
                                    ! DIAG_DOC: dV$ \quad(total potential
                                    ! DIAG_DOC: energy)
-  integer :: idiag_ugm=0           ! DIAG_DOC: $\left<\vu \cdot \vg\right>$
+  integer :: idiag_ugm=0           ! DIAG_DOC: $\left<\uv \cdot \gv\right>$
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
@@ -210,8 +209,14 @@ module Gravity
             call fatal_error('initialize_gravity','zref=impossible')
           else
             call get_shared_variable('cs20',cs20,caller='initialize_gravity')
-            call get_shared_variable('mpoly',mpoly)
             call get_shared_variable('gamma',gamma)
+            if (ldensity.and..not.lstratz) then
+              call get_shared_variable('mpoly',mpoly)
+            else
+              if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
+                                      'set impossible')
+              allocate(mpoly); mpoly=impossible
+            endif
 !
             zinfty=zref+cs20*(mpoly+1)/(-gamma*gravz)
             if (lroot) print*,'initialize_gravity: computed zinfty=',zinfty
@@ -297,6 +302,14 @@ module Gravity
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x + potx_const
+        g0=gravx
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
+!
+      case ('kepler_2d')
+        if (lroot) print*,'initialize_gravity: kepler_2d x-grav, gravx=',gravx
+        gravx_xpencil=-gravx/x
+        potx_xpencil=-gravx*alog(x) + potx_const
         g0=gravx
         call put_shared_variable('gravx', gravx, caller='initialize_gravity')
         call put_shared_variable('gravx_xpencil', gravx_xpencil)
@@ -693,7 +706,8 @@ module Gravity
       if (lreference_state) lpenc_requested(i_rho1)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epot/=0 .or. idiag_epotmx/=0 .or. &
-          idiag_epotmy/=0 .or. idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
+          idiag_epotmy/=0 .or. idiag_epotmz/=0 .or. &
+          idiag_epottot/=0) lpenc_diagnos(i_epot)=.true.
       if (idiag_epotuxmx/=0 .or. idiag_epotuzmz/=0) then
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
@@ -1141,6 +1155,7 @@ module Gravity
 !  12-jun-04/axel: adapted from grav_z
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -1206,10 +1221,7 @@ module Gravity
 !  IDL needs this even if everything is zero.
 !
       if (lwr) then
-        write(3,*) 'igg=',igg
-        write(3,*) 'igx=',igx
-        write(3,*) 'igy=',igy
-        write(3,*) 'igz=',igz
+        call farray_index_append('igg',igg)
       endif
 !
     endsubroutine rprint_gravity

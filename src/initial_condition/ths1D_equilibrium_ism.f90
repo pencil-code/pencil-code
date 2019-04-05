@@ -87,29 +87,31 @@ module InitialCondition
 !  Includes neutral hydrogen and warm ionized hydrogen plus helium 
 !  proportionately. Multiply by m_u_cgs for gas density
 !
-  real, parameter, dimension(5) :: nfraction_cgs = (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/) ! particles per cm cubed normalized to 1 at midplane 
-  real, parameter, dimension(5) :: hscale_cgs = (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/) ! scale height in cm
+! particles per cm cubed not normalized to 1 at midplane 
+  real, parameter, dimension(5) :: nfraction_cgs = &
+      (/0.399,0.1083,0.0627,0.015,0.025/)
+! scale height in cm
+  real, parameter, dimension(5) :: hscale_cgs = &
+      (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/)
   real, dimension(5) :: rho_fraction, hscale 
 !
-!  Heating function, cooling function and mass movement
-!  method selection.
+!  Heating function, cooling function
 !
-  character (len=labellen) :: cooling_select  = 'WSW'
   character (len=labellen) :: heating_select  = 'wolfire'
+  character (len=labellen) :: cooling_select  = 'WSW'
 !
+!  TT & rho z-dependent profiles
 !
-  real, parameter :: T_init_cgs=2e3
+  real, parameter :: T_init_cgs=1e3
   real :: T_init=impossible
   real :: rhox=1. ! column density comparative to Milky Way default
-!
-!  TT & z-dependent uv-heating profile
-!
+  real :: He_factor=1.101 !number density rescale for helium
   real, dimension(mz) :: rho, lnTT
 !
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      T_init, cooling_select, rhox, &
+      T_init, cooling_select, rhox, HE_factor, &
       heating_select
 !
   contains
@@ -191,7 +193,7 @@ module InitialCondition
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        rho_fraction = rhox * nfraction_cgs * m_u_cgs/unit_density
+        rho_fraction = rhox * He_factor*nfraction_cgs * m_u_cgs/unit_density
         hscale = hscale_cgs/unit_length
         if (T_init == impossible) T_init = T_init_cgs/unit_temperature
       else if (unit_system=='SI') then

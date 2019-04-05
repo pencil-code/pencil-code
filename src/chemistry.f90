@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  This modules addes chemical species and reactions.
-!  The units used in the chem.in files are cm3,mole,sec,kcal and K
+!  MODULE_DOC: This modules adds chemical species and reactions.
+!  MODULE_DOC: The units used in the chem.in files are cm3,mole,sec,kcal and K
 !  This was found out by comparing the mechanism found in 
 !  samples/0D/chemistry_H2_ignition_delay
 !  with Flow Reactor Studies and Kinetic Modeling of the ReactionH/O22
@@ -40,16 +40,20 @@ module Chemistry
   include 'chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension(mx,my,mz) :: cp_full, cv_full, mu1_full
+  real, dimension(mx,my,mz) :: cp_full, cv_full
+  real, dimension(:,:,:), pointer :: mu1_full
   real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
   real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
 !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
-! parameters for simiplifyed cases
+
+  real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
+
+! parameters for simplified cases
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: Diff_coef_const=impossible
-  real :: Sc_number=0.7, Pr_number=0.7
-  real :: Cp_const=impossible
+  real :: Sc_number=0.7!, Pr_number=0.7
+!  real :: Cp_const=impossible
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
   logical :: init_from_file, reinitialize_chemistry=.false.
@@ -77,6 +81,7 @@ module Chemistry
 !  logical :: lnospec_eqns=.true.
 !
   logical :: lheatc_chemistry=.true.
+  logical :: lspecies_cond_simplified=.false.
   logical :: lDiff_simple=.false.
   logical :: lDiff_lewis=.false.
   logical :: lThCond_simple=.false.
@@ -157,10 +162,23 @@ module Chemistry
   logical :: lcloud=.false.
   integer, SAVE :: index_O2=0., index_N2=0., index_O2N2=0., index_H2O=0.
 !
+!   Lewis coefficients
+!
+ real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
+!
+!   Transport data
+!
+ real, dimension(nchemspec,7) :: tran_data
+!
 !   Diagnostics
 !
   real, allocatable, dimension(:,:) :: net_react_m, net_react_p
+  real, dimension(nchemspec) :: Ythresh=0.
   logical :: lchemistry_diag=.false.
+!
+!   Hot spot problem
+!
+  logical :: lhotspot=.false.
 !
 ! input parameters
   namelist /chemistry_init_pars/ &
@@ -171,56 +189,41 @@ module Chemistry
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
       init_TT2,init_rho, &
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
-      str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
+      str_thick,lfix_Pr, lT_tanh,lT_const, lheatc_chemistry, lspecies_cond_simplified, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud
+      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
+      lhotspot
 !
 !
 ! run parameters
   namelist /chemistry_run_pars/ &
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
-      lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
+      lreactions, lchem_cdtc, lheatc_chemistry, lspecies_cond_simplified, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lFlux_simple, &
       lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
       linit_density, &
-      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
+      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi, &
+      Ythresh
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
-  integer, dimension(nchemspec) :: idiag_Ym=0 ! DIAG_DOC: $\left<Y_x\right>$
-  integer, dimension(nchemspec) :: idiag_dYm=0 ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
-  integer, dimension(nchemspec) :: idiag_dYmax=0 ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
-  integer, dimension(nchemspec) :: idiag_Ymax=0 ! DIAG_DOC: $\left<Y_{x,max}\right>$
-  integer, dimension(nchemspec) :: idiag_Ymin=0 ! DIAG_DOC: $\left<Y_{x,min}\right>$
-  integer, dimension(nchemspec) :: idiag_hm=0 ! DIAG_DOC: $\left<H_{x,max}\right>$
-  integer, dimension(nchemspec) :: idiag_cpm=0 ! DIAG_DOC: $\left<c_{p,x}\right>$
-  integer, dimension(nchemspec) :: idiag_diffm=0 ! DIAG_DOC: $\left<D_{x}\right>$
+  integer, dimension(nchemspec) :: idiag_Ym=0      ! DIAG_DOC: $\left<Y_x\right>$
+  integer, dimension(nchemspec) :: idiag_TYm=0     ! DIAG_DOC: $\left<Y_{\rm thresh}-Y_x\right>$
+  integer, dimension(nchemspec) :: idiag_dYm=0     ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
+  integer, dimension(nchemspec) :: idiag_dYmax=0   ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
+  integer, dimension(nchemspec) :: idiag_Ymax=0    ! DIAG_DOC: $\left<Y_{x,max}\right>$
+  integer, dimension(nchemspec) :: idiag_Ymin=0    ! DIAG_DOC: $\left<Y_{x,min}\right>$
+  integer, dimension(nchemspec) :: idiag_hm=0      ! DIAG_DOC: $\left<H_{x,max}\right>$
+  integer, dimension(nchemspec) :: idiag_cpm=0     ! DIAG_DOC: $\left<c_{p,x}\right>$
+  integer, dimension(nchemspec) :: idiag_diffm=0   ! DIAG_DOC: $\left<D_{x}\right>$
+  integer, dimension(nchemspec) :: idiag_Ymz=0     ! DIAG_DOC: $\left<Y_x\right>_{xy}(z)$
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
 !
-  integer :: idiag_Y1mz=0        ! DIAG_DOC: $\left<Y_1\right>_{xy}(z)$
-  integer :: idiag_Y2mz=0        ! DIAG_DOC: $\left<Y_2\right>_{xy}(z)$
-  integer :: idiag_Y3mz=0        ! DIAG_DOC: $\left<Y_3\right>_{xy}(z)$
-  integer :: idiag_Y4mz=0        ! DIAG_DOC: $\left<Y_4\right>_{xy}(z)$
-  integer :: idiag_Y5mz=0        ! DIAG_DOC: $\left<Y_5\right>_{xy}(z)$
-  integer :: idiag_Y6mz=0        ! DIAG_DOC: $\left<Y_6\right>_{xy}(z)$
-  integer :: idiag_Y7mz=0        ! DIAG_DOC: $\left<Y_7\right>_{xy}(z)$
-  integer :: idiag_Y8mz=0        ! DIAG_DOC: $\left<Y_8\right>_{xy}(z)$
-  integer :: idiag_Y9mz=0        ! DIAG_DOC: $\left<Y_9\right>_{xy}(z)$
-  integer :: idiag_Y10mz=0        ! DIAG_DOC: $\left<Y_10\right>_{xy}(z)$
-  integer :: idiag_Y11mz=0        ! DIAG_DOC: $\left<Y_11\right>_{xy}(z)$
-  integer :: idiag_Y12mz=0        ! DIAG_DOC: $\left<Y_12\right>_{xy}(z)$
-  integer :: idiag_Y13mz=0        ! DIAG_DOC: $\left<Y_13\right>_{xy}(z)$
-  integer :: idiag_Y14mz=0        ! DIAG_DOC: $\left<Y_14\right>_{xy}(z)$
-  integer :: idiag_Y15mz=0        ! DIAG_DOC: $\left<Y_15\right>_{xy}(z)$
-  integer :: idiag_Y16mz=0        ! DIAG_DOC: $\left<Y_16\right>_{xy}(z)$
-  integer :: idiag_Y17mz=0        ! DIAG_DOC: $\left<Y_17\right>_{xy}(z)$
-  integer :: idiag_Y18mz=0        ! DIAG_DOC: $\left<Y_18\right>_{xy}(z)$
-  integer :: idiag_Y19mz=0        ! DIAG_DOC: $\left<Y_19\right>_{xy}(z)$
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
@@ -229,10 +232,15 @@ module Chemistry
   integer :: idiag_lambdam=0
   integer :: idiag_num=0
 !
+!  Auxiliaries.
+!
+  integer :: ireac=0
+  integer, dimension(nchemspec) :: ireaci=0
+
   contains
 !
 !***********************************************************************
-    subroutine register_chemistry()
+    subroutine register_chemistry
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -305,7 +313,7 @@ module Chemistry
 !
 !  Write all data on species and their thermodynamics to file.
 !
-      if (lcheminp) call write_thermodyn()
+      if (lcheminp) call write_thermodyn
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -323,6 +331,8 @@ module Chemistry
 !                    in the f array for output.
 !
       use FArrayManager
+      use SharedVariables, only: get_shared_variable
+      use Messages, only: warning
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: data_file_exit=.false.
@@ -479,7 +489,7 @@ module Chemistry
         net_react_m = 0.
       endif
 !
-!  Define the chemical reaction rates as auxilliary variables for output
+!  Define the chemical reaction rates as auxiliary variables for output
 !
       if (lreac_as_aux) then
         if (ireac == 0) then
@@ -487,17 +497,20 @@ module Chemistry
           do i = 0, nchemspec-1
             ireaci(i+1) = ireac+i
           enddo
-        endif
-        if (ireac /= 0 .and. lroot) then
-          print*, 'initialize_reaction_rates: ireac = ', ireac
-          open (3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write (3,*) 'ireac=',ireac
+        else
+          if (lroot) print*, 'initialize_chemistry: ireac = ', ireac
+          call farray_index_append('ireac',ireac)
           do i = 1, nchemspec
             write (car2,'(i2)') i
-            write (3,*) 'ireac'//trim(adjustl(car2))//'=', ireaci(i)
+            call farray_index_append('ireac'//trim(adjustl(car2)),ireaci(i))
           enddo
-          close (3)
         endif
+      endif
+!
+      if (leos) then
+        call get_shared_variable('mu1_full',mu1_full,caller='initialize_chemistry')
+      else
+        call warning('initialize_chemistry','mu1_full not provided by eos')
       endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -611,6 +624,8 @@ module Chemistry
           call prerun_1D_opp(f,prerun_directory)
         case ('FlameMaster')
           call FlameMaster_ini(f,file_name)
+        case ('flame_front_new')
+          call flame_front_new(f)
         case default
 !
 !  Catch unknown values
@@ -635,7 +650,7 @@ module Chemistry
 !
     endsubroutine init_chemistry
 !***********************************************************************
-    subroutine pencil_criteria_chemistry()
+    subroutine pencil_criteria_chemistry
 !
 !  All pencils that this chemistry module depends on are specified here.
 !
@@ -1180,9 +1195,9 @@ module Chemistry
       if (lroot) then
         print*, '          init                      final'
         if (lH2 .and. .not. lCH4) print*, 'H2 :', init_H2, 0.
-        if (lCH4) print*, 'CH4 :', init_CH4, 0.
-        if (lO2) print*, 'O2 :', init_O2, final_massfrac_O2
-        if (lH2O) print*, 'H2O :', 0., final_massfrac_H2O
+        if (lCH4) print*, 'CH4 :',  init_CH4, 0.
+        if (lO2) print*, 'O2 :',    init_O2, final_massfrac_O2
+        if (lH2O) print*, 'H2O :',  init_H2O, final_massfrac_H2O
         if (lCO2)  print*, 'CO2 :', 0., final_massfrac_CO2
       endif
 !
@@ -1319,6 +1334,166 @@ module Chemistry
       enddo
 !
     endsubroutine flame_front
+!***********************************************************************
+    subroutine flame_front_new(f)
+!
+!  10-nov-18/chengeng: adapted from flame_front, but flame front on the left,
+!                      and added initial condition for hotspot problem.
+!                      This version replaces experimental/test_chemistry.
+!
+!  This routine set up the initial profiles used in 1D flame speed measurments
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i, j,k
+!
+      real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
+      real :: log_inlet_density, del, PP
+      integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
+      integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
+      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
+      real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
+          final_massfrac_H2O, final_massfrac_CO2,final_massfrac_H2
+      real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
+      logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
+      logical :: lCH4=.false., lCO2=.false.
+      real :: theta
+!
+      lflame_front = .true.
+!
+      call air_field(f,PP)
+!
+      if (ltemperature_nolog) f(:,:,:,ilnTT) = log(f(:,:,:,ilnTT))
+!
+! Initialize some indexes
+!
+      call find_species_index('H2',i_H2,ichem_H2,lH2)
+      if (lH2) then
+        mH2 = species_constants(ichem_H2,imass)
+        init_H2 = initial_massfractions(ichem_H2)
+      endif
+      call find_species_index('O2',i_O2,ichem_O2,lO2)
+      if (lO2) then
+        mO2 = species_constants(ichem_O2,imass)
+        init_O2 = initial_massfractions(ichem_O2)
+      endif
+      call find_species_index('N2',i_N2,ichem_N2,lN2)
+      if (lN2) then
+        mN2 = species_constants(ichem_N2,imass)
+        init_N2 = initial_massfractions(ichem_N2)
+      else
+        init_N2 = 0
+      endif
+      call find_species_index('H2O',i_H2O,ichem_H2O,lH2O)
+      if (lH2O) then
+        mH2O = species_constants(ichem_H2O,imass)
+        init_H2O = initial_massfractions(ichem_H2O)
+      endif
+!
+! Find approximate value for the mass fraction of O2 after the flame front
+! Warning: These formula are only correct for lean fuel/air mixtures. They
+!          must be modified under rich conditions to account for the excess
+!          of fuel.
+!
+      final_massfrac_O2 = 0.
+      final_massfrac_H2 = 0.
+      if ( lH2 ) then
+        final_massfrac_H2O = mH2O/mH2 * init_H2
+        final_massfrac_O2 = 1. - final_massfrac_H2O- init_N2
+      endif
+!
+      if (final_massfrac_O2 < 0.) final_massfrac_O2 = 0.
+      if (lroot) then
+        print*, '          init                      final'
+        if (lH2 ) print*, 'H2 :' , init_H2,  final_massfrac_H2
+        if (lO2)  print*, 'O2 :' , init_O2,  final_massfrac_O2
+        if (lH2O) print*, 'H2O :', init_H2O, final_massfrac_H2O
+      endif
+!
+!  Initialize temperature and species
+!
+      do k = 1,mx
+!
+!  Initialize temperature
+!
+                     
+      if( lhotspot )then
+          if( x(k)<init_x2 )then
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
+          f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
+          else
+          f(k,:,:,ilnTT) = log( init_TT2 )
+          end if
+          f(k,:,:,i_H2)  = init_H2
+          f(k,:,:,i_O2)  = init_O2 
+          f(k,:,:,i_H2O) = init_H2O
+          f(k,:,:,iux) = 0.0
+      else
+          if ( x(k)<=init_x1 )then
+          f(k,:,:,ilnTT) = log( init_TT1 )
+          f(k,:,:,i_H2)  = final_massfrac_H2
+          f(k,:,:,i_O2)  = final_massfrac_O2 
+          f(k,:,:,i_H2O) = final_massfrac_H2O
+          f(k,:,:,iux) = 0.0
+          else if ( x(k)>init_x2 )then
+          f(k,:,:,ilnTT) = log( init_TT2 )
+          f(k,:,:,i_H2)  = init_H2
+          f(k,:,:,i_O2)  = init_O2
+          f(k,:,:,i_H2O) = init_H2O
+          f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)
+          else
+          theta = ( x(k)-init_x1 )/( init_x2-init_x1 )
+          f(k,:,:,ilnTT) = log( init_TT1-theta*(init_TT1-init_TT2) )
+          f(k,:,:,i_H2)  = init_H2*theta+final_massfrac_H2
+          f(k,:,:,i_O2)  = init_O2*theta+final_massfrac_O2
+          f(k,:,:,i_H2O) = init_H2O*(1.0-theta)+final_massfrac_H2O
+          f(k,:,:,iux) = init_ux*(init_TT1/init_TT2-1.0)*theta
+          end if
+      end if
+
+      end do
+!
+      if (unit_system == 'cgs') then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas = Rgas_unit_sys/unit_energy
+      endif
+!
+!  Find logaritm of density at inlet
+!
+      initial_mu1 = &
+          initial_massfractions(ichem_O2)/(mO2) &
+          +initial_massfractions(ichem_H2O)/(mH2O) &
+          +initial_massfractions(ichem_N2)/(mN2)
+      if (lH2 .and. .not. lCH4) initial_mu1 = initial_mu1+ &
+          initial_massfractions(ichem_H2)/(mH2)
+      if (lCO2) initial_mu1 = initial_mu1+init_CO2/(mCO2)
+      if (lCH4) initial_mu1 = initial_mu1+init_CH4/(mCH4)
+      log_inlet_density = &
+          log(init_pressure)-log(Rgas)-log(init_TT1)-log(initial_mu1)
+!
+!  Initialize density
+!
+      call getmu_array(f,mu1_full)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = log(init_pressure)-log(Rgas)  &
+          -f(l1:l2,m1:m2,n1:n2,ilnTT)-log(mu1_full(l1:l2,m1:m2,n1:n2))
+!
+!  Initialize velocity
+!
+!      f(l1:l2,m1:m2,n1:n2,iux)=exp(log_inlet_density - f(l1:l2,m1:m2,n1:n2,ilnrho)) &
+!          * (f(l1:l2,m1:m2,n1:n2,iux)+init_ux)
+      !f(l1:l2,m1:m2,n1:n2,iux) = f(l1:l2,m1:m2,n1:n2,iux)+init_ux
+!
+! Renormalize all species to be sure that the sum of all mass fractions
+! are unity
+!
+      do i = 1,mx
+        do j = 1,my
+          do k = 1,mz
+            f(i,j,k,ichemspec) = f(i,j,k,ichemspec)/sum(f(i,j,k,ichemspec))
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine flame_front_new
 !***********************************************************************
     subroutine TTD(f)
 !
@@ -2306,6 +2481,9 @@ module Chemistry
                         *cp_R_spec/species_constants(k,imass)*Rgas
                     cv_full(:,j2,j3) = cv_full(:,j2,j3)+f(:,j2,j3,ichemspec(k))  &
                         *cv_R_spec_full(:,j2,j3,k)/species_constants(k,imass)*Rgas
+
+cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
+
                   endif
                 enddo
               enddo
@@ -2765,7 +2943,7 @@ module Chemistry
       real, dimension(nx) :: ugchemspec, sum_DYDT, sum_dhhk=0.
       real, dimension(nx) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac
       type (pencil_case) :: p
-      real, dimension(nx) :: RHS_T_full
+      real, dimension(nx) :: RHS_T_full, diffus_chem
 !
 !  indices
 !
@@ -2921,7 +3099,9 @@ module Chemistry
           RHS_T_full = sum_DYDt(:)
         else
           if (ltemperature_nolog) then
-            call stop_it('ltemperature_nolog case does not work now!')
+              RHS_T_full = p%cv1*((sum_DYDt(:)-Rgas*p%mu1*p%divu)*p%TT &
+                  +sum_dk_ghk+sum_hhk_DYDt_reac)
+   !       call stop_it('ltemperature_nolog case does not work now!')
           else
             if (lchemonly) then
               RHS_T_full = (sum_DYDt(:)+sum_hhk_DYDt_reac*p%TT1(:))*p%cv1
@@ -2976,6 +3156,7 @@ module Chemistry
         if (.not. lcheminp) then
           diffus_chem = chem_diff*maxval(chem_diff_prefactor)*dxyz_2
         else
+          diffus_chem=0.
           do j = 1,nx
             if (ldiffusion .and. .not. ldiff_simple) then
 !
@@ -2990,6 +3171,7 @@ module Chemistry
             endif
           enddo
         endif
+        maxdiffus=max(maxdiffus,diffus_chem)
       endif
 !
 ! NB: it should be discussed
@@ -3050,6 +3232,9 @@ module Chemistry
           if (idiag_Ymin(ii)/= 0) then
             call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           endif
+          if (idiag_TYm(ii)/= 0) then
+            call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
+          endif
           if (idiag_diffm(ii)/= 0) then
             call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
           endif
@@ -3071,49 +3256,10 @@ module Chemistry
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-!
-!  To prevent out of bounds errors in auto-test, reset the i2-i19 values.
-!
-        if (idiag_Y2mz == 0)  iz2 = 1
-        if (idiag_Y3mz == 0)  iz3 = 1
-        if (idiag_Y4mz == 0)  iz4 = 1
-        if (idiag_Y5mz == 0)  iz5 = 1
-        if (idiag_Y6mz == 0)  iz6 = 1
-        if (idiag_Y7mz == 0)  iz7 = 1
-        if (idiag_Y8mz == 0)  iz8 = 1
-        if (idiag_Y9mz == 0)  iz9 = 1
-        if (idiag_Y10mz == 0) iz10 = 1
-        if (idiag_Y11mz == 0) iz11 = 1
-        if (idiag_Y12mz == 0) iz12 = 1
-        if (idiag_Y13mz == 0) iz13 = 1
-        if (idiag_Y14mz == 0) iz14 = 1
-        if (idiag_Y15mz == 0) iz15 = 1
-        if (idiag_Y16mz == 0) iz16 = 1
-        if (idiag_Y17mz == 0) iz17 = 1
-        if (idiag_Y18mz == 0) iz18 = 1
-        if (idiag_Y19mz == 0) iz19 = 1
-!
-!  Now can start:
-!
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz1)),idiag_Y1mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz2)),idiag_Y2mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz3)),idiag_Y3mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz4)),idiag_Y4mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz5)),idiag_Y5mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz6)),idiag_Y6mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz7)),idiag_Y7mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz8)),idiag_Y8mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz9)),idiag_Y9mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz10)),idiag_Y10mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz11)),idiag_Y11mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz12)),idiag_Y12mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz13)),idiag_Y13mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz14)),idiag_Y14mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz15)),idiag_Y15mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz16)),idiag_Y16mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz17)),idiag_Y17mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz18)),idiag_Y18mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz19)),idiag_Y19mz)
+        do ii = 1,nchemspec
+          if (idiag_Ymz(ii)/= 0) &
+            call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
+        enddo
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)
 !
@@ -3162,7 +3308,8 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: itoa
+      use FArrayManager, only: farray_index_append
+      use General, only: itoa, get_species_nr
 !
       integer :: iname, inamez,ii
       logical :: lreset, lwr
@@ -3171,10 +3318,12 @@ module Chemistry
       character(len=6) :: diagn_Ymax
       character(len=6) :: diagn_Ymin
       character(len=7) :: diagn_dYmax
+      character(len=6) :: diagn_TYm
       character(len=6) :: diagn_dYm
       character(len=6) :: diagn_hm
       character(len=6) :: diagn_cpm
       character(len=7) :: diagn_diffm
+      character(len=fmtlen) :: sname
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
@@ -3185,6 +3334,7 @@ module Chemistry
       if (lreset) then
         idiag_dtchem = 0
         idiag_Ym = 0
+        idiag_TYm = 0
         idiag_dYm = 0
         idiag_Ymax = 0
         idiag_Ymin = 0
@@ -3196,25 +3346,7 @@ module Chemistry
         idiag_cpfull = 0
         idiag_cvfull = 0
         idiag_e_intm = 0
-        idiag_Y1mz = 0
-        idiag_Y2mz = 0
-        idiag_Y3mz = 0
-        idiag_Y4mz = 0
-        idiag_Y5mz = 0
-        idiag_Y6mz = 0
-        idiag_Y7mz = 0
-        idiag_Y8mz = 0
-        idiag_Y9mz = 0
-        idiag_Y10mz = 0
-        idiag_Y11mz = 0
-        idiag_Y12mz = 0
-        idiag_Y13mz = 0
-        idiag_Y14mz = 0
-        idiag_Y15mz = 0
-        idiag_Y16mz = 0
-        idiag_Y17mz = 0
-        idiag_Y18mz = 0
-        idiag_Y19mz = 0
+        idiag_Ymz = 0
 !
         idiag_lambdam = 0
         idiag_num = 0
@@ -3234,6 +3366,8 @@ module Chemistry
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ymin),idiag_Ymin(ii))
           diagn_dYm = 'dY'//trim(adjustl(number))//'m'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYm),idiag_dYm(ii))
+          diagn_TYm = 'TY'//trim(adjustl(number))//'m'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_TYm),idiag_TYm(ii))
           diagn_dYmax = 'dY'//trim(adjustl(number))//'max'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYmax),idiag_dYmax(ii))
           diagn_hm = 'h'//trim(adjustl(number))//'m'
@@ -3262,32 +3396,28 @@ module Chemistry
 !  xy-averages
 !
       do inamez = 1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y1mz',idiag_Y1mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y2mz',idiag_Y2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y3mz',idiag_Y3mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y4mz',idiag_Y4mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y5mz',idiag_Y5mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y6mz',idiag_Y6mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y7mz',idiag_Y7mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y8mz',idiag_Y8mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y9mz',idiag_Y9mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y10mz',idiag_Y10mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y11mz',idiag_Y11mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y12mz',idiag_Y12mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y13mz',idiag_Y13mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y14mz',idiag_Y14mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y15mz',idiag_Y15mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y16mz',idiag_Y16mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y17mz',idiag_Y17mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y18mz',idiag_Y18mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y19mz',idiag_Y19mz)
+        do ii=1,nchemspec
+          write (number,'(I2)') ii
+          diagn_Ym = 'Y'//trim(adjustl(number))//'mz'
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),trim(diagn_Ym),idiag_Ymz(ii))
+        enddo
+      enddo
+!
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        sname=trim(cnamev(iname))
+        if (sname(1:8)=='chemspec') then
+          if (get_species_nr(sname,'chemspec',nchemspec,'rprint_chemistry')>0) &
+            cformv(iname)='DEFINED'
+        endif
       enddo
 !
 !  Write chemistry index in short notation
 !
       if (lwr) then
-        write (3,*) 'nchemspec=',nchemspec
-        write (3,*) 'ichemspec=indgen('//trim(itoa(nchemspec))//') + '//trim(itoa(ichemspec(1)))
+        call farray_index_append('nchemspec',nchemspec)
+        call farray_index_append('ichemspec',ichemspec(1),1,nchemspec)
       endif
 !
     endsubroutine rprint_chemistry
@@ -3299,170 +3429,24 @@ module Chemistry
 !  13-aug-07/steveb: dummy
 !  16-may-09/raphael: added more slices
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
-      integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
       type (slice_data) :: slices
-!
-!  Loop over slices
-!
-      select case (trim(slices%name))
+
+      character(len=fmtlen) :: sname
+      integer :: ispec
 !
 !  Chemical species mass fractions.
 !
-      case ('chemspec')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i1))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i1))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i1))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i1))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i1))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i1))
-        slices%ready = .true.
-      case ('chemspec2')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i2))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i2))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i2))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i2))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i2))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i2))
-        slices%ready = .true.
-      case ('chemspec3')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i3))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i3))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i3))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i3))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i3))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i3))
-        slices%ready = .true.
-      case ('chemspec4')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i4))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i4))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i4))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i4))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i4))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i4))
-        slices%ready = .true.
-      case ('chemspec5')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i5))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i5))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i5))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i5))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i5))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i5))
-        slices%ready = .true.
-      case ('chemspec6')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i6))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i6))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i6))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i6))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i6))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i6))
-        slices%ready = .true.
-      case ('chemspec7')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i7))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i7))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i7))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i7))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i7))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i7))
-        slices%ready = .true.
-      case ('chemspec8')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i8))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i8))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i8))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i8))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i8))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i8))
-        slices%ready = .true.
-      case ('chemspec9')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i9))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i9))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i9))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i9))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i9))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i9))
-        slices%ready = .true.
-      case ('chemspec10')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i10))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i10))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i10))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i10))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i10))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i10))
-        slices%ready = .true.
-      case ('chemspec11')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i11))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i11))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i11))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i11))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i11))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i11))
-        slices%ready = .true.
-      case ('chemspec12')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i12))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i12))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i12))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i12))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i12))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i12))
-        slices%ready = .true.
-      case ('chemspec13')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i13))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i13))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i13))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i13))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i13))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i13))
-        slices%ready = .true.
-      case ('chemspec14')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i14))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i14))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i14))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i14))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i14))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i14))
-        slices%ready = .true.
-      case ('chemspec15')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i15))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i15))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i15))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i15))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i15))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i15))
-        slices%ready = .true.
-      case ('chemspec16')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i16))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i16))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i16))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i16))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i16))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i16))
-        slices%ready = .true.
-      case ('chemspec17')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i17))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i17))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i17))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i17))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i17))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i17))
-        slices%ready = .true.
-      case ('chemspec18')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i18))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i18))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i18))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i18))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i18))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i18))
-        slices%ready = .true.
-      case ('chemspec19')
-        slices%yz = f(ix_loc,m1:m2,n1:n2,ichemspec(i19))
-        slices%xz = f(l1:l2,iy_loc,n1:n2,ichemspec(i19))
-        slices%xy = f(l1:l2,m1:m2,iz_loc,ichemspec(i19))
-        slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ichemspec(i19))
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ichemspec(i19))
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ichemspec(i19))
-        slices%ready = .true.
-      endselect
+      sname=trim(slices%name)
+      if (sname(9:)==' ') then    ! 9=len('chemspec')+1
+        ispec=1
+      else
+        read(sname(9:),'(i3)') ispec
+      endif
+! 
+      call assign_slices_scal(slices,f,ichemspec(ispec))
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
@@ -3524,7 +3508,7 @@ module Chemistry
 !
     endsubroutine build_stoich_matrix
 !***********************************************************************
-    subroutine write_reactions()
+    subroutine write_reactions
 !
 !  write reaction coefficient in the output file
 !
@@ -3757,7 +3741,7 @@ module Chemistry
 !  read chemistry data
 !
       call read_reactions(input_file)
-      call write_reactions()
+      call write_reactions
 !
 !  calculate stoichio and nreactions
 !
@@ -3788,8 +3772,8 @@ module Chemistry
         close (file_id)
       endif
 !
-100   format(I1,16f6.1)
-101   format('    ',16A6)
+100   format(I1,26f6.1)
+101   format('    ',26A6)
 !
       call keep_compiler_quiet(f)
 !
@@ -4355,6 +4339,7 @@ module Chemistry
           else
             kr = kf-Kc
           endif
+          if (lpencil_check_at_work) where (kr > 32) kr = kr / exp(real(nint(alog(kr))))
 !
           if (Mplus_case (reac)) then
             where (prod1 > 0.)
@@ -4856,11 +4841,19 @@ module Chemistry
       pi_2 = pi*pi
       pi_1_5 = pi*sqrt(pi)
 !
+!  With lspecies_cond_simplified, species conduction is calculated
+!  according to the book "Transport phenomena" by Bird, Warren, & Lightfoot
+!  page 276, Eq.(9.3-15).
+!
       do j3 = nn1,nn2
         do j2 = mm1,mm2
           tmp_sum = 0.
           tmp_sum2 = 0.
           do k = 1,nchemspec
+            if (lspecies_cond_simplified) then
+              species_cond(:,j2,j3,k) = (species_viscosity(:,j2,j3,k))*&
+                ( cp_spec_glo(:,j2,j3,k) + 1.25*Rgas/species_constants(k,imass) )
+            else
 !
 ! Check if the molecule is a single atom (0), linear (1) or non-linear (2).
 !
@@ -4911,6 +4904,8 @@ module Chemistry
                 /(species_constants(k,imass)/unit_mass)*Rgas* &
                 (f_tran*Cv_tran_R+f_rot*Cv_rot_R  &
                 +f_vib*Cv_vib_R)
+            endif
+
 !
 ! tmp_sum and tmp_sum2 are used later to find the mixture averaged
 ! conductivity.
@@ -5111,15 +5106,16 @@ module Chemistry
 !
 !  29-feb-08/natalia: coded
 !
-      use Sub, only: dot
+      use Sub, only: dot, del2
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1
+      real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1, del2TT
 !
       if (ltemperature_nolog) then
         call dot(p%gTT,p%glambda,g2TTlambda)
+        call del2(f,iTT,del2TT)
       else
         call dot(p%glnTT,p%glambda,g2TTlambda)
         call dot(p%glnTT,p%glnTT,g2TT)
@@ -5128,11 +5124,12 @@ module Chemistry
 !  Add heat conduction to RHS of temperature equation
 !
 !      if (l1step_test .or. lSmag_heat_transport) then
-       if (l1step_test) then
+      if (l1step_test) then
         tmp1 = p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
         if (ltemperature_nolog) then
-          tmp1 = (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
+          tmp1 = (p%lambda(:)*del2TT+g2TTlambda)*p%cv1/p%rho(:)
+   !       tmp1 = (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
         else
           tmp1 = (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
@@ -5172,12 +5169,13 @@ module Chemistry
 !
     endsubroutine get_cs2_full
 !***********************************************************************
-    subroutine get_cs2_slice(slice,dir,index)
+    subroutine get_cs2_slice(f,slice,dir,index)
 !
 ! Find a slice of the speed of sound
 !
 ! 10-dez-09/nils: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
 !
@@ -5213,12 +5211,13 @@ module Chemistry
       enddo
     endsubroutine get_gamma_full
 !***********************************************************************
-    subroutine get_gamma_slice(slice,dir,index)
+    subroutine get_gamma_slice(f,slice,dir,index)
 !
 !  Get a 2D slice of gamma
 !
 !  10-dez-09/Nils Erland L. Haugen: coded
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:,:), intent(out) :: slice
       integer, intent(in) :: index, dir
 !
@@ -5302,7 +5301,7 @@ module Chemistry
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 
           read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)') PP
-          if (lroot) print*, ' Pressure, Pa   ', PP
+          if (lroot) print*, ' Pressure, Ba   ', PP
 
         elseif (tmp_string == 'V') then
 
@@ -5329,7 +5328,6 @@ module Chemistry
             read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
             if (lroot) print*, ' volume fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
-
             if (species_constants(ind_chem,imass)>0.) then
              air_mass=air_mass+YY_k*0.01/species_constants(ind_chem,imass)
             endif
@@ -5692,7 +5690,7 @@ module Chemistry
 !
     endsubroutine jacobn
 !***********************************************************************
-    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction)
+    subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary, and
 ! its gradient, is required.
@@ -5704,6 +5702,7 @@ module Chemistry
       real, dimension(:,:), intent(out) :: slice
       real, dimension(:,:), intent(out) :: grad_slice
       integer, intent(in) :: index, sgn, direction
+      real, dimension(mx,my,mz,mfarray) :: f
 !
       if (direction == 1) then
         slice = mu1_full(index,m1:m2,n1:n2)
@@ -6166,7 +6165,7 @@ module Chemistry
 !
     endsubroutine get_reac_rate
 !***********************************************************************
-    subroutine chemistry_clean_up()
+    subroutine chemistry_clean_up
 !
       if (allocated(Bin_diff_coef))  deallocate(Bin_diff_coef)
       if (allocated(stoichio))       deallocate(stoichio)
@@ -6226,5 +6225,184 @@ module Chemistry
       f(:,:,:,isN2)=1.0-sum_Y
 !
     endsubroutine chemspec_normalization_N2
+!***********************************************************************
+    subroutine getmu_array(f,mu1_full)
+!
+!  Calculate mean molecular weight
+!
+!  16-mar-10/natalia
+!  30-jun-17/MR: moved here from eos_chemistry.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: mu1_full
+      integer :: k,j2,j3
+!
+!  Mean molecular weight
+!
+      mu1_full=0.
+      do k=1,nchemspec
+        if (species_constants(k,imass)>0.) then
+          do j2=mm1,mm2
+            do j3=nn1,nn2
+              mu1_full(:,j2,j3)= &
+                  mu1_full(:,j2,j3)+unit_mass*f(:,j2,j3,ichemspec(k)) &
+                  /species_constants(k,imass)
+            enddo
+          enddo
+        endif
+      enddo
+!
+    endsubroutine getmu_array
+!***********************************************************************
+   subroutine read_Lewis
+!
+!  Reading of the species Lewis numbers in an input file
+!
+!  21-jun-10/julien: coded
+!  30-jun-17/MR: moved here from eos_chemistry.
+!
+     use Mpicomm, only: stop_it
+!
+      logical :: emptyfile
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem, i
+      real    :: lewisk
+      character (len=10) :: specie_string
+!
+      emptyFile=.true.
+!
+      open(file_id,file="lewis.dat")
+!
+      if (lroot) print*, 'lewis.dat: beginning of the list:'
+!
+      i=0
+      dataloop: do
+        read(file_id,*,end=1000) specie_string, lewisk
+        emptyFile=.false.
+!
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+!
+        if (found_specie) then
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' Lewis=', lewisk
+          Lewis_coef(ind_chem) = lewisk
+          Lewis_coef1(ind_chem) = 1./lewisk
+          i=i+1
+        endif
+      enddo dataloop
+!
+! Stop if lewis.dat is empty
+!
+1000  if (emptyFile)  call stop_it('End of the file!')
+!
+      if (lroot) then
+        print*, 'lewis.dat: end of the list:'
+        if (i == 0) &
+            print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
+      endif
+!
+      close(file_id)
+!
+    endsubroutine read_Lewis
+!***********************************************************************
+   subroutine read_transport_data
+!
+!  Reading of the chemkin transport data
+!
+!  01-apr-08/natalia: coded
+!  30-jun-17/MR: moved here from eos_chemistry.
+!
+     use Mpicomm, only: stop_it
+!
+      logical :: emptyfile
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem
+      character (len=80) :: ChemInpLine
+      character (len=10) :: specie_string
+      integer :: VarNumber
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      logical :: tranin=.false.
+      logical :: trandat=.false.
+!
+      emptyFile=.true.
+!
+      StartInd_1=1; StopInd_1 =0
+
+      inquire (file='tran.dat',exist=trandat)
+      inquire (file='tran.in',exist=tranin)
+      if (tranin .and. trandat) then
+        call fatal_error('eos_chemistry',&
+            'tran.in and tran.dat found. Please decide which one to use.')
+      endif
+
+      if (tranin) open(file_id,file='tran.in')
+      if (trandat) open(file_id,file='tran.dat')
+!
+      if (lroot) print*, 'the following species are found '//&
+          'in tran.in/dat: beginning of the list:'
+!
+      dataloop: do
+!
+        read(file_id,'(80A)',end=1000) ChemInpLine(1:80)
+        emptyFile=.false.
+!
+        StopInd_1=index(ChemInpLine,' ')
+        specie_string=trim(ChemInpLine(1:StopInd_1-1))
+!
+        call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
+!
+        if (found_specie) then
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
+!
+          VarNumber=1; StartInd=1; StopInd =0
+          stringloop: do while (VarNumber<7)
+!
+            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+            StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
+            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+!
+            if (StopInd==StartInd) then
+              StartInd=StartInd+1
+            else
+              if (VarNumber==1) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E1.0)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==2) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==3) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==4) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==5) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              elseif (VarNumber==6) then
+                read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)')  &
+                    tran_data(ind_chem,VarNumber)
+              else
+                call stop_it("No such VarNumber!")
+              endif
+!
+              VarNumber=VarNumber+1
+              StartInd=StopInd
+            endif
+            if (StartInd==80) exit
+          enddo stringloop
+!
+        endif
+      enddo dataloop
+!
+! Stop if tran.dat is empty
+!
+!
+1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
+!
+      if (lroot) print*, 'the following species are found in tran.dat: end of the list:'                    
+!
+      close(file_id)
+!
+    endsubroutine read_transport_data
 !***********************************************************************
 endmodule Chemistry

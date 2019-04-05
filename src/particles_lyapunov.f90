@@ -10,9 +10,10 @@
 !
 ! CPARAM logical, parameter :: lparticles_lyapunov=.true.
 !
-! MAUX CONTRIBUTION 9
-! COMMUNICATED AUXILIARIES 9
+! MAUX CONTRIBUTION 12
+! COMMUNICATED AUXILIARIES 12
 ! MPVAR CONTRIBUTION 12
+! PENCILS PROVIDED bbf(3)
 !
 !***************************************************************
 module Particles_lyapunov
@@ -27,12 +28,12 @@ module Particles_lyapunov
 !
   include 'particles_lyapunov.h'
 !
-  logical :: lnoise2pvector=.false.
-  real :: fake_eta=0.,bamp=0.
+  logical :: lnoise2pvector=.false.,linit_largeb=.false.
+  real :: fake_eta=0.,bamp=1e-2,kmode_forb=3
   integer :: idiag_bx2pm=0,idiag_by2pm=0,idiag_bz2pm=0
 !
   namelist /particles_lyapunov_init_pars/ &
-    bamp
+    bamp,linit_largeb,kmode_forb
 !
   namelist /particles_lyapunov_run_pars/ &
   lnoise2pvector,fake_eta
@@ -52,37 +53,21 @@ module Particles_lyapunov
 !
 !  Indices for velocity gradient matrix (Wij) at particle positions
 !
-      iup11=npvar+1
-      pvarname(npvar+1)='iup11'
-      iup12=npvar+2
-      pvarname(npvar+2)='iup12'
-      iup13=npvar+3
-      pvarname(npvar+3)='iup13'
-      iup21=npvar+4
-      pvarname(npvar+4)='iup21'
-      iup22=npvar+5
-      pvarname(npvar+5)='iup22'
-      iup23=npvar+6
-      pvarname(npvar+6)='iup23'
-      iup31=npvar+7
-      pvarname(npvar+7)='iup31'
-      iup32=npvar+8
-      pvarname(npvar+8)='iup32'
-      iup33=npvar+9
-      pvarname(npvar+9)='iup33'
+      call append_npvar('iup11',iup11)
+      call append_npvar('iup12',iup12)
+      call append_npvar('iup13',iup13)
+      call append_npvar('iup21',iup21)
+      call append_npvar('iup22',iup22)
+      call append_npvar('iup23',iup23)
+      call append_npvar('iup31',iup31)
+      call append_npvar('iup32',iup32)
+      call append_npvar('iup33',iup33)
 !
 !  Indices for a passive vector at particle positions
 !
-      ibpx=npvar+10
-      pvarname(npvar+10)='ibpx'
-      ibpy=npvar+11
-      pvarname(npvar+11)='ibpy'
-      ibpz=npvar+12
-      pvarname(npvar+12)='ibpz'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+12
+      call append_npvar('ibpx',ibpx)
+      call append_npvar('ibpy',ibpy)
+      call append_npvar('ibpz',ibpz)
 !
 !  Set indices for velocity gradient matrix at grid points
 !
@@ -90,6 +75,11 @@ module Particles_lyapunov
       igu11=iguij; igu12=iguij+1; igu13=iguij+2
       igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
       igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
+!
+!  Set indices for bp data mapped back on grid; this is auxilliary variable 
+!
+      call farray_register_auxiliary('bbf',ibbf,communicated=.true.,vector=3)
+      ibxf=ibbf; ibyf=ibbf+1; ibzf=ibbf+2
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -121,18 +111,21 @@ module Particles_lyapunov
 !
     endsubroutine initialize_particles_lyapunov
 !***********************************************************************
-    subroutine init_particles_lyapunov(f,fp)
+    subroutine init_particles_lyapunov(fp)
 !
       use Sub, only: kronecker_delta
       use General, only: keep_compiler_quiet,random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
       integer, dimension (ncpus) :: my_particles=0,all_particles=0
-      real :: random_number
+      real :: random_number,xcoord
       integer :: ipzero,ik,ii,jj,ij
 !
+      if (lroot) then 
+         write(*,*) 'init_particles_lyapunov:'
+         write(*,*) 'linit_largeb=',linit_largeb
+      endif
       do ip=1,npar_loc
 !
 ! Initialize the gradU matrix at particle position
@@ -140,16 +133,21 @@ module Particles_lyapunov
 !
         ij=0
         do ii=1,3; do jj=1,3 
-          ij=ij+1
           fp(ip,iup11+ij)=kronecker_delta(ii,jj)
+          ij=ij+1
         enddo;enddo
 !
 ! Assign random initial value for the passive vector 
 !
-        do ik=1,3
-          call random_number_wrapper(random_number)
-          fp(ip,ibpx+ik-1)= random_number
-        enddo
+        if (linit_largeb) then
+          xcoord=fp(ip,ixp)
+          fp(ip,ibpx+ik-1) = bamp*sin(kmode_forb*xcoord)
+        else
+          do ik=1,3
+            call random_number_wrapper(random_number)
+            fp(ip,ibpx+ik-1)= bamp*random_number
+          enddo
+        endif
       enddo
 !
     endsubroutine init_particles_lyapunov
@@ -288,14 +286,36 @@ module Particles_lyapunov
       integer :: ip,ik
       real,dimension(2) :: grandom
 !
-      do ik=1,3
-        do ip=1,npar_loc
+      do ip=1,npar_loc
+        do ik=1,3
           call gaunoise_number(grandom)
           fp(ip,ibpx+ik-1) = fp(ip,ibpx+ik-1)+sqrt(fake_eta)*grandom(2)*sqrt(dt)
         enddo
       enddo
 !    
     endsubroutine particles_stochastic_lyapunov
+!***********************************************************************
+    subroutine calc_pencils_par_lyapunov(f,p)
+!
+      use Sub, only: grad
+!
+!  This calculates the bbf data to a pencil.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  16-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_bbf)) then
+        if (ibbf/=0) then
+          p%bbf=f(l1:l2,m,n,ibxf:ibzf)
+        else
+          p%bbf=0.0
+        endif
+      endif
+!
+    endsubroutine calc_pencils_par_lyapunov
 !***********************************************************************
     subroutine rprint_particles_lyapunov(lreset,lwrite)
 !
@@ -304,6 +324,7 @@ module Particles_lyapunov
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General,   only: itoa
 !
       logical :: lreset
@@ -320,18 +341,18 @@ module Particles_lyapunov
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'iup11=',iup11
-        write(3,*) 'iup12=',iup12
-        write(3,*) 'iup13=',iup13
-        write(3,*) 'iup21=',iup21
-        write(3,*) 'iup22=',iup22
-        write(3,*) 'iup23=',iup23
-        write(3,*) 'iup31=',iup31
-        write(3,*) 'iup32=',iup32
-        write(3,*) 'iup33=',iup33
-        write(3,*) 'ibpx=', ibpx
-        write(3,*) 'ibpy=', ibpy
-        write(3,*) 'ibpz=', ibpz
+        call farray_index_append('iup11',iup11)
+        call farray_index_append('iup12',iup12)
+        call farray_index_append('iup13',iup13)
+        call farray_index_append('iup21',iup21)
+        call farray_index_append('iup22',iup22)
+        call farray_index_append('iup23',iup23)
+        call farray_index_append('iup31',iup31)
+        call farray_index_append('iup32',iup32)
+        call farray_index_append('iup33',iup33)
+        call farray_index_append('ibpx', ibpx)
+        call farray_index_append('ibpy', ibpy)
+        call farray_index_append('ibpz', ibpz)
       endif
 !
 !  Reset everything in case of reset.

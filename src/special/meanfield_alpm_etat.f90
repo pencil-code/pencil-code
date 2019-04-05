@@ -300,6 +300,7 @@ module Special
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -337,13 +338,13 @@ module Special
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_etatm=',idiag_etatm
-        write(3,*) 'i_etmax=',idiag_etmax
-        write(3,*) 'i_etrms=',idiag_etrms
-        write(3,*) 'i_alpmm=',idiag_alpmm
-        write(3,*) 'i_ammax=',idiag_ammax
-        write(3,*) 'i_amrms=',idiag_amrms
-        write(3,*) 'ispecial=',ialpm
+        call farray_index_append('i_etatm',idiag_etatm)
+        call farray_index_append('i_etmax',idiag_etmax)
+        call farray_index_append('i_etrms',idiag_etrms)
+        call farray_index_append('i_alpmm',idiag_alpmm)
+        call farray_index_append('i_ammax',idiag_ammax)
+        call farray_index_append('i_amrms',idiag_amrms)
+        call farray_index_append('ispecial',ialpm)
       endif
 !
     endsubroutine rprint_special

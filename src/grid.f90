@@ -34,11 +34,21 @@ module Grid
   public :: real_to_index, inverse_grid
   public :: grid_bound_data
   public :: set_coorsys_dimmask
+  public :: construct_serial_arrays
 !
+  public :: find_star
+  public :: calc_bound_coeffs
+  public :: grid_profile
+
   interface grid_profile
     module procedure grid_profile_0D
     module procedure grid_profile_1D
   endinterface
+!
+  interface calc_pencils_grid
+    module procedure calc_pencils_grid_pencpar
+    module procedure calc_pencils_grid_std
+  endinterface calc_pencils_grid
 !
   integer, parameter :: BOT=1, TOP=2
 !
@@ -65,7 +75,11 @@ module Grid
 !  25-jun-04/tobi+wolf: coded
 !   3-mar-15/MR: calculation of d[xyz]2_bound added: contain twice the distances of
 !                three neighbouring points from the boundary point
+!   9-mar-17/MR: removed unneeded use of optional parameters in calls to grid_profile
+!   6-mar-18/MR: moved call construct_serial_arrays here from initialize_grid
 !
+      use Cdata, only: xprim, yprim, zprim, dx_1, dx_tilde, dy_1, dy_tilde, dz_1, dz_tilde
+
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
@@ -175,6 +189,9 @@ module Grid
       if (nxgrid==1) then
         x = x00 + 0.5 * dx
         ! hopefully, we will only ever multiply by the following quantities:
+        ! [PABourdin] We should find a way to have valid grid functions as:
+        ! xprim = dx  ;  dx_1 = 1/dx
+        ! together with a degenerated-case flag: ldegenerated_x = .true.
         xprim = 0.
         xprim2 = 0.
         dx_1 = 0.
@@ -346,16 +363,16 @@ module Grid
           a= log(xyz1(1)/xyz0(1))/(xi1up-xi1lo)
           b= .5*(xi1up+xi1lo-log(xyz1(1)*xyz0(1))/a)
 !
-          call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2,param=c)
-          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo,param=c)
-          call grid_profile(a*(xi1up-b),grid_func(1),g1up,param=c)
+          call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo)
+          call grid_profile(a*(xi1up-b),grid_func(1),g1up)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
           if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc,param=c)
+            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
 !
@@ -503,6 +520,9 @@ module Grid
       if (nygrid==1) then
         y = y00 + 0.5 * dy
         ! hopefully, we will only ever multiply by the following quantities:
+        ! [PABourdin] We should find a way to have valid grid functions as:
+        ! xprim = dx  ;  dx_1 = 1/dx
+        ! together with a degenerated-case flag: ldegenerated_x = .true.
         yprim = 0.
         yprim2 = 0.
         dy_1 = 0.
@@ -655,7 +675,6 @@ module Grid
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
 ! are estimated) are removed.
 !
-
         if (lpole(2)) then                       !apply grid symmetry across the poles 
           if (lfirst_proc_y) then
             y(     1:nghost) = -y(     m1i:m1:-1)
@@ -687,6 +706,9 @@ module Grid
       if (nzgrid==1) then
         z = z00 + 0.5 * dz
         ! hopefully, we will only ever multiply by the following quantities:
+        ! [PABourdin] We should find a way to have valid grid functions as:
+        ! xprim = dx  ;  dx_1 = 1/dx
+        ! together with a degenerated-case flag: ldegenerated_x = .true.
         zprim = 0.
         zprim2 = 0.
         dz_1 = 0.
@@ -803,6 +825,59 @@ module Grid
                  'linear+log not implemented for particles.')
           endif
 !
+        case ('squared')
+          ! Grid distance increases linearily
+          a=max(nzgrid,1)
+          b=-max(nzgrid,1)/10
+          !b=0.
+          call grid_profile(a*(xi3  -b),grid_func(3),g3,g3der1,g3der2)
+          call grid_profile(a*(xi3lo-b),grid_func(3),g3lo)
+          call grid_profile(a*(xi3up-b),grid_func(3),g3up)
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+          zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+!
+          if (lfirst_proc_z) then
+            bound_prim1=z(n1+1)-z(n1)
+            do i=1,nghost
+              z(n1-i)=z(n1)-i*bound_prim1
+              zprim(1:n1)=bound_prim1
+            enddo
+          endif
+          if (llast_proc_z) then
+            bound_prim2=z(n2)-z(n2-1)
+            do i=1,nghost
+              z(n2+i)=z(n2)+i*bound_prim2
+              zprim(n2:mz)=bound_prim2
+            enddo
+          endif
+!
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'squared not implemented for particles.')
+          endif
+!
+        case ('trough')
+          ! Grid distance is almost equidistant at boundaries and then decreases
+          ! at the middle
+          a=0.02
+          b=80
+          c=320
+!
+          call grid_profile(xi3  ,grid_func(3),g3,g3der1,g3der2,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+          call grid_profile(xi3lo,grid_func(3),g3lo,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+          call grid_profile(xi3up,grid_func(3),g3up,param=a,xistep=(/b,c/),delta=(/0.5,0.1/))
+!
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*g3der1/(g3up-g3lo)
+          zprim2=    Lz*g3der2/(g3up-g3lo)
+!
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'trough not implemented for particles.')
+          endif
+
         case default
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
@@ -835,6 +910,27 @@ module Grid
           procz_bounds(i)=(g3proc(2*i)+g3proc(2*i+1))*0.5
         enddo
       endif
+!
+!  Fargo (orbital advection acceleration) is implemented for polar coordinates only.
+!  Die otherwise.       
+!
+      if (lfargo_advection.and.coord_system=='cartesian') then
+        if (lroot) then
+          print*,""
+          print*,"Fargo advection is only implemented for"
+          print*,"polar coordinates. Switch"
+          print*," coord_system='cylindric' or 'spherical'"
+          print*,"in init_pars of start.in if you"
+          print*,"want to use the fargo algorithm"
+          print*,""
+        endif
+        call fatal_error("construct_grid","")
+      endif
+!
+!  Set the serial grid arrays, that contain the coordinate values
+!  from all processors.
+!
+!!!      call construct_serial_arrays  !!! creates trouble
 !
     endsubroutine construct_grid
 !***********************************************************************
@@ -899,13 +995,17 @@ module Grid
 !                initialization of Yin-Yang grid; added dimensionality mask:
 !                lists the indices of the non-degenerate directions in the first 
 !                dimensionality elements of dim_mask 
+!  10-oct-17/MR: avoided communication in calculation of r_int and r_ext
+!  10-jan-17/MR: moved call construct_serial_arrays to beginning
 !
-      use Sub, only: remove_zprof
+      use Sub, only: remove_prof
       use Mpicomm
       use IO, only: lcollective_IO
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
+!
+      call construct_serial_arrays
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
@@ -1215,49 +1315,19 @@ module Grid
       dVol1_y = 1./dVol_y
       dVol1_z = 1./dVol_z
 !
+      if (lspherical_coords.or.lcylindrical_coords) then
+!
 !  Define inner and outer radii for non-cartesian coords.
 !  If the user did not specify them yet (in start.in),
 !  these are the first point of the first x-processor,
 !  and the last point of the last x-processor.
+!  r_int and r_ext can be taken from the domain's x-extent as periodic BC can't 
+!  appear for r.
 !
-      if (lspherical_coords.or.lcylindrical_coords) then
-!
-        if (nprocx/=1) then
-!
-!  The root (iproc=0) has by default the first value of x
-!
-          if (lroot) then
-            if (r_int==0) r_int=x(l1)
-!
-!  The root should also receive the value of r_ext from
-!  from the last x-processor (which is simply nprocx-1
-!  for iprocy=0 and iprocz=0) for broadcasting.
-!
-            if (r_ext==impossible) &
-                 call mpirecv_real(r_ext,nprocx-1,111)
-          endif
-!
-!  The last x-processor knows the value of r_ext, and sends
-!  it to root, for broadcasting.
-!
-          if ((r_ext==impossible).and.&
-               (llast_proc_x.and.lfirst_proc_y.and.lfirst_proc_z)) then
-            r_ext=x(l2)
-            call mpisend_real(r_ext,0,111)
-          endif
-!
-!  Broadcast the values of r_int and r_ext
-!
-          call mpibcast_real(r_int,comm=MPI_COMM_WORLD)
-          call mpibcast_real(r_ext,comm=MPI_COMM_WORLD)
-        else
-!
-!  Serial-x. Just get the local grid values.
-!
-          if (r_int == 0)         r_int=x(l1)
-          if (r_ext ==impossible) r_ext=x(l2)
-        endif
-        if (lroot) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
+        if (r_int == 0)         r_int=xyz0(1)
+        if (r_ext ==impossible) r_ext=xyz1(1)
+        
+        if (lroot.and.ip<14) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
       endif
 !
 !  For a non-periodic mesh, multiply boundary points by 1/2.
@@ -1290,19 +1360,12 @@ module Grid
         lpoint2=min(max(l1,lpoint2),l2)
         mpoint2=min(max(m1,mpoint2),m2)
         npoint2=min(max(n1,npoint2),n2)
-        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
-        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
       endif
 !
 !  Clean up profile files.
 !
-      if (lroot.or..not.lcollective_IO) call remove_zprof
+      if (lroot.or..not.lcollective_IO) call remove_prof('z')
       lwrite_prof=.true.
-!
-!  Set the the serial grid arrays, that contain the coordinate values
-!  from all processors.
-!
-      call construct_serial_arrays
 !
     endsubroutine initialize_grid
 !***********************************************************************
@@ -1589,13 +1652,12 @@ module Grid
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
-    subroutine calc_pencils_grid(f,p)
+    subroutine calc_pencils_grid_std(f,p)
 !
-!  Calculate Grid/geometry related pencils.
-!  Most basic pencils should come first, as others may depend on them.
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
 !
-!   15-nov-06/tony: coded
-!   27-aug-07/wlad: generalized for cyl. and sph. coordinates
+! 10-oct-17/MR: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1603,52 +1665,72 @@ module Grid
       intent(in) :: f
       intent(inout) :: p
 !
+      call calc_pencils_grid_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_grid_std
+!***********************************************************************
+    subroutine calc_pencils_grid_pencpar(f,p,lpenc_loc)
+!
+!  Calculate Grid/geometry related pencils. Uses arbitrary pencil mask lpenc_loc.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!   15-nov-06/tony: coded
+!   27-aug-07/wlad: generalized for cyl. and sph. coordinates
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
+!
+      intent(in) :: f
+      intent(inout) :: p
+      intent(in) :: lpenc_loc
+!
       if (lcartesian_coords) then
 !coordinates vectors
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)
-        if (lpencil(i_y_mn))     p%y_mn    = spread(y(m),1,nx)
-        if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
+        if (lpenc_loc(i_x_mn))     p%x_mn    = x(l1:l2)
+        if (lpenc_loc(i_y_mn))     p%y_mn    = spread(y(m),1,nx)
+        if (lpenc_loc(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
 !spherical distance
-        if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+        if (lpenc_loc(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
 !cylindrical distance (pomega)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
+        if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
 !azimuthal angle (phi)
-        if (lpencil(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
+        if (lpenc_loc(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
 !inverse cylindrical distance 1/pomega
-        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
 !inverse spherical distance 1/r
-        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+        if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
 !pomega unit vectors: pomx=cos(phi) and pomy=sin(phi) where phi=azimuthal angle
-        if (lpencil(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
-        if (lpencil(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
+        if (lpenc_loc(i_pomx))     p%pomx    = x(l1:l2)*p%rcyl_mn1
+        if (lpenc_loc(i_pomy))     p%pomy    = y(  m  )*p%rcyl_mn1
 !phi unit vectors
-        if (lpencil(i_phix))     p%phix    =-y(  m  )*p%rcyl_mn1
-        if (lpencil(i_phiy))     p%phiy    = x(l1:l2)*p%rcyl_mn1
+        if (lpenc_loc(i_phix))     p%phix    =-y(  m  )*p%rcyl_mn1
+        if (lpenc_loc(i_phiy))     p%phiy    = x(l1:l2)*p%rcyl_mn1
 !
       elseif (lcylindrical_coords) then
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*cos(y(m))
-        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))
-        if (lpencil(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
-        if (lpencil(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)
-        if (lpencil(i_phi_mn))   p%phi_mn  = spread(y(m),1,nx)
-        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
-        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
-        if (lpencil(i_pomx))     p%pomx    = 1.
-        if (lpencil(i_pomy))     p%pomy    = 0.
-        if (lpencil(i_phix))     p%phix    = 0.
-        if (lpencil(i_phiy))     p%phiy    = 1.
+        if (lpenc_loc(i_x_mn))     p%x_mn    = x(l1:l2)*cos(y(m))
+        if (lpenc_loc(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))
+        if (lpenc_loc(i_z_mn))     p%z_mn    = spread(z(n),1,nx)
+        if (lpenc_loc(i_r_mn))     p%r_mn    = sqrt(x(l1:l2)**2+z(n)**2)
+        if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)
+        if (lpenc_loc(i_phi_mn))   p%phi_mn  = spread(y(m),1,nx)
+        if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+        if (lpenc_loc(i_pomx))     p%pomx    = 1.
+        if (lpenc_loc(i_pomy))     p%pomy    = 0.
+        if (lpenc_loc(i_phix))     p%phix    = 0.
+        if (lpenc_loc(i_phiy))     p%phiy    = 1.
       elseif (lspherical_coords) then
-        if (lpencil(i_x_mn))     p%x_mn    = x(l1:l2)*sin(y(m))*cos(z(n))
-        if (lpencil(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))*sin(z(n))
-        if (lpencil(i_z_mn))     p%z_mn    = x(l1:l2)*cos(y(m))
-        if (lpencil(i_r_mn))     p%r_mn    = x(l1:l2)
-        if (lpencil(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(y(m))
-        if (lpencil(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx)
-        if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
-        if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
-        if (lpencil(i_pomx).or.lpencil(i_pomy).or.&
-            lpencil(i_phix).or.lpencil(i_phiy)) &
+        if (lpenc_loc(i_x_mn))     p%x_mn    = x(l1:l2)*sin(y(m))*cos(z(n))
+        if (lpenc_loc(i_y_mn))     p%y_mn    = x(l1:l2)*sin(y(m))*sin(z(n))
+        if (lpenc_loc(i_z_mn))     p%z_mn    = x(l1:l2)*cos(y(m))
+        if (lpenc_loc(i_r_mn))     p%r_mn    = x(l1:l2)
+        if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = x(l1:l2)*sin(y(m))
+        if (lpenc_loc(i_phi_mn))   p%phi_mn  = spread(z(n),1,nx)
+        if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
+        if (lpenc_loc(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+        if (lpenc_loc(i_pomx).or.lpenc_loc(i_pomy).or.&
+            lpenc_loc(i_phix).or.lpenc_loc(i_phiy)) &
             call fatal_error('calc_pencils_grid', &
                 'pomx, pomy, phix and phix not implemented for '// &
                 'spherical polars')
@@ -1656,7 +1738,7 @@ module Grid
 !
 !  set position vector
 !
-      if (lpencil(i_rr)) then
+      if (lpenc_loc(i_rr)) then
         if (lcartesian_coords) then
           p%rr(:,1)=p%x_mn
           p%rr(:,2)=p%y_mn
@@ -1670,7 +1752,7 @@ module Grid
 !
 !  evr is the radial unit vector
 !
-      if (lpencil(i_evr)) then
+      if (lpenc_loc(i_evr)) then
         if (lcartesian_coords) then
           p%evr(:,1) = p%rcyl_mn*p%r_mn1*p%pomx
           p%evr(:,2) = p%rcyl_mn*p%r_mn1*p%pomy
@@ -1684,7 +1766,7 @@ module Grid
 !
 !  evth is the co-latitudinal unit vector
 !
-      if (lpencil(i_evth)) then
+      if (lpenc_loc(i_evth)) then
         if (lcartesian_coords) then
           p%evth(:,1) = z(n)*p%r_mn1*p%pomx
           p%evth(:,2) = z(n)*p%r_mn1*p%pomy
@@ -1698,7 +1780,7 @@ module Grid
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_grid
+    endsubroutine calc_pencils_grid_pencpar
 !***********************************************************************
     subroutine grid_profile_0D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta)
 !
@@ -1717,24 +1799,9 @@ module Grid
       intent(in)  :: xi, grid_func, param, dxyz, xistep, delta
       intent(out) :: g, gder1, gder2
 !
-      real, dimension(1) :: tmp_xi, tmp_g, tmp_gder1, tmp_gder2
-      real :: tmp_param
-      real, dimension(3) :: tmp_dxyz
-      real, dimension(2) :: tmp_xistep, tmp_delta
+      real, dimension(1) :: tmp_g, tmp_gder1, tmp_gder2
 !
-!
-      tmp_param = 0.0
-      if (present (param)) tmp_param = param
-      tmp_dxyz = 0.0
-      if (present (dxyz)) tmp_dxyz = dxyz
-      tmp_xistep = 0.0
-      if (present (xistep)) tmp_xistep = xistep
-      tmp_delta = 0.0
-      if (present (delta)) tmp_delta = delta
-!
-      tmp_xi(:) = xi
-!
-      call grid_profile (tmp_xi, grid_func, tmp_g, tmp_gder1, tmp_gder2, tmp_param, tmp_dxyz, tmp_xistep, tmp_delta)
+      call grid_profile ((/xi/), grid_func, tmp_g, tmp_gder1, tmp_gder2, param, dxyz, xistep, delta)
 !
       g = tmp_g(1)
       if (present (gder1)) gder1 = tmp_gder1(1)
@@ -1748,6 +1815,7 @@ module Grid
 !  and calculate g,g',g''.
 !
 !  25-jun-04/tobi+wolf: coded
+!   9-mar-17/MR: blocked used of unpresent optionals
 !
       real, dimension(:)                    :: xi
       character(len=*)                      :: grid_func
@@ -1876,9 +1944,31 @@ module Grid
 !
       case ('power-law')
         ! Grid distance increases according to a power-law
+        if (.not. present (param)) &
+            call fatal_error ('grid_profile', "'power-law' needs its parameter.")
         g=xi**(1./param)
         if (present(gder1)) gder1=1./param*              xi**(1/param-1)
         if (present(gder2)) gder2=1./param*(1./param-1.)*xi**(1/param-2)
+!
+      case ('trough')
+        ! Grid distance larger and linear near boundaries and smaller and linear in
+        ! middle. Needs xistep(2), delta(2) and param parameters specified in
+        ! start.in. E.g.,for solar atmosphere can use delta=0.4,0.5, xistar=100,300,
+        ! param=0.02 on a grid of mzgrid=646
+        if (.not. present (param)) &
+          call fatal_error ('grid_profile', "'trough' needs its parameter.")
+        g=(-alog(exp(param*(xi-xistep(1)))+exp(-param*(xi-xistep(1))))/param+ &
+            alog(exp(param*(xi-xistep(2)))+exp(-param*(xi-xistep(2))))/param+   &
+            (2.+delta(1))*xi)/(2.+delta(1))
+        if (present(gder1)) then 
+          gder1=(2.+delta(1)-tanh(param*(xi-xistep(1)))+ &
+                tanh(param*(xi-xistep(2))))/(2.+delta(1))
+        endif
+        if (present(gder2)) then 
+          gder2=(-param*(1.-(tanh(param*(xi-xistep(1))))**2)+ &
+                 param*(1.-(tanh(param*(xi-xistep(2))))**2))/ &
+                (2.+delta(1))
+        endif
 !
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
@@ -2089,7 +2179,8 @@ module Grid
         xi = (arcsinh(a) + arcsinh(b * (x - xyz0(dir)) - a)) / (coeff_grid(dir) * h)
 !
       case default func
-        call fatal_error('inverse_grid', 'unknown grid function ' // trim(grid_func(dir)))
+        call fatal_error('inverse_grid in grid.f90', &
+          'unknown grid function ' // trim(grid_func(dir)))
 !
       endselect func
 !

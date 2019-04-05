@@ -52,9 +52,19 @@ module Boundcond
 !  Update all ghost zones of f.
 !
 !  21-sep-02/wolf: extracted from wsnaps
+!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
 !
       real, dimension (:,:,:,:) :: f
 !
+      if (ighosts_updated>=0) then
+!
+!  If registration is activated, register all variables to have been communicated.
+!
+        ighosts_updated=ighosts_updated+1
+        updated_var_ranges(:,ighosts_updated)=(/1,min(mcom,size(f,4))/)
+      endif
+!
+!if (lroot)print*, 'update_ghosts_all'
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
       call finalize_isendrcv_bdry(f)
@@ -68,19 +78,45 @@ module Boundcond
 !  Update specific ghost zones of f.
 !
 !  11-aug-11/wlad: adapted from update_ghosts
+!  28-mar-17/MR: added registration of already communicated variable ranges in f. 
+!
+      use General, only: add_merge_range
 !
       real, dimension (:,:,:,:) :: f
       integer  :: ivar1,ivar2
       integer, optional :: ivar2_opt
 !
+      integer :: nact_ranges,i
+!
       ivar2=ivar1
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      call boundconds_x(f,ivar1,ivar2)
-      call initiate_isendrcv_bdry(f,ivar1,ivar2)
-      call finalize_isendrcv_bdry(f,ivar1,ivar2)
-      call boundconds_y(f,ivar1,ivar2)
-      call boundconds_z(f,ivar1,ivar2)
+      if (ighosts_updated>=0) then
+!
+!  If registration is activated, figure out which variables out of the range (ivar1,ivar2) have yet to be communicated.
+!  These are appended as a set of ranges to the list of ranges in updated_var_ranges after position ighosts_updated.
+!  The new total number of variable ranges to be communicated is nact_ranges.
+!
+        nact_ranges=add_merge_range( updated_var_ranges, ighosts_updated, (/ivar1,ivar2/) )
+!
+        if (nact_ranges>ighosts_updated) then
+          do i=ighosts_updated+1,nact_ranges
+            call boundconds_x(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call initiate_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call finalize_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call boundconds_y(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+            call boundconds_z(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
+          enddo
+          ighosts_updated=nact_ranges
+        endif
+      else
+        call boundconds_x(f,ivar1,ivar2)
+        call initiate_isendrcv_bdry(f,ivar1,ivar2)
+        call finalize_isendrcv_bdry(f,ivar1,ivar2)
+        call boundconds_y(f,ivar1,ivar2)
+        call boundconds_z(f,ivar1,ivar2)
+      endif
+!if (lroot) print*, 'update_ghosts_range'
 !
     endsubroutine update_ghosts_range
 !***********************************************************************
@@ -238,7 +274,7 @@ module Boundcond
                   call bc_sf_x(f,+1,topbot,j)
                 case ('ss')
                   ! BCX_DOC: symmetry, plus function value given
-                  call bc_symset_x(f,+1,topbot,j)
+                  call bc_symset_x(f,+1,topbot,j,val=fbcx(:,k))
                 case ('sds')
                   ! BCY_DOC: symmetric-derivative-set
                   call bc_symderset_x(f,topbot,j,val=fbcx(:,k))
@@ -257,7 +293,7 @@ module Boundcond
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
-               case ('a2v')
+                case ('a2v')
                   ! BCX_DOC: set boundary value and antisymmetry relative to it
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
@@ -402,6 +438,9 @@ module Boundcond
                 case ('e3')
                   ! BCX_DOC: extrapolation in log [maintain a power law]
                   call bcx_extrap_2_3(f,topbot,j)
+                case ('el')
+                  ! BCX_DOC: linear extrapolation from last two active cells
+                  call bcx_extrap_linear(f, topbot, j)
                 case ('hat')
                   ! BCX_DOC: top hat jet profile in spherical coordinate.
                   !Defined only for the bottom boundary
@@ -419,6 +458,10 @@ module Boundcond
                   if (j==iux) call fatal_error('boundconds_x', &
                              'stress-free BC at r boundary not allowed for uu_r')
                   call bc_set_sfree_x(f,topbot,j)
+                case ('sr1')
+                  ! BCX_DOC: Stress-free bc for spherical coordinate system.
+                  ! BCX_DOC: Implementation with one-sided derivative.
+                  call bc_set_sr1_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
@@ -572,9 +615,12 @@ module Boundcond
                 ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
                 call bc_sym_y(f,+1,topbot,j)
+              case ('sf')
+                ! BCY_DOC: symmetry with respect to interface
+                call bc_sf_y(f,+1,topbot,j)
               case ('ss')
                 ! BCY_DOC: symmetry, plus function value given
-                call bc_symset_y(f,+1,topbot,j)
+                call bc_symset_y(f,+1,topbot,j,val=fbcy(:,k))
               case ('sds')
                 ! BCY_DOC: symmetric-derivative-set
                 call bc_symderset_y(f,topbot,j,val=fbcy(:,k))
@@ -587,6 +633,9 @@ module Boundcond
               case ('a')
                 ! BCY_DOC: antisymmetry
                 call bc_sym_y(f,-1,topbot,j)
+              case ('af')
+                ! BCY_DOC: antisymmetry with respect to interface
+                call bc_sf_y(f,-1,topbot,j)
               case ('a2')
                 ! BCY_DOC: antisymmetry relative to boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.)
@@ -748,6 +797,7 @@ module Boundcond
 !  30-dec-16/MR: added BC 'a1s' for constant alpha mean-field model in one dimension
 !
       use General, only: var_is_vec
+      use Gravity, only: gravz_profile
       use Special, only: special_boundconds
       use EquationOfState
       use Magnetic_meanfield, only: pc_aasb_const_alpha
@@ -903,17 +953,25 @@ module Boundcond
                 call bc_ss_temp_z(f,topbot,.true.)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                if (j==iss)   call bc_ss_temp2_z(f,topbot)
+                if (j==iss) call bc_ss_temp2_z(f,topbot)
               case ('cT3')
                 ! BCZ_DOC: constant temp. (keep lnrho)
-                if (j==iss)   call bc_ss_temp3_z(f,topbot)
+                if (j==iss) call bc_ss_temp3_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
-                if (.not.lgrav) call fatal_error('boundconds_z', &
+                if (.not. lgrav) call fatal_error('boundconds_z', &
                   'hs boundary condition requires gravity')
-                if (j==ilnrho) call bc_lnrho_hds_z_iso(f,topbot)
-                if (j==irho_b) call bc_lnrho_hds_z_iso(f,topbot)
-                if (j==ipp)    call bc_pp_hds_z_iso(f,topbot)
+                if (gravz_profile /= 'const') call fatal_error('boundconds_z', &
+                  'hs boundary condition requires a constant gravity profile')
+                if (.not. lequidist(3)) call fatal_error('boundconds_z', &
+                  'hs boundary condition requires symmetric grid distances on the z boundary')
+                if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
+                  call bc_lnrho_hds_z_iso(f,topbot)
+                elseif (j==ipp) then
+                  call bc_pp_hds_z_iso(f,topbot)
+                else
+                  call fatal_error ('boundconds_z', "hs boundary condition requires density or pressure")
+                endif
               case ('hse')
                 ! BCZ_DOC: hydrostatic extrapolation
                 ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
@@ -1052,6 +1110,10 @@ module Boundcond
                 ! BCZ_DOC: allow outflow, but no inflow
                 ! BCZ_DOC: forces ghost cells and boundary to not point inwards
                 call bc_outflow_z(f,topbot,j,.true.)
+              case ('crk')
+                ! BCY_DOC: no-inflow: copy value of last physical point
+                ! BCY_DOC: to all ghost cells, but suppressing any inflow
+                call bc_copy_z_noinflow(f,topbot,j)
               case ('in0')
                 ! BCZ_DOC: allow inflow, but no outflow
                 ! BCZ_DOC: forces ghost cells and boundary to not point outwards
@@ -1225,7 +1287,7 @@ module Boundcond
 !
       integer, intent(in) :: ncell, nghost, ncomp
       real, dimension(1-nghost:ncell+nghost, ncomp), intent(inout) :: penc
-      character(len=*), dimension(ncomp,2), intent(in) :: bc
+      character(len=bclen), dimension(ncomp,2), intent(in) :: bc
       real, dimension(-nghost:nghost), optional :: d2_bound
       real, dimension(2), optional :: bound
 !
@@ -1306,13 +1368,15 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
-!  the local spherical coordinate basis.
+!  Vector quantities need to be transformed from the Cartesian basis to 
+!  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
         if (topbot=='bot') then
           call transform_cart_spher(f,1,nghost,1,mz,j)    ! in-place!
         else
+!if (iproc_world==5) print*, 'vor:j=', j,llast_proc_y
+!if (iproc_world==5) print'(3(e13.6,1x))', f(31,m2+1:my,1:mz,j+2)
           call transform_cart_spher(f,m2+1,my,1,mz,j)     !  ~
         endif
 !
@@ -1410,8 +1474,8 @@ module Boundcond
 
       if (is_vec) then
 !
-!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
-!  the local spherical coordinate basis.
+!  Vector quantities need to be transformed from the Cartesian basis to 
+!  the local spherical basis.
 !
         jdone=j+2     ! requires adjacent vector components
 
@@ -1790,7 +1854,7 @@ module Boundcond
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
-          f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
+          !f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
         endif
 !
       case ('top')               ! top boundary
@@ -1799,7 +1863,7 @@ module Boundcond
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
-          f(l2,:,:,j)=(4.*f(l2-1,:,:,j)-f(l2-2,:,:,j))/3.
+          !f(l2,:,:,j)=(4.*f(l2-1,:,:,j)-f(l2-2,:,:,j))/3.
         endif
 !
       case default
@@ -2324,7 +2388,7 @@ module Boundcond
     subroutine bc_stratified_y(f,topbot,j)
 !
 !  Boundary condition that maintains hydrostatic equilibrium in the meriodional direction.
-!  This boundary is coded only for linear density in spherical coordinates
+!  This boundary is coded only for spherical coordinates.
 !
 !  06-oct-13/wlad: coded
 !
@@ -2414,7 +2478,7 @@ module Boundcond
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
           do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
-          f(:,m1,:,j)=(4.*f(:,m1+1,:,j)-f(:,m1+2,:,j))/3.
+          !f(:,m1,:,j)=(4.*f(:,m1+1,:,j)-f(:,m1+2,:,j))/3.
         endif
 !
       case ('top')               ! top boundary
@@ -2423,7 +2487,7 @@ module Boundcond
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else
           do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
-          f(:,m2,:,j)=(4.*f(:,m2-1,:,j)-f(:,m2-2,:,j))/3.
+          !f(:,m2,:,j)=(4.*f(:,m2-1,:,j)-f(:,m2-2,:,j))/3.
         endif
 !
       case default
@@ -2611,9 +2675,20 @@ module Boundcond
         if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2(j)*spread(x**2,2,size(f,2))
         if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4(j)*spread(x**4,2,size(f,2))
         if (relative) then
-          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j);
+            if (.false..and.j==3) then
+!if (i==1) print*, f(4,4:9,n1,j)
+!if (i==1) print*, f(4,4:23,n1-1,j)
+              if (any(f(4:131,4:131,n1-i,j)/=f(4:131,4:131,n1+i,j))) &
+                print'(a,i2,1x,e20.12)','boundcond ghost:i=', i, maxval(abs(f(4:131,4:131,n1-i,j)-f(4:131,4:131,n1+i,j)))
+              if (any(f(4:131,4:131,n1-i,j)/=f(4:131,4:131,n1,j))) &
+                print'(a,i2,1x,e20.12)','boundcond bound-:i=', i, maxval(abs(f(4:131,4:131,n1-i,j)-f(4:131,4:131,n1,j)))
+              if (any(f(4:131,4:131,n1+i,j)/=f(4:131,4:131,n1,j))) &
+                print'(a,i2,1x,e20.12)','boundcond bound+:i=', i, maxval(abs(f(4:131,4:131,n1+i,j)-f(4:131,4:131,n1,j)))
+            endif
+          enddo
         else
-!!!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
+!if (ldownsampling) print*, 'size,n1,j=', size(f,1), size(f,2), size(f,3), size(f,4),n1,j 
           do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
           if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
@@ -2623,9 +2698,9 @@ module Boundcond
         if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2(j)*spread(x**2,2,size(f,2))
         if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4(j)*spread(x**4,2,size(f,2))
         if (relative) then
-          do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+          do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j)+(f(:,:,n2,j)+sgn*f(:,:,n2-i,j));
+          enddo
         else
-          !!if (ldownsampling) print*, 'size,n2,j=',size(f,1),size(f,2),size(f,3),size(f,4),n2,j 
           do i=1,nghost; f(:,:,n2+i,j)=              sgn*f(:,:,n2-i,j); enddo
           if (sgn<0) f(:,:,n2,j) = 0. ! set bdry value=0 (indep of initcond)
         endif
@@ -2640,6 +2715,8 @@ module Boundcond
     subroutine bc_sf_x(f,sgn,topbot,j)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!  i.e. where the reflection plane is between the last mesh point and first
+!  ghost point
 !
 !    sgn = +1  -->  symmetric
 !    sgn = -1  -->  antisymmetric
@@ -2663,9 +2740,39 @@ module Boundcond
 !
     endsubroutine bc_sf_x
 !***********************************************************************
+    subroutine bc_sf_y(f,sgn,topbot,j)
+!
+!  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!  i.e. where the reflection plane is between the last mesh point and first
+!  ghost point
+!
+!    sgn = +1  -->  symmetric
+!    sgn = -1  -->  antisymmetric
+!
+!  12-nov-16/ccyang: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      integer, intent(in) :: sgn, j
+      character(3), intent(in) :: topbot
+!
+      integer :: i
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        forall (i=1:nghost) f(:,m1-i,:,j) = real(sgn) * f(:,m1+i-1,:,j)
+      case('top')               ! top boundary
+        forall (i=1:nghost) f(:,m2+i,:,j) = real(sgn) * f(:,m2-i+1,:,j)
+      case default
+        print *, 'bc_sf_y: unknown input; topbot = ', topbot
+      endselect
+!
+    endsubroutine bc_sf_y
+!***********************************************************************
     subroutine bc_sf_z(f,sgn,topbot,j)
 !
 !  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!  i.e. where the reflection plane is between the last mesh point and first
+!  ghost point
 !
 !    sgn = +1  -->  symmetric
 !    sgn = -1  -->  antisymmetric
@@ -2989,12 +3096,36 @@ module Boundcond
       character (len=bclen), intent (in) :: topbot
       real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
-      integer :: k
 !
-      call bval_from_3rd(f,topbot,j,1,-1./x(l1))
+      if (topbot=='bot') then
+        call bval_from_3rd(f,topbot,j,1,-1./x(l1))
+      else
+        call bval_from_3rd(f,topbot,j,1,-1./x(l2)) 
+      endif
       call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
 !
     endsubroutine bc_set_nr1_x
+!***********************************************************************
+    subroutine bc_set_sr1_x(f,topbot,j)
+!
+!  Stress-free boundary condition for spherical
+!  coordinate system: \partial_r u_(\theta,\phi)|_r_(i,a) = u_(r_(i,a),\theta,\phi)/r_(i,a)
+!  Implementation with one-sided derivative.
+!
+!  4-Sep-2017/MR: coded
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (:,:,:,:), intent (inout) :: f
+      integer, intent (in) :: j
+!
+      if (topbot=='bot') then
+        call bval_from_3rd(f,topbot,j,1,1./x(l1))
+      else
+        call bval_from_3rd(f,topbot,j,1,1./x(l2))
+      endif
+      call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+!
+    endsubroutine bc_set_sr1_x
 ! **********************************************************************
     subroutine bc_set_sa2_x(f,topbot,j)
 !
@@ -4313,6 +4444,42 @@ module Boundcond
       endselect
 !
     endsubroutine bcx_extrap_2_3
+!***********************************************************************
+    subroutine bcx_extrap_linear(f, topbot, j)
+!
+!  Applies linear extrapolation to the ghost cells.
+!
+!  05-jun-18/ccyang: coded.
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      character(len=bclen), intent(in) :: topbot
+      integer, intent(in) :: j
+!
+      integer :: i
+      real :: dx1
+!
+      select case (topbot)
+!
+      case ('bot')
+        ! bottom (left end of the domain)
+        dx1 = 1.0 / (x(l1+1) - x(l1))
+        do i = 1, nghost
+          f(l1-i,:,:,j) = (dx1 * (x(l1+1) - x(l1-i))) * f(l1,:,:,j) + (dx1 * (x(l1-i) - x(l1))) * f(l1+1,:,:,j)
+        enddo
+!
+      case ('top')
+        ! top (right end of the domain)
+        dx1 = 1.0 / (x(l2) - x(l2-1))
+        do i = 1, nghost
+          f(l2+i,:,:,j) = (dx1 * (x(l2) - x(l2+i))) * f(l2-1,:,:,j) + (dx1 * (x(l2+i) - x(l2-1))) * f(l2,:,:,j)
+        enddo
+!
+      case default
+        call fatal_error('bcx_extrap_linear', 'invalid argument', lfirst_proc_xy)
+!
+      endselect
+!
+    endsubroutine bcx_extrap_linear
 !***********************************************************************
     subroutine bcz_extrapol(f,topbot,j)
 !
@@ -6848,6 +7015,60 @@ module Boundcond
 !
     endsubroutine bc_copy_z
 !***********************************************************************
+    subroutine bc_copy_z_noinflow(f,topbot,j)
+!
+!  Copy value in last grid point to all ghost cells. Set to zero if
+!  the sign is wrong. This bc is different from outflow (cop). Outflow
+!  just copies the last point to the ghost cells, thus permitting both
+!  outflow (uy pointing out of the box) and inflow (uy pointing back to
+!  the box). 'crk' is a no-inflow, purely outflow boundary. It sets the
+!  velocity to zero if that was pointing back to the box. The 'k' means
+!  "kill". "copy amd reduce if outflow, kill if inflow". Additionally the velocity
+!  in the ghost zones are reduced by a factor 
+!  2i, where i is the i-th ghost zone
+!
+!  22-mar-2018/piyali: copied from bc_copy_z_noinflow
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      real :: value
+      integer :: j
+!
+      integer :: i,l
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do l=1,size(f,1); do m=1,size(f,2)
+          value=0.
+          if (f(l,m,n1,j)<0) value=f(l,m,n1,j)
+          do i=1,nghost
+            f(l,m,n1-i,j)=value/(1.0*i)
+          enddo
+        enddo;enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do l=1,size(f,1); do m=1,size(f,2)
+          do i=1,nghost
+            value=0.
+            if (f(l,m,n2,j) > 0) value=f(l,m,n2-i,j)
+            f(l,m,n2+i,j)=value/(1.0*i)
+          enddo
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_copy_z_noinflow: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_copy_z_noinflow
+!***********************************************************************
     subroutine bc_frozen_in_bb(topbot,j)
 !
 !  Set flags to indicate that magnetic flux is frozen-in at the
@@ -6946,8 +7167,10 @@ module Boundcond
 !
 !  Potential field extrapolation in z-direction for the ghost cells.
 !  To have a smooth transition at the boundary from non-force-free to a
-!  force-free field, the Az component is also extrapolated, so that it goes
-!  to zero smoothly. This reduces strong currents at the physical boundary.
+!  force-free field, the Az component is also extrapolated in the same way.
+!  This reduces strong currents at the top boundary.
+!  At the bottom boundary the extrapolation increases contrasts in A.
+!  This mimicks flux tubes that become narrower below the photosphere.
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !

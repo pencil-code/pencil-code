@@ -25,4 +25,164 @@ calc/
 obsolete/
 
 ----------------------------------------------------------
-We should put this on the agenda for May 2015.
+We should put this on the agenda for Summer 2018.
+
+
+statistics/
+          / Sep 15  2016 loadhist.pro
+          / Sep 15  2016 pc_accumulate.pro
+          / Sep 15  2016 pc_error_range2.pro
+          / Dec 11  2016 pc_error_range_array.pro
+          / Jun  5  2017 pc_error_range.pro
+          / Dec 11  2016 pc_object_stats.pro
+          / Mar 30 18:37 pc_variable_stats.pro
+
+units/
+          / Sep 15  2016 pc_check_math.pro
+          / Dec 11  2016 pc_units.pro
+
+visualization/
+             / Dec 11  2016 arrow_pc.pro
+             / Sep 15  2016 bbsections.pro
+             / Mar 30 18:37 GUI
+             / Sep 15  2016 hsections.pro
+             / Dec 11  2016 inlegend.pro
+             / Dec 11  2016 pc_save_image.pro
+             / Sep 15  2016 phiavg.pro
+             / Dec 11  2016 pphiavg.pro
+             / Sep 15  2016 pscaleh.pro
+             / Sep 15  2016 psect.pro
+             / Sep 15  2016 pvert.pro
+             / Dec 11  2016 pvv_phiavg.pro
+             / Dec 11  2016 rvid_box.pro
+             / Jun  5  2017 rvid_line.pro
+             / Jun  5  2017 rvid_plane.pro
+             / Dec 11  2016 set_arrows.pro
+             / Sep 15  2016 strati.pro
+             / Dec 11  2016 streamplot.pro
+             / Dec 11  2016 tavg_phiavg.pro
+             / Sep 15  2016 urms-z.pro
+             / Dec 11  2016 vsectanim.pro
+             / Sep 15  2016 vsections2.pro
+             / Sep 15  2016 vsections.pro
+
+vapor/
+     / Dec 11  2016 pc2vdf.pro
+     / Dec 11  2016 pc_convert_vdf.pro
+     / Dec 11  2016 pc_save_vdf.pro
+     / Sep 15  2016 pc_vapor_create.pro
+     / Dec 11  2016 pc_write_vapor.pro
+     / Dec 11  2016 pc_write_vdf.pro
+     / Dec 11  2016 README
+     / Dec 11  2016 red-temperature.vtf
+
+modules/
+       / Dec 11  2016 chemistry
+       / Sep 15  2016 dust
+       / Sep 15  2016 dynamo
+       / Dec 11  2016 eos
+       / Sep 15  2016 forcing
+       / Sep 15  2016 interstellar
+       / Sep 15  2016 ionization
+       / Sep 15  2016 magnetic
+       / Sep 15  2016 observables
+       / Mar 30 18:37 particles
+       / Dec 11  2016 polar
+       / Dec 11  2016 powerspectra
+       / Sep 15  2016 radiation
+       / Sep 15  2016 shear
+       / Dec 11  2016 solid_objects
+       / Dec 11  2016 structure_functions
+       / Dec 11  2016 testfield
+
+obscure/ #(those can probably all be deleted)
+       / Sep 15  2016 pc_rvector.pro
+       / Sep 15  2016 README
+       / Dec 11  2016 time_series.pro
+
+initial_conditions/
+                  / Sep 15  2016 save_stratification.pro
+
+less_general/
+            / Sep 15  2016 extra_1d.pro
+            / Dec 11  2016 rallxy_zloop.pro
+            / Sep 15  2016 rslice2.pro
+            / Dec 11  2016 testfield
+
+lib/
+   / Dec 11  2016 check_ftn_consistency.pro
+   / Dec 11  2016 default.pro
+   / Sep 15  2016 defined.pro
+   / Jun  5  2017 derivatives
+   / Sep 15  2016 dx_export.pro
+   / Dec 11  2016 exists.pro
+   / Dec 11  2016 functions
+   / Dec 11  2016 general
+   / Sep 15  2016 glue_array.pro
+   / Dec 11  2016 graphics
+   / Sep 15  2016 grid-data
+   / Dec 11  2016 interpolation
+   / Jun  5  2017 IO
+   / Dec 11  2016 is_defined.pro
+   / Dec 11  2016 is_in.pro
+   / Dec 11  2016 is_str.pro
+   / Dec 11  2016 line_key.pro
+   / Dec 11  2016 logformat.pro
+   / Jun  5  2017 math
+   / Mar 30 18:37 merge_yin_yang.pro
+   / Sep 15  2016 minkowski
+   / Sep 15  2016 minmax.pro
+   / Dec 11  2016 misc
+   / Sep 15  2016 my_rebin.pro
+   / Mar 30 18:37 operators
+   / Dec 11  2016 others
+   / Sep 15  2016 pc_coarsegrain.pro
+   / Sep 15  2016 pc_potentialfield_exterior_z.pro
+   / Mar 30 18:37 plotting
+   / Dec 11  2016 rangegen.pro
+   / Mar 30 18:37 spherical_harmonics
+   / Sep 15  2016 spread.pro
+   / Dec 11  2016 spread_scalar_to_components.pro
+   / Sep 15  2016 str.pro
+   / Dec 11  2016 tag_exists.pro
+   / Mar 30 18:37 transform_thph_yy.pro
+   / Dec 11  2016 undefine.pro
+   / Dec 11  2016 vizit
+   / Dec 11  2016 wdundefine.pro
+   / Mar 30 18:37 yin2yang_coors.pro
+
+lib_other/
+         / Sep 15  2016 cmslib
+         / Dec 11  2016 coyote
+         / Sep 15  2016 esrg
+         / Sep 15  2016 idlastro
+         / Dec 11  2016 martin_schultz
+
+lib_rsi/
+       / Sep 15  2016 mean.pro
+       / Dec 11  2016 moment.pro
+
+modules/
+       / Dec 11  2016 chemistry
+       / Sep 15  2016 dust
+       / Sep 15  2016 dynamo
+       / Dec 11  2016 eos
+       / Sep 15  2016 forcing
+       / Sep 15  2016 interstellar
+       / Sep 15  2016 ionization
+       / Sep 15  2016 magnetic
+       / Sep 15  2016 observables
+       / Mar 30 18:37 particles
+       / Dec 11  2016 polar
+       / Dec 11  2016 powerspectra
+       / Sep 15  2016 radiation
+       / Sep 15  2016 shear
+       / Dec 11  2016 solid_objects
+       / Dec 11  2016 structure_functions
+       / Dec 11  2016 testfield
+
+paraview/
+        / Dec 11  2016 pc2vtk_allvar.pro
+        / Dec 11  2016 pc2vtk.pro
+        / Dec 11  2016 pc_write_vtk.pro
+        / Dec 11  2016 write_vtk.pro

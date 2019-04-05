@@ -13,6 +13,7 @@ program rvid_box
 !
       use Cparam
       use General
+      use File_io
 !
       implicit none
 !
@@ -43,6 +44,7 @@ program rvid_box
       character (len=20) :: field='lnrho',field2=''
 !
       logical :: exists,lfirst_slice=.true.
+      character, dimension(-1:0) :: trufal=(/'F','T'/)
 !
 !  Read name of the field from a file containing the field to be read.
 !  Use videoread.in as default. If that does not exist, use video.in
@@ -70,9 +72,14 @@ program rvid_box
         open(lun_stride,file='stride.in')
         read(lun_stride,'(i3)') stride
         close(lun_stride)
-        print*,'Read stride.in. Will skip every ',stride,' slices'
+        if (stride==0) then
+          print*,'Read stride.in. No skipping.'
+        else
+          print*,'Read stride.in. Will skip every ',stride,' slices'
+        endif
       else
         stride = 0
+        print*,'No stride.in hence no skipping.'
       endif
 !
 ! Loop over all processors to find the positions of the slices.
@@ -111,7 +118,17 @@ program rvid_box
         enddo
       enddo
 !
-!  Need to reset
+      open (lun_pos,file=trim(datadir)//'/slice_position.dat',form='formatted',STATUS='replace')
+      write(lun_pos,*) trufal(min(ipz1,0))
+      write(lun_pos,*) trufal(min(ipz2,0))
+      write(lun_pos,*) trufal(min(ipz3,0))
+      write(lun_pos,*) trufal(min(ipz4,0))
+      write(lun_pos,*) trufal(min(ipy1,0))
+      write(lun_pos,*) trufal(min(ipy2,0))
+      write(lun_pos,*) trufal(min(ipx1,0))
+      close(lun_pos)
+!
+!  Need to reset     MR: Why?
 !
       if (ipz1/=-1) lread_slice_xy=.true.
       if (ipz2/=-1) lread_slice_xy2=.true.
@@ -141,11 +158,9 @@ program rvid_box
 !
 !  Determine if it is a scalar field by checking the file existence
 !  (assuming the xy-slice exists)
-!  TODO: relax this assumption
 !
-      call get_fullname(nprocx*nprocy*ipz1, field2, 'xy', fullname)
-      inquire(file=fullname, exist=exists)
-      if (exists) then
+      call get_fullname(nprocx*nprocy*ipz1, field2, '*', fullname)
+      if (list_files(fullname,only_number=.true.)>0) then
         field = field2
         sindex = 0
       else
@@ -157,12 +172,10 @@ program rvid_box
 !
 !  Determine if it has multiple components by checking the file existence
 !  (assuming the xy-slice exists)
-!  TODO: relax this assumption
 !
       call append_number(field2, field, sindex)
-      call get_fullname(nprocx*nprocy*ipz1, field, 'xy', fullname)
-      inquire(file=fullname, exist=exists)
-      if (exists) then
+      call get_fullname(nprocx*nprocy*ipz1, field, '*', fullname)
+      if (list_files(fullname,only_number=.true.)>0) then
         sindex = sindex + 1
       else
         if (sindex==1) print*, 'The field ', trim(field2), ' does not exist.'
@@ -547,4 +560,3 @@ contains
   endsubroutine append_number
 !***********************************************************************
 endprogram rvid_box
-!***********************************************************************

@@ -1,16 +1,15 @@
 it(f8.0)
 t(e9.2)
 dt(e9.2)
-uxmax(e11.3)
-uxmin(e11.3)
-uxm(e11.3)
-TTmax(f12.4)
-TTm(f11.4)
+#uxmax(e11.3) # highly fluctuating from numerical noise, boundary condition too loose?
+#uxmin(e11.3) # highly fluctuating from numerical noise, boundary condition too loose?
+uxm(e9.2)
+#TTmax(f12.4) # fluctuating, due to ux fluctuations?
+TTm(f6.1) # low precision, due to ux fluctuations?
 Y2m(e10.3)
 Y3m(e10.3)
 Y6m(e10.3)
 Y8m(e10.3)
-Y6m(e10.3)
 Y9m(e10.3)
 Y10m(e10.3)
 Y11m(e10.3)

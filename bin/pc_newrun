@@ -129,6 +129,7 @@ cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 [ -f k.dat ] && cp k.dat $targetdir
+[ -f k_double.dat ] && cp k_double.dat $targetdir
 [ -f kvect.dat ] && cp kvect.dat $targetdir
 [ -f chemistry.dat ] && cp chemistry.dat $targetdir
 [ -f chemistry_m.dat ] && cp chemistry_m.dat $targetdir
@@ -153,6 +154,7 @@ cp *.in $targetdir
 #  (We don't want to use a link to the entire src directory, because
 #  then a run directory that is checked in would not possess a record
 #  of it's own src/*.local files.)
+#  Also: copy $olddir/src/*.inc, which are needed for remeshing.
 #
 if [ $same_source ]; then
   cd $targetdir/src
@@ -167,6 +169,6 @@ if [ $same_source ]; then
     ln -s `readlink $olddir/src/run.x` .
   else
     ln -s $olddir/src/*.x .
-    cp $olddir/src/*.inc .
   fi
+  cp $olddir/src/*.inc .
 fi

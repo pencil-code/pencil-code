@@ -1,0 +1,30 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+
+HYDRO     =   hydro
+DENSITY   =   density
+EOS       =   eos_idealgas
+ENTROPY   =   temperature_idealgas
+MAGNETIC  =   magnetic
+RADIATION = noradiation
+
+GRAVITY   =   gravity_simple
+FORCING   = noforcing
+SHEAR     = noshear
+
+SPECIAL   =   special/coronae
+INITIAL_CONDITION = initial_condition/coronae_init
+
+FOURIER   =   fourier_fftpack
+
+REAL_PRECISION = double
+
+SHOCK  =  shock
+
+BORDER_PROFILES = border_profiles
+
+HEATFLUX = heatflux

@@ -47,27 +47,27 @@ module Dustdensity
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
-  real, dimension(ndustspec0) :: dsize0, BB=0.
-  real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log,amplnd_rel=0.
+  real, dimension(ndustspec0) :: BB=0.
+  real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
   real, dimension(ndustspec) :: diffnd_ndustspec
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
   real :: diffnd_exponent=0.0, adref_diffnd=0.0
-  real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
+  real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_hyper3_mesh=5.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
   real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
-  real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0, supsatfac1=1.0
+  real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0
   real :: amplnd=1.0, kx_nd=1.0, ky_nd=1.0, kz_nd=1.0, widthnd=1.0
   real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
-  real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2
+  real :: rho_w=1.0, Dwater=22.0784e-2
   real :: delta=1.2, delta0=1.2, deltavd_const=1.
   real :: Rgas=8.31e7
-  real :: Rgas_unit_sys, m_w=18., m_s=60.
+  real :: Rgas_unit_sys, m_w=18.
   real :: AA=0.66e-4,  Ntot=1., dt_substep=2e-7
-  real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
+  real :: nd_reuni=0.,init_x1=0., init_x2=0., a0=0., a1=0.
   real :: dndfac_sum, dndfac_sum2, momcons_sum_x, momcons_sum_y, momcons_sum_z
   real :: momcons_term_frac=1.
   integer :: iglobal_nd=0
@@ -82,10 +82,11 @@ module Dustdensity
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
-  logical :: ldiffusion_dust=.true., ldust_cdtc=.false.
+  logical :: ldust_cdtc=.false.
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
+  logical :: ldiffd_hyper3_mesh=.false.
   logical :: ldiffd_simpl_anisotropic=.false.
   logical :: latm_chemistry=.false., lsubstep=.false.
   logical :: lresetuniform_dustdensity=.false.
@@ -104,6 +105,9 @@ module Dustdensity
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
   real    :: supsatratio_omega=0., self_collision_factor=1.
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
+  real    :: r_lucky=0., r_collected=0., f_lucky=0.
+  real :: tstart_droplet_coagulation=impossible
+  real :: nd0_luck=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -117,11 +121,12 @@ module Dustdensity
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
-      lzero_upper_kern, rotat_position, dt_substep
+      lzero_upper_kern, rotat_position, dt_substep, &
+      r_lucky, r_collected, f_lucky, nd0_luck
  
 !
   namelist /dustdensity_run_pars/ &
-      rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
+      rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       ldust_cdtc, idiffd, lupw_ndmdmi, deltavd_imposed, deltavd_const, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
@@ -133,7 +138,8 @@ module Dustdensity
       self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
-      lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac
+      lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
+      tstart_droplet_coagulation
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -161,7 +167,7 @@ module Dustdensity
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde, farray_index_append
       use General, only: itoa
 !
       integer :: k, i, ind_tmp, imd_tmp, imi_tmp, dc_tmp
@@ -175,11 +181,9 @@ module Dustdensity
         call farray_register_pde('nd'//sdust,ind_tmp)
         ind(k) = ind_tmp
       enddo
-      if (lroot .and. ndustspec/=1) then
-        open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'nnd=',ndustspec
-        write(3,*) 'ind=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(ind(1)))
-        close(3)
+      if (ndustspec/=1) then
+        call farray_index_append('nnd',ndustspec)
+        call farray_index_append('ind',ind(1),1,ndustspec)
       endif
 !
 !  Register dust mass.
@@ -191,11 +195,9 @@ module Dustdensity
           call farray_register_pde('md'//sdust,imd_tmp)
           imd(k) = imd_tmp
         enddo
-        if (lroot .and. ndustspec/=1) then
-          open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'nmd=',ndustspec
-          write(3,*) 'imd=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imd(1)))
-          close(3)
+        if (ndustspec/=1) then
+          call farray_index_append('nmd',ndustspec)
+          call farray_index_append('imd',imd(1),1,ndustspec)
         endif
       endif
 !
@@ -208,11 +210,9 @@ module Dustdensity
           call farray_register_pde('mi'//sdust,imi_tmp)
           imd(k) = imi_tmp
         enddo
-        if (lroot .and. ndustspec/=1) then
-          open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'nmi=',ndustspec
-          write(3,*) 'imi=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imi(1)))
-          close(3)
+        if (ndustspec/=1) then
+          call farray_index_append('nmi',ndustspec)
+          call farray_index_append('imi',imi(1),1,ndustspec)
         endif
       endif
 !
@@ -233,11 +233,9 @@ module Dustdensity
           enddo
         enddo
 !
-        if (lroot .and. ndustspec/=1) then
-          open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'ndc=',ndustspec
-          write(3,*) 'idc=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(idc(1)))
-          close(3)
+        if (ndustspec/=1) then
+          call farray_index_append('ndc',ndustspec)
+          call farray_index_append('imi',idc(1),1,ndustspec)
         endif
 !
       endif
@@ -453,6 +451,7 @@ module Dustdensity
       ldiffd_dusttogasratio=.false.
       ldiffd_hyper3=.false.
       ldiffd_hyper3_polar=.false.
+      ldiffd_hyper3_mesh=.false.
       ldiffd_shock=.false.
       ldiffd_simpl_anisotropic=.false.
 !
@@ -475,6 +474,9 @@ module Dustdensity
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(nd))^6/Deltaq^2'
           ldiffd_hyper3_polar=.true.
+       case ('hyper3_mesh','hyper3-mesh')
+          if (lroot) print*,'diffusion: mesh hyperdiffusion'
+          ldiffd_hyper3_mesh=.true.
         case ('hyper3lnnd')
           if (lroot) print*,'dust diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnnd'
           ldiffd_hyper3lnnd=.true.
@@ -572,7 +574,8 @@ module Dustdensity
 !   7-nov-01/wolf: coded
 !  28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs0, cs20, gamma, beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: cs20, gamma
       use Initcond, only: hat3d, sinwave_phase
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
@@ -666,6 +669,11 @@ module Dustdensity
           do k=1,2
             f(:,:,:,ind(k)) = nd0/2
           enddo
+        case ('lucky')
+          print*, 'init_nd: only 1 particle with radius 12.6'
+          f(:,:,:,ind) = 0.
+          f(:,:,:,ind(1)) = nd0
+          f(:,:,:,ind(2)) = nd0_luck
         case ('replicate_bins')
           if (headtt) then
             print*, 'init_nd: replicate particles from first to other bins.'
@@ -694,6 +702,18 @@ module Dustdensity
               endif
             endif
           enddo
+!  Initial condition for lucky droplet            
+        case ('luckyDrop')
+          do k=1,ndustspec
+            if (abs(ad(k)-r_lucky) .eq. minval(abs(ad-r_lucky))) then
+              f(:,:,:,ind(k)) = f_lucky
+            elseif (abs(ad(k)-r_collected) .eq. minval(abs(ad-r_collected))) then
+              f(:,:,:,ind(k)) = amplnd
+            else
+              f(:,:,:,ind(k)) = 0
+            endif
+          enddo
+
 !
 !  lognormal initial condition
 !
@@ -935,7 +955,8 @@ module Dustdensity
 !
 !  18-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1291,7 +1312,7 @@ module Dustdensity
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
       real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
-      integer :: i,k,mm,nn,ll1,l1p4
+      integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
 ! nd
@@ -1510,7 +1531,11 @@ module Dustdensity
         if (lpencil(i_fcloud)) then
           do i=1, nx
            ff_tmp=p%nd(i,:)*dsize(:)**3
-           if (ndustspec>1) ttt= spline_integral(dsize,ff_tmp)
+           if (ndustspec>1) then
+             ttt=spline_integral(dsize,ff_tmp)
+           else
+             !ttt=     !fill me in
+           endif
            p%fcloud(i)=4.0/3.0*pi*rho_w*ttt(ndustspec)
           enddo
 !
@@ -1533,13 +1558,15 @@ module Dustdensity
 !
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
-          if (dsize(k)>0.) then
-          if (.not. ldcore) then
-!
-              p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+            if (dsize(k)>0. .and. dsize(k)/=1.01e-6) then
+              if (.not.ldcore) then
+                ! catch extremely large values in p%TT1 during pencil check
+                T_tmp = AA*p%TT1
+                if (lpencil_check_at_work) T_tmp = T_tmp / exp(real(nint(alog(T_tmp))))
+                p%ppsf(:,k)=p%ppsat*exp(T_tmp/(2.*dsize(k)) &
                             -2.75e-8*0.1/(2.*(dsize(k)-1.01e-6)))
-          endif
-          endif
+              endif
+            endif
           enddo
         endif
 ! ccondens
@@ -1592,11 +1619,12 @@ module Dustdensity
                   endif
                 endif
               enddo
-                if (any(dsize==0.0)) then
-                else
-                  ttt= spline_integral(dsize,ff_tmp)
-                endif
-                 p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
+              if (any(dsize==0.0)) then
+                !ttt=         !fill me in
+              else
+                ttt= spline_integral(dsize,ff_tmp)
+              endif
+               p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
             endif
            enddo
           endif
@@ -1768,10 +1796,10 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
+      real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
-      integer :: k,i,j,jj
-      real :: tmpl
+      integer :: k,i,j
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -1958,6 +1986,7 @@ module Dustdensity
         fdiffd=0.0
 ! AJ: this only works if diffusion coefficient is same for all species:
         diffus_diffnd=0.0   ! Do not sum diffusion from all dust species
+        diffus_diffnd3=0.0
 !
         if (ldiffd_simplified) then
           if (ldustdensity_log) then
@@ -2015,8 +2044,21 @@ module Dustdensity
             fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp1*dline_1(:,j)**2
           enddo
           if (lfirst.and.ldt) &
-               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1/dxyz_4
+               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1*dxmin_pencil**4
         endif
+!
+      if (ldiffd_hyper3_mesh) then
+        do j=1,3
+          call der6(f,ind(k),tmp1,j,IGNOREDX=.true.)
+          fdiffd = fdiffd + diffnd_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,j)
+        enddo
+        if (lfirst.and.ldt) then 
+           advec_hypermesh_nd=diffnd_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+           advec2_hypermesh=advec2_hypermesh+advec_hypermesh_nd**2
+        endif
+        if (headtt) print*,'dnd_dt: diffnd_hyper3_mesh=', &
+            diffnd_hyper3_mesh
+      endif
 !
         if (ldiffd_hyper3lnnd) then
           if (ldustdensity_log) then
@@ -2030,6 +2072,11 @@ module Dustdensity
           fdiffd = fdiffd + diffnd_shock*p%shock*p%del2nd(:,k) + &
                    diffnd_shock*gshockgnd
           if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_shock*p%shock*dxyz_2
+        endif
+
+        if (lfirst.and.ldt) then 
+          maxdiffus=max(maxdiffus,diffus_diffnd)
+          maxdiffus3=max(maxdiffus3,diffus_diffnd3)
         endif
 !
 !  Add diffusion term.
@@ -2353,8 +2400,8 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, mfluxcondp, mfluxcondm, cc_tmp
       real, dimension (nx) :: coefkp, coefkm, coefk0
-      real :: dmdfac, dampfact
-      integer :: k,l
+      real :: dampfact
+      integer :: k
 !
 !  Calculate mass flux of condensing monomers
 !  But only if not lsemi_chemistry, because then we run Natalia's stuff.
@@ -2616,6 +2663,10 @@ module Dustdensity
       integer :: i,j,l,k
       integer :: row,col
 !
+!
+! a flag to start collision on the fly
+      if (t >= tstart_droplet_coagulation) lcalcdkern=.true. 
+!
       if (ldustcoagulation) then
 !
 !  As a test, can set kernel to a constant 
@@ -2854,7 +2905,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real :: dndfac, dndfaci, dndfacj, dndfac_momconsi, dndfac_momconsj
+      real :: dndfac, dndfaci, dndfacj
       real :: momcons_term_x,momcons_term_y,momcons_term_z
       integer :: i,j,k,l
       logical :: lmdvar_noevolve=.false.
@@ -3090,24 +3141,19 @@ module Dustdensity
 !   3-may-02/axel: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: itoa
+      use FArrayManager, only: farray_index_append
+      use General, only: itoa, loptest, get_species_nr
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamex, inamexy, k
-      logical :: lwr
       character (len=intlen) :: sdust
+      character (len=fmtlen) :: sname
 !
 !  Write information to index.pro that should not be repeated for all species.
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        write(3,*) 'ndustspec=',ndustspec
-        write(3,*) 'nname=',nname
-      endif
+      if (loptest(lwrite)) call farray_index_append('ndustspec',ndustspec)
 !
 !  Reset everything in case of reset.
 !
@@ -3189,6 +3235,19 @@ module Dustdensity
 !
       enddo
 !
+!  Check for those quantities for which we want video slices.
+!
+      do iname=1,nnamev
+        sname=trim(cnamev(iname))
+        if (sname(1:2)=='nd') then
+          if (sname(3:5)=='max') then
+            cformv(iname)='DEFINED'
+          elseif (get_species_nr(sname,'nd',ndustspec,'rprint_dustdensity')>0) then
+            cformv(iname)='DEFINED'
+          endif
+        endif
+      enddo   
+!
 !  Non-species-dependent diagnostics.
 !
       do iname=1,nname
@@ -3219,241 +3278,39 @@ module Dustdensity
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: f_tmpx
-      real, dimension (mx,mz) :: f_tmpy
-      real, dimension (mx,my) :: f_tmpz
-      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9, i10=10
-      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16
-      integer :: i17=17,i18=18,i19=19,i20=20
-      integer :: ii,jj
+      integer :: ispec
       type (slice_data) :: slices
+      character(LEN=fmtlen) :: sname
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+      sname=trim(slices%name)
+      if (sname=='ndmax') then
+
+          if (lwrite_slice_yz) slices%yz =maxval(f(ix_loc,m1:m2  ,n1:n2  ,ind),dim=3)
+          if (lwrite_slice_xz) slices%xz =maxval(f(l1:l2 ,iy_loc ,n1:n2  ,ind),dim=3)
+          if (lwrite_slice_xy) slices%xy =maxval(f(l1:l2 ,m1:m2  ,iz_loc ,ind),dim=3)
+          if (lwrite_slice_xy2)slices%xy2=maxval(f(l1:l2 ,m1:m2  ,iz2_loc,ind),dim=3)
+          if (lwrite_slice_xy3)slices%xy3=maxval(f(l1:l2 ,m1:m2  ,iz3_loc,ind),dim=3)
+          if (lwrite_slice_xy4)slices%xy4=maxval(f(l1:l2 ,m1:m2  ,iz4_loc,ind),dim=3)
+          if (lwrite_slice_xz2)slices%xz2=maxval(f(l1:l2 ,iy2_loc,n1:n2  ,ind),dim=3)
+
+          slices%ready=.true.
+          return
 !
 !  Dustdensity.
 !
-        case ('nd')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i1))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i1))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i1))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i1))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i1))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i1))
-          slices%ready=.true.
-        case ('nd2')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i2))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i2))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i2))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i2))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i2))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i2))
-          slices%ready=.true.
-        case ('nd3')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i3))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i3))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i3))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i3))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i3))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i3))
-          slices%ready=.true.
-        case ('nd4')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i4))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i4))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i4))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i4))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i4))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i4))
-          slices%ready=.true.
-        case ('nd5')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i5))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i5))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i5))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i5))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i5))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i5))
-          slices%ready=.true.
-        case ('nd6')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i6))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i6))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i6))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i6))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i6))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i6))
-          slices%ready=.true.
-        case ('nd7')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i7))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i7))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i7))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i7))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i7))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i7))
-          slices%ready=.true.
-        case ('nd8')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i8))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i8))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i8))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i8))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i8))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i8))
-          slices%ready=.true.
-        case ('nd9')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i9))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i9))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i9))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i9))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i9))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i9))
-          slices%ready=.true.
-        case ('nd10')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i10))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i10))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i10))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i10))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i10))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i10))
-          slices%ready=.true.
-        case ('nd11')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i11))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i11))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i11))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i11))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i11))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i11))
-          slices%ready=.true.
-        case ('nd12')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i12))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i12))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i12))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i12))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i12))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i12))
-          slices%ready=.true.
-        case ('nd13')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i13))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i13))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i13))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i13))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i13))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i13))
-          slices%ready=.true.
-        case ('nd14')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i14))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i14))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i14))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i14))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i14))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i14))
-          slices%ready=.true.
-        case ('nd15')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i15))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i15))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i15))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i15))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i15))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i15))
-          slices%ready=.true.
-        case ('nd16')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i16))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i16))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i16))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i16))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i16))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i16))
-          slices%ready=.true.
-        case ('nd17')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i17))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i17))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i17))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i17))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i17))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i17))
-          slices%ready=.true.
-        case ('nd18')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i18))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i18))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i18))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i18))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i18))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i18))
-          slices%ready=.true.
-        case ('nd19')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i19))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i19))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i19))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i19))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i19))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i19))
-          slices%ready=.true.
-        case ('nd20')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i20))
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i20))
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ind(i20))
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ind(i20))
-          if (lwrite_slice_xy3) &
-          slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i20))
-          if (lwrite_slice_xy4) &
-          slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i20))
-          slices%ready=.true.
-        case ('ndmax')
-          do ii=m1,m2; do jj=n1,n2
-            f_tmpx(ii,jj)=maxval(f(ix_loc,ii ,jj,ind(:)))
-          enddo; enddo
-          do ii=l1,l2; do jj=n1,n2
-            f_tmpy(ii,jj)=maxval(f(ii,iy_loc,jj,ind(:)))
-          enddo; enddo
-          do ii=l1,l2; do jj=m1,m2
-            f_tmpz(ii,jj)=maxval(f(ii,jj,iz_loc,ind(:)))
-          enddo; enddo
-          slices%yz =f_tmpx
-          slices%xz =f_tmpy
-          slices%xy =f_tmpz
-          do ii=l1,l2; do jj=m1,m2
-            f_tmpz(ii,jj)=maxval(f(ii,jj,iz2_loc,ind(:)))
-          enddo; enddo
-          slices%xy2=f_tmpz
-          slices%ready=.true.
-      endselect
+      elseif (sname(1:2)=='nd') then
+        if (sname(3:)=='') then
+          ispec=1
+        else                 ! slice name is "nd" followed by a number for the species 
+          read(slices%name(3:),'(i3)') ispec
+        endif
+        call assign_slices_scal(slices,f,ind(ispec))
+      endif
 !
     endsubroutine get_slices_dustdensity
 !***********************************************************************
@@ -3467,13 +3324,10 @@ module Dustdensity
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
-      real, dimension (nx,ndustspec) :: ff_tmp1,ff_tmp2,dndr_dr1,dndr_dr2
+      real, dimension (nx,ndustspec) :: dndr_dr,ff_tmp
       real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep,  nd_new
-      integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
-      real, dimension (35) ::  x2, S
-      real, dimension (6) ::  X1, Y1
-      real :: del =0.85, GS, Ntot_tmp=0.
+      integer :: k, i, jj, kk1,kk2 !, ind_tmp=6
+      real :: GS
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr

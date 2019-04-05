@@ -42,6 +42,7 @@ module Register
       use Dustvelocity,     only: register_dustvelocity
       use Energy,           only: register_energy
       use EquationOfState,  only: register_eos
+      use FArrayManager, only: farray_index_reset
       use Forcing,          only: register_forcing
       use Gravity,          only: register_gravity
       use Heatflux,         only: register_heatflux
@@ -57,7 +58,7 @@ module Register
       use PointMasses,      only: register_pointmasses
       use Polymer,          only: register_polymer
       use Pscalar,          only: register_pscalar
-      use Supersat,         only: register_supersat
+      use Ascalar,         only: register_ascalar
       use Radiation,        only: register_radiation
       use Selfgravity,      only: register_selfgravity
       use Shear,            only: register_shear
@@ -80,10 +81,7 @@ module Register
 !
 !  Initialize index.pro file.
 !
-      if (lroot) then
-        open(3,file=trim(datadir)//'/index.pro',status='replace')
-        close(3)
-      endif
+      call farray_index_reset()
 !
 !  Set up the ordering of the pencils.
 !
@@ -142,7 +140,7 @@ module Register
       call register_testflow
       call register_radiation
       call register_pscalar
-      call register_supersat
+      call register_ascalar
       call register_chiral
       call register_chemistry
       call register_dustvelocity
@@ -224,12 +222,13 @@ module Register
       use Magnetic,         only: initialize_magnetic
       use Lorenz_gauge,     only: initialize_lorenz_gauge
       use Polymer,          only: initialize_polymer
+      use Power_spectrum,   only: initialize_power_spectrum
       use NeutralDensity,   only: initialize_neutraldensity
       use NeutralVelocity,  only: initialize_neutralvelocity
       use PointMasses,      only: initialize_pointmasses
       use Poisson,          only: initialize_poisson
       use Pscalar,          only: initialize_pscalar
-      use Supersat,         only: initialize_supersat
+      use Ascalar,          only: initialize_ascalar
       use Radiation,        only: initialize_radiation
       use Selfgravity,      only: initialize_selfgravity
       use Shear,            only: initialize_shear
@@ -244,6 +243,7 @@ module Register
       use Viscosity,        only: initialize_viscosity
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
+      use GPU,              only: initialize_gpu
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -365,6 +365,7 @@ module Register
 !
       call initialize_deriv
       call initialize_diagnostics
+      call initialize_gpu
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
       call initialize_eos
@@ -381,12 +382,13 @@ module Register
       call initialize_magnetic(f)
       call initialize_lorenz_gauge(f)
       call initialize_polymer(f)
+      call initialize_power_spectrum
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
       call initialize_radiation
       call initialize_pscalar(f)
-      call initialize_supersat(f)
+      call initialize_ascalar(f)
       call initialize_chiral(f)
       call initialize_chemistry(f)
       call initialize_dustvelocity(f)
@@ -410,6 +412,7 @@ module Register
 !  print summary of variable names
 !
       call write_varname
+      call write_pt_positions
 !
     endsubroutine initialize_modules
 !***********************************************************************
@@ -426,6 +429,7 @@ module Register
       use Special,        only: finalize_special
       use Deriv,          only: finalize_deriv
       use Special,        only: finalize_mult_special
+      use Gpu,            only: finalize_gpu
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -434,6 +438,7 @@ module Register
       call finalize_deriv
       call finalize_mult_special
       call finalize_io
+      call finalize_gpu
 !
     endsubroutine finalize_modules
 !***********************************************************************
@@ -475,8 +480,22 @@ module Register
 !
 !  Set unit_magnetic=3.5449077018110318=sqrt(4*pi), unless it was set already.
 !  Note that unit_magnetic determines the value of mu_0 in the rest of the code.
+!  Fred: lfix_unit_std ensures mu0=1 and avoids very small or large coefficient
+!        in Ohmic heating and Lorentz forces 
 !
-      if (unit_magnetic == impossible) unit_magnetic=3.5449077018110318
+      if (unit_magnetic == impossible) then
+        if (lfix_unit_std) then
+          if (unit_system=='cgs') then
+            unit_magnetic=3.5449077018110318* &
+                sqrt(unit_density)*unit_velocity
+          elseif (unit_system=='SI') then
+            unit_magnetic=3.5449077018110318* &
+                sqrt(1e-7*unit_density)*unit_velocity
+          endif
+        else
+          unit_magnetic=3.5449077018110318
+        endif
+      endif
 !
 !  Check that everything is OK.
 !
@@ -498,14 +517,15 @@ module Register
 !
       integer :: i
 !
-      if (lroot) print*, 'choose_pencils: finding out which pencils '// &
-          'are needed for the pencil case'
+      if (lroot.and.ip<14) call information('choose_pencils','finding out which pencils '// &
+          'are needed for the pencil case')
 !
 !  Must set all pencil arrays to false in case of reload.
 !
       lpenc_requested=.false.
       lpenc_diagnos=.false.
       lpenc_diagnos2d=.false.
+      lpenc_video=.false.
 !
 !  Find out which pencils are needed for the pencil case.
 !
@@ -564,7 +584,7 @@ module Register
       use Gravity,         only: pencil_criteria_gravity
       use Selfgravity,     only: pencil_criteria_selfgravity
       use Pscalar,         only: pencil_criteria_pscalar
-      use Supersat,        only: pencil_criteria_supersat
+      use Ascalar,        only: pencil_criteria_ascalar
       use Chemistry,       only: pencil_criteria_chemistry
       use Dustvelocity,    only: pencil_criteria_dustvelocity
       use Dustdensity,     only: pencil_criteria_dustdensity
@@ -601,7 +621,7 @@ module Register
       call pencil_criteria_gravity
       call pencil_criteria_selfgravity
       call pencil_criteria_pscalar
-      call pencil_criteria_supersat
+      call pencil_criteria_ascalar
       call pencil_criteria_interstellar
       call pencil_criteria_chemistry
       call pencil_criteria_dustvelocity
@@ -657,7 +677,7 @@ module Register
       use Testfield, only: pencil_interdep_testfield
       use Testflow, only: pencil_interdep_testflow
       use Pscalar, only: pencil_interdep_pscalar
-      use Supersat, only: pencil_interdep_supersat
+      use Ascalar, only: pencil_interdep_ascalar
       use Chemistry, only: pencil_interdep_chemistry
       use Dustvelocity, only: pencil_interdep_dustvelocity
       use Dustdensity, only: pencil_interdep_dustdensity
@@ -693,7 +713,7 @@ module Register
       call pencil_interdep_neutralvelocity(lpencil_in)
       call pencil_interdep_neutraldensity(lpencil_in)
       call pencil_interdep_pscalar(lpencil_in)
-      call pencil_interdep_supersat(lpencil_in)
+      call pencil_interdep_ascalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
       call pencil_interdep_lorenz_gauge(lpencil_in)
       call pencil_interdep_polymer(lpencil_in)
@@ -784,7 +804,7 @@ module Register
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
       use Cdata
-      use Sub,             only: numeric_precision
+      use General,         only: numeric_precision
       use Diagnostics
       use Heatflux,        only: rprint_heatflux
       use Hydro,           only: rprint_hydro
@@ -802,7 +822,7 @@ module Register
       use Radiation,       only: rprint_radiation
       use EquationOfState, only: rprint_eos
       use Pscalar,         only: rprint_pscalar
-      use Supersat,        only: rprint_supersat
+      use Ascalar,         only: rprint_ascalar
       use Chiral,          only: rprint_chiral
       use Interstellar,    only: rprint_interstellar
       use Chemistry,       only: rprint_chemistry
@@ -931,9 +951,9 @@ module Register
             nname_sound=0
           endif
         endif
+        if (lroot .and. (ip<14)) &
+            print*, 'sound_print_list: nname_sound=', nname_sound
       endif
-      if (lroot .and. (ip<14)) &
-          print*, 'sound_print_list: nname_sound=', nname_sound
 !
 !  Read in the list of variables for xy-averages.
 !
@@ -1036,8 +1056,6 @@ module Register
 !  For the convenience of idl users, the indices of variables in
 !  the f-array and the time_series.dat files are written to data/index.pro.
 !
-      if (lroot) open(3,file=trim(datadir)//'/index.pro',position='append')
-!
       call rprint_general         (lreset,LWRITE=lroot)
       call rprint_heatflux        (lreset,LWRITE=lroot)
       call rprint_hydro           (lreset,LWRITE=lroot)
@@ -1055,7 +1073,7 @@ module Register
       call rprint_radiation       (lreset,LWRITE=lroot)
       call rprint_eos             (lreset,LWRITE=lroot)
       call rprint_pscalar         (lreset,LWRITE=lroot)
-      call rprint_supersat        (lreset,LWRITE=lroot)
+      call rprint_ascalar         (lreset,LWRITE=lroot)
       call rprint_chiral          (lreset,LWRITE=lroot)
       call rprint_interstellar    (lreset,LWRITE=lroot)
       call rprint_chemistry       (lreset,LWRITE=lroot)
@@ -1074,8 +1092,6 @@ module Register
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
       call rprint_pointmasses     (lreset,LWRITE=lroot)
-      
-      if (lroot) close(3)
 !
     endsubroutine rprint_list
 !***********************************************************************
@@ -1089,8 +1105,11 @@ module Register
 !
       use Cdata
       use Diagnostics
-      use Energy,  only: expand_shands_energy
-      use Hydro,   only: expand_shands_hydro
+      use General, only: loptest
+      use IO, only: IO_strategy
+      use Energy, only: expand_shands_energy
+      use FArrayManager, only: farray_index_append
+      use Hydro, only: expand_shands_hydro
       use Magnetic,only: expand_shands_magnetic
 !
       integer :: iname,irz
@@ -1107,7 +1126,7 @@ module Register
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
         idiag_timeperstep=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
-        idiag_dtv=0; idiag_dtdiffus=0; idiag_Rmesh=0; idiag_Rmesh3=0
+        idiag_dtv=0; idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0; idiag_Rmesh=0; idiag_Rmesh3=0
         idiag_maxadvec=0
       endif
 !
@@ -1120,6 +1139,8 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'dt',idiag_dt)
         call parse_name(iname,cname(iname),cform(iname),'dtv',idiag_dtv)
         call parse_name(iname,cname(iname),cform(iname),'dtdiffus',idiag_dtdiffus)
+        call parse_name(iname,cname(iname),cform(iname),'dtdiffus2',idiag_dtdiffus2)
+        call parse_name(iname,cname(iname),cform(iname),'dtdiffus3',idiag_dtdiffus3)
         call parse_name(iname,cname(iname),cform(iname),'Rmesh',idiag_Rmesh)
         call parse_name(iname,cname(iname),cform(iname),'Rmesh3',idiag_Rmesh3)
         call parse_name(iname,cname(iname),cform(iname),'maxadvec',idiag_maxadvec)
@@ -1148,16 +1169,32 @@ module Register
           call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',idiag_rmphi)
         enddo
 !
-!  Output in phiavg.list the list of fields after the taking into
-!  account of possible shorthands in phiaver.in
-!
-        if (lroot) then
+        if (lroot .and. (IO_strategy /= "HDF5")) then
+          ! output in phiavg.list the list of fields after the taking into
+          ! account of possible shorthands in phiaver.in
           open(11,file=trim(datadir)//'/averages/phiavg.list',status='unknown')
           do irz=1,nnamerz
             write(11,'(A30)') cnamerz(irz)
           enddo
           close(11)
         endif
+      endif
+!
+!  For compatibility with older IDL scripts.
+!
+      if (loptest(lwrite)) then
+        ! [PAB]: why do we need these?
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamev',nnamev)
+        call farray_index_append('nnamex',nnamex)
+        call farray_index_append('nnamey',nnamey)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('nnamer',nnamer)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamexz',nnamexz)
+        call farray_index_append('nnamerz',nnamerz)
+        call farray_index_append('nname_sound',nname_sound)
+        call farray_index_append('ncoords_sound',ncoords_sound)
       endif
 !
     endsubroutine rprint_general
@@ -1190,5 +1227,37 @@ module Register
       endif root
 !
     endsubroutine write_varname
+!***********************************************************************
+    subroutine write_pt_positions
+!
+!  Writes positions where pt and p2 variables are written
+!
+!   2-apr-18/axel: coded.
+!
+!  Note: this would need to be reworked if one later makes
+!  the output positions processor-dependent. At the moment,
+!  those positions are in that part of the mesh that is on
+!  the root processor.
+!
+      integer, parameter :: unit = 3
+!
+      root: if (lroot) then
+        open(unit, file=trim(datadir)//'/pt_positions.dat', status='replace')
+        10 format (3g13.5,2x,3i6)
+        11 format (a)
+        write(unit,11)'Positions where pt and p2 variables are written:'
+        write(unit,11)''
+        write(unit,11)'x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint='
+        write(unit,10) x(lpoint), y(mpoint), z(npoint), lpoint, mpoint, npoint
+        write(unit,11)''
+        write(unit,11)'x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2='
+        write(unit,10) x(lpoint2), y(mpoint2), z(npoint2), lpoint2, mpoint2, npoint2
+        write(unit,11)''
+        write(unit,11)'x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)='
+        write(unit,10) x(lpoint)-x(lpoint2), y(mpoint)-y(mpoint2), z(npoint)-z(npoint2)
+        close(unit)
+      endif root
+!
+    endsubroutine write_pt_positions
 !***********************************************************************
 endmodule Register

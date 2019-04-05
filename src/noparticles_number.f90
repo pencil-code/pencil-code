@@ -22,7 +22,7 @@ module Particles_number
 !
   contains
 !***********************************************************************
-    subroutine register_particles_number()
+    subroutine register_particles_number
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -71,8 +71,8 @@ module Particles_number
       call keep_compiler_quiet(present(init))
 !
     endsubroutine set_particle_number
-!init_particles_number***********************************************************************
-    subroutine pencil_criteria_par_number()
+!***********************************************************************
+    subroutine pencil_criteria_par_number
 !
 !  All pencils that the Particles_number module depends on are specified here.
 !
@@ -160,6 +160,8 @@ module Particles_number
 !
 !  24-nov-05/anders: dummy
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -170,7 +172,7 @@ module Particles_number
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if (lwr) write(3,*) 'inpswarm=', inpswarm
+      if (lwr) call farray_index_append('inpswarm', inpswarm)
 !
       call keep_compiler_quiet(lreset)
 !

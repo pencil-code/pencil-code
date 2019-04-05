@@ -287,7 +287,7 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: dfdy, penc
+      real, dimension(nx) :: dfdy,penc,diffus_shear3,advec_shear
       integer :: j,k
       real :: d
 !
@@ -304,7 +304,7 @@ module Shear
 !
       if (.not. lshearadvection_as_shift) then
         do j = 1, nvar
-          ! bfield and testfield modules may handle their own shearing.
+          ! bfield and testflow modules may handle their own shearing.
           if (lbfield .and. (j >= ibx) .and. (j <= ibz)) cycle
           if (ltestflow .and. (j >= iuutest) .and. (j <= iuutest+ntestflow-1)) cycle
           call der(f,j,dfdy,2)
@@ -327,7 +327,10 @@ module Shear
           call der6(f, j, penc, 1, ignoredx=.true.)
           df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + d * penc
         enddo comp1
-        if (lfirst .and. ldt) diffus_shear3 = diffus_shear3 + d
+        if (lfirst .and. ldt) then
+          diffus_shear3 = d
+          maxdiffus3=max(maxdiffus3,diffus_shear3)
+        endif
       endif hyper3x
 !
 !  Add (Lagrangian) shear term for all dust species.
@@ -358,12 +361,12 @@ module Shear
         enddo
         if (iuutest/=0) then
           do j=iuutest,iuztestpq,3
-            df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear*f(l1:l2,m,n,j)
+            df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-Sshear1*f(l1:l2,m,n,j)
           enddo
         endif
       endif
 !
-!  Meanfield stretching term.
+!  Mean magnetic field stretching term.
 !  Loop through all the dax/dt equations and add -S*ay contribution.
 !
       if (iam/=0) then
@@ -373,8 +376,12 @@ module Shear
 !  Take shear into account for calculating time step.
 !
       if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
-          nygrid > 1 .and. .not. lshearadvection_as_shift) &
-          advec_shear = abs(uy0 * dy_1(m))
+        nygrid > 1 .and. .not. lshearadvection_as_shift) then
+        advec_shear = abs(uy0 * dy_1(m))
+        maxadvec=maxadvec+advec_shear
+      else
+        advec_shear=0.
+      endif
 !
 !  Calculate shearing related diagnostics.
 !
@@ -613,7 +620,7 @@ module Shear
       logical :: error
       integer :: istat
       integer :: ic, j, k
-      real :: shift
+      real :: shift, avg
 !
 !  Find the displacement traveled with the advection.
 !
@@ -680,6 +687,8 @@ module Shear
                 ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
               endif newy
 !
+              avg = sum(bt(:,j,k)) / real(nygrid)
+              bt(:,j,k) = bt(:,j,k) - avg
               ymethod: select case (method)
               case ('bspline') ymethod
                 py = bt(:,j,k)
@@ -702,7 +711,7 @@ module Shear
               endselect ymethod
               if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
 !
-              bt(:,j,k) = py
+              bt(:,j,k) = avg + py
             enddo scan_yz
           enddo scan_yx
           call transp_pencil_xy(bt, b1)
@@ -871,7 +880,7 @@ module Shear
       logical :: error
       integer :: istat
       integer :: i, k
-      real :: s
+      real :: s, avg
 !
 !  Find the new y-coordinates after shift.
 !
@@ -898,6 +907,8 @@ module Shear
       call remap_to_pencil_y(a, work)
       scan_z: do k = 1, nz
         scan_x: do i = 1, nghost
+          avg = sum(work(i,:,k)) / real(nygrid)
+          work(i,:,k) = work(i,:,k) - avg
           periodic: if (method == 'poly') then
             worky(nghost+1:mygrid-nghost) = work(i,:,k)
             worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
@@ -921,7 +932,7 @@ module Shear
           endselect dispatch
           if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in interpolation; ' // trim(message))
 !
-          work(i,:,k) = penc
+          work(i,:,k) = avg + penc
         enddo scan_x
       enddo scan_z
       call unmap_from_pencil_y(work, a)
@@ -979,7 +990,7 @@ module Shear
         uy0_shear = Sshear * (x - x0_shear)
       else
         if (size(uy0_shear) /= nx) call fatal_error('get_uy0_shear', 'unconformable output array uy0_shear')
-        uy0_shear(1:nx) = uy0
+        uy0_shear = uy0
       endif
 !
     endsubroutine

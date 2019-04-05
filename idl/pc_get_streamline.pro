@@ -20,6 +20,7 @@
 ;   * length         Returns the full length of each traced streamline.
 ;   * num_lines      Returns the number of traced streamlines.
 ;   * num_points     Returns the number of points in each traced streamline.
+;   * max_points     Set the maximum number of points for each traced streamline.
 ;   * origin         Returns the array index of the origin of each traced streamline.
 ;   * coords         Returns an array of grid coordinates of each traced streamline.
 ;   * distances      Returns an array of the distances from the anchor point along each streamline.
@@ -51,7 +52,7 @@
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, data, description=description, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices, quiet=quiet
+function pc_get_streamline, data, description=description, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, max_points=max_points, return_indices=return_indices, quiet=quiet
 
         default, dir, 0
         default, precision, 0.1
@@ -61,7 +62,8 @@ function pc_get_streamline, data, description=description, anchor=anchor, grid=g
         default, nbox, 3.0
         default, max_packet_length, 1000000L
         default, display_packet, 1000L
-	default, description, ''
+        default, description, ''
+        default, max_points, 100000L
 
         ; Periodicity
         if (keyword_set (grid)) then periodic = grid.lperi
@@ -102,7 +104,7 @@ function pc_get_streamline, data, description=description, anchor=anchor, grid=g
                 if (display_packet ge num_lines / 100) then display_packet = (num_lines / 100) > 5
                 for pos = 0L, num_lines - 1L do begin
                         if (not quiet and (((pos mod display_packet) eq 0) or (pos le 10))) then print, " Tracing streamline "+strtrim (pos, 2)+" of "+strtrim (num_lines, 2)+string (13b), form='(A,$)'
-                        stream = pc_get_streamline (data, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, select=select, max_length=max_length)
+                        stream = pc_get_streamline (data, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, select=select, max_length=max_length, max_points=max_points)
                         num_points[pos] = stream.num_points
                         if ((packet_length + num_points[pos]) gt max_packet_length) then begin
                                 if (packet_length gt 0L) then begin
@@ -230,8 +232,13 @@ function pc_get_streamline, data, description=description, anchor=anchor, grid=g
         last = anchor
         num_total = 0L
         done = 0
-        local_data = data[0:1,0:1,0:1,*]
-        while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
+        lower = [ 0, 0, 0 ]
+        upper = lower + 1
+        if (periodic[0] and (upper[0] ge nx)) then upper[0] = 0
+        if (periodic[1] and (upper[1] ge ny)) then upper[1] = 0
+        if (periodic[2] and (upper[2] ge nz)) then upper[2] = 0
+        local_data = dblarr (2,2,2,3)
+        while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and (num_points lt max_points) and not done) do begin
 
                 ; Interpolate data
                 int_pos = (floor (pos) < (Box_xyz_upper-1)) > Box_xyz_lower

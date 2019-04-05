@@ -18,6 +18,7 @@ module Messages
   public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
   public :: outlog, set_caller
+  public :: terminal_setfgbrightcolor, terminal_setfgcolor
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
   integer, public, parameter :: iterm_BRIGHT    = 1
@@ -41,7 +42,6 @@ module Messages
   integer, public, parameter :: iip_EVERYTHING  = 0
   integer, public, parameter :: iip_DEFAULT     = 0
   integer, parameter :: iinformation_ip = 1000
-  integer :: warnings=0
   integer :: errors=0
   integer :: fatal_errors=0, fatal_errors_total=0
   logical :: ldie_onwarning=.false.
@@ -248,15 +248,21 @@ module Messages
 !  Print out colored warning.
 !
 !  30-jun-05/tony: coded
+!   2-apr-17/MR: optional parameter ip = processor number added
 !
+      use General, only: ioptest
+
       character (len=*), optional :: location
       character (len=*)           :: message
       integer, optional :: ip
 !
+      integer :: ipl
+!
       if (present(location)) scaller=location
+      ipl=ioptest(ip,0)
 
       if (.not.llife_support) then
-        if (lroot .or. (ncpus<=16 .and. (message/=''))) then
+        if ((iproc_world==ipl .or. ncpus<=16) .and. (message/='')) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING: "
           call terminal_defaultcolor()

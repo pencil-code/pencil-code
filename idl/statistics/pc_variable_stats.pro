@@ -9,6 +9,9 @@ pro pc_variable_stats,variable, varname=varname, dim=dim, $
     TRIM=TRIM, NOHEADER=NOHEADER, NOVECTORS=NOVECTORS, YINYANG=yinyang, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
 ;
+;  Statistics for scalar and vector variables.
+;  Yet missing: multicomponent non-vector variables.
+;
 if not keyword_set(yinyang) then yinyang=0 
 yinyang = logical_true(yinyang)
 ;
@@ -26,14 +29,14 @@ stats        =[ $
                "'-->'",         $
                'min(statvar)', $
                'max(statvar)', $
-               'mean(statvar)',$
+               'mean(statvar,/double)',$
                ;'stddev(statvar)' ]
                ;
                ;  work-around to prevent stddev from exiting on scalars
                ;
-               'stddev(statvar*[1,1])' ]
+               'stddev(statvar*[1,1],/double)' ]
 stat_formats =[ $
-               'A10',$
+               'A12',$
                'A',$
                '1G15.6',$
                '1G15.6',$
@@ -68,34 +71,22 @@ if (not keyword_set(NOHEADER)) then $
 ;
 ;  We do not want averages of grid and time parameters.
 ;
-if ((varname eq 'X')  or (varname eq 'Y')  or (varname eq 'Z') or $
-    (varname eq 'DX') or (varname eq 'DY') or (varname eq 'DZ') or $
-    (varname eq 'T')  or (varname eq 'YZ') or (varname eq 'TRIANGLES') or $
-    (varname eq 'SPHERE_DATA')) then return
-  if yinyang then $
+if (varname eq 'X')  or (varname eq 'Y')  or (varname eq 'Z') or $
+   (varname eq 'DX') or (varname eq 'DY') or (varname eq 'DZ') then return
+  if yinyang then begin
     if strpos(varname,'MERGE') ge 0 then return
+    if (varname eq 'YZ') or (varname eq 'TRIANGLES') or (varname eq 'SPHERE_DATA') or $
+       (varname eq 'YGHOSTS') or (varname eq 'ZGHOSTS') or (varname eq 'FVAL') then return
+  endif
 ;
 varsize=size(variable)
 ;
 fmt='('+arraytostring(stat_formats[where(requested_stats)],LIST=',',/NOLEAD)+')'
+;if ( pc_is_scalarfield(variable, dim=dim, $
+;    subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) ) then begin
 
-if ( pc_is_scalarfield(variable, dim=dim, $
-    subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) ) then begin
-;
-;  The array is a scalar field....
-;
-  stats[0]="' '+strmid(strlowcase(varname)+'          ',0,10)"
-; 
-  if (execute("statvar=variable[" + $
-      arraytostring(subscripts,/NOLEADER)+"]",1) ne 1) then $
-      message, 'Subscripting array  ' + varname 
-;
-  cmd = "print, FORMAT=fmt" + $
-      arraytostring(stats[where(requested_stats)])  
-  if (execute(cmd,1) ne 1) then message, 'Error printing stats for ' + stats[0] 
-
-endif else if ( pc_is_vectorfield(variable, dim=dim, $
-   subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) ) then begin
+if ( pc_is_vectorfield(variable, dim=dim, $
+   subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) eq 1) then begin
 ;
 ;  The array is a vector field...
 ;
@@ -111,6 +102,20 @@ endif else if ( pc_is_vectorfield(variable, dim=dim, $
     if (execute(cmd,1) ne 1) then message, 'Error printing stats for '+stats[0] 
   endfor
 ;
-endif
+endif else begin
+;
+;  The array is a scalar field....
+;
+  stats[0]="' '+strmid(strlowcase(varname)+'          ',0,10)"
+;
+  if (execute("statvar=variable[" + $
+      arraytostring(subscripts,/NOLEADER)+"]",1) ne 1) then $
+      message, 'Subscripting array  ' + varname
+;
+  cmd = "print, FORMAT=fmt" + $
+      arraytostring(stats[where(requested_stats)])
+  if (execute(cmd,1) ne 1) then message, 'Error printing stats for ' + stats[0] 
+
+endelse
 ;
 end

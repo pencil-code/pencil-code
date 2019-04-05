@@ -30,16 +30,20 @@ module Special
 !
   ! maximum number of granulation levels, technical maximum is 9
   integer, parameter :: max_gran_levels=3
+  integer :: cool_RTV_cutoff=0
 !
-  real :: tdown=0., allp=0., Kgpara=0., heat_cool=0., rho_diff_fix=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
+  real :: nc_tau=0., nc_alt=0., Kgpara=0., heat_cool=0., rho_diff_fix=0., cool_RTV=0., Kgpara2=0., nc_tau_rho=0., nc_alt_rho=0.
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
+  real :: T_crit=0., deltaT_crit=0.
   real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
-  real :: Bavoid=0., nvor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
+  real :: Bavoid=0., vorticity_factor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
   logical :: lgranulation=.false., lgran_proc=.false., lgran_parallel=.false.
   logical :: luse_vel_field=.false., lquench=.false., lmassflux=.false.
   logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
+  logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
+             lemerg_profx=.false.,lset_boundary_emf=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -49,8 +53,14 @@ module Special
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
-  real :: lnrho_min=-max_real, lnrho_min_tau=1.0
+  real :: lnrho_min=-max_real, lnrho_min_tau=1.0, uu_tau1_quench=0.0
+  real, dimension(2) :: nwave,w_ff,z_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
+!
+  integer :: nlf=4
+  real, dimension (mx) :: x12
+  real, dimension (my) :: y12
+  real, dimension (mz) :: z12
 !
   real, dimension(nx,ny,2) :: A_init
 !
@@ -60,8 +70,11 @@ module Special
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
   character(len=labellen) :: prof_type='nothing'
-  real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z, deltaT_init_z, deltarho_init_z
+  real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
+  real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0, uu_drive=0.0
+  real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
+  logical :: lheatcond_cutoff=.false.
 !
   ! file location settings
   character(len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -69,16 +82,18 @@ module Special
   character(len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
   character(len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
   character(len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
+  character(len=labellen) :: flux_type='uniform'
 !
   ! input parameters
-  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type
+  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type, &
+           lslope_limited_special
 !
   ! run parameters
   namelist /special_run_pars/ &
-      tdown,allp,Kgpara,heat_cool,rho_diff_fix,cool_RTV,lntt0,wlntt,bmdi,hcond1, &
-      Kgpara2,K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
+      nc_tau,nc_alt,Kgpara,heat_cool,rho_diff_fix,cool_RTV,lntt0,wlntt,bmdi,hcond1, &
+      Kgpara2,K_spitzer,nc_tau_rho,nc_alt_rho,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
-      b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
+      b_tau,flux_tau,Bavoid,nglevel,vorticity_factor,Bz_flux,init_time,init_time_hcond, &
       lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
       lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
       iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
@@ -86,8 +101,12 @@ module Special
       lnc_density_depend, lnc_intrin_energy_depend, &
       init_time_fade_start, init_time_hcond_fade_start, &
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
-      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
+      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
+      cool_RTV_cutoff, T_crit, deltaT_crit, & 
+      lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
+      lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench
 !
+  integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
   integer :: idiag_dtradloss=0 ! DIAG_DOC: Radiative losses time step
@@ -100,13 +119,13 @@ module Special
   integer :: idiag_mag_flux=0  ! DIAG_DOC: Total vertical magnetic flux at
                                ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
+  integer :: ivid_logQ=0, ivid_rtv=0
+!
   ! video slices
-  real, target, dimension(nx,ny) :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
-  real, target, dimension(nx,nz) :: rtv_xz
-  real, target, dimension(ny,nz) :: rtv_yz
-  real, target, dimension(nx,ny) :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
-  real, target, dimension(nx,nz) :: logQ_xz
-  real, target, dimension(ny,nz) :: logQ_yz
+  real, target, dimension(:,:), allocatable :: rtv_xy, rtv_xy2, rtv_xy3, rtv_xy4
+  real, target, dimension(:,:), allocatable :: rtv_xz, rtv_yz, rtv_xz2
+  real, target, dimension(:,:), allocatable :: logQ_xy, logQ_xy2, logQ_xy3, logQ_xy4
+  real, target, dimension(:,:), allocatable :: logQ_xz, logQ_xz2, logQ_yz
 !
   ! Granule midpoint:
   type point
@@ -144,6 +163,7 @@ module Special
 !
   integer, save, dimension(mseed) :: nano_seed
   integer :: alloc_err
+  real, dimension(nx) :: diffus_chi, diffus_chi3
 !
   contains
 !
@@ -154,6 +174,8 @@ module Special
 !  which should be know to be able to evaluate
 !
 !  6-oct-03/tony: coded
+!
+      use FArrayManager
 !
       if (lroot) call svn_id("$Id$")
 !
@@ -166,6 +188,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use File_io, only: parallel_file_exists
+      !use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -185,9 +208,9 @@ module Special
           call fatal_error ('solar_corona/gran_driver', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
       ! Using vorticity increase, the x- and y-directions must be equidistant.
-      if ((nvor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
+      if (lgranulation .and. (vorticity_factor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
           call fatal_error ('solar_corona/gran_driver', &
-              "If 'nvor' is active, the grid must be equidistant in x and y.")
+              "If 'vorticity_factor' is active, the grid must be equidistant in x and y.")
       ! For only one granulation level, no parallelization is required.
       if (lgran_parallel .and. (nglevel == 1)) &
           call fatal_error ('solar_corona/gran_driver', &
@@ -203,13 +226,20 @@ module Special
       if ((Bavoid > 0.0) .and. (.not. lmagnetic)) &
           call fatal_error ('solar_corona', &
               "'Bavoid' needs the magnetic module.")
-      if ((tdown > 0.0) .and. (allp == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
+      if ((nc_tau > 0.0) .and. (nc_alt == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
           call fatal_error ('solar_corona', &
-              "Please select decaying of Newton Cooling using 'allp' or 'nc_lnrho_num_magn'.")
+              "Please select decaying of Newton Cooling using 'nc_alt' or 'nc_lnrho_num_magn'.")
       ! Restoration half-time of initial total vertical flux:
       if ((flux_tau > 0.0) .and. (Bz_flux <= 0.0)) &
           call fatal_error ('solar_corona/mag_driver', &
               "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
+      ! Check if heat conduction terms are implemented:
+      if ((K_spitzer /= 0.0) .and. (lentropy .or. (ltemperature .and. ltemperature_nolog))) &
+          call fatal_error('solar_corona/calc_heatcond_tensor', &
+              "Heat conduction 'K_spitzer' currently requirees logarithmic temperature.", .true.)
+      if ((K_iso /= 0.0) .and. lentropy) &
+          call fatal_error('solar_corona/calc_heatcond_grad', &
+              "Heat conduction 'K_iso' is currently not implemented for entropy.", .true.)
 !
       if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
@@ -229,6 +259,32 @@ module Special
       ! Setup atmosphere stratification for later use
       call setup_profiles()
 !
+      if (lslope_limited_special) then
+        if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+        call generate_halfgrid(x12,y12,z12)
+      endif
+!
+      if (ivid_rtv/=0) then
+        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
+      endif
+      if (ivid_logQ/=0) then
+        !call alloc_slice_buffers(logQ_xy,logQ_xz,logQ_yz,logQ_xy2,logQ_xy3,logQ_xy4,logQ_xz2)
+        if (lwrite_slice_xy .and..not.allocated(logQ_xy) ) allocate(logQ_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(logQ_xz) ) allocate(logQ_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(logQ_yz) ) allocate(logQ_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(logQ_xy2)) allocate(logQ_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(logQ_xy3)) allocate(logQ_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(logQ_xy4)) allocate(logQ_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(logQ_xz2)) allocate(logQ_xz2(nx,nz))
+      endif
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -326,14 +382,14 @@ module Special
 ! Only read profiles if needed, e.g. for Newton cooling
 !
       if (.not. (ltemperature .or. lentropy)) return
-      lnewton_cooling = (tdown > 0.0) .or. (tdownr > 0.0)
+      lnewton_cooling = (nc_tau > 0.0) .or. (nc_tau_rho > 0.0)
       if (.not. (linit_uu .or. linit_lnrho .or. linit_lnTT .or. lnewton_cooling)) return
 !
       ! default: read 'stratification.dat' with density and temperature
       if (prof_type == 'nothing') prof_type = 'lnrho_lnTT'
 !
       ! check if density profile is read, when needed
-      if ((tdownr > 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
+      if ((nc_tau_rho > 0.0) .and. (index (prof_type, 'lnrho') < 1)) then
         call fatal_error ("setup_profiles", &
             "a density profile must be read to use density based newton cooling")
       endif
@@ -375,7 +431,8 @@ module Special
       integer, parameter :: unit=12
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
-      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltarho
+      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltaE, lread_prof_deltarho, &
+          lread_prof_E
 !
       ! file location settings
       character(len=*), parameter :: stratification_dat = 'stratification.dat'
@@ -383,6 +440,8 @@ module Special
       character(len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
       character(len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
       character(len=*), parameter :: deltaT_dat = 'driver/prof_deltaT.dat'
+      character(len=*), parameter :: deltaE_dat = 'driver/prof_deltaE.dat'
+      character(len=*), parameter :: E_dat = 'driver/prof_E.dat'
       character(len=*), parameter :: deltarho_dat = 'driver/prof_deltarho.dat'
 !
 ! Check which stratification file should be used:
@@ -391,6 +450,8 @@ module Special
       lread_prof_lnrho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnrho') > 0)
       lread_prof_lnTT = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
       lread_prof_deltaT = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaT') > 0)
+      lread_prof_deltaE = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaE') > 0)
+      lread_prof_E = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_E') > 0)
       lread_prof_deltarho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltarho') > 0)
 !
       if (prof_type == 'lnrho_lnTT') then
@@ -422,7 +483,8 @@ module Special
 !
         deallocate (prof_lnTT, prof_lnrho, prof_z)
 !
-      elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT .or. lread_prof_deltaT .or. lread_prof_deltarho) then
+      elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT .or. lread_prof_deltaT &
+          .or. lread_prof_deltaE .or. lread_prof_deltarho) then
 !
         ! read vertical velocity profile for interpolation
         if (lread_prof_uu) &
@@ -438,14 +500,26 @@ module Special
 !
         ! read temperature differences profile
         if (lread_prof_deltaT) then
-          call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature), .false.)
-          deltaT_init_z = deltaT_init_z * unit_time
+          allocate (deltaT_init_z(mz))
+          call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature/unit_time), .false.)
+        endif
+!
+        ! read internal energy profile
+        if (lread_prof_E) then
+          allocate (E_init_z(mz))
+          call read_profile (E_dat, E_init_z, real(unit_energy), .false.)
+        endif
+!
+        ! read internal energy differences profile
+        if (lread_prof_deltaE) then
+          allocate (deltaE_init_z(mz))
+          call read_profile (deltaE_dat, deltaE_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
         ! read density differences profile
         if (lread_prof_deltarho) then
-          call read_profile (deltarho_dat, deltarho_init_z, real(unit_density), .false.)
-          deltarho_init_z = deltarho_init_z * unit_time
+          allocate (deltarho_init_z(mz))
+          call read_profile (deltarho_dat, deltarho_init_z, real(unit_density/unit_time), .false.)
         endif
 !
       elseif (index (prof_type, 'internal_') == 1) then
@@ -589,7 +663,14 @@ module Special
         lpenc_requested(i_cp1) = .true.
       endif
 !
-      if ((tdown > 0.0) .or. (tdownr > 0.0)) then
+      if (heat_cool /= 0.0) then
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_lnTT) = .true.
+        lpenc_requested(i_cp1) = .true.
+        lpenc_requested(i_rho1) = .true.
+      endif
+!
+      if ((nc_tau > 0.0) .or. (nc_tau_rho > 0.0)) then
         lpenc_requested(i_lnrho) = .true.
         lpenc_requested(i_lnTT) = .true.
       endif
@@ -617,7 +698,6 @@ module Special
       if (swamp_eta > 0.0) then
         lpenc_requested(i_del2a) = .true.
         lpenc_requested(i_diva) = .true.
-        lpenc_requested(i_uxb) = .true.
       endif
 !
       if (hcond1 /= 0.0) then
@@ -667,7 +747,6 @@ module Special
         lpenc_requested(i_hlnTT) = .true.
         lpenc_requested(i_rho1) = .true.
         lpenc_requested(i_glnrho) = .true.
-        lpenc_requested(i_rho1) = .true.
       endif
 !
       if (Ksat /= 0.) then
@@ -696,6 +775,11 @@ module Special
           lpenc_diagnos(i_cp1) = .true.
           lpenc_diagnos(i_TT1) = .true.
           lpenc_diagnos(i_rho1) = .true.
+        case ('T<Tcrit')
+          lpenc_requested(i_b2) = .true.
+          lpenc_requested(i_TT) = .true.
+          lpenc_requested(i_rho1) = .true.
+          lpenc_requested(i_cp1) = .true.
         endselect
       enddo
 !
@@ -770,6 +854,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset, lwr
@@ -788,6 +873,8 @@ module Special
         idiag_dtradloss = 0
         idiag_dtspitzer = 0
         idiag_mag_flux = 0
+        ivid_logQ=0
+        ivid_rtv=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -801,15 +888,22 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mag_flux',idiag_mag_flux)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do iname = 1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'logQ',ivid_logQ)
+        call parse_name(iname,cnamev(iname),cformv(iname),'rtv',ivid_rtv)
+      enddo
+!
 !  write column where which variable is stored
 !
       if (lwr) then
-        write (3,*) 'i_dtvel=',idiag_dtvel
-        write (3,*) 'i_dtchi2=',idiag_dtchi2
-        write (3,*) 'i_dtnewt=',idiag_dtnewt
-        write (3,*) 'i_dtradloss=',idiag_dtradloss
-        write (3,*) 'i_dtspitzer=',idiag_dtspitzer
-        write (3,*) 'i_mag_flux=',idiag_mag_flux
+        call farray_index_append('i_dtvel',idiag_dtvel)
+        call farray_index_append('i_dtchi2',idiag_dtchi2)
+        call farray_index_append('i_dtnewt',idiag_dtnewt)
+        call farray_index_append('i_dtradloss',idiag_dtradloss)
+        call farray_index_append('i_dtspitzer',idiag_dtspitzer)
+        call farray_index_append('i_mag_flux',idiag_mag_flux)
       endif
 !
     endsubroutine rprint_special
@@ -819,7 +913,9 @@ module Special
 !  Write slices for animation of special variables.
 !
 !  26-jun-06/tony: dummy
-!
+! 
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension(mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -827,24 +923,11 @@ module Special
 !
       select case (trim(slices%name))
 !
-      case ('rtv')
-        slices%yz =>rtv_yz
-        slices%xz =>rtv_xz
-        slices%xy =>rtv_xy
-        slices%xy2 =>rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3 =>rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4 =>rtv_xy4
-        slices%ready = .true.
+      case ('rtv'); call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
+                                            rtv_xy3,rtv_xy4,rtv_xz2)
 !
-      case ('logQ')
-        slices%yz =>logQ_yz
-        slices%xz =>logQ_xz
-        slices%xy =>logQ_xy
-        slices%xy2 =>logQ_xy2
-        if (lwrite_slice_xy3) slices%xy3 =>logQ_xy3
-        if (lwrite_slice_xy4) slices%xy4 =>logQ_xy4
-        slices%ready = .true.
-!
+      case ('logQ'); call assign_slices_scal(slices,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
+                                             logQ_xy3,logQ_xy4,logQ_xz2)
       endselect
 !
       call keep_compiler_quiet(f)
@@ -878,7 +961,7 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: fdiff
@@ -888,7 +971,7 @@ module Special
           call del6(f,ilnrho,fdiff,IGNOREDX=.true.)
         else
           call fatal_error('special_calc_density', &
-              'not yet implented for ldensity_nolog')
+              'not yet implemented for ldensity_nolog')
         endif
 !
 !        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
@@ -911,6 +994,34 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
 !
+      if (lslope_limited_special) then
+        if (headtt) print*,'special_calc_density: call div_diff_flux'
+        if (ibb==0)  &
+          call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
+        if (ldensity_nolog) then
+          call div_diff_flux(f,irho,p,fdiff)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
+!
+!  Density is frozen at boundary
+!
+            df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
+          else
+            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+          endif
+        else
+!
+! Store the diffusive flux in a special aux array to be added later to
+! log-density in special_after_timestep
+!
+          call div_diff_flux(f,ilnrho,p,fdiff)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
+            df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
+          else
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
+          endif
+        endif
+      endif
+!    
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
@@ -931,6 +1042,8 @@ module Special
       real, dimension(nx,3) :: hhh, tmpv
       integer :: i, j, k
 !
+      diffus_chi=0.; diffus_chi3=0.
+
       if (chi_hyper3 /= 0.0) then
         call del6(f,ilnTT,hc,IGNOREDX=.true.)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper3*hc
@@ -995,12 +1108,17 @@ module Special
       if (heat_cool /= 0.0) call calc_heat_cool(df,p)
       if (rho_diff_fix /= 0.0) call calc_rho_diff_fix(df,p)
       if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
-      if (max (tdown, tdownr) > 0.0) call calc_heat_cool_newton(df,p)
+      if (max (nc_tau, nc_tau_rho) > 0.0) call calc_heat_cool_newton(df,p)
       if (K_iso /= 0.0) call calc_heatcond_grad(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
 !
       if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
+      if (lfirst.and.ldt) then
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
+
     endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_before_boundary(f,lfinalize)
@@ -1105,6 +1223,158 @@ module Special
           call save_name (Bz_total_flux, idiag_mag_flux)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine special_boundconds(f,bc)
+!
+!  Some precalculated pencils of data are passed in for efficiency,
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type (boundary_condition), intent(in) :: bc
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(bc)
+!
+    endsubroutine special_boundconds
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_,llast)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  induction equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      use Deriv, only: der
+      use Mpicomm, only: mpibcast_real,initiate_isendrcv_bdry, &
+                         finalize_isendrcv_bdry
+      use SharedVariables, only: get_shared_variable
+      use Sub, only: cross,gij,curl_mn
+!
+      logical, intent(in) :: llast
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz):: rho_tmp
+      real, intent(in) :: dt_
+      real, dimension(nx,3) :: uu,bb,uxb
+      real, dimension(nx) :: va
+      real, dimension(2) :: gn
+      real, pointer, dimension(:) :: B_ext
+      integer :: ig,ierr
+!
+! Flux emergence by driving an EMF at bottom boundary
+! Presently only emf from constant field and constant velocity
+!
+      if (lset_boundary_emf) then
+          call initiate_isendrcv_bdry(f,iax,iaz)
+          call finalize_isendrcv_bdry(f,iax,iaz)
+        do m=m1,m2
+          call bc_emf_z(f,df,dt_,'top',iax)
+          call bc_emf_z(f,df,dt_,'top',iay)
+          call bc_emf_z(f,df,dt_,'top',iaz)
+        enddo
+      endif
+      if (lfirst_proc_z.and.lcartesian_coords) then
+        if (lflux_emerg_bottom) then
+          select case (flux_type)
+          case ('uniform')
+            do ig=0,nghost
+              do m=m1, m2
+                call get_shared_variable('B_ext', B_ext,ierr)
+                if (ierr/=0) call fatal_error('special_after_timestep:',&
+                'failed to get B_ext from magnetic')
+                bb(:,1)=bb_emerg(1)+B_ext(1)
+                bb(:,2)=bb_emerg(2)+B_ext(2)
+                bb(:,3)=bb_emerg(3)+B_ext(3)
+                if (iglobal_bx_ext/=0) bb(:,1)=bb(:,1)+f(l1:l2,m,n1-ig,iglobal_bx_ext)
+                if (iglobal_by_ext/=0) bb(:,2)=bb(:,2)+f(l1:l2,m,n1-ig,iglobal_by_ext)
+                if (iglobal_bz_ext/=0) bb(:,3)=bb(:,3)+f(l1:l2,m,n1-ig,iglobal_bz_ext)
+                uu(:,1)=uu_emerg(1)*sin(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
+                uu(:,2)=uu_emerg(2)*cos(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
+                if (lemerg_profx) then
+!
+! Hard coding the emerging velocity x-profile for testing
+!
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
+                          tanh((x(l1:l2)+4+0.5)/0.4))* &
+                          (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
+                          (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
+                          (1+tanh((x(l1:l2)-4+0.5)/0.4))))
+                else
+                  uu(:,3)=uu_emerg(3)*cos(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
+                endif
+                f(l1:l2,m,n1-ig,iux) = uu(:,1)
+                f(l1:l2,m,n1-ig,iuy) = uu(:,2)
+                f(l1:l2,m,n1-ig,iuz) = uu(:,3)
+!
+!
+!
+                call cross(uu,bb,uxb)
+                f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
+                f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
+                f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
+              enddo
+            enddo
+          case ('noise')
+            do ig=0,nghost
+              do m=m1, m2
+                uu(:,1)=uu_emerg(1)
+                uu(:,2)=uu_emerg(2)
+                if (lemerg_profx) then
+!
+! Hard coding the emerging velocity x-profile for testing
+!
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
+                          tanh((x(l1:l2)+4+0.5)/0.4))* &
+                          (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
+                          (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
+                          (1+tanh((x(l1:l2)-4+0.5)/0.4))))
+                else
+                  uu(:,3)=uu_emerg(3)
+                endif
+                f(l1:l2,m,n1-ig,iuz) = uu(:,3)
+!
+                call random_number(gn)
+                bb(:,1)=0.5*bb_emerg(1)*(1.+gn(1))
+                bb(:,2)=bb_emerg(2)
+                bb(:,3)=bb_emerg(3)*sin(pi*(2*x(l1:l2)/Lxyz(1)+gn(2)))
+!                
+                call cross(uu,bb,uxb)
+                f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
+                f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
+                f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
+              enddo
+            enddo
+          case default
+            call fatal_error('special_after_timestep:','wrong flux_type')
+          endselect
+        endif
+      endif
+      if (any(uu_drive /= 0.0)) then
+        do m=m1, m2
+          do n=n1,n2
+            if ((z(n) .lt. z_ff(2)) .and. (z(n) .gt. z_ff(1))) then
+               uu(:,2)=1.11803*uu_drive(2)*cos(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)
+               uu(:,1)=uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
+               uu(:,3)=-uu_drive(3)*sin(nwave(2)*x(l1:l2)/Lxyz(1)+nwave(2)*z(n)/Lxyz(1)-w_ff(2)*t)/1.11803
+               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)+uu(:,1)*w_ff(2)*dt_
+               f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)+uu(:,2)*w_ff(2)*dt_
+               f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)+uu(:,3)*w_ff(2)*dt_
+            endif
+          enddo
+        enddo
+     endif
+!
+!      if (.not.ldensity_nolog .and. lslope_limited_special) then
+!        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
+!        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
+!      endif
+!
+    endsubroutine special_after_timestep
 !***********************************************************************
     function get_swamp_fade_fact(height,deriv)
 !
@@ -1273,9 +1543,10 @@ module Special
 !
       swamp_fade_fact = swamp_eta * get_swamp_fade_fact (z(n), dfade_fact)
       if (swamp_fade_fact > 0.0) then
-        df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + p%uxb(:,1) + swamp_fade_fact * p%del2a(:,1)
-        df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) + p%uxb(:,2) + swamp_fade_fact * p%del2a(:,2)
-        df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) + p%uxb(:,3) + swamp_fade_fact * p%del2a(:,3) + swamp_eta * dfade_fact * p%diva
+        ! eta varies along z and requires the deta/dz term in the third component
+        df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + swamp_fade_fact * p%del2a(:,1)
+        df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) + swamp_fade_fact * p%del2a(:,2)
+        df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) + swamp_fade_fact * p%del2a(:,3) + swamp_eta * dfade_fact * p%diva
       endif
 !
     endsubroutine calc_swamp_eta
@@ -1846,22 +2117,22 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: newton, newtonr, tmp_tau, lnTT_ref
+      real, dimension(nx) :: newton, newton_rho, tmp_tau, lnTT_ref
 !
       tmp_tau = 0.0
 !
       ! Correction of density profile
-      if (tdownr > 0.0) then
+      if (nc_tau_rho > 0.0) then
         ! Get reference density
-        newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
-        ! allpr is given in [Mm]
-        tmp_tau = tdownr * exp (-allpr*unit_length*1e-6 * z(n))
+        newton_rho = exp (lnrho_init_z(n) - p%lnrho) - 1.0
+        ! nc_alt_rho is given in [Mm]
+        tmp_tau = nc_tau_rho * exp (-nc_alt_rho * z(n)*unit_length*1e-6)
         ! Add correction term to density
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau
       endif
 !
       ! Newton cooling of temperature profile
-      if ((tdown /= 0.0) .and. (.not. lnc_intrin_energy_depend)) then
+      if ((nc_tau /= 0.0) .and. (.not. lnc_intrin_energy_depend)) then
         if (lnc_density_depend) then
           ! Find reference temperature to actual density profile
           call find_ref_temp (p%lnrho, lnTT_ref)
@@ -1872,34 +2143,34 @@ module Special
         endif
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnTT_ref - p%lnTT) - 1.0
-        if (allp /= 0.0) then
+        if (nc_alt /= 0.0) then
           ! Calculate density-dependant inverse time scale and let cooling decay exponentially
-          tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
+          tmp_tau = nc_tau * exp (-nc_alt * (lnrho0 - p%lnrho))
         elseif (nc_lnrho_num_magn /= 0.0) then
           ! Calculate density-dependant inverse time scale with a smooth sine curve decay
-          tmp_tau = tdown * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.25*nc_lnrho_trans_width, -1.0)
+          tmp_tau = nc_tau * sine_step (p%lnrho, lnrho0-nc_lnrho_num_magn, 0.5*nc_lnrho_trans_width, -1.0)
         endif
         ! Optional height dependant smooth cutoff
         if (nc_z_max /= 0.0) &
-            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
+            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.5*nc_z_trans_width, -1.0))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
       endif
 !
       ! Newton cooling that keeps the intrinsic energy constant
-      if ((tdown /= 0.0) .and. lnc_intrin_energy_depend) then
+      if ((nc_tau /= 0.0) .and. lnc_intrin_energy_depend) then
         ! Calculate intrinsic-energy-dependant inverse time scale and let cooling decay exponentially
-        tmp_tau = tdown * exp (-allp * (lnrho0*lnTT_init_z(n1) - p%lnrho*p%lnTT))
+        tmp_tau = nc_tau * exp (-nc_alt * (lnrho0*lnTT_init_z(n1) - p%lnrho*p%lnTT))
         ! Optional height dependant smooth cutoff
         if (nc_z_max /= 0.0) &
-            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
+            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.5*nc_z_trans_width, -1.0))
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnrho - p%lnTT) - 1.0
         ! Calculate newton cooling factor to reference density
-        newtonr = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnTT - p%lnrho) - 1.0
+        newton_rho = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnTT - p%lnrho) - 1.0
         ! Add newton cooling term to entropy and density
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau
       endif
 !
       if (lfirst .and. ldt) then
@@ -2070,7 +2341,8 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot, dot2
+      use Sub, only: dot, dot2, step
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -2079,7 +2351,9 @@ module Special
       real, dimension(nx,3) :: tmpv, gKp
       real, dimension(nx) :: cos_B_glnTT, gKp_b
       real, dimension(nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
+      real, pointer :: z_cutoff
       integer :: i, j
+      integer :: ierr
 !
       ! heatflux density vector: q = kappa * grad_T [W/m^2]
       ! thermal diffusivity: chi = gamma * kappa / (rho * cp)
@@ -2106,6 +2380,14 @@ module Special
           gKp(:,3) = p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)*glnTT_abs_inv
           chi_spitzer =  chi_sat
         endwhere
+      endif
+      if (lheatcond_cutoff) then 
+        call get_shared_variable('z_cutoff',&
+             z_cutoff,ierr)
+        if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
+             'failed to get z_cutoff from radiation_ray')
+        chi_spitzer = chi_spitzer* &
+          step(z(n),z_cutoff,0.2)
       endif
 !
 !  Limit heat conduction so that the diffusion speed
@@ -2329,6 +2611,21 @@ module Special
 !
 !  Apply external heating and cooling profile.
 !
+!  08-Mar-2017/PABourdin: coded
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      if (allocated (deltaT_init_z)) call calc_heat_cool_deltaT(df,p)
+      if (allocated (deltaE_init_z)) call calc_heat_cool_deltaE(df,p)
+      if (allocated (E_init_z)) call calc_heat_cool_E(df,p)
+!
+    endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine calc_heat_cool_deltaT(df,p)
+!
+!  Apply external heating and cooling profile.
+!
 !  30-Sep-2016/PABourdin: coded
 !
       use Diagnostics,     only: max_mn_name
@@ -2342,25 +2639,124 @@ module Special
 !     add to temperature equation
 !
       if (ltemperature .and. ltemperature_nolog) then
-        delta_lnTT = deltaT_init_z(n) * dt
+        delta_lnTT = deltaT_init_z(n)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_lnTT
       elseif (ltemperature) then
-        delta_lnTT = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(n) * dt) - df(l1:l2,m,n,ilnTT)
+        delta_lnTT = -df(l1:l2,m,n,ilnTT)
+        df(l1:l2,m,n,ilnTT) = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(n))
+        delta_lnTT = delta_lnTT + df(l1:l2,m,n,ilnTT)
       else
         if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
+            call stop_it('solar_corona: calc_heat_cool_deltaT:lentropy=not implemented')
       endif
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_lnTT
 !
       if (lfirst .and. ldt) then
         tmp = delta_lnTT / cdts
-        if (ldiagnos .and. idiag_dtradloss /= 0) then
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
       endif
 !
-    endsubroutine calc_heat_cool
+    endsubroutine calc_heat_cool_deltaT
+!***********************************************************************
+    subroutine calc_heat_cool_deltaE(df,p)
+!
+!  Apply external heating and cooling profile.
+!
+!  08-Mar-2017/PABourdin: coded
+!
+      use Diagnostics,     only: max_mn_name
+      use EquationOfState, only: gamma
+      use Mpicomm,         only: stop_it
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: tmp
+!
+!     add to energy equation
+!
+!write (100+iproc,*) 'it    :', it
+!write (100+iproc,*) 'pos_z :', n
+!write (100+iproc,*) 'p%TT1 :', p%TT1
+!write (100+iproc,*) 'p%rho1:', p%rho1
+!write (100+iproc,*) 'deltaE_init_z(n):', deltaE_init_z(n)
+      if (ltemperature .and. ltemperature_nolog) then
+        tmp = p%rho1 * p%cp1 * gamma * deltaE_init_z(n)
+!write (100+iproc,*) 'delta_T  :', tmp
+! flush (100+iproc)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+        tmp = alog (1 + tmp)
+      elseif (ltemperature) then
+        tmp = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n)
+!write (100+iproc,*) 'delta_lnT:', tmp
+! flush (100+iproc)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_heat_cool_deltaE:lentropy=not implemented')
+      endif
+!
+      if (lfirst .and. ldt) then
+        tmp = tmp / cdts
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
+          itype_name(idiag_dtradloss) = ilabel_max_dt
+          call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
+        endif
+        dt1_max = max(dt1_max, tmp)
+      endif
+!
+    endsubroutine calc_heat_cool_deltaE
+!***********************************************************************
+    subroutine calc_heat_cool_E(df,p)
+!
+!  Restore external thermal energy profile.
+!
+!  12-Mar-2017/PABourdin: coded
+!
+      use Diagnostics,     only: max_mn_name
+      use EquationOfState, only: gamma
+      use Mpicomm,         only: stop_it
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: tmp
+!
+!     change energy equation
+!
+! write (100+iproc+10*it,*) 'n:', n
+! write (100+iproc+10*it,*) 'E:', E_init_z(n)
+! write (100+iproc+10*it,*) 'P:', 1.0/(p%TT1 * p%rho1 * p%cp1 * gamma)
+! write (100+iproc+10*it,*) 'ratio:', E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
+! write (100+iproc+10*it,*) 'TT1:', p%TT1
+! write (100+iproc+10*it,*) 'rho1:', p%rho1
+! write (100+iproc+10*it,*) 'unit_energy:', unit_energy   ! 1.0e12 ?
+! write (100+iproc+10*it,*) 'cp1:', p%cp1   ! 1.0
+! write (100+iproc+10*it,*) 'gamma:', gamma ! 5/3
+      if (ltemperature .and. ltemperature_nolog) then
+        tmp = heat_cool * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+        tmp = alog (1 + tmp)
+      elseif (ltemperature) then
+        tmp = alog (heat_cool * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma))
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_heat_cool_E:lentropy=not implemented')
+      endif
+!
+      if (lfirst .and. ldt) then
+        tmp = tmp / cdts
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
+          call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
+        endif
+        dt1_max = max(dt1_max, tmp)
+      endif
+!
+    endsubroutine calc_heat_cool_E
 !***********************************************************************
     subroutine calc_rho_diff_fix(df,p)
 !
@@ -2379,9 +2775,9 @@ module Special
 !     add to density
 !
       if (ldensity .and. ldensity_nolog) then
-        delta_lnrho = deltarho_init_z(n) * dt
+        delta_lnrho = deltarho_init_z(n)
       elseif (ldensity) then
-        delta_lnrho = alog (exp (df(l1:l2,m,n,ilnrho)) + deltarho_init_z(n) * dt) - df(l1:l2,m,n,ilnrho)
+        delta_lnrho = alog (exp (df(l1:l2,m,n,ilnrho)) + deltarho_init_z(n)) - df(l1:l2,m,n,ilnrho)
       else
         call stop_it('solar_corona: calc_rho_diff_fix:need density to work on it')
       endif
@@ -2399,13 +2795,17 @@ module Special
       use EquationOfState, only: gamma
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
-      use Sub,             only: cubic_step
+      use Sub,             only: cubic_step,step
+      use SharedVariables, only: get_shared_variable
+      use Slices_methods,  only: store_slices
 !
+      integer :: ierr
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
       real :: unit_lnQ
+      real, pointer :: z_cutoff
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
           5*alog(real(unit_length))+alog(real(unit_density))
@@ -2420,21 +2820,35 @@ module Special
       call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
 !
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
-      rtv_cool = gamma*p%cp1*exp(rtv_cool)
+      rtv_cool = p%cv1*exp(rtv_cool)
 !
-      rtv_cool = rtv_cool*cool_RTV * get_time_fade_fact()
+      rtv_cool = rtv_cool*cool_RTV
 !     for adjusting by setting cool_RTV in run.in
 !
-      rtv_cool = rtv_cool &
+      select case (cool_RTV_cutoff)
+      case(0)
+        rtv_cool = rtv_cool*get_time_fade_fact() &
           *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      case(1)
+!
+! Do nothing actually!
+!
+      case(2)
+        call get_shared_variable('z_cutoff',&
+             z_cutoff,ierr)
+        if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
+             'failed to get z_cutoff from radiation_ray')
+        rtv_cool = rtv_cool &
+          *step(z(n),z_cutoff,0.2)
+      case default
+        call fatal_error('cool_RTV_cutoff:','wrong value')
+      endselect
 !
 ! slices
-      rtv_yz(m-m1+1,n-n1+1) = rtv_cool(ix_loc-l1+1)
-      if (m == iy_loc)  rtv_xz(:,n-n1+1) = rtv_cool
-      if (n == iz_loc)  rtv_xy(:,m-m1+1) = rtv_cool
-      if (n == iz2_loc) rtv_xy2(:,m-m1+1) = rtv_cool
-      if (n == iz3_loc) rtv_xy3(:,m-m1+1) = rtv_cool
-      if (n == iz4_loc) rtv_xy4(:,m-m1+1) = rtv_cool
+!
+      if (ivid_rtv/=0) &
+        call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz,rtv_xy2, &
+                                   rtv_xy3,rtv_xy4,rtv_xz2)
 !
 !     add to temperature equation
 !
@@ -2442,7 +2856,7 @@ module Special
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
       else
         if (lentropy) &
-            call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
+            call stop_it('solar_corona: calc_heat_cool:lentropy=not implemented')
       endif
 !
       if (lfirst .and. ldt) then
@@ -2454,12 +2868,9 @@ module Special
         dt1_max = max(dt1_max,tmp)
       endif
 !
-      logQ_yz(m-m1+1,n-n1+1) = lnQ(ix_loc-l1+1)*0.43429448
-      if (m == iy_loc)  logQ_xz(:,n-n1+1) = lnQ*0.43429448
-      if (n == iz_loc)  logQ_xy(:,m-m1+1) = lnQ*0.43429448
-      if (n == iz2_loc) logQ_xy2(:,m-m1+1) = lnQ*0.43429448
-      if (n == iz3_loc) logQ_xy3(:,m-m1+1) = lnQ*0.43429448
-      if (n == iz4_loc) logQ_xy4(:,m-m1+1) = lnQ*0.43429448
+      if (ivid_logQ/=0) &
+        call store_slices(lnQ*0.43429448,logQ_xy,logQ_xz,logQ_yz,logQ_xy2, &
+                                         logQ_xy3,logQ_xy4,logQ_xz2)
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -2471,6 +2882,7 @@ module Special
       real, dimension(nx), intent(in) :: lnTT
       real, dimension(nx), intent(out) :: lnQ, delta_lnTT
 !
+      ! 37 points extracted from Cook et al. (1989)
       real, parameter, dimension(37) :: intlnT = (/ &
           8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, &
           9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
@@ -2487,6 +2899,7 @@ module Special
           -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
           -0.66650 /)
 !
+      ! 16 points extracted from Cook et al. (1989)
       real, parameter, dimension(16) :: intlnT1 = (/ &
           8.98008, 9.44060, 9.90112, 10.3616, 10.8221, 11.2827, &
           11.5129, 11.8583, 12.4340, 12.8945, 13.3550, 13.8155, &
@@ -2496,6 +2909,7 @@ module Special
           -79.1322, -79.4776, -79.2934, -79.6618, -79.3778, -79.5159, &
           -80.1990, -82.5093, -82.1793, -78.6717 /)
 !
+      ! Four Gaussians plus one constant fitted to Cook et al. (1989)
       real, dimension(9) :: pars = (/ &
           2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
           1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
@@ -2505,11 +2919,12 @@ module Special
       integer :: i, px, z_ref
       real :: pos, frac
 !
-!  select type for cooling fxunction
-!  1: 10 points interpolation
-!  2: 37 points interpolation
-!  3: four gaussian fit
+!  select type for cooling function
+!  1: 16-points logarithmic-piecewise-linear interpolation
+!  2: 37-points logarithmic-piecewise-linear interpolation
+!  3: four Gaussians fit
 !  4: several fits
+!  5: 37-points logarithmic-piecewise-linear interpolation with extrapolation
 !
       select case (cool_type)
       case (1)
@@ -2781,6 +3196,11 @@ module Special
             heatinput = heatinput + heat_event1D/heat_unit
           endif
 !
+        case ('T<Tcrit')
+!
+          heatinput = heatinput + &
+          0.5*(1.-tanh((p%TT-T_crit)/deltaT_crit))
+!
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
               'Please provide correct iheattype')
@@ -2913,7 +3333,7 @@ module Special
 ! It is invoked by setting lgranulation=T in run.in
 ! additional parameters are
 ! 'Bavoid': the magn. field strenght in Tesla at which no granule is allowed
-! 'nvor': the strength by which the vorticity is enhanced
+! 'vorticity_factor': the strength by which the vorticity is enhanced
 !
 !  11-may-10/bing: coded
 !
@@ -3800,14 +4220,14 @@ module Special
       vy = Uy
 !
 ! Calculating and enhancing rotational part by factor 5
-      if (nvor > 0.0) then
+      if (vorticity_factor > 0.0) then
         call helmholtz(wscr,wscr2)
-        vx = (vx+nvor*wscr )
-        vy = (vy+nvor*wscr2)
+        vx = vx + vorticity_factor*wscr
+        vy = vy + vorticity_factor*wscr2
       endif
 !
 ! Normalize to given total rms-velocity
-      vrms = sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
+      vrms = sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid)) + tini
 !
       if (unit_system == 'SI') then
         vtot = 3.*1e3/unit_velocity
@@ -3820,10 +4240,387 @@ module Special
 !
 ! Reinserting rotationally enhanced velocity field
 !
-      Ux = vx*vtot/vrms
-      Uy = vy*vtot/vrms
+      Ux = vx * vtot/vrms
+      Uy = vy * vtot/vrms
 !
     endsubroutine enhance_vorticity
+!***********************************************************************
+    subroutine bc_emf_z(f,df,dt_,topbot,j)
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      real, dimension(mz) :: border_prof_z_uu=1.0
+      real, dimension(nz) :: zeta
+      real, intent(in) :: dt_
+      real :: uborder, border_width
+      integer, intent (in) :: j
+      integer :: i
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        print*, "bc_emf_z: ", topbot, " should be 'top'"
+      case ('top')               ! top boundary
+        if (border_frac_z(2) /= 0) then 
+          border_width=border_frac_z(2)*Lxyz(3)/2
+          uborder=xyz1(3)-border_width
+          zeta=1-max(z(n1:n2)-uborder,0.0)/border_width
+          border_prof_z_uu(n1:n2)=min(border_prof_z_uu(n1:n2),zeta**2*(3-2*zeta))
+          do n=n1, n2
+            do i=0, 2
+              f(l1:l2,m,n,iuu+i) = f(l1:l2,m,n,iuu+i) - &
+              f(l1:l2,m,n,iuu+i)*(1.-border_prof_z_uu(n))*uu_tau1_quench*dt_
+            enddo
+          enddo
+        endif
+        if (llast_proc_z) then
+          do i=1,nghost
+            f(l1:l2,m,n2+i,j)=f(l1:l2,m,n2+i,j)+df(l1:l2,m,n2,j)*dt_
+          enddo
+        endif
+
+      case default
+        print*, "bc_emf_z: ", topbot, " should be 'top'"
+      endselect
+!
+    endsubroutine bc_emf_z
+!***********************************************************************
+
+    subroutine generate_halfgrid(x12,y12,z12)
+!
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
+      real, dimension (mx), intent(out) :: x12
+      real, dimension (my), intent(out) :: y12
+      real, dimension (mz), intent(out) :: z12
+!
+      if (nxgrid == 1) then
+        x12 = x
+      else
+        x12 = x + 0.5/dx_1 - 0.25*dx_tilde/dx_1**2
+      endif
+!
+      if (nygrid == 1) then
+        y12 = y
+      else
+        y12 = y + 0.5/dy_1 - 0.25*dy_tilde/dy_1**2
+      endif
+!
+      if (nzgrid == 1) then
+        z12 = z
+      else
+        z12 = z + 0.5/dz_1 - 0.25*dz_tilde/dz_1**2
+      endif
+!
+    endsubroutine generate_halfgrid
+!*******************************************************************************
+    subroutine div_diff_flux(f,j,p,div_flux)
+      intent(in) :: f,j
+      intent(out) :: div_flux
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: flux_im12,flux_ip12
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: div_flux
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
+      real, dimension (nx) :: fim1,fip1,rfac,q1
+      real :: alpha=1.25
+      type (pencil_case), intent(in) :: p
+      integer :: i,j,k
+!
+! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
+!
+        fim1=0
+        fip1=0
+        fim12_l=0
+        fim12_r=0
+        fip12_l=0
+        fip12_r=0
+        cmax_ip12=0
+        cmax_im12=0
+!
+!  Generate halfgrid points
+!
+      do k=1,3
+!
+        call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
+                                   fim1,fip1,k)      
+        call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+        do ix=1,nx
+          if (ldensity_nolog) then
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+                     fim1(ix))+tini)
+          else
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
+                     fim1(ix))+tini)
+          endif
+          q1(ix)=(min1(1.0,alpha*rfac(ix)))**nlf
+        enddo
+        flux_im12(:,k)=0.5*cmax_im12(:,k)*q1*(fim12_r-fim12_l)
+        do ix=1,nx
+          if (ldensity_nolog) then
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     f(ix+nghost,m,n,j))+tini)
+          else
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     exp(f(ix+nghost,m,n,j)))+tini)
+          endif
+          q1(ix)=(min1(1.0,alpha*rfac(ix)))**nlf
+        enddo
+        flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
+      enddo
+!
+! Now calculate the 2nd order divergence
+!
+      if (lspherical_coords) then
+        div_flux=0.0
+        div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                 /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1))) &
+        +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
+                sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
+            +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
+      else if (lcartesian_coords) then
+        div_flux=0.0
+        if (nygrid == 1) then
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+              +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        else
+          div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                   /(x12(l1:l2)-x12(l1-1:l2-1)) &
+          +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
+            +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+        endif
+       else
+         call fatal_error('solar_corona:div_diff_flux','Not coded for cylindrical')
+       endif
+!
+    endsubroutine div_diff_flux
+!*******************************************************************************
+    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
+                                     fip1,k)
+!
+! Reconstruction of a scalar by slope limited linear interpolation
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1
+      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
+      real, dimension (0:nx+1) :: delfx
+      integer :: j,k
+      integer :: i,ix
+      real :: tmp0,tmp1,tmp2,tmp3
+! x-component
+      select case (k)
+        case(1)
+! Special case of non uniform grid only in the radial direction
+        if (ldensity_nolog) then
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(f(i,m,n,j)-f(i-1,m,n,j))/(x(i)-x(i-1))
+            tmp2=(f(i+1,m,n,j)-f(i,m,n,j))/(x(i+1)-x(i))
+            delfx(ix) = minmod_alt(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)*(x(i)-x(i-1))
+            fim12_r(ix) = f(i,m,n,j)-delfx(ix)*(x(i)-x(i-1))
+            fip12_l(ix) = f(i,m,n,j)+delfx(ix)*(x(i+1)-x(i))
+            fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)*(x(i+1)-x(i))
+            fim1(ix) = f(i-1,m,n,j)
+            fip1(ix) = f(i+1,m,n,j)
+          enddo
+        else
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(exp(f(i,m,n,j))-exp(f(i-1,m,n,j)))/(x(i)-x(i-1))
+            tmp2=(exp(f(i+1,m,n,j))-exp(f(i,m,n,j)))/(x(i+1)-x(i))
+            delfx(ix) = minmod_alt(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i-1,m,n,j))+delfx(ix-1)*(x(i)-x(i-1))
+            fim12_r(ix) = exp(f(i,m,n,j))-delfx(ix)*(x(i)-x(i-1))
+            fip12_l(ix) = exp(f(i,m,n,j))+delfx(ix)*(x(i+1)-x(i))
+            fip12_r(ix) = exp(f(i+1,m,n,j))-delfx(ix+1)*(x(i+1)-x(i))
+            fim1(ix) = exp(f(i-1,m,n,j))
+            fip1(ix) = exp(f(i+1,m,n,j))
+          enddo
+        endif
+! y-component
+        case(2)
+        if (ldensity_nolog) then
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
+            tmp1=f(i,m,n,j)-f(i,m-1,n,j)
+            delfym1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=f(i,m+1,n,j)-f(i,m,n,j)
+            delfy(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
+            delfyp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfy(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+            fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
+            fim1(ix) = f(i,m-1,n,j)
+            fip1(ix) = f(i,m+1,n,j)
+          enddo
+        else
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
+            tmp1=exp(f(i,m,n,j))-exp(f(i,m-1,n,j))
+            delfym1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=exp(f(i,m+1,n,j))-exp(f(i,m,n,j))
+            delfy(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=exp(f(i,m+2,n,j))-exp(f(i,m+1,n,j))
+            delfyp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i,m-1,n,j))+delfym1(ix)
+            fim12_r(ix) = exp(f(i,m,n,j))-delfy(ix)
+            fip12_l(ix) = exp(f(i,m,n,j))+delfy(ix)
+            fip12_r(ix) = exp(f(i,m+1,n,j))-delfyp1(ix)
+            fim1(ix) = exp(f(i,m-1,n,j))
+            fip1(ix) = exp(f(i,m+1,n,j))
+          enddo
+        endif
+! z-component
+        case(3)
+        if (ldensity_nolog) then
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
+            tmp1=f(i,m,n,j)-f(i,m,n-1,j)
+            delfzm1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=f(i,m,n+1,j)-f(i,m,n,j)
+            delfz(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
+            delfzp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfz(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+            fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
+            fim1(ix) = f(i,m,n-1,j)
+            fip1(ix) = f(i,m,n+1,j)
+          enddo
+        else
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))
+            tmp1=exp(f(i,m,n,j))-exp(f(i,m,n-1,j))
+            delfzm1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=exp(f(i,m,n+1,j))-exp(f(i,m,n,j))
+            delfz(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=exp(f(i,m,n+2,j))-exp(f(i,m,n+1,j))
+            delfzp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i,m,n-1,j))+delfzm1(ix)
+            fim12_r(ix) = exp(f(i,m,n,j))-delfz(ix)
+            fip12_l(ix) = exp(f(i,m,n,j))+delfz(ix)
+            fip12_r(ix) = exp(f(i,m,n+1,j))-delfzp1(ix)
+            fim1(ix) = exp(f(i,m,n-1,j))
+            fip1(ix) = exp(f(i,m,n+1,j))
+          enddo
+        endif
+        case default
+          call fatal_error('twist_inject:slope_lim_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine slope_lim_lin_interpol
+!***********************************************************************
+    subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+      intent(in) :: f,k
+      intent(out) :: cmax_im12,cmax_ip12
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: b1_tmp,b2_tmp,b3_tmp,rho_tmp
+      real, dimension (0:nx) :: b1_xtmp,b2_xtmp,b3_xtmp,rho_xtmp
+      type (pencil_case), intent(in) :: p
+      integer :: k
+      integer :: i,ix
+!
+      select case (k)
+! x-component
+        case(1)
+          b1_xtmp=0.5*(f(l1-1:l2,m,n,ibx)+f(l1:l2+1,m,n,ibx))
+          b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
+          b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
+          if (ldensity_nolog) then
+          rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
+          else
+          rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
+          endif
+          cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
+          cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)
+! y-component
+        case(2)
+          b1_tmp=0.5*(f(l1:l2,m-1,n,ibx)+f(l1:l2,m,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m-1,n,iby)+f(l1:l2,m,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m-1,n,ibz)+f(l1:l2,m,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m-1,n,irho)+f(l1:l2,m,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m-1,n,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
+          endif
+          cmax_im12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m+1,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m+1,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m+1,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m+1,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m+1,n,ilnrho)))
+          endif
+          cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+! z-component
+        case(3)
+          b1_tmp=0.5*(f(l1:l2,m,n-1,ibx)+f(l1:l2,m,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n-1,iby)+f(l1:l2,m,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n-1,ibz)+f(l1:l2,m,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n-1,irho)+f(l1:l2,m,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n-1,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
+          endif
+          cmax_im12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m,n+1,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m,n+1,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m,n+1,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m,n+1,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m,n+1,ilnrho)))
+          endif
+          cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+        endselect
+    endsubroutine characteristic_speed
+!***********************************************************************
+    real function minmod_alt(a,b)
+!
+!  minmod=max(0,min(abs(a),sign(1,a)*b))
+!
+      real :: a,b
+!
+      minmod_alt=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
+!
+    endfunction minmod_alt
+!***********************************************************************
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

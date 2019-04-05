@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lsolid_cells = .true.
+! CPARAM logical, parameter :: lsolid_ogrid = .false.
 !
 !***************************************************************
 module Solid_Cells
@@ -81,6 +82,10 @@ module Solid_Cells
   integer, allocatable :: fpnearestgrid(:,:,:)
   real, allocatable    :: c_dragx(:), c_dragy(:), c_dragz(:), Nusselt(:)
   real, allocatable    :: c_dragx_p(:), c_dragy_p(:), c_dragz_p(:)
+!  Dummy variables
+  real :: r_ogrid
+  real :: r_int_outer
+  real, dimension(3) :: xorigo_ogrid
 !
   contains
 !***********************************************************************
@@ -2434,10 +2439,7 @@ module Solid_Cells
       integer :: i
 !
       do i = l1,l2
-        if ( &
-            (ba(i,m,n,1) /= 0).or. &
-            (ba(i,m,n,2) /= 0).or. &
-            (ba(i,m,n,3) /= 0)) then
+        if (any(ba(i,m,n,1:3)/= 0)) then
 !
 !  If this is a fluid point that has to be interpolated because it is very
 !  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the
@@ -2594,6 +2596,16 @@ module Solid_Cells
                     endif
                   endif
 !
+                  if (x(i+4) > xval_p .and. x(i+3) < xval_p) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,1) = -4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == 1) ba(i,j,k,1) = -4
+                    endif
+                  endif
+!
                   if (x(i-1) < xval_m) then
                     if (.not. ba_defined(i,j,k)) then
                       ba(i,j,k,1) = 1
@@ -2621,6 +2633,16 @@ module Solid_Cells
                     else
                       call find_closest_wall(i,j,k,iobj,cw)
                       if (cw == -1) ba(i,j,k,1) = 3
+                    endif
+                  endif
+!
+                  if (x(i-4) < xval_m .and. x(i-3) > xval_m) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,1) = 4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == -1) ba(i,j,k,1) = 4
                     endif
                   endif
 !
@@ -2691,6 +2713,16 @@ module Solid_Cells
                     endif
                   endif
 !
+                  if (y(j+4) > yval_p .and. y(j+3) < yval_p) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,2) = -4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == 2) ba(i,j,k,2) = -4
+                    endif
+                  endif
+!
                   if (y(j-1) < yval_m) then
                     if (.not. ba_defined(i,j,k)) then
                       ba(i,j,k,2) = 1
@@ -2718,6 +2750,16 @@ module Solid_Cells
                     else
                       call find_closest_wall(i,j,k,iobj,cw)
                       if (cw == -2) ba(i,j,k,2) = 3
+                    endif
+                  endif
+!
+                  if (y(j-4) < yval_m .and. y(j-3) > yval_m) then
+                    if (.not. ba_defined(i,j,k)) then
+                      ba(i,j,k,2) = 4
+                      ba(i,j,k,4) = iobj
+                    else
+                      call find_closest_wall(i,j,k,iobj,cw)
+                      if (cw == -2) ba(i,j,k,2) = 4
                     endif
                   endif
 !
@@ -2789,6 +2831,16 @@ module Solid_Cells
                       endif
                     endif
 !
+                    if (z(k+4) > zval_p .and. z(k+3) < zval_p) then
+                      if (.not. ba_defined(i,j,k)) then
+                        ba(i,j,k,3) = -4
+                        ba(i,j,k,4) = iobj
+                      else
+                        call find_closest_wall(i,j,k,iobj,cw)
+                        if (cw == 1) ba(i,j,k,3) = -4
+                      endif
+                    endif
+!
                     if (z(k-1) < zval_m) then
                       if (.not. ba_defined(i,j,k)) then
                         ba(i,j,k,3) = 1
@@ -2816,6 +2868,16 @@ module Solid_Cells
                       else
                         call find_closest_wall(i,j,k,iobj,cw)
                         if (cw == -1) ba(i,j,k,3) = 3
+                      endif
+                    endif
+!
+                    if (z(k-4) < zval_m .and. z(k-3) > zval_m) then
+                      if (.not. ba_defined(i,j,k)) then
+                        ba(i,j,k,3) = 4
+                        ba(i,j,k,4) = iobj
+                      else
+                        call find_closest_wall(i,j,k,iobj,cw)
+                        if (cw == -1) ba(i,j,k,3) = 4
                       endif
                     endif
 !
@@ -3674,5 +3736,77 @@ module Solid_Cells
             'Cannot use close_interpolation_method=1 for spheres!')
       endif
     endfunction gridplane_need_adjust
+!***********************************************************************
+    subroutine time_step_ogrid(f)
+!
+!  Dummy routine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    end subroutine time_step_ogrid
+!***********************************************************************
+    subroutine f_ogrid
+!
+!  Dummy routine
+!
+    end subroutine f_ogrid
+!***********************************************************************
+    subroutine p_ogrid
+!
+!  Dummy routine
+!
+    end subroutine p_ogrid
+!***********************************************************************
+    subroutine wsnap_ogrid(chsnap,enum,flist)
+!
+!  Dummy routine
+!
+      character(len=*), intent(in) :: chsnap
+      character(len=*), intent(in), optional :: flist
+      logical, intent(in), optional :: enum
+!
+      if (ALWAYS_FALSE) print*, chsnap
+      if (ALWAYS_FALSE) then 
+        if (present(enum)) print*, enum
+        if (present(enum)) print*, flist
+      endif
+    endsubroutine wsnap_ogrid
+!***********************************************************************
+    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid,rthz)
+!
+!  Dummy routine
+!
+      real, dimension (3) :: xxp, rthz
+      integer, dimension (4) :: ineargrid_ogrid
+!
+      intent(in)  :: xxp, rthz
+      intent(out) :: ineargrid_ogrid
+!      
+      if(ALWAYS_FALSE) print*, xxp, rthz
+      ineargrid_ogrid=0
+!      
+    endsubroutine map_nearest_grid_ogrid
+!***********************************************************************
+    subroutine interpolate_particles_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+!
+!  Dummy routine
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (4) :: inear_glob
+!
+      intent(in)  :: ivar1, ivar2, xxp, inear_glob
+      intent(out) :: gp
+!
+      if (ALWAYS_FALSE) then
+        print*, ivar1,ivar2,xxp
+        print*, inear_glob
+      endif
+      gp=0.
+!
+    endsubroutine interpolate_particles_ogrid
 !***********************************************************************
 endmodule Solid_Cells

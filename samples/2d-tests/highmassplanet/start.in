@@ -1,0 +1,52 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2013/08/16 17:29:10 richert Exp $',
+  ip=10,                        ! debugging parameter
+  xyz0  =  0.4,-3.1415,-0.26,       ! first corner of box
+  xyz1  =  12, 3.1415, 0.26,       ! second corner of box
+  lperi = F  , T  , T,         ! periodic direction?
+
+  bcx = 'a','a2','s','a2','a2','s'
+
+  lwrite_ic=T
+  coord_system='cylindrical'
+  lcylindrical_gravity=T
+  grid_func='power-law'
+  coeff_grid=.5
+/
+&initial_condition_pars
+  density_power_law=.5
+  temperature_power_law=1
+/
+&eos_init_pars
+  cs0  = 0.05 
+  rho0 = 1.
+  gamma= 1.4
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  density_floor=-100
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.
+/
+&pointmasses_init_pars
+  initxxq='fixed-cm'
+  initvvq='fixed-cm'
+  GNewton=1.0
+  pmass=1e-2, 1.
+  xq0=1,0
+  r_smooth=0.15,0.
+  lcylindrical_gravity_nbody=T,T
+  iprimary=2
+  bcqx='out',bcqy='p'
+  ipotential_pointmass='plummer','newton'
+/
+&entropy_init_pars
+/

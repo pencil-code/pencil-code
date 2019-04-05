@@ -279,6 +279,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
+!
       integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -303,8 +305,8 @@ module Special
       enddo
 !  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'idiag_posx=',idiag_posx(1)
-        write(3,*) 'idiag_Iring=',idiag_Iring(ibp)
+        call farray_index_append('idiag_posx',idiag_posx(1))
+        call farray_index_append('idiag_Iring',idiag_Iring(ibp))
       endif
       enddo
 !!
@@ -323,19 +325,6 @@ module Special
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -378,7 +367,7 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
@@ -389,6 +378,8 @@ module Special
       use Mpicomm, only: mpibcast_double
       use Diagnostics, only: save_name
 !      use Sub, only: cross,curl_mn,gij,gij_etc
+!
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_

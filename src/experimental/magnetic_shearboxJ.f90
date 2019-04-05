@@ -47,28 +47,29 @@ module Magnetic
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb_xy, jj_xy, poynting_xy
-  real, target, dimension (nx,ny,3) :: bb_xy2,jj_xy2,poynting_xy2
-  real, target, dimension (nx,ny,3) :: bb_xy3,jj_xy3,poynting_xy3
-  real, target, dimension (nx,ny,3) :: bb_xy4,jj_xy4,poynting_xy4
-  real, target, dimension (nx,nz,3) :: bb_xz, jj_xz, poynting_xz
-  real, target, dimension (ny,nz,3) :: bb_yz, jj_yz, poynting_yz
+  real, target, dimension (:,:,:), allocatable :: bb_xy, jj_xy, poynting_xy
+  real, target, dimension (:,:,:), allocatable :: bb_xy2,jj_xy2,poynting_xy2
+  real, target, dimension (:,:,:), allocatable :: bb_xy3,jj_xy3,poynting_xy3
+  real, target, dimension (:,:,:), allocatable :: bb_xy4,jj_xy4,poynting_xy4
+  real, target, dimension (:,:,:), allocatable :: bb_xz, jj_xz, poynting_xz
+  real, target, dimension (:,:,:), allocatable :: bb_yz, jj_yz, poynting_yz
+  real, target, dimension (:,:,:), allocatable :: bb_xz2,jj_xz2,poynting_xz2
 !
-  real, target, dimension (nx,ny) :: b2_xy, jb_xy, j2_xy,  ab_xy
-  real, target, dimension (nx,ny) :: b2_xy2,jb_xy2,j2_xy2, ab_xy2
-  real, target, dimension (nx,ny) :: b2_xy3,jb_xy3,j2_xy3, ab_xy3
-  real, target, dimension (nx,ny) :: b2_xy4,jb_xy4,j2_xy4, ab_xy4
-  real, target, dimension (ny,nz) :: b2_yz, jb_yz, j2_yz,  ab_yz
-  real, target, dimension (nx,nz) :: b2_xz, jb_xz, j2_xz,  ab_xz
-  real, target, dimension (nx,nz) :: b2_xz2
+  real, target, dimension (:,:), allocatable :: b2_xy, jb_xy, j2_xy,  ab_xy
+  real, target, dimension (:,:), allocatable :: b2_xy2,jb_xy2,j2_xy2, ab_xy2
+  real, target, dimension (:,:), allocatable :: b2_xy3,jb_xy3,j2_xy3, ab_xy3
+  real, target, dimension (:,:), allocatable :: b2_xy4,jb_xy4,j2_xy4, ab_xy4
+  real, target, dimension (:,:), allocatable :: b2_yz, jb_yz, j2_yz,  ab_yz
+  real, target, dimension (:,:), allocatable :: b2_xz, jb_xz, j2_xz,  ab_xz
+  real, target, dimension (:,:), allocatable :: b2_xz2,jb_xz2,j2_xz2, ab_xz2
 !
-  real, target, dimension (nx,ny) :: beta1_xy
-  real, target, dimension (nx,ny) :: beta1_xy2
-  real, target, dimension (nx,ny) :: beta1_xy3
-  real, target, dimension (nx,ny) :: beta1_xy4
-  real, target, dimension (ny,nz) :: beta1_yz
-  real, target, dimension (nx,nz) :: beta1_xz
-  real, target, dimension (nx,nz) :: beta1_xz2
+  real, target, dimension (:,:), allocatable :: beta1_xy
+  real, target, dimension (:,:), allocatable :: beta1_xy2
+  real, target, dimension (:,:), allocatable :: beta1_xy3
+  real, target, dimension (:,:), allocatable :: beta1_xy4
+  real, target, dimension (:,:), allocatable :: beta1_yz
+  real, target, dimension (:,:), allocatable :: beta1_xz
+  real, target, dimension (:,:), allocatable :: beta1_xz2
 !
 !  xy-averaged field
 !
@@ -796,6 +797,11 @@ module Magnetic
   integer :: idiag_StokesU1mxy=0! ZAVG_DOC: $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$
   integer :: idiag_beta1mxy=0   ! ZAVG_DOC: $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$
 !
+!  Video data.
+!
+  integer :: ivid_bb=0, ivid_jj=0, ivid_b2=0, ivid_j2=0, ivid_ab=0, &
+             ivid_jb=0, ivid_beta1=0, ivid_poynting=0
+!
   interface calc_pencils_magnetic
      module procedure calc_pencils_magnetic_pencpar
      module procedure calc_pencils_magnetic_std
@@ -1428,6 +1434,89 @@ module Magnetic
 !
       lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
+      if (ivid_bb/=0) then
+        !call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+        if (lwrite_slice_xy .and..not.allocated(bb_xy) ) allocate(bb_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb_xz) ) allocate(bb_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb_yz) ) allocate(bb_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb_xy2)) allocate(bb_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb_xy3)) allocate(bb_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb_xy4)) allocate(bb_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb_xz2)) allocate(bb_xz2(nx,nz,3))
+      endif
+      if (ivid_jj/=0) then
+        !call alloc_slice_buffers(jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
+        if (lwrite_slice_xy .and..not.allocated(jj_xy) ) allocate(jj_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(jj_xz) ) allocate(jj_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(jj_yz) ) allocate(jj_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(jj_xy2)) allocate(jj_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(jj_xy3)) allocate(jj_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(jj_xy4)) allocate(jj_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(jj_xz2)) allocate(jj_xz2(nx,nz,3))
+      endif
+      if (ivid_b2/=0) then
+        !call alloc_slice_buffers(b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
+        if (lwrite_slice_xy .and..not.allocated(b2_xy) ) allocate(b2_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(b2_xz) ) allocate(b2_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(b2_yz) ) allocate(b2_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(b2_xy2)) allocate(b2_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(b2_xy3)) allocate(b2_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(b2_xy4)) allocate(b2_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(b2_xz2)) allocate(b2_xz2(nx,nz))
+      endif
+      if (ivid_j2/=0) then
+        !call alloc_slice_buffers(j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+        if (lwrite_slice_xy .and..not.allocated(j2_xy) ) allocate(j2_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(j2_xz) ) allocate(j2_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(j2_yz) ) allocate(j2_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(j2_xy2)) allocate(j2_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(j2_xy3)) allocate(j2_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(j2_xy4)) allocate(j2_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(j2_xz2)) allocate(j2_xz2(nx,nz))
+      endif
+      if (ivid_ab/=0) then
+        !call alloc_slice_buffers(ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
+        if (lwrite_slice_xy .and..not.allocated(ab_xy) ) allocate(ab_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(ab_xz) ) allocate(ab_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(ab_yz) ) allocate(ab_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(ab_xy2)) allocate(ab_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(ab_xy3)) allocate(ab_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(ab_xy4)) allocate(ab_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(ab_xz2)) allocate(ab_xz2(nx,nz))
+      endif
+      if (ivid_jb/=0) then
+        !call alloc_slice_buffers(jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
+        if (lwrite_slice_xy .and..not.allocated(jb_xy) ) allocate(jb_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(jb_xz) ) allocate(jb_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(jb_yz) ) allocate(jb_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(jb_xy2)) allocate(jb_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(jb_xy3)) allocate(jb_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(jb_xy4)) allocate(jb_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(jb_xz2)) allocate(jb_xz2(nx,nz))
+      endif
+      if (ivid_beta1/=0) then
+        !call alloc_slice_buffers(beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
+        !                         beta1_xy3,beta1_xy4,beta1_xz2)
+        if (lwrite_slice_xy .and..not.allocated(beta1_xy) ) allocate(beta1_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(beta1_xz) ) allocate(beta1_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(beta1_yz) ) allocate(beta1_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(beta1_xy2)) allocate(beta1_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(beta1_xy3)) allocate(beta1_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(beta1_xy4)) allocate(beta1_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(beta1_xz2)) allocate(beta1_xz2(nx,nz))
+      endif
+      if (ivid_poynting/=0) then
+        !call alloc_slice_buffers(poynting_xy,poynting_xz,poynting_yz,poynting_xy2,&
+        !                         poynting_xy3,poynting_xy4,poynting_xz2)
+        if (lwrite_slice_xy .and..not.allocated(poynting_xy) ) allocate(poynting_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(poynting_xz) ) allocate(poynting_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(poynting_yz) ) allocate(poynting_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(poynting_xy2)) allocate(poynting_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(poynting_xy3)) allocate(poynting_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(poynting_xy4)) allocate(poynting_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(poynting_xz2)) allocate(poynting_xz2(nx,nz,3))
+      endif
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -1851,7 +1940,7 @@ module Magnetic
         lpenc_requested(i_b2)=.true.
       endif
 !
-      if (dvid/=0.0) then
+      if (lwrite_slices) then
         lpenc_video(i_b2)=.true.
         lpenc_video(i_jb)=.true.
         lpenc_video(i_j2)=.true.
@@ -2458,7 +2547,7 @@ module Magnetic
           m = mm(imn)
           n = nn(imn)
           call gij(f, iaa, aij, 1)
-          call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+          call curl_mn(aij, bb, f(:,m,n,iax:iaz))
 !
 !  Add imposed field, if any
 !
@@ -2999,6 +3088,7 @@ module Magnetic
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3020,7 +3110,9 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
-      real, dimension (nx) :: del2aa_ini, tanhx2  
+      real, dimension (nx) :: del2aa_ini, tanhx2
+      real, dimension (nx) :: diffus_eta, diffus_eta2, diffus_eta3, &
+                              advec_hall,advec_hypermesh_aa,advec_va2
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3076,6 +3168,8 @@ module Magnetic
 !
       fres=0.0
       etatotal=0.0
+      
+      diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -3113,7 +3207,7 @@ module Magnetic
         else exp_zdep
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
-          if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n)) * dz_1(n)
+          if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
         endif exp_zdep
         etatotal = etatotal + eta_z(n)
       endif eta_zdep
@@ -3215,6 +3309,7 @@ module Magnetic
           else
             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
         endif
       endif
 !
@@ -3496,6 +3591,10 @@ module Magnetic
           diffus_eta3=diffus_eta3*dxyz_6
         endif
         if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
+
+        maxdiffus=max(maxdiffus,diffus_eta)
+        maxdiffus2=max(maxdiffus2,diffus_eta2)
+        maxdiffus3=max(maxdiffus3,diffus_eta3)
 !
         if (headtt.or.ldebug) then
           print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
@@ -3648,9 +3747,10 @@ module Magnetic
           advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
                      abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
                      abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
+          advec2=advec2+advec_hall**2
+          if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
+                                        maxval(advec_hall)
         endif
-        if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
-                                     maxval(advec_hall)
       endif
 !
 !  Add Battery term.
@@ -3719,6 +3819,7 @@ module Magnetic
 !  Consider advective timestep only when lhydro=T.
 !
       if (lfirst.and.ldt) then
+        advec_va2=0.
         if (lhydro) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
@@ -3754,11 +3855,12 @@ module Magnetic
 !    Please check
 !
         if (lisotropic_advection) then
-          if (lfirst.and.ldt) then
-            if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
-                 advec_va2=sqrt(p%va2*dxyz_2)
-          endif
+          if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
+             advec_va2=sqrt(p%va2*dxyz_2)
         endif
+        
+        advec2=advec2+advec_va2
+
       endif
 !
 !  Apply border profiles.
@@ -4576,68 +4678,26 @@ module Magnetic
 !  Note: ix is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst) then
-        do j=1,3
-          bb_yz(m-m1+1,n-n1+1,j)=p%bb(ix_loc-l1+1,j)
-          if (m==iy_loc)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
-          if (n==iz_loc)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
-          if (n==iz2_loc) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
-          if (n==iz3_loc) bb_xy3(:,m-m1+1,j)=p%bb(:,j)
-          if (n==iz4_loc) bb_xy4(:,m-m1+1,j)=p%bb(:,j)
-        enddo
-        do j=1,3
-          jj_yz(m-m1+1,n-n1+1,j)=p%jj(ix_loc-l1+1,j)
-          if (m==iy_loc)  jj_xz(:,n-n1+1,j)=p%jj(:,j)
-          if (n==iz_loc)  jj_xy(:,m-m1+1,j)=p%jj(:,j)
-          if (n==iz2_loc) jj_xy2(:,m-m1+1,j)=p%jj(:,j)
-          if (n==iz3_loc) jj_xy3(:,m-m1+1,j)=p%jj(:,j)
-          if (n==iz4_loc) jj_xy4(:,m-m1+1,j)=p%jj(:,j)
-        enddo
-        b2_yz(m-m1+1,n-n1+1)=p%b2(ix_loc-l1+1)
-        if (m==iy_loc)  b2_xz(:,n-n1+1)=p%b2
-        if (m==iy2_loc) b2_xz2(:,n-n1+1)=p%b2
-        if (n==iz_loc)  b2_xy(:,m-m1+1)=p%b2
-        if (n==iz2_loc) b2_xy2(:,m-m1+1)=p%b2
-        if (n==iz3_loc) b2_xy3(:,m-m1+1)=p%b2
-        if (n==iz4_loc) b2_xy4(:,m-m1+1)=p%b2
-        j2_yz(m-m1+1,n-n1+1)=p%j2(ix_loc-l1+1)
-        if (m==iy_loc)  j2_xz(:,n-n1+1)=p%j2
-        if (n==iz_loc)  j2_xy(:,m-m1+1)=p%j2
-        if (n==iz2_loc) j2_xy2(:,m-m1+1)=p%j2
-        if (n==iz3_loc) j2_xy3(:,m-m1+1)=p%j2
-        if (n==iz4_loc) j2_xy4(:,m-m1+1)=p%j2
-        jb_yz(m-m1+1,n-n1+1)=p%jb(ix_loc-l1+1)
-        if (m==iy_loc)  jb_xz(:,n-n1+1)=p%jb
-        if (n==iz_loc)  jb_xy(:,m-m1+1)=p%jb
-        if (n==iz2_loc) jb_xy2(:,m-m1+1)=p%jb
-        if (n==iz3_loc) jb_xy3(:,m-m1+1)=p%jb
-        if (n==iz4_loc) jb_xy4(:,m-m1+1)=p%jb
-        beta1_yz(m-m1+1,n-n1+1)=p%beta1(ix_loc-l1+1)
-        if (m==iy_loc)  beta1_xz(:,n-n1+1)=p%beta1
-        if (m==iy2_loc) beta1_xz2(:,n-n1+1)=p%beta1
-        if (n==iz_loc)  beta1_xy(:,m-m1+1)=p%beta1
-        if (n==iz2_loc) beta1_xy2(:,m-m1+1)=p%beta1
-        if (n==iz3_loc) beta1_xy3(:,m-m1+1)=p%beta1
-        if (n==iz4_loc) beta1_xy4(:,m-m1+1)=p%beta1
+
+        if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+        if (ivid_jj/=0) call store_slices(p%jj,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
+        if (ivid_b2/=0) call store_slices(p%b2,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
+        if (ivid_j2/=0) call store_slices(p%j2,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
+        if (ivid_jb/=0) call store_slices(p%jb,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
+        if (ivid_ab/=0) call store_slices(p%ab,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
+        if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
+                                             beta1_xy3,beta1_xy4,beta1_xz2)
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
 !
-        call cross(p%uxb,p%bb,uxbxb)
-        do j=1,3
-          poynting(:,j) = etatotal * p%jxb(:,j) - mu01 * uxbxb(:,j)
-          poynting_yz(m-m1+1,n-n1+1,j)=poynting(ix_loc-l1+1,j)
-          if (m==iy_loc)  poynting_xz(:,n-n1+1,j)=poynting(:,j)
-          if (n==iz_loc)  poynting_xy(:,m-m1+1,j)=poynting(:,j)
-          if (n==iz2_loc) poynting_xy2(:,m-m1+1,j)=poynting(:,j)
-          if (n==iz3_loc) poynting_xy3(:,m-m1+1,j)=poynting(:,j)
-          if (n==iz4_loc) poynting_xy4(:,m-m1+1,j)=poynting(:,j)
-        enddo
-!
-        ab_yz(m-m1+1,n-n1+1)=p%ab(ix_loc-l1+1)
-        if (m==iy_loc)  ab_xz(:,n-n1+1)=p%ab
-        if (n==iz_loc)  ab_xy(:,m-m1+1)=p%ab
-        if (n==iz2_loc) ab_xy2(:,m-m1+1)=p%ab
-        if (n==iz3_loc) ab_xy3(:,m-m1+1)=p%ab
-        if (n==iz4_loc) ab_xy4(:,m-m1+1)=p%ab
+        if (ivid_poynting/=0) then
+          call cross(p%uxb,p%bb,uxbxb)
+          do j=1,3
+            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
+          enddo
+          call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
+                            poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2)
+        endif
 !
       endif
       call timing('daa_dt','finished',mnloop=.true.)
@@ -4709,11 +4769,11 @@ module Magnetic
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
 !-- subroutine magnetic_after_boundary(f)
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Calculate <A>, which is needed for test-field methods.
 !
-!   2-jan-10/axel: adapted from calc_lhydro_pars
+!   2-jan-10/axel: adapted from hydro_after_boundary
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
       use General, only: notanumber
@@ -4830,10 +4890,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
 !  XX
 !
-!     if (lmagn_mf) call calc_lmagnetic_pars
+!     if (lmagn_mf) call magnetic_after_boundary
 !
 !-- endsubroutine magnetic_after_boundary
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
 !
@@ -5306,6 +5366,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_vec, assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -5316,98 +5378,38 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !  Magnetic vector potential (code variable)
 !
         case ('aa')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iax-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iax-1+slices%index)
-            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iax-1+slices%index)
-            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iax-1+slices%index)
-            if (lwrite_slice_xy3) &
-                 slices%xy3=f(l1:l2,m1:m2,iz3_loc,iax-1+slices%index)
-            if (lwrite_slice_xy4) &
-                 slices%xy4=f(l1:l2,m1:m2,iz4_loc,iax-1+slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,f,iaa)
 !
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =>bb_yz(:,:,slices%index)
-            slices%xz =>bb_xz(:,:,slices%index)
-            slices%xy =>bb_xy(:,:,slices%index)
-            slices%xy2=>bb_xy2(:,:,slices%index)
-            if (lwrite_slice_xy3) slices%xy3=>bb_xy3(:,:,slices%index)
-            if (lwrite_slice_xy4) slices%xy4=>bb_xy4(:,:,slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
 !
 !  Current density (derived variable)
 !
         case ('jj')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =>jj_yz(:,:,slices%index)
-            slices%xz =>jj_xz(:,:,slices%index)
-            slices%xy =>jj_xy(:,:,slices%index)
-            slices%xy2=>jj_xy2(:,:,slices%index)
-            if (lwrite_slice_xy3) slices%xy3=>jj_xy3(:,:,slices%index)
-            if (lwrite_slice_xy4) slices%xy4=>jj_xy4(:,:,slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,jj_xy,jj_xz,jj_yz,jj_xy2,jj_xy3,jj_xy4,jj_xz2)
 !
 !  Magnetic field squared (derived variable)
 !
         case ('b2')
-          slices%yz =>b2_yz
-          slices%xz =>b2_xz
-          slices%xy =>b2_xy
-          slices%xy2=>b2_xy2
-          if (lwrite_slice_xy3) slices%xy3=>b2_xy3
-          if (lwrite_slice_xy4) slices%xy4=>b2_xy4
-          if (lwrite_slice_xz2) slices%xz2=>b2_xz2
-          slices%ready=.true.
+          call assign_slices_scal(slices,b2_xy,b2_xz,b2_yz,b2_xy2,b2_xy3,b2_xy4,b2_xz2)
 !
 !  Current squared (derived variable)
 !
         case ('j2')
-          slices%yz =>j2_yz
-          slices%xz =>j2_xz
-          slices%xy =>j2_xy
-          slices%xy2=>j2_xy2
-          if (lwrite_slice_xy3) slices%xy3=>j2_xy3
-          if (lwrite_slice_xy4) slices%xy4=>j2_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,j2_xy,j2_xz,j2_yz,j2_xy2,j2_xy3,j2_xy4,j2_xz2)
 !
 !  Current density times magnetic field (derived variable)
 !
         case ('jb')
-          slices%yz =>jb_yz
-          slices%xz =>jb_xz
-          slices%xy =>jb_xy
-          slices%xy2=>jb_xy2
-          if (lwrite_slice_xy3) slices%xy3=>jb_xy3
-          if (lwrite_slice_xy4) slices%xy4=>jb_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,jb_xy,jb_xz,jb_yz,jb_xy2,jb_xy3,jb_xy4,jb_xz2)
 !
 !  Plasma beta
 !
        case ('beta1')
-          slices%yz =>beta1_yz
-          slices%xz =>beta1_xz
-          slices%xy =>beta1_xy
-          slices%xy2=>beta1_xy2
-          if (lwrite_slice_xy3) slices%xy3=>beta1_xy3
-          if (lwrite_slice_xy4) slices%xy4=>beta1_xy4
-          if (lwrite_slice_xz2) slices%xz2=>beta1_xz2
-          slices%ready=.true.
+          call assign_slices_scal(slices,beta1_xy,beta1_xz,beta1_yz,beta1_xy2,beta1_xy3,&
+                                  beta1_xy4,beta1_xz2)
 !
        case ('beta')
          if (lroot) then
@@ -5419,29 +5421,13 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 ! Poynting vector
 !
         case ('poynting')
-          if (slices%index>=3) then
-            slices%ready=.false.
-          else
-            slices%index=slices%index+1
-            slices%yz =>poynting_yz(:,:,slices%index)
-            slices%xz =>poynting_xz(:,:,slices%index)
-            slices%xy =>poynting_xy(:,:,slices%index)
-            slices%xy2=>poynting_xy2(:,:,slices%index)
-            if (lwrite_slice_xy3) slices%xy3=>poynting_xy3(:,:,slices%index)
-            if (lwrite_slice_xy4) slices%xy4=>poynting_xy4(:,:,slices%index)
-            if (slices%index<=3) slices%ready=.true.
-          endif
+          call assign_slices_vec(slices,poynting_xy,poynting_xz,poynting_yz,poynting_xy2,&
+                                 poynting_xy3,poynting_xy4,poynting_xz2)
 !
 !  Magnetic helicity density
 !
         case ('ab')
-          slices%yz =>ab_yz
-          slices%xz =>ab_xz
-          slices%xy =>ab_xy
-          slices%xy2=>ab_xy2
-          if (lwrite_slice_xy3) slices%xy3=>ab_xy3
-          if (lwrite_slice_xy4) slices%xy4=>ab_xy4
-          slices%ready=.true.
+          call assign_slices_scal(slices,ab_xy,ab_xz,ab_yz,ab_xy2,ab_xy3,ab_xy4,ab_xz2)
 !
       endselect
 !
@@ -7254,8 +7240,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
-      integer :: iname,inamex,inamey,inamez,ixy,ixz,irz,inamer,iname_half,iname_sound
+      integer :: iname,inamex,inamey,inamez,inamev,ixy,ixz,irz,inamer,iname_half,iname_sound,idum
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -7372,6 +7359,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
         idiag_hjparallelm=0;idiag_hjperpm=0;idiag_magfricmax=0
+        ivid_bb=0; ivid_jj=0; ivid_b2=0; ivid_j2=0; ivid_ab=0
+        ivid_jb=0; ivid_beta1=0; ivid_poynting=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -7897,16 +7886,31 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         call parse_name(iname_sound,cname_sound(iname_sound),cform_sound(iname_sound),'Ezpt',idiag_Ezpt)
       enddo
 !
+!  Check for those quantities for which we want to have video slices.
+!
+      idum=0
+      do inamev=1,nnamev
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'aa',idum)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'bb',ivid_bb)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'jj',ivid_jj)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'b2',ivid_b2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'j2',ivid_j2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'ab',ivid_ab)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'jb',ivid_jb)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'beta1',ivid_beta1)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'poynting',ivid_poynting)
+      enddo
+!
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
-        write(3,*) 'ihypres=',ihypres
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamexz',nnamexz)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('iaa',iaa)
+        call farray_index_append('iax',iax)
+        call farray_index_append('iay',iay)
+        call farray_index_append('iaz',iaz)
+        call farray_index_append('ihypres',ihypres)
       endif
 !
 !  call corresponding mean-field routine

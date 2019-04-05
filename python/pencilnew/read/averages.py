@@ -14,15 +14,20 @@ def aver(*args, **kwargs):
 
     call signature:
 
-    read(self, plane_list=['xy', 'xz', 'yz'], datadir='data'):
+    read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1):
 
     Keyword arguments:
 
     *plane_list*:
-      A list of the planes over which the averages were taken.
+      A list of the 2d/1d planes over which the averages were taken.
+      Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
     *datadir*:
       Directory where the data is stored.
+
+    *proc*:
+      Processor to be read. If -1 read all and assemble to one array.
+      Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
     """
 
     averages_tmp = Averages()
@@ -51,13 +56,13 @@ class Averages(object):
 
         call signature:
 
-        read(self, plane_list=['xy', 'xz', 'yz'], datadir='data'):
+        read(plane_list=['xy', 'xz', 'yz'], datadir='data', proc=-1):
 
         Keyword arguments:
 
         *plane_list*:
-          A list of the planes over which the averages were taken.
-          Takes 'xy', 'xz', 'yz', 'y', 'z'
+          A list of the 2d/1d planes over which the averages were taken.
+          Takes 'xy', 'xz', 'yz', 'y', 'z'.
 
         *datadir*:
           Directory where the data is stored.
@@ -133,6 +138,8 @@ class Averages(object):
         del(raw_data)
         del(ext_object)
 
+        return 0
+
 
     def __equal_newline(self, line):
         """
@@ -151,37 +158,60 @@ class Averages(object):
         import os
         import numpy as np
         from scipy.io import FortranFile
-        from pencilnew import read
+        from .. import read
+
+        globdim = read.dim(datadir)
+        if plane == 'y':
+            nu = globdim.nx
+            nv = globdim.nz
+        if plane == 'z':
+            nu = globdim.nx
+            nv = globdim.ny
 
         if proc < 0:
-            proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
-                                                   os.listdir(datadir)))
+            offset = globdim.nprocx*globdim.nprocy
+            if plane == 'z':
+            	procs = range(offset)
+            if plane == 'y': 
+                procs = [] 
+                xr = range(globdim.nprocx)
+                for iz in range(globdim.nprocz):
+                    procs.extend(xr)
+                    xr = [x+offset for x in xr]
+            allprocs=True
         else:
-            proc_dirs = ['proc' + str(proc)]
+            procs = [proc]
+            allprocs=False
 
         dim = read.dim(datadir, proc)
+        if dim.precision == 'S':
+            dtype = np.float32
+        if dim.precision == 'D':
+            dtype = np.float64
 
         # Prepare the raw data.
         # This will be reformatted at the end.
-
         raw_data = []
-        for directory in proc_dirs:
-            proc = int(directory[4:])
+        for proc in procs:
+            proc_dir = 'proc'+str(proc)
             proc_dim = read.dim(datadir, proc)
-
             # Read the data.
             t = []
             proc_data = []
-            file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
+            try:
+                file_id = FortranFile(os.path.join(datadir, proc_dir, aver_file_name))
+            except:
+                # Not all proc dirs have a [yz]averages.dat.
+                print("Averages of processor"+str(proc)+"missing!")
+                break
             while True:
                 try:
-                    t.append(file_id.read_record(dtype=np.float32)[0])
-                    proc_data.append(file_id.read_record(dtype=np.float32))
+                    t.append(file_id.read_record(dtype=dtype)[0])
+                    proc_data.append(file_id.read_record(dtype=dtype))
                 except:
                     # Finished reading.
                     break
             file_id.close()
-
             # Reshape the proc data into [len(t), pnu, pnv].
             if plane == 'y':
                 pnu = proc_dim.nx
@@ -192,17 +222,23 @@ class Averages(object):
             proc_data = np.array(proc_data)
             proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
+            if not allprocs:
+                return np.array(t), proc_data.swapaxes(2,3)
+
             # Add the proc_data (one proc) to the raw_data (all procs)
             if plane == 'y':
-                nu = dim.nx
-                nv = dim.nz
-                idx_u = proc_dim.ipx*proc_dim.nx
-                idx_v = proc_dim.ipz*proc_dim.nz
+                if allprocs:
+                    idx_u = proc_dim.ipx*proc_dim.nx
+                    idx_v = proc_dim.ipz*proc_dim.nz
+                else:
+                    idx_v = 0; idx_u = 0
             if plane == 'z':
-                nu = dim.nx
-                nv = dim.ny
-                idx_u = proc_dim.ipx*proc_dim.nx
-                idx_v = proc_dim.ipy*proc_dim.ny
+                if allprocs:
+                    idx_u = proc_dim.ipx*proc_dim.nx
+                    idx_v = proc_dim.ipy*proc_dim.ny
+                else:
+                    idx_v = 0; idx_u = 0
+
             if not isinstance(raw_data, np.ndarray):
                 # Initialize the raw_data array with the right dimensions.
                 raw_data = np.zeros([len(t), n_vars, nv, nu])
@@ -216,7 +252,7 @@ class Averages(object):
 
     def __read_2d_aver(self, plane, datadir, aver_file_name, n_vars):
         """
-        Read the yaverages.dat, xzaverages.dat, yzaverages.dat
+        Read the xyaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
         """
 
@@ -225,13 +261,17 @@ class Averages(object):
         from pencilnew import read
 
         # Determine the structure of the xy/xz/yz averages.
-        nw_string = 'n' + 'xyz'[np.where(np.array(map(plane.find, 'xyz')) == -1)[0][0]]
-        nw = getattr(read.dim(), nw_string)
+        if plane == 'xy':
+            nw = getattr(read.dim(), 'nz')
+        if plane == 'xz':
+            nw = getattr(read.dim(), 'ny')
+        if plane == 'yz':
+            nw = getattr(read.dim(), 'nx')
         file_id = open(os.path.join(datadir, aver_file_name))
         aver_lines = file_id.readlines()
         file_id.close()
         entry_length = int(np.ceil(nw*n_vars/8.))
-        n_times = len(aver_lines)/(1 + entry_length)
+        n_times = int(len(aver_lines)/(1. + entry_length))
 
         # Prepare the data arrays.
         t = np.zeros(n_times, dtype=np.float32)

@@ -2,14 +2,19 @@
 #$Id$
 #
 #  Examples:
-#     ./pc_copy_VAR_procN_shift 1023 512 dir1 dir2
+#     pc_copy_VAR_procN_shift 1023 512 dir1 dir2 #(old version)
+#     pc_copy_VAR_procN_shift 1151 32 . ../Strat_H5.0e-05_z20_nu5em4a5/ #(old version)
+#     pc_copy_VAR_procN_shift 2047 -1024 dir1 dir2 1024 dim.dat
+#
 #  Used for restarting with a deeper box (from nz=1024 to 1536)
+#  or for restarting with half the domain.
 
-for i in $(seq $1 -1 0)
+for i in $(seq $1 -1 $5)
 do
 
   j=$(( $i + $2 ))
-  echo "cp $3/data/proc$i/var.dat $4/data/proc$j/var.dat"
-  cp $3/data/proc$i/var.dat $4/data/proc$j/var.dat
+  echo "cp $3/data/proc$i/$6 $4/data/proc$j/$6"
+  #cp $3/data/proc$i/var.dat $4/data/proc$j/var.dat
+  cp $3/data/proc$i/$6 $4/data/proc$j/$6
 
 done

@@ -1,0 +1,19 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/highmassplanet
+Maintainer:
+    Alex Richert <alexrichert@gmail.com>
+Added:
+    19-apr-2018
+Recommended resolution:
+    Current (768x1024)
+Comments:
+    This is a copy of run H from Richert et al. (2015). It models a 10 Jupiter mass
+    planet in a gas-only disk. The model uses a simple Newton cooling scheme with a
+    quite short cooling time (a tenth of an orbit), so it looks close to the
+    locally isothermal case. To change to the locally iosthermal case, change
+    'entropy' to 'noentropy' in cparam.local, set 'llocal_iso=T' in start.in under
+    'init_pars', remove the entropy boundary condition in 'init_pars' ('bcx'), and
+    change 'gamma' from 1 to 1.4 in start.in under 'eos_init_pars'.
+References:
+    Richert et al. (2015): http://adsabs.harvard.edu/abs/2015ApJ...804...95R
+    For the pointmasses code, this tests the potential 'plummer' for the planet.

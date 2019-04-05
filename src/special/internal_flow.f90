@@ -25,8 +25,11 @@ module Special
   !
   ! Slice precalculation buffers
   !
-  real, target, dimension (nx,ny,3) :: oo_xy_meanx
-  real, target, dimension (nx,ny,3) :: uu_xy_meanx
+  real, target, dimension(:,:,:), allocatable :: oo_xy_meanx,oo_xy2_meanx,oo_xy3_meanx,oo_xy4_meanx
+  real, target, dimension(:,:,:), allocatable :: oo_xz_meanx,oo_xz2_meanx,oo_yz_meanx
+  real, target, dimension(:,:,:), allocatable :: uu_xy_meanx,uu_xy2_meanx,uu_xy3_meanx,uu_xy4_meanx
+  real, target, dimension(:,:,:), allocatable :: uu_xz_meanx,uu_xz2_meanx,uu_yz_meanx
+
   real, dimension(nygrid,3) :: mean_u
 !
   character(len=24) :: initspecial='nothing'
@@ -39,7 +42,8 @@ module Special
        initspecial,central_vel,ampluu_spec,Re_tau
 !
   integer :: idiag_turbint=0
-  integer :: idiag_uxm_central,idiag_tau_w
+  integer :: idiag_uxm_central=0,idiag_tau_w=0
+  integer :: ivid_uu_meanx=0, ivid_oo_meanx=0
 !
   contains
 !
@@ -68,6 +72,28 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
+      if (ivid_uu_meanx/=0) then
+        !call alloc_slice_buffers(uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx,uu_xy3_meanx,uu_xy4_meanx,uu_xz2_meanx)
+        if (lwrite_slice_xy .and..not.allocated(uu_xy_meanx) ) allocate(uu_xy_meanx (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(uu_xz_meanx) ) allocate(uu_xz_meanx (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(uu_yz_meanx) ) allocate(uu_yz_meanx (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(uu_xy2_meanx)) allocate(uu_xy2_meanx(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(uu_xy3_meanx)) allocate(uu_xy3_meanx(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(uu_xy4_meanx)) allocate(uu_xy4_meanx(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(uu_xz2_meanx)) allocate(uu_xz2_meanx(nx,nz,3))
+      endif
+
+      if (ivid_oo_meanx/=0) then
+        !call alloc_slice_buffers(oo_xy_meanx,oo_xz_meanx,oo_yz_meanx,oo_xy2_meanx,oo_xy3_meanx,oo_xy4_meanx,oo_xz2_meanx)
+        if (lwrite_slice_xy .and..not.allocated(oo_xy_meanx) ) allocate(oo_xy_meanx (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(oo_xz_meanx) ) allocate(oo_xz_meanx (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(oo_yz_meanx) ) allocate(oo_yz_meanx (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(oo_xy2_meanx)) allocate(oo_xy2_meanx(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(oo_xy3_meanx)) allocate(oo_xy3_meanx(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(oo_xy4_meanx)) allocate(oo_xy4_meanx(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(oo_xz2_meanx)) allocate(oo_xz2_meanx(nx,nz,3))
+      endif
+
     endsubroutine initialize_special
 !***********************************************************************
     subroutine init_special(f)
@@ -176,11 +202,10 @@ module Special
       use Sub
       use Deriv, only: der_pencil
       use Viscosity, only: getnu
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (3) :: meanx_oo
-      real, dimension (3) :: meanx_uu
       real, dimension (nx,3) :: ufluct
       real, dimension (nx) :: ufluct2
       type (pencil_case) :: p
@@ -200,13 +225,19 @@ module Special
       ! Write video slices
       !
       if (lvideo.and.lfirst) then
-        if (n==iz_loc)  then
+        if (ivid_uu_meanx/=0) then
           do j=1,3
-            meanx_oo(j)=sum(p%oo(:,j))/(l2-l1+1)
-            meanx_uu(j)=mean_u(m+ny*ipy-nghost,j)
-            oo_xy_meanx(:,m-m1+1,j)=p%oo(:,j)-meanx_oo(j)
-            uu_xy_meanx(:,m-m1+1,j)=p%uu(:,j)-meanx_uu(j)
+            ufluct(:,j)=p%uu(:,j)-mean_u(m+ny*ipy_meanx-nghost,j)
           enddo
+          call store_slices(ufluct,uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx,uu_xy3_meanx, &
+                            uu_xy4_meanx,uu_xz2_meanx)
+        endif
+        if (ivid_oo_meanx/=0) then
+          do j=1,3
+            ufluct(:,j)=p%oo(:,j)-sum(p%oo(:,j))/nx
+          enddo
+          call store_slices(ufluct,oo_xy_meanx,oo_xz_meanx,oo_yz_meanx,oo_xy2_meanx,oo_xy3_meanx, &
+                            oo_xy4_meanx,oo_xz2_meanx)
         endif
       endif
 !
@@ -274,6 +305,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -290,6 +322,7 @@ module Special
         idiag_turbint=0
         idiag_tau_w=0
         idiag_uxm_central=0
+        ivid_uu_meanx=0; ivid_oo_meanx=0
       endif
 !
       do iname=1,nname
@@ -298,11 +331,19 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'uxm_central',idiag_uxm_central)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'uu_meanx', ivid_uu_meanx)
+        call parse_name(iname,cnamev(iname),cformv(iname),'oo_meanx', ivid_oo_meanx)
+      enddo
+!
 !  write column where which magnetic variable is stored
+!
       if (lwr) then
-        write(3,*) 'i_turbint=',idiag_turbint
-        write(3,*) 'i_tau_w=',idiag_tau_w
-        write(3,*) 'i_uxm_central=',idiag_uxm_central
+        call farray_index_append('i_turbint',idiag_turbint)
+        call farray_index_append('i_tau_w',idiag_tau_w)
+        call farray_index_append('i_uxm_central',idiag_uxm_central)
       endif
 !
     endsubroutine rprint_special
@@ -313,6 +354,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
+      use Slices_methods, only: assign_slices_vec
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
       !
@@ -320,29 +363,19 @@ module Special
       !
       select case (trim(slices%name))
         !
-        !  Vorticity (derived variable)
+        !  Mean vorticity (derived variable)
         !
       case ('oo_meanx')
-        if (slices%index == 3) then
-          slices%ready = .false.
-        else
-          slices%index = slices%index+1
-          slices%xy=>oo_xy_meanx(:,:,slices%index)
-          if (slices%index < 3) slices%ready = .true.
-        endif
+        call assign_slices_vec(slices,oo_xy_meanx,oo_xz_meanx,oo_yz_meanx,oo_xy2_meanx, &
+                                      oo_xy3_meanx,oo_xy4_meanx,oo_xz2_meanx)
       case ('uu_meanx')
-        if (slices%index >= 3) then
-          slices%ready = .false.
-        else
-          slices%index = slices%index+1
-          slices%xy=uu_xy_meanx(:,:,slices%index)
-          if (slices%index < 3) slices%ready = .true.
-        endif
+        call assign_slices_vec(slices,uu_xy_meanx,uu_xz_meanx,uu_yz_meanx,uu_xy2_meanx, &
+                                      uu_xy3_meanx,uu_xy4_meanx,uu_xz2_meanx)
       endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  Mean flow velocitites
 !
@@ -372,7 +405,7 @@ module Special
         enddo
       endif
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

@@ -24,18 +24,9 @@ module Particles_lyapunov
 !
   include 'particles_lyapunov.h'
 !
-  logical :: lnoise2pvector=.false.
-  real :: fake_eta=0.,bamp=0.
-!
-  namelist /particles_lyapunov_init_pars/ & 
-    bamp
-!
-  namelist /particles_lyapunov_run_pars/ &
-  lnoise2pvector,fake_eta
-!
   contains
 !***********************************************************************
-    subroutine register_particles_lyapunov()
+    subroutine register_particles_lyapunov
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -55,7 +46,6 @@ module Particles_lyapunov
 !
 !  May-16/dhruba+nishant+akshay: coded
 !
-      use General, only: keep_compiler_quiet
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -64,22 +54,22 @@ module Particles_lyapunov
 !
     endsubroutine initialize_particles_lyapunov
 !***********************************************************************
-    subroutine init_particles_lyapunov(f,fp)
+!    subroutine init_particles_lyapunov(f,fp)
+    subroutine init_particles_lyapunov(fp)
 !
-      use Sub, only: kronecker_delta
-      use General, only: keep_compiler_quiet,random_number_wrapper
-      use Mpicomm, only: mpiallreduce_sum
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+!      use Sub, only: kronecker_delta
+!      use General, only: keep_compiler_quiet,random_number_wrapper
+!      use Mpicomm, only: mpiallreduce_sum
+!      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
 !
-      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_lyapunov
 !***********************************************************************
     subroutine dlyapunov_dt(f,df,fp,dfp,ineargrid)
-!
 !
       use Diagnostics
 !
@@ -88,7 +78,7 @@ module Particles_lyapunov
       real, dimension (mpar_loc,mparray), intent (in) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
-      logical :: lheader, lfirstcall=.true.
+      
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
@@ -108,7 +98,6 @@ module Particles_lyapunov
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
       intent (inout) :: df, dfp,ineargrid
-      real, dimension(9) :: Sijp
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -124,16 +113,15 @@ module Particles_lyapunov
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-!
-      read(parallel_unit, NML=particles_lyapunov_init_pars, IOSTAT=iostat)
+
+      iostat=0
 !
     endsubroutine read_plyapunov_init_pars
 !***********************************************************************
     subroutine write_plyapunov_init_pars(unit)
 !
       integer, intent(in) :: unit
-!
-      write(unit, NML=particles_lyapunov_init_pars)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_plyapunov_init_pars
 !***********************************************************************
@@ -142,20 +130,20 @@ module Particles_lyapunov
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-!
-      read(parallel_unit, NML=particles_lyapunov_run_pars, IOSTAT=iostat)
+
+      iostat=0
 !
     endsubroutine read_plyapunov_run_pars
 !***********************************************************************
     subroutine write_plyapunov_run_pars(unit)
 !
       integer, intent(in) :: unit
-!
-      write(unit, NML=particles_lyapunov_run_pars)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_plyapunov_run_pars
 !***********************************************************************
     subroutine particles_stochastic_lyapunov(fp)
+!
       real, dimension (mpar_loc,mparray), intent (out) :: fp
 !
       call keep_compiler_quiet(fp)
@@ -168,13 +156,28 @@ module Particles_lyapunov
 !
 !  may-2016/dhruba+akshay: coded
 !
-      use Diagnostics
-      use General,   only: itoa
-!
       logical :: lreset
       logical, optional :: lwrite
-
 !
+      call keep_compiler_quiet(lreset,lwrite)
+!    
     endsubroutine rprint_particles_lyapunov
+!***********************************************************************
+    subroutine calc_pencils_par_lyapunov(f,p)
+!
+      use Sub, only: grad
+!
+!  This calculates the bbf data to a pencil.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  16-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_pencils_par_lyapunov
 !***********************************************************************
 endmodule Particles_lyapunov

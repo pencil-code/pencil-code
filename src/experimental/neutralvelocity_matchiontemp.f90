@@ -736,6 +736,7 @@ module NeutralVelocity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: fvisc,unij5glnrhon
       real, dimension(nx) :: munrhon1,tmp
+      real, dimension(nx) :: diffus_nun, diffus_nun3
       integer :: i,j,jj,ju
       type (pencil_case) :: p
 !
@@ -744,6 +745,7 @@ module NeutralVelocity
 !
       fvisc=0.
       diffus_nun=0.
+      diffus_nun3=0.
 !
       do j=1,ninit
          select case (iviscn(j))
@@ -827,6 +829,11 @@ module NeutralVelocity
             call stop_it('calc_viscous_forcing')
          endselect
       enddo
+
+      if (lfirst.and.ldt) then
+        maxdiffus=max(maxdiffus,diffus_nun)
+        maxdiffus3=max(maxdiffus3,diffus_nun3)
+      endif
 !
 ! Add viscosity to the equation of motion
 !
@@ -846,6 +853,7 @@ module NeutralVelocity
 !  28-feb-07/wlad: adapted
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,inamey,inamex,ixy,irz,inamer
       logical :: lreset,lwr
@@ -1002,11 +1010,11 @@ module NeutralVelocity
 !  write column where which neutralvelocity variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuun=',iuun
-        write(3,*) 'iunx=',iunx
-        write(3,*) 'iuny=',iuny
-        write(3,*) 'iunz=',iunz
+        call farray_index_append('nname',nname)
+        call farray_index_append('iuun',iuun)
+        call farray_index_append('iunx',iunx)
+        call farray_index_append('iuny',iuny)
+        call farray_index_append('iunz',iunz)
       endif
 !
     endsubroutine rprint_neutralvelocity

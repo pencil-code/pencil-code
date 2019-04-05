@@ -16,9 +16,35 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   contains
+!***********************************************************************
+    subroutine initialize_timestep
+! 
+!  Coefficients for up to order 3.
+!    
+      use Messages, only: fatal_error
+      use General, only: itoa
+!
+      if (itorder==1) then
+        alpha_ts=(/ 0., 0., 0. /)
+        beta_ts =(/ 1., 0., 0. /)
+      elseif (itorder==2) then
+        alpha_ts=(/ 0., -1./2., 0. /)
+        beta_ts=(/ 1./2.,  1.,  0. /)
+      elseif (itorder==3) then
+        !alpha_ts=(/0., -2./3., -1./)
+        !beta_ts=(/1./3., 1., 1./2./)
+        !  use coefficients of Williamson (1980)
+        alpha_ts=(/  0. ,  -5./9., -153./128. /)
+        beta_ts=(/ 1./3., 15./16.,    8./15.  /)
+      else
+        call fatal_error('initialize_timestep','Not implemented: itorder= '// &
+                         trim(itoa(itorder)))
+      endif
+
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -30,7 +56,7 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ
-      use Mpicomm
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
       use Particles_main
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
@@ -40,7 +66,6 @@ module Timestep
       type (pencil_case) :: p
       real :: t0, t1, ds, dt1, dt1_local
       real, save :: dt1_last=0.0
-      integer :: j
 !
       if (lroot .and. headt .and. llsode) print*, 'timestep_LSODE: '// &
           'Chemistry is solved using LSODE'
@@ -59,25 +84,6 @@ module Timestep
 !
         call lsode_fc(t0,t1,f,df)
 !
-      endif
-!
-!  Coefficients for up to order 3.
-!
-      if (itorder==1) then
-        alpha_ts=(/ 0., 0., 0. /)
-        beta_ts =(/ 1., 0., 0. /)
-      elseif (itorder==2) then
-        alpha_ts=(/ 0., -1./2., 0. /)
-        beta_ts=(/ 1./2.,  1.,  0. /)
-      elseif (itorder==3) then
-        !alpha_ts=(/0., -2./3., -1./)
-        !beta_ts=(/1./3., 1., 1./2./)
-        !  use coefficients of Williamson (1980)
-        alpha_ts=(/  0. ,  -5./9., -153./128. /)
-        beta_ts=(/ 1./3., 15./16.,    8./15.  /)
-      else
-        if (lroot) print*,'Not implemented: itorder=',itorder
-        call mpifinalize
       endif
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -105,7 +111,7 @@ module Timestep
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
+        call pde(f,df,p,itsub)
 !
         ds=ds+1.
 !
@@ -127,15 +133,13 @@ module Timestep
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
 !
-!  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
+!  Apply border quenching.
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-!ajwm Note to self... Just how much overhead is there in calling
-!ajwm a sub this often...
-          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
-        enddo; enddo; enddo
+        if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
+!
+!  Time evolution of grid variables.
+!
+        f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
 !  Time evolution of particle variables.
 !
@@ -147,7 +151,7 @@ module Timestep
         if (lshear) call advance_shear(f,df,dt_beta_ts(itsub)*ds)
 !
         if (lspecial) &
-            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds,llast)
 !
 !  Increase time.
 !
@@ -174,5 +178,15 @@ module Timestep
       endif
 !
     endsubroutine time_step
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=2
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(alpha_ts,p_par(1))  ! (3)
+    call copy_addr_c(beta_ts ,p_par(2))  ! (3)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep

@@ -22,6 +22,7 @@
 #  Abbreviations:
 #    v, var       - var.dat
 #    p, pvar      - pvar.dat
+#    og, ogvar    - ogvar.dat (overlapping grid)
 #    naked number - VAR*
 #
 set data=data/
@@ -88,6 +89,12 @@ if ( $var1 =~ "p" || $var1 =~ "pvar") then
 endif
 if ( $var2 =~ "p" || $var2 =~ "pvar") then
   set var2='pvar.dat'
+endif
+if ( $var1 =~ "og" || $var1 =~ "ogvar") then
+  set var1='ogvar.dat'
+endif
+if ( $var2 =~ "og" || $var2 =~ "kgvar") then
+  set var2='ogvar.dat'
 endif
 #
 #  Naked integers get 'VAR' in front.

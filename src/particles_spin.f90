@@ -55,21 +55,9 @@ module Particles_spin
 !
 !  Indices for particle spin
 !
-      ipsx = npvar + 1
-      pvarname(ipsx) = 'ipsx'
-      ipsy = npvar + 2
-      pvarname(ipsy) = 'ipsy'
-      ipsz = npvar + 3
-      pvarname(ipsz) = 'ipsz'
-!
-      npvar = npvar + 3
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      bound: if (npvar > mpvar) then
-        if (lroot) print *, 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_spin', 'npvar > mpvar')
-      endif bound
+      call append_npvar('ipsx',ipsx)
+      call append_npvar('ipsy',ipsy)
+      call append_npvar('ipsz',ipsz)
 !
     endsubroutine register_particles_spin
 !***********************************************************************
@@ -304,6 +292,7 @@ module Particles_spin
 !  06-oct-15/ccyang: continued.
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
@@ -317,9 +306,9 @@ module Particles_spin
       if (present(lwrite)) lwr = lwrite
 !
       indices: if (lwr) then
-        write(3,*) "ipsx = ", ipsx
-        write(3,*) "ipsy = ", ipsy
-        write(3,*) "ipsz = ", ipsz
+        call farray_index_append('ipsx', ipsx)
+        call farray_index_append('ipsy', ipsy)
+        call farray_index_append('ipsz', ipsz)
       endif indices
 !
 !  Reset everything in case of reset

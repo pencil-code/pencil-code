@@ -135,6 +135,7 @@ module Particles_diagnos_state
     subroutine rprint_particles_diagnos_state(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -148,11 +149,11 @@ module Particles_diagnos_state
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ipss=', ipss
-        write(3,*) 'ipst=', ipst
-        write(3,*) 'ipxx=', ipxx
-        write(3,*) 'ipyy=', ipyy
-        write(3,*) 'ipzz=', ipzz
+        call farray_index_append('ipss', ipss)
+        call farray_index_append('ipst', ipst)
+        call farray_index_append('ipxx', ipxx)
+        call farray_index_append('ipyy', ipyy)
+        call farray_index_append('ipzz', ipzz)
       endif
 !
 !  Reset everything in case of reset.

@@ -46,6 +46,8 @@ module Particles_map
       integer :: i
       real :: total_gab_weights
 !
+      if (particles_module .ne. "lagrangian") then
+!
 !  Check the particle-mesh interpolation method.
 !
       pm: select case (particle_mesh)
@@ -73,6 +75,9 @@ module Particles_map
         lparticlemesh_tsc = .false.
         lparticlemesh_gab = .true.
         if (lroot) print *, 'initialize_particles_map: selected gaussian-box for particle-mesh method. '
+
+!NILS: Must figure out what to do with GAB!!!!!!!
+
         do i = 1,4
           gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
         enddo
@@ -95,6 +100,8 @@ module Particles_map
       case default pm
         call fatal_error('initialize_particles_map', 'unknown particle-mesh type ' // trim(particle_mesh))
       endselect pm
+
+    endif
 
       if (lparticlemesh_gab) then
         lfold_df_3points=.true.
@@ -143,24 +150,39 @@ module Particles_map
 !
 !  Check if the grid point interval is really correct.
 !
-      if (((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1)) .or. nxgrid==1) .and. &
-          ((y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2)) .or. nygrid==1) .and. &
-          ((z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3)) .or. nzgrid==1)) then
-        ! Everything okay
+      if ((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1)) .or. nxgrid==1) then
+      ! x-dirn ok
       else
         print*, 'interpolate_linear: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
         print*, 'ipar = ', ipar
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
+        print*, 'xp0, xp, xp1 = ', x(ix0), xxp(1), x(ix0+1)
+        call fatal_error('interpolate_linear','point outside of x-interval')
+      endif 
+      if ((y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2)) .or. nygrid==1) then
+      ! y-dirn ok
+      else
+        print*, 'interpolate_linear: Interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
+        print*, 'yp0, yp, yp1 = ', y(iy0), xxp(2), y(iy0+1)
+        call fatal_error('interpolate_linear','point outside of y-interval')
+      endif 
+      if ((z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3)) .or. nzgrid==1) then
+      ! z-dirn ok
+      else
+        print*, 'interpolate_linear: Interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
-        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
-        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
-        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
-        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call fatal_error('interpolate_linear','point outside of interval')
-      endif
+        print*, 'zp0, zp, zp1 = ', z(iz0), xxp(3), z(iz0+1)
+        call fatal_error('interpolate_linear','point outside of z-interval')
+      endif 
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
 !  Set it equal to 0 for dimensions having 1 grid points; this will make sure
@@ -218,7 +240,7 @@ module Particles_map
 !  If we have solid geometry we might want some special treatment very close
 !  to the surface of the solid geometry
 !
-      if (lsolid_cells) then
+      if (lsolid_cells.and.(.not.lsolid_ogrid)) then
         do ivar=ivar1,ivar2
           f_tmp(ivar)=gp(ivar-ivar1+1)
         enddo
@@ -378,7 +400,7 @@ module Particles_map
 !  If we have solid geometry we might want some special treatment very close
 !  to the surface of the solid geometry
 !
-      if (lsolid_cells) then
+      if (lsolid_cells.and.(.not.lsolid_ogrid)) then
         f_tmp(ivar)=gp
         call close_interpolation(f,ix0,iy0,iz0,icyl,xxp,&
             f_tmp,.false.)
@@ -1158,12 +1180,6 @@ module Particles_map
         close (lun)
       endif
 !
-! If we are using particles_potential, this is the time to update the neighbour list
-!
-      if (lparticles_potential) then
-        call invert_ineargrid_list(fp,ineargrid,ipar,dfp,f)
-      endif
-!
       if (ip<=8) print '(A,i4,i8,i4,l4)', &
            'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
            iproc, ncount, isorttype, lrunningsort
@@ -1419,6 +1435,11 @@ module Particles_map
                 endif
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+                if (lparticles_lyapunov) then
+                   if (ibbf/=0) then
+                        f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+weight*fp(k,ibpx:ibpz) 
+                   endif
+                endif
 !
                 if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
                   if (lparticles_number) then
@@ -1513,6 +1534,11 @@ module Particles_map
                 if (nzgrid/=1) weight=weight*weight_z
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+                if (lparticles_lyapunov) then
+                   if (ibbf/=0) then
+                        f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+weight*fp(k,ibpx:ibpz) 
+                   endif
+                endif
 !
                 if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
                   if (lparticles_number) then
@@ -1554,6 +1580,11 @@ module Particles_map
                 endif
 !
                 f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
+                if (lparticles_lyapunov) then
+                   if (ibbf/=0) then
+                        f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+weight0*fp(k,ibpx:ibpz) 
+                   endif
+                endif
 !
                 if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
                   if (lparticles_number) then
@@ -1568,12 +1599,24 @@ module Particles_map
             enddo
           else
             f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
+            if (lparticles_lyapunov) then
+              if (ibbf/=0) then
+                 f(ixx,iyy,izz,ibxf:ibzf)=f(ixx,iyy,izz,ibxf:ibzf)+fp(k,ibpx:ibpz) 
+              endif
+            endif
           endif
         endif
 !
 !  Fold first ghost zone of f.
 !
-        if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) then 
+          call fold_f(f,irhop,irhop)
+          if (lparticles_lyapunov.and.ibbf/=0) then
+            call fold_f(f,ibxf,ibxf)
+            call fold_f(f,ibyf,ibyf)
+            call fold_f(f,ibzf,ibzf)
+          endif
+        endif
         if (.not.(lparticles_radius.or.lparticles_number.or. &
             lparticles_density)) then
           do m=m1,m2; do n=n1,n2
@@ -1938,7 +1981,7 @@ module Particles_map
             interp%pol_TT)
         elseif (ltemperature) then
           call interp_field_pencil_wrap(f,ilnTT,ilnTT,fp,ineargrid,interp_TT, &
-            interp%pol_TT)
+               interp%pol_TT)
         endif
 !
         if ( (lentropy.and.pretend_lnTT)   .or. &
@@ -1961,9 +2004,15 @@ module Particles_map
           call fatal_error('interpolate_quantities','')
         endif
 !
-        do k=k1,k2
-          interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
-        enddo
+        if (npar_imn(imn) /= 0) then
+           do k=k1,k2
+              interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
+           enddo
+           if (lsolid_ogrid) then
+                 call interp_field_pencil_wrap(f,iTT+1,iTT+mogaux,&
+                      fp,ineargrid,interp_gradTT,interp%pol_TT)
+           endif
+        endif
       endif
 !
 !  Density:
@@ -2068,7 +2117,11 @@ module Particles_map
       intent(in) :: f,i1,i2,fp,ineargrid, policy
       intent(inout) :: vec
 !
-      call interp_field_pencil(f,i1,i2,fp,ineargrid,1,vec,policy)
+      if(lsolid_ogrid) then
+        call interp_field_pencil_ogrid(f,i1,i2,fp,ineargrid,1,vec)
+      else
+        call interp_field_pencil(f,i1,i2,fp,ineargrid,1,vec,policy)
+      endif
 !
     endsubroutine interp_field_pencil_0
 !***********************************************************************
@@ -2086,7 +2139,11 @@ module Particles_map
       intent(in) :: f,i1,i2,fp,ineargrid, policy
       intent(inout) :: vec
 !
-      call interp_field_pencil(f,i1,i2,fp,ineargrid,ubound(vec,2),vec,policy)
+      if(lsolid_ogrid) then
+        call interp_field_pencil_ogrid(f,i1,i2,fp,ineargrid,ubound(vec,2),vec)
+      else
+         call interp_field_pencil(f,i1,i2,fp,ineargrid,ubound(vec,2),vec,policy)
+      endif
 !
     endsubroutine interp_field_pencil_1
 !***********************************************************************
@@ -2131,6 +2188,57 @@ module Particles_map
       endif
 !
     endsubroutine interp_field_pencil
+!***********************************************************************
+    subroutine interp_field_pencil_ogrid(f,i1,i2,fp,ineargrid,uvec2,vec)
+!
+!  Interpolate stream field to all sub grid particle positions in the
+!  current pencil.
+!  i1 & i2 sets the component to interpolate; ex.: iux:iuz, or iss:iss
+!
+!  16-jul-08/kapelrud: coded
+!
+      use Solid_Cells, only: interpolate_particles_ogrid, map_nearest_grid_ogrid, &
+                             r_int_outer, xorigo_ogrid
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i1,i2
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+      integer :: uvec2
+      real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec
+!
+      real, dimension(k1_imn(imn):k2_imn(imn)) :: rp2
+      real :: r2_ogrid
+      integer, dimension(4) :: inear_ogrid
+      real, dimension(3) :: rthz
+
+      intent(in) :: f,i1,i2,fp,ineargrid
+      intent(inout) :: vec
+!
+      integer :: k
+      ! TODO
+      real, dimension(k1_imn(imn):k2_imn(imn),uvec2) :: vec2
+
+      r2_ogrid=r_int_outer*r_int_outer
+!
+      if (npar_imn(imn)/=0) then
+        rp2 = (fp(k1_imn(imn):k2_imn(imn),ixp)-xorigo_ogrid(1))**2 &
+             +(fp(k1_imn(imn):k2_imn(imn),iyp)-xorigo_ogrid(2))**2
+        do k=k1_imn(imn),k2_imn(imn)
+           if(rp2(k)>r2_ogrid) then
+              if(iTT > 0 .or. i1<=iTT) then
+                 call interpolate_linear( &
+                      f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
+              endif
+           else
+              call map_nearest_grid_ogrid(fp(k,ixp:izp),inear_ogrid,rthz)
+              call interpolate_particles_ogrid(i1,i2,rthz,vec(k,:),inear_ogrid)
+           endif
+         
+        enddo
+     endif
+!
+    endsubroutine interp_field_pencil_ogrid
 !***********************************************************************
     subroutine sort_particles_iblock(fp,ineargrid,ipar,dfp)
 !

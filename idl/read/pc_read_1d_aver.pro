@@ -33,7 +33,7 @@ default, varfile, avdirs+'averages.dat'
 default, monotone, 0
 default, quiet, 0
 default, njump, 1
-default, tmin, 0
+default, tmin, 0.
 ;
 ;  Read variables from '*aver.in' file
 ;
@@ -66,8 +66,11 @@ if (not file_test(filename)) then $
 nlines=file_lines(filename)
 nlin_per_time=1L+ceil(nvar*ndir/8.)
 nit=nlines/nlin_per_time/njump
-if ((nlines mod nlin_per_time) ne 0) then $
-    print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!'
+if ((nlines mod nlin_per_time) ne 0) then begin
+  print, 'Warning: File "'+strtrim(filename,2)+'" corrupted!'
+  corrupt=1
+endif else $
+  corrupt=0
 ;
 if (not quiet) then print, 'Going to read averages at <=', strtrim(nit,2), ' times'
 ;
@@ -87,21 +90,28 @@ times =fltarr(nit)*one
 ;
 openr, file, filename, /get_lun
 
-nread=0 & dummy=zero
+nread=0 & dummy=zero & t=zero & line=0
 for it=0,nit-1 do begin
   ; Read time
   readf, file, t
+  line++
+  if corrupt and nread gt 0 then $
+    if t lt times[nread-1] then begin
+      print, 'Warning: File corrupt before or in line', line
+      corrupt=0
+    endif
+ 
   ; Read data
+  readf, file, var
+  line+=nlin_per_time-1
   if (it mod njump) eq 0 and t ge tmin then begin
-    readf, file, var
     times[nread]=t
     for i=0,nvar-1 do begin
       cmd=varnames[i]+'[*,nread]=var[i*ndir:(i+1)*ndir-1]'
       if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
     endfor
     nread++
-  endif else $
-    readf, file, dummy
+  endif
 endfor
 if nread gt 0 then begin
   times=times[0:nread-1]

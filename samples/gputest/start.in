@@ -1,0 +1,31 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$',
+  ip=14,                        ! debugging parameter
+  !xyz0  = -1.1,-1.1,-1.1,       ! first corner of box
+  !xyz1  =  1.1, 1.1, 1.1,       ! second corner of box
+  !lperi =  F  , F  , F,         ! periodic direction?
+  !bcx = 'a','s','s','a2'
+  !bcy = 's','a','s','a2'
+  !bcz = 's','s','a','s:a2'
+  lperi =  T  , T  , T,         ! periodic direction?
+  random_gen='nr_f90',
+/
+&hydro_init_pars
+  !inituu='zero'
+  !inituu='sinwave-x', ampluu=1.
+  !inituu='sinwave-z', ampluu=1.
+  !inituu='ABC', ampluu=1., kx_uu=16., ky_uu=16., kz_uu=16.
+  !inituu='ABC', ampluu=1., kx_uu=8., ky_uu=8., kz_uu=8.
+  inituu='ABC', ampluu=1., kx_uu=32., ky_uu=32., kz_uu=32.
+  !inituu='ABC', ampluu=1., kx_uu=1., ky_uu=1., kz_uu=1.
+  !inituu='ABC','gaussian-noise-xy',  ampluu=1.,.5
+  !urand=0.05,      ! cp=2.5 version used urand=0.05
+  !urand=0.5,      ! cp=2.5 version used urand=0.05
+/
+&density_init_pars
+  initlnrho='const_lnrho', lnrho_const=1.23
+/

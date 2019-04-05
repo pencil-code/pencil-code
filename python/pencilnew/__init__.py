@@ -1,22 +1,21 @@
-#
-# The __init__ file is used not only to import the sub-modules, but also to
-# set everything up properly.
-#
+'''
+The __init__ file is used not only to import the sub-modules, but also to
+set everything up properly.
+'''
 
 # Load sub-modules.
-import io		   # input und output functions, like save data or call IDL scripts
-import diag		   # diagnostic scripts and functions
-import visu		   # visualization routines
-import calc		   # math functions and further calculations
-import math
-import sim         # handling simulations as python objects
-import read		   # read data and parameters from pencil code directory
-import tool_kit	   # all nice workarounds get stored here (e.g., resubmit script)
-import export	   # exporter (e.g., vtk, xml)
-#import backpack    # third party modules, tribute to the author!
+from . import io           # input und output functions, like save data or call IDL scripts
+from . import diag         # diagnostic scripts and functions
+from . import visu         # visualization routines
+from . import calc         # math functions and further calculations
+from . import math         # basic math functions, like products and derivatives
+from . import sim          # handling simulations as python objects
+from . import read         # read data and parameters from pencil code directory
+from . import tool_kit     # all nice workarounds get stored here (e.g., resubmit script)
+from . import export       # exporter (e.g., vtk, xml)
+from . import backpack     # third party modules, tribute to the author!
 
 # internal routines
-from pencilnew.sim import simulation as __Simulation__
 def __is_sim_dir__(path='.'):
     """Checks if a path is pointing at a pencil code simulation."""
     return sim.is_sim_dir(path)
@@ -36,3 +35,21 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=True):
                 hidden sim will stay hidden.
     """
     return sim.get_sims(path_root=path_root, depth=1, unhide_all=unhide_all, quiet=quiet)
+
+def check_dependencies():
+    """ Check if dependencies are fullfilled for pencilnew. """
+    import importlib
+    from itertools import compress
+
+    dependencies = ['vtk', 'tqdm']
+
+    not_found = [importlib.util.find_spec(dep) is None for dep in dependencies]
+    missing_dependencies = list(compress(dependencies, not_found))
+
+    print('WARNING: The following python modules have not been found. \
+          Full functionallity may not be granted!')
+
+    if 'vtk' in missing_dependencies:
+        print('Warning: vtk missing. Try to install the python-vtk or pyevtk module.')
+    if 'tqdm' in missing_dependencies:
+        print('Warning: tqdm missing. Check out https://github.com/tqdm/tqdm')

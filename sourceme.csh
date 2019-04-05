@@ -44,11 +44,11 @@ if (! $?_sourceme) then		# called for the fist time?
   if (-d $PENCIL_HOME/bin) then
 
     #  Set shell path
-    if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"
+    if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel},scripts} to PATH"
     set path = ( $path $PENCIL_HOME/bin \
                        $PENCIL_HOME/utils \
-                       $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel \
+                       $PENCIL_HOME/src/scripts \
 		       $PENCIL_HOME/remesh/bin)
 
 		       #  Set path for DX macros
@@ -66,13 +66,22 @@ if (! $?_sourceme) then		# called for the fist time?
     else
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:<IDL_DEFAULT>"
     endif
+
+    # Set HDF5 path
+    if (! $?HDF5_HOME) setenv HDF5_HOME `which h5fc 2>/dev/null | sed -e 's/\/bin\/h5fc$//'`
+
     #  Set PYTHON path
     if ($?PYTHONPATH) then
       setenv PYTHONPATH "${PYTHONPATH}:${PENCIL_HOME}/python:${PWD}/python"
     else
       setenv PYTHONPATH "${PENCIL_HOME}/python:${PWD}/python"
     endif
-
+    #  Set library path for linker
+    if ($?LD_LIBRARY_PATH) then
+      setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src"
+    else
+      setenv LD_LIBRARY_PATH "./src"
+    endif
 #    #  Set Perl module path [no longer needed]
 #    set _perl5lib = "${PENCIL_HOME}/lib/perl"
 #    if ($?PERL5LIB) then

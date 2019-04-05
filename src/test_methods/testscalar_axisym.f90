@@ -10,6 +10,9 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestscalar = .true.
+! CPARAM logical, parameter :: ltestfield_z = .true.
+! CPARAM logical, parameter :: ltestfield_xy = .false.
+! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 2
@@ -383,12 +386,9 @@ module Testscalar
       if (lug_as_aux) then
         if (iug==0) then
           call farray_register_auxiliary('ug',iug,vector=njtestscalar)
-        endif
-        if (iug/=0.and.lroot) then
-          print*, 'initialize_magnetic: iug = ', iug
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iug=',iug
-          close(3)
+        else
+          if (lroot) print*, 'initialize_testscalar: iug = ', iug
+          call farray_index_append('iug',iug)
         endif
       endif
 !
@@ -543,6 +543,7 @@ module Testscalar
       real, dimension (nx,3,njtestscalar) :: Fipq,Gipq,Hipq
       real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
+      real, dimension (nx) :: diffus_eta
       integer :: jcctest,jtest,j,nl,ml,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
       logical,save :: ltest_ug=.false.
 !
@@ -673,7 +674,8 @@ module Testscalar
 !  and whatever is calculated here.
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,kappatest*dxyz_2)
+        diffus_eta=kappatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
@@ -1110,6 +1112,7 @@ module Testscalar
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamez
@@ -1221,11 +1224,8 @@ module Testscalar
       enddo
 !
       if (loptest(lwrite)) then
-        write(3,*) 'icctest=',icctest
-        write(3,*) 'ntestscalar=',ntestscalar
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
+        call farray_index_append('icctest',icctest)
+        call farray_index_append('ntestscalar',ntestscalar)
       endif
 !
     endsubroutine rprint_testscalar

@@ -131,18 +131,22 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_Lorentz_abs:'Lorentz force', $
 		W_Lorentz:'Lorentz work', $
 		Lorentz_angle:'Lorentz angle', $
+		Lorentz_angle_deviation:'Lorentz angle deviation', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_ohm_particle:'Ohmic heating rate / particle', $
 		HR_viscous:'viscous heating rate', $
 		HR_viscous_particle:'viscous heating rate / particle', $
+		A_abs:'magnetic vector potential', $
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
+		div_A:'divergence of magnetic vector potential', $
 		B_abs:'magnetic field strength', $
 		B_2:'magnetic field squared', $
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
+		grad_B_abs:'magnetic field gradient', $
 		EMF_abs:'electro motive force strength', $
 		EMF_x:'electro motive force x', $
 		EMF_y:'electro motive force y', $
@@ -180,6 +184,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'velocity y', $
 		u_z:'velocity z', $
 		u_abs:'velocity', $
+		grad_u_abs:'velocity gradient', $
+		E_therm:'thermal energy', $
 		E_kin_rho:'kinetic energy density', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
@@ -187,20 +193,25 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		H_P_therm_x:'thermal pressure scaling height x', $
 		H_P_therm_y:'thermal pressure scaling height y', $
 		H_P_therm_z:'thermal pressure scaling height z', $
-		a_grav_abs:'Gravity acceleration absolute value', $
-		a_grav_x:'Gravity acceleration x', $
-		a_grav_y:'Gravity acceleration y', $
-		a_grav_z:'Gravity acceleration z', $
-		F_grav_abs:'Gravity force absolute value', $
-		F_grav_x:'Gravity force x', $
-		F_grav_y:'Gravity force y', $
-		F_grav_z:'Gravity force z', $
-		rho_u_abs:'impulse density absolute value', $
+		a_grav_abs:'gravity acceleration', $
+		a_grav_x:'gravity acceleration x', $
+		a_grav_y:'gravity acceleration y', $
+		a_grav_z:'gravity acceleration z', $
+		F_grav_abs:'gravity force', $
+		F_grav_x:'gravity force x', $
+		F_grav_y:'gravity force y', $
+		F_grav_z:'gravity force z', $
+		rho_u_abs:'impulse density', $
 		rho_u_x:'impulse density x', $
 		rho_u_y:'impulse density y', $
 		rho_u_z:'impulse density z', $
 		Rn_viscous:'viscous Reynolds number', $
 		Rn_mag:'magnetic Reynolds number', $
+		forcing_x:'forcing function x', $
+		forcing_y:'forcing function y', $
+		forcing_z:'forcing function z', $
+		forcing_abs:'forcing function', $
+		q_abs:'isotropic heatflux', $
 		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_q_parallel:'field-aligned Spitzer heatflux', $
@@ -238,6 +249,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	; List of available vector field quantities.
 	available_vectorfields = { $
 		u:'velocities', $
+		grad_u:'velocity gradient', $
 		j:'current density', $
 		F_Lorentz:'Lorentz force', $
 		Poynting_j:'current Poynting flux', $
@@ -246,6 +258,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
+		grad_B:'magnetic field gradient', $
 		dB_dx:'magnetic field x-derivative', $
 		dB_dy:'magnetic field y-derivative', $
 		dB_dz:'magnetic field z-derivative', $
@@ -256,8 +269,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_Temp:'grad temperature', $
 		grad_rho:'grad density', $
 		grad_P_therm:'grad thermal pressure', $
-		a_grav:'Gravity acceleration', $
-		F_grav:'Gravity force', $
+		a_grav:'gravity acceleration', $
+		F_grav:'gravity force', $
+		forcing:'forcing function', $
 		rho_u:'impulse density' $
 	}
 
@@ -270,6 +284,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dx:'grid distance x', $
 		dy:'grid distance y', $
 		dz:'grid distance z', $
+		dV:'grid cell volume', $
 		inv_dx:'inverse grid distance x', $
 		inv_dy:'inverse grid distance y', $
 		inv_dz:'inverse grid distance z', $
@@ -292,7 +307,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		TT:{ TT:['lnTT', 'TT'] }, $
 		Temp:{ Temp_alternatives:['TT', 'S_rho'] }, $
 		S:{ S_alternatives:['ss', 'TT_rho'] }, $
-		grad_Temp:'TT', $
+		grad_Temp:'Temp', $
 		grad_Temp_abs:'grad_Temp', $
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
@@ -311,13 +326,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_Lorentz_abs:'F_Lorentz', $
 		W_Lorentz:['u', 'F_Lorentz'], $
 		Lorentz_angle:['j', 'B'], $
+		Lorentz_angle_deviation:'Lorentz_angle', $
 		HR_ohm:'j', $
 		HR_ohm_particle:['HR_ohm', 'n_rho'], $
 		HR_viscous:['u', 'rho'], $
 		HR_viscous_particle:['HR_viscous', 'n_rho'], $
+		A_abs:'A', $
 		A_x:'A', $
 		A_y:'A', $
 		A_z:'A', $
+		div_A:'A', $
 		B_abs:'B', $
 		B_2:'B', $
 		B_x:'B', $
@@ -326,6 +344,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dx:'A', $
 		dB_dy:'A', $
 		dB_dz:'A', $
+		grad_B:'B_abs', $
+		grad_B_abs:'B_abs', $
 		E:['u','A'], $
 		E_abs:'E', $
 		EMF:['u','A'], $
@@ -372,9 +392,12 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'u', $
 		u_z:'u', $
 		u_abs:'u', $
+		grad_u:'u_abs', $
+		grad_u_abs:'u_abs', $
+		E_therm:['Temp','n_rho'], $
 		E_kin_rho:['u','rho'], $
 		P_therm:['Temp', 'rho'], $
-		grad_P_therm:['P_therm', 'grad_Temp'], $
+		grad_P_therm:['P_therm','grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
 		c_sound:['P_therm', 'rho'], $
 		H_P_therm_x:['P_therm','grad_P_therm'], $
@@ -397,6 +420,12 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_u_z:['u_z', 'rho'], $
 		Rn_viscous:'u', $
 		Rn_mag:['u','B'], $
+		forcing:'ff', $
+		forcing_x:'forcing', $
+		forcing_y:'forcing', $
+		forcing_z:'forcing', $
+		forcing_abs:'forcing', $
+		q_abs:['Temp'], $
 		q_sat:['Temp', 'rho'], $
 		Spitzer_K_parallel:'Temp', $
 		Spitzer_q:['Temp'], $
@@ -434,9 +463,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dx:'', $
 		dy:'', $
 		dz:'', $
-		inv_dx:'', $
-		inv_dy:'', $
-		inv_dz:'', $
+		dV:['dx', 'dy', 'dz'], $
+		inv_dx:'dx', $
+		inv_dy:'dy', $
+		inv_dz:'dz', $
 		size_x:'', $
 		size_y:'', $
 		size_z:'', $
@@ -450,12 +480,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		depend = create_struct (depend, species_depend)
 	end
 
-	; Fill default values
+	; Return requested listings
 	if (keyword_set (all)) then return, create_struct (available, available_vectorfields, alias, additional)
 	if (keyword_set (avail)) then return, available
 	if (keyword_set (aliases)) then return, alias
 	if (keyword_set (add_quant)) then return, additional
 	if (keyword_set (vectorfields)) then return, available_vectorfields
+
+	; Fill default values
 	if (not keyword_set (check)) then check = create_struct (available)
 
 	if (size (check, /type) eq 7) then begin

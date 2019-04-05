@@ -6,60 +6,72 @@
   cvsid='$Id$',
 !  nt=645000, it1=250, isave=1000, it1d=5000, itorder=3, tmax=0.5
   nt=10, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.5
-  cdt=0.6, cdtv=0.6, dtmin=1e-13, cdts=0.6
+  cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.1
   dsnap=.0005, dvid=.00025, slice_position='m' 
   !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo? 
-  !dsnap=2., dvid=2., 
+  !dsnap=2., dvid=2., slice_position='m' 
   bcz = 's','s','ubs','ism','ism','cop','cop'
   ip=30
   lpencil_check=T
-  lreset_seed=F
-  lmaximal_cdt=T, lmaximal_cdtv=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
 /
 &hydro_run_pars
   lupw_uu=T
-  cdt_tauf=0.6
-  lcdt_tauf=T
-  ulev = 0.1
   Omega=25.0
+  cdt_tauf=1.0
+  lcdt_tauf=T
+  ulev = 20.0
+/
+&viscosity_run_pars
+  ivisc='nu-shock', 'nu-const'
+  nu_shock=4.0, nu=1e-5
 /
 &density_run_pars
   lupw_rho=T
-  diffrho=4e-3
-  diffrho_shock=1.
-  lmassdiff_fixkin=T
-  idiff='normal','shock'
+  idiff='shock'
+  diffrho_shock=1.0
+  lmassdiff_fix=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
   lupw_ss=T
-  iheatcond='chi-cspeed','shock'
-  chi_cs=6e-4,chi_shock=5.
+  iheatcond='shock'
+  chi_shock=4.0
+  lthdiff_Hmax=T
 /
 &interstellar_run_pars
-  cdt_tauc=0.6
-  lSN_scale_rad=T
   laverage_SN_heating=T
-  heatingfunction_scalefactor=0.25
-  heatingfunction_fadefactor=1.
+  lSN_scale_rad=T
+  N_mass=25.0
+  !rfactor should set minimum radius to 18pc
+  rfactor_SN=4.5
+  frac_kin=0.0
+  frac_ecr=0.0
+  mass_width_ratio=1.75
+  mass_profile='gaussian3'
+  energy_width_ratio=1.0
+  thermal_profile='gaussian2'
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T 
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
 !  lreset_ism_seed=T
 !  seed_reset=1245
+!! vary rate of SN with loss/gain of mass through boundary
+  lscale_SN_interval=T
+  iSNdx=1.65
+  eps_mass=0.05
+  SN_interval_rhom=6.66e-2
+  laverage_SNII_heating=F
+  laverage_SNI_heating=T
+  heatingfunction_scalefactor=5.0
+  heatingfunction_fadefactor=25.0
 /
 &shear_run_pars
-  Sshear=-25.0
-/
-&viscosity_run_pars
-  ivisc='nu-cspeed','nu-shock'
-  nu=4e-3,nu_shock=10.0
+  Sshear = -25.0
 /
 &shock_run_pars
-  ishock_max=3
-  lfix_Re_mesh=T
+  ishock_max=2
 /

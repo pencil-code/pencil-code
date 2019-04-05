@@ -28,6 +28,9 @@ if (-e "LOCK" || -e "data/LOCK") then
   echo ""
   echo "Will *not* start in this directory, as code may already be running."
   echo "(create an empty file NEVERLOCK to tell the code not to write a LOCK file)"
+  echo ""
+  echo "  rm LOCK; touch NEVERLOCK"
+  echo ""
   echo "Checking for NEWDIR file to tell us to run somewhere else:"
   if (-e "NEWDIR") then
     if (-s "NEWDIR") then
@@ -421,6 +424,31 @@ echo "AXEL2"
   #set $mpirun=mpirun
 
 #------------------------------------------
+else if ($hn =~ scylla* ) then
+  echo "******************************"
+  echo "scylla"
+  echo " ******************************"
+# if (! $?PENCIL_HOME) setenv PENCIL_HOME $HOME/pencil-code
+# if (-r $PENCIL_HOME/sourceme.csh) then
+#   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
+# endif
+    #set nnode = `expr $NSLOTS - 1`
+#   set nnode = 12
+#   set nprocpernode = `expr $ncpus / $nnode`
+#   #set npops = "-nodes=${nnode}x${nprocpernode}"
+#   set npops = "-np ${nnode} --cpus-per-proc ${nprocpernode}"
+#echo "AXEL1"
+#echo $nnode
+#echo $nprocpernode
+#echo $npops
+#echo "AXEL2"
+  #set $mpirun=/usr/local/mpich2/bin/mpirun
+  #set $mpirun=/export/shared/openmpi-1.8.4/bin/mpif90
+  set mpirun=mpirun
+  set datadir="data"
+  set npops = "-np $ncpus"
+
+#------------------------------------------
 else if ($hn =~ compute-*.local ) then
 #  echo "Warp cluster (warp) - Pittsburgh"
 #  echo "******************************"
@@ -741,7 +769,7 @@ else if ($hn =~ clogin*) then
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
-  set remote_top     = 1
+  set remote_top     = 0
   set local_binary = 0
 else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
   echo "sisu - CSC, Kajaani, Finland"
@@ -756,7 +784,23 @@ else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cds
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
-  set remote_top     = 1
+  set remote_top     = 0
+  set local_binary = 0
+#----------------------------------------------
+else if (($hn =~ s*) && ($USER =~ pr*)) then
+  echo "MareNostrum - BSC, Barcelona, Spain"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = " "
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
   set local_binary = 0
 #----------------------------------------------
 else if ($hn =~ daint*) then
@@ -1487,8 +1531,23 @@ else if ($hn =~ hy[0-9]*) then
 #---------------------------------------------------
 else if ($hn =~ dra[0-9]*) then
   echo "Draco system at Rechenzentrum Garching"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
   set mpirun = srun
-  set mpirunops2="-c $ncpus"
+#---------------------------------------------------
+else if ($hn =~ co[0-9]*) then
+  echo "Cobra system at Rechenzentrum Garching"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirun = srun
 #---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
@@ -1884,7 +1943,6 @@ endif
 ## End of machine specific settings
 ## ------------------------------
 
-
 ## MPI specific setup
 if ($mpi) then
   # Check mpiexec setting
@@ -2000,8 +2058,13 @@ endif
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
 set subdirs = ("allprocs" "reduced" "averages" "idl")
-set procdirs = \
-    `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
+set HDF5=`grep -Eci '^ *hdf5_io *= *hdf5_io_' src/Makefile.local`
+if ($HDF5) then
+  set procdirs = ()
+  set subdirs = ("allprocs" "slices" "averages" "idl")
+else
+  set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
+endif
 if ($local_disc) then
   if ($one_local_disc) then
     echo "Creating directory structure on common scratch disc"

@@ -690,6 +690,11 @@ pro cslice_load_ct, id
 
 	device, decomposed=(id eq 0)
 	if (id eq 1) then begin
+		; Inverse: white-black (negative-positive)
+		num_colors = !D.table_size
+		wedge = bytscl (-findgen (num_colors))
+		tvlct, wedge, wedge, wedge
+	end else if (id eq 2) then begin
 		; Doppler velocities: red-white-blue (negative-zero-positive)
 		num_colors = !D.table_size
 		mid = round (num_colors / 2)
@@ -701,8 +706,20 @@ pro cslice_load_ct, id
 		g[0:mid-1] = wedge         &  g[mid:*] = reverse (wedge)
 		b[0:mid-1] = wedge         &  b[mid:*] = num_colors-1
 		tvlct, r, g, b
+	end else if (id eq 3) then begin
+		; Doppler velocities: blue-white-red (negative-zero-positive)
+		num_colors = !D.table_size
+		mid = round (num_colors / 2)
+		wedge = bytscl (findgen (mid) / (mid-1) * (num_colors-1))
+		r = bytarr (num_colors)
+		g = bytarr (num_colors)
+		b = bytarr (num_colors)
+		r[0:mid-1] = wedge         &  r[mid:*] = num_colors-1
+		g[0:mid-1] = wedge         &  g[mid:*] = reverse (wedge)
+		b[0:mid-1] = num_colors-1  &  b[mid:*] = reverse (wedge)
+		tvlct, r, g, b
 	end else begin
-		loadct, (id - 2) > 0, /silent
+		loadct, (id - 4) > 0, /silent
 	end
 end
 
@@ -1082,12 +1099,16 @@ pro cslice_draw_averages, number
 	vert_label = (['X', 'Y', 'Z', 'r'])[selected_axis]
 	if (unit.default_length_str) then begin
 		vert_label += ' ['+unit.default_length_str+']'
+		unit_system = '-'
 	end else if (strupcase (param.unit_system) eq "SI") then begin
 		vert_label += ' [m]'
+		unit_system = 'SI'
 	end else if (strupcase (param.unit_system) eq "CGS") then begin
 		vert_label += ' [cm]'
+		unit_system = 'cgs'
 	end else begin
 		vert_label += ' [code units]'
+		unit_system = '-'
 	end
 
 	prefix = varfiles[selected_snapshot].title + "_" + (tag_names (set))[selected_cube]
@@ -1098,12 +1119,12 @@ pro cslice_draw_averages, number
 	if (selected_axis eq 3) then begin
 		coords = { x:coord.x*unit.default_length, y:coord.y*unit.default_length, z:coord.z*unit.default_length }
 		anchor = [ coords.x[px], coords.y[py], coords.z[pz] ]*unit.default_length
-		pc_radial_profile, cube, coord=coords, anchor=anchor, title=title, log=log_plot, horiz_label=vert_label, vert_label='['+param.unit_system+']', file_label=prefix, time=time
+		pc_radial_profile, cube, coord=coords, anchor=anchor, title=title, log=log_plot, horiz_label=vert_label, vert_label='['+unit_system+']', file_label=prefix, time=time
 	end else begin
 		if (selected_axis eq 0) then coords = coord.x
 		if (selected_axis eq 1) then coords = coord.y
 		if (selected_axis eq 2) then coords = coord.z
-		pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+		pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 	end
 end
 
@@ -1616,7 +1637,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	bsubcol	= WIDGET_BASE (bcot, /col)
 	loadct, get_names=table_names
-	table_names = [ 'original', 'red-white-blue', table_names ]
+	table_names = [ 'original', 'inverse', 'red-white-blue', 'blue-white-red', table_names ]
 	tmp	= WIDGET_LABEL (bsubcol, value='color table:', frame=0)
 	coltab	= WIDGET_DROPLIST (bsubcol, value=table_names, uvalue='COLTAB', EVENT_PRO=cslice_event)
 

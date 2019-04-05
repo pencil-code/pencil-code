@@ -5,7 +5,8 @@ if !d.name eq 'PS' then begin
 end
 ;
 ;  mv idl.ps fig/ptimes.ps
-;  convert fig/ptimes.ps ~/Figures/Pencil/2015/ptimes.png
+;  convert fig/ptimes.ps /D/Print/PCUserMeeting2017/ptimes.png
+;  convert fig/ptimes.ps /D/Print/PC18/ptimes.png
 ;
 !p.charsize=1.7
 !x.margin=[6.1,.5]
@@ -21,7 +22,7 @@ o=a(3,*)
 print,n
 print
 print,total(n)
-plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2016.5]
+plot,y,n,ps=10,yr=[0,64],xr=[2002.8,2018.7]
 oplot,y,c,ps=10,col=122
 oplot,y,o,ps=10,col=55
 print,'total(n)=',fix(total(n))
@@ -29,6 +30,6 @@ print,'total(c)=',fix(total(c))
 print,'total(o)=',fix(total(o)),' ',nint(100*total(o)/total(n)),'%'
 ;
 siz=2.0
-xyouts,2003.4,58,'w/o Brandenburg',col=55,siz=siz
-xyouts,2003.4,52,'comp & ref papers',col=122,siz=siz
+xyouts,2003.4,58,'w/o Brandenburg',col=55,siz=siz*.9
+xyouts,2003.4,52,'comp & ref papers',col=122,siz=siz*.9
 END

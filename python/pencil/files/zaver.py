@@ -90,7 +90,6 @@ def read_zaver(datadir='data/',format='native',point=(-1,-1),proc=-1,
             if ndx >= tindex[0] and N.mod(ndx,tindex[2])==0:
                 if raw_data >= trange[0]:
                     t = N.concatenate((t,raw_data))
-             
             try:
                 raw_data = infile.fort_read(precision,shape=zaver_loc_shape)
             except ValueError:

@@ -30,13 +30,13 @@ module Density
 !
   use Cparam
   use Cdata
-  use EquationOfState, only: beta_glnrho_global
   use General, only: keep_compiler_quiet
   use Messages
 !
   implicit none
 !
   include 'density.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   character(len=labellen), dimension(ninit) :: initrho = 'nothing'
   real, dimension(ninit) :: amplrho = 0.0
@@ -47,6 +47,7 @@ module Density
   real :: density_floor = 0.0
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix
 !
@@ -409,7 +410,7 @@ module Density
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: fdiff, del2rhos, penc
+      real, dimension(nx) :: fdiff, del2rhos, penc, src_density
       integer :: j
 !
 !  Start the clock for this procedure.
@@ -425,7 +426,10 @@ module Density
 !
       penc = p%uu(:,3) * dlnrho0dz(n)
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ugrhos - p%rhos * (p%divu + penc)
-      if (lfirst .and. ldt) src_density = src_density + abs(penc)
+      if (lfirst .and. ldt) then
+        src_density = abs(penc)
+        maxsrc = max(maxsrc, src_density)
+      endif
 !
       fdiff = 0.0
 !
@@ -629,6 +633,7 @@ module Density
 !  27-feb-13/ccyang: coded.
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
@@ -716,13 +721,18 @@ module Density
         call parse_name(iname, cnamexy(iname), cformxy(iname), 'sigma', idiag_sigma)
       enddo zaver
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='rho'.or.cnamev=='drho') cformv='DEFINED'
+      endif
+!
 !  Write column where which density variable is stored.
 !
-      indices: if (lwr) then
-        write(3,*) 'nname = ', nname
-        write(3,*) 'ilnrho = 0'
-        write(3,*) 'irho = ', irho
-      endif indices
+      if (lwr) then
+        call farray_index_append('ilnrho',0)
+        call farray_index_append('irho',irho)
+      endif
 !
     endsubroutine rprint_density
 !***********************************************************************
@@ -732,27 +742,23 @@ module Density
 !
 !  27-feb-13/ccyang: coded.
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
 !
       var: select case (trim(slices%name))
 !
-      case ('drho') var
-        slices%yz = f(ix_loc, m1:m2, n1:n2, irho)
-        slices%xz = f(l1:l2, iy_loc, n1:n2, irho)
-        slices%xy = f(l1:l2, m1:m2, iz_loc, irho)
-        slices%xy2 = f(l1:l2, m1:m2, iz2_loc, irho)
-        if (lwrite_slice_xy3) slices%xy3 = f(l1:l2, m1:m2, iz3_loc, irho)
-        if (lwrite_slice_xy4) slices%xy4 = f(l1:l2, m1:m2, iz4_loc, irho)
-        slices%ready = .true.
+      case ('drho');  call assign_slices_scal(slices,f,irho)
 !
       case ('rho') var
-        slices%yz = (1.0 + f(ix_loc, m1:m2, n1:n2, irho)) * spread(rho0z(n1:n2), 1, ny)
-        slices%xz = (1.0 + f(l1:l2, iy_loc, n1:n2, irho)) * spread(rho0z(n1:n2), 1, nx)
-        slices%xy = (1.0 + f(l1:l2, m1:m2, iz_loc, irho)) * rho0z(iz_loc)
-        slices%xy2 = (1.0 + f(l1:l2, m1:m2, iz2_loc, irho)) * rho0z(iz2_loc)
-        if (lwrite_slice_xy3) slices%xy3 = (1.0 + f(l1:l2, m1:m2, iz3_loc, irho)) * rho0z(iz3_loc)
-        if (lwrite_slice_xy4) slices%xy4 = (1.0 + f(l1:l2, m1:m2, iz4_loc, irho)) * rho0z(iz4_loc)
+        if (lwrite_slice_yz)  slices%yz  = (1.+f(ix_loc,m1:m2, n1:n2,  irho))*spread(rho0z(n1:n2),1,ny)
+        if (lwrite_slice_xz)  slices%xz  = (1.+f(l1:l2, iy_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
+        if (lwrite_slice_xz2) slices%xz2 = (1.+f(l1:l2, iy2_loc,n1:n2,  irho))*spread(rho0z(n1:n2),1,nx)
+        if (lwrite_slice_xy)  slices%xy  = (1.+f(l1:l2, m1:m2, iz_loc, irho))*rho0z(iz_loc)
+        if (lwrite_slice_xy2) slices%xy2 = (1.+f(l1:l2, m1:m2, iz2_loc,irho))*rho0z(iz2_loc)
+        if (lwrite_slice_xy3) slices%xy3 = (1.+f(l1:l2, m1:m2, iz3_loc,irho))*rho0z(iz3_loc)
+        if (lwrite_slice_xy4) slices%xy4 = (1.+f(l1:l2, m1:m2, iz4_loc,irho))*rho0z(iz4_loc)
         slices%ready = .true.
 !
       endselect var
@@ -837,13 +843,13 @@ module Density
 !
     endsubroutine boussinesq
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
-  endsubroutine calc_ldensity_pars
+  endsubroutine density_after_boundary
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
@@ -918,5 +924,15 @@ module Density
       if (lslope_limit_diff) call fatal_error('update_char_vel_density', 'not implemented')
 !
     endsubroutine update_char_vel_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine impose_density_ceiling
 !***********************************************************************
 endmodule Density

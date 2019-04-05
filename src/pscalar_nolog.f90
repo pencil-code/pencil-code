@@ -47,13 +47,14 @@ module Pscalar
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
   character (len=labellen) :: initcc='nothing', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
+  integer :: ll_sh=0, mm_sh=0, n_xprof=0
 !
   namelist /pscalar_init_pars/ &
       initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
       cc_left, cc_right, &
       epsilon_cc, widthcc, cc_min, cc_const, initlncc, initlncc2, ampllncc, &
       ampllncc2, kx_lncc, ky_lncc, kz_lncc, radius_lncc, epsilon_lncc, &
-      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh
+      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh, ll_sh, mm_sh, n_xprof
 !
 !  Run parameters.
 !
@@ -160,12 +161,18 @@ module Pscalar
 !  initialise passive scalar field; called from start.f90
 !
 !   6-jul-2001/axel: coded
+!  27-jun-2017/MR: added initial condition: spherical harmonic in \theta,\phi,
+!                  sinusoidal in r with frequency n_xprof
 !
       use Sub
+      use General, only: yin2yang_coors
       use Initcond
       use InitialCondition, only: initial_condition_lncc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: tmpx
+      real, dimension(:,:), allocatable :: yz
+      integer :: iyz
 !
       ! for the time being, keep old name for backward compatibility
       if (initlncc/='impossible') initcc=initlncc
@@ -238,6 +245,31 @@ module Pscalar
         case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,'y')
         case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,'z')
         case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
+        case('spher-harm')
+          if (.not.lspherical_coords) call fatal_error("init_lncc", &
+              "spher-harm only meaningful for spherical coordinates"//trim(initcc))
+          !tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1)) + (xyz1(1) - 0.5*xyz0(1))*x(l1:l2)         ! S(r)
+          tmpx=sin((2.*pi/(Lxyz(1))*n_xprof)*(x(l1:l2)-xyz0(1)))
+
+          if (lyang) then
+            allocate(yz(2,ny*nz))
+            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+            iyz=1
+            do m=m1,m2
+              do n=n1,n2
+!if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
+                f(l1:l2,m,n,icc) = amplcc*tmpx*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh,mm_sh)
+                iyz=iyz+1
+              enddo
+            enddo
+          else
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,icc) = amplcc*tmpx*ylm(ll_sh,mm_sh)
+              enddo
+            enddo
+          endif
+
         case default; call fatal_error('init_lncc','bad initcc='//trim(initcc))
       endselect
 !
@@ -460,7 +492,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
+      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu,diffus_pscalar,diffus_pscalar3
       real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
@@ -621,6 +653,8 @@ module Pscalar
         if (lfirst.and.ldt) then
           diffus_pscalar =(pscalar_diff+tensor_pscalar_diff)*dxyz_2
           diffus_pscalar3=pscalar_diff_hyper3*dxyz_6
+          maxdiffus=max(maxdiffus,diffus_pscalar)
+          maxdiffus3=max(maxdiffus3,diffus_pscalar3)
         endif
 !
 !  Special contributions to this module are called here.
@@ -760,6 +794,7 @@ module Pscalar
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -875,16 +910,22 @@ module Pscalar
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'ccmxy',idiag_ccmxy)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='cc'.or.cnamev=='lncc') cformv='DEFINED'
+      endif
+!
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'ilncc=0'
+        call farray_index_append('ilncc', 0)
         if (npscalar > 1) then
           write(fmt,'(I2)') npscalar - 1
           fmt = '(1X, A, ' // trim(fmt) // '(I2, A2), I2, A)'
           write(3,fmt) 'icc = [', (i, ', ', i = icc, icc+npscalar-2), icc+npscalar-1, ']'
         else
-          write(3,*) 'icc = ', icc
+          call farray_index_append('icc', icc)
         endif
       endif
 !
@@ -897,52 +938,27 @@ module Pscalar
 !  26-jul-06/tony: coded
 !  31-jan-11/ccyang: generalized to multiple scalars
 !
+      use Slices_methods, only: assign_slices_vec, process_slices, log2d
+
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
-!
-      integer :: icc1
+      character(LEN=labellen) :: sname
 !
 !  Loop over slices.
 !
-      select case (trim(slices%name))
+      sname=trim(slices%name)
 !
-!  Passive scalar.
+!  Passive scalar or logarithm of it..
 !
-        case ('cc')
-          if (0 <= slices%index .and. slices%index < npscalar) then
-            icc1 = icc + slices%index
-            slices%index = slices%index + 1
-            slices%yz = f(ix_loc,m1:m2 ,n1:n2  ,icc1)
-            slices%xz = f(l1:l2 ,iy_loc,n1:n2  ,icc1)
-            slices%xy = f(l1:l2 ,m1:m2 ,iz_loc ,icc1)
-            slices%xy2= f(l1:l2 ,m1:m2 ,iz2_loc,icc1)
-            if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,icc1)
-            if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,icc1)
-            if (lwrite_slice_xz2) slices%xz2 = f(l1:l2,iy2_loc,n1:n2,icc1)
-            slices%ready = .true.
-          else
-            slices%ready = .false.
-          endif
+      if (sname=='cc'.or.sname=='lncc') then
+
+        call assign_slices_vec(slices,f,icc,npscalar)
 !
 !  Logarithmic passive scalar.
 !
-        case ('lncc')
-          if (0 <= slices%index .and. slices%index < npscalar) then
-            icc1 = icc + slices%index
-            slices%index = slices%index + 1
-            slices%yz = alog(f(ix_loc,m1:m2 ,n1:n2  ,icc1))
-            slices%xz = alog(f(l1:l2 ,iy_loc,n1:n2  ,icc1))
-            slices%xy = alog(f(l1:l2 ,m1:m2 ,iz_loc ,icc1))
-            slices%xy2= alog(f(l1:l2 ,m1:m2 ,iz2_loc,icc1))
-            if (lwrite_slice_xy3) slices%xy3 = alog(f(l1:l2,m1:m2,iz3_loc,icc1))
-            if (lwrite_slice_xy4) slices%xy4 = alog(f(l1:l2,m1:m2,iz4_loc,icc1))
-            if (lwrite_slice_xz2) slices%xz2 = alog(f(l1:l2,iy2_loc,n1:n2,icc1))
-            slices%ready = .true.
-          else
-            slices%ready = .false.
-          endif
+        if (sname=='lncc') call process_slices(slices,log2d)       
 !
-      endselect
+      endif
 !
     endsubroutine get_slices_pscalar
 !***********************************************************************

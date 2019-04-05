@@ -1,0 +1,11 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/selfgravdisk-logspirals
+SVN Id:
+    $Id $
+Maintainer:
+    Wladimir Lyra <wladimir.lyra/gmail[dot]com>
+Added:
+    2016-dec-10
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:

@@ -1,6 +1,6 @@
 # interpolation.py
+#
 # Written by Simon Candelaresi (iomsn1@gmail.com)
-
 """
 Interpolation routines for scalar and vector fields.
 """
@@ -14,7 +14,7 @@ def vec_int(xyz, var, field, interpolation='trilinear'):
 
     call signature:
 
-        vecInt(xyz, var, field, interpolation = 'weighted')
+        vecInt(xyz, var, field, interpolation = 'mean')
 
     Keyword arguments:
 

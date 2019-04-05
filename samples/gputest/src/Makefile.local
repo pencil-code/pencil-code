@@ -1,0 +1,17 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+LDMPI=-lmpi
+
+MPICOMM   =   mpicomm
+IO        =   io_dist
+GPU       =   gpu_astaroth
+
+HYDRO     =   hydro
+DENSITY   =   density
+EOS       = noeos
+
+FORCING   = noforcing
+SHEAR     = noshear

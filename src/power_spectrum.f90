@@ -25,26 +25,39 @@
 module power_spectrum
 !
   use Cdata
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, warning, fatal_error
 !
   implicit none
 !
   include 'power_spectrum.h'
 !
   logical :: lintegrate_shell=.true., lintegrate_z=.true., lcomplex=.false.
+  logical :: lhalf_factor_in_GW=.false.
   integer :: firstout = 0
 !
   character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
-  integer :: inz=0, n_segment_x=1, n_segment_y=1, ndelx
+  integer :: inz=0, n_segment_x=1, ndelx
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
-      inz, n_segment_x
+      inz, n_segment_x, lhalf_factor_in_GW
 !
   contains
+!***********************************************************************
+    subroutine initialize_power_spectrum
+!
+      !!! the following warnings should become fatal errors
+      if (nxgrid > nx) call warning ('power_spectrum', &
+          "Part of the high-frequency spectrum are lost because nxgrid/= nx.")
+      if (((dx /= dy) .and. ((nxgrid-1)*(nxgrid-1) /= 0)) .or. &
+          ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
+          call warning ('power_spectrum', &
+          "Shell-integration will be wrong; set dx=dy=dz to fix this.")
+!
+    endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
 !
@@ -240,6 +253,7 @@ module power_spectrum
   do ivec=1,3
      !
      if (trim(sp)=='u') then
+        if (iuu==0) call fatal_error('power','iuu=0')
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
      elseif (trim(sp)=='r2u') then
         a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)*exp(f(l1:l2,m1:m2,n1:n2,ilnrho)/2.)
@@ -280,7 +294,7 @@ module power_spectrum
      do ikz=1,nz
         do iky=1,ny
            do ikx=1,nx
-              k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+              k=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
               if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                    +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
            enddo
@@ -489,7 +503,7 @@ module power_spectrum
     res=mod(nxgrid,n_segment_x)
     la=0
     do i=1,n_segment_x
-      le=la+1; la=la+ndelx 
+      le=la+1; la=la+ndelx
       if (res>0) then
         la=la+1
         res=res-1
@@ -899,7 +913,7 @@ module power_spectrum
   real, dimension(nygrid) :: ky
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
-  logical, save :: lwrite_krms=.true.
+  logical, save :: lwrite_krms=.true., lwrite_krms_GWs=.false.
 !
 !  passive scalar contributions (hardwired for now)
 !
@@ -909,8 +923,7 @@ module power_spectrum
 !
 !  identify version
 !
-  if (lroot .AND. ip<10) call svn_id( &
-       "$Id$")
+  if (lroot .AND. ip<10) call svn_id("$Id$")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -938,6 +951,7 @@ module power_spectrum
     !  For "mag", calculate spectra of <bk^2> and <ak.bk>
     !
     if (sp=='kin') then
+      if (iuu==0) call fatal_error('powerhel','iuu=0')
       do n=n1,n2
         do m=m1,m2
           call curli(f,iuu,bbi,ivec)
@@ -953,21 +967,67 @@ module power_spectrum
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+      if (iaa==0) call fatal_error('powerhel','iaa=0')
+      if (lmagnetic) then
+        do n=n1,n2
+          do m=m1,m2
+            call curli(f,iaa,bbi,ivec)
+            im=m-nghost
+            in=n-nghost
+            b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
+          enddo
         enddo
-      enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
+        a_im=0.
+        b_im=0.
+      else
+        if (headt) print*,'magnetic power spectra only work if lmagnetic=T'
+      endif
+!
+!  Gravitational wave power spectra (breathing mode; diagonal components of gij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWd') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hii)
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gii)
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave power spectra (off-diagonal components of gij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWe') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','igij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  !(corresponds to hij)
+      b_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  !(corresponds to gij)
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave power spectra (breathing mode; diagonal components of hij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWf') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','ihij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec-1)  !(corresponds to gii)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec-1)  !(corresponds to hii)
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave power spectra (off-diagonal components of hij)
+!  Also compute production of |hij|^2, i.e., hij*gij^*
+!
+    elseif (sp=='GWg') then
+      if (ihij==0.or.igij==0) call fatal_error('powerhel','igij=0 or igij=0')
+      a_re=f(l1:l2,m1:m2,n1:n2,igij+ivec+2)  !(corresponds to gij)
+      b_re=f(l1:l2,m1:m2,n1:n2,ihij+ivec+2)  !(corresponds to hij)
       a_im=0.
       b_im=0.
 !
 !  spectrum of u.b
 !
     elseif (sp=='u.b') then
+      if (iuu==0.or.iaa==0) call fatal_error('powerhel','iuu or iaa=0')
       do n=n1,n2
         do m=m1,m2
           call curli(f,iaa,bbi,ivec)
@@ -981,7 +1041,7 @@ module power_spectrum
       b_im=0.
 !
 !  vertical magnetic power spectra (spectra of |Bz|^2 and Az.Bz)
-!  Do as before, but compute only for ivec=0.
+!  Do as before, but compute only for ivec=3.
 !  Arrays will still be zero otherwise.
 !
     elseif (sp=='mgz') then
@@ -997,22 +1057,27 @@ module power_spectrum
         a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !(corresponds to vector potential)
         a_im=0.
         b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
       endif
 !
-!  spectrum of u.b
+!  spectrum of uzs and s^2
 !
-    elseif (sp=='u.b') then
-      do n=n1,n2
-        do m=m1,m2
-          call curli(f,iaa,bbi,ivec)
-          im=m-nghost
-          in=n-nghost
-          b_re(:,im,in)=bbi  !(this corresponds to magnetic field)
-        enddo
-      enddo
-      a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  !(this corresponds to velocity)
-      a_im=0.
-      b_im=0.
+    elseif (sp=='uzs') then
+      if (ivec==3) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iuz)  !(this corresponds to uz)
+        b_re=f(l1:l2,m1:m2,n1:n2,iss)  !(this corresponds to ss)
+        a_im=0.
+        b_im=0.
+      else
+        a_re=0.
+        b_re=0.
+        a_im=0.
+        b_im=0.
+      endif
 !
 !  magnetic energy spectra based on fields with Euler potentials
 !
@@ -1337,6 +1402,661 @@ module power_spectrum
   endif
   !
   endsubroutine powerLor
+!***********************************************************************
+  subroutine powerEMF(f,sp)
+!
+!  Calculate power and helicity spectra (on spherical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   3-oct-10/axel: added compution of krms (for realisability condition)
+!  22-jan-13/axel: corrected for x parallelization
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
+  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im, d_re,d_im
+  real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
+  real, dimension(nx,3,3) :: aij,bij
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum,spectrum_sum
+ real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms=.true.
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  !
+  !  compute EMFentz force
+  !
+  do m=m1,m2
+  do n=n1,n2
+     uu=f(l1:l2,m,n,iux:iuz)
+     aa=f(l1:l2,m,n,iax:iaz)
+     call gij(f,iaa,aij,1)
+     call gij_etc(f,iaa,aa,aij,bij)
+     call curl_mn(aij,bb,aa)
+     call curl_mn(bij,jj,bb)
+     call cross_mn(uu,bb,uxb)
+     call cross_mn(uu,jj,uxj)
+     EMF(l1:l2,m,n,:)=uxb
+     EMB(l1:l2,m,n,:)=uxj
+     JJJ(l1:l2,m,n,:)=jj
+     BBB(l1:l2,m,n,:)=bb
+  enddo
+  enddo
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+!
+!  Electromotive force spectra (spectra of L*L^*)
+!
+    if (sp=='EMF') then
+      a_re=EMF(l1:l2,m1:m2,n1:n2,ivec)
+      b_re=JJJ(l1:l2,m1:m2,n1:n2,ivec)
+      c_re=EMB(l1:l2,m1:m2,n1:n2,ivec)
+      d_re=BBB(l1:l2,m1:m2,n1:n2,ivec)
+      a_im=0.
+      b_im=0.
+      c_im=0.
+      d_im=0.
+!
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+    call fft_xyz_parallel(c_re,c_im)
+    call fft_xyz_parallel(d_re,d_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+            spectrum(k+1)=spectrum(k+1) &
+               +c_re(ikx,iky,ikz)*d_re(ikx,iky,ikz) &
+               +c_im(ikx,iky,ikz)*d_im(ikx,iky,ikz)
+            spectrumhel(k+1)=spectrumhel(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+            if (lwrite_krms) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    !
+    !spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
+  endif
+  !
+  endsubroutine powerEMF
+!***********************************************************************
+  subroutine powerTra(f,sp)
+!
+!  Calculate power and helicity spectra (on spherical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   3-oct-10/axel: added compution of krms (for realisability condition)
+!  22-jan-13/axel: corrected for x parallelization
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn, div_mn, multsv_mn, &
+        h_dot_grad_vec
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my,mz,3) :: Adv, Str, BBB
+  real, dimension(nx,ny,nz) :: a_re,a_im, b_re,b_im, c_re,c_im
+  real, dimension(nx,3) :: uu, aa, bb, divu, bbdivu, bgradu, ugradb
+  real, dimension(nx,3,3) :: uij, aij, bij
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms=.true.
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  k2m=0.
+  nks=0.
+  spectrum=0.
+  spectrum_sum=0.
+  spectrumhel=0.
+  spectrumhel_sum=0.
+  !
+  !  compute EMF transfer terms. Following Rempel (2014), we split
+  !  curl(uxB) = -[uj*dj(Bi)+.5*Bi(divu)] -[-Bj*dj(ui)+.5*Bi(divu)]
+  !            =  ---- advection --------  ------ stretching ------
+  !
+  do m=m1,m2
+  do n=n1,n2
+     uu=f(l1:l2,m,n,iux:iuz)
+     aa=f(l1:l2,m,n,iax:iaz)
+     call gij(f,iuu,uij,1)
+     call gij(f,iaa,aij,1)
+     call gij_etc(f,iaa,aa,aij,bij)
+     call div_mn(uij,divu,uu)
+     call curl_mn(aij,bb,aa)
+     call multsv_mn(divu,bb,bbdivu)
+     call h_dot_grad_vec(uu,bij,bb,ugradb)
+     call h_dot_grad_vec(bb,uij,uu,bgradu)
+     Adv(l1:l2,m,n,:)=+ugradb+.5*bbdivu
+     Str(l1:l2,m,n,:)=-bgradu+.5*bbdivu
+     BBB(l1:l2,m,n,:)=bb
+  enddo
+  enddo
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+!
+!  Electromotive force transfer spectra
+!
+    if (sp=='Tra') then
+      a_re=BBB(l1:l2,m1:m2,n1:n2,ivec)
+      b_re=Adv(l1:l2,m1:m2,n1:n2,ivec)
+      c_re=Str(l1:l2,m1:m2,n1:n2,ivec)
+      a_im=0.
+      b_im=0.
+      c_im=0.
+!
+    endif
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+    call fft_xyz_parallel(c_re,c_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!
+            spectrum(k+1)=spectrum(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            spectrumhel(k+1)=spectrumhel(k+1) &
+               +a_re(ikx,iky,ikz)*c_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*c_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+            if (lwrite_krms) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+!
+!  compute krms only once
+!
+  if (lwrite_krms) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    !
+    !spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    if (lwrite_krms) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms=.false.
+    endif
+  endif
+  !
+  endsubroutine powerTra
+!***********************************************************************
+  subroutine powerGWs(f,sp)
+!
+!  Calculate power and helicity spectra (on spherical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   3-oct-10/axel: added compution of krms (for realisability condition)
+!  22-jan-13/axel: corrected for x parallelization
+!
+    use Fourier, only: fft_xyz_parallel, fourier_transform
+    use Mpicomm, only: mpireduce_sum
+    use SharedVariables, only: get_shared_variable
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn
+    use Special, only: specGWs, specGWshel, specGWh, specGWhhel, &
+                       specGWm, specGWmhel, specStr, specStrhel
+!
+  integer, parameter :: nk=nxgrid/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  real :: k2
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx,3) :: aa,bb,jj,jxb
+  real, dimension(nx,3,3) :: aij,bij
+  real, dimension(nk) :: nks=0.,nks_sum=0.
+  real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nk) :: spectrumhel,spectrumhel_sum
+! real, dimension(:), pointer :: specGWs   ,specGWh   ,specStr
+! real, dimension(:), pointer :: specGWshel,specGWhhel,specStrhel
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  logical, save :: lwrite_krms_GWs=.false.
+  real :: sign_switch, kk1, kk2, kk3
+!
+!  identify version
+!
+  if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+! Select cases where spectra are precomputed
+!
+  if (iggXim>0.or.iggTim>0) then
+    if (sp=='GWs') then
+!     call get_shared_variable('specGWs   ', specGWs   , caller='powerGWs')
+!     call get_shared_variable('specGWshel', specGWshel, caller='powerGWs')
+      spectrum   =specGWs
+      spectrumhel=specGWshel
+    endif
+    if (sp=='GWh') then
+!     call get_shared_variable('specGWh   ', specGWh   , caller='powerGWs')
+!     call get_shared_variable('specGWhhel', specGWhhel, caller='powerGWs')
+      spectrum   =specGWh
+      spectrumhel=specGWhhel
+    endif
+    if (sp=='GWm') then
+!     call get_shared_variable('specGWm   ', specGWm   , caller='powerGWs')
+!     call get_shared_variable('specGWmhel', specGWmhel, caller='powerGWs')
+      spectrum   =specGWm
+      spectrumhel=specGWmhel
+    endif
+    if (sp=='Str') then
+!     call get_shared_variable('specStr   ', specStr   , caller='powerGWs')
+!     call get_shared_variable('specStrhel', specStrhel, caller='powerGWs')
+      spectrum   =specStr
+      spectrumhel=specStrhel
+    endif
+  else
+!
+!  Initialize power spectrum to zero. The following lines only apply to
+!  the case where special/gravitational_waves_hij6.f90 is used.
+!
+    k2m=0.
+    nks=0.
+    spectrum=0.
+    spectrumhel=0.
+!
+!  Define wave vector, defined here for the *full* mesh.
+!  Each processor will see only part of it.
+!  Ignore *2*pi/Lx factor, because later we want k to be integers
+!
+    kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+    ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+    kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+!
+!  Gravitational wave tensor (spectra of g*g^* for gT and gX, where g=hdot)
+!
+    if (sp=='GWs') then
+      if (iggX>0.and.iggT>0.and.iggXim==0.and.iggTim==0) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iggX)
+        b_re=f(l1:l2,m1:m2,n1:n2,iggT)
+      else
+        call fatal_error('powerGWs','must have lggTX_as_aux=T')
+      endif
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave tensor (spectra of h*h^* for hT and hX)
+!
+    elseif (sp=='GWh') then
+      if (ihhX>0.and.ihhXim==0) then
+        a_re=f(l1:l2,m1:m2,n1:n2,ihhX)
+        b_re=f(l1:l2,m1:m2,n1:n2,ihhT)
+      else
+        call fatal_error('powerGWs','must have lhhTX_as_aux=T')
+      endif
+      a_im=0.
+      b_im=0.
+!
+!  Gravitational wave stress tensor (only if lStress_as_aux is requested)
+!  Note: for aux_stress='d2hdt2', the stress is replaced by GW_rhs.
+!
+    elseif (sp=='Str') then
+      if (iStressX>0.and.iStressXim==0) then
+        a_re=f(l1:l2,m1:m2,n1:n2,iStressX)
+        b_re=f(l1:l2,m1:m2,n1:n2,iStressT)
+      else
+        call fatal_error('powerGWs','must have lStress_as_aux=T')
+      endif
+      a_im=0.
+      b_im=0.
+    else
+      call fatal_error('powerGWs','no valid spectrum (=sp) chosen')
+    endif
+!
+!  Doing the Fourier transform
+!
+    !call fft_xyz_parallel(a_re,a_im)
+    !call fft_xyz_parallel(b_re,b_im)
+    call fourier_transform(a_re,a_im)
+    call fourier_transform(b_re,b_im)
+!
+!  integration over shells
+!
+    if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+! do ikz=1,nz
+!   do iky=1,ny
+!     do ikx=1,nx
+    do iky=1,nz
+      do ikx=1,ny
+        do ikz=1,nx
+          k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+          k=nint(sqrt(k2))
+          if (k>=0 .and. k<=(nk-1)) then
+!
+!  Switch sign for the same k vectors for which we also
+!  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
+!
+            kk1=kx(ikx+ipy*ny)
+            kk2=ky(iky+ipz*nz)
+            kk3=kz(ikz+ipx*nx)
+!
+            !kk1=kx(ikx+ipx*nx)
+            !kk2=ky(iky+ipy*ny)
+            !kk3=kz(ikz+ipz*nz)
+!
+!  possibility of swapping the sign
+!
+             sign_switch=1.
+             if (kk3<0.) then
+               sign_switch=-1.
+             elseif (kk3==0.) then
+               if (kk2<0.) then
+                 sign_switch=-1.
+               elseif (kk2==0.) then
+                 if (kk1<0.) then
+                   sign_switch=-1.
+                 endif
+               endif
+             endif
+!
+!  sum energy and helicity spectra
+!
+            spectrum(k+1)=spectrum(k+1) &
+               +a_re(ikz,ikx,iky)**2 &
+               +a_im(ikz,ikx,iky)**2 &
+               +b_re(ikz,ikx,iky)**2 &
+               +b_im(ikz,ikx,iky)**2
+            spectrumhel(k+1)=spectrumhel(k+1)+2*sign_switch*( &
+               +a_im(ikz,ikx,iky)*b_re(ikz,ikx,iky) &
+               -a_re(ikz,ikx,iky)*b_im(ikz,ikx,iky))
+!
+!  compute krms only once
+!
+            if (lwrite_krms_GWs) then
+              k2m(k+1)=k2m(k+1)+k2
+              nks(k+1)=nks(k+1)+1.
+            endif
+!
+!  end of loop through all points
+!
+          endif
+        enddo
+      enddo
+    enddo
+!
+!  end from communicated versus computed spectra
+!
+  endif
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+if (ip<7) print*,'AXEL6: iproc,spec=',iproc,sp,spectrum
+  call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+if (ip<7) print*,'AXEL7: iproc,spec=',iproc,sp,spectrum_sum
+!
+!  compute krms only once
+!
+  if (lwrite_krms_GWs) then
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+    if (iproc/=root) lwrite_krms_GWs=.false.
+  endif
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (lroot) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    !
+    !  half factor or not?
+    !  By default (lhalf_factor_in_GW=F), we have total(S) = gg2m.
+    !  Otherwise we have total(S) = (1/2) * gg2m.
+    !
+    if (lhalf_factor_in_GW) then
+      spectrum_sum=.5*spectrum_sum
+      spectrumhel=.5*spectrumhel
+    endif
+    !
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrum_sum
+    endif
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+    if (lformat) then
+      do k = 1, nk
+        write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+      enddo
+    else
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumhel_sum
+    endif
+    close(1)
+    !
+    if (lwrite_krms_GWs) then
+      krms=sqrt(k2m_sum/nks_sum)
+      open(1,file=trim(datadir)//'/power_krms_GWs.dat',position='append')
+      write(1,'(1p,8e10.2)') krms
+      close(1)
+      lwrite_krms_GWs=.false.
+    endif
+  endif
+  !
+  endsubroutine powerGWs
 !***********************************************************************
   subroutine powerscl(f,sp)
 !
@@ -2159,6 +2879,7 @@ endsubroutine pdf
   integer :: i,k,ikx,iky,ikz,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz,3) :: a1,b1
+  real, dimension(nx,3) :: tmp_a1
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -2187,7 +2908,12 @@ endsubroutine pdf
   !
   if (trim(sp)=='j') then
      ! compute j = curl(curl(x))
-     call del2v_etc(f,iaa,curlcurl=a1)
+     do n=n1,n2
+       do m=m1,m2
+         call del2v_etc(f,iaa,curlcurl=tmp_a1)
+         a1(:,m-nghost,n-nghost,:) = tmp_a1
+       enddo
+     enddo
   else
      print*,'There are no such sp=',trim(sp)
   endif

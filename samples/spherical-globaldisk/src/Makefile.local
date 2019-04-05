@@ -6,6 +6,15 @@
 MPICOMM   =   mpicomm
 GLOBAL    = noglobal
 
+#================================
+# Please uncomment one IO option:
+#================================
+IO        = io_dist
+#--------------------------------
+#IO        = io_hdf5
+#HDF5_IO   =   hdf5_io_parallel
+#================================
+
 HYDRO     =   hydro
 DENSITY   =   density
 ENTROPY   = noentropy

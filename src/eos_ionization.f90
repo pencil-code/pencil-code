@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED rho_anel
+! PENCILS PROVIDED rho_anel; rho1gpp(3)
 !
 !***************************************************************
 module EquationOfState
@@ -37,7 +37,8 @@ module EquationOfState
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
-  integer :: l,icp,ics
+!  integer :: icp,ics
+  integer :: ics
 ! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
@@ -50,27 +51,21 @@ module EquationOfState
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=impossible, rho0=impossible, cp=impossible, cv=impossible
   real :: cs20=impossible, lnrho0=impossible
-  logical :: lcalc_cp = .false., lpp_as_aux=.false., lcp_as_aux=.false.
+  logical :: lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
 ! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 ! run parameters
   namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Not sure this should exist either...
-  real :: cs2cool=0.
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  integer :: isothtop=0
   integer :: imass=1
-  real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
-!
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
 !
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+  logical :: lpres_grad=.false.
 !
   contains
 !***********************************************************************
@@ -115,7 +110,13 @@ module EquationOfState
 !
 !  24-jun-06/tobi: coded
 !
-      if (unit_temperature==impossible) unit_temperature=1.
+      if (unit_temperature==impossible) then
+        if (lfix_unit_std) then
+          unit_temperature=unit_density*unit_velocity**2/k_B_cgs
+        else
+          unit_temperature=1.
+        endif
+      endif
 !
     endsubroutine units_eos
 !***********************************************************************
@@ -132,7 +133,6 @@ module EquationOfState
       use SharedVariables,only: put_shared_variable
 !
       real :: mu1yHxHe
-      integer :: ierr
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -310,6 +310,12 @@ module EquationOfState
       call keep_compiler_quiet(lreset)
       call keep_compiler_quiet(present(lwrite))
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='lnTT'.or.cnamev=='yH') cformv='DEFINED'
+      endif
+!
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine get_slices_eos(f,slices)
@@ -317,6 +323,8 @@ module EquationOfState
 !  Write slices for animation of Eos variables.
 !
 !  26-jul-06/tony: coded
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -327,25 +335,11 @@ module EquationOfState
 !
 !  Temperature.
 !
-        case ('lnTT')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,ilnTT)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,ilnTT)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,ilnTT)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilnTT)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilnTT)
-          slices%ready=.true.
+        case ('lnTT'); call assign_slices_scal(slices,f,ilnTT)
 !
 !  Degree of ionization.
 !
-        case ('yH')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iyH)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iyH)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iyH)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iyH)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iyH)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iyH)
-          slices%ready=.true.
+        case ('yH'); call assign_slices_scal(slices,f,iyH)
 !
       endselect
 !
@@ -525,20 +519,6 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
-!***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
 !***********************************************************************
     subroutine ioninit(f)
 !
@@ -1186,7 +1166,8 @@ module EquationOfState
             yH=yH-dyH
           endwhere
         endwhere
-        where (abs(dyH)>yHacc*yH)
+
+        where (abs(dyH)>max(yHacc,1e-31)*max(yH,1e-31))     ! use max to avoid underflow
           fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
                              +yH*(2*log(yH)-lnrho_e-lnrho_H) &
@@ -1435,7 +1416,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,TT_xy,rho_xy,yH_xy
-      integer :: i,ierr
+      integer :: i
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -1528,6 +1509,7 @@ module EquationOfState
         print*,"bc_ss_flux: invalid argument"
         call stop_it("")
       endselect
+      call keep_compiler_quiet(present(lone_sided))
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
@@ -1672,6 +1654,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(present(lone_sided))
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -2016,10 +1999,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -2064,12 +2043,6 @@ module EquationOfState
 !
      endsubroutine find_mass
 !***********************************************************************
-    subroutine read_Lewis
-!
-! Dummy routine
-!
-    endsubroutine read_Lewis
-!***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
 !  Get background stratification in z direction.
@@ -2087,5 +2060,23 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule EquationOfState

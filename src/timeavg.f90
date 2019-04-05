@@ -46,7 +46,7 @@ module Timeavg
 !
       do i=1,mtavg
         if (idx_tavg(i) == 0) then
-          if (lroot) print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
+          if (lroot.and.ip<14) print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
           idx_tavg(i)=i
         endif
       enddo
@@ -109,7 +109,7 @@ module Timeavg
       character (len=intlen) :: ch
       character (len=fnlen) :: file
       character (len=*) :: chsnap,flist
-      logical :: lsnap,enum
+      logical :: enum
       logical, save :: lfirst_call=.true.
       integer, save :: nsnap
       real, save :: tsnap
@@ -134,7 +134,7 @@ module Timeavg
 !
         call update_snaptime(file,tsnap,nsnap,tavg,t,lsnap,ch)
         if (lsnap) then
-          call output_globals(chsnap//ch,f_tavg,mtavg)
+          call output_globals(chsnap//ch,f_tavg,mtavg,'timeavg')
           if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
         endif
 !
@@ -142,7 +142,7 @@ module Timeavg
 !
 !  write snapshot without label (typically, timeavg.dat)
 !
-        call output_globals(chsnap,f_tavg,mtavg)
+        call output_globals(chsnap,f_tavg,mtavg,'timeavg')
       endif
 !
     endsubroutine wsnap_timeavgs

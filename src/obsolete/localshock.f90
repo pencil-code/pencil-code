@@ -256,6 +256,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
+!      use FArrayManager, only: farray_index_append
       use Sub
 !
 !  define diagnostics variable
@@ -285,7 +286,7 @@ module Special
 !
       if (lwr) then
         !hydro
-!        write(3,*) 'i_urm=',idiag_urm
+!        call farray_index_append('i_urm',idiag_urm)
       endif
 !
     endsubroutine rprint_special
@@ -308,19 +309,6 @@ module Special
       enddo
 !
     endsubroutine calc_pencils_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !

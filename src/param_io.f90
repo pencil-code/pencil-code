@@ -41,7 +41,7 @@ module Param_IO
   use Polymer
   use Power_spectrum
   use Pscalar
-  use Supersat
+  use Ascalar
   use Radiation
   use Selfgravity
   use Shear
@@ -75,22 +75,23 @@ module Param_IO
   real, dimension(mcom) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
-
+  integer :: niter_poisson  ! dummy
+!
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
-      coord_system, lpole, &
+      coord_system, lpole, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
-      lmodify,modify_filename, &
+      lmodify,modify_filename, dvid, ldivu_perp, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
-      G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
+      G_Newton, hbar, random_gen, seed0, lseed_global, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
-      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
+      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       ireset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
-      tstart, lseparate_persist, ldistribute_persist, lpersist, &
+      tstart, lseparate_persist, ldistribute_persist, lpersist, lomit_add_data, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
@@ -104,30 +105,36 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors, lyinyang
+      ldirect_access, ltolerate_namelist_errors, &
+      lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
+      lcutoff_corners, nycut, nzcut, rel_dang, &
+      sigmaSB_set, c_light_set, k_B_set, m_u_set
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
-      nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
+      nt, it1, it1start, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
-      d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
+      d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, ldivu_perp, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
-      uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, Lor_spec, &
+      uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
+      Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, &
+      GWd_spec,GWe_spec,GWf_spec,   GWg_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, sp_spec, isaveglobal, lr_spec, r2u_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
-      lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
+      ladv_der_as_aux, lkinflow_as_aux, &
+      ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       lnowrite, noghost_for_isave, nghost_read_fewer, &
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
-      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
-      lwrite_dim_again,&
+      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
+      lread_oldsnap_rho2lnrho, lwrite_dim_again, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &
@@ -135,7 +142,7 @@ module Param_IO
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
       luse_oldgrid, luse_xyz1, fshift_int, fshift_ext, lpersist, &
-      ireset_tstart, tstart, lseparate_persist, ldistribute_persist, &
+      ireset_tstart, tstart, lseparate_persist, ldistribute_persist, lomit_add_data, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
@@ -145,14 +152,15 @@ module Param_IO
       onedall, pretend_lnTT, old_cdtv, lmaxadvec_sum, save_lastsnap, &
       lwrite_aux, lwrite_dvar, force_lower_bound, force_upper_bound, &
       oned, twod, lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
-      border_frac_x, border_frac_y, border_frac_z, &
+      border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
-      crash_file_dtmin_factor, niter_poisson, ltestperturb, eps_rkf, &
+      crash_file_dtmin_factor, ltestperturb, eps_rkf, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
-      lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
+      lini_t_eq_zero, lini_t_eq_zero_once, &
+      lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, &
       lread_less, lread_nogrid, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
@@ -163,7 +171,9 @@ module Param_IO
       lread_from_other_prec, downsampl, lfullvar_in_slices, &
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
-      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
+      cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
+      lignore_nonequi
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -306,7 +316,7 @@ module Param_IO
       call read_namelist(read_testflow_init_pars       ,'testflow'       ,ltestflow)
       call read_namelist(read_radiation_init_pars      ,'radiation'      ,lradiation)
       call read_namelist(read_pscalar_init_pars        ,'pscalar'        ,lpscalar)
-      call read_namelist(read_supersat_init_pars       ,'supersat'       ,lsupersat)
+      call read_namelist(read_ascalar_init_pars        ,'ascalar'        ,lascalar)
       call read_namelist(read_chiral_init_pars         ,'chiral'         ,lchiral)
       call read_namelist(read_chemistry_init_pars      ,'chemistry'      ,lchemistry)
       call read_namelist(read_signal_init_pars         ,'signal'         ,lsignal)
@@ -346,7 +356,8 @@ module Param_IO
         if (lroot.and..not.lrun) &
           call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
         lperi(2:3) = .false.; lpole = .false.
-        bcy='yy'; bcz='yy'
+        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
+        bcy='nil'; bcz='nil'
       endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
@@ -447,7 +458,7 @@ module Param_IO
       call read_namelist(read_testflow_run_pars       ,'testflow'          ,ltestflow)
       call read_namelist(read_radiation_run_pars      ,'radiation'         ,lradiation)
       call read_namelist(read_pscalar_run_pars        ,'pscalar'           ,lpscalar)
-      call read_namelist(read_supersat_run_pars       ,'supersat'          ,lsupersat)
+      call read_namelist(read_ascalar_run_pars        ,'ascalar'           ,lascalar)
       call read_namelist(read_chiral_run_pars         ,'chiral'            ,lchiral)
       call read_namelist(read_chemistry_run_pars      ,'chemistry'         ,lchemistry)
       call read_namelist(read_dustvelocity_run_pars   ,'dustvelocity'      ,ldustvelocity)
@@ -486,7 +497,8 @@ module Param_IO
       if (lyinyang) then
         if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
         lperi(2:3) = .false.; lpole = .false.
-        bcy='yy'; bcz='yy'
+        !bcy='yy'; bcz='yy'    ! not needed when interpolating spherical components of vectors
+        bcy='nil'; bcz='nil'
       endif
 !
 !  Print SVN id from first line.
@@ -631,7 +643,7 @@ module Param_IO
         call write_stub ('testflow', ltestflow)
         call write_stub ('radiation', lradiation)
         call write_stub ('pscalar', lpscalar)
-        call write_stub ('supersat', lsupersat)
+        call write_stub ('ascalar', lascalar)
         call write_stub ('chiral', lchiral)
         call write_stub ('chemistry', lchemistry)
         call write_stub ('dustvelocity', ldustvelocity)
@@ -640,6 +652,7 @@ module Param_IO
         call write_stub ('neutraldensity', lneutraldensity)
         call write_stub ('cosmicray', lcosmicray)
         call write_stub ('cosmicrayflux', lcosmicrayflux)
+        call write_stub ('heatflux', lheatflux)
         call write_stub ('interstellar', linterstellar)
         call write_stub ('shear', lshear)
         call write_stub ('testperturb', ltestperturb)
@@ -665,6 +678,7 @@ module Param_IO
 !
         call write_stub ('particles', lparticles)
         call write_stub ('particles_radius', lparticles_radius)
+        call write_stub ('particles_cond', lparticles_condensation)
         ! call write_stub ('particles_potential', lparticles_potential)
         call write_stub ('particles_spin', lparticles_spin)
         call write_stub ('particles_sink', lparticles_sink)
@@ -681,6 +695,7 @@ module Param_IO
         if (.not. lstart) then
           call write_stub ('particles_adapt', lparticles_adaptation)
           call write_stub ('particles_coag', lparticles_coagulation)
+          call write_stub ('particles_cond', lparticles_condensation)
           call write_stub ('particles_coll', lparticles_collisions)
           call write_stub ('particles_stirring', lparticles_stirring)
           call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
@@ -754,6 +769,7 @@ module Param_IO
         call write_testflow_init_pars(unit)
         call write_radiation_init_pars(unit)
         call write_pscalar_init_pars(unit)
+        call write_ascalar_init_pars(unit)
         call write_chiral_init_pars(unit)
         call write_chemistry_init_pars(unit)
         call write_signal_init_pars(unit)
@@ -851,6 +867,7 @@ module Param_IO
         call write_testflow_run_pars(unit)
         call write_radiation_run_pars(unit)
         call write_pscalar_run_pars(unit)
+        call write_ascalar_run_pars(unit)
         call write_chiral_run_pars(unit)
         call write_chemistry_run_pars(unit)
         call write_dustvelocity_run_pars(unit)
@@ -859,6 +876,7 @@ module Param_IO
         call write_neutraldensity_run_pars(unit)
         call write_cosmicray_run_pars(unit)
         call write_cosmicrayflux_run_pars(unit)
+        call write_heatflux_run_pars(unit)
         call write_interstellar_run_pars(unit)
         call write_shear_run_pars(unit)
         call write_testperturb_run_pars(unit)
@@ -994,9 +1012,10 @@ module Param_IO
       write(unit,'(A,L1,A)') " linterstellar=", linterstellar, ","
       write(unit,'(A,L1,A)') " lcosmicray=", lcosmicray, ","
       write(unit,'(A,L1,A)') " lcosmicrayflux=", lcosmicrayflux, ","
+      write(unit,'(A,L1,A)') " lheatflux=", lheatflux, ","
       write(unit,'(A,L1,A)') " lshear=", lshear, ","
       write(unit,'(A,L1,A)') " lpscalar=", lpscalar, ","
-      write(unit,'(A,L1,A)') " lsupersat=", lsupersat, ","
+      write(unit,'(A,L1,A)') " lascalar=", lascalar, ","
       write(unit,'(A,L1,A)') " lradiation=", lradiation, ","
       write(unit,'(A,L1,A)') " leos=", leos, ","
       write(unit,'(A,L1,A)') " lchiral=", lchiral, ","
@@ -1043,7 +1062,7 @@ module Param_IO
        do i=1,npencils
          if (lpenc_video(i)) write(unit,*) i, pencil_names(i)
        enddo
-       print*, 'write_pencil_info: pencil information written to the file pencils.list'
+       if (ip<14) call information('write_pencil_info','pencil information written to the file pencils.list')
        close(unit)
      endif
 !

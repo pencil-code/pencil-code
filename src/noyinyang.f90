@@ -7,6 +7,7 @@
 module Yinyang
 !
   use Cdata, only: lroot
+  use General, only: keep_compiler_quiet
 
   implicit none
 
@@ -18,7 +19,7 @@ module Yinyang
   end type
 
 contains
-
+!
 !**************************************************************************
     subroutine bilin_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
 !
@@ -36,6 +37,9 @@ contains
       stop
 
       buffer=0.
+      call keep_compiler_quiet(ith, iph, i2buf, i3buf)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(indcoeffs%inds)
 
     endsubroutine bilin_interp
 !**************************************************************************
@@ -55,10 +59,13 @@ contains
       stop
 
       buffer=0.
+      call keep_compiler_quiet(ith, iph, i2buf, i3buf)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(indcoeffs%inds)
 
     endsubroutine biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,itype,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,ngap,th_range) result (nok)
 !
 !  Dummy routine.
 !
@@ -67,6 +74,7 @@ contains
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
       integer,                         intent(IN) :: itype
+      integer,               optional, intent(IN) :: ngap
       integer, dimension(2), optional, intent(OUT):: th_range
 
       integer :: nok
@@ -78,7 +86,10 @@ contains
 
       indcoeffs%inds=0
       indcoeffs%coeffs=0.
-      if (present(th_range)) th_range=0
+      call keep_compiler_quiet(thphprime)
+      call keep_compiler_quiet(itype,ngap)
+      call keep_compiler_quiet(th_range)
+      call keep_compiler_quiet(indcoeffs%inds)
 !
     endfunction prep_interp
 !**************************************************************************
@@ -95,9 +106,18 @@ contains
         print*, 'coeffs_to_weights: not implemented in Fortran 95'
       stop
 
-      indweights%inds=0
-      indweights%coeffs=0.
+      call keep_compiler_quiet(intcoeffs%inds,indweights%inds)
 
     endsubroutine coeffs_to_weights
+!*******************************************************************
+    function in_overlap_mask(indth,indph) result (ok)
+
+      integer, intent(IN) :: indth,indph
+      logical :: ok
+
+      ok=.true.
+      call keep_compiler_quiet(indth,indph)
+
+    endfunction in_overlap_mask
 !*******************************************************************
 endmodule Yinyang

@@ -1,7 +1,7 @@
 ! This is a tool to collect a distributed data cube in one file.
 !
 ! $Id: pc_collect.f90 22542 2014-11-18 22:51:03Z Bourdin.KIS $
-!***********************************************************************
+!
 program pc_collect
 !
   use Cdata
@@ -50,9 +50,10 @@ program pc_collect
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
+  call read_all_init_pars
+  call set_coorsys_dimmask
   lstart = .false.
   lrun = .true.
-  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
@@ -122,8 +123,8 @@ program pc_collect
 !
     if (IO_strategy == "collect_xy") then
 !
-      iproc = ipz * nprocx*nprocy
-      lroot = (iproc==root)
+      iproc_world = ipz * nprocx*nprocy
+      lroot = (iproc_world==root)
 !
 ! Take the shortcut, files are well prepared for direct combination
 !
@@ -185,8 +186,8 @@ program pc_collect
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 
 ! Set up directory names 'directory' and 'directory_snap'
 

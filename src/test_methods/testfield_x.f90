@@ -312,14 +312,11 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
-        endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: iuxb = ', iuxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
-          close(3)
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
+        else
+          if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          call farray_index_append('iuxbtest',iuxbtest)
         endif
       endif
 !
@@ -327,14 +324,11 @@ module Testfield
 !  used in connection with testflow method)
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
-        endif
-        if (ijxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: ijxb = ', ijxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxb=',ijxb
-          close(3)
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
+        else
+          if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          call farray_index_append('ijxbtest',ijxbtest)
         endif
       endif
 !
@@ -485,7 +479,7 @@ module Testfield
       real, dimension (nx,3) :: del2Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest
-      real, dimension (nx) :: bpq2,Epq2
+      real, dimension (nx) :: bpq2,Epq2,diffus_eta
       integer :: jtest, j, iuxtest, iuytest, iuztest
       integer :: i1=1, i2=2, i3=3, i4=4
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
@@ -553,8 +547,8 @@ module Testfield
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_uxb=.false.)
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
-            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+          if (iuxbtest/=0.and..not.ltest_uxb) then
+            uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
           else
             call curl(f,iaxtest,bbtest)
             call cross_mn(p%uu,bbtest,uxbtest)
@@ -614,8 +608,8 @@ module Testfield
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_jxb=.false.)
 !
-          if (ijxb/=0.and..not.ltest_jxb) then
-            jxbtest=f(l1:l2,m,n,ijxb+3*(jtest-1):ijxb+3*jtest-1)
+          if (ijxbtest/=0.and..not.ltest_jxb) then
+            jxbtest=f(l1:l2,m,n,ijxbtest+3*(jtest-1):ijxbtest+3*jtest-1)
           else
             call cross_mn(jjtest,bbtest,jxbrtest)
           endif
@@ -631,7 +625,7 @@ module Testfield
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
 !
         if ((ldiagnos.or.l1davgfirst).and. &
-          ((lsoca.or.iuxb/=0).and.(.not.ltest_uxb))) then
+          ((lsoca.or.iuxbtest/=0).and.(.not.ltest_uxb))) then
           call curl(f,iaxtest,bbtest)
           call cross_mn(p%uu,bbtest,uxbtest)
         endif
@@ -643,7 +637,8 @@ module Testfield
 !  and whatever is calculated here
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
@@ -835,6 +830,18 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
+    subroutine testfield_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!    4-oct-18/axel+nishant: adapted from testflow
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine testfield_before_boundary
+!***********************************************************************
     subroutine testfield_after_boundary(f,p)
 !
 !  calculate <uxb>, which is needed when lsoca=.false.
@@ -875,13 +882,13 @@ module Testfield
         do jtest=1,njtest
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
-          juxb=iuxb+3*(jtest-1)
+          juxb=iuxbtest+3*(jtest-1)
           do n=n1,n2
             do m=m1,m2
               call calc_pencils_hydro(f,p,lpenc_loc)
               call curl(f,iaxtest,bbtest)
               call cross_mn(p%uu,bbtest,uxbtest)
-              if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+              if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               uxbtestm(:,:,jtest)=uxbtestm(:,:,jtest)+fac*uxbtest
               headtt=.false.
             enddo
@@ -902,7 +909,7 @@ module Testfield
         do jtest=1,njtest
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
-          jjxb=ijxb+3*(jtest-1)
+          jjxb=ijxbtest+3*(jtest-1)
           do n=n1,n2
             do m=m1,m2
               aatest=f(l1:l2,m,n,iaxtest:iaztest)
@@ -911,7 +918,7 @@ module Testfield
               call curl_mn(aijtest,bbtest,aatest)
               call curl_mn(bijtest,jjtest,bbtest)
               call cross_mn(jjtest,bbtest,jxbtest)
-              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+              if (ijxbtest/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
               jxbtestm(:,:,jtest)=jxbtestm(:,:,jtest)+fac*jxbtest
               headtt=.false.
             enddo
@@ -1082,6 +1089,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamex,inamez,inamexz
@@ -1200,11 +1208,8 @@ module Testfield
       enddo
 !
       if (loptest(lwrite)) then
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'ntestfield=',ntestfield
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('ntestfield',ntestfield)
       endif
 !
     endsubroutine rprint_testfield

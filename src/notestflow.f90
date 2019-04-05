@@ -24,11 +24,9 @@ module Testflow
 !
   include 'testflow.h'
 !
-  logical :: lshear_as_param=.false.
-!
   contains
 !***********************************************************************
-    subroutine register_testflow()
+    subroutine register_testflow
 !
 !  Dummy routine
 !
@@ -54,7 +52,7 @@ module Testflow
 !
     endsubroutine init_uutest
 !***********************************************************************
-    subroutine pencil_criteria_testflow()
+    subroutine pencil_criteria_testflow
 !
 !  Dummy routine
 !
@@ -161,8 +159,7 @@ module Testflow
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_testflow
 !***********************************************************************

@@ -336,6 +336,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+!!$      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -362,9 +363,9 @@ module Special
 !!$!
 !!$!  write column where which magnetic variable is stored
 !!$      if (lwr) then
-!!$        write(3,*) 'i_turbint=',idiag_turbint
-!!$        write(3,*) 'i_tau_w=',idiag_tau_w
-!!$        write(3,*) 'i_uxm_central=',idiag_uxm_central
+!!$        call farray_index_append('i_turbint',idiag_turbint)
+!!$        call farray_index_append('i_tau_w',idiag_tau_w)
+!!$        call farray_index_append('i_uxm_central',idiag_uxm_central)
 !!$      endif
 !
     endsubroutine rprint_special
@@ -404,7 +405,7 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  Mean flow velocitites
 !
@@ -434,7 +435,7 @@ module Special
 !!$        enddo
 !!$      endif
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

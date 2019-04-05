@@ -25,14 +25,15 @@ module Forcing
   implicit none
 !
   logical :: lhydro_forcing=.false.,ltestflow_forcing=.false.
+
   include 'forcing.h'
 !
-  integer :: idiag_rufm=0
   integer :: n_forcing_cont=n_forcing_cont_max
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************
-    subroutine register_forcing()
+    subroutine register_forcing
 !
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
@@ -44,7 +45,7 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing()
+    subroutine initialize_forcing
 !
 !  initialize random number generator in processor-dependent fashion
 !  see comments in start.f90 for details
@@ -61,7 +62,7 @@ module Forcing
 !
     endsubroutine addforce
 !***********************************************************************
-    subroutine calc_lforcing_cont_pars(f)
+    subroutine forcing_cont_after_boundary(f)
 !
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
@@ -71,9 +72,18 @@ module Forcing
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lforcing_cont_pars
+    endsubroutine forcing_cont_after_boundary
 !***********************************************************************
-    subroutine pencil_criteria_forcing()
+    subroutine forcing_coefs_hel(coef1,coef2,coef3,fx,fy,fz,fda)
+
+      real, dimension(:) :: coef1,coef2,coef3,fx,fy,fz,fda
+
+      call keep_compiler_quiet(coef1,coef2,coef3,fda)
+      call keep_compiler_quiet(fx,fy,fz)
+     
+    endsubroutine forcing_coefs_hel
+!***********************************************************************
+    subroutine pencil_criteria_forcing
 !
 !  Dummy routine
 !
@@ -166,29 +176,11 @@ module Forcing
 !
 !  26-jan-04/axel: coded
 !
-      use Diagnostics, only: parse_name
-!
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        idiag_rufm=0
-      endif
-!
-!  iname runs through all possible names that may be listed in print.in
-!
-      if (lroot.and.ip<14) print*,'rprint_noforcing: run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
-      enddo
-!
+      call keep_compiler_quiet(lreset,lwrite)
+
     endsubroutine rprint_forcing
 !***********************************************************************
     subroutine forcing_clean_up

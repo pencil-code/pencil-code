@@ -24,7 +24,7 @@ module Cosmicrayflux
 !
   contains
 !***********************************************************************
-    subroutine register_cosmicrayflux()
+    subroutine register_cosmicrayflux
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !
     endsubroutine init_fcr
 !***********************************************************************
-    subroutine pencil_criteria_cosmicrayflux()
+    subroutine pencil_criteria_cosmicrayflux
 !
 !   All pencils that the CosmicrayFlux module depends on are specified here.
 !
@@ -124,8 +124,7 @@ module Cosmicrayflux
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_cosmicrayflux
 !***********************************************************************

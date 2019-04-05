@@ -27,11 +27,11 @@ module Pscalar
   include 'pscalar.h'
 !
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
-  character (len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false.
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
-  real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min
-  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0, radius_lncc=0.0
+  real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min, delta_lncc=0
+  real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0
+  real :: amplcc, radius_lncc=0.0
   real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
   logical :: ldustdrift=.false.
@@ -39,7 +39,8 @@ module Pscalar
 !
   namelist /pscalar_init_pars/ &
       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc, ldustdrift
+      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc, &
+      ldustdrift, delta_lncc, amplcc
 !
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
@@ -151,6 +152,7 @@ module Pscalar
       use InitialCondition, only: initial_condition_lncc
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: der, prof
 !
       select case (initlncc)
         case ('zero'); f(:,:,:,ilncc)=0.
@@ -174,6 +176,21 @@ module Pscalar
             f(l1:l2,m,n,ilncc)=-1.0+2*0.5*(1.+tanh(z(n)/widthlncc))
           enddo; enddo
         case ('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,radius_lncc,epsilon_lncc)
+        case ('double_shear_layer')
+!
+!  Double shear layer
+!
+          if (lroot) print*,'init_lncc: Double shear layer'
+          do m=m1,m2
+            der=2./delta_lncc
+            prof=amplcc*(&
+                tanh(der*(y(m)+widthlncc))-&
+                tanh(der*(y(m)-widthlncc)))/2.
+            prof=prof
+            do n=n1,n2
+              f(l1:l2,m,n,ilncc)=log(1.-prof+amplcc*1e-20)
+            enddo
+          enddo
         case default; call fatal_error('init_lncc','bad initlncc='//trim(initlncc))
       endselect
 !
@@ -430,6 +447,7 @@ module Pscalar
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -494,11 +512,17 @@ module Pscalar
             'ccmx',idiag_ccmx)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then 
+        where(cnamev=='cc'.or.cnamev=='lncc') cformv='DEFINED'
+      endif
+!
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'ilncc=',ilncc
-        write(3,*) 'icc=0'
+        call farray_index_append('ilncc',ilncc)
+        call farray_index_append('icc',0)
       endif
 !
     endsubroutine rprint_pscalar
@@ -509,36 +533,27 @@ module Pscalar
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal,process_slices,exp2d
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+
+      character(LEN=fmtlen) :: sname
 !
 !  Loop over slices.
+
+      sname=trim(slices%name)
+      if (sname=='lncc'.or.sname=='cc') then
 !
-      select case (trim(slices%name))
+!  Logarithmic or linear passive scalar.
 !
-!  Passive scalar.
+        call assign_slices_scal(slices,f,ilncc)
 !
-        case ('cc')
-          slices%yz =exp(f(ix_loc,m1:m2,n1:n2,ilncc))
-          slices%xz =exp(f(l1:l2,iy_loc,n1:n2,ilncc))
-          slices%xy =exp(f(l1:l2,m1:m2,iz_loc,ilncc))
-          slices%xy2=exp(f(l1:l2,m1:m2,iz2_loc,ilncc))
-          if (lwrite_slice_xy3) slices%xy3=exp(f(l1:l2,m1:m2,iz3_loc,ilncc))
-          if (lwrite_slice_xy4) slices%xy4=exp(f(l1:l2,m1:m2,iz4_loc,ilncc))
-          slices%ready=.true.
+!  Linear passive scalar.
 !
-!  Logarithmic passive scalar.
+        if (sname=='cc') call process_slices(slices,exp2d)
 !
-        case ('lncc')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,ilncc)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,ilncc)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,ilncc)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ilncc)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ilncc)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ilncc)
-          slices%ready=.true.
-!
-      endselect
+      endif
 !
     endsubroutine get_slices_pscalar
 !***********************************************************************

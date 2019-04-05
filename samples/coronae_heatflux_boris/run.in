@@ -1,0 +1,101 @@
+!                     -*-f90-*-   (for emacs)
+!  run parameters for /sven/Korona/1D/128/no_heat
+!
+&run_pars
+  ip=14
+  cvsid='$Id: run.in,v 1.1 2018/06/17 13:33:10 joern Exp $'
+  nt=5, it1=1, it1start=1, isave=5000
+  dsnap=60.   ! = 60 sec
+  dtmin =1e-10
+!
+  bcz = 's:a' ,'s:a' ,'div:a','fg:s','fg:s','pfe','nil','nil','a','a','a'
+  fbcz_bot= 0.,    0., 0., 0., 0., 0.25
+!
+  lpencil_check=F
+  lpencil_check_small=F
+!
+  dvid = 0.1  ! = 0.1 sec
+  iz2=1
+  slice_position='m'
+!
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff = 'normal'
+  diffrho  = 0.25e3
+  lmassdiff_fix = T
+/
+&grav_run_pars
+  gravz=-274e-3 ! gravz * unit_velocity^2 / unit_length = 274 m/s
+/
+&entropy_run_pars
+  iheatcond='chi-const'
+  chi = 0.25e5
+  lviscosity_heat=T
+/
+&magnetic_run_pars
+  iresistivity = 'zdep'
+  zdep_profile = 'cubic_step'
+  eta_zwidth = -1100.
+  eta_z0 =1200.
+  eta_jump = 0.8e3 ! top val = eta * eta_jump ! 2e4
+  eta = 25.  ! at lower bound
+!
+  linduction=T
+  llorentzforce=T
+  lohmic_heat = T
+!
+  lboris_correction=T
+  va2max_boris=1e8 ! va_limit=1e4 km/s
+/
+&viscosity_run_pars
+  ivisc='nu-const','nu-shock'
+  nu=1e4 ! nu*unit_velocity*unit_length=1e10 m^2/s
+  nu_shock=1e2
+/
+&special_run_pars
+!
+  lgranulation=T
+  u_amplifier=3.
+  increase_vorticity = 50.
+!
+  lmag_time_bound=T
+  b_tau=1.6666667e-3 ! in 1/s => 10 mins relaxing time
+!
+  Bavoid=0.18 ! in Tesla => 1800 Gauss
+!
+  quench=0.5
+  quench0=0.
+  quench_width=0.3
+!
+  ldensity_floor_c=T
+!
+  hyper3_nu = 1e-1
+  hyper3_eta = 1e-5
+  hyper3_chi = 1e-1
+  hyper3_diffrho = 1e-1
+!
+  cool_RTV = 1.
+!
+  Kpara = 0.0
+  hcond_grad_iso = 5.e+12
+!
+/
+&heatflux_run_pars
+   iheatflux='spitzer'
+   tau_inv_spitzer=0.001
+   Kspitzer_para=2e-5
+   saturation_flux=1.
+   Kc=0.0
+   lnfs2=T
+   ltau_spitzer_va=T
+   va2max_tau_boris=1e8 ! va_limit=1e4 km/s
+/
+&shock_run_pars
+  lforce_periodic_shockviscosity=T
+  lshock_first=F
+  lshock_max5=T
+/

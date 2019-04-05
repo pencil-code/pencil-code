@@ -193,7 +193,6 @@ module Cosmicrayflux
 !  08-mar-05/snod: adapted from daa_dt
 !
       use Sub
-      use Slices
       use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
       use Diagnostics, only: sum_mn_name
@@ -202,7 +201,7 @@ module Cosmicrayflux
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: delucrxbb, delucrxbb2, gecr_over_ecr
       real, dimension (nx)   :: b2, b21, ucr2
-      real, dimension (nx)   :: tmp, ratio
+      real, dimension (nx)   :: tmp, ratio, advec_cs2cr
       real :: fact
       integer :: i,j
       type (pencil_case) :: p
@@ -221,8 +220,10 @@ module Cosmicrayflux
 !
 !  Time step control.
 !
-      if (lfirst.and.ldt) advec_cs2cr=cs2cr*dxyz_2
-!
+      if (lfirst.and.ldt) then
+        advec_cs2cr=cs2cr*dxyz_2
+        advec2=advec2+advec_cs2cr
+      endif
 !  Compute auxiliary terms.
 !
       call cross(omegahat*(p%ucr-p%uu),p%bb,delucrxbb)
@@ -317,6 +318,7 @@ module Cosmicrayflux
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr
@@ -361,7 +363,7 @@ module Cosmicrayflux
 !  Write column, idiag_XYZ, where our variable XYZ is stored.
 !
       if (lwr) then
-        write(3,*) 'ifcr=',ifcr
+        call farray_index_append('ifcr',ifcr)
       endif
 !
     endsubroutine rprint_cosmicrayflux

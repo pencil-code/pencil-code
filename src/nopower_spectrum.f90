@@ -26,6 +26,10 @@ module power_spectrum
 !
   contains
 !***********************************************************************
+    subroutine initialize_power_spectrum
+!
+    endsubroutine initialize_power_spectrum
+!***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
 !
       integer, intent(out) :: iostat
@@ -93,6 +97,36 @@ module power_spectrum
       call keep_compiler_quiet(sp)
 !
     endsubroutine powerLor
+!***********************************************************************
+    subroutine powerEMF(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerEMF
+!***********************************************************************
+    subroutine powerTra(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerTra
+!***********************************************************************
+    subroutine powerGWs(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerGWs
 !***********************************************************************
     subroutine powerscl(f,sp)
 !

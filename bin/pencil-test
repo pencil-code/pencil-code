@@ -171,6 +171,9 @@ my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc 
 $instances_running =~ s/\s+$//s;
 if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
 
+# Immediate flushing after "\n"
+$| = 1;
+
 print_header();
 
 ## Run test(s)
@@ -198,7 +201,7 @@ sub run_tests_on {
     $shost = "\u$shost";
 
     if ($html) {
-        unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
+        unless ($first) { print "<p>\n<hr>\n<p>\n" };
         print "<h2>$shost:</h2>\n\n<pre>\n";
     } else {
         unless ($first) { print "\n\n" };
@@ -249,8 +252,11 @@ sub run_tests_on {
             if ($empty && ($line =~ /^\s*(?:[^:\/]+\/)*\/*(samples(?:\/[^:\/\s]+)+): \(\d+\/\d+\)\s*$/is)) {
                 print "</pre>\n".'<a name="'.$1.'"></a>'."\n<pre>";
             }
+            if ($empty && ($line =~ /^\s*(?:All .*? tests? succeeded\.|\#*\s*auto-test failed\s*\#*)\s*$/is)) {
+                print "</pre>\n".'<a name="summary"></a>'."\n<pre>";
+            }
             $empty = 0;
-            if ($line =~ /^\s*$/s) { $empty = 1; }
+            if ($line =~ /^[\s\-]*$/s) { $empty = 1; }
 
             # Links on failures summary in HTML
             if ($failures != 0) { 
@@ -342,6 +348,9 @@ sub print_header {
 
     my $date = scalar localtime();
     my $xml = "";
+    my $testname = "Pencil Code auto-test";
+
+    $testname = $1." - ".$testname if ($commandline =~ /--pencil-home='[^\s]+?([^\/]+)'/is);
 
     if ($with_xml) {
         $xml=<<"END_XMLHEAD";
@@ -352,14 +361,17 @@ END_XMLHEAD
     }
     if ($html) {
         print <<"END_HEAD";
-<!-- $commandline -->
-<html>
-<head></head>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html lang="en">
+<head>
+        <meta name="language" content="en">
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8" >
+        <title>$testname</title>
+</head>
 <body>
 
 <p>$date</p>
 <pre>$commandline</pre>
-<p>
 END_HEAD
     } else {
         print "$date\n\n";
@@ -373,7 +385,6 @@ sub print_footer {
         print <<"END_FOOT";
 </pre>
 $date
-</p>
 </body>
 </html>
 END_FOOT

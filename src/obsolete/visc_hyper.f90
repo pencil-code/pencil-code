@@ -122,6 +122,7 @@ module Viscosity
 !  24-nov-03/tony: adapted from rprint_ionization
 !
       use Cdata
+      use FArrayManager, only: farray_index_append
       use Sub
 ! 
       logical :: lreset
@@ -146,9 +147,9 @@ module Viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'ihyper=',ihyper
-          write(3,*) 'ishock=',ishock
-          write(3,*) 'i_epsK2=',idiag_epsK2
+          call farray_index_append('ihyper',ihyper)
+          call farray_index_append('ishock',ishock)
+          call farray_index_append('i_epsK2',idiag_epsK2)
         endif
       endif
 !        

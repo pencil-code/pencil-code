@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="charged"
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED epsp; grhop(3)
@@ -136,25 +137,15 @@ module Particles
 !
 !  Indices for particle position.
 !
-      ixp=npvar+1
-      pvarname(npvar+1)='ixp'
-      iyp=npvar+2
-      pvarname(npvar+2)='iyp'
-      izp=npvar+3
-      pvarname(npvar+3)='izp'
+      call append_npvar('ixp',ixp)
+      call append_npvar('iyp',iyp)
+      call append_npvar('izp',izp)
 !
 !  Indices for particle velocity.
 !
-      ivpx=npvar+4
-      pvarname(npvar+4)='ivpx'
-      ivpy=npvar+5
-      pvarname(npvar+5)='ivpy'
-      ivpz=npvar+6
-      pvarname(npvar+6)='ivpz'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+6
+      call append_npvar('ivpx',ivpx)
+      call append_npvar('ivpy',ivpy)
+      call append_npvar('ivpz',ivpz)
 !
 !  Set indices for particle assignment.
 !
@@ -166,16 +157,9 @@ module Particles
 ! This module shall always require electric field and magnetic field stored as
 ! a auxiliary array.
 !
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles','npvar > mpvar')
-      endif
-!
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -186,7 +170,7 @@ module Particles
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
+      real, dimension (mpar_loc,mparray) :: fp
       real :: rhom
       integer :: ierr, jspec
 !
@@ -313,7 +297,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp,&
@@ -1385,11 +1369,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
-!  Evolution of dust particle velocity.
+!  Evolution of charged particle velocity.
 !
-!  29-dec-04/anders: coded
 !
       use Diagnostics
       use EquationOfState, only: cs20
@@ -1399,6 +1382,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       real :: Omega2
       integer :: npar_found
@@ -1670,9 +1654,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of dust particle velocity (called from main pencil loop).
+!  Evolution of charged particle velocity (called from main pencil loop).
 !
-!  25-apr-06/anders: codedg
 !
       use Diagnostics
       use EquationOfState, only: cs20
@@ -2008,6 +1991,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  29-dec-04/anders: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -2021,17 +2005,17 @@ k_loop:   do while (.not. (k>npar_loc))
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
-        write(3,*) 'iupx=', iupx
-        write(3,*) 'iupy=', iupy
-        write(3,*) 'iupz=', iupz
+        call farray_index_append('ixp', ixp)
+        call farray_index_append('iyp', iyp)
+        call farray_index_append('izp', izp)
+        call farray_index_append('ivpx', ivpx)
+        call farray_index_append('ivpy', ivpy)
+        call farray_index_append('ivpz', ivpz)
+        call farray_index_append('inp', inp)
+        call farray_index_append('irhop', irhop)
+        call farray_index_append('iupx', iupx)
+        call farray_index_append('iupy', iupy)
+        call farray_index_append('iupz', iupz)
       endif
 !
 !  Reset everything in case of reset.
@@ -2232,6 +2216,22 @@ k_loop:   do while (.not. (k>npar_loc))
       else
         call fatal_error('periodic_boundcond_on_aux','particles_charged demands iEE ne 0')
       endif
+      if (lparticles_grad) then
+        if (igradu .ne. 0) then
+          call set_periodic_boundcond_on_aux(f,igradu11)
+          call set_periodic_boundcond_on_aux(f,igradu12)
+          call set_periodic_boundcond_on_aux(f,igradu13)
+          call set_periodic_boundcond_on_aux(f,igradu21)
+          call set_periodic_boundcond_on_aux(f,igradu22)
+          call set_periodic_boundcond_on_aux(f,igradu23)
+          call set_periodic_boundcond_on_aux(f,igradu31)
+          call set_periodic_boundcond_on_aux(f,igradu32)
+          call set_periodic_boundcond_on_aux(f,igradu33)
+        else
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+        endif
+      endif
+
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)

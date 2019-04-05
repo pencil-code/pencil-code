@@ -1,0 +1,45 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Runtime parameters for shocktube problem
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2017/04/26 17:31:11 wlyra Exp $'
+  !nt=1000000, it1=25, it1d=5000, isave=5000, itorder=3
+  nt=50, it1=5, it1d=5000, isave=5000, itorder=3
+  cdt=0.4
+  cdtv=0.4
+  cdtv3=0.4
+!
+  dsnap=6.28318530718
+!
+  dtmin=1e-6
+  crash_file_dtmin_factor=10.
+  lfargo_advection=T
+  lpencil_check=F
+  lpencil_check_small=F
+!
+  fraction_tborder=0.1
+  wborder_int=0.1
+  wborder_ext=0.2
+!
+  tmax=630
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+  lfargoadvection_as_shift=T
+/
+&density_run_pars
+  idiff='hyper3-mesh' 
+  diffrho_hyper3_mesh=20
+  borderlnrho='initial-condition'
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh','nu-shock'
+  nu_hyper3=20,nu_shock=4.
+/
+&shock_run_pars
+/

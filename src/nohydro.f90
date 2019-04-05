@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
-! PENCILS PROVIDED del2u(3), curlo(3)
+! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
 !
 !***************************************************************
 module Hydro
@@ -47,6 +47,7 @@ module Hydro
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
   real :: ampl_fcont_uu=1.
   logical :: lforcing_cont_uu=.false.
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -124,15 +125,9 @@ module Hydro
           iux=iuu
           iuy=iuu+1
           iuz=iuu+2
-        endif
-        if (iuu/=0.and.lroot) then
-          print*, 'initialize_velocity: iuu = ', iuu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuu=',iuu
-          write(3,*) 'iux=',iux
-          write(3,*) 'iuy=',iuy
-          write(3,*) 'iuz=',iuz
-          close(3)
+        else
+          if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
+          call farray_index_append('iuu',iuu,3)
         endif
       endif
 !
@@ -219,7 +214,21 @@ module Hydro
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
-    subroutine calc_pencils_hydro(f,p)
+    subroutine calc_pencils_hydro_std(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_hydro_pencpar(f,p,lpencil)
+!
+      endsubroutine calc_pencils_hydro_std
+!***********************************************************************
+    subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -232,37 +241,38 @@ module Hydro
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f, lpenc_loc
       intent(inout) :: p
 ! uu
-      if (lpencil(i_uu)) p%uu=0.0
+      if (lpenc_loc(i_uu)) p%uu=0.0
 ! u2
-      if (lpencil(i_u2)) p%u2=0.0
+      if (lpenc_loc(i_u2)) p%u2=0.0
 ! oo
-      if (lpencil(i_oo)) p%oo=0.0
+      if (lpenc_loc(i_oo)) p%oo=0.0
 ! ou
-      if (lpencil(i_ou)) p%ou=0.0
+      if (lpenc_loc(i_ou)) p%ou=0.0
 ! uij
-      if (lpencil(i_uij)) p%uij=0.0
+      if (lpenc_loc(i_uij)) p%uij=0.0
 ! sij
-      if (lpencil(i_sij)) p%sij=0.0
+      if (lpenc_loc(i_sij)) p%sij=0.0
 ! sij2
-      if (lpencil(i_sij2)) p%sij2=0.0
+      if (lpenc_loc(i_sij2)) p%sij2=0.0
 ! divu
-      if (lpencil(i_divu)) p%divu=0.0
+      if (lpenc_loc(i_divu)) p%divu=0.0
 ! uij5
-      if (lpencil(i_uij5)) p%uij5=0.0
+      if (lpenc_loc(i_uij5)) p%uij5=0.0
 ! graddivu
-      if (lpencil(i_graddivu)) p%graddivu=0.0
+      if (lpenc_loc(i_graddivu)) p%graddivu=0.0
 ! ugu
-      if (lpencil(i_ugu)) p%ugu=0.0
+      if (lpenc_loc(i_ugu)) p%ugu=0.0
 ! ogu
-      if (lpencil(i_ogu)) p%ogu=0.0
+      if (lpenc_loc(i_ogu)) p%ogu=0.0
 ! del2u
-      if (lpencil(i_del2u)) p%del2u=0.0
+      if (lpenc_loc(i_del2u)) p%del2u=0.0
 ! curlo
-      if (lpencil(i_curlo)) p%curlo=0.0
+      if (lpenc_loc(i_curlo)) p%curlo=0.0
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -283,7 +293,7 @@ module Hydro
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_hydro
+    endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
     subroutine hydro_before_boundary(f)
 !
@@ -352,7 +362,7 @@ module Hydro
 !  coriolis terms for cartesian geometry
 !
 !  30-oct-09/MR: outsourced, parameter velind added
-!  checked to be an equivalent change by auot-test conv-slab-noequi, mdwarf
+!  checked to be an equivalent change by auto-test conv-slab-noequi, mdwarf
 !
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
@@ -364,7 +374,7 @@ module Hydro
 !
    endsubroutine coriolis_cartesian
 !***********************************************************************
-    subroutine calc_lhydro_pars(f)
+    subroutine hydro_after_boundary(f)
 !
 !  dummy routine
 !
@@ -373,7 +383,7 @@ module Hydro
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lhydro_pars
+    endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
 !
@@ -817,6 +827,7 @@ module Hydro
 !   8-jun-02/axel: adapted from hydro
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -884,11 +895,10 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuu=',iuu
-        write(3,*) 'iux=',iux
-        write(3,*) 'iuy=',iuy
-        write(3,*) 'iuz=',iuz
+        call farray_index_append('iuu',iuu)
+        call farray_index_append('iux',iux)
+        call farray_index_append('iuy',iuy)
+        call farray_index_append('iuz',iuz)
       endif
 !
     endsubroutine rprint_hydro
@@ -926,6 +936,18 @@ module Hydro
       call keep_compiler_quiet(f)
 !
     endsubroutine remove_mean_momenta
+!***********************************************************************
+    subroutine remove_mean_flow(f,indux)
+!
+!  Dummy.
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      integer,                            intent (in)    :: indux
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(indux)
+!
+    endsubroutine remove_mean_flow
 !***********************************************************************
     subroutine impose_velocity_ceiling(f)
 !
@@ -983,6 +1005,17 @@ module Hydro
 !
     endsubroutine expand_shands_hydro
 !***********************************************************************
+    subroutine hydro_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+
+    endsubroutine hydro_after_timestep
+!***********************************************************************
     subroutine update_char_vel_hydro(f)
 !
 !  Dummy
@@ -994,6 +1027,16 @@ module Hydro
       call keep_compiler_quiet(f)
 
     endsubroutine update_char_vel_hydro
+!***********************************************************************
+    subroutine calc_gradu(f)
+!
+! Dummy 
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+
+    endsubroutine calc_gradu
 !***********************************************************************
 endmodule Hydro
 

@@ -255,21 +255,26 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)      
+      call keep_compiler_quiet(f)
 !
     endsubroutine particles_special_bfre_bdary
 !***********************************************************************
-    subroutine particles_special(f)
+    subroutine particles_special_after_dtsub(f, dtsub)
 !
-      real :: dummy_=0.
-      real, dimension (mx,my,mz,mfarray) :: f
+!  Send fp and dfp to Special for processing in the end of a
+!  sub-time-step.
+!
+!  27-feb-18/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dtsub
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(dummy_)
+      call keep_compiler_quiet(dtsub)
 !
-    endsubroutine particles_special
+    endsubroutine particles_special_after_dtsub
 !***********************************************************************
-    subroutine particles_pde(f,df)
+    subroutine particles_pde(f,df,p)
 !
 !  Dynamical evolution of particle variables.
 !
@@ -277,9 +282,11 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -372,15 +379,13 @@ module Particles_main
 !
     endsubroutine write_dim_particles
 !***********************************************************************
-    subroutine write_snapshot_particles(snap_directory,f,enum,snapnum)
+    subroutine write_snapshot_particles(f,enum,snapnum)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
-      character (len=*) :: snap_directory
       integer, optional :: snapnum
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(snap_directory)
       call keep_compiler_quiet(enum)
       call keep_compiler_quiet(present(snapnum))
 !
@@ -412,17 +417,15 @@ module Particles_main
       call keep_compiler_quiet(dummy)
     endsubroutine fetch_nparloc
 !***********************************************************************
-    subroutine fetch_npvar(dummy)
-! dummy subroutine
-      integer :: dummy
-      call keep_compiler_quiet(dummy)
-    endsubroutine fetch_npvar
-!***********************************************************************
-    subroutine return_npvar(dummy)
-! dummy subroutine
-      integer :: dummy
-      call keep_compiler_quiet(dummy)
-    endsubroutine return_npvar
+    subroutine append_particle_index(label,ilabel)
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: ilabel
+!
+      call keep_compiler_quiet(label)
+      call keep_compiler_quiet(ilabel)
+!
+    endsubroutine append_particle_index
 !*********************************************************************** 
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !

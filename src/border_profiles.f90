@@ -53,6 +53,7 @@ module BorderProfiles
 !                  because r_int and r_ext are not set until after all
 !                  calls to initialize are done in Register.
 !
+      use IO, only: output_profile
       use SharedVariables, only: get_shared_variable
       use Messages, only: fatal_error
 !
@@ -60,7 +61,7 @@ module BorderProfiles
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
       real :: border_width, lborder, uborder
-      integer :: l,ierr
+      integer :: l, ierr
       real, pointer :: gsum
 !
 !  x-direction
@@ -131,23 +132,32 @@ module BorderProfiles
 !
 !  Write border profiles to file.
 !
-      open(1,file=trim(directory_dist)//'/border_prof_x.dat')
-        do l=1,mx
-          write(1,'(2f15.6)') x(l), border_prof_x(l)
-        enddo
-      close(1)
+      if (lmonolithic_io) then
+        if (lrun) then
+          call output_profile('border', x, border_prof_x, 'x', lhas_ghost=.true.) ! , loverwrite=.true.)
+          call output_profile('border', y, border_prof_y, 'y', lhas_ghost=.true.) ! , loverwrite=.true.)
+          call output_profile('border', z, border_prof_z, 'z', lhas_ghost=.true.) ! , loverwrite=.true.)
+        endif
+      else
+        open(1,file=trim(directory_dist)//'/border_prof_x.dat')
+          do l=1,mx
+            write(1,'(2f15.6)') x(l), border_prof_x(l)
+          enddo
+        close(1)
 !
-      open(1,file=trim(directory_dist)//'/border_prof_y.dat')
-        do m=1,my
-          write(1,'(2f15.6)') y(m), border_prof_y(m)
-        enddo
-      close(1)
+        open(1,file=trim(directory_dist)//'/border_prof_y.dat')
+          do m=1,my
+            write(1,'(2f15.6)') y(m), border_prof_y(m)
+          enddo
+        close(1)
 !
-      open(1,file=trim(directory_dist)//'/border_prof_z.dat')
-        do n=1,mz
-          write(1,'(2f15.6)') z(n), border_prof_z(n)
-        enddo
-      close(1)
+        open(1,file=trim(directory_dist)//'/border_prof_z.dat')
+          do n=1,mz
+            write(1,'(2f15.6)') z(n), border_prof_z(n)
+          enddo
+        close(1)
+      endif
+!
 !
 !  Switch border quenching on if any border frac is non-zero
 !
@@ -167,12 +177,17 @@ module BorderProfiles
           if (ierr/=0) call fatal_error("initialize_border_profiles",&
                "there was an error getting gsum")
           !the inverse period is the inverse of 2pi/Omega =>  1/2pi * sqrt(r^3/gsum)
-          fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
+          if (gsum/=0) then
+            fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
+          else
+            call fatal_error("initialize_border_profiles","gsum=0")
+          endif
         else
           fac_sqrt_gsum1 = 1/(2*pi)
         endif
 !
         fraction_tborder1=1./fraction_tborder
+!
       endif
 !
       if (lmeridional_border_drive.and..not.lspherical_coords) &
@@ -190,7 +205,7 @@ module BorderProfiles
 !  25-aug-09/anders: coded
 !  06-mar-11/wlad  : added IC functionality
 !
-      use IO, only: input_globals
+      use IO, only: input_snap, input_snap_finalize
 !
       character (len=labellen) :: border_var
       logical :: lread=.true.
@@ -203,7 +218,8 @@ module BorderProfiles
 !
 !  Read the data into an initial condition array f_init that will be saved
 !
-        call input_globals('VAR0',f_init(:,:,:,1:mvar),mvar)
+        call input_snap ('VAR0', f_init(:,:,:,1:mvar), mvar, mode=0)
+        call input_snap_finalize
         lread=.false.
 !
       endif
@@ -379,7 +395,7 @@ module BorderProfiles
                 (y(m)>=theta_upper_border-2*wborder_theta_upper))     ! upper stripe
 !
         if (lradial.or.lmeridional) then
-          call get_drive_time(p,inverse_drive_time,i)
+          call get_drive_time(inverse_drive_time,i)
           call get_border(p,pborder,i)
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
                - (f(i+l1-1,m,n,j) - f_target(i))*pborder*inverse_drive_time
@@ -427,7 +443,7 @@ module BorderProfiles
 !
     endsubroutine get_border
 !***********************************************************************
-    subroutine get_drive_time(p,inverse_drive_time,i)
+    subroutine get_drive_time(inverse_drive_time,i)
 !
 !  This is problem-dependent, since the driving should occur in the
 !  typical time-scale of the problem. tborder can be specified as input.
@@ -438,7 +454,6 @@ module BorderProfiles
 !
       real, intent(out) :: inverse_drive_time
       real :: inverse_period
-      type (pencil_case) :: p
       integer :: i
 !
 !  calculate orbital time
@@ -460,18 +475,17 @@ module BorderProfiles
 !
     endsubroutine get_drive_time
 !***********************************************************************
-    subroutine border_quenching(f,df,j,dt_sub)
+    subroutine border_quenching(f,df,dt_sub)
 !
       use Sub, only: del6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: del6_fj,border_prof_pencil
-      real :: border_diff=0.01,dt_sub
-      integer :: j
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_sub
 !
-      intent(in) :: f,j
-      intent(inout) :: df
+      real, dimension (nx) :: del6_fj,border_prof_pencil
+      real :: border_diff=0.01
+      integer :: j
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
@@ -479,17 +493,23 @@ module BorderProfiles
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
       if (lborder_quenching) then
-        border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
+        do j = 1, mvar
+          do n = n1, n2
+            do m = m1, m2
+              border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 !
-        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
+              df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
 !
-        if (lborder_hyper_diff) then
-          if (maxval(border_prof_pencil) < 1.) then
-            call del6(f,j,del6_fj,IGNOREDX=.true.)
-            df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-                border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
-          endif
-        endif
+              if (lborder_hyper_diff) then
+                if (maxval(border_prof_pencil) < 1.) then
+                  call del6(f,j,del6_fj,IGNOREDX=.true.)
+                  df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+                      border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
+                endif
+              endif
+            enddo
+          enddo
+        enddo
       endif
 !
     endsubroutine border_quenching

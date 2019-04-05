@@ -46,7 +46,7 @@ contains
       real, dimension(:),     intent(IN)    :: a
 
       call keep_compiler_quiet(fnamexy)
-      call keep_compiler_quiet(iname)
+      call keep_compiler_quiet(iname,m,n)
       call keep_compiler_quiet(a)
 
     endsubroutine zsum_yy

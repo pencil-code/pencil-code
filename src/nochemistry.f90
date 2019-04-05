@@ -151,20 +151,6 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
-    subroutine bc_nscbc_subin_x(f,df,topbot,val)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      character (len=3) :: topbot
-      real, dimension (mcom), optional :: val
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(present(val))
-!
-    endsubroutine bc_nscbc_subin_x
-!***********************************************************************
     subroutine chemistry_clean_up()
 !
     endsubroutine chemistry_clean_up
@@ -179,13 +165,14 @@ module Chemistry
 !
     endsubroutine jacobn
 !***********************************************************************
-    subroutine get_mu1_slice(slice,grad_slice,index,sgn,direction)
+    subroutine get_mu1_slice(f,slice,grad_slice,index,sgn,direction)
 !
 ! For the NSCBC boudary conditions the slice of mu1 at the boundary
 ! is required.
 !
 ! 2009.12.10: Nils Erland L. Haugen (coded)
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(ny,nz), intent(out) :: slice, grad_slice
       integer, intent(in) :: index, sgn,direction
 !
@@ -195,12 +182,13 @@ module Chemistry
 !
     end subroutine get_mu1_slice
 !***********************************************************************
-    subroutine get_gamma_slice(slice,index,dir)
+    subroutine get_gamma_slice(f,slice,index,dir)
 !
 !  Get a 2D slice of gamma
 !
 !  2009.12.10: Nils Erland L. Haugen (coded)
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (:,:), intent(out)  :: slice
       integer, intent(in) :: index,dir
 !
@@ -210,12 +198,13 @@ module Chemistry
       !
     endsubroutine get_gamma_slice
 !***********************************************************************
-    subroutine get_cs2_slice(slice,index,dir)
+    subroutine get_cs2_slice(f,slice,index,dir)
 !
 !  Get a 2D slice of cs2
 !
 !  2009.12.10: Nils Erland L. Haugen (coded)
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (:,:), intent(out)  :: slice
       integer, intent(in) :: index,dir
 !

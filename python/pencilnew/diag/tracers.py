@@ -13,8 +13,8 @@ try:
 except:
     print("Warning: no h5py library found.")
 import multiprocessing as mp
-from pencilnew.calc.streamlines import Stream
-from pencilnew.math.interpolation import vec_int
+from ..calc.streamlines import Stream
+from ..math.interpolation import vec_int
 
 
 class Tracers(object):
@@ -190,7 +190,7 @@ class Tracers(object):
 
         # Multi core setup.
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
-            print "error: invalid processor number"
+            print("error: invalid processor number")
             return -1
         queue = mp.Queue()
 

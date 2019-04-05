@@ -1,0 +1,76 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid='$Id$',
+  nt= 40, it1=10, isave=2000, it1d=2000, itorder=3, tmax=0.0024
+  cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.05
+  dsnap=.000025, dvid=.005, slice_position='m' 
+  lpencil_check_small=F
+  lpencil_check=F
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  dspec=0.00005, ou_spec=T, ab_spec=T !(for energy spectra)
+  oned=T,ip=30
+/
+&eos_run_pars
+  mu=0.531
+/
+&hydro_run_pars
+  lupw_uu=T
+  cdt_tauf=1.0
+  lcdt_tauf=T
+  ulev = 50.0
+/
+&density_run_pars
+  lupw_rho=T
+  lconserve_total_mass=T
+  total_mass=0.006591796875
+  diffrho_shock=1.0
+  lmassdiff_fix=T
+  idiff='shock'
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  lupw_ss=T
+  lthdiff_Hmax=T
+  iheatcond='shock','shock2'
+  chi_shock=1.0, chi_shock2=5.0
+/
+&magnetic_run_pars
+  lupw_aa=T
+  ladvective_gauge=T
+  iresistivity='eta-shock', 'eta-shock2'
+  eta_shock=1.0, eta_shock2=5.0, eta_hyper3_mesh=0.
+/
+&viscosity_run_pars
+  ivisc='nu-shock'
+  nu_shock=4.0
+/
+&interstellar_run_pars
+  lSN_scale_rad=T
+  N_mass=25.0
+  rfactor_SN=4.5 !depending on resolution min radius 18 parsec 
+  mass_profile='gaussian3'
+  thermal_profile='gaussian2'
+  mass_width_ratio=1.75
+  energy_width_ratio=1.0
+  frac_kin=0.0
+  frac_ecr=0.0
+  eps_mass=0.01
+  eps_radius=0.005
+  TT_SN_max=4.9e6
+  rho_SN_max=50.0
+  luniform_zdist_SNI=T
+  lSNII_gaussian=F
+  SNI_factor=51.38
+  !t_next_SNI=0.
+  l_persist_overwrite_tSNI=F
+  SN_rho_ratio=1e4
+/
+&shock_run_pars
+  ishock_max=2
+/
+&power_spectrum_run_pars
+/

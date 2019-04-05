@@ -13,3 +13,6 @@ Recommended resolution:
 Comments:
     This is a 1-D flame in a frame where the flame front is stationary
     The temperatures on the two ends are 750K and 2500K, respectively.
+    lviscosity_heat=T was added on 11-feb-19/axel. It makes a difference
+    to orms, but not to urms.
+

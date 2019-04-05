@@ -1,0 +1,110 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Solar subsurface convection and atmosphere
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2017/03/15 08:44:26 piyali Exp $'
+  nt=50
+  it1=2
+  isave=20
+  cdt=0.25
+  dvid=1.0
+  dsnap=0.1
+  d2davg=1.0
+  itorder=3
+  bcz = 's:a','s:a','a:out','StS:s','StS:cT','a:nil','a:nil','s:nil','a','a','a','s'
+  lwrite_aux=T
+  dtmin=1.0e-9
+/
+&eos_run_pars
+  xHe=0.089
+  lss_as_aux=T
+  lgamma_as_aux=T
+/
+&hydro_run_pars
+  uuprof='damp_corona',tau_diffrot1=1.0
+  lcalc_uumean=T,rdampext=0.0,wdamp=0.2
+  lupw_uu=T                            ! avoid wiggles
+/
+&density_run_pars
+  lupw_lnrho=T                            ! avoid wiggles
+  idiff='shock','normal','hyper3lnrho'
+  diffrho_shock=5.0,diffrho=4.0e-6,diffrho_hyper3=1.0e-7
+/
+&grav_run_pars
+  gravz_profile='const'
+  gravz=-2.75
+  zinfty=46.0
+/
+&entropy_run_pars
+  lupw_lnTT=T                             ! avoid wiggles
+  iheatcond='chi-const','chi-hyper3'
+  chi=1.0e-6,chi_hyper3=5.0e-8
+/
+&magnetic_run_pars
+  lweyl_gauge=T
+  lbb_as_aux=T
+  B_ext=1.0,0.0,1.0,t_bext=30.0
+  B0_ext=0.0707107,0.0,0.0707107,t0_bext=5.0
+  iresistivity='hyper3','shock','eta-zdep'
+  eta=1.0e-6
+  zdep_profile='step',eta_jump=40001.0,eta_z0=1.0,eta_zwidth=-0.2
+  eta_hyper3=1e-7
+  eta_shock=5.
+  lboris_correction=T,cmin=30.0
+/
+&radiation_run_pars
+  cdtrad=5.0e-4
+  cdtrad=1.0e-3
+  lrad_debug=F
+  bc_rad='p:p','p:p','S:0'
+  radx=1
+  rady=0
+  radz=1
+  rad2max=1
+  lcutoff_opticallythin=T,lcutoff_zconst=T
+  z_cutoff=1.5
+  opacity_type='total_Rosseland_mean'
+  scalefactor_cooling=1.,scalefactor_srad=1.0
+  cool_wid=0.25
+  kapparho_floor=1.0e-10
+  lradflux=F,lno_rad_heating=T
+  qrad_max=1.0,zclip_up=1.2,zclip_dwn=0.3
+/
+&viscosity_run_pars
+  ivisc='nu-prof','hyper3_nu-const','nu-shock'
+  nu=1.0e-6,nu_jump=400001.0,znu=1.0,widthnu=-0.2
+  nu_hyper3=1e-7
+  nu_shock=5.
+/
+&special_run_pars
+  cool_RTV=1 ! radiative losses
+  cool_RTV_cutoff=2 ! radiative losses
+  nvor=0
+  luse_vel_field=F
+  lslope_limited_special=F
+  lnrho_min=-22.9,lnrho_min_tau=10.0
+! If temperature in chromosphere drops below Tcrit
+! switch on artificial heating
+  iheattype='T<Tcrit'
+  T_crit=2000.0
+  deltaT_crit=300
+  lflux_emerg_bottom=F,lset_boundary_emf=T
+  flux_type='uniform'
+  nwave=50.2655,50.2655
+  z_ff=2.0,2.2
+  w_ff=2.0943952,6.28319
+  uu_emerg=0.05,0.05,0.05
+  uu_drive=0.0,0.0,0.0
+  bb_emerg=0.0,1.0,0.0
+/
+&shock_run_pars
+  lshock_first=F
+/ 
+&heatflux_run_pars
+   iheatflux='noadvection-spitzer',tau_inv_spitzer=1000.0
+   Kspitzer_para=1.0e-25,Kc=0.1,hyper3_coeff=100.0
+   lreset_heatflux=F
+/
+

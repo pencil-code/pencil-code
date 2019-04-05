@@ -516,6 +516,7 @@ module Hydro
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,ixy
       logical :: lreset,lwr
@@ -583,38 +584,38 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_u2m=',idiag_u2m
-        write(3,*) 'i_um2=',idiag_um2
-        write(3,*) 'i_o2m=',idiag_o2m
-        write(3,*) 'i_oum=',idiag_oum
-        write(3,*) 'i_urms=',idiag_urms
-        write(3,*) 'i_umax=',idiag_umax
-        write(3,*) 'i_ux2m=',idiag_ux2m
-        write(3,*) 'i_uy2m=',idiag_uy2m
-        write(3,*) 'i_uz2m=',idiag_uz2m
-        write(3,*) 'i_orms=',idiag_orms
-        write(3,*) 'i_omax=',idiag_omax
-        write(3,*) 'i_ruxm=',idiag_ruxm
-        write(3,*) 'i_ruym=',idiag_ruym
-        write(3,*) 'i_ruzm=',idiag_ruzm
-        write(3,*) 'i_umx=',idiag_umx
-        write(3,*) 'i_umy=',idiag_umy
-        write(3,*) 'i_umz=',idiag_umz
-        write(3,*) 'i_Marms=',idiag_Marms
-        write(3,*) 'i_Mamax=',idiag_Mamax
-        write(3,*) 'i_divu2m=',idiag_divu2m
-        write(3,*) 'i_epsK=',idiag_epsK
-        write(3,*) 'i_uxmz=',idiag_uxmz
-        write(3,*) 'i_uymz=',idiag_uymz
-        write(3,*) 'i_uzmz=',idiag_uzmz
-        write(3,*) 'i_uxmxy=',idiag_uxmxy
-        write(3,*) 'i_uymxy=',idiag_uymxy
-        write(3,*) 'i_uzmxy=',idiag_uzmxy
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuu=',iuu
-        write(3,*) 'iux=',iux
-        write(3,*) 'iuy=',iuy
-        write(3,*) 'iuz=',iuz
+        call farray_index_append('i_u2m',idiag_u2m)
+        call farray_index_append('i_um2',idiag_um2)
+        call farray_index_append('i_o2m',idiag_o2m)
+        call farray_index_append('i_oum',idiag_oum)
+        call farray_index_append('i_urms',idiag_urms)
+        call farray_index_append('i_umax',idiag_umax)
+        call farray_index_append('i_ux2m',idiag_ux2m)
+        call farray_index_append('i_uy2m',idiag_uy2m)
+        call farray_index_append('i_uz2m',idiag_uz2m)
+        call farray_index_append('i_orms',idiag_orms)
+        call farray_index_append('i_omax',idiag_omax)
+        call farray_index_append('i_ruxm',idiag_ruxm)
+        call farray_index_append('i_ruym',idiag_ruym)
+        call farray_index_append('i_ruzm',idiag_ruzm)
+        call farray_index_append('i_umx',idiag_umx)
+        call farray_index_append('i_umy',idiag_umy)
+        call farray_index_append('i_umz',idiag_umz)
+        call farray_index_append('i_Marms',idiag_Marms)
+        call farray_index_append('i_Mamax',idiag_Mamax)
+        call farray_index_append('i_divu2m',idiag_divu2m)
+        call farray_index_append('i_epsK',idiag_epsK)
+        call farray_index_append('i_uxmz',idiag_uxmz)
+        call farray_index_append('i_uymz',idiag_uymz)
+        call farray_index_append('i_uzmz',idiag_uzmz)
+        call farray_index_append('i_uxmxy',idiag_uxmxy)
+        call farray_index_append('i_uymxy',idiag_uymxy)
+        call farray_index_append('i_uzmxy',idiag_uzmxy)
+        call farray_index_append('nname',nname)
+        call farray_index_append('iuu',iuu)
+        call farray_index_append('iux',iux)
+        call farray_index_append('iuy',iuy)
+        call farray_index_append('iuz',iuz)
       endif
 !
     endsubroutine rprint_hydro

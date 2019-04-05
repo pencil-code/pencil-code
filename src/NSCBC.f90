@@ -18,14 +18,12 @@ module NSCBC
 !
   use Cdata
   use Cparam
-  use Messages
-  use Mpicomm
-  use EquationOfState
-  use Boundcond
+  use Messages, only: fatal_error
+  use Mpicomm, only: stop_it
 !
   implicit none
 !
-include 'NSCBC.h'
+  include 'NSCBC.h'
 !
 ! Format: nscbc_bc = 'bottom_x:top_x','bottom_y:top_y','bottom_z:top_z'
 ! for top and bottom boundary treatment at x, y and z-boundaries.
@@ -375,9 +373,9 @@ include 'NSCBC.h'
 !                    enable a relaxation of the species mass fractions at the inlet
 !                    in the case of a multi-species flow
 !
-      use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+      use Deriv, only: der_onesided_4_slice
       use Chemistry
-      use General, only: random_number_wrapper
+      use EquationOfState, only: imass, species_constants
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -528,7 +526,7 @@ include 'NSCBC.h'
 !  This includes values and gradients of; density, temperature, pressure
 !  In addition also speed of sound, gamma and mu1 is found.
 !
-      call get_thermodynamics(mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,&
+      call get_thermodynamics(f,mu1,grad_mu1,gamma,cs2,cs,rho0,TT,P0,&
           grad_rho,grad_P,grad_T,lll,sgn,dir1,fslice,T_t,llinlet,&
           imin,imax,jmin,jmax)
 !
@@ -964,6 +962,8 @@ include 'NSCBC.h'
 !
 !  2010.01.20/Nils Erland L. Haugen: coded
 !
+      use Boundcond, only: jet_x
+
       logical, intent(out) :: non_zero_transveral_velo
       real, dimension(:,:,:), intent(out) :: u_in
       real, dimension(:,:), intent(out) :: scalar_profile
@@ -979,6 +979,7 @@ include 'NSCBC.h'
       real :: radius_mean, smooth, rad, vel
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
+      logical :: lprint
 !
 !  Allocate allocatables
 !
@@ -992,24 +993,25 @@ include 'NSCBC.h'
 ! Define velocity profile at inlet
 !
         u_in=0
+        lprint=lroot .and. it==1 .and. lfirst .and. .not. lpencil_check_at_work
         do j=1,ninit
           select case (inlet_profile(j))
 !
           case ('nothing')
-            if (lroot .and. it==1 .and. j == 1 .and. lfirst) &
+            if (lprint .and. j==1) &
                 print*,'inlet_profile: nothing'
             non_zero_transveral_velo=.false.
             u_profile=1.
 !
           case ('uniform')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: uniform'
             non_zero_transveral_velo=.false.
             u_in(:,:,dir)=u_in(:,:,dir)+u_t
             u_profile=1.
 !
           case ('coaxial_jet')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: coaxial_jet'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1080,7 +1082,7 @@ include 'NSCBC.h'
             enddo
 !
           case ('single_jet')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: single_jet'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1114,7 +1116,7 @@ include 'NSCBC.h'
             enddo
 !
           case ('single_jet_no_coflow')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_profile: single_jet'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1155,7 +1157,7 @@ include 'NSCBC.h'
             print*,'1:u_in(*,1,1)=',u_in(:,1,1)
 !
          case ('single_jet_no_coflow2')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                  print*,'inlet_profile: single_jet_no_coflow2'
             non_zero_transveral_velo=.true.
             velo(1)=u_t
@@ -1238,7 +1240,7 @@ include 'NSCBC.h'
 !
 !  2010.07.26/Julien Savre: coded
 !
-      use EquationOfState
+      use EquationOfState, only: find_species_index
       use General, only: keep_compiler_quiet
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
@@ -1252,29 +1254,31 @@ include 'NSCBC.h'
       integer :: i_CH4=0, i_O2=0, i_N2=0
       integer :: ichem_CH4=0, ichem_O2=0, ichem_N2=0
       integer :: i,jj,k
-      logical :: lO2, lN2, lCH4
+      logical :: lO2, lN2, lCH4, lprint
 !
 ! Define composition profile at inlet
 !
       call keep_compiler_quiet(jmin)
       call keep_compiler_quiet(jmax)
 !
+      lprint=lroot .and. it==1 .and. lfirst .and. .not. lpencil_check_at_work
+
         do jj=1,ninit
           select case (zz_profile(jj))
 !
           case ('nothing')
-            if (lroot .and. it==1 .and. jj == 1 .and. lfirst) &
+            if (lprint .and. jj==1) &
                 print*,'inlet_YY_profile: nothing'
 !
           case ('uniform')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_YY_profile: uniform,'
             do k = 1, nchemspec
               YYi_full(:,:,k)=YYi(k)
             enddo
 !
           case ('triple_flame')
-            if (lroot .and. it==1 .and. lfirst) &
+            if (lprint) &
                 print*,'inlet_YY_profile: triple flame, constant gradient'
             zz1=inlet_zz1
             zz2=inlet_zz2
@@ -1401,7 +1405,7 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_z
 !***********************************************************************
-      subroutine get_thermodynamics(mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,&
+      subroutine get_thermodynamics(f,mu1,grad_mu1,gamma_,cs2,cs,rho0,TT,P0,&
           grad_rho,grad_P,grad_T,lll,sgn,direction,fslice,T_t,llinlet,&
           imin,imax,jmin,jmax)
 !
@@ -1410,9 +1414,9 @@ include 'NSCBC.h'
 ! 2010.01.21/Nils Erland: coded
 !
         use Chemistry
-        use Viscosity
         use EquationOfState, only: cs0, cs20, eoscalc, irho_TT, gamma
 !
+        real, dimension(mx,my,mz,mfarray) :: f
         integer, intent(in) :: direction, sgn,lll,imin,imax,jmin,jmax
         real, dimension(:,:), intent(out)  :: mu1,cs2,cs,gamma_, grad_mu1
         real, dimension(:,:), intent(out)  :: rho0,TT,P0
@@ -1444,8 +1448,8 @@ include 'NSCBC.h'
 !
         if (ilnTT>0 .or. iTT>0) then
           if (leos_chemistry) then
-            call get_mu1_slice(mu1,grad_mu1,lll,sgn,direction)
-            call get_gamma_slice(gamma_,direction,lll)
+            call get_mu1_slice(f,mu1,grad_mu1,lll,sgn,direction)
+            call get_gamma_slice(f,gamma_,direction,lll)
           else
             gamma_=gamma
             mu1=1.0
@@ -1473,7 +1477,7 @@ include 'NSCBC.h'
           cs=cs0
         endif
       elseif (leos_chemistry) then
-        call get_cs2_slice(cs2,direction,lll)
+        call get_cs2_slice(f,cs2,direction,lll)
         cs=sqrt(cs2)
       else
         print*,"bc_nscbc_prf_x: leos_idealgas=",leos_idealgas,"."
@@ -1523,7 +1527,7 @@ include 'NSCBC.h'
 !
 !  2010.01.21/Nils Erland: coded
 !
-        use Deriv, only: der_onesided_4_slice, der_pencil, der2_pencil
+        use Deriv, only: der_onesided_4_slice, der_pencil
 !
         integer, intent(in) :: sgn,dir,lll
         real, dimension(:,:,:,:), intent(out) :: dui_dxj
@@ -1592,6 +1596,7 @@ include 'NSCBC.h'
 !  Do central differencing in the directions parallell to the boundary
 !
         if (dir == 1) then
+          lglob=lll-nghost
           if (nygrid /= 1) then
             do i=n1,n2
               call der_pencil(2,f(lll,:,i,iux),tmp1(:,i))
@@ -1614,6 +1619,7 @@ include 'NSCBC.h'
           endif
           if (nzgrid /= 1) then
             do i=m1,m2
+              m=i
               call der_pencil(3,f(lll,i,:,iux),tmp1(i,:))
               call der_pencil(3,f(lll,i,:,iuy),tmp2(i,:))
               call der_pencil(3,f(lll,i,:,iuz),tmp3(i,:))
@@ -1654,7 +1660,9 @@ include 'NSCBC.h'
             if (ilnTT>0) grad_T(:,:,1)=0
           endif
           if (nzgrid /= 1) then
+            m=lll
             do i=l1,l2
+              lglob=i-nghost
               call der_pencil(3,f(i,lll,:,iux),tmp1(i,:))
               call der_pencil(3,f(i,lll,:,iuy),tmp2(i,:))
               call der_pencil(3,f(i,lll,:,iuz),tmp3(i,:))
@@ -1696,6 +1704,7 @@ include 'NSCBC.h'
           endif
           if (nygrid /= 1) then
             do i=l1,l2
+              lglob=i-nghost
               call der_pencil(2,f(i,:,lll,iux),tmp1(i,:))
               call der_pencil(2,f(i,:,lll,iuy),tmp2(i,:))
               call der_pencil(2,f(i,:,lll,iuz),tmp3(i,:))
@@ -1767,7 +1776,6 @@ include 'NSCBC.h'
 !
 !   16-nov-08/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil
       use Chemistry
 !
@@ -1917,7 +1925,6 @@ include 'NSCBC.h'
 !
 !   16-nov-08/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice, der_pencil
       use Chemistry
 !
@@ -2118,7 +2125,6 @@ include 'NSCBC.h'
 !
 !   16-nov-08/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil, der2_pencil
       use Chemistry
 !
@@ -2578,7 +2584,6 @@ include 'NSCBC.h'
 !
 !   16-jun-09/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
       use Chemistry
 !
@@ -3016,7 +3021,6 @@ include 'NSCBC.h'
 !
 !   16-jun-09/natalia: coded.
 !
-      use EquationOfState, only: cs0, cs20
       use Deriv, only: der_onesided_4_slice,der_pencil
       use Chemistry
 !
@@ -3442,10 +3446,6 @@ include 'NSCBC.h'
 !    ux,uy,T are fixed, drho  is calculated
 !
 !   16-nov-08/natalia: coded.
-!
-      use EquationOfState, only: cs0, cs20
-      use Deriv, only: der_onesided_4_slice, der_pencil
-      use Chemistry
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot

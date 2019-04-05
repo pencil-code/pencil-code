@@ -45,6 +45,16 @@ module Magnetic
   real :: bthresh=0.
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
+!
+! Slice precalculation buffers
+!
+  real, target, dimension (:,:,:), allocatable :: bb_xy
+  real, target, dimension (:,:,:), allocatable :: bb_xy2
+  real, target, dimension (:,:,:), allocatable :: bb_xy3
+  real, target, dimension (:,:,:), allocatable :: bb_xy4
+  real, target, dimension (:,:,:), allocatable :: bb_xz
+  real, target, dimension (:,:,:), allocatable :: bb_yz
+  real, target, dimension (:,:,:), allocatable :: bb_xz2
 
   namelist /magnetic_init_pars/ &
        eta,A0,B_ext,k_aa, &
@@ -76,6 +86,7 @@ module Magnetic
   integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0
   integer :: idiag_bmy=0,idiag_bmz=0,idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
   integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_uxDxuxbm=0
+  integer :: ivid_bb=0
 
   contains
 
@@ -117,6 +128,17 @@ module Magnetic
 !
 !  24-nov-2002/tony: dummy routine - nothing to do at present
       mu01=1./mu0
+
+      if (ivid_bb/=0) then
+        !call alloc_slice_buffers(bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
+        if (lwrite_slice_xy .and..not.allocated(bb_xy) ) allocate(bb_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb_xz) ) allocate(bb_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb_yz) ) allocate(bb_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb_xy2)) allocate(bb_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb_xy3)) allocate(bb_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb_xy4)) allocate(bb_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb_xz2)) allocate(bb_xz2(nx,nz,3))
+      endif
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -219,7 +241,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       use Diagnostics
       use IO
-      use Slices
+      use Slices_methods, only: store_slices
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -240,6 +262,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       real, dimension (nx,3) :: glnrho
       real, dimension (nx) :: B2,B21,E2,divE,divE2,divEE2,ou,o2,sij2
       real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
+      real, dimension (nx) :: diffus_eta,diffus_nu,advec_va2
       real :: c2=1
 !
 !
@@ -322,13 +345,17 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       if (lfirst.and.ldt) then
         advec_va2=B2*dxyz_2
+        advec2=advec2+advec_va2
+
         diffus_nu=nu*dxyz_2   ! isn't this done elsewhere ?
         diffus_eta=eta*dxyz_2
-      endif
-      if (headtt.or.ldebug) then
-        print*,'daa_dt: max(advec_va2) =',maxval(advec_va2)
-        print*,'daa_dt: max(diffus_nu) =',maxval(diffus_nu)
-        print*,'daa_dt: max(diffus_eta) =',maxval(diffus_eta)
+        maxdiffus=max(maxdiffus,diffus_eta,diffus_nu)
+!
+        if (headtt.or.ldebug) then
+          print*,'daa_dt: max(advec_va2) =',maxval(advec_va2)
+          print*,'daa_dt: max(diffus_nu) =',maxval(diffus_nu)
+          print*,'daa_dt: max(diffus_eta) =',maxval(diffus_eta)
+        endif
       endif
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
@@ -382,13 +409,8 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-        if (lvideo.and.lfirst) then
-          do j=1,3
-            bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
-            if (m==iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
-            if (n==iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
-            if (n==iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
-          enddo
+        if (lvideo.and.lfirst.and.ivid_bb) then
+          call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2)
           call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh,nbthresh)
         endif
 !
@@ -565,6 +587,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr
@@ -585,6 +608,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
         idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_uxDxuxbm=0.
+        ivid_bb=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -646,49 +670,55 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
         call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',idiag_b2mphi)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'bb',ivid_bb)
+      enddo
+!
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_abm=',idiag_abm
-        write(3,*) 'i_jbm=',idiag_jbm
-        write(3,*) 'i_b2m=',idiag_b2m
-        write(3,*) 'i_e2m=',idiag_e2m
-        write(3,*) 'i_dive2m=',idiag_dive2m
-        write(3,*) 'i_divee2m=',idiag_divee2m
-        write(3,*) 'i_bm2=',idiag_bm2
-        write(3,*) 'i_j2m=',idiag_j2m
-        write(3,*) 'i_jm2=',idiag_jm2
-        write(3,*) 'i_epsM=',idiag_epsM
-        write(3,*) 'i_brms=',idiag_brms
-        write(3,*) 'i_bmax=',idiag_bmax
-        write(3,*) 'i_jrms=',idiag_jrms
-        write(3,*) 'i_jmax=',idiag_jmax
-        write(3,*) 'i_vArms=',idiag_vArms
-        write(3,*) 'i_vAmax=',idiag_vAmax
-        write(3,*) 'i_bx2m=',idiag_bx2m
-        write(3,*) 'i_by2m=',idiag_by2m
-        write(3,*) 'i_bz2m=',idiag_bz2m
-        write(3,*) 'i_uxbm=',idiag_uxbm
-        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
-        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
-        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
-        write(3,*) 'i_bxmz=',idiag_bxmz
-        write(3,*) 'i_bymz=',idiag_bymz
-        write(3,*) 'i_bzmz=',idiag_bzmz
-        write(3,*) 'i_bmx=',idiag_bmx
-        write(3,*) 'i_bmy=',idiag_bmy
-        write(3,*) 'i_bmz=',idiag_bmz
-        write(3,*) 'i_bxmxy=',idiag_bxmxy
-        write(3,*) 'i_bymxy=',idiag_bymxy
-        write(3,*) 'i_bzmxy=',idiag_bzmxy
-        write(3,*) 'i_b2mphi=',idiag_b2mphi
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
+        call farray_index_append('i_abm',idiag_abm)
+        call farray_index_append('i_jbm',idiag_jbm)
+        call farray_index_append('i_b2m',idiag_b2m)
+        call farray_index_append('i_e2m',idiag_e2m)
+        call farray_index_append('i_dive2m',idiag_dive2m)
+        call farray_index_append('i_divee2m',idiag_divee2m)
+        call farray_index_append('i_bm2',idiag_bm2)
+        call farray_index_append('i_j2m',idiag_j2m)
+        call farray_index_append('i_jm2',idiag_jm2)
+        call farray_index_append('i_epsM',idiag_epsM)
+        call farray_index_append('i_brms',idiag_brms)
+        call farray_index_append('i_bmax',idiag_bmax)
+        call farray_index_append('i_jrms',idiag_jrms)
+        call farray_index_append('i_jmax',idiag_jmax)
+        call farray_index_append('i_vArms',idiag_vArms)
+        call farray_index_append('i_vAmax',idiag_vAmax)
+        call farray_index_append('i_bx2m',idiag_bx2m)
+        call farray_index_append('i_by2m',idiag_by2m)
+        call farray_index_append('i_bz2m',idiag_bz2m)
+        call farray_index_append('i_uxbm',idiag_uxbm)
+        call farray_index_append('i_oxuxbm',idiag_oxuxbm)
+        call farray_index_append('i_jxbxbm',idiag_jxbxbm)
+        call farray_index_append('i_uxDxuxbm',idiag_uxDxuxbm)
+        call farray_index_append('i_bxmz',idiag_bxmz)
+        call farray_index_append('i_bymz',idiag_bymz)
+        call farray_index_append('i_bzmz',idiag_bzmz)
+        call farray_index_append('i_bmx',idiag_bmx)
+        call farray_index_append('i_bmy',idiag_bmy)
+        call farray_index_append('i_bmz',idiag_bmz)
+        call farray_index_append('i_bxmxy',idiag_bxmxy)
+        call farray_index_append('i_bymxy',idiag_bymxy)
+        call farray_index_append('i_bzmxy',idiag_bzmxy)
+        call farray_index_append('i_b2mphi',idiag_b2mphi)
+        call farray_index_append('nname',nname)
+        call farray_index_append('nnamexy',nnamexy)
+        call farray_index_append('nnamez',nnamez)
+        call farray_index_append('iaa',iaa)
+        call farray_index_append('iax',iax)
+        call farray_index_append('iay',iay)
+        call farray_index_append('iaz',iaz)
       endif
 !
     endsubroutine rprint_magnetic
@@ -787,6 +817,7 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
       endif
 !
       first = .false.
+!
     endsubroutine calc_mfield
 !***********************************************************************
     subroutine bc_frozen_in_bb_z(topbot)

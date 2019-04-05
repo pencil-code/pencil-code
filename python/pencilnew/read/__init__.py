@@ -1,18 +1,20 @@
-################
-##
-##	read
-##
-################
+'''
+Reading routines for the pencil code data.
+'''
 
-from dim import *
-from param import *
-from grid import *
-from index import *
-from var import var
-from slices import slices
-from ts import *
-from averages import *
+from .dim import dim
+from .pdim import pdim, __Pdim__
+from .param import param
+from .grid import grid
+from .index import index
+from .var import var
+from .slices import slices
+from .ts import ts
+from .averages import aver
+from .power import power
+from .ogdim import ogdim
+from .ogvar import ogvar
 
 # idl workarounds
-from pstalk import pstalk
-from pvar import pvar
+from .pstalk import pstalk
+from .pvar import pvar

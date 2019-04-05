@@ -25,7 +25,7 @@ module Initcond
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
-  public :: beltrami_complex, beltrami_old, bhyperz, bihelical
+  public :: beltrami_general, beltrami_complex, beltrami_old, bhyperz, bihelical
   public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: stratification_xz
@@ -55,7 +55,7 @@ module Initcond
   public :: hawley_etal99a
   public :: robertsflow
   public :: const_lou
-  public :: corona_init,mdi_init,mag_init,temp_hydrostatic
+  public :: corona_init,mdi_init,mag_init,mag_Az_init,file_init,temp_hydrostatic
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
@@ -180,7 +180,7 @@ module Initcond
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
                                    *spread(spread(sin(ky1*y),1,mx),3,mz)&
                                    *spread(spread(sin(kz1*z),1,mx),2,my))
-!XXX
+!
       endif
 !
     endsubroutine sinx_siny_sinz
@@ -1549,7 +1549,7 @@ module Initcond
 !
     endsubroutine beltrami_old
 !***********************************************************************
-    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
+    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sigma)
 !
 !  Beltrami field (as initial condition)
 !
@@ -1561,8 +1561,8 @@ module Initcond
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
-      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
-      real :: ampl,k=1.,ph
+      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma
+      real :: ampl,k=1.,ph,sig
 !
 !  possibility of shifting the Beltrami wave by phase ph
 !
@@ -1571,6 +1571,15 @@ module Initcond
         ph=phase
       else
         ph=0.
+      endif
+!
+!  possibility of a fractional helicity
+!
+      if (present(sigma)) then
+        if (lroot) print*,'Beltrami: sigma=',sigma
+        sig=sigma
+      else
+        sig=1.
       endif
 !
 !  wavenumber k, helicity H=ampl (can be either sign)
@@ -1587,12 +1596,12 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)*sig
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kx,i=',k,i
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)*sig
         endif
       endif
 !
@@ -1609,10 +1618,10 @@ module Initcond
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)*sig
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)*sig
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
         endif
       endif
@@ -1629,16 +1638,59 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)*sig
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kz,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)*sig
         endif
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine beltrami_general(ampl,f,i,kx,ky,kz,phase)
+!
+!  Beltrami field (as initial condition)
+!
+!  19-jun-02/axel: coded
+!   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
+!
+      integer :: i,j,l,m,n
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: kx, ky, kz, phase, k, cfunc, sfunc
+      !real :: ex=.1, ey=.33, ez=.58
+      !real :: ex=1., ey=.0, ez=1.
+      !real :: ex=1., ey=.0, ez=0.
+      real :: ex=0., ey=.0, ez=1.
+      real :: kxe_x, kxe_y, kxe_z, kxkxe_x, kxkxe_y, kxkxe_z
+      real :: ampl
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+      kxe_x=ky*ez-kz*ey
+      kxe_y=kz*ex-kx*ez
+      kxe_z=kx*ey-ky*ex
+!
+      kxkxe_x=ky*kxe_z-kz*kxe_y
+      kxkxe_y=kz*kxe_x-kx*kxe_z
+      kxkxe_z=kx*kxe_y-ky*kxe_x
+!
+      k=sqrt(kx**2+ky**2+kz**2)
+!
+      do n=1,mz
+      do m=1,my
+      do l=1,mx
+        cfunc=abs(ampl)*cos(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        sfunc=    ampl *sin(kx*x(l)+ky*y(m)+kz*z(n)+phase)
+        j=i  ; f(l,m,n,j)=f(l,m,n,j)+kxkxe_x*cfunc+k*kxe_x*sfunc
+        j=i+1; f(l,m,n,j)=f(l,m,n,j)+kxkxe_y*cfunc+k*kxe_y*sfunc
+        j=i+2; f(l,m,n,j)=f(l,m,n,j)+kxkxe_z*cfunc+k*kxe_z*sfunc
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine beltrami_general
 !***********************************************************************
     subroutine bihelical(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase,sym)
 !
@@ -2457,7 +2509,7 @@ module Initcond
       use Sub, only: write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,ssat0
+      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,acc0
       real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2,var3
       logical :: exist
@@ -2486,19 +2538,19 @@ module Initcond
       case ('lnrho_ss')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
             if (ldensity) lnrho0(n)=var1
             if (lentropy) ss0(n)=var2
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
         enddo
 !
       case ('lnrho_lnTT')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
             if (ldensity) lnrho0(n)=var1
             if (ltemperature) lnTT0(n)=var2
@@ -2507,14 +2559,14 @@ module Initcond
               ss0(n)=tmp
             endif
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
         enddo
 !
-      case ('lnrho_lnTT_ssat')
+      case ('lnrho_lnTT_acc')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2,var3
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1, var2, var3=', tmp, var1, var2, var3
             if (ldensity) lnrho0(n)=var1
             if (ltemperature) lnTT0(n)=var2
@@ -2522,20 +2574,20 @@ module Initcond
               call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
               ss0(n)=tmp
             endif
-            if (lsupersat) ssat0(n)=var3
+            if (lascalar) acc0(n)=var3
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
         enddo
 !
       case ('lnrho')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1
-          if (stat>=0) then
+          if (stat==0) then
             if (ip<5) print*, 'stratification: z, var1=', tmp, var1
             if (ldensity) lnrho0(n)=var1
           else
-            exit
+            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
           endif
 !
         enddo
@@ -2543,11 +2595,12 @@ module Initcond
 !
 !  Select the right region for the processor afterwards.
 !
-      select case (n)
+!--   select case (n)
 !
 !  Without ghost zones.
 !
-      case (nzgrid+1)
+!--   case (nzgrid+1)
+      if (n==(nzgrid+1)) then
         if (lentropy) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
@@ -2560,11 +2613,11 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
-        if (ltemperature.and.lsupersat) then
+        if (ltemperature.and.lascalar) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
-            f(:,:,n,issat)=ssat0(ipz*nz+(n-nghost))
+            f(:,:,n,iacc)=acc0(ipz*nz+(n-nghost))
           enddo
         endif
         if (.not.lentropy.and..not.ltemperature) then
@@ -2575,7 +2628,8 @@ module Initcond
 !
 !  With ghost zones.
 !
-      case (mzgrid+1)
+!--   case (mzgrid+1)
+      elseif (n==(mzgrid+1)) then
         if (lentropy) then
           do n=1,mz
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
@@ -2594,7 +2648,8 @@ module Initcond
           enddo
         endif
 !
-      case default
+!--   case default
+      else
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
                 'for this run is allowed to contain either',nzgrid, &
@@ -2604,29 +2659,30 @@ module Initcond
         endif
         call fatal_error('','')
 !
-      endselect
+!--   endselect
+      endif
 !
 !  occupy profile arrays
 !
-        if (lentropy) then
-          do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n)
-            ss_mz(n)=ss0(ipz*nz+n)
-          enddo
-          call write_zprof('ss_mz',ss_mz)
-        endif
-        if (ltemperature) then
-          do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n)
-            lnTT_mz(n)=lnTT0(ipz*nz+n)
-          enddo
-          call write_zprof('lnTT_mz',lnTT_mz)
-        endif
-        if (.not.lentropy.and..not.ltemperature) then
-          do n=1,mz
-            lnrho_mz(n)=lnrho0(ipz*nz+n)
-          enddo
-        endif
+      if (lentropy) then
+        do n=1,mz
+          lnrho_mz(n)=lnrho0(ipz*nz+n)
+          ss_mz(n)=ss0(ipz*nz+n)
+        enddo
+        if (lcooling_ss_mz) call write_zprof('ss_mz',ss_mz)
+      endif
+      if (ltemperature) then
+        do n=1,mz
+          lnrho_mz(n)=lnrho0(ipz*nz+n)
+          lnTT_mz(n)=lnTT0(ipz*nz+n)
+        enddo
+        if (lcooling_ss_mz) call write_zprof('lnTT_mz',lnTT_mz)
+      endif
+      if (.not.lentropy.and..not.ltemperature) then
+        do n=1,mz
+          lnrho_mz(n)=lnrho0(ipz*nz+n)
+        enddo
+      endif
 !
       close(19)
 !
@@ -2697,11 +2753,12 @@ module Initcond
 !
 !  select the right region for the processor afterwards
 !
-      select case (n)
+!--   select case (n)
   !
   !  without ghost zones
   !
-      case (nxgrid+1)
+!--   case (nxgrid+1)
+      if (n==nxgrid+1) then
         if (lentropy) then
           do n=l1,l2
             f(n,:,:,ilnrho)=lnrho0(ipx*nx+(n-nghost))
@@ -2717,7 +2774,8 @@ module Initcond
   !
   !  with ghost zones
   !
-      case (mxgrid+1)
+!--   case (mxgrid+1)
+      elseif (n==mxgrid+1) then
         if (lentropy) then
           do n=1,mx
             f(n,:,:,ilnrho)=lnrho0(ipx*nx+n)
@@ -2731,7 +2789,8 @@ module Initcond
           enddo
         endif
 !
-      case default
+!--   case default
+      else
         if (lroot) then
           print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
                 'for this run is allowed to contain either',nxgrid, &
@@ -2741,7 +2800,8 @@ module Initcond
         endif
         call fatal_error('','')
 !
-      endselect
+!--   endselect
+      endif
 !
       close(19)
 !
@@ -3814,10 +3874,10 @@ module Initcond
       else
         print*,'uniform_x: uniform x-field ; i=',i
         if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
-        do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,i  )=0.0
-          f(l1:l2,m,n,i+1)=-ampl*z(n)
-          f(l1:l2,m,n,i+2)=0.0
+        do n=1,mz; do m=1,my
+          f(:,m,n,i  )=0.0
+          f(:,m,n,i+1)=-ampl*z(n)
+          f(:,m,n,i+2)=0.0
         enddo; enddo
       endif
 !
@@ -4655,7 +4715,7 @@ module Initcond
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
       else
-        lscale_tobox1 = .false.
+        lscale_tobox1 = .true.
       endif
 !
 !  Allocate memory for arrays.
@@ -4686,15 +4746,15 @@ module Initcond
 !  calculate k^2
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lx
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lx
         kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Ly
+        if (.not.lscale_tobox1) scale_factor=2*pi/Ly
         ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lz
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lz
         kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  integration over shells
@@ -4756,7 +4816,8 @@ module Initcond
 !***********************************************************************
     subroutine power_randomphase_hel(ampl,initpower,initpower2, &
       cutoff,ncutoff,kpeak,f,i1,i2,relhel,kgaussian, &
-      lskip_projection,lno_second_ampl,lvectorpotential,lscale_tobox)
+      lskip_projection,lno_second_ampl,lvectorpotential,lscale_tobox, &
+      k1hel, k2hel)
 !
 !  Produces helical k^initpower*exp(-k**2/cutoff**2) spectrum.
 !  The relative helicity is relhel.
@@ -4767,7 +4828,14 @@ module Initcond
 !          =-3.67 k^{-5/3}
 !          =-5 -> k^{-3}
 !
+!  Note that the rms value is unchanged if kpeak is changed.
+!  Thus, to reproduce an unchanged subinertial range after increasing kpeak,
+!  for example, one has to *increase* ampl by a factor 1/kpeak**2.5,
+!  e.g., from 3e-4 to 17e-4.
+!
 !  08-sep-14/axel: adapted from power_randomphase
+!  17-sep-18/axel: added optional wavenumber interval for helical field.
+!  28-jan-19/axel: special treatment of 2-D case (nz==1)
 !
       use Fourier, only: fft_xyz_parallel, fourier_transform
 !
@@ -4775,6 +4843,7 @@ module Initcond
       logical :: lvectorpotential, lscale_tobox1
       logical :: lskip_projection, lno_second_ampl
       integer :: i,i1,i2,ikx,iky,ikz,stat
+      real, intent(in), optional :: k1hel, k2hel
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k2, r
       real, dimension (:), allocatable :: kx, ky, kz
@@ -4787,7 +4856,7 @@ module Initcond
       if (present(lscale_tobox)) then
         lscale_tobox1 = lscale_tobox
       else
-        lscale_tobox1 = .false.
+        lscale_tobox1 = .true.
       endif
 !
 !  Allocate memory for arrays.
@@ -4825,27 +4894,40 @@ module Initcond
 !  calculate k^2
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lx
-        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lx
+        !kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+        kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Ly
-        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+        if (.not.lscale_tobox1) scale_factor=2*pi/Ly
+        !ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+        ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2)*scale_factor
 !
         scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lz
-        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+        if (.not.lscale_tobox1) scale_factor=2*pi/Lz
+        kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2)*scale_factor
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+!  In 2-D
+        if (nz==1) then
+          do iky=1,nx
+            do ikx=1,ny
+              ikz=1
+              k2(iky,ikx,ikz)=kx(ikx+ipy*ny)**2+ky(iky)**2
             enddo
           enddo
-        enddo
+!  In 3-D
+        else
+          do iky=1,nz
+            do ikx=1,ny
+                do ikz=1,nx
+                  k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+                enddo
+            enddo
+          enddo
+        endif
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
 !
 !  generate flat spectrum with random phase (between -pi and pi)
@@ -4874,11 +4956,11 @@ module Initcond
 !  which comes from a kpeak^3 factor in the k^2 dk integration.
 !  The 1/2 factor comes from setting uk (as opposed to uk^2).
 !
+        fact=(kpeak1*scale_factor)**1.5
         if (lvectorpotential) then
-          fact=kpeak1**2.5
+          fact=fact*kpeak1
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+3.))
         else
-          fact=kpeak1**1.5
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
         r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
@@ -4910,33 +4992,60 @@ module Initcond
           v_re=u_re
           v_im=u_im
         else
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
+!  In 2-D
+          if (nz==1) then
+            do iky=1,nx
+              do ikx=1,ny
+                ikz=1
 !
 !  Real part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-              r(ikz,ikx,iky)=(kx(ikx+ipy*ny)*u_re(ikz,ikx,iky,1) &
-                             +ky(iky+ipz*nz)*u_re(ikz,ikx,iky,2) &
-                             +kz(ikz+ipx*nx)*u_re(ikz,ikx,iky,3))/k2(ikz,ikx,iky)
-              v_re(ikz,ikx,iky,1)=u_re(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
-              v_re(ikz,ikx,iky,2)=u_re(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
-              v_re(ikz,ikx,iky,3)=u_re(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
+                r(iky,ikx,ikz)=(kx(ikx+ipy*ny)*u_re(iky,ikx,ikz,1) &
+                               +ky(iky+ipz*nz)*u_re(iky,ikx,ikz,2))/k2(iky,ikx,ikz)
+                v_re(iky,ikx,ikz,1)=u_re(iky,ikx,ikz,1)-kx(ikx+ipy*ny)*r(iky,ikx,ikz)
+                v_re(iky,ikx,ikz,2)=u_re(iky,ikx,ikz,2)-ky(iky+ipz*nz)*r(iky,ikx,ikz)
+                v_re(iky,ikx,ikz,3)=u_re(iky,ikx,ikz,3)
 !
 !  Imaginary part of (ux, uy, uz) -> vx, vy, vz
 !  (kk.uu)/k2, vi = ui - ki kj uj
 !
-              r(ikz,ikx,iky)=(kx(ikx+ipy*ny)*u_im(ikz,ikx,iky,1) &
-                             +ky(iky+ipz*nz)*u_im(ikz,ikx,iky,2) &
-                             +kz(ikz+ipx*nx)*u_im(ikz,ikx,iky,3))/k2(ikz,ikx,iky)
-              v_im(ikz,ikx,iky,1)=u_im(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
-              v_im(ikz,ikx,iky,2)=u_im(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
-              v_im(ikz,ikx,iky,3)=u_im(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
-!
+                r(iky,ikx,ikz)=(kx(ikx+ipy*ny)*u_im(iky,ikx,ikz,1) &
+                               +ky(iky+ipz*nz)*u_im(iky,ikx,ikz,2))/k2(iky,ikx,ikz)
+                v_im(iky,ikx,ikz,1)=u_im(iky,ikx,ikz,1)-kx(ikx+ipy*ny)*r(iky,ikx,ikz)
+                v_im(iky,ikx,ikz,2)=u_im(iky,ikx,ikz,2)-ky(iky+ipz*nz)*r(iky,ikx,ikz)
+                v_im(iky,ikx,ikz,3)=u_im(iky,ikx,ikz,3)
+              enddo
             enddo
-          enddo
-        enddo
+!  In 3-D
+          else
+            do iky=1,nz
+              do ikx=1,ny
+                do ikz=1,nx
+!
+!  Real part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+                  r(ikz,ikx,iky)=(kx(ikx+ipy*ny)*u_re(ikz,ikx,iky,1) &
+                                 +ky(iky+ipz*nz)*u_re(ikz,ikx,iky,2) &
+                                 +kz(ikz+ipx*nx)*u_re(ikz,ikx,iky,3))/k2(ikz,ikx,iky)
+                  v_re(ikz,ikx,iky,1)=u_re(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
+                  v_re(ikz,ikx,iky,2)=u_re(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
+                  v_re(ikz,ikx,iky,3)=u_re(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
+!
+!  Imaginary part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
+!
+                  r(ikz,ikx,iky)=(kx(ikx+ipy*ny)*u_im(ikz,ikx,iky,1) &
+                                 +ky(iky+ipz*nz)*u_im(ikz,ikx,iky,2) &
+                                 +kz(ikz+ipx*nx)*u_im(ikz,ikx,iky,3))/k2(ikz,ikx,iky)
+                  v_im(ikz,ikx,iky,1)=u_im(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
+                  v_im(ikz,ikx,iky,2)=u_im(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
+                  v_im(ikz,ikx,iky,3)=u_im(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
+                enddo
+              enddo
+            enddo
+          endif
         endif
 !
 !  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
@@ -4944,40 +5053,84 @@ module Initcond
 !
         r=relhel/sqrt(k2)
         r(1,1,1)=0.
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
+!
+!  put sigma=0 outside [r1hel,r2hel]
+!
+        if (present(k2hel) .and. present(k2hel)) then
+          if (k1hel>0. .and. k2hel<max_real) then
+            where (k2<k1hel**2 .or. k2>k2hel**2)
+              r = 0.
+            endwhere
+          endif
+        endif
+!
+!  In 2-D
+        if (nz==1) then
+          do iky=1,nz
+            do ikx=1,ny
+              ikz=1
 !
 !  (vx, vy, vz) -> ux
 !
-              u_re(ikz,ikx,iky,1)=v_re(ikz,ikx,iky,1) &
-                  +kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,2)*r(ikz,ikx,iky) &
-                  -ky(iky+ipz*nz)*v_im(ikz,ikx,iky,3)*r(ikz,ikx,iky)
-              u_im(ikz,ikx,iky,1)=v_im(ikz,ikx,iky,1) &
-                  -kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,2)*r(ikz,ikx,iky) &
-                  +ky(iky+ipz*nz)*v_re(ikz,ikx,iky,3)*r(ikz,ikx,iky)
+              u_re(iky,ikx,ikz,1)=v_re(iky,ikx,ikz,1) &
+                  -ky(iky+ipz*nz)*v_im(iky,ikx,ikz,3)*r(iky,ikx,ikz)
+              u_im(iky,ikx,ikz,1)=v_im(iky,ikx,ikz,1) &
+                  +ky(iky+ipz*nz)*v_re(iky,ikx,ikz,3)*r(iky,ikx,ikz)
 !
 !  (vx, vy, vz) -> uy
 !
-              u_re(ikz,ikx,iky,2)=v_re(ikz,ikx,iky,2) &
-                  +kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,3)*r(ikz,ikx,iky) &
-                  -kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,1)*r(ikz,ikx,iky)
-              u_im(ikz,ikx,iky,2)=v_im(ikz,ikx,iky,2) &
-                  -kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,3)*r(ikz,ikx,iky) &
-                  +kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,1)*r(ikz,ikx,iky)
+              u_re(iky,ikx,ikz,2)=v_re(iky,ikx,ikz,2) &
+                  +kx(ikx+ipy*ny)*v_im(iky,ikx,ikz,3)*r(iky,ikx,ikz)
+              u_im(iky,ikx,ikz,2)=v_im(iky,ikx,ikz,2) &
+                  -kx(ikx+ipy*ny)*v_re(iky,ikx,ikz,3)*r(iky,ikx,ikz)
 !
 !  (vx, vy, vz) -> uz
 !
-              u_re(ikz,ikx,iky,3)=v_re(ikz,ikx,iky,3) &
-                  +ky(iky+ipz*nz)*v_im(ikz,ikx,iky,1)*r(ikz,ikx,iky) &
-                  -kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,2)*r(ikz,ikx,iky)
-              u_im(ikz,ikx,iky,3)=v_im(ikz,ikx,iky,3) &
-                  -ky(iky+ipz*nz)*v_re(ikz,ikx,iky,1)*r(ikz,ikx,iky) &
-                  +kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,2)*r(ikz,ikx,iky)
-!
+              u_re(iky,ikx,ikz,3)=v_re(iky,ikx,ikz,3) &
+                  +ky(iky+ipz*nz)*v_im(iky,ikx,ikz,1)*r(iky,ikx,ikz) &
+                  -kx(ikx+ipy*ny)*v_im(iky,ikx,ikz,2)*r(iky,ikx,ikz)
+              u_im(iky,ikx,ikz,3)=v_im(iky,ikx,ikz,3) &
+                  -ky(iky+ipz*nz)*v_re(iky,ikx,ikz,1)*r(iky,ikx,ikz) &
+                  +kx(ikx+ipy*ny)*v_re(iky,ikx,ikz,2)*r(iky,ikx,ikz)
             enddo
           enddo
-        enddo
+!  In 3-D
+        else
+          do iky=1,nz
+            do ikx=1,ny
+              do ikz=1,nx
+!
+!  (vx, vy, vz) -> ux
+!
+                u_re(ikz,ikx,iky,1)=v_re(ikz,ikx,iky,1) &
+                    +kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,2)*r(ikz,ikx,iky) &
+                    -ky(iky+ipz*nz)*v_im(ikz,ikx,iky,3)*r(ikz,ikx,iky)
+                u_im(ikz,ikx,iky,1)=v_im(ikz,ikx,iky,1) &
+                    -kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,2)*r(ikz,ikx,iky) &
+                    +ky(iky+ipz*nz)*v_re(ikz,ikx,iky,3)*r(ikz,ikx,iky)
+!
+!  (vx, vy, vz) -> uy
+!
+                u_re(ikz,ikx,iky,2)=v_re(ikz,ikx,iky,2) &
+                    +kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,3)*r(ikz,ikx,iky) &
+                    -kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,1)*r(ikz,ikx,iky)
+                u_im(ikz,ikx,iky,2)=v_im(ikz,ikx,iky,2) &
+                    -kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,3)*r(ikz,ikx,iky) &
+                    +kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,1)*r(ikz,ikx,iky)
+!
+!  (vx, vy, vz) -> uz
+!
+                u_re(ikz,ikx,iky,3)=v_re(ikz,ikx,iky,3) &
+                    +ky(iky+ipz*nz)*v_im(ikz,ikx,iky,1)*r(ikz,ikx,iky) &
+                    -kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,2)*r(ikz,ikx,iky)
+                u_im(ikz,ikx,iky,3)=v_im(ikz,ikx,iky,3) &
+                    -ky(iky+ipz*nz)*v_re(ikz,ikx,iky,1)*r(ikz,ikx,iky) &
+                    +kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,2)*r(ikz,ikx,iky)
+!
+              enddo
+            enddo
+          enddo
+        endif
 !
 !  back to real space
 !
@@ -5624,6 +5777,134 @@ module Initcond
 !
     endsubroutine mag_init
 !***********************************************************************
+    subroutine mag_Az_init(f)
+!
+!  Intialize the vector potential A with a potential field extrapolation from the bottom boundary read from a file.
+!
+!  30-Mar-2018/Bourdin.KIS : coded.
+!
+      use Mpicomm, only: stop_it_if_any, distribute_xy
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension (:,:), allocatable :: A_global, A_local
+      integer, parameter :: unit=11
+      logical :: exists
+      integer :: alloc_err, rec_len
+!
+      ! file location settings
+      character (len=*), parameter :: Az_init_dat = 'Az_init.dat'
+!
+!  Allocate memory for arrays.
+!
+      if (lroot) then
+        allocate (A_global(nxgrid,nygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('mag_Az_init', &
+            'Could not allocate memory for A_global', .true.)
+      endif
+      if (lfirst_proc_z) then
+        allocate (A_local(nx,ny), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('mag_Az_init', &
+            'Could not allocate memory for A_local', .true.)
+      endif
+!
+      call mag_init(f)
+!
+      if (lroot) then
+        inquire (file=Az_init_dat, exist=exists)
+        call stop_it_if_any(.not. exists, &
+            'mag_Az_init: file not found: "'//trim(Az_init_dat)//'"')
+        inquire (iolength=rec_len) 1.0d0
+        open (unit, file=Az_init_dat, form='unformatted', recl=rec_len*nxgrid*nygrid, access='direct')
+        ! read A components for each ipz layer
+        read (unit, rec=1) A_global
+        close (unit)
+        ! distribute A component
+        call distribute_xy(A_local, A_global)
+        f(l1:l2,m1:m2,1,3) = A_local
+      elseif (lfirst_proc_z) then
+        call stop_it_if_any(.false.,'')
+        call distribute_xy(A_local)
+        f(l1:l2,m1:m2,1,3) = A_local
+      else
+        call stop_it_if_any(.false.,'')
+      endif
+!
+      if (lroot) deallocate (A_global)
+      if (lfirst_proc_z) deallocate (A_local)
+!
+    endsubroutine mag_Az_init
+!***********************************************************************
+    subroutine file_init(f)
+!
+!  Intialize the vector potential with a vector potential A from a file.
+!
+!  30-Mar-2018/Bourdin.KIS : coded.
+!
+      use Mpicomm, only: stop_it_if_any, distribute_xy, mpisend_real, mpirecv_real
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension (:,:,:), allocatable :: A_global, A_local
+      integer, parameter :: unit=11
+      integer, parameter :: tag_z=133
+      logical :: exists
+      integer :: partner, pz, comp, alloc_err, rec_len
+!
+      ! file location settings
+      character (len=*), parameter :: A_init_dat = 'Axyz_init.dat'
+!
+!  Allocate memory for arrays.
+!
+      if (lfirst_proc_xy) then
+        allocate (A_global(nxgrid,nygrid,nz), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error('file_init', &
+            'Could not allocate memory for A_global', .true.)
+      endif
+      allocate (A_local(nx,ny,nz), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error('file_init', &
+          'Could not allocate memory for A_local', .true.)
+!
+      if (lroot) then
+        inquire (file=A_init_dat, exist=exists)
+        call stop_it_if_any(.not. exists, &
+            'file_init: file not found: "'//trim(A_init_dat)//'"')
+        inquire (iolength=rec_len) 1.0d0
+        open (unit, file=A_init_dat, form='unformatted', recl=rec_len*nxgrid*nygrid*nz, access='direct')
+        ! read A components for each ipz layer
+        do comp = 1, 3
+          do pz = 0, nprocz-1
+            read (unit, rec=pz+nprocz*(comp-1)) A_global
+            ! distribute A component
+            if (pz == ipz) then
+              call distribute_xy(A_local, A_global)
+              f(l1:l2,m1:m2,:,comp) = A_local
+            else
+              partner = ipx + ipy*nprocx + pz*nprocxy
+              call mpisend_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
+            endif
+          enddo
+        enddo
+        close (unit)
+      else
+        call stop_it_if_any(.false.,'')
+        do comp = 1, 3
+          if (lfirst_proc_xy) then
+            partner = ipx + ipy*nprocx
+            call mpirecv_real (A_global, (/ nxgrid, nygrid, nz /), partner, tag_z)
+            call distribute_xy(A_global, A_local)
+          else
+            call distribute_xy(A_local)
+          endif
+          f(l1:l2,m1:m2,:,comp) = A_local
+        enddo
+      endif
+!
+      if (lfirst_proc_xy) deallocate (A_global)
+      deallocate (A_local)
+!
+    endsubroutine file_init
+!***********************************************************************
     subroutine temp_hydrostatic(f,rho0)
 !
 ! 07-dec-05/bing : coded.
@@ -5992,7 +6273,7 @@ module Initcond
       if (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
-            rpart = amp*(x(l1)-x(l))*(x(l2)-x(l))
+            rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
             f(l,m,:,ix:ix+1) = 0.
             f(l,m,:,ix+2)    = rpart*sin(y(m))
           enddo
@@ -6017,7 +6298,7 @@ module Initcond
       if (lspherical_coords) then
         do m = m1,m2
           do l = l1,l2
-            rpart = amp*(x(l1)-x(l))*(x(l2)-x(l))
+            rpart = amp*(xyz0(1)-x(l))*(xyz1(1)-x(l))
             f(l,m,:,ix)   = 2.*rpart*cos(y(m))
             f(l,m,:,ix+1) = rpart*sin(y(m))
             f(l,m,:,ix+2) = 0.
@@ -6272,23 +6553,52 @@ module Initcond
 !
     endsubroutine read_outside_scal_array
 !***********************************************************************
-    subroutine read_outside_vec_array(f, datafile, i)
+    subroutine read_outside_vec_array(f, datafile, i, lbinary,ampl)
 !
 !   Reads a pre-generated setup of a vector variable (i.e. uu) from an ascii file,
 !   generated by an external script.
 !   13-may-13/mvaisala: created
 !
+      use IO, only: input_snap, input_snap_finalize
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      logical :: exfile
+      real, dimension (mx,my,mz,3) :: apot
+      logical :: exfile, lbin=.false.
+      logical, optional :: lbinary
       integer :: l,m,n, lfile, mfile, nfile, io_status, i
-      real :: value1, value2, value3
+      real :: value1, value2, value3, scale_aa=1.0
+      real, optional :: ampl
       character(len=*) :: datafile
 !
       inquire (file=datafile, exist=exfile)
+      if (present(lbinary)) lbin=lbinary
+      if (present(ampl)) scale_aa=ampl
       if (.NOT. exfile) then
         call fatal_error(datafile,' no input file')
       else
-        open(19,file=datafile)
+        if (lbin) then
+          call input_snap(datafile,apot,3,0)
+          call input_snap_finalize()
+!          apot(:,:,:,1)=0.0
+!          apot(:,:,:,2)=spread(spread(0.1*(alog(exp((x+2)/0.2)+exp(-(x+2)/0.2))-&
+!                       alog(exp((x+1)/0.2)+exp(-(x+1)/0.2))),2,my),3,mz)-&
+!                       spread(spread(0.1*(alog(exp((x-1)/0.2)+exp(-(x-1)/0.2))-&
+!                       alog(exp((x-2)/0.2)+exp(-(x-2)/0.2))),2,my),3,mz)
+!          apot(:,:,:,2)=spread(spread(0.1*(alog(exp((x+5)/0.2)+exp(-(x+5)/0.2))-&
+!                       alog(exp((x+4)/0.2)+exp(-(x+4)/0.2))),2,my),3,mz)-&
+!                       spread(spread(0.1*(alog(exp((x+1)/0.2)+exp(-(x+1)/0.2))-&
+!                       alog(exp((x-0)/0.2)+exp(-(x-0)/0.2))),2,my),3,mz) + &
+!                       -spread(spread(0.1*(alog(exp((x+0)/0.2)+exp(-(x+0)/0.2))-&
+!                       alog(exp((x-1)/0.2)+exp(-(x-1)/0.2))),2,my),3,mz)-&
+!                       spread(spread(0.1*(alog(exp((x-5)/0.2)+exp(-(x-5)/0.2))-&
+!                       alog(exp((x-4)/0.2)+exp(-(x-4)/0.2))),2,my),3,mz)
+!          apot(:,:,:,3)=0.0
+          f(:,:,:,i  ) = f(:,:,:,i  )+scale_aa*apot(:,:,:,1)
+          f(:,:,:,i+1) = f(:,:,:,i+1)+scale_aa*apot(:,:,:,2)
+          f(:,:,:,i+2) = f(:,:,:,i+2)+scale_aa*apot(:,:,:,3)
+          return
+        else
+          open(19,file=datafile)
+        endif
       end if
 !
 !   Every processor reads from the same datafile. Depending on the indices,

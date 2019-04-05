@@ -280,6 +280,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
 !  define counters
@@ -297,6 +298,7 @@ module Special
       if (lreset) then
         idiag_phim=0; idiag_phipt=0; idiag_phip2=0
         idiag_phibzm=0; idiag_phibzmz=0
+        cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -312,15 +314,21 @@ module Special
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'phibzmz',idiag_phibzmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='potturb') cformv='DEFINED'
+      endif
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_phim=',idiag_phim
-        write(3,*) 'i_phibzm=',idiag_phibzm
-        write(3,*) 'i_phibzmz=',idiag_phibzmz
-        write(3,*) 'i_phipt=',idiag_phipt
-        write(3,*) 'i_phip2=',idiag_phip2
-        write(3,*) 'iphi=',iphi
+        call farray_index_append('i_phim',idiag_phim)
+        call farray_index_append('i_phibzm',idiag_phibzm)
+        call farray_index_append('i_phibzmz',idiag_phibzmz)
+        call farray_index_append('i_phipt',idiag_phipt)
+        call farray_index_append('i_phip2',idiag_phip2)
+        call farray_index_append('iphi',iphi)
       endif
 !
     endsubroutine rprint_special
@@ -330,6 +338,8 @@ module Special
 !  Write slices for animation of electric potential
 !
 !  26-feb-07/axel: adapted from gross_pitaevskii
+!
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
@@ -342,12 +352,7 @@ module Special
 !
 !  phi
 !
-        case ('phi')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iphi)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iphi)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iphi)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iphi)
-          slices%ready = .true.
+        case ('phi'); call assign_slices_vec(slices,f,iphi)
 !
       endselect
 !

@@ -299,25 +299,15 @@ module Particles
 !
 !  Indices for particle position.
 !
-      ixp=npvar+1
-      pvarname(npvar+1)='ixp'
-      iyp=npvar+2
-      pvarname(npvar+2)='iyp'
-      izp=npvar+3
-      pvarname(npvar+3)='izp'
+      call append_npvar('ixp',ixp)
+      call append_npvar('iyp',iyp)
+      call append_npvar('izp',izp)
 !
 !  Indices for particle velocity.
 !
-      ivpx=npvar+4
-      pvarname(npvar+4)='ivpx'
-      ivpy=npvar+5
-      pvarname(npvar+5)='ivpy'
-      ivpz=npvar+6
-      pvarname(npvar+6)='ivpz'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+6
+      call append_npvar('ivpx',ivpx)
+      call append_npvar('ivpy',ivpy)
+      call append_npvar('ivpz',ivpz)
 !
 !  Set indices for particle assignment.
 !
@@ -346,19 +336,7 @@ module Particles
         call farray_register_auxiliary('tausupersat', itausupersat) 
 !
 !  Kill particles that spend enough time in birth ring
-      if (lbirthring_depletion) then
-        npvar=npvar+1
-        ibrtime=npvar
-        pvarname(ibrtime)='ibrtime'
-      endif
-
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles','npvar > mpvar')
-      endif
+      if (lbirthring_depletion) call append_npvar('ibrtime',ibrtime)
 !
     endsubroutine register_particles
 !***********************************************************************
@@ -818,7 +796,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
@@ -1965,7 +1944,7 @@ module Particles
 !
 ! Update total number of inserted particles, npar_inserted_tot.
 ! Not the same as npar_total, which is the number of particles in the system, 
-! without couting removed particles
+! without counting removed particles
 !
           npar_inserted_tot = n_insert + npar_inserted_tot
 !
@@ -2183,7 +2162,8 @@ module Particles
 !
 !  14-apr-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs0
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs0
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2291,7 +2271,7 @@ module Particles
 !
 !  30-jan-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
@@ -2400,7 +2380,8 @@ module Particles
 !
 !  14-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -5788,6 +5769,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General,   only: itoa
 !
       logical :: lreset
@@ -5804,21 +5786,21 @@ module Particles
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
-        write(3,*) 'iupx=', iupx
-        write(3,*) 'iupy=', iupy
-        write(3,*) 'iupz=', iupz
-        write(3,*) 'ifgx=', ifgx
-        write(3,*) 'ifgy=', ifgy
-        write(3,*) 'ifgz=', ifgz
-        write(3,*) 'itausupersat=', itausupersat
+        call farray_index_append('ixp',ixp)
+        call farray_index_append('iyp',iyp)
+        call farray_index_append('izp',izp)
+        call farray_index_append('ivpx',ivpx)
+        call farray_index_append('ivpy',ivpy)
+        call farray_index_append('ivpz',ivpz)
+        call farray_index_append('inp',inp)
+        call farray_index_append('irhop',irhop)
+        call farray_index_append('iupx',iupx)
+        call farray_index_append('iupy',iupy)
+        call farray_index_append('iupz',iupz)
+        call farray_index_append('ifgx',ifgx)
+        call farray_index_append('ifgy',ifgy)
+        call farray_index_append('ifgz',ifgz)
+        call farray_index_append('itausupersat',itausupersat)
       endif
 !
 !  Reset everything in case of reset.

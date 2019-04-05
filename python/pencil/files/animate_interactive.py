@@ -134,7 +134,10 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     import pylab as plt
     import time
     import os # for making the movie
-    import thread # for GUI
+    try:
+        import thread # for GUI
+    except:
+        import _thread as thread
     from matplotlib.colors import LightSource
 
     global tStep, sliderTime, pause
@@ -368,23 +371,23 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         # set up the gui        
         plt.ion()
 
-        axPlay = plt.axes([0.1, 0.05, 0.15, 0.05], axisbg='lightgoldenrodyellow')
+        axPlay = plt.axes([0.1, 0.05, 0.15, 0.05], facecolor='lightgoldenrodyellow')
         buttonPlay = plt.Button(axPlay, 'play', color='lightgoldenrodyellow', hovercolor='0.975')
         buttonPlay.on_clicked(play_thread)
-        axPause = plt.axes([0.3, 0.05, 0.15, 0.05], axisbg='lightgoldenrodyellow')
+        axPause = plt.axes([0.3, 0.05, 0.15, 0.05], facecolor='lightgoldenrodyellow')
         buttonPause = plt.Button(axPause, 'pause', color='lightgoldenrodyellow', hovercolor='0.975')
         buttonPause.on_clicked(pausing)
     
-        axReverse = plt.axes([0.5, 0.05, 0.15, 0.05], axisbg='lightgoldenrodyellow')
+        axReverse = plt.axes([0.5, 0.05, 0.15, 0.05], facecolor='lightgoldenrodyellow')
         buttonReverse = plt.Button(axReverse, 'reverse', color='lightgoldenrodyellow', hovercolor='0.975')
         buttonReverse.on_clicked(reverse)
-        axForward = plt.axes([0.7, 0.05, 0.15, 0.05], axisbg='lightgoldenrodyellow')
+        axForward = plt.axes([0.7, 0.05, 0.15, 0.05], facecolor='lightgoldenrodyellow')
         buttonForward = plt.Button(axForward, 'forward', color='lightgoldenrodyellow', hovercolor='0.975')
         buttonForward.on_clicked(forward)
         
         # create the time slider
         fig.subplots_adjust(bottom=0.2)
-        sliderTimeAxes = plt.axes([0.2, 0.12, 0.6, 0.03], axisbg='lightgoldenrodyellow')
+        sliderTimeAxes = plt.axes([0.2, 0.12, 0.6, 0.03], facecolor='lightgoldenrodyellow')
         sliderTime = plt.Slider(sliderTimeAxes, 'time', t[0], t[-1], valinit = 0.0)
         def update(val):
             global tStep

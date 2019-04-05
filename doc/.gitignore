@@ -10,6 +10,7 @@ manual.ind
 manual.log
 manual.out
 manual.pdf
+manual.ps
 manual.ps.gz
 manual.toc
 manual.vidx
@@ -25,3 +26,4 @@ manual.vind
 *.toc
 *.vidx
 *.vind
+*-eps-converted-to.pdf

@@ -215,6 +215,7 @@ module Shock
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -229,6 +230,7 @@ module Shock
         ldivu_perp=.false.
         lgauss_integral=.false.
         lgauss_integral_comm_uu=.false.
+        cformv=''
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -239,14 +241,20 @@ module Shock
             'shockmax',idiag_shockmax)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='shock'.or.cnamev=='shock_perp') cformv='DEFINED'
+      endif
+!
 !  write column where which ionization variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_shockmax=',idiag_shockmax
-          write(3,*) 'i_shockmax_perp=',idiag_shockmax_perp
-          write(3,*) 'ishock=',ishock
-          write(3,*) 'ishock_perp=',ishock_perp
+          call farray_index_append('i_shockmax',idiag_shockmax)
+          call farray_index_append('i_shockmax_perp',idiag_shockmax_perp)
+          call farray_index_append('ishock',ishock)
+          call farray_index_append('ishock_perp',ishock_perp)
         endif
       endif
 !
@@ -259,10 +267,10 @@ module Shock
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -271,18 +279,10 @@ module Shock
 !  Shock profile
 !
         case ('shock')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ishock)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ishock)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ishock)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock)
-          slices%ready=.true.
+          call assign_slices_scal(slices,f,ishock)
 !
         case ('shock_perp')
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ishock_perp)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ishock_perp)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ishock_perp)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock_perp)
-          slices%ready=.true.
+          call assign_slices_scal(slices,f,ishock_perp)
 !
       endselect
 !
@@ -406,7 +406,7 @@ module Shock
      f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
 !
 !debug only line:-
-! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
+! if (ip==0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile_simple
 !!***********************************************************************
     subroutine calc_shock_profile(f)

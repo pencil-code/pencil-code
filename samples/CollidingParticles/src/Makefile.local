@@ -3,17 +3,20 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM  = nompicomm
+MPICOMM  =   mpicomm
 EOS      =   eos_idealgas
 HYDRO    =   hydro
 DENSITY  =   density
 ENTROPY  = noentropy
-MAGNETIC =   magnetic
 GRAVITY  = nogravity
 FORCING  =   forcing
-PSCALAR  =   pscalar_nolog
 
 FOURIER  =   fourier_fftpack
 POWER    =   power_spectrum
 
-PARTICLES  =   particles_potential
+PARTICLES_MAIN       =   particles_main
+PARTICLES_SUB        =   particles_sub
+PARTICLES            =   particles_dust
+PARTICLES_RADIUS     =   particles_radius
+PARTICLES_POTENTIAL  =   particles_potential
+REAL_PRECISION       =   double

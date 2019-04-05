@@ -9,14 +9,13 @@
 ! CPARAM logical, parameter :: leos = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
 ! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth; heth(3,3)
-! PENCILS PROVIDED eths; geths(3)
+! PENCILS PROVIDED eths; geths(3); rho1gpp(3)
 !
 !***************************************************************
 module EquationOfState
@@ -38,8 +37,6 @@ module EquationOfState
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
   integer :: iglobal_cs2, iglobal_glnTT, ics
-  real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0
@@ -50,14 +47,10 @@ module EquationOfState
   real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=0.0
   real :: fac_cs=1.0
-  real :: mpoly=impossible, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real :: width_eos_prof=0.2
+  real, pointer :: mpoly
   real :: sigmaSBt=1.0
-  integer :: isothtop=0
   integer :: imass=1
   integer :: isothmid=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
@@ -65,29 +58,34 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
-  character (len=labellen) :: ieos_profile='nothing'
 !
   character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
   real, dimension(:), pointer :: B_ext
 !
   real, dimension(nchemspec,18):: species_constants
-  real, dimension(nchemspec,7) :: tran_data
-  real, dimension(nchemspec)   :: Lewis_coef, Lewis_coef1
+!
+  real :: Cp_const=impossible
+  real :: Pr_number=0.7
+  logical :: lpres_grad=.false.
+!
+!  Background stratification data
+!
+  character(len=labellen) :: gztype = 'zero'
+  real :: gz_coeff = 0.0
 !
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
-      fac_cs,isothmid,&
-      lstratz, gztype, gz_coeff
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, &
+      sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
+      fac_cs,isothmid, lstratz, gztype, gz_coeff, lpres_grad
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini,           &
-      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt, &
+      xHe, mu, cp, cs0, rho0, gamma, error_cp,           &
+      pres_corr, sigmaSBt, &
       lanelastic_lin, lcs_as_aux, lcs_as_comaux
 !
 !  Module variables
@@ -166,13 +164,25 @@ module EquationOfState
       endif
 !
       if (unit_temperature==impossible) then
-        if (cp==impossible) cp=1.0
-        if (gamma_m1==0.0) then
-          Rgas=mu*cp
+        if (lfix_unit_std) then !Fred: sets optimal unit temperature lnTT0=0
+          Rgas=mu*gamma1
+          if (cp==impossible) then
+            if (gamma_m1==0.0) then
+              cp=Rgas/mu
+            else
+              cp=Rgas/(mu*gamma_m1*gamma1)
+            endif
+          endif
+          unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         else
-          Rgas=mu*(1.0-gamma1)*cp
+          if (cp==impossible) cp=1.0
+          if (gamma_m1==0.0) then
+            Rgas=mu*cp
+          else
+            Rgas=mu*(1.0-gamma1)*cp
+          endif
+          unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         endif
-        unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
         if (cp==impossible) then
@@ -192,8 +202,10 @@ module EquationOfState
             cp_reference=Rgas/(mu*gamma_m1*gamma1)
           endif
           if (abs(cp-cp_reference)/cp > error_cp) then
-            if (lroot) print*,'units_eos: consistency: cp=', cp , &
+            if (lroot) print*,'Rgas,mu=', Rgas, mu
+            if (lroot) print*,'units_eos: consistency: cp=', cp, &
                 'while: cp_reference=', cp_reference
+            if (lroot) print*,'also caused when changing gamma btw start/run!'
             call fatal_error('units_eos','cp is not correctly calculated')
           endif
         endif
@@ -216,7 +228,6 @@ module EquationOfState
 ! Shared variables
 !
       call put_shared_variable('cs20',cs20,caller='units_eos')
-      call put_shared_variable('mpoly',mpoly)
       call put_shared_variable('gamma',gamma)
 !
 !  Check that everything is OK.
@@ -226,21 +237,11 @@ module EquationOfState
         print*, 'units_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
       endif
 !
-!  Calculate profile functions (used as prefactors to turn off pressure
-!  gradient term).
-!
-      if (ieos_profile=='nothing') then
-        profz_eos=1.0
-        dprofz_eos=0.0
-      elseif (ieos_profile=='surface_z') then
-        profz_eos=0.5*(1.0-erfunc(z/width_eos_prof))
-        dprofz_eos=-exp(-(z/width_eos_prof)**2)/(sqrtpi*width_eos_prof)
-      endif
-!
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos
 !
+      use FArrayManager
       use SharedVariables, only: put_shared_variable
       use Sub, only: register_report_aux
 !
@@ -287,6 +288,26 @@ module EquationOfState
 !
       if (lstratz) call set_stratz
       lstratset = .true.
+!
+      if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
+          call fatal_error("initialize_eos","fargo advection not "//&
+          "implemented for the temperature equation")
+!
+!  Register gradient of pressure
+!
+      if (lpres_grad) then
+        call farray_register_auxiliary('gpx',igpx)
+!
+!  Writing files for use with IDL
+!
+        aux_count = aux_count+1
+!
+        call farray_register_auxiliary('gpy',igpy)
+!
+!  Writing files for use with IDL
+!
+        aux_count = aux_count+1
+      endif
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -448,37 +469,34 @@ module EquationOfState
 !
     endsubroutine getmu
 !***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
-!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+
+      if (lwrite_slices) then 
+        where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
+      endif
 !
     endsubroutine rprint_eos
 !***********************************************************************
     subroutine get_slices_eos(f,slices)
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+!  Loop over slices.
+!
+      select case (trim(slices%name))
+!
+        case ('gpx'); if (lpres_grad) call assign_slices_scal(slices,f,igpx)
+        case ('gpy'); if (lpres_grad) call assign_slices_scal(slices,f,igpy)
+        slices%ready=.true.
+!
+      endselect
 !
     endsubroutine get_slices_eos
 !***********************************************************************
@@ -1534,7 +1552,7 @@ module EquationOfState
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
         if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
-        if (present(cs2)) call fatal_error('eoscalc_farray', 'cs2 is not implemented. ')
+        if (present(cs2)) cs2=cp*exp(lnTT_)*gamma_m1
 !
 ! Log rho or rho and T
 !
@@ -2191,7 +2209,7 @@ module EquationOfState
 !   4-jun-2015/MR: factor cp added in front of tmp_xy
 !  30-sep-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
 !
-      use DensityMethods, only: getdlnrho, getderlnrho_z
+      use DensityMethods, only: getdlnrho_z, getderlnrho_z
       use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
       use General, only: loptest
 !
@@ -2287,7 +2305,7 @@ module EquationOfState
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
              do i=1,nghost
-               call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)        ! rho_xy=del_z ln(rho)
+               call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)        ! rho_xy=del_z ln(rho)
                f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
              enddo
           endif
@@ -2341,7 +2359,7 @@ module EquationOfState
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
             do i=1,nghost
-              call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)        ! rho_xy=del_z ln(rho)
+              call getdlnrho_z(f(:,:,:,ilnrho),n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
               f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
             enddo
           endif
@@ -2364,15 +2382,15 @@ module EquationOfState
 !    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary; 
 !                   added branches for Kramers heat conductivity (using sigmaSBt!)
 !
-      logical, pointer :: lmeanfield_chitB, lheatc_kramers
-      real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop
+      logical, pointer :: lheatc_kramers
+      real, pointer :: chi,chi_t,hcondzbot,hcondztop
       real, pointer :: chit_prof1,chit_prof2,hcond0_kramers, nkramers
       real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy,chi_xy
-      real, dimension (l2-l1+1) :: quench
+      real, dimension (size(f,1),size(f,2)) :: dsdz_xy,cs2_xy,lnrho_xy,rho_xy, &
+          TT_xy,dlnrhodz_xy,chi_xy
       integer :: i
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2396,14 +2414,14 @@ module EquationOfState
 !
 !  lmeanfield_chitB and chi_t0
 !
-      if (lmagnetic) then
-        call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
-        if (lmeanfield_chitB) then
-          call get_shared_variable('chi_t0',chi_t0)
-        else
-          lmeanfield_chitB=.false.
-        endif
-      endif
+!     if (lmagnetic) then
+!       call get_shared_variable('lmeanfield_chitB',lmeanfield_chitB)
+!       if (lmeanfield_chitB) then
+!         call get_shared_variable('chi_t0',chi_t0)
+!       else
+!         lmeanfield_chitB=.false.
+!       endif
+!     endif
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
@@ -2420,8 +2438,8 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        call getlnrho(f(:,:,n1,ilnrho),rho_xy)            ! here rho_xy=log(rho)
-        cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n1,iss)
+        call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
+        cs2_xy=gamma_m1*(lnrho_xy-lnrho0)+cv1*f(:,:,n1,iss)
         if (lreference_state) &
           cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*spread(reference_state(:,iref_s),2,my)
         cs2_xy=cs20*exp(cs2_xy)
@@ -2455,19 +2473,23 @@ module EquationOfState
 !  set ghost zones such that dsdz_xy obeys
 !  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
-        call getlnrho(f(:,:,n2,ilnrho),rho_xy)            ! here rho_xy=log(rho)
-        cs2_xy=gamma_m1*(rho_xy-lnrho0)+cv1*f(:,:,n2,iss)
-        if (lreference_state) &
-          cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*spread(reference_state(:,iref_s),2,my)
-        cs2_xy=cs20*exp(cs2_xy)
-
-        call getrho(f(:,:,n2,ilnrho),rho_xy)              ! here rho_xy=rho
+        if (ilnrho/=0) then
+          call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)            ! here rho_xy=log(rho)
+          cs2_xy=gamma_m1*(lnrho_xy-lnrho0)+cv1*f(:,:,n2,iss) ! this is lncs2
+          if (lreference_state) &
+            cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:) + cv1*spread(reference_state(:,iref_s),2,my)
+          cs2_xy=cs20*exp(cs2_xy)
+          call getrho(f(:,:,n2,ilnrho),rho_xy)                ! here rho_xy=rho
+        endif
+!
+!  This TT_xy is used for b.c. used in BB14
+!
         TT_xy=cs2_xy/(gamma_m1*cp)
         dlnrhodz_xy= coeffs_1_z(1,2)*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                     +coeffs_1_z(2,2)*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                     +coeffs_1_z(3,2)*(f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho))
 
-        if (ldensity_nolog) dlnrhodz_xy=dlnrhodz_xy/rho_xy
+        if (ldensity_nolog) dlnrhodz_xy=dlnrhodz_xy/rho_xy   ! (not used)
 !
 !  Set chi_xy=chi, which sets also the ghost zones.
 !  chi_xy consists of molecular and possibly turbulent values.
@@ -2475,36 +2497,39 @@ module EquationOfState
 !
       chi_xy=chi
       if (lmagnetic) then
-        if (lmeanfield_chitB) then
-          n=n2
-          do m=m1,m2
-            call bdry_magnetic(f,quench,'meanfield_chitB')
-          enddo
-          chi_xy(l1:l2,m)=chi+chi_t0*quench
-        endif
+        !if (lmeanfield_chitB) then
+        !  n=n2
+        !  do m=m1,m2
+        !    call bdry_magnetic(f,quench,'meanfield_chitB')
+        !  enddo
+        !  chi_xy(l1:l2,m)=chi+chi_t0*quench
+        !endif
       endif
 !
 !  Select to use either: sigmaSBt*TT^4 = - K dT/dz - chi_t*rho*T*ds/dz,
 !                    or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
 !
-        if (lheatc_kramers) then
-          dsdz_xy=-cv*(sigmaSBt*TT_xy**3+hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers)* &
-                       gamma_m1*dlnrhodz_xy)/(hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers) &
+      if (lheatc_kramers) then
+        dsdz_xy=-cv*(sigmaSBt*TT_xy**3+hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers)* &
+                gamma_m1*dlnrhodz_xy)/(hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers) &
                        + chit_prof2*chi_t*rho_xy/gamma)
-        elseif (hcondztop==impossible) then
-          dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
-                   (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
-        else
-          dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*gamma_m1*dlnrhodz_xy)/ &
-                   (chit_prof2*chi_t*rho_xy+hcondztop/cv)
-        endif
+      elseif (hcondztop==impossible) then
+        dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
+            (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
+      else
+!
+!  This is what was used in the BB14 paper.
+!
+        dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*gamma_m1*dlnrhodz_xy)/ &
+                 (chit_prof2*chi_t*rho_xy+hcondztop/cv)
+      endif
 !
 !  Apply condition;
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
-        do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
-        enddo
+      do i=1,nghost
+        f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+dz2_bound(i)*dsdz_xy
+      enddo
 !
 !  capture undefined entries
 !
@@ -2531,6 +2556,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
+      real, dimension (size(f,2),size(f,3)) :: hcond_total
       integer :: i
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
@@ -2655,19 +2681,12 @@ module EquationOfState
 !            
           TT_yz=cs2_yz/(gamma_m1*cp)
 !
-!  Calculate d rho/d x    or   d ln(rho) / dx
+!  Calculate d rho/d x  or  d ln(rho) / d x
 !
           dlnrhodx_yz= coeffs_1_x(1,2)*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
                       +coeffs_1_x(2,2)*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
                       +coeffs_1_x(3,2)*(f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho))
 !
-!          fac=(1./60)*dx_1(l2)
-!          dlnrhodx_yz=fac*(45.0*(f(l2+1,:,:,ilnrho)-f(l2-1,:,:,ilnrho)) &
-!                    -       9.0*(f(l2+2,:,:,ilnrho)-f(l2-2,:,:,ilnrho)) &
-!                    +           (f(l2+3,:,:,ilnrho)-f(l2-3,:,:,ilnrho)))
-!print*, 'coeffs(1)=', 45.*fac, coeffs_1_x(1,2)
-!print*, 'coeffs(2)=', -9.*fac, coeffs_1_x(2,2)
-!print*, 'coeffs(3)=',     fac, coeffs_1_x(3,2)
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density to d rho/d x and divide by total density
@@ -2681,23 +2700,26 @@ module EquationOfState
 
           endif
 !
-          if (lheatc_kramers) then
-            dsdx_yz=-cv*( (sigmaSBt/hcond0_kramers)*TT_yz**(3-6.5*nkramers)*rho_yz**(2.*nkramers) &
-                         +gamma_m1*dlnrhodx_yz)      ! no turbulent diffusivity considered here!
-          else
-            dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxtop*gamma_m1*dlnrhodx_yz)/ &
-                     (chit_prof2*chi_t*rho_yz+hcondxtop/cv)
-          endif
+!  Compute total heat conductivity
+!
+          if (lheatc_kramers .or. (hcondxtop /= 0.0)) then
+            hcond_total = hcondxtop
+            if (lheatc_kramers) hcond_total = hcond_total + &
+                hcond0_kramers*TT_yz**(6.5*nkramers)*rho_yz**(-2.*nkramers)
+!
+            dsdx_yz = -(sigmaSBt*TT_yz**3+hcond_total*gamma_m1*dlnrhodx_yz) / &
+                (chit_prof2*chi_t*rho_yz+hcond_total/cv)
 !
 !  Substract gradient of reference entropy.
 !
-          if (lreference_state) dsdx_yz = dsdx_yz - reference_state(TOP,iref_gs)
+            if (lreference_state) dsdx_yz = dsdx_yz - reference_state(TOP,iref_gs)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
-          do i=1,nghost
-            f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+dx2_bound(i)*dsdx_yz
-          enddo
+            do i=1,nghost
+              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+dx2_bound(i)*dsdx_yz
+            enddo
+          endif
         endif
 !
 !  capture undefined entries
@@ -2718,7 +2740,7 @@ module EquationOfState
 !                   added branches for Kramers heat conductivity
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getdlnrho
+      use DensityMethods, only: getdlnrho_x
 !
       real, pointer :: chi_t, hcondxbot, hcondxtop, chit_prof1, chit_prof2
       real, pointer :: Fbot, Ftop
@@ -2813,7 +2835,7 @@ module EquationOfState
 !  Enforce ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho(f(l1-i:l1+i,:,:,ilnrho),i,BOT,rho_yz,dlnrhodx_yz)
+            call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrhodx_yz)
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &
                 cp*(hcondxbot*gamma_m1/(gamma*hcondxbot+chit_prof1*chi_t*rho_yz))* &
                    dlnrhodx_yz+dx2_bound(-i)*dsdx_yz
@@ -2970,7 +2992,7 @@ module EquationOfState
 !                   added branches for Kramers heat conductivity
 !
       use Mpicomm, only: stop_it
-      use DensityMethods, only: getdlnrho
+      use DensityMethods, only: getdlnrho_z
 !
       real, pointer :: chi, hcondzbot, hcondztop
       real, pointer :: chi_t, chit_prof1, chit_prof2
@@ -3052,7 +3074,7 @@ module EquationOfState
 !  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,TT_xy)             ! here TT_xy = d_z ln(rho)
+            call getdlnrho_z(f(:,:,:,ilnrho),n1,i,TT_xy)             ! here TT_xy = d_z ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + cp*(rho_xy*TT_xy+dz2_bound(-i)*dsdz_xy)
           enddo
 
@@ -3809,6 +3831,14 @@ module EquationOfState
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='bc_ss_temp3_z')
 !
+      if (ldensity.and..not.lstratz) then
+        call get_shared_variable('mpoly',mpoly)
+      else
+        if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
+                                'set impossible')
+        allocate(mpoly); mpoly=impossible
+      endif
+!
       if (ldebug) print*,'bc_ss_temp3_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
@@ -3860,7 +3890,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use DensityMethods, only: getdlnrho
+      use DensityMethods, only: getdlnrho_x
 
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -3894,7 +3924,7 @@ module EquationOfState
           if (ldensity_nolog) then
 
             if (lreference_state) then
-              call getdlnrho(f(l1-i:l1+i,:,:,ilnrho),i,BOT,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
+              call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
               f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(BOT,iref_gs) &
                                + (cp-cv)*dlnrho 
             else
@@ -3917,7 +3947,7 @@ module EquationOfState
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
-              call getdlnrho(f(l2-i:l2+i,:,:,ilnrho),i,TOP,rho_yz,dlnrho)    ! dlnrho = d_x ln(rho)
+              call getdlnrho_x(f(:,:,:,ilnrho),l2,i,rho_yz,dlnrho)    ! dlnrho = d_x ln(rho)
               f(l2+i,:,:,iss) =  f(l2-i,:,:,iss) - dx2_bound(i)*reference_state(TOP,iref_gs) &
                                - (cp-cv)*dlnrho
             else
@@ -3971,7 +4001,7 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
-          call getdlnrho_y(f(:,m1-i:m1+i,:,ilnrho),i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f(:,:,:,ilnrho),m1,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -3981,7 +4011,7 @@ module EquationOfState
         if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
-          call getdlnrho_y(f(:,m2-i:m2+i,:,ilnrho),i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f(:,:,:,ilnrho),m2,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) - (cp-cv)*dlnrho
         enddo
 !
@@ -3998,7 +4028,7 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use DensityMethods, only: getdlnrho
+      use DensityMethods, only: getdlnrho_z
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
@@ -4024,7 +4054,7 @@ module EquationOfState
       case ('bot')
         if (cs2bot<=0.) print*, 'bc_ss_stemp_z: cannot have cs2bot<=0'
         do i=1,nghost
-          call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,dlnrho)     ! dlnrho = d_z ln(rho)
+          call getdlnrho_z(f(:,:,:,ilnrho),n1,i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n1-i,iss) = f(:,:,n1+i,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -4033,7 +4063,7 @@ module EquationOfState
       case ('top')
         if (cs2top<=0.) print*, 'bc_ss_stemp_z: cannot have cs2top<=0'
         do i=1,nghost
-          call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,dlnrho)     ! dlnrho = d_z ln(rho)
+          call getdlnrho_z(f(:,:,:,ilnrho),n2,i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) - (cp-cv)*dlnrho
         enddo
       case default
@@ -4433,6 +4463,11 @@ module EquationOfState
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
             endif
+            if (bcz12(ilnrho,1)/='nil') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                "To avoid a double computation, this boundary condition "// &
+                "should be used only with bcz1(ilnrho)='nil' for density.")
+            endif
 !
             rho=getrho_s(f(l1,m1,n1,ilnrho),l1)
             ss=f(l1,m1,n1,iss)
@@ -4448,11 +4483,16 @@ module EquationOfState
               f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - dz2_bound(-i)*dlnrhodz
               f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - dz2_bound(-i)*dssdz
             enddo
-          else if (lanelastic) then
+          elseif (lanelastic) then
             if (bcz12(iss_b,1)/='hs') then
               call fatal_error("bc_lnrho_hds_z_iso", &
                 "This boundary condition for density is "// &
                 "currently only correct for bcz1(iss)='hs'")
+            endif
+            if (bcz12(irho_b,1)/='nil') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                "To avoid a double computation, this boundary condition "// &
+                "should be used only with bcz1(irho_b)='nil' for density.")
             endif
             call eoscalc(ipp_ss,log(f(l1,m1,n1,irho_b)),f(l1,m1,n1,iss_b), &
                          cs2=cs2_point)
@@ -4464,21 +4504,32 @@ module EquationOfState
               f(:,:,n1-i,irho_b) = f(:,:,n1+i,irho_b) - dz2_bound(-i)*dlnrhodz*f(:,:,n1+1,irho_b)
               f(:,:,n1-i,iss_b ) = f(:,:,n1+i,iss_b ) - dz2_bound(-i)*dssdz
             enddo
+          else
+            call fatal_error("bc_lnrho_hds_z_iso", &
+                "This boundary condition is at bottom only implemented for ldensity=T or lanelastic=T")
           endif
 !
         elseif (ltemperature) then
 !
 !  Energy equation formulated in logarithmic temperature.
 !
-          if (bcz12(ilntt,1)/='s') then
-            call fatal_error("bc_lnrho_hds_z_iso", &
-                "This boundary condition for density is "// &
-                "currently only correct for bcz1(ilntt)='s'")
-          endif
-!
-          call eoscalc(ilnrho_lntt,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilntt), &
+          if (ltemperature_nolog) then
+            if (bcz12(iTT,1)/='s') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                  "This boundary condition for density is "// &
+                  "currently only correct for bcz1(iTT)='s'")
+            endif
+            call eoscalc(ilnrho_TT,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iTT), &
                        cs2=cs2_point)
-!
+          else
+            if (bcz12(ilnTT,1)/='s') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                  "This boundary condition for density is "// &
+                  "currently only correct for bcz1(ilnTT)='s'")
+            endif
+            call eoscalc(ilnrho_lnTT,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilnTT), &
+                       cs2=cs2_point)
+          endif
           dlnrhodz =  gamma *gravz/cs2_point
 !
           do i=1,nghost
@@ -4529,6 +4580,11 @@ module EquationOfState
                   "This boundary condition for density is "//&
                   "currently only correct for bcz2(iss)='hs'")
             endif
+            if (bcz12(ilnrho,2)/='nil') then
+              call fatal_error("bc_lnrho_hds_z_iso", &
+                "To avoid a double computation, this boundary condition "// &
+                "should be used only with bcz2(ilnrho)='nil' for density.")
+            endif
 
             rho=getrho_s(f(l2,m2,n2,ilnrho),l2)
             ss=f(l2,m2,n2,iss)
@@ -4553,15 +4609,23 @@ module EquationOfState
 !
 !  Energy equation formulated in logarithmic temperature.
 !
-          if (bcz12(ilntt,2)/='s') then
-            call fatal_error("bc_lnrho_hydrostatic_z", &
-                "This boundary condition for density is "//&
-                "currently only correct for bcz2(ilntt)='s'")
-          endif
-!
-          call eoscalc(ilnrho_lntt,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilntt), &
+          if (ltemperature_nolog) then
+            if (bcz12(iTT,2)/='s') then
+              call fatal_error("bc_lnrho_hydrostatic_z", &
+                  "This boundary condition for density is "//&
+                  "currently only correct for bcz2(iTT)='s'")
+            endif
+            call eoscalc(ilnrho_TT,f(l2,m2,n2,ilnrho),f(l2,m2,n2,iTT), &
                        cs2=cs2_point)
-!
+          else
+            if (bcz12(ilnTT,2)/='s') then
+              call fatal_error("bc_lnrho_hydrostatic_z", &
+                  "This boundary condition for density is "//&
+                  "currently only correct for bcz2(ilnTT)='s'")
+            endif
+            call eoscalc(ilnrho_lnTT,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilnTT), &
+                       cs2=cs2_point)
+          endif
           dlnrhodz =  gamma *gravz/cs2_point
 !
           do i=1,nghost
@@ -4737,10 +4801,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -4784,12 +4844,6 @@ module EquationOfState
        call keep_compiler_quiet(MolMass)
 !
      endsubroutine find_mass
-!***********************************************************************
-    subroutine read_Lewis
-!
-!  Dummy routine
-!
-    endsubroutine read_Lewis
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
@@ -4846,5 +4900,25 @@ module EquationOfState
       call get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
     endsubroutine set_stratz
+!***********************************************************************
+    subroutine pushdiags2c(p_diag)
+
+    integer, parameter :: n_diags=0
+    integer(KIND=ikind8), dimension(:) :: p_diag
+
+    call keep_compiler_quiet(p_diag)
+
+    endsubroutine pushdiags2c
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    integer, parameter :: n_pars=3
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+    call copy_addr_c(gamma,p_par(2))
+    call copy_addr_c(cv1,p_par(3))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule EquationOfState

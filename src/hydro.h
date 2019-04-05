@@ -8,10 +8,11 @@
   public :: read_hydro_run_pars,  write_hydro_run_pars
   public :: rprint_hydro
   public :: get_slices_hydro
-  public :: init_uu, duu_dt, calc_lhydro_pars, calc_pencils_hydro
+  public :: init_uu, duu_dt, hydro_after_boundary, calc_pencils_hydro
   public :: time_integrals_hydro
   public :: pencil_criteria_hydro, pencil_interdep_hydro
-  public :: calc_mflow, remove_mean_momenta, impose_velocity_ceiling
+  public :: calc_mflow, remove_mean_momenta, remove_mean_flow
+  public :: impose_velocity_ceiling
   public :: hydro_clean_up
   public :: coriolis_cartesian
   public :: kinematic_random_phase
@@ -19,10 +20,20 @@
   public :: expand_shands_hydro
   public :: calc_means_hydro
   public :: update_char_vel_hydro
+  public :: hydro_after_timestep
+  public :: calc_gradu
+  public :: pushpars2c, pushdiags2c
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
   public :: uumx,        lcalc_uumeanx
   public :: uumz, guumz, lcalc_uumeanz, lupw_uu
-  public :: uumxy, uumxz, lcalc_uumeanxy, lcalc_uumeanxz
+  public :: uumxy, uumxz,lcalc_uumeanxy, lcalc_uumeanxz
   public :: ampl_fcont_uu
+
+  interface calc_pencils_hydro
+    module procedure calc_pencils_hydro_pencpar
+    module procedure calc_pencils_hydro_std
+  endinterface calc_pencils_hydro
+!
+

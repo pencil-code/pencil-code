@@ -34,18 +34,20 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
+  logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
              lremove_mean_temperature=.false.
 !
   logical :: lwrite_debug=.false.
 !
-  real, dimension (nz,3) :: glnrhomz
+  real, dimension (nz) :: lnrhomz,glnrhomz
   real :: dx_2, dz_2
   real, pointer :: chi
 !
   include '../density.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   integer :: iorder_z=4
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_run_pars/ iorder_z, lwrite_debug, lremove_mean_temperature
 !
@@ -159,13 +161,13 @@ module Density
 !
     endsubroutine write_density_run_pars
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
-  endsubroutine calc_ldensity_pars
+  endsubroutine density_after_boundary
 !***********************************************************************
     subroutine pencil_criteria_density()
 !
@@ -183,7 +185,7 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      call keep_compiler_quiet(lpencil_in)
+      if (lpencil_in(i_ekin)) lpencil_in(i_u2)=.true.
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -224,7 +226,7 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
 ! ekin
-      if (lpencil(i_ekin)) p%ekin=0.0
+      if (lpencil(i_ekin)) p%ekin=0.5*p%u2
 !
       call keep_compiler_quiet(f)
 !
@@ -252,6 +254,17 @@ module Density
       call keep_compiler_quiet(p)
 !
     endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine density_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine density_after_timestep
 !***********************************************************************
     subroutine split_update_density(f)
 !
@@ -417,6 +430,7 @@ module Density
           f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-gpp(:,j)
         enddo
       enddo; enddo
+!      f(:,:,:,ipp)=f(:,:,:,ipp)/dt
 !
     endsubroutine boussinesq
 !***********************************************************************
@@ -752,5 +766,24 @@ module Density
                             =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
 !
     endsubroutine update_char_vel_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Density

@@ -1,0 +1,45 @@
+COMMON_HEADERS = common/datatypes.h common/defines.h common/errorhandler.h common/config.h common/grid.h utils/utils.h
+CHEADERS = ../../cparam_c.h ../../cdata_c.h ../../sub_c.h  ../../headers_c.h ../../forcing_c.h
+PC_HEADERS = common/PC_module_parfuncs.h common/PC_modulepars.h common/PC_modulepardecs.h diagnostics/PC_module_diagfuncs.h diagnostics/PC_modulediags.h diagnostics/PC_modulediags_init.h
+
+gpu_astaroth.o: gpu_astaroth.cc $(COMMON_HEADERS) common/PC_moduleflags.h common/PC_module_parfuncs.h common/forcing.h gpu/gpu.h gpu/cuda/cuda_generic.cuh diagnostics/diagnostics.h $(CHEADERS)
+#
+common/config.o: common/config.cc $(COMMON_HEADERS)
+#
+common/grid.o: common/grid.cc $(COMMON_HEADERS)
+#
+common/slice.o: common/slice.cc common/errorhandler.h common/slice.h
+#
+gpu/gpu.o: gpu/gpu.cc gpu/gpu.h common/errorhandler.h gpu/cuda/cuda_generic.cuh gpu/cuda/core/concur_cuda_core.cuh gpu/cuda/generic/collectiveops_cuda_generic.cuh common/datatypes.h common/config.h common/grid.h common/slice.h common/forcing.h 
+#
+gpu/cuda/cuda_generic.o: gpu/cuda/cuda_generic.cu gpu/cuda/cuda_generic.cuh utils/utils.h gpu/cuda/core/cuda_core.cuh gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh gpu/cuda/core/concur_cuda_core.cuh gpu/cuda/core/copyHalosConcur.cuh gpu/cuda/generic/rk3_cuda_generic.cuh gpu/cuda/generic/boundcond_cuda_generic.cuh gpu/cuda/generic/slice_cuda_generic.cuh gpu/cuda/generic/collectiveops_cuda_generic.cuh common/datatypes.h common/config.h common/grid.h common/slice.h common/forcing.h 
+#
+diagnostics/timeseries_diagnostics.o: diagnostics/timeseries_diagnostics.cc common/grid.h common/qualify.h utils/utils.h gpu/cuda/cuda_generic.cuh ../../cparam_c.h ../../cdata_c.h ../../diagnostics_c.h diagnostics/PC_module_diagfuncs.h diagnostics/PC_modulediags_init.h diagnostics/PC_modulediags.h
+#
+gpu/cuda/generic/boundcond_cuda_generic.o: gpu/cuda/generic/boundcond_cuda_generic.cu gpu/cuda/generic/boundcond_cuda_generic.cuh gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh common/config.h common/grid.h common/errorhandler.h
+#
+gpu/cuda/generic/collectiveops_cuda_generic.o: gpu/cuda/generic/collectiveops_cuda_generic.cu gpu/cuda/generic/collectiveops_cuda_generic.cuh gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh utils/utils.h common/errorhandler.h common/config.h
+#
+gpu/cuda/generic/rk3_cuda_generic.o: gpu/cuda/generic/rk3_cuda_generic.cu gpu/cuda/generic/rk3_cuda_generic.cuh gpu/cuda/generic/diff_cuda_generic.cuh gpu/cuda/core/errorhandler_cuda.cuh common/datatypes.h common/defines.h common/errorhandler.h common/config.h common/grid.h common/PC_moduleflags.h
+#
+gpu/cuda/generic/slice_cuda_generic.o: gpu/cuda/generic/slice_cuda_generic.cu gpu/cuda/generic/slice_cuda_generic.cuh common/config.h common/grid.h common/errorhandler.h common/slice.h gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh common/PC_moduleflags.h
+#
+gpu/cuda/core/concur_cuda_core.o: gpu/cuda/core/concur_cuda_core.cu gpu/cuda/core/concur_cuda_core.cuh
+#
+gpu/cuda/core/copyHalosConcur.o: gpu/cuda/core/copyHalosConcur.cu gpu/cuda/core/copyHalosConcur.cuh gpu/cuda/cuda_generic.cuh common/PC_moduleflags.h common/PC_modulepardecs.h common/datatypes.h common/errorhandler.h gpu/cuda/core/dconsts_core.cuh ../../cdata_c.h
+#
+gpu/cuda/core/cuda_core.o: gpu/cuda/core/cuda_core.cu gpu/cuda/core/cuda_core.cuh gpu/cuda/cuda_generic.cuh common/datatypes.h common/errorhandler.h gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh gpu/cuda/core/copyHalosConcur.cuh common/PC_moduleflags.h common/PC_modulepardecs.h common/config.h common/grid.h common/slice.h common/forcing.h common/PC_moduleflags.h common/PC_modulepars.h common/PC_module_parfuncs.h
+#
+../../cparam_c.h: ../../cparam.f90 ../../cparam.inc ../../cparam.local ../../scripts/cparam2c ../../scripts/cparam.sed
+	@cd ../..; cparam2c
+../../cdata_c.h: ../../defines_cdata.h ../../cdata.f90 ../../scripts/cdata2c ../../scripts/cdata.sed
+	@cd ../..; cdata2c
+../../defines_cdata.h: ../../cdata.f90 ../../scripts/cdata2c ../../scripts/cdata.sed
+	@cd ../..; cdata2c
+../../diagnostics_c.h: ../../diagnostics.f90 ../../scripts/diagnostics2c
+	@cd ../..; diagnostics2c
+../../forcing_c.h: ../../forcing.f90 ../../scripts/forcing2c
+	@cd ../..; forcing2c
+../../sub_c.h: ../../sub.f90 ../../scripts/sub2c
+	@cd ../..; sub2c
+

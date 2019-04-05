@@ -3,11 +3,18 @@
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
+;  1-mar-17/MR: added new keyword parameters "single" and "array".
+;               /single would force to store the data in single precision.
+;               array=<name> would force output of the data in an array <name>
+;               instead in "object". This saves half the RAM space as no duplication
+;               of the (internally anyway used) array into individual variables is performed.
+;               "object" contains then the names and starting positions of the variables in array.
+;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
     solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, $
-    proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc
+    proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc, single=single, array=array
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -22,6 +29,7 @@ default, savefile, 1
 default, proc, -1
 default, trimxyz, 1
 default, id_proc, 0
+objout = not arg_present(array)
 ;
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
@@ -58,7 +66,7 @@ endelse
 ;
 mpvar=pdim.mpvar
 if (proc ne -1) then begin
-  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile 
+  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile
 ;
 ;  Check if file exists.
 ;
@@ -141,10 +149,39 @@ varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
 ;
+default, idXp1, 0
+varcontent[idXp1].variable = 'Particle Separation (dXp)'
+varcontent[idXp1].idlvar   = 'dXp'
+varcontent[idXp1].idlinit  = INIT_3VECTOR
+varcontent[idXp1].skip     = 2
+;
+default, idVp1, 0
+varcontent[idVp1].variable = 'Particle Velocity Difference(dVp)'
+varcontent[idVp1].idlvar   = 'dVp'
+varcontent[idVp1].idlinit  = INIT_3VECTOR
+varcontent[idVp1].skip     = 2
+;
+;default, idXpo1, 0
+;varcontent[idXpo1].variable = 'Old Particle Separation (dXpo)'
+;varcontent[idXpo1].idlvar   = 'dXpo'
+;varcontent[idXpo1].idlinit  = INIT_3VECTOR
+;varcontent[idXpo1].skip     = 2
+;
+default, ibpx, 0
+varcontent[ibpx].variable = 'Particle magnetic field (bp)'
+varcontent[ibpx].idlvar   = 'bp'
+varcontent[ibpx].idlinit  = INIT_3VECTOR
+varcontent[ibpx].skip     = 2
+;
 default, iap, 0
 varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
 varcontent[iap].idlinit  = INIT_SCALAR
+;
+default, icaustics, 0
+varcontent[icaustics].variable = 'Number of caustics'
+varcontent[icaustics].idlvar   = 'caustics'
+varcontent[icaustics].idlinit  = INIT_SCALAR
 ;
 default, inpswarm, 0
 varcontent[inpswarm].variable = 'Particle internal number (npswarm)'
@@ -156,6 +193,16 @@ varcontent[irhopswarm].variable = 'Particle mass density (rhopswarm)'
 varcontent[irhopswarm].idlvar   = 'rhopswarm'
 varcontent[irhopswarm].idlinit  = INIT_SCALAR
 ;
+default, ivpxt, 0
+varcontent[ivpxt].variable = 'Particle turbulent speed (vpxt)'
+varcontent[ivpxt].idlvar   = 'vpxt'
+varcontent[ivpxt].idlinit  = INIT_SCALAR
+;
+default, ivpzt, 0
+varcontent[ivpzt].variable = 'Particle turbulent speed (vpzt)'
+varcontent[ivpzt].idlvar   = 'vpzt'
+varcontent[ivpzt].idlinit  = INIT_SCALAR
+;
 default, iaps, 0
 varcontent[iaps].variable = 'Particle sink radius (aps)'
 varcontent[iaps].idlvar   = 'aps'
@@ -166,7 +213,52 @@ varcontent[imp].variable = 'Particle mass (mp)'
 varcontent[imp].idlvar   = 'mp'
 varcontent[imp].idlinit  = INIT_SCALAR
 ;
-;  Check if there is other pvar data written by the special module. 
+default, iup11, 0
+varcontent[iup11].variable = 'grad uu at particle(up11)'
+varcontent[iup11].idlvar   = 'up11'
+varcontent[iup11].idlinit  = INIT_SCALAR
+;
+default, iup12, 0
+varcontent[iup12].variable = 'grad uu at particle(up12)'
+varcontent[iup12].idlvar   = 'up12'
+varcontent[iup12].idlinit  = INIT_SCALAR
+;
+;
+default, iup13, 0
+varcontent[iup13].variable = 'grad uu at particle(up13)'
+varcontent[iup13].idlvar   = 'up13'
+varcontent[iup13].idlinit  = INIT_SCALAR
+;
+default, iup21, 0
+varcontent[iup21].variable = 'grad uu at particle(up21)'
+varcontent[iup21].idlvar   = 'up21'
+varcontent[iup21].idlinit  = INIT_SCALAR
+;
+default, iup22, 0
+varcontent[iup22].variable = 'grad uu at particle(up22)'
+varcontent[iup22].idlvar   = 'up22'
+varcontent[iup22].idlinit  = INIT_SCALAR
+;
+default, iup23, 0
+varcontent[iup23].variable = 'grad uu at particle(up23)'
+varcontent[iup23].idlvar   = 'up23'
+varcontent[iup23].idlinit  = INIT_SCALAR
+;
+default, iup31, 0
+varcontent[iup31].variable = 'grad uu at particle(up31)'
+varcontent[iup31].idlvar   = 'up31'
+varcontent[iup31].idlinit  = INIT_SCALAR
+;
+default, iup32, 0
+varcontent[iup32].variable = 'grad uu at particle(up32)'
+varcontent[iup32].idlvar   = 'up32'
+varcontent[iup32].idlinit  = INIT_SCALAR
+;
+default, iup33, 0
+varcontent[iup33].variable = 'grad uu at particle(up33)'
+varcontent[iup33].idlvar   = 'up33'
+varcontent[iup33].idlinit  = INIT_SCALAR
+;  Check if there is other pvar data written by the special module.
 ;
 file_special=datadir+'/index_special_particles.pro'
 exist_specialvar=file_test(file_special)
@@ -208,13 +300,12 @@ endfor
 ;
 ;  Define arrays for temporary storage of data.
 ;
-array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
 ;
 ; Define array for processor id storage
 ;
 if (id_proc) then begin
-  iproc=replicate(-1,npar) 
+  iproc=replicate(-1,npar)
   variables=[variables,'iproc']
 endif
 ;
@@ -232,7 +323,7 @@ endif
 ;  Read from single processor.
 ;
 if (proc ne -1) then begin
-  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile 
+  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile
   if (not keyword_set(quiet)) then $
       print, 'Loading data from processor ', strtrim(str(proc))
 ;
@@ -250,13 +341,17 @@ if (proc ne -1) then begin
 ;  Read particle data (if any).
 ;
   if (npar ne 0) then begin
-;    
+;
     ipar=lonarr(npar)
     readu, file, ipar
 ;
 ;  Read local processor data.
 ;
-    array=fltarr(npar,mpvar)*one
+    if keyword_set(single) then $
+      array=fltarr(npar,mpvar) $
+    else $
+      array=fltarr(npar,mpvar)*one
+
     readu, file, array
 ;
   endif
@@ -272,7 +367,13 @@ if (proc ne -1) then begin
 ;
   close, file
   free_lun, file
+;
 endif else begin
+;
+  if keyword_set(single) then $
+    array=fltarr(npar_max,totalvars) $
+  else $
+    array=fltarr(npar_max,totalvars)*one
 ;
 ;  Loop over processors.
 ;
@@ -283,7 +384,7 @@ endif else begin
         strtrim(str(ncpus)), ' (', $
         strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
 ;
-    filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
+    filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile
 ;
 ;  Check if file exists.
 ;
@@ -306,12 +407,13 @@ endif else begin
 ;  Read particle data (if any).
 ;
     if (npar_loc ne 0) then begin
-;    
+;
       ipar_loc=lonarr(npar_loc)
       readu, file, ipar_loc
+      if (n_elements(iipar) eq 0) then iipar=ipar_loc else iipar = [iipar, ipar_loc]
 ;
 ;  Register particle indices for later check if all particles have been read.
-;  
+;
       for k=0L,npar_loc-1 do begin
         ipar[ipar_loc[k]-1]=ipar[ipar_loc[k]-1]+1
       endfor
@@ -506,15 +608,18 @@ endif
 ;
 ;  Put data into sensibly named arrays.
 ;
-for iv=0L,mpvar-1L do begin
-  res=varcontent[iv].idlvar+'=array[*,iv:iv+varcontent[iv].skip]'
-  if (execute(res,0) ne 1) then $
-    message, 'Error putting data into '+varcontent[iv].idlvar+' array'
-  iv=iv+varcontent[iv].skip
-endfor
+if objout then begin
+  for iv=0L,mpvar-1L do begin
+    res=varcontent[iv].idlvar+'=array[*,iv:iv+varcontent[iv].skip]'
+    if (execute(res,0) ne 1) then $
+      message, 'Error putting data into '+varcontent[iv].idlvar+' array'
+    iv=iv+varcontent[iv].skip
+  endfor
+  undefine, array
+endif
 ;
 ;  Check if all particles found exactly once.
-;  Allow for particles not beeing found if particles are beeing 
+;  Allow for particles not being found if particles are being
 ;  inserted continuously.
 ;
 if (proc eq -1 and not keyword_set(quiet)) then begin
@@ -537,7 +642,7 @@ if (proc eq -1 and not keyword_set(quiet)) then begin
           if ( ipar[i] gt 1 ) then print, i, ipar[i]
         endfor
       endif
-    endelse  
+    endelse
   endif else begin
     if (rmv) then begin
       if ( (max(ipar+ipar_rmv) ne 1) or (min(ipar+ipar_rmv) ne 1) ) then begin
@@ -596,6 +701,7 @@ endif
 ;
 ;  If requested print a summary.
 ;
+if objout then $
 if ( keyword_set(stats) and (not quiet) ) then begin
   print, ''
   print, 'VARIABLE SUMMARY:'
@@ -656,13 +762,32 @@ endif
 ;
 ;  Put data and parameters in object.
 ;
-npar_found=0L
-npar_found=n_elements(where(ipar eq 1))
-makeobject="object = create_struct(name=objectname," + $
-    "['t','x','y','z','dx','dy','dz','npar_found'," + $
-    arraytostring(variables,quote="'",/noleader) + "]," + $
-    "t,x,y,z,dx,dy,dz,npar_found," + $
-    arraytostring(variables,/noleader) + ")"
+npar_found=n_elements(where(ipar eq 1))+0L
+if objout then $
+  makeobject="object = create_struct(name=objectname," + $
+             "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
+             arraytostring(variables,quote="'",/noleader) + "]," + $
+             "t,x,y,z,dx,dy,dz,npar_found,iipar," + $
+             arraytostring(variables,/noleader) + ")" $
+else begin
+;
+;  Turning skips into variable lengths
+;
+  for iv=0,mpvar-1L do begin
+    if varcontent[iv].idlvar ne 'dummy' then begin
+      iskip = varcontent[iv].skip
+      varcontent[iv].skip = iskip+1
+      iv += iskip
+    endif
+  endfor
+
+  makeobject="object = create_struct(name=objectname," + $
+             "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
+             "'varnames', 'varlens']," + $
+             "t,x,y,z,dx,dy,dz,npar_found,iipar" + $
+             "varcontent.idlvar, varcontent.skip )"
+endelse
+
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /info
   undefine, object

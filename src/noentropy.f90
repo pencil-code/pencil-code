@@ -15,6 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); tcond; sglnTT(3)
+! PENCILS PROVIDED uglnTT
 !
 !***************************************************************
 module Energy
@@ -28,14 +29,9 @@ module Energy
 !
   include 'energy.h'
 !
-  real :: hcond0=0.0, hcond1=impossible, chi=impossible
-  real :: Fbot=impossible, FbotKbot=impossible, Kbot=impossible
-  real :: Ftop=impossible, FtopKtop=impossible
-  logical :: lmultilayer=.true.
-  logical :: lheatc_chiconst=.false.
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
-  logical, pointer :: lffree
+  logical, pointer :: lffree, lrelativistic_eos
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -51,6 +47,7 @@ module Energy
   integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_ufpresm=0
   integer :: idiag_uduum=0
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************
@@ -60,12 +57,20 @@ module Energy
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use SharedVariables
+      use SharedVariables, only: get_shared_variable
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
-                               caller='register_energy')
+      call get_shared_variable('lpressuregradient_gas', &
+          lpressuregradient_gas, caller='register_energy')
+!
+!  Check if we are solving the relativistic eos equations.
+!  In that case we'd need to get lrelativistic_eos from density.
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos', &
+            lrelativistic_eos, caller='register_energy')
+      endif
 !
 !  Identify version number.
 !
@@ -81,8 +86,8 @@ module Energy
 !
 !  24-nov-02/tony: coded
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 cs0, select_eos_variable,gamma_m1
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
+      use EquationOfState, only: cs0, select_eos_variable,gamma_m1
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
@@ -118,7 +123,18 @@ module Energy
       if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
 !
+!  Check that cs0 is set correctly when lrelativistic_eos=.true.
+!
+      if (ldensity.and.lrelativistic_eos) then
+        if (abs(cs0**2-onethird)>0.01) then
+          if (lroot) write(*,*) &
+              'WARNING: consider putting cs0=1/sqrt(3) for relativistic EoS'
+        endif
+      endif
+!
 ! check if we are solving the force-free equations in parts of domain
+! AB: I suspect the following lines won't work here and need
+! AB: do be moved directly to register.
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
@@ -146,7 +162,7 @@ module Energy
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
       if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
-                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + w_sldchar_ent*sqrt(cs20)
+                            =max(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c), w_sldchar_ene*sqrt(cs20))
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************
@@ -166,7 +182,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
 !
       if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
@@ -250,7 +266,15 @@ module Energy
             if (llocal_iso) then
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
             else
-              p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+!
+!  The relativistic EoS works ok even if cs2 is not 1/3, but
+!  it may still be a good idea to put cs0=1/sqrt(3)=0.57735
+!
+              if (ldensity.and.lrelativistic_eos) then
+                p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
+              else
+                p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+              endif
             endif
 !
 !  multiply previous p%fpres pencil with profiles
@@ -273,23 +297,22 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  Dummy routine.
 !
-
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
       call keep_compiler_quiet(f)
 
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -297,8 +320,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension(nx) :: ufpres, uduu
-      integer :: j,ju
-      integer :: i
+      integer :: j,i
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -315,18 +337,16 @@ module Energy
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
       if (lhydro.and.lpressuregradient_gas) then
-        do j=1,3
-          ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
-        enddo
+
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 !
 !  Add pressure force from global density gradient.
 !
         if (any(beta_glnrho_global /= 0.)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
           do j=1,3
-            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                - p%cs2*beta_glnrho_scaled(j)
+            df(l1:l2,m,n,(iux-1)+j) =  df(l1:l2,m,n,(iux-1)+j) &
+                                     - p%cs2*beta_glnrho_scaled(j)
           enddo
         endif
      endif
@@ -441,11 +461,8 @@ module Energy
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  Reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -464,16 +481,21 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
-!
-!  Write column where which energy variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iss=',iss
-        write(3,*) 'iyH=0'
-      endif
+
+      call keep_compiler_quiet(present(lwrite))
 !
     endsubroutine rprint_energy
+!***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
 !***********************************************************************
     subroutine split_update_energy(f)
 !
@@ -483,7 +505,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine
+    endsubroutine split_update_energy
 !***********************************************************************
     subroutine expand_shands_energy
 !

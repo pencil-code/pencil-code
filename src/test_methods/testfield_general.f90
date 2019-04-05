@@ -36,6 +36,7 @@ module Testfield_general
   real,                     dimension(ninit):: amplaatest=0.,                            &
                                                kx_aatest=0.,ky_aatest=0.,kz_aatest=0.,   &
                                                phasex_aatest=0.,phasey_aatest=0.,phasez_aatest=0.
+  real :: ampl_eta_uz=0.
 !
   logical                                   :: luxb_as_aux=.false.,ljxb_as_aux=.false.
 
@@ -46,7 +47,8 @@ module Testfield_general
            initaatest,                              &          !        .
            amplaatest,                              &          !        .
            kx_aatest,ky_aatest,kz_aatest,           &          !        .
-           phasex_aatest,phasey_aatest,phasez_aatest           !        .
+           phasex_aatest,phasey_aatest,phasez_aatest, &        !        .
+           ampl_eta_uz
 !
 ! run parameters
 !
@@ -58,6 +60,7 @@ module Testfield_general
             ltestfield_taver=.false.,         &
             ltestfield_artifric=.false.,      &
             lresitest_eta_const=.false.,      &
+            lresitest_eta_proptouz=.false.,   &
             lresitest_hyper3=.false.,         &
             leta_rank2=.true.,                &   
             lforcing_cont_aatest=.false.
@@ -148,6 +151,9 @@ module Testfield_general
         case ('hyper3')
           if (lroot) print*, 'resistivity: hyper3'
           lresitest_hyper3=.true.
+        case ('proptouz')
+          if (lroot) print*, 'resistivity: proportional to uz'
+          lresitest_eta_proptouz=.true.
         case ('none')
           ! do nothing
         case default
@@ -334,9 +340,16 @@ module Testfield_general
 !
             iaxtest=iaatest+3*(jtest-1)
 !
+!  If rescale_aatest=0, we really want to reset to zero,
+!  rather than rescale a NaN, for example, to another NaN.
+!
             do j=iaxtest,iaxtest+2
               do nl=n1,n2
-                f(l1:l2,m1:m2,nl,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,nl,j)
+                if (rescale_aatest(jtest)==0.) then
+                  f(l1:l2,m1:m2,nl,j)=0.
+                else
+                  f(l1:l2,m1:m2,nl,j)=rescale_aatest(jtest)*f(l1:l2,m1:m2,nl,j)
+                endif
               enddo
             enddo
 !
@@ -468,42 +481,45 @@ module Testfield_general
       real, dimension(nx,3,3):: aijtest
 
       call gij(f,iaxt,aijtest,1)
-      call curl_mn(aijtest,bbtest,f(l1:l2,m,n,iaxt:iaxt+2))
+      call curl_mn(aijtest,bbtest,f(:,m,n,iaxt:iaxt+2))
       call cross_mn(p%uu,bbtest,uxb)
 
     endsubroutine calc_uxb
 !***********************************************************************
-    subroutine calc_diffusive_part(f,iaxt,daatest)
+    subroutine calc_diffusive_part(f,p,iaxt,daatest)
 !
 !   6-jun-13/MR: outsourced from daatest_dt
 !   6-sep-13/MR: extended to spherical coordinates,
 !                generalized handling of eta profiles to all possible cases.
 !
       use Cdata
-      use Sub, only: del2v, gij, gij_etc, div_mn, del6v
+      use Sub, only: del2v, gij, gij_etc, div_other, div_mn, del6v
 
       real, dimension(mx,my,mz,mfarray),intent(IN)   :: f      
+      type (pencil_case),               intent(IN)   :: p
       integer,                          intent(IN)   :: iaxt
       real, dimension(nx,3),            intent(INOUT):: daatest
 
       real, dimension(nx)    :: divatest
       real, dimension(nx,3)  :: del2Atest
       real, dimension(nx,3,3):: aijtest
+      real, dimension(nx,3,3):: uijtest
+      real, dimension(nx) :: diffus_eta, diffus_eta3
+      integer :: i
 
       if (lcartesian_coords) then
         call del2v(f,iaxt,del2Atest)
-      elseif (lcylindrical_coords) then
-        !TBDone ?
-      elseif (lspherical_coords) then
+        if (any(lresitest_prof).or.lresitest_eta_proptouz) & 
+          call div_other(f(:,:,:,iaxt:iaxt+2),divatest)
+      else
         call gij(f,iaxt,aijtest,1)
-        call gij_etc(f,iaxt,f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
+        if (any(lresitest_prof).or.lresitest_eta_proptouz) &
+          call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
+        call gij_etc(f,iaxt,AA=f(l1:l2,m,n,iaxt:iaxt+2),AIJ=aijtest,DEL2=del2Atest)
       endif
-
+!
       if (any(lresitest_prof)) then
 !
-        if (.not.lspherical_coords) call gij(f,iaxt,aijtest,1)
-        call div_mn(aijtest,divatest,f(l1:l2,m,n,iaxt:iaxt+2))
-
         if (lresitest_prof(iny).or.lresitest_prof(inz)) then
           call calc_diffusive_part_prof_0d(del2Atest,divatest,eta1d(mnprof),(/geta1d(mnprof)/),(/jgprof/),daatest)
         elseif (lresitest_prof(inx)) then
@@ -521,11 +537,27 @@ module Testfield_general
 !  better cumulative with profiles?
 !
         if (lresitest_eta_const) daatest=etatest*del2Atest
+!
+        if (lresitest_eta_proptouz) then
+           call gij(f,iuu,uijtest,1)
+           do i=1,3 ; daatest(:,i)=etatest*((1.+ampl_eta_uz*p%uu(:,3))*del2Atest(:,i)+ampl_eta_uz*uijtest(:,3,i)*divatest) ; enddo
+        endif
+!
+!  diffusive time step, just take the max of diffus_eta (if existent)
+!  and whatever is calculated here
+!
+        if (lfirst.and.ldt) then
+          diffus_eta=etatest*dxyz_2
+          maxdiffus=max(maxdiffus,diffus_eta)
+        endif 
         
         if (lresitest_hyper3) then
           call del6v(f,iaxt,del2Atest)
           daatest=daatest+etatest_hyper3*del2Atest
-          if (lfirst.and.ldt) diffus_eta3=diffus_eta3+etatest_hyper3
+          if (lfirst.and.ldt) then
+            diffus_eta3=etatest_hyper3
+            maxdiffus3=max(maxdiffus3,diffus_eta3)
+          endif
         endif
 !
       endif
@@ -554,6 +586,7 @@ module Testfield_general
       do j=1,size(jg)
         daatest(:,jg(j))=daatest(:,jg(j))+geta(j)*divatest
       enddo
+!
     endsubroutine calc_diffusive_part_prof_0d
 !***********************************************************************
     subroutine calc_diffusive_part_prof_1d(del2Atest,divatest,eta,geta,jg,daatest)
@@ -703,7 +736,7 @@ module Testfield_general
 !   7-nov-13/MR: nygrid -> ny (a more speaking name)
 ! 
     Use Diagnostics, only: sum_mn_name, save_name
-    Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x
+    Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot
     Use Sub, only: fourier_single_mode
 !
     integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiags_Eij, idiags_Eij_z, idiags_Eij_xz, &
@@ -983,7 +1016,7 @@ module Testfield_general
 !
 !  calculate diffusive part
 !
-        call calc_diffusive_part(f,iaxtest,daatest)      
+        call calc_diffusive_part(f,p,iaxtest,daatest)
 !
 !  calculate testfield
 !
@@ -1020,12 +1053,6 @@ module Testfield_general
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
                                         +uxbtest-uxbtestm(:,:,jtest)
         endif
-!
-!  diffusive time step, just take the max of diffus_eta (if existent)
-!  and whatever is calculated here
-!
-        if (lfirst.and.ldt) diffus_eta=max(diffus_eta,etatest*dxyz_2)
-      
       enddo
 !
     endsubroutine rhs_daatest

@@ -791,6 +791,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: dTdz1,dTdz2,dTdz3,dTdz4,nusselt_num,nusselt_den,TTmin_cline,TTmax_cline
       real, dimension (nx) :: devsigzz1,devsigzz2,devsigzz3,devsigzz4
+      real, dimension (nx) :: diffus_special,advec_special
       type (pencil_case) :: p
 !      
 !  Advection
@@ -812,13 +813,14 @@ module Special
         advec_special=abs(q%uu(:,1))*dx_1(l1:l2)+ &
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
+        maxadvec=maxadvec+advec_special
 !
-        diffus_special=diffus_special + kappa*dxyz_2
-      endif
-!
-      if (headtt.or.ldebug) then
-         print*,'special_calc_energy: max(advec_special)  =',maxval(advec_special)
-         print*,'special_calc_energy: max(diffus_special) =',maxval(diffus_special)
+        diffus_special=kappa*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_special)
+        if (headtt.or.ldebug) then
+           print*,'special_calc_energy: max(advec_special)  =',maxval(advec_special)
+           print*,'special_calc_energy: max(diffus_special) =',maxval(diffus_special)
+        endif
       endif
 !
       if (ldiagnos) then 
@@ -1022,6 +1024,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -1096,44 +1099,44 @@ module Special
       enddo
 !
       if (lwr) then
-        write(3,*) 'uqxmin=',idiag_uqxmin
-        write(3,*) 'uqxmax=',idiag_uqxmax
-        write(3,*) 'uqxrms=',idiag_uqxrms
-        write(3,*) 'uqxm=',idiag_uqxm
-        write(3,*) 'uqx2m=',idiag_uqx2m
+        call farray_index_append('uqxmin',idiag_uqxmin)
+        call farray_index_append('uqxmax',idiag_uqxmax)
+        call farray_index_append('uqxrms',idiag_uqxrms)
+        call farray_index_append('uqxm',idiag_uqxm)
+        call farray_index_append('uqx2m',idiag_uqx2m)
 !
-        write(3,*) 'uqzmin=',idiag_uqzmin
-        write(3,*) 'uqzmax=',idiag_uqzmax
-        write(3,*) 'uqzrms=',idiag_uqzrms
-        write(3,*) 'uqzm=',idiag_uqzm
-        write(3,*) 'uqz2m=',idiag_uqz2m
+        call farray_index_append('uqzmin',idiag_uqzmin)
+        call farray_index_append('uqzmax',idiag_uqzmax)
+        call farray_index_append('uqzrms',idiag_uqzrms)
+        call farray_index_append('uqzm',idiag_uqzm)
+        call farray_index_append('uqz2m',idiag_uqz2m)
 !
-        write(3,*) 'uq2m=',idiag_uq2m
-        write(3,*) 'uqrms=',idiag_uqrms
-        write(3,*) 'uqmax=',idiag_uqmax
+        call farray_index_append('uq2m',idiag_uq2m)
+        call farray_index_append('uqrms',idiag_uqrms)
+        call farray_index_append('uqmax',idiag_uqmax)
 !
-        write(3,*) 'qtidalmin=',idiag_qtidalmin
-        write(3,*) 'qtidalmax=',idiag_qtidalmax
-        write(3,*) 'qtidalm=',idiag_qtidalm
+        call farray_index_append('qtidalmin',idiag_qtidalmin)
+        call farray_index_append('qtidalmax',idiag_qtidalmax)
+        call farray_index_append('qtidalm',idiag_qtidalm)
 !
-        write(3,*) 'dTdz1=',idiag_dTdz1
-        write(3,*) 'dTdz2=',idiag_dTdz2
-        write(3,*) 'dTdz3=',idiag_dTdz3
-        write(3,*) 'dTdz4=',idiag_dTdz4
+        call farray_index_append('dTdz1',idiag_dTdz1)
+        call farray_index_append('dTdz2',idiag_dTdz2)
+        call farray_index_append('dTdz3',idiag_dTdz3)
+        call farray_index_append('dTdz4',idiag_dTdz4)
 !
-        write(3,*) 'nusselt_num=',idiag_nusselt_num
-        write(3,*) 'nusselt_den=',idiag_nusselt_den
+        call farray_index_append('nusselt_num',idiag_nusselt_num)
+        call farray_index_append('nusselt_den',idiag_nusselt_den)
 !
-        write(3,*) 'TTmax_cline=',idiag_TTmax_cline
-        write(3,*) 'TTmin_cline=',idiag_TTmin_cline
+        call farray_index_append('TTmax_cline',idiag_TTmax_cline)
+        call farray_index_append('TTmin_cline',idiag_TTmin_cline)
 !
-        write(3,*) 'devsigzz1=',idiag_devsigzz1
-        write(3,*) 'devsigzz2=',idiag_devsigzz2
-        write(3,*) 'devsigzz3=',idiag_devsigzz3
-        write(3,*) 'devsigzz4=',idiag_devsigzz4
+        call farray_index_append('devsigzz1',idiag_devsigzz1)
+        call farray_index_append('devsigzz2',idiag_devsigzz2)
+        call farray_index_append('devsigzz3',idiag_devsigzz3)
+        call farray_index_append('devsigzz4',idiag_devsigzz4)
 !
-        write(3,*) 'icount=',idiag_icount
-        write(3,*) 'residual=',idiag_residual
+        call farray_index_append('icount',idiag_icount)
+        call farray_index_append('residual',idiag_residual)
      endif
 !
     endsubroutine rprint_special
@@ -1151,19 +1154,6 @@ module Special
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
 !
 !********************************************************************

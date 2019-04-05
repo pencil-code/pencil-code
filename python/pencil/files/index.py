@@ -1,5 +1,6 @@
 #$Id$
 import os
+import numpy as np
 from pencil import read_param, read_dim
 
 
@@ -48,16 +49,24 @@ class Index(dict):
             name=clean.split('=')[0].strip().replace('[','').replace(']','')
             if (clean.split('=')[1].strip().startswith('intarr(')):
                 continue
-            val=int(clean.split('=')[1].strip())
-           # val=int(float(clean.split('=')[1].strip())) # sean150513
+            if (clean.split('=')[1].strip().startswith('indgen(')):
+                val=int(clean.split('=')[1].strip().replace('indgen(','').split(')')[0])
+                app=clean.split('=')[1].strip().split('+')
+                val=np.arange(val)
+                if (len(app) > 1 ):
+                    val=val+int(app[1])
+                if (all(val != 0)  and all(val <= totalvars) \
+                    and not name.startswith('i_') and name.startswith('i')):
+                    name=name.lstrip('i')
+                    if (name == 'lnTT' and param.ltemperature_nolog):
+                        name = 'tt'
+                    self[name] = val
+            else:
+                val=int(clean.split('=')[1].strip())
+                if (val != 0  and val <= totalvars \
+                    and not name.startswith('i_') and name.startswith('i')):
+                        name=name.lstrip('i')
+                        if (name == 'lnTT' and param.ltemperature_nolog):
+                                name = 'tt'
+                        self[name] = val
 
-            #            print name,val
-            # need to compare val to totalvars as global indices
-            # may be present in index.pro
-            #            if (val != 0 and val <= totalvars and \
-            if (val != 0  and val <= totalvars \
-                and not name.startswith('i_') and name.startswith('i')):
-                name=name.lstrip('i')
-                if (name == 'lnTT' and param.ltemperature_nolog):
-                    name = 'tt'
-                self[name] = val

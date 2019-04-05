@@ -45,8 +45,6 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      use SharedVariables, only: get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -109,8 +107,8 @@ module Particles_mass
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(fp,dfp)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
@@ -154,6 +152,8 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -163,7 +163,7 @@ module Particles_mass
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'imp=', imp
+      if (lwr) call farray_index_append('imp', imp)
 !
       call keep_compiler_quiet(lreset)
 !

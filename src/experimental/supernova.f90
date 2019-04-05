@@ -392,7 +392,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('netcool',inetcool,communicated=.true.)
+      call farray_register_auxiliary('netcool',inetheat,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -430,7 +430,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
 !
       f(:,:,:,icooling)=0.0
-      f(:,:,:,inetcool)=0.0
+      f(:,:,:,inetheat)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -993,6 +993,7 @@ module Interstellar
 !  01-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -1028,11 +1029,15 @@ module Interstellar
         call parse_name(iname,cname(iname),cform(iname),'Gamm',idiag_Gamm)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      where(cnamev=='ism_cool'.or.cnamev=='ism_netcool') cformv='DEFINED'
+!
 !  Write column in which each interstellar variable is stored
 !
       if (lwr) then
-        write(3,*) 'icooling=',icooling
-        write(3,*) 'inetcool=',inetcool
+        call farray_index_append('icooling',icooling)
+        call farray_index_append('inetheat',inetheat)
       endif
 !
     endsubroutine rprint_interstellar
@@ -1042,6 +1047,8 @@ module Interstellar
 !  Write slices for animation of Interstellar variables.
 !
 !  26-jul-06/tony: coded
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -1053,17 +1060,10 @@ module Interstellar
 !  Shock profile
 !
         case ('ism_cool')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,icooling)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,icooling)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
-          slices%ready = .true.
+          call assign_slices_scal(slices,f,icooling)
+
         case ('ism_netcool')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetcool)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetcool)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetcool)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetcool)
-          slices%ready = .true.
+          call assign_slices_scal(slices,f,inetheat)
 !
       endselect
 !
@@ -1412,7 +1412,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,inetcool)=heatcool
+      f(l1:l2,m,n,inetheat)=heatcool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)

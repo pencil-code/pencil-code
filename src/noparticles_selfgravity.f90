@@ -23,7 +23,7 @@ module Particles_selfgravity
 !
   contains
 !***********************************************************************
-    subroutine register_particles_selfgrav()
+    subroutine register_particles_selfgrav
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -60,7 +60,7 @@ module Particles_selfgravity
 !
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
-    subroutine pencil_criteria_par_selfgrav()
+    subroutine pencil_criteria_par_selfgrav
 !
 !  All pencils that the Particles_selfgrav module depends on are specified here.
 !
@@ -179,6 +179,8 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset
       logical, optional :: lwrite
 !
@@ -190,9 +192,9 @@ module Particles_selfgravity
 !  Write information to index.pro
 !
       if (lwr) then
-        write(3,*) 'igpotselfx=0'
-        write(3,*) 'igpotselfy=0'
-        write(3,*) 'igpotselfz=0'
+        call farray_index_append('igpotselfx',0)
+        call farray_index_append('igpotselfy',0)
+        call farray_index_append('igpotselfz',0)
       endif
 !
       call keep_compiler_quiet(lreset)

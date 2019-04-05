@@ -11,8 +11,8 @@
 ! CPARAM logical, parameter :: lselfgravity = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
-! COMMUNICATED AUXILIARIES 1
+! MAUX CONTRIBUTION 4
+! COMMUNICATED AUXILIARIES 4
 !
 ! PENCILS PROVIDED potself; gpotself(3)
 !
@@ -58,12 +58,18 @@ module Selfgravity
 !
   integer :: idiag_potselfm=0, idiag_potself2m=0, idiag_potselfmxy=0
   integer :: idiag_potselfmx=0, idiag_potselfmy=0, idiag_potselfmz=0                  
-  integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0               ! Ask Wlad about moving
-  integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0            ! diagnostic indices to poisson
+  integer :: idiag_gpotselfxm=0, idiag_gpotselfym=0, idiag_gpotselfzm=0
+  integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
   integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0,idiag_qtoomremax=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
+!
+  type InternalPencils
+     real, dimension(nx) :: qtoomre
+  endtype InternalPencils
+!
+  type (InternalPencils) :: q
 !
 !  Module Variables
 !
@@ -82,6 +88,15 @@ module Selfgravity
 !  Set indices for auxiliary variables
 !
       call farray_register_auxiliary('potself',ipotself,communicated=.true.)
+!
+!  Register, unless particles selfgravity already did so (it also needs to use
+!  accelerations instead of potential).
+!
+      if (.not.lparticles_selfgravity) then
+        call farray_register_auxiliary('gpotselfx',igpotselfx,communicated=.true.)
+        call farray_register_auxiliary('gpotselfy',igpotselfy,communicated=.true.)
+        call farray_register_auxiliary('gpotselfz',igpotselfz,communicated=.true.)
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -107,6 +122,7 @@ module Selfgravity
 !  Initialize gravitational potential to zero.
 !
       f(:,:,:,ipotself)=0.0
+      f(:,:,:,igpotselfx:igpotselfz)=0.0
 !
 !  If gravitational constant was set, re-define rhs_poisson_const.
 !  else define the gravitational constant via rhs_poisson_const
@@ -163,9 +179,7 @@ module Selfgravity
 !
 !  Check that density and self-potential have consistent boundary conditions.
 !
-      !! does there need to be an ipotself consistency check here? I dont think so, since all that gets USED
-      !! in this module to update velocities is gpotself...I added becuase I dont think it will hurt.
-if (ldensity) then
+      if (ldensity) then
         i = merge(irho, ilnrho, ldensity_nolog)
         if (bcx(ipotself)=='p' .and. .not.(bcx(i)=='p')) then
           if (lroot) then
@@ -225,6 +239,65 @@ if (ldensity) then
           call fatal_error('initialize_selfgravity','')
         endif
       endif
+      if (ldensity) then
+        i = merge(irho, ilnrho, ldensity_nolog)
+        if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(i)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: gpotself has bcx=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcx=', bcx
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+        if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(i)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: gpotself has bcy=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcy=', bcy
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+        if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(i)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: gpotself has bcz=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcz=', bcz
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+      endif
+
+      if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcx=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcx=', bcx
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+      if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcy=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcy=', bcy
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+      if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcz=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcz=', bcz
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+
 !
 !  Initialize the epicycle frequency for calculating Toomre Q.
 !
@@ -316,6 +389,10 @@ if (ldensity) then
         !if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
       !endif
 !
+      if (ldiagnos.and.(idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0)) then
+        q%qtoomre=kappa_mn*sqrt(p%cs2)/(gravitational_const*pi*p%rho)
+      endif
+!
 !  Apply Jeans stiffening to the EOS
 !
       if (ljeans_stiffening) then
@@ -348,7 +425,8 @@ if (ldensity) then
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx,ny,nz) :: rhs_poisson=0.0
+      real, dimension (nx,ny,nz)   :: rhs_poisson=0.0
+      real, dimension (nx,ny,nz,3) :: acceleration
 !
       integer :: k
 !
@@ -415,15 +493,20 @@ if (ldensity) then
         call inverse_laplacian(rhs_poisson)
 !
 !  Put potential into f array.
+!  The accelerations will need to be retrieved from the poisson module, as they
+!  cannot be passed out of it or put directly into the f array without ruining
+!  other poisson modules.
+!
+        call get_acceleration(acceleration)
 !
         if (tselfgrav_gentle > 0.0 .and. t < tstart_selfgrav + tselfgrav_gentle) then
           f(l1:l2,m1:m2,n1:n2,ipotself) = 0.5 * &
               (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * rhs_poisson
           f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = 0.5 * &
-              (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * gpotself
+              (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * acceleration
         else
           f(l1:l2,m1:m2,n1:n2,ipotself)              = rhs_poisson
-          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = gpotself
+          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = -acceleration
         endif
 !
       endif ! if (t>=tstart_selfgrav) then
@@ -481,19 +564,9 @@ if (ldensity) then
              call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
-        if (idiag_qtoomre/=0) then
-          !print*,maxval(kappa_mn),maxval(sqrt(p%cs2)),maxval(gravitational_const*pi*p%rho)
-          !print*,minval(kappa_mn),minval(sqrt(p%cs2)),minval(gravitational_const*pi*p%rho)
-             call sum_mn_name(kappa_mn*sqrt(p%cs2)/ &
-             (gravitational_const*pi*p%rho),idiag_qtoomre)
-           endif
-           !stop
-        if (idiag_qtoomremin/=0) &
-             call max_mn_name(-kappa_mn*sqrt(p%cs2)/ &
-             (gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
-        if (idiag_qtoomremax/=0) &
-             call max_mn_name(kappa_mn*sqrt(p%cs2)/ &
-             (gravitational_const*pi*p%rho),idiag_qtoomremax)
+        if (idiag_qtoomre/=0) call sum_mn_name(q%qtoomre,idiag_qtoomre)
+        if (idiag_qtoomremin/=0) call max_mn_name(-q%qtoomre,idiag_qtoomremin,lneg=.true.)
+        if (idiag_qtoomremax/=0) call max_mn_name( q%qtoomre,idiag_qtoomremax)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
             (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
@@ -584,6 +657,7 @@ if (ldensity) then
 !  16-may-06/anders+jeff: adapted
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -670,10 +744,10 @@ if (ldensity) then
 !  Write column where which variable is stored.
 !
       if (lwr) then
-         write(3,*) 'ipotself=', ipotself
-         write(3,*) 'ipotselfx=', igpotselfx
-         write(3,*) 'ipotselfy=', igpotselfy
-         write(3,*) 'ipotselfz=', igpotselfz
+         call farray_index_append('ipotself', ipotself)
+         call farray_index_append('ipotselfx', igpotselfx)
+         call farray_index_append('ipotselfy', igpotselfy)
+         call farray_index_append('ipotselfz', igpotselfz)
       endif
 !
     endsubroutine rprint_selfgravity

@@ -31,7 +31,7 @@ module General
   public :: bessj, cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, count_bits, parser, write_full_columns
-  public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
+  public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
   public :: compress, fcompress
@@ -45,17 +45,21 @@ module General
   public :: ranges_dimensional
   public :: staggered_mean_scal, staggered_mean_vec
   public :: staggered_max_scal, staggered_max_vec
-  public :: directory_names_std
+  public :: directory_names_std, numeric_precision
   public :: touch_file
   public :: var_is_vec
-  public :: transform_cart_spher, transform_spher_cart_yy
+  public :: transform_cart_spher, transform_cart_spher_other, transform_spher_cart_yy
   public :: yy_transform_strip, yy_transform_strip_other, yin2yang_coors
   public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
+  public :: copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle
   public :: transpose_mn
   public :: notanumber, notanumber_0d
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
+  public :: linear_interpolate_2d
+  public :: chk_time
+  public :: get_species_nr
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -74,6 +78,7 @@ module General
     module procedure keep_compiler_quiet_sl
     module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_i1d
+    module procedure keep_compiler_quiet_i81d
     module procedure keep_compiler_quiet_i2d
     module procedure keep_compiler_quiet_i3d
     module procedure keep_compiler_quiet_l
@@ -186,7 +191,9 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cdata, only: mm,nn,imn_array,necessary,lroot
+      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip, &
+                       lyinyang,lcutoff_corners,nycut,nzcut, &
+                       lfirst_proc_y, lfirst_proc_z, llast_proc_y, llast_proc_z, iproc
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -206,6 +213,10 @@ module General
           enddo
         enddo
       else
+!
+!  For parallelized runs:
+!  Do inner rectangle.
+!
         imn=1
         do n=n1i+2,n2i-2
           do m=m1i+2,m2i-2
@@ -274,6 +285,17 @@ module General
           enddo
         enddo
       endif
+
+      if (lyinyang.and.lcutoff_corners) then
+        if (lfirst_proc_y) then
+          if (lfirst_proc_z) call reset_triangle_inds(1,my-nycut+nghost, 1,mz-nzcut+nghost,imn_array)  ! lower left corner
+          if (llast_proc_z ) call reset_triangle_inds(1,my-nycut+nghost,mz,nzcut+1-nghost ,imn_array)  ! upper left
+        endif
+        if (llast_proc_y) then
+          if (lfirst_proc_z) call reset_triangle_inds(my,nycut+1-nghost,  1,mz-nzcut+nghost,imn_array) ! lower right
+          if (llast_proc_z ) call reset_triangle_inds(my,nycut+1-nghost, mz,nzcut+1-nghost ,imn_array) ! upper right
+        endif
+      endif
 !
 !  Debugging output to be analysed with $PENCIL_HOME/utils/check-mm-nn.
 !
@@ -285,6 +307,7 @@ module General
           enddo
         endif
       endif
+      !if (iproc==0) write(100,'(30(i3,1x))') imn_array
 !
     endsubroutine setup_mm_nn
 !***********************************************************************
@@ -300,8 +323,8 @@ module General
         call random_number_wrapper(r)
       enddo
       call random_number_wrapper(p)
-      gn(1)=sqrt(-2*log(r))*sin(2*pi*p)
-      gn(2)=sqrt(-2*log(r))*cos(2*pi*p)
+      gn(1)=sqrt(-2*log(r))*sin(twopi*p)
+      gn(2)=sqrt(-2*log(r))*cos(twopi*p)
     endsubroutine gaunoise_number
 !***********************************************************************
     subroutine random_number_wrapper_0(a)
@@ -763,6 +786,27 @@ module General
       endif
 !
     endsubroutine keep_compiler_quiet_i
+!***********************************************************************
+    subroutine keep_compiler_quiet_i81d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer(KIND=ikind8), dimension(:) :: v1, v2, v3, v4
+      optional :: v2, v3, v4
+!
+      if (ALWAYS_FALSE) then
+        write(0,*) 'keep_compiler_quiet_i: Never got here...'
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+        STOP 1
+      endif
+!
+    endsubroutine keep_compiler_quiet_i81d
 !***********************************************************************
     subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
 !
@@ -1981,7 +2025,7 @@ module General
 ! III
       if ((re< 0.0).and.(im< 0.0)) complex_phase=  pi-asin(im/c)
 ! IV
-      if ((re>=0.0).and.(im< 0.0)) complex_phase=2*pi+asin(im/c)
+      if ((re>=0.0).and.(im< 0.0)) complex_phase=twopi+asin(im/c)
 !
     endfunction complex_phase
 !***********************************************************************
@@ -2166,7 +2210,7 @@ module General
 !  INTEGER N
 !
 !  N=2
-!  X=0.75D0
+!  X=0.75
 !
 !  Y = BESSJ(N,X)
 !
@@ -2192,7 +2236,7 @@ module General
 !     MATHEMATICAL TABLES, VOL.5, 1962.
 !
       integer, parameter :: IACC = 40
-      real, parameter :: BIGNO = 1.D10, BIGNI = 1.D-10
+      real, parameter :: BIGNO = 1.E10, BIGNI = 1.E-10
       real :: X,BESSJ,TOX,BJM,BJ,BJP,SUM1
       integer :: N,J,M,JSUM
 !
@@ -2262,11 +2306,11 @@ module General
       -.2073370639D-5,.2093887211D-6 /
       DATA Q1,Q2,Q3,Q4,Q5 /-.1562499995D-1,.1430488765D-3, &
       -.6911147651D-5,.7621095161D-6,-.9349451520D-7 /
-      DATA R1,R2,R3,R4,R5,R6 /57568490574.D0,-13362590354.D0, &
-      651619640.7D0,-11214424.18D0,77392.33017D0,-184.9052456D0 /
-      DATA S1,S2,S3,S4,S5,S6 /57568490411.D0,1029532985.D0, &
-      9494680.718D0,59272.64853D0,267.8532712D0,1.D0 /
-      IF(X==0.D0) GO TO 1
+      DATA R1,R2,R3,R4,R5,R6 /57568490574.,-13362590354., &
+      651619640.7,-11214424.18,77392.33017,-184.9052456 /
+      DATA S1,S2,S3,S4,S5,S6 /57568490411.,1029532985., &
+      9494680.718,59272.64853,267.8532712,1. /
+      IF(X==0.) GO TO 1
       AX = ABS (X)
       IF (AX<8.) THEN
       Y = X*X
@@ -2282,7 +2326,7 @@ module General
       BESSJ0 = SQRT(.636619772/AX)*(FP*COS(XX)-Z*FQ*SIN(XX))
       ENDIF
       RETURN
-    1 BESSJ0 = 1.D0
+    1 BESSJ0 = 1.
       RETURN
     endfunction BESSJ0
 !***********************************************************************
@@ -2301,10 +2345,10 @@ module General
       .2457520174D-5,-.240337019D-6 /,P6 /.636619772D0 /
       DATA Q1,Q2,Q3,Q4,Q5 /.04687499995D0,-.2002690873D-3,   &
       .8449199096D-5,-.88228987D-6,.105787412D-6 /
-      DATA R1,R2,R3,R4,R5,R6 /72362614232.D0,-7895059235.D0, &
-      242396853.1D0,-2972611.439D0,15704.48260D0,-30.16036606D0 /
-      DATA S1,S2,S3,S4,S5,S6 /144725228442.D0,2300535178.D0, &
-      18583304.74D0,99447.43394D0,376.9991397D0,1.D0 /
+      DATA R1,R2,R3,R4,R5,R6 /72362614232.,-7895059235., &
+      242396853.1,-2972611.439,15704.48260,-30.16036606 /
+      DATA S1,S2,S3,S4,S5,S6 /144725228442.,2300535178., &
+      18583304.74,99447.43394,376.9991397,1. /
 !
       AX = ABS(X)
       IF (AX<8.) THEN
@@ -2373,6 +2417,89 @@ module General
 !
     endsubroutine cyclic
 !***********************************************************************
+   function linear_interpolate_2d(f,xx,yy,xxp,lcheck) result(gp)
+!
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using the linear interpolation formula
+!
+!    g(x,y,z) = B*x*y + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!
+!  30-dec-04/anders: coded
+!  04-nov-10/nils: moved from particles_map to general
+!  22-apr-11/MR: changed to logical function to get rid of dependence on
+!                module Messages
+!
+      use Cdata
+!
+      real, dimension(:,:) :: f
+      real, dimension(:) :: xx,yy
+      real, dimension(2) :: xxp
+
+      real :: gp
+!
+      real, parameter :: eps=1.e-5
+      real :: g1, g2, g3, g4
+      real :: xp0, yp0
+      real, save :: dx1, dy1
+      integer :: ix0, iy0
+      logical :: lcheck
+!
+      intent(in) :: f, xx, yy, xxp, lcheck
+!
+!  Determine index value of lowest lying corner point of grid box surrounding
+!  the interpolation point.
+!
+      do ix0=1,size(xx)
+        if ( xx(ix0)>=xxp(1) ) exit
+      enddo
+      if (ix0>1) ix0=ix0-1
+
+      do iy0=1,size(yy)
+        if ( yy(iy0)>=xxp(2) ) exit
+      enddo
+      if (iy0>1) iy0=iy0-1
+!
+!  Check if the grid point interval is really correct.
+!
+      if ( xx(ix0)-eps<=xxp(1) .and. xx(ix0+1)+eps>=xxp(1) .and. &
+           yy(iy0)-eps<=xxp(2) .and. yy(iy0+1)+eps>=xxp(2) )  then
+        ! Everything okay
+      else
+        if (lcheck) then
+          print*, 'linear_interpolate: Interpolation point does not ' // &
+                  'lie within the calculated grid point interval.'
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'xp, xp0, xp1 = ', xxp(1), xx(ix0), xx(ix0+1)
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'yp, yp0, yp1 = ', xxp(2), yy(iy0), yy(iy0+1)
+        endif
+        return
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!
+      xp0=xxp(1)-xx(ix0)
+      yp0=xxp(2)-yy(iy0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!
+      dx1=1./(xx(2)-xx(1))
+      dy1=1./(yy(2)-yy(1))
+!
+!  Function values at all corners.
+!
+      g1=f(ix0  ,iy0  )
+      g2=f(ix0+1,iy0  )
+      g3=f(ix0  ,iy0+1)
+      g4=f(ix0+1,iy0+1)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + xp0*yp0*dx1*dy1*(g1-g2-g3+g4)
+
+    endfunction linear_interpolate_2d
+!***********************************************************************
    logical function linear_interpolate(f,ivar1,ivar2,xxp,gp,inear,lcheck)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
@@ -2386,7 +2513,7 @@ module General
 !  30-dec-04/anders: coded
 !  04-nov-10/nils: moved from particles_map to general
 !  22-apr-11/MR: changed to logical function to get rid of dependence on
-!  module Messages
+!                module Messages
 !
       use Cdata
 !
@@ -2575,7 +2702,7 @@ module General
 !***********************************************************************
   subroutine write_full_columns_real(unit,buffer,range,unfilled,ncol,fmt)
 !
-! range-wise output of a real or complex vector in ncol columns
+! range-wise output of a real vector in ncol columns
 ! unfilled (inout) - number of unfilled slots in last written line
 !
 !  20-apr-11/MR: coded
@@ -2584,7 +2711,6 @@ module General
 !
     integer,                        intent(in)    :: unit
     real,    dimension(*),          intent(in)    :: buffer
-    complex, dimension(*),          intent(in)    :: buffer_cmplx
     integer, dimension(3),          intent(in)    :: range
     integer,                        intent(inout) :: unfilled
     integer,              optional, intent(in)    :: ncol
@@ -2593,9 +2719,6 @@ module General
     integer              :: ncoll, nd, ia, ie, is, rest
     character(len=intlen):: str
     character(len=intlen):: fmtl, fmth
-    logical              :: lcomplex
-!
-    lcomplex = .false.
 !
     if ( present(fmt) ) then
       fmtl = fmt
@@ -2603,19 +2726,7 @@ module General
       fmtl = 'e10.2'
     endif
 !
-    goto 1
-!
-  entry write_full_columns_cmplx(unit,buffer_cmplx,range,unfilled,ncol,fmt)
-!
-    lcomplex = .true.
-!
-    if ( present(fmt) ) then
-      fmtl = '('//fmt//',1x,'//fmt//')'
-    else
-      fmtl = '(e10.2,1x,e10.2)'
-    endif
-!
- 1  nd = get_range_no(range,1)
+    nd = get_range_no(range,1)
     if ( nd==0 ) return
 !
     ncoll = ioptest(ncol,8)
@@ -2632,14 +2743,9 @@ module General
         if (nd<unfilled) fmth = trim(fmtl)//'$'
         str=itoa(nd)
       endif
-!
       nd = nd-unfilled
 !
-      if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer_cmplx(range(1):ie:is)
-      else
-        write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
-      endif
+      write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
 !
       if ( nd>0 ) then
         ia = ie + is
@@ -2656,28 +2762,174 @@ module General
 !
     if ( rest<nd ) then
       str=itoa(ncoll)
-      if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer_cmplx(ia:ie:is)
-      else
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
-      endif
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
     endif
 !
     if ( rest > 0 ) then
-!
       str=itoa(rest)
-      if (lcomplex) then
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer_cmplx(ie+is:range(2):is)
-      else
-        write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
-      endif
-!
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
       unfilled = ncoll-rest
     else
       unfilled = 0
     endif
 !
   endsubroutine write_full_columns_real
+!***********************************************************************
+  subroutine write_full_columns_cmplx(unit,buffer,range,unfilled,ncol,fmt)
+!
+! range-wise output of a complex vector in ncol columns
+! unfilled (inout) - number of unfilled slots in last written line
+!
+!  20-apr-11/MR: coded
+!  29-jan-14/MR: introduced is for range step; inserted some trim calls
+!  05-feb-14/MR: corrected wrong placement of is definition
+!
+    integer,                        intent(in)    :: unit
+    complex, dimension(*),          intent(in)    :: buffer
+    integer, dimension(3),          intent(in)    :: range
+    integer,                        intent(inout) :: unfilled
+    integer,              optional, intent(in)    :: ncol
+    character(len=*),     optional, intent(in)    :: fmt
+!
+    integer              :: ncoll, nd, ia, ie, is, rest
+    character(len=intlen):: str
+    character(len=intlen):: fmtl, fmth
+!
+    if ( present(fmt) ) then
+      fmtl = '('//fmt//',1x,'//fmt//')'
+    else
+      fmtl = '(e10.2,1x,e10.2)'
+    endif
+!
+    nd = get_range_no(range,1)
+    if ( nd==0 ) return
+!
+    ncoll = ioptest(ncol,8)
+    is = range(3)
+!
+    if ( unfilled > 0 ) then
+!
+      fmth = fmtl
+      if ( nd>unfilled ) then
+        ie = range(1)+(unfilled-1)*is
+        str=itoa(unfilled)
+      else
+        ie = range(2)
+        if (nd<unfilled) fmth = trim(fmtl)//'$'
+        str=itoa(nd)
+      endif
+      nd = nd-unfilled
+!
+      write(unit,'(1p,'//trim(str)//trim(fmth)//')') buffer(range(1):ie:is)
+!
+      if ( nd>0 ) then
+        ia = ie + is
+      else
+        unfilled = -nd
+        return
+      endif
+    else
+      ia = range(1)
+    endif
+!
+    rest = mod(nd,ncoll)
+    ie = (nd-rest-1)*is + ia
+!
+    if ( rest<nd ) then
+      str=itoa(ncoll)
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//')') buffer(ia:ie:is)
+    endif
+!
+    if ( rest > 0 ) then
+      str=itoa(rest)
+      write(unit,'(1p,'//trim(str)//trim(fmtl)//'$)') buffer(ie+is:range(2):is)
+      unfilled = ncoll-rest
+    else
+      unfilled = 0
+    endif
+!
+  endsubroutine write_full_columns_cmplx
+!***********************************************************************
+    function add_merge_range( ranges, ie, range ) result (iel)
+!  
+!  Checks whether range is contained (maybe partly) in any of ranges(:,1:ie) and stores it or its possible
+!  fragments in ranges(:,ie+1:). Returns new total number of ranges.
+!
+!  20-apr-11/MR: coded
+!
+    integer, dimension(:,:),intent(INOUT):: ranges
+    integer,                intent(IN)   :: ie
+    integer, dimension(2),  intent(IN)   :: range
+
+    integer :: iel
+
+    integer, dimension(2,2*size(ranges,2)) :: ranges_loc
+    integer :: i,ieloc,iloc
+ 
+    if (ie==0) then
+      iel=1
+      ranges(:,1) = range
+    else
+      ranges_loc(:,1) = range
+      ieloc=1
+      do i=1,ie
+        iloc=1
+        do while (iloc<=ieloc)
+          call analyze_range(ranges(:,i),ranges_loc,iloc,ieloc)
+        enddo
+      enddo
+      iel=ie
+      do i=1,ieloc
+        if (ranges_loc(1,ieloc)>0) then
+          iel=iel+1
+          ranges(:,iel)=ranges_loc(:,ieloc)
+        endif  
+      enddo
+    endif
+
+    endfunction add_merge_range
+!***********************************************************************
+    subroutine analyze_range(testrange,store,istore,iestore)
+!
+!  Analyzes range in store(:,istore) with respect to testrange.
+!  If fully contained it is marked deleted, if partly contained
+!  leftover(s) is(are) stored in store(:,istore) (and store(:,iestore+1).
+!
+!  20-apr-11/MR: coded
+!
+    integer, dimension(2),  intent(IN)   :: testrange
+    integer, dimension(:,:),intent(INOUT):: store
+    integer,                intent(INOUT):: istore,iestore
+
+    integer, dimension(2) :: range
+
+      range=store(:,istore)
+
+      if (range(1)>=testrange(1) .and. range(1)<=testrange(2)) then
+
+        if (range(2)<=testrange(2)) then
+          store(:,istore) = (/0,0/)                      ! range is completely absorbed
+        else
+          store(:,istore) = (/testrange(2)+1,range(2)/)  ! left leftover
+        endif
+
+      elseif (range(1)<testrange(1)) then
+        if (range(2)>=testrange(1)) then
+          store(:,istore) = (/range(1),testrange(1)-1/)  ! right leftover
+        elseif (range(2)<testrange(1)) then
+          continue                                       ! left unchanged
+        else
+          store(:,istore) = (/range(1),testrange(1)-1/)  ! two leftovers: left
+          iestore=iestore+1
+          store(:,iestore) = (/testrange(2)+1,range(2)/) ! right
+          istore=istore+1
+        endif
+      else
+        continue                                         ! right unchanged
+      endif
+      istore=istore+1
+
+    endsubroutine analyze_range
 !***********************************************************************
     function merge_ranges( ranges, ie, range, ia, istore )
 !
@@ -3125,7 +3377,7 @@ module General
 !******************************************************************************
   subroutine write_by_ranges_2d_real( unit, buffer, xranges, yranges, trans )
 !
-! writes a real or complex 2D array controlled by lists of ranges
+! writes a real 2D array controlled by lists of ranges
 ! xranges and yranges for each of the two dimensions; output optionally transposed
 !
 ! 10-may-11/MR: coded
@@ -3137,20 +3389,12 @@ module General
     integer,                 intent(in)           :: unit
     integer, dimension(3,*), intent(in)           :: xranges, yranges
     real,    dimension(:,:), intent(in)           :: buffer
-    complex, dimension(:,:), intent(in)           :: buffer_cmplx
     logical,                 intent(in), optional :: trans
 !
     integer :: i,j,jl,unfilled
-    logical :: transl, lcomplex
+    logical :: transl
 !
-    lcomplex = .false.
-    goto 1
-!
-  entry write_by_ranges_2d_cmplx( unit, buffer_cmplx, xranges, yranges, trans )
-!
-    lcomplex = .true.
-!
- 1  unfilled = 0
+    unfilled = 0
 !
     if ( present(trans) ) then
       transl = trans
@@ -3160,25 +3404,14 @@ module General
 !
     do j=1,nk_max
       if ( yranges(1,j) == 0 ) exit
-!
       do jl=yranges(1,j),yranges(2,j),yranges(3,j)
         do i=1,nk_max
           if ( xranges(1,i) == 0 ) exit
-!
           if ( transl ) then
-            if (lcomplex) then
-              call write_full_columns_cmplx( unit, buffer_cmplx(jl,:), xranges(1,i), unfilled )
-            else
-              call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
-            endif
+            call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
           else
-            if (lcomplex) then
-              call write_full_columns_cmplx( unit, buffer_cmplx(:,jl), xranges(1,i), unfilled )
-            else
-              call write_full_columns_real( unit, buffer(:,jl), xranges(1,i), unfilled )
-            endif
+            call write_full_columns_real( unit, buffer(:,jl), xranges(1,i), unfilled )
           endif
-!
         enddo
       enddo
     enddo
@@ -3187,9 +3420,54 @@ module General
 !
   endsubroutine write_by_ranges_2d_real
 !***********************************************************************
+  subroutine write_by_ranges_2d_cmplx( unit, buffer, xranges, yranges, trans )
+!
+! writes a real or complex 2D array controlled by lists of ranges
+! xranges and yranges for each of the two dimensions; output optionally transposed
+!
+! 10-may-11/MR: coded
+! 27-jan-14/MR: loops truncated if all valid ranges processed
+! 29-jan-14/MR: changed declaration of buffer*
+!
+    use Cdata, only: nk_max
+!
+    integer,                 intent(in)           :: unit
+    integer, dimension(3,*), intent(in)           :: xranges, yranges
+    complex, dimension(:,:), intent(in)           :: buffer
+    logical,                 intent(in), optional :: trans
+!
+    integer :: i,j,jl,unfilled
+    logical :: transl
+!
+    unfilled = 0
+!
+    if ( present(trans) ) then
+      transl = trans
+    else
+      transl = .false.
+    endif
+!
+    do j=1,nk_max
+      if ( yranges(1,j) == 0 ) exit
+      do jl=yranges(1,j),yranges(2,j),yranges(3,j)
+        do i=1,nk_max
+          if ( xranges(1,i) == 0 ) exit
+          if ( transl ) then
+            call write_full_columns_cmplx( unit, buffer(jl,:), xranges(1,i), unfilled )
+          else
+            call write_full_columns_cmplx( unit, buffer(:,jl), xranges(1,i), unfilled )
+          endif
+        enddo
+      enddo
+    enddo
+!
+    if ( unfilled > 0 ) write( unit,'(a)')
+!
+  endsubroutine write_by_ranges_2d_cmplx
+!***********************************************************************
   subroutine write_by_ranges_1d_real(unit,buffer,ranges)
 !
-! writes a real or complex vector controlled by lists of ranges
+! writes a real vector controlled by lists of ranges
 ! output optionally transposed
 !
 ! 10-may-11/MR: coded
@@ -3200,31 +3478,46 @@ module General
 !
     integer,                 intent(in) :: unit
     real,    dimension(:)  , intent(in) :: buffer
-    complex, dimension(:)  , intent(in) :: buffer_cmplx
     integer, dimension(3,*), intent(in) :: ranges
 !
     integer :: unfilled, i
-    logical :: lcomplex
 !
-    lcomplex = .false.
-    goto 1
-!
-  entry  write_by_ranges_1d_cmplx(unit,buffer_cmplx,ranges)
-    lcomplex = .true.
-!
- 1  unfilled = 0
+    unfilled = 0
     do i=1,nk_max
       if ( ranges(1,i) == 0 ) exit
-      if (lcomplex) then
-        call write_full_columns_cmplx( unit, buffer_cmplx, ranges(1,i), unfilled )
-      else
-        call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
-      endif
+      call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
     enddo
 !
     if ( unfilled > 0 ) write(unit,'(a)')
 !
   endsubroutine write_by_ranges_1d_real
+!***********************************************************************
+  subroutine write_by_ranges_1d_cmplx(unit,buffer,ranges)
+!
+! writes a complex vector controlled by lists of ranges
+! output optionally transposed
+!
+! 10-may-11/MR: coded
+! 27-jan-14/MR: loop truncated if all valid ranges processed
+! 29-jan-14/MR: changed declaration of buffer*
+!
+    use Cdata, only: nk_max
+!
+    integer,                 intent(in) :: unit
+    complex, dimension(:)  , intent(in) :: buffer
+    integer, dimension(3,*), intent(in) :: ranges
+!
+    integer :: unfilled, i
+!
+    unfilled = 0
+    do i=1,nk_max
+      if ( ranges(1,i) == 0 ) exit
+      call write_full_columns_cmplx( unit, buffer, ranges(1,i), unfilled )
+    enddo
+!
+    if ( unfilled > 0 ) write(unit,'(a)')
+!
+  endsubroutine write_by_ranges_1d_cmplx
 !***********************************************************************
     subroutine date_time_string(date)
 !
@@ -3859,60 +4152,60 @@ module General
       if (dimensionality==3) then
 !    
         do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm+1,nn,  k:k+2))) &
-                     ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2))))
+                     ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2)))))
         enddo; enddo; enddo
 
       elseif (dimensionality==1) then
         if (nxgrid/=1) then
           do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll+1,mm,nn,k:k+2)))))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
           do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll,mm+1,nn,k:k+2))))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll,mm+1,nn,k:k+2)))))
           enddo; enddo; enddo
         else
           do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll,mm,nn+1,k:k+2))))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll,mm,nn+1,k:k+2)))))
           enddo; enddo; enddo      
         endif
       elseif (nzgrid==1) then   !  x-y
         do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
-                     ,maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
+                     ,maxval(abs(f(ll+1,mm+1,nn,k:k+2)))))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
          do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
-                     ,maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
+                     ,maxval(abs(f(ll+1,mm,nn+1,k:k+2)))))
         enddo; enddo; enddo
       else                      !  y-z
         do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+           weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                 
-                     ,maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
+                     ,maxval(abs(f(ll,mm+1,nn+1,k:k+2)))))
         enddo; enddo; enddo
       endif
 
@@ -3932,60 +4225,60 @@ module General
       if (dimensionality==3) then
 !    
         do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,      k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,      k)) &
                      ,abs(f(ll,mm,nn+1,    k)) &
                      ,abs(f(ll,mm+1,nn,    k)) &
                      ,abs(f(ll,mm+1,nn+1,  k)) &
                      ,abs(f(ll+1,mm,nn,    k)) &
                      ,abs(f(ll+1,mm,nn+1,  k)) &
                      ,abs(f(ll+1,mm+1,nn,  k)) &
-                     ,abs(f(ll+1,mm+1,nn+1,k)))
+                     ,abs(f(ll+1,mm+1,nn+1,k))))
         enddo; enddo; enddo
 
       elseif (dimensionality==1) then
         if (nxgrid/=1) then
           do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll+1,mm,nn,k)))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll+1,mm,nn,k))))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
           do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll,mm+1,nn,k)))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll,mm+1,nn,k))))
           enddo; enddo; enddo
         else
           do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
-            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-            +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll,mm,nn+1,k)))
+            f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+            weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll,mm,nn+1,k))))
           enddo; enddo; enddo
         endif
       elseif (nzgrid==1) then   !  x-y
         do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,    k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm+1,nn,  k)) &
                      ,abs(f(ll+1,mm,nn,  k)) &                 
-                     ,abs(f(ll+1,mm+1,nn,k)))
+                     ,abs(f(ll+1,mm+1,nn,k))))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
          do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,    k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm,nn+1,  k)) &
                      ,abs(f(ll+1,mm,nn,  k)) &                 
-                     ,abs(f(ll+1,mm,nn+1,k)))
+                     ,abs(f(ll+1,mm,nn+1,k))))
         enddo; enddo; enddo
       else                      !  y-z
         do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
-          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
-          +weight*max(abs(f(ll,mm,nn,    k)) &
+          f(ll,mm,nn,jmax) = max(f(ll,mm,nn,jmax), &
+          weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm,nn+1,  k)) &
                      ,abs(f(ll,mm+1,nn,  k)) &                 
-                     ,abs(f(ll,mm+1,nn+1,k)))
+                     ,abs(f(ll,mm+1,nn+1,k))))
         enddo; enddo; enddo
       endif
 
@@ -3998,9 +4291,11 @@ module General
 !  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
+!  23-may-2017/axel: added directory_prestart, not to be erased after start
 !
-      use Cdata, only: iproc_world, directory, datadir, datadir_snap, directory_dist, &
-                       directory_snap, directory_collect
+      use Cdata, only: iproc_world, directory, datadir, directory_dist, &
+                       datadir_snap, directory_snap, directory_collect, &
+                       datadir_prestart, directory_prestart
 
       logical, optional :: lproc
 
@@ -4010,18 +4305,41 @@ module General
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_dist, &
                                             trim(datadir_snap)//'/proc'//chproc)
+      call safe_character_assign(directory_prestart, &
+                                            trim(datadir_prestart)//'/proc'//chproc)
+!
       if (loptest(lproc)) then
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/proc'//chproc)
+                                            trim(datadir_snap)//'/proc'//chproc)
       else
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/allprocs')
+                                            trim(datadir_snap)//'/allprocs')
       endif
       call safe_character_assign(directory_collect, &
                                             trim (datadir_snap)//'/allprocs')
 !
     endsubroutine directory_names_std
 !****************************************************************************
+    character function numeric_precision()
+!
+!  Return 'S' if running in single, 'D' if running in double precision.
+!
+!  12-jul-06/wolf: extracted from wdim()
+!
+      integer :: real_prec
+!
+      real_prec = precision(1.)
+      if (real_prec==6 .or. real_prec==7) then
+        numeric_precision = 'S'
+      elseif (real_prec == 15) then
+        numeric_precision = 'D'
+      else
+        print*, 'WARNING: encountered unknown precision ', real_prec
+        numeric_precision = '?'
+      endif
+!
+    endfunction numeric_precision
+!***********************************************************************
     subroutine touch_file(file)
 !
 !  Touches a given file (used for code locking).
@@ -4064,25 +4382,48 @@ module General
 !
 ! 4-dec-2015/MR: coded
 !
-      use Cdata, only: cosph, sinph, costh, sinth
+      use Cdata, only: cosph, sinph, costh, sinth    !, iproc, lyang
 
       real, dimension(:,:,:,:) :: f
       integer :: ith1, ith2, iph1, iph2, j
 
       real, dimension(size(f,1)) :: tmp12,tmp3
       integer :: ith,iph
+!      real, dimension(size(f,1)) :: tmp
 
       do ith=ith1,ith2; do iph=iph1,iph2
-
+!tmp=sum(f(:,ith,iph,j:j+2)**2,2)
         tmp12=cosph(iph)*f(:,ith,iph,j)+sinph(iph)*f(:,ith,iph,j+1)
         tmp3 =f(:,ith,iph,j+2)
         f(:,ith,iph,j+2) = -sinph(iph)*f(:,ith,iph,j)+cosph(iph)*f(:,ith,iph,j+1)
         f(:,ith,iph,j  ) =  sinth(ith)*tmp12 + costh(ith)*tmp3
         f(:,ith,iph,j+1) =  costh(ith)*tmp12 - sinth(ith)*tmp3
 
+!if (any(abs(tmp-sum(f(:,ith,iph,j:j+2)**2,2)) > 1.e-7)) print*, 'iproc,ith,iph=', iproc,ith,iph,maxval(tmp)
+
       enddo; enddo
 
     endsubroutine transform_cart_spher
+!***********************************************************************
+    subroutine transform_cart_spher_other(arr,th,ph)
+!
+!  Transforms a vector given in f array in slots j to j+2 on the rectangle
+!  ith1:ith2 x iph1:iph2 from Cartesian to spherical basis. Works in-place.
+!
+! 4-dec-2015/MR: coded
+!
+      real, dimension(nx,3), intent(INOUT) :: arr
+      real,                  intent(IN)    :: th,ph
+
+      real, dimension(nx) :: tmp12, tmp3
+
+        tmp12=cos(ph)*arr(:,1)+sin(ph)*arr(:,2)
+        tmp3 =arr(:,3)
+        arr(:,3) = -sin(ph)*arr(:,1)+ cos(ph)*arr(:,2)
+        arr(:,1) =  sin(th)*tmp12   + cos(th)*tmp3
+        arr(:,2) =  cos(th)*tmp12   - sin(th)*tmp3
+
+    endsubroutine transform_cart_spher_other
 !***********************************************************************
     subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,lyy)
 !
@@ -4094,18 +4435,18 @@ module General
 !
       use Cdata, only: cosph, sinph, costh, sinth
 
-      real, dimension(:,:,:,:) :: f
-      integer :: ith1, ith2, iph1, iph2
-      real, dimension(size(f,1),ith2-ith1+1,iph2-iph1+1,3) :: dest
-      logical, optional :: lyy
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer                 , intent(IN) :: ith1, ith2, iph1, iph2
+      real, dimension(size(f,1),ith2-ith1+1,iph2-iph1+1,3), intent(OUT) :: dest
+      logical, optional, intent(IN) :: lyy
 
       real, dimension(mx) :: tmp12
-      integer :: i,j,itd,ipd
+      integer :: i,j,itd,ipd,ju,jo
 
-      do i=ith1,ith2; do j=iph1,iph2
+      ju=max(n1,iph1); jo=min(n2,iph2)
+      do i=max(m1,ith1),min(m2,ith2); do j=ju,jo
 
         tmp12=sinth(i)*f(:,i,j,1)+costh(i)*f(:,i,j,2)
-
         itd=i-ith1+1; ipd=j-iph1+1
         if (loptest(lyy)) then
           dest(:,itd,ipd,1) = -(cosph(j)*tmp12 - sinph(j)*f(:,i,j,3))
@@ -4116,64 +4457,60 @@ module General
           dest(:,itd,ipd,2) = sinph(j)*tmp12 + cosph(j)*f(:,i,j,3)
           dest(:,itd,ipd,3) = costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,2)
         endif
-
+!if (any(abs(sum(dest(:,itd,ipd,:)**2,2)-sum(f(:,i,j,:)**2,2)) > 2.e-14 )) print*, 'i,j=', i,j,maxval(abs(sum(dest(:,itd,ipd,:)**2,2)-sum(f(:,i,j,:)**2,2)))
       enddo; enddo
 
     endsubroutine transform_spher_cart_yy
 !***********************************************************************
-    subroutine yy_transform_strip(ith1_,ith2_,iph1_,iph2_,thphprime)
+    subroutine yy_transform_strip(ith1,ith2,iph1,iph2,thphprime,ith_shift_,iph_shift_)
 !
 !  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
-!  Strip is defined by index ranges (ith1_,ith2_), (iph1_,iph2_) with respect
+!  Strip is defined by index ranges (ith1,ith2), (iph1,iph2) with respect
 !  to local grid, in particular sinth, costh etc.
 !
 !  4-dec-15/MR: coded
 ! 12-mar-16/MR: entry yy_transform_strip_other added
+! 10-sep-18/MR: added parameters ith_shift_,iph_shift_ for creating slanted strips
+! 25-oct-18/PABourdin: entry yy_transform_strip_other removed and simplified code
 !
-      use Cdata, only: y,z,costh,sinth,cosph,sinph,iproc_world
+      use Cdata, only: costh,sinth,cosph,sinph, y, z
 
-      integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
+      integer,               intent(IN) :: ith1,ith2,iph1,iph2
       real, dimension(:,:,:),intent(OUT):: thphprime
-      real, dimension(:),    intent(IN) :: th,ph
+      integer, optional,     intent(IN) :: iph_shift_, ith_shift_
 
-      integer :: i,j,itp,jtp,ith1,ith2,iph1,iph2
+      integer :: i,j,itp,jtp,iph_shift,ith_shift,ii,jj,ishift,jshift
       real :: sth, cth, xprime, yprime, zprime, sprime
-      logical :: ltransp, lother
+      logical :: ltransp
 
-      lother=.false.
-      ith1=ith1_; ith2=ith2_; iph1=iph1_; iph2=iph2_
-      goto 1
+      if (ith2<ith1.or.iph2<iph1) return
 
-    entry yy_transform_strip_other(th,ph,thphprime)
-!
-!  Here strip is given by vectors th and ph not related to local grid.
-!
-      lother=.true.
-      ith1=1; ith2=size(th)
-      iph1=1; iph2=size(ph)
+      ltransp = ith2-ith1+1 /= size(thphprime,2)
 
- 1    ltransp = ith2-ith1+1 /= size(thphprime,2)
+      iph_shift=ioptest(iph_shift_)        ! default is zero
+      ith_shift=ioptest(ith_shift_)        ! default is zero
+
+      thphprime(1,:,:)=0.                  ! to indicate undefined values
 !
+      jshift=iph_shift
       do i=ith1,ith2
-
-        if (lother) then
-          sth=sin(th(i)); cth=cos(th(i))
-        else
-          sth=sinth(i); cth=costh(i)
-        endif
-
+        ishift=ith_shift
         do j=iph1,iph2
 !
 !  Rotate by Pi about z axis, then by Pi/2 about x axis.
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
-          if (lother) then
-            xprime = -cos(ph(j))*sth
-            zprime = -sin(ph(j))*sth
-          else
-            xprime = -cosph(j)*sth
-            zprime = -sinph(j)*sth
-          endif
+          jj=j+jshift
+          if (jj<1.or.jj>mz) cycle
+
+          ii=i+ishift
+          if (ishift/=0) ishift=ishift+ith_shift
+
+          if (ii<1.or.ii>my) cycle
+
+          sth=sinth(ii); cth=costh(ii)
+          xprime = -cosph(jj)*sth
+          zprime = -sinph(jj)*sth
           yprime = -cth
 
           sprime = sqrt(xprime**2 + yprime**2)
@@ -4186,28 +4523,303 @@ module General
 
           thphprime(1,itp,jtp) = atan2(sprime,zprime)
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
-          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
-
-!if (iproc_world==0.and.size(thphprime,3)==41) &
-!  print'(4(f7.4,1x),4(i2,1x))', y(i), z(j), thphprime(:,itp,jtp), i,j,itp,jtp
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
+!
+          !thphprime(1,itp,jtp) = ii   !!!
+          !thphprime(2,itp,jtp) = jj   !!!
+!
         enddo
+        if (jshift/=0) jshift=jshift+iph_shift
       enddo
 
     endsubroutine yy_transform_strip
 !***********************************************************************
+    subroutine yy_transform_strip_other(th,ph,thphprime,ith_shift_,iph_shift_)
+!
+!  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
+!  Strip is defined by by vectors th and ph not related to local grid.
+!
+!  4-dec-15/MR: coded
+! 12-mar-16/MR: entry yy_transform_strip_other added
+! 10-sep-18/MR: added parameters ith_shift_,iph_shift_ for creating slanted strips
+! 25-oct-18/PABourdin: entry yy_transform_strip_other removed and simplified code
+!
+      use Cdata, only: costh,sinth,cosph,sinph, y, z
+
+      real, dimension(:),    intent(IN) :: th,ph
+      real, dimension(:,:,:),intent(OUT):: thphprime
+      integer, optional,     intent(IN) :: iph_shift_, ith_shift_
+
+      integer :: i,j,itp,jtp,iph_shift,ith_shift,ii,jj,ishift,jshift
+      real :: sth, cth, xprime, yprime, zprime, sprime
+      logical :: ltransp
+
+      ltransp = size(th) /= size(thphprime,2)
+
+      iph_shift=ioptest(iph_shift_)        ! default is zero
+      ith_shift=ioptest(ith_shift_)        ! default is zero
+
+      thphprime(1,:,:)=0.                  ! to indicate undefined values
+!
+      jshift=iph_shift
+      do i=1,size(th)
+        ishift=ith_shift; 
+        do j=1,size(ph)
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          ii=i+ishift
+          sth=sin(th(ii)); cth=cos(th(ii))
+
+          jj=j+jshift
+          xprime = -cos(ph(jj))*sth
+          zprime = -sin(ph(jj))*sth
+          yprime = -cth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+
+          if (ltransp) then
+            jtp = i; itp = j
+          else
+            itp = i; jtp = j
+          endif
+
+          thphprime(1,itp,jtp) = atan2(sprime,zprime)
+          thphprime(2,itp,jtp) = atan2(yprime,xprime)
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
+!
+          !thphprime(1,itp,jtp) = ii   !!!
+          !thphprime(2,itp,jtp) = jj   !!!
+!
+          if (ishift/=0) ishift=ishift+ith_shift
+        enddo
+        if (jshift/=0) jshift=jshift+iph_shift
+      enddo
+
+    endsubroutine yy_transform_strip_other
+!***********************************************************************
+    subroutine copy_kinked_strip_z(len_cut,jstart_,source,dest,j,shift,leftright,ladd_)
+!
+! Copies (optionally cumulatively) variable j from rectangular strip source into variable j of kinked strip
+! in dest, consisting of a horizontal (y-aligned) part with 
+! length len_cut and width nghost and a slanted part with width 2*nghost.
+!
+! 20-jan-19/MR: coded
+!
+      use Cdata, only: iproc, iproc_world
+      use Cdata, only: lyang,lroot
+
+      real, dimension(:,:,:,:), intent(IN)   :: source
+      real, dimension(:,:,:,:), intent(INOUT):: dest
+      integer,                  intent(IN)   :: len_cut,jstart_,j,shift
+      logical,                  intent(IN)   :: leftright
+      logical, optional,        intent(IN)   :: ladd_
+
+      integer :: istart,iend,jstart,jend
+      logical :: ladd
+
+      jstart=jstart_
+      jend=jstart+nghost-1
+      ladd=loptest(ladd_)
+
+      if (leftright) then   !upper and lower left
+        istart=1; iend=my-len_cut
+        jstart=jstart_+shift*nghost; jend=jstart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,my-len_cut+1:,:,j),dest(:,:,:,j),0,shift,ladd) ! outer skew band
+        jstart=jstart_; jend=jstart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd) ! main skew band
+
+        if (ladd) then
+          dest(:,my-len_cut+1:my,jstart:jend,j) = dest  (:,my-len_cut+1:my,jstart:jend,j) &      ! horizonzal band 
+                                                 +source(:,2*(my-len_cut)+1:my,1:nghost,j)
+        else
+          dest(:,my-len_cut+1:my,jstart:jend,j) = source(:,2*(my-len_cut)+1:my,1:nghost,j)
+        endif
+!if (notanumber(source(:,my-len_cut+1:my,1:nghost,j))) print*, 'source(:,my-len_cut+1:my,1:nghost,j): iproc,j=', iproc, iproc_world, j
+      else                  !upper and lower right
+        if (ladd) then
+          dest(:,:len_cut,jstart:jend,j) = dest  (:,:len_cut,jstart:jend,j) &                    ! horizonzal band 
+                                          +source(:,:len_cut,1:nghost,j)
+        else
+          dest(:,:len_cut,jstart:jend,j) = source(:,:len_cut,1:nghost,j)
+        endif
+if (notanumber(source(:,1:len_cut,1:nghost,j))) print*, 'source(:,1:len_cut,1:nghost,j): iproc,j=', iproc, iproc_world, j
+        istart=len_cut+1; iend=my
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),0,shift,ladd) ! main skew band
+        jstart=jstart_-shift*nghost; jend=jstart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,my-len_cut+1:,:,j),dest(:,:,:,j),0,shift,ladd) ! outer skew band
+      endif
+
+    endsubroutine copy_kinked_strip_z
+!***********************************************************************
+    subroutine copy_kinked_strip_y(len_cut,istart_,source,dest,j,shift,leftright,ladd_)
+!
+! Copies (optionally cumulatively) variable j from rectangular strip source into variable j of kinked strip
+! in dest, consisting of a vertical (z-aligned) part with 
+! length len_cut and width nghost and a slanted part with width 2*nghost.
+!
+! 20-jan-19/MR: coded
+!
+      use Cdata, only: iproc, iproc_world
+
+      real, dimension(:,:,:,:), intent(IN)   :: source
+      real, dimension(:,:,:,:), intent(INOUT):: dest
+      integer,                  intent(IN)   :: len_cut,istart_,j,shift
+      logical,                  intent(IN)   :: leftright
+      logical, optional,        intent(IN)   :: ladd_
+
+      integer :: istart,iend,jstart,jend
+      logical :: ladd
+
+      istart=istart_
+      iend=istart+nghost-1
+      ladd=loptest(ladd_)
+      
+      if (leftright) then   !upper and lower left
+        jstart=1; jend=mz-len_cut
+        istart=istart_+shift*nghost; iend=istart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,mz-len_cut+1:,j),dest(:,:,:,j),shift,0,ladd)   ! outer skew band
+        istart=istart_; iend=istart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)   ! main skew band
+        if (ladd) then                                                                             ! vertical band
+          dest(:,istart:iend,mz-len_cut+1:mz,j) = dest  (:,istart:iend,mz-len_cut+1:mz,j) &
+                                                 +source(:,1:nghost,2*(mz-len_cut)+1:mz,j)
+        else
+          dest(:,istart:iend,mz-len_cut+1:mz,j) = source(:,1:nghost,2*(mz-len_cut)+1:mz,j)
+        endif
+!if (notanumber(source(:,1:nghost,mz-len_cut+1:mz,j))) print*, 'source(:,1:nghost,mz-len_cut+1:mz,j): iproc,j=', iproc, iproc_world, j
+      else                  !upper and lower right
+        jstart=len_cut+1; jend=mz
+        if (ladd) then
+          dest(:,istart:iend,1:len_cut,j) = dest  (:,istart:iend,1:len_cut,j) &                    ! vertical band
+                                           +source(:,1:nghost,1:len_cut,j)
+        else
+          dest(:,istart:iend,1:len_cut,j) = source(:,1:nghost,1:len_cut,j)
+        endif
+if (notanumber(source(:,1:nghost,1:len_cut,j))) print*, 'source(:,1:nghost,1:len_cut,j): iproc,j=', iproc, iproc_world,j
+        jstart=len_cut+1; jend=mz
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,:,j),dest(:,:,:,j),shift,0,ladd)   ! main skew band
+        istart=istart_-shift*nghost; iend=istart+nghost-1
+        call copy_with_shift(istart,iend,jstart,jend,source(:,:,mz-len_cut+1:,j),dest(:,:,:,j),shift,0,ladd)   ! outer skew band
+      endif
+
+    endsubroutine copy_kinked_strip_y
+!***********************************************************************
+    subroutine copy_with_shift(i1, i2, j1, j2, source, dest, ishift_, jshift_,ladd)
+!
+! Copies (optionally cumulatively) into slanted strip.
+! Sets i1,i2 (or j1,j2) to last interval with shift.
+!
+! 20-sep-18/MR: coded
+!
+      use Cdata, only: iproc, iproc_world
+
+      real, dimension(:,:,:), intent(IN)   :: source
+      real, dimension(:,:,:), intent(INOUT):: dest
+      integer,                intent(INOUT):: i1, i2, j1, j2
+      integer,                intent(IN)   :: ishift_, jshift_
+      logical, optional,      intent(IN)   :: ladd
+
+      integer :: ishift, jshift, i, j, ii, jj, id, jd, is, js, iimax, jjmax
+
+      iimax=size(dest,2); jjmax=size(dest,3)
+
+      jshift=jshift_
+      if (ishift_/=0) then; is=1; else; is=i1; endif
+
+      do i=i1,i2
+        ishift=ishift_
+
+        if (jshift_/=0) then; js=1; else; js=j1; endif
+
+        do j=j1,j2
+!
+          ii=i+ishift
+          jj=j+jshift
+
+          if (ii>=1.and.jj>=1.and.ii<=iimax.and.jj<=jjmax) then
+            if (loptest(ladd)) then
+              dest(:,ii,jj) = dest(:,ii,jj) + source(:,is,js)
+            else
+              dest(:,ii,jj) = source(:,is,js)
+            endif
+          endif
+if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, iproc_world, j
+          js=js+1
+!
+          if (ishift/=0) ishift=ishift+ishift_
+        enddo
+        is=is+1
+        if (jshift/=0) jshift=jshift+jshift_
+      enddo
+
+      if (ishift_/=0) then; id=i2-i1; i2=ii+ishift_; i1=i2-id; endif 
+      if (jshift_/=0) then; jd=j2-j1; j2=jj+jshift_; j1=j2-jd; endif 
+!
+    endsubroutine copy_with_shift
+!***********************************************************************
+    subroutine reset_triangle(i1,i2,j1,j2,f)
+!
+!  Sets triangular area of float array f, defined by i1,i2,j1,j2, to zero.
+!  "Right angle" of triangle is at (i1,j1).
+! 
+!  28-jan-2019/MR: coded
+!
+    integer,                intent(IN) :: i1,i2,j1,j2
+    real, dimension(:,:,:), intent(OUT):: f
+
+    integer :: istep, jstep, i, j
+
+      istep = sign(1,i2-i1); jstep = sign(1,j2-j1)
+
+      do i=i1,i2,istep
+        do j=j1,j2,jstep
+          if ( jstep*(j-j2)+istep*(i-i1) <= 0 ) then
+            f(:,i,j)=0.
+          endif
+        enddo
+      enddo
+
+    endsubroutine reset_triangle
+!***********************************************************************
+    subroutine reset_triangle_inds(i1,i2,j1,j2,inds_arr)
+!
+!  Sets triangular area of integer array inds_arr, defined by i1,i2,j1,j2, to zero.
+!  "Right angle" of triangle is at (i1,j1).
+! 
+!  28-jan-2019/MR: coded
+!
+    integer,                 intent(IN) :: i1,i2,j1,j2
+    integer, dimension(:,:), intent(OUT):: inds_arr
+
+    integer :: istep, jstep, i, j
+
+      istep = sign(1,i2-i1); jstep = sign(1,j2-j1)
+
+      do i=i1,i2,istep
+        do j=j1,j2,jstep
+          if ( jstep*(j-j2)+istep*(i-i1) <= 0 ) then
+            inds_arr(i,j)=0
+          endif
+        enddo
+      enddo
+
+    endsubroutine reset_triangle_inds
+!***********************************************************************
     subroutine transform_thph_yy( vec, powers, transformed, theta, phi )
 !
 !  Transforms theta and phi components of vector vec defined with the Yang
-!  grid basis
-!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
-!  Without optional parameters theta, phi For use on pencils within mn-loop.
+!  grid basis to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  Without optional parameters theta, phi: for use on pencils within mn-loop.
 !  Note that components of transformed are undefined if corresponding power
 !  in mask powers is 0.
 !  If theta, phi are present, it is for use outside mn-loop or for other
-!  coordinate than y(m), z(n)
+!  coordinates than y(m), z(n).
 !
 ! 30-mar-2016/MR: coded
 ! 28-jun-2016/MR: added optional parameters
+! 28-aug-2017/MR: cared for singularity at pole
 !
       use Cdata, only: costh, sinth, cosph, sinph, m, n
 
@@ -4216,54 +4828,75 @@ module General
       real,    dimension(:,:),intent(OUT):: transformed
       real, optional,         intent(IN) :: theta, phi
 
-      real :: sinth1, a, b, cost, cosp
+      real :: sinth1, a, b, sinp, sisisq
 
       if (any(powers(2:3)/=0)) then
         if (present(theta)) then
-          cosp=cos(phi); cost=cos(theta)
-          sinth1=1./sqrt(cost**2+(sin(theta)*cosp)**2)
-          a=-cosp*sinth1; b=sin(phi)*cost*sinth1
+          sinp=sin(phi)
+          sisisq=sqrt(1.-(sinp*sin(theta))**2)
+          if (sisisq==0.) then                 ! i.e. at pole of other grid -> theta and phi components indefined
+            a=0.; b=0.
+          else
+            sinth1=1./sisisq
+            a=cos(phi)*sinth1; b=sinp*cos(theta)*sinth1
+          endif
         else
-          sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
-          a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+          sisisq=sqrt(1.-(sinth(m)*sinph(n))**2)
+          if (sisisq==0.) then
+            a=0.; b=0.
+          else
+            sinth1=1./sisisq
+            a=cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+          endif
         endif
       endif
 
       if (powers(1)/=0) &
         transformed(:,1) = vec(:,1)
       if (powers(2)/=0) &
-        transformed(:,2) = b*vec(:,2) - a*vec(:,3)
+        transformed(:,2) = b*vec(:,2) + a*vec(:,3)
       if (powers(3)/=0) &
-        transformed(:,3) = a*vec(:,2) + b*vec(:,3)
+        transformed(:,3) =-a*vec(:,2) + b*vec(:,3)
 
     endsubroutine transform_thph_yy
 !***********************************************************************
-    subroutine transform_thph_yy_other( vec, vec_transformed )
+    subroutine transform_thph_yy_other( vec,indthl,indthu,indphl,indphu,transformed )
 !
 !  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
-!  Both vec and vec_transformed must have shape (dimx,ny,nz,2).
+!  The r component is transfered unaltered.
+!  Both vec and vec_transformed must have shape (dimx,ny,nz,3).
 !  For use outside mn-loop.
 !
 ! 30-mar-2016/MR: coded
+! 28-aug-2017/MR: cared for singularity at pole
+! 30-jan-2019/MR: index bounds now parameters; transferes r component unaltered
 !
       use Cdata, only: costh, sinth, cosph, sinph
 
       real, dimension(:,:,:,:), intent(IN) :: vec
-      real, dimension(:,:,:,:), intent(OUT):: vec_transformed
+      integer,                  intent(IN) :: indthl,indthu,indphl,indphu
+      real, dimension(:,:,:,:), intent(OUT):: transformed
 
-      integer :: i,j,ig,jg
-      real :: sinth1,a,b
+      integer :: ig,jg,jl,ju
+      real :: sisisq,sinth1,a,b
 
-      do i=1,nz
-        do j=1,ny
+      jl=max(m1,indthl); ju=min(m2,indthu)
 
-          ig=i+nghost; jg=j+nghost
-          sinth1=1./sqrt(costh(jg)**2+(sinth(jg)*cosph(ig))**2)
-          a=-cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
+      do ig=max(n1,indphl),min(n2,indphu)
+        do jg=jl,ju
 
-          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) - a*vec(:,j,i,2)
-          vec_transformed(:,j,i,2) = a*vec(:,j,i,1) + b*vec(:,j,i,2)
+          sisisq=sqrt(1.-(sinth(jg)*sinph(ig))**2)
+          if (sisisq==0.) then                     ! i.e. at pole of other grid -> theta and phi components indefined
+            a=0.; b=0.
+          else
+            sinth1=1./sisisq
+            a=cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
+          endif
+
+          transformed(:,jg-indthl+1,ig-indphl+1,1) =   vec(:,jg,ig,1)
+          transformed(:,jg-indthl+1,ig-indphl+1,2) = b*vec(:,jg,ig,2) + a*vec(:,jg,ig,3)
+          transformed(:,jg-indthl+1,ig-indphl+1,3) =-a*vec(:,jg,ig,2) + b*vec(:,jg,ig,3)
 
         enddo
       enddo
@@ -4316,7 +4949,7 @@ module General
       logical :: notanumber_0
       real :: f
 !
-      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge_real))
 !
     endfunction notanumber_0
 !***********************************************************************
@@ -4332,7 +4965,7 @@ module General
      logical :: notanumber_0d
      double precision :: f
 !
-     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge_double))
 !
     endfunction notanumber_0d
 !***********************************************************************
@@ -4348,7 +4981,7 @@ module General
       logical :: notanumber_1
       real, dimension(:) :: f
 !
-      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_1
 !***********************************************************************
@@ -4364,7 +4997,7 @@ module General
       logical :: notanumber_2
       real, dimension(:,:) :: f
 !
-      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_2
 !***********************************************************************
@@ -4380,7 +5013,7 @@ module General
       logical :: notanumber_3
       real, dimension(:,:,:) :: f
 !
-      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_3
 !***********************************************************************
@@ -4396,7 +5029,7 @@ module General
       logical :: notanumber_4
       real, dimension(:,:,:,:) :: f
 !
-      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_4
 !***********************************************************************
@@ -4412,7 +5045,7 @@ module General
       logical :: notanumber_5
       real, dimension(:,:,:,:,:) :: f
 !
-      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_5
 !***********************************************************************
@@ -4513,7 +5146,7 @@ module General
 
           yz(1,ind) = atan2(sprime,zprime)
           yz(2,ind) = atan2(yprime,xprime)
-          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+2.*pi
+          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+twopi
           ind = ind+1
 
         enddo
@@ -4527,11 +5160,12 @@ module General
 ! length(array1)xlength(array2). Analagous to numpy.meshgrid
 !
 ! 19-aug-16/vince: adapted
+! 16-jun-17/MR: double -> real
 !
-      double precision, intent(in), dimension(:) :: array1
-      double precision, intent(in), dimension(:) :: array2
-      double precision, intent(out), dimension(:,:) :: output_array1
-      double precision, intent(out), dimension(:,:) :: output_array2
+      real, intent(in), dimension(:) :: array1
+      real, intent(in), dimension(:) :: array2
+      real, intent(out), dimension(:,:) :: output_array1
+      real, intent(out), dimension(:,:) :: output_array2
 !    
       output_array1=spread(array1,2,size(array2))
       output_array2=spread(array2,1,size(array1))
@@ -4618,17 +5252,17 @@ module General
 !  12-sep-16/MR: coded
 !
       real, dimension(:,:),           intent(INOUT) :: x
-      external :: func
+      !external :: func
       real, dimension(:,:), optional, intent(IN) :: add
       real,                 optional, intent(IN) :: fmax, dxmax
       integer,              optional, intent(IN) :: itmax
 
-      !interface
-      !  pure subroutine func(x,f,df)
-      !    real, intent(in) :: x
-      !    real, intent(out):: f, df
-      !  endsubroutine
-      !endinterface
+      interface
+        pure subroutine func(x,f,df)
+          real, intent(in) :: x
+          real, intent(out):: f, df
+        endsubroutine
+      endinterface
 
       real, parameter :: damp=0.1
       integer :: itmax_, it, i, j
@@ -4641,6 +5275,7 @@ module General
       ladd  =present(add)
 
       do i=1,size(x,1); do j=1,size(x,2)
+
         it=0;  fXi=fmax_
         do while (abs(fXi)>=fmax_)
 !  
@@ -4654,8 +5289,78 @@ module General
           if (it>=itmax_) exit
 !
         enddo
+
       enddo; enddo
       
     endsubroutine newton_arr
+!***********************************************************************
+    integer function ld(ix)
+!
+!  Simple dyadic logarithm for integer argument ix without rounding.
+!  Return value is negative if ix is not a power of 2,
+!  and equal to impossible_int if ix<=0.
+!
+!  10-dec-17/MR: coded
+!
+      integer :: ix
+      real :: q
+
+      if (ix<=0) then
+        ld=impossible_int
+        return
+      endif
+
+      ld=0; q=ix
+      do 
+
+        q=ix/2
+        if (q<1.) exit
+        ld=ld+1
+
+      enddo
+ 
+      if (2**ld /= ix) ld=-ld 
+
+    endfunction ld
+!****************************************************************************** 
+    function get_species_nr(name,stem,maxnr,caller) result (ispec)
+!
+! Extracts species number of a multi-species quantity from name if base name of quantity is
+! stem and maximum legal number is maxnr. caller is the calling routine.
+! If no number conatined, 1 is returned.
+!
+! 10-may-18/MR: coded
+!
+    use Cdata, only: lroot
+
+    character (LEN=*) name, stem, caller
+    integer :: maxnr
+    integer :: ispec
+
+    integer :: lenstem, ios
+
+    lenstem=len(stem)
+
+    if (name(lenstem+1:)==' ') then
+      ispec=1
+    else
+      ispec=0
+      read(name(lenstem+1:),'(i3)',iostat=ios) ispec
+      if (ios/=0) then
+        if (lroot) &
+          print*, trim(caller)//': Warning - unreadable species number in slice name "'// &                        
+                  trim(name)//'"'
+        return
+      endif
+    endif
+
+    if (ispec>maxnr) then
+      if (lroot) &
+        print*, trim(caller)//': Warning - species number in slice name "'// &
+                trim(name)//'" bigger than maximum '//trim(itoa(maxnr))
+      ispec=0
+    endif
+
+    endfunction get_species_nr
 !***********************************************************************
   endmodule General

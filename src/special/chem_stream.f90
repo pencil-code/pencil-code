@@ -271,6 +271,8 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
+      real, dimension(nx) :: diffus_chi
+!
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
@@ -282,11 +284,12 @@ module Special
       if (ldiagnos) then
         if (idiag_dtcrad/=0) &
           call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
-        if (idiag_dtchi/=0) &
+        if (idiag_dtchi/=0) &    !! diffus_chi not calculated here.
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -318,6 +321,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  define diagnostics variable
 !
@@ -344,24 +348,11 @@ module Special
 !
 !  write column where which magnetic variable is stored
       if (lwr) then
-        write(3,*) 'i_dtcrad=',idiag_dtcrad
-        write(3,*) 'i_dtchi=',idiag_dtchi
+        call farray_index_append('i_dtcrad',idiag_dtcrad)
+        call farray_index_append('i_dtchi',idiag_dtchi)
       endif
 !
     endsubroutine rprint_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !

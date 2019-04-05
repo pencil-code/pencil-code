@@ -25,6 +25,10 @@ module Particles_stirring
 !
   contains
 !***********************************************************************
+    subroutine register_particles_stirring()
+!
+    endsubroutine register_particles_stirring
+!***********************************************************************
     subroutine particle_stirring(fp,ineargrid)
 !
 !  30-dec-10/anders+michiel: dummy

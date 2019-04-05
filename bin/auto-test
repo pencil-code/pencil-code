@@ -111,7 +111,6 @@ my %tests = (
              # Level 3 for now contains all non-canonical tests that run
              # successfully
              3 =>  [qw(
-                          0d-tests/coagulation-fragmentation
                           0d-tests/heating_ionize_planck
                           1d-tests/jeans-drag-dustpar-x
                           1d-tests/jeans-x
@@ -119,10 +118,16 @@ my %tests = (
                           1d-tests/toomre-x
                           2d-tests/bubble
                           2d-tests/conv-slab-MLT
-                          interstellar
+                          supernova-driven-turbulence/1Dhd_init_equidistant/
+                          supernova-driven-turbulence/1Dhd_init_non-equidistant/
+                          supernova-driven-turbulence/3Dhd_equidistant/
+                          supernova-driven-turbulence/3Dhd_non-equidistant/
+                          supernova-driven-turbulence/sedov/
+                          supernova-driven-turbulence/snowplough/
                           interlocked-fluxrings
                           conv-slab-flat
                           corona
+                          coronae_heatflux_boris
                           spherical-convection
                           testfield
                           testfield_xz
@@ -148,6 +153,7 @@ my %tests = (
              # Level 5 for now contains all non-canonical tests that run,
              # but produce wrong results
              5 =>  [qw(
+                          interstellar
                           hexagon
                           MHD-ABCforcing
                           taylor-couette
@@ -177,6 +183,7 @@ my %tests = (
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
              6 =>  [qw(
+                          0d-tests/coagulation-fragmentation
                      )],
              # Level 7 for now contains all non-canonical tests that
              # compile, but don't start sucessfully
@@ -272,7 +279,7 @@ Examples:
                  # referece.out{,.double} file
   auto-test --level=1         # run all level 1 tests
   auto-test -l --max-level=1  # list test dirs in levels 0 and 1
-  auto-test -al  # list all dirs `auto-test -a' would run in
+  auto-test -al  # list all dirs 'auto-test -a' would run in
   auto-test -aL  # list all run dirs under samples/, even those without
                  # reference data
 ";

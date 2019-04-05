@@ -1,0 +1,30 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+#DIAGNOSTICS  =   diagnostics_f90
+MPICOMM      = mpicomm
+
+HYDRO        =   hydro
+DENSITY      =   density
+ENTROPY      = noentropy
+MAGNETIC     = nomagnetic
+RADIATION    = noradiation
+PSCALAR      = nopscalar
+
+GRAVITY      =   gravity_simple
+FORCING      =   forcing
+SHEAR        = noshear
+VISCOSITY    =   viscosity
+
+DUSTDENSITY  = nodustdensity
+DUSTVELOCITY = nodustvelocity
+
+PARTICLES             =   particles_dust
+PARTICLES_NUMBER      =   particles_number
+PARTICLES_RADIUS      =   particles_radius
+PARTICLES_COAGULATION =   particles_coagulation
+PARTICLES_STALKER     =   particles_stalker
+
+REAL_PRECISION = double

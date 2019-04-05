@@ -4,20 +4,22 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM integer, parameter :: nghost = 1
+! CPARAM integer, parameter :: nghost = 3
 !
 !***************************************************************
 module Deriv
 !
   use Messages
   use Cdata
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !
   private
 !
   public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j
+  public :: der, der2, der3, der4, der5, der6, derij, der5i1j,der3i3j,der3i2j1k,der4i1j1k
+  public :: der4i2j, der2i2j2k
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
   public :: der_upwind1st
@@ -256,7 +258,7 @@ module Deriv
 !
     endsubroutine der_pencil
 !***********************************************************************
-    subroutine der2_main(f,k,df2,j)
+    subroutine der2_main(f, k, df2, j, lwo_line_elem)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 6th order, explicit, periodic
@@ -270,6 +272,7 @@ module Deriv
       real, dimension (nx) :: df2,fac,df
       real, parameter :: der2_coef0=-2., der2_coef1=1.
       integer :: j,k
+      logical, intent(in), optional :: lwo_line_elem
 !
       intent(in)  :: f,k,j
       intent(out) :: df2
@@ -277,6 +280,10 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
+!
+      if (present(lwo_line_elem)) then
+        if (lwo_line_elem) call fatal_error("der2_main", "lwo_line_elem=T is not implemented")
+      endif
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -902,7 +909,7 @@ module Deriv
 !
     endsubroutine der6_other
 !***********************************************************************
-    subroutine derij_main(f,k,df,i,j)
+    subroutine derij_main(f, k, df, i, j, lwo_line_elem)
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
@@ -916,9 +923,14 @@ module Deriv
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
+      logical, intent(in), optional :: lwo_line_elem
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
+!
+      if (present(lwo_line_elem)) then
+        if (lwo_line_elem) call fatal_error("derij_main", "lwo_line_elem=T is not implemented")
+      endif
 !
       if (lbidiagonal_derij) then
         !
@@ -1471,6 +1483,73 @@ module Deriv
            call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
 !
     endsubroutine der5i1j
+!***********************************************************************
+    subroutine der4i2j(f,k,df,i,j)
+!
+!  Calculate 6th derivative with respect to two different directions.
+!
+!  02-apr-17/wlyra: adapted from der5i1j
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: df,fac
+      integer :: i,j,k
+!
+      call fatal_error("der4i2j","not implemented in deriv_2nd")
+!
+    endsubroutine der4i2j
+!***********************************************************************
+    subroutine der2i2j2k(f,k,df)
+!
+!  Mixed 6th derivative of der2x(der2y(der2z(f))). Worked out symbolically
+!  in python. Result as spit from the python routine.
+!
+!  02-apr-17/wlyra: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (nx) :: fac
+      integer,intent(in) :: k
+      real, dimension(nx), intent(out) :: df
+!
+      call fatal_error("der2i2j2k","not implemented in deriv_2nd")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der2i2j2k
+!***********************************************************************
+    subroutine der3i3j(f,k,df,i,j)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: k,i,j
+!
+      call fatal_error("der3i3j","not implemented in deriv_2nd")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der3i3j
+!***********************************************************************          
+    subroutine der3i2j1k(f,ik,df,i,j,k)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: ik,i,j,k
+!
+      call fatal_error("der3i2j1k","not implemented in deriv_2nd")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der3i2j1k
+!***********************************************************************
+    subroutine der4i1j1k(f,ik,df,i,j,k)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: ik,i,j,k
+!
+      call fatal_error("der4i1j1k","not implemented in deriv_10th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der4i1j1k
 !***********************************************************************
     subroutine der_upwind1st(f,uu,k,df,j)
 !

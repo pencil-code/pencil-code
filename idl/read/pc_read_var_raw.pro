@@ -119,6 +119,11 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
       print, 'Could not find '+datadir+'/param2.nml'
     end
   end
+;
+; We know from param whether we have to read 2-D or 3-D data.
+;
+  run2D=start_param.lwrite_2d
+;
   if (n_elements (grid) eq 0) then $
       pc_read_grid, object=grid, dim=dim, param=start_param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, trim=trimall, /quiet
 ;
@@ -207,7 +212,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;  Read meta data and set up variable/tag lists.
 ;
   if (n_elements (varcontent) eq 0) then $
-      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet)
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=start_param,quiet=quiet,run2D=run2D)
   totalvars = (size(varcontent))[1]
   if (n_elements (var_list) eq 0) then begin
     var_list = varcontent[*].idlvar
@@ -233,14 +238,10 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
     tag = var_list[ov]
     iv = where (varcontent[*].idlvar eq tag)
     if (iv ge 0) then begin
-      if (tag eq "uu") then begin
-        tags = create_struct (tags, "uu", [num_read, num_read+1, num_read+2])
-        tags = create_struct (tags, "ux", num_read, "uy", num_read+1, "uz", num_read+2)
-        indices = [ indices, iv, iv+1, iv+2 ]
-        num_read += 3
-      end else if (tag eq "aa") then begin
-        tags = create_struct (tags, "aa", [num_read, num_read+1, num_read+2])
-        tags = create_struct (tags, "ax", num_read, "ay", num_read+1, "az", num_read+2)
+      if (varcontent[iv].skip eq 2) then begin
+        label = strmid (tag, 0, 1)
+        tags = create_struct (tags, tag, [num_read, num_read+1, num_read+2])
+        tags = create_struct (tags, label+"x", num_read, label+"y", num_read+1, label+"z", num_read+2)
         indices = [ indices, iv, iv+1, iv+2 ]
         num_read += 3
       end else begin
@@ -251,6 +252,15 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
       read_content += ', '+varcontent[iv].variable
     end
   end
+
+  proc_mx=procdim.mx & proc_my=procdim.my & proc_mz=procdim.mz
+
+  if (run2D) then begin
+    if (dim.nxgrid eq 1) then proc_mx = 1 
+    if (dim.nygrid eq 1) then proc_my = 1
+    if (dim.nzgrid eq 1) then proc_mz = 1
+  endif
+
   read_content = strmid (read_content, 2)
   if (not keyword_set(quiet)) then begin
     print, ''
@@ -263,10 +273,13 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   if (not any (indices ge 0)) then message, 'Error: nothing to read!'
   indices = indices[where (indices ge 0)]
 ;
-; Initialise read buffers.
+; Initialise target object: contains ghost zones irrespective of whether they are stored or not.
 ;
   object = make_array (dim.mx, dim.my, dim.mz, num_read, type=type_idl)
-  buffer = make_array (procdim.mx, procdim.my, procdim.mz, type=type_idl)
+;
+; Initialise read buffers.
+;
+  buffer = make_array (proc_mx, proc_my, proc_mz, type=type_idl)
   if (f77 eq 0) then markers = 0 else markers = 1
 ;
 ; Iterate over processors.
@@ -275,20 +288,27 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   for ipz = ipz_start, ipz_end do begin
     for ipy = ipy_start, ipy_end do begin
       for ipx = ipx_start, ipx_end do begin
+;
         iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
+;
         x_off = (ipx-ipx_start) * procdim.nx
         y_off = (ipy-ipy_start) * procdim.ny
         z_off = (ipz-ipz_start) * procdim.nz
-        x_end = x_off + procdim.mx-1
-        y_end = y_off + procdim.my-1
-        z_end = z_off + procdim.mz-1
 ;
 ; Setup the coordinates mappings from the processor to the full domain.
 ; (Don't overwrite ghost zones of the lower processor.)
 ;
-        x_add = nghostx * (ipx ne ipx_start)
-        y_add = nghosty * (ipy ne ipy_start)
-        z_add = nghostz * (ipz ne ipz_start)
+        x_add_glob = nghostx * (ipx ne ipx_start or proc_mx eq 1)
+        y_add_glob = nghosty * (ipy ne ipy_start or proc_my eq 1)
+        z_add_glob = nghostz * (ipz ne ipz_start or proc_mz eq 1)
+;
+        x_add_proc = proc_mx eq 1 ? 0 : x_add_glob
+        y_add_proc = proc_my eq 1 ? 0 : y_add_glob
+        z_add_proc = proc_mz eq 1 ? 0 : z_add_glob
+;
+        x_end = x_off + proc_mx-1 + x_add_glob - x_add_proc
+        y_end = y_off + proc_my-1 + y_add_glob - y_add_proc
+        z_end = z_off + proc_mz-1 + z_add_glob - z_add_proc
 ;
 ; Build the full path and filename.
 ;
@@ -317,14 +337,19 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ; Open a varfile and read some data!
 ;
         openr, lun, filename, swap_endian=swap_endian, /get_lun
-        mxyz = long64 (procdim.mx) * long64 (procdim.my) * long64 (procdim.mz)
+        mxyz = long64 (proc_mx) * long64 (proc_my) * long64 (proc_mz)
         for pos = 0, num_read-1 do begin
           pa = indices[pos]
           point_lun, lun, data_bytes * pa*mxyz + long64 (markers*4)
           readu, lun, buffer
-          object[x_off+x_add:x_end,y_off+y_add:y_end,z_off+z_add:z_end,pos] = buffer[x_add:*,y_add:*,z_add:*]
+          object[x_off+x_add_glob:x_end,y_off+y_add_glob:y_end,z_off+z_add_glob:z_end,pos] = $
+          buffer[x_add_proc:*,y_add_proc:*,z_add_proc:*]
         end
         close, lun
+;
+        x_end = x_off + procdim.mx-1
+        y_end = y_off + procdim.my-1
+        z_end = z_off + procdim.mz-1
 ;
         openr, lun, filename, /f77, swap_endian=swap_endian
         point_lun, lun, data_bytes * mvar_io*mxyz + long64 (2*markers*4)

@@ -44,89 +44,51 @@ notebook beeing open to the whole internet!!
 Lets start!
 
 
-1.) Connect to you interactive login node. In my case I have many interactive
-login nodes from which I randomly get one chosen when connecting to the general
-node address. So, I do set up my ssh config to have a specific node be "my"
-favorite node and give it a name:
+## First: NO security version: ##
 
-HOST hydrai   Hostname hydra05i   User YOURUSERNAME   ProxyCommand ssh -a -Y rzg
-netcat -v %h 22   ForwardX11 yes   ServerAliveInterval = 600
-ServerAliveCountMax = 30
-- from my ~/.ssh/config
+1.	How to start a Jupyter server on hydra.
+a.	Login to hydra cluster via gate, e.g. 
+>> ssh gate.rzg.mpg.de
+>> ssh hydra08i
 
-As you can see I use netcat to let this connection being forwarded to hydra05i.
-Hence this rzg named gate computer needs to be specified as well:
+b.	Then start a screen session in which the server can stay alive, even if the connection is closed. Checkout screen commands first, if you are not familiar with screen: screen –S, screen –list, screen –r, Strg+A – d, Strg+A – c, Strg+A – space
+>> screen –S jupyter
+>> jupyter notebook --no-browser --port=9876 --ip='*'
+You might want to bind the command above, and some other like the ssh tunnel to an alias!! 
 
-HOST rzg   Hostname gateafs.rzg.mpg.de   User YOURUSERNAME   ForwardX11 yes
-ServerAliveInterval = 600   ServerAliveCountMax = 30
-- from my ~/.ssh/config
+2.	Create a SSH Tunnel, which let you access the jupyter notebook directly via a port on your pc.
+a.	>> ssh -L 9876:hydra08i.rzg.mpg.de:9876 USERNAME@gate.rzg.mpg.de
+This will bind to you localhost:9876 port a connection via ssh (so this small patch is secure) to the port 9876 on hydra08i computer. It herein bypasses the gate.rzg.mpg.de node, aka tunnels.
 
-To let myself connect multiple times via the same ssh connection, instead of
-building up a new one every time I also have in my config:
+3.	Connect to your jupyter notebook via a suiting browser
+a.	Open firefox and type in: localhost:9876, or something similar, like http://127.0.0.1:9876
+b.	You should now see your jupyter notebook
+BEWARE: This is not a completely secure connection and all data streams, e.g. passwords, might be transported in clear text! Also, till now EVERYBODY (with login rights to hydra) has access to your notebook and all rights of your account by hijacking your notebook!!! So let us fix that in step 4 and 5.
 
-host *     controlmaster auto     controlpath /tmp/ssh-%r@%h:%p
-- from my ~/.ssh/config
+## Second: Good security version: ##
 
-Typing 'ssh hydrai' should now let you connect to your interactive login node
-directly. If not, contact your cluster support or do some googleing.
+4.	Activate password protection to your notebook.
+a.	Login again to your cluster login note, e.g. hydra08i, and start ipython, then
+>> from IPython.lib import passwd; passwd()
+Type your password twice and store the resulting sha1 key for the next step
+b.	Exit ipython and go to ~/.jupyter and call
+>> jupyter notebook --generate-config
+In this config file add your sha1 key in the line that says:
+c.NotebookApp.password = u''"
+Uncomment that line to activate it! If you connect again as above (1-3), you will be asked for your password. But this might be transmitted in clear text at least part of your connection! 
+5.	To not transmit any data (i.e. passwords) in clear text, i.e. cleartext on the way to your local port, we shall create a certificate file, that allows us to activate https:// instead of http:// from above.
+a.	Go to you ~/.jupyter directory on your cluster, e.g. hydra08i, and produce a certificate:
+>> openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout mykey.key -out mycert.pem
+b.	Tell the next time you start your jupyter notebook server that he shall use your certificate via:
+>> jupyter notebook --certfile=mycert.pem --keyfile mykey.key --port=6789 --ip="*" --no-browser
 
-Next, open a screen session via 'screen -S jupyter_notebook' and navigate to the
-directory which you want to be your root for the jupyter notebooks. In my case
-I use simply '~/'. You can navigate later anyway.
+## Things are not as supposed? You want to know more? ##
 
-
-2.) Now, we have to start the python notebook but as a server with dedicated port
-adress do access to from remote.
-
->> jupyter notebook --no-browser --port=5678 --ip='*'
-
-you can choose the port number as you like.
-
-
-3.) Back on our machine we need to connect one of our localhost (local) ports to
-the port on hydrai on which jupyter is listening. So we do:
-
->> ssh -N -f -L 5678:hydra05i.rzg.mpg.de:5678 YOURUSERNAME@gate.rzg.mpg.de
-
-We're almost done now!
-
-
-4.) Open a Browser, e.g. Firefox, and connect to http://127.0.0.1:5678, i.e.
-
->> firefox -url https://127.0.0.1:9876 &
-
-Note that this is NOT SAFE since we use http instead of https. If you try https
-you will notice that this does not work. But in principle your done and can
-start now using your jupyter notebook server.
-
-
-5.) To make your connection secure, we follow
-
-https://ipython.org/ipython-doc/1/interactive/public_server.html
-
-Short:
-
-5.1) Generate a password as sha1 key:
-In [1]: from IPython.lib import passwd
-In [2]: passwd()
-
-5.2) Open ~/.jupyter/jupyter_notebook_config.py and add something like:
-
-# Set options for certfile, ip, password, and toggle off browser auto-opening
-c.NotebookApp.certfile = u'USERROOTDIR/.jupyter/YOURCERTIFICATE.pem'
-c.NotebookApp.keyfile = u'USERROOTDIR/.jupyter/YOURCERTIFICATE.pem'
-# Set ip to '*' to bind on all interfaces (ips) for the public server
-c.NotebookApp.ip = '*'
-c.NotebookApp.password = u'sha1:236bf1754298:4c7c7d9646XYZ....'
-c.NotebookApp.open_browser = False
-# It is a good idea to set a known, fixed port for server access
-c.NotebookApp.port = 5678
-
-5.3) Get a certificate via
-
-http://arstechnica.com/security/2009/12/how-to-get-set-with-a-secure-sertificate-for-free/
-
-and add to ~/.jupyter/YOURCERTIFICATE.pem
+i)	Not working..  
+Have you installed anaconda? Try >> module load anaconda/3
+ii)	I see a strange directory when connecting to my notebook..  Check if you notebook server is running from your home directory, you might accidentally started jupyter in your ~/.jupyter directory! 
+iii)	If you are tired of passwords, try and set a static access tokes for your notebook server: http://jupyter-notebook.readthedocs.io/en/latest/security.html
+iv)	If nothing helps or to learn more: check out https://jupyter-notebook.readthedocs.io/en/latest/public_server.html
 
 That should be it! Have fun!
 

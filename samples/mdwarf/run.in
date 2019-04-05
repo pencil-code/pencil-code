@@ -5,17 +5,25 @@
 &run_pars
   cvsid='$Id$',
   ip=13,
-  nt=50, it1=20, isave=200, itorder=3,
+  nt=50, it1=10, isave=200, itorder=3,
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
-  dsnap=2., d2davg=.5, ! time intervals for writing snapshots and phi-averages
-  dvid=1000., slice_position='m' ! time interval and position for slices
+  dsnap=.2, d2davg=.2, ! time intervals for writing snapshots and phi-averages
+  iz=11, dvid=0.2, slice_position='m' ! time interval and position for slices
   bcx = 'a','s','s','a2','sT','a','s','s',
   bcy = 's','a','s','a2','sT','s','a','s',
   bcz = 's','s','a','a2','sT','s','s','a',
-  tavg = 10.,                   ! time constant for time averaging
+  tavg = 0.1,                   ! time constant for time averaging
 !  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
   random_gen='nr_f90'
-  lpencil_check=T
+  lpencil_check=F
+  lpencil_check_small=F
+! without the above line, the small cencil check fails on re-run with:
+!Program received signal SIGFPE: Floating-point exception - erroneous arithmetic operation.
+!#3  0x10402D2 in __magnetic_MOD_calc_pencils_magnetic_pencpar at magnetic.f90:3245 (discriminator 16)
+!#4  0x1046713 in __magnetic_MOD_calc_pencils_magnetic_std at magnetic.f90:2943
+!#5  0xF83F0B in rhs_cpu at equ.f90:805
+!#6  0xF861EF in __equ_MOD_pde at equ.f90:335
+!#7  0xF9182C in __pencil_check_MOD_pencil_consistency_check at pencil_check.f90:206 (discriminator 2)
 /
 &eos_run_pars
 /

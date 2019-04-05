@@ -46,13 +46,17 @@ if [ -z $_sourceme ]; then	# called for the first time?
 
     #  Set shell path
     if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/{bin,utils{,/axel},remesh/bin} to PATH"; fi
-    PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/remesh/bin
+    # PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/remesh/bin
+    PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel:$PENCIL_HOME/utils/xiangyu:$PENCIL_HOME/remesh/bin:$PENCIL_HOME/src/scripts
 
     #  Set path for DX macros
     DXMACROS="${PENCIL_HOME}/dx/macros${DXMACROS:+:$DXMACROS}"
 
     #  Set IDL path
     IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
+
+    # Set HDF5 path
+    if [ -z $HDF5_HOME ]; then HDF5_HOME=`which h5fc 2>/dev/null | sed -e 's/\/bin\/h5fc$//'`; fi
 
 #    #  Set Perl module path [no longer needed]
 #    PERL5LIB="${PENCIL_HOME}/lib/perl${PERL5LIB:+:$PERL5LIB}"
@@ -63,6 +67,13 @@ if [ -z $_sourceme ]; then	# called for the first time?
     else
        PYTHONPATH="$PYTHONPATH:$PENCIL_HOME/python:$PWD/python"
     fi
+    #  Set library path for linker
+    if [ -z $LD_LIBRARY_PATH ]; then
+      LD_LIBRARY_PATH="./src"
+    else
+      LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:./src"
+    fi
+
     # Remember that sourceme has been successfully run
     _sourceme="set"
 

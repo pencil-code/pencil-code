@@ -33,6 +33,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #     ! COMMUNICATED AUXILIARIES 1
 #     ! NDUSTSPEC CONTRIBUTION 17
 #     ! NDUSTRAD  CONTRIBUTION 10
+#     ! NPARTDISP  CONTRIBUTION 30
 #     ! NCHEMSPEC CONTRIBUTION 3
 #     ! NPSCALAR CONTRIBUTION 3
 #   and accumulates the numbers mvar, maux, maux_com, mglobal, mscratch,
@@ -82,6 +83,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # ---------------------------------------------------------------------- #
 my $mvar_decl     = '^\s*!\s*MVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $maux_decl     = '^\s*!\s*MAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $mogaux_decl   = '^\s*!\s*MOGAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*(-?[0-9]+)\s*$';
@@ -90,6 +92,7 @@ my $mpaux_decl    = '^\s*!\s*MPAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mqvar_decl    = '^\s*!\s*MQVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mqaux_decl    = '^\s*!\s*MQAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $ndustrad_decl    = '^\s*!\s*NDUSTRAD\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $npartdisp_decl    = '^\s*!\s*NPARTDISP\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
@@ -106,8 +109,9 @@ my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
 my $ndustrad = 5;
+my $npartdisp = 20;
 my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux, $mqvar, $mqaux) = (0) x 20;
-my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
+my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem, $mogaux) = (0) x 20;
 my $npscalar = 0;
 my $nadsspec = 0;
 my $nsurfreacspec = 0;
@@ -117,6 +121,7 @@ my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
 my %open_files;
+my $penc_name_len='';
 
 #
 # Process command line.
@@ -154,6 +159,7 @@ file: foreach my $infile (@ARGV) {
     last line if ($line !~ /^\s*!/); # done if non-comment line
     extract_decl ($line, $mvar_decl    , \$mvar     );
     extract_decl ($line, $maux_decl    , \$maux     );
+    extract_decl ($line, $mogaux_decl  , \$mogaux   );
     extract_decl ($line, $mglobal_decl , \$mglobal  );
     extract_decl ($line, $mscratch_decl, \$mscratch );
     extract_decl ($line, $maux_com_decl, \$maux_com );
@@ -165,6 +171,7 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $nadsspec_decl, \$nadsspec );
     extract_decl ($line, $nsurfreacspec_decl, \$nsurfreacspec);
     extract_decl_reset ($line, $ndustrad_decl, \$ndustrad );
+    extract_decl_reset ($line, $npartdisp_decl, \$npartdisp);
     # Check for information about number of chemical and dust species
     # and discretization type:
     if ($line=~ /$chem_decl/) {$chem_string=$1;}
@@ -296,6 +303,7 @@ print $out <<"EOF";
 
 integer, parameter :: mvar=${\($mvar+0)}, maux=${\($maux+0)}
 integer, parameter :: maux_com=${\($maux_com+0)}
+integer, parameter :: mogaux=${\($mogaux+0)}
 integer, parameter :: mglobal=${\($mglobal+0)}
 integer, parameter :: mscratch=${\($mscratch+0)}
 integer, parameter :: mpvar=${\($mpvar+0)}
@@ -308,6 +316,7 @@ integer, parameter :: npscalar=${\($npscalar+0)}
 integer, parameter :: nadsspec=${\($nadsspec+0)}
 integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
 integer, parameter :: ndustrad=${\($ndustrad+0)}
+integer, parameter :: npartdisp=${\($npartdisp+0)}
 
 EOF
 
@@ -412,12 +421,23 @@ foreach my $pencil (@pencil_names) {
   $i++;
 }
 
+unless (open(INPUT,"< cparam.f90")) {
+  die "Can't open cparam.f90 for reading"
+}
+while (defined($line=<INPUT>)) {
+  if ( $line =~ /penc_name_len\s*=\s*[0-9]/ )
+  {
+    ($penc_name_len) = $line =~ m/=([0-9]+)/; 
+    last;
+  }
+}
+
 # Define pencil names:
-print $out_pencil "character (len=15), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+print $out_pencil "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
 $i=0;
 foreach my $pencil (@pencil_names){
   print $out_pencil ", " if ($i != 0);
-  print $out_pencil "'$pencil" . " " x (14-length($pencil)) . "'";
+  print $out_pencil "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
   print $out_pencil "  &\n   " if (($i % 4) == 3);
   $i++;
 }

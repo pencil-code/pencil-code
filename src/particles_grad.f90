@@ -46,30 +46,17 @@ module Particles_grad
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Index for particle radius.
+!  Indices for particle gradients.
 !
-      isigmap11=npvar+1
-      pvarname(npvar+1)='isigmap11'
-      isigmap12=npvar+2
-      pvarname(npvar+2)='isigmap12'
-      isigmap13=npvar+3
-      pvarname(npvar+3)='isigmap13'
-      isigmap21=npvar+4
-      pvarname(npvar+4)='isigmap21'
-      isigmap22=npvar+5
-      pvarname(npvar+5)='isigmap22'
-      isigmap23=npvar+6
-      pvarname(npvar+6)='isigmap23'
-      isigmap31=npvar+7
-      pvarname(npvar+7)='isigmap31'
-      isigmap32=npvar+8
-      pvarname(npvar+8)='isigmap32'
-      isigmap33=npvar+9
-      pvarname(npvar+9)='isigmap33'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+9
+      call append_npvar('isigmap11',isigmap11)
+      call append_npvar('isigmap12',isigmap12)
+      call append_npvar('isigmap13',isigmap13)
+      call append_npvar('isigmap21',isigmap21)
+      call append_npvar('isigmap22',isigmap22)
+      call append_npvar('isigmap23',isigmap23)
+      call append_npvar('isigmap31',isigmap31)
+      call append_npvar('isigmap32',isigmap32)
+      call append_npvar('isigmap33',isigmap33)
 !
 ! This module always demands gradu stored as an auxiliary array
 !
@@ -77,14 +64,6 @@ module Particles_grad
         igradu11=igradu+0; igradu12=igradu+1; igradu13=igradu+2
         igradu21=igradu+3; igradu22=igradu+4; igradu23=igradu+5
         igradu31=igradu+6; igradu32=igradu+7; igradu33=igradu+8
-      endif
-
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles_grad: npvar > mpvar','')
       endif
 !
     endsubroutine register_particles_grad
@@ -318,6 +297,7 @@ module Particles_grad
 !  22-aug-05/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -330,15 +310,15 @@ module Particles_grad
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) then 
-        write(3,*) 'isigmap11=', isigmap11
-        write(3,*) 'isigmap12=', isigmap12
-        write(3,*) 'isigmap13=', isigmap13
-        write(3,*) 'isigmap21=', isigmap21
-        write(3,*) 'isigmap22=', isigmap22
-        write(3,*) 'isigmap23=', isigmap23
-        write(3,*) 'isigmap31=', isigmap31
-        write(3,*) 'isigmap32=', isigmap32
-        write(3,*) 'isigmap33=', isigmap33
+        call farray_index_append('isigmap11', isigmap11)
+        call farray_index_append('isigmap12', isigmap12)
+        call farray_index_append('isigmap13', isigmap13)
+        call farray_index_append('isigmap21', isigmap21)
+        call farray_index_append('isigmap22', isigmap22)
+        call farray_index_append('isigmap23', isigmap23)
+        call farray_index_append('isigmap31', isigmap31)
+        call farray_index_append('isigmap32', isigmap32)
+        call farray_index_append('isigmap33', isigmap33)
       endif
 !
 !  Reset everything in case of reset.

@@ -1,0 +1,87 @@
+--------2017-09-18
+
+
+Building instructions:
+    "mkdir build && cd build && cmake .. && make -j" and run with "./ac_run". 
+
+
+
+Also for future reference to whom it may concern.
+
+------------------------------------
+Files directly copied from Astaroth git:
+
+common/CMakeLists.txt
+common/config.cc
+common/config.h
+common/datatypes.h
+common/errorhandler.h
+common/defines_dims_PC.h
+common/defines_PC.h
+common/grid.cc
+common/grid.h
+common/slice.cc
+common/slice.h
+common/forcing.h
+utils/utils.h
+gpu/CMakeLists.txt
+gpu/gpu.cc
+gpu/gpu.h
+gpu/cuda/cuda_generic.cu
+gpu/cuda/cuda_generic.cuh
+gpu/cuda/core/cuda_core.cu
+gpu/cuda/core/cuda_core.cuh
+gpu/cuda/core/dconsts_core.cuh
+gpu/cuda/core/errorhandler_cuda.cuh
+gpu/cuda/generic/boundcond_cuda_generic.cu
+gpu/cuda/generic/boundcond_cuda_generic.cuh
+gpu/cuda/generic/collectiveops_cuda_generic.cu
+gpu/cuda/generic/collectiveops_cuda_generic.cuh
+gpu/cuda/generic/diff_cuda_generic.cuh
+gpu/cuda/generic/rk3_cuda_generic.cu
+gpu/cuda/generic/rk3_cuda_generic.cuh
+gpu/cuda/generic/slice_cuda_generic.cu
+gpu/cuda/generic/slice_cuda_generic.cuh
+
+
+Files copied and modified:
+
+CMakeLists.txt
+
+
+Completely PC-exclusive files:
+
+gpu_astaroth_new.cc
+README
+
+
+Things that were left out:
+-IO-related stuff (file readers, config files, etc)
+-CPU model functions, array initialization etc
+-Verification and autotesting
+-Benchmarking
+-Several alternative implementations of the rk3 integrator
+-Build-related stuff (All CMakeLists except one)
+-Astaroth's own WIP README
+
+------------------------------------
+
+
+Best,
+Johannes Pekkilä
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

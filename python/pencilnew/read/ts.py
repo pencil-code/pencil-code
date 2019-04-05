@@ -1,9 +1,12 @@
 # ts.py
 #
-# Read the time_series.dat and return a TimeSeries class of 1D numpy
+# Read the time_series.dat and return a TimeSeries object of 1D numpy
 # arrrays
+# For supernova data change file_name to 'sn_series.dat' (Fred Gent)
+#
 #
 # Author: S. Candelaresi (iomsn1@gmail.com).
+#         
 """
 Contains the classes and methods to read the time series file.
 """
@@ -16,7 +19,7 @@ def ts(*args, **kwargs):
     call signature:
 
     ts(file_name='time_series.dat', datadir='data',
-       quiet=False, comment_char='#')
+       quiet=False, comment_char='#', sim=False)
 
     Keyword arguments:
 
@@ -31,6 +34,13 @@ def ts(*args, **kwargs):
 
     *comment_char*
       Comment character in the time series file.
+
+    *sim*
+      Simulation object from which to take the datadir.
+
+    *unique_clean*
+      Set True, np.unique is used to clean up the ts, e.g. remove errors
+      at the end of crashed runs.
     """
 
     ts_tmp = TimeSeries()
@@ -48,18 +58,19 @@ class TimeSeries(object):
         Fill members with default values.
         """
 
+        self.t = []
         self.keys = []
 
 
     def read(self, file_name='time_series.dat', datadir='data',
-             quiet=False, comment_char='#'):
+             quiet=False, comment_char='#', sim=None, unique_clean=False):
         """
         Read Pencil Code time series data.
 
         call signature:
 
         read(self, file_name='time_series.dat', datadir='data',
-             double=0, quiet=0, comment_char='#')
+             double=0, quiet=0, comment_char='#', sim=False)
 
         Keyword arguments:
 
@@ -74,26 +85,37 @@ class TimeSeries(object):
 
         *comment_char*
           Comment character in the time series file.
+
+        *sim*
+          Simulation object from which to take the datadir.
+
+        *unique_clean*
+          Set True, np.unique is used to clean up the ts, e.g. remove errors
+          at the end of crashed runs.
         """
 
         import numpy as np
         import os.path
         import re
 
+        if sim:
+            from ..sim import __Simulation__
+
+            if isinstance(sim, __Simulation__):
+                datadir = sim.datadir
+
         datadir = os.path.expanduser(datadir)
         infile = open(os.path.join(datadir, file_name), "r")
         lines = infile.readlines()
         infile.close()
 
-        # Need to handle cases where restart AND print.in changes,
-        # but not right away.
         nlines_init = len(lines)
         data = np.zeros((nlines_init, len(self.keys)))
         nlines = 0
         for line in lines:
             if re.search("^%s--" % comment_char, line):
                 # Read header and create keys for dictionary.
-                line = line.strip("%s-\n" % comment_char)
+                line = line.strip("{0}-\n".format(comment_char))
                 keys_new = re.split("-+", line)
                 if keys_new != self.keys:
                     n_newrows = abs(len(keys_new) - len(self.keys))
@@ -102,7 +124,7 @@ class TimeSeries(object):
                     self.keys = keys_new
             else:
                 try:
-                    row = np.array(map(float, re.split(" +", line.strip(" \n"))))
+                    row = np.array(list(map(float, re.split(" +", line.strip(" \n")))))
                     data[nlines, :] = row
                     nlines += 1
                 except ValueError:
@@ -112,8 +134,16 @@ class TimeSeries(object):
         data = np.resize(data, (nlines, len(self.keys)))
 
         if not quiet:
-            print("Read {0} lines".format(nlines))
+            print("Read {0} lines.".format(nlines))
 
         # Assemble into a TimeSeries class.
         for i in range(0, len(self.keys)):
             setattr(self, self.keys[i], data[:, i])
+
+        # Do unique clean up.
+        if unique_clean:
+            clean_t, unique_indices = np.unique(self.t, return_index=True)
+
+            if np.size(clean_t) != np.size(self.t):
+                for key in self.keys:
+                    setattr(self, key, getattr(self, key)[unique_indices])

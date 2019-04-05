@@ -18,7 +18,7 @@ module File_io
     endsubroutine parallel_rewind
 !***********************************************************************
 !***********************************************************************
-! The following routines are for later usage (transerred from General and Sub):
+! The following routines are for later usage (transferred from General and Sub):
 !***********************************************************************
 !***********************************************************************
     subroutine fseek_pos(unit, rec_len, num_rec, reference)
@@ -33,7 +33,7 @@ module File_io
 !
 !  20-Feb-2012/PABourdin: coded
 !
-      use General, only: itoa
+      use General, only: itoa, keep_compiler_quiet
       use Messages, only: fatal_error
 !
       integer, intent(in) :: unit
@@ -66,6 +66,7 @@ module File_io
       if (num >= 2) then
         do i = 2, num
           !!!call fseek (unit, rec_len, 1)
+          call keep_compiler_quiet(reference)
         enddo
       endif
 !
@@ -137,6 +138,20 @@ module File_io
 !
     endsubroutine delete_file
 !****************************************************************************
+    subroutine file_remove(file)
+!
+!  Removes a file if it exists.
+!
+!  05-Nov-2018/PABourdin: coded
+!
+      character(len=*), intent(in) :: file
+!
+      logical :: removed
+!
+      removed = file_exists(file, delete=.true.)
+!
+    endsubroutine file_remove
+!***********************************************************************
     function file_exists(file, delete)
 !
 !  Determines if a file exists.
@@ -147,19 +162,19 @@ module File_io
 !
 !  23-mar-10/PABourdin: implemented
 !
-      use Cparam, only: ip
+      use Cdata, only: ip
       use General, only: loptest
 !
       logical :: file_exists
-      character(len=*) :: file
-      logical, optional :: delete
+      character(len=*), intent(in) :: file
+      logical, optional, intent(in) :: delete
 !
       integer, parameter :: unit = 1
 !
       inquire (file=file, exist=file_exists)
 !
       if (file_exists .and. loptest(delete)) then
-        if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
+        if (ip <= 6) print *, 'file_exists: Removing file <'//trim(file)//'>'
         open (unit, file=file)
         close (unit, status='delete')
       endif
@@ -178,7 +193,7 @@ module File_io
 !  23-may-2015/PABourdin: coded
 !
       integer :: file_size
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
 !
       file_size = -2
       if (file_exists(file)) then
@@ -188,7 +203,7 @@ module File_io
 !
     endfunction file_size
 !***********************************************************************
-    function count_lines(file,ignore_comments)
+    function count_lines(file,ignore_comments,lbinary)
 !
 !  Determines the number of lines in a file.
 !
@@ -199,26 +214,37 @@ module File_io
 !  23-mar-10/PABourdin: implemented
 !  26-aug-13/MR: optional parameter ignore_comments added
 !  28-May-2015/PABourdin: reworked
+!   1-Dec-2017/MR: option for binary files added
 !
       use Cdata, only: comment_char
-      use General
+      use General, only: loptest, operator (.in.)
 !
       integer :: count_lines
       character (len=*), intent(in) :: file
-      logical, optional, intent(in) :: ignore_comments
+      logical, optional, intent(in) :: ignore_comments, lbinary
 !
-      integer :: ierr
+      integer :: ierr, idum
       integer, parameter :: unit = 1
       character :: ch
+      logical :: lbin
 !
       count_lines = -1
       if (.not. file_exists(file)) return
 !
-      open (unit, file=file, status='old', iostat=ierr)
+      lbin=loptest(lbinary)
+      if (lbin) then
+        open (unit, file=file, status='old', iostat=ierr, form='unformatted')
+      else
+        open (unit, file=file, status='old', iostat=ierr)
+      endif
       if (ierr /= 0) return
       count_lines = 0
       do while (ierr == 0)
-        read (unit,'(a)',iostat=ierr) ch
+        if (lbin) then
+          read (unit,iostat=ierr) idum
+        else
+          read (unit,'(a)',iostat=ierr) ch
+        endif
         if (ierr == 0) then
           if (loptest(ignore_comments) .and. (ch .in. (/ '!', comment_char /))) cycle
           count_lines = count_lines + 1
@@ -227,6 +253,27 @@ module File_io
       close (unit)
 !
     endfunction count_lines
+!***********************************************************************
+    function list_files(name,options,only_number) result (num)
+! 
+! Wrapper for UNIX command ls. At present returns only number of found files.
+!
+! 20-may-18/MR: coded
+!
+      use General, only: coptest
+      use Syscalls, only: system_cmd
+
+      integer :: num
+      
+      character(LEN=*),           intent(IN) :: name
+      character(LEN=*), optional, intent(IN) :: options 
+      logical,          optional, intent(IN) :: only_number
+    
+      call system_cmd('ls '//coptest(options)//name//' > tmplsout 2> /dev/null')
+      num=count_lines('tmplsout')
+      call delete_file('tmplsout')
+    
+    endfunction list_files
 !***********************************************************************
     function parallel_count_lines(file,ignore_comments)
 !
@@ -324,15 +371,16 @@ module File_io
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       call find_namelist (trim(name)//trim(type)//trim(suffix),found)
 !
-      if (.not. found) then
-        if (.not. lparam_nml) lnamelist_error = .true.
-        return
-      endif
-!
       ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
 !
       if (ierr /= 0) then
+      
+        if (.not.found) then
+          if (.not. lparam_nml) lnamelist_error = .true.
+          return
+        endif
+!
         lnamelist_error = .true.
         if (lroot) then
           if (ierr == -1) then
@@ -347,5 +395,86 @@ module File_io
       call parallel_rewind
 !
     endsubroutine read_namelist
+!***********************************************************************
+    subroutine read_zaver(f,k1,k2,source,nav,indav,nstart_,ltaver)
+    
+      use Cparam, only: nx,ny,nz,l1,l2,m1,m2,n1,n2,lactive_dimension
+      use Cdata, only: directory_snap
+      use General, only: directory_names_std, loptest, ioptest
+
+      real, dimension(:,:,:,:), intent(OUT) :: f
+      integer, intent(IN) :: k1,k2,nav,indav
+      character(LEN=*) :: source
+      integer, optional, intent(IN) :: nstart_
+      logical, optional, intent(IN) :: ltaver
+
+      integer :: k,nt,it,nstart,ios,klen
+      logical :: s0
+      integer, parameter :: unit=111
+      real, dimension(nx,ny,nav) :: read_arr
+      real :: tav, tav0
+      real, dimension(:,:,:), allocatable :: buffer
+
+      klen=k2-k1+1
+      call directory_names_std(.true.)
+
+      if (file_exists(trim(directory_snap)//'/zaverages0.dat')) then
+        open(unit,FILE=trim(directory_snap)//'/zaverages0.dat',FORM='unformatted', STATUS='old')
+        !read(unit) tav0, tav
+        !read(unit) aTens,bTens,uTens
+        !close(unit)
+      else
+        nstart=ioptest(nstart_,-1)
+        allocate(buffer(nx,ny,klen))
+        if (loptest(ltaver)) then
+          open (unit, FILE=trim(source)//trim(directory_snap)//'/zaverages.dat', &
+                FORM='unformatted', status='old')
+          buffer=0.
+        else
+          open (unit, FILE=trim(source)//trim(directory_snap)//'/zaverages.dat', &
+                FORM='unformatted', status='old', position='append')
+          backspace(unit)
+          backspace(unit)
+        endif
+
+        ios=0; s0=.true.; nt=0; it=1
+        do while(ios==0)
+
+          read(unit,iostat=ios) tav
+          if (ios/=0) exit
+          if (loptest(ltaver) .and. it<nstart) then
+            read(unit,iostat=ios) tav
+          else
+            if (s0) then
+              tav0=tav
+              s0=.false.
+            endif
+            read(unit,iostat=ios) read_arr
+            if (ios==0) then
+              if (loptest(ltaver)) then
+                nt=nt+1
+                buffer=buffer+read_arr(:,:,indav:indav+klen-1)
+              else
+                buffer=read_arr(:,:,indav:indav+klen-1)
+              endif
+            endif
+          endif
+          it=it+1
+
+        enddo
+        close(unit)
+
+        if (loptest(ltaver)) buffer=buffer/nt
+
+        if (.not.lactive_dimension(3)) then
+          f(l1:l2,m1:m2,n1,k1:k2) = buffer
+        else
+          do k=k1,k2
+            f(l1:l2,m1:m2,n1:n2,k) = spread(buffer(:,:,k),3,nz)
+          enddo
+        endif
+      endif
+
+    endsubroutine read_zaver
 !***********************************************************************
 endmodule File_io

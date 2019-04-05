@@ -37,7 +37,7 @@ module Cosmicray
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
   logical :: lalfven_advect = .false.
-  real :: cosmicray_diff=0., Kperp=impossible, Kpara=impossible, ampl_Qcr=0.
+  real :: cosmicray_diff=0., ampl_Qcr=0.
   real, target :: K_para=0., K_perp=0.
 !
   namelist /cosmicray_init_pars/ &
@@ -45,8 +45,7 @@ module Cosmicray
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
        gammacr, lnegl, lvariable_tensor_diff,x_pos_cr,y_pos_cr,z_pos_cr, &
        x_pos_cr2, y_pos_cr2, z_pos_cr2, &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para
+       cosmicray_diff, K_perp, K_para
 !
   real :: limiter_cr=1.,blimiter_cr=0.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
@@ -55,21 +54,20 @@ module Cosmicray
   logical :: lcheck_negative_ecr
 !
   namelist /cosmicray_run_pars/ &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para, &
+       cosmicray_diff, K_perp, K_para, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
        limiter_cr,blimiter_cr,ecr_floor, &
        lalfven_advect,lupw_ecr,lcheck_negative_ecr
 !
-  integer :: idiag_ecrm=0,idiag_ecrmax=0,idiag_ecrpt=0
+  integer :: idiag_ecrm=0,idiag_ecrmin=0,idiag_ecrmax=0,idiag_ecrpt=0
   integer :: idiag_ecrdivum=0
   integer :: idiag_kmax=0
 !
   contains
 !
 !***********************************************************************
-    subroutine register_cosmicray()
+    subroutine register_cosmicray
 !
 !  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
@@ -111,24 +109,13 @@ module Cosmicray
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
 !
-!     Checks whether the obsolescent parameter names are being used
-!
-      if (Kpara /= impossible .or. Kperp /= impossible) then
-        call warning('initialize_cosmicray', &
-            'using obsolescent parameters Kpara and Kperp!' &
-            // ' In the future, please use K_para and K_perp instead.')
-        K_para = Kpara
-        K_perp = Kperp
-        call put_shared_variable('K_perp', impossible)
-        call put_shared_variable('K_para', impossible)
-      else
-        call put_shared_variable('K_perp', K_perp)
-        call put_shared_variable('K_para', K_para)
-     endif
-!
 !     Shares diffusivities allowing the cosmicrayflux module to know them
 !
-!
+     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+     call put_shared_variable('K_para', K_para)
+
+     call keep_compiler_quiet(f)
+
     endsubroutine initialize_cosmicray
 !***********************************************************************
     subroutine init_ecr(f)
@@ -185,7 +172,7 @@ module Cosmicray
 !
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine pencil_criteria_cosmicray()
+    subroutine pencil_criteria_cosmicray
 !
 !  The current module's criteria for which pencils are needed
 !
@@ -194,7 +181,7 @@ module Cosmicray
       lpenc_requested(i_ecr)=.true.
       lpenc_requested(i_ugecr)=.true.
       lpenc_requested(i_divu)=.true.
-      if (.not.lnegl) lpenc_requested(i_rho1)=.true.
+      if (.not.lnegl.and.lhydro) lpenc_requested(i_rho1)=.true.
       if (K_perp/=0. .or. K_para/=0. .or. lvariable_tensor_diff) then
         lpenc_requested(i_gecr)=.true.
         lpenc_requested(i_bij)=.true.
@@ -258,7 +245,7 @@ module Cosmicray
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
       if (lpencil(i_ugecr)) then
-        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr) 
+        call u_dot_grad(f,iecr,p%gecr,p%uu,p%ugecr,UPWIND=lupw_ecr)
       endif
 ! bgecr
       if (lpencil(i_bgecr)) call dot_mn(p%bb,p%gecr,p%bgecr)
@@ -284,7 +271,7 @@ module Cosmicray
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr,wgecr,divw,tmp
+      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr,wgecr,divw,tmp,diffus_cr
       integer :: j
 !
       intent (in) :: f,p
@@ -323,7 +310,7 @@ module Cosmicray
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      if (.not.lnegl) then
+      if (.not.lnegl .and. lhydro) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
               gammacr1*p%rho1*p%gecr(:,1+j)
@@ -366,12 +353,17 @@ module Cosmicray
 !
       if (lfirst.and.ldt) then
         if (lvariable_tensor_diff)then
-          diffus_cr=max(diffus_cr,cosmicray_diff,vKperp,vKpara)*dxyz_2
+          diffus_cr=max(cosmicray_diff,vKperp,vKpara)*dxyz_2
+        elseif (lcosmicrayflux) then
+          ! If using the cosmicrayflux module, accounts only for isotropic
+          ! diffusion (the rest will accounted for in the cosmicrayflux module)
+          diffus_cr=cosmicray_diff
         else
-          diffus_cr=max(diffus_cr,cosmicray_diff,K_perp,K_para)*dxyz_2
+          diffus_cr=max(cosmicray_diff,K_perp,K_para)*dxyz_2
         endif
+        maxdiffus=max(maxdiffus,diffus_cr)
+        if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
       endif
-      if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
 !
 !  diagnostics
 !
@@ -381,6 +373,7 @@ module Cosmicray
       if (ldiagnos) then
         if (idiag_ecrdivum/=0) call sum_mn_name(p%ecr*p%divu,idiag_ecrdivum)
         if (idiag_ecrm/=0) call sum_mn_name(p%ecr,idiag_ecrm)
+        if (idiag_ecrmin/=0)   call max_mn_name(-p%ecr,idiag_ecrmin,lneg=.true.)
         if (idiag_ecrmax/=0) call max_mn_name(p%ecr,idiag_ecrmax)
         if (idiag_ecrpt/=0) call save_name(p%ecr(lpoint-nghost),idiag_ecrpt)
         if (idiag_kmax/=0) call max_mn_name(vKperp,idiag_kmax)
@@ -431,6 +424,7 @@ module Cosmicray
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -444,7 +438,7 @@ module Cosmicray
 !
       if (lreset) then
         idiag_ecrm=0; idiag_ecrdivum=0; idiag_ecrmax=0; idiag_kmax=0
-        idiag_ecrpt=0
+        idiag_ecrpt=0; idiag_ecrmin=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -453,6 +447,7 @@ module Cosmicray
         call parse_name(iname,cname(iname),cform(iname),'ecrm',idiag_ecrm)
         call parse_name(iname,cname(iname),cform(iname),&
             'ecrdivum',idiag_ecrdivum)
+        call parse_name(iname,cname(iname),cform(iname),'ecrmin',idiag_ecrmin)
         call parse_name(iname,cname(iname),cform(iname),'ecrmax',idiag_ecrmax)
         call parse_name(iname,cname(iname),cform(iname),'ecrpt',idiag_ecrpt)
         call parse_name(iname,cname(iname),cform(iname),'kmax',idiag_kmax)
@@ -464,11 +459,15 @@ module Cosmicray
 !        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='ecr') cformv='DEFINED'
+      endif
+!
 !  write column where which cosmic ray variable is stored
 !
-      if (lwr) then
-        write(3,*) 'iecr=',iecr
-      endif
+      if (lwr) call farray_index_append('iecr',iecr)
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
@@ -477,6 +476,8 @@ module Cosmicray
 !  Write slices for animation of Cosmicray variables.
 !
 !  26-jul-06/tony: coded
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -487,14 +488,7 @@ module Cosmicray
 !
 !  Cosmic ray energy density.
 !
-        case ('ecr')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iecr)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iecr)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iecr)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iecr)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iecr)
-          slices%ready=.true.
+        case ('ecr'); call assign_slices_scal(slices,f,iecr)
 !
       endselect
 !
@@ -683,7 +677,7 @@ module Cosmicray
     subroutine impose_ecr_floor(f)
 !
 !  Impose a minimum cosmic ray energy density by setting all lower
-!  values to the minimum value (ecr_floor). 
+!  values to the minimum value (ecr_floor).
 !
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
@@ -701,10 +695,10 @@ module Cosmicray
           where (f(l1:l2,m,n,iecr)<ecr_floor) f(l1:l2,m,n,iecr)=ecr_floor
           if (lcosmicrayflux)then
             call div(f,ifcr,divfcr)
-            where (f(l1:l2,m,n,iecr)<ecr_floor .and. divfcr>0.) 
-              f(l1:l2,m,n,ifcr)  =min( f(l1:l2,m,n,ifcr), 0.) 
-              f(l1:l2,m,n,ifcr+1)=min( f(l1:l2,m,n,ifcr+1), 0.) 
-              f(l1:l2,m,n,ifcr+2)=min( f(l1:l2,m,n,ifcr+2), 0.) 
+            where (f(l1:l2,m,n,iecr)<ecr_floor .and. divfcr>0.)
+              f(l1:l2,m,n,ifcr)  =min( f(l1:l2,m,n,ifcr), 0.)
+              f(l1:l2,m,n,ifcr+1)=min( f(l1:l2,m,n,ifcr+1), 0.)
+              f(l1:l2,m,n,ifcr+2)=min( f(l1:l2,m,n,ifcr+2), 0.)
             endwhere
           endif
         enddo; enddo

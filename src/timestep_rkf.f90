@@ -9,7 +9,7 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
 ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.9
@@ -19,6 +19,9 @@ module Timestep
 !
   contains
 !
+!***********************************************************************
+    subroutine initialize_timestep
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -67,6 +70,7 @@ module Timestep
         dt_temp = safety*dt*(errmax**dt_decrease)
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+!print*,'AXEL: ',dt,dt_temp,errmax,safety
         ! New time
         tnew = t+dt
         if (tnew == t) then
@@ -82,12 +86,13 @@ module Timestep
         ! But not by more than a factor of 5
         dt_next = 5.0*dt
       endif
+!print*,'AXEL2: ',dt,dt_temp,errmax,safety
 !
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt  !(all have same dt?)
 ! Increase time
       t = t+dt
 ! Time step to try next time
-      dt = dt_next
+      if (lfirst.and.ldt) dt = dt_next
 !
 !  Time evolution of grid variables
 !  (do this loop in pencils, for cache efficiency)
@@ -145,7 +150,7 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mfarray,5) :: k
+      real, dimension(mx,my,mz,mvar,5) :: k
 ! Note: The tmp array will not use more memory than the temporary
 !   array that would be implicitly created with calls like
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
@@ -164,49 +169,55 @@ module Timestep
         k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
       enddo; enddo; enddo
 !
+!print*, 'k,f', maxval(abs(k(l1:l2,m1:m2,n1:n2,1:mvar,1))), maxval(abs(f(l1:l2,m1:m2,n1:n2,:)))
       lfirst=.false.
-      tmp = f + b21*k(:,:,:,:,1)
+!
+!  Transferring auxiliaries from f to tmp.
+!
+      if (mfarray>mvar) tmp(:,:,:,mvar+1:mfarray) = f(:,:,:,mvar+1:mfarray)
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b21*k(:,:,:,:,1)
 !
       call pde(tmp, k(:,:,:,:,2), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       enddo; enddo; enddo
 !
-      tmp = f + b31*k(:,:,:,:,1) &
-              + b32*k(:,:,:,:,2)
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b31*k(:,:,:,:,1) &
+                                          + b32*k(:,:,:,:,2)
 !
       call pde(tmp, k(:,:,:,:,3), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       enddo; enddo; enddo
 !
-      tmp = f + b41*k(:,:,:,:,1) &
-              + b42*k(:,:,:,:,2) &
-              + b43*k(:,:,:,:,3)
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b41*k(:,:,:,:,1) &
+                                          + b42*k(:,:,:,:,2) &
+                                          + b43*k(:,:,:,:,3)
 !
       call pde(tmp, k(:,:,:,:,4), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       enddo; enddo; enddo
 !
-      tmp = f + b51*k(:,:,:,:,1) &
-              + b52*k(:,:,:,:,2) &
-              + b53*k(:,:,:,:,3) &
-              + b54*k(:,:,:,:,4)
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b51*k(:,:,:,:,1) &
+                                          + b52*k(:,:,:,:,2) &
+                                          + b53*k(:,:,:,:,3) &
+                                          + b54*k(:,:,:,:,4)
 !
       call pde(tmp, k(:,:,:,:,5), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       enddo; enddo; enddo
 !
-      tmp = f + b61*k(:,:,:,:,1) &
-              + b62*k(:,:,:,:,2) &
-              + b63*k(:,:,:,:,3) &
-              + b64*k(:,:,:,:,4) &
-              + b65*k(:,:,:,:,5)
+      tmp(:,:,:,1:mvar) = f(:,:,:,1:mvar) + b61*k(:,:,:,:,1) &
+                                          + b62*k(:,:,:,:,2) &
+                                          + b63*k(:,:,:,:,3) &
+                                          + b64*k(:,:,:,:,4) &
+                                          + b65*k(:,:,:,:,5)
 !
       call pde(tmp, df, p)
 !
+!print*, 'df,tmp', maxval(abs(df)), maxval(abs(tmp))
       do j=1,mvar; do n=n1,n2; do m=m1,m2
         df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
@@ -241,7 +252,14 @@ module Timestep
           ! No error check
         endselect
 !
-      enddo; enddo; enddo
+      enddo; enddo; 
+
+!print*, 'j,errmaxs=', j,errmaxs
+      enddo
+!
+!  Transferring auxiliaries from tmp to f.
+!
+      if (mfarray>mvar) f(:,:,:,mvar+1:mfarray) = tmp(:,:,:,mvar+1:mfarray)
 !
 ! Divide your maximum error by the required accuracy
 !
@@ -250,5 +268,16 @@ module Timestep
       call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine rkck
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Messages, only: fatal_error
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call fatal_error('timestep_rkf','alpha_ts, beta_ts not defined')
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep

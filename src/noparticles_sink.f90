@@ -20,7 +20,7 @@ module Particles_sink
 !
   contains
 !***********************************************************************
-    subroutine register_particles_sink()
+    subroutine register_particles_sink
 !
 !  07-aug-12/anders: dummy
 !
@@ -137,8 +137,7 @@ module Particles_sink
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_particles_sink
 !***********************************************************************

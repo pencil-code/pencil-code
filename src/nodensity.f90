@@ -26,14 +26,21 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
-  real, dimension (nz) :: glnrhomz
+  logical :: lcalc_lnrhomean=.false., lcalc_glnrhomean=.false.,lupw_lnrho=.false.
+  real, dimension (nz) :: glnrhomz, lnrhomz
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   include 'density.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
+
+  interface calc_pencils_density
+    module procedure calc_pencils_density_pnc
+    module procedure calc_pencils_density_std
+  endinterface calc_pencils_density
 !
   contains
 !***********************************************************************
-    subroutine register_density()
+    subroutine register_density
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -70,15 +77,15 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
-  endsubroutine calc_ldensity_pars
+  endsubroutine density_after_boundary
 !***********************************************************************
-    subroutine pencil_criteria_density()
+    subroutine pencil_criteria_density
 !
 !  All pencils that the Density module depends on are specified here.
 !
@@ -98,7 +105,21 @@ module Density
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
-    subroutine calc_pencils_density(f,p)
+    subroutine calc_pencils_density_std(f,p)
+!
+! Envelope adjusting calc_pencils_density_pnc to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_density_pnc(f,p,lpencil)
+!
+      endsubroutine calc_pencils_density_std
+!***********************************************************************
+    subroutine calc_pencils_density_pnc(f,p,lpenc_loc)
 !
 !  Calculate Density pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -109,37 +130,38 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f, lpenc_loc
       intent(inout) :: p
 ! rho
-      if (lpencil(i_rho)) p%rho=rho0
+      if (lpenc_loc(i_rho)) p%rho=rho0
 ! lnrho
-      if (lpencil(i_lnrho)) p%lnrho=lnrho0
+      if (lpenc_loc(i_lnrho)) p%lnrho=lnrho0
 ! rho1
-      if (lpencil(i_rho1)) p%rho1=1/rho0
+      if (lpenc_loc(i_rho1)) p%rho1=1/rho0
 ! glnrho
-      if (lpencil(i_glnrho)) p%glnrho=0.0
+      if (lpenc_loc(i_glnrho)) p%glnrho=0.0
 ! grho
-      if (lpencil(i_grho)) p%grho=0.0
+      if (lpenc_loc(i_grho)) p%grho=0.0
 ! del6lnrho
-      if (lpencil(i_del6lnrho)) p%del6lnrho=0.0
+      if (lpenc_loc(i_del6lnrho)) p%del6lnrho=0.0
 ! hlnrho
-      if (lpencil(i_hlnrho)) p%hlnrho=0.0
+      if (lpenc_loc(i_hlnrho)) p%hlnrho=0.0
 ! sglnrho
-      if (lpencil(i_sglnrho)) p%sglnrho=0.0
+      if (lpenc_loc(i_sglnrho)) p%sglnrho=0.0
 ! uglnrho
-      if (lpencil(i_uglnrho)) p%uglnrho=0.0
+      if (lpenc_loc(i_uglnrho)) p%uglnrho=0.0
 ! ugrho
-      if (lpencil(i_ugrho)) p%ugrho=0.0
+      if (lpenc_loc(i_ugrho)) p%ugrho=0.0
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
+      if (lpenc_loc(i_uij5glnrho)) p%uij5glnrho=0.0
 ! ekin
-      if (lpencil(i_ekin)) p%ekin=0.0
+      if (lpenc_loc(i_ekin)) p%ekin=0.0
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_density
+    endsubroutine calc_pencils_density_pnc
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
@@ -161,6 +183,17 @@ module Density
       call keep_compiler_quiet(p)
 !
     endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine density_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine density_after_timestep
 !***********************************************************************
     subroutine split_update_density(f)
 !
@@ -212,12 +245,10 @@ module Density
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_density
 !***********************************************************************
@@ -323,5 +354,15 @@ module Density
                             =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
 !
     endsubroutine update_char_vel_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine impose_density_ceiling
 !***********************************************************************
 endmodule Density

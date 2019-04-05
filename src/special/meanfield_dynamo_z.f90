@@ -328,6 +328,7 @@ module Special
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
@@ -344,6 +345,7 @@ module Special
       if (lreset) then
         idiag_bmx2m=0; idiag_bmy2m=0
         idiag_bmxpt=0; idiag_bmypt=0; idiag_bmxp2=0; idiag_bmyp2=0
+        cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -357,16 +359,22 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'bmyp2',idiag_bmyp2)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='phi') cformv='DEFINED'
+      endif
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_bmx2m=',idiag_bmx2m
-        write(3,*) 'i_bmy2m=',idiag_bmy2m
-        write(3,*) 'i_bmxpt=',idiag_bmxpt
-        write(3,*) 'i_bmypt=',idiag_bmypt
-        write(3,*) 'i_bmxp2=',idiag_bmxp2
-        write(3,*) 'i_bmyp2=',idiag_bmyp2
-        write(3,*) 'iam=',iam
+        call farray_index_append('i_bmx2m',idiag_bmx2m)
+        call farray_index_append('i_bmy2m',idiag_bmy2m)
+        call farray_index_append('i_bmxpt',idiag_bmxpt)
+        call farray_index_append('i_bmypt',idiag_bmypt)
+        call farray_index_append('i_bmxp2',idiag_bmxp2)
+        call farray_index_append('i_bmyp2',idiag_bmyp2)
+        call farray_index_append('iam',iam)
       endif
 !
     endsubroutine rprint_special
@@ -378,6 +386,7 @@ module Special
 !  26-feb-07/axel: adapted from gross_pitaevskii
 !
       use Cdata
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
@@ -390,18 +399,13 @@ module Special
 !
 !  phi
 !
-        case ('phi')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iam)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iam)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iam)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iam)
-          slices%ready = .true.
+        case ('phi'); call assign_slices_scal(slices,f,iam)
 !
       endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  calculate alp_ij eta_ij tensors, which are needed when ltestfield=.true.
 !
@@ -455,7 +459,7 @@ module Special
         eta_ij(:,2,2)=-eta_ij3(:,2,1)
       endif
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
 !
 !********************************************************************

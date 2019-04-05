@@ -25,13 +25,12 @@ module Particles_grad
 !
   contains
 !***********************************************************************
-    subroutine register_particles_grad()
+    subroutine register_particles_grad
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  17-sep-15/dhruba: dummy
 !
-
     endsubroutine register_particles_grad
 !***********************************************************************
     subroutine initialize_particles_grad(f)
@@ -43,18 +42,15 @@ module Particles_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_grad
 !***********************************************************************
-    subroutine pencil_criteria_par_grad()
+    subroutine pencil_criteria_par_grad
 !
 !  All pencils that the Particles_grad module depends on are specified here.
 !
 !  17-sep-15/dhruba: dummy
-!
-
 !
     endsubroutine pencil_criteria_par_grad
 !***********************************************************************
@@ -125,16 +121,12 @@ module Particles_grad
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
-
 !
     endsubroutine dsigmap_dt
 !***********************************************************************
     subroutine read_particles_grad_init_pars(iostat)
 !
-      use File_io, only: parallel_unit
-!
       integer, intent(out) :: iostat
-      integer :: pos
 !
       iostat=0
 !
@@ -149,8 +141,6 @@ module Particles_grad
     endsubroutine write_particles_grad_init_pars
 !***********************************************************************
     subroutine read_particles_grad_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
@@ -173,11 +163,11 @@ module Particles_grad
 !  22-aug-05/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
       logical :: lwr
 !
 !  Write information to index.pro.
@@ -185,17 +175,17 @@ module Particles_grad
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
       if (lwr) then 
-        write(3,*) 'isigmap11=', isigmap11
-        write(3,*) 'isigmap12=', isigmap12
-        write(3,*) 'isigmap13=', isigmap13
-        write(3,*) 'isigmap21=', isigmap21
-        write(3,*) 'isigmap22=', isigmap22
-        write(3,*) 'isigmap23=', isigmap23
-        write(3,*) 'isigmap31=', isigmap31
-        write(3,*) 'isigmap32=', isigmap32
-        write(3,*) 'isigmap33=', isigmap33
+        call farray_index_append('isigmap11', isigmap11)
+        call farray_index_append('isigmap12', isigmap12)
+        call farray_index_append('isigmap13', isigmap13)
+        call farray_index_append('isigmap21', isigmap21)
+        call farray_index_append('isigmap22', isigmap22)
+        call farray_index_append('isigmap23', isigmap23)
+        call farray_index_append('isigmap31', isigmap31)
+        call farray_index_append('isigmap32', isigmap32)
+        call farray_index_append('isigmap33', isigmap33)
       endif
-!
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_particles_grad
 !***********************************************************************

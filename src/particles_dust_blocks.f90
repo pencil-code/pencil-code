@@ -18,6 +18,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="dust_blocks"
 !
 ! PENCILS PROVIDED np; rhop; epsp; grhop(3);peh
 !
@@ -48,7 +49,7 @@ module Particles
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, tausp01=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: epsp_friction_increase=0.0
@@ -109,7 +110,7 @@ module Particles
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      rad_sphere, pos_sphere, rhopmat, &
+      remove_particle_criteria_edtog, rad_sphere, pos_sphere, rhopmat, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
@@ -129,7 +130,7 @@ module Particles
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      ldt_grav_par, lsinkpoint, rhopmat, &
+      remove_particle_criteria_edtog, ldt_grav_par, lsinkpoint, rhopmat, &
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
@@ -181,25 +182,15 @@ module Particles
 !
 !  Indices for particle position.
 !
-      ixp=npvar+1
-      pvarname(npvar+1)='ixp'
-      iyp=npvar+2
-      pvarname(npvar+2)='iyp'
-      izp=npvar+3
-      pvarname(npvar+3)='izp'
+      call append_npvar('ixp',ixp)
+      call append_npvar('iyp',iyp)
+      call append_npvar('izp',izp)
 !
 !  Indices for particle velocity.
 !
-      ivpx=npvar+4
-      pvarname(npvar+4)='ivpx'
-      ivpy=npvar+5
-      pvarname(npvar+5)='ivpy'
-      ivpz=npvar+6
-      pvarname(npvar+6)='ivpz'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+6
+      call append_npvar('ivpx',ivpx)
+      call append_npvar('ivpy',ivpy)
+      call append_npvar('ivpz',ivpz)
 !
 !  Set indices for auxiliary variables
 !
@@ -208,16 +199,9 @@ module Particles
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
 !
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles','npvar > mpvar')
-      endif
-!
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -231,6 +215,7 @@ module Particles
       use Density, only: mean_density
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       real :: rhom
       integer :: ierr, jspec
@@ -317,6 +302,10 @@ module Particles
           cs2_powerlaw=temperature_power_law
         endif
       endif
+!
+!  Normalization for Epstein drag with particles radius.
+!
+      if (ldraglaw_epstein .and. iap /= 0) tausp01 = rho0 * cs0 / (rhopmat * Omega)
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
 !
@@ -436,7 +425,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: gamma, beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use Sub
@@ -670,7 +660,7 @@ module Particles
             endif
           enddo
 !
-       case ('random-cylindrical','random-cyl')
+       case ('random-cylindrical','random-cyl','random-spherical','random-sph')
           if (lroot) print*, 'init_particles: Random particle '//&
                'cylindrical positions with power-law =',dustdensity_powerlaw
 !
@@ -1274,6 +1264,9 @@ k_loop:   do while (.not. (k>npar_loc))
             elseif (lspherical_coords) then
               rad=fp(k,ixp)*sin(fp(k,iyp))
               OO=sqrt(gravr)*rad**(-1.5)
+              fp(k,ivpx) =  0.0
+              fp(k,ivpy) =  0.0
+              fp(k,ivpz) =  OO*rad
             endif
           enddo
 !
@@ -1537,7 +1530,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -1551,6 +1544,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       real, dimension(3) :: ggp
       real :: Omega2, rr, vv, OO2
@@ -2401,7 +2395,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhopmat)
+          if (fp(k,iap)/=0.0) tausp1_par = tausp01 / fp(k,iap)
         else
           if (npar_species>1) then
             jspec=npar_species*(ipar(k)-1)/npar+1
@@ -2429,10 +2423,7 @@ k_loop:   do while (.not. (k>npar_loc))
             elseif (lcylindrical_coords) then
               OO=fp(k,ixp)**(-1.5)
             elseif (lspherical_coords) then
-              call fatal_error("get_frictiontime",&
-                   "variable draglaw not implemented for"//&
-                   "spherical coordinates")
-              OO=0.
+              OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
             else
               call fatal_error("get_frictiontime", &
                    "no valid coord system")
@@ -2782,6 +2773,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  29-dec-04/anders: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -2795,14 +2787,14 @@ k_loop:   do while (.not. (k>npar_loc))
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
+        call farray_index_append('ixp', ixp)
+        call farray_index_append('iyp', iyp)
+        call farray_index_append('izp', izp)
+        call farray_index_append('ivpx', ivpx)
+        call farray_index_append('ivpy', ivpy)
+        call farray_index_append('ivpz', ivpz)
+        call farray_index_append('inp', inp)
+        call farray_index_append('irhop', irhop)
       endif
 !
 !  Reset everything in case of reset.

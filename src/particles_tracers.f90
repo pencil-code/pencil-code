@@ -7,6 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM character (len=20), parameter :: particles_module="tracer"
 !
 ! MAUX CONTRIBUTION 2
 ! MPVAR CONTRIBUTION 3
@@ -76,37 +77,24 @@ module Particles
 !
 !  Indices for particle position.
 !
-      ixp=npvar+1
-      pvarname(npvar+1)='ixp'
-      iyp=npvar+2
-      pvarname(npvar+2)='iyp'
-      izp=npvar+3
-      pvarname(npvar+3)='izp'
+      call append_npvar('ixp',ixp)
+      call append_npvar('iyp',iyp)
+      call append_npvar('izp',izp)
 !
-!  Increase npvar accordingly.
+!  Indices for particle velocity.
 !
-      npvar=npvar+3
-!
-      ivpx=mpvar+npaux+1
-      ivpy=mpvar+npaux+2
-      ivpz=mpvar+npaux+3
-      npaux = npaux+3
+      call append_npaux('ivpx',ivpx)
+      call append_npaux('ivpy',ivpy)
+      call append_npaux('ivpz',ivpz)
 !
 !  Set indices for auxiliary variables.
 !
       call farray_register_auxiliary('np',inp)
       call farray_register_auxiliary('rhop',irhop)
 !
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles','npvar > mpvar')
-      endif
-!
     endsubroutine register_particles
 !***********************************************************************
-    subroutine initialize_particles(f)
+    subroutine initialize_particles(f,fp)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -114,6 +102,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       real :: rhom
 !
@@ -160,7 +149,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: gamma, cs20, beta_glnrho_global
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub
@@ -511,7 +501,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt(f,df,p,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -522,6 +512,7 @@ module Particles
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -899,6 +890,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -912,14 +904,8 @@ module Particles
       if (present(lwrite)) lwr=lwrite
 !
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', mpvar+ivpx
-        write(3,*) 'ivpy=', mpvar+ivpy
-        write(3,*) 'ivpz=', mpvar+ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
+        call farray_index_append('inp', inp)
+        call farray_index_append('irhop', irhop)
       endif
 !
 !  Reset everything in case of reset
@@ -956,16 +942,16 @@ module Particles
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',          idiag_rhopmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',          idiag_epspmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
       enddo
 !
 !  check for those quantities for which we want z-averages
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',          idiag_rhopmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',          idiag_epspmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
       enddo
 !
     endsubroutine rprint_particles

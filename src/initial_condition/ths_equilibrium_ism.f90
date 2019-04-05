@@ -4,7 +4,7 @@
 !  simulations. First run 1D simulation using identical z grid with 
 !  initial_condition/ths1D_equilibrium_ism.f90.
 !  This module will load the converged 1D profiles derived and saved to
-!  init_ism.dat.
+!  init_ism.dat (now init_ism.in).
 !
 !   Description                               | Relevant function call
 !  ------------------------------------------------------------------------
@@ -238,8 +238,13 @@ module InitialCondition
 !  Assuming no ghost zones in init_ism.in.
 !
       do n=n1,n2
-        f(l1:l2,m1:m2,n,ilnrho)=log(tmp1(n-nghost+ipz*nz))
-        lnTT(n)                =log(tmp2(n-nghost+ipz*nz))
+        rho(n)=tmp1(n-nghost+ipz*nz)
+        if (ldensity_nolog) then
+          f(l1:l2,m1:m2,n,irho)=log(rho(n))
+        else
+          f(l1:l2,m1:m2,n,ilnrho)=log(rho(n))
+        endif
+        lnTT(n)=log(tmp2(n-nghost+ipz*nz))
       enddo
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
@@ -306,7 +311,7 @@ module InitialCondition
             f(:,:,:,iax:iay) = 0.0
             do m=m1,m2
             do n=n1,n2
-              f(l1:l2,m,n,iaz) = amplaa * x(l1:l2) * sqrt(rho(n))
+              f(l1:l2,m,n,iaz) = -amplaa * x(l1:l2) * sqrt(rho(n))
             enddo
             enddo
           case ('uniform-x+y')
@@ -314,7 +319,7 @@ module InitialCondition
             do l=l1,l2
             do m=m1,m2
             do n=n1,n2
-              f(l,m,n,iaz) = amplaa * (x(l) + ybias_aa*y(m)) * sqrt(rho(n)) / &
+              f(l,m,n,iaz) = amplaa * (-x(l) + ybias_aa*y(m)) * sqrt(rho(n)) / &
                              sqrt(1 + ybias_aa**2)
             enddo
             enddo

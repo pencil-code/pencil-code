@@ -90,13 +90,18 @@ else if ($hn =~ ds0*) then
 #else if (($hn =~ *.rc.colorado.edu)) then
   #set str='s/home/rc_scratch/g'
 #else if (($hn =~ login0* && $USER =~ axbr9098)) then
-else if (($hn =~ login0*)) then
-  set str='s/home/lustre\/janus_scratch/g'
+##else if (($hn =~ login0*)) then
+##  set str='s/home/lustre\/janus_scratch/g'
 else if (($hn =~ ekhi.colorado.edu)) then
   set str='s/home1/export\/ekhi/g'
+else if (($hn =~ lcd.colorado.edu)) then
+  set str='s/home1/scratch/g'
 else if (($hn =~ charybdis.colorado.edu)) then
-  set str='s/home6/charybdis/g'
-else if (($hn =~ scylla.colorado.edu)) then
+  #set str='s/home6/charybdis/g'
+  set str='s/home1/charybdis/g'
+else if (($hn =~ scylla.colorado.edu) && ($USER =~ axbr9098)) then
+  set str='s/home1/scylla/g'
+else if (($hn =~ scylla.colorado.edu) && ($USER =~ lcdworkshop)) then
   set str='s/home6/scylla/g'
 else if (($hn =~ nl11) || ($hn =~ wormhole)) then
   set str='s/home/home\/data/g'
@@ -125,8 +130,13 @@ else if ($hn =~ nw*) then
 else if ($hn =~ fire) then
   echo $cwd/data >! .tmp
   set str='s/home\/parallab\/ntnu/work/g'
-else if ($hn =~ *stampede* ) then #stampede.tacc.utexas.edu
-  set str='s/home1/scratch/g'
+else if ($hn =~ *stampede*) then #stampede.tacc.utexas.edu
+  if ($USER =~ ccyang) then
+    echo "Special entry for Chao-Chin Yang"
+    set str='s/work\/01074\/ccyang\/stampede2/scratch\/01074\/ccyang/g'
+  else
+    set str='s/home1/scratch/g'
+  endif
 else if ($hn =~ login*) then
   echo $cwd/data >! .tmp
   set str='s/home/disk\/global/g'
@@ -214,6 +224,8 @@ else if ( ($hn =~ gardar*) ) then
 else if ($hn =~ darwin*) then
   set str='s/Users/var\/tmp/g'
 else if (($hn =~ hydra*) && ($USER =~ joernw))then # joern on hydra
+  set str='s/u\//ptmp\//g'
+else if (($hn =~ cobra*) && ($USER =~ joernw))then # joern on cobra
   set str='s/u\//ptmp\//g'
 else if (($hn =~ gwdu*) && ($USER =~ jwarnec))then # joern on gwdg
   set str='s/usr\/users\/jwarnec\/pencil-code/scratch\/jwarnec\/pencil-data/g'

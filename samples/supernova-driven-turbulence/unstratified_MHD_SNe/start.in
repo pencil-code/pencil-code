@@ -1,0 +1,51 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for interstellar
+!
+&init_pars
+  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $'
+  unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
+  unit_density=1.6737236e-24
+  xyz0=-0.09375,-0.09375,-0.09375
+  xyz1=+0.09375,+0.09375,+0.09375
+  lwrite_aux=T
+  lfix_unit_std=T
+/
+&eos_init_pars
+  mu=0.531
+/
+&hydro_init_pars
+  inituu='nothing'
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_rho', rho_const=1.0
+/
+&magnetic_init_pars
+  initaa = 'gaussian-noise'
+  amplaa = 6e-7
+/
+&entropy_init_pars
+  initss='isothermal', T0=272.94676293922208619109 
+/
+&interstellar_init_pars
+  cooling_select='WSW'
+  heating_select='wolfire'
+  initial_SNI = 25
+  lSNII=F
+  lSNI=T
+  initinterstellar='multiple'
+  lSN_scale_rad=T
+  N_mass=25.0
+  rfactor_SN=4.5 !depending on resolution min radius 18 parsec 
+  mass_profile='gaussian3'
+  thermal_profile='gaussian2'
+  mass_width_ratio=1.75
+  energy_width_ratio=1.0
+  frac_kin=0.0
+  frac_ecr=0.0
+  lSN_mass=F
+  TT_SN_max=4.9e6
+  rho_SN_max=25.
+  luniform_zdist_SNI=T
+/

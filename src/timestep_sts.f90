@@ -17,9 +17,12 @@ module Timestep
 !
   private
 !
-  public :: time_step
+  include 'timestep.h'
 !
   contains
+!***********************************************************************
+    subroutine initialize_timestep
+    endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)
 !
@@ -44,7 +47,6 @@ module Timestep
       real :: dt1, dt1_local
       real, save :: dt1_last=0.0
       real, dimension (itorder) :: tau_sts
-      integer :: j
 !
 ! Temporal loop over N substeps given by itorder
 !
@@ -58,7 +60,7 @@ module Timestep
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
+        call pde(f,df,p,itsub)
 !
         if (lfirst.and.ldt) then
           dt1_local=maxval(dt1_max(1:nx))
@@ -75,14 +77,15 @@ module Timestep
           dt = sum(tau_sts)
         endif
 !
+!  Apply border quenching.
+!
+        if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
+!
 !  Time evolution of grid variables.
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-          if (lborder_profiles) call border_quenching(f,df,j,tau_sts(itsub))
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+tau_sts(itsub)*df(l1:l2,m,n,j)
-        enddo; enddo; enddo
+        f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + tau_sts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
-        if (lspecial) call special_after_timestep(f,df,tau_sts(itsub))
+        if (lspecial) call special_after_timestep(f,df,tau_sts(itsub),llast)
 
 !  Increase time.
 !
@@ -130,6 +133,17 @@ module Timestep
       enddo
 !
     endsubroutine substeps
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Messages, only: fatal_error
+
+    integer, parameter :: n_pars=0
+    integer(KIND=ikind8), dimension(:) :: p_par
+
+    call fatal_error('timestep_sts','alpha_ts, beta_ts not defined')
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Timestep
 

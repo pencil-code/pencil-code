@@ -1,6 +1,7 @@
 !$Id: particles_surfspec.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
 !
-!  This module takes care of everything related to reactive particles.
+!  MOUDLE_DOC: This module takes care the gas phase species in the
+!  MODULE_DOC: immediate vicinity of reactive particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -34,15 +35,15 @@ module Particles_surfspec
 !
   character(len=labellen), dimension(ninit) :: init_surf='nothing'
   character(len=10), dimension(:), allocatable :: solid_species
-  real, dimension(10) :: init_surf_mol_frac
+  real, dimension(10) :: init_surf_mol_frac ! INIT_DOC: Initial surface fraction
   real, dimension(:,:), allocatable :: nu_power
   integer, dimension(nchemspec) :: ispecaux=0
   integer :: ispecenth
-  integer :: ndiffsteps=3
+  integer :: ndiffsteps=3 ! RUN_DOC: Number of mass transfer diffusion steps
   integer :: Ysurf
-  logical :: lspecies_transfer=.true.
-  logical :: linfinite_diffusion=.true.
-  logical :: lboundary_explicit=.true.
+  logical :: lspecies_transfer=.true. ! RUN_DOC: species transfer between particle and gas
+  logical :: linfinite_diffusion=.true. ! RUN_DOC: infinitely fast diffusion between particle and gas
+  logical :: lboundary_explicit=.true. ! RUN_DOC: explicit evolution of particle surface species
   logical :: lpchem_cdtc=.false.
   logical :: lpchem_mass_enth=.true.
   logical :: lpfilter =.true.
@@ -132,18 +133,8 @@ module Particles_surfspec
 !  Increase of npvar according to N_surface_species, which is
 !  the concentration of gas phase species at the particle surface
 !
-      if (N_surface_species > 1) then
-        isurf = npvar+1
-        npvar = npvar+N_surface_species-1
-        isurf_end = isurf+N_surface_species-1
-      else
+      if (N_surface_species <= 1) then
         call fatal_error('register_particles_', 'N_surface_species must be > 1')
-      endif
-!
-! Check that the fp and dfp arrays are big enough
-      if (npvar > mpvar) then
-        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_ads','npvar > mpvar')
       endif
 !
 ! Allocate memory for a number of arrays
@@ -177,11 +168,10 @@ module Particles_surfspec
       call get_reactants(reactants)
       call sort_compounds(reactants,solid_species,n_surface_species)
 !
-      if (N_surface_species > 1) then
-        do i = 1,N_surface_species
-          pvarname(isurf+i-1) = 'i'//solid_species(i)
-        enddo
-      endif
+      do i = 1,N_surface_species
+        call append_npvar('i'//solid_species(i),isurf)
+      enddo
+      isurf_end = isurf
 !
 !  create binding between gas phase and near field gas species
 !  chemistry and particles_chemistry module
@@ -791,7 +781,7 @@ module Particles_surfspec
 !
 !  end of particle on pencil loop
 !
-            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
+!            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
           enddo
 !
 !

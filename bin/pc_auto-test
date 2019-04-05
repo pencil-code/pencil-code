@@ -29,6 +29,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Remove directory from /tmp when encountering Ctl-c
 # - Treat `svn update' as separate stage that can be `OK' or not
 
+use strict;
+
 BEGIN {
     # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
     if (-d "$ENV{PENCIL_HOME}/lib/perl") {
@@ -45,7 +47,6 @@ Pencil::Util::use_pencil_perl_modules(
     'Test::ScriptTester',
     ) or die;
 
-use strict;
 use constant NOQUIET     => 0;
 use constant QUIET       => 1;
 use constant LOCK_FAILED => 128; # return status if we can't get lock
@@ -77,22 +78,21 @@ my %tests = (
                          backwards-compatible
                          1d-tests/implicit_diffusion
                          2d-tests/chemistry_GrayScott
-                         2d-tests/boussinesq_convection
-                         2d-tests/selfgravitating-shearwave
                          2d-tests/shearwave-dust-par
-                         0d-tests/heating_ionize
                          dust-vortex
                          damped_alfven_waves
-                         2d-tests/streaming_instability
+                         corona
                      )],
+#                         helical-MHDturb
              2 => [qw(
+                         0d-tests/heating_ionize
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
                          chiral-diffusion
                          cosmicray
                          1d-tests/sod_10
                          1d-tests/ambipolar_diffusion
-                         helical-MHDturb
+                         GravitationalWaves
                          polymer/forced_3dturbulence
                          testfield_z
                          random_uu_particles
@@ -100,10 +100,11 @@ my %tests = (
                          kin-dynamo
                          meissner
                          conv-slab-noequi
-                         conv-slab
-                         corona
+                         2d-tests/selfgravitating-shearwave
+                         2d-tests/streaming_instability
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
+                         2d-tests/planet-disk-fargo
                          spherical-globaldisk
                          spherical-globaldisk-mhd
                          spherical-gdisk-planet-thermo
@@ -126,12 +127,13 @@ my %tests = (
                          2d-tests/Kelvin-Helmholtz
                          2d-tests/selfgravdisk-planet-dust
                          cylindrical-globaldisk-dzone
+                         2d-tests/selfgravdisk-logspirals
                          2d-tests/turbulent_potential
+                         2d-tests/WhiteDwarfDisk
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
              3 => [qw(
-                         0d-tests/coagulation-fragmentation
                          0d-tests/heating_ionize_planck
                          1d-tests/jeans-drag-dustpar-x
                          1d-tests/jeans-x
@@ -140,9 +142,11 @@ my %tests = (
                          2d-tests/bubble
                          2d-tests/conv-slab-MLT
                          2d-tests/2d_methane_flame
-                         interstellar
+                         2d-tests/boussinesq_convection
+                         conv-slab
                          interlocked-fluxrings
                          conv-slab-flat
+                         coronae_heatflux_boris
                          testfield
                          testfield_nonlin_z
                          spherical-convection
@@ -167,6 +171,7 @@ my %tests = (
              # Level 5 for now contains all non-canonical tests that run,
              # but produce wrong results
              5 => [qw(
+                         interstellar
                          hexagon
                          MHD-ABCforcing
                          taylor-couette
@@ -197,6 +202,7 @@ my %tests = (
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
              6 => [qw(
+                         0d-tests/coagulation-fragmentation
                      )],
              # Level 7 for now contains all non-canonical tests that
              # compile, but don't start sucessfully
@@ -283,6 +289,7 @@ Options:
                            \tUse 'DEFAULT' to get all configured types with
                            \ttheir default interpreters
        --time-limit=limit  \tLimit time for each phase
+       --auto-clean        \tAutomatic clean & recompile, if compilation fails
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
                            \tconfiguration files, rather than trying to find a
@@ -352,6 +359,7 @@ GetOptions(\%opts,
                     --max-level=s
                     --script-tests=s
                     --time-limit=s
+                    --auto-clean
                     --config-files=s
                     --host-id=s
                     --list-maintainers
@@ -394,6 +402,7 @@ my $level       = (              $opts{'level'}                   );
 my $max_level   = (              $opts{'max-level'}               );
 my $script_tests = (             $opts{'script-tests'}            );
 my $time_limit  = (              $opts{'time-limit'}      || ''   );
+my $auto_clean  = (              $opts{'auto-clean'}      || 0    );
 my $config_files = (             $opts{'config-files'}    || ''   );
 my $host_id     = (              $opts{'host-id'}         || ''   );
 my $list_maint  = (              $opts{'list-maintainers'} || 0   );
@@ -454,6 +463,10 @@ my %time_summary;               # hash to accumulate timing summary
 
 ## Debugging output:
 if ($debug) {
+    my $dummy = $Test::ScriptTester::DEBUG;  # suppress 'used only once'
+                                             # warning
+    $Test::ScriptTester::DEBUG = 1;
+
     eval { use Data::Dumper };   # Need eval here to calm down compiler
     print STDERR Dumper(\%opts);
     print STDERR
@@ -595,7 +608,7 @@ sub get_sampdirs {
         my $upper = $2;
         $level = $1;
         if ($2 < $1) { $level = $2; $upper = $1; }
-	if ($upper > $level) {
+        if ($upper > $level) {
             for (my $pos = $level + 1; $pos <= $upper; $pos++) {
                 $level .= ','.$pos;
             }
@@ -830,10 +843,21 @@ sub test_shell_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning `$nice $cmd`" if ($debug);
+    print STDERR "\nRunning `$nice $cmd`\n" if ($debug);
     $! = 0;                     # reset
     my $res = `$nice $cmd 2>&1`;
     my ($cmdstatus, $cmdmesg) = ($?, $!);
+
+    if ($auto_clean && ($phase eq 'compilation') && ($cmdstatus != 0)) {
+        # Retry compilation after cleaning
+        test_shell_cmd("@pc_build --cleanall", $dir, "cleaning up", QUIET);
+        return "ERROR running @pc_build --cleanall" if ($test_status);
+        print STDERR "\nRetrying `$nice $cmd`\n" if ($debug);
+        $! = 0;                     # reset
+        $res = `$nice $cmd 2>&1`;
+        ($cmdstatus, $cmdmesg) = ($?, $!);
+    }
+
     $res = '' unless defined($res);
     chomp($res);
     if ($res ne '') {
@@ -876,7 +900,7 @@ sub test_perl_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning Perl command" if ($debug);
+    print STDERR "\nRunning Perl command\n" if ($debug);
     my ($error_count, $mesg) = &$cmd();
     $res = $error_count ? "[$mesg]" : '';
 
@@ -893,8 +917,6 @@ sub test_timelimited_perl_cmd {
 # The first argument is a ref to a function that returns its status as
 # ($error_count, $message).
 # Return error message.
-#
-# Due to the
     my $cmd   = shift;
     my $time_limit   = shift;
     my $dir   = (shift || "<Unknown directory>");
@@ -902,7 +924,7 @@ sub test_timelimited_perl_cmd {
     my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
-    print STDERR "\nRunning Perl command" if ($debug);
+    print STDERR "\nRunning Perl command\n" if ($debug);
 
     my ($error_count, $res) = (0, '');
     eval {
@@ -936,7 +958,7 @@ sub call_sub_catch_output {
 # Return the return value of &$cmd() and a string containing the output.
     my $cmd = shift;
 
-    # We need to explicitly mark the end of conversation pver the pipe, or
+    # We need to explicitly mark the end of conversation over the pipe, or
     # else the reader hangs (why does it not realize that the pipe is
     # closed?).
     my $end_marker = '## DONE ##';
@@ -946,9 +968,12 @@ sub call_sub_catch_output {
     my @retval;
 
     pipe my $read_retval_handle, my $write_retval_handle;
-
-    my $child_id = open($comm, '-|') or die "can't fork: $!";
+    my $child_id = open($comm, '-|');
+    unless (defined $child_id) {
+        die "Cannot fork: $!";
+    }
     if ($child_id) { # parent --> read output from child
+        print STDERR "Parent here\n" if $debug;
         while (<$comm>) {
             $output .= $_;
         }
@@ -960,6 +985,7 @@ sub call_sub_catch_output {
         }
         close $read_retval_handle;
     } else {                    # child --> run &$cmd
+        print STDERR "Child here\n" if $debug;
         $skip_end_block = 1;    # don't remove lock, etc. yet
         open(STDERR, ">& STDOUT"); # also redirect STDERR to $comm
         @retval = &$cmd();
@@ -969,7 +995,7 @@ sub call_sub_catch_output {
             print $write_retval_handle "$value\n";
         }
         print $write_retval_handle "$end_marker\n";
-        # close $write_retval_handle;
+        close $write_retval_handle;
         exit;
     }
 
@@ -1108,6 +1134,7 @@ sub test_run {
         }
         if ($res =~ /floating[\s\-]point exceptions recorded:[^\n]*\n+(.*?)(?=\n\S)/is) {
             my $exceptions = $1;
+            # $exceptions =~ s/\s+share_SN_parameters:.*$//is; # temporal workaround, uncomment only if needed
             $exceptions =~ s/^\s+/\t* /gm;
             print "\tFloating-point exceptions:\n".$exceptions."\n";
         }
@@ -1139,7 +1166,12 @@ sub test_results {
                   $dir, "results");
             return;
         }
-        my $comparator = Test::NumericFileComparator->new($reference_out);
+        my $comparator;
+        eval { $comparator = Test::NumericFileComparator->new($reference_out); };
+        if ($@) {
+          my_ok(0, 1, join ("\n",$@), $dir, "results");
+          return;
+        }
         my @message = $comparator->compare($ts_file);
         if (@message) {
             my $msg = join(
@@ -1185,7 +1217,7 @@ sub test_scripts {
         $tester->run_tests(@tests);
     };
     if ($time_limit) {
-        print "\nRunning Perl cmd with time limit $time_limit" if $debug;
+        print "\nRunning Perl cmd with time limit $time_limit\n" if $debug;
         test_timelimited_perl_cmd(
             $test_cmd,
             $time_limit,
@@ -1193,7 +1225,7 @@ sub test_scripts {
             NOQUIET, $t_ref
             );
     } else {
-        print "\nRunning Perl cmd" if $debug;
+        print "\nRunning Perl cmd\n" if $debug;
         test_perl_cmd(
             $test_cmd,
             $dir, "running script tests",
@@ -1708,7 +1740,6 @@ END {
             system(@pc_dump_config);
             printf "Perl version v%vd\n", $^V;
         }
-
     }
 
     # Clean up generated directories
@@ -1725,6 +1756,13 @@ END {
 
     # Tell user we are done
     Pencil::Util::notify('with auto test') if $notify;
+
+    # Exit with appropriate status
+    if ($failed || %failed) {
+        exit 1;
+    } else {
+        exit 0;
+    }
 }
 
 # End of file pc_auto-test

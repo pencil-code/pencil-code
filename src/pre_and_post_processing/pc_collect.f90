@@ -1,14 +1,14 @@
 ! This is a tool to collect a distributed data cube in one file.
 !
 ! $Id$
-!***********************************************************************
+!
 program pc_collect
 !
   use Cdata
   use Cparam, only: fnlen
   use File_io, only: backskip_to_time, delete_file
   use General, only: loptest
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid,set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO
@@ -60,9 +60,11 @@ program pc_collect
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
+  call read_all_init_pars
+  call set_coorsys_dimmask
+!
   lstart = .false.
   lrun = .true.
-  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
@@ -123,7 +125,7 @@ program pc_collect
   if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  iproc = 0
+  iproc_world = 0
   call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
@@ -132,6 +134,7 @@ program pc_collect
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
   t_test = huge(1.0)
@@ -192,8 +195,8 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
       gy = huge(1.0)
     endif
 !
-    iproc = ipz * nprocx*nprocy
-    lroot = (iproc==root)
+    iproc_world = ipz * nprocx*nprocy
+    lroot = (iproc_world==root)
     lfirst_proc_z = (ipz == 0)
     llast_proc_z = (ipz == nprocz-1)
 !
@@ -256,8 +259,8 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
@@ -317,7 +320,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 !
 !  Need to re-initialize the local grid for each processor.
 !
-          call initialize_grid
+          call construct_grid(x,y,z,dx,dy,dz)
 
         ! collect x coordinates:
           gx(1+ipx*nx:mx+ipx*nx) = x

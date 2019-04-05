@@ -18,7 +18,7 @@ def param(*args, **kwargs):
 
     call signature:
 
-    read(datadir='data/', param2=False, quiet=True)
+    read(datadir='data', param2=False, quiet=True)
 
     Keyword arguments:
 
@@ -56,7 +56,7 @@ class Param(object):
         self.keys = []
 
 
-    def read(self, datadir='data/', param2=False, quiet=True,
+    def read(self, datadir='data', param2=False, quiet=True,
              asdict=False, nest_dict=False):
         """
         Read Pencil Code simulation parameters.
@@ -64,8 +64,7 @@ class Param(object):
 
         call signature:
 
-        read(self, datadir='data/', param2=False, quiet=True,
-             asdict=False, nest_dict=False)
+        read(datadir='data', param2=False, quiet=True)
 
         Keyword arguments:
 
@@ -96,7 +95,7 @@ class Param(object):
 
         # Execute output of nl2python script.
         if not os.path.exists(filen):
-            print("Param.read: no such file {0}.".format(filen))
+            print("read.param: no such file {0}.".format(filen))
             raise ValueError
 
         # Read the parameters into a dictionary.
@@ -112,12 +111,14 @@ class Param(object):
                 setattr(self, key, param_list[key])
         # Read the parameters as attributes to class Params.
         else:
-            cmd = 'nl2python '+filen
+            cmd = 'nl2python ' + filen
             script = os.popen(cmd).read()
             if not quiet:
                 print(script)
             if script:
+                # This import is needed to execute the script.
                 import numpy
+                # TODO: Do this without calling a shell command.
                 exec(script.replace("\n    ", "\nself.")[198:])
                 del(numpy)
             else:
@@ -149,8 +150,7 @@ class Param(object):
         try:
             if "." in string_part:
                 return float(string_part)
-            else:
-                return int(string_part)
+            return int(string_part)
         except:
             return re.sub("'", "", string_part)
 
@@ -174,8 +174,7 @@ class Param(object):
             for j in range(len(string)):
                 string[j] = self.__param_formatter(string[j])
             return tuple(string)
-        else:
-            return self.__param_formatter(string)
+        return self.__param_formatter(string)
 
 
     def __read_nml(self, file_name, nest=False):
@@ -196,6 +195,7 @@ class Param(object):
         """
 
         import re
+
         r = re.compile(r'(?:[^,(]|\([^)]*\))+')
 
         params = dict()
@@ -219,7 +219,7 @@ class Param(object):
                     for i in range(len(parts)):
                         if "*" in parts[i]:
                             s = parts[i].split("*")
-                            for i in range(int(s[0])):
+                            for j in range(int(s[0])):
                                 value += [self.__tuple_catch(s[1])]
                         else:
                             value += [self.__tuple_catch(parts[i])]

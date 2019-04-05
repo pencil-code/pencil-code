@@ -338,6 +338,7 @@ module Special
     subroutine rprint_special(lreset,lwrite)
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
 !  reads and registers print parameters relevant to special
 !
@@ -377,18 +378,18 @@ module Special
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_kappam=',idiag_kappam
-        write(3,*) 'i_kappamax=',idiag_kappamax
-        write(3,*) 'i_kappamin=',idiag_kappamin
+        call farray_index_append('i_kappam',idiag_kappam)
+        call farray_index_append('i_kappamax',idiag_kappamax)
+        call farray_index_append('i_kappamin',idiag_kappamin)
 !
-        write(3,*) 'i_lambdam=',idiag_lambdam
-        write(3,*) 'i_lambdamax=',idiag_lambdamax
-        write(3,*) 'i_lambdamin=',idiag_lambdamin
+        call farray_index_append('i_lambdam',idiag_lambdam)
+        call farray_index_append('i_lambdamax',idiag_lambdamax)
+        call farray_index_append('i_lambdamin',idiag_lambdamin)
 !
-        write(3,*) 'i_divfluxm=',idiag_divfluxm
-        write(3,*) 'i_divflux2m=',idiag_divflux2m
-        write(3,*) 'i_divfluxmax=',idiag_divfluxmax
-        write(3,*) 'i_divfluxmin=',idiag_divfluxmin
+        call farray_index_append('i_divfluxm',idiag_divfluxm)
+        call farray_index_append('i_divflux2m',idiag_divflux2m)
+        call farray_index_append('i_divfluxmax',idiag_divfluxmax)
+        call farray_index_append('i_divfluxmin',idiag_divfluxmin)
       endif
 !
     endsubroutine rprint_special

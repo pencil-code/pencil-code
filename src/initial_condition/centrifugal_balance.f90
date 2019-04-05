@@ -81,10 +81,12 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
+  real :: truncation_degree=2.,truncation_scale=1.
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   real :: gravitational_const=0.
   real :: magnetic_power_law=impossible
+  real :: dustdensity_powerlaw=1.5,edtog=0.01
 !
 ! For the magnetic field
 !
@@ -120,19 +122,25 @@ module InitialCondition
 !
   real :: bump_radius = 1.,bump_ampl = 0.4, bump_width = 0.1
   character (len=labellen) :: ipressurebump='nobump'
+  character (len=labellen) :: imidplane='power-law'
+!
+! Magnetic spiral
+  real :: B0_spiral=0.012042837784031205
+  real :: etamu0_spiral = 1.0
+  real :: Omega0_spiral=1.0, r0_spiral=1.0
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
-       temperature_power_law,lexponential_smooth,&
-       radial_percent_smooth,rshift,lcorrect_selfgravity,&
-       gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
-       llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
-       rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
-       zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
-       r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
-       lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
-       bump_radius,bump_ampl,bump_width,ipressurebump,&
-       lselfgravity_logspirals
+       truncation_degree,truncation_scale,temperature_power_law,&
+       lexponential_smooth,radial_percent_smooth,rshift,&
+       lcorrect_selfgravity,gravitational_const,xmodes,ymodes,zmodes,&
+       rho_rms,llowk_noise,xmid,lgaussian_distributed_noise,&
+       rborder_int,rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
+       zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const,r0_pot,qgshear,n_pot,&
+       magnetic_power_law,lcorrect_lorentzforce,lcorrect_pressuregradient,&
+       lpolynomial_fit_cs2,ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,&
+       widthbb2,bump_radius,bump_ampl,bump_width,ipressurebump,imidplane,&
+       lselfgravity_logspirals,dustdensity_powerlaw,edtog,&
+       B0_spiral,etamu0_spiral,Omega0_spiral,r0_spiral
 !
   contains
 !***********************************************************************
@@ -160,6 +168,13 @@ module InitialCondition
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
       if (lcorotational_frame) then
+        if (lpointmasses) then
+          if (lroot) then
+            print*,'initialize_initial_condition: lcorotational frame not coded for pointmasses'
+            print*,'switch to gravity_r'
+            call fatal_error("","")
+          endif
+        endif
         OOcorot=rcorot**(-1.5)
       else
         OOcorot=0.
@@ -169,6 +184,11 @@ module InitialCondition
            call put_shared_variable('itemperature_power_law',&
              temperature_power_law,&
              caller='initialize_particles')
+! for magnetic spiral
+      call put_shared_variable('B0_spiral',B0_spiral)
+      call put_shared_variable('etamu0_spiral',etamu0_spiral)
+      call put_shared_variable('Omega0_spiral',Omega0_spiral)
+      call put_shared_variable('r0_spiral',r0_spiral)
 !
       call keep_compiler_quiet(f)
 !
@@ -206,6 +226,7 @@ module InitialCondition
              call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
       endif
 !
+      if (.not.lread_oldsnap) then
       do m=m1,m2
       do n=n1,n2
 !
@@ -260,8 +281,8 @@ module InitialCondition
         endif
 !
         if (coord_system=='cartesian') then
-          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
@@ -275,6 +296,7 @@ module InitialCondition
 !
       enddo
       enddo
+    endif
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
@@ -292,7 +314,7 @@ module InitialCondition
         call farray_use_global('cs2',iglobal_cs2)
       elseif (lentropy) then
         call get_cv1(cv1)
-      elseif (ltemperature) then 
+      elseif (ltemperature) then
         call get_cp1(cp1)
       endif
 !
@@ -303,7 +325,7 @@ module InitialCondition
           !even with ldensity_nolog=T, this rho is in log
           cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
                gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))
-        elseif (ltemperature) then 
+        elseif (ltemperature) then
           if (ltemperature_nolog) then
             cs2=f(l1:l2,m,n,iTT)*gamma_m1/cp1
           else
@@ -394,8 +416,6 @@ module InitialCondition
 !
       if (lroot) print*,&
            'initial_condition_lnrho: locally isothermal approximation'
-      if (lroot) print*,'Radial stratification with power law=',&
-           density_power_law
 !
       if (lenergy.and.llocal_iso) then
         if (lroot) then
@@ -411,7 +431,7 @@ module InitialCondition
       do m=1,my; do n=1,mz
         lheader=((m==1).and.(n==1).and.lroot)
         call get_radial_distance(rr_sph,rr_cyl)
-        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then 
+        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then
           rr=rr_cyl 
         elseif (lsphere_in_a_box.or.lspherical_coords) then
           rr=rr_sph
@@ -420,12 +440,13 @@ module InitialCondition
                "no valid coordinate system")
         endif
 !
-        if (llocal_iso.or.lenergy) then 
-          if (.not.lpolynomial_fit_cs2) then 
+        if (llocal_iso.or.lenergy) then
+          if (.not.lpolynomial_fit_cs2) then
             call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
           else 
             call poly_fit(cs2)
           endif  
+
 !
 !  Store cs2 in one of the free slots of the f-array
 !
@@ -433,16 +454,20 @@ module InitialCondition
             nullify(iglobal_cs2)
             call farray_use_global('cs2',iglobal_cs2)
             ics2=iglobal_cs2
-          elseif (ltemperature) then
-            if (ltemperature_nolog) then 
-              ics2=iTT
-            else
-              ics2=ilnTT
+            f(:,m,n,ics2)=cs2
+          elseif (.not.lread_oldsnap) then
+            if (ltemperature) then
+              if (ltemperature_nolog) then
+                ics2=iTT
+              else
+                ics2=ilnTT
+              endif
+              f(:,m,n,ics2)=cs2
+            elseif (lentropy) then
+              ics2=iss
+              f(:,m,n,ics2)=cs2
             endif
-          elseif (lentropy) then
-            ics2=iss
           endif
-          f(:,m,n,ics2)=cs2
         else
           ics2=impossible_int 
         endif
@@ -454,6 +479,7 @@ module InitialCondition
 !  do this trick below to decide whether this run is
 !  2D or 3D.
 !
+      if (.not.lread_oldsnap) then
       lpresent_zed=.false.
       if (lspherical_coords) then
         if (nygrid/=1) lpresent_zed=.true.
@@ -489,15 +515,30 @@ module InitialCondition
            call fatal_error("initial_condition_lnrho","")
         endselect
 !
-        if (lexponential_smooth) then
-          !radial_percent_smooth = percentage of the grid
-          !that the smoothing is applied
-          rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-          lnrhomid=log(rho0) &
-               + density_power_law*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
-        else
-          lnrhomid=log(rho0) -.5*density_power_law*log((rr/r_ref)**2+rsmooth**2)
-        endif
+        select case (imidplane)
+        case ('power-law')
+           if (lheader) print*,'Radial stratification with power law=',&
+                density_power_law
+          if (lexponential_smooth) then
+            !radial_percent_smooth = percentage of the grid
+            !that the smoothing is applied
+            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
+            lnrhomid=log(rho0) &
+                 + density_power_law*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
+          else
+            lnrhomid=log(rho0) -.5*density_power_law*log((rr/r_ref)**2+rsmooth**2)
+          endif
+        case ('exponential')
+          if (lheader) print*,'Exponential disk'
+          lnrhomid=log(rho0) - rr/r_ref
+        case ('truncated')
+          if (lheader) print*,'Truncated disk'
+          lnrhomid=log(rho0) - density_power_law*log((rr/r_ref)) &
+                   - (rr/(truncation_scale*r_ref))**(truncation_degree-density_power_law)
+       case default
+           if (lroot) print*, 'No such value for imidplane: ', trim(ipressurebump)
+           call fatal_error("initial_condition_lnrho","")
+        endselect
 !
 !  Vertical stratification, if needed
 !
@@ -508,7 +549,7 @@ module InitialCondition
 !
 !  Get the sound speed
 !
-          if (lenergy.or.llocal_iso) then 
+          if (lenergy.or.llocal_iso) then
             cs2=f(:,m,n,ics2)
           else
             cs2=cs20
@@ -571,7 +612,7 @@ module InitialCondition
 !  Correct the velocities for self-gravity
 !
       if (lcorrect_selfgravity) then
-        if (lselfgravity_logspirals) then 
+        if (lselfgravity_logspirals) then
           call correct_selfgravity_logspirals(f)
         else
           call correct_selfgravity(f)
@@ -582,12 +623,14 @@ module InitialCondition
 !
       if (llowk_noise) call lowk_noise_gaussian_rprof(f)
 !
+      endif
+!
 !  Set the thermodynamical variable
 !
       if (llocal_iso) then
         call set_thermodynamical_quantities&
              (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
-      else if (lenergy) then 
+      else if (lenergy.and.(.not.lread_oldsnap)) then
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
 !
@@ -606,6 +649,169 @@ module InitialCondition
       call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ss
+!***********************************************************************
+    subroutine initial_condition_nd(f)
+!
+!  Initialize logarithmic density. init_lnrho 
+!  will take care of converting it to linear 
+!  density if you use ldensity_nolog
+!
+!  20-sep-17/wlad: coded
+!
+      use EquationOfState, only: rho0
+      use Sub,             only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: rr_sph,rr_cyl
+      real, dimension (mx) :: lnrhomid !,strat
+      !real, dimension (mx) :: cs2,tmp1,tmp2
+      real    :: p !,q
+      integer :: k
+      !integer :: ics2
+      !integer, pointer :: iglobal_cs2
+!
+      p=-dustdensity_powerlaw 
+      if (lroot) print*,'Radial dust density stratification with power law=',p
+!
+!  Pencilize the density allocation.
+!
+      do n=1,mz
+        do m=1,my
+!
+!  Midplane density
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+          lnrhomid=log(edtog*rho0)+p*log(rr_cyl/r_ref)
+          do k=1,ndustspec
+             f(:,m,n,ind(k)) = f(:,m,n,ind(k))+exp(lnrhomid)
+          enddo
+!
+!  Dust stratification          
+!
+          !if (lgrav) then
+          !  call potential(POT=tmp1,RMN=rr_sph)
+          !  call potential(POT=tmp2,RMN=rr_cyl)
+          !elseif (lpointmasses) then
+          !  tmp1=-g0/rr_sph 
+          !  tmp2=-g0/rr_cyl
+          !endif
+          !if (lcylindrical_gravity) then 
+          !  strat=0.
+          !else
+          !  strat=-gamma*(tmp1-tmp2)/vrms2
+          !endif
+          !f(:,m,n,ilnrho) = f(:,m,n,ilnrho)+strat
+!
+        enddo
+      enddo
+!
+    endsubroutine initial_condition_nd
+!***********************************************************************
+    subroutine initial_condition_uud(f)
+!
+!  Initialize the velocity field.
+!
+!  This subroutine is a general routine that takes
+!  the gravity acceleration and adds the centrifugal force
+!  that numerically balances it.
+!
+!  Pressure corrections to ensure centrifugal equilibrium are
+!  added in the respective modules
+!
+!  24-feb-05/wlad: coded
+!  04-jul-07/wlad: generalized for any shear
+!  08-sep-07/wlad: moved here from initcond
+!
+      use Gravity, only: acceleration
+      use Sub,     only: get_radial_distance,power_law
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: rr_cyl,rr_sph,OO,g_r,tmp
+      integer :: i,k
+!
+      if (lroot) &
+           print*,'centrifugal_balance: initializing velocity field'
+!
+      if ((rsmooth/=0.).or.(r0_pot/=0)) then
+        if (rsmooth/=r0_pot) &
+             call fatal_error("centrifugal_balance","rsmooth and r0_pot must be equal")
+        if (n_pot<=2) &
+             call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
+      endif
+!
+      do m=m1,m2
+      do n=n1,n2
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+!
+        if (lgrav) then
+!
+! Gravity of a static central body
+!
+          call acceleration(g_r)
+!
+! Sanity check
+!
+          if (any(g_r > 0.)) then
+            do i=l1,l2
+              if (g_r(i-l1+1) > 0) then
+                print*,"centrifugal_balance: gravity at physical point ",&
+                     x(i),y(m),z(n),"is directed outwards"
+                call fatal_error("","")
+              endif
+            enddo
+          else
+            if ( (coord_system=='cylindric')  .or.&
+                 (coord_system=='cartesian')) then
+              OO=sqrt(max(-g_r/rr_cyl,0.))
+            else if (coord_system=='spherical') then
+              OO=sqrt(max(-g_r/rr_sph,0.))
+            endif
+          endif
+!
+        elseif (lpointmasses) then
+!
+! Gravity from dynamical point masses with a dominating central body
+!
+          call power_law(sqrt(g0),rr_sph,qgshear,tmp)
+!
+          if (lcartesian_coords.or.&
+               lcylindrical_coords) then
+            OO=tmp
+            if (lcylindrical_gravity) &
+                 OO=tmp*sqrt(rr_sph/rr_cyl)
+          elseif (lspherical_coords) then
+            OO=tmp
+          endif
+!
+        else
+!
+          print*,"both gravity and pointmasses are switched off"
+          print*,"there is no gravity to determine the azimuthal velocity"
+          call fatal_error("initial_condition_uud","")
+!
+        endif
+!
+        do k=1,ndustspec 
+        if (coord_system=='cartesian') then
+          f(l1:l2,m,n,iudx(k)) = f(l1:l2,m,n,iudx(k)) - y(  m  )*OO
+          f(l1:l2,m,n,iudy(k)) = f(l1:l2,m,n,iudy(k)) + x(l1:l2)*OO
+          f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) + 0.
+        elseif (coord_system=='cylindric') then
+          f(l1:l2,m,n,iudx(k)) = f(l1:l2,m,n,iudx(k)) + 0.
+          f(l1:l2,m,n,iudy(k)) = f(l1:l2,m,n,iudy(k)) + (OO-OOcorot)*rr_cyl
+          f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) + 0.
+        elseif (coord_system=='spherical') then
+          f(l1:l2,m,n,iudx(k)) = f(l1:l2,m,n,iudx(k)) + 0.
+          f(l1:l2,m,n,iudy(k)) = f(l1:l2,m,n,iudy(k)) + 0.
+          f(l1:l2,m,n,iudz(k)) = f(l1:l2,m,n,iudz(k)) + (OO-OOcorot)*rr_sph
+       endif
+       enddo
+!
+      enddo
+      enddo
+!
+    endsubroutine initial_condition_uud
 !***********************************************************************
     subroutine set_thermodynamical_quantities&
          (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
@@ -707,7 +913,7 @@ module InitialCondition
           endif
         elseif (ltemperature) then
 !  else do it as temperature ...
-          if (ltemperature_nolog) then 
+          if (ltemperature_nolog) then
             f(l1:l2,m,n,iTT)=cs2*cp1/gamma_m1
           else
             f(l1:l2,m,n,ilnTT)=log(cs2*cp1/gamma_m1)
@@ -933,7 +1139,7 @@ module InitialCondition
        case ("lambda_over_Lz_cte") 
          if (zmode_mag==0) &
               call fatal_error("initcond_aa","zmode_mag is zero")
-         if (magnetic_power_law/=impossible) then 
+         if (magnetic_power_law/=impossible) then
            pblaw=magnetic_power_law
          else
            pblaw=1.5+0.5*density_power_law !alfven
@@ -970,9 +1176,9 @@ module InitialCondition
       call integrate_field(bz*x,aphi_mx)
 !
       do n=1,mz;do m=1,my
-        if (lcylindrical_coords) then 
+        if (lcylindrical_coords) then
           f(:,m,n,iay) = aphi_mx/x 
-        elseif (lspherical_coords) then 
+        elseif (lspherical_coords) then
           f(:,m,n,iaz) = sin(y(m))*aphi_mx/x 
         else 
           call fatal_error("initial_condition_aa",&
@@ -1039,7 +1245,7 @@ module InitialCondition
       real, dimension(mx), intent(out) :: Bout
       integer :: i
 !      
-      if (rm_int==-impossible.and.rm_ext==impossible) then 
+      if (rm_int==-impossible.and.rm_ext==impossible) then
         Bout=Bin
       else
         do i=1,mx
@@ -1084,7 +1290,7 @@ module InitialCondition
 !  If the run is serial in x, we're done. Otherwise, take into account that 
 !  the contribution of previous x-processors should be summed up. 
 !
-      if (nprocx/=1) then 
+      if (nprocx/=1) then
 !
 !  Store the last value of the integral, which should be the starting point 
 !  for the next x-processor.
@@ -1095,7 +1301,7 @@ module InitialCondition
 !
          do px=0,nprocx-1
             partner = px + nprocx*ipy + nprocxy*ipz
-            if (iproc/=partner) then 
+            if (iproc/=partner) then
                !Send to all processors in this row.
                call mpisend_real(out,partner,111)
                !Receive from all processors in the same row.
@@ -1179,7 +1385,7 @@ module InitialCondition
           gslnrho=glnrho(:,1)
         endif
 !
-        if (lspherical_coords.or.lsphere_in_a_box) then 
+        if (lspherical_coords.or.lsphere_in_a_box) then
           rr=rr_sph
         else
           rr=rr_cyl
@@ -1189,7 +1395,7 @@ module InitialCondition
 !
         if (llocal_iso.or.lenergy) then
           cs2=f(l1:l2,m,n,ics2)
-          if (.not.lpolynomial_fit_cs2) then 
+          if (.not.lpolynomial_fit_cs2) then
              gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
           else
              xi=x(l1:l2)
@@ -1206,7 +1412,7 @@ module InitialCondition
 !
         fpres_thermal=(gslnrho+gslnTT)*cs2/gamma
 !
-        call correct_azimuthal_velocity(f,fpres_thermal)
+        call correct_azimuthal_velocity(f,fpres_thermal,'pressure gradient')
 !
       enddo;enddo
 !
@@ -1231,7 +1437,7 @@ module InitialCondition
 !
       if (lroot) print*,'Correcting for self-gravity on the '//&
            'centrifugal force'
-      if (.not.lpoisson) then 
+      if (.not.lpoisson) then
         print*,"You want to correct for selfgravity but you "
         print*,"are using POISSON=nopoisson in src/Makefile.local. "
         print*,"Please use a poisson solver."
@@ -1272,7 +1478,7 @@ module InitialCondition
           gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
         endif
 !
-        call correct_azimuthal_velocity(f,gspotself)
+        call correct_azimuthal_velocity(f,gspotself,'self gravity')
 !
       enddo;enddo
 !
@@ -1285,55 +1491,50 @@ module InitialCondition
 !  ??-???-15/wlad: adapted from correct_selfgravity
 !
       use Sub,         only:get_radial_distance,grad
-      use Poisson,     only:inverse_laplacian
+      use Poisson,     only:inverse_laplacian,get_acceleration
       use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (mx,my,mz) :: rho
-      real, dimension (nx,ny,nz,3) :: gpotself
-      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
+      real, dimension (nx,ny,nz) :: rho
+      real, dimension (nx,ny,nz,3) :: acceleration
+      real, dimension (nx) :: gspotself
       real :: rhs_poisson_const
 !
       if (lroot) print*,'Correcting for self-gravity on the '//&
            'centrifugal force'
-      if (.not.lpoisson) then 
+      if (.not.lpoisson) then
         print*,"You want to correct for selfgravity but you "
         print*,"are using POISSON=nopoisson in src/Makefile.local. "
         print*,"Please use a poisson solver."
         call fatal_error("correct_selfgravity_logspirals","")
       endif
+      if (.not.lcylindrical_coords) then
+        if (lroot) then
+          print*,'You are calling correct_selfgravity_logspirals'
+          print*,'from the centrifugal_balance module with non-'
+          print*,'cylindrical coordinates.'
+          print*,'If you are using the other _logspirals modules,'
+          print*,'they currently require cylindrical coordinates.'
+          print*,"If you aren't using the other _logspirals modules,"
+          print*,'please call correct_selfgravity instead.'
+        endif
+        call fatal_error("correct_selfgravity_logspirals","")
+      endif
 !
-!  Poisson constant is 4piG, this has to be consistent with the 
-!  constant in poisson_init_pars
-!
-      !rhs_poisson_const=4*pi*gravitational_const
-!
-      rho(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !     
-      !!!!!!!!!!!! call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2),gpotself)
-      call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2))!,gpotself)
+      call inverse_laplacian(rho)
+      call get_acceleration(acceleration)
+!
+!  The acceleration is the negative of the potential gradient
 !
       do n=n1,n2 ; do m=m1,m2
 !
-!  Get the potential gradient
-!
-        !call get_radial_distance(rr_sph,rr_cyl)
-        !call grad(f,ipotself,gpotself)
-!
 !  correct the angular frequency phidot^2
 !
-        if (lcartesian_coords) then
-          !gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-        elseif (lcylindrical_coords) then
-          ! PABourdin: this variable is unset:
-          !!!!!!!!!!!! gspotself=gpotself(:,m-m1+1,n-n1+1,1)
-        elseif (lspherical_coords) then
-          !gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
-        endif
-!
-        ! PABourdin: can't do that with an unset gspotself:
-        !!!!!!!!!!!! call correct_azimuthal_velocity(f,gspotself)
+        gspotself = -acceleration(:,m-m1+1,n-n1+1,1)
+        call correct_azimuthal_velocity(f,gspotself,'self gravity')
 !
       enddo;enddo
 !
@@ -1366,19 +1567,20 @@ module InitialCondition
         call multsv_mn(rho1,jxb,jxbr)   !jxb/rho
         fpres_magnetic=-jxbr(:,1)
 !
-        call correct_azimuthal_velocity(f,fpres_magnetic)  
+        call correct_azimuthal_velocity(f,fpres_magnetic,'magnetic pressure')  
 !
       enddo; enddo
 !
     endsubroutine correct_lorentz_numerical
 !***********************************************************************
-    subroutine correct_azimuthal_velocity(f,corr)
+    subroutine correct_azimuthal_velocity(f,corr,label)
 !
       use Sub, only: get_radial_distance
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx), intent(in) :: corr
       real, dimension(nx) :: rr_sph, rr_cyl, rr, tmp1, tmp2
+      character (len=*) :: label
 !
       call get_radial_distance(rr_sph,rr_cyl)
 !
@@ -1395,12 +1597,12 @@ module InitialCondition
 !
 !  Make sure the correction does not impede centrifugal equilibrium
 !
-      if (lcylindrical_coords.or.lcylinder_in_a_box) then 
+      if (lcylindrical_coords.or.lcylinder_in_a_box) then
         rr=rr_cyl
       else
         rr=rr_sph
       endif
-      call reality_check(tmp2,rr)
+      call reality_check(tmp2,rr,label)
 !
 !  Correct the velocities
 !
@@ -1415,7 +1617,7 @@ module InitialCondition
 !
     endsubroutine correct_azimuthal_velocity
 !***********************************************************************
-    subroutine reality_check(tmp,rr)
+    subroutine reality_check(tmp,rr,label)
 !
 !  Catches unphysical negative values of phidot^2, i.e., impossibility 
 !  of centrifugal equilibrium.
@@ -1428,6 +1630,7 @@ module InitialCondition
       real, dimension(nx) :: tmp,rr 
       logical :: lheader
       integer :: i
+      character (len=*) :: label
 !      
       lheader=lroot.and.lfirstpoint
 !
@@ -1437,14 +1640,18 @@ module InitialCondition
             !it's inside the frozen zone, so
             !just set tmp2 to zero and emit a warning
              tmp(i)=0.
-             if ((ip<=10).and.lheader) &
-                  call warning('reality_check','Cannot '//&
-                  'have centrifugal equilibrium in the inner '//&
-                  'domain. The pressure gradient is too steep.')
+             if ((ip<=10).and.lheader) then
+               print*,'reality_check: ',&
+                    'cannot have centrifugal equilibrium in the inner ',&
+                    'domain. ', label, ' is too strong at ',&
+                    'x,y,z=',x(i+nghost),y(m),z(n)
+               print*,'the angular frequency here is',tmp(i)
+               call warning("","")
+             endif
           else
             print*,'reality_check: ',&
                  'cannot have centrifugal equilibrium in the inner ',&
-                 'domain. The pressure gradient is too steep at ',&
+                 'domain. ', label, ' is too strong at ',&
                  'x,y,z=',x(i+nghost),y(m),z(n)
             print*,'the angular frequency here is',tmp(i)
             call fatal_error("","")
@@ -1545,7 +1752,7 @@ module InitialCondition
           do i=1,nx
             ll1=i+l1-1 ; xi=x(ll1)
 !
-            if (lgaussian_distributed_noise) then 
+            if (lgaussian_distributed_noise) then
               fac=exp(-(.5*(xi-xmid)/d0)**2)
             else
               fac=1
@@ -1575,7 +1782,7 @@ module InitialCondition
       f(l1:l2,m1:m2,n1:n2,irho)=1.+&
           normalization_factor*(f(l1:l2,m1:m2,n1:n2,irho)-1.)
 !
-      if (lroot) then 
+      if (lroot) then
         print*,'max density (linear): ',maxval(f(l1:l2,m1:m2,n1:n2,irho))
         print*,'min density (linear): ',minval(f(l1:l2,m1:m2,n1:n2,irho))
         print*,'rms density (linear): ',&

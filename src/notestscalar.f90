@@ -24,16 +24,9 @@ module Testscalar
 !
   include 'testscalar.h'
 !
-  real :: dummy=0.
-!
-  namelist /testscalar_init_pars/ &
-       dummy
-  namelist /testscalar_run_pars/ &
-       dummy
-!
   contains
 !***********************************************************************
-    subroutine register_testscalar()
+    subroutine register_testscalar
 !
 !  Dummy routine
 !
@@ -59,7 +52,7 @@ module Testscalar
 !
     endsubroutine init_cctest
 !***********************************************************************
-    subroutine pencil_criteria_testscalar()
+    subroutine pencil_criteria_testscalar
 !
 !  Dummy routine
 !
@@ -161,8 +154,7 @@ module Testscalar
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_testscalar
 !***********************************************************************

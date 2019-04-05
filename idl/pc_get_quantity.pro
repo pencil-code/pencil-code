@@ -128,6 +128,9 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	gm2 = m2
 	gn1 = n1
 	gn2 = n2
+	gnx = nx
+	gny = ny
+	gnz = nz
 	if (keyword_set (ghost)) then begin
 		gl1 = 0
 		gl2 += nghostx
@@ -135,6 +138,9 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		gm2 += nghosty
 		gn1 = 0
 		gn2 += nghostz
+		gnx += 2 * nghostx
+		gny += 2 * nghosty
+		gnz += 2 * nghostz
 	end
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
@@ -160,9 +166,28 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'u_abs', /fold_case)) then begin
 		; Absolute value of the velocity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
-		return, sqrt (dot2 (uu))
+		if (n_elements (u_abs) eq 0) then u_abs = sqrt (dot2 (uu))
+		return, u_abs
+	end
+	if (strcmp (quantity, 'grad_u', /fold_case)) then begin
+		; Velocity gradient
+		if (n_elements (grad_u) eq 0) then grad_u = (grad (sqrt (dot2 (vars[*,*,*,index.uu]))))[l1:l2,m1:m2,n1:n2,*] * unit.velocity
+		return, grad_u
+	end
+	if (strcmp (quantity, 'grad_u_abs', /fold_case)) then begin
+		; Velocity gradient absolute value
+		if (n_elements (grad_u) eq 0) then grad_u = pc_compute_quantity (vars, index, 'grad_u', ghost=ghost)
+		return, sqrt (dot2 (grad_u))
 	end
 
+	if (strcmp (quantity, 'E_therm', /fold_case)) then begin
+		; Thermal energy [J]
+		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, rho * Temp * cp_SI / gamma * unit.energy
+	end
 	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
 		; Kinetic energy density [J/m^3]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
@@ -199,6 +224,19 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 				grad_Temp = (grad (exp (vars[*,*,*,index.lnTT])))[l1:l2,m1:m2,n1:n2,*] * unit.temperature / unit.length
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				grad_Temp = (grad (vars[*,*,*,index.TT]))[l1:l2,m1:m2,n1:n2,*] * unit.temperature / unit.length
+			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+				cp = pc_get_parameter ('cp', label=quantity)
+				cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+				cs0 = pc_get_parameter ('cs0', label=quantity)
+				gamma = pc_get_parameter ('gamma', label=quantity)
+				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+				ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+				ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+				S = pc_compute_quantity (vars, index, 'S', /ghost)
+				ln_rho = pc_compute_quantity (vars, index, 'ln_rho', /ghost) - ln_rho_0
+				Temp_with_ghosts = exp (ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho)
+				; *** WORK HERE: this is maybe better computed with a direct derivation from the entropy S
+				grad_Temp = (grad (Temp_with_ghosts))[l1:l2,m1:m2,n1:n2,*] / unit.length
 			end
 		end
 		return, grad_Temp
@@ -264,6 +302,11 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end
 	end
 
+	if (strcmp (quantity, 'q_abs', /fold_case)) then begin
+		; Absolute value of the heat flux density vector q [W / m^2] = [kg / s^3]
+		chi = pc_get_parameter ('chi', label=quantity)
+		return, chi * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * unit.density / (unit.length^2 * unit.time^3 * unit.temperature)
+	end
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
 		; Absolute value of the saturation heat flux density vector q [W / m^2] = [kg / s^3]
 		K_sat = pc_get_parameter ('K_sat', label=quantity)
@@ -281,6 +324,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'Spitzer_K_parallel', /fold_case)) then begin
 		; Field-aligned Spitzer heat flux coefficient, not including T^2.5 [W / (m * K^3.5)] = [kg * m / (s^3 * K^3.5)]
 		K_Spitzer = pc_get_parameter ('K_Spitzer', label=quantity)
+		; TODO: check units consistency
 		return, K_Spitzer * (unit.density * unit.velocity^3 * unit.length / unit.temperature)
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
@@ -397,7 +441,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, rho
 	end
 	if (strcmp (quantity, 'grad_rho', /fold_case)) then begin
-		; Gradient of density
+		; Gradient of density [kg / m^4]
 		if (n_elements (grad_rho) eq 0) then begin
 			if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
 				grad_rho = (grad (exp (vars[*,*,*,index.lnrho])))[l1:l2,m1:m2,n1:n2,*] * unit.density / unit.length
@@ -441,7 +485,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
-		; Gradient of thermal pressure
+		; Gradient of thermal pressure [N / m^3]
 		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
@@ -456,7 +500,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, grad_P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm_abs', /fold_case)) then begin
-		; Absolute value of thermal pressure gradient
+		; Absolute value of thermal pressure gradient [N / m^3]
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		return, sqrt (dot2 (grad_P_therm))
 	end
@@ -468,21 +512,21 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, sqrt (kappa * P_therm / rho)
 	end
 	if (strcmp (quantity, 'H_P_therm_x', /fold_case)) then begin
-		; Scaling height of thermal pressure x-component
+		; Scaling height of thermal pressure x-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dx = grad_P_therm[*,*,*,0]
 		return, -(P_therm / dP_therm_dx)
 	end
 	if (strcmp (quantity, 'H_P_therm_y', /fold_case)) then begin
-		; Scaling height of thermal pressure y-component
+		; Scaling height of thermal pressure y-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dy = grad_P_therm[*,*,*,1]
 		return, -(P_therm / dP_therm_dy)
 	end
 	if (strcmp (quantity, 'H_P_therm_z', /fold_case)) then begin
-		; Scaling height of thermal pressure z-component
+		; Scaling height of thermal pressure z-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dz = grad_P_therm[*,*,*,2]
@@ -616,6 +660,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
 	end
+	if (strcmp (quantity, 'A_abs', /fold_case)) then begin
+		; Magnetic vector potential [T * m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'A')))
+	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
 		; Magnetic vector potential x-component
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.ax] * (unit.magnetic_field*unit.length)
@@ -627,6 +675,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'A_z', /fold_case)) then begin
 		; Magnetic vector potential z-component
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.az] * (unit.magnetic_field*unit.length)
+	end
+	if (strcmp (quantity, 'div_A', /fold_case)) then begin
+		; Divergence of the magnetic vector potential [T]
+		return, (div (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2] * unit.magnetic_field
 	end
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
@@ -687,6 +739,17 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		dB_dz[*,*,*,2] *= (zderxder (vars[*,*,*,index.ay]) - zderyder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
 		return, dB_dz
 	end
+	if (strcmp (quantity, 'grad_B', /fold_case)) then begin
+		; Magnetic field gradient [T / m]
+		if (n_elements (grad_B) eq 0) then grad_B = (gradcurl (pc_compute_quantity (vars, index, 'A', /ghost)))[l1:l2,m1:m2,n1:n2,*] / unit.length^2
+		return, grad_B
+	end
+	if (strcmp (quantity, 'grad_B_abs', /fold_case)) then begin
+		; Magnetic field gradient absolute value
+		if (n_elements (grad_B) eq 0) then grad_B = pc_compute_quantity (vars, index, 'grad_B')
+		return, sqrt (dot2 (grad_B))
+	end
+
 	if (strcmp (quantity, 'E', /fold_case)) then begin
 		; Electric field [V / m]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
@@ -824,10 +887,35 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, ((Rx > Ry) > Rz) / (eta * unit.length^2/unit.time)
 	end
 
+	if (strcmp (quantity, 'forcing', /fold_case)) then begin
+		; Forcing function [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = (vars[*,*,*,index.fx:index.fz])[gl1:gl2,gm1:gm2,gn1:gn2,*] * unit.mass * unit.length / unit.time^2
+		return, ff
+	end
+	if (strcmp (quantity, 'forcing_abs', /fold_case)) then begin
+		; Absolute value of the forcing function [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, sqrt (dot2 (ff))
+	end
+	if (strcmp (quantity, 'forcing_x', /fold_case)) then begin
+		; Forcing function x-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,0]
+	end
+	if (strcmp (quantity, 'forcing_y', /fold_case)) then begin
+		; Forcing function y-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,1]
+	end
+	if (strcmp (quantity, 'forcing_z', /fold_case)) then begin
+		; Forcing function z-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,2]
+	end
+
 	if (strcmp (quantity, 'j', /fold_case)) then begin
 		; Current density [A / m^2]
-		mu0 = pc_get_parameter ('mu0', label=quantity)
-		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / mu0 * unit.current_density
+		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] * unit.current_density
 		return, jj
 	end
 	if (strcmp (quantity, 'j_abs', /fold_case)) then begin
@@ -863,29 +951,30 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	if (strcmp (quantity, 'H_mag', /fold_case)) then begin
-		; Magnetic field helicity [T^2 * m^4]
+		; Magnetic field helicity density [T^2 * m]
 		aa = pc_compute_quantity (vars, index, 'A')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, dot (aa, bb)
 	end
 	if (strcmp (quantity, 'H_mag_pos', /fold_case)) then begin
-		; Magnetic field helicity (positive part) [T^2 * m^4]
+		; Magnetic field helicity density (positive part) [T^2 * m]
 		H_mag_pos = pc_compute_quantity (vars, index, 'H_mag') > 0.0
 		return, H_mag_pos
 	end
 	if (strcmp (quantity, 'H_mag_neg', /fold_case)) then begin
-		; Magnetic field helicity (negative part) [T^2 * m^4]
+		; Magnetic field helicity density (negative part) [T^2 * m]
 		H_mag_neg = (-pc_compute_quantity (vars, index, 'H_mag')) > 0.0
 		return, H_mag_neg
 	end
 	if (strcmp (quantity, 'H_j', /fold_case)) then begin
 		; Electric current helicity [A * T * m]
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		return, dot (jj, bb)
+		return, mu0_SI * dot (jj, bb)
 	end
 	if (strcmp (quantity, 'dH_mag_dt', /fold_case)) then begin
-		; Change rate of magnetic field helicity [T^2 * m^4 / s =?= A * T * m^3 / s]
+		; Change rate of magnetic field helicity density [T^2 * m / s =?= A * T / s]
 		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 		H_j = pc_compute_quantity (vars, index, 'H_j')
 		return, -2 * eta * H_j
@@ -930,7 +1019,12 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		B_abs = pc_compute_quantity (vars, index, 'B_abs')
 		j_abs = pc_compute_quantity (vars, index, 'j_abs')
-		return, acos (dot (jj, bb) / sqrt (j_abs * B_abs)) * (180 / !DPi)
+		return, acos (dot (jj, bb) / (j_abs * B_abs)) * (180 / !DPi)
+	end
+	if (strcmp (quantity, 'Lorentz_angle_deviation', /fold_case)) then begin
+		; Deviation of the angle (j,B) from 0° or 180° with values in [-90°,90°] where negative is anti-parallel
+		Lorentz_angle = pc_compute_quantity (vars, index, 'Lorentz_angle')
+		return, ((Lorentz_angle + 90) mod 180) - 90
 	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
@@ -1047,7 +1141,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	; Check for Pencil Code alias names
-	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)
+	if (n_elements (alias) eq 0) then alias = pc_check_quantities (sources=sources, /aliases)
 	pos = find_tag (alias, quantity)
 	if (pos ge 0) then return, pc_compute_quantity (vars, index, alias.(pos))
 
@@ -1055,19 +1149,32 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'time', /fold_case)) then return, index.time * unit.time
 
 	; Coordinates
-	if (strcmp (quantity, 'x', /fold_case)) then return, x[l1:l2] * unit.length
-	if (strcmp (quantity, 'y', /fold_case)) then return, y[m1:m2] * unit.length
-	if (strcmp (quantity, 'z', /fold_case)) then return, z[n1:n2] * unit.length
+	if (strcmp (quantity, 'x', /fold_case)) then return, x[gl1:gl2] * unit.length
+	if (strcmp (quantity, 'y', /fold_case)) then return, y[gm1:gm2] * unit.length
+	if (strcmp (quantity, 'z', /fold_case)) then return, z[gn1:gn2] * unit.length
 
 	; Grid distances
-	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[l1:l2] * unit.length
-	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[m1:m2] * unit.length
-	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[n1:n2] * unit.length
+	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[gl1:gl2] * unit.length
+	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[gm1:gm2] * unit.length
+	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[gn1:gn2] * unit.length
 
 	; Inverse grid distances
-	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[l1:l2] / unit.length
-	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[m1:m2] / unit.length
-	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[n1:n2] / unit.length
+	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[gl1:gl2] / unit.length
+	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[gm1:gm2] / unit.length
+	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[gn1:gn2] / unit.length
+
+	; Grid volume
+	if (strcmp (quantity, 'dV', /fold_case)) then begin
+		dx = pc_compute_quantity (vars, index, 'dx')
+		dy = pc_compute_quantity (vars, index, 'dy')
+		dz = pc_compute_quantity (vars, index, 'dz')
+		if (all (lequidist[0:1])) then begin
+			dV = dx[0] * dy[0] * dz[0]
+		end else begin
+			dV = spread (dx, [1,2], [gny,gnz]) * spread (dy, [0,2], [gnx,gnz]) * spread (dz, [0,1], [gnx,gny])
+		end
+		return, dV
+	end
 
 	; Box size
 	if (strcmp (quantity, 'size_x', /fold_case)) then return, (x[l2]-x[l1] + lperi[0] * mean (1.0 / dx_1[[l1,l2]])) * unit.length

@@ -1,18 +1,13 @@
-################
-##
-##	math
-##
-################
+'''
+Basic mathematical operators, including derivatives.
+'''
 
-from vector_multiplication import dot
-from vector_multiplication import dot2
-from vector_multiplication import cross
-import derivatives
+from .vector_multiplication import dot, dot2, cross
+from .general import is_number, is_int, is_float, is_iterable
+from .general import log_range, round_next_magnitude, natural_sort
+from .transform import pospolar2cart, velpolar2cart
+from .integration import integrate
+del(integration)
 
-# type checks
-from is_int import *
-from is_float import *
-from is_number import *
+from . import derivatives
 
-# sorting
-from natural_sort import natural_sort

@@ -24,12 +24,13 @@ module Energy
   use Messages
 !
   implicit none
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   include 'energy.h'
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Identify version number.
 !
@@ -87,7 +88,7 @@ module Energy
 !
     endsubroutine init_ee
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Entropy module depends on are specified here.
 !
@@ -130,7 +131,7 @@ module Energy
 !
     endsubroutine dee_dt
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  dummy routine
 !
@@ -139,7 +140,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
@@ -216,7 +217,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
@@ -229,8 +230,7 @@ module Energy
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_energy
 !***********************************************************************

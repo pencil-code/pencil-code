@@ -27,16 +27,17 @@ TUTORIAL OVERVIEW:
 
 The tutorials are grouped as follows:
 
-0xxx    on using pencilnew and Jupyter/Python in general
-            basics and neat tricks await you here
-1xxx    on using pencilnew to READ in your simulation data
-2xxx    on using pencilnew to VISUALIZE your data
-3xxx    on using pencilnew to POSTPROCESS your data
-4xxx    on using pencilnew and python to postprocess PARTICLE data
-5xxx    on using the full capacity of pencilnew
-7xxx    on using FANCY pencil code MODULES
+0xxx    On using pencilnew and Jupyter/Python in general.
+         Basics and neat tricks await you here.
+1xxx    On using pencilnew to READ in your simulation data.
+2xxx    On using pencilnew to VISUALIZE your data.
+3xxx    On using pencilnew to POSTPROCESS your data.
+4xxx    On using pencilnew and python to postprocess PARTICLE data.
+5xxx    On using the full capacity of pencilnew.
+7xxx    On using FANCY pencil code MODULES.
 
-Now go and check them out! Feel free to add you own tutorials or request them from the Pencil Code Community! I recommend to go through the tutorials in number ordering.
+Now go and check them out! Feel free to add you own tutorials or request them from the Pencil Code Community! 
+I recommend to go through the tutorials in number ordering.
 
 Tutorials may use dummy/sample simulations. You find them in the
 sample_simulations folder.

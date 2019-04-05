@@ -394,6 +394,7 @@ module Polymer
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx,3,3) :: uijT
+      real, dimension(nx) :: diffus_eta_poly
       integer :: ipi,ipj,ipk
 !
 !  Identify module and boundary conditions.
@@ -464,14 +465,19 @@ module Polymer
 !
 ! Time step constraint from polymer diffusivity
 !
-        if (lfirst.and.ldt)  diffus_eta_poly=eta_poly*dxyz_2
+        if (lfirst.and.ldt) then
+          diffus_eta_poly=eta_poly*dxyz_2
+          maxdiffus=max(maxdiffus,diffus_eta_poly)
+          if (headtt.or.ldebug) &
+            print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
+        endif
       endif
 !
 ! Time step constrant from relaxation time of polymer
-      if (lfirst.and.ldt) trelax_poly=tau_poly/frmax_local
-      if (headtt.or.ldebug) then
-        print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
-        print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
+      if (lfirst.and.ldt) then
+        trelax_poly=tau_poly/frmax_local
+        if (headtt.or.ldebug) &
+          print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
       endif
 !
     endsubroutine dpoly_dt
@@ -581,6 +587,7 @@ module Polymer
 !   8-aug-10/dhruba: aped from pscalar
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -629,17 +636,17 @@ module Polymer
 !  Write column where which passive scalar variable is stored.
 !
       if (lwr) then
-        write(3,*) 'ipoly=',ipoly
-        write(3,*) 'ip11=',ip11
-        write(3,*) 'ip12=',ip12
-        write(3,*) 'ip13=',ip13
-        write(3,*) 'ip21=',ip21
-        write(3,*) 'ip22=',ip22
-        write(3,*) 'ip23=',ip23
-        write(3,*) 'ip31=',ip31
-        write(3,*) 'ip32=',ip32
-        write(3,*) 'ip33=',ip33
-        write(3,*) 'ipoly_fr=',ipoly_fr
+        call farray_index_append('ipoly',ipoly)
+        call farray_index_append('ip11',ip11)
+        call farray_index_append('ip12',ip12)
+        call farray_index_append('ip13',ip13)
+        call farray_index_append('ip21',ip21)
+        call farray_index_append('ip22',ip22)
+        call farray_index_append('ip23',ip23)
+        call farray_index_append('ip31',ip31)
+        call farray_index_append('ip32',ip32)
+        call farray_index_append('ip33',ip33)
+        call farray_index_append('ipoly_fr',ipoly_fr)
       endif
 !
     endsubroutine rprint_polymer

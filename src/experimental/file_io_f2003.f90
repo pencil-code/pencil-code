@@ -224,7 +224,7 @@ module File_io
 !
 !  23-mar-10/PABourdin: implemented
 !
-      use Cparam, only: ip
+      use Cdata, only: ip
 !
       logical :: file_exists
       character(len=*) :: file
@@ -236,7 +236,7 @@ module File_io
 !
       if (file_exists .and. present(delete)) then
         if (delete) then
-          if (ip <= 6) print *, 'remove_file: Removing file <'//trim(file)//'>'
+          if (ip <= 6) print *, 'file_exists: Removing file <'//trim(file)//'>'
           open (unit, file=file)
           close (unit, status='delete')
         endif

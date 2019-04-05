@@ -37,6 +37,7 @@ module Density
   implicit none
 !
   include '../density.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
@@ -54,11 +55,13 @@ module Density
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real, dimension (nz,3) :: glnrhomz
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: init_average_density
+  real, target :: mpoly=impossible
   integer, parameter :: ndiff_max=4
   logical :: lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -72,7 +75,6 @@ module Density
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
   logical, pointer :: lanelastic_lin
-
 !
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
@@ -100,12 +102,14 @@ module Density
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,                      &
       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
-      wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
+      wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,beta_glnrho_global,   &
       lnrho_const,plaw,lcontinuity_gas,                             &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
       lcheck_negative_density,lmassdiff_fix,niter
+!
 ! diagnostic variables (need to be consistent with reset list below)
+!
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
   integer :: idiag_rho2m=0      ! DIAG_DOC:
@@ -175,9 +179,7 @@ module Density
       integer :: i,ierr
       logical :: lnothing
 !
-      call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
-      if (ierr/=0) call stop_it("lanelastic_lin: "//&
-        "there was a problem when sharing lanelastic_lin")
+      call get_shared_variable('lanelastic_lin',lanelastic_lin,caller='initialize_density')
 !
       if (lanelastic_lin) then
         call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
@@ -248,6 +250,7 @@ module Density
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
 
+      call put_shared_variable('mpoly',mpoly)
       call initialize_density_methods
 !
     endsubroutine initialize_density
@@ -410,13 +413,13 @@ module Density
 !
     endsubroutine init_lnrho
 !**********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
-   endsubroutine calc_ldensity_pars
+   endsubroutine density_after_boundary
 !***********************************************************************
     subroutine numerical_equilibrium(f)
 !
@@ -610,8 +613,11 @@ module Density
            call sum_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoum)
         if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%ugrho)**2,idiag_divrhourms,lsqrt=.true.)
         if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoumax)
-        if (idiag_dtd/=0) &
-            call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+!
+! MR: diffus_diffrho is never set
+!
+!        if (idiag_dtd/=0) &
+!            call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
 !
     endsubroutine dlnrho_dt
@@ -851,6 +857,7 @@ module Density
 !  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -873,6 +880,7 @@ module Density
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0 
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0
         idiag_rhomxz=0; idiag_divrhoum=0; idiag_divrhourms=0; idiag_divrhoumax=0
+        cformv=''
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -946,35 +954,41 @@ module Density
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',idiag_rhomphi)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='rho'.or.cnamev=='pp') cformv='DEFINED'
+      endif
+!
 !  write column where which density variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rhom=',idiag_rhom
-        write(3,*) 'i_rho2m=',idiag_rho2m
-        write(3,*) 'i_drho2m=',idiag_drho2m
-        write(3,*) 'i_drhom=',idiag_drhom
-        write(3,*) 'i_rhomin=',idiag_rhomin
-        write(3,*) 'i_rhomax=',idiag_rhomax
-        write(3,*) 'i_lnrho2m=',idiag_lnrho2m
-        write(3,*) 'i_ugrhom=',idiag_ugrhom
-        write(3,*) 'i_uglnrhom=',idiag_uglnrhom
-        write(3,*) 'i_rhomz=',idiag_rhomz
-        write(3,*) 'i_rhomy=',idiag_rhomy
-        write(3,*) 'i_rhomx=',idiag_rhomx
-        write(3,*) 'i_rhomxy=',idiag_rhomxy
-        write(3,*) 'i_rhomxz=',idiag_rhomxz
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnrho=',ilnrho
-        write(3,*) 'irho=',irho
-        write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
-        write(3,*) 'i_rhomphi=',idiag_rhomphi
-        write(3,*) 'i_rhomr=',idiag_rhomr
-        write(3,*) 'i_dtd=',idiag_dtd
-        write(3,*) 'i_totmass=',idiag_totmass
-        write(3,*) 'i_mass=',idiag_mass
-        write(3,*) 'i_divrhoum=',idiag_divrhoum
-        write(3,*) 'i_divrhourms=',idiag_divrhourms
-        write(3,*) 'i_divrhoumax=',idiag_divrhoumax
+        call farray_index_append('i_rhom',idiag_rhom)
+        call farray_index_append('i_rho2m',idiag_rho2m)
+        call farray_index_append('i_drho2m',idiag_drho2m)
+        call farray_index_append('i_drhom',idiag_drhom)
+        call farray_index_append('i_rhomin',idiag_rhomin)
+        call farray_index_append('i_rhomax',idiag_rhomax)
+        call farray_index_append('i_lnrho2m',idiag_lnrho2m)
+        call farray_index_append('i_ugrhom',idiag_ugrhom)
+        call farray_index_append('i_uglnrhom',idiag_uglnrhom)
+        call farray_index_append('i_rhomz',idiag_rhomz)
+        call farray_index_append('i_rhomy',idiag_rhomy)
+        call farray_index_append('i_rhomx',idiag_rhomx)
+        call farray_index_append('i_rhomxy',idiag_rhomxy)
+        call farray_index_append('i_rhomxz',idiag_rhomxz)
+        call farray_index_append('nname',nname)
+        call farray_index_append('ilnrho',ilnrho)
+        call farray_index_append('irho',irho)
+        call farray_index_append('i_lnrhomphi',idiag_lnrhomphi)
+        call farray_index_append('i_rhomphi',idiag_rhomphi)
+        call farray_index_append('i_rhomr',idiag_rhomr)
+        call farray_index_append('i_dtd',idiag_dtd)
+        call farray_index_append('i_totmass',idiag_totmass)
+        call farray_index_append('i_mass',idiag_mass)
+        call farray_index_append('i_divrhoum',idiag_divrhoum)
+        call farray_index_append('i_divrhourms',idiag_divrhourms)
+        call farray_index_append('i_divrhoumax',idiag_divrhoumax)
       endif
 !
     endsubroutine rprint_density
@@ -1006,29 +1020,25 @@ module Density
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       if (.not. lanelastic_lin) then
+!
 !  Loop over slices
-      
+!      
         select case (trim(slices%name))
 
 !  Density.
 
-          case ('rho')
-              slices%yz =f(ix_loc,m1:m2,n1:n2,irho)
-              slices%xz =f(l1:l2,iy_loc,n1:n2,irho)
-              slices%xy =f(l1:l2,m1:m2,iz_loc,irho)
-              slices%xy2=f(l1:l2,m1:m2,iz2_loc,irho)
-              if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,irho)
-              if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,irho)
-              slices%ready=.true.
+          case ('rho'); call assign_slices_scal(slices,f,irho)
 !
-!  Logarithmic density.
+!  Logarithmic density (not implemented).
 !
-          case ('lnrho')
-            call fatal_error('get_slices_density','Not working with lnrho anymore')
+          !case ('lnrho')
+
         endselect
       endif
 !
@@ -1040,6 +1050,8 @@ module Density
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -1049,14 +1061,7 @@ module Density
 !
 !  Pressure.
 !
-        case ('pp')
-            slices%yz =f(ix_loc,m1:m2,n1:n2,ipp)
-            slices%xz =f(l1:l2,iy_loc,n1:n2,ipp)
-            slices%xy =f(l1:l2,m1:m2,iz_loc,ipp)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipp)
-            if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ipp)
-            if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ipp)
-            slices%ready=.true.
+        case ('pp'); call assign_slices_scal(slices,f,ipp)
 !
       endselect
 !

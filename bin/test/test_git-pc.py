@@ -33,7 +33,7 @@ import tempfile
 
 try:
     from proboscis import test, TestProgram
-    #from proboscis.asserts import assert_equal, \
+    # from proboscis.asserts import assert_equal, \
     #                              assert_not_equal, \
     #                              assert_true, \
     #                              assert_false
@@ -112,22 +112,42 @@ def call_checkout():
 @test(groups=['tag-wip'])
 def test_tag_wip():
     '''Tag unrecorded changes with 'git pc tag-wip\''''
-    git = GitSandbox('tag_wip', initial_commit=True)
+
+    for staged_line in False, True:
+        for uncommitted_line in False, True:
+            for uncommitted_file in False, True:
+                _test_tag_wip(staged_line, uncommitted_line, uncommitted_file)
+
+
+def _test_tag_wip(staged_line, uncommitted_line, uncommitted_file):
+    '''Tag configurable changes with 'git pc tag-wip\'.'''
+
+    name = 'tag_wip_'
+    for flag in staged_line, uncommitted_line, uncommitted_file:
+        if flag:
+            name += '1'
+        else:
+            name += '0'
+
+    git = GitSandbox(name, initial_commit=True)
     file1 = 'committed-file'
 
     git.write_line_to(file1, 'Committed line.')
     git('add', file1)
     git.commit_all('Committing one line.')
 
-    git.write_line_to(file1, 'Staged line.')
-    git('add', file1)
+    if staged_line:
+        git.write_line_to(file1, 'Staged line.')
+        git('add', file1)
 
-    git.write_line_to(file1, 'Uncommitted line.')
+    if uncommitted_line:
+        git.write_line_to(file1, 'Uncommitted line.')
 
-    git.write_line_to(
-        'uncommitted-file',
-        'Uncommitted line in uncommitted file.'
-        )
+    if uncommitted_file:
+        git.write_line_to(
+            'uncommitted-file',
+            'Uncommitted line in uncommitted file.'
+            )
 
     git('pc', 'tag-wip')
 

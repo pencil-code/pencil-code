@@ -27,16 +27,9 @@ module Testfield
 !
   include 'testfield.h'
 !
-  real :: dummy=0.
-!
-  namelist /testfield_init_pars/ &
-      dummy
-  namelist /testfield_run_pars/ &
-      dummy
-!
   contains
 !***********************************************************************
-    subroutine register_testfield()
+    subroutine register_testfield
 !
 !  Dummy routine
 !
@@ -62,7 +55,7 @@ module Testfield
 !
     endsubroutine init_aatest
 !***********************************************************************
-    subroutine pencil_criteria_testfield()
+    subroutine pencil_criteria_testfield
 !
 !  Dummy routine
 !
@@ -136,6 +129,18 @@ module Testfield
 !
     endsubroutine get_slices_testfield
 !***********************************************************************
+    subroutine testfield_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!    4-oct-18/axel+nishant: adapted from testflow
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine testfield_before_boundary
+!***********************************************************************
     subroutine testfield_after_boundary(f)
 !
 !  29-jan-06/axel: dummy routine
@@ -164,8 +169,7 @@ module Testfield
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_testfield
 !***********************************************************************

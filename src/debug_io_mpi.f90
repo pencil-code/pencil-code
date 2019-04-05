@@ -466,7 +466,7 @@ contains
 !  Read processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: directory,dx,dy,dz
+      use Cdata, only: directory,dx,dy,dz,ip
 !
       integer :: i,iostat
       character (len=*) :: file ! not used

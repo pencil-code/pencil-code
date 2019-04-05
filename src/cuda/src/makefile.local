@@ -1,0 +1,4 @@
+#Contains the macro flags
+
+//MFLAGS = -D USE_HYDRO=1
+//MFLAGS += -D USE_MYDRO=0

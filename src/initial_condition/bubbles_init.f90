@@ -33,10 +33,11 @@ module InitialCondition
   ! [xyz]_b = position of the bubble
   ! rho_b = density of the bubble
   ! T_b = temperature of the bubble
-  ! rho_m_0 = density of the medium at z = z_0
-  ! z_0 > 0
-  ! T_0 = temperature of the medium at z = z_0
-  ! gamma = adiabatic index
+  ! rho_m_0 = density of the medium at z = 0
+  ! z_0 > 0 (see comment below)
+  ! T_0 = temperature of the medium at z = 0
+  ! profile = stratification profile, either 'polytropic' (including adiabatic) or 'isothermal'
+  ! lam = exponent for tanh smoothing profile for the density and temperature
   ! passive_scalar = determines if a passive scalar at the bubble should be set
   ! n_smooth = exponent of the smoothing function for the vector potential
   ! k_aa = wave vector of the initial magnetic vector potential in terms of the bubble radius
@@ -46,12 +47,14 @@ module InitialCondition
   real :: x_b = 0, y_b = 0, z_b = 0
   real :: rho_b = 0.1, T_b = 5.0
   real :: rho_m_0 = 1.0, T_0 = 1.0
-  real :: z_0
+  real :: z_0 = 1.0  ! Note that R/mu = 0.4 in some cases. Consider this with z_0 = R/(mu g) T_0.
+  character (len=labellen) :: profile = 'isothermal'
+  real :: lam = 20
   integer :: passive_scalar = 0, n_smooth = 2
   real :: k_aa = 1., ampl = 1., asym_factor = 1., sigma_b = 1.
   
   namelist /initial_condition_pars/ &
-      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, passive_scalar, k_aa, ampl, asym_factor, sigma_b, n_smooth
+      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, lam, profile, passive_scalar, k_aa, ampl, asym_factor, sigma_b, n_smooth
 !
   contains
 !***********************************************************************
@@ -105,40 +108,43 @@ module InitialCondition
       
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: l, m, n
-      real :: log_rho_b, log_T_b, log_rho_m_0, log_T_0
-      real :: r, z_tilde, rho_ex, T_ex  ! working variables for smoothing
+      real :: log_rho_b, log_rho_m_0
+      real :: r, z_tilde, log_rho_ex  ! working variables for smoothing
 !
     ! initialize the density of the medium and the bubble
     log_rho_b = log(rho_b)
-    log_T_b = log(T_b)
     log_rho_m_0 = log(rho_m_0)
-    log_T_0 = log(T_0)
-    
-    write(*,*) 'init_bubble: k_aa = ', k_aa
+
     do n = n1, n2, 1
       do m = m1, m2, 1
         do l = l1, l2, 1
           ! check if this point lies in the bubble
           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
             ! reduce the shocks at the start of the simulation by reducing the
-            ! density and temperature gradient
-!             r = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)
-!             z_tilde = z_b - (z(n)-z_b)/r*r_b
-            
-!             rho_ex = exp(log_rho_m_0 + log(1-(gamma-1)/gamma*z_tilde/z_0) / (gamma-1))
-!             f(l,m,n,ilnrho) = log(rho_b * (1 - (r/r_b)**2) + rho_ex*(r/r_b)**2)
-!             
-!             T_ex = exp(log_T_0 + log(1-(gamma-1)/gamma*z_tilde/z_0))
-!             f(l,m,n,ilnTT) = log(T_b * (1 - (r/r_b)**2) + T_ex*(r/r_b)**2)
+            ! density gradient
+             r = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)
+             z_tilde = z_b + (z(n)-z_b)*r_b/r
 
-            f(l,m,n,ilnrho) = log_rho_b
+             if (profile == 'isothermal') then
+                 log_rho_ex = log_rho_m_0 - z(n)/z_0
+                 f(l,m,n,ilnrho) = log_rho_b*(1-tanh((r-r_b+3*r_b/lam)/r_b*lam))/2 + &
+                                   log_rho_ex*(1+tanh((r-r_b+3*r_b/lam)/r_b*lam))/2
+             endif
 
-!             if (passive_scalar == 1) then
-!                 f(l,m,n,ilncc) = 1.
-!             endif
-            
+             if (profile == 'polytropic') then
+                 log_rho_ex = log_rho_m_0 + log(1-(gamma-1)/gamma*z_tilde/z_0) / (gamma-1)
+                 f(l,m,n,ilnrho) = log_rho_b*(1-tanh((r-r_b+3*r_b/lam)/r_b*lam))/2 + &
+                                   log_rho_ex*(1+tanh((r-r_b+3*r_b/lam)/r_b*lam))/2
+             endif
+           
+!            f(l,m,n,ilnrho) = log_rho_b
           else
-            f(l,m,n,ilnrho) = log_rho_m_0 + log(1-(gamma-1)/gamma*z(n)/z_0) / (gamma-1)
+             if (profile == 'isothermal') then
+                 f(l,m,n,ilnrho) = log_rho_m_0 - z(n)/z_0
+             endif
+             if (profile == 'polytropic') then
+                 f(l,m,n,ilnrho) = log_rho_m_0 + log(1-(gamma-1)/gamma*z(n)/z_0) / (gamma-1)
+             endif
           endif
         enddo
       enddo
@@ -159,18 +165,17 @@ module InitialCondition
       integer :: l, m, n
       real :: log_T_b, log_T_0
 !
-    write(*,*) 'ini_bubble: aa'
-    ! initialize the temperature of the medium and the bubble
+    ! initialize the magnetic field inside the bubble
     do n = n1, n2, 1
       do m = m1, m2, 1
         do l = l1, l2, 1
           ! check if this point lies in the bubble
           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-            f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa/r_b) + sin((z(n)-z_b)*k_aa/r_b))
-            f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa/r_b) + sin((x(l)-x_b)*k_aa/r_b))
-            f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa/r_b) + sin((y(m)-y_b)*k_aa/r_b))
+            f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa) + sin((z(n)-z_b)*k_aa))
+            f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa) + sin((x(l)-x_b)*k_aa))
+            f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa) + sin((y(m)-y_b)*k_aa))
             f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-                (1-((x(l)-x_b)**n_smooth+(y(m)-y_b)**n_smooth+(z(n)-z_b)**n_smooth)/r_b**n_smooth)
+                (1-(sqrt((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b)**n_smooth)
           endif
         enddo
       enddo
@@ -190,6 +195,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       integer :: l, m, n
       real :: log_T_b, log_T_0
+      real :: r, z_tilde, log_T_ex  ! working variables for smoothing
 !
     ! initialize the temperature of the medium and the bubble
     log_T_b = log(T_b)
@@ -199,7 +205,15 @@ module InitialCondition
         do l = l1, l2, 1
           ! check if this point lies in the bubble
           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-            f(l,m,n,ilnTT) = log_T_b
+            ! reduce the shocks at the start of the simulation by reducing the
+            ! temperature gradient
+             r = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)
+             z_tilde = z_b + (z(n)-z_b)*r_b/r
+
+             log_T_ex = log_T_0 + log(1-(gamma-1)/gamma*z_tilde/z_0)
+             f(l,m,n,ilnTT) = log_T_b*(1-tanh((r-r_b+3*r_b/lam)/r_b*lam))/2 + log_T_ex*(1+tanh((r-r_b+3*r_b/lam)/r_b*lam))/2
+
+!            f(l,m,n,ilnTT) = log_T_b
           else
             f(l,m,n,ilnTT) = log_T_0 + log(1-(gamma-1)/gamma*z(n)/z_0)
           endif
@@ -218,16 +232,17 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       integer :: l, m, n
 !
-    write(*,*) 'init cc'
     ! initialize the temperature of the medium and the bubble
     if (passive_scalar == 1) then
         do n = n1, n2, 1
             do m = m1, m2, 1
                 do l = l1, l2, 1
-                ! check if this point lies in the bubble
-                if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-                    f(l,m,n,ilncc) = 1.
-                endif
+                    ! check if this point lies in the bubble
+                    if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
+                        f(l,m,n,ilncc) = 1.
+                    else
+                        f(l,m,n,ilncc) = 0.
+                    endif
                 enddo
             enddo
         enddo

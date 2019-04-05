@@ -17,7 +17,8 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
-  use File_io, only: delete_file
+  use File_io, only: file_exists
+  use HDF5_IO, only: output_dim
   use Messages, only: fatal_error, outlog, warning, svn_id
 !
   implicit none
@@ -144,13 +145,12 @@ module Io
       integer :: io_err
       logical :: lerror
 !
-      t_sp = t
+      t_sp = real (t)
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize
       if (present(file)) then
-        call delete_file(trim(directory_snap)//'/'//file)
-        open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='new')
+        open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
         lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_snap')
       endif
 !
@@ -215,6 +215,142 @@ module Io
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
+    subroutine output_part_snap(ipar, ap, mv, nv, file, label, ltruncate)
+!
+!  Write particle snapshot file, always write mesh and time.
+!
+!  23-Oct-2018/PABourdin: adapted from output_snap
+!
+      integer, intent(in) :: mv, nv
+      integer, dimension (mv), intent(in) :: ipar
+      real, dimension (mv,mparray), intent(in) :: ap
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+      logical, optional, intent(in) :: ltruncate
+!
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      t_sp = real (t)
+      open(lun_output,FILE=trim(directory_dist)//'/'//file,FORM='unformatted', IOSTAT=io_err, status='new')
+      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_part_snap')
+!
+      ! write the number of particles present at the processor
+      write(lun_output, IOSTAT=io_err) nv
+      lerror = outlog (io_err, 'number of particles per processor')
+      if (nv/=0) then
+        ! write particle index
+        write(lun_output, IOSTAT=io_err) ipar(1:nv)
+        ! write particle data
+        write(lun_output, IOSTAT=io_err) ap(1:nv,:)
+      endif
+      lerror = outlog(io_err, 'main data')
+!
+      ! write time and grid parameters
+      write(lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+      lerror = outlog(io_err, 'additional data')
+!
+      close(lun_output)
+!
+    endsubroutine output_part_snap
+!***********************************************************************
+    subroutine output_pointmass(file, labels, fq, mv, nc)
+!
+!  Write pointmass snapshot file with time.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(in) :: fq
+!
+      if (.not. lroot) return
+!
+      open(lun_output,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted', IOSTAT=io_err, status='new')
+      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_pointmass')
+      write(lun_output, IOSTAT=io_err) mv
+      lerror = outlog (io_err, 'number of pointmasses')
+      if (mv > 0) then
+        write(lun_output, IOSTAT=io_err) fq
+        lerror = outlog (io_err, 'main data')
+      endif
+      write(lun_output, IOSTAT=io_err) t
+      lerror = outlog (io_err, 'additional data')
+      close(lun_output)
+      if (ip<=10) print*,'written pointmass snapshot ', trim (file)
+!
+    endsubroutine output_pointmass
+!***********************************************************************
+    subroutine output_slice_position
+!
+!  'data/procN/slice_position.dat' is distributed, but may not be synchronized
+!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
+!
+!  27-Oct-2018/PABourdin: cleaned up
+!
+      open (lun_output, file=trim(directory)//'/slice_position.dat', STATUS='unknown', IOSTAT=io_err)
+!
+      if (outlog (io_err, 'open', trim(directory)//'/slice_position.dat')) return
+!
+      write (lun_output, '(l5,i5," XY")', IOSTAT=io_err) lwrite_slice_xy, iz_loc
+      if (outlog (io_err, 'write lwrite_slice_xy,iz_loc')) return
+!
+      write (lun_output, '(l5,i5," XY2")', IOSTAT=io_err) lwrite_slice_xy2, iz2_loc
+      if (outlog (io_err, 'write lwrite_slice_xy2,iz2_loc')) return
+!
+      write (lun_output, '(l5,i5," XY3")', IOSTAT=io_err) lwrite_slice_xy3, iz3_loc
+      if (outlog (io_err, 'write lwrite_slice_xy3,iz3_loc')) return
+!
+      write (lun_output, '(l5,i5," XY4")', IOSTAT=io_err) lwrite_slice_xy4, iz4_loc
+      if (outlog (io_err, 'write lwrite_slice_xy4,iz4_loc')) return
+!
+      write (lun_output, '(l5,i5," XZ")', IOSTAT=io_err) lwrite_slice_xz, iy_loc
+      if (outlog (io_err, 'write lwrite_slice_xz,iy_loc')) return
+!
+      write (lun_output, '(l5,i5," XZ2")', IOSTAT=io_err) lwrite_slice_xz2, iy2_loc
+      if (outlog (io_err, 'write lwrite_slice_xz2,iy2_loc')) return
+!
+      write (lun_output, '(l5,i5," YZ")', IOSTAT=io_err) lwrite_slice_yz, ix_loc
+      if (outlog (io_err, 'write lwrite_slice_yz,ix_loc')) return
+!
+      close (lun_output, IOSTAT=io_err)
+      if (outlog (io_err,'close')) return
+!
+    endsubroutine output_slice_position
+!***********************************************************************
+    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+!
+!  append to a slice file
+!
+!  12-nov-02/axel: coded
+!  26-jun-06/anders: moved to slices
+!  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
+!  28-Oct-2018/PABourdin: cleaned up, moved to IO module
+!
+      logical, intent(in) :: lwrite
+      real, intent(in) :: time
+      character (len=*), intent(in) :: label, suffix
+      real, dimension (:) :: grid
+      integer, intent(in) :: pos, grid_pos
+      integer, intent(in) :: ndim1, ndim2
+      real, dimension (:,:), pointer :: data
+!
+      if (.not. lwrite .or. .not. associated(data)) return
+!
+!  files data/procN/slice*.* are distributed and will be synchronized a-posteriori on I/O error
+!
+      open (lun_output, file=trim(directory)//'/slice_'//trim(label)//'.'//trim(suffix), form='unformatted', position='append', &
+          IOSTAT=io_err)
+      if (outlog (io_err, 'open', filename, dist=1)) return
+!
+      write (lun_output, IOSTAT=io_err) data, time, pos
+      if (outlog (io_err, 'write data,time,pos')) return
+!
+      close (lun_output, IOSTAT=io_err)
+      if (outlog (io_err, 'close')) continue
+!
+    endsubroutine output_slice
+!***********************************************************************
     logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to snapshot file.
@@ -237,11 +373,10 @@ module Io
 !
       if (filename /= "") then
         close (lun_output)
-        call delete_file(trim (directory_snap)//'/'//file)
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', &
-              IOSTAT=io_err, status='new')
+        open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', &
+              IOSTAT=io_err, status='replace')
         init_write_persist = outlog (io_err, 'openw persistent file', &
-                             trim (directory_snap)//'/'//file, location='init_write_persist' )
+                             trim (directory_snap)//'/'//filename, location='init_write_persist' )
         filename = ""
       endif
 !
@@ -548,7 +683,7 @@ module Io
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
               call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
-              tstart=t_sgl
+              tstart = t_sgl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,'.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
@@ -556,7 +691,7 @@ module Io
               call stop_it('read_snap_single')
             endif
           else
-            tstart=t_sp
+            tstart = t_sp
           endif
 !
         endif
@@ -693,7 +828,7 @@ module Io
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
               call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
-              tstart=t_dbl
+              tstart = t_dbl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
@@ -701,7 +836,7 @@ module Io
               call stop_it('read_snap_double')
             endif
           else
-            tstart=t_sp
+            tstart = t_sp
           endif
 !
         endif
@@ -738,6 +873,72 @@ module Io
       if (lserial_io) call end_serialize
 !
     endsubroutine input_snap_finalize
+!***********************************************************************
+    subroutine input_part_snap(ipar, ap, mv, nv, npar_total, file, label)
+!
+!  Read particle snapshot file, mesh and time are read in 'input_snap'.
+!
+!  25-Oct-2018/PABourdin: apadpted and moved to IO module
+!
+      use Mpicomm, only: mpireduce_sum_int
+!
+      integer, intent(in) :: mv
+      integer, dimension (mv), intent(out) :: ipar
+      real, dimension (mv,mparray), intent(out) :: ap
+      integer, intent(out) :: nv, npar_total
+      character (len=*), intent(in) :: file
+      character (len=*), optional, intent(in) :: label
+!
+      open (1, FILE=trim(directory_dist)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
+      lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, location='read_snap_double')
+!
+      ! Read number of particles for this processor.
+      read (1, IOSTAT=io_err) nv
+      lerror = outlog (io_err, 'number of particles per processor')
+      if (nv > 0) then
+        ! Read particle number identifier and then particle data.
+        read (1, IOSTAT=io_err) ipar(1:nv)
+        read (1, IOSTAT=io_err) ap(1:nv,:)
+        lerror = outlog (io_err, 'main data')
+      endif
+      close (1)
+      if (ip<=8 .and. lroot) print*, 'input_particles: read ', file
+!
+      ! Sum the total number of all particles on the root processor.
+      call mpireduce_sum_int (nv, npar_total)
+!
+    endsubroutine input_part_snap
+!***********************************************************************
+    subroutine input_pointmass(file, labels, fq, mv, nc)
+!
+!  Read pointmass snapshot file.
+!
+!  26-Oct-2018/PABourdin: coded
+!
+      use Mpicomm, only: mpibcast_real
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mv, nc
+      character (len=*), dimension (nc), intent(in) :: labels
+      real, dimension (mv,nc), intent(out) :: fq
+!
+      integer :: mv_in
+!
+      if (lroot) then
+        open(lun_input,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted')
+        lerror = outlog (io_err, 'openr', file, dist=lun_input, location='input_pointmass')
+        read(lun_input) mv_in
+        lerror = outlog (io_err, 'number of pointmasses')
+        if (mv_in /= mv) call fatal_error("","")
+        if (mv_in /= 0) read(lun_input) fq
+        lerror = outlog (io_err, 'main data')
+        close(lun_input)
+        if (ip<=8) print*, 'read pointmass snapshot', trim (file)
+      endif
+!
+      call mpibcast_real(fq,(/mv,nc/))
+!
+    endsubroutine input_pointmass
 !***********************************************************************
     logical function init_read_persist(file)
 !
@@ -928,7 +1129,19 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine output_globals(file,a,nv)
+    subroutine output_timeseries(data, data_im)
+!
+!  Append diagnostic data to a binary file.
+!
+!  01-Apr-2019/PABourdin: coded
+!
+      real, dimension(2*nname), intent(in) :: data, data_im
+!
+      ! dummy routine
+!
+    endsubroutine output_timeseries
+!***********************************************************************
+    subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignoring mesh.
 !
@@ -939,6 +1152,7 @@ module Io
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
+      character (len=*), intent(in), optional :: label
 !
       integer :: io_err
       logical :: lerror
@@ -968,7 +1182,7 @@ module Io
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file,a,nv)
+    subroutine input_globals(file, a, nv)
 !
 !  Read globals snapshot file, ignoring mesh.
 !
@@ -1140,7 +1354,7 @@ module Io
         mzout1=mz
       endif
 !
-      t_sp = t
+      t_sp = real (t)
 
       open(lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
       if (io_err /= 0) call fatal_error('wgrid', &
@@ -1168,7 +1382,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
-        t_sp = t
+        t_sp = real (t)
       endif
 
       call collect_grid (x, y, z, gx, gy, gz)
@@ -1336,6 +1550,383 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
+    subroutine wdim_default_grid(file)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: redesigned
+!
+      character (len=*), intent(in) :: file
+!
+      call output_dim (file, mx, my, mz, mxgrid, mygrid, mzgrid, mvar, maux, mglobal)
+!
+    endsubroutine wdim_default_grid
+!***********************************************************************
+    subroutine wdim_default(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
+!
+!  Write dimension to file.
+!
+!  02-Nov-2018/PABourdin: redesigned
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
+!
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar, maux, mglobal)
+!
+    endsubroutine wdim_default
+!***********************************************************************
+    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
+!
+!  Write dimension to file.
+!
+!   8-sep-01/axel: adapted to take my_out,mz_out
+!   4-oct-16/MR: added optional parameters mvar_out,maux_out
+!  02-Nov-2018/PABourdin: redesigned, moved to IO modules
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
+!
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
+!
+    endsubroutine wdim
+!***********************************************************************
+    subroutine output_profile(fname, coord, a, type, lsave_name, lhas_ghost)
+!
+!  Writes a profile to a file.
+!
+!  10-jul-05/axel: coded
+!  07-Nov-2018/PABourdin: moved to IO modules
+!
+      use General, only: loptest
+!
+      real, dimension(:) :: coord, a
+      character (len=*) :: fname
+      character :: type
+      logical, optional :: lsave_name, lhas_ghost
+!
+      integer :: pos, np
+!
+!  If within a loop, do this only for the first step (indicated by lwrite_prof).
+!
+      if (lwrite_prof) then
+        ! Write profile.
+        open(lun_output,file=trim(directory)//'/'//type//'prof_'//trim(fname)//'.dat',position='append',IOSTAT=io_err)
+        lerror = outlog(io_err,"openw",trim(directory)//type//'/prof_'//trim(fname)//'.dat',location='output_profile')
+        np = size(coord)
+        do pos=1, np
+          write(lun_output,*,IOSTAT=io_err) coord(pos), a(pos)
+          lerror = outlog(io_err,'output_profile')
+        enddo
+        close(lun_output,IOSTAT=io_err)
+        lerror = outlog(io_err,'close')
+!
+        ! Add file name to list of profiles if lsave_name is true.
+        if (loptest(lsave_name)) then
+          open(lun_output,file=trim(directory)//'/'//type//'prof_list.dat',position='append',IOSTAT=io_err)
+          lerror = outlog(io_err,"openw",trim(directory)//type//'/prof_list.dat',location='output_profile')
+          write(lun_output,*,IOSTAT=io_err) fname
+          lerror = outlog(io_err,'output_profile')
+          close(lun_output,IOSTAT=io_err)
+          lerror = outlog(io_err,'close')
+        endif
+      endif
+!
+    endsubroutine output_profile
+!***********************************************************************
+    subroutine input_profile(fname, type, a, np, lhas_ghost)
+!
+!  Read a profile from a file (taken from stratification, for example).
+!
+!  15-may-15/axel: coded
+!  05-Nov-2018/PABourdin: generalized to any direction and moved to IO module
+!
+      character (len=*), intent(in) :: fname
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
+      logical, optional :: lhas_ghost
+!
+      integer :: pos
+      real, dimension(np) :: coord
+!
+      ! Read profile.
+      open(lun_input,file=trim(directory)//type//'/prof_'//trim(fname)//'.dat',IOSTAT=io_err)
+      lerror = outlog(io_err,"openr",trim(directory)//type//'/prof_'//trim(fname)//'.dat',location='input_profile')
+      do pos=1, np
+        read(lun_input,*,IOSTAT=io_err) coord(pos), a(pos)
+        lerror = outlog(io_err,'input_profile')
+      enddo
+      close(lun_input,IOSTAT=io_err)
+      lerror = outlog(io_err,'close')
+!
+!  Should we check that coord == z for type == 'z'?
+!
+    endsubroutine input_profile
+!***********************************************************************
+    subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
+!
+!   Output 1D average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      integer :: io_err
+      logical :: lerror
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      if (trim (label) == 'phi_z') filename = trim(path) // '/phizaverages.dat'
+      if (lbinary) then
+        open(lun_output, file=filename, form='unformatted', position='append', IOSTAT=io_err)
+        lerror = outlog(io_err,"openw",trim(filename),location='output_average_1D')
+        if (present (header)) then
+          write(lun_output,IOSTAT=io_err) header
+          lerror = outlog(io_err,'1D-average header')
+        endif
+        write(lun_output,IOSTAT=io_err) time
+        lerror = outlog(io_err,'1D-average time')
+        write(lun_output,IOSTAT=io_err) data(:,1:nc)
+        lerror = outlog(io_err,'1D-average data')
+        close(lun_output)
+      else
+        open(lun_output, file=filename, position='append', IOSTAT=io_err)
+        lerror = outlog(io_err,"openw",trim(filename),location='output_average_1D')
+        if (present (header)) then
+          write(lun_output,'(1p,8e14.5e3)',IOSTAT=io_err) header
+          lerror = outlog(io_err,'1D-average header')
+        endif
+        write(lun_output,'(1pe12.5)',IOSTAT=io_err) time
+        lerror = outlog(io_err,'1D-average time')
+        write(lun_output,'(1p,8e14.5e3)',IOSTAT=io_err) data(:,1:nc)
+        lerror = outlog(io_err,'1D-average data')
+        close(lun_output)
+      endif
+!
+    endsubroutine output_average_1D
+!***********************************************************************
+    subroutine output_average_1D_chunked(path, label, nc, name, data, full, time, lbinary, lwrite, header)
+!
+!   Output 1D chunked average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      integer, intent(in) :: full
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      if (present (header)) then
+        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
+      else
+        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite)
+      endif
+!
+    endsubroutine output_average_1D_chunked
+!***********************************************************************
+    subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
+!
+!   Output average to a file.
+!
+!   16-Nov-2018/PABourdin: coded
+!
+      character (len=*), intent(in) :: path, label
+      integer, intent(in) :: nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      logical, intent(in) :: lbinary, lwrite
+      real, dimension(:), optional, intent(in) :: header
+!
+      character (len=fnlen) :: filename
+      integer :: ia
+      integer :: io_err
+      logical :: lerror
+!
+      if (.not. lwrite .or. (nc <= 0)) return
+!
+      filename = trim(path) // '/' // trim(label) // 'averages.dat'
+      if (lbinary) then
+        open(lun_output, file=filename, form='unformatted', position='append', IOSTAT=io_err)
+        lerror = outlog(io_err,"openw",trim(filename),location='output_average_2D')
+        if (present (header)) then
+          write(lun_output,IOSTAT=io_err) header
+          lerror = outlog(io_err,'2D-average header')
+        endif
+        write(lun_output,IOSTAT=io_err) time
+        lerror = outlog(io_err,'2D-average time')
+        if (label == 'z') then
+          write(lun_output,IOSTAT=io_err) ( data(ia,:,:), ia=1, nc )
+          lerror = outlog(io_err,'2D-average z-data')
+        else
+          write(lun_output,IOSTAT=io_err) data(:,:,1:nc)
+          lerror = outlog(io_err,'2D-average data')
+        endif
+        close(lun_output)
+      else
+        open(lun_output, file=filename, position='append', IOSTAT=io_err)
+        lerror = outlog(io_err,"openw",trim(filename),location='output_average_2D')
+        if (present (header)) then
+          write(lun_output,'(1p,8e14.5e3)',IOSTAT=io_err) header
+          lerror = outlog(io_err,'2D-average header')
+        endif
+        write(lun_output,'(1pe12.5)',IOSTAT=io_err) time
+        lerror = outlog(io_err,'2D-average time')
+        if (label == 'z') then
+          write(lun_output,'(1p,8e14.5e3)',IOSTAT=io_err) ( data(ia,:,:), ia=1, nc )
+          lerror = outlog(io_err,'2D-average z-data')
+        else
+          write(lun_output,'(1p,8e14.5e3)',IOSTAT=io_err) data(:,:,1:nc)
+          lerror = outlog(io_err,'2D-average data')
+        endif
+        close(lun_output)
+      endif
+!
+    endsubroutine output_average_2D
+!***********************************************************************
+    subroutine output_average_phi(path, number, nr, nc, name, data, time, r, dr)
+!
+!   Output phi average to a file with these records:
+!   1) nr_phiavg, nz_phiavg, nvars, nprocz
+!   2) t, r_phiavg, z_phiavg, dr, dz
+!   3) data
+!   4) len(labels),labels
+!
+!   27-Nov-2014/PABourdin: cleaned up code from write_phiaverages
+!   25-Nov-2018/PABourdin: coded
+!
+      use General, only: safe_character_append
+!
+      character (len=*), intent(in) :: path, number
+      integer, intent(in) :: nr, nc
+      character (len=fmtlen), dimension(nc), intent(in) :: name
+      real, dimension(:,:,:,:), intent(in) :: data
+      real, intent(in) :: time
+      real, dimension(nr), intent(in) :: r
+      real, intent(in) :: dr
+!
+      character (len=fnlen) :: filename
+      character (len=1024) :: labels
+      integer :: pos
+      integer :: io_err
+      logical :: lerror
+!
+      if (.not. lroot .or. (nc <= 0)) return
+!
+      filename = 'PHIAVG' // trim(number)
+      open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append', IOSTAT=io_err)
+      lerror = outlog(io_err,"openw",trim(path)//'/averages/'//trim(filename),location='output_average_phi')
+      write(lun_output,IOSTAT=io_err) nr, nzgrid, nc, nprocz
+      lerror = outlog(io_err,'phi-average header')
+      write(lun_output,IOSTAT=io_err) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
+      lerror = outlog(io_err,'phi-average time')
+      ! note: due to passing data as implicit-size array,
+      ! the indices (0:nz) are shifted to (1:nz+1),
+      ! so that we have to write only the portion (2:nz+1).
+      ! data has to be repacked to avoid writing an array temporary
+      ! ngrs: writing an array temporary outputs corrupted data on copson
+      write(lun_output,IOSTAT=io_err) pack(data(:,2:nz+1,:,1:nc), .true.)
+      lerror = outlog(io_err,'phi-average data')
+      labels = trim(name(1))
+      if (nc >= 2) then
+        do pos = 2, nc
+          call safe_character_append (labels, ",", trim(name(pos)))
+        enddo
+      endif
+      write(lun_output,IOSTAT=io_err) len(labels), labels
+      lerror = outlog(io_err,'phi-average labels')
+      close(lun_output)
+!
+      ! append filename to list
+      open (lun_output, FILE=trim(datadir)//'/averages/phiavg.files', POSITION='append', IOSTAT=io_err)
+      lerror = outlog(io_err,"openw",trim(datadir)//'/averages/phiavg.files',location='output_average_phi')
+      write (lun_output,'(A)',IOSTAT=io_err) trim(filename)
+      lerror = outlog(io_err,'phi-average list')
+      close (lun_output)
+!
+    endsubroutine output_average_phi
+!***********************************************************************
+    subroutine trim_average(path, plane, ngrid, nname)
+!
+!  Trim a 1D-average file for times past the current time.
+!
+!  25-apr-16/ccyang: coded
+!  23-Nov-2018/PABourdin: moved to IO module
+!
+      character (len=*), intent(in) :: path, plane
+      integer, intent(in) :: ngrid, nname
+!
+      real, dimension(:), allocatable :: tmp
+      character(len=fnlen) :: filename
+      integer :: pos, num_rec, ioerr, alloc_err
+      integer :: lun_input = 84
+      real :: time
+!
+      if (.not. lroot) return
+      if ((ngrid <= 0) .or. (nname <= 0)) return
+      filename = trim(path) // '/' // trim(plane) // 'averages.dat'
+      if (.not. file_exists (filename)) return
+!
+      allocate (tmp(ngrid * nname), stat = alloc_err)
+      if (alloc_err > 0) call fatal_error('trim_average', 'Could not allocate memory for averages')
+!
+      if (lwrite_avg1d_binary) then
+        open(lun_input, file=filename, form='unformatted', action='readwrite')
+      else
+        open(lun_input, file=filename, action='readwrite')
+      endif
+!
+      ! count number of records
+      num_rec = 0
+      ioerr = 0
+      time = 0.0
+      do while ((t > time) .and. (ioerr >= 0))
+        num_rec = num_rec + 1
+        if (lwrite_avg1d_binary) then
+          read(lun_input, iostat=ioerr) time
+          read(lun_input, iostat=ioerr) tmp
+        else
+          read(lun_input, *, iostat=ioerr) time
+          read(lun_input, *, iostat=ioerr) tmp
+        endif
+      enddo
+      if (time == t) num_rec = num_rec - 1
+!
+      if ((time >= t) .and. (ioerr >= 0)) then
+        ! trim excess data at the end of the average file
+        rewind(lun_input)
+        if (num_rec > 0) then
+          do pos = 1, num_rec
+            if (lwrite_avg1d_binary) then
+              read(lun_input, iostat=ioerr) time
+              read(lun_input, iostat=ioerr) tmp
+            else
+              read(lun_input, *, iostat=ioerr) time
+              read(lun_input, *, iostat=ioerr) tmp
+            endif
+          enddo
+        endif
+        endfile (lun_input)
+        if (ip <= 10) print *, 'trim_average: trimmed '//trim(plane)//'-averages for t >= ', t
+      endif
+!
+      close (lun_input)
+      deallocate (tmp)
+!
+    endsubroutine trim_average
+!***********************************************************************
     subroutine wproc_bounds(file)
 !
 !   Export processor boundaries to file.
@@ -1348,8 +1939,7 @@ module Io
       integer :: io_err
       logical :: lerror
 !
-      call delete_file(file) 
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='new')
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='replace')
       lerror = outlog(io_err,"openw",file,location='wproc_bounds')
       write(lun_output,IOSTAT=io_err) procx_bounds
       lerror = outlog(io_err,'procx_bounds')

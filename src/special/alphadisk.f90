@@ -66,12 +66,18 @@ module Special
                                        !   the temperature table has min and max
                                        !   in a range slightly bigger than the
                                        !   simulation variable.
+!
+  real    :: temperature_star=4000     ! Stellar temperature, in Kelvin
+  real    :: radius_star=1e11          ! Stellar radius, in cm
+!
   real    :: cprime
 !
   real :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
   real :: plaw_temperature=0.5, temperature0=280.0
   real :: mumol=2.34, nut_constant=0.0, lambda_nut=0.0, ampl_nut=0.0
   real :: r0_gaussian=1.0, width_gaussian=1.0
+  real :: dlnHdlnR = 1.28571428571
+  !9./7
 !
   character (len=labellen), dimension(ninit) :: initsigma='nothing'
   character (len=labellen), dimension(ninit) :: inittmid='nothing'
@@ -83,7 +89,8 @@ module Special
       r0_gaussian, width_gaussian, temperature_model, nut_constant, &
       lambda_nut, ampl_nut, &
       temperature_background, temperature_precision, nsigma_table, &
-      sigma_middle, sigma_floor, tmid_table_buffer
+      sigma_middle, sigma_floor, tmid_table_buffer,&
+      temperature_star,radius_star, dlnHdlnR
 !
   namelist /special_run_pars/ &
       lwind
@@ -102,6 +109,14 @@ module Special
    integer :: idiag_sigmamin=0, idiag_sigmamax=0, idiag_tmyr=0
    integer :: idiag_sigmamx=0
    integer :: maxit=1000
+!
+   real :: Rgas=8.314d7
+   real :: mmol=2.4
+   real :: gamma=1.4
+   real :: stbz=5.6704d-5
+   real :: Rgasmu,cp
+   real :: T1=132.,T2=170.,T3=375.,T4=390.
+   real :: T5=580.,T6=680.,T7=960.,T8=1570.,T9=3730.
 !
    interface sigma_to_mdot
      module procedure sigma_to_mdot_mn
@@ -164,6 +179,8 @@ module Special
       AU1_cgs=1./AU_cgs
       Myr=1d6*yr_cgs
       one_over_three_pi=1./(3*pi)
+      Rgasmu=Rgas/2.4
+      cp=gamma*Rgasmu/(gamma-1)
 !
 !  Grid "pencils"
 !
@@ -293,6 +310,11 @@ module Special
 !
       endif
 !
+      if (lroot) then
+        print*,'minmax sigma= ',minval(f(l1:l2,m1:m2,n1:n2,isigma)),&
+                                maxval(f(l1:l2,m1:m2,n1:n2,isigma))
+      endif
+!
 !  Initialize the gas temperature.
 !
       do j=1,ninit
@@ -364,8 +386,6 @@ module Special
       enddo; enddo
 !
       if (lroot) then
-        print*,'minmax sigma= ',minval(f(l1:l2,m1:m2,n1:n2,isigma)),&
-                                maxval(f(l1:l2,m1:m2,n1:n2,isigma))
         print*,'minmax tmid = ',minval(f(l1:l2,m1:m2,n1:n2,itmid)),&
                                 maxval(f(l1:l2,m1:m2,n1:n2,itmid))
       endif
@@ -411,8 +431,6 @@ module Special
       do i=1,nsigma_table
         sigma_table(i)= minsigma + (i-1)*dsig
       enddo
-      if (ldebug) print*,'minmax sigma_table: ',minval(sigma_table),&
-                                                maxval(sigma_table)
 !
 !  The second table is logarithmic between the density
 !  floor and sigma_middle.
@@ -423,8 +441,6 @@ module Special
       do i=1,nsigma_table
         lnsigma_table(i)= minlnsigma + (i-1)*dlnsig
       enddo
-      if (ldebug) print*,'minmax sigma_table: ',minval(lnsigma_table),&
-                                                maxval(lnsigma_table)
 !
       omega=sqrt(GNewton_cgs*Msun_cgs/rr**3)
 !
@@ -432,12 +448,12 @@ module Special
         do j=1,nx
 !
           call sigma_to_mdot(sigma_table(i),mdot_pt,j)
-          temperature=3730. !T9
+          temperature=T9
           call calc_tmid(sigma_table(i),omega(j),mdot_pt,temperature)
           tmid1_table(i,j)=temperature
 !
           call sigma_to_mdot(exp(lnsigma_table(i)),mdot_pt,j)
-          temperature=3730. !T9
+          temperature=T9
           call calc_tmid(exp(lnsigma_table(i)),omega(j),mdot_pt,temperature)
           tmid2_table(i,j)=temperature
 !
@@ -525,6 +541,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: nu
+      real, dimension (nx) :: diffus_special
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -554,10 +571,10 @@ module Special
 !
       if (lfirst.and.ldt) then
         nu=pmdot*one_over_three_pi/psigma
-        diffus_special=diffus_special+nu*dxyz_2
-      endif
-      if (headtt.or.ldebug) then
-        print*,'dspecial_dt: max(diffus_special) =', maxval(diffus_special)
+        diffus_special=nu*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_special)
+        if (headtt.or.ldebug) &
+          print*,'dspecial_dt: max(diffus_special) =', maxval(diffus_special)
       endif
 !
 !  Diagnostics.
@@ -680,26 +697,14 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
 !
 !  27-nov-08/wlad: coded
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
@@ -730,6 +735,7 @@ module Special
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -1117,15 +1123,11 @@ module Special
       real :: taueff,edot,temp1
       real :: phi,dtaudt,dtau2dt
       real :: a_exp,b_exp
-      real, save :: stbz
-      logical, save :: lfirstcall=.true.
+      real :: rr, temperature_irradiation
       real, optional :: dphi,d2phi
 !
-      if (lfirstcall) then
-        !stefan_boltzmann_cgs = 5.6704d-5  ! erg cm-2 s-1 K-4
-        stbz=5.6704d-5
-        lfirstcall=.false.
-      endif
+      real :: H
+      real :: grazing_irradiation,flaring_term
 !
 !  Get the opacity and calculate the effective optical depth.
 !
@@ -1140,14 +1142,27 @@ module Special
 !      taueff = 3*tau/8 + sqrt(3)/4 + 1/(4*tau),
 !
 ! handles both optically thin and thick regions.
-
 !
       taueff = 0.375*tau + 0.43301270 + .25*tau1
 !
-! Phi is the left-hand-side of the equation to solve.
+! Viscous heating
 !
       edot=0.75*pi_1*mdot*omega**2
-      phi  = 2*stbz*(temp**4-temperature_background**4)-taueff*edot
+!
+! Stellar heating.
+!
+      rr = (GNewton_cgs*Msun_cgs/omega**2)**(1./3)
+      H=sqrt(temp*cp*(gamma-1))/omega
+!
+      grazing_irradiation = 2./(3*pi) * (radius_star/rr)**3
+      flaring_term       = .5*( (radius_star/rr)**2 * (H/rr) * (dlnHdlnR - 1))
+!
+      temperature_irradiation = &
+           temperature_star * (max(grazing_irradiation + flaring_term,0.0))**0.25
+!
+! Phi is the left-hand-side of the equation to solve.
+!
+      phi  = 2*stbz*(temp**4-temperature_background**4-temperature_irradiation**4)-taueff*edot
 !
 ! First and second analytical derivatives of Phi, to speed
 ! up the iterations.
@@ -1312,24 +1327,11 @@ module Special
 !
 !  01-aug-11/wlad: coded
 !
-      real :: tt,sigma,omega,k,a,b,kk,rho,H
-      real :: logkk,logk
+      real, intent(in) :: tt,sigma,omega
+      real, intent(out) :: kk
+      real :: k,a,b,rho,H,logkk,logk
 !
-      real, save :: t1,t2,t3,t4,t5,t6,t7,t8,t9
-      real, save :: Rgas,mmol,Rgasmu,cp,gamma
-      logical, save :: lfirstcall=.true.
-!
-      if (lfirstcall) then
-        T1=132. ; T2=170. ; T3=375. ; T4=390.
-        T5=580. ; T6=680. ; T7=960. ; T8=1570. ; T9=3730.
-!
-        Rgas=8.314d7 ; mmol=2.4 ; Rgasmu=Rgas/2.4 ; gamma=1.4
-        cp=gamma*Rgasmu/(gamma-1)
-!
-        lfirstcall=.false.
-      endif
-!
-      kk=0
+      kk=0.0
 !
       if (tt < 0.0) then
         call fatal_error("calc_opacity", "Negative temperature")
@@ -1362,7 +1364,7 @@ module Special
         kk=k*rho**a*tt**b
       else
         if (lroot) then
-          print*,'calc_opacity: density ',sigma,' g/cm2'
+          print*,'calc_opacity: surface density ',sigma,' g/cm2'
           print*,'calc_opacity: temperature ',TT,' K. Higher '//&
                'than maximum allowed, ',T9
         endif

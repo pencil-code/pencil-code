@@ -36,6 +36,7 @@ module Magnetic
   implicit none
 !
   include 'magnetic.h'
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
 !  Initialization parameters
 !
@@ -165,6 +166,7 @@ module Magnetic
   real, dimension(nz,3), parameter :: bbmz = 0.0, jjmz = 0.0
   logical, dimension(7) :: lresi_dep = .false.
   real, dimension(3) :: b_ext_inv = 0.0
+  logical, parameter :: lcalc_aamean = .false.
   logical, parameter :: lcalc_aameanz = .false.
   logical, parameter :: lelectron_inertia = .false.
   integer, parameter :: idiag_bcosphz = 0, idiag_bsinphz = 0
@@ -417,7 +419,7 @@ module Magnetic
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
@@ -523,9 +525,20 @@ module Magnetic
         enddo yscan2
       enddo zscan2
 !
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
-    subroutine calc_pencils_magnetic(f, p)
+    subroutine calc_pencils_magnetic_std(f,p)
+!
+!  Standard version (_std): global variable lpencil contains information about needed pencils.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      type (pencil_case),                 intent(out)  :: p
+!
+      call calc_pencils_magnetic_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_magnetic_std
+!***********************************************************************
+    subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculates Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -534,13 +547,14 @@ module Magnetic
 !
       use Sub, only: gij, div_mn, curl_mn, cross, dot2_mn
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      type(pencil_case), intent(inout) :: p
+      real, dimension(mx,my,mz,mfarray), intent(in)   :: f
+      type(pencil_case),                 intent(inout):: p
+      logical, dimension(:),             intent(in)   :: lpenc_loc
 !
       real, dimension(nx,3,3) :: eij
       real, dimension(3) :: b_ext
 !
-      bb: if (lpencil(i_bb)) then
+      bb: if (lpenc_loc(i_bb)) then
         if (lbext) then
           call get_bext(b_ext)
           p%bb = f(l1:l2,m,n,ibx:ibz) + spread(b_ext,1,nx)
@@ -549,39 +563,39 @@ module Magnetic
         endif
       endif bb
 !
-      if (lpencil(i_bbb)) p%bbb = f(l1:l2,m,n,ibx:ibz)
+      if (lpenc_loc(i_bbb)) p%bbb = f(l1:l2,m,n,ibx:ibz)
 !
-      if (lpencil(i_b2)) p%b2 = sum(p%bb**2, dim=2)
+      if (lpenc_loc(i_b2)) p%b2 = sum(p%bb**2, dim=2)
 !
-      if (lpencil(i_bij)) call gij(f, ibb, p%bij, 1)
+      if (lpenc_loc(i_bij)) call gij(f, ibb, p%bij, 1)
 !
-      if (lpencil(i_jj)) p%jj = f(l1:l2,m,n,ijx:ijz)
+      if (lpenc_loc(i_jj)) p%jj = f(l1:l2,m,n,ijx:ijz)
 !
-      if (lpencil(i_j2)) call dot2_mn(p%jj, p%j2)
+      if (lpenc_loc(i_j2)) call dot2_mn(p%jj, p%j2)
 !
-      if (lpencil(i_divb)) call div_mn(p%bij, p%divb, p%bb)
+      if (lpenc_loc(i_divb)) call div_mn(p%bij, p%divb, p%bb)
 !
-      jxbr: if (lpencil(i_jxbr)) then
+      jxbr: if (lpenc_loc(i_jxbr)) then
         call cross(p%jj, p%bb, p%jxbr)
         p%jxbr = spread(p%rho1,2,3) * p%jxbr
       endif jxbr
 !
-      curle: if (lpencil(i_curle)) then
+      curle: if (lpenc_loc(i_curle)) then
         call gij(f, iee, eij, 1)
-        call curl_mn(eij, p%curle, f(l1:l2,m,n,ieex:ieez))
+        call curl_mn(eij, p%curle, f(:,m,n,ieex:ieez))
       endif curle
 !
-      if (lpencil(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
+      if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, tiny(1.0))
 !
-      if (lpencil(i_va2)) p%va2 = mu01 * p%b2 * p%rho1
+      if (lpenc_loc(i_va2)) p%va2 = mu01 * p%b2 * p%rho1
 !
 !  Dummy pencils
 !
-      if (lpencil(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
+      if (lpenc_loc(i_aa)) call fatal_error('calc_pencils_magnetic', 'pencil aa is not implemented. ')
 !
-      if (lpencil(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
+      if (lpenc_loc(i_ss12)) call fatal_error('calc_pencils_magnetic', 'pencil ss12 is not implemented. ')
 !
-    endsubroutine calc_pencils_magnetic
+    endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine daa_dt(f, df, p)
 !
@@ -629,9 +643,8 @@ module Magnetic
 !
       timestep: if (lfirst .and. ldt) then
         call set_advec_va2(p)
-        if (lshear) advec_shear = abs(uy0(l1:l2) * dy_1(m))
-        diffus_eta = maxdiffus_eta
-        diffus_eta3 = maxdiffus_eta3
+        maxdiffus = max(maxdiffus,maxdiffus_eta)
+        maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
       endif timestep
 !
 !  Evaluate Magnetic diagnostics.
@@ -645,6 +658,17 @@ module Magnetic
       endif avg1d
 !
     endsubroutine daa_dt
+!***********************************************************************
+   subroutine magnetic_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine magnetic_after_timestep
 !***********************************************************************
     subroutine split_update_magnetic(f)
 !
@@ -704,6 +728,7 @@ module Magnetic
 !  25-jun-13/ccyang: coded.
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
@@ -888,22 +913,28 @@ module Magnetic
         call parse_name(iname, cnamex(iname), cformx(iname), 'beta2mx', idiag_beta2mx)
       enddo yzavg
 !
+!  check for those quantities for which we want video slices
+!       
+      if (lwrite_slices) then 
+        where(cnamev=='bb'.or.cnamev=='b2'.or.cnamev=='db2') cformv='DEFINED'
+      endif
+!       
 !  Write variable indices for IDL.
 !
       option: if (present(lwrite)) then
         indices: if (lwrite) then
-          write(3,*) 'ibb = ', ibb
-          write(3,*) 'ibx = ', ibx
-          write(3,*) 'iby = ', iby
-          write(3,*) 'ibz = ', ibz
-          write(3,*) 'iEE = ', iEE
-          write(3,*) 'iEEx = ', iEEx
-          write(3,*) 'iEEy = ', iEEy
-          write(3,*) 'iEEz = ', iEEz
-          write(3,*) 'ijj = ', ijj
-          write(3,*) 'ijx = ', ijx
-          write(3,*) 'ijy = ', ijy
-          write(3,*) 'ijz = ', ijz
+          call farray_index_append('ibb',ibb)
+          call farray_index_append('ibx',ibx)
+          call farray_index_append('iby',iby)
+          call farray_index_append('ibz',ibz)
+          call farray_index_append('iEE',iEE)
+          call farray_index_append('iEEx',iEEx)
+          call farray_index_append('iEEy',iEEy)
+          call farray_index_append('iEEz',iEEz)
+          call farray_index_append('ijj',ijj)
+          call farray_index_append('ijx',ijx)
+          call farray_index_append('ijy',ijy)
+          call farray_index_append('ijz',ijz)
         endif indices
       endif option
 !
@@ -914,6 +945,8 @@ module Magnetic
 !  Prepares the slices requested by video.in.
 !
 !  26-jun-13/ccyang: coded.
+!
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
@@ -930,40 +963,28 @@ module Magnetic
 !  Magnetic field
 !
       case ('bb') slice
-        bcomp: if (slices%index >= 3) then
-          slices%ready=.false.
-        else bcomp
-          ivar = ibb + slices%index
-          slices%index = slices%index + 1
-          slices%yz = f(ix_loc,m1:m2,n1:n2,ivar)
-          slices%xz = f(l1:l2,iy_loc,n1:n2,ivar)
-          slices%xy = f(l1:l2,m1:m2,iz_loc,ivar)
-          slices%xy2 = f(l1:l2,m1:m2,iz2_loc,ivar)
-          if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,ivar)
-          if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,ivar)
-          if (slices%index <= 3) slices%ready = .true.
-        endif bcomp
+        call assign_slices_vec(slices,f,ibb)
 !
-!  Magnetic energy
+!  Magnetic energy or fluctuating part of the magnetic energy
 !
-      case ('b2') slice
-        slices%yz = sum((f(ix_loc,m1:m2,n1:n2,ibx:ibz) + spread(spread(b_ext,1,ny),2,nz))**2, dim=3)
-        slices%xz = sum((f(l1:l2,iy_loc,n1:n2,ibx:ibz) + spread(spread(b_ext,1,nx),2,nz))**2, dim=3)
-        slices%xy = sum((f(l1:l2,m1:m2,iz_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        slices%xy2 = sum((f(l1:l2,m1:m2,iz2_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        if (lwrite_slice_xy3) slices%xy3 = sum((f(l1:l2,m1:m2,iz3_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        if (lwrite_slice_xy4) slices%xy4 = sum((f(l1:l2,m1:m2,iz4_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
-        slices%ready = .true.
-!
-!  Fluctuating part of the magnetic energy
-!
-      case ('db2') slice
-        slices%yz = sum(f(ix_loc,m1:m2,n1:n2,ibx:ibz)**2, dim=3)
-        slices%xz = sum(f(l1:l2,iy_loc,n1:n2,ibx:ibz)**2, dim=3)
-        slices%xy = sum(f(l1:l2,m1:m2,iz_loc,ibx:ibz)**2, dim=3)
-        slices%xy2 = sum(f(l1:l2,m1:m2,iz2_loc,ibx:ibz)**2, dim=3)
-        if (lwrite_slice_xy3) slices%xy3 = sum(f(l1:l2,m1:m2,iz3_loc,ibx:ibz)**2, dim=3)
-        if (lwrite_slice_xy4) slices%xy4 = sum(f(l1:l2,m1:m2,iz4_loc,ibx:ibz)**2, dim=3)
+      case ('b2','db2') slice
+        if (trim(slices%name)=='b2'.and.any(b_ext /= 0.0)) then
+          if (lwrite_slice_yz)  slices%yz = sum((f(ix_loc,m1:m2,n1:n2,ibx:ibz) + spread(spread(b_ext,1,ny),2,nz))**2, dim=3)
+          if (lwrite_slice_xz)  slices%xz = sum((f(l1:l2,iy_loc,n1:n2,ibx:ibz) + spread(spread(b_ext,1,nx),2,nz))**2, dim=3)
+          if (lwrite_slice_xz2) slices%xz2 = sum((f(l1:l2,iy2_loc,n1:n2,ibx:ibz) + spread(spread(b_ext,1,nx),2,nz))**2, dim=3)
+          if (lwrite_slice_xy)  slices%xy = sum((f(l1:l2,m1:m2,iz_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+          if (lwrite_slice_xy2) slices%xy2 = sum((f(l1:l2,m1:m2,iz2_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+          if (lwrite_slice_xy3) slices%xy3 = sum((f(l1:l2,m1:m2,iz3_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+          if (lwrite_slice_xy4) slices%xy4 = sum((f(l1:l2,m1:m2,iz4_loc,ibx:ibz) + spread(spread(b_ext,1,nx),2,ny))**2, dim=3)
+        else
+          if (lwrite_slice_yz)  slices%yz = sum(f(ix_loc,m1:m2,n1:n2,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xz)  slices%xz = sum(f(l1:l2,iy_loc,n1:n2,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xz2) slices%xz2 = sum(f(l1:l2,iy2_loc,n1:n2,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy)  slices%xy = sum(f(l1:l2,m1:m2,iz_loc,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy2) slices%xy2 = sum(f(l1:l2,m1:m2,iz2_loc,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy3) slices%xy3 = sum(f(l1:l2,m1:m2,iz3_loc,ibx:ibz)**2, dim=3)
+          if (lwrite_slice_xy4) slices%xy4 = sum(f(l1:l2,m1:m2,iz4_loc,ibx:ibz)**2, dim=3)
+        endif
         slices%ready = .true.
 !
       endselect slice
@@ -1140,6 +1161,7 @@ module Magnetic
 !  25-jun-13/ccyang: coded.
 !
       type(pencil_case), intent(in) :: p
+      real, dimension(nx) :: advec_va2
 !
       if (lspherical_coords) then
         advec_va2 = ((p%bb(:,1) * dx_1(l1:l2))**2 + &
@@ -1154,6 +1176,7 @@ module Magnetic
                      (p%bb(:,2) * dy_1(m))**2 + &
                      (p%bb(:,3) * dz_1(n))**2) * mu01 * p%rho1
       endif
+      advec2=advec2+advec_va2
 !
     endsubroutine set_advec_va2
 !***********************************************************************

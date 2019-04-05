@@ -1,14 +1,15 @@
 /*                             headers_c.h
-                              ------------
-*/
+                               -----------
 
-/* $Id$
+   $Id$
    Description:
      Common headers for all of our C files. Mostly required to get the
      number of underscores and single vs. double precision right.
 */
 
-/* Choose single or double precision here (typically done from the Makefile) */
+// Choose single or double precision here (typically done from the Makefile) 
+#pragma once
+
 #ifdef DOUBLE_PRECISION
   #define REAL double
   #define FINT int

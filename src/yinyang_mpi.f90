@@ -237,7 +237,7 @@ module Yinyang_mpi
       integer, dimension(2) :: rng
       logical :: lwith_ghosts
       logical, save :: lcalled=.false.
-
+return !!!
       if (lcalled) then
         nycap_=nycap
         return                    ! routine has already been called
@@ -278,7 +278,7 @@ module Yinyang_mpi
 !  yloc x zloc: strip of Yin-phi coordinate lines from Yin-proc iproc_yin.
 !
             call yy_transform_strip_other(yloc,zloc,thphprime)
-            nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,thrange_gap(:,ifound+1))
+            nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,th_range=thrange_gap(:,ifound+1))
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_gap: y-range of
@@ -320,7 +320,7 @@ module Yinyang_mpi
 !
             call mpisend_int(rng,2,iproc_yin,iproc_world,MPI_COMM_WORLD)
 
-            if (ifound==3) stop              ! lines from at most 3 Yin procs expected.
+            if (ifound>3) stop               ! lines from at most 3 Yin procs expected.
             yloc=yloc+Lxyz_loc(2)+dy/nprocy  ! shift y coordinates to next z-root proc of Yin grid.
 
           enddo
@@ -359,7 +359,7 @@ module Yinyang_mpi
 
             caproot=find_proc(ipx,0,0)                 ! "cap collector" has lowest rank in layer ipx.
             capzprocs=(/0,nprocz/3/)                   ! range of z ranks in cap.      
-if (iproc==caproot)print*, 'South: yloc=', yloc
+!if (iproc==caproot)print*, 'South: yloc=', yloc
 
           elseif (ipz>=2*nprocz/3-1) then
 !
@@ -370,14 +370,14 @@ if (iproc==caproot)print*, 'South: yloc=', yloc
 
             caproot=find_proc(ipx,nprocy-1,nprocz-1)   ! "cap collector" has highest rank in layer ipx.
             capzprocs=(/2*nprocz/3-1,nprocz-1/)        ! range of z ranks in cap.     
-if (iproc==caproot) print*, 'North: yloc=', yloc
+!if (iproc==caproot) print*, 'North: yloc=', yloc
           endif
 !if (iproc==caproot) print*, 'iproc, yloc=', iproc, yloc(1), yloc(nycap)
 !
 !  yloc x zloc: strip of all Yin-phi coordinate lines in cap.
 !
           call yy_transform_strip_other(yloc,zloc,thphprime)
-          nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,thrange_cap)
+          nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,th_range=thrange_cap)
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_cap: y-range of
@@ -472,7 +472,6 @@ if (iproc==caproot) print*, 'North: yloc=', yloc
 
       endif
 
-!print*, 'nach initialize_zaver_yy', iproc_world, lcaproot
       call mpibarrier
 
     endsubroutine initialize_zaver_yy

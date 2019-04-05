@@ -1,0 +1,12 @@
+
+############################################################
+##
+## PRESSURE BUMP SAMPLE         - do not use, yet!
+##
+############################################################
+ 
+This sample lets you add a pressure bump to your gas in a shearing sheet simulation.
+It therefor uses the special/pressure_bump module.
+
+Status now is: Not usable, yet! Pressure bump is not as expected and this sample can be 
+seen for debugging the special module!

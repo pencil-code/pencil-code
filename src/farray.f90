@@ -13,6 +13,7 @@ module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
   use Cdata, only: nvar,naux,naux_com,datadir,lroot,lwrite_aux,lreloading
+  use HDF5_IO
   use Messages
 !
   implicit none
@@ -24,6 +25,8 @@ module FArrayManager
   public :: farray_register_auxiliary
   public :: farray_register_global
   public :: farray_use_variable
+  public :: farray_index_append
+  public :: farray_index_reset
   public :: farray_use_pde
   public :: farray_use_auxiliary
   public :: farray_use_global
@@ -172,9 +175,8 @@ module FArrayManager
       integer :: ncomponents
 !
       if (vartype==iFARRAY_TYPE_SCRATCH) then
-        print*,"Registering f-array variable: ",varname
         call fatal_error("farray_register_variable", &
-          "To allocate a scratch variable in the f-array, you must use the"// &
+          "Registering "//trim(varname)//" as scratch variable fails. Use the"// &
           "farray_acquire_scratch_area routine.")
       endif
 !
@@ -193,9 +195,8 @@ module FArrayManager
             ivar=0
             return
           endif
-          print*,"Registering f-array variable: ",varname
           call fatal_error("farray_register_variable", &
-            "f array variable name already exists but with a different "//&
+            "Registering "//trim(varname)//" fails: Name already exists but with a different "//&
             "number of components!")
         endif
         if (item%vartype/=vartype) then
@@ -204,9 +205,8 @@ module FArrayManager
             ivar=0
             return
           endif
-          print*,"Registering f-array variable: ",varname
           call fatal_error("farray_register_variable", &
-                           "f array variable name already exists but with a different variable type!")
+                           "Registering "//trim(varname)//" fails: Name already exists but with a different variable type!")
         endif
         if (.not.lreloading) then
           if (present(ierr)) then
@@ -214,8 +214,7 @@ module FArrayManager
             ivar=0
             return
           endif
-          print*,"Registering f-array variable: ",varname
-          call fatal_error("farray_register_variable","f-array variable name already exists!")
+          call fatal_error("farray_register_variable","Registering "//trim(varname)//" fails: Name already exists!")
         endif
       else
 !
@@ -229,11 +228,10 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array pde variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient mvar variables allocated.  This probably means "//&
+            "Registering "//trim(varname)//" fails: Insufficient mvar variables allocated.  This probably means "//&
             "the MVAR CONTRIBUTION header is incorrect in one of the physics "// &
-            "modules. ")
+            "modules or in cparam.local.")
             endif
           case (iFARRAY_TYPE_AUXILIARY)
             if (naux+ncomponents>maux) then
@@ -242,9 +240,8 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array auxiliary variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient maux variables allocated.  This either means "//&
+            "Registering "//trim(varname)//" fails: Insufficient maux variables allocated.  This either means "//&
             "the MAUX CONTRIBUTION header is incorrect in one of the physics "// &
             "modules. Or that there you are using some code that can, depending "// &
             "on runtime parameters, require extra auxiliary variables.  For the "// &
@@ -257,9 +254,8 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array communicated auxiliary variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient maux_com variables allocated.  This either means "//&
+            "Registering "//trim(varname)//" fails: Insufficient maux_com variables allocated.  This either means "//&
             "the COMMUNICATED AUXILIARIES header is incorrect in one of the physics "// &
             "modules. Or that there you are using some code that can, depending "// &
             "on runtime parameters, require extra auxiliary variables.  For the "// &
@@ -273,18 +269,16 @@ module FArrayManager
                 ivar=0
                 return
               endif
-              print*,"Registering f-array global variable: ",varname
               call fatal_error("farray_register_variable", &
-            "There are insufficient mglobal variables allocated.  This either means "//&
+            "Registering "//trim(varname)//" fails: Insufficient mglobal variables allocated.  This either means "//&
             "the MGLOBAL CONTRIBUTION header is incorrect in one of the physics "// &
             "modules. Or that there you are using some code that can, depending "// &
             "on runtime parameters, require extra global variables.  For the "// &
             "latter try adding an MGLOBAL CONTRIBUTION header to cparam.local.")
             endif
           case default
-            print*,"Registering f-array variable: ",varname
             call fatal_error("farray_register_variable", &
-            "Invalid vartype set")
+            "Registering "//trim(varname)//" fails: Invalid vartype set")
         endselect
 !
         call new_item_atstart(thelist,new=new)
@@ -316,17 +310,55 @@ module FArrayManager
 !  except for auxiliary variables which are not written into var.dat
 !
         if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
-             vartype==iFARRAY_TYPE_AUXILIARY )) return
-
-        if (lroot) then
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'i'//varname, '=', ivar
-          close(3)
-        endif
+                                    vartype==iFARRAY_TYPE_AUXILIARY )) return
+!
+        call farray_index_append('i'//varname,ivar,vector)
 !
       endif
 !
     endsubroutine farray_register_variable
+!***********************************************************************
+    subroutine farray_index_append(varname,ivar,vector,array)
+!
+! 14-Oct-2018/PAB: coded
+!
+      character (len=*), intent(in) :: varname
+      integer, intent(in) :: ivar
+      integer, optional, intent(in) :: vector
+      integer, optional, intent(in) :: array
+!
+      character (len=len(varname)) :: component
+      integer :: l
+!
+      call index_append(trim(varname),ivar,vector,array)
+      if (.not. present (array) .and. present (vector)) then
+        ! expand vectors: iuu => (iux,iuy,iuz), iaa => (iax,iay,iaz), etc.
+        component = trim(varname)
+        l = len(trim(component))
+        if (l >= 2) then
+          ! double endings: iuu, iaa, etc.
+          if (component(l:l) == component(l-1:l-1)) l = l - 1
+        endif
+        if (vector >= 1) then
+          call index_append(trim(component(1:l))//'x',ivar)
+        endif
+        if (vector >= 2) then
+          call index_append(trim(component(1:l))//'y',ivar+1)
+        endif
+        if (vector >= 3) then
+          call index_append(trim(component(1:l))//'z',ivar+2)
+        endif
+      endif
+!
+    endsubroutine farray_index_append
+!***********************************************************************
+    subroutine farray_index_reset()
+!
+! 14-oct-18/PAB: coded
+!
+      call index_reset()
+!
+    endsubroutine farray_index_reset
 !***********************************************************************
     subroutine farray_acquire_scratch_area(varname,ivar,vector,ierr)
 !
@@ -491,7 +523,6 @@ module FArrayManager
 !
       type (farray_contents_list), pointer :: item
       integer :: i
-
 !
 !  Put variable name in array for
 !  use by analysis tool output

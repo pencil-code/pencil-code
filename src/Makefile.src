@@ -18,6 +18,7 @@ SYSCALLS           =   syscalls
 DERIV              =   deriv
 FOURIER            = nofourier
 GHOSTFOLD          = noghostfold
+GPU                = nogpu
 GRID               =   grid
 GSL                = nogsl
 IMPLICIT_DIFFUSION = noimplicit_diffusion
@@ -29,7 +30,12 @@ MPICOMM            = nompicomm
 NSCBC              = noNSCBC
 POWER              = nopower_spectrum
 SOLID_CELLS        = nosolid_cells
+SOLID_CELLS_MPICOMM= nosolid_cells_mpicomm
+SOLID_CELLS_OGRID_SUB= nosolid_cells_ogrid_sub
+SOLID_CELLS_OGRID_CDATA= nosolid_cells_ogrid_cdata
+SOLID_CELLS_OGRID_CHEMISTRY=nosolid_cells_ogrid_chemistry
 SLICES             =   slices
+SLICES_METHODS     =   slices_methods
 SIGNAL_HANDLING    = nosignal_handling
 STRUCT_FUNC        = nostruct_func
 TIMEAVG            = notimeavg
@@ -68,7 +74,7 @@ NEUTRALVELOCITY   = noneutralvelocity
 POISSON           = nopoisson
 POLYMER           = nopolymer
 PSCALAR           = nopscalar
-SUPERSAT          = nosupersat
+ASCALAR           = noascalar
 RADIATION         = noradiation
 SELFGRAVITY       = noselfgravity
 SHEAR             = noshear
@@ -96,6 +102,7 @@ PARTICLES_ADSORBED    = noparticles_adsorbed
 PARTICLES_SURFSPEC    = noparticles_surfspec
 PARTICLES_CHEMISTRY   = noparticles_chemistry
 PARTICLES_COAGULATION = noparticles_coagulation
+PARTICLES_CONDENSATION= noparticles_condensation
 PARTICLES_COLLISIONS  = noparticles_collisions
 PARTICLES_DRAG        = noparticles_drag
 PARTICLES_KMEANS      = noparticles_kmeans
@@ -112,6 +119,9 @@ PARTICLES_SINK        = noparticles_sink
 PARTICLES_SPIN        = noparticles_spin
 PARTICLES_STALKER     = noparticles_stalker
 PARTICLES_LYAPUNOV    = noparticles_lyapunov
+PARTICLES_CAUSTICS    = noparticles_caustics
+PARTICLES_TETRAD      = noparticles_tetrad
+PARTICLES_PERSISTENCE = noparticles_persistence
 PARTICLES_STIRRING    = noparticles_stirring
 PARTICLES_SUB         = noparticles_sub
 PARTICLES_DIAGNOS_DV  = noparticles_diagnos_dv
@@ -158,9 +168,9 @@ CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 #
 # Default linker flags.
 #
-LDFLAGS=-ldl
-DLL_FFLAGS=-fPIC
-DLL_LDFLAGS=-shared
+LDFLAGS ?= -ldl
+DLL_FFLAGS ?= -fPIC
+DLL_LDFLAGS ?= -shared
 #
 # Overwrite settings that are local to each run directory.
 #
@@ -238,6 +248,29 @@ endif
 ifeq ($(TIMESTEP),timestep_LSODE)
   LSODE_FC          =   lsode_for_chemistry
 endif
+#
+# Set up MPI-communication if overlapping grids are used with solid_cells
+#
+ifeq ($(SOLID_CELLS),solid_cells_ogrid)
+  SOLID_CELLS_OGRID_CDATA= solid_cells_ogrid_cdata
+  SOLID_CELLS_OGRID_SUB= solid_cells_ogrid_sub
+  ifeq ($(MPICOMM),mpicomm)
+    SOLID_CELLS_MPICOMM= solid_cells_ogrid_mpicomm
+  endif
+  ifeq ($(MPICOMM),nompicomm)
+    SOLID_CELLS_MPICOMM= solid_cells_ogrid_nompicomm
+  endif
+  ifeq ($(CHEMISTRY),experimental/chemistry_simple)
+    SOLID_CELLS_OGRID_CHEMISTRY= solid_cells_ogrid_chemistry
+  endif
+  ifeq ($(CHEMISTRY),nochemistry)
+    SOLID_CELLS_OGRID_CHEMISTRY= nosolid_cells_ogrid_chemistry
+  endif
+  solid_cells_objects = $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ) $(SOLID_CELLS_OGRID_CDATA_OBJ) $(SOLID_CELLS_OGRID_CHEMISTRY_OBJ) $(SOLID_CELLS_OGRID_SUB_OBJ)
+else
+  solid_cells_objects = $(SOLID_CELLS_MPICOMM_OBJ) $(SOLID_CELLS_OBJ)
+endif
+
 #
 # Check for inconsistent settings in Makefile.local.
 #
@@ -347,6 +380,7 @@ ifeq ($(YINYANG),yinyang)
 else
   YINYANG_MPI = noyinyang_mpi
 endif
+
 SPECIAL_DEPS =
 SPECIAL_MULT =
 ifeq ($(SPECIAL),nospecial)
@@ -358,15 +392,32 @@ special_message:
 	@echo ";;;    SPECIAL must not been set to special, but to individual module(s) in directory special."
 	exit 1
   else
-    SPECIAL_MODULES := $(SPECIAL)
-#    SPECIAL_DEPS = special_preps
-#    ifneq ($(shell echo $(SPECIAL) | wc -w),1)
-#      LDFLAGS += -dynamic
-#      SPECIAL_DEPS += special.dll
-#      SPECIAL = special
-#      SPECIAL_MULT = 1
-#    endif
+    ifneq ($(SPECIAL),special/meanfield_e_tensor)
+      SPECIAL_MODULES := $(SPECIAL)
+      SPECIAL_DEPS = special_preps
+      ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
+        LDFLAGS_MAIN += -dynamic
+        SPECIAL_DEPS += special.dll
+        SPECIAL = special
+        SPECIAL_MULT = 1
+      endif
+    endif
   endif
+endif
+
+LIBGPU =
+GPU_DEPS =
+ifeq ($(GPU),gpu_astaroth)
+  LDFLAGS_MAIN += -dynamic
+  GPU_INTERFACE = gpu_astaroth_ansi.o
+  GPU_DEPS = gpu_preps
+  ifeq ($(REAL_PRECISION),double)
+    LIBGPU = astaroth_dbl.so
+  else
+    LIBGPU = astaroth_sgl.so
+  endif
+else
+  GPU_INTERFACE=
 endif
 #ifdef ENTROPY
 #entropy_message:
@@ -526,6 +577,9 @@ GRAVITY_SRC=$(GRAVITY).f90
 GRID_OBJ=$(GRID).o
 GRID_SRC=$(GRID).f90
 #
+GPU_OBJ=$(GPU).o
+GPU_SRC=$(GPU).f90
+#
 GSL_OBJ=$(GSL).o
 GSL_SRC=$(GSL).c
 #
@@ -606,6 +660,9 @@ PARTICLES_ADAPTATION_SRC=$(PARTICLES_ADAPTATION).f90
 PARTICLES_COAGULATION_OBJ=$(PARTICLES_COAGULATION).o
 PARTICLES_COAGULATION_SRC=$(PARTICLES_COAGULATION).f90
 #
+PARTICLES_CONDENSATION_OBJ=$(PARTICLES_CONDENSATION).o
+PARTICLES_CONDENSATION_SRC=$(PARTICLES_CONDENSATION).f90
+#
 PARTICLES_COLLISIONS_OBJ=$(PARTICLES_COLLISIONS).o
 PARTICLES_COLLISIONS_SRC=$(PARTICLES_COLLISIONS).f90
 #
@@ -650,6 +707,15 @@ PARTICLES_STALKER_SRC=$(PARTICLES_STALKER).f90
 #
 PARTICLES_LYAPUNOV_OBJ=$(PARTICLES_LYAPUNOV).o
 PARTICLES_LYAPUNOV_SRC=$(PARTICLES_LYAPUNOV).f90
+#
+PARTICLES_CAUSTICS_OBJ=$(PARTICLES_CAUSTICS).o
+PARTICLES_CAUSTICS_SRC=$(PARTICLES_CAUSTICS).f90
+#
+PARTICLES_TETRAD_OBJ=$(PARTICLES_TETRAD).o
+PARTICLES_TETRAD_SRC=$(PARTICLES_TETRAD).f90
+#
+PARTICLES_PERSISTENCE_OBJ=$(PARTICLES_PERSISTENCE).o
+PARTICLES_PERSISTENCE_SRC=$(PARTICLES_PERSISTENCE).f90
 #
 PARTICLES_STIRRING_OBJ=$(PARTICLES_STIRRING).o
 PARTICLES_STIRRING_SRC=$(PARTICLES_STIRRING).f90
@@ -714,8 +780,23 @@ SIGNAL_HANDLING_SRC=$(SIGNAL_HANDLING).f90
 SLICES_OBJ=$(SLICES).o
 SLICES_SRC=$(SLICES).f90
 #
+SLICES_METHODS_OBJ=$(SLICES_METHODS).o
+SLICES_METHODS_SRC=$(SLICES_METHODS).f90
+#
 SOLID_CELLS_OBJ=$(SOLID_CELLS).o
 SOLID_CELLS_SRC=$(SOLID_CELLS).f90
+#
+SOLID_CELLS_MPICOMM_OBJ=$(SOLID_CELLS_MPICOMM).o
+SOLID_CELLS_MPICOMM_SRC=$(SOLID_CELLS_MPICOMM).f90
+#
+SOLID_CELLS_OGRID_SUB_OBJ=$(SOLID_CELLS_OGRID_SUB).o
+SOLID_CELLS_OGRID_SUB_SRC=$(SOLID_CELLS_OGRID_SUB).f90
+#
+SOLID_CELLS_OGRID_CDATA_OBJ=$(SOLID_CELLS_OGRID_CDATA).o
+SOLID_CELLS_OGRID_CDATA_SRC=$(SOLID_CELLS_OGRID_CDATA).f90
+#
+SOLID_CELLS_OGRID_CHEMISTRY_OBJ=$(SOLID_CELLS_OGRID_CHEMISTRY).o
+SOLID_CELLS_OGRID_CHEMISTRY_SRC=$(SOLID_CELLS_OGRID_CHEMISTRY).f90
 #
 SPECIAL_OBJ=$(SPECIAL).o
 SPECIAL_SRC=$(SPECIAL).f90
@@ -726,8 +807,8 @@ STREAMLINES_SRC=$(STREAMLINES).f90
 STRUCT_FUNC_OBJ=$(STRUCT_FUNC).o
 STRUCT_FUNC_SRC=$(STRUCT_FUNC).f90
 #
-SUPERSAT_OBJ=$(SUPERSAT).o
-SUPERSAT_SRC=$(SUPERSAT).f90
+ASCALAR_OBJ=$(ASCALAR).o
+ASCALAR_SRC=$(ASCALAR).f90
 #
 SYSCALLS_OBJ=$(SYSCALLS).o
 SYSCALLS_SRC=$(SYSCALLS).f90
@@ -1206,12 +1287,31 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Piyali on Hydra
 ##
 #FC=mpif90 #(hydra)
-#FFLAGS= -O1  #(hydra)
+#FFLAGS= -O2  #(hydra)
 #CC=mpicc #(hydra)
-#CFLAGS=-O1 -DFUNDERSC=1 #(hydra)
+#CFLAGS=-O2 -DFUNDERSC=1 #(hydra)
 #LD_MPI= #(hydra)
-#FFLAGS_DOUBLE=-fdefault-real-8 #(hydra)
+#FFLAGS_DOUBLE=-r8 #(hydra)
 #LIBMPISUFFIX=#(hydra)
+##
+## Piyali on Nova
+##
+#FFLAGS= -O2 -mcmodel=large #(nova)
+#FC=mpiifort #(nova)
+#CC=mpiicc #(nova)
+#CFLAGS=-O2 -DFUNDERSC=1 #(nova)
+#LD_MPI= #(nova)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(nova)
+#FFLAGS_DOUBLE=-r8 #(nova)
+#LIBMPISUFFIX=#(nova
+##
+#####Sahel on CRAY ####################
+#FC=ftn #(elogin*)
+#F90=$(FC) #(elogin*)
+#CC=cc #(elogin*)
+#FFLAGS=-O2 -free #(elogin*)
+##FFLAGS_DOUBLE=-s default64 #(elogin*)
+#CFLAGS=-DFUNDERSC=1 -O2 #(elogin*)
 ##
 ## Axel on LCD
 ##
@@ -1264,12 +1364,13 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O1 -g -CB -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -L/usr/lib#(nl6)
 #FFLAGS=-O1 -g -CB -check bounds -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
+#FFLAGS=-O1 -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
 #LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(nl6)
 #CC=icc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
 #FFLAGS_DOUBLE=-autodouble #(nl6)
 ##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
-#
+##
 ## Giuseppe on giuseppe-desktop (gfortran)
 ##
 #FC=gfortran #(giuseppe-desktop)
@@ -1314,6 +1415,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(norlx51)
 #CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
+#LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
 #LIBMPISUFFIX= #(norlx51)
 ##
 ## Axel on norlx55 (gfortran)
@@ -1379,12 +1481,12 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ##  Piyali's laptop
 ##
-#FC=mpif90 #(saveri)
+#FC=mpif90.openmpi #(saveri)
 #F77=$(FC) #(saveri*)
-#CC=mpicc #(saveri*)
+#CC=mpicc.openmpi #(saveri*)
 #CFLAGS=-O2 -DFUNDERSC=1 #(saveri*)
-#FFLAGS=-O2 #(saveri*)
-#FFLAGS_DOUBLE=-r8  #(saveri*)
+#FFLAGS=-O2 -mcmodel=large #(saveri*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(saveri*)
 ##LD_MPI= #(saveri*)
 ##
 ##  Pencil-Code Servers
@@ -1814,10 +1916,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #F90=$(FC) #(sisu*)
 #CC=cc #(sisu*)
 #FFLAGS=-O1 -ffree -e m -J . -p . #(sisu*)
+##FFLAGS+= -I/opt/cray/hdf5-parallel/1.10.0.1/lib/CRAY/8.3/include  #(sisu*)
 #FFLAGS_DOUBLE=-s real64 #(sisu*)
 ##FFLAGS=-O1 #(sisu*)
 ##FFLAGS_DOUBLE=-r8 #(sisu*)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(sisu*)
+##LDFLAGS+= -L/opt/cray/hdf5-parallel/1.10.0.1/lib/CRAY/8.3/lib #(sisu*)
+##FFLAGS+= -I/opt/cray/hdf5-parallel/1.10.0.1/lib/INTEL/15.0/include #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
+##LDFLAGS+= -L/opt/cray/hdf5-parallel/1.10.0.1/lib/INTEL/15.0/lib #(sisu*)
 ##
 ## Piz Daint - CrayXC30 - (ETH Zurich)
 ##
@@ -1856,6 +1963,18 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-r8 #(emil)
 #CFLAGS=-DFUNDERSC=1 -O3 #(emil*)
 ##
+## Summit - Cray XC40 - (Boulder)
+##
+#FC=mpiifort #(shas013*)
+#F90=$(FC) #(shas013*)
+#CC=mpicc #(shas013*)
+#CC=cc #(shas013*)
+#FFLAGS=-O3 #(shas013*)
+#FFLAGS=-O3 -xCORE-AVX2 -align array64byte -ipo #(shas013*)
+##FFLAGS_DOUBLE=-fdefault-real-8 -fdefault-double-8 #(shas013*)
+#FFLAGS_DOUBLE=-r8 #(shas013*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(shas013*)
+##
 ## Beskow - Cray XC40 - (Stockholm)
 ## 1516 24-nodes per cabinet 2.1GHz Opterons
 ##
@@ -1875,6 +1994,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ##NS: added compiler option -ffree-line-length-0
 ##NS: to allow for long lines in source codes (max col no def was 132)
+##FFLAGS=-O3 -ffree-line-length-0 -large #(beskow*)
 #FFLAGS=-O3 -ffree-line-length-0 #(beskow*)
 ##NS: use following for debugging the code
 ##FFLAGS=-O3 -fcheck=all #(beskow*)
@@ -1893,15 +2013,25 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(vuori)
 #FFLAGS_DOUBLE=-r8 #(vuori)
 ##
-## Taito - HP Supercluster - (Kajaani)
+## Taito: HP Supercluster - (Kajaani)
 ##
-#FC=mpif90 #(taito*)
-#FSTD_95=-std95 #(taito*)
-#F90=$(FC) #(taito*)
-#CC=mpicc #(taito*)
-#FFLAGS=-O3 -implicitnone #(taito*)
-#FFLAGS_DOUBLE=-r8 #(taito*)
-#CFLAGS=-DFUNDERSC=1 -O3 #(taito*)
+#FC=mpif90 #(taito-[^g]|taito[^-])
+#FSTD_95=-std95 #(taito-[^g]|taito[^-])
+#F90=$(FC) #(taito-[^g]|taito[^-])
+#CC=mpicc #(taito-[^g]|taito[^-])
+#FFLAGS=-O3 -implicitnone #(taito-[^g]|taito[^-])
+#FFLAGS_DOUBLE=-r8 #(taito-[^g]|taito[^-])
+#CFLAGS=-DFUNDERSC=1 -O3 #(taito-[^g]|taito[^-])
+##
+## Taito-gpu: with GPUs - (Kajaani)
+##
+#FC=mpif90 #(taito-gpu)
+#FSTD_95=-std95 #(taito-gpu)
+#F90=$(FC) #(taito-gpu)
+#CC=mpicc #(taito-gpu)
+#FFLAGS=-O1 -fbacktrace #(taito-gpu)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(taito-gpu)
+#CFLAGS=-DFUNDERSC=1 -O3 #(taito-gpu)
 ##
 ## Triton.aalto.fi: FGI cluster at Aalto
 ##
@@ -2067,10 +2197,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## Petri's work laptop (MacBook Pro)
 ##
-#FC=mpif90 #(lm3-huckleberry|dhcp-eduroam-hy*)
-#FFLAGS= -O3 #(lm3-huckleberry|dhcp-eduroam-hy*)
-#CFLAGS=-DFUNDERSC=1 #(lm3-huckleberry|dhcp-eduroam-hy*)
-#FFLAGS_DOUBLE=-fdefault-real-8  #(lm3-huckleberry|dhcp-eduroam-hy*)
+#FC=mpif90 #(mbp4)
+#FFLAGS= -O3 #(mbp4)
+#CFLAGS=-DFUNDERSC=1 #(mbp4)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(mbp4)
 ##
 ##
 ## Piyali's work laptop at UiO(MacBook Pro)
@@ -2139,6 +2269,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##CFLAGS=-DFUNDERSC=2 #(ebisu)
 ##CC=gcc #(ebisu)
 #CC=/usr/local/openmpi_gfortran/bin/mpicc #(ebisu)
+##
+## Chengeng's laptop
+##
+#FC=mpif90 #(Qian)
+#FFLAGS=-O3 #(Qian)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(Qian)
+#CC=mpicc #(Qian)
+#CFLAGS=-O3 -DFUNDERSC=1 #(Qian)
 ##
 ## Nordita MacBook
 ##
@@ -2252,7 +2390,21 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
 # LD?=$(FC)
 LD=$(FC)
-export HDF5_FLINKER:=$(FC)
+
+ifneq ($(HDF5_IO),nohdf5_io)
+	# default location of HDF5 installation
+	HDF5_HOME ?= /usr
+	# set if undefined
+	HDF5_INC ?= $(HDF5_HOME)/include
+	HDF5_LIB ?= $(HDF5_HOME)/lib
+	HDF5_BIN ?= $(HDF5_HOME)/bin
+	# add HDF5 library path
+	LDFLAGS += -L$(HDF5_LIB)
+	# set HDF5 linker
+	LD := $(HDF5_BIN)/h5fc
+	export HDF5_FLINKER:=$(FC)
+endif
+
 #
 #  RULES SECTION
 #
@@ -2266,12 +2418,14 @@ export HDF5_FLINKER:=$(FC)
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
+
 special/%.o : special/%.f90
 ifeq ($(SPECIAL_MULT),1)
-	@$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
 else
-	@$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
 endif
+
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
@@ -2280,13 +2434,13 @@ endif
 #
 #  Default target (start.x and run.x are compiled in "code").
 #
-legacy_default: Makefile cparam.inc legacy_code buildinfo
+legacy_default: Makefile cparam.inc legacy_code buildinfo | $(SPECIAL_DEPS)
 default_to_be: Makefile cparam.inc code buildinfo
 #
 #  Short hand for modules that must be preprocessed with mkcparam.
 #  Please use alphabetical order.
 #
-preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(SUPERSAT_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
+preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GPU_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_CONDENSATION_SRC)  $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_CAUSTICS_SRC) $(PARTICLES_TETRAD_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_PERSISTENCE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(ASCALAR_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
 ifeq ($(SPECIAL_MULT),1)
   preprocess += $(SPECIAL_MODULES:=.f90)
 endif
@@ -2295,106 +2449,135 @@ endif
 #  Static libraries (.a files) must be placed in the end.
 #  Please use alphabetical order.
 #
-physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(DENSITY_OBJ) $(DENSITY_METHODS_OBJ) $(DETONATE_OBJ) $(DUSTDENSITY_OBJ) $(DUSTVELOCITY_OBJ) $(ENERGY_OBJ) $(EOS_OBJ) $(FORCING_OBJ) $(GRAVITY_OBJ) $(HEATFLUX_OBJ) $(HYDRO_OBJ) $(HYPERRESI_STRICT_OBJ) $(HYPERVISC_STRICT_OBJ) $(IMPLICIT_PHYSICS_OBJ) $(INTERSTELLAR_OBJ) $(LORENZ_GAUGE_OBJ) $(NEUTRALDENSITY_OBJ) $(NEUTRALVELOCITY_OBJ) $(OPACITY_OBJ) $(POINTMASSES_OBJ) $(POISSON_OBJ) $(POLYMER_OBJ) $(PSCALAR_OBJ) $(RADIATION_OBJ) $(SELFGRAVITY_OBJ) $(SHEAR_OBJ) $(SHOCK_OBJ) $(SPECIAL_OBJ) $(SUPERSAT_OBJ) $(TESTFIELD_GENERAL_OBJ) $(TESTFIELD_OBJ) $(TESTFLOW_OBJ) $(TESTSCALAR_OBJ) $(VISCOSITY_OBJ) magnetic.a $(PARTICLES_MAIN).a
+physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(DENSITY_OBJ) $(DENSITY_METHODS_OBJ) $(DETONATE_OBJ) $(DUSTDENSITY_OBJ) $(DUSTVELOCITY_OBJ) $(ENERGY_OBJ) $(EOS_OBJ) $(FORCING_OBJ) $(GRAVITY_OBJ) $(HEATFLUX_OBJ) $(HYDRO_OBJ) $(HYPERRESI_STRICT_OBJ) $(HYPERVISC_STRICT_OBJ) $(IMPLICIT_PHYSICS_OBJ) $(INTERSTELLAR_OBJ) $(LORENZ_GAUGE_OBJ) $(NEUTRALDENSITY_OBJ) $(NEUTRALVELOCITY_OBJ) $(OPACITY_OBJ) $(POINTMASSES_OBJ) $(POISSON_OBJ) $(POLYMER_OBJ) $(PSCALAR_OBJ) $(RADIATION_OBJ) $(SELFGRAVITY_OBJ) $(SHEAR_OBJ) $(SHOCK_OBJ) $(SPECIAL_OBJ) $(ASCALAR_OBJ) $(TESTFIELD_GENERAL_OBJ) $(TESTFIELD_OBJ) $(TESTFLOW_OBJ) $(TESTSCALAR_OBJ) $(VISCOSITY_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a
+technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(SNAPSHOT_OBJ) $(solid_cells_objects) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) $(YINYANG_MPI_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
-start=$(physics) $(technical)
+start=$(physics) $(technical) nogpu.o
 #
 #  Short hand notation for run.o dependencies.
 #
-run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
+run=$(physics) $(technical) $(GPU_OBJ) $(GPU_INTERFACE) $(TIMESTEP_OBJ) equ.o pencil_check.o
 #
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
 start.o: $(start) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
-	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x $(LDFLAGS)
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x $(LDFLAGS) $(LDFLAGS_MAIN)
 #
 run.o: $(run) Makefile.local
-run.x: run.o | $(SPECIAL_DEPS)
-	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x $(LDFLAGS)
+run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
+	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) $(LIBGPU) -o run.x $(LDFLAGS) $(LDFLAGS_MAIN)
+#
 special_preps:
 ifneq ($(SPECIAL_MULT),1)
-	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > tmp
-	@if ! cmp -s tmp $(SPECIAL_MODULES).f90; then mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; fi
+	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > special.tmp
+	@if ! cmp -s special.tmp $(SPECIAL_MODULES).f90; then mv -f special.tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; else rm -f special.tmp; fi
 else
-	@list="$(subst special/,,$(SPECIAL_MODULES))";sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > tmp; mv -f tmp $(PENCIL_HOME)/src/special.f90
+	@list="$(subst special/,,$(SPECIAL_MODULES))";sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > special.tmp; mv -f special.tmp $(PENCIL_HOME)/src/special.f90
 	@for file in $(SPECIAL_MODULES); do sed -e"s/^\(module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
-					 < $$file.f90 > tmp; if ! cmp -s tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f tmp $(PENCIL_HOME)/src/$$file.f90; fi ; done
+					 < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ; done
 endif
 special.dll: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.dll
 #
+# writes moduleflags in cuda/src_new/common/PC_moduleflags.h, list of needed physics module source files in cuda/src_new/PC_modulesources
+# 
+gpu_preps: cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources
+#
+cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources: .sentinel
+#
+.sentinel: Makefile.local
+	@touch .sentinel
+	@rm -f cuda/src_new/common/PC_moduleflags.h
+	@echo '#pragma once' > cuda/src_new/common/PC_moduleflags.h
+	@sed -f gpu.sed < Makefile.local >> cuda/src_new/common/PC_moduleflags.h
+ifeq ($(VISCOSITY),viscosity)
+	@echo '#define VISCOSITY // ../../viscosity.f90' >> cuda/src_new/common/PC_moduleflags.h
+	@echo '../../viscosity.f90 \' >> cuda/src_new/PC_modulesources
+endif
+ifeq ($(TIMESTEP),timestep)
+	@echo '../../timestep.f90 \' >> cuda/src_new/PC_modulesources
+endif
+ifeq ($(EOS),noeos)
+	@echo '../../noeos.f90' >> cuda/src_new/PC_modulesources
+else
+	@echo '' >> cuda/src_new/PC_modulesources
+endif
+#	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < cuda/src_new/common/PC_moduleflags.h >> cuda/src_new/PC_modulesources
+#
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-basics=cparam.o cdata.o general.o $(SYSCALLS_OBJ) syscalls_ansi.o $(NOMPICOMM_OBJ)
+basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) syscalls_ansi.o $(NOMPICOMM_OBJ)
 #
 combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
-	$(LD) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x $(LDFLAGS)
+	$(LD) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 read_videofiles.o: $(basics)
 read_videofiles.x: read_videofiles.o
-	$(LD) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x $(LDFLAGS)
+	$(LD) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 read_all_videofiles.o: $(basics)
 read_all_videofiles.x: read_all_videofiles.o
-	$(LD) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x $(LDFLAGS)
+	$(LD) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
-	$(LD) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x $(LDFLAGS)
+	$(LD) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
-technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
+technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(solid_cells_objects) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
-	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
-	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
-	$(LD) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute_z.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
-	$(LD) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_configtest.o: pre_and_post_processing/pc_configtest.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_configtest.x: pre_and_post_processing/pc_configtest.o
-	$(LD) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
-	$(LD) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
-	$(LD) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x $(LDFLAGS) $(LDFLAGS_HELPER)
 #
 pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_solid.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
-	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x $(LDFLAGS)
+	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x $(LDFLAGS) $(LDFLAGS_HELPER)
+#
+hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -I$(HDF5_INC) -o hdf5_io_parallel.o -c hdf5_io_parallel.f90
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
 experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) | experimental/analyzers.o
 experimental/pc_meanfield_collect.x: experimental/pc_meanfield_collect.o
-	$(LD) experimental/analyzers.o experimental/pc_meanfield_collect.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_meanfield_collect.x
+	$(LD) experimental/analyzers.o experimental/pc_meanfield_collect.o $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_meanfield_collect.x
 experimental/pc_h5collect.o: experimental/pc_h5collect.f90 $(start) | experimental/analyzers.o
 experimental/pc_h5collect.x: experimental/pc_h5collect.o
-	$(LD) experimental/analyzers.o experimental/pc_h5collect.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_h5collect.x
+	$(LD) experimental/analyzers.o experimental/pc_h5collect.o $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_h5collect.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
@@ -2457,7 +2640,7 @@ buildinfo:
 	    -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENERGY='$(ENERGY)';" \
 	    -e "MAGNETIC='$(MAGNETIC)';MAGNETIC_MEANFIELD='$(MAGNETIC_MEANFIELD)';" \
 	    -e "RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
-	    -e "SUPERSAT='$(SUPERSAT)';" \
+	    -e "ASCALAR='$(ASCALAR)';" \
 	    -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
 	    -e "POLYMER='$(POLYMER)';" \
 	    -e "POINTMASSES='$(POINTMASSES)';" \
@@ -2471,25 +2654,24 @@ buildinfo:
 	    -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';INITIAL_CONDITION='$(INITIAL_CONDITION)';" \
 	    -e "PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
 	    -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';" \
-	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 	    -e "PARTICLES_GRAD='$(PARTICLES_GRAD)';" \
 	    -e "PARTICLES_TEMPERATURE='$(PARTICLES_TEMPERATURE)';PARTICLES_ADSORBED='$(PARTICLES_ADSORBED)';" \
 	    -e "PARTICLES_MASS='$(PARTICLES_MASS)';PARTICLES_SURFSPEC='$(PARTICLES_SURFSPEC)';" \
 	    -e "PARTICLES_DRAG='$(PARTICLES_DRAG)';" \
 	    -e "PARTICLES_SPIN='$(PARTICLES_SPIN)';PARTICLES_CHEMISTRY='$(PARTICLES_CHEMISTRY)';" > .buildinfo
+#	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	scripts/mkcparam -b $(preprocess) -o cparam.inc
-	@cat cparam.inc | perl -ne '$$H{$$_}++ or print' > tmp
-	@mv -f tmp cparam.inc
+	scripts/mkcparam -b $(preprocess) -o cparam.inc.tmp
+	@cat cparam.inc.tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
+	@rm -f cparam.inc.tmp
+	@if [ ! -e cparam.inc ] || [ "`diff -w cparam.inc.prelim cparam.inc`" != "" ]; then \
+	  mv -f cparam.inc.prelim cparam.inc; \
+	else \
+	  rm -f cparam.inc.prelim; \
+	fi
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
-	if [ "" ]; then \
-	    rm -f cparam.inc; \
-	    rm -f cparam_pencils.inc; \
-	    ln -s cparam.inc cparam.inc; \
-	    ln -s cparam_pencils.inc cparam_pencils.inc; \
-	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
@@ -2499,14 +2681,14 @@ else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
 endif
 #
-initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
+initial_condition_dummies.inc:  Makefile.local noinitial_condition.f90 $(INITIAL_CONDITION).f90
 	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 -o initial_condition_dummies.inc
 #
-file_io_common.inc:  Makefile.local $(FILE_IO).f90
+file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 	scripts/mkdummyinc -d file_io_common.f90 -s $(FILE_IO).f90 -o file_io_common.inc
 #
 mpicomm_double.f90: mpicomm.f90
-	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
+	sed -e 's/REAL/DOUBLE_PRECISION/g' -e 's/MPI_COMPLEX/MPI_DOUBLE_COMPLEX/g' mpicomm.f90 > mpicomm_double.f90
 #
 ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
@@ -2520,16 +2702,19 @@ mpicomm_double_.f90: mpicomm_double.f90
 nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 #
-EXECUTABLES=start.x run.x \
+MAIN_EXECUTABLES=start.x run.x
+HELPER_EXECUTABLES= \
 	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x \
 	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
+ALL_EXECUTABLES=$(MAIN_EXECUTABLES) $(HELPER_EXECUTABLES)
+EXECUTABLES=$(ALL_EXECUTABLES)
 #
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-legacy_code: Makefile.inc Makefile-standard.inc cparam.inc
+legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 	@# Realize error even when last command in pipe is FCCLEANER:
@@ -2580,8 +2765,8 @@ debug:
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) -o start.x $(LDFLAGS)
-	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x $(LDFLAGS)
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LIBGPU) -o start.x $(LDFLAGS) $(LDFLAGS_MAIN)
+	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LIBGPU) -o run.x $(LDFLAGS) $(LDFLAGS_MAIN)
 #
 #  Needed for the underscore trick.
 #
@@ -2595,7 +2780,7 @@ mpicomm_.f90: mpicomm.f90
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 
-$(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
+$(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC) $(PARTICLES_OBJ)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o fftpack.o -c fftpack.f90
@@ -2610,18 +2795,6 @@ file_io_f95.o: file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o file_io_dist.o -c file_io_dist.f90
 #
-#  Remove all build files, but keep executables (misleading name..)
-#
-run:
-	rm -f *.o *.mod *.d
-	rm -f work.pc work.pcl
-#
-#  Alternative to make run. To copy executables to parent directory. Make
-#  clean(n) could then be run on the source. (misleading name..)
-#
-install:
-	cp *.x ../
-#
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
 #  temporarily create them
@@ -2631,17 +2804,26 @@ TAGS: $(TAG_SOURCE)
 	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
 	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
 #
+#  Slender the src/ directory by removing object and module files.
+#
+slender:
+	rm -f *.o *.a *.mod
+	rm -f experimental/*.o experimental/*.mod
+	rm -f initial_condition/*.o initial_condition/*.mod
+	rm -f magnetic/*.o magnetic/*.mod
+	rm -f pre_and_post_processing/*.o
+	rm -f special/*.o special/*.mod
+	rm -f test_methods/*.o test_methods/*.mod
+#
 #  Clean up, but leave makefile and TAGS.
 #
-clean:
-	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
-	rm -f special/*.o special/*.mod
-	rm -f initial_condition/*.o initial_condition/*.mod
-	rm -f experimental/*.o experimental/*.mod
-	rm -f pre_and_post_processing/*.o pre_and_post_processing/*.x
+clean:  slender
+	rm -f *.x *.d cparam*.inc* cparam_pencils*.inc file_io_common.inc *.il
+	rm -f pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
+	rm -f .sentinel cuda/src_new/PC_modulesources cuda/src_new/common/PC_moduleflags.h  # for GPU
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #

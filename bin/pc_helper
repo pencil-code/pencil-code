@@ -1,0 +1,30 @@
+#!/bin/csh
+# CVS: $Id$
+
+# Name:   pc_helper
+# Author: MR
+# Date:   19-Feb-2017
+# Description:
+#   Runs a helper executable; builds it first, if necessary
+
+cd src
+if (-e $0:t.f90) then
+  set dir=.
+else
+  set dir=pre_and_post_processing
+  if (!(-e $dir/$0:t.f90)) then
+    echo "No helper executable $0:t.x known."
+    exit
+  endif
+endif
+
+make $dir/$0:t.x > /dev/null
+if ( $? != 0) then
+  echo "Build of executable $0:t.x failed."
+  exit
+endif
+
+set dir=src/$dir
+cd ..
+$dir/$0:t.x
+

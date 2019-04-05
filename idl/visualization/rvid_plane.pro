@@ -91,6 +91,11 @@ default,maptype,'orthographic'
 ;
 sample = ~keyword_set(interp)
 ;
+if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
+;
+cmd='if not s.'+strtrim(extension,2)+'read then begin print, "Slice '+extension+' missing!!!" & return & endif'
+ret=execute(cmd)
+;
 tini=1e-30 ; a small number
 ;
 ;  Set up a window for double buffering.
@@ -187,9 +192,18 @@ if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
-  if (not quiet) then print,'file_slice=',file_slice
 endelse
-
+;
+if not file_test(file_slice) then begin
+  print, 'Slice file "'+file_slice+'" does not exist!!!'
+  pos=strpos(file_slice,'.'+extension)
+  compfile=strmid(file_slice,0,pos)+'1'+'.'+extension
+  if file_test(compfile) then $
+    print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
+  return
+endif
+if (not quiet) then print,'Will read "'+file_slice+'".'
+;
 case field of
 'uu1': quan='!8u!dx!n!6'
 'uu2': quan='!8u!dy!n!6'
@@ -392,7 +406,7 @@ endif else if (not keyword_set(doublebuffer)) then begin
     q=Nwy/Nwx
     if yinyang then q=.5
   endelse
-  window, xsize=700, ysize=q*700, title=title
+  window, xsize=700, ysize=700, title=title
 endif
 ;
 ;  Allow for skipping "stride" time slices.
@@ -401,6 +415,7 @@ istride=stride ;(make sure the first one is written)
 ;
 if (keyword_set(global_scaling)) then begin
   first=1L
+  print, 'Reading "'+file_slice+'".'
   openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
   if yinyang and extension eq 'yz' then begin
     ninds=0L
@@ -467,6 +482,7 @@ if (keyword_set(global_scaling)) then begin
   if (not quiet) then print,'Scale using global min, max: ', amin, amax
 endif
 ;
+print, 'Reading "'+file_slice+'".'
 openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
 ;
 ;  Read auxiliary date for Yin-Yang grid: number of points in merged (irregular) grid ngrid and merged grid itself.

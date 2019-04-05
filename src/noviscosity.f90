@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
-! PENCILS PROVIDED visc_heat; nu; gradnu(3)
+! PENCILS PROVIDED visc_heat; nu; gradnu(3); nu_smag
 !
 !***************************************************************
 module Viscosity
@@ -27,6 +27,7 @@ module Viscosity
   include 'viscosity.h'
 !
   logical :: lvisc_first=.false.
+  integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************
@@ -68,8 +69,7 @@ module Viscosity
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_viscosity
 !***********************************************************************

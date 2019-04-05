@@ -82,6 +82,14 @@ module Special
 !
   include 'special.h'
 !
+!  Do this here because shared variables for this array doesn't work on Beskow.
+!
+  integer, parameter :: nk=nxgrid/2
+  real, dimension(nk) :: specGWs   ,specGWh   ,specGWm,   specStr
+  real, dimension(nk) :: specGWshel,specGWhhel,specGWmhel,specStrhel
+  public :: specGWs, specGWshel, specGWh, specGWhhel, specGWm, specGWmhel
+  public :: specStr, specStrhel
+!
 ! Declare index of new variables in f array (if any).
 !
 !!   integer :: ispecial=0
@@ -147,15 +155,6 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
-!
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special')
-      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -311,6 +310,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+!!      use FArrayManager, only: farray_index_append
+!
 !!      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -332,7 +333,7 @@ module Special
 !!
 !!!  write column where which magnetic variable is stored
 !!      if (lwr) then
-!!        write(3,*) 'idiag_SPECIAL_DIAGNOSTIC=',idiag_SPECIAL_DIAGNOSTIC
+!!        call farray_index_append('idiag_SPECIAL_DIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
 !!      endif
 !!
     endsubroutine rprint_special
@@ -350,19 +351,6 @@ module Special
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
@@ -608,21 +596,42 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  Possibility to modify the f and df after df is updated.
 !  Used for the Fargo shift, for instance.
 !
 !  27-nov-08/wlad: coded
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
+!***********************************************************************
+    subroutine special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
+!
+!  Possibility to modify fp in the end of a sub-time-step.
+!
+!  28-aug-18/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(in) :: dtsub
+      real, dimension(:,:), intent(in) :: fp, dfp
+      integer, dimension(:,:), intent(in) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(dtsub)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine special_particles_after_dtsub
 !***********************************************************************
     subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !

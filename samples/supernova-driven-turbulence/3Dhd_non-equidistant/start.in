@@ -5,7 +5,8 @@
 &init_pars
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1e-24, unit_temperature=36.637181156923013, unit_magnetic=1e-6
+  unit_density=1.6737236e-24
+  unit_magnetic=1e-6
   xyz0=-0.032,-0.032,-2.0
   xyz1=+0.032,+0.032,+2.0
   lperi=T,T,F
@@ -16,6 +17,8 @@
   xi_step_width = 0.0,0.0,10., 0.0,0.0,10. 
   bcz = 's','s','ubs','ism','ism','s','s'
   lwrite_aux=T
+  lfix_unit_std=T
+  lproper_averages=T
 /
 &initial_condition_pars
   !amplaa=0.0
@@ -38,26 +41,20 @@
   initss='nothing'
 /
 &interstellar_init_pars
-  cooling_select='WSW'
-  heating_select='wolfire'
   initinterstellar='multiple'
-  initial_SNI = 5
+  initial_SNI = 25
   lSNII=T
   lSNI=T
   lSN_scale_rad=T
-  N_mass=50.0
-  width_SN = 0.035
+  N_mass=25.0
+  !rfactor should set minimum radius to 18pc
+  rfactor_SN=4.5
   frac_kin=0.0
-  frac_eth=1.0
-  lSN_ecr=F
-  lSN_mass=T
-  lSN_velocity=F
-  energy_width_ratio=1.0
-  mass_width_ratio=1.0
-  thermal_profile='gaussian3'
+  frac_ecr=0.0
+  mass_width_ratio=1.75
   mass_profile='gaussian3'
-  TT_SN_max=2.72e7 !1e9 K
-  rho_SN_max=8.364 !5ppcc
+  energy_width_ratio=1.0
+  thermal_profile='gaussian2'
 /
 &shear_init_pars
   Sshear=-25.0

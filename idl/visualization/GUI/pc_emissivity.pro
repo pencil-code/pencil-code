@@ -178,8 +178,8 @@ pro pc_emissivity_precalc
 		end
 	end
 
-	if (bin_x ne 1 or bin_z ne 1) then em_x = congrid (em_x, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
-	if (bin_y ne 1 or bin_z ne 1) then em_y = congrid (em_y, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
+	if (bin_x ne 1 or bin_z ne 1) then em_x = congrid (em_x, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
+	if (bin_y ne 1 or bin_z ne 1) then em_y = congrid (em_y, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
 	if (bin_x ne 1 or bin_y ne 1) then em_z = congrid (em_z, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
 end
 

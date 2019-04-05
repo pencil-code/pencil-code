@@ -1,8 +1,10 @@
 ################
 ##
-##	io
+##	diag
 ##
 ################
 
-from tracers import *
-from fixed_points import *
+from .tracers import *
+from .fixed_points import *
+from .particle import *
+from .gas_alpha import *

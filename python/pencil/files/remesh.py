@@ -29,13 +29,19 @@ import pencil as pc
 from scipy.io import FortranFile as ftn
 
 def interp_var(
-                var='var.dat', 
+                oldvar='var.dat',
+                newvar='var.dat',
                 source='old_run', target='new_run', 
                 source_path=None, target_path=None,
                 xlim=None, ylim=None, zlim=None,
+                xrepeat=1,
+                yrepeat=1,
+                zrepeat=1,
                 time=None,
                 deltay=None,
-                nghosts=3
+                arrs=None,
+                innghosts=3,
+                outghosts=3
               ):
     """ load var file to be interpolated from old simulation and var file from
     started new simulation of correct shape and processor layout
@@ -50,35 +56,36 @@ def interp_var(
             return 
         os.chdir(localdir+source)
         print('loading data from '+localdir+source)
-        fold=pc.read_var(var,quiet=True)
+        fold=pc.read_var(oldvar,quiet=True)
     else:
         if not os.path.exists(source_path):
             print('error: source_path does not exist')
             return 
         os.chdir(source_path)
         print('loading data from '+source_path)
-        fold=pc.read_var(var,quiet=True)
+        fold=pc.read_var(oldvar,quiet=True)
     if target_path==None:
         if not os.path.exists(localdir+target):
             print('error: target_path must be specified as string')
             return 
         os.chdir(localdir+target)
         print('loading data from '+localdir+target)
-        fnew=pc.read_var(var,quiet=True)
+        fnew=pc.read_var(newvar,quiet=True)
     else:
         if not os.path.exists(target_path):
             print('error: target_path does not exist')
             return 
         os.chdir(target_path)
         print('loading data from '+target_path)
-        fnew=pc.read_var(var,quiet=True)
+        fnew=pc.read_var(newvar,quiet=True)
     if xlim==None:
         xlim=[fold.x.min(),fold.x.max()]
     if ylim==None:
         ylim=[fold.y.min(),fold.y.max()]
     if zlim==None:
         zlim=[fold.z.min(),fold.z.max()]
-    arrs=['uu','rho','lnrho','ss','aa','shock','netheat','cooling']
+    if arrs==None:
+        arrs=['uu','rho','lnrho','ss','aa','shock','netheat','cooling']
     iarr=0
     x=np.linspace(xlim[0],xlim[1],fnew.x.size)
     y=np.linspace(ylim[0],ylim[1],fnew.y.size)
@@ -87,13 +94,16 @@ def interp_var(
         if hasattr(fold,arr):
             print('interpolating '+arr)
             tmp = fold.__getattribute__(arr)
-            intmpx = interp1d(fold.x,tmp,axis=-1)
-            tmp = intmpx(x)
-            intmpy = interp1d(fold.y,tmp,axis=-2)
-            tmp=intmpy(y)
-            intmpz = interp1d(fold.z,tmp,axis=-3)
-            tmp = intmpz(z)
-            fnew.__getattribute__(arr)[:] = tmp
+            if xrepeat == 1:
+                intmpx = interp1d(fold.x,tmp,axis=-1)
+                tmp = intmpx(x)
+            if yrepeat == 1:
+                intmpy = interp1d(fold.y,tmp,axis=-2)
+                tmp=intmpy(y)
+            if zrepeat == 1:
+                intmpz = interp1d(fold.z,tmp,axis=-3)
+                tmp = intmpz(z)
+                fnew.__getattribute__(arr)[:] = tmp
             if len(tmp.shape)==4:
                 fnew.f[iarr:iarr+3] = tmp
                 iarr += 3
@@ -101,8 +111,8 @@ def interp_var(
                 fnew.f[iarr] = tmp
                 iarr += 1
     if hasattr(fold,'deltay'):
-        fnew.deltay = fold.deltay*(fnew.y.size-2*nghosts)/float(
-                                   fold.y.size-2*nghosts)
+        fnew.deltay = fold.deltay*(fnew.y.size-2*innghosts)/float(
+                                   fold.y.size-2*outghosts)
     if not time==None:
         fnew.t=time
     return fnew

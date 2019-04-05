@@ -8,7 +8,7 @@
  ANSI C and standard library callable function wrappers for use in Fortran.
  Written to compensate for inadequatenesses in the Fortran95/2003 standards.
 */
-
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dlfcn.h>
 
 #include "headers_c.h"
 
@@ -44,9 +45,72 @@ void FTNIZE(file_size_c)
 
   *bytes = fileStat.st_size;
 }
-
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller)
+     (void (*func)(float* par1, ... ), FINT* npar, ... )
+{
+  float **arg=(float**)&npar;
 
+  switch(*npar)
+  {
+  case 1: func(*(arg+1));
+  case 2: func(*(arg+1),*(arg+2));
+  case 3: func(*(arg+1),*(arg+2),*(arg+3));
+  case 4: func(*(arg+1),*(arg+2),*(arg+3),*(arg+4));
+  case 5: func(*(arg+1),*(arg+2),*(arg+3),*(arg+4),*(arg+5));
+  default: return;
+  }
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(caller0)
+     (void (*func)(void))
+{
+   func(); 
+}
+/* ---------------------------------------------------------------------- */
+void *FTNIZE(dlopen_c)(const char *filename, FINT *flag)
+{
+ const int ALLNOW=1;
+ void *pointer;
+ void *p1;
+ char *name;
+
+printf("library = %s\n", filename);
+
+ if (*flag==ALLNOW)
+ {
+/*   pointer = dlopen(filename, RTLD_LAZY); 
+printf("pointer = %d\n", pointer);
+   name = "fargo_mp_initialize_special_";
+   p1 = dlsym(pointer,name);
+printf("handlel = %d\n", p1);
+*/
+   //return dlopen(filename, RTLD_NOW); 
+ }
+ else
+   //return dlopen(filename, RTLD_LAZY); 
+ return NULL;
+}
+/* ---------------------------------------------------------------------- */
+void *FTNIZE(dlsym_c)(void *handle, const char *symbol)
+{
+//printf("handlel = %d\n", handle);
+//printf("symbol = %s\n", symbol);
+ return dlsym(handle, symbol); 
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(dlclose_c)(void *handle)
+{
+ dlclose(handle);
+}
+/* ---------------------------------------------------------------------- */
+char* FTNIZE(dlerror_c)(void)
+{
+ char *error=dlerror();
+printf("error = %s\n", dlerror());
+ return error;
+}       
+/* ---------------------------------------------------------------------- */
 void FTNIZE(write_binary_file_c)
      (char *filename, FINT *bytes, char *buffer, FINT *result)
 /* Writes a given buffer to a binary file.
@@ -169,6 +233,10 @@ void FTNIZE(sizeof_real_c)
 {
   *result = sizeof (*value);
 }
-
+/* ---------------------------------------------------------------------- */
+  void FTNIZE(copy_addr_c)(void *src, void **dest)
+  {
+    *dest=src;
+  }
 /* ---------------------------------------------------------------------- */
 

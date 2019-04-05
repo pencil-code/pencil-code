@@ -1,4 +1,4 @@
-! $Id$
+! $Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $
 !
 !  Radial gravity
 !
@@ -44,8 +44,9 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: gravz_const=1.,reduced_top=1.
   real :: g0=0.
-  real :: g1=0.,rp1,rp1_pot=0.
+  real, target :: g1=0.,rp1=1.0,rp1_pot=impossible
   real, target :: gsum=0.
+  real :: rp1_smooth,rp1_smooth1,frac_smooth=1.0
   real :: r0_pot=0.,r1_pot1=0.    ! peak radius for smoothed potential
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
@@ -56,7 +57,8 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz=0.,zinfty
   real :: nu_epicycle=1.0
-  real :: t_ramp_mass=impossible,t1_ramp_mass
+  real, target :: t_ramp_mass=impossible
+  real :: t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
   character (len=labellen) :: ipotential_secondary='plummer'
 !
@@ -64,21 +66,27 @@ module Gravity
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
-  logical :: lindirect_terms=.false.
-  logical :: lramp_mass=.false.
-  integer :: iglobal_gg=0  
+  logical :: lindirect_terms=.true.
+  logical, target :: lramp_mass=.false.
+  integer :: iglobal_gg=0
+  logical, target :: lsecondary_wait=.false.
+  logical :: lcoriolis_force_gravity=.true.
+  logical :: lcentrifugal_force_gravity=.true.
+  real, target :: t_start_secondary = -impossible
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass,&
-      ipotential_secondary
+      ipotential_secondary,lsecondary_wait,t_start_secondary, &
+      lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
-      ipotential_secondary
+      ipotential_secondary,lsecondary_wait,t_start_secondary, &
+      lcoriolis_force_gravity,lcentrifugal_force_gravity,frac_smooth
 !
   contains
 !***********************************************************************
@@ -90,7 +98,7 @@ module Gravity
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id("$Id$")
+      if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
       lgravr=.true.
       lgravr_gas =.true.
@@ -133,11 +141,54 @@ module Gravity
              "companion gravity coded only for corotational frame")
       endif
 !
-!  Share gsum to modules that may need it
+!  Smoothing radius
+!
+      if (rp1_pot == impossible) then
+         rp1_smooth   = frac_smooth * rp1 * (g1/3.)**(1./3)
+         if (rp1_smooth /= 0) then
+           rp1_smooth1  = 1./rp1_smooth
+         else
+           rp1_smooth1 = 0.
+         endif
+      endif
+!
+!  Share variables related to corotational frame to modules that may need it
 !
       call put_shared_variable('gsum',gsum,ierr)
       if (ierr/=0) call fatal_error('initialize_gravity', &
           'there was a problem when putting gsum')
+!
+      call put_shared_variable('g0',g0,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting g0')
+!
+      call put_shared_variable('g1',g1,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting g1')
+!
+      call put_shared_variable('rp1',rp1,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting rp1')
+!
+      call put_shared_variable('rp1_pot',rp1_pot,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting rp1_pot')
+!
+      call put_shared_variable('lramp_mass',lramp_mass,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting lramp_mass')
+!
+      call put_shared_variable('t_ramp_mass',t_ramp_mass,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting t_ramp_mass')
+!
+      call put_shared_variable('lsecondary_wait',lsecondary_wait,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting lsecondary_wait')
+!
+      call put_shared_variable('t_start_secondary',t_start_secondary,ierr)
+      if (ierr/=0) call fatal_error('initialize_gravity', &
+          'there was a problem when putting t_start_secondary')
 !
 !  Shortcut for optimization
 !
@@ -455,7 +506,7 @@ module Gravity
 !  If there is a secondary body whose mass is changing in time (ramped-up), then 
 !  this gravity is not added to the global array. It is re-calculated instead. 
 !
-        if (g1/=0 .and. lramp_mass) then
+        if (g1/=0 .and. (lramp_mass.or.lsecondary_wait)) then
           call secondary_body_gravity(ggp)
           p%gg = p%gg + ggp
         endif
@@ -515,6 +566,24 @@ module Gravity
 !  Add the indirect terms from the motion of the primary in a non-inertial frame,
 !  plus the Coriolis and centrifugal terms from the motion of the secondary.
 !
+!  The indirect potential is Phi = GMp/rp**3 r dot rp
+!
+!  Mp is planet mass and rp planet position. For rp=(1,0,0), the potential is
+!
+!    Phi = gp * x = gp * r*cos(phi)
+!
+!  with gp = GMp/rp**2. So the resulting acceleration is, in cylindrical: 
+!
+!    grad = -       dPhi/drad = - gp * cos(phi)
+!    gphi = - 1/r * dPhi/dphi =   gp * sin(phi)
+!    gzed = -       dPhi/dzed =   0.
+!
+!  In spherical coordinates, x = r*sin(tht)*cos(phi), so 
+!
+!    grad = -                  dPhi/drad = - gp * sin(tht)*cos(phi)
+!    gtht = - 1/ r           * dPhi/dtht = - gp * cos(tht)*cos(phi)
+!    gphi = - 1/[r*sin(tht)] * dPhi/dphi =   gp *          sin(phi)  
+!
 !  20-jul-14/wlad: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -531,24 +600,33 @@ module Gravity
         g2 = g1/rp1**2
       endif
 !
+!  Do not allow secondary before t_start_secondary
+!
+      if (lsecondary_wait .and. t <= t_start_secondary) then
+        g2 = 0. 
+      endif
+!
       if (lcylindrical_coords) then
 !
 !  Indirect terms
 !
         if (lindirect_terms) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + g2*sin(y(m))
         endif
 !
 !  Coriolis force
 !
-        c2 = 2*Omega_corot
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + c2*p%uu(:,2)
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - c2*p%uu(:,1)
+        if (lcoriolis_force_gravity) then
+          c2 = 2*Omega_corot
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + c2*p%uu(:,2)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - c2*p%uu(:,1)
+        endif
 !
 !  Centrifugal force
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_corot**2
+        if (lcentrifugal_force_gravity) &
+             df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + x(l1:l2)*Omega_corot**2
 !
       else if (lspherical_coords) then
 !
@@ -560,20 +638,24 @@ module Gravity
           df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + g2*         sinph(n)
         endif
 !
-        c2 = 2*Omega_corot*costh(m)
-        s2 = 2*Omega_corot*sinth(m)
-!
 !  Coriolis force
 !
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) - s2*p%uu(:,1)
+        if (lcoriolis_force_gravity) then
+          c2 = 2*Omega_corot*costh(m)
+          s2 = 2*Omega_corot*sinth(m)
+!
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + s2*p%uu(:,3)
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + c2*p%uu(:,3)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - c2*p%uu(:,2) - s2*p%uu(:,1)
+        endif
 !
 !  Centrifugal force
 !
-        rrcyl_mn=x(l1:l2)*sinth(m)
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_corot**2
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_corot**2
+        if (lcentrifugal_force_gravity) then
+          rrcyl_mn=x(l1:l2)*sinth(m)
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + rrcyl_mn*sinth(m)*Omega_corot**2
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + rrcyl_mn*costh(m)*Omega_corot**2
+        endif
 !
       endif
 !
@@ -958,7 +1040,7 @@ module Gravity
 !
 !  Add the gravity of a stationary secondary body (i.e., following reference frame)
 !
-      if (g1/=0 .and. (.not.lramp_mass)) then 
+      if (g1/=0 .and. (.not.(lramp_mass.or.lsecondary_wait))) then 
 !
 !  In this case, the mass is constant in time. Add to the global array.
 !
@@ -977,12 +1059,9 @@ module Gravity
 !
       real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
-      real :: rhill,rhill1
+      real :: rhill,rhill1,rp1_pot1
       integer :: i
 !
-      rhill  = rp1*(g1/3.)**(1./3)
-      rhill1 = 1./rhill
-!      
       if (lcylindrical_coords) then
         if (lcylindrical_gravity) then
           rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m))
@@ -1002,15 +1081,15 @@ module Gravity
       case ('plummer')
         gp = -g1*(rr2_pm+rp1_pot**2)**(-1.5)
 !           
-      case ('boley')
+     case ('boley')
 !
-!  Correct potential outside Hill sphere
+!  Correct potential outside a sphere of radius rsmooth. Default to Hill sphere.
 !
         do i=1,nx
-          if (rr2_pm(i) .gt. rhill**2) then 
-            gp(i) = -g1*rr2_pm(i)**(-1.5) 
+          if (rr2_pm(i) .gt. rp1_smooth**2) then
+            gp(i) = -g1*rr2_pm(i)**(-1.5)
           else
-            gp(i) =  g1*(3*sqrt(rr2_pm(i))*rhill1 - 4)*rhill1**3
+            gp(i) =  g1*(3*sqrt(rr2_pm(i))*rp1_smooth1 - 4)*rp1_smooth1**3
           endif
         enddo
 !           
@@ -1024,7 +1103,8 @@ module Gravity
 !
       endselect
 !
-      if (lramp_mass.and.(t<=t_ramp_mass)) gp = gp * t*t1_ramp_mass
+      if (lramp_mass     .and.(t<=t_ramp_mass)      ) gp = gp * t*t1_ramp_mass
+      if (lsecondary_wait.and.(t<=t_start_secondary)) gp = 0.
 !       
 !  Set the acceleration
 !
@@ -1048,6 +1128,8 @@ module Gravity
 !
 !  26-apr-03/axel: coded
 !
+      use FArrayManager, only: farray_index_append
+!
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1058,10 +1140,10 @@ module Gravity
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'igg=',igg
-        write(3,*) 'igx=',igx
-        write(3,*) 'igy=',igy
-        write(3,*) 'igz=',igz
+        call farray_index_append('igg',igg)
+        call farray_index_append('igx',igx)
+        call farray_index_append('igy',igy)
+        call farray_index_append('igz',igz)
       endif
 !
       call keep_compiler_quiet(lreset)

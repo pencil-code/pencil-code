@@ -14,8 +14,6 @@ module Diagnostics
 !
   implicit none
 !
-  private
-!
   public :: initialize_diagnostics, prints
   public :: diagnostic, initialize_time_integrals,get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
@@ -23,10 +21,13 @@ module Diagnostics
   public :: phiaverages_rz
   public :: write_1daverages, write_2daverages
   public :: write_sound
-  public :: write_2daverages_prepare, write_zaverages
-  public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
-  public :: save_name_sound
+  public :: write_2daverages_prepare
   public :: name_is_present
+  public :: expand_cname, parse_name, fparse_name
+! GPU-START
+  public :: set_type
+  public :: save_name
+  public :: save_name_halfz, save_name_sound
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
   public :: integrate_mn
@@ -36,23 +37,30 @@ module Diagnostics
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
+  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
+  public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
+! GPU-END
   public :: allocate_fnames,allocate_vnames,allocate_sound
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
-  public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages
-  public :: fnames_clean_up,vnames_clean_up,sound_clean_up
-  public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
-  public :: phizaverages_clean_up
-  public :: yaverages_clean_up, zaverages_clean_up, phiaverages_clean_up
+  public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages, allocate_zaverages_data
+  public :: trim_averages
+  public :: fnames_clean_up, vnames_clean_up, diagnostics_clean_up
   public :: get_from_fname
   public :: init_xaver
   public :: gen_form_legend
-  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, zsum_mn_name_xy_mpar, yzsum_mn_name_x_mpar
+  public :: sign_masked_xyaver
+  public :: report_undefined_diagnostics
 !
   interface max_name
     module procedure max_name_int
     module procedure max_name_real
   endinterface max_name
+!
+  interface sum_name
+    module procedure sum_name_int
+    module procedure sum_name_real
+  endinterface sum_name
 !
   interface expand_cname
     module procedure expand_cname_short
@@ -70,6 +78,18 @@ module Diagnostics
     module procedure sum_mn_name_arr2
     module procedure sum_mn_name_std
   endinterface sum_mn_name
+
+  interface zsum_mn_name_xy
+    module procedure zsum_mn_name_xy_scal
+    module procedure zsum_mn_name_xy_vec
+  endinterface zsum_mn_name_xy
+
+  interface zsum_mn_name_xy_mpar
+    module procedure zsum_mn_name_xy_mpar_scal
+    module procedure zsum_mn_name_xy_mpar_vec
+  endinterface zsum_mn_name_xy_mpar
+!
+  private
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real :: dVol_rel1
@@ -77,9 +97,13 @@ module Diagnostics
   integer :: mnamer
   character (len=intlen) :: ch2davg
 !
+! Variables for Yin-Yang grid: z-averages.
+!
+  real, dimension(:,:,:), allocatable :: fnamexy_cap
+!
   contains
 !***********************************************************************
-    subroutine initialize_diagnostics()
+    subroutine initialize_diagnostics
 !
 !  Setup variables needed for output of diagnostic quantities and
 !  averages.
@@ -91,7 +115,7 @@ module Diagnostics
       integer :: i
       real :: dxeff,dyeff,dzeff
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
-!
+! 
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
 !  of doing it.
@@ -162,18 +186,19 @@ module Diagnostics
 !   3-may-02/axel: coded
 !  20-aug-13/MR: changes for accumulating and complex diagnostics
 !  26-aug-13/MR: corrected insertion of imaginary values
+!  12-jan-17/MR: undefined diagnostics suppressed in output
 !
-      use General, only: safe_character_append
+      use General, only: safe_character_append, compress
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
-      logical,save :: lfirst_call=.true.
-      character (len=640) :: fform,legend,line
+      character (len=1000) :: fform,legend,line
       integer :: iname, iostat, nnamel
       character(LEN=linelen) :: iomsg
       logical :: lop
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
+      logical, save :: lfirst_call = .true.
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -181,9 +206,9 @@ module Diagnostics
 !  point or double precision.
 !
       if (lroot) then
-        if (idiag_t /=0)  call save_name(tdiagnos,idiag_t)
-        if (idiag_dt/=0)  call save_name(dt,idiag_dt)
-        if (idiag_it/=0)  call save_name(one_real*(it-1),idiag_it)
+        call save_name(tdiagnos,idiag_t)
+        call save_name(dt,idiag_dt)
+        call save_name(one_real*(it-1),idiag_it)
       endif
 !
       if (lroot) then
@@ -208,11 +233,8 @@ module Diagnostics
         if (lfirst_call) then
           write(*,*)
           write(*,'(" ",A)') trim(legend)
-        endif
 !
 !  Write legend to extra file (might want to do only once after each lreset)
-!
-        if (lfirst_call) then
 !
           open(lun,file=trim(datadir)//'/legend.dat',IOSTAT=iostat,iomsg=iomsg)
           if (.not. outlog(iostat,'openw',trim(datadir)//'/legend.dat', &
@@ -228,24 +250,26 @@ module Diagnostics
           endif
         endif
 !
-!  Put output line into a string.
-!
-        if (ldebug) write(*,*) 'bef. writing prints'
+        if (ldebug) write(*,*) 'before writing prints'
         buffer(1:nname) = fname(1:nname)
 !
-!  add accumulated values to current ones if existent
+!  Add accumulated values to current ones if existent.
 !
         where( fname_keep(1:nname) /= impossible .and. &
                itype_name(1:nname)<ilabel_complex ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
+!  Insert imaginary parts behind real ones if quantity is complex.
+!
         nnamel=nname
         do iname=nname,1,-1
-          if (itype_name(iname)>=ilabel_complex) then
+          if (itype_name(iname)>=ilabel_complex .and. cform(iname)/='') &
             call insert(buffer,(/fname_keep(iname)/),iname+1,nnamel)
-          endif
         enddo
 !
+!  Put output line into a string.
+!
+        call compress(buffer,cform=='',nnamel)
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
 !
@@ -259,6 +283,7 @@ module Diagnostics
 !
           if (lfirst_call) then
             write(lun,"('"//comment_char//"',a)",IOSTAT=iostat,iomsg=iomsg) trim(legend)
+            lfirst_call = .false.
             if (.not. outlog(iostat,'legend',iomsg=iomsg)) continue
           endif
 !
@@ -274,12 +299,11 @@ module Diagnostics
 !  Write to stdout.
 !
         write(*,'(a)') trim(line)
-        flush(6)
+        !flush(6)                 ! this is a F2003 feature....
 !
-      endif                     ! (lroot)
+      endif                      ! (lroot)
 !
       if (ldebug) write(*,*) 'exit prints'
-      lfirst_call = .false.
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
@@ -289,20 +313,68 @@ module Diagnostics
 !
     endsubroutine prints
 !***********************************************************************
+    subroutine report_undefined(cname,cform,len,file)
+!
+!  Reports diagnostics requested in cname, but undefined (their format is empty in cform).
+!
+!  12-jan-17/MR: coded
+!
+      character(len=*), dimension(:), intent(IN) :: cname,cform
+      integer,                         intent(IN) :: len
+      character(len=*),                intent(IN) :: file
+
+      integer :: ind, i
+      character(LEN=256) :: text
+
+      text='WARNING:'; ind=-1
+      do i=1,len
+        if (cname(i)/=''.and.cform(i)=='') then
+          ind=index(cname(i),'('); if (ind==0) ind=31
+          text=trim(text)//' '//trim(cname(i)(1:ind-1))//','
+        endif
+      enddo
+
+      if (ind/=-1) then
+        text=text(1:index(text,',',BACK=.true.)-1)//' diagnostic(s) in '//trim(file)//' not defined!'
+        print*, trim(text)
+      endif
+
+    endsubroutine report_undefined
+!***********************************************************************
+    subroutine report_undefined_diagnostics
+
+      if (lroot) then
+        call report_undefined(cname,cform,nname,'print.in')
+        call report_undefined(cname_sound,cform_sound,nname_sound,'sound.in')
+        call report_undefined(cnamex,cformx,nnamex,'yzaver.in')
+        call report_undefined(cnamey,cformy,nnamey,'xzaver.in')
+        call report_undefined(cnamez,cformz,nnamez,'xyaver.in')
+        call report_undefined(cnamer,cformr,nnamer,'phizaver.in')
+        call report_undefined(cnamexy,cformxy,nnamexy,'zaver.in')
+        call report_undefined(cnamexz,cformxz,nnamexz,'yaver.in')
+        call report_undefined(cnamerz,cformrz,nnamerz,'phiaver.in')
+        call report_undefined(cnamev,cformv,nnamev,'video.in')
+      endif
+
+    endsubroutine report_undefined_diagnostics
+!***********************************************************************
     subroutine gen_form_legend(fform,legend)
 !
 !  19-aug-13/MR: outsourced from prints
+!  10-jan-17/MR: added adjustment of fixed point format to output value
+!  12-jan-17/MR: undefined diagnostics suppressed in format
 !
-      use General, only: safe_character_append
+      use General, only: safe_character_append, itoa
       use Sub, only: noform
 !
-      character (len=640)          ,intent(OUT) :: fform
-      character (len=640), optional,intent(OUT) :: legend
+      character (len=*)          ,intent(OUT) :: fform
+      character (len=*), optional,intent(OUT) :: legend
 !
       character, parameter :: comma=','
       character(len=40)    :: tform
-      integer              :: iname
+      integer              :: iname, index_i, index_d, length
       logical              :: lcompl
+      real                 :: rlength
 !
 !  Produce the format.
 !
@@ -310,18 +382,37 @@ module Diagnostics
         if (present(legend)) legend=''
 !
         do iname=1,nname
+!
+          if (cform(iname)/='') then
 
-          lcompl=itype_name(iname)>=ilabel_complex
+            lcompl=itype_name(iname)>=ilabel_complex
 
-          if (lcompl) then
-            tform = comma//'" ("'//comma//trim(cform(iname))//comma &
-              //'","'//comma//trim(cform(iname))//comma//'")"'
-          else
-            tform = comma//trim(cform(iname))
+            if (lcompl) then
+              tform = comma//'" ("'//comma//trim(cform(iname))//comma &
+                      //'","'//comma//trim(cform(iname))//comma//'")"'
+            else
+              if (fname(iname)/=0.) then
+!
+!  Check output item for fixed-point formats.
+!
+                index_i=scan(cform(iname),'fF')
+                if (index_i>0) then
+                  read(cform(iname)(index_i+1:),*) rlength
+                  if (floor(alog10(abs(fname(iname))))+2 > rlength) then
+                    index_d=index(cform(iname),'.')
+                    length=len(trim(cform(iname)))
+                    write(cform(iname)(index_i+1:), &
+                          '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+                  endif
+                endif
+              endif
+              if (cform(iname)/='') tform = comma//trim(cform(iname))
+
+            endif
+            call safe_character_append(fform, trim(tform))
+            if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
+
           endif
-          call safe_character_append(fform, trim(tform))
-          if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
-
         enddo
         call safe_character_append(fform, ')')
 !
@@ -348,17 +439,17 @@ module Diagnostics
 !
     endsubroutine clean_line
 !***********************************************************************
-    subroutine write_sound_append(legend,sublegend,coorlegend,line)
+    subroutine write_sound_append(legend,sublegend,coorlegend,line,lwrite_legend)
 !
 !  Append to diagnostics file.
 !
 !  27-Nov-2014/Bourdin.KIS: cleaned up code from write_sound
 !
       character (len=*), intent(in) :: legend, sublegend, coorlegend, line
+      logical, intent(in) :: lwrite_legend
 !
-      logical, save :: lfirst_call=.true.
       integer, parameter :: lun=1
-      integer :: iostat
+      integer :: len_stroke, len_leg, iostat
       character(LEN=linelen) :: iomsg
 !
         open(lun,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
@@ -366,32 +457,28 @@ module Diagnostics
         if (outlog(iostat,'openw',trim(directory)//'/sound.dat',dist=1, &
                    location='write_sound_append',iomsg=iomsg)) return
 !
-        if (lfirst_call) then
-!
-          write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(legend)
-          if (outlog(iostat,'legend',iomsg=iomsg)) return
-!
-          if (dimensionality>0) then
-!
+        if (lwrite_legend) then
+          if (dimensionality > 0) then
+            len_leg=len_trim(legend)
+            len_stroke=max(len_leg,len_trim(coorlegend),len_trim(sublegend))
+            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(legend)//repeat('-',max(0,len_stroke-len_leg))
+            if (outlog(iostat,'legend',iomsg=iomsg)) return
             write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(coorlegend)
             if (outlog(iostat,'coorlegend',iomsg=iomsg)) return
-!
             if ( ncoords_sound>1 ) then
               write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(sublegend)
               if (outlog(iostat,'sublegend',iomsg=iomsg)) return
             endif
-!
-            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) comment_char//repeat('-',len_trim(legend)-1)
+            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) comment_char//repeat('-',len_stroke-1)
             if (outlog(iostat,'comment',iomsg=iomsg)) return
-!
+          else
+            write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(legend)
+            if (outlog(iostat,'legend',iomsg=iomsg)) return
           endif
         endif
 !
-        write(lun,'(a)',IOSTAT=iostat,iomsg=iomsg) trim(line)
-        if (outlog(iostat,'line',iomsg=iomsg)) return
-!
-        close(lun,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
+        write(lun,'(a)') trim(line)
+        close(lun)
 !
     endsubroutine write_sound_append
 !***********************************************************************
@@ -403,14 +490,13 @@ module Diagnostics
 !   3-dec-10/dhruba+joern: coded
 !  10-jan-11/MR: modified
 !
-      use General, only: itoa, safe_character_append, safe_character_prepend
-      use Sub    , only: noform
+      use General, only: itoa, safe_character_append, safe_character_prepend,compress
+      use Sub, only: noform
 !
       implicit none
 !
       real, intent(in) :: tout
 !
-      logical, save :: lfirst_call=.true.
       logical :: ldata
       character (len=linelen*3) :: fform,legend,sublegend,coorlegend,line
       character (len=*), parameter :: tform='(f10.4'
@@ -418,14 +504,14 @@ module Diagnostics
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j
+      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j,len
+      logical, save :: lfirst_call = .true.
 !
 !  Produce the format.
 !
       fform = tform//','
-      if ( ncoords_sound>1 ) then
+      if ( ncoords_sound>1 ) &
         call safe_character_append(fform, trim(itoa(ncoords_sound))//'(')
-      endif
 !
       if (lfirst_call) then
 !
@@ -433,23 +519,22 @@ module Diagnostics
 !
         if (dimensionality>0) then
 !
-          coorlegend = comment_char//' Points:   '
+          coorlegend = comment_char//' Point(s):   '
           nleg = len_trim(coorlegend)+3
 !
           do icoor=1,ncoords_sound
 !
-            coorlegend(nleg+1:) = trim(itoa(icoor))//' = '
+            if (ncoords_sound>1) coorlegend(nleg+1:) = trim(itoa(icoor))//' = '
             nleg = len_trim(coorlegend)+1
 !
             item = '('
             do idim=1,dimensionality
-              select case (idim)
+              select case (dim_mask(idim))
               case (1); coor=x(sound_coords_list(icoor,1))
               case (2); coor=y(sound_coords_list(icoor,2))
               case (3); coor=z(sound_coords_list(icoor,3))
-              case default
               end select
-              write(scoor,tform//')')coor
+              write(scoor,tform//')') coor
               call safe_character_append(item,trim(adjustl(scoor))//',')
             enddo
             coorlegend(nleg+1:) = item(1:len_trim(item)-1)//'),   '
@@ -467,6 +552,7 @@ module Diagnostics
       do iname=1,nname_sound
 !
         if (cform_sound(iname)/=' ') then
+
           ldata=.true.
           if (lfirst_call) then
 !
@@ -496,28 +582,31 @@ module Diagnostics
 !  Put output line into a string.
 !
       if (ldata) then
+
         fform = fform(1:len_trim(fform)-1)
         if ( ncoords_sound>1 ) call safe_character_append(fform, ')')
-        write(line,trim(fform)//')') tout, ((fname_sound(i,j),  &
-            j=1,ncoords_sound), i=1,nname_sound)
+        len=nname_sound
+        call compress(fname_sound,cform_sound=='',len)
+        write(line,trim(fform)//')') tout, ((fname_sound(i,j), i=1,ncoords_sound), j=1,len)
+               !i=1,ncoords_sound), j=1,nname_sound)
                !(1:nname_sound,1:ncoords_sound)
       else
         write(line,tform//')')tout
       endif
 !
       call clean_line(line)
-      call write_sound_append(legend,sublegend,coorlegend,line)
+      call write_sound_append(legend,sublegend,coorlegend,line,lfirst_call)
 !
       if (ldebug) write(*,*) 'exit write_sound'
-      lfirst_call = .false.
 !
-      fname_sound(1:nname_sound,1:ncoords_sound)=0.0
+      fname_sound(1:ncoords_sound,1:nname_sound) = 0.0
+      lfirst_call = .false.
 !
     endsubroutine write_sound
 !***********************************************************************
     subroutine get_average_density(mass_per_proc,average_density)
 !
-!  Finalize calculation of diagnostic quantities (0-D).
+!  Calculation of average density.
 !
 !   1-dec-09/dhruba+piyali: adapted from diagnostic
 !   3-may-12/axel+MR: to divide by box_volume, not nw
@@ -535,7 +624,7 @@ module Diagnostics
 !  The result is present everywhere
 !
       average_density=mass/box_volume
-      call mpibcast_real(average_density)
+      call mpibcast_real(average_density,comm=MPI_COMM_WORLD)
 !
     endsubroutine get_average_density
 !**********************************************************************
@@ -583,7 +672,8 @@ module Diagnostics
             if (itype==ilabel_sum_weighted .or. &
                 itype==ilabel_sum_weighted_sqrt .or. &
                 itype==ilabel_sum_par .or. &
-                itype==ilabel_sum_sqrt_par) then
+                itype==ilabel_sum_sqrt_par .or. &
+                itype==ilabel_sum_log10_par) then
               fweight_tmp(isum_count)=fweight(iname)
               lweight_comm=.true.
             endif
@@ -597,10 +687,9 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count,comm=MPI_COMM_WORLD) ! only for scalars!
-!
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count)
-      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
+      call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_WORLD)
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)                        ! wrong for Yin-Yang due to overlap
+      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_WORLD)!   ~
 !
 !  The result is present only on the root processor.
 !
@@ -644,25 +733,37 @@ module Diagnostics
               if (itype==ilabel_sum_sqrt)       &
                   vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 !
+              if (itype==ilabel_sum_log10)       &
+                  vname(iname)=log10(fsum(isum_count)*dVol_rel1)
+!
               if (itype==ilabel_sum_par)        &
                   vname(iname)=fsum(isum_count)/fweight(isum_count)
 !
               if (itype==ilabel_sum_sqrt_par)        &
                   vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
 !
+              if (itype==ilabel_sum_log10_par)        &
+                  vname(iname)=log10(fsum(isum_count)/fweight(isum_count))
+!
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)
 !
-               if (itype==ilabel_surf)          &
-                   vname(iname)=fsum(isum_count)
+              if (itype==ilabel_integrate_sqrt)      &
+                  vname(iname)=sqrt(fsum(isum_count))
 !
-               if (itype==ilabel_sum_lim) then
-                  vol=1.
-                  if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
-                  if (nzgrid/=1)           vol=vol*Lz
-                  if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
-                  vname(iname)=fsum(isum_count)/vol
-               endif
+              if (itype==ilabel_integrate_log10)      &
+                  vname(iname)=log10(fsum(isum_count))
+!
+              if (itype==ilabel_surf)          &
+                  vname(iname)=fsum(isum_count)
+!
+              if (itype==ilabel_sum_lim) then
+                 vol=1.
+                 if (lcylinder_in_a_box)  vol=vol*pi*(r_ext**2-r_int**2)
+                 if (nzgrid/=1)           vol=vol*Lz
+                 if (lsphere_in_a_box)    vol=1.333333*pi*(r_ext**3-r_int**3)
+                 vname(iname)=fsum(isum_count)/vol
+              endif
 !
               if (itype==ilabel_sum_weighted) then
                 if (fweight(isum_count)/=0.0) then
@@ -704,7 +805,7 @@ module Diagnostics
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
-    subroutine xyaverages_z()
+    subroutine xyaverages_z
 !
 !  Calculate xy-averages (still depending on z)
 !  NOTE: these averages depend on z, so after summation in x and y they
@@ -719,7 +820,7 @@ module Diagnostics
 !
 !   6-jun-02/axel: coded
 !
-      real, dimension (nz,nprocz,nnamez) :: fsumz
+      real, dimension(nz,nprocz,nnamez) :: fsumz
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
@@ -732,7 +833,7 @@ module Diagnostics
 !
     endsubroutine xyaverages_z
 !***********************************************************************
-    subroutine xzaverages_y()
+    subroutine xzaverages_y
 !
 !  Calculate xz-averages (still depending on y).
 !
@@ -751,7 +852,7 @@ module Diagnostics
 !
     endsubroutine xzaverages_y
 !***********************************************************************
-    subroutine yzaverages_x()
+    subroutine yzaverages_x
 !
 !  Calculate yz-averages (still depending on x).
 !
@@ -770,7 +871,7 @@ module Diagnostics
 !
     endsubroutine yzaverages_x
 !***********************************************************************
-    subroutine phizaverages_r()
+    subroutine phizaverages_r
 !
 !  Calculate phiz-averages (still depending on r).
 !
@@ -796,7 +897,7 @@ module Diagnostics
 !
     endsubroutine phizaverages_r
 !***********************************************************************
-    subroutine yaverages_xz()
+    subroutine yaverages_xz
 !
 !  Calculate y-averages (still depending on x and z).
 !
@@ -814,25 +915,45 @@ module Diagnostics
 !
     endsubroutine yaverages_xz
 !***********************************************************************
-    subroutine zaverages_xy()
+    subroutine zaverages_xy
 !
 !  Calculate z-averages (still depending on x and y).
 !
 !  19-jun-02/axel: coded
+!  25-mar-16/MR: extensions for Yin-Yang grid
 !
-      real, dimension (nnamexy,nx,ny) :: fsumxy
-!
-!  Communicate over all processors along z beams.
-!  The result is only present on the z-root processors.
+      use General, only: find_proc
+      use Yinyang_mpi, only: reduce_zsum
+
+      real, dimension(:,:,:), allocatable :: fsumxy
+      real :: fac
 !
       if (nnamexy>0) then
-        call mpireduce_sum(fnamexy,fsumxy,(/nnamexy,nx,ny/),idir=3)
-        if (lfirst_proc_z) fnamexy=fsumxy/nzgrid
+
+        if (lyang) then
+          if (lcaproot) then
+            allocate(fsumxy(nnamexy,nx,size(fnamexy_cap,3)))
+            fsumxy=0.
+          endif
+        else
+          if (lfirst_proc_z) allocate(fsumxy(nnamexy,nx,ny))
+        endif
+
+        call reduce_zsum(fnamexy,fsumxy)
+
+        fac=1./nzgrid_eff   ! nzgrid_eff approx =4/3*nzgrid for Yin-Yang
+
+        if (.not.lyang) then
+          if (lfirst_proc_z) fnamexy=fac*fsumxy
+        elseif (lcaproot) then
+          fnamexy_cap=fac*fsumxy
+        endif
+
       endif
 !
     endsubroutine zaverages_xy
 !***********************************************************************
-    subroutine phiaverages_rz()
+    subroutine phiaverages_rz
 !
 !  Calculate azimuthal averages (as functions of r_cyl,z).
 !  NOTE: these averages depend on (r and) z, so after summation they
@@ -859,22 +980,32 @@ module Diagnostics
 !
     endsubroutine phiaverages_rz
 !***********************************************************************
-    subroutine write_1daverages()
+    subroutine write_1daverages
 !
 !  Write 1d averages (z-averages, .., i.e. quantities that are only  1d
 !  after averaging). These are written every it1d (default it1) timesteps
 !  and appended to their individual files.
 !
 !   7-aug-03/wolf: coded
+!  24-Nov-2018/PABourdin: redesigned
 !
-      call write_xyaverages()
-      call write_xzaverages()
-      call write_yzaverages()
-      call write_phizaverages()
+      use IO, only: output_average
+!
+      logical, save :: lfirst_call = .true.
+!
+      call output_average (datadir, 'xy', nnamez, fnamez, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      call output_average (datadir, 'xz', nnamey, fnamey, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      call output_average (datadir, 'yz', nnamex, fnamex, t1ddiagnos, lwrite_avg1d_binary, lroot)
+      if (lfirst_call) then
+        call output_average (datadir, 'phiz', nnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
+        lfirst_call = .false.
+      else
+        call output_average (datadir, 'phiz', nnamer, fnamer, t1ddiagnos, .false., lroot)
+      endif
 !
     endsubroutine write_1daverages
 !***********************************************************************
-    subroutine write_2daverages_prepare()
+    subroutine write_2daverages_prepare(lwrite)
 !
 !  Prepare l2davg for writing 2D averages.
 !  This needs to be done in the beginning of each time step, so
@@ -884,24 +1015,28 @@ module Diagnostics
 !
       use Sub, only: update_snaptime, read_snaptime
 !
+      logical, intent(IN) :: lwrite
       real, save :: t2davg
       integer, save :: n2davg
-      logical, save :: first=.true.
+      logical, save :: lfirst=.true.
       character (len=fnlen) :: file
+      logical :: lwrite_
 !
       file=trim(datadir)//'/t2davg.dat'
-      if (first) then
+      if (lfirst) then
         call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
+        lfirst = .false.
       endif
-      first = .false.
 !
 !  This routine sets l2davg=T whenever its time to write 2D averages
-!
-      call update_snaptime(file,t2davg,n2davg,d2davg,t,l2davg,ch2davg)
+!    
+      lwrite_=lwrite
+      call update_snaptime(file,t2davg,n2davg,d2davg,t,lwrite_,ch2davg)
+      l2davg=lwrite_
 !
     endsubroutine write_2daverages_prepare
 !***********************************************************************
-    subroutine write_2daverages()
+    subroutine write_2daverages
 !
 !  Write 2d averages (z-averages, phi-averages, .., i.e. quantities that
 !  are still 2d after averaging) if it is time.
@@ -909,295 +1044,48 @@ module Diagnostics
 !  is determined by a parameter (t2davg) in run.in.
 !
 !   7-aug-03/wolf: adapted from wsnap
+!  24-Nov-2018/PABourdin: redesigned
 !
-      if (lwrite_yaverages)   call write_yaverages()
-      if (lwrite_zaverages)   call write_zaverages()
-      if (lwrite_phiaverages) call write_phiaverages(ch2davg)
+      use IO, only: output_average
 !
-      if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
+      if (lwrite_yaverages) &
+          call output_average (directory_dist, 'y', nnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
+!
+      if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
+        if (lcaproot) then
+          ! cap root (Yang)
+          call output_average (directory_dist, 'z', nnamexy, fnamexy_cap, t2davgfirst, .true., lfirst_proc_z)
+        else
+          ! z-beam root (Yin)
+          call output_average (directory_dist, 'z', nnamexy, fnamexy, t2davgfirst, .true., lfirst_proc_z)
+        endif
+      endif
+!
+      if (lwrite_phiaverages) then
+        ! normalization is already done in phiaverages_rz
+        call output_average (datadir, ch2davg, nnamerz, fnamerz, t2davgfirst, rcyl, drcyl)
+      endif
+!
+      if (lroot .and. (ip<=10)) write(*,*) 'write_2daverages: wrote averages (xy,xz,phi#'//trim (ch2davg)//')'
 !
     endsubroutine write_2daverages
 !***********************************************************************
-    subroutine write_xyaverages()
+    subroutine trim_averages
 !
-!  Write xy-averages (which are 1d data) that have been requested via
-!  `xyaver.in'
+!  Trim averages for times past the current time.
 !
-!   6-jun-02/axel: coded
+!  25-apr-16/ccyang: coded
+!  23-Nov-2018/PABourdin: redesigned
 !
-      integer :: iostat
-      character(LEN=linelen) :: iomsg
-      logical :: lop
+      use IO, only: trim_average
 !
-      if (lroot.and.nnamez>0) then
+      call trim_average(datadir, 'xy', nzgrid, nnamez)
+      call trim_average(datadir, 'xz', nygrid, nnamey)
+      call trim_average(datadir, 'yz', nxgrid, nnamex)
 !
-        inquire(1,opened=lop)
-        if (.not.lop) then
-          open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
-! file not distributed, backskipping enabled
-          if (outlog(iostat,'openw',trim(datadir)//'/xyaverages.dat',dist=-1, &
-                     location='write_xyaverages',iomsg=iomsg)) return
-        endif
-!
-        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
-!
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamez(:,:,1:nnamez)
-        if (outlog(iostat,'fnamez',iomsg=iomsg)) return
-!
-        close(1,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-      endif
-!
-    endsubroutine write_xyaverages
+    endsubroutine trim_averages
 !***********************************************************************
-    subroutine write_xzaverages()
-!
-!  Write xz-averages (which are 1d data) that have been requested via
-!  `xzaver.in'
-!
-!  12-oct-05/anders: adapted from write_xyaverages
-!
-      integer :: iostat
-      character(LEN=linelen) :: iomsg
-!
-      if (lroot.and.nnamey>0) then
-!
-        open(1,file=trim(datadir)//'/xzaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
-! file not distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(datadir)//'/xzaverages.dat',dist=-1, &
-                   location='write_xzaverages',iomsg=iomsg)) return
-!
-        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
-!
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamey(:,:,1:nnamey)
-        if (outlog(iostat,'fnamey',iomsg=iomsg)) return
-!
-        close(1,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-      endif
-!
-    endsubroutine write_xzaverages
-!***********************************************************************
-    subroutine write_yzaverages()
-!
-!  Write yz-averages (which are 1d data) that have been requested via
-!  `yzaver.in'
-!
-!   2-oct-05/anders: adapted from write_xyaverages
-!
-      integer :: iostat
-      character(LEN=linelen) :: iomsg
-!
-      if (lroot.and.nnamex>0) then
-!
-        open(1,file=trim(datadir)//'/yzaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
-! file not distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(datadir)//'/yzaverages.dat',dist=-1, &
-                   location='write_yzaverages',iomsg=iomsg)) return
-!
-        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
-!
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamex(:,:,1:nnamex)
-        if (outlog(iostat,'fnamex',iomsg=iomsg)) return
-!
-        close(1,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-      endif
-!
-    endsubroutine write_yzaverages
-!***********************************************************************
-    subroutine write_phizaverages()
-!
-!  Write phiz-averages (which are 1d data) that have been requested via
-!  `phizaver.in'
-!
-!  Also write rcyl to the output. It is needed just once, since it will
-!  not change over the simulation. The condition "if (it==1)" is not the
-!  best one, since it is reset upon restarting of a simulation and
-!  therefore one has to manually remove the extra(s) rcyl from
-!  the phizaverages.dat file
-!
-!  29-jan-07/wlad: adapted from write_yzaverages
-!
-      integer :: iostat
-      character(LEN=linelen) :: iomsg
-!
-      if (lroot.and.nnamer>0) then
-!
-        open(1,file=trim(datadir)//'/phizaverages.dat',position='append',IOSTAT=iostat,iomsg=iomsg)
-! file not distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(datadir)//'/phizaverages.dat',dist=-1, &
-                   location='write_phizaverages',iomsg=iomsg)) return
-!
-        if (it==1) then     ! right question?
-          write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) rcyl
-          if (outlog(iostat,'rcyl',iomsg=iomsg)) return
-        endif
-!
-        write(1,'(1pe12.5)',IOSTAT=iostat,iomsg=iomsg) t1ddiagnos
-        if (outlog(iostat,'t1ddiagnos',iomsg=iomsg)) return
-!
-        write(1,'(1p,8e14.5e3)',IOSTAT=iostat,iomsg=iomsg) fnamer(:,1:nnamer)
-        if (outlog(iostat,'fnamer',iomsg=iomsg)) return
-!
-        close(1,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-      endif
-!
-    endsubroutine write_phizaverages
-!***********************************************************************
-    subroutine write_yaverages()
-!
-!  Write y-averages (which are 2d data) that have been requested via yaver.in.
-!
-!   7-jun-05/axel: adapted from write_zaverages
-!
-      integer :: iostat
-      character(LEN=linelen) :: iomsg
-!
-      if (lfirst_proc_y.and.nnamexz>0) then
-        open(1, file=trim(directory_dist)//'/yaverages.dat', &
-            form='unformatted', position='append',IOSTAT=iostat,iomsg=iomsg)
-! file distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(directory_dist)//'/yaverages.dat',dist=1, &
-                   location='write_yaverages',iomsg=iomsg)) return
-!
-        write(1,IOSTAT=iostat,iomsg=iomsg) t2davgfirst
-        if (outlog(iostat,'t2davgfirst',iomsg=iomsg)) return
-!
-        write(1,IOSTAT=iostat,iomsg=iomsg) fnamexz(:,:,1:nnamexz)
-        if (outlog(iostat,'fnamexz',iomsg=iomsg)) return
-!
-        close(1,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-      endif
-!
-    endsubroutine write_yaverages
-!***********************************************************************
-    subroutine write_zaverages()
-!
-!  Write z-averages (which are 2d data) that have been requested via zaver.in.
-!
-!  19-jun-02/axel: adapted from write_xyaverages
-!
-      integer :: iostat, i
-      character(LEN=linelen) :: iomsg
-!
-      if (lfirst_proc_z.and.nnamexy>0) then
-        open(1, file=trim(directory_dist)//'/zaverages.dat', &
-            form='unformatted', position='append',IOSTAT=iostat,iomsg=iomsg)
-! file distributed, backskipping enabled
-        if (outlog(iostat,'openw',trim(directory_dist)//'/zaverages.dat',dist=1, &
-                   location='write_zaverages',iomsg=iomsg)) return
-!
-        write(1,IOSTAT=iostat,iomsg=iomsg) t2davgfirst
-        if (outlog(iostat,'t2davgfirst',iomsg=iomsg)) return
-!
-        write(1,IOSTAT=iostat,iomsg=iomsg) (fnamexy(i,:,:),i=1,nnamexy)
-        if (outlog(iostat,'fnamexy',iomsg=iomsg)) return
-!
-        close(1,IOSTAT=iostat,iomsg=iomsg)
-        if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-      endif
-!
-    endsubroutine write_zaverages
-!***********************************************************************
-    subroutine write_phiaverages_file(ch)
-!
-!  File format:
-!    1. nr_phiavg, nz_phiavg, nvars, nprocz
-!    2. t, r_phiavg, z_phiavg, dr, dz
-!    3. data
-!    4. len(labels),labels
-!
-!   27-Nov-2014/Bourdin.KIS: cleaned up code from write_phiaverages
-!
-      use General, only: safe_character_append
-!
-      character(len=*), intent(in) :: ch
-!
-      integer, parameter :: lun=1
-      integer :: i,iostat
-      character(LEN=linelen) :: iomsg
-      character (len=1024) :: labels
-!
-      open(lun,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted',IOSTAT=iostat,iomsg=iomsg)
-      if (outlog(iostat,'openw',trim(datadir)//'/averages/PHIAVG'//trim(ch), &
-                 location='write_phiaverages_file',iomsg=iomsg)) return
-!
-      write(lun,IOSTAT=iostat,iomsg=iomsg) nrcyl,nzgrid,nnamerz,nprocz
-      if (outlog(iostat,'nrcyl etc.',iomsg=iomsg)) return
-!
-      write(lun,IOSTAT=iostat,iomsg=iomsg) t2davgfirst,rcyl,z(n1)+(/(i*dz, i=0,nzgrid-1)/),drcyl,dz
-      if (outlog(iostat,'t2davgfirst etc.',iomsg=iomsg)) return
-!
-      !ngrs: use pack to explicitly order the array before writing
-      !     (write was messing up on copson without this...)
-!
-      write(lun,IOSTAT=iostat,iomsg=iomsg) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
-      if (outlog(iostat,'fnamerz',iomsg=iomsg)) return
-!
-!  Write labels at the end of file.
-!
-      labels = trim(cnamerz(1))
-      do i=2,nnamerz
-        call safe_character_append(labels,",",trim(cnamerz(i)))
-      enddo
-      write(lun,IOSTAT=iostat,iomsg=iomsg) len(labels),labels
-      if (outlog(iostat,'labels',iomsg=iomsg)) return
-!
-      close(lun,IOSTAT=iostat,iomsg=iomsg)
-      if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-    endsubroutine write_phiaverages_file
-!***********************************************************************
-    subroutine write_phiaverages(ch)
-!
-!  Write azimuthal averages (which are 2d data) that have been requested
-!  via `phiaver.in'.
-!  Note: fnamerz still has a third dimension indicating ipz, but the way
-!  we are writing we automatically end up with the full z-direction
-!  written contiguously.
-!
-!   2-jan-03/wolf: adapted from write_zaverages
-!
-      character(len=*), intent(in) :: ch
-!
-      integer, parameter :: lun=1
-      integer :: iostat
-      character(LEN=linelen) :: iomsg
-!
-      if (.not. lroot .or. (nnamerz <= 0)) return
-!
-!  Write result; normalization is already done in phiaverages_rz.
-!
-      call write_phiaverages_file(ch)
-!
-!  Write file name to file list.
-!
-      open(lun,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat,iomsg=iomsg)
-      ! file not distributed, backskipping enabled
-      if (outlog(iostat,'openw',trim(datadir)//'/averages/phiavg.files',dist=-1, &
-                 location='write_phiaverages',iomsg=iomsg)) return
-!
-      write(lun,'(A)',IOSTAT=iostat,iomsg=iomsg)'PHIAVG'//trim(ch)
-      if (outlog(iostat,'"PHIAVG"',iomsg=iomsg)) return
-!
-      close(lun,IOSTAT=iostat,iomsg=iomsg)
-      if (outlog(iostat,'close',iomsg=iomsg)) continue
-!
-    endsubroutine write_phiaverages
-!***********************************************************************
-    integer function fparse_name(iname,cname,cform,ctest,itest)
+    integer function fparse_name(iname,cname,ctest,itest,cform)
 !
 !  Parse name and format of scalar print variable
 !  On output, ITEST is set to INAME if CNAME matches CTEST
@@ -1217,17 +1105,20 @@ module Diagnostics
 !  26-feb-13/MR  : prepared for ignoring multiple occurrences of
 !                  diagnostics in print.in
 !  26-aug-13/MR  : removed unneeded 0p setting in format, added handling of D formats
-!  27-aug13/MR   : reinstated 0p
+!  27-aug-13/MR  : reinstated 0p
+!  10-jan-17/MR  : added correction of floating-point formats if not sufficient to hold sign
 !
-      use General, only: safe_character_assign
+      use General, only: safe_character_assign, itoa
 !
-      character (len=*) :: cname,cform
+      character (len=*) :: cname, cform
       character (len=*) :: ctest
-      integer :: iname,itest,iform0,iform1,iform2,length,index_i
+      integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
 !
-      intent(in)    :: iname,cname,ctest
-      intent(inout) :: itest
+      intent(in)    :: iname,ctest
+      intent(inout) :: cname,itest
       intent(out)   :: cform
+
+      character(len=fmtlen) :: tmp
 !
 !  Check whether format is given.
 !
@@ -1238,43 +1129,68 @@ module Diagnostics
 !  Set format; use default if not given.
 !
       if (iform1>0) then
-        cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1pE10.2'  !!(the nag-f95 compiler requires a comma after
-                         !! 1p [does it?])
         length=iform0-1
       endif
-!
-!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
-!
-      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') .or. &
-          (cform(1:1) == 'd') .or. (cform(1:1) == 'D') .or. &
-          (cform(1:1) == 'g') .or. (cform(1:1) == 'G'))     &
-        call safe_character_assign(cform, '1p'//trim(cform)//',0p')
 !
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
       if (cname(1:length)==ctest) then
+
         if (itest==0) then
+          if (iform1>0) then
+            cform=cname(iform1+1:iform2-1)
+          else
+            cform='1pE10.2'
+          endif
           itest=iname
           fparse_name=iname
         else
           fparse_name=-1
         endif
+
+        if (scan(cform(1:1), 'eEdDgG')==1) then
+!
+!Increase d in [ED]w.d if insufficient to hold a sign.
+!
+          if (scan(cform(1:1), "eEdD")==1) then
+
+            index_i=index(cform,'.')
+            if (index_i>=3.and.index_i<len(cform)) then
+              tmp=cform(2:index_i-1)
+              read(tmp,*) iwidth
+              tmp=cform(index_i+1:)
+              read(tmp,*) idecs
+              idiff=iwidth-idecs-7
+              if (idiff<0) then
+                cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
+!
+!Put changed format back into cname.
+!
+                if (iform1>0) cname(iform1:)='('//trim(cform)//')'
+              endif
+            endif
+          endif
+!
+!Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
+!
+          call safe_character_assign(cform, '1p'//trim(cform)//',0p')
+
+        endif
+!
+!Integer formats are turned into floating point numbers.
+!
+        index_i=scan(cform,'iI',.true.)
+
+        if (index_i>0) then
+          cform(index_i:index_i)='f'
+          cform=trim(cform)//'.0, TL1," "'     ! TL1," " needed, as sometimes, unknown why,
+        endif                                  ! the unwanted decimal point does appear.
+
       else
         fparse_name=0
-      endif
-!
-!  Integer formats are turned into floating point numbers.
-!
-      index_i=index(cform,'i')
-      if (index_i==0) index_i=index(cform,'I')
-
-      if (index_i/=0) then
-        cform(index_i:index_i)='f'
-        cform=trim(cform)//'.0'
       endif
 !
     endfunction fparse_name
@@ -1285,17 +1201,17 @@ module Diagnostics
 !
 !   26-nov-09/MR: coded
 !
-      character (len=*) :: cname,cform
+      character (len=*) :: cname, cform
       character (len=*) :: ctest
       integer :: iname,itest
 !
-      intent(in)  :: iname,cname,ctest
+      intent(in)  :: iname,ctest
       intent(out) :: cform
-      intent(inout) :: itest
+      intent(inout) :: cname,itest
 !
       integer :: iret
 !
-      iret = fparse_name(iname,cname,cform,ctest,itest)
+      iret = fparse_name(iname,cname,ctest,itest,cform)
 !
     endsubroutine parse_name_s
 !***********************************************************************
@@ -1309,13 +1225,13 @@ module Diagnostics
       character (len=*) :: ctest
       integer :: iname,itest
 !
-      intent(in)  :: iname,cname,ctest
+      intent(in)  :: iname,ctest
       intent(out) :: cform
-      intent(inout) :: itest
+      intent(inout) :: cname,itest
 !
       integer :: iret
 !
-      iret = fparse_name(iname,cname(iname),cform(iname),ctest,itest)
+      iret = fparse_name(iname,cname(iname),ctest,itest,cform(iname))
 !
     endsubroutine parse_name_sa
 !***********************************************************************
@@ -1332,14 +1248,15 @@ module Diagnostics
       character (len=*), dimension(:) :: cdiag
       integer,           dimension(:) :: idiag
 !
-      intent(in)  :: cname,cdiag
-      intent(out) :: cform,idiag
+      intent(in)   :: cdiag
+      intent(inout):: cname
+      intent(out)  :: cform,idiag
 !
       integer :: i,j
 !
       do i=1,size(cname)
         do j=1,size(cdiag)
-          if ( fparse_name(i,cname(i),cform(i),cdiag(j),idiag(j)) /= 0 ) exit
+          if ( fparse_name(i,cname(i),cdiag(j),idiag(j),cform(i)) /= 0 ) exit
         enddo
       enddo
 !
@@ -1459,22 +1376,48 @@ module Diagnostics
 !
     endsubroutine expand_cname_full
 !***********************************************************************
+    subroutine set_type(iname, lsqrt, llog10, lint, lsum, lmax, lmin)
+!
+!  Sets the diagnostic type in itype_name.
+!
+!  21-sep-17/MR: coded
+!
+      integer :: iname
+      logical, optional :: lsqrt, llog10, lint, lsum, lmax, lmin
+
+      if (iname==0) return
+
+      if (present(lsqrt)) &
+        itype_name(iname)=ilabel_sum_sqrt
+      if (present(lsqrt)) then
+        itype_name(iname)=ilabel_sum_sqrt
+      elseif (present(llog10)) then
+        itype_name(iname)=ilabel_sum_log10
+      elseif (present(lint)) then
+        itype_name(iname)=ilabel_integrate
+      elseif (present(lsum)) then
+        itype_name(iname)=ilabel_sum
+      elseif (present(lmax)) then
+        itype_name(iname)=ilabel_max
+      elseif (present(lmin)) then
+        itype_name(iname)=ilabel_max_neg
+      else
+        itype_name(iname)=ilabel_save
+      endif
+
+    endsubroutine set_type
+!***********************************************************************
     subroutine save_name(a,iname)
 !
-!  Lists the value of a (must be treated as real) in fname array
+!  Sets the value of a (must be treated as real) in fname array
 !
 !  26-may-02/axel: adapted from max_mn_name
+!  20-sep-17/MR: removed setting of itype_name as it is set to "save" by default.
 !
       real :: a
       integer :: iname
 !
-!  Set corresponding entry in itype_name
-!  This routine is to be called only once per step
-!
-      if (iname/=0) then
-        fname(iname)=a
-        itype_name(iname)=ilabel_save
-      endif
+      if (iname/=0) fname(iname)=a
 !
    endsubroutine save_name
 !***********************************************************************
@@ -1490,7 +1433,7 @@ module Diagnostics
 !
 !  This routine is to be called only once per step
 !
-      if (iname/=0) fname_sound(iname,iscoord)=a
+      if (iname/=0) fname_sound(iscoord,iname)=a
 !
    endsubroutine save_name_sound
 !***********************************************************************
@@ -1572,7 +1515,7 @@ module Diagnostics
 !
     endsubroutine max_name_real
 !***********************************************************************
-    subroutine sum_name(a,iname)
+    subroutine sum_name_real(a,iname)
 !
 !  Calculate the summation of a, which is supplied at each call.
 !
@@ -1590,7 +1533,28 @@ module Diagnostics
 !
       itype_name(iname)=ilabel_surf
 !
-    endsubroutine sum_name
+    endsubroutine sum_name_real
+!***********************************************************************
+    subroutine sum_name_int(a,iname)
+!
+!  Calculate the summation of a, which is supplied at each call.
+!
+!  19-jun-11/anders: changed to sum single number of all cores
+!  17-jun-09/ccyang: adapted from max_name
+!  03-sep-09/MR: corrected to real sum
+!  12-apr-16/Jørgen+Nils: overloading with int
+!
+      integer, intent(in) :: a
+      integer, intent(in) :: iname
+!
+      fname(iname)=a
+!
+!  Set corresponding entry in itype_name.
+!  Need to set ilabel_surf to avoid multiplication by volume later (to fix).
+!
+      itype_name(iname)=ilabel_surf
+!
+    endsubroutine sum_name_int
 !***********************************************************************
     subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
 !
@@ -1630,31 +1594,32 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name_arr2(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
-!                first dimension of a is 1; if it is 2 considers a a complex
+!                first dimension of a is 1; if it is 2 considers a to be a complex
 !                pencil - stores real(imaginary) part in fname(fname_keep),
 !                sets type of diagnostic to complex
 !
       real, dimension(:,:), intent(IN) :: a
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
-      logical, optional,    intent(IN) :: lsqrt, lint
+      logical, optional,    intent(IN) :: lsqrt, llog10, lint
 
       if (size(a,1)==1) then
-        call sum_mn_name_std(a(1,:),iname,lsqrt,lint,ipart)
+        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart)
       else
 
-        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,lint,ipart)
+        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart)
         call sum_mn_name_real(a(2,:),iname,fname_keep)
-        itype_name(iname)=itype_name(iname)+ilabel_complex
+        if (itype_name(iname) < ilabel_complex ) &
+          itype_name(iname)=itype_name(iname)+ilabel_complex
 
       endif
 !
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
-    subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name, behaves as before
 !
@@ -1663,18 +1628,19 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
       integer, optional,   intent(IN) :: ipart
-      logical, optional,   intent(IN) :: lsqrt, lint
+      logical, optional,   intent(IN) :: lsqrt, llog10, lint
 
-      call sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
 
     endsubroutine sum_mn_name_std
 !***********************************************************************
-    subroutine sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
 !  explicitly given and true, the integral is calculated, instead.
 !  With 'lsqrt=.true.', a square root is applied after building the mean.
+!  With 'llog10=.true.', a log10 is applied after building the mean.
 !  Start from zero if lfirstpoint=.true.
 !  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
 !  TODO: rename 'ilabel_sum{_sqrt}' as 'ilabel_mean{_sqrt}'.
@@ -1698,13 +1664,15 @@ module Diagnostics
 !  Update [28-Sep-2004 wd]:
 !    Done here, but not yet in all other routines
 !
+      use Yinyang, only: in_overlap_mask
+
       real, dimension(nx) :: a,a_scaled
       real, dimension(nname) :: fname
 !
       real :: ppart,qpart
       integer :: iname
       integer, optional :: ipart
-      logical, optional :: lsqrt, lint
+      logical, optional :: lsqrt, llog10, lint
 !
       intent(in) :: iname
 !
@@ -1712,10 +1680,16 @@ module Diagnostics
 !
       if (iname/=0) then
 !
+!  Only do something if (m,n) is in overlap mask (only relevant for Yin-Yang grid).
+!
+      if (in_overlap_mask(m,n)) then
+!
 !  Set corresponding entry in itype_name.
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_sum_log10
         elseif (present(lint)) then
           itype_name(iname)=ilabel_integrate
         else
@@ -1745,7 +1719,6 @@ module Diagnostics
 !  Normal method.
 !
         else
-
           if (lproper_averages) then
             call integrate_mn(a,fname(iname))
           else
@@ -1780,6 +1753,7 @@ module Diagnostics
             endif
           endif
         endif
+      endif
       endif
 !
     endsubroutine sum_mn_name_real
@@ -2441,60 +2415,181 @@ module Diagnostics
 !
     endsubroutine ysum_mn_name_xz_npar
 !***********************************************************************
-    subroutine zsum_mn_name_xy(a,iname,lint)
+    subroutine zsum_mn_name_xy_scal(a,iname,lint)
 !
 !  Successively calculate sum over z of a, which is supplied at each call.
 !  The result fnamexy is xy-dependent.
 !  Start from zero if lfirstpoint=.true.
-!
+!     
 !  19-jun-02/axel: adapted from xysum_mn_name
 !  08-feb-12/ccyang: add option for integration
-!   3-sep-13/MR: derived from zsum_mn_name_xy
-!
+!   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
+!     
       use General, only: loptest
-      use Cdata,   only: n,m
+      use Cdata,   only: n,m,nzgrid_eff 
 !
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname
       logical,   optional, intent(in) :: lint
-!
+
       if (iname==0) return
-!
+!         
 !  Scale factor for integration
-!
+!       
       if (loptest(lint)) then
-        call zsum_mn_name_xy_mpar((real(nzgrid)*zprim(n))*a,m,iname)
+        call zsum_mn_name_xy_mpar((real(nzgrid_eff)*zprim(n))*a,m,iname)
       else
         call zsum_mn_name_xy_mpar(a,m,iname)
+      endif                                                                                                 
+!
+    endsubroutine zsum_mn_name_xy_scal
+!***********************************************************************
+    subroutine zsum_mn_name_xy_vec(avec,iname,powers,scal,lint)
+!
+!  Wrapper for zsum_mn_name_xy_mpar_vec..
+!
+!  19-jun-02/axel: adapted from xysum_mn_name
+!  08-feb-12/ccyang: add option for integration
+!   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
+!  31-mar-16/MR: derived from zsum_mn_name_xy
+!
+      use General, only: loptest
+      use Cdata,   only: n,m
+!
+      real,    dimension(nx,3),        intent(in) :: avec
+      integer,                         intent(in) :: iname
+      integer, dimension(3),           intent(in) :: powers
+      real,    dimension(:), optional, intent(in) :: scal
+      logical,               optional, intent(in) :: lint
+!
+      if (loptest(lint)) then
+!
+!  Mulitply with scale factor for integration.
+!  Not correct for Yin-Yang with non-equidistant z grid (would this happen?). 
+!
+        if (present(scal)) then
+          call zsum_mn_name_xy_mpar(avec,m,iname,powers,(real(nzgrid_eff)*zprim(n))*scal)
+        else
+          call zsum_mn_name_xy_mpar(avec,m,iname,powers,(/real(nzgrid_eff)*zprim(n)/))
+        endif
+      else
+        call zsum_mn_name_xy_mpar(avec,m,iname,powers,scal)
       endif
 !
-    endsubroutine zsum_mn_name_xy
+    endsubroutine zsum_mn_name_xy_vec
 !***********************************************************************
-    subroutine zsum_mn_name_xy_mpar(a,m,iname)
+    subroutine zsum_mn_name_xy_mpar_vec(avec,m,iname,powers,scal)
 !
-!  Initialize to zero, including other parts of the xy-array
+!  Calculates a general tensor component from vector avec as 
+!  avec(1)**power(1)*avec(2)**power(2)*avec(3)**power(3),
+!  optionally the scalar scal (a pencil or one-element vector)
+!  is multiplied finally.
+!  On Yang procs, avec is first transformed properly.
+!
+!  31-mar-16/MR: coded
+!
+      use General, only: transform_thph_yy
+
+      real, dimension(nx,3),        intent(in) :: avec
+      integer,                      intent(in) :: iname, m
+      integer, dimension(3),        intent(in) :: powers
+      real, dimension(:), optional, intent(in) :: scal
+!
+      real, dimension(nx,3) :: work
+      real, dimension(nx) :: quan
+      integer :: i
+      logical :: lfirst
+
+      if (iname==0) return
+
+      if (lyang) then
+!
+! On Yang procs: transform theta and phi components if necessary. 
+!
+        call transform_thph_yy(avec,powers,work)
+      else
+        work=avec
+      endif
+!
+!  Perform product of powers of vector components..
+!
+      lfirst=.true.
+      do i=1,3
+        if (powers(i)/=0) then
+          if (lfirst) then
+            lfirst=.false.
+            if (powers(i)==1) then
+              quan=work(:,i)
+            else
+              quan=work(:,i)**powers(i)
+            endif
+          else
+            if (powers(i)==1) then
+              quan=quan*work(:,i)
+            else
+              quan=quan*work(:,i)**powers(i)
+            endif
+          endif
+        endif
+      enddo
+!
+!  Multiply with scalar if present.
+!
+      if (present(scal)) then
+        if (size(scal)==1) then
+          quan=quan*scal(1)
+        else
+          quan=quan*scal
+        endif
+      endif
+!
+!  Sum up result like a scalar.
+!
+      call zsum_mn_name_xy_mpar(quan,m,iname)
+
+    endsubroutine zsum_mn_name_xy_mpar_vec
+!***********************************************************************
+    subroutine zsum_mn_name_xy_mpar_scal(a,m,iname)
+!
+!  Accumulates contributions to z-sum within an mn-loop
 !  which are later merged with an mpi reduce command.
+!  In the Yang part of a Yin-Yang grid, the contributions
+!  to the sum along a (extended) phi coordinate line of the Yin 
+!  grid are calculated by use of predetermined weights.
+!  Likewise for those coordinate lines of the Yin-phi which lie completely
+!  within the Yang grid (i.e. the polar caps).
 !
-!   3-sep-13/MR: derived from zsum_mn_name_xy, m now parameter
-!                no optional lint because of compiler error in g95 and gfortran
-!                when using the subroutine as an actual parameter
+!   3-apr-16/MR: derived from zsum_mn_name_xy_mpar; extensions for Yin-Yang grid
+!   7-jun-16/MR: outsourced initialize_zaver_yy, reduce_zsum, zsum_y and 
+!                corresponding Yin-Yang specific data to Yinyang_mpi
 !
+      use Cdata, only: n
+      use Yinyang_mpi, only: zsum_yy
+
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname, m
-!
+
       integer :: ml
 !
       if (iname==0) return
 !
       if (lfirstpoint) fnamexy(iname,:,:)=0.
+
+      if (lyang) then
 !
-!  m starts with nghost+1=4, so the correct index is m-nghost.
+!  On Yang grid:
 !
-      ml=m-nghost
+        call zsum_yy(fnamexy,iname,m,n,a)
+      else
 !
-      fnamexy(iname,:,ml)=fnamexy(iname,:,ml)+a
+! Normal summing-up in Yin procs.
+! m starts with nghost+1, so the correct index is m-nghost.
+! 
+        ml=m-nghost
+        fnamexy(iname,:,ml)=fnamexy(iname,:,ml)+a
+      endif
 !
-    endsubroutine zsum_mn_name_xy_mpar
+    endsubroutine zsum_mn_name_xy_mpar_scal
 !***********************************************************************
     subroutine calc_phiavg_profile(p)
 !
@@ -2597,9 +2692,9 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_open, parallel_close, parallel_unit, parallel_count_lines
+      use File_io, only : parallel_unit_vec, parallel_open, parallel_close, parallel_count_lines
       use General, only : itoa
-      use Sub, only : location_in_proc
+      use Sub, only     : location_in_proc
 !
       integer, intent(in) :: nnamel
 !
@@ -2608,10 +2703,9 @@ module Diagnostics
       logical :: lval
       integer :: ierr, il
       integer :: mcoords_sound
-      integer, allocatable, dimension (:,:) :: temp_sound_coords
-      real    :: xsound, ysound, zsound
-      integer :: lsound, msound, nsound
-      character (LEN=80) :: line
+      integer, allocatable, dimension (:,:) :: sound_inds
+      real, dimension(dimensionality) :: coords
+      integer :: lsound, msound, nsound, nitems
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2619,42 +2713,26 @@ module Diagnostics
 !  such as computing mean field energies in calc_bmz, for example,
 !
       mcoords_sound = parallel_count_lines(sound_coord_file)
-      allocate(temp_sound_coords(mcoords_sound,3),stat=ierr)
+
+      allocate(sound_inds(mcoords_sound,3),stat=ierr)
       if (ierr>0) call fatal_error('allocate_sound', &
-            'Could not allocate memory for temp_sound_coords')
+                                   'Could not allocate memory for sound_inds')
 !
-      ncoords_sound = 0
+      ncoords_sound = 0; nitems = 0
 !
-      call parallel_open(sound_coord_file)
+      call parallel_open(sound_coord_file,nitems=nitems)
 !
       do isound=1,mcoords_sound
 !
-        select case (dimensionality)
-        case (1); read(parallel_unit,*,iostat=ierr) xsound
-        case (2); read(parallel_unit,*,iostat=ierr) xsound, ysound
-        case (3); read(parallel_unit,*,iostat=ierr) xsound, ysound, zsound
-        case default
-        endselect
+        read(parallel_unit_vec,*) coords
 !
-        if (ierr < 0) exit ! end-of-file
-!
-        if (ierr > 0) then
-!          backspace parallel_unit
-!          read (parallel_unit,*) line
-!          if ((line(1:1) /= comment_char) .and. (line(1:1) /= '!')) then
-            print*, 'allocate_sound - Warning: unreadable data in line '// &
-                    trim(itoa(isound))//' of '//trim(sound_coord_file)//' !'
-!          endif
-          cycle
-        endif
-!
-        if (location_in_proc(xsound,ysound,zsound,lsound,msound,nsound)) then
+        if (location_in_proc(coords,lsound,msound,nsound)) then
 !
           lval = .true.
           do il = 1, ncoords_sound
-            if ((temp_sound_coords(il,1) == lsound) .and. &
-                (temp_sound_coords(il,2) == msound) .and. &
-                (temp_sound_coords(il,3) == nsound) ) then
+            if ((sound_inds(il,1) == lsound) .and. &
+                (sound_inds(il,2) == msound) .and. &
+                (sound_inds(il,3) == nsound) ) then
               lval = .false.
               exit
             endif
@@ -2662,53 +2740,47 @@ module Diagnostics
 !
           if (lval) then
             ncoords_sound = ncoords_sound + 1
-            temp_sound_coords(ncoords_sound,1) = lsound
-            temp_sound_coords(ncoords_sound,2) = msound
-            temp_sound_coords(ncoords_sound,3) = nsound
+            sound_inds(ncoords_sound,1) = lsound
+            sound_inds(ncoords_sound,2) = msound
+            sound_inds(ncoords_sound,3) = nsound
           endif
         endif
       enddo
 !
-      call parallel_close(parallel_unit)
+      call parallel_close
+!
+! cname_sound is allocated also for ncoords_sound=0 as needed in read_name_format.
+!
+      allocate(cname_sound(nnamel),stat=ierr)
+      if (ierr>0) call fatal_error('allocate_sound', &
+                                   'Could not allocate memory for cname_sound')
 !
       lwrite_sound = ncoords_sound>0
       if (lwrite_sound) then
 !
-        if (.not. allocated(cname_sound)) then
-          allocate(cname_sound(nnamel),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for cname_sound')
-        endif
+        allocate(sound_coords_list(ncoords_sound,3),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+                                     'Could not allocate memory for sound_coords_list')
+        sound_coords_list = sound_inds(1:ncoords_sound,:)
 !
-        if (.not. allocated(sound_coords_list)) then
-          allocate(sound_coords_list(ncoords_sound,3),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for sound_coords_list')
-        endif
-        sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
+        allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+                                     'Could not allocate memory for fname_sound')
+        if (ldebug) print*, 'allocate_sound: allocated memory for '// &
+                            'fname_sound  with nname_sound  =', nnamel
 !
-        if (.not. allocated(fname_sound)) then
-          allocate(fname_sound(nnamel,ncoords_sound),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for fname_sound')
-          if (ldebug) print*, 'allocate_sound: allocated memory for '// &
-              'fname_sound  with nname_sound  =', nnamel
-!
-        endif
         fname_sound = 0.0
 !
-        if (.not. allocated(cform_sound)) then
-          allocate(cform_sound(nnamel),stat=ierr)
-          if (ierr>0) call fatal_error('allocate_sound', &
-              'Could not allocate memory for cform_sound')
-        endif
+        allocate(cform_sound(nnamel),stat=ierr)
+        if (ierr>0) call fatal_error('allocate_sound', &
+                                     'Could not allocate memory for cform_sound')
         cform_sound = ' '
 !
       endif
 !
 !  Now deallocate the temporary memory.
 !
-      deallocate(temp_sound_coords)
+      deallocate(sound_inds)
 !
     endsubroutine allocate_sound
 !***********************************************************************
@@ -2738,44 +2810,36 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not.allocated(cname)) then
-        allocate(cname(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for cname')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'cname   with nname   =', nnamel
-      endif
+      allocate(cname(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for cname')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'cname   with nname   =', nnamel
       cname=''
 !
-      if (.not.allocated(fname)) then
-        allocate(fname(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for fname')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'fname   with nname   =', nnamel
-        allocate(fname_keep(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for fname_keep')
-      endif
+      allocate(fname(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for fname')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'fname   with nname   =', nnamel
+      allocate(fname_keep(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for fname_keep')
       fname=0.0
       fname_keep=0.0
 !
-      if (.not.allocated(cform)) then
-        allocate(cform(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for cform')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'cform   with nname   =', nnamel
-      endif
+      allocate(cform(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for cform')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'cform   with nname   =', nnamel
       cform=''
 !
-      if (.not.allocated(itype_name)) then
-        allocate(itype_name(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_fnames', &
-            'Could not allocate memory for itype_name')
-        if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
-            'itype_name with nname   =', nnamel
-      endif
+      allocate(itype_name(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_fnames', &
+                                   'Could not allocate memory for itype_name')
+      if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
+                          'itype_name with nname   =', nnamel
       itype_name=ilabel_save
 
     endsubroutine allocate_fnames
@@ -2791,14 +2855,20 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not.allocated(cnamev)) then
-        allocate(cnamev(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_vnames', &
-            'Could not allocate memory for cnamev')
-        if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
-            'cnamev  with nnamev  =', nnamel
-      endif
+      allocate(cnamev(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_vnames', &
+          'Could not allocate memory for cnamev')
+      if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
+          'cnamev  with nnamev  =', nnamel
       cnamev=''
+!
+      if (allocated(cformv)) deallocate(cformv)
+      allocate(cformv(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_vnames', &
+          'Could not allocate memory for cformv')
+      if (ldebug) print*, 'allocate_vnames    : allocated memory for '// &
+          'cformv   with nname   =', nnamel
+      cformv=''
 !
     endsubroutine allocate_vnames
 !***********************************************************************
@@ -2818,31 +2888,25 @@ module Diagnostics
 !  averages, and only evaluates its output for special purposes
 !  such as computing mean field energies in calc_bmz, for example,
 !
-      if (.not.allocated(cnamez)) then
-        allocate(cnamez(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for cnamez')
-        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
-            'cnamez  with nnamez  =', nnamel
-      endif
+      allocate(cnamez(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for cnamez')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'cnamez  with nnamez  =', nnamel
       cnamez=''
 !
-      if (.not.allocated(fnamez)) then
-        allocate(fnamez(nz,nprocz,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for fnamez')
-        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
-            'fnamez  with nnamez  =', nnamel
-      endif
+      allocate(fnamez(nz,nprocz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for fnamez')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'fnamez  with nnamez  =', nnamel
       fnamez=0.0
 !
-      if (.not.allocated(cformz)) then
-        allocate(cformz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for cformz')
-        if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
-            'cformz  with nnamez  =', nnamel
-      endif
+      allocate(cformz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xyaverages', &
+                                   'Could not allocate memory for cformz')
+      if (ldebug) print*, 'allocate_xyaverages: allocated memory for '// &
+                          'cformz  with nnamez  =', nnamel
       cformz=''
 !
     endsubroutine allocate_xyaverages
@@ -2858,31 +2922,25 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not.allocated(cnamey)) then
-        allocate(cnamey(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for cnamey')
-        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
-            'cnamey  with nnamey  =', nnamel
-      endif
+      allocate(cnamey(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xzaverages', &
+                                   'Could not allocate memory for cnamey')
+      if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
+                          'cnamey  with nnamey  =', nnamel
       cnamey=''
 !
-      if (.not.allocated(fnamey)) then
-        allocate(fnamey(ny,nprocy,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for fnamey', .true.)
-        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
-            'fnamey  with nnamey  =', nnamel
-      endif
+      allocate(fnamey(ny,nprocy,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xzaverages', &
+                                   'Could not allocate memory for fnamey', .true.)
+      if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
+                          'fnamey  with nnamey  =', nnamel
       fnamey=0.0
 !
-      if (.not.allocated(cformy)) then
-        allocate(cformy(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_xzaverages', &
-            'Could not allocate memory for cformy', .true.)
-        if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
-            'cformy  with nnamey  =', nnamel
-      endif
+      allocate(cformy(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_xzaverages', &
+                                   'Could not allocate memory for cformy', .true.)
+      if (ldebug) print*, 'allocate_xzaverages: allocated memory for '// &
+                          'cformy  with nnamey  =', nnamel
       cformy=''
 !
     endsubroutine allocate_xzaverages
@@ -2898,31 +2956,25 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not.allocated(cnamex)) then
-        allocate(cnamex(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for cnamex')
-        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
-            'cnamex  with nnamex  =', nnamel
-      endif
+      allocate(cnamex(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yzaverages', &
+                                   'Could not allocate memory for cnamex')
+      if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
+                          'cnamex  with nnamex  =', nnamel
       cnamex=''
 !
-      if (.not.allocated(fnamex)) then
-        allocate(fnamex(nx,nprocx,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for fnamex')
-        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
-            'fnamex  with nnamex  =', nnamel
-      endif
+      allocate(fnamex(nx,nprocx,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yzaverages', &
+                                   'Could not allocate memory for fnamex')
+      if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
+                          'fnamex  with nnamex  =', nnamel
       fnamex=0.0
 !
-      if (.not.allocated(cformx)) then
-        allocate(cformx(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yzaverages', &
-            'Could not allocate memory for cformx')
-        if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
-            'cformx  with nnamex  =', nnamel
-      endif
+      allocate(cformx(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yzaverages', &
+                                   'Could not allocate memory for cformx')
+      if (ldebug) print*, 'allocate_yzaverages: allocated memory for '// &
+                          'cformx  with nnamex  =', nnamel
       cformx=''
 !
     endsubroutine allocate_yzaverages
@@ -2938,32 +2990,26 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamer)) then
-        allocate(cnamer(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for cnamer')
-        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-            'cnamer  with nnamel =', nnamel
-      endif
+      allocate(cnamer(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phizaverages', &
+                                   'Could not allocate memory for cnamer')
+      if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
+                          'cnamer  with nnamel =', nnamel
       cnamer=''
 !
       mnamer=nnamel+1
-      if (.not.allocated(fnamer)) then
-        allocate(fnamer(nrcyl,mnamer),stat=stat)
-        if (stat>0) call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for fnamer')
-        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-            'fnamer  with nnamer+1 =', mnamer
-      endif
+      allocate(fnamer(nrcyl,mnamer),stat=stat)
+      if (stat>0) call fatal_error('allocate_phizaverages', &
+                                   'Could not allocate memory for fnamer')
+      if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
+                          'fnamer  with nnamer+1 =', mnamer
       fnamer=0.0
 !
-      if (.not.allocated(cformr)) then
-        allocate(cformr(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phizaverages', &
-            'Could not allocate memory for cformr')
-        if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
-            'cformr  with nnamel =', nnamel
-      endif
+      allocate(cformr(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phizaverages', &
+                                   'Could not allocate memory for cformr')
+      if (ldebug) print*, 'allocate_phizaverages: allocated memory for '// &
+                          'cformr  with nnamel =', nnamel
       cformr=''
 !
     endsubroutine allocate_phizaverages
@@ -2979,31 +3025,25 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not.allocated(cnamexz)) then
-        allocate(cnamexz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for cnamexz')
-        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
-            'cnamexz with nnamexz =', nnamel
-      endif
+      allocate(cnamexz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yaverages', &
+                                   'Could not allocate memory for cnamexz')
+      if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
+                          'cnamexz with nnamexz =', nnamel
       cnamexz=''
 !
-      if (.not.allocated(fnamexz)) then
-        allocate(fnamexz(nx,nz,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for fnamexz')
-        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
-            'fnamexz with nnamexz =', nnamel
-      endif
+      allocate(fnamexz(nx,nz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yaverages', &
+                                   'Could not allocate memory for fnamexz')
+      if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
+                          'fnamexz with nnamexz =', nnamel
       fnamexz=0.0
 !
-      if (.not.allocated(cformxz)) then
-        allocate(cformxz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for cformxz')
-        if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
-            'cformxz with nnamexz =', nnamel
-      endif
+      allocate(cformxz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_yaverages', &
+                                   'Could not allocate memory for cformxz')
+      if (ldebug) print*, 'allocate_yaverages : allocated memory for '// &
+                          'cformxz with nnamexz =', nnamel
       cformxz=''
 !
     endsubroutine allocate_yaverages
@@ -3014,40 +3054,61 @@ module Diagnostics
 !
 !   12-aug-09/dhruba: coded
 !   11-jan-11/MR: parameter nnamel added
+!   11-mar-16/MR: outsourced allocation of fnamexy to allocate_zaverages_data
 !
       integer, intent(in) :: nnamel
 !
       integer :: stat
 !
-      if (.not.allocated(cnamexy)) then
-        allocate(cnamexy(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for cnamexy')
-        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'cnamexy with nnamexy =', nnamel
-      endif
+      allocate(cnamexy(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_zaverages', &
+                                   'Could not allocate memory for cnamexy')
+      if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
+                          'cnamexy with nnamexy =', nnamel
       cnamexy=''
 !
-      if (.not.allocated(fnamexy)) then
-        allocate(fnamexy(nnamel,nx,ny),stat=stat)
-        if (stat>0) call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for fnamexy')
-        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'fnamexy with nnamexy =', nnamel
-      endif
-      fnamexy=0.
-!
-      if (.not.allocated(cformxy)) then
-        allocate(cformxy(nnamel),stat=stat)
-        if (stat>0) &
-          call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for cformxy')
-        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'fnamexy with cformxy =', nnamel
-      endif
+      allocate(cformxy(nnamel),stat=stat)
+      if (stat>0) &
+        call fatal_error('allocate_zaverages', &
+                         'Could not allocate memory for cformxy')
+      if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
+                          'cformxy with nnamel =', nnamel
       cformxy=''
-!
+
     endsubroutine allocate_zaverages
+!*******************************************************************
+    subroutine allocate_zaverages_data(nnamel)
+!
+!  Allocate data array needed for z-averages.
+!  Additional fnamexy_cap for collection of z-sums in polar caps of Yang grid.
+!
+!   11-mar-16/MR: outsourced from allocate_zaverages
+!
+      use Yinyang_mpi, only: initialize_zaver_yy
+
+      integer, intent(in) :: nnamel
+!
+      integer :: stat, nyl, nycap
+!
+      nyl=ny
+      if (lyinyang) call initialize_zaver_yy(nyl,nycap)
+!
+      allocate(fnamexy(nnamel,nx,nyl),stat=stat)
+      if (stat>0) call fatal_error('allocate_zaverages_data', &
+                                   'Could not allocate memory for fnamexy')
+      if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
+                          'fnamexy with nnamexy =', nnamel
+      fnamexy=0.
+
+      if (lcaproot) then
+        allocate(fnamexy_cap(nnamel,nx,nycap),stat=stat)
+        if (stat>0) call fatal_error('allocate_zaverages_data', &
+                                     'Could not allocate memory for fnamexy_cap')
+        if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
+                            'fnamexy_cap with nycap, nnamexy =', nycap, nnamel
+      endif
+!
+    endsubroutine allocate_zaverages_data
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)
 !
@@ -3060,34 +3121,90 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not.allocated(cnamerz)) then
-        allocate(cnamerz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for cnamerz')
-        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
-            'cnamerz with nnamerz =', nnamel
-      endif
+      allocate(cnamerz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phiaverages', &
+                                   'Could not allocate memory for cnamerz')
+      if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
+                          'cnamerz with nnamerz =', nnamel
       cnamerz=''
 !
-      if (.not.allocated(fnamerz)) then
-        allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for fnamerz')
-        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
-            'fnamerz with nnamerz =', nnamel
-      endif
+      allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phiaverages', &
+                                   'Could not allocate memory for fnamerz')
+      if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
+                          'fnamerz with nnamerz =', nnamel
       fnamerz=0.0
 !
-      if (.not.allocated(cformrz)) then
-        allocate(cformrz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for cformrz')
-        if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
-            'cformrz with nnamerz =', nnamel
-      endif
+      allocate(cformrz(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_phiaverages', &
+                                   'Could not allocate memory for cformrz')
+      if (ldebug) print*, 'allocate_phiaverages : allocated memory for '// &
+                          'cformrz with nnamerz =', nnamel
       cformrz=''
 !
     endsubroutine allocate_phiaverages
+!***********************************************************************
+    subroutine sign_masked_xyaver(quan,idiag,ncount)
+!
+!  Forms sign-masked averaging over xy-planes (only positive values count).
+!  ncount holds the number of points which contribute.
+!
+!  28-sep-16/MR: coded
+!
+      use Mpicomm, only: mpiallreduce_sum_int, IXYPLANE
+
+      real   ,dimension(nx),intent(IN)   :: quan
+      integer,              intent(IN)   :: idiag
+      integer,dimension(nz),intent(INOUT):: ncount
+
+      real, dimension(nx) :: buf
+      integer, dimension(:), allocatable :: nsum
+
+      if (idiag>0) then
+
+        where (quan>0.)
+          buf=quan
+        elsewhere
+          buf=0.
+        endwhere
+
+        ncount(n-n1+1)=ncount(n-n1+1)+count(buf>0.)
+        call xysum_mn_name_z(buf,idiag)
+
+        if (llastpoint) then
+!
+!  Find total number of contributing points in xy-plane.
+!
+          allocate(nsum(nz))
+          call mpiallreduce_sum_int(ncount,nsum,nz,IXYPLANE)
+!
+!  Form average by dividing by this number. Multiplication with nxygrid
+!  necessary as later the average is divided by that.
+!
+          where (nsum>0) &
+            fnamez(:,ipz,idiag)=fnamez(:,ipz,idiag)/nsum*nxygrid
+          ncount=0
+        endif
+      endif
+
+    endsubroutine sign_masked_xyaver
+!***********************************************************************
+    subroutine diagnostics_clean_up
+!
+!   16-jan-17/MR: coded
+!
+                               call vnames_clean_up
+                               call fnames_clean_up
+                               call xyaverages_clean_up
+                               call xzaverages_clean_up
+                               call yzaverages_clean_up
+      if (lwrite_phizaverages) call phizaverages_clean_up
+      if (lwrite_yaverages)    call yaverages_clean_up
+      if (lwrite_zaverages)    call zaverages_clean_up
+      if (lwrite_phiaverages)  call phiaverages_clean_up
+      if (lwrite_sound)        call sound_clean_up
+    
+    endsubroutine diagnostics_clean_up
 !***********************************************************************
     subroutine fnames_clean_up
 !
@@ -3110,7 +3227,7 @@ module Diagnostics
 !
 !   20-apr-10/Bourdin.KIS: copied from xyaverages_clean_up
 !
-      if (allocated(cnamev)) deallocate(cnamev)
+      if (allocated(cnamev)) deallocate(cnamev,cformv)
 !
     endsubroutine vnames_clean_up
 !***********************************************************************
@@ -3181,6 +3298,7 @@ module Diagnostics
 !   12-aug-09/dhruba: coded
 !
       if (allocated(fnamexy)) deallocate(fnamexy)
+      if (allocated(fnamexy_cap)) deallocate(fnamexy_cap)
       if (allocated(cnamexy)) deallocate(cnamexy)
       if (allocated(cformxy)) deallocate(cformxy)
 !

@@ -18,6 +18,7 @@ module Special
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages, only: fatal_error, warning, svn_id
+  use Slices_methods, only: assign_slices_scal, store_slices
 !
   implicit none
 !
@@ -30,13 +31,14 @@ module Special
   real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.,R_hyper3=0.0
   real :: R_hyperchi=0.,R_hypereta=0.,R_hypernu=0.,R_hyperdiffrho=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
-  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
+  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.
   real :: width_newton=0.,gauss_newton=0.
-  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lmag_time_bound=.false.
+  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.
+  logical :: lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
-  real :: Bz_flux=0.,quench=0., b_tau=0.
+  real :: Bz_flux=0.,quench=0.,quench0=0.,quench_width=1., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
-  real :: init_time2=0.
+  real :: init_time2=0., density_min=0.
   real :: limiter_tensordiff=3
   real :: u_amplifier=1.
   integer :: twisttype=0,irefz=nghost+1
@@ -44,13 +46,15 @@ module Special
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.
   logical :: mark=.false.,lchen=.false.,ldensity_floor_c=.false.
-  logical :: lwrite_granules=.false.
+  logical :: lwrite_granules=.false.,ldensity_floor=.false.
   real :: hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.
   real :: mach_chen=0.,maxvA=0., dA=1.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.,hyper_heating=.false.
+  logical :: linject_maghel=.false., lmag_bound_vec=.false.
+  real :: maghel_ampl=0., Bz2xym=1.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -61,7 +65,9 @@ module Special
   real, dimension(9) :: heat_par_full=(/0.,1.,0.,1.,0.,1.,0.,0.,0./)
   real, dimension(1) :: heat_par_rappazzo=0.
   real, dimension(1) :: heat_par_schrijver04=0.
-  real, dimension(1) :: heat_par_balleg=0.
+  real, dimension(1) :: heat_par_balleg=0.,dummy_init_pars=0.
+!
+  namelist /special_init_pars/ dummy_init_pars
 !
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
@@ -70,16 +76,17 @@ module Special
       heat_par_full,heat_par_rappazzo,heat_par_schrijver04, &
       heat_par_balleg,t_start_mark,t_mid_mark,t_width_mark,&
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
-      lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
-      Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
+      lgranulation,luse_ext_vel_field,lvel_field_is_3D,increase_vorticity,hyper3_chi, &
+      Bavoid,Bz_flux,init_time,init_width,quench,quench0,quench_width,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,irefz,tau_inv_spitzer,maxvA, b_tau,&
+      heat_par_b2,irefz,maxvA, b_tau,&
       mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,R_hyper3, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
       sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp, &
-      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating
+      R_hyperchi,R_hypereta,R_hypernu,R_hyperdiffrho,hyper_heating, &
+      linject_maghel, maghel_ampl, ldensity_floor, density_min, lmag_bound_vec
 !
 ! variables for print.in
 !
@@ -91,22 +98,18 @@ module Special
   integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
   integer :: idiag_dtrad=0    ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtnewt=0
+  integer :: ivid_newton=0, ivid_spitzer=0, ivid_rtv=0, ivid_hgrad=0
 !
 !  variables for video slices:
 !
-  real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2
-  real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
-  real, target, dimension (nx,nz) :: spitzer_xz
-  real, target, dimension (ny,nz) :: spitzer_yz
-  real, target, dimension (nx,ny) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
-  real, target, dimension (nx,nz) :: newton_xz
-  real, target, dimension (ny,nz) :: newton_yz
-  real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
-  real, target, dimension (nx,nz) :: rtv_xz
-  real, target, dimension (ny,nz) :: rtv_yz
-  real, target, dimension (nx,ny) :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
-  real, target, dimension (nx,nz) :: hgrad_xz
-  real, target, dimension (ny,nz) :: hgrad_yz
+  real, target, dimension (:,:), allocatable :: spitzer_xy,spitzer_xy2,spitzer_xy3,spitzer_xy4
+  real, target, dimension (:,:), allocatable :: spitzer_xz,spitzer_yz,spitzer_xz2
+  real, target, dimension (:,:), allocatable :: newton_xy,newton_xy2,newton_xy3,newton_xy4
+  real, target, dimension (:,:), allocatable :: newton_xz,newton_yz,newton_xz2
+  real, target, dimension (:,:), allocatable :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
+  real, target, dimension (:,:), allocatable :: rtv_xz,rtv_yz,rtv_xz2
+  real, target, dimension (:,:), allocatable :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
+  real, target, dimension (:,:), allocatable :: hgrad_xz,hgrad_yz,hgrad_xz2
 !
 !  variables for granulation driver
 !
@@ -131,9 +134,10 @@ module Special
   integer, save :: pow
   integer, save, dimension(mseed) :: points_rstate
   real, dimension(nx,ny) :: Ux,Uy,b2
-  real, dimension(:,:), allocatable :: Ux_ext_global,Uy_ext_global
+  real, dimension(:,:), allocatable :: Ux_ext_global,Uy_ext_global,Uz_ext_global
   real, dimension(:,:), allocatable :: Ux_e_g_l,Ux_e_g_r
   real, dimension(:,:), allocatable :: Uy_e_g_l,Uy_e_g_r
+  real, dimension(:,:), allocatable :: Uz_e_g_l,Uz_e_g_r
 !
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
   real, dimension(nx,ny,nz) :: Blength
@@ -144,12 +148,14 @@ module Special
 !  miscellaneous variables
 !
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
-  real :: Bzflux
+  real :: Bzflux=0., lnrho_min=0.
   real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
   real :: Kspitzer_perp_SI = 3e12, Kspitzer_perp=0.
   real :: Ksaturation_SI = 7e7,Ksaturation=0.
 !
-  real :: nu_ee,ln_unit_TT
+  real :: nu_ee=0.,ln_unit_TT=0.
+!
+  real, dimension(nx) :: diffus_chi
 !
   contains
 !
@@ -186,6 +192,16 @@ module Special
 !  Get the external magnetic field if exists.
       if (lmagnetic) &
         call get_shared_variable('B_ext', B_ext, caller='calc_hcond_timestep')
+!
+!     magnetic helicity density set in units of G2 Mm
+!     renormalize to average magnetic helicity density in PC units
+!
+      if (linject_maghel) &
+      maghel_ampl = maghel_ampl/1e8/unit_magnetic**2/unit_length*1e6
+!
+!  transform density_min from SI to code units and lnrho
+!
+      if (ldensity_floor) lnrho_min=alog(real(density_min/unit_density))
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -228,10 +244,12 @@ module Special
           read(unit) lnTT_init_prof
           close(unit)
         else
-          if (ldensity_nolog) then
-            lnrho_init_prof = log(f(l1,m1,:,irho))
-          else
-            lnrho_init_prof = f(l1,m1,:,ilnrho)
+          if (ldensity) then
+            if (ldensity_nolog) then
+              lnrho_init_prof = log(f(l1,m1,:,irho))
+            else
+              lnrho_init_prof = f(l1,m1,:,ilnrho)
+            endif
           endif
           if (ltemperature) then
             if (ltemperature_nolog) then
@@ -241,7 +259,7 @@ module Special
             endif
           else if (lentropy.and.pretend_lnTT) then
             lnTT_init_prof = f(l1,m1,:,ilnTT)
-          else if (lthermal_energy) then
+          else if (lthermal_energy .and. ldensity) then
             if (leos) call get_cp1(cp1)
             lnTT_init_prof=log(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
           else
@@ -276,7 +294,6 @@ module Special
         print*,'Loaded loop length data for heattype: ',iheattype
       endif
 !
-!
       if (lrun .and. lgranulation .and. (ipz == 0)) then
         if (lhydro) then
           call set_driver_params()
@@ -284,6 +301,50 @@ module Special
           call fatal_error &
               ('initialize_special','granulation only works for lhydro=T')
         endif
+      endif
+!
+      if (ivid_rtv/=0) then
+        !call alloc_slice_buffers(rtv_xy,rtv_xz,rtv_yz,rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (lwrite_slice_xy .and..not.allocated(rtv_xy) ) allocate(rtv_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(rtv_xz) ) allocate(rtv_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(rtv_yz) ) allocate(rtv_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(rtv_xy2)) allocate(rtv_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(rtv_xy3)) allocate(rtv_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(rtv_xy4)) allocate(rtv_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(rtv_xz2)) allocate(rtv_xz2(nx,nz))
+      endif
+!
+      if (ivid_spitzer/=0) then
+        !call alloc_slice_buffers(spitzer_xy,spitzer_xz,spitzer_yz,spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+        if (lwrite_slice_xy .and..not.allocated(spitzer_xy) ) allocate(spitzer_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(spitzer_xz) ) allocate(spitzer_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(spitzer_yz) ) allocate(spitzer_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(spitzer_xy2)) allocate(spitzer_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(spitzer_xy3)) allocate(spitzer_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(spitzer_xy4)) allocate(spitzer_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(spitzer_xz2)) allocate(spitzer_xz2(nx,nz))
+      endif
+!
+      if (ivid_newton/=0) then
+        !call alloc_slice_buffers(newton_xy,newton_xz,newton_yz,newton_xy2,newton_xy3,newton_xy4,newton_xz2)
+        if (lwrite_slice_xy .and..not.allocated(newton_xy) ) allocate(newton_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(newton_xz) ) allocate(newton_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(newton_yz) ) allocate(newton_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(newton_xy2)) allocate(newton_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(newton_xy3)) allocate(newton_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(newton_xy4)) allocate(newton_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(newton_xz2)) allocate(newton_xz2(nx,nz))
+      endif
+!
+      if (ivid_hgrad/=0) then
+        !call alloc_slice_buffers(hgrad_xy,hgrad_xz,hgrad_yz,hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
+        if (lwrite_slice_xy .and..not.allocated(hgrad_xy) ) allocate(hgrad_xy (nx,ny))
+        if (lwrite_slice_xz .and..not.allocated(hgrad_xz) ) allocate(hgrad_xz (nx,nz))
+        if (lwrite_slice_yz .and..not.allocated(hgrad_yz) ) allocate(hgrad_yz (ny,nz))
+        if (lwrite_slice_xy2.and..not.allocated(hgrad_xy2)) allocate(hgrad_xy2(nx,ny))
+        if (lwrite_slice_xy3.and..not.allocated(hgrad_xy3)) allocate(hgrad_xy3(nx,ny))
+        if (lwrite_slice_xy4.and..not.allocated(hgrad_xy4)) allocate(hgrad_xy4(nx,ny))
+        if (lwrite_slice_xz2.and..not.allocated(hgrad_xz2)) allocate(hgrad_xz2(nx,nz))
       endif
 !
     endsubroutine initialize_special
@@ -304,6 +365,26 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
+        subroutine read_special_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+      read(parallel_unit, NML=special_init_pars)
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_init_pars)
+!
+    endsubroutine write_special_init_pars
+!***********************************************************************
+
     subroutine read_special_run_pars(iostat)
 !
       use File_io, only: parallel_unit
@@ -461,6 +542,7 @@ module Special
 !  04-sep-10/bing: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname
       logical :: lreset,lwr
@@ -479,6 +561,7 @@ module Special
         idiag_dtchi2=0
         idiag_dtrad=0
         idiag_dtnewt=0
+        ivid_newton=0; ivid_spitzer=0; ivid_rtv=0; ivid_hgrad=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -490,13 +573,22 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'newton', ivid_newton)
+        call parse_name(iname,cnamev(iname),cformv(iname),'spitzer',ivid_spitzer)
+        call parse_name(iname,cnamev(iname),cformv(iname),'rtv',    ivid_rtv)
+        call parse_name(iname,cnamev(iname),cformv(iname),'hgrad',  ivid_hgrad)
+      enddo
+!
 !  write column where which variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
-        write(3,*) 'i_dtchi2=',idiag_dtchi2
-        write(3,*) 'i_dtrad=',idiag_dtrad
-        write(3,*) 'i_dtnewt=',idiag_dtnewt
+        call farray_index_append('i_dtspitzer',idiag_dtspitzer)
+        call farray_index_append('i_dtchi2',idiag_dtchi2)
+        call farray_index_append('i_dtrad',idiag_dtrad)
+        call farray_index_append('i_dtnewt',idiag_dtnewt)
       endif
 !
     endsubroutine rprint_special
@@ -557,41 +649,17 @@ module Special
       select case (trim(slices%name))
 !
       case ('newton')
-        slices%yz => newton_yz
-        slices%xz => newton_xz
-        slices%xy => newton_xy
-        slices%xy2=> newton_xy2
-        if (lwrite_slice_xy3) slices%xy3=> newton_xy3
-        if (lwrite_slice_xy4) slices%xy4=> newton_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,newton_xy,newton_xz,newton_yz, &
+                                newton_xy2,newton_xy3,newton_xy4,newton_xz2)
       case ('spitzer')
-        slices%yz => spitzer_yz
-        slices%xz => spitzer_xz
-        slices%xy => spitzer_xy
-        slices%xy2=> spitzer_xy2
-        if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
-        if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,spitzer_xy,spitzer_xz,spitzer_yz, &
+                                spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       case ('rtv')
-        slices%yz => rtv_yz
-        slices%xz => rtv_xz
-        slices%xy => rtv_xy
-        slices%xy2=> rtv_xy2
-        if (lwrite_slice_xy3) slices%xy3=> rtv_xy3
-        if (lwrite_slice_xy4) slices%xy4=> rtv_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,rtv_xy,rtv_xz,rtv_yz, &
+                                rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
       case ('hgrad')
-        slices%yz => hgrad_yz
-        slices%xz => hgrad_xz
-        slices%xy => hgrad_xy
-        slices%xy2=> hgrad_xy2
-        if (lwrite_slice_xy3) slices%xy3=> hgrad_xy3
-        if (lwrite_slice_xy4) slices%xy4=> hgrad_xy4
-        slices%ready=.true.
-!
+        call assign_slices_scal(slices,hgrad_xy,hgrad_xz,hgrad_yz, &
+                                hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endselect
 !
     endsubroutine get_slices_special
@@ -631,7 +699,8 @@ module Special
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lcompute_gran.and.Bavoid>0.0).or.Bz_flux /= 0.) call set_B2(f)
+        if ((lcompute_gran.and.(Bavoid>0.0 .or. quench>0.0)) &
+             .or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
@@ -690,6 +759,9 @@ module Special
           f(l1:l2,m1:m2,n1,iux) = Ux_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
           f(l1:l2,m1:m2,n1,iuy) = Uy_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
         endif
+        if (lvel_field_is_3D) then
+          f(l1:l2,m1:m2,n1,iuz) = Uz_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
       endif
 !
 !  Read time dependent magnetic lower boundary
@@ -700,12 +772,13 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+    subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  10-oct-12/bing: coded
 !
       use EquationOfState, only: gamma
 !
+      logical, intent(in) :: llast
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
@@ -801,6 +874,7 @@ module Special
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(llast)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -820,6 +894,7 @@ module Special
       real, dimension (nx) :: hc,tmp
       integer :: itemp
 !
+      diffus_chi=0.
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
       if (Kiso /= 0.) call calc_heatcond_spitzer_iso(df,p)
       if (Kpara /= 0.          .and. (.not. sub_step_hcond)) call calc_heatcond_tensor(f,df,p)
@@ -846,7 +921,8 @@ module Special
 !
 !  due to ignoredx hyper3_chi has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/cdtv3)
       endif
 !
       if (R_hyperchi /= 0.) then
@@ -864,7 +940,12 @@ module Special
 !
 !  due to ignoredx tmp has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
+      endif
+!
+      if (lfirst.and.ldt) then
+         maxdiffus=max(maxdiffus,diffus_chi)
       endif
 !
     endsubroutine special_calc_energy
@@ -893,19 +974,21 @@ module Special
 !
 !  due to ignoredx hyper3_nu has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/cdtv3)
       endif
 !
       if (R_hypernu /= 0.) then
         tmp = sqrt(p%u2)/dxmax_pencil/R_hypernu
         do i=0,2
           call del6(f,iux+i,hc,IGNOREDX=.true.)
-          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_nu*hc
+          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + tmp*hc
         enddo
 !
 !  due to ignoredx tmp has the unit [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
       if (lchen .and. mach_chen /= 0.) then
@@ -960,6 +1043,14 @@ module Special
         endwhere
       endif
 !
+!     density can only have a miminum value
+!
+      if (ldensity_floor) then
+        tmp=lnrho_min - f(l1:l2,m,n,ilnrho)
+        where (tmp < 0.0) tmp=0.0
+        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + tmp
+      endif
+!
       if (hyper3_diffrho /= 0.) then
         if (ldensity_nolog.and.(ilnrho /= irho)) &
             call fatal_error('hyper3_diffrho special','please check')
@@ -969,7 +1060,8 @@ module Special
 !
 !  due to ignoredx hyper3_diffrho has [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/cdtv3)
       endif
 !
       if (R_hyperdiffrho /= 0.) then
@@ -982,7 +1074,8 @@ module Special
 !
 !  due to ignoredx tmp has the units [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
     endsubroutine special_calc_density
@@ -1020,7 +1113,8 @@ module Special
 !
 !  due to ignoredx hyper3_heat has the unit [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_heat/0.01)
+!          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_heat/0.01)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_nu/cdtv3)
       endif
 !
       if (R_hypereta /= 0.) then
@@ -1039,7 +1133,8 @@ module Special
 !
 !  due to ignoredx tmp has the unit [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+!          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
       endif
 !
     endsubroutine special_calc_magnetic
@@ -1156,12 +1251,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
-        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
-        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
-        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
-        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
-        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
+!
+        if (ivid_spitzer/=0) &
+          call store_slices(thdiff,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1245,12 +1338,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
-        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
-        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
-        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
-        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
-        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
+!
+        if (ivid_spitzer/=0) &
+          call store_slices(thdiff,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1618,12 +1709,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        hgrad_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-        if (m == iy_loc)  hgrad_xz(:,n-n1+1)= rhs
-        if (n == iz_loc)  hgrad_xy(:,m-m1+1)= rhs
-        if (n == iz2_loc) hgrad_xy2(:,m-m1+1)= rhs
-        if (n == iz3_loc) hgrad_xy3(:,m-m1+1)= rhs
-        if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
+!        
+        if (ivid_hgrad/=0) &
+          call store_slices(rhs,hgrad_xy,hgrad_xz,hgrad_yz, &
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
 !
 !  for timestep extension multiply with the
@@ -1707,12 +1796,10 @@ module Special
       if (lvideo) then
 !
 ! slices
-        hgrad_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
-        if (m == iy_loc)  hgrad_xz(:,n-n1+1)= rhs
-        if (n == iz_loc)  hgrad_xy(:,m-m1+1)= rhs
-        if (n == iz2_loc) hgrad_xy2(:,m-m1+1)= rhs
-        if (n == iz3_loc) hgrad_xy3(:,m-m1+1)= rhs
-        if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
+!
+        if (ivid_hgrad/=0) &
+          call store_slices(rhs,hgrad_xy,hgrad_xz,hgrad_yz, &
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -1742,7 +1829,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT, tmp
       real :: unit_lnQ
 !
       unit_lnQ=3*log(real(unit_velocity))+&
@@ -1809,21 +1896,22 @@ module Special
       if (lvideo) then
 !
 ! slices
-        rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
-        if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
-        if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
-        if (n == iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
-        if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
-        if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
+!
+        if (ivid_rtv/=0) &
+          call store_slices(rtv_cool,rtv_xy,rtv_xz,rtv_yz, &
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
       endif
 !
       if (lfirst.and.ldt) then
         if (lentropy) then
           rtv_cool=gamma*p%cp1*rtv_cool
         endif
-        dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
+! JW: include time step directly due to rtv_cool
+!        dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
+        dt1_max=max(dt1_max,rtv_cool/cdts)
         if (ldiagnos.and.idiag_dtrad /= 0.) then
-          call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
+!          call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
+          call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
         endif
       endif
 !
@@ -2134,13 +2222,13 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: newton,tau_inv_tmp
-      real, dimension (nx) :: rho0_rho,TT0_TT
+      real, dimension (nx) :: rho0_rho,TT0_TT,dumpenc
 !
       if (headtt) print*,'special_calc_energy: newton cooling',tau_inv_newton
 !
 !  Get reference temperature
-      rho0_rho = exp(lnrho_init_prof(n)-p%lnrho)
-      TT0_TT = exp(lnTT_init_prof(n)-p%lnTT)
+      if (ldensity) rho0_rho = exp(lnrho_init_prof(n)-p%lnrho)
+      if (ltemperature) TT0_TT = exp(lnTT_init_prof(n)-p%lnTT)
 !
 !  Multiply by density dependend time scale
       if (exp_newton /= 0.) then
@@ -2164,8 +2252,8 @@ module Special
         tau_inv_tmp = tau_inv_newton
       endif
 !
-      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + tau_inv_tmp*(rho0_rho-1.)
-      df(l1:l2,m,n,ilnTT) =df(l1:l2,m,n,ilnTT)  + tau_inv_tmp*rho0_rho*(TT0_TT-1.)
+      if (ldensity) df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + tau_inv_tmp*(rho0_rho-1.)
+      if (ltemperature) df(l1:l2,m,n,ilnTT) =df(l1:l2,m,n,ilnTT)  + tau_inv_tmp*rho0_rho*(TT0_TT-1.)
 !
 !       newton  = newton * tau_inv_tmp
 ! !
@@ -2189,15 +2277,23 @@ module Special
 !         tau_inv_tmp=max(tau_inv_tmp,tau_inv_top)
 !       endif
 !
-      if (lvideo) then
+      if (lvideo.and.lfirst) then
 !
-! slices
-        newton_yz(m-m1+1,n-n1+1)= -1 ! this is undefined: newton(ix_loc-l1+1)
-        if (m == iy_loc)  newton_xz(:,n-n1+1)= -1 ! this is undefined: newton
-        if (n == iz_loc)  newton_xy(:,m-m1+1)= -1 ! this is undefined: newton
-        if (n == iz2_loc) newton_xy2(:,m-m1+1)= -1 ! this is undefined: newton
-        if (n == iz3_loc) newton_xy3(:,m-m1+1)= -1 ! this is undefined: newton
-        if (n == iz4_loc) newton_xy4(:,m-m1+1)= -1 ! this is undefined: newton
+! slices (all undefined so far)
+!
+        dumpenc=-1.
+        if (ivid_newton/=0) &
+          call store_slices(dumpenc,newton_xy,newton_xz,newton_yz, &
+                            newton_xy2,newton_xy3,newton_xy4,newton_xz2)
+        if (ivid_spitzer/=0) &
+          call store_slices(dumpenc,spitzer_xy,spitzer_xz,spitzer_yz, &
+                            spitzer_xy2,spitzer_xy3,spitzer_xy4,spitzer_xz2)
+        if (ivid_rtv/=0) & 
+          call store_slices(dumpenc,rtv_xy,rtv_xz,rtv_yz, &
+                            rtv_xy2,rtv_xy3,rtv_xy4,rtv_xz2)
+        if (ivid_hgrad/=0) &
+          call store_slices(dumpenc,hgrad_xy,hgrad_xz,hgrad_yz, &
+                            hgrad_xy2,hgrad_xy3,hgrad_xy4,hgrad_xz2)
       endif
 !
       if (lfirst.and.ldt) then
@@ -2268,6 +2364,7 @@ module Special
 !  converts into the vector potential.
 !
 !  15-jan-11/bing: coded
+!  14-oct-18/joern: add vector magnetogram
 !
       use File_io, only: file_exists
       use Fourier, only: fourier_transform_other
@@ -2278,16 +2375,19 @@ module Special
       real, save :: tl=0.,tr=0.,delta_t=0.
       integer :: ierr,lend,i,idx2,idy2,stat
 !
-      real, dimension (nxgrid,nygrid) :: Bz0l, Bz0r
-      real, dimension (:,:), allocatable :: Bz0_i
+      real, dimension (:,:), allocatable :: Bz0_i,Bz0l,Bz0r
+      real, dimension (:,:), allocatable :: Bx0_i,Bx0l,Bx0r
+      real, dimension (:,:), allocatable :: By0_i,By0l,By0r
       real, dimension (:,:), allocatable :: A_i,A_r
-      real, dimension (:,:), allocatable :: kx,ky,k2
-      real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr
+      real, dimension (:,:), allocatable :: kx,ky,kz,k2
+      real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr,Azl,Azr
 !
-      real :: time_SI, Bz_fluxm, Bzfluxm
+      real :: time_SI
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
+!
+!
 !
       ierr = 0
       stat = 0
@@ -2307,14 +2407,26 @@ module Special
 !
       if (tr+delta_t <= time_SI) then
 !
-!        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-!        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
         allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
         allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
         allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
         allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+!
+!     using a Vector magnetogram
+!
+        if (lmag_bound_vec) then
+          allocate(Bx0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(Bx0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(Bx0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+          allocate(By0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(By0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+          allocate(By0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+!          allocate(kz(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+        endif
 !
         kx =spread(kx_fft,2,nygrid)
         ky =spread(ky_fft,1,nxgrid)
@@ -2347,102 +2459,267 @@ module Special
         enddo
         close (10)
 !
+!  Read magnetogram
+!
         open (10,file=mag_field_dat,form='unformatted',status='unknown', &
             recl=lend*nxgrid*nygrid,access='direct')
-        read (10,rec=i) Bz0l
-        read (10,rec=i+1) Bz0r
+          if (lmag_bound_vec) then
+!! reading first Bz, so mag_field.dat can be used for initial condition
+            read (10,rec=3*(i-1)+1) Bz0l
+            read (10,rec=3*i+1)     Bz0r
+            read (10,rec=3*(i-1)+2) Bx0l
+            read (10,rec=3*i+2)     Bx0r
+            read (10,rec=3*(i-1)+3) By0l
+            read (10,rec=3*i+3)     By0r
+          else 
+            read (10,rec=i) Bz0l
+            read (10,rec=i+1) Bz0r
+          endif
         close (10)
 !
+        if (lmag_bound_vec) then
+          Bx0l = Bx0l *  1e-4 / unit_magnetic  ! left real part
+          Bx0r = Bx0r *  1e-4 / unit_magnetic  ! right real part
+          By0l = By0l *  1e-4 / unit_magnetic  ! left real part
+          By0r = By0r *  1e-4 / unit_magnetic  ! right real part
+        endif
         Bz0l = Bz0l *  1e-4 / unit_magnetic  ! left real part
         Bz0r = Bz0r *  1e-4 / unit_magnetic  ! right real part
 !
 ! first point in time
 !
+!
+!       Inject magnetic helicity desnity A*B:
+!       maghel_ampl is the horizontal averaged magnetic helcity density.
+!       We set Az = maghel/<Bz2>_h Bz.
+!
+        if (linject_maghel) then
+          Bz2xym=sum(Bz0l**2.)/nxgrid/nygrid
+          Azl = maghel_ampl/Bz2xym * Bz0l(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
+!
+!  optionally, also use and transform Bx and By; otherwise just Bz
+!
+        if (lmag_bound_vec) then
+          Bx0_i = 0.
+          call fourier_transform_other(Bx0l,Bx0_i)
+          By0_i = 0.
+          call fourier_transform_other(By0l,By0_i)
+        endif
         Bz0_i = 0.
         call fourier_transform_other(Bz0l,Bz0_i)
 !
-        where (k2 /= 0 )
-          A_r = -Bz0_i*ky/k2
-          A_i =  Bz0l *ky/k2
-        elsewhere
-          A_r = -Bz0_i*ky/ky(1,idy2)
-          A_i =  Bz0l *ky/ky(1,idy2)
-        endwhere
+!        if (lmag_bound_vec) then
+!          where(Bz0l /= 0. )
+!            kz=(-kx*Bx0_i-ky*By0_i)/Bz0l
+!          elsewhere
+!            kz=0.0
+!          endwhere
+!          k2=kx*kx+ky*ky-kz*kz
+!
+!          where (k2 /= 0 )
+!            A_r = -Bz0_i*ky/k2 - By0l *kz/k2
+!            A_i =  Bz0l *ky/k2 + By0_i*kz/k2
+!          elsewhere
+!            A_r = -Bz0_i*ky/ky(1,idy2) - By0l *kz/ky(1,idy2)
+!            A_i =  Bz0l *ky/ky(1,idy2) + By0_i*kz/ky(1,idy2)
+!          endwhere
+!        else
+!
+!  compute Ax, but call it here just A
+!
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2
+            A_i =  Bz0l *ky/k2
+          elsewhere
+            !A_r = -Bz0_i*ky/ky(1,idy2)
+            !A_i =  Bz0l *ky/ky(1,idy2)
+!AXEL: why not set to zero here?
+            A_r = 0.
+            A_i = 0.
+          endwhere
+!        endif
+!
+!  transform back to real space
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Axl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        where (k2 /= 0 )
-          A_r =  Bz0_i*kx/k2
-          A_i = -Bz0l *kx/k2
-        elsewhere
-          A_r =  Bz0_i*kx/kx(idx2,1)
-          A_i = -Bz0l *kx/kx(idx2,1)
-        endwhere
+!        if (lmag_bound_vec) then
+!          where (k2 /= 0 )
+!            A_r =  Bz0_i*kx/k2  + Bx0l*kz/k2
+!            A_i = -Bz0l *kx/k2  - Bx0_i*kz/k2
+!          elsewhere
+!            A_r =  Bz0_i*kx/kx(idx2,1)  + Bx0l*kz/kx(idx2,1)
+!            A_i = -Bz0l *kx/kx(idx2,1)  - Bx0_i*kz/kx(idx2,1)
+!          endwhere
+!        else
+!
+!  Compute Ay, and call it A (real and imaginary parts)
+!
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2
+            A_i = -Bz0l *kx/k2
+          elsewhere
+            !A_r =  Bz0_i*kx/kx(idx2,1)
+            !A_i = -Bz0l *kx/kx(idx2,1)
+!AXEL: why not set to zero here?
+            A_r = 0.
+            A_i = 0.
+          endwhere
+!        endif
+!
+!  transform back to real space
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
+        if (lmag_bound_vec) then
+          where (k2 /= 0 )
+            A_r =  -By0_i*kx/k2 + Bx0_i*ky/k2
+            A_i =  By0l*kx/k2 - Bx0l*ky/k2
+          elsewhere
+            A_r =  -By0_i*kx/kx(idx2,1) + Bx0_i*ky/ky(1,idy2)
+            A_i =  By0l*kx/kx(idx2,1) - Bx0l*ky/ky(1,idy2)
+          endwhere
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+          if (.not. linject_maghel) then
+            Azl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          else
+            Azl = Azl + A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+         endif
+       endif
+!
+!
 ! second point in time
+!
+!
+!       Inject magnetic helicity desnity A*B:
+!       maghel_ampl is the horizontal averaged magnetic helcity density.
+!       We set Az = maghel/<Bz2>_h Bz.
+!
+        if (linject_maghel) then
+          Bz2xym=sum(Bz0r**2.)/nxgrid/nygrid
+          Azr = maghel_ampl/Bz2xym * Bz0r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
+!
+        if (lmag_bound_vec) then
+          Bx0_i = 0.
+          call fourier_transform_other(Bx0r,Bx0_i)
+          By0_i = 0.
+          call fourier_transform_other(By0r,By0_i)
+        endif
 !
         Bz0_i = 0.
         call fourier_transform_other(Bz0r,Bz0_i)
-        where (k2 /= 0 )
-          A_r = -Bz0_i*ky/k2
-          A_i =  Bz0r *ky/k2
-        elsewhere
-          A_r = -Bz0_i*ky/ky(1,idy2)
-          A_i =  Bz0r *ky/ky(1,idy2)
-        endwhere
+!
+!        if (lmag_bound_vec) then
+!          where(Bz0r /= 0. )
+!            kz=(-kx*Bx0_i-ky*By0_i)/Bz0r
+!          elsewhere
+!            kz=0
+!          endwhere
+!          k2=kx*kx+ky*ky-kz*kz
+!
+!          where (k2 /= 0 )
+!            A_r = -Bz0_i*ky/k2 - By0r *kz/k2
+!            A_i =  Bz0r *ky/k2 + By0_i*kz/k2
+!          elsewhere
+!            A_r = -Bz0_i*ky/ky(1,idy2) - By0r *kz/ky(1,idy2)
+!            A_i =  Bz0r *ky/ky(1,idy2) + By0_i*kz/ky(1,idy2)
+!          endwhere
+!        else
+          where (k2 /= 0 )
+            A_r = -Bz0_i*ky/k2
+            A_i =  Bz0r *ky/k2
+          elsewhere
+            A_r = -Bz0_i*ky/ky(1,idy2)
+            A_i =  Bz0r *ky/ky(1,idy2)
+          endwhere
+!        endif
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Axr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        where (k2 /= 0 )
-          A_r =  Bz0_i*kx/k2
-          A_i = -Bz0r *kx/k2
-        elsewhere
-          A_r =  Bz0_i*kx/kx(idx2,1)
-          A_i = -Bz0r *kx/kx(idx2,1)
-        endwhere
+!        if (lmag_bound_vec) then
+!          where (k2 /= 0 )
+!            A_r =  Bz0_i*kx/k2  + Bx0r*kz/k2
+!            A_i = -Bz0r *kx/k2  - Bx0_i*kz/k2
+!          elsewhere
+!            A_r =  Bz0_i*kx/kx(idx2,1)  + Bx0r*kz/kx(idx2,1)
+!            A_i = -Bz0r *kx/kx(idx2,1)  - Bx0_i*kz/kx(idx2,1)
+!          endwhere
+!        else
+          where (k2 /= 0 )
+            A_r =  Bz0_i*kx/k2
+            A_i = -Bz0r *kx/k2
+          elsewhere
+            A_r =  Bz0_i*kx/kx(idx2,1)
+            A_i = -Bz0r *kx/kx(idx2,1)
+          endwhere
+!        endif
 !
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-!        if (allocated(Bz0l)) deallocate(Bz0l)
-!        if (allocated(Bz0r)) deallocate(Bz0r)
+        if (lmag_bound_vec) then
+          where (k2 /= 0 )
+            A_r =  -By0_i*kx/k2 + Bx0_i*ky/k2
+            A_i =  By0r*kx/k2 - Bx0r*ky/k2
+          elsewhere
+            A_r =  -By0_i*kx/kx(idx2,1) + Bx0_i*ky/ky(1,idy2)
+            A_i =  By0r*kx/kx(idx2,1) - Bx0r*ky/ky(1,idy2)
+          endwhere
+!
+          call fourier_transform_other(A_r,A_i,linv=.true.)
+          if (.not. linject_maghel) then
+            Azr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          else
+            Azr = Azr + A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          endif
+        endif
+!
+        if (allocated(Bz0l)) deallocate(Bz0l)
+        if (allocated(Bz0r)) deallocate(Bz0r)
         if (allocated(Bz0_i)) deallocate(Bz0_i)
         if (allocated(A_r)) deallocate(A_r)
         if (allocated(A_i)) deallocate(A_i)
         if (allocated(kx)) deallocate(kx)
         if (allocated(ky)) deallocate(ky)
         if (allocated(k2)) deallocate(k2)
+        if (lmag_bound_vec) then
+          if (allocated(Bx0l)) deallocate(Bx0l)
+          if (allocated(Bx0r)) deallocate(Bx0r)
+          if (allocated(Bx0_i)) deallocate(Bx0_i)
+          if (allocated(By0l)) deallocate(By0l)
+          if (allocated(By0r)) deallocate(By0r)
+          if (allocated(By0_i)) deallocate(By0_i)
+!          if (allocated(kz)) deallocate(kz)
+        endif
 !
       endif
 !
-!      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
-!      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
       if (b_tau > 0.0) then
         f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)*dt*b_tau
         f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)*dt*b_tau
+!
+        if (linject_maghel .or. lmag_bound_vec) then
+          f(l1:l2,m1:m2,n1,iaz) = f(l1:l2,m1:m2,n1,iaz)*(1.0-dt*b_tau) + &
+                                ((time_SI - (tl+delta_t)) * (Azr - Azl) / (tr - tl) + Azl)*dt*b_tau
+        endif
+
       else
         f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
         f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+!
+        if (linject_maghel .or. lmag_bound_vec) then
+          f(l1:l2,m1:m2,n1,iaz) = (time_SI - (tl+delta_t)) * (Azr - Azl) / (tr - tl) + Azl
+        endif
       endif
 !
-!      Bz_fluxm=sum((time_SI - (tl+delta_t)) * (abs(Bz0r) - abs(Bz0l)) / (tr - tl) + abs(Bz0l))
-!      Bzfluxm =sum(abs((time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l))
-!!print*,Bz_fluxm/Bzfluxm
-!
-!      f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * Bz_fluxm/Bzfluxm
-!
-!      f(l1:l2,m1:m2,n1,iax) = 0.9*f(l1:l2,m1:m2,n1,iax) &
-!                            + 0.1* ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)
-!      f(l1:l2,m1:m2,n1,iay) = 0.9*f(l1:l2,m1:m2,n1,iay) &
-!                            + 0.1*((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)
-
 !
     endsubroutine mag_time_bound
 !***********************************************************************
@@ -2633,8 +2910,12 @@ module Special
 ! additional parameters are
 !         Bavoid =0.01 : the magn. field strenght in Tesla at which
 !                        no granule is allowed
-!         nvor = 5.    : the strength by which the vorticity is
-!                        enhanced
+!
+!         increase_vorticity = 15. : the strength by which the vorticity is
+!                                    enhanced
+!
+!         quench = 0.03 : factor by which the granular velocity
+!                         is reduced at low beta
 !
 !  11-may-10/bing: coded
 !
@@ -2666,6 +2947,7 @@ module Special
         if (quench /= 0.) call footpoint_quenching(f)
 !
 ! restore global seed and save seed list of the granulation
+!
         call random_seed_wrapper(GET=points_rstate)
         call random_seed_wrapper(PUT=global_rstate)
       endif
@@ -3387,7 +3669,7 @@ module Special
             +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
       endif
 !
-      b2 = bbx*bbx + bby*bby + bbz*bbz
+      B2 = bbx*bbx + bby*bby + bbz*bbz
       Bzflux = sum(abs(bbz))
 !
     endsubroutine set_B2
@@ -3483,7 +3765,7 @@ module Special
         vx=Ux
         vy=Uy
 !
-! Calculating and enhancing rotational part by factor 5
+! Calculating and enhancing rotational part by a factor
         call helmholtz(wx,wy)
         vx=(vx+increase_vorticity*wx )
         vy=(vy+increase_vorticity*wy)
@@ -3510,11 +3792,11 @@ module Special
 !
       if (ltemperature.and..not.ltemperature_nolog) then
         if (ldensity_nolog) then
-          call fatal_error('solar_corona', &
-              'uudriver only implemented for ltemperature=true')
+          call fatal_error('coronae', &
+              'footpoint_quneching not only implemented for ldensity_nolog=true')
         else
           pp =gamma_m1*gamma1/cp1 * &
-              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnrho))
+              exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnTT))
         endif
       else
         pp=gamma1*cs20*exp(lnrho0)
@@ -3524,9 +3806,9 @@ module Special
 !
 !  quench velocities to some percentage of the granule velocities
       do i=1,ny
-        q(:,i) = cubic_step(log10(beta(:,i)),0.,1.)*(1.-quench)+quench
+        q(:,i) = cubic_step(log10(beta(:,i)),quench0,quench_width)*(1.-quench)+quench
       enddo
-      !
+!
       Ux = Ux * q
       Uy = Uy * q
 !
@@ -3609,7 +3891,8 @@ module Special
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
       integer, parameter :: tag_uxl=348,tag_uyl=349
       integer, parameter :: tag_uxr=350,tag_uyr=351
-      integer :: lend=0,ierr,i,stat,px,py
+      integer, parameter :: tag_uzl=352,tag_uzr=353
+      integer :: lend=0,ierr,i,stat,px,py,nr
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
       character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -3626,6 +3909,8 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(Uy_ext_global)) allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
+      if (lvel_field_is_3D .and. .not. allocated(Uz_ext_global)) allocate(Uz_ext_global(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
       if (.not.allocated(Ux_e_g_l)) allocate(Ux_e_g_l(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
       if (.not.allocated(Ux_e_g_r)) allocate(Ux_e_g_r(nxgrid,nygrid),stat=stat)
@@ -3634,6 +3919,12 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(Uy_e_g_r)) allocate(Uy_e_g_r(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
+      if (lvel_field_is_3D) then
+        if (.not.allocated(Uz_e_g_l)) allocate(Uz_e_g_l(nxgrid,nygrid),stat=stat)
+        ierr = max(stat,ierr)
+        if (.not.allocated(Uz_e_g_r)) allocate(Uz_e_g_r(nxgrid,nygrid),stat=stat)
+        ierr = max(stat,ierr)
+      endif
 !
       if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
           'Could not allocate memory for some variable, please check')
@@ -3673,17 +3964,28 @@ module Special
           open (unit,file=vel_field_dat,form='unformatted', &
               status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
-          read (unit,rec=2*i-1) Ux_e_g_l
-          read (unit,rec=2*i+1) Ux_e_g_r
+          nr = 2
+          if (lvel_field_is_3D) nr = 3
+          read (unit,rec=nr*(i-1)+1) Ux_e_g_l
+          read (unit,rec=nr*i+1) Ux_e_g_r
 !
-          read (unit,rec=2*i)   Uy_e_g_l
-          read (unit,rec=2*i+2) Uy_e_g_r
+          read (unit,rec=nr*(i-1)+2) Uy_e_g_l
+          read (unit,rec=nr*i+2) Uy_e_g_r
+!
+          if (lvel_field_is_3D) then
+            read (unit,rec=nr*(i-1)+3) Uz_e_g_l
+            read (unit,rec=nr*i+3) Uz_e_g_r
+          endif
 !
 ! convert to pencil units
           Ux_e_g_l = Ux_e_g_l / unit_velocity
           Ux_e_g_r = Ux_e_g_r / unit_velocity
           Uy_e_g_l = Uy_e_g_l / unit_velocity
           Uy_e_g_r = Uy_e_g_r / unit_velocity
+          if (lvel_field_is_3D) then
+            Uz_e_g_l = Uz_e_g_l / unit_velocity
+            Uz_e_g_r = Uz_e_g_r / unit_velocity
+          endif
 !
           close (unit)
 !
@@ -3697,8 +3999,10 @@ module Special
               call mpisend_real(delta_t, px+py*nprocx, tag_dt)
               call mpisend_real(Ux_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uxl)
               call mpisend_real(Uy_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uyl)
+              if (lvel_field_is_3D) call mpisend_real(Uz_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uzl)
               call mpisend_real(Ux_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uxr)
               call mpisend_real(Uy_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uyr)
+              if (lvel_field_is_3D) call mpisend_real(Uz_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uzr)
             enddo
           enddo
 !
@@ -3709,8 +4013,10 @@ module Special
             call mpirecv_real(delta_t, 0, tag_dt)
             call mpirecv_real(Ux_e_g_l,(/nxgrid,nygrid/),0,tag_uxl)
             call mpirecv_real(Uy_e_g_l,(/nxgrid,nygrid/),0,tag_uyl)
+            if (lvel_field_is_3D) call mpirecv_real(Uz_e_g_l,(/nxgrid,nygrid/),0,tag_uzl)
             call mpirecv_real(Ux_e_g_r,(/nxgrid,nygrid/),0,tag_uxr)
             call mpirecv_real(Uy_e_g_r,(/nxgrid,nygrid/),0,tag_uyr)
+            if (lvel_field_is_3D) call mpirecv_real(Uz_e_g_r,(/nxgrid,nygrid/),0,tag_uzr)
           endif
         endif
 !
@@ -3720,13 +4026,12 @@ module Special
 !
       if (tr /= tl) then
         Ux_ext_global=(t*unit_time-(tl+delta_t))*(Ux_e_g_r-Ux_e_g_l)/(tr-tl)+Ux_e_g_l
+        Uy_ext_global=(t*unit_time-(tl+delta_t))*(Uy_e_g_r-Uy_e_g_l)/(tr-tl)+Uy_e_g_l
+        if (lvel_field_is_3D) Uz_ext_global=(t*unit_time-(tl+delta_t))*(Uz_e_g_r-Uz_e_g_l)/(tr-tl)+Uz_e_g_l
       else
         Ux_ext_global = Ux_e_g_r
-      endif
-      if (tr /= tl) then
-        Uy_ext_global=(t*unit_time-(tl+delta_t))*(Uy_e_g_r-Uy_e_g_l)/(tr-tl)+Uy_e_g_l
-      else
         Uy_ext_global = Uy_e_g_r
+        if (lvel_field_is_3D) Uz_ext_global = Uz_e_g_r
       endif
 !
     endsubroutine read_ext_vel_field
@@ -3754,8 +4059,8 @@ module Special
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
 !
       if (lfirstcall) then
-        lnrho_init = f(:,:,1:3,ilnrho)
-        lntt_init  = f(:,:,1:3,ilntt)
+        if (ldensity) lnrho_init = f(:,:,1:3,ilnrho)
+        if (ltemperature) lntt_init = f(:,:,1:3,ilntt)
         ax_init    = f(:,:,1:3,iax)
         ay_init    = f(:,:,1:3,iay)
         az_init    = f(:,:,1:3,iaz)

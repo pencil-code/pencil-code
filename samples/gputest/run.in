@@ -1,0 +1,30 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id$',
+  ip=13,
+  nt=200, it1=10, isave=500, itorder=3, 
+  nt=20, it1=4, isave=500, itorder=3, 
+  !nt=2, it1=1, isave=500, itorder=3, 
+  nt=1, it1=1, isave=10, itorder=3, 
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,   dt=1.e-3
+  random_gen='nr_f90',
+  slice_position='e'
+  lpencil_check=F
+  lpencil_check_small=F
+  lbidiagonal_derij=F  !(uses the slightly more accurate formulation for derij)
+/
+&hydro_run_pars
+  theta=0.,
+  !Omega=1.                           ! cp=2.5 version used Omega=1.
+  !Omega=0.632456,                     ! cp=1   version uses Omega=1./sqrt(2.5)
+  !othresh_per_orms=3.                ! cp=2.5 version used othresh=3.0
+  othresh_per_orms=1.89737            ! cp=1   version uses othresh=3.0/sqrt(2.5)
+/
+&density_run_pars
+/
+&viscosity_run_pars
+  nu=1e-3                  !cp=2.5 version used nu=1e-4
+/

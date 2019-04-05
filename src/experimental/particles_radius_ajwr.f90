@@ -79,38 +79,13 @@ module Particles_radius
 !
 !  Index for particle radius.
 !
-      iap=npvar+1
-      pvarname(npvar+1)='iap'
-!
-!  Increase npvar accordingly.
-!
-      npvar=npvar+1
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_particles: npvar > mpvar','')
-      endif
+      call append_npvar('iap',iap)
 !
 ! Index for the effectiveness factor of surface reactions
 !
-      ieffp = mpvar+npaux+1
-      pvarname(ieffp) = 'ieffp'
-      npaux = npaux+1
+      call append_npaux('ieffp',ieffp)
 !
-      if (lparticles_radius_rpbeta) then
-        irpbeta=npvar+1
-        pvarname(npvar+1)='irpbeta'
-        npvar=npvar+1
-      endif
-!
-! Check that the fp and dfp arrays are big enough.
-!
-      if (npaux > mpaux) then
-        if (lroot) write (0,*) 'npaux = ', npaux, ', mpaux = ', mpaux
-        call fatal_error('register_particles_radius: npaux > mpaux','')
-      endif
+      if (lparticles_radius_rpbeta) call append_npvar('irpbeta',irpbeta)
 !
     endsubroutine register_particles_radius
 !***********************************************************************
@@ -861,6 +836,7 @@ module Particles_radius
 !  22-aug-05/anders: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -872,7 +848,7 @@ module Particles_radius
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iap=', iap
+      if (lwr) call farray_index_append('iap', iap)
 !
 !  Reset everything in case of reset.
 !

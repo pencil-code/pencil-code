@@ -28,6 +28,8 @@ module Viscosity
   real :: maxeffectivenu,nu_mol,C_smag=0.0
   logical :: lvisc_first=.false.
 !
+  integer :: idiag_nu_LES=0     ! DIAG_DOC: Mean value of Smagorinsky viscosity 
+!
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc,c_smag
 !
   contains

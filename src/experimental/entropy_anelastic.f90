@@ -23,9 +23,8 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot, &
-                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
-                         beta_glnrho_global, cs2top_ini, dcs2top_ini
+  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot
+  use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
   use Viscosity
@@ -51,6 +50,7 @@ module Energy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: kx_ss=1.,ky_ss=1.,kz_ss=1.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
+  real, target :: cs2cool
   real :: cool_fac=1., chiB=0.
   real, dimension(3) :: chi_hyper3_aniso=0.
 !
@@ -68,6 +68,8 @@ module Energy
   real :: tau_cool=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
   real :: chit_aniso=0.0,xbot=0.0
+  real, pointer :: mpoly
+  real, target :: mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
@@ -122,7 +124,7 @@ module Energy
       mixinglength_flux, &
       chi_t, &
       pp_const, &
-      ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
+      ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
       T0,ampl_TT,kx_ss,ky_ss,kz_ss,beta_glnrho_global,ladvection_entropy, &
@@ -209,6 +211,9 @@ module Energy
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
 !
+!  Auxiliary variables
+!
+  real, dimension(nx) :: diffus_chi, diffus_chi3
 !
   contains
 !
@@ -242,13 +247,12 @@ module Energy
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
-                                 beta_glnrho_global, beta_glnrho_scaled, &
-                                 mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma_m1
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use FArrayManager
       use Gravity, only: gravz,g0
       use Mpicomm, only: stop_it
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -261,29 +265,37 @@ module Energy
 !
 ! Check any module dependencies
 !
-      if (.not. leos) then
+      if (.not. leos) &
         call fatal_error('initialize_energy', &
             'EOS=noeos but energy requires an EQUATION OF STATE for the fluid')
-      endif
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
 !ajwm      if (.not. lreloading) then ! already in place when reloading
-        if (pretend_lnTT) then
-          call select_eos_variable('lnTT',iss)
+      if (pretend_lnTT) then
+        call select_eos_variable('lnTT',iss)
+      else
+        if (gamma_m1==0.) then
+          call fatal_error('initialize_energy',&
+               'Use experimental/noenergy for isothermal case')
         else
-          if (gamma_m1==0.) then
-            call fatal_error('initialize_energy',&
-                 'Use experimental/noenergy for isothermal case')
-          else
-            call select_eos_variable('ss',iss)
-          endif
+          call select_eos_variable('ss',iss)
         endif
+      endif
+
+      if (ldensity.and..not.lstratz) then
+        call get_shared_variable('mpoly',mpoly)
+      else
+        call warning('initialize_energy','mpoly not obtained from density,'// &
+                     'set impossible')
+        allocate(mpoly); mpoly=impossible
+      endif
+!
 !ajwm      endif
 !
 !  radiative diffusion: initialize flux etc
 !
-        hcond = 0.
+      hcond = 0.
       !
       !  Kbot and hcond0 are used interchangibly, so if one is
       !  =impossible, set it to the other's value
@@ -561,6 +573,10 @@ module Energy
 !
       call put_shared_variable('hcond0',hcond0,caller='initialize_energy')
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
+      call put_shared_variable('cs2cool',cs2cool)
+      call put_shared_variable('mpoly0',mpoly0)
+      call put_shared_variable('mpoly1',mpoly2)
+      call put_shared_variable('mpoly2',mpoly2)
 !
       call keep_compiler_quiet(f)
 !
@@ -611,11 +627,9 @@ module Energy
       use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState,  only: mpoly, isothtop, &
-                                mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
-                                rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
-                                eosperturb
+      use EquationOfState,  only: cs0, rho0, lnrho0, isothermal_entropy, & 
+                                  isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
+                                  eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1406,8 +1420,6 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
-!
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0) lpenc_requested(i_cp1)=.true.
       if (ladvection_entropy) then
@@ -1544,7 +1556,7 @@ module Energy
 !
 !  08-dec-2009/piyali:adapted
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1582,7 +1594,7 @@ module Energy
 !
 !   08-dec-09/piyali: adapted from entropy.f90
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma1, cs0
+      use EquationOfState, only: gamma1, cs0
       use Special, only: special_calc_energy
       use Sub
 !
@@ -1633,6 +1645,8 @@ module Energy
 !
 !  Thermal conduction delegated to different subroutines.
 !
+      diffus_chi=0.; diffus_chi3=0.
+
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
 !
 !  Interstellar radiative cooling and UV heating.
@@ -1650,6 +1664,11 @@ module Energy
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
 !
+      if (lfirst.and.ldt) then
+        dt1_max=max(dt1_max,Hmax/ee/cdts)
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
 !
 !  Possibility of entropy relaxation in exterior region.
 !
@@ -1769,7 +1788,7 @@ module Energy
 !
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  Dummy routine.
 !
@@ -1778,7 +1797,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
@@ -1903,6 +1922,7 @@ module Energy
         else
           diffus_chi=diffus_chi+(chi+chi_t)*dxyz_2
         endif
+
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -2362,7 +2382,7 @@ module Energy
 !  Write out cooling profile (during first time step only) and apply.
 !  MR: later to be moved to initialization!
 !
-        if (m==m1) call write_prof('cooling_profile',z(n:n),prof(1:1),'z',lsave_name=(n==n1))
+        if (m==m1) call output_profile('cooling_profile',z(n:n),prof(1:1),'z',lsave_name=(n==n1))
 !
 !  Write divergence of cooling flux.
 !
@@ -2652,6 +2672,7 @@ module Energy
 !   1-jun-02/axel: adapted from magnetic fields
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -2675,6 +2696,7 @@ module Energy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0
+        cformv=''
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2758,54 +2780,60 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'cs2mphi',idiag_cs2mphi)
       enddo
+!       
+!  check for those quantities for which we want video slices
+!       
+      if (lwrite_slices) then
+        where(cnamev=='ss') cformv='DEFINED'
+      endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',idiag_dtc
-        write(3,*) 'i_dtchi=',idiag_dtchi
-        write(3,*) 'i_ethtot=',idiag_ethtot
-        write(3,*) 'i_ethdivum=',idiag_ethdivum
-        write(3,*) 'i_ethm=',idiag_ethm
-        write(3,*) 'i_ssm=',idiag_ssm
-        write(3,*) 'i_ss2m=',idiag_ss2m
-        write(3,*) 'i_eem=',idiag_eem
-        write(3,*) 'i_ppm=',idiag_ppm
-        write(3,*) 'i_pdivum=',idiag_pdivum
-        write(3,*) 'i_heatm=',idiag_heatm
-        write(3,*) 'i_csm=',idiag_csm
-        write(3,*) 'i_fconvm=',idiag_fconvm
-        write(3,*) 'i_ugradpm=',idiag_ugradpm
-        write(3,*) 'i_fradbot=',idiag_fradbot
-        write(3,*) 'i_fradtop=',idiag_fradtop
-        write(3,*) 'i_TTtop=',idiag_TTtop
-        write(3,*) 'i_ssmphi=',idiag_ssmphi
-        write(3,*) 'i_cs2mphi=',idiag_cs2mphi
-        write(3,*) 'i_fturbz=',idiag_fturbz
-        write(3,*) 'i_fconvz=',idiag_fconvz
-        write(3,*) 'i_dcoolz=',idiag_dcoolz
-        write(3,*) 'i_fradz=',idiag_fradz
-        write(3,*) 'i_ssmz=',idiag_ssmz
-        write(3,*) 'i_TTmz=',idiag_TTmz
-        write(3,*) 'i_uxTTmz=',idiag_uxTTmz
-        write(3,*) 'i_uyTTmz=',idiag_uyTTmz
-        write(3,*) 'i_uzTTmz=',idiag_uzTTmz
-        write(3,*) 'i_ssmr=',idiag_ssmr
-        write(3,*) 'i_TTmr=',idiag_TTmr
-        write(3,*) 'nname=',nname
-        write(3,*) 'iss=',iss
-        write(3,*) 'i_yHmax=',idiag_yHmax
-        write(3,*) 'i_yHm=',idiag_yHm
-        write(3,*) 'i_TTmax=',idiag_TTmax
-        write(3,*) 'i_TTmin=',idiag_TTmin
-        write(3,*) 'i_TTm=',idiag_TTm
-        write(3,*) 'i_TTp=',idiag_TTp
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'ilnTT=',ilnTT
-        write(3,*) 'i_TTmxy=',idiag_TTmxy
-        write(3,*) 'i_TTmxz=',idiag_TTmxz
-        write(3,*) 'i_ssmxy=',idiag_ssmxy
-        write(3,*) 'i_ssmxz=',idiag_ssmxz
+        call farray_index_append('i_dtc',idiag_dtc)
+        call farray_index_append('i_dtchi',idiag_dtchi)
+        call farray_index_append('i_ethtot',idiag_ethtot)
+        call farray_index_append('i_ethdivum',idiag_ethdivum)
+        call farray_index_append('i_ethm',idiag_ethm)
+        call farray_index_append('i_ssm',idiag_ssm)
+        call farray_index_append('i_ss2m',idiag_ss2m)
+        call farray_index_append('i_eem',idiag_eem)
+        call farray_index_append('i_ppm',idiag_ppm)
+        call farray_index_append('i_pdivum',idiag_pdivum)
+        call farray_index_append('i_heatm',idiag_heatm)
+        call farray_index_append('i_csm',idiag_csm)
+        call farray_index_append('i_fconvm',idiag_fconvm)
+        call farray_index_append('i_ugradpm',idiag_ugradpm)
+        call farray_index_append('i_fradbot',idiag_fradbot)
+        call farray_index_append('i_fradtop',idiag_fradtop)
+        call farray_index_append('i_TTtop',idiag_TTtop)
+        call farray_index_append('i_ssmphi',idiag_ssmphi)
+        call farray_index_append('i_cs2mphi',idiag_cs2mphi)
+        call farray_index_append('i_fturbz',idiag_fturbz)
+        call farray_index_append('i_fconvz',idiag_fconvz)
+        call farray_index_append('i_dcoolz',idiag_dcoolz)
+        call farray_index_append('i_fradz',idiag_fradz)
+        call farray_index_append('i_ssmz',idiag_ssmz)
+        call farray_index_append('i_TTmz',idiag_TTmz)
+        call farray_index_append('i_uxTTmz',idiag_uxTTmz)
+        call farray_index_append('i_uyTTmz',idiag_uyTTmz)
+        call farray_index_append('i_uzTTmz',idiag_uzTTmz)
+        call farray_index_append('i_ssmr',idiag_ssmr)
+        call farray_index_append('i_TTmr',idiag_TTmr)
+        call farray_index_append('nname',nname)
+        call farray_index_append('iss',iss)
+        call farray_index_append('i_yHmax',idiag_yHmax)
+        call farray_index_append('i_yHm',idiag_yHm)
+        call farray_index_append('i_TTmax',idiag_TTmax)
+        call farray_index_append('i_TTmin',idiag_TTmin)
+        call farray_index_append('i_TTm',idiag_TTm)
+        call farray_index_append('i_TTp',idiag_TTp)
+        call farray_index_append('iyH',iyH)
+        call farray_index_append('ilnTT',ilnTT)
+        call farray_index_append('i_TTmxy',idiag_TTmxy)
+        call farray_index_append('i_TTmxz',idiag_TTmxz)
+        call farray_index_append('i_ssmxy',idiag_ssmxy)
+        call farray_index_append('i_ssmxz',idiag_ssmxz)
       endif
 !
     endsubroutine rprint_energy
@@ -2817,6 +2845,7 @@ module Energy
 !  26-jul-06/tony: coded
 !
       use EquationOfState, only: eoscalc, ilnrho_ss
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -2830,16 +2859,8 @@ module Energy
 !
 !  Entropy.
 !
-        case ('ss')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iss)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iss)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iss)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iss)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iss)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iss)
-          slices%ready=.true.
-!
-!
+        case ('ss'); call assign_slices_scal(slices,f,iss)
+
       endselect
 !
     endsubroutine get_slices_energy
@@ -3179,8 +3200,7 @@ module Energy
 !  09-aug-06/dintrans: coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
-                                 mpoly1, lnrho0, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, lnrho0, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
@@ -3402,7 +3422,7 @@ module Energy
 !
 !  17-jan-07/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma_m1, mpoly0, mpoly1, lnrho0, cs20
+    use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
     use Sub, only: step, erfunc, interp1
 !
     integer, parameter   :: nr=100

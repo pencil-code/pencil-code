@@ -372,51 +372,65 @@ pro pc_magic_var, variables, tags, $
 ; Sound speed squared
     endif else if (variables[iv] eq 'cs2') then begin
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/cs2,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/cs2,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure gradient
-    endif else if (variables[iv] eq 'fpres') then begin
-      if (param.ldensity_nolog) then begin
-        variables[iv]='spread(-1./rho[*,*,*,iyy],3,3)*grad(rho[*,*,*,iyy])'
+    endif else if (variables[iv] eq 'fpres' or variables[iv] eq 'apres') then begin
+      if lentropy then begin
+
+        if (variables[iv] eq 'fpres') then $
+          variables[iv]='-grad(pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/pp,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir))' $
+        else if (param.ldensity_nolog) then $
+          variables[iv]='spread(-1./rho[*,*,*,iyy],3,3)*grad(pc_eoscalc(rho[*,*,*,iyy],ss[*,*,*,iyy],/pp,/rho_ss,dim=dim,param=param,datadir=datadir))' $
+        else $
+          variables[iv]='spread(-exp(-lnrho[*,*,*,iyy]),3,3)*grad(pc_eoscalc(lnrho[*,*,*,iyy],ss[*,*,*,iyy],/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir))'
       endif else begin
-        variables[iv]='-grad(lnrho[*,*,*,iyy])'
+; The following only correct for isothermal gas.
+        if (variables[iv] eq 'fpres') then begin
+          if (param.ldensity_nolog) then $
+            variables[iv]='-grad(rho[*,*,*,iyy])' $
+          else $
+            variables[iv]='-grad(exp(lnrho[*,*,*,iyy]))'
+        endif else $
+          if (param.ldensity_nolog) then $
+            variables[iv]='spread(-1./rho[*,*,*,iyy],3,3)*grad(rho[*,*,*,iyy])' $
+          else $
+            variables[iv]='-grad(lnrho[*,*,*,iyy])'
+        variables[iv]+='*param.cs02'
       endelse
 ; Specific energy
     endif else if (variables[iv] eq 'ee') then begin
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ee,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/ee,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Temperature
     endif else if (variables[iv] eq 'tt') then begin
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT[*,*,*,iyy])'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/tt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Logarithm of temperature
     endif else if (variables[iv] eq 'lntt') then begin
-      if (lionization and not lionization_fixed) then begin
-        variables[iv]='lnTT[*,*,*,iyy]'
-      endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
-      endelse
+      if not (lionization and not lionization_fixed) then $
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/lntt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
 ; Entropy ss
     endif else if (variables[iv] eq 'ss') then begin
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss[*,*,*,iyy]'
+        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure
     endif else if (variables[iv] eq 'pp') then begin
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/pp,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/pp,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Divergence of dust velocity
     endif else if (variables[iv] eq 'divud') then begin
@@ -456,29 +470,35 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'argpsi') then begin
       variables[iv]="atan(psi_imag[*,*,*,iyy],psi_real[*,*,*,iyy])"
 ; Viscosity.
-    endif else if (variables[iv] eq 'fvisc') then begin
+    endif else if (variables[iv] eq 'fvisc' or variables[iv] eq 'avisc') then begin
+
+      if (param.ldensity_nolog) then begin
+        rhospread ='*spread(rho[*,*,*,iyy],3,3)'
+        rho1spread='/spread(rho[*,*,*,iyy],3,3)'
+      endif else begin
+        rhospread ='*spread(exp( lnrho[*,*,*,iyy]),3,3)'
+        rho1spread='*spread(exp(-lnrho[*,*,*,iyy]),3,3)'
+      endelse
+
       if (par2.ivisc[0] eq 'simplified') then begin
         variables[iv]='par2.nu*del2(uu[*,*,*,*,iyy])'
+        if (variables[iv] eq 'fvisc') then variables[iv]+=rhospread
       endif else if (par2.ivisc[0] eq 'rho_nu-const') then begin
-        if (param.ldensity_nolog) then begin
-          variables[iv]='par2.nu/spread(rho[*,*,*,iyy],3,3)*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
-        endif else begin
-          variables[iv]='par2.nu/spread(exp(lnrho[*,*,*,iyy]),3,3)*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
-        endelse
+        variables[iv]='par2.nu*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
+        if (variables[iv] eq 'avisc') then variables[iv]+=rho1spread
       endif else if (par2.ivisc[0] eq 'nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='2*par2.nu*total((uij[*,*,*,*,*,iyy]+transpose(uij[*,*,*,*,*,iyy],[0,1,2,4,3]))*spread(grad(alog(rho[*,*,*,iyy])),4,3),5)+par2.nu*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
+          variables[iv]='par2.nu*(2*total((uij[*,*,*,*,*,iyy]+transpose(uij[*,*,*,*,*,iyy],[0,1,2,4,3]))*spread(grad(alog(rho[*,*,*,iyy])),4,3),5) + del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]) )'
         endif else  begin
-          variables[iv]='2*par2.nu*total((uij[*,*,*,*,*,iyy]+transpose(uij[*,*,*,*,*,iyy],[0,1,2,4,3]))*spread(grad(lnrho[*,*,*,iyy]),4,3),5)+par2.nu*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
+          variables[iv]='par2.nu*(2*total((uij[*,*,*,*,*,iyy]+transpose(uij[*,*,*,*,*,iyy],[0,1,2,4,3]))*spread(grad(lnrho[*,*,*,iyy]),4,3),5) + del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]) )'
         endelse
+        if (variables[iv] eq 'fvisc') then variables[iv]+=rhospread
       endif else if (par2.ivisc[0] eq 'hyper3_simplified') then begin
-        variables[iv]='del6(uu[*,*,*,*,iyy])'
+        variables[iv]='par2.nu_hyper3*del6(uu[*,*,*,*,iyy])'
+        if (variables[iv] eq 'fvisc') then variables[iv]+=rhospread
       endif else if (par2.ivisc[0] eq 'hyper3_rho_nu-const') then begin
-        if (param.ldensity_nolog) then begin
-          variables[iv]='1/spread(rho[*,*,*,iyy],3,3)*del6(uu[*,*,*,*,iyy])'
-        endif else begin
-          variables[iv]='spread(exp(-lnrho[*,*,*,iyy]),3,3)*del6(uu[*,*,*,*,iyy])'
-        endelse
+        variables[iv]='par2.nu_hyper3*del6(uu[*,*,*,*,iyy])'
+        if (variables[iv] eq 'avisc') then variables[iv]+=rho1spread
       endif else begin
         print, 'pc_magic_var: unknown viscosity type ivisc=', par2.ivisc[0]
         variables[iv]='fltarr(mx,my,mz,3)'

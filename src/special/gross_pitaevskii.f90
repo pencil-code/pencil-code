@@ -613,6 +613,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
       use Sub
 !
       integer :: iname
@@ -636,11 +637,18 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'Egpe2',i_Egpe2)
         call parse_name(iname,cname(iname),cform(iname),'Egpe3',i_Egpe3)
       enddo
-!!
-!!  write column where which magnetic variable is stored
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='psi2') cformv='DEFINED'
+      endif
+!
+!  write column where which magnetic variable is stored
+!
       if (lwr) then
-        write(3,*) 'ipsi_real=',ipsi_real
-        write(3,*) 'ipsi_imag=',ipsi_imag
+        call farray_index_append('ipsi_real',ipsi_real)
+        call farray_index_append('ipsi_imag',ipsi_imag)
       endif
 !
     endsubroutine rprint_special
@@ -663,14 +671,20 @@ module Special
 !  psi2 - Absolute value of the wave function squared
 !
         case ('psi2')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi_real)**2 &
-                  + f(ix_loc,m1:m2,n1:n2,ipsi_imag)**2
-          slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi_real)**2 &
-                  + f(l1:l2,iy_loc,n1:n2,ipsi_imag)**2
-          slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi_real)**2 &
-                  + f(l1:l2,m1:m2,iz_loc,ipsi_imag)**2
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi_real)**2 &
-                  + f(l1:l2,m1:m2,iz2_loc,ipsi_imag)**2
+          if (lwrite_slice_xy) slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi_real)**2 &
+                                        +f(l1:l2,m1:m2,iz_loc,ipsi_imag)**2
+          if (lwrite_slice_xz) slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi_real)**2 &
+                                        +f(l1:l2,iy_loc,n1:n2,ipsi_imag)**2
+          if (lwrite_slice_yz) slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi_real)**2 &
+                                        +f(ix_loc,m1:m2,n1:n2,ipsi_imag)**2
+          if (lwrite_slice_xy2) slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi_real)**2 &
+                                          +f(l1:l2,m1:m2,iz2_loc,ipsi_imag)**2
+          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,ipsi_real)**2 &
+                                          +f(l1:l2,m1:m2,iz3_loc,ipsi_imag)**2
+          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,ipsi_real)**2 &
+                                          +f(l1:l2,m1:m2,iz4_loc,ipsi_imag)**2
+          if (lwrite_slice_xz2) slices%xz=f(l1:l2,iy2_loc,n1:n2,ipsi_real)**2 &
+                                         +f(l1:l2,iy2_loc,n1:n2,ipsi_imag)**2
           slices%ready = .true.
 !
       endselect

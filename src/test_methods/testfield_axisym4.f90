@@ -8,6 +8,9 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM logical, parameter :: ltestfield_z = .false.
+! CPARAM logical, parameter :: ltestfield_xy = .false.
+! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
 !***************************************************************
 
@@ -22,10 +25,8 @@ module Testfield
 !
 ! Slice precalculation buffers
 !
-  real, target, dimension (nx,ny,3) :: bb1_xy
-  real, target, dimension (nx,ny,3) :: bb1_xy2
-  real, target, dimension (nx,nz,3) :: bb1_xz
-  real, target, dimension (ny,nz,3) :: bb1_yz
+  real, target, dimension (:,:,:), allocatable :: bb1_xy,bb1_xy2,bb1_xy3,bb1_xy4
+  real, target, dimension (:,:,:), allocatable :: bb1_xz,bb1_xz2,bb1_yz
 !
 !  cosine and sine function for setting test fields and analysis
 !
@@ -119,6 +120,7 @@ module Testfield
   integer :: idiag_b1rms=0      ! DIAG_DOC: $\left<b_{1}^2\right>^{1/2}$
   integer :: idiag_b2rms=0      ! DIAG_DOC: $\left<b_{2}^2\right>^{1/2}$
   integer :: idiag_b3rms=0      ! DIAG_DOC: $\left<b_{3}^2\right>^{1/2}$
+  integer :: ivid_bb1=0
 !
   logical :: lcalc_zdep_coeffs=.false.
 !
@@ -366,14 +368,11 @@ module Testfield
 !  arrays are already allocated and must not be allocated again.
 !
       if (luxb_as_aux) then
-        if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
-        endif
-        if (iuxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: iuxb = ', iuxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuxb=',iuxb
-          close(3)
+        if (iuxbtest==0) then
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
+        else
+          if (lroot) print*, 'initialize_testfield: iuxbtest = ', iuxbtest
+          call farray_index_append('iuxbtest',iuxbtest)
         endif
       endif
 !
@@ -381,14 +380,11 @@ module Testfield
 !  used in connection with testflow method)
 !
       if (ljxb_as_aux) then
-        if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
-        endif
-        if (ijxb/=0.and.lroot) then
-          print*, 'initialize_magnetic: ijxb = ', ijxb
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ijxb=',ijxb
-          close(3)
+        if (ijxbtest==0) then
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
+        else
+          if (lroot) print*, 'initialize_testfield: ijxbtest = ', ijxbtest
+          call farray_index_append('ijxbtest',ijxbtest)
         endif
       endif
 !
@@ -397,6 +393,16 @@ module Testfield
       lcalc_zdep_coeffs = any((/idiag_gamz, idiag_alpPERPz, idiag_alpPARAz, &
                                 idiag_muz, idiag_betPERPz, idiag_delz,      &
                                 idiag_kapPERPz, idiag_betPARAz, idiag_kapPARAz /).gt.0)
+!
+      if (ivid_bb1/=0) then
+        if (lwrite_slice_xy .and..not.allocated(bb1_xy) ) allocate(bb1_xy (nx,ny,3))
+        if (lwrite_slice_xz .and..not.allocated(bb1_xz) ) allocate(bb1_xz (nx,nz,3))
+        if (lwrite_slice_yz .and..not.allocated(bb1_yz) ) allocate(bb1_yz (ny,nz,3))
+        if (lwrite_slice_xy2.and..not.allocated(bb1_xy2)) allocate(bb1_xy2(nx,ny,3))
+        if (lwrite_slice_xy3.and..not.allocated(bb1_xy3)) allocate(bb1_xy3(nx,ny,3))
+        if (lwrite_slice_xy4.and..not.allocated(bb1_xy4)) allocate(bb1_xy4(nx,ny,3))
+        if (lwrite_slice_xz2.and..not.allocated(bb1_xz2)) allocate(bb1_xz2(nx,nz,3))
+      endif
 !
 !  write testfield information to a file (for convenient post-processing)
 !
@@ -553,6 +559,7 @@ module Testfield
       use Diagnostics
       use Mpicomm, only: stop_it
       use Sub
+      use Slices_methods, only: store_slices
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -562,7 +569,7 @@ module Testfield
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct,aatest,jjtest
       real, dimension (nx,3,3) :: aijtest
-      real, dimension (nx) :: bpq2
+      real, dimension (nx) :: bpq2,diffus_eta
       integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, nl
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -663,8 +670,8 @@ module Testfield
 !  use f-array for uxb (if space has been allocated for this) and
 !  if we don't test (i.e. if ltest_uxb=.false.)
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
-            uxbtest=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
+          if (iuxbtest/=0.and..not.ltest_uxb) then
+            uxbtest=f(l1:l2,m,n,iuxbtest+3*(jtest-1):iuxbtest+3*jtest-1)
           else
             aatest=f(l1:l2,m,n,iaxtest:iaztest)
             call gij(f,iaxtest,aijtest,1)
@@ -720,7 +727,8 @@ module Testfield
 !  and whatever is calculated here
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9
@@ -924,14 +932,8 @@ module Testfield
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 ! 
-      if (lvideo.and.lfirst) then
-        do j=1,3
-          bb1_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
-          if (m==iy_loc)  bb1_xz(:,n-n1+1,j)=bpq(:,j,1)
-          if (n==iz_loc)  bb1_xy(:,m-m1+1,j)=bpq(:,j,1)
-          if (n==iz2_loc) bb1_xy2(:,m-m1+1,j)=bpq(:,j,1)
-        enddo
-      endif
+      if (lvideo.and.lfirst.and.ivid_bb1/=0) &
+        call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
 !
     endsubroutine daatest_dt
 !***********************************************************************
@@ -1002,6 +1004,7 @@ module Testfield
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 ! 
       use General, only: keep_compiler_quiet
+      use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -1013,21 +1016,25 @@ module Testfield
 !  Magnetic field
 !
       case ('bb1')
-        if (slices%index>=3) then
-          slices%ready=.false.
-        else
-          slices%index=slices%index+1
-          slices%yz =>bb1_yz(:,:,slices%index)
-          slices%xz =>bb1_xz(:,:,slices%index)
-          slices%xy =>bb1_xy(:,:,slices%index)
-          slices%xy2=>bb1_xy2(:,:,slices%index)
-          if (slices%index<=3) slices%ready=.true.
-        endif
+        call assign_slices_vec(slices,bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2)
+!
       endselect
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine get_slices_testfield
+!***********************************************************************
+    subroutine testfield_before_boundary(f)
+!
+!  Actions to take before boundary conditions are set.
+!
+!    4-oct-18/axel+nishant: adapted from testflow
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine testfield_before_boundary
 !***********************************************************************
     subroutine testfield_after_boundary(f)
 !
@@ -1144,14 +1151,14 @@ module Testfield
                 uufluct=p%uu
               endif
               call cross_mn(uufluct,bbtest,uxbtest)
-              juxb=iuxb+3*(jtest-1)
+              juxb=iuxbtest+3*(jtest-1)
               if (ltestfield_taver) then
                 if (llast) then
-                  if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)= &
+                  if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)= &
                           fac1*f(l1:l2,m,n,juxb:juxb+2)+fac2*uxbtest
                 endif
               else
-                if (iuxb/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
+                if (iuxbtest/=0) f(l1:l2,m,n,juxb:juxb+2)=uxbtest
               endif
 !
               if (.not.lsoca) then
@@ -1212,8 +1219,8 @@ module Testfield
               call curl_mn(aijtest,bbtest,aatest)
               call curl_mn(bijtest,jjtest,bbtest)
               call cross_mn(jjtest,bbtest,jxbtest)
-              jjxb=ijxb+3*(jtest-1)
-              if (ijxb/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
+              jjxb=ijxbtest+3*(jtest-1)
+              if (ijxbtest/=0) f(l1:l2,m,n,jjxb:jjxb+2)=jxbtest
               jxbtestm(nl,:,jtest)=jxbtestm(nl,:,jtest)+fac*sum(jxbtest,1)   !MR: not yet correct
               headtt=.false.
             enddo
@@ -1425,6 +1432,7 @@ module Testfield
 !
       use Cdata
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use General, only: loptest
 !
       integer :: iname,inamez
@@ -1443,6 +1451,7 @@ module Testfield
         idiag_kapPERPz=0; idiag_kapPARAz=0; idiag_muz=0
         idiag_b1rms=0; idiag_b2rms=0; idiag_b3rms=0
         idiag_bx1pt=0; idiag_bx2pt=0; idiag_bx3pt=0
+        ivid_bb1=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1483,12 +1492,17 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'muz',idiag_muz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        do iname=1,nnamev
+          call parse_name(iname,cnamev(iname),cformv(iname),'bb1',ivid_bb1)
+        enddo
+      endif
+!
       if (loptest(lwrite)) then
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'ntestfield=',ntestfield
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
+        call farray_index_append('iaatest',iaatest)
+        call farray_index_append('ntestfield',ntestfield)
       endif
 !
     endsubroutine rprint_testfield

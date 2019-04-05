@@ -397,6 +397,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
       use Sub
 !
 !  define counters
@@ -419,6 +420,7 @@ module Special
         idiag_jxaprms=0; idiag_divapbrms=0
         idiag_jxgLamrms=0; idiag_d2Lambrms=0
         idiag_gLamrms=0; idiag_d2Lamrms=0
+        cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -445,18 +447,24 @@ module Special
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'Lambzmz',idiag_Lambzmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='Lam') cformv='DEFINED'
+      endif
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_Lamm=',idiag_Lamm
-        write(3,*) 'i_Lamrms=',idiag_Lamrms
-        write(3,*) 'i_Lambzm=',idiag_Lambzm
-        write(3,*) 'i_Lambzmz=',idiag_Lambzmz
-        write(3,*) 'i_Lampt=',idiag_Lampt
-        write(3,*) 'i_Lamp2=',idiag_Lamp2
-        write(3,*) 'i_gLambm=',idiag_gLambm
-        write(3,*) 'i_apbrms=',idiag_apbrms
-        write(3,*) 'iLam=',iLam
+        call farray_index_append('i_Lamm',idiag_Lamm)
+        call farray_index_append('i_Lamrms',idiag_Lamrms)
+        call farray_index_append('i_Lambzm',idiag_Lambzm)
+        call farray_index_append('i_Lambzmz',idiag_Lambzmz)
+        call farray_index_append('i_Lampt',idiag_Lampt)
+        call farray_index_append('i_Lamp2',idiag_Lamp2)
+        call farray_index_append('i_gLambm',idiag_gLambm)
+        call farray_index_append('i_apbrms',idiag_apbrms)
+        call farray_index_append('iLam',iLam)
       endif
 !
     endsubroutine rprint_special
@@ -467,6 +475,8 @@ module Special
 !
 !  26-feb-07/axel: adapted from gross_pitaevskii
 !
+      use Slices_methods, only: assign_slices_scal
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
 !
@@ -478,12 +488,7 @@ module Special
 !
 !  Lam
 !
-        case ('Lam')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iLam)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iLam)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iLam)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iLam)
-          slices%ready = .true.
+        case ('Lam'); call assign_slices_scal(slices,f,iLam)
 !
       endselect
 !

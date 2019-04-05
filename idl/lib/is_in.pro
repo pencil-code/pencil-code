@@ -15,19 +15,20 @@ function is_in, feld, val, replace=replace, abbrev=abbrev
 
   len = n_elements(feld)
 
-  strabbr = keyword_set(abbrev) and is_str(feld)
   if len gt 0 then begin
 
+    strabbr = keyword_set(abbrev) and is_str(feld)
     if strabbr then begin
 
       feldt = strtrim(feld,2)
       minlen = strlen(val) < strlen(feldt)
 
       for i=0,len-1 do $
-        if strmid( val, 0, minlen(i) ) eq strmid( feldt(i), 0, minlen(i) ) then $
-          inds = add2vec( i, inds )
-
-      if not is_defined( inds ) then inds = -1
+        if strmid( val, 0, minlen(i) ) eq strmid( feldt(i), 0, minlen(i) ) then begin
+          if not is_defined(inds) then inds=[i] else inds=[inds,i]
+          ;inds = add2vec( i, inds )
+        endif
+      if not is_defined(inds) then inds = -1
 
     endif else $
 

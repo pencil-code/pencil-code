@@ -1,0 +1,40 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for interstellar
+!
+&init_pars
+  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $'
+  unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
+  unit_density=1.e-24
+  unit_temperature=36.637181156923013, unit_magnetic=1e-6
+  !unit_temperature=44.741267294,unit_magnetic=3.54491e-7
+  xyz0=-0.512,-0.512,-1.12
+  xyz1=+0.512,+0.512,+1.12
+  lperi=T,T,F
+!  bcz = 'a2','a2','a2','ek2','eT2','a2','a2'
+  bcz = 's','s','a2','a2','a2','a2','a2'
+  lwrite_aux=T
+/
+&initial_condition_pars
+/
+&eos_init_pars
+  mu=0.503
+/
+&hydro_init_pars
+  Omega=0.
+  inituu='nothing'
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&grav_init_pars
+  gravz_profile='Ferriere'
+/
+&entropy_init_pars
+/
+&interstellar_init_pars
+/
+&shear_init_pars
+  Sshear=-0.0
+  Sshear1=-0.0
+/ 

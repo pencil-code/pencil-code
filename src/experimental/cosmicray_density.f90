@@ -324,6 +324,7 @@ module Cosmicray
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -338,6 +339,7 @@ module Cosmicray
       if (lreset) then
         idiag_ecrm=0; idiag_ecrdivum=0; idiag_ecrmax=0; idiag_kmax=0
         idiag_ecrpt=0
+        cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -357,10 +359,16 @@ module Cosmicray
 !        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='ecr') cformv='DEFINED'
+      endif
+!
 !  write column where which cosmic ray variable is stored
 !
       if (lwr) then
-        write(3,*) 'iecr=',iecr
+        call farray_index_append('iecr',iecr)
       endif
 !
     endsubroutine rprint_cosmicray
@@ -371,6 +379,8 @@ module Cosmicray
 !
 !  26-jul-06/tony: coded
 !
+      use Slices_methods, only: assign_slices_scal
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
@@ -380,14 +390,7 @@ module Cosmicray
 !
 !  Cosmic ray energy density.
 !
-        case ('ecr')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iecr)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iecr)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iecr)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iecr)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iecr)
-          slices%ready=.true.
+        case ('ecr'); call assign_slices_scal(slices,f,iecr)
 !
       endselect
 !

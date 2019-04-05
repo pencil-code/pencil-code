@@ -1,0 +1,13 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/SolarAtmosMag+Boris_Corr+Heatflux
+SVN Id:
+    $Id$
+Maintainer:
+    Piyali Chatterjee <mail/piyali.chatterjee AT iiap / res / in>
+Added:
+    18-Jun-2018
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+References:
+    Chatterjee, P. 2018, "Testing Alfven wave propagation in a realistic 
+    set-up of the solar atmosphere", GAFD (submitted for pencil code special issue)

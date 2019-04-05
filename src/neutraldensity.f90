@@ -47,7 +47,6 @@ module NeutralDensity
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
   character (len=labellen) :: borderlnrhon='nothing'
   character (len=intlen) :: iinit_str
-  integer :: iglobal_gg=0
   integer :: iglobal_rhon=0
 !
   namelist /neutraldensity_init_pars/ &
@@ -254,8 +253,6 @@ module NeutralDensity
 !  28-feb-07/wlad: adapted
 !
       use General, only: itoa,complex_phase
-      use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
-                          lnumerical_equilibrium
       use Initcond
       use InitialCondition, only: initial_condition_lnrhon
       use General, only: notanumber
@@ -639,11 +636,11 @@ module NeutralDensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: fdiff, gshockglnrhon, gshockgrhon, tmp
-      integer :: j
-!
       intent(in)  :: f,p
       intent(out) :: df
+!
+      real, dimension (nx) :: fdiff, gshockglnrhon, gshockgrhon, tmp, diffus_diffrhon, diffus_diffrhon3
+      integer :: j
 !
 !  identify module and boundary conditions
 !
@@ -673,6 +670,7 @@ module NeutralDensity
 !  Mass diffusion
 !
       fdiff=0.0
+      diffus_diffrhon=0.; diffus_diffrhon3=0.
 !
       if (ldiffn_normal) then  ! Normal diffusion operator
         if (lneutraldensity_nolog) then
@@ -719,7 +717,7 @@ module NeutralDensity
           fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
         enddo
         if (lfirst.and.ldt) &
-             diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1/dxyz_4
+             diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
         if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
       endif
 !
@@ -757,8 +755,12 @@ module NeutralDensity
         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
       endif
 !
-      if (headtt.or.ldebug) &
+      if (lfirst.and.ldt) then
+        if (headtt.or.ldebug) &
           print*,'dlnrhon_dt: max(diffus_diffrhon) =', maxval(diffus_diffrhon)
+        maxdiffus=max(maxdiffus,diffus_diffrhon)
+        maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
+      endif
 !
 !  Apply border profile
 !
@@ -852,6 +854,7 @@ module NeutralDensity
 !  28-feb-07/wlad: adapted
 !
       use Diagnostics, only: parse_name
+      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -929,8 +932,7 @@ module NeutralDensity
 !  write column where which density variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnrhon=',ilnrhon
+        call farray_index_append('ilnrhon',ilnrhon)
       endif
 !
     endsubroutine rprint_neutraldensity

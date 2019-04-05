@@ -401,7 +401,7 @@ class NullPoint(object):
                 normal = np.cross(fan_vectors[0], fan_vectors[1])
                 normal = normal/np.sqrt(np.sum(normal**2))
             else:
-                print "Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field
+                print("Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field)
                 eigen_values = np.zeros(3)
                 eigen_vectors = np.zeros((3, 3))
                 sign_trace = 0

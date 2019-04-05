@@ -97,7 +97,6 @@ module Magnetic_meanfield_demfdt
 !
 !   6-jan-11/axel: adapted from meanfield.f90
 !
-      use BorderProfiles, only: request_border_driving
       use FArrayManager
       use SharedVariables, only: put_shared_variable, get_shared_variable
 !

@@ -5,7 +5,7 @@
 !  ZEUS 3D implementation.
 !
 !  NB: This module solves for ln(ecr):  ecr is here used for lnecr.
-!  The alternative module cosmicray_nolog.f90 works with ecr, 
+!  The alternative module cosmicray_nolog.f90 works with ecr,
 !   and the _nolog version has been more heavily used/developed.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -33,19 +33,18 @@ module Cosmicray
 !
   character (len=labellen) :: initecr='zero', initecr2='zero'
   real :: gammacr=4./3.,gammacr1
-  real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=1.
+  real :: amplecr=.1,widthecr=.5,ecr_const=1.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
-  real :: cosmicray_diff=0., Kperp=0., Kpara=0.
-  real, target :: K_perp=impossible, K_para=impossible
+  real :: cosmicray_diff=0.
+  real, target :: K_perp=0., K_para=0.
 !
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
        gammacr, lnegl, lvariable_tensor_diff, &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para
+       cosmicray_diff, K_perp, K_para
 !
   real :: limiter_cr=1.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
@@ -53,8 +52,7 @@ module Cosmicray
   logical :: lupw_ecr=.false.
 !
   namelist /cosmicray_run_pars/ &
-       cosmicray_diff,Kperp,Kpara, &
-       K_perp, K_para, &
+       cosmicray_diff, K_perp, K_para, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,limiter_cr,ecr_floor,lupw_ecr
 !
@@ -63,7 +61,7 @@ module Cosmicray
 !
   contains
 !***********************************************************************
-    subroutine register_cosmicray()
+    subroutine register_cosmicray
 !
 !  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
@@ -100,29 +98,21 @@ module Cosmicray
 !
       use SharedVariables, only: put_shared_variable
       use Messages, only: warning
+
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  initialize gammacr1
 !
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
+!
+!     Shares diffusivities allowing the cosmicrayflux module to know them
+!
+     call put_shared_variable('K_perp', K_perp, caller='initialize_cosmicray')
+     call put_shared_variable('K_para', K_para)
 
-!
-!     Checks whether the obsolescent parameter names are being used
-!
-      if (Kpara /= impossible .or. Kperp /= impossible) then
-        call warning('initialize_cosmicray', &
-            'using obsolescent parameters Kpara and Kperp!' &
-            // ' In the future, please use K_para and K_perp instead.')
-        K_para = Kpara
-        K_perp = Kperp
-        call put_shared_variable('K_perp', impossible)
-        call put_shared_variable('K_para', impossible)
-      else
-        call put_shared_variable('K_perp', K_perp)
-        call put_shared_variable('K_para', K_para)
-     endif
-!
+     call keep_compiler_quiet(f)
+
     endsubroutine initialize_cosmicray
 !***********************************************************************
     subroutine init_ecr(f)
@@ -185,7 +175,7 @@ print*,"init_ecr: initecr = ", initecr
 !
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine pencil_criteria_cosmicray()
+    subroutine pencil_criteria_cosmicray
 !
 !  All pencils that the Cosmicray module depends on are specified here.
 !
@@ -196,7 +186,7 @@ print*,"init_ecr: initecr = ", initecr
       lpenc_requested(i_ecr)=.true.
       lpenc_requested(i_ugecr)=.true.
       lpenc_requested(i_divu)=.true.
-      if (.not.lnegl) lpenc_requested(i_rho1)=.true.
+      if (.not.lnegl.and.lhydro) lpenc_requested(i_rho1)=.true.
       if (K_perp/=0. .or. K_para/=0. .or. lvariable_tensor_diff) then
         lpenc_requested(i_gecr)=.true.
         lpenc_requested(i_bij)=.true.
@@ -272,7 +262,7 @@ print*,"init_ecr: initecr = ", initecr
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,gecr2
+      real, dimension (nx) :: del2ecr,vKperp,vKpara,gecr2,diffus_cr
       integer :: j
 !
       intent(in) :: f,p
@@ -283,7 +273,7 @@ print*,"init_ecr: initecr = ", initecr
       if (headtt.or.ldebug) print*,'SOLVE decr_dt'
       if (headtt) call identify_bcs('ecr',iecr)
 !
-!  Evolution equation of cosmic ray energy density 
+!  Evolution equation of cosmic ray energy density
 !  (in terms of lnecr, as used in this module):
 !     d lnecr/dt = - u dot grad(ln ecr) - gammacr*(div u) [ + diffusion ]
 !
@@ -293,7 +283,7 @@ print*,"init_ecr: initecr = ", initecr
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !  should rename lnegl to, eg, lcrpressureforce
 !
-      if (.not.lnegl) then
+      if (.not.lnegl .and. lhydro) then
         do j=0,2
           df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
               gammacr1*p%rho1*p%gecr(:,1+j)*exp(p%ecr(:))
@@ -319,11 +309,16 @@ print*,"init_ecr: initecr = ", initecr
       if (lfirst.and.ldt) then
         if (lvariable_tensor_diff)then
           diffus_cr=max(cosmicray_diff,vKperp,vKpara)*dxyz_2
+        elseif (lcosmicrayflux) then
+          ! If using the cosmicrayflux module, accounts only for isotropic
+          ! diffusion (the rest will accounted for in the cosmicrayflux module)
+          diffus_cr=cosmicray_diff
         else
           diffus_cr=max(cosmicray_diff,K_perp,K_para)*dxyz_2
         endif
+        if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
+        maxdiffus=max(maxdiffus,diffus_cr)
       endif
-      if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
 !
 !  diagnostics
 !
@@ -381,6 +376,7 @@ print*,"init_ecr: initecr = ", initecr
 !   6-jul-02/axel: coded
 !
       use Diagnostics
+      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
       logical :: lreset,lwr
@@ -410,11 +406,15 @@ print*,"init_ecr: initecr = ", initecr
 !        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='ecr') cformv='DEFINED'
+      endif
+!
 !  write column where which cosmic ray variable is stored
 !
-      if (lwr) then
-        write(3,*) 'iecr=',iecr
-      endif
+      if (lwr) call farray_index_append('iecr',iecr)
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
@@ -423,6 +423,8 @@ print*,"init_ecr: initecr = ", initecr
 !  Write slices for animation of Cosmicray variables.
 !
 !  26-jul-06/tony: coded
+!
+      use Slices_methods, only: assign_slices_scal
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -433,14 +435,7 @@ print*,"init_ecr: initecr = ", initecr
 !
 !  Cosmic ray energy density.
 !
-        case ('ecr')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,iecr)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,iecr)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,iecr)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,iecr)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,iecr)
-          slices%ready=.true.
+        case ('ecr'); call assign_slices_scal(slices,f,iecr)
 !
       endselect
 !
@@ -579,7 +574,7 @@ print*,"init_ecr: initecr = ", initecr
           enddo
         enddo
 !
-!
+!  apply CR diffusion
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
         + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
@@ -597,8 +592,8 @@ print*,"init_ecr: initecr = ", initecr
 !***********************************************************************
     subroutine impose_ecr_floor(f)
 !
-!  Impose a minimum cosmic ray energy density by setting all lower 
-!  densities to the minimum value (ecr_floor). 
+!  Impose a minimum cosmic ray energy density by setting all lower
+!  densities to the minimum value (ecr_floor).
 !
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
