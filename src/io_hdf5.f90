@@ -1063,6 +1063,7 @@ module Io
       do pos = 1, nname
         label = cname(pos)
         label = label(1:min(index(label,' '), index(label,'('))-1)
+        if (label == 'it') cycle
         call create_group_hdf5 (label)
         call output_hdf5 (trim(label)//'/'//iteration, data(pos))
         if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
@@ -1072,6 +1073,7 @@ module Io
         endif
       enddo
       call output_hdf5 ('last', it-1)
+      call output_hdf5 ('step', it1)
       call file_close_hdf5
 !
     endsubroutine output_timeseries
