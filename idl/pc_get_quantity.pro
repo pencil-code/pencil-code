@@ -683,7 +683,11 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
 		; Magnetic field vector [Tesla]
-		if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
+		if (any (strcmp (sources, 'bb', /fold_case))) then begin
+			if (n_elements (bb) eq 0) then bb = vars[gl1:gl2,gm1:gm2,gn1:gn2,index.bb] * unit.magnetic_field
+		end else begin
+			if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
+		end
 		return, bb
 	end
 	if (strcmp (quantity, 'B_abs', /fold_case)) then begin
