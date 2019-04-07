@@ -7,13 +7,18 @@
 ;  $Date: 2005-10-24 01:47:28 $
 ;  $Revision: 1.4 $
 ;
-;  27-nov-02/tony: tony
+;  27-nov-02/tony: coded
+;  07-Apr-2019/PABourdin: renamed to 'pc_read_help'
 ;
-pro pc_read
+pro pc_read_help
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Display list of routines
 ;
+    print, "  ------ UNIVERSAL READ ROUTINES ------                                    "
+    print, "pc_read(quantity, file=file)                                               "
+    print, "    Reads data from a snapshot (like 'var.dat').                           "
+    print, ""
     print, "  ------ 'BIG-DATA'-COMPATIBLE READ ROUTINES ------                        "
     print, "pc_read_var_raw                                                            "
     print, "    Reads data from a snapshot (like 'var.dat').                           "
