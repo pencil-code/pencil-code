@@ -74,6 +74,8 @@ if (-e NOSTART) then
   echo "Found NOSTART file. Won't run start.x"
   if (-e $datadir/time_series.dat) \
       mv $datadir/time_series.dat $datadir/time_series.`timestr`
+  if (-e $datadir/time_series.h5) \
+      mv $datadir/time_series.h5 $datadir/time_series.`timestr`.h5
   exit
 endif
 
@@ -107,6 +109,8 @@ if (! -e NOERASE) then
   rm -f $datadir/../driver/pts_[1-9].dat $datadir/../driver/seed_[1-9].dat >& /dev/null
   if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) \
       mv $datadir/time_series.dat $datadir/time_series.`timestr`
+  if (-e $datadir/time_series.h5 && ! -z $datadir/time_series.h5) \
+      mv $datadir/time_series.h5 $datadir/time_series.`timestr`.h5
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
         $datadir/averages/* >& /dev/null
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null

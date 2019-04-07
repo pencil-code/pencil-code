@@ -1258,6 +1258,12 @@ sub archive_time_series {
         rename $tseries, $archived_series
           or die "Cannot rename $tseries to $archived_series: $!\n";
     }
+    $tseries = "$data_dir/time_series.h5";
+    if (-e $tseries && -s $tseries) {
+        my $archived_series = "$data_dir/time_series." . timestr() . ".h5";
+        rename $tseries, $archived_series
+          or die "Cannot rename $tseries to $archived_series: $!\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub start_background_helpers {
