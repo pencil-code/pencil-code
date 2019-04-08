@@ -8,4 +8,4 @@
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
 !integer, parameter :: ncpus=4,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=16,nygrid=64,nzgrid=16
-integer, parameter :: npar=1000
+integer, parameter :: npar=1000,npar_mig=10
