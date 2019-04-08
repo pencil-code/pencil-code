@@ -160,6 +160,14 @@ indices = [ $
   ; don't forget to add a comma above when extending
 ]
 
+indices_vector = [ $
+  { name:'iuu', components:['iux','iuy','iuz'] }, $
+  { name:'iaa', components:['iax','iay','iaz'] }, $
+  { name:'ibb', components:['ibx','iby','ibz'] }, $
+  { name:'ijj', components:['ijx','ijy','ijz'] } $
+  ; don't forget to add a comma above when extending
+]
+
 ; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
   { name:'iee', label:'Electric field', dims:3 }, $
@@ -332,6 +340,8 @@ for tag = 1, num_tags do begin
     endelse
   endif else begin
     ; Regular f-array variables.
+    found = where(search eq indices_vector[*].name, num_found)
+    if (num_found ge 1) then search = indices_vector[found].components[0]
     matches = stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
   endelse
   line = max (where (matches[0,*] ne ''))
