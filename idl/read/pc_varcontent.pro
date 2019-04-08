@@ -421,7 +421,6 @@ for var = 0, num_vars-1 do begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
       if (num_components gt 1) then idl_var += str (component)
-;stop,"AXEL"
       varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
       varcontent[pos[component-1]-1].idlvar = idl_var
       varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
