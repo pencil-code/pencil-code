@@ -41,6 +41,22 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
 	if (keyword_set (filename)) then begin
 		if (not keyword_set (datadir)) then datadir = pc_get_datadir (datadir)
 		file = datadir+'/allprocs/'+filename
+	end else begin
+		if (not keyword_set (file)) then begin
+			; no file is open
+			if (not keyword_set (datadir)) then datadir = pc_get_datadir (datadir)
+			if (file_test (datadir+'/allprocs/var.h5')) then begin
+				filename = 'var.h5'
+				file = datadir+'/allprocs/'+filename
+			end else begin
+				; no HDF5 file found
+				if (not file_test (datadir+'/proc0/var.dat') and not file_test (datadir+'/allprocs/var.dat')) then begin
+					message, 'pc_read: ERROR: please either give a filename or open a HDF5 file!'
+				end
+				; read old file format
+				return, pc_read_old (quantity, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+			end
+		end
 	end
 
 	if (size (processor, /type) ne 0) then begin
