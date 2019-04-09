@@ -206,12 +206,12 @@ COMPILE_OPT IDL2, HIDDEN
       mygrid = globdim.mygrid
       mzgrid = globdim.mzgrid
     end else begin
-      nxgrid = nx
-      nygrid = ny
-      nzgrid = nz
-      mxgrid = nxgrid + (2 * nghostx)
-      mygrid = nygrid + (2 * nghosty)
-      mzgrid = nzgrid + (2 * nghostz)
+      mxgrid = mx
+      mygrid = my
+      mzgrid = mz
+      nxgrid = mxgrid - (2 * nghostx)
+      nygrid = mygrid - (2 * nghosty)
+      nzgrid = mzgrid - (2 * nghostz)
     end
   end
 ;
