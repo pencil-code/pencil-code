@@ -132,6 +132,10 @@ COMPILE_OPT IDL2,HIDDEN
     return
   endif
 ;
+; Default data directory.
+;
+  datadir = pc_get_datadir(datadir)
+;
 ; Name and path of varfile to read.
 ;
   if (keyword_set(ogrid)) then begin
@@ -154,19 +158,11 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endelse
 ;
-; Default data directory.
-;
-  datadir = pc_get_datadir(datadir)
-;
 ; Check if reduced keyword is set.
 ;
   default, reduced, 0
   if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       message, "pc_read_var: /reduced and 'proc' cannot be set both."
-;
-; Check if allprocs is set.
-;
-  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
 ;
 ; Infer allprocs setting.
 ;
@@ -176,6 +172,10 @@ COMPILE_OPT IDL2,HIDDEN
     if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
     if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
   endif
+;
+; Check if allprocs is set.
+;
+  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
 ;
 ; Set f77 keyword according to allprocs.
 ;
