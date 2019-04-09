@@ -142,8 +142,11 @@ COMPILE_OPT IDL2,HIDDEN
     if (n_elements(ivar) eq 1) then begin
       default, varfile_, 'OGVAR'
       varfile=varfile_+strcompress(string(ivar),/remove_all)
+      if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
     endif else begin
-      default, varfile_, 'ogvar.dat'
+      default_varfile = 'ogvar.dat'
+      if (file_test (datadir+'/allprocs/ogvar.h5')) then default_varfile = 'ogvar.h5'
+      default, varfile_, default_varfile
       varfile=varfile_
       ivar=-1
     endelse
@@ -151,12 +154,21 @@ COMPILE_OPT IDL2,HIDDEN
     if (n_elements(ivar) eq 1) then begin
       default, varfile_, 'VAR'
       varfile=varfile_+strcompress(string(ivar),/remove_all)
+      if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
     endif else begin
-      default, varfile_, 'var.dat'
+      default_varfile = 'var.dat'
+      if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
+      default, varfile_, default_varfile
       varfile=varfile_
       ivar=-1
     endelse
   endelse
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "pc_read_var: ERROR: reading of HDF5 varfiles is not yet implemented..."
+  end
 ;
 ; Check if reduced keyword is set.
 ;
