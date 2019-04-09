@@ -104,7 +104,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 if (not keyword_set(down)) then begin
   gridfile='grid.dat'
-else
+end else begin
   gridfile='grid_down.dat'
 end
 ;
