@@ -124,51 +124,12 @@ COMPILE_OPT IDL2,HIDDEN
   default, cubint, -.5
 ;
   if (arg_present(exit_status)) then exit_status=0
-  default, reduced, 0
-  if (keyword_set(reduced)) then allprocs=1
-  if not is_defined(allprocs) then begin
-;
-; derive allprocs from the setting in Makefile.local
-;
-    spawn, "grep '^ *[^\#].*io_collect' src/Makefile.local", grepres
-    if strpos(grepres,'xy') ge 0 then $
-      allprocs=2 $
-    else if grepres ne '' then $
-      allprocs=1 $
-    else $
-      allprocs=0
-  endif
 ;
 ; If no meaningful parameters are given show some help!
 ;
   if (keyword_set(help)) then begin
     doc_library, 'pc_read_var'
     return
-  endif
-;
-; Check if reduced keyword is set.
-;
-if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
-    message, "pc_read_var: /reduced and 'proc' cannot be set both."
-;
-; Check if allprocs is set.
-;
-  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
-;
-; Set f77 keyword according to allprocs.
-;
-  if (keyword_set (allprocs)) then $
-    if allprocs eq 1 then default, f77, 0
-  default, f77, 1
-;
-; Default data directory.
-;
-  datadir = pc_get_datadir(datadir)
-;
-; Can only unshear coordinate frame if variables have been trimmed.
-;
-  if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
-    message, 'pc_read_var: /unshear only works with /trimall'
   endif
 ;
 ; Name and path of varfile to read.
@@ -192,6 +153,41 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       ivar=-1
     endelse
   endelse
+;
+; Default data directory.
+;
+  datadir = pc_get_datadir(datadir)
+;
+; Infer allprocs setting.
+;
+  default, reduced, 0
+  if (keyword_set(reduced)) then allprocs=1
+  if (not is_defined(allprocs)) then begin
+    allprocs = 0
+    if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
+    if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
+  endif
+;
+; Check if reduced keyword is set.
+;
+if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
+    message, "pc_read_var: /reduced and 'proc' cannot be set both."
+;
+; Check if allprocs is set.
+;
+  if ((allprocs ne 0) and (n_elements (proc) ne 0)) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
+;
+; Set f77 keyword according to allprocs.
+;
+  if (keyword_set (allprocs)) then $
+    if allprocs eq 1 then default, f77, 0
+  default, f77, 1
+;
+; Can only unshear coordinate frame if variables have been trimmed.
+;
+  if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
+    message, 'pc_read_var: /unshear only works with /trimall'
+  endif
 ;
 ; Downsampled snapshot?
 ;
