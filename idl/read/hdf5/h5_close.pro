@@ -1,6 +1,7 @@
 pro hdf5_close
 
 	common hdf5_file_info, file_id, file_name
+	common pc_read_common, file
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 
@@ -12,4 +13,5 @@ pro hdf5_close
 	H5F_CLOSE, file_id
 	file_id = !Values.D_NaN
 	file_name = ''
+	file = ''
 end
