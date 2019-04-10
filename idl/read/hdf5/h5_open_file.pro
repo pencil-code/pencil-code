@@ -1,6 +1,6 @@
-pro hdf5_open, file, write=write, truncate=truncate
+pro h5_open_file, file, write=write, truncate=truncate
 
-	common hdf5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 
