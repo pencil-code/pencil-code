@@ -167,7 +167,22 @@ COMPILE_OPT IDL2,HIDDEN
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-    message, "pc_read_var: ERROR: reading of HDF5 varfiles is not yet implemented..."
+    message, "pc_read_var: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (varcontent, /type) eq 0) then begin
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
+    end
+    quantities = varcontent[*].idlvar
+    num_quantities = n_elements (quantities)
+    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
+    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
+    for pos = 0, num_quantities-1 do begin
+      if (quantities[pos] eq 'dummy') then continue
+      object = create_struct (object, quantities[pos], pc_read (quantities[pos], trimall=trimall, processor=proc, dim=dim))
+    end
+    h5_close_file
+    return
   end
 ;
 ; Check if reduced keyword is set.
