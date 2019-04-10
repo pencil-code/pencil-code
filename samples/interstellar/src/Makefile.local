@@ -3,8 +3,16 @@
 ### Included by `Makefile'
 ###
 
+#================================
+# Please uncomment one IO option:
+#================================
+#MPICOMM      =   mpicomm
+#IO           =   io_hdf5
+#HDF5_IO      =   hdf5_io_parallel
+#--------------------------------
 MPICOMM      = nompicomm
 IO           =   io_dist
+#================================
 
 INITIAL_CONDITION = initial_condition/hs_equilibrium_ism
 HYDRO        =   hydro
