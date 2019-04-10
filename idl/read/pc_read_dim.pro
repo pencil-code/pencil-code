@@ -131,22 +131,22 @@ COMPILE_OPT IDL2, HIDDEN
     ; HDF5 format is available
     filename = datadir+'/grid.h5'
     if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
-    mxgrid = hdf5_read ('settings/mx', filename=filename)
-    mygrid = hdf5_read ('settings/my')
-    mzgrid = hdf5_read ('settings/mz')
-    nxgrid = hdf5_read ('settings/nx')
-    nygrid = hdf5_read ('settings/ny')
-    nzgrid = hdf5_read ('settings/nz')
-    mvar = hdf5_read ('settings/mvar')
-    maux = hdf5_read ('settings/maux')
-    mglobal = hdf5_read ('settings/mglobal')
-    nghostx = hdf5_read ('settings/nghost')
+    mxgrid = h5_read ('settings/mx', file=filename)
+    mygrid = h5_read ('settings/my')
+    mzgrid = h5_read ('settings/mz')
+    nxgrid = h5_read ('settings/nx')
+    nygrid = h5_read ('settings/ny')
+    nzgrid = h5_read ('settings/nz')
+    mvar = h5_read ('settings/mvar')
+    maux = h5_read ('settings/maux')
+    mglobal = h5_read ('settings/mglobal')
+    nghostx = h5_read ('settings/nghost')
     nghosty = nghostx
     nghostz = nghostx
-    nprocx = hdf5_read ('settings/nprocx')
-    nprocy = hdf5_read ('settings/nprocy')
-    nprocz = hdf5_read ('settings/nprocz')
-    precision_new = hdf5_read ('settings/precision')
+    nprocx = h5_read ('settings/nprocx')
+    nprocy = h5_read ('settings/nprocy')
+    nprocz = h5_read ('settings/nprocz')
+    precision_new = h5_read ('settings/precision', /close)
     pc_set_precision, precision=precision_new
     if (size (proc, /type) ne 0) then begin
       ipx = proc mod nprocx
