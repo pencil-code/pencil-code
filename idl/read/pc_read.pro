@@ -19,6 +19,7 @@
 ;       dim [structure]: dimension structure. Default: load if needed
 ;       start [integer]: start reading at this grid position (includes ghost cells)
 ;       count [integer]: number of grid cells to read from starting position
+;       close [boolean]: close file after reading
 ;
 ; EXAMPLES:
 ;       Ax = pc_read ('ax', file='var.h5') ;; open file 'var.h5' and read Ax
@@ -30,7 +31,7 @@
 ;       $Id$
 ;       07-Apr-2019/PABourdin: coded
 ;
-function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count
+function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, close=close
 
 	COMPILE_OPT IDL2,HIDDEN
 
