@@ -21,10 +21,10 @@
 ;       count [integer]: number of grid cells to read from starting position
 ;
 ; EXAMPLES:
-;       Ax = pc_read ('ax', file='var.h5') ;; read Ax
+;       Ax = pc_read ('ax', file='var.h5') ;; open file 'var.h5' and read Ax
 ;       Ay = pc_read ('ay', /trim) ;; read Ay without ghost cells
-;       Az = pc_read ('az', processor=2) ;; read subvolume of processor 2
-;       ux = pc_read ('ux', start=[35,35,3], count=[32,32,4]) ;; read subvolume
+;       Az = pc_read ('az', processor=2) ;; read data of processor 2
+;       ux = pc_read ('ux', start=[47,11,13], count=[16,8,4]) ;; read subvolume
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$
@@ -61,11 +61,11 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
 
 	if (size (processor, /type) ne 0) then begin
 		if (keyword_set (particles)) then begin
-			distribution = hdf5_read ('proc/distribution', filename=file)
+			distribution = h5_read ('proc/distribution', filename=file)
 			start = 0
 			if (processor ge 1) then start = total (distribution[0:processor-1])
 			count = distribution[processor]
-			return, hdf5_read (quantity, start=start, count=count)
+			return, h5_read (quantity, start=start, count=count, close=close)
 		end else begin
 			if (size (dim, /type) eq 0) then pc_read_dim, obj=dim, datadir=datadir, proc=proc
 			ipx = processor mod dim.nprocx
@@ -81,7 +81,8 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
 	end
 
 	if (not keyword_set (particles)) then begin
-		if (strpos (strlowcase (quantity) ,'/') lt 0) then quantity = 'data/'+quantity
+		if (strpos (strlowcase (quantity), '/') lt 0) then quantity = 'data/'+quantity
+		if (strpos (quantity, 'data/time') ge 0) then quantity = 'time'
 		if (keyword_set (trim)) then begin
 			default, start, [ 0, 0, 0 ]
 			default, count, [ dim.mxgrid, dim.mygrid, dim.mzgrid ]
@@ -89,10 +90,10 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
                         ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
 			degenerated = where (count eq 1, num_degenerated)
 			if (num_degenerated gt 0) then ghost[degenerated] = 0
-			return, hdf5_read (quantity, filename=file, start=start+ghost, count=count-ghost*2)
+			return, h5_read (quantity, filename=file, start=start+ghost, count=count-ghost*2, close=close)
 		end
 	end
 
-	return, hdf5_read (quantity, filename=file, start=start, count=count)
+	return, h5_read (quantity, filename=file, start=start, count=count, close=close)
 end
 
