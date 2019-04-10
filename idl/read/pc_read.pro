@@ -26,6 +26,7 @@
 ;       Ay = pc_read ('ay', /trim) ;; read Ay without ghost cells
 ;       Az = pc_read ('az', processor=2) ;; read data of processor 2
 ;       ux = pc_read ('ux', start=[47,11,13], count=[16,8,4]) ;; read subvolume
+;       aa = pc_read ('aa') ;; read all three components of a vector-field
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$
@@ -36,6 +37,34 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
 	COMPILE_OPT IDL2,HIDDEN
 
 	common pc_read_common, file
+
+	vectors = [ 'aa', 'uu', 'bb', 'jj' ]
+	vector = where (vectors eq strlowcase (quantity))
+	if (vector[0] ge 0) then begin
+		quantity = strmid (quantity, 0, strlen (quantity) - 1) + [ 'x', 'y', 'z' ]
+	end
+
+	num_quantities = n_elements (quantity)
+	if (num_quantities gt 1) then begin
+		; read multiple quantities in one large array
+		data = pc_read (quantity[0], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+		sizes = size (data, /dimensions)
+		dimensions = size (data, /n_dimensions)
+		for pos = 1, num_quantities-1 do begin
+			tmp = pc_read (quantity[pos], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
+			if (dimensions eq 1) then begin
+				data = [ data, tmp ]
+			end else if (dimensions eq 2) then begin
+				data = [ [data], [tmp] ]
+			end else begin
+				data = [ [[data]], [[tmp]] ]
+			end
+		end
+		tmp = !Values.D_NaN
+		if (keyword_set (close)) then h5_close_file
+		data = reform (data, [ sizes, num_quantities ])
+		return, data
+	end
 
 	particles = (strpos (strlowcase (quantity) ,'part/') ge 0)
 
