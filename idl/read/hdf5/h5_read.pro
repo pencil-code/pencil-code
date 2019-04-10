@@ -1,10 +1,10 @@
-function hdf5_read, label, start=start, count=count, transpose=transpose, filename=filename
+function h5_read, label, start=start, count=count, transpose=transpose, filename=filename, close=close
 
-	common hdf5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 
-	if (size (filename, /type) eq 7) then hdf5_open, filename
+	if (size (filename, /type) eq 7) then h5_open_file, filename
 
 	if (finite (file_id, /NaN)) then begin
 		print, "ERROR: no HDF5 file is open!"
@@ -37,6 +37,8 @@ function hdf5_read, label, start=start, count=count, transpose=transpose, filena
 	if ((size (data, /n_dimensions) eq 1) and (n_elements (data) eq 1)) then begin
 		data = data[0]
 	end
+
+	if (keyword_set (close)) then h5_close_file
 
 	return, data
 end

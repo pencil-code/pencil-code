@@ -1,6 +1,6 @@
-function hdf5_content, group, number=num
+function h5_content, group, number=num
 
-	common hdf5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 

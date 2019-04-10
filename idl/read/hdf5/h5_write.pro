@@ -1,10 +1,10 @@
-pro hdf5_write, label, data, transpose=transpose, filename=filename
+pro h5_write, label, data, transpose=transpose, filename=filename, close=close, close=close
 
-	common hdf5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name
 
-	if (size (filename, /type) eq 7) then hdf5_open, filename, /write
+	if (size (filename, /type) eq 7) then h5_open_file, filename, /write
 
-	exists = hdf5_contains (label, group=group, name=name)
+	exists = h5_contains (label, group=group, name=name)
 
 	if (exists) then begin
 		print, "WARNING: can not overwrite existing '"+label+"' in '"+file_name+"'!"
@@ -31,5 +31,7 @@ pro hdf5_write, label, data, transpose=transpose, filename=filename
 	h5g_close, group_id
 	h5s_close, dataspace_id
 	h5t_close, datatype_id
+
+	if (keyword_set (close)) then h5_close_file
 end
 
