@@ -17,7 +17,7 @@ pro h5_open_file, file, write=write, truncate=truncate
 		if (keyword_set (write) or keyword_set (truncate)) then begin
 			file_id = H5F_CREATE (file)
 		end else begin
-			print, "ERROR: '"+file+"' does not exist!"
+			print, "ERROR: file '"+file+"' does not exist!"
 			stop
 			return
 		end
