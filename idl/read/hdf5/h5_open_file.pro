@@ -1,6 +1,7 @@
-pro h5_open_file, file, write=write, truncate=truncate
+pro h5_open_file, filename, write=write, truncate=truncate
 
 	common h5_file_info, file_id, file_name
+	common pc_read_common, file
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 
@@ -9,26 +10,27 @@ pro h5_open_file, file, write=write, truncate=truncate
 		file_id = !Values.D_NaN
 	end
 
-	if (file_test (file, /regular) and keyword_set (truncate)) then begin
-		file_delete, file
+	if (file_test (filename, /regular) and keyword_set (truncate)) then begin
+		file_delete, filename
 	end
 
-	if (not file_test (file, /regular) or keyword_set (truncate)) then begin
+	if (not file_test (filename, /regular) or keyword_set (truncate)) then begin
 		if (keyword_set (write) or keyword_set (truncate)) then begin
-			file_id = H5F_CREATE (file)
+			file_id = H5F_CREATE (filename)
 		end else begin
-			print, "ERROR: file '"+file+"' does not exist!"
+			print, "ERROR: file '"+filename+"' does not exist!"
 			stop
 			return
 		end
 	end else begin
-		if (not H5F_IS_HDF5 (file)) then begin
-			print, "ERROR: '"+file+"' is not a HDF5 file!"
+		if (not H5F_IS_HDF5 (filename)) then begin
+			print, "ERROR: '"+filename+"' is not a HDF5 file!"
 			stop
 			return
 		end
 
-		file_name = file
-		file_id = H5F_OPEN (file, write=write)
+		file_name = filename
+		file_id = H5F_OPEN (filename, write=write)
+		file = filename
 	end
 end
