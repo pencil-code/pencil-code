@@ -49,14 +49,19 @@ endelse
     t = pc_read ('time', file=varfile, datadir=datadir)
     quantities = h5_content('part')
     num_quantities = n_elements (quantities)
-    object = { t:t, distribution:pc_read ('proc/distribution') }
+    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    distribution = pc_read ('proc/distribution')
+    object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz, distribution:distribution, npar_found:total(distribution, /preserve_type) }
     if (proc ge 0) then begin
       start = 0
       if (proc ge 1) then start = total (object.distribution[0:proc-1])
       count = object.distribution[proc]
     end
     for pos = 0, num_quantities-1 do begin
-      object = create_struct (object, quantities[pos], pc_read ('part/'+quantities[pos], start=start, count=count))
+      quantity = quantities[pos]
+      if (strlowcase (quantity) eq 'id') then quantity = 'ipar'
+      object = create_struct (object, quantity, pc_read ('part/'+quantities[pos], start=start, count=count))
     end
     h5_close_file
     return
