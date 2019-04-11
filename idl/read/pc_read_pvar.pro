@@ -34,10 +34,33 @@ objout = not arg_present(array)
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
   varfile=varfile_+strcompress(string(ivar),/remove_all)
+  if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
 endif else begin
-  default,varfile_,'pvar.dat'
+  default_varfile = 'pvar.dat'
+  if (file_test (datadir+'/allprocs/pvar.h5')) then default_varfile = 'pvar.h5'
+  default, varfile_, default_varfile
   varfile=varfile_
 endelse
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "pc_read_pvar: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    quantities = h5_content('part')
+    num_quantities = n_elements (quantities)
+    object = { t:t, distribution:pc_read ('proc/distribution') }
+    if (proc ge 0) then begin
+      start = 0
+      if (proc ge 1) then start = total (object.distribution[0:proc-1])
+      count = object.distribution[proc]
+    end
+    for pos = 0, num_quantities-1 do begin
+      object = create_struct (object, quantities[pos], pc_read ('part/'+quantities[pos], start=start, count=count))
+    end
+    h5_close_file
+    return
+  end
 ;
 ;  Set rmv if solid_objects
 ;
