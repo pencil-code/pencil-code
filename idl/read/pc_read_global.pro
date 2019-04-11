@@ -35,7 +35,35 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Name and path of varfile to read
 ;
+  if (file_test (datadir+'/global.h5')) then default, varfile, 'global.h5'
   default, varfile, 'global.dat'
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "pc_read_global: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (varcontent, /type) eq 0) then begin
+      varcontent = pc_varcontent_global (datadir=datadir, dim=dim, param=param, quiet=quiet, scalar=scalar, run2D=run2D)
+    end
+    quantities = varcontent[*].idlvar
+    num_quantities = n_elements (quantities)
+    for pos = 0, num_quantities-1 do begin
+      quantity = quantities[pos]
+      if (quantity eq 'dummy') then continue
+      if (quantity eq 'gg') then begin
+        quantity = [ 'global_gx', 'global_gy', 'global_gz' ]
+      end else if (quantity eq 'glnTT') then begin
+        quantity = [ 'glnTx', 'glnTy', 'glnTz' ]
+      end
+      if (pos eq 0) then begin
+        object = create_struct (quantities[pos], pc_read (quantity, file=varfile, datadir=datadir, trimall=trimall, processor=proc, dim=dim))
+      end else begin
+        object = create_struct (object, quantities[pos], pc_read (quantity, trimall=trimall, processor=proc, dim=dim))
+      end
+    end
+    h5_close_file
+    return
+  end
 ;
 ; Get necessary dimensions quietly
 ;
