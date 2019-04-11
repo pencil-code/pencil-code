@@ -1,0 +1,213 @@
+#!/bin/sh
+#                      pc_radmc3d
+#                     -------------
+# Description:
+#   Link files into a local radmc3d directory
+#
+# CVS:
+#   $Id$
+#
+# Usage:
+#   pc_radmc3d [options] [src-dir]
+#
+IAM=$0
+#
+link_scripts()
+{
+  echo "Linking job submission/execution scripts."
+  to_link=
+  for script in $scripts
+  do
+    if [ -f $bindir/$script ]; then
+      [ -h ./$script ] && rm -f $script
+      [ ! -f ./$script ] && to_link="$to_link $bindir/$script"
+    else
+      echo "No such file: $bindir/$script"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+}
+#
+#-----------------------------------------------------------------------------
+make_rad_dir()
+{
+## src subdirectory
+  if [ ! -d $radmc ]; then
+    echo "No radmc directory found: creating new one (`pwd`/radmc)."
+    mkdir $radmc
+  fi
+}
+#
+generate_amr_grid_inp()
+{
+#                                                                                                                    
+#                                                                                                                    
+#
+    old_dir="`pwd`"
+    cd $radmc
+    if [ ! -f write_amr_grid.py ]; then
+	cp $PENCIL_HOME/radmc/write_amr_grid.py . 
+    fi	
+    if [ ! -f amr_grid.inp ]; then
+	python write_amr_grid.py
+    fi
+    cd $old_dir
+}
+#
+link_wavelenghts_stars_inp()
+{
+  old_dir="`pwd`"
+  cd $radmc
+
+  for file in $PENCIL_HOME/radmc/stars.inp \
+              $PENCIL_HOME/radmc/wavelengths_micron.inp
+
+  do
+      ln -s $file .
+  done
+  cd $old_dir
+}
+#
+link_src_files()
+{
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
+  echo "Linking files in '$src'."
+  old_dir="`pwd`"
+  cd $src
+  n=0
+  to_link=
+  for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
+              $srcdir/Makefile.src $srcdir/Makefile.depend \
+              $srcdir/Makefile.library $srcdir/Makefile.machine \
+              $srcdir/*.h $srcdir/scripts $srcdir/*.sed $srcdir/.cvsignore
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+        to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+        to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+#
+#-----------------------------------------------------------------------------
+file_for_link()
+{
+    if [ -f $1 ] || [ -d $1 ]; then
+#      relname=${1:$len}
+      relname=`echo $file | sed -r 's/^.*src_new\///'`
+      if [ -h $relname ]; then
+        rm -f $relname
+        to_link="$to_link $1"
+      elif [ ! -f $relname ] \
+        && [ ! -d $relname ]; then
+        to_link="$to_link $1"
+      fi
+    else
+      echo "No such file: $1"
+    fi
+}
+#
+copy_local_files()
+{
+#
+#  COPY all *.local files into local src directory
+#
+  echo "Creating .local files in $src (if necessary)."
+  old_dir="`pwd`"
+  cd $src
+  n=0
+  to_copy=
+  for file in $srcdir/*.local
+  do
+    if [ -f $file ]; then
+      if [ ! -f "`basename $file`" ]; then
+# Warn user about copying *.local, as these should normally come
+# with each run directory:
+        echo "Copying default file $file to src/ -- are you sure this is OK?"
+        to_copy="$to_copy $file"
+        #cp $file .
+      else
+        # echo "`basename $file` already exists"
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_copy" ] && cp $to_copy .
+  cd $old_dir
+}
+#
+print_status()
+{
+  [ $n -eq 1 ] &&  echo "$existf already existed in $src"
+  [ $n -gt 1 ] && echo "$n files already existed in $src"
+}
+#
+remove_broken_links()
+{
+## Remove any broken links...
+  find . $src -type l 2>/dev/null | perl -lne 'unlink $_ if (-l && ! -e)'
+}
+#
+prepare_for_compile()
+{
+#
+#  Generate Makefile
+#
+  echo "Rebuilding Makefile from Makefile.src."
+  old_dir="`pwd`"
+  cd $src
+  rm -f Makefile                        # for old run directories
+  rm -f makefile                        # for old run directories
+  $srcdir/scripts/adapt-mkfile Makefile.src Makefile
+  cd $old_dir
+  hn=`hostname`
+  if [ "$hn" = emil-login2.pdc.kth.se ]; then
+      touch FAKE_PARALLEL_IO
+  fi
+}
+#
+scripts="write_amr_grid.py"
+pencil_home_path=$PENCIL_HOME
+radmc="`pwd`/radmc"
+#
+if [ ! "$pencil_home_path" ]; then
+  echo " You need to provide the path to the Pencil Code, either via the"
+  echo " --pencil-home option or you need to set PENCIL_HOME; "
+  echo " consider sourcing sourceme.{,c}sh"
+  exit 1
+fi
+#
+bindir=$pencil_home_path/bin
+radmcdir=$pencil_home_path/radmc
+#
+echo "Files will be linked to the root code directory '$pencil_home_path'."
+#
+make_rad_dir
+generate_amr_grid_inp
+link_wavelenghts_stars_inp
+#remove_broken_links
+#link_scripts
+#make_src_dir
+#link_src_files
+#create_Makefile_inc
+#copy_local_files
+#print_status
+
