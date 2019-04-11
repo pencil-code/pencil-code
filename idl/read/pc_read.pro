@@ -112,8 +112,10 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
 	end
 
 	if (not keyword_set (particles)) then begin
-		if (strpos (strlowcase (quantity), '/') lt 0) then quantity = 'data/'+quantity
-		if (strpos (quantity, 'data/time') ge 0) then quantity = 'time'
+		if (strpos (strlowcase (quantity), '/') lt 0) then begin
+			h5_open_file, file
+			if (not h5_contains (quantity) and h5_contains ('data/'+quantity)) then quantity = 'data/'+quantity
+		end
 		if (keyword_set (trim)) then begin
 			default, start, [ 0, 0, 0 ]
 			default, count, [ dim.mxgrid, dim.mygrid, dim.mzgrid ]
