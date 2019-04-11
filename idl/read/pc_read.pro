@@ -67,14 +67,18 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
 
 	if (keyword_set (filename)) then begin
 		if (not keyword_set (datadir)) then datadir = pc_get_datadir (datadir)
-		file = datadir+'/allprocs/'+filename
+		if (file_test (datadir+'/allprocs/'+filename)) then begin
+			file = datadir+'/allprocs/'+filename
+		end else begin
+			file = datadir+'/'+filename
+		end
 	end else begin
 		if (not keyword_set (file)) then begin
 			; no file is open
 			if (not keyword_set (datadir)) then datadir = pc_get_datadir (datadir)
 			if (file_test (datadir+'/allprocs/var.h5')) then begin
 				filename = 'var.h5'
-				file = datadir+'/allprocs/'+filename
+				file = datadir+'/allprocs/var.h5'
 			end else begin
 				; no HDF5 file found
 				if (not file_test (datadir+'/proc0/var.dat') and not file_test (datadir+'/allprocs/var.dat')) then begin
