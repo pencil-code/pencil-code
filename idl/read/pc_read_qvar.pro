@@ -17,11 +17,26 @@ default, qquiet, 0
 if n_elements(ivar) eq 1 then begin
   default,varfile_,'QVAR'
   varfile=varfile_+strcompress(string(ivar),/remove_all)
+  if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
 endif else begin
-  default,varfile_,'qvar.dat'
+  default_varfile = 'qvar.dat'
+  if (file_test (datadir+'/allprocs/qvar.h5')) then default_varfile = 'qvar.h5'
+  default, varfile_, default_varfile
   varfile=varfile_
 endelse
-
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "pc_read_qvar: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    object = { t:t, number:pc_read ('number') }
+    object = create_struct (object, 'mass', pc_read ('points/mass'))
+    object = create_struct (object, 'xx', pc_read ('points/'+['x','y','z']))
+    object = create_struct (object, 'vv', pc_read ('points/v'+['x','y','z']))
+    return
+  end
+;
 if (qquiet) then quiet=1
 ;
 ;  Derived dimensions.
