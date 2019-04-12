@@ -46,11 +46,10 @@ endelse
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
     message, "pc_read_pvar: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
     t = pc_read ('time', file=varfile, datadir=datadir)
     quantities = h5_content('part')
     num_quantities = n_elements (quantities)
-    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
-    t = pc_read ('time', file=varfile, datadir=datadir)
     distribution = pc_read ('proc/distribution')
     object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz, distribution:distribution, npar_found:total(distribution, /preserve_type) }
     if (proc ge 0) then begin
