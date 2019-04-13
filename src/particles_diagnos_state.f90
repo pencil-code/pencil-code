@@ -48,24 +48,11 @@ module Particles_diagnos_state
       if (lroot) call svn_id( &
            "$Id$")
 !
-      ipss=npvar+1  !particle state
-      ipst=npvar+2  !time particle entered current state
-!
-      ipxx=npvar+3  !x position particle entered current state
-      ipyy=npvar+4  !y position particle entered current state
-      ipzz=npvar+5  !z position particle entered current state
-!
-!     individual particle labels are tracked through ipar,
-!
-      npvar=npvar+5
-!
-!  Check that the fp and dfp arrays are big enough.
-!
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call fatal_error('register_pars_diagnos_state', &
-            'npvar > mpvar')
-      endif
+      call append_npvar('ipss',ipss)  ! particle state
+      call append_npvar('ipst',ipst)  ! time particle entered current state
+      call append_npvar('ipxx',ipxx)  ! x position particle entered current state
+      call append_npvar('ipyy',ipyy)  ! y position particle entered current state
+      call append_npvar('ipzz',ipzz)  ! z position particle entered current state
 !
     endsubroutine register_pars_diagnos_state
 !***********************************************************************
@@ -135,26 +122,11 @@ module Particles_diagnos_state
     subroutine rprint_particles_diagnos_state(lreset,lwrite)
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
-      logical :: lwr
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call farray_index_append('ipss', ipss)
-        call farray_index_append('ipst', ipst)
-        call farray_index_append('ipxx', ipxx)
-        call farray_index_append('ipyy', ipyy)
-        call farray_index_append('ipzz', ipzz)
-      endif
 !
 !  Reset everything in case of reset.
 !
