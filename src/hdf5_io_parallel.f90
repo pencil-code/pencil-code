@@ -58,7 +58,7 @@ module HDF5_IO
     integer :: component
     type (element), pointer :: previous
   endtype element
-  type (element), pointer :: last => null(), last_particle => null()
+  type (element), pointer :: last => null(), last_particle => null(), last_pointmass => null()
 !
   contains
 !***********************************************************************
@@ -1593,13 +1593,31 @@ module HDF5_IO
 !
     endsubroutine particle_index_append
 !***********************************************************************
-    function index_get(ivar,particle)
+    subroutine pointmass_index_append(label,ilabel)
+!
+! 13-Apr-2019/PABourdin: copied from 'particle_index_append'
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: ilabel
+!
+      integer, parameter :: lun_output = 92
+!
+      if (lroot) then
+        open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro), POSITION='append')
+        write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
+        close(lun_output)
+      endif
+      call index_register (trim(label), ilabel, pointmass=.true.)
+!
+    endsubroutine pointmass_index_append
+!***********************************************************************
+    function index_get(ivar,particle,pointmass)
 !
 ! 17-Oct-2018/PABourdin: coded
 !
       character (len=labellen) :: index_get
       integer, intent(in) :: ivar
-      logical, optional, intent(in) :: particle
+      logical, optional, intent(in) :: particle, pointmass
 !
       type (element), pointer, save :: current => null()
       integer, save :: max_reported = -1
@@ -1607,6 +1625,7 @@ module HDF5_IO
       index_get = ''
       current => last
       if (loptest (particle)) current => last_particle
+      if (loptest (pointmass)) current => last_pointmass
       do while (associated (current))
         if (current%component == ivar) then
           index_get = current%label(2:len(current%label))
@@ -1628,7 +1647,7 @@ module HDF5_IO
 !
     endfunction index_get
 !***********************************************************************
-    subroutine index_register(varname,ivar,particle)
+    subroutine index_register(varname,ivar,particle,pointmass)
 !
 ! 17-Oct-2018/PABourdin: coded
 !
@@ -1638,7 +1657,7 @@ module HDF5_IO
 !
       type (element), pointer, save :: new => null()
 !
-      if (.not. loptest (particle)) then
+      if (.not. loptest (particle) .and. .not. loptest (pointmass)) then
         ! ignore variables that are not written
         if ((ivar < 1) .or. (ivar > mfarray)) return
       endif
@@ -1651,6 +1670,8 @@ module HDF5_IO
       nullify (new%previous)
       if (loptest (particle)) then
         if (associated (last_particle)) new%previous => last_particle
+      elseif (loptest (pointmass)) then
+        if (associated (last_pointmass)) new%previous => last_pointmass
       else
         if (associated (last)) new%previous => last
       endif
@@ -1658,6 +1679,8 @@ module HDF5_IO
       new%component = ivar
       if (loptest (particle)) then
         last_particle => new
+      elseif (loptest (pointmass)) then
+        last_pointmass => new
       else
         last => new
       endif
@@ -1676,6 +1699,8 @@ module HDF5_IO
         close(lun_output)
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
         close(lun_output)
+        open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro),status='replace')
+        close(lun_output)
       endif
 !
       do while (associated (last))
@@ -1688,6 +1713,13 @@ module HDF5_IO
       do while (associated (last_particle))
         current => last_particle
         last_particle => last%previous
+        deallocate (current)
+        nullify (current)
+      enddo
+!
+      do while (associated (last_pointmass))
+        current => last_pointmass
+        last_pointmass => last%previous
         deallocate (current)
         nullify (current)
       enddo

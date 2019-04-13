@@ -448,18 +448,37 @@ module HDF5_IO
 !
     endsubroutine particle_index_append
 !***********************************************************************
-    function index_get(ivar,particle)
+    subroutine pointmass_index_append(label,ilabel)
+!
+! 13-Apr-2019/PABourdin: copied from 'particle_index_append'
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: ilabel
+!
+      integer, parameter :: lun_output = 92
+!
+      if (lroot) then
+        open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro), POSITION='append')
+        write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
+        close(lun_output)
+      endif
+      call index_register (trim(label), ilabel, pointmass=.true.)
+!
+    endsubroutine pointmass_index_append
+!***********************************************************************
+    function index_get(ivar,particle,pointmass)
 !
 ! 13-Nov-2018/PABourdin: coded
 !
       character (len=labellen) :: index_get
       integer, intent(in) :: ivar
-      logical, optional, intent(in) :: particle
+      logical, optional, intent(in) :: particle, pointmass
 !
       call fatal_error ('index_get', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(ivar)
       call keep_compiler_quiet(particle)
-
+      call keep_compiler_quiet(pointmass)
+!
       index_get=' '
 !
     endfunction index_get
@@ -474,6 +493,8 @@ module HDF5_IO
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
         close(lun_output)
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
+        close(lun_output)
+        open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro),status='replace')
         close(lun_output)
       endif
 !
