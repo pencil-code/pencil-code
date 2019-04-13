@@ -1653,7 +1653,7 @@ module HDF5_IO
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
-      logical, optional, intent(in) :: particle
+      logical, optional, intent(in) :: particle, pointmass
 !
       type (element), pointer, save :: new => null()
 !
