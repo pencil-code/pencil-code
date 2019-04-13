@@ -462,7 +462,6 @@ module HDF5_IO
         write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
         close(lun_output)
       endif
-      call index_register (trim(label), ilabel, pointmass=.true.)
 !
     endsubroutine pointmass_index_append
 !***********************************************************************
