@@ -487,19 +487,11 @@ module Particles_temperature
 !  28-aug-14/jonas+nils: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname
-      logical :: lwr
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr = lwrite
-      if (lwr) call farray_index_append('iox', iox)
 !
 !  Reset everything in case of reset.
 !
