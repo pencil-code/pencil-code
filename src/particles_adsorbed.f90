@@ -83,8 +83,6 @@ module Particles_adsorbed
 !
 !  29-aug-14/jonas: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
-!
       integer :: i, stat,j
       character(len=10), dimension(40) :: reactants
 !
@@ -414,20 +412,12 @@ module Particles_adsorbed
 !  06-oct-14/jonas: adapted
 !
       use Diagnostics
-!     use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
-      logical :: lwr
       integer :: iname,i
       character(len=6) :: diagn_ads, number
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr = lwrite
-!     if (lwr) call farray_index_append('iads', iads)
 !
       if (lreset) then
         idiag_ads = 0
