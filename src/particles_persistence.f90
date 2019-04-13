@@ -46,8 +46,6 @@ contains
 !
 !  May-16/dhruba: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
-!
       if (lroot) call svn_id( &
           "$Id$")
 !
@@ -58,6 +56,11 @@ contains
      izp0=mpvar+npaux+3
      ippersist=mpvar+npaux+4
      npaux=npaux+4
+!
+     call append_mpaux('ixp0',ixp0)
+     call append_mpaux('iyp0',iyp0)
+     call append_mpaux('izp0',izp0)
+     call append_mpaux('ippersist', ippersist)
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -207,28 +210,14 @@ contains
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General,   only: itoa
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
       integer :: k
-      logical :: lwr
       character (len=intlen) :: srad
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-         call farray_index_append('ixp0',ixp0)
-         call farray_index_append('iyp0',iyp0)
-         call farray_index_append('izp0',izp0)
-         call farray_index_append('ippersist', ippersist)
-      endif
 !
 !  Reset everything in case of reset
 !
