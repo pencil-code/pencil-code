@@ -278,45 +278,14 @@ contains
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General,   only: itoa
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname
       integer :: k
-      logical :: lwr
       character (len=intlen) :: srad
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-         call farray_index_append('idR11', idR11)
-         call farray_index_append('idR12', idR12)
-         call farray_index_append('idR13', idR13)
-         call farray_index_append('idV11', idV11)
-         call farray_index_append('idV12', idV12)
-         call farray_index_append('idV13', idV13)
-!
-         call farray_index_append('idR21', idR21)
-         call farray_index_append('idR22', idR22)
-         call farray_index_append('idR23', idR23)
-         call farray_index_append('idV21', idV21)
-         call farray_index_append('idV22', idV22)
-         call farray_index_append('idV23', idV23)
-!
-         call farray_index_append('idR31', idR31)
-         call farray_index_append('idR32', idR32)
-         call farray_index_append('idR33', idR33)
-         call farray_index_append('idV31', idV31)
-         call farray_index_append('idV32', idV32)
-         call farray_index_append('idV33', idV33)
-         call farray_index_append('iVolp', iVolp)
-      endif
 !
 !  Reset everything in case of reset.
 !
