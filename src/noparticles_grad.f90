@@ -163,29 +163,11 @@ module Particles_grad
 !  22-aug-05/anders: coded
 !
       use Diagnostics, only: parse_name
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
-!
-      logical :: lwr
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) then 
-        call farray_index_append('isigmap11', isigmap11)
-        call farray_index_append('isigmap12', isigmap12)
-        call farray_index_append('isigmap13', isigmap13)
-        call farray_index_append('isigmap21', isigmap21)
-        call farray_index_append('isigmap22', isigmap22)
-        call farray_index_append('isigmap23', isigmap23)
-        call farray_index_append('isigmap31', isigmap31)
-        call farray_index_append('isigmap32', isigmap32)
-        call farray_index_append('isigmap33', isigmap33)
-      endif
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_grad
 !***********************************************************************

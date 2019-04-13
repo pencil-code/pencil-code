@@ -179,25 +179,11 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: dummy
 !
-      use FArrayManager, only: farray_index_append
-!
       logical :: lreset
       logical, optional :: lwrite
 !
-      logical :: lwr
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write information to index.pro
-!
-      if (lwr) then
-        call farray_index_append('igpotselfx',0)
-        call farray_index_append('igpotselfy',0)
-        call farray_index_append('igpotselfz',0)
-      endif
-!
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_selfgrav
 !***********************************************************************
