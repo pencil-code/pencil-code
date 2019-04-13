@@ -177,19 +177,11 @@ module Particles_mass
 ! 04-jul-17/ccyang: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
 !
-      logical :: lwr
       integer :: iname
-!
-! Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr = lwrite
-      if (lwr) call farray_index_append('imp', imp)
 !
 ! Reset diagnostic variables if requested.
 !
