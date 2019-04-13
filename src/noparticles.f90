@@ -316,28 +316,10 @@ module Particles
 !
 !  22-aug-05/anders: dummy
 !
-      use FArrayManager, only: farray_index_append
-!
-      logical :: lreset, lwr
       logical, optional :: lwrite
 !
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-
-      if (lwr) then
-        call farray_index_append('ixp',0)
-        call farray_index_append('iyp',0)
-        call farray_index_append('izp',0)
-        call farray_index_append('ivpx',0)
-        call farray_index_append('ivpy',0)
-        call farray_index_append('ivpz',0)
-        call farray_index_append('inp',0)
-        call farray_index_append('irho',0)
-      endif
-!
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles
 !***********************************************************************
