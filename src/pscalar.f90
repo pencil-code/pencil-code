@@ -453,10 +453,6 @@ module Pscalar
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamey, inamex
-      logical :: lwr
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
@@ -516,13 +512,6 @@ module Pscalar
 !
       if (lwrite_slices) then 
         where(cnamev=='cc'.or.cnamev=='lncc') cformv='DEFINED'
-      endif
-!
-!  Write column where which passive scalar variable is stored.
-!
-      if (lwr) then
-        call farray_index_append('ilncc',ilncc)
-        call farray_index_append('icc',0)
       endif
 !
     endsubroutine rprint_pscalar

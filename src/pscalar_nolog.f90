@@ -118,7 +118,6 @@ module Pscalar
       lpscalar_nolog = .true.
 !
       call farray_register_pde('cc', icc, vector=npscalar)
-      ilncc = 0                 ! needed for idl
 !
 !  Identify version number.
 !
@@ -801,9 +800,8 @@ module Pscalar
 !
       character(len=80) :: fmt
       integer :: iname, inamez, inamey, inamex, inamexy, inamexz
-      logical :: lwr
-!
       integer :: i
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -916,17 +914,8 @@ module Pscalar
         where(cnamev=='cc'.or.cnamev=='lncc') cformv='DEFINED'
       endif
 !
-!  Write column where which passive scalar variable is stored.
-!
       if (lwr) then
-        call farray_index_append('ilncc', 0)
-        if (npscalar > 1) then
-          write(fmt,'(I2)') npscalar - 1
-          fmt = '(1X, A, ' // trim(fmt) // '(I2, A2), I2, A)'
-          write(3,fmt) 'icc = [', (i, ', ', i = icc, icc+npscalar-2), icc+npscalar-1, ']'
-        else
-          call farray_index_append('icc', icc)
-        endif
+        call farray_index_append('npscalar', npscalar)
       endif
 !
     endsubroutine rprint_pscalar
