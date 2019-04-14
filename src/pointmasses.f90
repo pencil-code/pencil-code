@@ -2068,27 +2068,16 @@ module PointMasses
       use HDF5_IO, only: pointmass_index_append
       use General, only: itoa
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,ks,j
       character :: str
       character (len=intlen) :: sks
-!
-!  Write information to index.pro
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call pointmass_index_append('ixq',ixq)
-        call pointmass_index_append('iyq',iyq)
-        call pointmass_index_append('izq',izq)
-        call pointmass_index_append('ivxq',ivxq)
-        call pointmass_index_append('ivyq',ivyq)
-        call pointmass_index_append('ivzq',ivzq)
-        call pointmass_index_append('imass',imass)
-      endif
 !
 !  Reset everything in case of reset
 !
