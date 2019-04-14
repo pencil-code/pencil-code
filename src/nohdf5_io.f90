@@ -465,18 +465,19 @@ module HDF5_IO
 !
     endsubroutine pointmass_index_append
 !***********************************************************************
-    function index_get(ivar,particle,pointmass)
+    function index_get(ivar,particle,pointmass,quiet)
 !
 ! 13-Nov-2018/PABourdin: coded
 !
       character (len=labellen) :: index_get
       integer, intent(in) :: ivar
-      logical, optional, intent(in) :: particle, pointmass
+      logical, optional, intent(in) :: particle, pointmass, quiet
 !
       call fatal_error ('index_get', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(ivar)
       call keep_compiler_quiet(particle)
       call keep_compiler_quiet(pointmass)
+      call keep_compiler_quiet(quiet)
 !
       index_get=' '
 !

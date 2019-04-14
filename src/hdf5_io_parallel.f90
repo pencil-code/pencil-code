@@ -1564,12 +1564,20 @@ module HDF5_IO
         if (lroot) write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
         ! expand array: iuud => iuud#=(#-1)*vector+ivar
         do pos=1, array
+          if ('i'//index_get ((pos-1)*vector+ivar, quiet=.true.) == trim(varname)//trim(itoa(pos))) then
+            write (13,*) varname, (pos-1)*vector+ivar
+            cycle
+          endif
           if (lroot) write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa((pos-1)*vector+ivar))
           call index_register (trim(varname)//trim(itoa(pos)), (pos-1)*vector+ivar)
         enddo
       else
-        if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar))
-        call index_register (trim(varname), ivar)
+        if ('i'//index_get (ivar, quiet=.true.) /= varname) then
+          if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar))
+          call index_register (trim(varname), ivar)
+        else
+          write (13,*) varname, ivar
+        endif
       endif
       if (lroot) close(3)
 !
@@ -1584,6 +1592,10 @@ module HDF5_IO
 !
       integer, parameter :: lun_output = 92
 !
+      if ('i'//index_get (ilabel, particle=.true., quiet=.true.) == label) then
+        write (13,*) label, ilabel
+        return
+      endif
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
         write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
@@ -1602,6 +1614,10 @@ module HDF5_IO
 !
       integer, parameter :: lun_output = 92
 !
+      if ('i'//index_get (ilabel, pointmass=.true., quiet=.true.) == label) then
+        write (13,*) label, ilabel
+        return
+      endif
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro), POSITION='append')
         write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
@@ -1611,13 +1627,13 @@ module HDF5_IO
 !
     endsubroutine pointmass_index_append
 !***********************************************************************
-    function index_get(ivar,particle,pointmass)
+    function index_get(ivar,particle,pointmass,quiet)
 !
 ! 17-Oct-2018/PABourdin: coded
 !
       character (len=labellen) :: index_get
       integer, intent(in) :: ivar
-      logical, optional, intent(in) :: particle, pointmass
+      logical, optional, intent(in) :: particle, pointmass, quiet
 !
       type (element), pointer, save :: current => null()
       integer, save :: max_reported = -1
@@ -1634,7 +1650,7 @@ module HDF5_IO
         current => current%previous
       enddo
 !
-      if (lroot .and. (index_get == '') .and. (max_reported < ivar)) then
+      if (lroot .and. .not. loptest (quiet) .and. (index_get == '') .and. (max_reported < ivar)) then
         call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found!')
         if (max_reported == -1) then
           call warning ('index_get', &
