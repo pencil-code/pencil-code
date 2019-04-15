@@ -2065,30 +2065,19 @@ module PointMasses
 !  17-nov-05/anders+wlad: adapted
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
+      use HDF5_IO, only: pointmass_index_append
       use General, only: itoa
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,ks,j
       character :: str
       character (len=intlen) :: sks
-!
-!  Write information to index.pro
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call farray_index_append('ixq',ixq)
-        call farray_index_append('iyq',iyq)
-        call farray_index_append('izq',izq)
-        call farray_index_append('ivxq',ivxq)
-        call farray_index_append('ivyq',ivyq)
-        call farray_index_append('ivzq',ivzq)
-        call farray_index_append('imass',imass)
-      endif
 !
 !  Reset everything in case of reset
 !
@@ -2120,8 +2109,8 @@ module PointMasses
 !  Run through parse list again
 !
           if (lwr) then
-            call farray_index_append('i_'//trim(str)//'q'//trim(sks),idiag_xxq(ks,j))
-            call farray_index_append('i_v'//trim(str)//'q'//trim(sks),idiag_vvq(ks,j))
+            call pointmass_index_append('i_'//trim(str)//'q'//trim(sks),idiag_xxq(ks,j))
+            call pointmass_index_append('i_v'//trim(str)//'q'//trim(sks),idiag_vvq(ks,j))
           endif
 !
         enddo
@@ -2142,12 +2131,12 @@ module PointMasses
         enddo
 !
         if (lwr) then
-          call farray_index_append('i_torqint_'//trim(sks),idiag_torqint(ks))
-          call farray_index_append('i_torqext_'//trim(sks),idiag_torqext(ks))
-          call farray_index_append('i_torqint_gas'//trim(sks),idiag_torqint(ks))
-          call farray_index_append('i_torqext_gas'//trim(sks),idiag_torqext(ks))
-          call farray_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
-          call farray_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
+          call pointmass_index_append('i_torqint_'//trim(sks),idiag_torqint(ks))
+          call pointmass_index_append('i_torqext_'//trim(sks),idiag_torqext(ks))
+          call pointmass_index_append('i_torqint_gas'//trim(sks),idiag_torqint(ks))
+          call pointmass_index_append('i_torqext_gas'//trim(sks),idiag_torqext(ks))
+          call pointmass_index_append('i_torqint_par'//trim(sks),idiag_torqint(ks))
+          call pointmass_index_append('i_torqext_par'//trim(sks),idiag_torqext(ks))
         endif
       enddo
 !
@@ -2158,7 +2147,7 @@ module PointMasses
       enddo
 !
        if (lwr) then
-         call farray_index_append('i_totenergy',idiag_totenergy)
+         call pointmass_index_append('i_totenergy',idiag_totenergy)
        endif
 !
     endsubroutine rprint_pointmasses

@@ -34,10 +34,37 @@ objout = not arg_present(array)
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
   varfile=varfile_+strcompress(string(ivar),/remove_all)
+  if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
 endif else begin
-  default,varfile_,'pvar.dat'
+  default_varfile = 'pvar.dat'
+  if (file_test (datadir+'/allprocs/pvar.h5')) then default_varfile = 'pvar.h5'
+  default, varfile_, default_varfile
   varfile=varfile_
 endelse
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "pc_read_pvar: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    quantities = h5_content('part')
+    num_quantities = n_elements (quantities)
+    distribution = pc_read ('proc/distribution')
+    object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz, distribution:distribution, npar_found:total(distribution, /preserve_type) }
+    if (proc ge 0) then begin
+      start = 0
+      if (proc ge 1) then start = total (object.distribution[0:proc-1])
+      count = object.distribution[proc]
+    end
+    for pos = 0, num_quantities-1 do begin
+      quantity = quantities[pos]
+      if (strlowcase (quantity) eq 'id') then quantity = 'ipar'
+      object = create_struct (object, quantity, pc_read ('part/'+quantities[pos], start=start, count=count))
+    end
+    h5_close_file
+    return
+  end
 ;
 ;  Set rmv if solid_objects
 ;
@@ -65,6 +92,7 @@ endelse
 ;  Derived dimensions.
 ;
 mpvar=pdim.mpvar
+mpaux=pdim.mpaux
 if (proc ne -1) then begin
   filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile
 ;
@@ -109,15 +137,15 @@ endif else begin
 endelse
 xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.mz)*one
 ;
-;  Read variable indices from index.pro
+;  Read particle variable indices from particle_index.pro
 ;
 datadir = pc_get_datadir(datadir)
-openr, lun, datadir+'/index.pro', /get_lun
+openr, lun, datadir+'/particle_index.pro', /get_lun
 line=''
 while (not eof(lun)) do begin
   readf, lun, line, format='(a)'
   if (execute(line) ne 1) then $
-      message, 'There was a problem with index.pro', /INF
+      message, 'There was a problem with particle_index.pro', /INF
 endwhile
 close, lun
 free_lun, lun
@@ -130,7 +158,7 @@ varcontent=replicate( $
     idlvar     : 'dummy', $
     idlinit    : 'fltarr(npar)*one', $
     skip       : 0}, $
-    mpvar+1)
+    mpvar+mpaux+1)
 ;
 INIT_SCALAR  = 'fltarr(npar)*one'
 INIT_3VECTOR = 'fltarr(npar,3)*one'
@@ -287,7 +315,7 @@ variables = (varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
 ;
 ;  Define arrays from contents of varcontent
 ;
-totalvars = mpvar
+totalvars = mpvar+mpaux
 for iv=0L,totalvars-1L do begin
   if (varcontent[iv].variable eq 'UNKNOWN') then $
       message, 'Unknown variable at position ' + str(iv) $
@@ -348,9 +376,9 @@ if (proc ne -1) then begin
 ;  Read local processor data.
 ;
     if keyword_set(single) then $
-      array=fltarr(npar,mpvar) $
+      array=fltarr(npar,mpvar+mpaux) $
     else $
-      array=fltarr(npar,mpvar)*one
+      array=fltarr(npar,mpvar+mpaux)*one
 
     readu, file, array
 ;
@@ -420,7 +448,7 @@ endif else begin
 ;
 ;  Read local processor data.
 ;
-      array_loc=fltarr(npar_loc,mpvar)*one
+      array_loc=fltarr(npar_loc,mpvar+mpaux)*one
       readu, file, array_loc
 ;
 ;  Put local processor data into proper place in global data array
@@ -487,14 +515,14 @@ endif else begin
           ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
           if (n_elements(array_sink) eq 0) then $
               array_sink=fltarr(npar_max,totalvars)*one
-          array_sink_loc=fltarr(mpvar)*one
+          array_sink_loc=fltarr(mpvar+mpaux)*one
         endif
 ;
 ;  Read positions, velocities, etc.
 ;
         get_lun, file2 & close, file2
         openr, file2, filename2, /f77
-        array_loc=fltarr(mpvar)*one
+        array_loc=fltarr(mpvar+mpaux)*one
         k=0L
         ipar_rmv_loc_dummy=0L
         for k=0,nrmv-1 do begin
@@ -609,7 +637,7 @@ endif
 ;  Put data into sensibly named arrays.
 ;
 if objout then begin
-  for iv=0L,mpvar-1L do begin
+  for iv=0L,mpvar+mpaux-1L do begin
     res=varcontent[iv].idlvar+'=array[*,iv:iv+varcontent[iv].skip]'
     if (execute(res,0) ne 1) then $
       message, 'Error putting data into '+varcontent[iv].idlvar+' array'
@@ -773,7 +801,7 @@ else begin
 ;
 ;  Turning skips into variable lengths
 ;
-  for iv=0,mpvar-1L do begin
+  for iv=0,mpvar+mpaux-1L do begin
     if varcontent[iv].idlvar ne 'dummy' then begin
       iskip = varcontent[iv].skip
       varcontent[iv].skip = iskip+1

@@ -18,6 +18,7 @@ module HDF5_IO
     module procedure input_hdf5_0D
     module procedure input_hdf5_1D
     module procedure input_hdf5_part_2D
+    module procedure input_hdf5_profile_1D
     module procedure input_hdf5_3D
     module procedure input_hdf5_4D
   endinterface
@@ -29,6 +30,10 @@ module HDF5_IO
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
     module procedure output_hdf5_part_2D
+    module procedure output_hdf5_profile_1D
+    module procedure output_local_hdf5_2D
+    module procedure output_hdf5_slice_2D
+    module procedure output_local_hdf5_3D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
   endinterface
@@ -53,15 +58,17 @@ module HDF5_IO
 !
     endsubroutine finalize_hdf5
 !***********************************************************************
-    subroutine file_open_hdf5(file, truncate, global, read_only)
+    subroutine file_open_hdf5(file, truncate, global, read_only, write)
 !
       character (len=*), intent(in) :: file
       logical, optional, intent(in) :: truncate
       logical, optional, intent(in) :: global
       logical, optional, intent(in) :: read_only
+      logical, optional, intent(in) :: write
 !
       call keep_compiler_quiet(file)
       call keep_compiler_quiet(.true.,truncate, global, read_only)
+      call keep_compiler_quiet(.true.,write)
 
       call fatal_error ('file_open_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
 !
@@ -157,6 +164,21 @@ module HDF5_IO
       nv = -1
 !
     endsubroutine input_hdf5_part_2D
+!***********************************************************************
+    subroutine input_hdf5_profile_1D(name, data, ldim, gdim, np1, np2)
+!
+      character (len=*), intent(in) :: name
+      real, dimension (:) :: data
+      integer, intent(in) :: ldim, gdim, np1, np2
+!
+      call fatal_error ('input_hdf5_profile_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(ldim)
+      call keep_compiler_quiet(gdim)
+      call keep_compiler_quiet(np1)
+      call keep_compiler_quiet(np2)
+!
+    endsubroutine input_hdf5_profile_1D
 !***********************************************************************
     subroutine input_hdf5_3D(name, data)
 !
@@ -256,6 +278,75 @@ module HDF5_IO
       call keep_compiler_quiet(nv)
 !
     endsubroutine output_hdf5_part_2D
+!***********************************************************************
+    subroutine output_hdf5_profile_1D(name, data, ldim, gdim, ip, np1, np2, ng, lhas_data)
+!
+      character (len=*), intent(in) :: name
+      real, dimension (:), intent(in) :: data
+      integer, intent(in) :: ldim, gdim, ip, np1, np2, ng
+      logical, intent(in) :: lhas_data
+!
+      call fatal_error ('output_hdf5_profile_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(ldim)
+      call keep_compiler_quiet(gdim)
+      call keep_compiler_quiet(ip)
+      call keep_compiler_quiet(np1)
+      call keep_compiler_quiet(np2)
+      call keep_compiler_quiet(ng)
+      call keep_compiler_quiet(lhas_data)
+!
+    endsubroutine output_hdf5_profile_1D
+!***********************************************************************
+    subroutine output_local_hdf5_2D(name, data, dim1, dim2)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: dim1, dim2
+      real, dimension (dim1,dim2), intent(in) :: data
+!
+      call fatal_error ('output_local_hdf5_2D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(dim1)
+      call keep_compiler_quiet(dim2)
+!
+    endsubroutine output_local_hdf5_2D
+!***********************************************************************
+    subroutine output_hdf5_slice_2D(name, data, ldim1, ldim2, gdim1, gdim2, ip1, ip2, lhas_data)
+!
+      character (len=*), intent(in) :: name
+      real, dimension (:,:), pointer :: data
+      integer, intent(in) :: ldim1, ldim2, gdim1, gdim2, ip1, ip2
+      logical, intent(in) :: lhas_data
+!
+      call fatal_error ('output_hdf5_slice_2D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(ldim1)
+      call keep_compiler_quiet(ldim2)
+      call keep_compiler_quiet(gdim1)
+      call keep_compiler_quiet(gdim2)
+      call keep_compiler_quiet(ip1)
+      call keep_compiler_quiet(ip2)
+      call keep_compiler_quiet(lhas_data)
+!
+    endsubroutine output_hdf5_slice_2D
+!***********************************************************************
+    subroutine output_local_hdf5_3D(name, data, dim1, dim2, dim3)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: dim1, dim2, dim3
+      real, dimension (dim1,dim2,dim3), intent(in) :: data
+!
+      call fatal_error ('output_local_hdf5_3D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(dim1)
+      call keep_compiler_quiet(dim2)
+      call keep_compiler_quiet(dim3)
+!
+    endsubroutine output_local_hdf5_3D
 !***********************************************************************
     subroutine output_hdf5_3D(name, data)
 !
@@ -357,18 +448,37 @@ module HDF5_IO
 !
     endsubroutine particle_index_append
 !***********************************************************************
-    function index_get(ivar,particle)
+    subroutine pointmass_index_append(label,ilabel)
+!
+! 13-Apr-2019/PABourdin: copied from 'particle_index_append'
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: ilabel
+!
+      integer, parameter :: lun_output = 92
+!
+      if (lroot) then
+        open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro), POSITION='append')
+        write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
+        close(lun_output)
+      endif
+!
+    endsubroutine pointmass_index_append
+!***********************************************************************
+    function index_get(ivar,particle,pointmass,quiet)
 !
 ! 13-Nov-2018/PABourdin: coded
 !
       character (len=labellen) :: index_get
       integer, intent(in) :: ivar
-      logical, optional, intent(in) :: particle
+      logical, optional, intent(in) :: particle, pointmass, quiet
 !
       call fatal_error ('index_get', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(ivar)
       call keep_compiler_quiet(particle)
-
+      call keep_compiler_quiet(pointmass)
+      call keep_compiler_quiet(quiet)
+!
       index_get=' '
 !
     endfunction index_get
@@ -383,6 +493,8 @@ module HDF5_IO
         open(lun_output,file=trim(datadir)//'/'//trim(index_pro),status='replace')
         close(lun_output)
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro),status='replace')
+        close(lun_output)
+        open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro),status='replace')
         close(lun_output)
       endif
 !

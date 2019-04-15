@@ -890,23 +890,11 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Diagnostics, only: parse_name
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamex, inamez
-      logical :: lwr
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call farray_index_append('inp', inp)
-        call farray_index_append('irhop', irhop)
-      endif
 !
 !  Reset everything in case of reset
 !

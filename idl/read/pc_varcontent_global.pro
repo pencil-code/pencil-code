@@ -182,8 +182,11 @@ if (ics2 gt 0) then begin
 endif
 ;
 default, iglnTT, 0
-if (iglnTT gt 0) then begin
-  iglnTT=iglnTT-dim.mvar-dim.maux
+default, iglnTx, 0
+default, iglnTy, 0
+default, iglnTz, 0
+if ((iglnTT gt 0) or ((iglnTx gt 0) and (iglnTy gt 0) and (iglnTz gt 0))) then begin
+  iglnTT=max ([iglnTT,iglnTx])-dim.mvar-dim.maux
   varcontent[iglnTT].variable   = 'Gradient of logarithmic temperature'
   varcontent[iglnTT].idlvar     = 'glnTT'
   varcontent[iglnTT].idlinit    = INIT_3VECTOR
@@ -193,8 +196,11 @@ if (iglnTT gt 0) then begin
 endif
 ;
 default, igg, 0
-if (igg gt 0) then begin
-  igg=igg-dim.mvar-dim.maux
+default, iglobal_gx, 0
+default, iglobal_gy, 0
+default, iglobal_gz, 0
+if ((igg gt 0) or ((iglobal_gx gt 0) and (iglobal_gy gt 0) and (iglobal_gz gt 0))) then begin
+  igg=max ([igg,iglobal_gx])-dim.mvar-dim.maux
   varcontent[igg].variable   = 'Gravitational acceleration'
   varcontent[igg].idlvar     = 'gg'
   varcontent[igg].idlinit    = INIT_3VECTOR

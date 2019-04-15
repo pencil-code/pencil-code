@@ -32,8 +32,6 @@ module Particles_lyapunov
 !
 !  May-16/dhruba: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
-!
       if (lroot) call svn_id( &
           "$Id$")
 !

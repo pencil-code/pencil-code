@@ -5364,38 +5364,14 @@ print*,'interp_default=',interp_default,particle_mesh
 !  29-dec-04/anders: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General,   only: itoa
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
       integer :: k
-      logical :: lwr
       character (len=intlen) :: srad
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call farray_index_append('ixp', ixp)
-        call farray_index_append('iyp', iyp)
-        call farray_index_append('izp', izp)
-        call farray_index_append('ivpx', ivpx)
-        call farray_index_append('ivpy', ivpy)
-        call farray_index_append('ivpz', ivpz)
-        call farray_index_append('inp', inp)
-        call farray_index_append('irhop', irhop)
-        call farray_index_append('iupx', iupx)
-        call farray_index_append('iupy', iupy)
-        call farray_index_append('iupz', iupz)
-        call farray_index_append('ifgx', ifgx)
-        call farray_index_append('ifgy', ifgy)
-        call farray_index_append('ifgz', ifgz)
-      endif
 !
 !  Reset everything in case of reset.
 !

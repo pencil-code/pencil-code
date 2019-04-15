@@ -160,21 +160,11 @@ module Particles_number
 !
 !  24-nov-05/anders: dummy
 !
-      use FArrayManager, only: farray_index_append
-!
       logical :: lreset
       logical, optional :: lwrite
 !
-      logical :: lwr
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) call farray_index_append('inpswarm', inpswarm)
-!
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_number
 !***********************************************************************

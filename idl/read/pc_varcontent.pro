@@ -39,7 +39,7 @@ if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quie
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
 if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
-; 
+;
 ;  Read the positions of variables in the f-array from the index file.
 ;
 indices_file = datadir+'/index.pro'
@@ -157,6 +157,14 @@ indices = [ $
   { name:'ieth', label:'Thermal energy', dims:1 }, $
   { name:'igpx', label:'Pressure gradient x', dims:1 }, $
   { name:'igpy', label:'Pressure gradient y', dims:1 } $
+  ; don't forget to add a comma above when extending
+]
+
+indices_vector = [ $
+  { name:'iuu', components:['iux','iuy','iuz'] }, $
+  { name:'iaa', components:['iax','iay','iaz'] }, $
+  { name:'ibb', components:['ibx','iby','ibz'] }, $
+  { name:'ijj', components:['ijx','ijy','ijz'] } $
   ; don't forget to add a comma above when extending
 ]
 
@@ -286,7 +294,7 @@ INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
 ;
 if (keyword_set(run2D)) then begin
   INIT_DATA_LOC = [ $
-    'reform(make_array (dim.nx eq 1 ? 1 : mxloc,dim.ny eq 1 ? 1 : myloc,dim.nz eq 1 ? 1 : mzloc,', $ 
+    'reform(make_array (dim.nx eq 1 ? 1 : mxloc,dim.ny eq 1 ? 1 : myloc,dim.nz eq 1 ? 1 : mzloc,', $
                    'type=type_idl))' ]
 endif else $
   INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
@@ -332,6 +340,8 @@ for tag = 1, num_tags do begin
     endelse
   endif else begin
     ; Regular f-array variables.
+    found = where(search eq indices_vector[*].name, num_found)
+    if (num_found ge 1) then search = indices_vector[found].components[0]
     matches = stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
   endelse
   line = max (where (matches[0,*] ne ''))
@@ -371,7 +381,7 @@ components = components[inds]
 totalvars = 0L
 for var=0,num_vars-1 do begin
   tag = selected[var]
-  totalvars += indices[tag].dims*components[var]  
+  totalvars += indices[tag].dims*components[var]
   if totalvars eq mvar+maux then begin
     selected = selected[0:var]
     executes = executes[0:var]
@@ -411,7 +421,6 @@ for var = 0, num_vars-1 do begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
       if (num_components gt 1) then idl_var += str (component)
-;stop,"AXEL"
       varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
       varcontent[pos[component-1]-1].idlvar = idl_var
       varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
@@ -428,20 +437,20 @@ endfor
 if (keyword_set(scalar)) then begin
   for i = 0L, totalvars-1L do begin
     if (varcontent[i].skip eq 2) then begin
-      varcontent[i+2].variable  = varcontent[i].variable + ' 3rd component' 
-      varcontent[i+1].variable  = varcontent[i].variable + ' 2nd component' 
-      varcontent[i  ].variable  = varcontent[i].variable + ' 1st component' 
-      varcontent[i+2].idlvar    = varcontent[i].idlvar + '3' 
-      varcontent[i+1].idlvar    = varcontent[i].idlvar + '2' 
-      varcontent[i  ].idlvar    = varcontent[i].idlvar + '1' 
-      varcontent[i+2].idlvarloc = varcontent[i].idlvarloc + '3' 
-      varcontent[i+1].idlvarloc = varcontent[i].idlvarloc + '2' 
-      varcontent[i  ].idlvarloc = varcontent[i].idlvarloc + '1' 
+      varcontent[i+2].variable  = varcontent[i].variable + ' 3rd component'
+      varcontent[i+1].variable  = varcontent[i].variable + ' 2nd component'
+      varcontent[i  ].variable  = varcontent[i].variable + ' 1st component'
+      varcontent[i+2].idlvar    = varcontent[i].idlvar + '3'
+      varcontent[i+1].idlvar    = varcontent[i].idlvar + '2'
+      varcontent[i  ].idlvar    = varcontent[i].idlvar + '1'
+      varcontent[i+2].idlvarloc = varcontent[i].idlvarloc + '3'
+      varcontent[i+1].idlvarloc = varcontent[i].idlvarloc + '2'
+      varcontent[i  ].idlvarloc = varcontent[i].idlvarloc + '1'
       varcontent[i:i+2].idlinit    = strjoin (INIT_DATA)
       varcontent[i:i+2].idlinitloc = strjoin (INIT_DATA_LOC)
       varcontent[i:i+2].skip       = 0
       i=i+2
-    endif   
+    endif
   endfor
 endif
 ;

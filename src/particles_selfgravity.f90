@@ -405,16 +405,11 @@ module Particles_selfgravity
 !  14-jun-06/anders: adapted
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname
-      logical :: lwr
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
       if (lreset) then
         idiag_gpotenp=0; idiag_potselfpm=0
@@ -425,14 +420,6 @@ module Particles_selfgravity
         call parse_name(iname,cname(iname),cform(iname),'potselfpm', &
             idiag_potselfpm)
       enddo
-!
-!  Write information to index.pro
-!
-      if (lwr) then
-        call farray_index_append('igpotselfx', igpotselfx)
-        call farray_index_append('igpotselfy', igpotselfy)
-        call farray_index_append('igpotselfz', igpotselfz)
-      endif
 !
     endsubroutine rprint_particles_selfgrav
 !***********************************************************************

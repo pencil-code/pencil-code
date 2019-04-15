@@ -529,14 +529,10 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -584,13 +580,6 @@ module Chiral
       if (lwrite_slices) then
         where(cnamev=='XX_chiral'.or.cnamev=='YY_chiral'.or.cnamev=='DQ_chiral') &
           cformv='DEFINED'
-      endif
-!
-!  write column where which chiral variable is stored
-!
-      if (lwr) then
-        call farray_index_append('iXX_chiral',iXX_chiral)
-        call farray_index_append('iYY_chiral',iYY_chiral)
       endif
 !
     endsubroutine rprint_chiral

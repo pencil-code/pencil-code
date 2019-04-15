@@ -121,42 +121,99 @@ COMPILE_OPT IDL2, HIDDEN
     if (keyword_set(reduced)) then $
         message, "pc_read_dim: /reduced and 'proc' cannot be set both."
     filename = datadir+'/proc'+str(proc)+'/'+dimfile
-  endif else begin
+  end else begin
     ; Read global dimensions.
     filename = datadir+'/'+dimfile
     if (keyword_set(reduced)) then filename = datadir+'/reduced/'+dimfile
-  endelse
+  end
+;
+  if (file_test (datadir+'/grid.h5')) then begin
+    ; HDF5 format is available
+    filename = datadir+'/grid.h5'
+    if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
+    mxgrid = h5_read ('settings/mx', file=filename)
+    mygrid = h5_read ('settings/my')
+    mzgrid = h5_read ('settings/mz')
+    nxgrid = h5_read ('settings/nx')
+    nygrid = h5_read ('settings/ny')
+    nzgrid = h5_read ('settings/nz')
+    mvar = h5_read ('settings/mvar')
+    maux = h5_read ('settings/maux')
+    mglobal = h5_read ('settings/mglobal')
+    nghostx = h5_read ('settings/nghost')
+    nghosty = nghostx
+    nghostz = nghostx
+    nprocx = h5_read ('settings/nprocx')
+    nprocy = h5_read ('settings/nprocy')
+    nprocz = h5_read ('settings/nprocz')
+    precision_new = h5_read ('settings/precision', /close)
+    pc_set_precision, precision=precision_new
+    if (size (proc, /type) ne 0) then begin
+      ipx = proc mod nprocx
+      ipy = (proc / nprocx) mod nprocy
+      ipz = proc / (nprocx * nprocy)
+      mx = nxgrid / nprocx + 2*nghostx
+      my = nygrid / nprocy + 2*nghosty
+      mz = nzgrid / nprocz + 2*nghostz
+    end else begin
+      ipx = -1
+      ipy = -1
+      ipz = -1
+      mx = mxgrid
+      my = mygrid
+      mz = mzgrid
+    end
+  end else begin
+    ; old file format
 ;
 ;  Check for existence and read the data.
 ;
-  if (not file_test(filename)) then begin
-    message, 'ERROR: cannot find file ' + filename
-  endif
-  if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
-;
-  openr, file, filename, /get_lun
-  if (execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1) then begin
-;  For backwards compatibility with dim.dat without mglobal.
-    print
-    print, 'Note: the Input conversion error is of no significance.'
-    print, 'Will now read without the mglobal parameter.'
-    print
-    close, file
-    openr, file, filename
-    readf, file, mx, my, mz, mvar, maux
-    mglobal = 0
-  endif
-  precision_new = ''
-  readf, file, precision_new
-  pc_set_precision, precision=precision_new
-  readf, file, nghostx, nghosty, nghostz
-  if (size(proc, /type) ne 0) then begin
-    readf, file, ipx, ipy, ipz
-  endif else begin
-    readf, file, nprocx, nprocy, nprocz
-  endelse
-  close,file
-  free_lun, file
+    if (not file_test(filename)) then message, 'ERROR: cannot find file ' + filename
+    if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
+    openr, file, filename, /get_lun
+    if (execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1) then begin
+      ; For backwards compatibility with dim.dat without mglobal.
+      print
+      print, 'Note: the Input conversion error is of no significance.'
+      print, 'Will now read without the mglobal parameter.'
+      print
+      close, file
+      openr, file, filename
+      readf, file, mx, my, mz, mvar, maux
+      mglobal = 0
+    end
+    precision_new = ''
+    readf, file, precision_new
+    pc_set_precision, precision=precision_new
+    readf, file, nghostx, nghosty, nghostz
+    if (size(proc, /type) ne 0) then begin
+      readf, file, ipx, ipy, ipz
+    end else begin
+      readf, file, nprocx, nprocy, nprocz
+    end
+    close,file
+    free_lun, file
+    ;
+    if (size(proc, /type) ne 0) then begin
+      pc_read_dim, obj=globdim, datadir=datadir, /quiet
+      nprocx = globdim.nprocx
+      nprocy = globdim.nprocy
+      nprocz = globdim.nprocz
+      nxgrid = globdim.nxgrid
+      nygrid = globdim.nygrid
+      nzgrid = globdim.nzgrid
+      mxgrid = globdim.mxgrid
+      mygrid = globdim.mygrid
+      mzgrid = globdim.mzgrid
+    end else begin
+      mxgrid = mx
+      mygrid = my
+      mzgrid = mz
+      nxgrid = mxgrid - (2 * nghostx)
+      nygrid = mygrid - (2 * nghosty)
+      nzgrid = mzgrid - (2 * nghostz)
+    end
+  end
 ;
 ;  Calculate any derived quantities
 ;
@@ -168,26 +225,6 @@ COMPILE_OPT IDL2, HIDDEN
   l1 = nghostx & l2 = mx-nghostx-1
   m1 = nghosty & m2 = my-nghosty-1
   n1 = nghostz & n2 = mz-nghostz-1
-;
-  if (size(proc, /type) ne 0) then begin
-    pc_read_dim, obj=globdim, datadir=datadir, /quiet
-    nprocx = globdim.nprocx
-    nprocy = globdim.nprocy
-    nprocz = globdim.nprocz
-    nxgrid = globdim.nxgrid
-    nygrid = globdim.nygrid
-    nzgrid = globdim.nzgrid
-    mxgrid = globdim.mxgrid
-    mygrid = globdim.mygrid
-    mzgrid = globdim.mzgrid
-  endif else begin
-    nxgrid = nx
-    nygrid = ny
-    nzgrid = nz
-    mxgrid = nxgrid + (2 * nghostx)
-    mygrid = nygrid + (2 * nghosty)
-    mzgrid = nzgrid + (2 * nghostz)
-  endelse
 ;
 ;  Build structure of all the variables.
 ;
@@ -218,11 +255,11 @@ COMPILE_OPT IDL2, HIDDEN
   if (keyword_set(print)) then begin
     if (size(proc, /type) ne 0) then begin
       print, 'For processor ',strtrim(proc, 2),' calculation domain:'
-    endif else if (keyword_set(reduced)) then begin
+    end else if (keyword_set(reduced)) then begin
       print, 'For REDUCED calculation domain:'
-    endif else begin
+    end else begin
       print, 'For GLOBAL calculation domain:'
-    endelse
+    end
 ;
     print, '            (mx,my,mz,mw) = (',mx,',',my,',',mz,',',mw,')'
     print, '    (mvar,maux,precision) = (',mvar,',',maux,',',precision,')'
@@ -232,6 +269,6 @@ COMPILE_OPT IDL2, HIDDEN
     print, '   (nxgrid,nygrid,nzgrid) = (',nxgrid,',',nygrid,',',nzgrid,')'
     print, '   (mxgrid,mygrid,mzgrid) = (',mxgrid,',',mygrid,',',mzgrid,')'
     print, '   (nprocx,nprocy,nprocz) = (',nprocx,',',nprocy,',',nprocz,')'
-  endif
+  end
 ;
 end

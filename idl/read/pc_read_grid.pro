@@ -50,14 +50,63 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ; Default data directory
 ;
-datadir = pc_get_datadir(datadir)
+  datadir = pc_get_datadir(datadir)
+;
+  if (file_test (datadir+'/grid.h5')) then begin
+    ; HDF5
+    t = 0.0d0
+    x = h5_read ('grid/x', file=datadir+'/grid.h5')
+    y = h5_read ('grid/y')
+    z = h5_read ('grid/z')
+    dx = h5_read ('grid/dx')
+    dy = h5_read ('grid/dy')
+    dz = h5_read ('grid/dz')
+    Lx = h5_read ('grid/Lx')
+    Ly = h5_read ('grid/Ly')
+    Lz = h5_read ('grid/Lz')
+    dx_1 = h5_read ('grid/dx_1')
+    dy_1 = h5_read ('grid/dy_1')
+    dz_1 = h5_read ('grid/dz_1')
+    dx_tilde = h5_read ('grid/dx_tilde')
+    dy_tilde = h5_read ('grid/dy_tilde')
+    dz_tilde = h5_read ('grid/dz_tilde', /close)
+    found_Lxyz=1
+    found_grid_der=1
+
+    if (size (dim, /type) eq 0) then pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
+    nx = dim.nx
+    ny = dim.ny
+    nz = dim.nz
+    nw = nx*ny*nz
+    mx = dim.mx
+    my = dim.my
+    mz = dim.mz
+    mw = mx*my*mz
+    l1 = dim.l1
+    l2 = dim.l2
+    m1 = dim.m1
+    m2 = dim.m2
+    n1 = dim.n1
+    n2 = dim.n2
+    nghostx = dim.nghostx
+    nghosty = dim.nghosty
+    nghostz = dim.nghostz
+
+    if (size (param, /type) eq 0) then pc_read_param, object=param, datadir=datadir, QUIET=QUIET
+    lequidist = (safe_get_tag (param, 'lequidist', default=[1,1,1]) ne 0)
+    lperi = (param.lperi ne 0)
+    ldegenerated = ([ nx, ny, nz ] eq 1)
+    coord_system = param.coord_system
+  end else begin
+    ; old file format
 ;
 ; Default filename
 ;
-if (not keyword_set(down)) then $
-  gridfile='grid.dat' $
-else $
+if (not keyword_set(down)) then begin
+  gridfile='grid.dat'
+end else begin
   gridfile='grid_down.dat'
+end
 ;
 allprocs_exists = file_test(datadir+'/allprocs/'+gridfile)
 default, swap_endian, 0
@@ -68,7 +117,7 @@ default, allprocs, -1
 if (allprocs eq -1) then begin
   allprocs=0
   if (allprocs_exists and (n_elements(proc) eq 0)) then allprocs=1
-endif
+end
 ;
 ; Check if allprocs is consistent with proc.
 ;
@@ -89,9 +138,9 @@ if (n_elements(param) eq 0) then $
 
 if ((allprocs gt 0) or allprocs_exists or keyword_set (reduced)) then begin
   ncpus=1
-endif else begin
+end else begin
   ncpus=dim.nprocx*dim.nprocy*dim.nprocz
-endelse
+end
 ;
 ; Set mx,my,mz in common block for derivative routines
 ;
@@ -264,14 +313,15 @@ missing:
   close,file
 endfor
 ;
+free_lun,file
+;
+  end
+;
 ;  Check for degenerated case.
 ;
 if (ldegenerated[0]) then dx_1[*] = 1.0/dx
 if (ldegenerated[1]) then dy_1[*] = 1.0/dy
 if (ldegenerated[2]) then dz_1[*] = 1.0/dz
-;
-;
-free_lun,file
 ;
 ;  Trim ghost zones of coordinate arrays.
 ;

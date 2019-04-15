@@ -3,7 +3,7 @@
 ;;
 ;;  Read particle dimension data.
 ;;
-pro pc_read_pdim, npar=npar, mpvar=mpvar, object=object, datadir=datadir, $
+pro pc_read_pdim, npar=npar, mpvar=mpvar, mpaux=mpaux, object=object, datadir=datadir, $
     print=print, quiet=quiet
 compile_opt IDL2,HIDDEN
 ;
@@ -16,6 +16,7 @@ datadir = pc_get_datadir(datadir)
 npar=0L
 mpvar=0L
 npar_stalk=0L
+mpaux=0L
 ;
 ; Check for existence and read the data.
 ;
@@ -24,7 +25,7 @@ if (file_test(filename)) then begin
   if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
   get_lun, file
   openr, file, filename
-  readf, file, npar, mpvar, npar_stalk
+  readf, file, npar, mpvar, npar_stalk, mpaux
   close, file
   free_lun, file
 endif else begin
@@ -33,12 +34,12 @@ endelse
 ;
 ; Build structure of all the variables.
 ;
-object = create_struct(name=objectname, ['npar','mpvar','npar_stalk'], npar, mpvar, npar_stalk)
+object = create_struct(name=objectname, ['npar','mpvar','npar_stalk','mpaux'], npar, mpvar, npar_stalk, mpaux)
 ;
 ; Print a summary if requested.
 ;
 if (keyword_set(print)) then begin
-  print, '     (npar,mpvar,npar_stalk) = (',npar,',',mpvar,',',npar_stalk,')'
+  print, '     (npar,mpvar,npar_stalk,mpaux) = (',npar,',',mpvar,',',npar_stalk,',',mpaux,')'
 endif
 ;
 end

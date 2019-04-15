@@ -43,6 +43,8 @@ module Particles_grad
 !
 !  17-sep-15/dhruba: coded
 !
+      use FArrayManager, only: farray_register_auxiliary
+!
       if (lroot) call svn_id( &
           "$Id$")
 !
@@ -60,11 +62,10 @@ module Particles_grad
 !
 ! This module always demands gradu stored as an auxiliary array
 !
+      igradu11=igradu+0; igradu12=igradu+1; igradu13=igradu+2
+      igradu21=igradu+3; igradu22=igradu+4; igradu23=igradu+5
+      igradu31=igradu+6; igradu32=igradu+7; igradu33=igradu+8
       call farray_register_auxiliary('gradu',igradu,vector=9)
-        igradu11=igradu+0; igradu12=igradu+1; igradu13=igradu+2
-        igradu21=igradu+3; igradu22=igradu+4; igradu23=igradu+5
-        igradu31=igradu+6; igradu32=igradu+7; igradu33=igradu+8
-      endif
 !
     endsubroutine register_particles_grad
 !***********************************************************************
@@ -297,29 +298,11 @@ module Particles_grad
 !  22-aug-05/anders: coded
 !
       use Diagnostics, only: parse_name
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname
-      logical :: lwr
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) then 
-        call farray_index_append('isigmap11', isigmap11)
-        call farray_index_append('isigmap12', isigmap12)
-        call farray_index_append('isigmap13', isigmap13)
-        call farray_index_append('isigmap21', isigmap21)
-        call farray_index_append('isigmap22', isigmap22)
-        call farray_index_append('isigmap23', isigmap23)
-        call farray_index_append('isigmap31', isigmap31)
-        call farray_index_append('isigmap32', isigmap32)
-        call farray_index_append('isigmap33', isigmap33)
-      endif
 !
 !  Reset everything in case of reset.
 !

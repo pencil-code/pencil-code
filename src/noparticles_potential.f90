@@ -135,19 +135,11 @@ module Particles_potential
 !
 !  22-aug-05/anders: dummy
 !
-      use FArrayManager, only: farray_index_append
-!
-      logical :: lreset, lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call farray_index_append('iap', iap)
-      endif
-!
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_particles_potential
 !***********************************************************************

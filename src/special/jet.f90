@@ -274,7 +274,6 @@ module Special
       use Mpicomm
       use Sub
       use Deriv, only: der_pencil
-      use Viscosity, only: getnu
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df

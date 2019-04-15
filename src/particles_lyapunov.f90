@@ -324,36 +324,14 @@ module Particles_lyapunov
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General,   only: itoa
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname,inamez,inamey,inamex,inamexy,inamexz,inamer,inamerz
       integer :: k
-      logical :: lwr
       character (len=intlen) :: srad
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        call farray_index_append('iup11',iup11)
-        call farray_index_append('iup12',iup12)
-        call farray_index_append('iup13',iup13)
-        call farray_index_append('iup21',iup21)
-        call farray_index_append('iup22',iup22)
-        call farray_index_append('iup23',iup23)
-        call farray_index_append('iup31',iup31)
-        call farray_index_append('iup32',iup32)
-        call farray_index_append('iup33',iup33)
-        call farray_index_append('ibpx', ibpx)
-        call farray_index_append('ibpy', ibpy)
-        call farray_index_append('ibpz', ibpz)
-      endif
 !
 !  Reset everything in case of reset.
 !

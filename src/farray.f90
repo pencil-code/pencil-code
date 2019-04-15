@@ -322,13 +322,15 @@ module FArrayManager
 !
 ! 14-Oct-2018/PAB: coded
 !
+      use General, only: itoa
+!
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
       integer, optional, intent(in) :: vector
       integer, optional, intent(in) :: array
 !
       character (len=len(varname)) :: component
-      integer :: l
+      integer :: pos, l
 !
       call index_append(trim(varname),ivar,vector,array)
       if (.not. present (array) .and. present (vector)) then
@@ -339,14 +341,14 @@ module FArrayManager
           ! double endings: iuu, iaa, etc.
           if (component(l:l) == component(l-1:l-1)) l = l - 1
         endif
-        if (vector >= 1) then
+        if (vector == 3) then
           call index_append(trim(component(1:l))//'x',ivar)
-        endif
-        if (vector >= 2) then
           call index_append(trim(component(1:l))//'y',ivar+1)
-        endif
-        if (vector >= 3) then
           call index_append(trim(component(1:l))//'z',ivar+2)
+        elseif (vector >= 2) then
+          do pos=1, vector
+            call index_append(trim(component(1:l))//trim(itoa(pos)),ivar+pos-1)
+          enddo
         endif
       endif
 !

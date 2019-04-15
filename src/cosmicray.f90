@@ -376,14 +376,10 @@ print*,"init_ecr: initecr = ", initecr
 !   6-jul-02/axel: coded
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -411,10 +407,6 @@ print*,"init_ecr: initecr = ", initecr
       if (lwrite_slices) then
         where(cnamev=='ecr') cformv='DEFINED'
       endif
-!
-!  write column where which cosmic ray variable is stored
-!
-      if (lwr) call farray_index_append('iecr',iecr)
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************

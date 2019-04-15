@@ -30,8 +30,6 @@ module Particles_tetrad
 !
 !  May-16/dhruba: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
-!
       if (lroot) call svn_id( &
           "$Id$")
 !

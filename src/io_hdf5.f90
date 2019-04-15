@@ -802,6 +802,8 @@ module Io
 !
 !  26-Oct-2018/PABourdin: coded
 !
+      use General, only: lower_case
+!
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, dimension(:), intent(in) :: value
@@ -813,7 +815,7 @@ module Io
 !
       value_int = 0
       where (value) value_int = 1
-      call output_hdf5 ('persist/'//label, value_int, size (value), same_size=.true.)
+      call output_hdf5 ('persist/'//lower_case (label), value_int, size (value), same_size=.true.)
 !
       write_persist_logical_1D = .false.
 !
@@ -843,6 +845,7 @@ module Io
 !  26-Oct-2018/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
+      use General, only: lower_case
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -851,7 +854,7 @@ module Io
       write_persist_int_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      call output_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
+      call output_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
       write_persist_int_1D = .false.
 !
@@ -880,6 +883,8 @@ module Io
 !
 !  26-Oct-2018/PABourdin: coded
 !
+      use General, only: lower_case
+!
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, dimension (:), intent(in) :: value
@@ -887,7 +892,7 @@ module Io
       write_persist_real_1D = .true.
       if (write_persist_id (label, id)) return
 !
-      call output_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
+      call output_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
       write_persist_real_1D = .false.
 !
@@ -925,6 +930,8 @@ module Io
 !
 !  27-Oct-2018/PABourdin: coded
 !
+      use General, only: lower_case
+!
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
       logical, intent(in), optional :: lerror_prone
@@ -935,7 +942,7 @@ module Io
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
       lexists = exists_in_hdf5('persist')
-      if (lexists) lexists = exists_in_hdf5('persist/'//trim (label))
+      if (lexists) lexists = exists_in_hdf5('persist/'//lower_case (label))
       if (lcatch_error .and. .not. lexists) id = -max_int
 !
       read_persist_id = .false.
@@ -965,12 +972,14 @@ module Io
 !
 !  27-Oct-2018/PABourdin: coded
 !
+      use General, only: lower_case
+!
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
       integer, dimension(size (value)) :: value_int
 !
-      call input_hdf5 ('persist/'//label, value_int, size (value), same_size=.true.)
+      call input_hdf5 ('persist/'//lower_case (label), value_int, size (value), same_size=.true.)
       value = .false.
       where (value_int > 0) value = .true.
 !
@@ -1000,10 +1009,12 @@ module Io
 !
 !  27-Oct-2018/PABourdin: coded
 !
+      use General, only: lower_case
+!
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
-      call input_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
+      call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
       read_persist_int_1D = .false.
 !
@@ -1031,10 +1042,12 @@ module Io
 !
 !  27-Oct-2018/PABourdin: coded
 !
+      use General, only: lower_case
+!
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
-      call input_hdf5 ('persist/'//label, value, size (value), same_size=.true.)
+      call input_hdf5 ('persist/'//lower_case (label), value, size (value), same_size=.true.)
 !
       read_persist_real_1D = .false.
 !
@@ -1063,6 +1076,7 @@ module Io
       do pos = 1, nname
         label = cname(pos)
         label = label(1:min(index(label,' '), index(label,'('))-1)
+        if (label == 'it') cycle
         call create_group_hdf5 (label)
         call output_hdf5 (trim(label)//'/'//iteration, data(pos))
         if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
@@ -1072,6 +1086,7 @@ module Io
         endif
       enddo
       call output_hdf5 ('last', it-1)
+      call output_hdf5 ('step', it1)
       call file_close_hdf5
 !
     endsubroutine output_timeseries

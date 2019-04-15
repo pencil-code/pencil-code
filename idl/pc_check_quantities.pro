@@ -313,7 +313,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		log_Temp:'Temp', $
 		A:'aa', $
 		A_contour:'A', $
-		B:'A', $
+		B:{ B_alternatives:['A', 'bb'] }, $
 		j:'A', $
 		j_abs:'j', $
 		j_x:'j', $

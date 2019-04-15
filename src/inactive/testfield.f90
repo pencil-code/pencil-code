@@ -104,6 +104,7 @@ module Testfield
 !
       ntestfield=3*njtest
       call farray_register_pde('aatest',iaatest,vector=ntestfield)
+      call farray_index_append('ntestfield',ntestfield)
 !
 !  Identify version number.
 !
@@ -777,14 +778,10 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,inamexz
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -902,13 +899,6 @@ module Testfield
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23exz',idiag_alp23exz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33exz',idiag_alp33exz)
       enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) then
-        call farray_index_append('iaatest',iaatest)
-        call farray_index_append('ntestfield',ntestfield)
-      endif
 !
     endsubroutine rprint_testfield
 

@@ -2,7 +2,7 @@
 ;;  $Id$
 ;;
 ;;  Sixth derivative d^6 / dx^6
-;;  - 6th-order (7-point stencil)
+;;  - 2nd-order (7-point stencil)
 ;;  - with ghost cells
 ;;
 function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ignoredx

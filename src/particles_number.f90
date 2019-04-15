@@ -445,19 +445,11 @@ module Particles_number
 !  24-aug-05/anders: adapted
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname
-      logical :: lwr
-!
-!  Write information to index.pro.
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) call farray_index_append('inpswarm', inpswarm)
 !
 !  Reset everything in case of reset.
 !

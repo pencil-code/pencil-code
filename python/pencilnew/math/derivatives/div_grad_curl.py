@@ -245,6 +245,69 @@ def del2(f, dx, dy, dz):
     return xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
 
 
+def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
+    """
+    Take the triple curl of a pencil code vector array f.
+
+    *x, y*:
+      Radial (x) and polar (y) coordinates, 1d arrays.
+
+    *run2D*:
+      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+      !Only for Cartesian grids at the moment!
+
+    *coordinate_system*:
+      Coordinate system under which to take the divergence.
+      Takes 'cartesian' and 'cylindrical'.
+    """
+
+    import numpy as np
+    from .der import xder, yder, zder, xder2, yder2, zder2, xder3, yder3, zder3
+
+    if (f.ndim != 4 or f.shape[0] != 3):
+        print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
+        raise ValueError
+
+    if coordinate_system == 'spherical':
+        print('ERROR: curl3 currently not implemented for spherical coordinates.')
+
+    curl3_value = np.empty(f.shape)
+
+    if coordinate_system == 'cartesian':
+        print('ERROR: curl3 currently not implemented for cartesian coordinates.')
+#        curl3_value[0] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
+#                              -yder2(f[0], dy) - zder2(f[0], dz)
+#        curl3_value[1] = yder(xder(f[0], dx) + zder(f[2], dz), dy) \
+#                              -xder2(f[1], dx) - zder2(f[1], dz)
+#        curl3_value[2] = zder(xder(f[0], dx) + yder(f[1], dy), dz) \
+#                              -xder2(f[2], dx) - yder2(f[2], dy)
+    if coordinate_system == 'cylindrical':
+        if x is None:
+            print('ERROR: need to specify x (radius) for cylindrical coordinates.')
+            raise ValueError
+        # Make sure x has compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        curl3_value[0] = 2*yder(zder(f[0], dz), dy)/x**2 - yder(zder(f[2], dz), dy)/x**2 \
+                         - xder2(yder(f[2], dy), dx)/x - yder3(f[2], dy)/x**3 \
+                         + yder2(zder(f[1], dz), dy)/x**2 - yder(zder2(f[2], dz), dy)/x \
+                         + zder3(f[1], dz) - zder(f[1], dz)/x**2 \
+                         + xder(zder(f[1], dz), dx)/x + xder2(zder(f[1], dz), dx)
+        curl3_value[1] = 2*yder(zder(f[1], dz), dy)/x**2 - yder2(zder(f[0], dz), dy)/x**2 \
+                         - zder3(f[0], dz) + xder(zder2(f[2], dz), dx) \
+                         - xder(zder(f[0], dz), dx)/x + zder(f[0], dz)/x**2 \
+                         - xder2(zder(f[0], dz), dx) + xder(zder(f[2], dz), dx)/x \
+                         - zder(f[2], dz)/x**2 + xder3(f[2], dx) \
+                         + xder(yder2(f[2], dy), dx)/x**2 - 2*yder2(f[2], dy)/x**3
+        curl3_value[2] = - xder(zder2(f[1], dz), dx) - zder2(f[1], dz)/x \
+                         + xder(f[1], dx) /x**2 - f[1]/x**3 \
+                         - xder3(f[1], dx) + xder2(yder(f[0], dy), dx)/x \
+                         - xder(yder(f[0], dy), dx)/x**2 + yder(f[0], dy)/x**3 \
+                         - yder2(f[1], dy)/x**3 - xder(yder2(f[1], dy), dx)/x**2 \
+                         + yder3(f[0], dy)/x**3 + yder(zder2(f[0], dz), dy)/x \
+                         -2*xder2(f[1], dx)/x
+    return curl3_value
+
+
 def del6(f, dx, dy, dz):
     """
     Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather

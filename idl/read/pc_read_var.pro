@@ -124,20 +124,6 @@ COMPILE_OPT IDL2,HIDDEN
   default, cubint, -.5
 ;
   if (arg_present(exit_status)) then exit_status=0
-  default, reduced, 0
-  if (keyword_set(reduced)) then allprocs=1
-  if not is_defined(allprocs) then begin
-;
-; derive allprocs from the setting in Makefile.local
-;
-    spawn, "grep '^ *[^\#].*io_collect' src/Makefile.local", grepres
-    if strpos(grepres,'xy') ge 0 then $
-      allprocs=2 $
-    else if grepres ne '' then $
-      allprocs=1 $
-    else $
-      allprocs=0
-  endif
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -146,10 +132,73 @@ COMPILE_OPT IDL2,HIDDEN
     return
   endif
 ;
+; Default data directory.
+;
+  datadir = pc_get_datadir(datadir)
+;
+; Name and path of varfile to read.
+;
+  if (keyword_set(ogrid)) then begin
+    if (n_elements(ivar) eq 1) then begin
+      default, varfile_, 'OGVAR'
+      varfile=varfile_+strcompress(string(ivar),/remove_all)
+      if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
+    endif else begin
+      default_varfile = 'ogvar.dat'
+      if (file_test (datadir+'/allprocs/ogvar.h5')) then default_varfile = 'ogvar.h5'
+      default, varfile_, default_varfile
+      varfile=varfile_
+      ivar=-1
+    endelse
+  endif else begin
+    if (n_elements(ivar) eq 1) then begin
+      default, varfile_, 'VAR'
+      varfile=varfile_+strcompress(string(ivar),/remove_all)
+      if (file_test (datadir+'/allprocs/'+varfile_[0]+'.h5')) then varfile += '.h5'
+    endif else begin
+      default_varfile = 'var.dat'
+      if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
+      default, varfile_, default_varfile
+      varfile=varfile_
+      ivar=-1
+    endelse
+  endelse
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    message, "pc_read_var: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (varcontent, /type) eq 0) then begin
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
+    end
+    quantities = varcontent[*].idlvar
+    num_quantities = n_elements (quantities)
+    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    object = { t:t, x:grid.x, y:grid.y, z:grid.z, dx:grid.dx, dy:grid.dy, dz:grid.dz }
+    if (h5_contains ('persist/shear_delta_y')) then object = create_struct (object, 'deltay', pc_read ('persist/shear_delta_y'))
+    for pos = 0, num_quantities-1 do begin
+      if (quantities[pos] eq 'dummy') then continue
+      object = create_struct (object, quantities[pos], pc_read (quantities[pos], trimall=trimall, processor=proc, dim=dim))
+    end
+    h5_close_file
+    return
+  end
+;
 ; Check if reduced keyword is set.
 ;
-if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
-    message, "pc_read_var: /reduced and 'proc' cannot be set both."
+  default, reduced, 0
+  if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
+      message, "pc_read_var: /reduced and 'proc' cannot be set both."
+;
+; Infer allprocs setting.
+;
+  if (keyword_set(reduced)) then allprocs = 1
+  if (not is_defined(allprocs)) then begin
+    allprocs = 0
+    if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
+    if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
+  endif
 ;
 ; Check if allprocs is set.
 ;
@@ -161,37 +210,11 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     if allprocs eq 1 then default, f77, 0
   default, f77, 1
 ;
-; Default data directory.
-;
-  datadir = pc_get_datadir(datadir)
-;
 ; Can only unshear coordinate frame if variables have been trimmed.
 ;
   if (keyword_set(unshear) and (not keyword_set(trimall))) then begin
     message, 'pc_read_var: /unshear only works with /trimall'
   endif
-;
-; Name and path of varfile to read.
-;
-  if (keyword_set(ogrid)) then begin
-    if (n_elements(ivar) eq 1) then begin
-      default, varfile_, 'OGVAR'
-      varfile=varfile_+strcompress(string(ivar),/remove_all)
-    endif else begin
-      default, varfile_, 'ogvar.dat'
-      varfile=varfile_
-      ivar=-1
-    endelse
-  endif else begin
-    if (n_elements(ivar) eq 1) then begin
-      default, varfile_, 'VAR'
-      varfile=varfile_+strcompress(string(ivar),/remove_all)
-    endif else begin
-      default, varfile_, 'var.dat'
-      varfile=varfile_
-      ivar=-1
-    endelse
-  endelse
 ;
 ; Downsampled snapshot?
 ;
