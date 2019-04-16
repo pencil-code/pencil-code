@@ -22,6 +22,9 @@ def power(*args, **kwargs):
 
     *datadir*:
       Directory where the data is stored.
+
+    *quiet*
+      Flag for switching off output.
     """
 
     power_tmp = Power()
@@ -41,18 +44,21 @@ class Power(object):
 
         self.t = []
 
-    def read(self, datadir='data'):
+    def read(self, datadir='data', quiet=False):
         """
         Read the power spectra.
 
         call signature:
 
-        power(datadir='data')
+        power(datadir='data',quiet=False)
 
         Keyword arguments:
 
         *datadir*:
           Directory where the data is stored.
+
+        *quiet*
+          Flag for switching off output.
         """
 
         import os
@@ -80,7 +86,8 @@ class Power(object):
             if file_name == 'powero.dat' or file_name == 'poweru.dat' or \
                 file_name == 'powerb.dat' or file_name == 'powera.dat':
                 continue
-            print(file_name)
+            if not quiet:
+                print(file_name)
 
             # Read the raw file.
             infile = open(os.path.join(datadir, file_name), 'r')
