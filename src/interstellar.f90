@@ -168,7 +168,7 @@ module Interstellar
   real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=2E7
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4, SN_TT_ratio=5e2
+  real :: SN_rho_ratio=1e4, SN_TT_ratio=3e2
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -342,7 +342,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=5.0, rad2_factor=0.8
+  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=5.0, rad_fraction=0.8
 !
 !  Requested SNe location (used for test SN)
 !
@@ -3053,8 +3053,7 @@ module Interstellar
 !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
                                  ilnrho_ss, irho_ss
-      use Mpicomm, only: mpiallreduce_max, mpibcast_real, &
-                         mpiallreduce_sum, mpibcast_int
+      use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum, mpireduce_max_int
       use General, only: keep_compiler_quiet
       use Grid, only: get_grid_mn
 !
@@ -3074,11 +3073,11 @@ module Interstellar
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
       real, dimension(nx,3) :: deltauu, deltafcr=0.
       real, dimension(3) :: dmpi2, dmpi2_tmp
-      real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
+      real, dimension(nx) ::  lnrho, yH, inlnTT, lnTT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
-      real :: maxlnTT, site_mass, maxTT=0., mmpi, mpi_tmp, etmp, ktmp
+      real :: maxlnTT, site_mass, maxTT, mmpi, mpi_tmp, etmp, ktmp
       real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
-      integer :: i
+      integer :: i, mpierr
 !
       SNR%indx%state=SNstate_exploding
 !
@@ -3091,7 +3090,7 @@ module Interstellar
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
       sol_mass_tot=solar_mass*N_mass
-      SNvol=4.*pi/3.*rad2_factor**1.5/sol_mass_tot
+      SNvol=4.*pi/3.*rad_fraction**3/sol_mass_tot
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
 !  improve match of mass to radius.
@@ -3144,7 +3143,13 @@ module Interstellar
           return
         endif
       endif
-      radius2 = rad2_factor*SNR%feat%radius**2
+      radius2 = (rad_fraction*SNR%feat%radius)**2
+!
+      if (present(ierr)) then
+        mpierr=ierr
+        call mpireduce_max_int(mpierr,ierr)
+        if (ierr==iEXPLOSION_TOO_RARIFIED.and..not.lSN_list) return
+      endif
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
@@ -3328,7 +3333,6 @@ module Interstellar
 !
         call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
             yH=yH,lnTT=lnTT,ee=ee_old)
-        TT=exp(lnTT)
 !
 !  Apply perturbations
 !
@@ -3341,36 +3345,41 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          where (dr2_SN > 2.5*radius2) lnTT=-10.0
-          maxTT=maxval(exp(lnTT))
-          maxlnTT=max(log(maxTT),maxlnTT)
-          mmpi=maxlnTT
-!Fred: check max value everywhere not just SN proc
-          call mpiallreduce_max(mmpi,maxlnTT)
-          maxTT=exp(maxlnTT)
-!
-!  Broadcast maxlnTT from remnant to all processors so all take the same path
-!  after these checks.
-!
-          if (maxTT>TT_SN_max.and.SNR%feat%radius<=1.05*rfactor_SN*SNR%feat%dr) then
-            if (present(ierr)) then
-              ierr=iEXPLOSION_TOO_HOT
+          if (SNR%feat%radius<=1.2*rfactor_SN*SNR%feat%dr) then
+            inlnTT=lnTT
+            where (dr2_SN > 2.5*radius2) inlnTT=-10.0
+            maxTT=maxval(exp(inlnTT))
+            if (maxTT>TT_SN_max) then
+              if (present(ierr)) then
+                ierr=iEXPLOSION_TOO_HOT
+              endif
+              return
             endif
-            return
-          elseif (maxTT>SN_TT_ratio*TT_SN_max) then
+          endif
+          maxTT=maxval(exp(lnTT))
+          if (maxTT>SN_TT_ratio*TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
             endif
             return
           endif
-!
+          maxlnTT=max(log(maxTT),maxlnTT)
         endif
       enddo
       enddo
 !
-      if (present(ierr)) then
-        call mpibcast_int(ierr,SNR%indx%iproc)
-        if (ierr==iEXPLOSION_TOO_HOT.and..not.lSN_list) return
+!  Broadcast maxlnTT from remnant to all processors so all take the same path
+!  after these checks.
+!
+      if (lSN_eth) then
+        mmpi=maxlnTT
+        call mpiallreduce_max(mmpi,maxlnTT)
+        maxTT=exp(maxlnTT)
+        if (present(ierr)) then
+          mpierr=ierr
+          call mpireduce_max_int(mpierr,ierr)
+          if (ierr==iEXPLOSION_TOO_HOT.and..not.lSN_list) return
+        endif
       endif
 !
 !  reject site if density distribution yields excessively high kinetic energy or 
@@ -3378,13 +3387,11 @@ module Interstellar
 !
       if (lSN_velocity)then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
-        if (ekintot_new-ekintot > ktmp) &
+        if (ekintot_new-ekintot < 0) then
+          cvelocity_SN = 0.
+        elseif (ekintot_new-ekintot > ktmp) then
           cvelocity_SN = cvelocity_SN * ktmp/(ekintot_new-ekintot)
-      endif
-!
-      if (present(ierr)) then
-        call mpibcast_int(ierr,SNR%indx%iproc)
-        if (ierr==iEXPLOSION_TOO_UNEVEN.and..not.lSN_list) return
+        endif
       endif
 !
       mpi_tmp=site_mass
@@ -3422,7 +3429,6 @@ module Interstellar
 !
         call eoscalc(irho_ss,rho_old,f(l1:l2,m,n,iss),&
             yH=yH,lnTT=lnTT,ee=ee_old)
-        TT=exp(lnTT)
 !
 !  Apply perturbations.
 !
@@ -3469,7 +3475,6 @@ module Interstellar
           call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),&
             yH=yH,lnTT=lnTT)
         endif
-        lnTT=log(TT)
         if (lentropy.and.ilnTT/=0) f(l1:l2,m,n,ilnTT)=lnTT
         if (iyH/=0) f(l1:l2,m,n,iyH)=yH
 !
@@ -3597,27 +3602,39 @@ module Interstellar
       integer, dimension(nx) :: mask, maxmask, minmask
       real, dimension(3) :: tmp,tmp2
 !
-!  Obtain distance to SN and sum all points inside SNR radius and
-!  divide by number of points.
+!  inner rad defined to determine mean density inside rad and smooth if desired
 !
-      radius2 = rad2_factor*remnant%feat%radius**2
+      radius2 = (rad_fraction*remnant%feat%radius)**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
+!
+!  Obtain distance to SN and sum all points inside SNR radius and
+!  divide by number of points.
+!
       do n=n1,n2
       do m=m1,m2
         if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
         call proximity_SN(remnant)
+!
+!  get rho from existing ambient density everywhere
+!
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
+!
+!  if inner remnant very dense uniform density inside inner rad
+!
         if (remnant%feat%radius<=1.05*rfactor_SN*remnant%feat%dr) then
           where (dr2_SN(1:nx) <= radius2) 
             rho(:)=remnant%feat%rhom
           endwhere
         endif
+!
+!  if radius scaled to total mass mask mass outside inner rad
+!
         if (lSN_scale_rad) then
           maxmask=0
           minmask=999999
@@ -3628,13 +3645,15 @@ module Interstellar
           rhomin=min(rhomin,minval(rho(1:nx)*minmask(1:nx)))
           rhomax=max(rhomax,maxval(rho(1:nx)*maxmask(1:nx)))
         endif
-!
-!  Necessary to compute ekintot in double precision here as very low rho
-!  can multiply very low u2 to make NaN. fred.
-!
         uu=f(l1:l2,m,n,iuu:iuu+2)
+!
+!  avoid NaN where uu less than tini
+!
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
         call dot2(uu,u2)
+!
+!  compute kinetic energy everywhere before applying the mask
+!
         tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask(1:nx)=1
         where (dr2_SN(1:nx) > radius2)
@@ -3651,7 +3670,7 @@ module Interstellar
 !
       call mpiallreduce_sum(tmp,tmp2,3)
       ekintot=0.5*tmp2(3)
-      if ((frac_kin/=0).and.(abs(tmp2(2)) < tini)) then
+      if ((lSN_velocity).and.(abs(tmp2(2)) < tini)) then
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
@@ -3695,22 +3714,31 @@ module Interstellar
       integer, dimension(nx) :: mask
       real, dimension(3) :: tmp,tmp2
 !
-!  Obtain distance to SN and sum all points inside SNR radius and
-!  divide by number of points.
+!  inner rad defined to determine mean density inside rad and smooth if desired
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = rad2_factor*remnant%feat%radius**2
+      radius2 = (rad_fraction*remnant%feat%radius)**2
       tmp=0.0
+!
+!  Obtain distance to SN and sum all points inside SNR radius and
+!  divide by number of points.
+!
       do n=n1,n2
       do m=m1,m2
         if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
         call proximity_SN(remnant)
+!
+!  get rho from existing ambient density everywhere
+!
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
         endif
+!
+!  if inner remnant very dense uniform density inside inner rad
+!
         if (remnant%feat%radius<=1.05*rfactor_SN*remnant%feat%dr) then
           where (dr2_SN(1:nx) <= radius2) 
             rho(:)=remnant%feat%rhom
@@ -3720,17 +3748,19 @@ module Interstellar
           call injectmass_SN(deltarho,width_mass,cmass_SN,remnant%feat%MM)
           rho=rho+deltarho
         endif
-!
-!  Necessary to compute ekintot in double precision here as very low rho
-!  can multiply very low u2 to make NaN. fred.
-!
         uu=f(l1:l2,m,n,iuu:iuu+2)
         if (lSN_velocity) then
           call injectvelocity_SN(deltauu,width_velocity,cvelocity_SN)
           uu=uu+deltauu
         endif
+!
+!  avoid NaN where uu less than tini
+!
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
         call dot2(uu,u2)
+!
+!  compute kinetic energy everywhere before applying the mask
+!
         tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask=1
         where (dr2_SN(1:nx) > radius2)
@@ -3748,7 +3778,7 @@ module Interstellar
       tmp2=tmp
       call mpiallreduce_sum(tmp,tmp2,3)
       ekintot=0.5*tmp2(3)
-      if ((frac_kin/=0).and.(abs(tmp2(2)) < tini)) then
+      if ((lSN_velocity).and.(abs(tmp2(2)) < tini)) then
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
@@ -3776,7 +3806,7 @@ module Interstellar
 !  Find lowest rho value in the surronding cavity.
 !
       rho_lowest=1E10
-      radius2 = rad2_factor*radius**2
+      radius2 = (rad_fraction*radius)**2
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(SNR)
