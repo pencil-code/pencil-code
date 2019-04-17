@@ -168,7 +168,7 @@ module Interstellar
   real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=2E7
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4, SN_TT_ratio=3e2
+  real :: SN_rho_ratio=1e4, SN_TT_ratio=5e2
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -3053,7 +3053,7 @@ module Interstellar
 !
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb ,&
                                  ilnrho_ss, irho_ss
-      use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum, mpireduce_max_int
+      use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
       use General, only: keep_compiler_quiet
       use Grid, only: get_grid_mn
 !
@@ -3077,7 +3077,7 @@ module Interstellar
       real, dimension(nx,3) :: uu, fcr=0.
       real :: maxlnTT, site_mass, maxTT, mmpi, mpi_tmp, etmp, ktmp
       real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
-      integer :: i, mpierr
+      integer :: i, mpiierr
 !
       SNR%indx%state=SNstate_exploding
 !
@@ -3140,16 +3140,16 @@ module Interstellar
         ambient_mass=SNvol*rhom*SNR%feat%radius**3
         if (ambient_mass/sol_mass_tot<eps_mass.and..not.lSN_list) then
           ierr=iEXPLOSION_TOO_RARIFIED
-          return
+          if (.not.lSN_list) return
         endif
       endif
       radius2 = (rad_fraction*SNR%feat%radius)**2
 !
-      if (present(ierr)) then
-        mpierr=ierr
-        call mpireduce_max_int(mpierr,ierr)
-        if (ierr==iEXPLOSION_TOO_RARIFIED.and..not.lSN_list) return
-      endif
+!      if (present(ierr)) then
+!        mpierr=ierr
+!        call mpireduce_max_int(mpierr,ierr)
+!        if (ierr==iEXPLOSION_TOO_RARIFIED.and..not.lSN_list) return
+!      endif
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
@@ -3352,16 +3352,16 @@ module Interstellar
             if (maxTT>TT_SN_max) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_HOT
+                if (.not.lSN_list) exit
               endif
-              return
             endif
           endif
           maxTT=maxval(exp(lnTT))
           if (maxTT>SN_TT_ratio*TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
+              if (.not.lSN_list) exit
             endif
-            return
           endif
           maxlnTT=max(log(maxTT),maxlnTT)
         endif
@@ -3376,8 +3376,8 @@ module Interstellar
         call mpiallreduce_max(mmpi,maxlnTT)
         maxTT=exp(maxlnTT)
         if (present(ierr)) then
-          mpierr=ierr
-          call mpireduce_max_int(mpierr,ierr)
+          mpiierr=ierr
+          call mpiallreduce_max(mpiierr,ierr)
           if (ierr==iEXPLOSION_TOO_HOT.and..not.lSN_list) return
         endif
       endif

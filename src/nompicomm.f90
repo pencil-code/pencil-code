@@ -162,6 +162,7 @@ module Mpicomm
   interface mpiallreduce_max
     module procedure mpiallreduce_max_scl_sgl
     module procedure mpiallreduce_max_scl_dbl
+    module procedure mpiallreduce_max_scl_int
     module procedure mpiallreduce_max_arr
   endinterface
 !
@@ -1315,6 +1316,20 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, present(comm)
 !
     endsubroutine mpiallreduce_max_scl_dbl
+!***********************************************************************
+    subroutine mpiallreduce_max_scl_int(imax_tmp,imax,comm)
+!
+!  Calculate total minimum and return to all processors.
+!
+      use General, only: ioptest
+
+      integer :: imax_tmp,imax
+      integer, optional :: comm
+!
+      imax=imax_tmp
+      if (ALWAYS_FALSE) print*, present(comm)
+!
+    endsubroutine mpiallreduce_max_scl_int
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
