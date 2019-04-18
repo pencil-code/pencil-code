@@ -236,14 +236,23 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   num = n_elements (var_list)
   for ov=0L, num-1L do begin
     tag = var_list[ov]
-    iv = where (varcontent[*].idlvar eq tag)
+    iv = (where (varcontent[*].idlvar eq tag))[0]
     if (iv ge 0) then begin
       if (varcontent[iv].skip eq 2) then begin
-        label = strmid (tag, 0, 1)
+        label = strmid (tag, 0, strlen (tag)-1)
         tags = create_struct (tags, tag, [num_read, num_read+1, num_read+2])
         tags = create_struct (tags, label+"x", num_read, label+"y", num_read+1, label+"z", num_read+2)
         indices = [ indices, iv, iv+1, iv+2 ]
         num_read += 3
+      end else if (varcontent[iv].skip gt 0) then begin
+        num_skip = varcontent[iv].skip + 1
+        tags = create_struct (tags, tag, num_read + indgen (num_skip))
+        for pos = 0, num_skip-1 do begin
+          label = tag + strtrim (pos + 1, 2)
+          tags = create_struct (tags, label, num_read+pos)
+        end
+        indices = [ indices, iv + indgen (num_skip) ]
+        num_read += num_skip
       end else begin
         tags = create_struct (tags, tag, num_read)
         indices = [ indices, iv ]
