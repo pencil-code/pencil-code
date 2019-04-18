@@ -1556,27 +1556,30 @@ module HDF5_IO
       if (ivar <= 0) return
 !
       ! ignore vectors because they get expanded in 'farray_index_append'
-      if (present (vector) .and. .not. present (array)) return
+      if (present (vector) .and. .not. present (array)) then
+        ! backwards-compatibile addition: iuud => ivar
+        if (lroot) then
+          open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
+          write(3,*) trim(varname)//'='//trim(itoa(ivar))
+          close(3)
+        endif
+        return
+      endif
 !
       if (lroot) open(3,file=trim(datadir)//'/'//trim(index_pro), POSITION='append')
       if (present (array)) then
-        ! backwards-compatibile expansion: iuud => indgen(vector)
-        if (lroot) write(3,*) trim(varname)//'=indgen('//trim(itoa(array))//')*'//trim(itoa(vector))//'+'//trim(itoa(ivar))
-        ! expand array: iuud => iuud#=(#-1)*vector+ivar
+        ! backwards-compatibile expansion: iuud => ivar ! + indgen(array)
+        if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar)) ! //'+indgen('//trim(itoa(array))//')'
+        ! expand array: iuud => iuud#=ivar+#-1
         do pos=1, array
-          if ('i'//index_get ((pos-1)*vector+ivar, quiet=.true.) == trim(varname)//trim(itoa(pos))) then
-            write (13,*) varname, (pos-1)*vector+ivar
-            cycle
-          endif
-          if (lroot) write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa((pos-1)*vector+ivar))
-          call index_register (trim(varname)//trim(itoa(pos)), (pos-1)*vector+ivar)
+          if ('i'//trim(index_get (ivar+pos-1, quiet=.true.)) == trim(varname)//trim(itoa(pos))) cycle
+          if (lroot) write(3,*) trim(varname)//trim(itoa(pos))//'='//trim(itoa(ivar+pos-1))
+          call index_register (trim(varname)//trim(itoa(pos)), ivar+pos-1)
         enddo
       else
-        if ('i'//index_get (ivar, quiet=.true.) /= varname) then
+        if ('i'//trim(index_get (ivar, quiet=.true.)) /= trim(varname)) then
           if (lroot) write(3,*) trim(varname)//'='//trim(itoa(ivar))
           call index_register (trim(varname), ivar)
-        else
-          write (13,*) varname, ivar
         endif
       endif
       if (lroot) close(3)
@@ -1592,10 +1595,7 @@ module HDF5_IO
 !
       integer, parameter :: lun_output = 92
 !
-      if ('i'//index_get (ilabel, particle=.true., quiet=.true.) == label) then
-        write (13,*) label, ilabel
-        return
-      endif
+      if ('i'//index_get (ilabel, particle=.true., quiet=.true.) == label) return
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(particle_index_pro), POSITION='append')
         write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
@@ -1614,10 +1614,7 @@ module HDF5_IO
 !
       integer, parameter :: lun_output = 92
 !
-      if ('i'//index_get (ilabel, pointmass=.true., quiet=.true.) == label) then
-        write (13,*) label, ilabel
-        return
-      endif
+      if ('i'//index_get (ilabel, pointmass=.true., quiet=.true.) == label) return
       if (lroot) then
         open(lun_output,file=trim(datadir)//'/'//trim(pointmass_index_pro), POSITION='append')
         write(lun_output,*) trim(label)//'='//trim(itoa(ilabel))
