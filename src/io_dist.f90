@@ -1709,7 +1709,7 @@ module Io
       num_rec = 0
       ioerr = 0
       time = 0.0
-      do while ((t > time) .and. (ioerr >= 0))
+      do while ((t > time) .and. (ioerr == 0))
         num_rec = num_rec + 1
         if (lwrite_avg1d_binary) then
           read(lun_input, iostat=ioerr) time
@@ -1721,7 +1721,7 @@ module Io
       enddo
       if (time == t) num_rec = num_rec - 1
 !
-      if ((time >= t) .and. (ioerr >= 0)) then
+      if ((time >= t) .and. (ioerr == 0)) then
         ! trim excess data at the end of the average file
         rewind(lun_input)
         if (num_rec > 0) then
