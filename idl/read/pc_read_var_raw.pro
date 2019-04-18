@@ -100,11 +100,13 @@ COMPILE_OPT IDL2,HIDDEN
       if (quantities[pos] eq 'dummy') then continue
       num_skip = varcontent[pos].skip
       if (num_skip eq 2) then begin
-        label = strmid (quantities[pos], 0, strlen (quantities[pos])-1)
+        length = strlen (quantities[pos])
+        if ((length eq 2) and (strmid (quantities[pos], 0, 1) eq strmid (quantities[pos], 1, 1))) then length--
+        label = strmid (quantities[pos], 0, length)
         object[*,*,*,pos] = pc_read ('data/'+label+'x', trimall=trimall, processor=proc, dim=dim)
         object[*,*,*,pos+1] = pc_read ('data/'+label+'y', trimall=trimall, processor=proc, dim=dim)
         object[*,*,*,pos+2] = pc_read ('data/'+label+'z', trimall=trimall, processor=proc, dim=dim)
-        tags = create_struct (tags, quantities[pos], pos+indgen(2), label+'x', pos, label+'y', pos+1, label+'z', pos+2)
+        tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1), label+'x', pos, label+'y', pos+1, label+'z', pos+2)
         pos += num_skip
       end else if (num_skip ge 1) then begin
         tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1))
