@@ -34,7 +34,7 @@ module Viscosity
   real :: nu=0.0, nu_cspeed=0.5
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
-  real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
+  real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0, nu_spitzer_max=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
   real :: C_smag=0.0, gamma_smag=0.0, nu_jump2=1.0
   real :: znu_shock=1.0, widthnu_shock=0.1, nu_jump_shock=1.0
@@ -120,7 +120,7 @@ module Viscosity
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
-      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
+      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2, nu_spitzer_max,&
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
@@ -1237,7 +1237,12 @@ module Viscosity
 !  viscous force: nu*TT^2.5/rho*(del2u+graddivu/3+5S.glnTT)
 !
       if (lvisc_spitzer) then
-        muTT=nu_spitzer*p%rho1*exp(2.5*p%lnTT)
+        if (nu_spitzer_max .ne. 0.0) then
+          tmp3=nu_spitzer*p%rho1*exp(2.5*p%lnTT)
+          muTT=nu_spitzer_max*tmp3/sqrt(nu_spitzer_max**2.+tmp3**2.)
+        else
+          muTT=nu_spitzer*p%rho1*exp(2.5*p%lnTT)
+        endif
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)+5.*p%sglnTT(:,i))

@@ -178,6 +178,7 @@ module Mpicomm
   interface mpiallreduce_max
     module procedure mpiallreduce_max_scl_dbl
     module procedure mpiallreduce_max_scl_sgl
+    module procedure mpiallreduce_max_scl_int
     module procedure mpiallreduce_max_arr
   endinterface
 !
@@ -4196,6 +4197,20 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
                          ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_max_scl_dbl
+!***********************************************************************
+    subroutine mpiallreduce_max_scl_int(imax_tmp,imax,comm)
+!
+!  Calculate total maximum and return to all processors.
+!
+      use General, only: ioptest
+
+      integer :: imax_tmp,imax
+      integer, optional :: comm
+!
+      call MPI_ALLREDUCE(imax_tmp, imax, 1, MPI_INTEGER, MPI_MAX, &
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpiallreduce_max_scl_int
 !***********************************************************************
     subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin,comm)
 !

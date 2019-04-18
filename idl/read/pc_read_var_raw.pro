@@ -77,7 +77,51 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Name and path of varfile to read.
 ;
-  if (not keyword_set (varfile)) then varfile = 'var.dat'
+  if (not keyword_set (varfile)) then begin
+    varfile = 'var.dat'
+    if (file_test (datadir+'/allprocs/var.h5')) then varfile = 'var.h5'
+  end else begin
+    if (file_test (datadir+'/allprocs/'+varfile+'.h5')) then varfile += '.h5'
+  end
+;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
+    t = pc_read ('time', file=varfile, datadir=datadir)
+    if (size (varcontent, /type) eq 0) then begin
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
+    end
+    quantities = varcontent[*].idlvar
+    num_quantities = n_elements (quantities)
+    if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
+    object = dblarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities)
+    tags = { time:t }
+    for pos = 0, num_quantities-1 do begin
+      if (quantities[pos] eq 'dummy') then continue
+      num_skip = varcontent[pos].skip
+      if (num_skip eq 2) then begin
+        label = strmid (quantities[pos], 0, strlen (quantities[pos])-1)
+        object[*,*,*,pos] = pc_read ('data/'+label+'x', trimall=trimall, processor=proc, dim=dim)
+        object[*,*,*,pos+1] = pc_read ('data/'+label+'y', trimall=trimall, processor=proc, dim=dim)
+        object[*,*,*,pos+2] = pc_read ('data/'+label+'z', trimall=trimall, processor=proc, dim=dim)
+        tags = create_struct (tags, quantities[pos], pos+indgen(2), label+'x', pos, label+'y', pos+1, label+'z', pos+2)
+        pos += num_skip
+      end else if (num_skip ge 1) then begin
+        tags = create_struct (tags, quantities[pos], pos + indgen (num_skip+1))
+        for comp = 0, num_skip do begin
+          label = quantities[pos] + strtrim(comp+1, 2)
+          object[*,*,*,pos+comp] = pc_read ('data/'+label, trimall=trimall, processor=proc, dim=dim)
+          tags = create_struct (tags, label, pos + comp)
+        end
+        pos += num_skip
+      end else begin
+        object[*,*,*,pos] = pc_read ('data/'+quantities[pos], trimall=trimall, processor=proc, dim=dim)
+        tags = create_struct (tags, quantities[pos], pos)
+      end
+    end
+    h5_close_file
+    return
+  end
 ;
 ; Default to allprocs, if available.
 ;
@@ -236,14 +280,23 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   num = n_elements (var_list)
   for ov=0L, num-1L do begin
     tag = var_list[ov]
-    iv = where (varcontent[*].idlvar eq tag)
+    iv = (where (varcontent[*].idlvar eq tag))[0]
     if (iv ge 0) then begin
       if (varcontent[iv].skip eq 2) then begin
-        label = strmid (tag, 0, 1)
+        label = strmid (tag, 0, strlen (tag)-1)
         tags = create_struct (tags, tag, [num_read, num_read+1, num_read+2])
         tags = create_struct (tags, label+"x", num_read, label+"y", num_read+1, label+"z", num_read+2)
         indices = [ indices, iv, iv+1, iv+2 ]
         num_read += 3
+      end else if (varcontent[iv].skip gt 0) then begin
+        num_skip = varcontent[iv].skip + 1
+        tags = create_struct (tags, tag, num_read + indgen (num_skip))
+        for pos = 0, num_skip-1 do begin
+          label = tag + strtrim (pos + 1, 2)
+          tags = create_struct (tags, label, num_read+pos)
+        end
+        indices = [ indices, iv + indgen (num_skip) ]
+        num_read += num_skip
       end else begin
         tags = create_struct (tags, tag, num_read)
         indices = [ indices, iv ]
