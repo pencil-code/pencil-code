@@ -1,5 +1,3 @@
-  !height_eta=.1, eta_out=5e-5, eta_zwidth=.05
-
 ! $Id$
 !
 !  This modules deals with all aspects of magnetic fields; if no
