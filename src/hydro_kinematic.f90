@@ -559,6 +559,29 @@ module Hydro
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Willis-flow
+!
+      case ('Willis')
+        if (headtt) print*,'Willis flow'
+        fac=2.*one_over_sqrt3
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=fac*sin(ky_uukin*y(m)    )*cos(kz_uukin*z(n)    )
+          p%uu(:,2)=fac*sin(kz_uukin*z(n)    )*cos(kx_uukin*x(l1:l2))
+          p%uu(:,3)=fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)    )
+        endif
+! oo
+        if (lpenc_loc(i_oo)) then
+          p%oo(:,1)=-fac*(sin(kx_uukin*x(l1:l2))*ky_uukin*sin(ky_uukin*y(m    )) &
+                         +cos(kx_uukin*x(l1:l2))*kz_uukin*cos(kz_uukin*z(n    )))
+          p%oo(:,2)=-fac*(sin(ky_uukin*y(m    ))*kz_uukin*sin(kz_uukin*z(n    )) &
+                         +cos(ky_uukin*y(m    ))*kx_uukin*cos(kx_uukin*x(l1:l2)))
+          p%oo(:,3)=-fac*(sin(kz_uukin*z(n    ))*kx_uukin*sin(kx_uukin*x(l1:l2)) &
+                         +cos(kz_uukin*z(n    ))*ky_uukin*cos(ky_uukin*y(m    )))
+        endif
+! divu
+        if (lpenc_loc(i_divu)) p%divu=0.
+!
 !  nocosine or Archontis flow
 !
       case ('nocos')
