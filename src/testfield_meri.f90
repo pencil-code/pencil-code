@@ -166,43 +166,28 @@ module Testfield
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
-      integer :: j
+!  Register test field.
+!
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
 !
 !  Set first and last index of test field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
 !  These values are used in this form in start, but later overwritten.
 !
-      iaatest=nvar+1
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      ntestfield=mtestfield
-      nvar=nvar+ntestfield
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
-!
-!  Put variable names in array
-!
-      do j=iaatest,nvar
-        varname(j) = 'aatest'
-      enddo
-      iaztestpq=nvar
+      iaztestpq=iaatest+3*njtest-1
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
 !
 !  Writing files for use with IDL
 !
@@ -382,7 +367,7 @@ module Testfield
 
       select case (initaatest(j))
 
-      case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
       case ('nothing'); !(do nothing)
 
       case default
@@ -1108,14 +1093,10 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -1143,13 +1124,6 @@ module Testfield
         do iname=1,nnamev
           call parse_name(iname,cnamev(iname),cformv(iname),'bb11',ivid_bb11)
         enddo
-      endif
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) then
-        call farray_index_append('iaatest',iaatest)
-        call farray_index_append('ntestfield',ntestfield)
       endif
 !
     endsubroutine rprint_testfield
