@@ -247,7 +247,7 @@ module Magnetic
 ! Run parameters
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
-  real :: eta_tdep=0.0, eta_tdep_exponent=0.0, eta_tdep_t0=0.0
+  real :: eta_tdep=0.0, eta_tdep_exponent=0.0, eta_tdep_t0=0.0, eta_tdep_toffset=0.0
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,& 
           eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
@@ -265,7 +265,7 @@ module Magnetic
   real :: forcing_continuous_aa_phasefact=1.0
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
-  real :: numag=0.0, B0_magfric=1.0
+  real :: numag=0.0, B0_magfric=1.0, ekman_friction_aa=0.0
   real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
   real :: ampl_eta_uz=0.0
   real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
@@ -320,7 +320,7 @@ module Magnetic
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
-      eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
+      eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, eta_tdep_toffset, &
       tau_aa_exterior, tauAD, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
@@ -345,7 +345,7 @@ module Magnetic
       lhalox, vcrit_anom, eta_jump, eta_jump2, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof, &
       k_relprof,lmagneto_friction,numag, magnetic_zaver_range,&
-      lncr_correlated, lncr_anticorrelated, ncr_quench, B0_magfric, &
+      lncr_correlated, lncr_anticorrelated, ncr_quench, B0_magfric, ekman_friction_aa, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       lax_ext_global,lay_ext_global,laz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
@@ -2398,7 +2398,7 @@ module Magnetic
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
       endif
-      if (tau_relprof/=0) then
+      if (tau_relprof/=0 .or. ekman_friction_aa/=0) then
         lpenc_requested(i_aa)=.true.
       endif
       if (ladvective_gauge) then
@@ -3776,7 +3776,7 @@ module Magnetic
 !  Time-dependent resistivity
 !
       if (lresi_eta_tdep) then
-        eta_tdep=eta*max(real(t),eta_tdep_t0)**eta_tdep_exponent
+        eta_tdep=eta*max(real(t-eta_tdep_toffset),eta_tdep_t0)**eta_tdep_exponent
         if (lweyl_gauge) then
           fres = fres - eta_tdep * mu0 * p%jj
         else
@@ -4294,7 +4294,8 @@ module Magnetic
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
-!  Works only on one processor.
+!  Works only on one processor. Note that there is also the analogous case
+!  to to Ekman friction; see below.
 !
       if (lmean_friction) then
         if (nprocxy==1) then
@@ -4577,6 +4578,11 @@ module Magnetic
         endif
         dAdt = dAdt-(eta_out1*mu0)*p%jj
       endif
+!
+!  Ekman Friction, used only in two dimensional runs.
+!
+      if (ekman_friction_aa/=0) &
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ekman_friction_aa*p%aa
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
