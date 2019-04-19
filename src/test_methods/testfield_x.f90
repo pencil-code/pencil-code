@@ -176,44 +176,29 @@ module Testfield
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
-      integer :: j
+!  Register test field.
+!
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
 !
 !  Set first and last index of text field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
 !  These values are used in this form in start, but later overwritten.
 !  Here always ltestfield=T
 !
-      iaatest=nvar+1
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      ntestfield=mtestfield
-      nvar=nvar+ntestfield
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
-!
-!  Put variable names in array
-!
-      do j=iaatest,nvar
-        varname(j) = 'aatest'
-      enddo
-      iaztestpq=nvar
+      iaztestpq=iaatest+3*njtest-1
 !
 !  identify version number
 !
       if (lroot) call svn_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
 !
 !  Writing files for use with IDL
 !
@@ -364,7 +349,7 @@ module Testfield
 
       select case (initaatest(j))
 
-      case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
       case ('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
       case ('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
       case ('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
@@ -1089,8 +1074,6 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General, only: loptest
 !
       integer :: iname,inamex,inamez,inamexz
       logical :: lreset
@@ -1206,11 +1189,6 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E20z',idiag_E20z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E30z',idiag_E30z)
       enddo
-!
-      if (loptest(lwrite)) then
-        call farray_index_append('iaatest',iaatest)
-        call farray_index_append('ntestfield',ntestfield)
-      endif
 !
     endsubroutine rprint_testfield
 

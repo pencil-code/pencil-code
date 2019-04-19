@@ -5,7 +5,7 @@
 !  routine is used instead which absorbs all the calls to the
 !  testfield relevant subroutines listed in here.
 !
-!  Derived from testfield_xz by P. K‰pyl‰, A. Brandenburg and 
+!  Derived from testfield_xz by P. K√§pyl√§, A. Brandenburg and 
 !  M. Rheinhardt
 !   27-aug-13/pete: adapted from testfield_xz.f90
 !
@@ -87,6 +87,41 @@ module Testfield
 !
   contains
 !
+!***********************************************************************
+    subroutine register_testfield
+!
+!  Initialise variables which should know that we solve for the vector
+!  potential: iaatest, etc; increase nvar accordingly
+!
+!   3-jun-05/axel: adapted from register_magnetic
+!
+      use FArrayManager
+      use Mpicomm
+      use Sub
+!
+!  Register test field.
+!
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
+!
+!  Identify version number.
+!
+      if (lroot) call svn_id( &
+           "$Id$")
+!
+!  Writing files for use with IDL
+!
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',aatest $'
+          if (nvar == mvar) write(4,*) ',aatest'
+        else
+          write(4,*) ',aatest $'
+        endif
+        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
+      endif
+!
+    endsubroutine register_testfield
 !***********************************************************************
     subroutine initialize_testfield(f)
 !
@@ -519,8 +554,6 @@ module Testfield
 !   6-mar-13/MR  : alternative parse_name used
 !
       use Diagnostics, only: parse_name
-      use FArrayManager, only: farray_index_append
-      use General, only: loptest
 !
       logical :: lreset
       logical, optional :: lwrite
@@ -561,13 +594,6 @@ module Testfield
           call parse_name(inamexy,cnamexy,cformxy,trim(cdiags(i))//'xy',idiags_xy(i))
         enddo
       enddo
-!
-      if (loptest(lwrite)) then
-        call farray_index_append('iaatest',iaatest)
-        call farray_index_append('ntestfield',ntestfield)
-        call farray_index_append('nnamex',nnamex)
-        call farray_index_append('nnamexy',nnamexy)
-      endif
 !
       needed2d = diagnos_interdep(idiags(1:idiag_base_end),idiags_x(1:idiag_base_end), &
                                   idiags_xy(1:idiag_base_end),twod_need_1d,twod_need_2d)

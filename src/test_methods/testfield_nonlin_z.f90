@@ -223,35 +223,29 @@ module Testfield
 !
 !   3-jun-05/axel: adapted from register_magnetic
 !
+      use FArrayManager
       use Mpicomm
       use Sub
-      use FArrayManager, only: farray_register_auxiliary
 !
-      integer :: j
+!  Register test field.
+!
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
+      call farray_register_pde('uutest',iuutest,array=3*njtest)
+      call farray_index_append('ntestflow',3*njtest)
 !
 !  Set first and last index of test field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
 !  These values are used in this form in start, but later overwritten.
 !
-      iaatest=nvar+1
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
       iaztestpq=iaatest+3*njtest-1
-!
-!  Allocate mtestfield slots; the first half is used for aatest
-!  and the second for uutest.
-!
-      iuutest=nvar+1+mtestfield/2
       iuxtest=iuutest
       iuytest=iuutest+1
       iuztest=iuutest+2
       iuztestpq=iuutest+3*njtest-1
-!
-!  set ntestfield and nvar
-!
-      ntestfield=mtestfield
-      nvar=nvar+ntestfield
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -290,30 +284,10 @@ module Testfield
         endif
       endif
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
-!
-!  Put variable names in array
-!
-      do j=1,ntestfield/2
-        varname(iaatest-1+j) = 'aatest'
-      enddo
-!
-      do j=ntestfield/2+1,ntestfield
-        varname(iaatest-1+j) = 'uutest'
-      enddo
-!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
 !
 !  Writing files for use with IDL
 !
@@ -487,7 +461,7 @@ module Testfield
 
       select case (initaatest(j))
 
-      case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
       case ('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
       case ('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
       case ('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
@@ -1759,8 +1733,6 @@ mn:   do n=n1,n2
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General, only: loptest
 !
       integer :: iname,inamez
       logical :: lreset
@@ -1929,13 +1901,6 @@ mn:   do n=n1,n2
         do iname=1,nnamev
           call parse_name(iname,cnamev(iname),cformv(iname),'bb11',ivid_bb11)
         enddo
-      endif
-!
-      if (loptest(lwrite)) then
-        call farray_index_append('iaatest',iaatest)
-        call farray_index_append('iuutest',iuutest)
-        call farray_index_append('ntestfield',ntestfield/2)
-        call farray_index_append('ntestflow',ntestfield/2)
       endif
 !
     endsubroutine rprint_testfield

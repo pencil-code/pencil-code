@@ -237,66 +237,43 @@ module Testfield
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
-      integer :: j
+!  Register test field.
+!
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
+      call farray_register_pde('uutest',iuutest,array=3*njtest)
+      call farray_index_append('ntestflow',3*njtest)
+      call farray_register_pde('lnrhotest',ihhtest,array=njtest)
+      call farray_index_append('ntestlnrho',njtest)
 !
 !  Set first and last index of text field
 !  These values are used in this form in start, but later overwritten.
 !
-      iaatest=nvar+1
       iaztestpq=iaatest+3*njtest-1
-!
-!  Allocate mtestfield slots; the first three are used for aatest
-!  and the next three for uutest.
-!
-      iuutest=nvar+1+3*njtest
       iuztestpq=iuutest+3*njtest-1
-!
-!  Allocate the 7th slot for pseudo-enthalpy
-!
-      ihhtest=nvar+1+6*njtest
-      ihhtestpq=nvar+7*njtest
-!
-!  set ntestfield and nvar
-!
-      ntestfield=mtestfield
-      nvar=nvar+ntestfield
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
-!
-!  Put variable names in array
-!
-      varname(iaatest:iaztestpq)='aatest'
-      varname(iuutest:iuztestpq)='uutest'
-      varname(ihhtest:ihhtestpq)='hhtest'
+      ihhtestpq=ihhtest+njtest-1
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
 !
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
-!
 !  Writing files for use with IDL
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aatest $'
-          if (nvar == mvar) write(4,*) ',aatest'
+          if (nvar < mvar) write(4,*) ',aatest,uutest,lnrhotest $'
+          if (nvar == mvar) write(4,*) ',aatest,uutest,lnrhotest'
         else
-          write(4,*) ',aatest $'
+          write(4,*) ',aatest,uutest,lnrhotest $'
         endif
-        write(15,*) 'aatest = fltarr(mx,my,mz,3*njtest)*one'
-        write(15,*) 'uutest = fltarr(mx,my,mz,3*njtest)*one'
-        write(15,*) 'hhtest = fltarr(mx,my,mz,njtest)*one'
+        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
+        write(15,*) 'uutest = fltarr(mx,my,mz,ntestflow)*one'
+        write(15,*) 'lnrhotest = fltarr(mx,my,mz,ntestlnrho)*one'
       endif
 !
     endsubroutine register_testfield
@@ -539,7 +516,7 @@ module Testfield
 !  select on initial condition for aatest
 !
         select case (initaatest(j))
-        case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+        case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
         case ('gaussian-noise-1'); call gaunoise(amplaatest(j),f,iaxtest+0,iaztest+0)
         case ('gaussian-noise-2'); call gaunoise(amplaatest(j),f,iaxtest+3,iaztest+3)
         case ('gaussian-noise-3'); call gaunoise(amplaatest(j),f,iaxtest+6,iaztest+6)
@@ -568,7 +545,7 @@ module Testfield
 !  select on initial condition for uutest
 !
       select case (inituutest(j))
-        case ('zero'); f(:,:,:,iuutest:iuutest+ntestfield-1)=0.
+        case ('zero'); f(:,:,:,iuutest:iuutest+3*njtest-1)=0.
         case ('sinwave-x-1'); call sinwave(ampluutest(j),f,iuxtest+0,kx=kx_aatest(j))
         case ('sinwave-x-2'); call sinwave(ampluutest(j),f,iuxtest+3,kx=kx_aatest(j))
         case ('sinwave-x-3'); call sinwave(ampluutest(j),f,iuxtest+6,kx=kx_aatest(j))
@@ -1860,8 +1837,6 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use FArrayManager, only: farray_index_append
-      use General, only: loptest
 !
       integer :: iname,inamez
       logical :: lreset
@@ -2029,15 +2004,6 @@ module Testfield
       do iname=1,nnamev
         call parse_name(iname,cnamev(iname),cformv(iname),'bb11', ivid_bb11)
       enddo
-!
-      if (loptest(lwrite)) then
-        call farray_index_append('iaatest',iaatest)
-        call farray_index_append('iuutest',iuutest)
-        call farray_index_append('ilnrhotest',ihhtest)
-        call farray_index_append('ntestfield',(ntestfield-njtest)/2)
-        call farray_index_append('ntestflow',(ntestfield-njtest)/2)
-        call farray_index_append('ntestlnrho',njtest)
-      endif
 !
     endsubroutine rprint_testfield
 
