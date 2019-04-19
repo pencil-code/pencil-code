@@ -90,7 +90,13 @@ module NeutralDensity
           call fatal_error('register_neutraldensity','non cartesian '//&
            'not yet implemented in the neutrals module')
 !
-      call farray_register_pde('lnrhon',ilnrhon)
+      if (lneutraldensity_nolog) then
+        call farray_register_pde('rhon',irhon)
+        ilnrhon=irhon
+      else
+        call farray_register_pde('lnrhon',ilnrhon)
+      endif
+
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -115,10 +121,6 @@ module NeutralDensity
 !
       integer :: i
       logical :: lnothing
-!
-!  Set irhon equal to ilnrhon if we are considering non-logarithmic density.
-!
-      if (lneutraldensity_nolog) irhon=ilnrhon
 !
 !  Turn off continuity equation term for 0-D runs.
 !
