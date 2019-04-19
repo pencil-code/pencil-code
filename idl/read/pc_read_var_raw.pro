@@ -21,7 +21,7 @@
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
 ;       proc: Specifies processor to get the data from. Default: ALL [integer]
-;    varfile: Name of the var file. Default: 'var.dat'.              [string]
+;    varfile: Name of the var file. Default: 'var.dat' or 'var.h5'.  [string]
 ;   allprocs: Load distributed (0) or collective (1 or 2) varfiles.  [integer]
 ;   /reduced: Load previously reduced collective varfiles (implies allprocs=1).
 ;
@@ -96,7 +96,7 @@ COMPILE_OPT IDL2,HIDDEN
     if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
     object = dblarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities)
     tags = { time:t }
-    for pos = 0, num_quantities-1 do begin
+    for pos = 0L, num_quantities-1 do begin
       if (quantities[pos] eq 'dummy') then continue
       num_skip = varcontent[pos].skip
       if (num_skip eq 2) then begin
@@ -293,7 +293,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
       end else if (varcontent[iv].skip gt 0) then begin
         num_skip = varcontent[iv].skip + 1
         tags = create_struct (tags, tag, num_read + indgen (num_skip))
-        for pos = 0, num_skip-1 do begin
+        for pos = 0L, num_skip-1 do begin
           label = tag + strtrim (pos + 1, 2)
           tags = create_struct (tags, label, num_read+pos)
         end
