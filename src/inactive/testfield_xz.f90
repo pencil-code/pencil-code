@@ -84,46 +84,30 @@ module Testfield
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
-      integer :: j
+!  Register test field.
 !
-      iaatest = nvar+1          ! indices to access aa
-      ntestfield=mtestfield
-      nvar = nvar+ntestfield    ! added ntestfield variables
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
-!
-!  Put variable names in array
-!
-      do j=1,ntestfield
-        varname(j) = 'aatest'
-      enddo
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
 !
 !  identify version number
 !
       if (lroot) call svn_id( &
            "$Id$")
 !
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
-!
 !  Writing files for use with IDL
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aa $'
-          if (nvar == mvar) write(4,*) ',aa'
+          if (nvar < mvar) write(4,*) ',aatest $'
+          if (nvar == mvar) write(4,*) ',aatest'
         else
-          write(4,*) ',aa $'
+          write(4,*) ',aatest $'
         endif
-        write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
+        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
       endif
 !
     endsubroutine register_testfield
@@ -142,7 +126,7 @@ module Testfield
 !  (in future, could call something like init_aa_simple)
 !
       if (reinitialize_aatest) then
-        f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+        f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
       endif
 !
 !  write testfield information to a file (for convenient post-processing)
@@ -178,7 +162,7 @@ module Testfield
 !
       select case (initaatest)
 
-      case ('zero', '0'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('zero', '0'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
 
       case default
         !
@@ -588,14 +572,10 @@ module Testfield
 !
       use Cdata
       use Diagnostics
-      use FArrayManager, only: farray_index_append
 !
       integer :: iname,inamez,inamexz
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -629,10 +609,6 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E221z',idiag_E221z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'E321z',idiag_E321z)
       enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) call farray_index_append('iaatest',iaatest)
 !
     endsubroutine rprint_testfield
 

@@ -102,9 +102,8 @@ module Testfield
 !
 !  Register test field.
 !
-      ntestfield=3*njtest
-      call farray_register_pde('aatest',iaatest,vector=ntestfield)
-      call farray_index_append('ntestfield',ntestfield)
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
 !
 !  Identify version number.
 !
@@ -115,12 +114,12 @@ module Testfield
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aa $'
-          if (nvar == mvar) write(4,*) ',aa'
+          if (nvar < mvar) write(4,*) ',aatest $'
+          if (nvar == mvar) write(4,*) ',aatest'
         else
-          write(4,*) ',aa $'
+          write(4,*) ',aatest $'
         endif
-        write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
+        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
       endif
 !
     endsubroutine register_testfield
@@ -139,7 +138,7 @@ module Testfield
 !  (in future, could call something like init_aa_simple)
 !
       if (reinitialize_aatest) then
-        f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+        f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
       endif
 !
 !  write testfield information to a file (for convenient post-processing)
@@ -173,7 +172,7 @@ module Testfield
 !
       select case (initaatest)
 
-      case ('zero', '0'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+      case ('zero', '0'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
 
       case default
         !
