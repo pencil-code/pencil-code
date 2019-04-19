@@ -32,7 +32,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
   real :: nu=0.0, nu_cspeed=0.5
-  real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
+  real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0, nu_spitzer_max=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
@@ -114,8 +114,8 @@ module Viscosity
   character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
-      limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
-      nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
+      limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, nu_tdep_toffset, &
+      zeta, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
@@ -1328,8 +1328,7 @@ module Viscosity
 !  -- the correct expression for nu=const
 !
       if (lvisc_nu_tdep) then
-        !nu_tdep=nu*(t-nu_tdep_t0)**nu_tdep_exponent         ! out of nm loop
-        nu_tdep=nu*max(real(t),nu_tdep_t0)**nu_tdep_exponent
+        nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
         p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu_tdep
