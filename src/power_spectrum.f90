@@ -964,6 +964,22 @@ module power_spectrum
       a_im=0.
       b_im=0.
 !
+!  neutral velocity power spectra (spectra of |un|^2 and on.un)
+!
+    elseif (sp=='neu') then
+      if (iuun==0) call fatal_error('powerhel','iuun=0')
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuun,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=bbi  !(this corresponds to vorticity)
+        enddo
+      enddo
+      b_re=f(l1:l2,m1:m2,n1:n2,iuun+ivec-1)  !(this corresponds to velocity)
+      a_im=0.
+      b_im=0.
+!
 !  magnetic power spectra (spectra of |B|^2 and A.B)
 !
     elseif (sp=='mag') then
