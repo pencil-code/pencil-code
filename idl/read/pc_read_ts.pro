@@ -124,17 +124,45 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Default data directory.
 ;
   datadir = pc_get_datadir(datadir)
-  default, filename, 'time_series.dat'
+  default_filename = 'time_series.dat'
+  if (file_test (datadir+'/time_series.h5')) then default_filename = 'time_series.h5'
+  default, filename, default_filename
   default, monotone, 0
   default, njump, 1
   default, movingaverage,0
   default, sepminus, 1
 ;
-  if (strpos(filename,'/') eq -1) then begin
-    fullfilename=datadir+'/'+filename
-  endif else begin
-    fullfilename=filename
-  endelse
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (filename, strlen(filename)-3) eq '.h5') then begin
+    if (file_test ('print.in')) then begin
+      lines = read_binary ('print.in')
+      quantities = strtrim (strsplit (string (lines), '[ '+string([10B,13B])+']+', /regex, /extract), 2)
+      quantities = stregex (quantities, '^([^()]+)', /extract)
+    end else begin
+      quantities = h5_content ('/')
+    end
+    last = pc_read ('last', file=filename, datadir=datadir)
+    step = pc_read ('step')
+    object = { it:lindgen(last/step+1)*step }
+    num_quantities = n_elements (quantities)
+    for pos = 0L, num_quantities-1 do begin
+      label = quantities[pos]
+      if (label eq 'it') then continue
+      if (label eq 'last') then continue
+      if (label eq 'step') then continue
+      data = pc_read (label+'/0')
+      if (last ge step) then begin
+        for it = step, last, step do begin
+          data = [ data, pc_read (label+'/'+strtrim (it, 2)) ]
+        end
+      end
+      object = create_struct (object, label, data)
+    end
+    h5_close_file
+    object = create_struct (object, { last:last, step:step })
+    return
+  end
 ;
 ;  Initialize / set default returns for ALL variables.
 ;
@@ -149,37 +177,37 @@ COMPILE_OPT IDL2,HIDDEN
   rhom=0.
   ssm=0.
 ;
-;  Get a unit number.
-;
-  get_lun, file
-;
-;  read header
-;
 ; Check for existence and read the data
-  if (file_test(fullfilename)) then begin
-
-    if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
-    openr, file, fullfilename
-    line = ''
-    repeat begin
-      readf, file, line
-      line = strtrim(line)
-      hashpos = strpos(line,'#')
-      hashpos2 = strpos(line,'%')
-      if hashpos2 gt hashpos then hashpos=hashpos2
-      ;; identify header line as / *#--/
-      marker=strmid(line,hashpos+1,2)
-    endrep until ((hashpos ge 0) and (stregex(marker,'[-a-zA-Z][-a-zA-Z]',/bool) or stregex(marker,'[a-zA-Z][a-zA-Z0-9_]',/bool)))
-
-    point_lun,-file,fileposition
-    close,file
-    free_lun,file
-
-  end else begin
-    free_lun, file
+;
+  if (file_test(filename)) then begin
+    fullfilename=filename
+  endif else begin
+    fullfilename=datadir+'/'+filename
+  endelse
+;
+  if (not file_test(fullfilename)) then begin
     message, 'ERROR: cannot find file ' + fullfilename
     return
-  endelse
+  end
+;
+;  Read header
+;
+  if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
+  get_lun, file
+  openr, file, fullfilename
+  line = ''
+  repeat begin
+    readf, file, line
+    line = strtrim(line)
+    hashpos = strpos(line,'#')
+    hashpos2 = strpos(line,'%')
+    if hashpos2 gt hashpos then hashpos=hashpos2
+    ;; identify header line as / *#--/
+    marker=strmid(line,hashpos+1,2)
+  endrep until ((hashpos ge 0) and (stregex(marker,'[-a-zA-Z][-a-zA-Z]',/bool) or stregex(marker,'[a-zA-Z][a-zA-Z0-9_]',/bool)))
+  point_lun,-file,fileposition
+  close,file
+  free_lun,file
 ;
 ;  Read table.
 ;
