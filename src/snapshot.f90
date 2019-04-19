@@ -548,6 +548,7 @@ module Snapshot
         if (Str_spec) call powerGWs(f,'Str')
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
+        if (oun_spec) call powerhel(f,'neu')
         if (ab_spec)  call powerhel(f,'mag')
         if (ub_spec)  call powerhel(f,'u.b')
         if (azbz_spec)call powerhel(f,'mgz')
