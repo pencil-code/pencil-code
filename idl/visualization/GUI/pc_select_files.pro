@@ -9,8 +9,8 @@
 ;;;   Optional parameters are:
 ;;;   * num_selected (returns the number of selected files)
 ;;;   * pattern (contains the file-search pattern, default: "VAR[0-9]*")
-;;;   * varfile (contains the varfile loaded by default, default: "var.dat")
-;;;   * addfile (contains an additional filename, default: "crash.dat")
+;;;   * varfile (contains the varfile loaded by default, default: "var.dat" or "var.h5")
+;;;   * addfile (contains an additional filename, default: "crash.dat" or "crash.h5")
 ;;;   * datadir (contains the datadir, default: pc_get_datadir)
 ;;;   * allprocs (contains the IO-strategy parameter, default: automatic)
 ;;;   * procdir (contains procdir based on the chosen IO-strategy)
@@ -433,9 +433,16 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	; Default settings
 	@pc_gui_settings
+	if (size (datadir, /type) eq 0) then datadir = pc_get_datadir (datadir)
+	default_varfile = 'var.dat'
+	default_crashfile = 'crash.dat'
+	if (file_test (datadir+'/allprocs/var.h5')) then begin
+		default_varfile = 'var.h5'
+		default_crashfile = 'crash.h5'
+	end
 	default, pattern, "VAR[0-9]*"
-	default, varfile, "var.dat"
-	default, addfile, "crash.dat"
+	default, varfile, default_varfile
+	default, addfile, default_crashfile
 	default, skipping, 0
 	default, stepping, 10
 	default, cut_x, -1
