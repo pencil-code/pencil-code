@@ -11,8 +11,8 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divun; un2; unij(3,3); uun(3); snij(3,3); ungun(3)
-! PENCILS PROVIDED del2un(3); del6un(3); graddivun(3)
+! PENCILS PROVIDED divun; visc_heatn; un2; unij(3,3); uun(3); snij(3,3); snij2
+! PENCILS PROVIDED ungun(3); del2un(3); del6un(3); graddivun(3)
 !
 !***************************************************************
 module NeutralVelocity
@@ -85,6 +85,7 @@ module NeutralVelocity
   integer :: idiag_un2mr=0,idiag_unrunpmr=0
   integer :: idiag_unrmr=0,idiag_unpmr=0,idiag_unzmr=0
   integer :: idiag_divunm=0,idiag_dtnun=0
+  integer :: idiag_epsKn=0       ! DIAG_DOC: $\left<2\nu_n\varrho_n\Strain_n^2\right>$
 !
   contains
 !***********************************************************************
@@ -328,6 +329,12 @@ module NeutralVelocity
         lpenc_diagnos(i_phiy)=.true.
       endif
 !
+      if (idiag_epsKn/=0) then
+        lpenc_diagnos(i_rhon)=.true.
+        lpenc_diagnos(i_snij2)=.true.
+        lpenc_diagnos(i_visc_heatn)=.true.
+      endif
+!
     endsubroutine pencil_criteria_neutralvelocity
 !***********************************************************************
     subroutine pencil_interdep_neutralvelocity(lpencil_in)
@@ -356,6 +363,8 @@ module NeutralVelocity
             lpencil_in(i_divun)=.true.
          endif
       endif
+!
+      if (lpencil_in(i_snij2)) lpencil_in(i_snij)=.true.
 !
     endsubroutine pencil_interdep_neutralvelocity
 !***********************************************************************
@@ -394,6 +403,8 @@ module NeutralVelocity
           p%snij(:,j,j)=p%snij(:,j,j)-(.333333)*p%divun
         enddo
       endif
+! snij2
+      if (lpencil(i_snij2)) call multm2_sym_mn(p%snij,p%snij2)
 ! ungun
       if (lpencil(i_ungun)) then
         if (headtt.and.lupw_uun) then
@@ -444,8 +455,9 @@ module NeutralVelocity
       real :: c2,s2
       integer :: j,jn,ji
 !
-      intent(in) :: f,p
+      intent(in) :: f
       intent(out) :: df
+      intent(inout) :: p
 !
 !  identify module and boundary conditions
 !
@@ -606,6 +618,7 @@ module NeutralVelocity
         !if (idiag_neutralangmom/=0) &
         !     call sum_lim_mn_name(p%rhon*(p%uun(:,2)*x(l1:l2)-p%uun(:,1)*y(m)),&
         !     idiag_neutralangmom,p)
+        if (idiag_epsKn/=0) call sum_mn_name(p%visc_heatn*p%rhon,idiag_epsKn)
 !
 !  kinetic field components at one point (=pt)
 !
@@ -743,12 +756,18 @@ module NeutralVelocity
       integer :: i,j,jj,ju
       type (pencil_case) :: p
 !
-      intent(in) :: p
+      intent(inout) :: p
       intent(inout) :: df
 !
       fvisc=0.
       diffus_nun=0.
       diffus_nun3=0.
+!
+!  Initialize p%visc_heatn to zero.
+!
+      if (lpencil(i_visc_heatn)) p%visc_heatn=0.
+!
+!  Loop over different species.
 !
       do j=1,ninit
          select case (iviscn(j))
@@ -763,7 +782,7 @@ module NeutralVelocity
             do i=1,3
                fvisc(:,i)=fvisc(:,i)+munrhon1*(p%del2un(:,i)+1./3.*p%graddivun(:,i))
             enddo
-            !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2*p%rhon1
+            if (lpencil(i_visc_heatn)) p%visc_heatn=p%visc_heatn + 2*nun*p%snij2*p%rhon1
             if (lfirst.and.ldt) diffus_nun=diffus_nun+munrhon1*dxyz_2
 
          case ('nun-const')
@@ -779,7 +798,7 @@ module NeutralVelocity
                fvisc=fvisc+nun*(p%del2un+1./3.*p%graddivun)
             endif
 !
-        !if (lpencil(i_visc_heat)) visc_heat=visc_heat + 2*nun*p%snij2
+            if (lpencil(i_visc_heatn)) p%visc_heatn=p%visc_heatn + 2*nun*p%snij2
             if (lfirst.and.ldt) diffus_nun=diffus_nun+nun*dxyz_2
 !
          case ('hyper3_nun-const')
@@ -885,6 +904,7 @@ module NeutralVelocity
         idiag_neutralangmom=0;
         idiag_unrunpmr=0; idiag_divunm=0
         idiag_un2mr=0; idiag_unrmr=0; idiag_unpmr=0; idiag_unzmr=0
+        idiag_epsKn=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -920,6 +940,7 @@ module NeutralVelocity
         call parse_name(iname,cname(iname),cform(iname),'unypt',idiag_unypt)
         call parse_name(iname,cname(iname),cform(iname),'unzpt',idiag_unzpt)
         call parse_name(iname,cname(iname),cform(iname),'neutralangmom',idiag_neutralangmom)
+        call parse_name(iname,cname(iname),cform(iname),'epsKn',idiag_epsKn)
       enddo
 !
 !  check for those quantities for which we want xy-averages
