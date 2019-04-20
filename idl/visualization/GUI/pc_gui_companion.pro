@@ -51,7 +51,7 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, sta
 	default, ye, coord.orig_ny
 	default, ze, coord.orig_nz
 	default, number, i
-	dir=pc_get_datadir(dir)
+	dir = pc_get_datadir (dir)
 	default, datadir, dir
 	default, time, 0.0d0
 	if (keyword_set (par)) then start_param = start_par
@@ -60,7 +60,9 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, sta
 	if (varfiles[i].number le 0) then varfiles[i].number = number
 
 	if (varfiles[i].loaded eq 0) then begin
-		default, varfile, "var.dat"
+		default_varfile = 'var.dat'
+		if (file_test (datadir+'/allprocs/var.h5')) then default_varfile = 'var.h5'
+		default, varfile, default_varfile
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
 			if ((xe-xs lt coord.orig_nx-1) or (ye-ys lt coord.orig_ny-1) or (ze-zs lt coord.orig_nz-1)) then begin
