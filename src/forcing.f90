@@ -51,7 +51,7 @@ module Forcing
   integer :: kzlarge=1
   integer :: iforcing_zsym=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
-  logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
+  logical :: lhydro_forcing=.true., lneutral_forcing=.false., lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lxxcorr_forcing=.false., lxycorr_forcing=.false.
   logical :: lhelical_test=.false., lrandom_location=.true.
@@ -127,7 +127,8 @@ module Forcing
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl, xff_ampl, yff_ampl, zff_ampl, zff_hel, &
        wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
-       lhydro_forcing,lmagnetic_forcing,ltestfield_forcing, ltestflow_forcing, &
+       lhydro_forcing, lneutral_forcing, lmagnetic_forcing, &
+       ltestfield_forcing, ltestflow_forcing, &
        lxxcorr_forcing, lxycorr_forcing, &
        jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
@@ -204,7 +205,9 @@ module Forcing
         if (ip<4) print*,'initialize_forcing: not needed in start'
       else
 !
-!  check whether we want ordinary hydro forcing or magnetic forcing
+!  Check whether we want ordinary hydro forcing or magnetic forcing
+!  Currently there is also the option of forcing just the neutrals,
+!  but in future it could be combined with other forcings instead.
 !
         lcrosshel_forcing=lmagnetic_forcing.and.lhydro_forcing .or. &
                           ltestfield_forcing.and.ltestflow_forcing
@@ -212,14 +215,22 @@ module Forcing
         if (lmagnetic_forcing) then
           ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
         endif 
+        if (lneutral_forcing) then
+          if (iuun==0) call fatal_error("lneutral_forcing","uun==0")
+          ifff=iuun; iffx=iunx; iffy=iuny; iffz=iunz
+        endif 
         if (lhydro_forcing) then
           if (lmagnetic_forcing) then
             i2fff=iuu; i2ffx=iux; i2ffy=iuy; i2ffz=iuz
           else
-            ifff=iuu; iffx=iux; iffy=iuy; iffz=iuz
+            if (iphiuu==0) then
+              ifff=iuu; iffx=iux; iffy=iuy; iffz=iuz
+            else
+              ifff=iphiuu; iffx=iphiuu; iffy=0; iffz=0
+            endif
           endif
         endif
-        if (.not.(lmagnetic_forcing.or.lhydro_forcing.or. &
+        if (.not.(lmagnetic_forcing.or.lhydro_forcing.or.lneutral_forcing.or. &
                   ltestfield_forcing.or.ltestflow_forcing)) &
           call stop_it("initialize_forcing: No forcing function set")
         
@@ -3436,7 +3447,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
-      real, dimension (nx) :: radius2,gaussian,ruf,rho
+      real, dimension (nx) :: radius2, gaussian, gaussian_fact, ruf, rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       integer :: j,jf
       real :: irufm,fact,width_ff21,fsum_tmp,fsum
@@ -3516,14 +3527,15 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  to a delta function of the time difference.
 !  When dtforce is finite, take dtforce+.5*dt.
 !  The 1/2 factor takes care of round-off errors.
-!  Also define width_ff21 = 1/width^2
+!  Also define width_ff21 = 1/width^2.
+!  The factor 2 in fact takes care of the 2 in 2*xi/R^2.
 !
         width_ff21=1./width_ff**2
         fact=2.*width_ff21*force_tmp*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
 !
-!  loop the two cases separately, so we don't check for r_ff during
-!  each loop cycle which could inhibit (pseudo-)vectorisation
-!  calculate energy input from forcing; must use lout (not ldiagnos)
+!  Loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorization.
+!  Calculate energy input from forcing; must use lout (not ldiagnos).
 !
         irufm=0
 !
@@ -3558,14 +3570,19 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  compute gaussian blob and set to forcing function
 !
             radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
-            gaussian=fact*exp(-radius2*width_ff21)
+            gaussian=exp(-radius2*width_ff21)
+            gaussian_fact=gaussian*fact
             variable_rhs=f(l1:l2,m,n,iffx:iffz)
-            do j=1,3
-              if (lactive_dimension(j)) then
-                jf=j+ifff-1
-                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian*delta(:,j)
-              endif
-            enddo
+            if (iphiuu==0) then
+              do j=1,3
+                if (lactive_dimension(j)) then
+                  jf=j+ifff-1
+                  f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian_fact*delta(:,j)
+                endif
+              enddo
+            else
+              f(l1:l2,m,n,ifff)=f(l1:l2,m,n,ifff)+gaussian
+            endif
 !
 !  test
 !
