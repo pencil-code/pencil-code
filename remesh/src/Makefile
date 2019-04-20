@@ -167,6 +167,15 @@ endif
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(neolith)
 ##LIBMPISUFFIX=_#(neolith)
 ##
+## Tegner (Stockholm)                
+## 1516 24-nodes per cabinet 2.1GHz Opterons                      
+##                                                                        
+#FC=ftn #(tegner*)
+#F90=$(FC) #(tegner*)
+#CC=cc #(tegner*)
+#FFLAGS=-O3 #(tegner*) 
+#CFLAGS=-DFUNDERSC=1 -O3 #(tegner*)
+##
 ## Lindgren - CrayXE6 - (Stockholm)                
 ## 1516 24-nodes per cabinet 2.1GHz Opterons                      
 ##                                                                        
