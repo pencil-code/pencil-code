@@ -87,7 +87,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-    t = pc_read ('time', file=varfile, datadir=datadir)
+    time = pc_read ('time', file=varfile, datadir=datadir)
     if (size (varcontent, /type) eq 0) then begin
       varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
     end
@@ -95,7 +95,7 @@ COMPILE_OPT IDL2,HIDDEN
     num_quantities = n_elements (quantities)
     if (size (grid, /type) eq 0) then pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /quiet
     object = dblarr (dim.mxgrid, dim.mygrid, dim.mzgrid, num_quantities)
-    tags = { time:t }
+    tags = { time:time }
     for pos = 0L, num_quantities-1 do begin
       if (quantities[pos] eq 'dummy') then continue
       num_skip = varcontent[pos].skip

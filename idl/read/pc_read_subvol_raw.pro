@@ -158,7 +158,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Load HDF5 varfile if requested or available.
 	if (strmid (varfile, strlen(varfile)-3) eq '.h5') then begin
-		t = pc_read ('time', file=varfile, datadir=datadir)
+		time = pc_read ('time', file=varfile, datadir=datadir)
 		if (size (varcontent, /type) eq 0) then begin
 			varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
 		end
@@ -174,7 +174,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 			gz_delta -= 2*nghostz
 		end
 		object = dblarr (gx_delta, gy_delta, gz_delta, num_quantities)
-		tags = { time:t }
+		tags = { time:time }
 		start = [ xs, ys, zs ]
 		count = [ gx_delta, gy_delta, gz_delta ]
 		for pos = 0L, num_quantities-1 do begin
