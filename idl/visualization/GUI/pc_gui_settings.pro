@@ -41,11 +41,6 @@ default, overplot_quantities, { $
 	B:'magnetic field' $
 }
 
-;;; Default filenames
-default, varfile, 'var.dat'
-default, crashfile, 'crash.dat'
-default, pattern, 'VAR[0-9]*'
-
 ;;; Preferred units for display
 default, display_units, { $
 	default_length:1, default_length_str:'m', $
