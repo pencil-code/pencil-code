@@ -15,7 +15,7 @@
 ;;;   Optional settings that can be done before starting the GUI:
 ;;;   IDL> scaling = (0,+oo]            ; magnification factor
 ;;;   IDL> datadir = "my_data_dir"      ; alternative data directory
-;;;   IDL> varfile = "VAR123"           ; default is "var.dat"
+;;;   IDL> varfile = "VAR123"           ; default is "var.dat" or "var.h5"
 ;;;   IDL> cut_y = 511                  ; only read an xz-slice at y-pos. 511
 ;;;   IDL> default_length = 1           ; default length display unit
 ;;;   IDL> default_length_str = '...'   ; default length string
@@ -48,7 +48,7 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 @pc_gui_settings
 
 ;;; Default data directory
-datadir=pc_get_datadir(datadir)
+datadir = pc_get_datadir (datadir)
 
 ;;; Default minimum size of the data display
 default, min_display_size, 256
@@ -66,8 +66,6 @@ default, reduced, 0
 default, pc_gui_loaded, 0
 
 if (not pc_gui_loaded) then BEGIN
-
-	default, addfile, crashfile
 
 	pc_read_dim, obj=orig_dim, datadir=datadir, reduced=reduced, /quiet
 	pc_read_param, obj=start_param, dim=orig_dim, datadir=datadir, /quiet
