@@ -86,7 +86,7 @@ module Testfield
   real, dimension (mz,3,njtest) :: uxbtestm
 
   contains
-
+!
 !***********************************************************************
     subroutine register_testfield
 !
