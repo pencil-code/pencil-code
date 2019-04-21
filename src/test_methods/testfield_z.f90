@@ -207,7 +207,7 @@ module Testfield
   real, dimension(nz,3,njtest) :: uxbtestm,jxbtestm    ! TB improved: declare smaller (njtestl) if possible, requires tb allocatable
 
   contains
-
+!
 !***********************************************************************
     subroutine initialize_testfield(f)
 !
