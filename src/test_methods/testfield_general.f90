@@ -273,7 +273,7 @@ module Testfield_general
         istart = iaxtest+3*(jtest-1)
         select case (initaatest(j))
 
-        case ('zero'); f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+        case ('zero'); f(:,:,:,iaatest:iaatest+3*njtest-1)=0.
         case ('gaussian-noise'); call gaunoise(amplaatest(j),f,istart,iaztest+3*(jtest-1))
         case ('sinwave-x'); if (istart>0) call sinwave(amplaatest(j),f,istart+1,kx=kx_aatest(j))   ! sets y-component!!
 !        case ('sinwave-x-1'); if (istart>0) call sinwave(amplaatest(j),f,iaxtest+0+1,kx=kx_aatest(j))        
@@ -368,42 +368,29 @@ module Testfield_general
 !   3-jun-05/axel: adapted from register_magnetic
 !  27-jun-13/MR  : moved from testfield_xz
 !
+      use FArrayManager
       use Cdata
       use Mpicomm, only: stop_it
       use Sub
+!
+!  Register test field.
+!
+      call farray_register_pde('aatest',iaatest,array=3*njtest)
+      call farray_index_append('ntestfield',3*njtest)
 !
 !  Set first and last index of test field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
 !  These values are used in this form in start, but later overwritten.
 !
-
-      iaatest=nvar+1
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      
-      ntestfield=3*njtest
-      nvar=nvar+ntestfield
-      iaztestpq=nvar
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaatest = ', iaatest
-      endif
-!
-!  Put variable names in array
-!
-      varname(iaatest:nvar) = 'aatest'
+      iaztestpq=iaatest+3*njtest-1
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id: testfield_general.f90 19193 2013-06-27 12:55:46Z wdobler $")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_testfield: nvar > mvar')
-      endif
 !
 !  Writing files for use with IDL
 !
