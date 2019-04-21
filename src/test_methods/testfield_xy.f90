@@ -88,41 +88,6 @@ module Testfield
   contains
 !
 !***********************************************************************
-    subroutine register_testfield
-!
-!  Initialise variables which should know that we solve for the vector
-!  potential: iaatest, etc; increase nvar accordingly
-!
-!   3-jun-05/axel: adapted from register_magnetic
-!
-      use FArrayManager
-      use Mpicomm
-      use Sub
-!
-!  Register test field.
-!
-      call farray_register_pde('aatest',iaatest,array=3*njtest)
-      call farray_index_append('ntestfield',3*njtest)
-!
-!  Identify version number.
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-!
-!  Writing files for use with IDL
-!
-      if (lroot) then
-        if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aatest $'
-          if (nvar == mvar) write(4,*) ',aatest'
-        else
-          write(4,*) ',aatest $'
-        endif
-        write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
-      endif
-!
-    endsubroutine register_testfield
-!***********************************************************************
     subroutine initialize_testfield(f)
 !
 !  Perform any post-parameter-read initialization
