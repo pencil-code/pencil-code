@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3); aps
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
-! PENCILS PROVIDED bijtilde(3,2)
+! PENCILS PROVIDED bijtilde(3,3),bij_cov_corr(3,3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
@@ -858,6 +858,15 @@ module Magnetic
   integer :: idiag_StokesQ1mxy=0! ZAVG_DOC: $+\left<F\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$
   integer :: idiag_StokesU1mxy=0! ZAVG_DOC: $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$
   integer :: idiag_beta1mxy=0   ! ZAVG_DOC: $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$
+  integer :: idiag_dbxdxmxy=0
+  integer :: idiag_dbxdymxy=0
+  integer :: idiag_dbxdzmxy=0
+  integer :: idiag_dbydxmxy=0
+  integer :: idiag_dbydymxy=0
+  integer :: idiag_dbydzmxy=0
+  integer :: idiag_dbzdxmxy=0
+  integer :: idiag_dbzdymxy=0
+  integer :: idiag_dbzdzmxy=0
 !
 !  Video data.
 !
@@ -1126,6 +1135,7 @@ module Magnetic
               center1_x,center1_z)
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
           case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
+          case ('sinwave-Ax-kz'); call sinwave(amplaa(j),f,iax,kz=kz_aa(j))
           case default
           endselect
         enddo
@@ -1529,7 +1539,8 @@ module Magnetic
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (lbb_as_aux .or. lbb_as_comaux) call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
+      if (lbb_as_aux .or. lbb_as_comaux) &
+        call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
       if (ljj_as_aux ) call register_report_aux('jj',ijj,ijx,ijy,ijz)
 !
       if (lbbt_as_aux) then
@@ -2660,6 +2671,10 @@ module Magnetic
       if (idiag_b2mphi/=0 .or. idiag_b2mxz/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
       if (idiag_bthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
+      if (idiag_dbxdxmxy/=0.or.idiag_dbxdymxy/=0.or.idiag_dbxdzmxy/=0 .or. &
+          idiag_dbydxmxy/=0.or.idiag_dbydymxy/=0.or.idiag_dbydzmxy/=0 .or. &
+          idiag_dbzdxmxy/=0.or.idiag_dbzdymxy/=0.or.idiag_dbzdzmxy/=0)     &
+        lpenc_diagnos2d(i_bijtilde)=.true.
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
       if (idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
           .or. idiag_abuxmz/=0 .or. idiag_abuymz/=0 .or. idiag_abuzmz/=0) &
@@ -3256,7 +3271,13 @@ module Magnetic
                        LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       endif
-      if (lpenc_loc(i_bijtilde)) call bij_tilde(f,p%bb,p%bijtilde)
+      if (lpenc_loc(i_bijtilde)) then
+        if (lcovariant_magnetic) then
+          call bij_tilde(f,p%bb,p%bijtilde,p%bij_cov_corr)
+        else
+          call bij_tilde(f,p%bb,p%bijtilde)
+        endif
+      endif
 !
 !  possibility of diamagnetism
 !
@@ -5499,6 +5520,43 @@ module Magnetic
         if (idiag_axmxy/=0)  call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
         if (idiag_aymxy/=0)  call zsum_mn_name_xy(p%aa,idiag_aymxy,(/0,1,0/))
         if (idiag_azmxy/=0)  call zsum_mn_name_xy(p%aa,idiag_azmxy,(/0,0,1/))
+        if (lcovariant_magnetic) then
+          if (idiag_dbxdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,1)+p%bij_cov_corr(:,1,1),idiag_dbxdxmxy)
+          if (idiag_dbxdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2),idiag_dbxdymxy)
+          if (idiag_dbxdzmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,3)+p%bij_cov_corr(:,1,3),idiag_dbxdzmxy)
+          if (idiag_dbydxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1),idiag_dbydxmxy)
+          if (idiag_dbydymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,2)+p%bij_cov_corr(:,2,2),idiag_dbydymxy)
+          if (idiag_dbydzmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,3)+p%bij_cov_corr(:,2,3),idiag_dbydzmxy)
+          if (idiag_dbzdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,1)+p%bij_cov_corr(:,3,1),idiag_dbzdxmxy)
+          if (idiag_dbzdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,2)+p%bij_cov_corr(:,3,2),idiag_dbzdymxy)
+          if (idiag_dbzdzmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,3)+p%bij_cov_corr(:,3,3),idiag_dbzdzmxy)
+          !if (idiag_dbxdxmxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,1,1)+p%bij_cov_corr(:,1,1)-p%bij(:,1,1),idiag_dbxdxmxy)
+          !if (idiag_dbxdymxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,1,2)+p%bij_cov_corr(:,1,2)-p%bij(:,1,2),idiag_dbxdymxy)
+          !if (idiag_dbxdzmxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,1,3)+p%bij_cov_corr(:,1,3)-p%bij(:,1,3),idiag_dbxdzmxy)
+          !if (idiag_dbydxmxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,2,1)+p%bij_cov_corr(:,2,1)-p%bij(:,2,1),idiag_dbydxmxy)
+          !if (idiag_dbydymxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,2,2)+p%bij_cov_corr(:,2,2)-p%bij(:,2,2),idiag_dbydymxy)
+          !if (idiag_dbydzmxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,2,3)+p%bij_cov_corr(:,2,3)-p%bij(:,2,3),idiag_dbydzmxy)
+          !if (idiag_dbzdxmxy/=0)&
+          !  call zsum_mn_name_xy(p%bijtilde(:,3,1)+p%bij_cov_corr(:,3,1)-p%bij(:,3,1),idiag_dbzdxmxy)
+          !if (idiag_dbzdymxy/=0)& 
+          !  call zsum_mn_name_xy(p%bijtilde(:,3,2)+p%bij_cov_corr(:,3,2)-p%bij(:,3,2),idiag_dbzdymxy)
+          !if (idiag_dbzdzmxy/=0)& 
+          !  call zsum_mn_name_xy(p%bijtilde(:,3,3)+p%bij_cov_corr(:,3,3)-p%bij(:,3,3),idiag_dbzdzmxy)
+
+        else
+          if (idiag_dbxdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,1),idiag_dbxdxmxy)
+          if (idiag_dbxdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,1,2),idiag_dbxdymxy)
+          if (idiag_dbydxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,1),idiag_dbydxmxy)
+          if (idiag_dbydymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,2,2),idiag_dbydymxy)
+          if (idiag_dbzdxmxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,1),idiag_dbzdxmxy)
+          if (idiag_dbzdymxy/=0) call zsum_mn_name_xy(p%bijtilde(:,3,2),idiag_dbzdymxy)
+        endif
 !
         if (idiag_b2mxz/=0)  call ysum_mn_name_xz(p%b2,idiag_b2mxz)
         if (idiag_axmxz/=0)  call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
@@ -8405,6 +8463,9 @@ module Magnetic
         idiag_bx2mz=0; idiag_by2mz=0; idiag_bz2mz=0
         idiag_bx2rmz=0; idiag_by2rmz=0; idiag_bz2rmz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
+        idiag_dbxdxmxy=0; idiag_dbxdymxy=0; idiag_dbxdzmxy=0
+        idiag_dbydxmxy=0; idiag_dbydymxy=0; idiag_dbydzmxy=0
+        idiag_dbzdxmxy=0; idiag_dbzdymxy=0; idiag_dbzdzmxy=0
         idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
         idiag_poynxmxy=0; idiag_poynymxy=0; idiag_poynzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0; idiag_bxbymxy=0
@@ -8946,6 +9007,15 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynxmxy',idiag_poynxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynymxy',idiag_poynymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynzmxy',idiag_poynzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbxdxmxy',idiag_dbxdxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbxdymxy',idiag_dbxdymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbxdzmxy',idiag_dbxdzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbydxmxy',idiag_dbydxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbydymxy',idiag_dbydymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbydzmxy',idiag_dbydzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbzdxmxy',idiag_dbzdxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbzdymxy',idiag_dbzdymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'dbzdzmxy',idiag_dbzdzmxy)
       enddo
 !
 !  Check for those quantities for which we want phi-averages.
