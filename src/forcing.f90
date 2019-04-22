@@ -129,7 +129,7 @@ module Forcing
        wff2_ampl, xff2_ampl,yff2_ampl, zff2_ampl, &
        lhydro_forcing, lneutral_forcing, lmagnetic_forcing, &
        ltestfield_forcing, ltestflow_forcing, &
-       lxxcorr_forcing, lxycorr_forcing, &
+       lcrosshel_forcing, lxxcorr_forcing, lxycorr_forcing, &
        jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        lforcing_coefs_hel_double, dtforce_ampl, &
@@ -163,6 +163,7 @@ module Forcing
   real, dimension(:,:), pointer :: reference_state
   real, dimension(3) :: k1xyz=0.
   real, dimension(mz) :: profz_k
+  logical :: lmhd_forcing
 !
   contains
 !
@@ -209,9 +210,16 @@ module Forcing
 !  Currently there is also the option of forcing just the neutrals,
 !  but in future it could be combined with other forcings instead.
 !
-        lcrosshel_forcing=lmagnetic_forcing.and.lhydro_forcing .or. &
-                          ltestfield_forcing.and.ltestflow_forcing
-
+        if (lcrosshel_forcing) then
+          if (.not.(lmagnetic.and.lhydro)) &
+            call fatal_error('initialize_forcing','cross helicity forcing requires an MHD run')
+          lmagnetic_forcing=.true.
+          lhydro_forcing=.true.
+          lmhd_forcing=.false.
+        else
+          lmhd_forcing=lmagnetic_forcing.and.lhydro_forcing .or. &
+                       ltestfield_forcing.and.ltestflow_forcing
+        endif 
         if (lmagnetic_forcing) then
           ifff=iaa; iffx=iax; iffy=iay; iffz=iaz
         endif 
@@ -1702,7 +1710,7 @@ module Forcing
           fz2_old=fz2
           fda2_old=fda2
           call forcing_coefs_hel2(force_double,coef1b,coef2b,coef3b,fx2,fy2,fz2,fda2)
-        elseif (lcrosshel_forcing) then
+        elseif (lmhd_forcing) then
           fx2_old=fx2
           fy2_old=fy2
           fz2_old=fz2
@@ -1759,7 +1767,7 @@ module Forcing
 !
 !  Do the same for secondary forcing function.
 !
-            if (lforcing_coefs_hel_double.or.lcrosshel_forcing) then
+            if (lforcing_coefs_hel_double.or.lmhd_forcing) then
               profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*coef2b
               fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
               fxyz2_old=fx2_old(l1:l2)*fy2_old(m)*fz2_old(n)
@@ -1795,7 +1803,7 @@ module Forcing
                   forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
                                         *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
 
-                if (lcrosshel_forcing) then
+                if (lmhd_forcing) then
                   forcing_rhs2(:,j) = force_ampl*fda2(j)*cos(omega_ff*t) & 
                                      *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
                   if (qforce/=0.) &
@@ -1862,8 +1870,11 @@ module Forcing
 !  Allow here for forcing both in u and in b=curla. In that case one sets
 !  lhydro_forcing=T and lmagnetic_forcing=T.
 !
-                    if (lcrosshel_forcing)  &
+                    if (lmhd_forcing) then 
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
+                    elseif (lcrosshel_forcing) then
+                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs(:,j)*force2_scl
+                    endif
 !
 !  Forcing with enhanced xx correlation.
 !
@@ -2364,9 +2375,11 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff/=0. works
 !  allow here for forcing both in u and in b=curla. In that case one sets
 !  lhydro_forcing=T and lmagnetic_forcing=T.
 !
-                    if (lcrosshel_forcing) &
+                    if (lmhd_forcing) then
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
-                    
+                    elseif (lcrosshel_forcing) then
+                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs(:,j)*force2_scl
+                    endif
                   endif
 !
                 endif
