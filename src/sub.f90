@@ -2520,56 +2520,77 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
-    subroutine bij_tilde(f,bb,bijtilde)
+    subroutine bij_tilde(f,bb,bijtilde,bij_cov_corr)
 !
-! Calculates \partial B_[r,\theta,\phi]/ \partial [r,\theta]
+! Calculates \partial B_[r,\theta,\phi]/ \partial [r,\theta],
+! and optionally the correction, needed for covariant derivatives, in bij_cov_corr.
 !
 ! 20-nov-16/MR: coded
 !
       use Deriv, only: der2,derij,der
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
-      real, dimension (nx,3),intent(in) :: bb
-      real, dimension (nx,3,2), intent (out) :: bijtilde
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx,3),             intent(in) :: bb
+      real, dimension (nx,3,*),           intent(out):: bijtilde
+      real, dimension (nx,3,3), optional, intent(out):: bij_cov_corr
  
-      real, dimension (nx,3) :: aa
+      real, dimension (nx,3) :: bbr1
+      real, dimension (nx,2:3) :: aar2
       real, dimension (nx) :: d2adrdt,tmp,tmp1
+      integer :: i
+
+      do i=1,3 
+        bbr1(:,i)=bb(:,i)*r1_mn
+      enddo
 !
 !  d B_r/dr
 !      
-      aa=f(l1:l2,m,n,iax:iaz)
-      call derij(f,iaz,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_phi/dr dtheta
+      do i=1,2 
+        aar2(:,i+1)=f(l1:l2,m,n,iaa+i)*r2_mn
+      enddo
+!
+      call derij(f,iaz,d2adrdt,1,2)     ! (1/r) d^2 a_phi/dr dtheta
 
-      bijtilde(:,1,1) = d2adrdt - (bb(:,1) + cotth(m)*(bb(:,2)+r1_mn*aa(:,3)))*r1_mn
+      bijtilde(:,1,1) = d2adrdt - (bbr1(:,1) + cotth(m)*(bbr1(:,2)+aar2(:,3)))
 !
 !  (1/r) d B_r/d theta
 !      
-      call der2(f,iaz,tmp,2,.true.)            ! (1/r^2) d^2 a_phi/dtheta^2
-      bijtilde(:,1,2) = tmp - aa(:,3)*(cotth(m)*cotth(m) + sin2th(m))*r2_mn + cotth(m)*bb(:,1)*r1_mn
+      call der2(f,iaz,tmp,2)            ! (1/r^2) d^2 a_phi/dtheta^2
+      bijtilde(:,1,2) = tmp - aar2(:,3)*(cotth(m)*cotth(m) + sin2th(m)) + cotth(m)*bbr1(:,1)
 !
 !  d B_theta/dr
 !      
-      call der2(f,iaz,tmp,1,.true.)            ! d^2 a_phi/dr^2
-      bijtilde(:,2,1) = -tmp + (bb(:,2)+2.*r1_mn*aa(:,3))*r1_mn
+      call der2(f,iaz,tmp,1)            ! d^2 a_phi/dr^2
+      bijtilde(:,2,1) = -tmp + (bbr1(:,2)+2.*aar2(:,3))
 !
 !  (1/r) d B_theta/d theta
 !      
-      bijtilde(:,2,2) = -d2adrdt - (bb(:,1) - cotth(m)*r1_mn*aa(:,3))*r1_mn
+      bijtilde(:,2,2) = -d2adrdt - (bbr1(:,1) - cotth(m)*aar2(:,3))
 !
 !  d B_phi/dr
 !      
-      call der2(f,iay,tmp,1,.true.)            ! d^2 a_theta/dr^2
-      call derij(f,iax,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_r/dr dtheta
-      call der(f,iax,tmp1,2)                   ! (1/r) d a_r/dtheta
-      bijtilde(:,3,1) = tmp - d2adrdt + (bb(:,3) - 2.*(r1_mn*aa(:,2)-tmp1))*r1_mn
+      call der2(f,iay,tmp,1)            ! d^2 a_theta/dr^2
+      call derij(f,iax,d2adrdt,1,2)     ! (1/r) d^2 a_r/dr dtheta
+      call der(f,iax,tmp1,2)            ! (1/r) d a_r/dtheta
+      bijtilde(:,3,1) = tmp - d2adrdt + bbr1(:,3) - 2.*(aar2(:,2)-tmp1*r1_mn)
 !
 !  (1/r) d B_phi/d theta
 !      
-      call der2(f,iax,tmp,2,.true.)            ! (1/r^2) d^2 a_r/dtheta^2
-      call derij(f,iay,d2adrdt,1,2,.true.)     ! (1/r) d^2 a_theta/dr dtheta
-      call der(f,iay,tmp1,2)                   ! (1/r) d a_theta/dtheta
+      call der2(f,iax,tmp,2)            ! (1/r^2) d^2 a_r/dtheta^2
+      call derij(f,iay,d2adrdt,1,2)     ! (1/r) d^2 a_theta/dr dtheta
+      call der(f,iay,tmp1,2)            ! (1/r) d a_theta/dtheta
       bijtilde(:,3,2) = tmp1*r1_mn - (tmp - d2adrdt)
-   
+ 
+      bijtilde(:,:,3)=0. 
+      if (present(bij_cov_corr)) then
+        bij_cov_corr(:,:,1) = 0.; bij_cov_corr(:,3,2)=0.
+        bij_cov_corr(:,1,2) = -bbr1(:,2)
+        bij_cov_corr(:,1,3) = -bbr1(:,3)
+        bij_cov_corr(:,2,2) =  bbr1(:,1)
+        bij_cov_corr(:,2,3) = -cotth(m)*bbr1(:,3)
+        bij_cov_corr(:,3,3) =  cotth(m)*bbr1(:,2)+bbr1(:,1)
+      endif
+ 
     endsubroutine bij_tilde 
 !***********************************************************************
     subroutine gij_etc(f,iref,aa,aij,bij,del2,graddiv,lcovariant_derivative)
@@ -2667,15 +2688,13 @@ module Sub
           bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
           bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
           if (loptest(lcovariant_derivative)) then
-            bij(:,1,1)=bij(:,1,1)+(aij(:,3,2)*r1_mn-aa(:,3)*r2_mn)*cotth(m)
+            bij(:,1,1)=bij(:,1,1)+(aij(:,3,2)*r1_mn-aa(:,3)*r2_mn)*cotth(m) ! MR: not correct, but strangely bij(:,1,1)
+                                                                            !     does need covariant correction. Why? 
             bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*r1_mn+aa(:,3)*r2_mn
             bij(:,1,3)=bij(:,1,3)+(aij(:,1,2)-aij(:,2,1))*r1_mn-aa(:,2)*r2_mn
-            !bij(:,2,1)=bij(:,2,1)
             bij(:,2,2)=bij(:,2,2)-aij(:,2,3)*r1_mn         +aa(:,3)*r2_mn*cotth(m)
             bij(:,2,3)=bij(:,2,3)+(aij(:,1,2)*r1_mn-aij(:,2,1)*r1_mn-aa(:,2)*r2_mn)&
                                                                          *cotth(m)
-            !bij(:,3,1)=bij(:,3,1)
-            !bij(:,3,2)=bij(:,3,2)
             bij(:,3,3)=bij(:,3,3)+(aij(:,3,2)+(aij(:,1,3)-aij(:,3,1))*cotth(m))*r1_mn
           endif
         endif
@@ -2691,15 +2710,9 @@ module Sub
 !
           bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*rcyl_mn1-aa(:,2)*rcyl_mn2
           if (loptest(lcovariant_derivative)) then
-            !bij(:,1,1)=bij(:,1,1)
             bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*rcyl_mn1
-            !bij(:,1,3)=bij(:,1,3)
-            !bij(:,2,1)=bij(:,2,1)
             bij(:,2,2)=bij(:,2,2)+(aij(:,3,2)-aij(:,2,3))*rcyl_mn1
-            !bij(:,2,3)=bij(:,2,3)
-            !bij(:,3,1)=bij(:,3,1)
-            !bij(:,3,2)=bij(:,3,2)
-            bij(:,3,3)=bij(:,3,3)+aij(:,2,3)*rcyl_mn1
+            bij(:,3,3)=bij(:,3,3)+aij(:,2,3)*rcyl_mn1   ! MR: correct?
           endif
         endif
       endif
@@ -4711,7 +4724,7 @@ module Sub
         if (bc(j) == '') then ! will probably never happen due to default='p'
           if (lroot) print*, 'Empty boundary condition No. ', &
               j, 'in (x, y, or z)'
-          call fatal_error('parse_bc','')
+          !!call fatal_error('parse_bc','')
         endif
         isep = index(bc(j),':')
         if (isep > 0) then
