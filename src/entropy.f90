@@ -3012,17 +3012,19 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
-        advec_cs2=p%cs2*dxyz_2
-      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
-        if (lscale_to_cs2top) then
-          advec_cs2=reduce_cs2*cs2top*dxyz_2
-        else
-          advec_cs2=reduce_cs2*p%cs2*dxyz_2
+      if (ldensity) then
+        if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
+          advec_cs2=p%cs2*dxyz_2
+        if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
+          if (lscale_to_cs2top) then
+            advec_cs2=reduce_cs2*cs2top*dxyz_2
+          else
+            advec_cs2=reduce_cs2*p%cs2*dxyz_2
+          endif
         endif
-      endif
-      if (headtt.or.ldebug) &
+        if (headtt.or.ldebug) &
           print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
+      endif
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes).
@@ -4941,8 +4943,10 @@ module Energy
 !
         chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-        if (notanumber(p%glnTT)) &
+        if (notanumber(p%glnTT)) then
+          !print*, 'entropy:iproc,it,m,n=', iproc_world,it,m,n
           call fatal_error_local('calc_heatcond', 'NaNs in p%glnTT')
+        endif
         call dot(p%glnTT,glnThcond,g2)
         if (pretend_lnTT) then
           thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
