@@ -626,17 +626,20 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
-        advec_cs2=p%cs2*dxyz_2
-      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) then
-        if (lscale_to_cs2top) then
-          call fatal_error('denergy_dt','lscale_to_cs2top not possible')
+      if (ldensity.and.lhydro.and.lfirst.and.ldt) then
+        if (lreduced_sound_speed) then
+          if (lscale_to_cs2top) then
+            call fatal_error('denergy_dt','lscale_to_cs2top not possible')
 !AB: because cs2top is undefined in this module
-!--       advec_cs2=reduce_cs2*cs2top*dxyz_2
+!--         advec_cs2=reduce_cs2*cs2top*dxyz_2
+          else
+            advec_cs2=reduce_cs2*p%cs2*dxyz_2
+          endif
         else
-          advec_cs2=reduce_cs2*p%cs2*dxyz_2
+          advec_cs2=p%cs2*dxyz_2
         endif
       endif
+!
       if (headtt.or.ldebug) &
           print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
