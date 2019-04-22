@@ -54,7 +54,7 @@ module Special
 
   ! Main HDF object ids and variables
 
-  character (len=fnlen) :: hdf_emftensors_filename
+  character (len=fnlen) :: hdf_emftensors_filename, emftensors_file='emftensors.h5'
   integer(HID_T) :: hdf_memtype, &
                     hdf_emftensors_file,  &
                     hdf_emftensors_plist, &
@@ -95,6 +95,9 @@ module Special
   logical, dimension(3) :: lgamma_sym  =[.true. ,.false.,.true. ], &
                            ldelta_sym  =[.false.,.true. ,.false.], &
                            lutensor_sym=[.true. ,.false.,.true. ]
+  !logical, dimension(3,3,3)::lkappa_sym=[[.false.,.true. ,.false.],[.true. ,.false.,.true. ],[.false.,.true.,.false.], &
+  !                                       [.true. ,.false.,.true. ],[.false.,.true. ,.false.],[.true. ,.false.,.true.], &
+  !                                       [.false.,.true. ,.false.],[.true. ,.false.,.true. ],[.false.,.true.,.false.]]
   logical, dimension(3,3,3)::lkappa_sym=reshape((/.false.,.true. ,.false.,.true. ,.false.,.true. ,.false.,.true.,.false., &
                                                   .true. ,.false.,.true. ,.false.,.true. ,.false.,.true. ,.false.,.true., &
                                                   .false.,.true. ,.false.,.true. ,.false.,.true. ,.false.,.true.,.false./), &
@@ -186,12 +189,14 @@ module Special
 ! special symmetries
 !
   logical :: lsymmetrize=.false.
+  integer :: nsmooth_rbound=0, nsmooth_thbound=0
   integer :: field_symmetry=0
 
   ! Input dataset name
   ! Input namelist
 
   namelist /special_init_pars/ &
+      emftensors_file, &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
       lbeta,    lbeta_c,    beta_name,    beta_scale, &
       lgamma,   lgamma_c,   gamma_name,   gamma_scale, &
@@ -202,6 +207,7 @@ module Special
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, defaultname, lusecoefs, lloop
   namelist /special_run_pars/ &
+      emftensors_file, &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
       lbeta,    lbeta_c,    beta_name,    beta_scale, &
       lgamma,   lgamma_c,   gamma_name,   gamma_scale, &
@@ -210,7 +216,8 @@ module Special
       lutensor, lutensor_c, utensor_name, utensor_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname, lusecoefs, lloop, lsymmetrize, field_symmetry
+      interpname, defaultname, lusecoefs, lloop, lsymmetrize, field_symmetry, &
+      nsmooth_rbound, nsmooth_thbound
 
 ! loadDataset interface
 
@@ -223,6 +230,14 @@ module Special
   interface symmetrize
     module procedure symmetrize_3d
     module procedure symmetrize_4d
+  end interface
+ 
+  interface smooth_thbound
+    module procedure smooth_thbound_4d
+  end interface
+
+  interface smooth_rbound
+    module procedure smooth_rbound_4d
   end interface
 
   contains
@@ -258,8 +273,7 @@ module Special
 
         if (lroot) print *, 'register_special: opening emftensors.h5 and loading relevant fields into memory...'
 
-        hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
-        !hdf_emftensors_filename = trim(datadir_snap)//'/emftensors_means.h5'
+        hdf_emftensors_filename = trim(datadir_snap)//'/'//trim(emftensors_file)
 
         inquire(file=hdf_emftensors_filename, exist=hdf_exists)
 
@@ -527,6 +541,80 @@ module Special
 !
     endsubroutine initialize_special
 !***********************************************************************
+    subroutine smooth_thbound_4d(arr,nsmooth)
+!
+!  Simple smothing at theta boundaries: last nsmooth points follow linear trend,
+!  defined by last unsmoothed point and zero in boundary point.
+!
+!  20-jan-2019/MR: coded
+!
+      real, dimension(:,:,:,:), intent(INOUT) :: arr
+      integer, intent(IN) :: nsmooth
+
+      integer :: len_theta,len_r,ir,is
+      real, dimension(size(arr,1),size(arr,4)) :: del
+
+      len_theta=size(arr,3); len_r=size(arr,2)
+
+      do ir=1,len_r
+
+        if (lfirst_proc_y) then
+          del=arr(:,ir,nsmooth+1,:)/nsmooth
+          do is=1,nsmooth
+            arr(:,ir,nsmooth+1-is,:)=arr(:,ir,nsmooth+1,:)-is*del
+          enddo
+          arr(:,ir,1,:)=0.
+        endif
+
+        if (llast_proc_y) then
+          del=arr(:,ir,len_theta-nsmooth,:)/nsmooth
+          do is=1,nsmooth
+            arr(:,ir,len_theta-nsmooth+is,:)=arr(:,ir,len_theta-nsmooth,:)-is*del
+          enddo
+          arr(:,ir,len_theta,:)=0.
+        endif
+
+      enddo
+
+    endsubroutine smooth_thbound_4d
+!***********************************************************************
+    subroutine smooth_rbound_4d(arr,nsmooth)
+!
+!  Simple smothing at r boundaries: last nsmooth points follow linear trend,
+!  defined by last unsmoothed point and zero in boundary point.
+!
+!  20-jan-2019/MR: coded
+!
+      real, dimension(:,:,:,:), intent(INOUT) :: arr
+      integer, intent(IN) :: nsmooth
+
+      integer :: len_theta,len_r,ith,is
+      real, dimension(size(arr,1),size(arr,4)) :: del
+
+      len_theta=size(arr,3); len_r=size(arr,2)
+
+      do ith=1,len_theta
+
+        if (lfirst_proc_x) then
+          del=arr(:,nsmooth+1,ith,:)/nsmooth
+          do is=1,nsmooth
+            arr(:,nsmooth+1-is,ith,:)=arr(:,nsmooth+1,ith,:)-is*del
+          enddo
+!          arr(:,ir,1,:)=0.
+        endif
+
+        if (llast_proc_x) then
+          del=arr(:,len_r-nsmooth,ith,:)/nsmooth
+          do is=1,nsmooth
+            arr(:,len_theta-nsmooth+is,ith,:)=arr(:,len_theta-nsmooth,ith,:)-is*del
+          enddo
+!          arr(:,ir,len_theta,:)=0.
+        endif
+
+      enddo
+
+    endsubroutine smooth_rbound_4d
+!***********************************************************************
     subroutine symmetrize_4d(arr,lsym)
 
       use Mpicomm, only: mpisendrecv_real,mpibarrier,MPI_ANY_TAG
@@ -713,6 +801,44 @@ endif
           if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
           lread_datasets=.false.
 
+          if (nsmooth_rbound/=0) then
+            do i=1,3
+              if (lgamma) call smooth_rbound(gamma_data(:,:,:,:,i),nsmooth_rbound)
+              if (ldelta) call smooth_rbound(delta_data(:,:,:,:,i),nsmooth_rbound)
+              if (lutensor) call smooth_rbound(utensor_data(:,:,:,:,i),nsmooth_rbound)
+              do j=1,3
+                if (lacoef) call smooth_rbound(acoef_data(:,:,:,:,i,j),nsmooth_rbound)
+                if (lalpha) call smooth_rbound(alpha_data(:,:,:,:,i,j),nsmooth_rbound)
+                if (lbeta) call smooth_rbound(beta_data(:,:,:,:,i,j),nsmooth_rbound)
+                do k=1,3
+                  if (lbcoef) call smooth_rbound(bcoef_data(:,:,:,:,i,j,k),nsmooth_rbound)
+                  if (lkappa) call smooth_rbound(kappa_data(:,:,:,:,i,j,k),nsmooth_rbound)
+                enddo
+              enddo
+            enddo
+          endif
+
+          if (nsmooth_thbound/=0) then
+      !beta_data(:,:,1,:,:,:)=0.
+      !beta_data(:,:,ny,:,:,:)=0.
+      !if (lfirst_proc_y) kappa_data(:,:,1,:,:,:,:)=0.
+      !if (llast_proc_y) kappa_data(:,:,ny,:,:,:,:)=0.
+            do i=1,3
+              if (lgamma) call smooth_thbound(gamma_data(:,:,:,:,i),nsmooth_thbound)
+              if (ldelta) call smooth_thbound(delta_data(:,:,:,:,i),nsmooth_thbound)
+              if (lutensor) call smooth_thbound(utensor_data(:,:,:,:,i),nsmooth_thbound)
+              do j=1,3
+                if (lacoef) call smooth_thbound(acoef_data(:,:,:,:,i,j),nsmooth_thbound)
+                if (lalpha) call smooth_thbound(alpha_data(:,:,:,:,i,j),nsmooth_thbound)
+                if (lbeta) call smooth_thbound(beta_data(:,:,:,:,i,j),nsmooth_thbound)
+                do k=1,3
+                  if (lbcoef) call smooth_thbound(bcoef_data(:,:,:,:,i,j,k),nsmooth_thbound)
+                  if (lkappa) call smooth_thbound(kappa_data(:,:,:,:,i,j,k),nsmooth_thbound)
+                enddo
+              enddo
+            enddo
+          endif
+
           if (lsymmetrize) then
             do i=1,3 
               if (lgamma) call symmetrize(gamma_data(:,:,:,:,i),lgamma_sym(i))
@@ -750,9 +876,10 @@ endif
 !  All pencils that this special module depends on are specified here.
 !
       lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_bij)=.true.
+      !lpenc_requested(i_bij)=.true.
+      lpenc_requested(i_bijtilde)=.true.
       lpenc_requested(i_jj)=.true.
-      if (lbcoef.and.lusecoefs) lpenc_requested(i_bijtilde)=.true.
+      !if (lbcoef.and.lusecoefs) lpenc_requested(i_bijtilde)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -841,7 +968,8 @@ endif
       if (lkappa) then
         ! Calculate kappa (grad B)_symm
         do j=1,3; do i=1,3
-          p%bij_symm(:,i,j)=0.5*(p%bij(:,i,j) + p%bij(:,j,i))
+          p%bij_symm(:,i,j)=0.5*(p%bijtilde(:,i,j)+p%bij_cov_corr(:,i,j) + &
+                                 p%bijtilde(:,j,i)+p%bij_cov_corr(:,j,i))
         end do; end do
 
         do k=1,3; do j=1,3; do i=1,3
@@ -897,12 +1025,10 @@ endif
         end do; end do; end do
 
         p%bcoef_emf = 0
-        do k=1,3; do j=1,3; do i=1,3
-          if (lbcoef_arr(i,j,k)) &
-            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bij(:,j,k)
-        end do; end do; end do
-
-        p%bcoef_emf = 0
+! 
+!  Use partial (non-covariant) derivatives of B in the form \partial B_{r,theta,phi}/\partial r, 
+!  \partial B_{r,theta,phi}/(r \partial theta).
+!
         do k=1,2; do j=1,3; do i=1,3
           if (lbcoef_arr(i,j,k)) &
             p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bijtilde(:,j,k)
