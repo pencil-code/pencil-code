@@ -469,8 +469,10 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (lhydro.and.ldensity.and.lfirst.and.ldt) then
+        advec_cs2=p%cs2*dxyz_2
+        if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
+      endif
 !
 !  Calculate entropy related diagnostics.
 !
