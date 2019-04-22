@@ -3870,21 +3870,21 @@ module Hydro
 !
 !  Remove mean flow (xy average).
 !
-        if (lremove_uumeanz) then
-          do j=1,3
-            do n=1,mz
-              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
-            enddo
+      if (lremove_uumeanz) then
+        do j=1,3
+          do n=1,mz
+            f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
           enddo
-        endif
+        enddo
+      endif
 !
-        if (lremove_uumeanz_horizontal) then
-          do j=1,2
-            do n=1,mz
-              f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
-            enddo
+      if (lremove_uumeanz_horizontal) then
+        do j=1,2
+          do n=1,mz
+            f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
           enddo
-        endif
+        enddo
+      endif
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
