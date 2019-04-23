@@ -4207,9 +4207,9 @@ module Energy
         else
           if (lchi_shock_density_dep) then
             call dot(p%gshock,p%gss,gshockgss)
-            call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
-            thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
-                   (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
+            call dot(twothird*p%glnrho+p%glnTT,p%gss,g2)
+            thdiff=exp(-onethird*p%lnrho)*chi_shock* &
+                   (p%shock*(exp(twothird*p%lnrho)*p%del2ss+g2)+gshockgss)
           else
             thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
           endif
@@ -4221,9 +4221,9 @@ module Energy
         else
           if (lchi_shock_density_dep) then
             call dot(p%gshock,p%gss,gshockgss)
-            call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
-            thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock2* &
-                   (p%shock**2*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+2*p%shock*gshockgss)
+            call dot(twothird*p%glnrho+p%glnTT,p%gss,g2)
+            thdiff=exp(-onethird*p%lnrho)*chi_shock2* &
+                   (p%shock**2*(exp(twothird*p%lnrho)*p%del2ss+g2)+2*p%shock*gshockgss)
           else
             thdiff=chi_shock2*(p%shock**2*(p%del2lnTT+g2)+2*p%shock*gshockglnTT)
           endif
@@ -4243,9 +4243,9 @@ module Energy
         if (leos_idealgas) then
           if (lchi_shock_density_dep) then
             if (lheatc_shock) &
-                diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
+                diffus_chi=diffus_chi+exp(-onethird*p%lnrho)*chi_shock*p%shock*p%cp1*dxyz_2
             if (lheatc_shock2) &
-                diffus_chi=diffus_chi+exp(-0.333333333332*p%lnrho)*chi_shock2*p%shock**2*p%cp1*dxyz_2
+                diffus_chi=diffus_chi+exp(-onethird*p%lnrho)*chi_shock2*p%shock**2*p%cp1*dxyz_2
           else
             if (lheatc_shock) &
                 diffus_chi=diffus_chi+(gamma*chi_shock*p%shock)*dxyz_2
@@ -5854,7 +5854,7 @@ module Energy
           if (headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
           if (headtt) print*,'p%rcyl_mn=',p%rcyl_mn
           if (headtt) print*,'p%z_mn=',p%z_mn
-          theta_profile=(1./3.-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
+          theta_profile=(onethird-(p%rcyl_mn/p%z_mn)**2)*deltaT_poleq
           prof = step(p%r_mn,r_ext,wcool)      ! outer heating/cooling step
           heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
           prof = 1. - step(p%r_mn,r_int,wcool)  ! inner heating/cooling step
@@ -6144,7 +6144,7 @@ module Energy
           intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /)
       double precision, parameter, dimension (9) :: &
           lnH_1 = (/ -542.398,  -228.833, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
-       B_1   = (/     50.,      15.,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)
+       B_1   = (/     50.,      15.,      0.,      2.0,      0.,    -2.,      0., -twothird,    0.5 /)
 !
 !  A second set of parameters for cool_RTV (from interstellar.f90).
 !
@@ -7267,7 +7267,7 @@ module Energy
 !  convective zone=mixing-length stratification
 !
             del=delad+alpha_MLT*(fc/ &
-                (exp(lnrhom(iz-1))*(gamma_m1*tempm(iz-1))**1.5))**.6666667
+                (exp(lnrhom(iz-1))*(gamma_m1*tempm(iz-1))**1.5))**twothird
           else
 !
 !  upper zone=isothermal stratification
