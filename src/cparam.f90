@@ -156,7 +156,7 @@ module Cparam
   real, parameter :: sqrt2=1.41421356237309504880168872420970
   real, parameter :: sqrt2pi=sqrt2*sqrtpi
   real, parameter :: four_pi_over_three=4.0/3.0*pi
-  real, parameter :: onethird=1./3., fourthird=4./3.
+  real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3.
   real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958
   real, parameter :: twopi = 6.2831853071795864769252867665590
   real, parameter :: dtor = pi/180.
