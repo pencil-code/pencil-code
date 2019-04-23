@@ -29,7 +29,7 @@ module Cosmicrayflux
   real :: subgrid_c1=0., subgrid_c2=0.
   real :: subgrid_brms=1.
   real :: subgrid_bmin=0.
-  real :: subgrid_s=1.66666666666666666667
+  real :: subgrid_s=5./3.
   real :: subgrid_k=0.
   real :: ratio_kpara_kperp=0.
   real, dimension(nx) :: vKperp, vKpara
