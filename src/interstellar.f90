@@ -118,13 +118,13 @@ module Interstellar
 !  3-D  was 3.71213666 but replaced with Maple result....
 !
   real, parameter, dimension(3) :: &
-             cnorm_gaussian_SN  =  (/ 0.8862269254527579, 3.141592653589793, 5.568327996831708  /)
+             cnorm_gaussian_SN  =  (/ 0.8862269254527579, pi, 5.568327996831708  /)
   real, parameter, dimension(3) :: &
              cnorm_gaussian2_SN =  (/ 0.9064024770554771, 2.784163998415854, 3.849760110050832  /)
   real, parameter, dimension(3) :: &
              cnorm_SN           =  (/ 0.9277193336300392, 2.805377873352155, 3.712218664554472  /)
   real, parameter, dimension(3) :: &
-             cnorm_para_SN =       (/  1.33333333,        1.570796326794897, 1.6755161          /)
+             cnorm_para_SN =       (/  fourthird,        1.570796326794897, 1.6755161          /)
   real, parameter, dimension(3) :: &
              cnorm_quar_SN =       (/  0.,                2.0943951,         0.                 /)
   ! kinetic energy with lmass_SN=F
@@ -168,7 +168,7 @@ module Interstellar
   real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=2E7
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
-  real :: SN_rho_ratio=1e4, SN_TT_ratio=5e2
+  real :: SN_rho_ratio=1e4, SN_TT_ratio=2e2
 !
 !  SNI per (x,y)-area explosion rate
 !
@@ -342,7 +342,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=5.0, rad_fraction=0.8
+  real :: N_mass=100.0, eps_mass=0.05, rfactor_SN=5.0
 !
 !  Requested SNe location (used for test SN)
 !
@@ -2998,7 +2998,7 @@ module Interstellar
 !
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) then
-            SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
+            SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**onethird
             SNR%feat%radius=max(SNR%feat%radius,rfactor_SN*SNR%feat%dr) ! minimum grid resolution
         endif
 !
@@ -3073,7 +3073,7 @@ module Interstellar
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
       real, dimension(nx,3) :: deltauu, deltafcr=0.
       real, dimension(3) :: dmpi2, dmpi2_tmp
-      real, dimension(nx) ::  lnrho, yH, inlnTT, lnTT, rho_old, ee_old, site_rho
+      real, dimension(nx) ::  lnrho, yH, lnTT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
       real :: maxlnTT, site_mass, maxTT, mmpi, mpi_tmp, etmp, ktmp
       real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
@@ -3090,7 +3090,7 @@ module Interstellar
       call get_properties(f,SNR,rhom,ekintot,rhomin)
       SNR%feat%rhom=rhom
       sol_mass_tot=solar_mass*N_mass
-      SNvol=4.*pi/3.*rad_fraction**3/sol_mass_tot
+      SNvol=fourthird*pi/sol_mass_tot
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
 !  improve match of mass to radius.
@@ -3143,7 +3143,7 @@ module Interstellar
           if (.not.lSN_list) return
         endif
       endif
-      radius2 = (rad_fraction*SNR%feat%radius)**2
+      radius2 = SNR%feat%radius**2
 !
 !      if (present(ierr)) then
 !        mpierr=ierr
@@ -3314,12 +3314,6 @@ module Interstellar
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
         endif
-        if (SNR%feat%radius<=1.05*rfactor_SN*SNR%feat%dr) then
-          where (dr2_SN(1:nx) <= radius2) 
-            rho_old(:)=SNR%feat%rhom
-            lnrho(:)=log(SNR%feat%rhom)
-          endwhere
-        endif
 !
 !  multiply by volume element to derive site mass
 !
@@ -3345,22 +3339,21 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          if (SNR%feat%radius<=1.2*rfactor_SN*SNR%feat%dr) then
-            inlnTT=lnTT
-            where (dr2_SN > 2.5*radius2) inlnTT=-10.0
-            maxTT=maxval(exp(inlnTT))
-            if (maxTT>TT_SN_max) then
-              if (present(ierr)) then
-                ierr=iEXPLOSION_TOO_HOT
-                if (.not.lSN_list) exit
-              endif
-            endif
-          endif
           maxTT=maxval(exp(lnTT))
           if (maxTT>SN_TT_ratio*TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
               if (.not.lSN_list) exit
+            endif
+          endif
+          where (dr2_SN > 2.5*radius2) lnTT=-10.0
+          maxTT=maxval(exp(lnTT))
+          if (SNR%feat%radius<=1.2*rfactor_SN*SNR%feat%dr) then
+            if (maxTT>TT_SN_max) then
+              if (present(ierr)) then
+                ierr=iEXPLOSION_TOO_HOT
+                if (.not.lSN_list) exit
+              endif
             endif
           endif
           maxlnTT=max(log(maxTT),maxlnTT)
@@ -3418,12 +3411,6 @@ module Interstellar
           rho_old=exp(lnrho)
         endif
         deltarho=0.
-        if (SNR%feat%radius<=1.05*rfactor_SN*SNR%feat%dr) then
-          where (dr2_SN(1:nx) <= radius2) 
-            rho_old(:)=SNR%feat%rhom
-            lnrho(:)=log(SNR%feat%rhom)
-          endwhere
-        endif
 !
 !  Get the old energy.
 !
@@ -3604,7 +3591,7 @@ module Interstellar
 !
 !  inner rad defined to determine mean density inside rad and smooth if desired
 !
-      radius2 = (rad_fraction*remnant%feat%radius)**2
+      radius2 = remnant%feat%radius**2
       tmp=0.0
       rhomin=1e20
       rhomax=0.0
@@ -3623,14 +3610,6 @@ module Interstellar
           rho=f(l1:l2,m,n,irho)
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
-        endif
-!
-!  if inner remnant very dense uniform density inside inner rad
-!
-        if (remnant%feat%radius<=1.05*rfactor_SN*remnant%feat%dr) then
-          where (dr2_SN(1:nx) <= radius2) 
-            rho(:)=remnant%feat%rhom
-          endwhere
         endif
 !
 !  if radius scaled to total mass mask mass outside inner rad
@@ -3718,7 +3697,7 @@ module Interstellar
 !
       width_mass     = remnant%feat%radius*mass_width_ratio
       width_velocity = remnant%feat%radius*velocity_width_ratio
-      radius2 = (rad_fraction*remnant%feat%radius)**2
+      radius2 = remnant%feat%radius**2
       tmp=0.0
 !
 !  Obtain distance to SN and sum all points inside SNR radius and
@@ -3735,14 +3714,6 @@ module Interstellar
           rho=f(l1:l2,m,n,irho)
         else
           rho=exp(f(l1:l2,m,n,ilnrho))
-        endif
-!
-!  if inner remnant very dense uniform density inside inner rad
-!
-        if (remnant%feat%radius<=1.05*rfactor_SN*remnant%feat%dr) then
-          where (dr2_SN(1:nx) <= radius2) 
-            rho(:)=remnant%feat%rhom
-          endwhere
         endif
         if (lSN_mass) then
           call injectmass_SN(deltarho,width_mass,cmass_SN,remnant%feat%MM)
@@ -3806,7 +3777,7 @@ module Interstellar
 !  Find lowest rho value in the surronding cavity.
 !
       rho_lowest=1E10
-      radius2 = (rad_fraction*radius)**2
+      radius2 = radius**2
       do n=n1,n2
       do m=m1,m2
         call proximity_SN(SNR)
