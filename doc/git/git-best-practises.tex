@@ -41,6 +41,8 @@
   pdfcreator={}}
 \begin{document}
 
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+
 \maketitle
 \tableofcontents
 
@@ -60,7 +62,41 @@ Tips and recommendations for using Git with the Pencil code:
 \section{Operative Summary}
 \label{sec-1}
 
-Here is the bottom line of this document.
+Recall you have two repositories; local to your machine and origin on github
+
+Basic work cycle:
+
+preparation:
+
+\begin{lstlisting}
+git diff # check for differences with local repository
+
+git status # check which files have been modified compared to local repository
+
+git diff origin/master master #check differences between local repository and origin repository
+\end{lstlisting}
+
+execution:
+
+\begin{lstlisting}
+git stash #protect uncommitted local changes (if any) temporarily
+
+git pull --rebase # get origin/master version
+
+git push # update the origin/master with locally committed revisions
+
+git stash pop # restore locally your uncommitted changes
+\end{lstlisting}
+
+Note, 'git add' to add new file to local git repository, 'git commit'
+updates local changes to you local git repository, 'git push' alone will
+change the origin/master
+
+In the event of a conflict see section \ref{sec-4-3-2}, "The worst thing
+that can happen".
+
+The rest of this document explains why, if you are interested or need more
+clarification \ldots
 
 \begin{enumerate}
 \item Decide whether you want to rebase or merge your local changes into
@@ -71,7 +107,6 @@ upstream (typically the \emph{origin/master} branch).
 local tracking branch (typically \emph{master}).
 
 \item Merge: Do \emph{not} merge upstream into your tracking branch like this:
-\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
 git pull origin/master   # DON'T!
 # or
