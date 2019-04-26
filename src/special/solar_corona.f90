@@ -1174,11 +1174,14 @@ module Special
       endif
 !
       ! External magnetic field driver
-      if (luse_mag_field .and. lfirst_proc_z) then
-        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
-            A_init, time_mag_l, time_mag_r)
-        call mag_driver (A_init, Bz_total_flux, f)
-      endif
+      use_mag_field: if (luse_mag_field) then
+        if (lbfield) call fatal_error("special_before_boundary", "luse_mag_field not implemented with bfield")
+        if (lfirst_proc_z) then
+          call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
+              A_init, time_mag_l, time_mag_r)
+          call mag_driver (A_init, Bz_total_flux, f)
+        endif
+      endif use_mag_field
 !
       ! External horizontal velocity driver
       if (luse_vel_field .and. lfirst_proc_z) then
@@ -1270,14 +1273,17 @@ module Special
 ! Presently only emf from constant field and constant velocity
 !
       if (lset_boundary_emf) then
-          call initiate_isendrcv_bdry(f,iax,iaz)
-          call finalize_isendrcv_bdry(f,iax,iaz)
+        if (lbfield) call fatal_error("special_after_timestep", "lset_boundary_emf not implemented with bfield")
+        call initiate_isendrcv_bdry(f,iax,iaz)
+        call finalize_isendrcv_bdry(f,iax,iaz)
         do m=m1,m2
           call bc_emf_z(f,df,dt_,'top',iax)
           call bc_emf_z(f,df,dt_,'top',iay)
           call bc_emf_z(f,df,dt_,'top',iaz)
         enddo
       endif
+      if (lflux_emerg_bottom .and. lbfield) &
+          call fatal_error("special_after_timestep", "lflux_emerg_bottom not implemented with bfield")
       if (lfirst_proc_z.and.lcartesian_coords) then
         if (lflux_emerg_bottom) then
           select case (flux_type)
@@ -1540,6 +1546,8 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real :: swamp_fade_fact, dfade_fact
+!
+      if (lbfield) call fatal_error("calc_swamp_eta", "not implemented with bfield. ")
 !
       swamp_fade_fact = swamp_eta * get_swamp_fade_fact (z(n), dfade_fact)
       if (swamp_fade_fact > 0.0) then
@@ -4037,50 +4045,60 @@ module Special
         if (alloc_err > 0) call fatal_error ('set_BB2', &
             'Could not allocate memory for fac and bbx/bby/bbz', .true.)
 !
+        bfield: if (lbfield) then
+          bbx = f(l1:l2,m1:m2,irefz,ibx)
+          bby = f(l1:l2,m1:m2,irefz,iby)
+          bbz = f(l1:l2,m1:m2,irefz,ibz)
+        else bfield
+!
 ! compute B = curl(A) for irefz layer
 !
-        bbx = 0
-        bby = 0
-        bbz = 0
-        if (nxgrid /= 1) then
-          fac = (1./60)*spread(dx_1(l1:l2),2,ny)
-          bby = bby - fac * &
-              ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
-              -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
-              +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)) )
-          bbz = bbz + fac * &
-              ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
-              -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
-              +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)) )
-        else
-          if (ip <= 5) print*, 'set_BB2: Degenerate case in x-direction'
-        endif
-        if (nygrid /= 1) then
-          fac = (1./60)*spread(dy_1(m1:m2),1,nx)
-          bbx = bbx + fac * &
-              ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
-              -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
-              +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)) )
-          bbz = bbz - fac * &
-              ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
-              -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
-              +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)) )
-        else
-          if (ip <= 5) print*, 'set_BB2: Degenerate case in y-direction'
-        endif
-        if (nzgrid /= 1) then
-          fac = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-          bbx = bbx - fac * &
-              ( 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
-              -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
-              +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)) )
-          bby = bby + fac * &
-              ( 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
-              -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
-              +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)) )
-        else
-          if (ip <= 5) print*, 'set_BB2: Degenerate case in z-direction'
-        endif
+          bbx = 0
+          bby = 0
+          bbz = 0
+!
+          xdir: if (nxgrid /= 1) then
+            fac = (1./60)*spread(dx_1(l1:l2),2,ny)
+            bby = bby - fac * &
+                ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
+                -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
+                +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)) )
+            bbz = bbz + fac * &
+                ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
+                -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
+                +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)) )
+          else xdir
+            if (ip <= 5) print*, 'set_BB2: Degenerate case in x-direction'
+          endif xdir
+!
+          ydir: if (nygrid /= 1) then
+            fac = (1./60)*spread(dy_1(m1:m2),1,nx)
+            bbx = bbx + fac * &
+                ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
+                -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
+                +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)) )
+            bbz = bbz - fac * &
+                ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
+                -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
+                +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)) )
+          else ydir
+            if (ip <= 5) print*, 'set_BB2: Degenerate case in y-direction'
+          endif ydir
+!
+          zdir: if (nzgrid /= 1) then
+            fac = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
+            bbx = bbx - fac * &
+                ( 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
+                -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
+                +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)) )
+            bby = bby + fac * &
+                ( 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
+                -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
+                +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)) )
+          else zdir
+            if (ip <= 5) print*, 'set_BB2: Degenerate case in z-direction'
+          endif zdir
+        endif bfield
 !
 ! Compute |B| and collect as global BB2 on root processor.
 !
