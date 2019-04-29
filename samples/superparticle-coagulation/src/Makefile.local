@@ -6,6 +6,9 @@
 #DIAGNOSTICS  =   diagnostics_f90
 MPICOMM      = mpicomm
 
+IO        =   io_hdf5
+HDF5_IO   =   hdf5_io_parallel
+
 HYDRO        =   hydro
 DENSITY      =   density
 ENTROPY      = noentropy
