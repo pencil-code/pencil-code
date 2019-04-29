@@ -6,8 +6,14 @@
 #DIAGNOSTICS  =   diagnostics_f90
 MPICOMM      = mpicomm
 
-IO        =   io_hdf5
-HDF5_IO   =   hdf5_io_parallel
+#================================
+# Please uncomment one IO option:
+#================================
+#IO        =   io_hdf5
+#HDF5_IO   =   hdf5_io_parallel
+#--------------------------------
+IO        =   io_dist
+#================================
 
 HYDRO        =   hydro
 DENSITY      =   density
