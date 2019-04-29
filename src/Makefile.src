@@ -2392,17 +2392,26 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 LD=$(FC)
 
 ifneq ($(HDF5_IO),nohdf5_io)
-	# default location of HDF5 installation
-	HDF5_HOME ?= /usr
+	# find HDF5 compiler (parallel version first)
+	LD := $(shell which h5pfc || which h5fc)
+	# set HDF5 Fortran linker
+	export HDF5_FLINKER:=$(FC)
+	# root directory of HDF5 installation
+	ifneq ($(LD),)
+		HDF5_BIN ?= $(shell dirname $(LD))
+		HDF5_DIR ?= $(shell dirname $(HDF5_BIN))
+	else
+		# try our best guess (ubuntu system)
+		HDF5_DIR ?= /usr
+		LD := h5fc
+	endif
+	HDF5_HOME ?= $(HDF5_DIR)
 	# set if undefined
 	HDF5_INC ?= $(HDF5_HOME)/include
 	HDF5_LIB ?= $(HDF5_HOME)/lib
 	HDF5_BIN ?= $(HDF5_HOME)/bin
 	# add HDF5 library path
 	LDFLAGS += -L$(HDF5_LIB)
-	# set HDF5 linker
-	LD := $(HDF5_BIN)/h5fc
-	export HDF5_FLINKER:=$(FC)
 endif
 
 #
