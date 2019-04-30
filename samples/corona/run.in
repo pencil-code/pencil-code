@@ -11,6 +11,10 @@
   itorder = 3
   dsnap = 1.0
 !
+  dvid = 4e-4
+  slice_position = 'm'
+  iz2 = 4
+!
   bcz      = 's:a', 's:a', 'a', 'set:a2', 'set:a2', 'pfe', 'nil', 'nil'
   fbcz_bot =      ,      ,    ,         ,         ,  0.2 ,      ,
   fbcz1    =      ,      ,    ,16.796295,0.78135928
