@@ -25,6 +25,7 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; Default values.
 ;
+planes = [ 'xy', 'xz', 'yz', 'xy2', 'xy3', 'xy4', 'xz2' ]
 datadir = pc_get_datadir(datadir)
 default, proc, -1
 default, nt, 100
@@ -38,6 +39,32 @@ default, xzread, 1
 default, xz2read, 1
 default, yzread, 1
 default, print, 1
+;
+; Load HDF5 data, if available
+;
+  if (file_test (datadir+'/slices', /directory)) then begin
+    num_planes = n_elements (planes)
+    default, mask, replicate (1B, num_planes)
+    mask = mask and [ xyread, xzread, yzread, xy2read, xy3read, xy4read, xz2read ]
+    mask = mask and file_test (datadir+'/slices/'+field+'_'+planes+'.h5')
+    object = { field:field }
+    for i = 0, num_planes-1 do begin
+      if (mask[i]) then object = create_struct (object, planes[i], pc_read_slice (field, planes[i], datadir=datadir, time=t, coord=coord, pos=pos))
+    endfor
+    default, t, 0.0
+    default, coord, !Values.D_NaN
+    default, pos, -1
+    object = create_struct (object, 't', t, 'coordinate', coord, 'position', pos, 'num_planes', num_planes, 'num_snapshots', n_elements (t))
+    if (keyword_set (print)) then begin
+      ; print summary
+      print, 'field="', field, '", datadir="', datadir, '"'
+      print, 'min(t)  , max(t)   = ', min(t), ',', max(t)
+      for i = 0, num_planes-1 do begin
+        if (mask[i]) then print, 'min('+planes[i]+') , max('+planes[i]+')  = ', minmax(object.(i+1))
+      endfor
+    endif
+    return
+  endif
 ;
 ; Read either from global data directory or from single processor directory.
 ;
