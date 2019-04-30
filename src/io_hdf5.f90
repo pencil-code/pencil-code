@@ -453,7 +453,7 @@ module Io
 !
 !  30-Oct-2018/PABourdin: coded
 !
-      use File_io, only: parallel_file_exists
+      use File_io, only: file_exists
       use General, only: itoa
       use Mpicomm, only: mpibcast_int, mpiallreduce_min, MPI_COMM_WORLD
 !
@@ -470,19 +470,23 @@ module Io
       real :: time_last
       logical :: lexists, lhas_data
 !
-      if (grid_pos < 0) return
-!
       last = 0
       filename = trim (datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
-      lexists = parallel_file_exists (filename)
-      if (lroot .and. lexists) then
-        call file_open_hdf5 (filename, global=.false., read_only=.true.)
-        if (exists_in_hdf5 ('last')) call input_hdf5 ('last', last)
-        do while (last >= 1)
-          call input_hdf5 (trim(itoa(last))//'/time', time_last)
-          if (time > time_last) exit
-          last = last - 1
-        enddo
+      if (lroot) then
+        lexists = file_exists (filename)
+        if (lexists) then
+          ! find last written slice
+          call file_open_hdf5 (filename, global=.false., read_only=.true.)
+          if (exists_in_hdf5 ('last')) call input_hdf5 ('last', last)
+          do while (last >= 1)
+            call input_hdf5 (trim(itoa(last))//'/time', time_last)
+            if (time > time_last) exit
+            last = last - 1
+          enddo
+        else
+          ! create empty file
+          call file_open_hdf5 (filename, global=.false., truncate=.true.)
+        endif
         call file_close_hdf5
       endif
       last = last + 1
@@ -493,7 +497,7 @@ module Io
       if (.not. lwrite) this_proc = ncpus + 1
       call mpiallreduce_min (this_proc, slice_proc, MPI_COMM_WORLD)
       lhas_data = (slice_proc == iproc)
-      call file_open_hdf5 (filename, global=.false., truncate=(.not. lexists), write=lhas_data)
+      call file_open_hdf5 (filename, global=.false., truncate=.false., write=lhas_data)
       call output_hdf5 ('last', last)
       call create_group_hdf5 (group)
       if (lhas_data) then
