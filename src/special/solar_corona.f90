@@ -241,6 +241,13 @@ module Special
           call fatal_error('solar_corona/calc_heatcond_grad', &
               "Heat conduction 'K_iso' is currently not implemented for entropy.", .true.)
 !
+      bfield: if (lbfield) then
+        if (luse_mag_field) call fatal_error("solar_corona", "luse_mag_field not implemented with bfield")
+        if (lset_boundary_emf) call fatal_error("solar_corona", "lset_boundary_emf not implemented with bfield")
+        if (lflux_emerg_bottom) call fatal_error("solar_corona", "lflux_emerg_bottom not implemented with bfield")
+        if (swamp_eta > 0.0) call fatal_error("solar_corona", "not implemented with bfield. ")
+      endif bfield
+!
       if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
       if (lpencil_check_at_work) return
@@ -1175,7 +1182,6 @@ module Special
 !
       ! External magnetic field driver
       use_mag_field: if (luse_mag_field) then
-        if (lbfield) call fatal_error("special_before_boundary", "luse_mag_field not implemented with bfield")
         if (lfirst_proc_z) then
           call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
               A_init, time_mag_l, time_mag_r)
@@ -1273,7 +1279,6 @@ module Special
 ! Presently only emf from constant field and constant velocity
 !
       if (lset_boundary_emf) then
-        if (lbfield) call fatal_error("special_after_timestep", "lset_boundary_emf not implemented with bfield")
         call initiate_isendrcv_bdry(f,iax,iaz)
         call finalize_isendrcv_bdry(f,iax,iaz)
         do m=m1,m2
@@ -1282,8 +1287,6 @@ module Special
           call bc_emf_z(f,df,dt_,'top',iaz)
         enddo
       endif
-      if (lflux_emerg_bottom .and. lbfield) &
-          call fatal_error("special_after_timestep", "lflux_emerg_bottom not implemented with bfield")
       if (lfirst_proc_z.and.lcartesian_coords) then
         if (lflux_emerg_bottom) then
           select case (flux_type)
@@ -1546,8 +1549,6 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real :: swamp_fade_fact, dfade_fact
-!
-      if (lbfield) call fatal_error("calc_swamp_eta", "not implemented with bfield. ")
 !
       swamp_fade_fact = swamp_eta * get_swamp_fade_fact (z(n), dfade_fact)
       if (swamp_fade_fact > 0.0) then
