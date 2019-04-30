@@ -205,7 +205,7 @@ module HDF5_IO
       elseif (lwrite) then
         if (ltrunc) then
           call h5fcreate_f (trim (file), H5F_ACC_TRUNC_F, h5_file, h5_err)
-          call check_error (h5_err, 'file_open_hdf5', 'create global file "'//trim (file)//'"')
+          call check_error (h5_err, 'file_open_hdf5', 'create local file "'//trim (file)//'"')
         else
           call h5fopen_f (trim (file), h5_read_mode, h5_file, h5_err)
           call check_error (h5_err, 'file_open_hdf5', 'open local file "'//trim (file)//'"')
