@@ -6397,7 +6397,8 @@ nameloop: do
 !  21-apr-15/MR: coded
 !  27-may-18/MR: added ind_loc=-1 when ind outside proc range
 !
-      integer, intent(in) :: ind,ip,ngrid
+      integer, intent(inout) :: ind
+      integer, intent(in) :: ip,ngrid
       integer, intent(out):: ind_loc
       logical, intent(out):: flag
      
@@ -6410,6 +6411,8 @@ nameloop: do
           flag=.false.
           ind_loc=-1
         endif
+      else
+        if (ind_loc > 0) ind = ind_loc + ip*ngrid
       endif
 
     endsubroutine position
