@@ -425,14 +425,16 @@ module Register
 !
       use Boundcond,      only: finalize_boundcond
       use Cdata
-      use IO,             only: finalize_io
-      use Special,        only: finalize_special
       use Deriv,          only: finalize_deriv
-      use Special,        only: finalize_mult_special
       use Gpu,            only: finalize_gpu
+      use IO,             only: finalize_io
+      use Particles_main, only: particles_finalize
+      use Special,        only: finalize_special
+      use Special,        only: finalize_mult_special
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      call particles_finalize
       call finalize_special(f)
       call finalize_boundcond(f)
       call finalize_deriv

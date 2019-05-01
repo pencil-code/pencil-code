@@ -286,6 +286,16 @@ module Particles_main
 !
     endsubroutine particles_init
 !***********************************************************************
+    subroutine particles_finalize()
+!
+!  Finalize particle modules.
+!
+!  01-May-2019/PABourdin: coded
+!
+      if (lparticles_stalker) call finalize_particles_stalker()
+!
+    endsubroutine particles_finalize
+!***********************************************************************
     subroutine read_snapshot_particles(snap_directory)
 !
       character (len=*) :: snap_directory
@@ -312,7 +322,7 @@ module Particles_main
 !
       call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
       call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
-      call read_namelist(read_particles_cond_init_pars ,'particles_cond'  ,lparticles_condensation)
+      call read_namelist(read_particles_cond_init_pars ,'particles_cond'    ,lparticles_condensation)
       call read_namelist(read_particles_spin_init_pars ,'particles_spin'    ,lparticles_spin)
       call read_namelist(read_particles_sink_init_pars ,'particles_sink'    ,lparticles_sink)
       call read_namelist(read_particles_num_init_pars  ,'particles_number'  ,lparticles_number)
@@ -325,7 +335,7 @@ module Particles_main
       call read_namelist(read_particles_surf_init_pars ,'particles_surf'    ,lparticles_surfspec)
       call read_namelist(read_particles_chem_init_pars ,'particles_chem'    ,lparticles_chemistry)
       call read_namelist(read_pstalker_init_pars       ,'particles_stalker' ,lparticles_stalker)
- call read_namelist(read_plyapunov_init_pars       ,'particles_lyapunov' ,lparticles_lyapunov)
+      call read_namelist(read_plyapunov_init_pars      ,'particles_lyapunov',lparticles_lyapunov)
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
@@ -353,7 +363,7 @@ module Particles_main
       call read_namelist(read_particles_ads_run_pars      ,'particles_ads'          ,lparticles_adsorbed)
       call read_namelist(read_particles_surf_run_pars     ,'particles_surf'         ,lparticles_surfspec)
       call read_namelist(read_particles_chem_run_pars     ,'particles_chem'         ,lparticles_chemistry)
-      call read_namelist(read_plyapunov_run_pars     ,'particles_lyapunov'         ,lparticles_lyapunov)
+      call read_namelist(read_plyapunov_run_pars          ,'particles_lyapunov'     ,lparticles_lyapunov)
 !
     endsubroutine read_all_particles_run_pars
 !***********************************************************************

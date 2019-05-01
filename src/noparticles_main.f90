@@ -58,6 +58,14 @@ module Particles_main
 !
     endsubroutine particles_init
 !***********************************************************************
+    subroutine particles_finalize()
+!
+!  Finalize particle modules.
+!
+!  01-May-2019/PABourdin: dummy
+!
+    endsubroutine particles_finalize
+!***********************************************************************
     subroutine particles_read_snapshot(filename)
 !
 !  Read particle snapshot from file.

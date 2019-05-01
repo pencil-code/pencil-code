@@ -38,6 +38,13 @@ module Particles_stalker
   logical :: lstalk_relvel=.false.
   logical :: lstalk_gTT=.false.
 !
+  real, dimension (:), allocatable :: xp, yp, zp, vpx, vpy, vpz, ux, uy, uz
+  real, dimension (:), allocatable :: rho, drhodx, drhody, drhodz
+  real, dimension (:), allocatable :: duxdx, duxdy, duxdz, duydx, duydy, duydz, duzdx, duzdy, duzdz
+  real, dimension (:), allocatable :: gTTx, gTTy, gTTz
+  real, dimension (:), allocatable :: bx, by, bz, ap, npswarm, rhopswarm
+  real, dimension (:), allocatable :: potself, aps, relvel
+!
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
@@ -107,6 +114,24 @@ module Particles_stalker
       if (lstalk_relvel)    nvar_stalk=nvar_stalk+1
       if (lstalk_gTT)       nvar_stalk=nvar_stalk+3
 !
+!  Reserve space for particle arrays.
+!
+      if (lstalk_xx) allocate (xp(npar_stalk), yp(npar_stalk), zp(npar_stalk))
+      if (lstalk_vv) allocate (vpx(npar_stalk), vpy(npar_stalk), vpz(npar_stalk))
+      if (lstalk_ap) allocate (ap(npar_stalk))
+      if (lstalk_npswarm) allocate (npswarm(npar_stalk))
+      if (lstalk_rhopswarm) allocate (rhopswarm(npar_stalk))
+      if (lstalk_aps) allocate (aps(npar_stalk))
+      if (lstalk_uu) allocate (ux(npar_stalk), uy(npar_stalk), uz(npar_stalk))
+      if (lstalk_guu) allocate (duxdx(npar_stalk), duxdy(npar_stalk), duxdz(npar_stalk), duydx(npar_stalk), duydy(npar_stalk), &
+          duydz(npar_stalk), duzdx(npar_stalk), duzdy(npar_stalk), duzdz(npar_stalk))
+      if (lstalk_rho) allocate (rho(npar_stalk))
+      if (lstalk_grho) allocate (drhodx(npar_stalk), drhody(npar_stalk), drhodz(npar_stalk))
+      if (lstalk_bb) allocate (bx(npar_stalk), by(npar_stalk), bz(npar_stalk))
+      if (lstalk_potself) allocate (potself(npar_stalk))
+      if (lstalk_relvel) allocate (relvel(npar_stalk))
+      if (lstalk_gTT) allocate (gTTx(npar_stalk), gTTy(npar_stalk), gTTz(npar_stalk))
+!
 !  Write information on which variables are stalked to file.
 !
       if (lroot) then
@@ -151,6 +176,29 @@ module Particles_stalker
 !
     endsubroutine initialize_particles_stalker
 !***********************************************************************
+    subroutine finalize_particles_stalker
+!
+!  Finalize module.
+!
+!  01-May-2019/PABourdin: coded
+!
+      if (lstalk_xx) deallocate (xp, yp, zp)
+      if (lstalk_vv) deallocate (vpx, vpy, vpz)
+      if (lstalk_ap) deallocate (ap)
+      if (lstalk_npswarm) deallocate (npswarm)
+      if (lstalk_rhopswarm) deallocate (rhopswarm)
+      if (lstalk_aps) deallocate (aps)
+      if (lstalk_uu) deallocate (ux, uy, uz)
+      if (lstalk_guu) deallocate (duxdx, duxdy, duxdz, duydx, duydy, duydz, duzdx, duzdy, duzdz)
+      if (lstalk_rho) deallocate (rho)
+      if (lstalk_grho) deallocate (drhodx, drhody, drhodz)
+      if (lstalk_bb) deallocate (bx, by, bz)
+      if (lstalk_potself) deallocate (potself)
+      if (lstalk_relvel) deallocate (relvel)
+      if (lstalk_gTT) deallocate (gTTx, gTTy, gTTz)
+!
+    endsubroutine finalize_particles_stalker
+!***********************************************************************
     subroutine particles_stalker_sub(f,fp,ineargrid)
 !
 !  Find local state of the gas at the position of a limited number of
@@ -164,15 +212,6 @@ module Particles_stalker
       integer, dimension (mpar_loc,3) :: ineargrid
       real :: t_sp
 !
-      real, dimension (npar_stalk) :: xp, yp, zp, vpx, vpy, vpz, ux, uy, uz
-      real, dimension (npar_stalk) :: rho, drhodx, drhody, drhodz
-      real, dimension (npar_stalk) :: duxdx, duxdy, duxdz
-      real, dimension (npar_stalk) :: duydx, duydy, duydz
-      real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
-      real, dimension (npar_stalk) :: gTTx, gTTy, gTTz
-      real, dimension (npar_stalk) :: bx, by, bz, ap, npswarm, rhopswarm
-      real, dimension (npar_stalk) :: potself, aps
-      real, dimension (npar_stalk) :: relvel
       real, dimension (:,:), allocatable :: values
       integer, dimension (npar_stalk) :: k_stalk
       integer :: i, k, npar_stalk_loc, ivalue
@@ -331,6 +370,7 @@ module Particles_stalker
 !  Relative velocity of gas and particle
 !
         if (lstalk_relvel) then
+          allocate (relvel(npar_stalk))
           do i=1,npar_stalk_loc
             vpx(i)=fp(k_stalk(i),ivpx)
             vpy(i)=fp(k_stalk(i),ivpy)
