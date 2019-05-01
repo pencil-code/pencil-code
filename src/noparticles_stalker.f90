@@ -32,6 +32,14 @@ module Particles_stalker
 !
     endsubroutine initialize_particles_stalker
 !***********************************************************************
+    subroutine finalize_particles_stalker
+!
+!  Finalize module.
+!
+!  01-May-2019/PABourdin: dummy
+!
+    endsubroutine finalize_particles_stalker
+!***********************************************************************
     subroutine particles_stalker_sub(f,fp,ineargrid)
 !
 !  13-nov-07/anders: dummy
