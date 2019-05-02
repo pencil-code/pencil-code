@@ -173,6 +173,8 @@ module EquationOfState
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0,caller='initialize_eos')
         call put_shared_variable('lnrho0',lnrho0)
+      else
+        call put_shared_variable('TTtop',TTtop,caller='initialize_eos')
       endif
 !
 !  write scale non-free constants to file; to be read by idl

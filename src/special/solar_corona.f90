@@ -43,7 +43,7 @@ module Special
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
   logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
-             lemerg_profx=.false.,lset_boundary_emf=.false.
+             lemerg_profx=.false.,lset_boundary_emf=.false.,lset_hotplate_lnTT=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -53,7 +53,8 @@ module Special
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
-  real :: lnrho_min=-max_real, lnrho_min_tau=1.0, uu_tau1_quench=0.0
+  real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0,&
+          lnTT_hotplate_tau=1.0
   real, dimension(2) :: nwave,w_ff,z_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
@@ -104,7 +105,8 @@ module Special
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
-      lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench
+      lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench, &
+      lset_hotplate_lnTT,lnTT_hotplate_tau
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1262,7 +1264,7 @@ module Special
       use Mpicomm, only: mpibcast_real,initiate_isendrcv_bdry, &
                          finalize_isendrcv_bdry
       use SharedVariables, only: get_shared_variable
-      use Sub, only: cross,gij,curl_mn
+      use Sub, only: cross,gij,curl_mn,step
 !
       logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1272,7 +1274,9 @@ module Special
       real, dimension(nx,3) :: uu,bb,uxb
       real, dimension(nx) :: va
       real, dimension(2) :: gn
+      real :: uborder, border_width
       real, pointer, dimension(:) :: B_ext
+      real, pointer :: TTtop
       integer :: ig,ierr
 !
 ! Flux emergence by driving an EMF at bottom boundary
@@ -1287,6 +1291,25 @@ module Special
           call bc_emf_z(f,df,dt_,'top',iaz)
         enddo
       endif
+!
+! Allow putting a hot plate at z=uborder to heat the corona
+!
+      if (lset_hotplate_lnTT) then
+          border_width=border_frac_z(2)*Lxyz(3)/2
+          uborder=xyz1(3)-1.1*border_width
+        call get_shared_variable('TTtop',TTtop,ierr)
+        if (ierr/=0) call fatal_error('special_after_timestep:',&
+             'failed to get TTtop from eos_temperature_ionization')
+        do m=m1, m2; do n=n1, n2
+          if (z(n) .gt. 0.9*uborder .and. z(n) .lt. 1.1*uborder) then
+            f(l1:l2,m,n,ilnTT) = f(l1:l2,m,n,ilnTT) - &
+                                 lnTT_hotplate_tau*(1.-&
+                                 TTtop/exp(f(l1:l2,m,n,ilnTT)))* &
+                                 step(z(n),uborder,0.2)*dt_
+          endif     
+        enddo; enddo
+      endif
+
       if (lfirst_proc_z.and.lcartesian_coords) then
         if (lflux_emerg_bottom) then
           select case (flux_type)
