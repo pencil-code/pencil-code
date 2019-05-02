@@ -3149,10 +3149,11 @@ module Magnetic
 !
         if (ladd_global_field) then
           call get_bext(B_ext)
-! Only need the first component to scale the global field
-          if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+B_ext(1)*f(l1:l2,m,n,iglobal_bx_ext)
-          if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+B_ext(1)*f(l1:l2,m,n,iglobal_by_ext)
-          if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+B_ext(1)*f(l1:l2,m,n,iglobal_bz_ext)
+! Only need the second component to scale the global field and first and third to add a
+! const oblique component at arbitrary deg inclination.
+          if (iglobal_bx_ext/=0) p%bb(:,1)=p%bb(:,1)+B_ext(2)*f(l1:l2,m,n,iglobal_bx_ext)+B_ext(1)
+          if (iglobal_by_ext/=0) p%bb(:,2)=p%bb(:,2)+B_ext(2)*f(l1:l2,m,n,iglobal_by_ext)
+          if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+B_ext(2)*f(l1:l2,m,n,iglobal_bz_ext)+B_ext(3)
         endif
       endif
 !
@@ -3582,7 +3583,7 @@ module Magnetic
 !
       case('constant'); p%nu_ni1=nu_ni1
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
-      case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)
+      case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)/p%yH
       case default
          write(unit=errormsg,fmt=*) &
               'set_ambipolar_diffusion: No such value for ambipolar_diffusion: ', &
