@@ -16,6 +16,7 @@
 %%   particles_chemistry.f90
 %%   particles_surfspec.f90
 %%   power_spectrum.f90
+%%   test_chemistry.f90
 %%   timestep.f90
 %%   timestep_strang.f90
 %%   timestep_subcycle.f90
@@ -56,6 +57,9 @@
   \var{particles_surfspec.f90} & immediate vicinity of reactive particles. \\
 \midrule
   \var{power_spectrum.f90} & reads in full snapshot and calculates power spetrum of u \\
+\midrule
+  \var{test_chemistry.f90} & This modules adds chemical species and reactions. \\
+  \var{}          & The units used in the chem.in files are cm3,mole,sec,kcal and K \\
 \midrule
   \var{timestep.f90} & Runge-Kutta time advance, accurate to order itorder. \\
   \var{}          & At the moment, itorder can be 1, 2, or 3. \\

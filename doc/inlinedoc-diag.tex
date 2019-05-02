@@ -23,6 +23,7 @@
 %%   dustdensity.f90
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
+%%   gravitational_waves_hTXk.f90
 %%   gravitational_waves_hij6.f90
 %%   gravity_simple.f90
 %%   heatflux.f90
@@ -30,6 +31,7 @@
 %%   magnetic_shearboxJ.f90
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
+%%   neutralvelocity.f90
 %%   noentropy.f90
 %%   particles_caustics.f90
 %%   particles_chemistry.f90
@@ -38,17 +40,21 @@
 %%   particles_lagrangian.f90
 %%   particles_mass_swarm.f90
 %%   particles_surfspec.f90
+%%   particles_tetrad.f90
 %%   polymer.f90
 %%   r75612.f90
 %%   r75759.f90
+%%   reaction_0D.f90
 %%   shear.f90
 %%   shock.f90
 %%   shock_highorder.f90
 %%   solar_corona.f90
 %%   solid_cells_CGEO.f90
+%%   solid_cells_ogrid_chemistry.f90
 %%   solid_cells_reactive.f90
 %%   temperature_idealgas.f90
 %%   temperature_ionization.f90
+%%   test_chemistry.f90
 %%   testfield_axisym.f90
 %%   testfield_axisym2.f90
 %%   testfield_axisym4.f90
@@ -520,6 +526,9 @@
   \var{bx2m}      & $\left< B_x^2 \right>$ \\
   \var{by2m}      & $\left< B_y^2 \right>$ \\
   \var{bz2m}      & $\left< B_z^2 \right>$ \\
+  \var{bx4m}      & $\left< B_x^4 \right>$ \\
+  \var{by4m}      & $\left< B_y^4 \right>$ \\
+  \var{bz4m}      & $\left< B_z^4 \right>$ \\
   \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{vmagfricmax} & $\max(1/\nu_{\rm mag}|\jv\times\Bv/\Bv^2|)$ \\
@@ -698,12 +707,15 @@
   \var{gmu5my}    & $\left<\nabla\mu_5\right>_y$ \\
   \var{gmu5mz}    & $\left<\nabla\mu_5\right>_z$ \\
   \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{bgmuSrms}  & $\left<(\Bv\cdot\nabla\mu_S)^2\right>^{1/2}$ \\
   \var{mu5bjm}    & $\left<\mu_5 ((\nabla\times\Bv)\cdot\Bv) \right>$ \\
   \var{mu5bjrms}  & $\left<(\mu_5 ((\nabla\times\Bv)\cdot\Bv))^2 \right>^{1/2}$ \\
-  \var{dt_mu5_1}  & $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ \\
-  \var{dt_mu5_2}  & $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ \\
-  \var{dt_mu5_3}  & $\delta x^2/D_5$ \\
-  \var{dt_bb_1}   & $\delta x /(\eta \mathrm{max}(\mu_5))$ \\
+  \var{dt_lambda5} & $\mathrm{min}(\mu_5/\Bv^2) \delta x/(\lambda \eta)$ \\
+  \var{dt_D5}     & $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ \\
+  \var{dt_gammaf5} & $1/\Gamma_\mathrm{f}$ \\
+  \var{dt_CMW}    & $\delta x/((C_\mu C_5)^{1/2} \mathrm{max}(|\Bv|))$ \\
+  \var{dt_Dmu}    & $(\lambda \eta \mathrm{min}(\Bv^2))^{-1}$ \\
+  \var{dt_vmu}    & $\delta x /(\eta \mathrm{max}(|\mu_5 |))$ \\
   \var{dt_chiral} & total time-step contribution from chiral MHD \\
   \var{mu5bxm}    & $\left<\mu_5B_x\right>$ \\
   \var{mu5b2m}    & $\left<\mu_5B^2\right>$ \\
@@ -788,6 +800,32 @@
   \var{strTpt}    & $S_{\rm T}(x_1,y_1,z_1,t)$ \\
   \var{strXpt}    & $S_{\rm X}(x_1,y_1,z_1,t)$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{gravitational_waves_hTXk.f90}} \\
+\midrule
+  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
+  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
+  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
+  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
+  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
+  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
+  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
+  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
+  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
+  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
+  \var{EEGW}      & $\bra{g_T^2+g_X^2}\,c^2/(32\pi G)$ \\
+  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
+  \var{hhT2m}     & $\bra{h_T^2}$ \\
+  \var{hhX2m}     & $\bra{h_X^2}$ \\
+  \var{hhTXm}     & $\bra{h_T h_X}$ \\
+  \var{ggT2m}     & $\bra{g_T^2}$ \\
+  \var{ggX2m}     & $\bra{g_X^2}$ \\
+  \var{ggTXm}     & $\bra{g_T g_X}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{gravitational_waves_hij6.f90}} \\
 \midrule
   \var{h22rms}    & $h_{22}^{\rm rms}$ \\
@@ -837,13 +875,14 @@
   \var{dtq}       & heatflux time step \\
   \var{dtq2}      & heatflux time step due to tau \\
   \var{qmax}      & $\max(|\qv|)$ \\
+  \var{tauqmax}   & $\max(|\tau_{\rm Spitzer}|)$ \\
   \var{qxmin}     & $\min(|q_x|)$ \\
   \var{qymin}     & $\min(|q_y|)$ \\
   \var{qzmin}     & $\min(|q_z|)$ \\
   \var{qxmax}     & $\max(|q_x|)$ \\
   \var{qymax}     & $\max(|q_y|)$ \\
   \var{qzmax}     & $\max(|q_z|)$ \\
-  \var{qrms}      & rms of heat flux vector \\
+  \var{qrms}      & $\sqrt(|\qv|^2)$ \\
   \var{qsatmin}   & minimum of qsat/qabs \\
   \var{qsatrms}   & rms of qsat/abs \\
 \midrule
@@ -1128,6 +1167,10 @@
   \var{EMFmax}    & $\max(\left<{\cal E}\right>)$ \\
   \var{EMFmin}    & $\min(\left<{\cal E}\right>)$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{neutralvelocity.f90}} \\
+\midrule
+  \var{epsKn}     & $\left<2\nu_n\varrho_n\Strain_n^2\right>$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{noentropy.f90}} \\
 \midrule
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
@@ -1144,6 +1187,7 @@
 \midrule
   \var{TrSigmapm} & $\langle{\rm Tr}\left[\sigma\right]\rangle$ \\
   \var{blowupm}   & Mean no. of times $\sigma$ falls below cutoff \\
+  \var{lnVpm}     & Mean of (logarithm of) Volume around an inertial particle \\
 \midrule
   \multicolumn{2}{c}{Module \file{particles_chemistry.f90}} \\
 \midrule
@@ -1196,6 +1240,12 @@
   \multicolumn{2}{c}{Module \file{particles_surfspec.f90}} \\
 \midrule
   \var{dtpchem}   & $dt_{particle,chemistry}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{particles_tetrad.f90}} \\
+\midrule
+  \var{TVolm}     & Mean signed volume of the tetrads \\
+  \var{TVolpm}    & Mean of positive volume of the tetrads \\
+  \var{TVolnm}    & Mean of negative volume of the tetrads \\
 \midrule
   \multicolumn{2}{c}{Module \file{polymer.f90}} \\
 \midrule
@@ -1262,6 +1312,38 @@
   \var{ggTm}      & $\bra{g_T}$ \\
   \var{ggXm}      & $\bra{g_X}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{reaction_0D.f90}} \\
+\midrule
+  \var{eem}       & $\langle \eta \rangle$ \\
+  \var{ee1m}      & $\langle |\eta| \rangle$ \\
+  \var{ee2m}      & $\langle \eta^2 \rangle$ \\
+  \var{ee3m}      & $\langle \eta^3 \rangle$ \\
+  \var{ee4m}      & $\langle \eta^4 \rangle$ \\
+  \var{ee10}      & $\langle \eta_{10\%} \rangle$ \\
+  \var{ee50}      & $\langle \eta_{50\%} \rangle$ \\
+  \var{ee90}      & $\langle \eta_{90\%} \rangle$ \\
+  \var{ee99}      & $\langle \eta_{99\%} \rangle$ \\
+  \var{AAm}       & $\langle [A] \rangle$ \\
+  \var{DDm}       & $\langle [D] \rangle$ \\
+  \var{LLm}       & $\langle [L] \rangle$ \\
+  \var{DLm}       & $\langle [D]+[L] \rangle$ \\
+  \var{kC}        & $k_C$ \\
+  \var{A1}        & $A_1$ \\
+  \var{A2}        & $A_2$ \\
+  \var{A3}        & $A_3$ \\
+  \var{A4}        & $A_4$ \\
+  \var{A5}        & $A_5$ \\
+  \var{D1}        & $D_1$ \\
+  \var{D2}        & $D_2$ \\
+  \var{D3}        & $D_3$ \\
+  \var{D4}        & $D_4$ \\
+  \var{D5}        & $D_5$ \\
+  \var{L1}        & $L_1$ \\
+  \var{L2}        & $L_2$ \\
+  \var{L3}        & $L_3$ \\
+  \var{L4}        & $L_4$ \\
+  \var{L5}        & $L_5$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
   \var{dtshear}   & advec\_shear/cdt \\
@@ -1290,6 +1372,10 @@
 \midrule
   \multicolumn{2}{c}{Module \file{solid_cells_CGEO.f90}} \\
 \midrule
+\midrule
+  \multicolumn{2}{c}{Module \file{solid_cells_ogrid_chemistry.f90}} \\
+\midrule
+  \var{dtchem}    & $dt_{chem}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{solid_cells_reactive.f90}} \\
 \midrule
@@ -1366,6 +1452,11 @@
   \var{eem}       & $\left< e \right> $
                     \quad(mean internal energy) \\
   \var{ppm}       & $\left< p \right> $ \\
+  \var{Tppm}      & $\left<\max(p_{\rm thresh}-p,0)_{\rm norm}\right> $ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{test_chemistry.f90}} \\
+\midrule
+  \var{dtchem}    & $dt_{chem}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_axisym.f90}} \\
 \midrule
