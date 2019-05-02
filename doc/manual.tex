@@ -3155,7 +3155,8 @@ We write permanent snapshot file \file{VAR$N$} every \var{dsnap}$=50$ time
 units and 2d slices for animation every \var{dvid}$=0.5$ time units.
 Again, we use a deterministic random number generator.
 Viscosity $\nu$ and magnetic diffusivity $\eta$
-are set to $5\times10^{-3}$ (so the mesh Reynolds number is about
+are set to $5\times10^{-3}$ (so the mesh Reynolds number
+{\em based on the rms velocity}\index{Mesh Reynolds number} is about
 $u_{\rm rms}\delta x/\nu=0.3\times(2\pi/32)/5\times10^{-3}\approx12$,
 which is in fact rather a bit to high).
 The parameters in \name{forcing_run_pars} specify fully helical forcing of
@@ -3299,7 +3300,7 @@ If any of these numbers is too small, you would need to have more
 meshpoints to get consistent numerical solutions; otherwise the code
 develops wiggles (`ringing') and will eventually crash.
 A useful criterion is given by the
-mesh Reynolds number based on the maximum velocity,
+mesh Reynolds number {\em based on the maximum velocity}\index{Mesh Reynolds number},
 \begin{equation}
   \mbox{Re}_{\rm mesh}=\max(|\uv|)\max(\delta x,\delta y,\delta z)/\nu,
 \end{equation}
@@ -5538,7 +5539,7 @@ In the presence of a magnetic field, $\mu_5$ leads to the occurrence of the curr
 where $\alpha_\mathrm{em} \approx 1/137$ is the fine structure constant.
 
 The chiral current~(\ref{CME}) adds to the classical Ohmic current, leading
-to a modification of the Maxwell equations.
+to a modification of the axwell equations.
 As a result, the induction equation is extended by one 
 additional term:
 \begin{eqnarray}
@@ -5586,7 +5587,7 @@ the CME.
 In particular, the initial value of $\mu$ is related to 
 a small-scale dynamo instability. 
 In order to resolve this instability in a domain of size $(2\pi)^3$, 
-the minimum number of grid points is given as:
+the minimum number of grid points is given as:\index{Mesh Reynolds number}
 \begin{equation}
   N_\mathrm{grid} \gtrsim \left(\frac{\mu_0}{\lambda}\right)^{1/2} \frac{2\pi}{\nu \mbox{Re}_{\rm mesh, crit}}.
 \end{equation}
@@ -10066,7 +10067,7 @@ a dramatic increase of the Reynolds number based on the scale of the box.
 By choosing \var[idiff]{idiff='hyper3_mesh'} in \code{density_run_pars}
 the hyperdiffusion for density is being set automatically in a
 mesh-independent way.
-A hyper-mesh Reynolds number of 30 corresponds to a coefficient
+A hyper-mesh Reynolds number\index{Mesh Reynolds number} of 30 corresponds to a coefficient
 \var[diffrho_hyper3_mesh]{diffrho_hyper3_mesh=2} if \var{maxadvec} is
 about 1, but in practice we need a bit more (5 is currently the default).
 
@@ -10092,7 +10093,7 @@ Empirical values of viscosity and hyperviscosity, as well as hyperdiffusion
 for density, at different numerical resolution, for simulations with
 forcing wavenumber $k_{\rm f}=1.5$ and a forcing amplitude of $f_0=0.02$
 in a $2\pi$ periodic domain.
-In all cases the half-mesh Reynolds number is about 5--7.
+In all cases the half-mesh Reynolds number\index{Mesh Reynolds number} is about 5--7.
 For comparison, estimates of the numerical 4th order hyperdiffusion
 resulting from a third order time step are give for two values of the
 CFL parameter.
@@ -11159,7 +11160,7 @@ We define Reynolds number based on the Nyquist wavenumber as
 $\mbox{Re}_{\rm Ny}=|\uv|/\nu_{\rm eff} k_{\rm Ny}$,
 and find $\mbox{Re}=-24/(\pi c_{\rm CFL})^3\approx 2.3$
 for our favorite choice $c_{\rm CFL}=0.7$.
-Thus, at the scale of the mesh, the effective Reynolds number
+Thus, at the scale of the mesh, the effective Reynolds number\index{Mesh Reynolds number}
 is comparable to the value often obtained in simulations.
 However, in turbulence simulations the viscous cutoff wavenumber
 is usually 5--10 times smaller than $k_{\rm Ny}$, so the relevant
@@ -13531,6 +13532,7 @@ these configuration files, before you apply them in an active simulation run.
 
 The following table lists all possible inputs to the file \file{print.in}
 that are documented.
+\index{Mesh Reynolds number}
 
 % ---------------------------------------------------------------------- %
 \input{inlinedoc-diag.tex}
