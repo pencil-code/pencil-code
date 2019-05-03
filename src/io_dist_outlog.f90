@@ -228,6 +228,8 @@ module Io
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
 !
+      integer :: io_err
+      logical :: lerror
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = real (t)
@@ -264,6 +266,9 @@ module Io
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(in) :: fq
 !
+      integer :: io_err
+      logical :: lerror
+!
       if (.not. lroot) return
 !
       open(lun_output,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted', IOSTAT=io_err, status='new')
@@ -287,6 +292,8 @@ module Io
 !  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
 !
 !  27-Oct-2018/PABourdin: cleaned up
+!
+      integer :: io_err
 !
       open (lun_output, file=trim(directory)//'/slice_position.dat', STATUS='unknown', IOSTAT=io_err)
 !
@@ -335,11 +342,15 @@ module Io
       integer, intent(in) :: ndim1, ndim2
       real, dimension (:,:), pointer :: data
 !
+      character (len=fnlen) :: filename
+      integer :: io_err
+!
       if (.not. lwrite .or. .not. associated(data)) return
 !
 !  files data/procN/slice*.* are distributed and will be synchronized a-posteriori on I/O error
 !
-      open (lun_output, file=trim(directory)//'/slice_'//trim(label)//'.'//trim(suffix), form='unformatted', position='append', &
+      filename = trim(directory)//'/slice_'//trim(label)//'.'//trim(suffix)
+      open (lun_output, file=filename, form='unformatted', position='append', &
           IOSTAT=io_err)
       if (outlog (io_err, 'open', filename, dist=1)) return
 !
@@ -576,10 +587,8 @@ module Io
 !  28-oct-13/MR: consistency check for t_sp relaxed for restart from different precision
 !   6-mar-14/MR: if timestamp of snapshot inconsistent, now three choices:
 !                if lreset_tstart=F: cancel program
-!                                =T, tstart unspecified: use minimum time of all
-!                                var.dat 
-!                                                        for start
-!                                 T, tstart specified: use this value
+!                                =T, tstart unspecified: use minimum time of all var.dat
+!                                =T, tstart specified: use this value
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
                          stop_it, mpiallreduce_min, MPI_COMM_WORLD
@@ -588,17 +597,19 @@ module Io
       integer, intent(in) :: nv, mode
       real(KIND=rkind4), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=rkind4) :: t_sp, t_sgl
-
       real(KIND=rkind4),                 intent(out) :: dx, dy, dz, deltay
       real(KIND=rkind4), dimension (mx), intent(out) :: x
       real(KIND=rkind4), dimension (my), intent(out) :: y
       real(KIND=rkind4), dimension (mz), intent(out) :: z
-
+!
+      real(KIND=rkind4) :: t_sp, t_sgl
       real :: t_test   ! t in single precision for backwards compatibility
-
+!
       integer :: io_err
       logical :: lerror, ltest
+      logical :: lreset_tstart
+!
+      lreset_tstart = .false.
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
@@ -744,6 +755,9 @@ module Io
       real :: t_test   ! t in single precision for backwards compatibility
       integer :: io_err
       logical :: lerror,ltest
+      logical :: lreset_tstart
+!
+      lreset_tstart = .false.
 !
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', &
@@ -889,6 +903,9 @@ module Io
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
 !
+      integer :: io_err
+      logical :: lerror
+!
       open (1, FILE=trim(directory_dist)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
       lerror = outlog (io_err, "openr snapshot data", trim(directory_snap)//'/'//file, location='read_snap_double')
 !
@@ -923,6 +940,8 @@ module Io
       real, dimension (mv,nc), intent(out) :: fq
 !
       integer :: mv_in
+      integer :: io_err
+      logical :: lerror
 !
       if (lroot) then
         open(lun_input,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted')
@@ -1604,7 +1623,8 @@ module Io
       character :: type
       logical, optional :: lsave_name, lhas_ghost
 !
-      integer :: pos, np
+      integer :: pos, np, io_err
+      logical lerror
 !
 !  If within a loop, do this only for the first step (indicated by lwrite_prof).
 !
@@ -1646,7 +1666,8 @@ module Io
       real, dimension(np), intent(out) :: a
       logical, optional :: lhas_ghost
 !
-      integer :: pos
+      integer :: pos, io_err
+      logical lerror
       real, dimension(np) :: coord
 !
       ! Read profile.
