@@ -207,12 +207,13 @@ module Particles_stalker
 !
 !  13-nov-07/anders: coded
 !
+      use IO, only: output_stalker_init, output_stalker, output_part_finalize
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       real :: t_sp
 !
-      real, dimension (:,:), allocatable :: values
       integer, dimension (npar_stalk) :: k_stalk
       integer :: i, k, npar_stalk_loc, ivalue
 !
@@ -386,90 +387,60 @@ module Particles_stalker
 !
 !  Write information to a file
 !
-        open(1,file=trim(directory_dist)//'/particles_stalker.dat', &
-            form='unformatted',position='append')
-!
-!  Write the time and the number of stalked particles at this processor.
-!
-          write(1) t_sp, npar_stalk_loc
-!
-!  Collect environment information in single array and write array to file.
-!
-          if (npar_stalk_loc>=1) then
-            write(1) ipar(k_stalk(1:npar_stalk_loc))
-            allocate(values(nvar_stalk,npar_stalk_loc))
-            ivalue=0
-            if (lstalk_xx) then
-              ivalue=ivalue+1; values(ivalue,:)=xp(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=yp(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=zp(1:npar_stalk_loc)
-            endif
-            if (lstalk_vv) then
-              ivalue=ivalue+1; values(ivalue,:)=vpx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=vpy(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=vpz(1:npar_stalk_loc)
-            endif
-            if (lstalk_ap) then
-              ivalue=ivalue+1; values(ivalue,:)=ap(1:npar_stalk_loc)
-            endif
-            if (lstalk_npswarm) then
-              ivalue=ivalue+1; values(ivalue,:)=npswarm(1:npar_stalk_loc)
-            endif
-            if (lstalk_rhopswarm) then
-              ivalue=ivalue+1; values(ivalue,:)=rhopswarm(1:npar_stalk_loc)
-            endif
-            if (lstalk_aps) then
-              ivalue=ivalue+1; values(ivalue,:)=aps(1:npar_stalk_loc)
-            endif
-            if (lstalk_uu) then
-              ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=uy(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=uz(1:npar_stalk_loc)
-            endif
-            if (lstalk_guu) then
-              ivalue=ivalue+1; values(ivalue,:)=duxdx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duxdy(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duxdz(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duydx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duydy(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duydz(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duzdx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duzdy(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=duzdz(1:npar_stalk_loc)
-            endif
-            if (lstalk_rho) then
-              ivalue=ivalue+1; values(ivalue,:)=rho(1:npar_stalk_loc)
-            endif
-            if (lstalk_grho) then
-              ivalue=ivalue+1; values(ivalue,:)=drhodx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=drhody(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=drhodz(1:npar_stalk_loc)
-            endif
-            if (lstalk_bb) then
-              ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk_loc)
-            endif
-            if (lstalk_potself) then
-              ivalue=ivalue+1; values(ivalue,:)=potself(1:npar_stalk_loc)
-            endif
-            if (lstalk_relvel) then
-              ivalue=ivalue+1; values(ivalue,:)=relvel(1:npar_stalk_loc)
-            endif
-            if (lstalk_gTT) then
-              ivalue=ivalue+1; values(ivalue,:)=gTTx(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=gTTy(1:npar_stalk_loc)
-              ivalue=ivalue+1; values(ivalue,:)=gTTz(1:npar_stalk_loc)
-            endif
-            write(1) values
-            deallocate(values)
-          endif
-!
-        close (1)
+        call output_stalker_init ('particles_stalker', nvar_stalk, npar_stalk_loc, nout, ipar(k_stalk(1:npar_stalk_loc)))
+        if (lstalk_xx) then
+          call output_stalker ('xp', npar_stalk, npar_stalk_loc, nout, xp)
+          call output_stalker ('yp', npar_stalk, npar_stalk_loc, nout, yp)
+          call output_stalker ('zp', npar_stalk, npar_stalk_loc, nout, zp)
+        endif
+        if (lstalk_vv) then
+          call output_stalker ('vpx', npar_stalk, npar_stalk_loc, nout, vpx)
+          call output_stalker ('vpy', npar_stalk, npar_stalk_loc, nout, vpy)
+          call output_stalker ('vpz', npar_stalk, npar_stalk_loc, nout, vpz)
+        endif
+        if (lstalk_ap) call output_stalker ('ap', npar_stalk, npar_stalk_loc, nout, ap)
+        if (lstalk_npswarm) call output_stalker ('npswarm', npar_stalk, npar_stalk_loc, nout, npswarm)
+        if (lstalk_rhopswarm) call output_stalker ('rhopswarm', npar_stalk, npar_stalk_loc, nout, rhopswarm)
+        if (lstalk_aps) call output_stalker ('aps', npar_stalk, npar_stalk_loc, nout, aps)
+        if (lstalk_uu) then
+          call output_stalker ('ux', npar_stalk, npar_stalk_loc, nout, ux)
+          call output_stalker ('uy', npar_stalk, npar_stalk_loc, nout, uy)
+          call output_stalker ('uz', npar_stalk, npar_stalk_loc, nout, uz)
+        endif
+        if (lstalk_guu) then
+          call output_stalker ('duxdx', npar_stalk, npar_stalk_loc, nout, duxdx)
+          call output_stalker ('duxdy', npar_stalk, npar_stalk_loc, nout, duxdy)
+          call output_stalker ('duxdz', npar_stalk, npar_stalk_loc, nout, duxdz)
+          call output_stalker ('duydx', npar_stalk, npar_stalk_loc, nout, duydx)
+          call output_stalker ('duydy', npar_stalk, npar_stalk_loc, nout, duydy)
+          call output_stalker ('duydz', npar_stalk, npar_stalk_loc, nout, duydz)
+          call output_stalker ('duzdx', npar_stalk, npar_stalk_loc, nout, duzdx)
+          call output_stalker ('duzdy', npar_stalk, npar_stalk_loc, nout, duzdy)
+          call output_stalker ('duzdz', npar_stalk, npar_stalk_loc, nout, duzdz)
+        endif
+        if (lstalk_rho) call output_stalker ('rho', npar_stalk, npar_stalk_loc, nout, rho)
+        if (lstalk_grho) then
+          call output_stalker ('drhodx', npar_stalk, npar_stalk_loc, nout, drhodx)
+          call output_stalker ('drhody', npar_stalk, npar_stalk_loc, nout, drhody)
+          call output_stalker ('drhodz', npar_stalk, npar_stalk_loc, nout, drhodz)
+        endif
+        if (lstalk_bb) then
+          call output_stalker ('bx', npar_stalk, npar_stalk_loc, nout, bx)
+          call output_stalker ('by', npar_stalk, npar_stalk_loc, nout, by)
+          call output_stalker ('bz', npar_stalk, npar_stalk_loc, nout, bz)
+        endif
+        if (lstalk_potself) call output_stalker ('potself', npar_stalk, npar_stalk_loc, nout, potself)
+        if (lstalk_relvel) call output_stalker ('relvel', npar_stalk, npar_stalk_loc, nout, relvel)
+        if (lstalk_gTT) then
+          call output_stalker ('gTTx', npar_stalk, npar_stalk_loc, nout, gTTx)
+          call output_stalker ('gTTy', npar_stalk, npar_stalk_loc, nout, gTTy)
+          call output_stalker ('gTTz', npar_stalk, npar_stalk_loc, nout, gTTz)
+        endif
+        call output_part_finalize
 !
 !  Next stalking time is dstalk later.
 !
-        do while (tstalk<t_sp)
+        do while (tstalk<=t_sp)
           tstalk=tstalk+dstalk
         enddo
         nout=nout+1

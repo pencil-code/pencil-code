@@ -255,6 +255,92 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_stalker_init(file, num, nv, snap, ID)
+!
+!  Open stalker particle snapshot file and initialize with snapshot time.
+!
+!  03-May-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: num, nv, snap
+      integer, dimension(nv), intent(in) :: ID
+!
+      integer :: io_err
+      logical :: lerror
+      real :: t_sp
+!
+      call output_stalker ('', 0, nv, -1, (/ 0.0 /), num)
+!
+      open (lun_output, file=trim(directory_dist)//'/particles_stalker.dat', form='unformatted', IOSTAT=io_err, position='append')
+      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_stalker_init')
+!
+      ! write the time, number, and ID of stalked particles at this processor
+      t_sp = t
+      write (lun_output, IOSTAT=io_err) t_sp, nv
+      lerror = outlog (io_err, 'number of stalker particles per processor')
+      if (nv >= 1) then
+        write (lun_output, IOSTAT=io_err) ID
+        lerror = outlog (io_err, 'stalker particles ID')
+      endif
+!
+    endsubroutine output_stalker_init
+!***********************************************************************
+    subroutine output_stalker(label, mv, nv, snap, data, nvar, lfinalize)
+!
+!  Write stalker particle quantity to snapshot file.
+!
+!  03-May-2019/PABourdin: coded
+!
+      use General, only: loptest
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: mv, nv, snap
+      real, dimension (mv), intent(in) :: data
+      integer, intent(in), optional :: nvar
+      logical, intent(in), optional :: lfinalize
+!
+      character (len=fnlen) :: dataset
+      real, dimension(:,:), allocatable, save :: stalk_data
+      integer, save :: pos = 0
+      integer :: io_err
+      logical :: lerror
+!
+      if (loptest (lfinalize)) then
+        ! deallocate temporary stalker particle space
+        if (pos > 0) then
+          write (lun_output, IOSTAT=io_err) stalk_data
+          lerror = outlog (io_err, 'stalker particles data')
+          pos = 0
+        endif
+        if (allocated (stalk_data)) deallocate (stalk_data)
+        return
+      endif
+!
+      if (present (nvar)) then
+        ! allocate temporary stalker particle space
+        if (nv > 0) allocate (stalk_data (nvar, nv))
+        return
+      endif
+!
+      if (nv > 0) then
+        ! write stalker particles to temporary space
+        pos = pos + 1
+        stalk_data(pos,:) = data(1:nv)
+      endif
+!
+    endsubroutine output_stalker
+!***********************************************************************
+    subroutine output_part_finalize
+!
+!  Close particle snapshot file.
+!
+!  03-May-2019/PABourdin: adapted from output_snap_finalize
+!
+      call output_stalker ('', 0, 1, -1, (/ 0.0 /), 0, lfinalize=.true.)
+      close (lun_output)
+!
+    endsubroutine output_part_finalize
+!***********************************************************************
     subroutine output_pointmass(file, labels, fq, mv, nc)
 !
 !  Write pointmass snapshot file with time.

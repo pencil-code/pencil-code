@@ -435,6 +435,46 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_stalker_init(file, num, nv, snap, ID)
+!
+!  Open stalker particle snapshot file and initialize with snapshot time.
+!
+!  03-May-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: num, nv, snap
+      integer, dimension(nv), intent(in) :: ID
+!
+      call fatal_error ('output_stalker_init', 'not implemented for "io_mpi2"', .true.)
+!
+    endsubroutine output_stalker_init
+!***********************************************************************
+    subroutine output_stalker(label, mv, nv, snap, data, nvar, lfinalize)
+!
+!  Write stalker particle quantity to snapshot file.
+!
+!  03-May-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: mv, nv, snap
+      real, dimension (mv), intent(in) :: data
+      integer, intent(in), optional :: nvar
+      logical, intent(in), optional :: lfinalize
+!
+      call fatal_error ('output_stalker', 'not implemented for "io_mpi2"', .true.)
+!
+    endsubroutine output_stalker
+!***********************************************************************
+    subroutine output_part_finalize
+!
+!  Close particle snapshot file.
+!
+!  03-May-2019/PABourdin: coded
+!
+      call output_stalker ('', 0, 1, -1, (/ 0.0 /), 0, lfinalize=.true.)
+!
+    endsubroutine output_part_finalize
+!***********************************************************************
     subroutine output_pointmass(file, labels, fq, mv, nc)
 !
 !  Write pointmass snapshot file with time.

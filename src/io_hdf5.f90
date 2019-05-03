@@ -316,6 +316,83 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
+    subroutine output_stalker_init(file, num, nv, snap, ID)
+!
+!  Open stalker particle snapshot file and initialize with snapshot time.
+!
+!  02-May-2019/PABourdin: coded
+!
+      use File_io, only: file_exists
+      use General, only: itoa
+      use Mpicomm, only: mpibarrier
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: num, nv, snap
+      integer, dimension(nv), intent(in) :: ID
+!
+      character (len=fnlen) :: filename, dataset
+      logical :: ltrunc
+      real :: t_sp
+!
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
+!
+      if (lroot) then
+        ltrunc = (snap == 0) .or. .not. file_exists(filename)
+        ! open global HDF5 file and write particle data
+        call file_open_hdf5 (filename, global=.false., truncate=ltrunc)
+        if (ltrunc) then
+          call create_group_hdf5 ('stalker')
+          call create_group_hdf5 ('stalker/0')
+          call create_group_hdf5 ('proc')
+          call create_group_hdf5 ('time')
+        else
+          dataset = 'stalker/'//itoa(snap)
+          if (.not. exists_in_hdf5(dataset)) call create_group_hdf5 (dataset)
+        endif
+        t_sp = t
+        dataset = 'time/'//itoa(snap)
+        call output_hdf5 (dataset, t_sp)
+        call output_hdf5 ('last', snap)
+        call file_close_hdf5
+      endif
+!
+      call mpibarrier
+      call file_open_hdf5 (filename, truncate=.false.)
+      call output_hdf5 ('proc/distribution', nv)
+      dataset = 'stalker/'//trim(itoa(snap))//'/ID'
+      call output_hdf5 (dataset, ID, nv)
+!
+    endsubroutine output_stalker_init
+!***********************************************************************
+    subroutine output_stalker(label, mv, nv, snap, data)
+!
+!  Write stalker particle quantity to snapshot file.
+!
+!  02-May-2019/PABourdin: coded
+!
+      use General, only: itoa
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: mv, nv, snap
+      real, dimension (mv), intent(in) :: data
+!
+      character (len=fnlen) :: dataset
+!
+      dataset = 'stalker/'//trim(itoa(snap))//'/'//trim(label)
+      call output_hdf5 (dataset, data(1:nv), nv)
+!
+    endsubroutine output_stalker
+!***********************************************************************
+    subroutine output_part_finalize
+!
+!  Close particle snapshot file.
+!
+!  02-May-2019/PABourdin: coded
+!
+      call file_close_hdf5
+!
+    endsubroutine output_part_finalize
+!***********************************************************************
     subroutine output_settings(time, time_only)
 !
 !  Write additional settings and grid.
