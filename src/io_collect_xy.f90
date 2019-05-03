@@ -1610,7 +1610,7 @@ module Io
 !
       filename = 'PHIAVG' // trim(number)
       open(lun_output, file=trim(path)//'/averages/'//trim(filename), form='unformatted', position='append')
-      write(lun_output) size nr, nzgrid, nc, nprocz
+      write(lun_output) nr, nzgrid, nc, nprocz
       write(lun_output) time, r, z(n1)+(/(pos*dz, pos=0, nzgrid-1)/), dr, dz
       ! note: due to passing data as implicit-size array,
       ! the indices (0:nz) are shifted to (1:nz+1),
