@@ -1247,7 +1247,7 @@ module Io
       call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
       call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
 !
-      if (lroot.and.io <= 4) then
+      if (lroot .and. (ip <= 4)) then
         print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz
         print *, 'rgrid: dx,dy,dz=', dx, dy, dz
       endif
