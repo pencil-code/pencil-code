@@ -46,7 +46,7 @@ COMPILE_OPT IDL2,HIDDEN
     default, magnetic, sqrt(4*double (!pi)/param.mu0 * density) * velocity
     object = { temperature:temperature, $
                density:density, $
-               mass:param.unit_density*param.unit_length^3, $
+               mass:density*length^3, $
                length:length, $
                velocity:velocity, $
                time:length/velocity, $
@@ -73,7 +73,7 @@ COMPILE_OPT IDL2,HIDDEN
     default, magnetic, sqrt (4*double (!pi)*1e-7/param.mu0 * density) * velocity
     object = { temperature:temperature, $
                density:density, $
-               mass:param.unit_density*param.unit_length^3, $
+               mass:density*length^3, $
                length:length, $
                velocity:velocity, $
                time:length/velocity, $
