@@ -717,7 +717,7 @@ module HDF5_IO
 !
       integer(HID_T) :: h5_strtype
       integer(HSIZE_T), dimension(2) :: size
-      character (len=len(data)), dimension(1) :: str_data
+      character (len=len(data)+1), dimension(1) :: str_data
       integer(SIZE_T), dimension(1) :: str_len
 !
       if (lcollective) call check_error (1, 'output_hdf5_string', 'string output requires local file', name)
@@ -726,14 +726,14 @@ module HDF5_IO
       str_len(1) = len_trim (data)
       size(1) = str_len(1)
       size(2) = 1
-      str_data(1) = data
+      str_data(1) = data//char(0)
 !
       ! create data space
       call H5Tcopy_f (H5T_STRING, h5_strtype, h5_err)
       call check_error (h5_err, 'output_hdf5_string', 'copy string data space type', name)
       call H5Tset_strpad_f (h5_strtype, H5T_STR_NULLPAD_F, h5_err)
       call check_error (h5_err, 'output_hdf5_string', 'modify string data space type', name)
-      call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
+      call h5screate_simple_f (1, size(2), h5_dspace, h5_err)
       call check_error (h5_err, 'output_hdf5_string', 'create string data space', name)
       if (exists_in_hdf5 (name)) then
         ! open dataset
