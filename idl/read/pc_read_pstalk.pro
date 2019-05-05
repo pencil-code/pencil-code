@@ -24,6 +24,41 @@ default, it1, -1
 default, it0, 0
 datadir = pc_get_datadir(datadir)
 ;
+; Load HDF5 file if requested or available.
+;
+  files = file_search (datadir+'/allprocs/PSTALK*.h5')
+  if (files[0] ne '') then begin
+    message, "pc_read_pstalk: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    num_files = n_elements (files)
+    for pos = 0, num_files-1 do begin
+      t = pc_read ('time', file='PSTALK'+strtrim (pos, 2)+'.h5', datadir=datadir)
+      if (pos eq 0) then begin
+        distribution = pc_read ('proc/distribution')
+        num_part = total (distribution)
+        quantities = h5_content('stalker')
+        num_quantities = n_elements (quantities)
+        object = { t:replicate(!Values.D_NaN, num_files), IPAR:pc_read('stalker/ID') }
+        data = dblarr (num_part, num_files)
+        for i = 0, num_quantities-1 do begin
+          if (strupcase (quantities[i]) eq 'ID') then continue
+          object = create_struct (object, quantities[i], data)
+        end
+      end
+      tags = (tag_names (object))
+      for i = 0, num_quantities-1 do begin
+        if ((strupcase (tags[i]) eq 'T') or (strupcase (tags[i]) eq 'IPAR')) then continue
+        found = where (strupcase (quantities) eq strupcase (tags[i]), num_found)
+        if (num_found ne 1) then message, 'pc_read_pstalk: ERROR while reading quantites.'
+        tmp = object.(i)
+        tmp[*,pos] = pc_read('stalker/'+quantities[found])
+        object.(i) = tmp
+      end
+      object.t[pos] = t
+    end
+    h5_close_file
+    return
+  end
+;
 ; Read dimensions and set precision.
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
