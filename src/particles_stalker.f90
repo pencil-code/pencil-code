@@ -387,54 +387,54 @@ module Particles_stalker
 !
 !  Write information to a file
 !
-        call output_stalker_init ('particles_stalker', nvar_stalk, npar_stalk_loc, nout, ipar(k_stalk(1:npar_stalk_loc)))
+        call output_stalker_init (nvar_stalk, npar_stalk_loc, nout, ipar(k_stalk(1:npar_stalk_loc)))
         if (lstalk_xx) then
-          call output_stalker ('xp', npar_stalk, npar_stalk_loc, nout, xp)
-          call output_stalker ('yp', npar_stalk, npar_stalk_loc, nout, yp)
-          call output_stalker ('zp', npar_stalk, npar_stalk_loc, nout, zp)
+          call output_stalker ('xp', npar_stalk, npar_stalk_loc, xp)
+          call output_stalker ('yp', npar_stalk, npar_stalk_loc, yp)
+          call output_stalker ('zp', npar_stalk, npar_stalk_loc, zp)
         endif
         if (lstalk_vv) then
-          call output_stalker ('vpx', npar_stalk, npar_stalk_loc, nout, vpx)
-          call output_stalker ('vpy', npar_stalk, npar_stalk_loc, nout, vpy)
-          call output_stalker ('vpz', npar_stalk, npar_stalk_loc, nout, vpz)
+          call output_stalker ('vpx', npar_stalk, npar_stalk_loc, vpx)
+          call output_stalker ('vpy', npar_stalk, npar_stalk_loc, vpy)
+          call output_stalker ('vpz', npar_stalk, npar_stalk_loc, vpz)
         endif
-        if (lstalk_ap) call output_stalker ('ap', npar_stalk, npar_stalk_loc, nout, ap)
-        if (lstalk_npswarm) call output_stalker ('npswarm', npar_stalk, npar_stalk_loc, nout, npswarm)
-        if (lstalk_rhopswarm) call output_stalker ('rhopswarm', npar_stalk, npar_stalk_loc, nout, rhopswarm)
-        if (lstalk_aps) call output_stalker ('aps', npar_stalk, npar_stalk_loc, nout, aps)
+        if (lstalk_ap) call output_stalker ('ap', npar_stalk, npar_stalk_loc, ap)
+        if (lstalk_npswarm) call output_stalker ('npswarm', npar_stalk, npar_stalk_loc, npswarm)
+        if (lstalk_rhopswarm) call output_stalker ('rhopswarm', npar_stalk, npar_stalk_loc, rhopswarm)
+        if (lstalk_aps) call output_stalker ('aps', npar_stalk, npar_stalk_loc, aps)
         if (lstalk_uu) then
-          call output_stalker ('ux', npar_stalk, npar_stalk_loc, nout, ux)
-          call output_stalker ('uy', npar_stalk, npar_stalk_loc, nout, uy)
-          call output_stalker ('uz', npar_stalk, npar_stalk_loc, nout, uz)
+          call output_stalker ('ux', npar_stalk, npar_stalk_loc, ux)
+          call output_stalker ('uy', npar_stalk, npar_stalk_loc, uy)
+          call output_stalker ('uz', npar_stalk, npar_stalk_loc, uz)
         endif
         if (lstalk_guu) then
-          call output_stalker ('duxdx', npar_stalk, npar_stalk_loc, nout, duxdx)
-          call output_stalker ('duxdy', npar_stalk, npar_stalk_loc, nout, duxdy)
-          call output_stalker ('duxdz', npar_stalk, npar_stalk_loc, nout, duxdz)
-          call output_stalker ('duydx', npar_stalk, npar_stalk_loc, nout, duydx)
-          call output_stalker ('duydy', npar_stalk, npar_stalk_loc, nout, duydy)
-          call output_stalker ('duydz', npar_stalk, npar_stalk_loc, nout, duydz)
-          call output_stalker ('duzdx', npar_stalk, npar_stalk_loc, nout, duzdx)
-          call output_stalker ('duzdy', npar_stalk, npar_stalk_loc, nout, duzdy)
-          call output_stalker ('duzdz', npar_stalk, npar_stalk_loc, nout, duzdz)
+          call output_stalker ('duxdx', npar_stalk, npar_stalk_loc, duxdx)
+          call output_stalker ('duxdy', npar_stalk, npar_stalk_loc, duxdy)
+          call output_stalker ('duxdz', npar_stalk, npar_stalk_loc, duxdz)
+          call output_stalker ('duydx', npar_stalk, npar_stalk_loc, duydx)
+          call output_stalker ('duydy', npar_stalk, npar_stalk_loc, duydy)
+          call output_stalker ('duydz', npar_stalk, npar_stalk_loc, duydz)
+          call output_stalker ('duzdx', npar_stalk, npar_stalk_loc, duzdx)
+          call output_stalker ('duzdy', npar_stalk, npar_stalk_loc, duzdy)
+          call output_stalker ('duzdz', npar_stalk, npar_stalk_loc, duzdz)
         endif
-        if (lstalk_rho) call output_stalker ('rho', npar_stalk, npar_stalk_loc, nout, rho)
+        if (lstalk_rho) call output_stalker ('rho', npar_stalk, npar_stalk_loc, rho)
         if (lstalk_grho) then
-          call output_stalker ('drhodx', npar_stalk, npar_stalk_loc, nout, drhodx)
-          call output_stalker ('drhody', npar_stalk, npar_stalk_loc, nout, drhody)
-          call output_stalker ('drhodz', npar_stalk, npar_stalk_loc, nout, drhodz)
+          call output_stalker ('drhodx', npar_stalk, npar_stalk_loc, drhodx)
+          call output_stalker ('drhody', npar_stalk, npar_stalk_loc, drhody)
+          call output_stalker ('drhodz', npar_stalk, npar_stalk_loc, drhodz)
         endif
         if (lstalk_bb) then
-          call output_stalker ('bx', npar_stalk, npar_stalk_loc, nout, bx)
-          call output_stalker ('by', npar_stalk, npar_stalk_loc, nout, by)
-          call output_stalker ('bz', npar_stalk, npar_stalk_loc, nout, bz)
+          call output_stalker ('bx', npar_stalk, npar_stalk_loc, bx)
+          call output_stalker ('by', npar_stalk, npar_stalk_loc, by)
+          call output_stalker ('bz', npar_stalk, npar_stalk_loc, bz)
         endif
-        if (lstalk_potself) call output_stalker ('potself', npar_stalk, npar_stalk_loc, nout, potself)
-        if (lstalk_relvel) call output_stalker ('relvel', npar_stalk, npar_stalk_loc, nout, relvel)
+        if (lstalk_potself) call output_stalker ('potself', npar_stalk, npar_stalk_loc, potself)
+        if (lstalk_relvel) call output_stalker ('relvel', npar_stalk, npar_stalk_loc, relvel)
         if (lstalk_gTT) then
-          call output_stalker ('gTTx', npar_stalk, npar_stalk_loc, nout, gTTx)
-          call output_stalker ('gTTy', npar_stalk, npar_stalk_loc, nout, gTTy)
-          call output_stalker ('gTTz', npar_stalk, npar_stalk_loc, nout, gTTz)
+          call output_stalker ('gTTx', npar_stalk, npar_stalk_loc, gTTx)
+          call output_stalker ('gTTy', npar_stalk, npar_stalk_loc, gTTy)
+          call output_stalker ('gTTz', npar_stalk, npar_stalk_loc, gTTz)
         endif
         call output_part_finalize
 !

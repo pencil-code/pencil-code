@@ -314,13 +314,12 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
-    subroutine output_stalker_init(file, num, nv, snap, ID)
+    subroutine output_stalker_init(num, nv, snap, ID)
 !
 !  Open stalker particle snapshot file and initialize with snapshot time.
 !
 !  03-May-2019/PABourdin: coded
 !
-      character (len=*), intent(in) :: file
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
 !
@@ -328,17 +327,15 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, snap, data, nvar, lfinalize)
+    subroutine output_stalker(label, mv, nv, data)
 !
 !  Write stalker particle quantity to snapshot file.
 !
 !  03-May-2019/PABourdin: coded
 !
       character (len=*), intent(in) :: label
-      integer, intent(in) :: mv, nv, snap
+      integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
-      integer, intent(in), optional :: nvar
-      logical, intent(in), optional :: lfinalize
 !
       call fatal_error ('output_stalker', 'not implemented for "io_collect"', .true.)
 !
@@ -350,7 +347,7 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
-      call output_stalker ('', 0, 1, -1, (/ 0.0 /), 0, lfinalize=.true.)
+      call fatal_error ('output_part_finalize', 'not implemented for "io_collect"', .true.)
 !
     endsubroutine output_part_finalize
 !***********************************************************************

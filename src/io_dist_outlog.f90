@@ -255,24 +255,25 @@ module Io
 !
     endsubroutine output_part_snap
 !***********************************************************************
-    subroutine output_stalker_init(file, num, nv, snap, ID)
+    subroutine output_stalker_init(num, nv, snap, ID)
 !
 !  Open stalker particle snapshot file and initialize with snapshot time.
 !
 !  03-May-2019/PABourdin: coded
 !
-      character (len=*), intent(in) :: file
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
 !
+      character (len=fnlen) :: filename
       integer :: io_err
       logical :: lerror
       real :: t_sp
 !
-      call output_stalker ('', 0, nv, -1, (/ 0.0 /), num)
+      call output_stalker ('', 0, nv, (/ 0.0 /), num)
 !
-      open (lun_output, file=trim(directory_dist)//'/particles_stalker.dat', form='unformatted', IOSTAT=io_err, position='append')
-      lerror = outlog (io_err, 'openw', file, dist=lun_output, location='output_stalker_init')
+      filename = trim(directory_dist)//'/particles_stalker.dat'
+      open (lun_output, file=filename, form='unformatted', IOSTAT=io_err, position='append')
+      lerror = outlog (io_err, 'openw', filename, dist=lun_output, location='output_stalker_init')
 !
       ! write the time, number, and ID of stalked particles at this processor
       t_sp = t
@@ -285,7 +286,7 @@ module Io
 !
     endsubroutine output_stalker_init
 !***********************************************************************
-    subroutine output_stalker(label, mv, nv, snap, data, nvar, lfinalize)
+    subroutine output_stalker(label, mv, nv, data, nvar, lfinalize)
 !
 !  Write stalker particle quantity to snapshot file.
 !
@@ -294,7 +295,7 @@ module Io
       use General, only: loptest
 !
       character (len=*), intent(in) :: label
-      integer, intent(in) :: mv, nv, snap
+      integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
       integer, intent(in), optional :: nvar
       logical, intent(in), optional :: lfinalize
@@ -336,7 +337,7 @@ module Io
 !
 !  03-May-2019/PABourdin: adapted from output_snap_finalize
 !
-      call output_stalker ('', 0, 1, -1, (/ 0.0 /), 0, lfinalize=.true.)
+      call output_stalker ('', 0, 1, (/ 0.0 /), 0, lfinalize=.true.)
       close (lun_output)
 !
     endsubroutine output_part_finalize
