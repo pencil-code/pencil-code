@@ -574,7 +574,7 @@ module Io
       call create_group_hdf5 (group)
       if (lhas_data) then
         call output_hdf5 (trim(group)//'time', time)
-        call output_hdf5 (trim(group)//'position', grid(pos))
+        call output_hdf5 (trim(group)//'position', pos)
         call output_hdf5 (trim(group)//'coordinate', grid_pos)
       endif
       call file_close_hdf5
