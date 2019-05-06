@@ -326,7 +326,7 @@ module Io
 !
     endsubroutine output_slice_position
 !***********************************************************************
-    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+    subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
 !  append to a slice file
 !
@@ -338,9 +338,8 @@ module Io
       logical, intent(in) :: lwrite
       real, intent(in) :: time
       character (len=*), intent(in) :: label, suffix
-      real, dimension (:) :: grid
-      integer, intent(in) :: pos, grid_pos
-      integer, intent(in) :: ndim1, ndim2
+      real, intent(in) :: pos
+      integer, intent(in) :: grid_pos
       real, dimension (:,:), pointer :: data
 !
       if (.not. lwrite .or. .not. associated(data)) return
@@ -348,7 +347,7 @@ module Io
 !  files data/procN/slice*.* are distributed and will be synchronized a-posteriori on I/O error
 !
       open (lun_output, file=trim(directory)//'/slice_'//trim(label)//'.'//trim(suffix), form='unformatted', position='append')
-      write (lun_output) data, time, grid(pos)
+      write (lun_output) data, time, pos
       close (lun_output)
 !
     endsubroutine output_slice

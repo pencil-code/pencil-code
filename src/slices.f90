@@ -166,13 +166,13 @@ contains
           else
             sname=trim(sname)//trim(itoa(slices%index))
           endif
-          if (lactive_slice_yz) call output_slice(lwrite_slice_yz, tslice, sname, 'yz', x, ix_loc, ix, slices%yz, ny, nz)
-          if (lactive_slice_xz) call output_slice(lwrite_slice_xz, tslice, sname, 'xz', y, iy_loc, iy, slices%xz, nx, nz)
-          if (lactive_slice_xz2) call output_slice(lwrite_slice_xz2, tslice, sname, 'xz2', y, iy2_loc, iy2, slices%xz2, nx, nz)
-          if (lactive_slice_xy) call output_slice(lwrite_slice_xy, tslice, sname, 'xy', z, iz_loc, iz, slices%xy, nx, ny)
-          if (lactive_slice_xy2) call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z, iz2_loc, iz2, slices%xy2, nx, ny)
-          if (lactive_slice_xy3) call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z, iz3_loc, iz3, slices%xy3, nx, ny)
-          if (lactive_slice_xy4) call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z, iz4_loc, iz4, slices%xy4, nx, ny)
+          if (lactive_slice_yz) call output_slice(lwrite_slice_yz, tslice, sname, 'yz', x(ix_loc), ix, slices%yz)
+          if (lactive_slice_xz) call output_slice(lwrite_slice_xz, tslice, sname, 'xz', y(iy_loc), iy, slices%xz)
+          if (lactive_slice_xz2) call output_slice(lwrite_slice_xz2, tslice, sname, 'xz2', y(iy2_loc), iy2, slices%xz2)
+          if (lactive_slice_xy) call output_slice(lwrite_slice_xy, tslice, sname, 'xy', z(iz_loc), iz, slices%xy)
+          if (lactive_slice_xy2) call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z(iz2_loc), iz2, slices%xy2)
+          if (lactive_slice_xy3) call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z(iz3_loc), iz3, slices%xy3)
+          if (lactive_slice_xy4) call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z(iz4_loc), iz4, slices%xy4)
         else
           if (slices%index/=0) slices%index=0
           inamev=inamev+1

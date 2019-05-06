@@ -412,7 +412,7 @@ module Io
 !
     endsubroutine output_slice_position
 !***********************************************************************
-    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+    subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
 !  append to a slice file
 !
@@ -424,9 +424,8 @@ module Io
       logical, intent(in) :: lwrite
       real, intent(in) :: time
       character (len=*), intent(in) :: label, suffix
-      real, dimension (:) :: grid
-      integer, intent(in) :: pos, grid_pos
-      integer, intent(in) :: ndim1, ndim2
+      real, intent(in) :: pos
+      integer, intent(in) :: grid_pos
       real, dimension (:,:), pointer :: data
 !
       character (len=fnlen) :: filename
