@@ -2522,7 +2522,7 @@ module Sub
 !***********************************************************************
     subroutine bij_tilde(f,bb,bijtilde,bij_cov_corr)
 !
-! Calculates \partial B_[r,\theta,\phi]/ \partial [r,\theta],
+! Calculates \partial B_[r,\theta,\phi]/ \partial r, B_[r,\theta,\phi]/(r \theta),
 ! and optionally the correction, needed for covariant derivatives, in bij_cov_corr.
 !
 ! 20-nov-16/MR: coded
@@ -6396,11 +6396,12 @@ nameloop: do
 !
 !  21-apr-15/MR: coded
 !  27-may-18/MR: added ind_loc=-1 when ind outside proc range
+!   6-may-19/MR: made +1 the "invalid" value to allow indexing with ind_loc
 !
-      integer, intent(inout) :: ind
-      integer, intent(in) :: ip,ngrid
-      integer, intent(out):: ind_loc
-      logical, intent(out):: flag
+      integer, intent(inout):: ind
+      integer, intent(in)   :: ip,ngrid
+      integer, intent(inout):: ind_loc
+      logical, intent(out)  :: flag
      
       if (ind>0) then
         ind_loc=ind-ip*ngrid
@@ -6409,10 +6410,10 @@ nameloop: do
           ind_loc=ind_loc+nghost
         else
           flag=.false.
-          ind_loc=-1
+          ind_loc=1
         endif
       else
-        if (ind_loc > 0) ind = ind_loc + ip*ngrid
+        if (ind_loc > nghost) ind = ind_loc + ip*ngrid
       endif
 
     endsubroutine position
