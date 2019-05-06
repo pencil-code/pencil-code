@@ -520,7 +520,7 @@ module Io
 !
     endsubroutine output_slice_position
 !***********************************************************************
-    subroutine output_slice(lwrite, time, label, suffix, grid, pos, grid_pos, data, ndim1, ndim2)
+    subroutine output_slice(lwrite, time, label, suffix, pos, grid_pos, data)
 !
 !  append to a slice file
 !
@@ -533,13 +533,12 @@ module Io
       logical, intent(in) :: lwrite
       real, intent(in) :: time
       character (len=*), intent(in) :: label, suffix
-      real, dimension (:) :: grid
-      integer, intent(in) :: pos, grid_pos
-      integer, intent(in) :: ndim1, ndim2
+      real, intent(in) :: pos
+      integer, intent(in) :: grid_pos
       real, dimension (:,:), pointer :: data
 !
       character (len=fnlen) :: filename, group
-      integer :: last, this_proc, slice_proc
+      integer :: last, this_proc, slice_proc, ndim1, ndim2
       real :: time_last
       logical :: lexists, lhas_data
 !
@@ -583,18 +582,11 @@ module Io
       call file_open_hdf5 (filename, truncate=.false.)
       ! collect data along 'xy', 'xz', or 'yz'
       lhas_data = lwrite .and. associated(data)
-      select case (suffix)
+      ndim1=size(data,1); ndim2=size(data,2)
+      select case (suffix(1:2))
       case ('xy')
         call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
-      case ('xy2')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
-      case ('xy3')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
-      case ('xy4')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
       case ('xz')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nzgrid, ipx, ipz, lhas_data)
-      case ('xz2')
         call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nzgrid, ipx, ipz, lhas_data)
       case ('yz')
         call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nygrid, nzgrid, ipy, ipz, lhas_data)
