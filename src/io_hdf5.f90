@@ -582,7 +582,7 @@ module Io
       call file_open_hdf5 (filename, truncate=.false.)
       ! collect data along 'xy', 'xz', or 'yz'
       lhas_data = lwrite .and. associated(data)
-      ndim1=size(data,1); ndim2=size(data,2)
+      ndim1=max(1,size(data,1)); ndim2=max(1,size(data,2))
       select case (suffix(1:2))
       case ('xy')
         call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
@@ -591,7 +591,7 @@ module Io
       case ('yz')
         call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nygrid, nzgrid, ipy, ipz, lhas_data)
       case default
-        call fatal_error ('output_hdf5', 'unknown 2D slice "'//trim (suffix)//'"', .true.)
+        call fatal_error ('output_slice', 'unknown 2D slice "'//trim (suffix)//'"', .true.)
       endselect
       call file_close_hdf5
 !
