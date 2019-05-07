@@ -381,11 +381,11 @@ contains
 !
       if (.not.lactive_dimension(3)) then
         lwrite_slice_xy2=.false.; lwrite_slice_xy3=.false.; lwrite_slice_xy4=.false.
-        iz2_loc=-1; iz3_loc=-1; iz4_loc=-1
+        iz2_loc=1; iz3_loc=1; iz4_loc=1
       endif 
 
       if (.not.lactive_dimension(2)) then
-        lwrite_slice_xz2=.false.; iy2_loc=-1
+        lwrite_slice_xz2=.false.; iy2_loc=1
       endif
 
       call output_slice_position
