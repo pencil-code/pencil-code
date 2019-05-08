@@ -66,6 +66,22 @@ for pdir in  $dirlist ; do
     cvs add sf*.dat
   fi
 #
+# add *.h5 files and the particle size distribution
+  \ls | egrep 'grid.h5' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add grid.h5
+  fi
+#
+  \ls | egrep 'time_series.h5' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add time_series.h5
+  fi
+#
+  \ls | egrep 'particle_size_dist.dat' >/dev/null
+  if [[ ! $status ]]; then
+    cvs add particle_size_dist.dat
+  fi
+#  
 #  add testfield_info.dat file if it exists
 #
   \ls | egrep 'testfield_info\.dat' >/dev/null
