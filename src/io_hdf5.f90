@@ -527,72 +527,77 @@ module Io
 !  30-Oct-2018/PABourdin: coded
 !
       use File_io, only: file_exists
-      use General, only: itoa
-      use Mpicomm, only: mpibcast_int, mpiallreduce_min, MPI_COMM_WORLD
+      use General, only: itoa, find_proc
+      use Mpicomm, only: mpibcast_int, mpibarrier, &
+                         MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE
 !
-      logical, intent(in) :: lwrite
-      real, intent(in) :: time
-      character (len=*), intent(in) :: label, suffix
-      real, intent(in) :: pos
-      integer, intent(in) :: grid_pos
-      real, dimension (:,:), pointer :: data
+      logical,                        intent(in) :: lwrite
+      real,                           intent(in) :: time, pos
+      character (len=*),              intent(in) :: label, suffix
+      integer,                        intent(in) :: grid_pos
+      real, dimension (:,:), pointer, intent(in) :: data
 !
       character (len=fnlen) :: filename, group
-      integer :: last, this_proc, slice_proc, ndim1, ndim2
+      integer :: last, slice_root, comm, ndim1, ndim2
       real :: time_last
-      logical :: lexists, lhas_data
 !
-      last = 0
-      filename = trim (datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
-      if (lroot) then
-        lexists = file_exists (filename)
-        if (lexists) then
+      if (.not.(lwrite.and.associated(data))) return
+
+      select case (suffix(1:2))
+        case ('xy'); comm=MPI_COMM_XYPLANE; slice_root=find_proc(0,0,ipz)
+        case ('xz'); comm=MPI_COMM_XZPLANE; slice_root=find_proc(0,ipy,0)
+        case ('yz'); comm=MPI_COMM_YZPLANE; slice_root=find_proc(ipx,0,0)
+      end select
+
+      filename = trim(datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
+      last=0
+      if (iproc==slice_root) then
+        if (file_exists (filename)) then
           ! find last written slice
-          call file_open_hdf5 (filename, global=.false., read_only=.true.)
+          call file_open_hdf5 (filename, global=.false., read_only=.true.,write=.true.)
           if (exists_in_hdf5 ('last')) call input_hdf5 ('last', last)
+          call input_hdf5('last', last)
           do while (last >= 1)
             call input_hdf5 (trim(itoa(last))//'/time', time_last)
             if (time > time_last) exit
-            last = last - 1
+            last=last-1
           enddo
         else
           ! create empty file
-          call file_open_hdf5 (filename, global=.false., truncate=.true.)
+          call file_open_hdf5 (filename, global=.false.,truncate=.true.,write=.true.)
         endif
         call file_close_hdf5
       endif
-      last = last + 1
-      call mpibcast_int (last)
+      last=last+1
+
+      call mpibcast_int (last,proc=0,comm=comm)    ! proc=0 as the procressor rank w.r.t. communicator comm is needed
       group = trim(itoa(last))//'/'
-!
-      this_proc = iproc
-      if (.not. lwrite) this_proc = ncpus + 1
-      call mpiallreduce_min (this_proc, slice_proc, MPI_COMM_WORLD)
-      lhas_data = (slice_proc == iproc)
-      call file_open_hdf5 (filename, global=.false., truncate=.false., write=lhas_data)
-      call output_hdf5 ('last', last)
-      call create_group_hdf5 (group)
-      if (lhas_data) then
+  !
+      if (iproc==slice_root) then
+        call file_open_hdf5 (filename, global=.false., truncate=.false., write=.true.)
+        call output_hdf5 ('last', last)
+        call create_group_hdf5 (group)
         call output_hdf5 (trim(group)//'time', time)
         call output_hdf5 (trim(group)//'position', pos)
         call output_hdf5 (trim(group)//'coordinate', grid_pos)
+        call file_close_hdf5
       endif
-      call file_close_hdf5
 !
-      call file_open_hdf5 (filename, truncate=.false.)
+      call mpibarrier(comm)
+      call file_open_hdf5 (filename, truncate=.false., write=.true.,comm=comm)
       ! collect data along 'xy', 'xz', or 'yz'
-      lhas_data = lwrite .and. associated(data)
       ndim1=max(1,size(data,1)); ndim2=max(1,size(data,2))
       select case (suffix(1:2))
       case ('xy')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy, lhas_data)
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nygrid, ipx, ipy)
       case ('xz')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nzgrid, ipx, ipz, lhas_data)
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nxgrid, nzgrid, ipx, ipz)
       case ('yz')
-        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nygrid, nzgrid, ipy, ipz, lhas_data)
+        call output_hdf5 (trim(group)//'data', data, ndim1, ndim2, nygrid, nzgrid, ipy, ipz)
       case default
         call fatal_error ('output_slice', 'unknown 2D slice "'//trim (suffix)//'"', .true.)
       endselect
+
       call file_close_hdf5
 !
     endsubroutine output_slice
