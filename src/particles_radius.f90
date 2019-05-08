@@ -48,7 +48,7 @@ module Particles_radius
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
   logical :: reinitialize_ap=.false.
-  logical :: ltauascalar = .false.
+  logical :: ltauascalar = .false., ldust_condensation=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -74,7 +74,8 @@ module Particles_radius
       reinitialize_ap, initap, &
       lcondensation_rate, vapor_mixing_ratio_qvs, &
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
-      ldt_condensation, ldt_condensation_off
+      ldt_condensation, ldt_condensation_off, &
+      ldust_condensation
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -763,6 +764,7 @@ module Particles_radius
               elseif (lascalar) then
                 if (ltauascalar) dapdt = G_condensation*f(ix,m,n,iacc)/fp(k,iap)
                 if (lcondensation_rate) dapdt = G_condensation*f(ix,m,n,issat)/fp(k,iap)
+                if (lcondensation_rate .and. ldust_condensation) dapdt = G_condensation*f(ix,m,n,issat)
               else
                 dapdt = 0.25*vth(ix)*rhopmat1* &
                 (rhovap(ix)-rhosat(ix))*alpha_cond_par
