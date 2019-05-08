@@ -73,7 +73,7 @@
   public :: ipx, ipy, ipz, lroot, iproc, mpi_precision
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
-  public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_XYPLANE, MPI_COMM_YZPLANE, MPI_INFO_NULL, MPI_ANY_TAG, lyang
-  integer, parameter, public :: IXBEAM=1, IYBEAM=2, IZBEAM=3, IXYPLANE=12, IXZPLANE=13, I_YZPLANE=23
+  public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, MPI_INFO_NULL, MPI_ANY_TAG, lyang
+  integer, parameter, public :: IXBEAM=1, IYBEAM=2, IZBEAM=3, IXYPLANE=12, IXZPLANE=13, IYZPLANE=23
 
   character(LEN=4), public :: cyinyang=' '

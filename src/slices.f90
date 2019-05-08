@@ -23,9 +23,6 @@ module Slices
   real :: tslice=0.
   real, target, dimension(:,:), allocatable :: slice_xy,slice_xy2,slice_xy3,slice_xy4
   real, target, dimension(:,:), allocatable :: slice_xz,slice_xz2,slice_yz
-  logical :: lactive_slice_yz, lactive_slice_xz, lactive_slice_xz2, &
-      lactive_slice_xy, lactive_slice_xy2, lactive_slice_xy3, lactive_slice_xy4
-
 !
 contains
 !***********************************************************************
@@ -166,13 +163,13 @@ contains
           else
             sname=trim(sname)//trim(itoa(slices%index))
           endif
-          if (lactive_slice_yz) call output_slice(lwrite_slice_yz, tslice, sname, 'yz', x(ix_loc), ix, slices%yz)
-          if (lactive_slice_xz) call output_slice(lwrite_slice_xz, tslice, sname, 'xz', y(iy_loc), iy, slices%xz)
-          if (lactive_slice_xz2) call output_slice(lwrite_slice_xz2, tslice, sname, 'xz2', y(iy2_loc), iy2, slices%xz2)
-          if (lactive_slice_xy) call output_slice(lwrite_slice_xy, tslice, sname, 'xy', z(iz_loc), iz, slices%xy)
-          if (lactive_slice_xy2) call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z(iz2_loc), iz2, slices%xy2)
-          if (lactive_slice_xy3) call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z(iz3_loc), iz3, slices%xy3)
-          if (lactive_slice_xy4) call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z(iz4_loc), iz4, slices%xy4)
+          call output_slice(lwrite_slice_yz, tslice, sname, 'yz', x(ix_loc), ix, slices%yz)
+          call output_slice(lwrite_slice_xz, tslice, sname, 'xz', y(iy_loc), iy, slices%xz)
+          call output_slice(lwrite_slice_xz2, tslice, sname, 'xz2', y(iy2_loc), iy2, slices%xz2)
+          call output_slice(lwrite_slice_xy, tslice, sname, 'xy', z(iz_loc), iz, slices%xy)
+          call output_slice(lwrite_slice_xy2, tslice, sname, 'xy2', z(iz2_loc), iz2, slices%xy2)
+          call output_slice(lwrite_slice_xy3, tslice, sname, 'xy3', z(iz3_loc), iz3, slices%xy3)
+          call output_slice(lwrite_slice_xy4, tslice, sname, 'xy4', z(iz4_loc), iz4, slices%xy4)
         else
           if (slices%index/=0) slices%index=0
           inamev=inamev+1
@@ -371,13 +368,6 @@ contains
       call position(iz2,ipz,nz,iz2_loc,lwrite_slice_xy2)
       call position(iz3,ipz,nz,iz3_loc,lwrite_slice_xy3)
       call position(iz4,ipz,nz,iz4_loc,lwrite_slice_xy4)
-      call mpiallreduce_or (lwrite_slice_yz, lactive_slice_yz)
-      call mpiallreduce_or (lwrite_slice_xz, lactive_slice_xz)
-      call mpiallreduce_or (lwrite_slice_xz2, lactive_slice_xz2)
-      call mpiallreduce_or (lwrite_slice_xy, lactive_slice_xy)
-      call mpiallreduce_or (lwrite_slice_xy2, lactive_slice_xy2)
-      call mpiallreduce_or (lwrite_slice_xy3, lactive_slice_xy3)
-      call mpiallreduce_or (lwrite_slice_xy4, lactive_slice_xy4)
 !
       if (.not.lactive_dimension(3)) then
         lwrite_slice_xy2=.false.; lwrite_slice_xy3=.false.; lwrite_slice_xy4=.false.

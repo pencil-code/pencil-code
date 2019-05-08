@@ -58,17 +58,19 @@ module HDF5_IO
 !
     endsubroutine finalize_hdf5
 !***********************************************************************
-    subroutine file_open_hdf5(file, truncate, global, read_only, write)
+    subroutine file_open_hdf5(file, truncate, global, read_only, write, comm)
 !
       character (len=*), intent(in) :: file
       logical, optional, intent(in) :: truncate
       logical, optional, intent(in) :: global
       logical, optional, intent(in) :: read_only
       logical, optional, intent(in) :: write
+      integer, optional, intent(in) :: comm
 !
       call keep_compiler_quiet(file)
       call keep_compiler_quiet(.true.,truncate, global, read_only)
       call keep_compiler_quiet(.true.,write)
+      call keep_compiler_quiet(comm)
 
       call fatal_error ('file_open_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
 !
