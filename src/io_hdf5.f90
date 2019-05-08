@@ -188,7 +188,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv, file, mode, ltruncate, label)
+    subroutine output_snap(a, nv1, nv2, file, mode, ltruncate, label)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
@@ -197,18 +197,21 @@ module Io
 !  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: parallel_file_exists
+      use General, only: ioptest
 !
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: a
+      integer, intent(in), optional :: nv1,nv2
+      real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
-      integer :: pos
+      integer :: pos, nv, ne
       logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
 !
+      nv=ioptest(nv2,mvar_io)
+
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
       dataset = 'f'
       if (present (label)) dataset = label
@@ -424,15 +427,15 @@ module Io
       call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
       call create_group_hdf5 ('unit')
       call output_hdf5 ('unit/system', unit_system)
-      call output_hdf5 ('unit/density', unit_density)
-      call output_hdf5 ('unit/length', unit_length)
-      call output_hdf5 ('unit/velocity', unit_velocity)
-      call output_hdf5 ('unit/magnetic', unit_magnetic)
-      call output_hdf5 ('unit/temperature', unit_temperature)
-      call output_hdf5 ('unit/mass', unit_mass)
-      call output_hdf5 ('unit/energy', unit_energy)
-      call output_hdf5 ('unit/time', unit_time)
-      call output_hdf5 ('unit/flux', unit_flux)
+      !call output_hdf5 ('unit/density', unit_density)
+      !call output_hdf5 ('unit/length', unit_length)
+      !call output_hdf5 ('unit/velocity', unit_velocity)
+      !call output_hdf5 ('unit/magnetic', unit_magnetic)
+      !call output_hdf5 ('unit/temperature', unit_temperature)
+      !call output_hdf5 ('unit/mass', unit_mass)
+      !call output_hdf5 ('unit/energy', unit_energy)
+      !call output_hdf5 ('unit/time', unit_time)
+      !call output_hdf5 ('unit/flux', unit_flux)
       call create_group_hdf5 ('settings')
       call output_hdf5 ('settings/mx', nxgrid+2*nghost)
       call output_hdf5 ('settings/my', nygrid+2*nghost)
@@ -535,7 +538,7 @@ module Io
       real,                           intent(in) :: time, pos
       character (len=*),              intent(in) :: label, suffix
       integer,                        intent(in) :: grid_pos
-      real, dimension (:,:), pointer, intent(in) :: data
+      real, dimension (:,:), pointer             :: data
 !
       character (len=fnlen) :: filename, group
       integer :: last, slice_root, comm, ndim1, ndim2
@@ -1179,7 +1182,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      call output_snap (a, nv, file, mode=0, label=coptest(label,'globals'))
+      call output_snap (a, nv, file=file, mode=0, label=coptest(label,'globals'))
       call output_snap_finalize
 !
     endsubroutine output_globals
