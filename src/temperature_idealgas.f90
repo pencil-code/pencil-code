@@ -48,16 +48,13 @@ module Energy
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real, dimension(5) :: hole_params
   real, dimension(nz) :: zmask_temp, zmask_emiss
-  real, dimension(nzgrid) :: zmask_temp_global, zmask_emiss_global
+  real, dimension(nzgrid) :: zmask_temp_global
   real, dimension(2) :: temp_zaver_range=(/-max_real,max_real/)
-  real, dimension(2) :: emiss_zaver_range=(/-max_real,max_real/)
-  real :: emiss_logT0=0.0
-  real :: emiss_width=1.0
   real :: mu=1.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   real :: beta_bouss=-1.0
-  integer :: temp_zmask_count=1, emiss_zmask_count=1
+  integer :: temp_zmask_count=1
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
@@ -100,7 +97,7 @@ module Energy
       center1_x, center1_y, center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, &
       Tbump, Kmin, Kmax, hole_slope, hole_width, ltemperature_nolog, &
       linitial_log, hcond0, luminosity, wheat, coef_lnTT, kx_lnTT, ky_lnTT, kz_lnTT, &
-      temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width
+      temp_zaver_range
 !
 !  Run parameters.
 !
@@ -111,7 +108,7 @@ module Energy
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
       cool, beta_bouss, borderss, lmultilayer, lcalc_TTmean, &
-      temp_zaver_range,emiss_zaver_range,mu,emiss_logT0,emiss_width, &
+      temp_zaver_range, &
       gradTT0, w_sldchar_ene, chi_z0, chi_jump, chi_zwidth
 !
 !  Diagnostic variables for print.in
@@ -173,9 +170,6 @@ module Energy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_Emzmask=0    ! DIAG_DOC: $\left< n^2 \exp{-(\log{T}-\log{T_0})
-                                ! DIAG_DOC:  ^2/(\delta \log{T})^2}\right>$
-                                ! DIAG_DOC:   the emiss_zaver_range
 !
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
@@ -217,14 +211,43 @@ module Energy
 ! y averaged diagnostics given in yaver.in
 !
   integer :: idiag_TTmxz=0      ! YAVG_DOC: $\left<T\right>_{y}$
-  integer :: idiag_Emymxz=0     ! YAVG_DOC: $\left< Em_y\right>_{y} $
-                                ! YAVG_DOC: \quad{Emission in y-direction}
+  integer :: idiag_EmAIA94mxz=0 ! YAVG_DOC: Emission off AIA 94 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmAIA131mxz=0! YAVG_DOC: Emission off AIA 131 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmAIA171mxz=0! YAVG_DOC: Emission off AIA 171 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmAIA193mxz=0! YAVG_DOC: Emission off AIA 193 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmAIA211mxz=0! YAVG_DOC: Emission off AIA 211 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmAIA304mxz=0! YAVG_DOC: Emission off AIA 304 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmAIA335mxz=0! YAVG_DOC: Emission off AIA 335 channel
+                                ! YAVG_DOC: integrated over y direction
+  integer :: idiag_EmXRTmxz=0   ! YAVG_DOC: Emission off XRT Al-poly channel
+                                ! YAVG_DOC: integrated over y direction
 !
 ! z averaged diagnostics given in zaver.in
 !
   integer :: idiag_TTmxy=0      ! ZAVG_DOC: $\left<T\right>_{z}$
-  integer :: idiag_Emzmxy=0     ! ZAVG_DOC: $\left< Em_z\right>_{z} $
-                                ! ZAVG_DOC: \quad{Emission in z-direction}
+  integer :: idiag_EmAIA94mxy=0 ! ZAVG_DOC: Emission off AIA 94 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmAIA131mxy=0! ZAVG_DOC: Emission off AIA 131 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmAIA171mxy=0! ZAVG_DOC: Emission off AIA 171 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmAIA193mxy=0! ZAVG_DOC: Emission off AIA 193 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmAIA211mxy=0! ZAVG_DOC: Emission off AIA 211 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmAIA304mxy=0! ZAVG_DOC: Emission off AIA 304 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmAIA335mxy=0! ZAVG_DOC: Emission off AIA 335 channel
+                                ! ZAVG_DOC: integrated over z direction
+  integer :: idiag_EmXRTmxy=0   ! ZAVG_DOC: Emission off XRT Al-poly channel
+                                ! ZAVG_DOC: integrated over z direction
+
 !
   integer :: ivid_pp=0
 !
@@ -557,34 +580,10 @@ module Energy
         zmask_temp = zmask_temp*float(nzgrid)/float(temp_zmask_count)
       endif
 !
-!  Compute mask for z-averaging where z is in emission_zaver_range.
-!  Normalize such that the average over the full domain
-!  gives still unity.
-!
-      if (n1 == n2) then
-        zmask_emiss = 1.
-        zmask_emiss_global = 1.
-      else
-        where (z(n1:n2) >= emiss_zaver_range(1) .and. z(n1:n2) <= emiss_zaver_range(2))
-          zmask_emiss = 1.
-        elsewhere
-          zmask_emiss = 0.
-        endwhere
-       where (zglobal(nghost+1:mzgrid-nghost) >= emiss_zaver_range(1) .and. &
-               zglobal(nghost+1:mzgrid-nghost) <= emiss_zaver_range(2))
-          zmask_emiss_global = 1.
-        elsewhere
-          zmask_emiss_global = 0.
-        endwhere
-        emiss_zmask_count = max(count(zmask_emiss_global ==  1.0),1)
-        zmask_emiss = zmask_emiss*float(nzgrid)/float(emiss_zmask_count)
-      endif
-!
 !  debug output
 !
       if (lroot.and.ip<14) then
         print*,'zmask_temp=' ,zmask_temp
-        print*,'zmask_emiss=',zmask_emiss
       endif
 !
 !
@@ -922,7 +921,7 @@ module Energy
       if ( idiag_TTmax/=0.or.idiag_TTmin/=0 .or.idiag_TTm/=0  .or.idiag_TugTm/=0 .or. &
            idiag_Trms/=0 .or.idiag_uxTm/=0  .or.idiag_uyTm/=0 .or.idiag_uzTm/=0  .or. &
            idiag_TT2mz/=0 .or.idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0 .or. &
-           idiag_TT2m/=0 .or.idiag_TTzmask/=0 .or. idiag_Emzmask/=0) lpenc_diagnos(i_TT)=.true.
+           idiag_TT2m/=0 .or.idiag_TTzmask/=0 ) lpenc_diagnos(i_TT)=.true.
 !
       if ( idiag_TugTm/=0 .or. idiag_gT2m/=0 .or. &
            idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_gTT)=.true.
@@ -983,8 +982,19 @@ module Energy
       if (idiag_fpresxmz/=0 .or. idiag_fpresymz/=0 .or. &
           idiag_fpreszmz/=0) lpenc_requested(i_fpres)=.true.
 !
-      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_Emymxz/=0 .or. &
-           idiag_Emzmxy/=0) lpenc_diagnos2d(i_TT)=.true.
+      if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
+!
+      if (idiag_EmAIA94mxy/=0 .or. idiag_EmAIA94mxz/=0 .or.  &
+          idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0 .or. &
+          idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0 .or. &
+          idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0 .or. &
+          idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0 .or. &
+          idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0 .or. &
+          idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0 .or. &
+          idiag_EmXRTmxy/=0 .or. idiag_EmXRTmxz/=0 ) then
+        lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_rho)=.true.
+      endif
 !
     endsubroutine pencil_criteria_energy
 !***********************************************************************
@@ -1120,7 +1130,9 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp, advec_hypermesh_ss
+      real, dimension (nx) :: NN2_resp, logT_resp, resp
       real :: fradtop, fradbot
+      integer, dimension (nx) :: idx_resp
       integer :: j
 !
       intent(inout) :: f,p,df
@@ -1315,12 +1327,6 @@ module Energy
       if (ldiagnos) then
         if (idiag_TTm/=0)   call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_TTzmask/=0) call sum_mn_name(p%TT*zmask_temp(n-n1+1),idiag_TTzmask)
-!
-!  emiss_logT0 is the temperature of a specific emission line
-!  emiss_width is the width of the temperature distribution of specific emission line
-!
-        if (idiag_Emzmask/=0)   call sum_mn_name((p%rho/mu)**2*exp(-(log(p%TT)-emiss_logT0)**2 &
-                                     /emiss_width**2)*zmask_emiss(n-n1+1),idiag_Emzmask)
         if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_ssm/=0)   call sum_mn_name(p%ss,idiag_ssm)
@@ -1433,11 +1439,109 @@ module Energy
       if (l2davgfirst) then
         if (idiag_TTmxy/=0) call zsum_mn_name_xy(p%TT,idiag_TTmxy)
         if (idiag_TTmxz/=0) call ysum_mn_name_xz(p%TT,idiag_TTmxz)
-        if (idiag_Emymxz/=0) call ysum_mn_name_xz((p%rho/mu)**2* & 
-                  exp(-(log(p%TT)-emiss_logT0)**2/(emiss_width)**2),idiag_Emymxz)
-        if (idiag_Emzmxy/=0) call zsum_mn_name_xy((p%rho/mu)**2* &
-                  exp(-(log(p%TT)-emiss_logT0)**2/(emiss_width)**2),idiag_Emzmxy)
+!
+!   calculating emission with tabulated response files
+!
+        if (idiag_EmAIA94mxy/=0  .or. idiag_EmAIA94mxz/=0  .or. &
+            idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0 .or. &
+            idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0 .or. &
+            idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0 .or. &
+            idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0 .or. &
+            idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0 .or. &
+            idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0 .or. &
+            idiag_EmXRTmxy/=0    .or. idiag_EmXRTmxz/=0) then
+!
+! partical density squared in SI
+!
+          NN2_resp   = (6./7.*p%rho/m_p*unit_density/unit_mass)**2.
+!
+! log10 temperature in SI (K)
+!
+          logT_resp  =log10(p%TT*unit_temperature)
+!
+          if (idiag_EmAIA94mxy/=0 .or. idiag_EmAIA94mxz/=0) then
+            call get_AIA_tab_resp('094',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA94mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA94mxy)
+            endif
+            if (idiag_EmAIA94mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA94mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA131mxy/=0 .or. idiag_EmAIA131mxz/=0) then
+            call get_AIA_tab_resp('131',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA131mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA131mxy)
+            endif
+            if (idiag_EmAIA131mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA131mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA171mxy/=0 .or. idiag_EmAIA171mxz/=0) then
+            call get_AIA_tab_resp('171',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA171mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA171mxy)
+            endif
+            if (idiag_EmAIA171mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA171mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA193mxy/=0 .or. idiag_EmAIA193mxz/=0) then
+            call get_AIA_tab_resp('193',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA193mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA193mxy)
+            endif
+            if (idiag_EmAIA193mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA193mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA211mxy/=0 .or. idiag_EmAIA211mxz/=0) then
+            call get_AIA_tab_resp('211',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA211mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA211mxy)
+            endif
+            if (idiag_EmAIA211mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA211mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA304mxy/=0 .or. idiag_EmAIA304mxz/=0) then
+            call get_AIA_tab_resp('304',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA304mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA304mxy)
+            endif
+            if (idiag_EmAIA304mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA304mxz)
+            endif
+          endif
+!
+          if (idiag_EmAIA335mxy/=0 .or. idiag_EmAIA335mxz/=0) then
+            call get_AIA_tab_resp('335',logT_resp,NN2_resp,resp)
+            if (idiag_EmAIA335mxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmAIA335mxy)
+            endif
+            if (idiag_EmAIA335mxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmAIA335mxz)
+            endif
+          endif
+!
+          if (idiag_EmXRTmxy/=0 .or. idiag_EmXRTmxz/=0) then
+            call get_AIA_tab_resp('XRT',logT_resp,NN2_resp,resp)
+            if (idiag_EmXRTmxy/=0) then
+              call zsum_mn_name_xy(resp*Lz*unit_length/1e6,idiag_EmXRTmxy)
+            endif
+            if (idiag_EmXRTmxz/=0) then
+              call ysum_mn_name_xz(resp*Ly*unit_length/1e6,idiag_EmXRTmxz)
+            endif
+          endif
+!
+        endif
       endif
+
 !
       if (lvideo.and.lfirst) then
         if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2)
@@ -2128,6 +2232,92 @@ module Energy
 !
     endsubroutine calc_heatcond_tensor
 !***********************************************************************
+    subroutine get_AIA_tab_resp(channel,lgT,part_den2,respon)
+!
+!  Determine the indices for the temperature used in the tabulated
+!  response functions of AIA on SDO.
+!
+!  8-may-19/joern: coded
+!
+      real, dimension  (nx) :: respon
+      real, dimension  (nx) :: part_den2
+      real, dimension  (nx) :: lgT
+!
+      real                  :: a0=1., a1=1., a2=1., a3=0., a4=0., a5=0.
+!
+      character (len=3) :: channel
+!
+!  the response functions are approximated by gaussian curves
+!  using the amplitude (a0), center (a1), width (the standard deviation) (a2) of gaussian
+!  following:
+!        func(x) = a0 * exp((x-a1)**2/2*a2**2)
+!
+   select case (trim(channel))
+!
+!   AIA channels
+!
+     case ('094')
+       a0=  3.68132d-27
+       a1=      6.86406
+       a2=     0.171703
+!
+     case ('131')
+       a0=  5.69305d-26
+       a1=      5.75804
+       a2=     0.225604
+!
+     case ('171')
+       a0=  1.29671d-24
+       a1=      5.93474
+       a2=     0.173903
+!
+     case ('193')
+       a0=  5.42492d-25
+       a1=      6.17694
+       a2=     0.120203
+!
+     case ('211')
+       a0=  1.71252d-25
+       a1=      6.26945
+       a2=     0.118102
+!
+     case ('304')
+       a0=  4.26987d-25
+       a1=      4.92302
+       a2=     0.128603
+!
+     case ('335')
+       a0=  6.38811d-27
+       a1=      5.33373
+       a2=     0.471810
+!
+!  XRT channel'
+!  we use Al-poly
+     case ('XRT')
+       a0=  2.72928d-25
+       a1=      6.93243
+       a2=     0.317607
+!
+     case default
+       a0= 1.
+       a1= 1.
+       a2=0.1
+!
+  endselect
+!
+!
+!  Construct the reponse function
+!
+      respon=a0*(exp(-1.*((lgT-a1)**2.)/(2.*a2**2.)))
+!
+!  two seconds exposure time
+!  mulitplying with the particle density squared
+!  getting the units right
+!
+      respon=2*respon*part_den2*1e-4
+!
+    endsubroutine get_AIA_tab_resp
+!***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
       use File_io, only: parallel_unit
@@ -2200,10 +2390,18 @@ module Energy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
         idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
-        idiag_TTmxy=0; idiag_TTmxz=0; idiag_Emymxz=0; idiag_Emzmxy=0
+        idiag_TTmxy=0; idiag_TTmxz=0
         idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradmz=0
-        idiag_ethtot=0; idiag_fconvmz=0; idiag_TT2m=0; idiag_Emzmask=0
+        idiag_ethtot=0; idiag_fconvmz=0; idiag_TT2m=0
         ivid_pp=0
+        idiag_EmAIA94mxy=0; idiag_EmAIA94mxz=0
+        idiag_EmAIA131mxy=0; idiag_EmAIA131mxz=0
+        idiag_EmAIA171mxy=0; idiag_EmAIA171mxz=0
+        idiag_EmAIA193mxy=0; idiag_EmAIA193mxz=0
+        idiag_EmAIA211mxy=0; idiag_EmAIA211mxz=0
+        idiag_EmAIA304mxy=0; idiag_EmAIA304mxz=0
+        idiag_EmAIA335mxy=0; idiag_EmAIA335mxz=0
+        idiag_EmXRTmxy=0; idiag_EmXRTmxz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2211,7 +2409,6 @@ module Energy
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTzmask',idiag_TTzmask)
-        call parse_name(iname,cname(iname),cform(iname),'Emzmask',idiag_Emzmask)
         call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
@@ -2296,8 +2493,22 @@ module Energy
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'TTmxy', &
             idiag_TTmxy)
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'Emzmxy', &
-           idiag_Emzmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA94mxy', &
+           idiag_EmAIA94mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA131mxy', &
+           idiag_EmAIA131mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA171mxy', &
+           idiag_EmAIA171mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA193mxy', &
+           idiag_EmAIA193mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA211mxy', &
+           idiag_EmAIA211mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA303mxy', &
+           idiag_EmAIA304mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmAIA1335mxy', &
+           idiag_EmAIA335mxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'EmXRTmxy', &
+           idiag_EmXRTmxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -2305,8 +2516,22 @@ module Energy
       do inamexz=1,nnamexz
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'TTmxz', &
             idiag_TTmxz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'Emymxz', &
-           idiag_Emymxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA94mxz', &
+           idiag_EmAIA94mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA131mxz', &
+           idiag_EmAIA131mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA171mxz', &
+           idiag_EmAIA171mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA193mxz', &
+           idiag_EmAIA193mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA211mxz', &
+           idiag_EmAIA211mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA304mxz', &
+           idiag_EmAIA304mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmAIA335mxz', &
+           idiag_EmAIA335mxz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'EmXRTmxz', &
+           idiag_EmXRTmxz)
       enddo
 !
 !  check for those quantities for which we want video slices
