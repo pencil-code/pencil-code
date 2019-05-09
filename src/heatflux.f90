@@ -523,8 +523,8 @@ contains
     call dot(K1,p%bb,tmp)
     call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
-! Reduce the heat conduction at places of low density or very
-! high temperatures
+!   Reduce the heat conduction at places of low density or very
+!   high temperatures
 !
     if (saturation_flux/=0.) then
       call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
@@ -544,7 +544,9 @@ contains
         spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
       endwhere
       if (ldiagnos) then
-        ! pc_auto-test may digest at maximum 2 digits in the exponent
+!
+!   pc_auto-test may digest at maximum 2 digits in the exponent
+!
         tmp = qsat/(qabs+sqrt(tini))
         where (tmp > 1d50) tmp = 1d50
         if (idiag_qsatmin/=0) call max_mn_name(-tmp,idiag_qsatmin,lneg=.true.)
@@ -562,6 +564,10 @@ contains
 !
       call unit_vector(p%glnTT,unit_glnTT)
       call dot(unit_glnTT,p%bunit,cosgT_b)
+!
+!     diffspitz is actually chi * gamma with chi being the usual
+!     heat diffusivity, however diffspitz is the one entering the timestep
+!     see EQ 24 in the manual.
 !
       diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
                  gamma*p%cp1*abs(cosgT_b)
