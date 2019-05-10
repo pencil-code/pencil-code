@@ -41,12 +41,13 @@ module Particles_tetrad
 !
 ! Diagnostic variables
 !
-  integer :: idiag_TVolm            ! DIAG_DOC: Mean signed volume of the tetrads
+  integer :: idiag_TVolm            ! DIAG_DOC: Mean absolute volume of the tetrads
   integer :: idiag_TVolpm            ! DIAG_DOC: Mean of positive volume of the tetrads
   integer :: idiag_TVolnm           ! DIAG_DOC: Mean of negative volume of the tetrads
-  integer :: idiag_VelVolm            ! DIAG_DOC: Mean signed volume of the tetrads in velocity space
+  integer :: idiag_VelVolm            ! DIAG_DOC: Mean absolute volume of the tetrads in velocity space
   integer :: idiag_VelVolpm           ! DIAG_DOC: Mean of positive volume of the tetrads in velocity space
   integer :: idiag_VelVolnm           ! DIAG_DOC: Mean of negative volume of the tetrads in velocity space.
+  integer :: idiag_pspaceVolm         !DIAG_DOC : mean of the phase-space volume always positive.
 contains
 !***********************************************************************
     subroutine register_particles_tetrad()
@@ -190,8 +191,10 @@ contains
 !      
         if (ldiagnos) then
            if (idiag_TVolm/=0) &
-                call sum_par_name(fp(1:npar_loc,iVolp),idiag_TVolm)
-                call sum_par_name(fp(1:npar_loc,iVelVolp),idiag_VelVolm)
+                call sum_par_name(abs(fp(1:npar_loc,iVolp)),idiag_TVolm)
+                call sum_par_name(abs(fp(1:npar_loc,iVelVolp)),idiag_VelVolm)
+                call sum_par_name(&
+                  abs(fp(1:npar_loc,iVelVolp)*fp(1:npar_loc,iVolp)),idiag_pspaceVolm)
         endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -310,6 +313,8 @@ contains
          idiag_TVolm=0
          idiag_TVolpm=0
          idiag_TVolnm=0
+         idiag_VelVolm=0
+         idiag_pspaceVolm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -317,6 +322,8 @@ contains
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'tvolm',idiag_TVolm)
+        call parse_name(iname,cname(iname),cform(iname),'tvel_volm',idiag_VelVolm)
+        call parse_name(iname,cname(iname),cform(iname),'tpvolm',idiag_pspaceVolm)
      enddo
 !
     endsubroutine rprint_particles_tetrad
