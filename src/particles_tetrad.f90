@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION  9
 ! COMMUNICATED AUXILIARIES 9
 ! MPVAR CONTRIBUTION 18
-! MPAUX CONTRIBUTION 1
+! MPAUX CONTRIBUTION 2
 !
 !***************************************************************
 module Particles_tetrad
@@ -42,8 +42,11 @@ module Particles_tetrad
 ! Diagnostic variables
 !
   integer :: idiag_TVolm            ! DIAG_DOC: Mean signed volume of the tetrads
-  integer :: idiag_TVolpm           ! DIAG_DOC: Mean of positive volume of the tetrads
+  integer :: idiag_TVolpm            ! DIAG_DOC: Mean of positive volume of the tetrads
   integer :: idiag_TVolnm           ! DIAG_DOC: Mean of negative volume of the tetrads
+  integer :: idiag_VelVolm            ! DIAG_DOC: Mean signed volume of the tetrads in velocity space
+  integer :: idiag_VelVolpm           ! DIAG_DOC: Mean of positive volume of the tetrads in velocity space
+  integer :: idiag_VelVolnm           ! DIAG_DOC: Mean of negative volume of the tetrads in velocity space.
 contains
 !***********************************************************************
     subroutine register_particles_tetrad()
@@ -90,6 +93,11 @@ contains
 ! of the tetrad:
 !
       call append_npaux('iVolp',iVolp)
+!
+! One MORE particle auxiliary that tracks the 
+! volume  of the tetrad in velocity space:
+!
+      call append_npaux('iVelVolp',iVelVolp)
 !
 !  Set indices for velocity gradient matrix at grid points
 !
@@ -150,8 +158,8 @@ contains
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
       logical :: lheader, lfirstcall=.true.
       integer :: ip,iStbin,k
-      real :: Vol
-      real,dimension(3) :: dR1,dR2,dR3
+      real :: Vol,VelVol
+      real,dimension(3) :: dR1,dR2,dR3,dV1,dV2,dV3
 !
 !  Print out header information in first time step.
 !
@@ -170,11 +178,20 @@ contains
          dR3=fp(ip,idR31:idR33)
          call ScalarTripleProduct(dR1,dR2,dR3,Vol)
          fp(ip,iVolp) = Vol
+!
+! Calculate the phase-space volume here
+!
+         dV1=fp(ip,idV11:idV13)
+         dV2=fp(ip,idV21:idV23)
+         dV3=fp(ip,idV31:idV33)
+         call ScalarTripleProduct(dV1,dV2,dV3,VelVol)
+         fp(ip,iVelVolp) = VelVol
       enddo
 !      
         if (ldiagnos) then
            if (idiag_TVolm/=0) &
                 call sum_par_name(fp(1:npar_loc,iVolp),idiag_TVolm)
+                call sum_par_name(fp(1:npar_loc,iVelVolp),idiag_VelVolm)
         endif
 !
       if (lfirstcall) lfirstcall=.false.

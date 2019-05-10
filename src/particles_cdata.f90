@@ -52,7 +52,7 @@ module Particles_cdata
   integer :: idR11=0, idR12=0, idR13=0, idV11=0, idV12=0, idV13=0
   integer :: idR21=0, idR22=0, idR23=0, idV21=0, idV22=0, idV23=0
   integer :: idR31=0, idR32=0, idR33=0, idV31=0, idV32=0, idV33=0
-  integer :: iVolp
+  integer :: iVolp,iVelVolp
   integer :: idXpo1=0, idXpo2=0, idXpo3=0
   integer :: iuf=0,iufx=0,iufy=0,iufz=0
   integer :: isigmap11=0,isigmap12=0,isigmap13=0

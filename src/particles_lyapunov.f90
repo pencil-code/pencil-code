@@ -23,6 +23,7 @@ module Particles_lyapunov
   use Particles_cdata
   use Particles_map
   use Particles_mpicomm
+  use Particles_sub
 !
   implicit none
 !
