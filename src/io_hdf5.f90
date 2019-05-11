@@ -553,25 +553,24 @@ module Io
       end select
 
       filename = trim(datadir)//'/slices/'//trim(label)//'_'//trim(suffix)//'.h5'
-      last=0
       if (iproc==slice_root) then
         if (file_exists (filename)) then
           ! find last written slice
           call file_open_hdf5 (filename, global=.false., read_only=.true.,write=.true.)
           if (exists_in_hdf5 ('last')) call input_hdf5 ('last', last)
           call input_hdf5('last', last)
-          do while (last >= 1)
+          do last=last,1,-1
             call input_hdf5 (trim(itoa(last))//'/time', time_last)
             if (time > time_last) exit
-            last=last-1
           enddo
+          last=last+1
         else
           ! create empty file
           call file_open_hdf5 (filename, global=.false.,truncate=.true.,write=.true.)
+          last=1
         endif
         call file_close_hdf5
       endif
-      last=last+1
 
       call mpibcast_int (last,proc=0,comm=comm)    ! proc=0 as the procressor rank w.r.t. communicator comm is needed
       group = trim(itoa(last))//'/'
