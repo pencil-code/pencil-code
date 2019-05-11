@@ -2392,14 +2392,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 LD=$(FC)
 
 ifneq ($(HDF5_IO),nohdf5_io)
-	# set HDF5 Fortran and C compiler and linker
+	# set HDF5 Fortran compiler and Fortran linker
 	export HDF5_FC:=$(FC)
 	export HDF5_FLINKER:=$(LD)
 	# find HDF5 compiler (parallel version first)
 	LD := $(shell which h5pfc || which h5fc)
 	ifeq ($(LD),)
-		# try our best guess (ubuntu system, serial version)
-		LD = h5fc
+		# try our best guess (parallel version)
+		LD = h5pfc
 	endif
 	# set HDF5 compiler and linker
 	FC_HDF5 := $(LD)
