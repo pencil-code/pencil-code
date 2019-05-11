@@ -2397,26 +2397,13 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	export HDF5_FLINKER:=$(LD)
 	# find HDF5 compiler (parallel version first)
 	LD := $(shell which h5pfc || which h5fc)
-	# root directory of HDF5 installation
-	ifneq ($(LD),)
-		HDF5_BIN ?= $(shell dirname $(LD))
-		HDF5_DIR ?= $(shell dirname $(HDF5_BIN))
-	else
-		# try our best guess (ubuntu system)
-		HDF5_DIR ?= /usr
+	ifeq ($(LD),)
+		# try our best guess (ubuntu system, serial version)
 		FC_HDF5 = h5fc
 		LD = h5fc
 	endif
-	HDF5_HOME ?= $(HDF5_DIR)
-	# set if undefined
-	HDF5_INC ?= $(HDF5_HOME)/include
-	HDF5_LIB ?= $(HDF5_HOME)/lib
-	HDF5_BIN ?= $(HDF5_HOME)/bin
 	# set HDF5 compiler and linker
-#	override FC := $(LD)
 	FC_HDF5 := $(LD)
-	# add HDF5 library path
-	LDFLAGS += -L$(HDF5_LIB)
 endif
 
 #
