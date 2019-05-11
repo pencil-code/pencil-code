@@ -2399,7 +2399,6 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	LD := $(shell which h5pfc || which h5fc)
 	ifeq ($(LD),)
 		# try our best guess (ubuntu system, serial version)
-		FC_HDF5 = h5fc
 		LD = h5fc
 	endif
 	# set HDF5 compiler and linker
