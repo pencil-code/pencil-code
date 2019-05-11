@@ -2392,10 +2392,11 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 LD=$(FC)
 
 ifneq ($(HDF5_IO),nohdf5_io)
+	# set HDF5 Fortran and C compiler and linker
+	export HDF5_FC:=$(FC)
+	export HDF5_FLINKER:=$(LD)
 	# find HDF5 compiler (parallel version first)
 	LD := $(shell which h5pfc || which h5fc)
-	# set HDF5 Fortran linker
-	export HDF5_FLINKER:=$(FC)
 	# root directory of HDF5 installation
 	ifneq ($(LD),)
 		HDF5_BIN ?= $(shell dirname $(LD))
@@ -2403,13 +2404,17 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	else
 		# try our best guess (ubuntu system)
 		HDF5_DIR ?= /usr
-		LD := h5fc
+		FC_HDF5 = h5fc
+		LD = h5fc
 	endif
 	HDF5_HOME ?= $(HDF5_DIR)
 	# set if undefined
 	HDF5_INC ?= $(HDF5_HOME)/include
 	HDF5_LIB ?= $(HDF5_HOME)/lib
 	HDF5_BIN ?= $(HDF5_HOME)/bin
+	# set HDF5 compiler and linker
+#	override FC := $(LD)
+	FC_HDF5 := $(LD)
 	# add HDF5 library path
 	LDFLAGS += -L$(HDF5_LIB)
 endif
@@ -2528,65 +2533,65 @@ basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) sysc
 #
 combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
-	$(LD) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) combine_videofiles.o $(basics) -o combine_videofiles.x
 #
 read_videofiles.o: $(basics)
 read_videofiles.x: read_videofiles.o
-	$(LD) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) read_videofiles.o $(basics) -o read_videofiles.x
 #
 read_all_videofiles.o: $(basics)
 read_all_videofiles.x: read_all_videofiles.o
-	$(LD) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) read_all_videofiles.o $(basics) -o read_all_videofiles.x
 #
 read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
-	$(LD) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) read_vectorfiles.o $(basics) -o read_vectorfiles.x
 #
 technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(solid_cells_objects) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
-	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_collect.x
 #
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
-	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_reduce.x
 #
 pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
-	$(LD) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_distribute.x
 #
 pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute_z.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
-	$(LD) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_distribute_z.x
 #
 pre_and_post_processing/pc_configtest.o: pre_and_post_processing/pc_configtest.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_configtest.x: pre_and_post_processing/pc_configtest.o
-	$(LD) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_configtest.x
 #
 pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
-	$(LD) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_extract.x
 #
 pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
-	$(LD) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_tecplot.x
 #
 pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_solid.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
-	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x $(LDFLAGS) $(LDFLAGS_HELPER)
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) -o pre_and_post_processing/pc_tecplot_solid.x
 #
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -I$(HDF5_INC) -o hdf5_io_parallel.o -c hdf5_io_parallel.f90
+	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -c hdf5_io_parallel.f90 -o hdf5_io_parallel.o
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
 experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) | experimental/analyzers.o
 experimental/pc_meanfield_collect.x: experimental/pc_meanfield_collect.o
-	$(LD) experimental/analyzers.o experimental/pc_meanfield_collect.o $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_meanfield_collect.x
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) experimental/analyzers.o experimental/pc_meanfield_collect.o $(start) -o experimental/pc_meanfield_collect.x
 experimental/pc_h5collect.o: experimental/pc_h5collect.f90 $(start) | experimental/analyzers.o
 experimental/pc_h5collect.x: experimental/pc_h5collect.o
-	$(LD) experimental/analyzers.o experimental/pc_h5collect.o $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_h5collect.x
+	$(LD) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) experimental/analyzers.o experimental/pc_h5collect.o $(start) -o experimental/pc_h5collect.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
