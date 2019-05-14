@@ -32,7 +32,8 @@ module Energy
   include 'energy.h'
 !
   real :: entropy_floor = impossible, TT_floor = impossible
-  real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
+  real, dimension(ninit) :: radius_ss=0.1, radius_ss_x=1., ampl_ss=0.0
+  real :: widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0
   real :: rcool=0.0, wcool=0.1, ppcool=1., zcool2=0.0
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
@@ -51,7 +52,7 @@ module Energy
   real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0
   real :: mixinglength_flux=0.0, entropy_flux=0.0
-  real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
+  real, dimension(ninit) :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: center2_x=0.0, center2_y=0.0, center2_z=0.0
   real :: kx_ss=1.0, ky_ss=1.0, kz_ss=1.0
   real :: thermal_background=0.0, thermal_peak=0.0, thermal_scaling=1.0
@@ -171,7 +172,8 @@ module Energy
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
+      initss, pertss, grads0, radius_ss, radius_ss_x, ampl_ss, &
+      widthss, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
       chi_t, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
@@ -211,8 +213,9 @@ module Energy
       hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, nsmooth_kramers, &
       xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ene, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
-      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
-      center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
+      reinitialize_ss, initss, ampl_ss, radius_ss, radius_ss_x, &
+      center1_x, center1_y, center1_z, &
+      lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
@@ -787,7 +790,7 @@ module Energy
         do j=1,ninit
           select case (initss(j))
           case ('blob')
-            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+            call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))
           case ('TTrescl')
             call rescale_TT_in_ss(f)
           case ('zprofile')
@@ -1232,11 +1235,11 @@ module Energy
 !
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-          case ('gaussian-noise'); call gaunoise(ampl_ss,f,iss,iss)
+          case ('gaussian-noise'); call gaunoise(ampl_ss(j),f,iss,iss)
           case ('blob')
-            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+            call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))
           case ('blob_radeq')
-            call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+            call blob_radeq(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
           case ('isothermal'); call isothermal_entropy(f,T0)
           case ('isothermal_lnrho_ss')
             print*, 'init_energy: Isothermal density and entropy stratification'
@@ -1245,12 +1248,12 @@ module Energy
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
           case ('wave')
             do n=n1,n2; do m=m1,m2
-              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss*sin(kx_ss*x(l1:l2)+pi)
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss(j)*sin(kx_ss*x(l1:l2)+pi)
             enddo; enddo
           case ('wave-pressure-equil')
             call get_cp1(cp1)
             do n=n1,n2; do m=m1,m2
-              tmp=ampl_ss*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
+              tmp=ampl_ss(j)*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmp
               if (ldensity_nolog) then
                 tmp=1./exp(cp1*tmp)
@@ -1269,12 +1272,12 @@ module Energy
           case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
           case('xyjump'); call jump(f,iss,ss_left,ss_right,widthss,'xy')
           case('x-y-jump'); call jump(f,iss,ss_left,ss_right,widthss,'x-y')
-          case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
+          case('sinxsinz'); call sinxsinz(ampl_ss(j),f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
-            call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss, &
-                center1_x,center1_z)
+            call htube(ampl_ss(j),f,iss,iss,radius_ss(j),epsilon_ss, &
+                center1_x(j),center1_z(j))
           case ('hor-tube')
-            call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
+            call htube2(ampl_ss(j),f,iss,iss,radius_ss(j),epsilon_ss)
           case ('const_chit'); call strat_const_chit(f)
           case ('read_arr_file'); call read_outside_scal_array(f, "ss.arr", iss)
           case ('mixinglength')
@@ -1283,13 +1286,13 @@ module Energy
              print*,'init_energy : Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
             if (lroot) print*,'init_energy: sedov - thermal background with gaussian energy burst'
-            call blob(thermal_peak,f,iss,radius_ss, &
-                center1_x,center1_y,center1_z)
+            call blob(thermal_peak,f,iss,radius_ss(j), &
+                center1_x(j),center1_y(j),center1_z(j))
           case ('sedov-dual')
             if (lroot) print*,'init_energy: sedov - thermal background with gaussian energy burst'
-            call blob(thermal_peak,f,iss,radius_ss, &
-                center1_x,center1_y,center1_z)
-            call blob(thermal_peak,f,iss,radius_ss, &
+            call blob(thermal_peak,f,iss,radius_ss(j), &
+                center1_x(j),center1_y(j),center1_z(j))
+            call blob(thermal_peak,f,iss,radius_ss(j), &
                 center2_x,center2_y,center2_z)
           case ('shock2d')
             if (ldensity_nolog) &
@@ -1326,13 +1329,13 @@ module Energy
 !
             if (lroot) print*,'init_energy: isentropic stratification'
             f(:,:,:,iss)=0.
-            if (ampl_ss/=0.) then
-              print*, 'init_energy: put bubble: radius_ss,ampl_ss=', &
-                  radius_ss, ampl_ss
+            if (ampl_ss(j)/=0.) then
+              print*, 'init_energy: put bubble: radius_ss(j),ampl_ss=', &
+                  radius_ss(j), ampl_ss(j)
               do n=n1,n2; do m=m1,m2
                 tmp=x(l1:l2)**2+y(m)**2+z(n)**2
                 f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ &
-                    ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
+                    ampl_ss(j)*exp(-tmp/max(radius_ss(j)**2-tmp,1e-20))
               enddo; enddo
             endif
           case ('linprof', '2')
@@ -1487,9 +1490,9 @@ module Energy
             call layer_ss(f)
           case ('blob_hs')
             print*, 'init_energy: put blob in hydrostatic equilibrium: '// &
-                'radius_ss,ampl_ss=', radius_ss, ampl_ss
-            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-            call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
+                'radius_ss(j),ampl_ss(j)=', radius_ss(j), ampl_ss(j)
+            call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
+            call blob(-ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             if (ldensity_nolog) then
               f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
               if (lreference_state) &
@@ -1528,7 +1531,7 @@ module Energy
         if (lroot) print*, 'init_energy: adding hexagonal perturbation to ss'
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
-              + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*x(l1:l2)) &
+              + ampl_ss(j)*(2*cos(sqrt(3.)*0.5*khor_ss*x(l1:l2)) &
                           *cos(0.5*khor_ss*y(m)) &
                          + cos(khor_ss*y(m))) * cos(pi*z(n))
         enddo; enddo
@@ -1551,7 +1554,7 @@ module Energy
         pretend_lnTT=.true.
         do m=1,my; do n=1,mz
           ss_mx=f(:,m,n,iss)
-          call eosperturb(f,mx,ss=ss_mx)
+L         call eosperturb(f,mx,ss=ss_mx)
         enddo; enddo
       endif
 
