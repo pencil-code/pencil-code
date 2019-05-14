@@ -5176,7 +5176,7 @@ nameloop: do
 !
     endsubroutine remove_prof
 !***********************************************************************
-    subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
+    subroutine blob(ampl,f,i,radius,xblob,yblob,zblob,radius_x)
 !
 !  Single blob.
 !
@@ -5185,7 +5185,8 @@ nameloop: do
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: xblob,yblob,zblob
-      real :: ampl,radius,x01=0.,y01=0.,z01=0.,fact
+      real :: ampl,radius,x01=0.,y01=0.,z01=0.,fact, fact_x
+      real, optional :: radius_x
 !
 !  Single  blob.
 !
@@ -5197,10 +5198,22 @@ nameloop: do
       else
         if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
         fact=1./radius**2
+!
+!  Possibility of elongated blob in the x direction
+!
+print*,'AXEL1: '
+        if (present(radius_x)) then
+          fact_x=1./radius_x**2
+print*,'AXEL2: ',radius_x
+        else
+          fact_x=fact
+        endif
+!
+print*,'AXEL3: ',fact,fact_x
         f(:,:,:,i)=f(:,:,:,i)+ampl*( &
-           spread(spread(exp(-fact*(x-x01)**2),2,my),3,mz) &
-          *spread(spread(exp(-fact*(y-y01)**2),1,mx),3,mz) &
-          *spread(spread(exp(-fact*(z-z01)**2),1,mx),2,my))
+           spread(spread(exp(-fact_x*(x-x01)**2),2,my),3,mz) &
+          *spread(spread(exp(-fact  *(y-y01)**2),1,mx),3,mz) &
+          *spread(spread(exp(-fact  *(z-z01)**2),1,mx),2,my))
       endif
 !
     endsubroutine blob
