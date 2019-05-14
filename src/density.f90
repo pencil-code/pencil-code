@@ -38,6 +38,7 @@ module Density
   real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
   real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
+  real, dimension (ninit) :: xblob=0.0, yblob=0.0, zblob=0.0
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
   real, dimension (nz) :: lnrhomz,glnrhomz
@@ -69,7 +70,7 @@ module Density
   real :: cdiffrho=0.0, diffrho=0.0, diff_cspeed=0.5
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
-  real :: xblob=0.0, yblob=0.0, zblob=0.0, mass_source_omega=0.
+  real :: mass_source_omega=0.
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
   real :: wdamp=0.0, density_floor=-1.0
@@ -1004,16 +1005,16 @@ module Density
           call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j))
         case ('blob')
-          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
+          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob(j),yblob(j),zblob(j))
         case ('blob_normalized')
           call blob(ampllnrho(j)/(sqrt2pi*radius_lnrho(j))**3,f,ilnrho, &
-              radius_lnrho(j)*sqrt2,xblob,yblob,zblob)
+              radius_lnrho(j)*sqrt2,xblob(j),yblob(j),zblob(j))
         case ('blob_hs')
           print*, 'init_lnrho: put a blob in hydrostatic equilibrium:'// &
           'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
-          ampllnrho(j), xblob, yblob, zblob
-          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
-          call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)
+          ampllnrho(j), xblob(j), yblob(j), zblob(j)
+          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob(j),yblob(j),zblob(j))
+          call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob(j),yblob(j),zblob(j))
         case ('pre-stellar'); call pre_stellar_cloud(f, datafile, mass_cloud, &
                      cloud_mode, T_cloud_out_rel, &
                      dens_coeff, temp_coeff, temp_trans, temp_coeff_out)
@@ -3081,6 +3082,7 @@ module Density
 !  Add (isothermal) mass sources and sinks.
 !
 !  28-apr-2005/axel: coded
+!  14-may-2019/axel: changed xblob -> xblob(1) for now
 !
       use General, only: random_number_wrapper
       use Sub, only: step
@@ -3107,7 +3109,7 @@ module Density
         case('bump2')
           dlnrhodt=fprofile_z(n-n1+1)
         case('bumpr')
-          radius2=(x(l1:l2)-xblob)**2+(y(m)-yblob)**2+(z(n)-zblob)**2
+          radius2=(x(l1:l2)-xblob(1))**2+(y(m)-yblob(1))**2+(z(n)-zblob(1))**2
           fprofile=(mass_source_Mdot/fnorm)*exp(-.5*radius2/mass_source_sigma**2)
           if (lmass_source_random) then
             call random_number_wrapper(fran)
