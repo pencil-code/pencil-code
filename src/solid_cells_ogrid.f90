@@ -45,12 +45,12 @@ module Solid_Cells
       lcheck_interpolation, lcheck_init_interpolation, SBP, BDRY5, &
       interpolation_method, lock_dt, lexpl_rho, &
       lshift_origin_ogrid,lshift_origin_lower_ogrid, interpol_filter, &
-      lrk_tvd, SBP_optimized, &
+      lrk_tvd, SBP_optimized, interp_shift, &
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
       lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, &
-      TT_square_fit, Tgrad_stretch, filter_frequency
+      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -103,7 +103,7 @@ module Solid_Cells
 !
       use Solid_Cells_Mpicomm, only: initialize_mpicomm_ogrid
       use SharedVariables, only: get_shared_variable
-      use EquationOfState, only: lpres_grad
+      use EquationOfState, only: lpres_grad, Pr_number
   !    use Energy, only: lpres_grad
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
@@ -395,6 +395,7 @@ module Solid_Cells
         call initialize_eos_ogr
       else
         call initialize_eos_chemistry
+        Pr_number1 = 1./Pr_number
       endif       
 !
 !  Check if it will be necessary to use communication between processors 
@@ -531,11 +532,12 @@ module Solid_Cells
       real :: a2, rr2, rr2_low, rr2_high 
       real :: wall_smoothing,wall_smoothing_temp
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
-      integer i,j,cyl,iflow,iorth, k
+      integer i,j,cyl,iflow,iorth, k, j2, j3
       real :: shift_top,shift_bot,r_k_top,r_k_bot,theta_k_top,theta_k_bot
       real :: ur_k_top ,ur_k_bot ,uth_k_top,uth_k_bot
       logical :: lnoerase=.false.
       real :: coef1, coef2, coef0, r_gradT
+      real :: lambda_Suth = 1.5e-5, Suth_const = 200.
 !
 !  Cartesian array f:
 !
@@ -695,6 +697,12 @@ module Solid_Cells
       !          endif
                 f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
+              if (lreac_heter) then
+                ! Heterogeneous reactions only work with simplified mechanism
+                f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
+                f_ogrid(i,j,:,ichemspec(2)) = 1.-f_ogrid(i,j,:,ichemspec(5))-f_ogrid(i,j,:,ichemspec(4))&
+                                                -f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(3))
+              endif
             endif
           endif
 !  Compute contribution to flow from cylinders above and below, due to periodic boundary conditions
@@ -722,6 +730,18 @@ module Solid_Cells
         f_ogrid(:,:,:,iTT) = f(l2,m2,n2,iTT)
         do k = 1,nchemspec
           f_ogrid(:,:,:,ichemspec(k)) = f(l2,m2,n2,ichemspec(k))
+        enddo
+      endif
+!
+      if (lchemistry) then
+!
+!  Viscosity of a mixture
+!
+        do j3 = 1,mz_ogrid
+          do j2 = 1,my_ogrid
+              f_ogrid(:,j2,j3,iviscosity) = lambda_Suth*f_ogrid(:,j2,j3,iTT)**(3./2.)&
+                                          /(Suth_const+f_ogrid(:,j2,j3,iTT))/f_ogrid(:,j2,j3,irho)
+          enddo
         enddo
       endif
 !
@@ -3880,7 +3900,7 @@ module Solid_Cells
       df_ogrid=0.0
       if(lrk_tvd) then
 !  First subtimestep
-        call pde_ogrid(f_ogrid,df_ogrid)
+        call pde_ogrid(f_ogrid,df_ogrid,dt_ogrid)
         do j=1,mvar 
           f_tmp(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
               f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
@@ -3889,7 +3909,7 @@ module Solid_Cells
         f_tmp(l2_ogrid+1:mx_ogrid,:,:,:)=f_ogrid(l2_ogrid+1:mx_ogrid,:,:,:)
 !  Second subtimestep
         df_ogrid=0.0
-        call pde_ogrid(f_tmp,df_ogrid)
+        call pde_ogrid(f_tmp,df_ogrid,dt_ogrid)
         do j=1,mvar 
           f_tmp(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
               (3./4.)*f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
@@ -3899,7 +3919,7 @@ module Solid_Cells
 !  Third subtimestep
         llast_ogrid=(tstep_ogrid==timestep_factor)
         df_ogrid=0.0
-        call pde_ogrid(f_tmp,df_ogrid)
+        call pde_ogrid(f_tmp,df_ogrid,dt_ogrid)
         do j=1,mvar 
           f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) = &
               (1./3.)*f_ogrid(l1_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j) &
@@ -3913,7 +3933,7 @@ module Solid_Cells
 !
 !  Change df according to the chosen physics modules.
 !
-          call pde_ogrid(f_ogrid,df_ogrid)
+          call pde_ogrid(f_ogrid,df_ogrid,dt_ogrid)
 !
 !  Time evolution of grid variables.
 !
@@ -3974,7 +3994,7 @@ module Solid_Cells
 
   endsubroutine time_step_ogrid
 !***********************************************************************
-    subroutine pde_ogrid(f_og,df)
+    subroutine pde_ogrid(f_og,df,dt_ogrid)
 !
 !  06-feb-17/Jorgen+Nils: Adapded from equ.f90
 !
@@ -3984,7 +4004,7 @@ module Solid_Cells
       integer :: nyz_ogrid
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       intent(out)    :: df
-      real :: c_dragx,c_dragy, Nusselt
+      real :: c_dragx,c_dragy, Nusselt, dt_ogrid
       c_dragx=0.
       c_dragy=0.
       Nusselt=0.
@@ -3996,6 +4016,7 @@ module Solid_Cells
       if (lchemistry) call chemspec_normalization_N2_og(f_og)
 !
       if (lchemistry) call calc_for_chem_mixture_ogrid(f_og)
+!
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
@@ -4024,7 +4045,10 @@ module Solid_Cells
         endif
         call calc_pencils_energy_ogrid(f_og)
         call calc_pencils_viscosity_ogrid
-        if (lchemistry) call calc_pencils_chemistry_ogrid(f_og)
+        if (lchemistry) then
+          call calc_pencils_chemistry_ogrid(f_og)
+          if (lreac_heter) call calc_heter_reaction_term(f_og)
+        endif
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -4037,7 +4061,7 @@ module Solid_Cells
         call duu_dt_ogrid(df)
         call dlnrho_dt_ogrid(df)
         call denergy_dt_ogrid(df,f_og)
-        if (lchemistry) call dYk_dt_ogrid(f_og,df)
+        if (lchemistry) call dYk_dt_ogrid(f_og,df,dt_ogrid)
 !
 !  Compute drag and lift coefficient, if this is the last sub-timestep
 !
@@ -4079,6 +4103,8 @@ module Solid_Cells
           m_ogrid=mm_ogrid(imn_ogrid)
           df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
           if (lexpl_rho) df(l1_ogrid,m_ogrid,n_ogrid,irho) = 0.
+          if (lchemistry .and. lreac_heter) &
+             df(l1_ogrid,m_ogrid,n_ogrid,ichemspec(1):ichemspec(nchemspec)) = 0.
         enddo
         if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
       endif
@@ -4448,7 +4474,7 @@ module Solid_Cells
         elseif(BDRY5) then
           if(lexpl_rho) call bval_from_neumann_bdry5(f_og)
           if (lchemistry) call fatal_error('boundconds_x_ogrid', &
-          'chemistry BC not set when BDRY5, use SBP instead!')
+          'chemistry BCs set correctly only when SBP=T')
         else
           !TODO set f_og as input
           call set_ghosts_onesided_ogrid(iux)
@@ -4457,7 +4483,6 @@ module Solid_Cells
           if (lfilter_TT) then
              call set_ghosts_onesided_ogrid(iTT)
           endif
-          ! chemistry BCs are taken care of here
           call bval_from_neumann_arr_ogrid
           call set_ghosts_onesided_ogrid(irho)
           if (lchemistry) then
@@ -4465,6 +4490,8 @@ module Solid_Cells
               call set_ghosts_onesided_ogrid(ichemspec(k))
             enddo
           endif
+          if (lchemistry) call fatal_error('boundconds_x_ogrid', &
+          'chemistry BCs set correctly only when SBP=T')
         endif
         !if(lupw_lnrho) then
         !  if(lexpl_rho) call bval_from_neumann_upw_ogrid
@@ -7572,33 +7599,33 @@ module Solid_Cells
         if(lroot) then
           dx_outer = 1./dx1grid_ogrid(nxgrid_ogrid)
           if(interpolation_method==1) then
-            r_int_outer=r_ogrid-dx_outer*0.01-dx_outer*interpol_filter
+            r_int_outer=r_ogrid-dx_outer*0.01-dx_outer*interp_shift
           elseif (interpolation_method==2 .or. interpolation_method==3 &
                  .or. interpolation_method==5) then
-            r_int_outer=r_ogrid-dx_outer*0.51-dx_outer*interpol_filter
+            r_int_outer=r_ogrid-dx_outer*0.51-dx_outer*interp_shift
             if((xgrid_ogrid(nxgrid_ogrid)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-1))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
               print*, 'iproc, r_int_outer first, r_int_outer second',&
                 iproc,r_int_outer,r_ogrid-dx_outer*1.01
-              r_int_outer=r_ogrid-dx_outer*1.01-dx_outer*interpol_filter
+              r_int_outer=r_ogrid-dx_outer*1.01-dx_outer*interp_shift
             endif
             if(interpolation_method==5) then
               print*, 'WARNING: Polynomal interpolation used, you better know what you are doing!'
             endif
  !         elseif (interpolation_method==4) then
- !           r_int_outer=r_ogrid-dx_outer*1.51-dx_outer*interpol_filter
+ !           r_int_outer=r_ogrid-dx_outer*1.51-dx_outer*interp_shift
  !           if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
  !             print*, 'WARNING: An error occured when setting interpolation zone.'
  !             print*, '         Zone adjusted.'
- !             r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interpol_filter
+ !             r_int_outer=r_ogrid-dx_outer*2.01-dx_outer*interp_shift
  !           endif
           elseif (mod(interpolation_method,2)==0) then
-            r_int_outer=r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01)-dx_outer*interpol_filter
+            r_int_outer=r_ogrid-dx_outer*((interpolation_method/2-0.5)+0.01)-dx_outer*interp_shift
             if((xgrid_ogrid(nxgrid_ogrid-1)-r_int_outer)<(r_int_outer-xgrid_ogrid(nxgrid_ogrid-2))) then
               print*, 'WARNING: An error occured when setting interpolation zone.'
               print*, '         Zone adjusted.'
-              r_int_outer=r_ogrid-dx_outer*((interpolation_method/2)+0.01)-dx_outer*interpol_filter
+              r_int_outer=r_ogrid-dx_outer*((interpolation_method/2)+0.01)-dx_outer*interp_shift
             endif
           else
             call fatal_error('initialize_solid_cells','interpolation method does not exist')

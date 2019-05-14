@@ -39,7 +39,7 @@ module solid_cells_ogrid_chemistry
   implicit none
 !
 public :: initialize_eos_chemistry, calc_for_chem_mixture_ogrid, calc_pencils_eos_ogrid_chem
-public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
+public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
   real :: Rgas_unit_sys=1.
   real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: cp_R_spec_ogrid
@@ -92,7 +92,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   character(len=60) :: prerun_directory='nothing'
   character(len=60) :: file_name='nothing'
 !
-  real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec), save :: RHS_Y_full_ogrid
   real, dimension(nchemspec) :: nu_spec=0., mobility=1.
 !
 !  Chemkin related parameters
@@ -101,6 +100,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
   logical :: lmobility=.false.
   integer :: iTemp1=2, iTemp2=3, iTemp3=4
   real :: lamb_low, lamb_up, Pr_turb=0.7
+!
+! carbon molar mass
+     real :: M_C=12.0107
 !
 !   Diagnostics
 !
@@ -130,6 +132,13 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
   integer :: ireac=0
   integer, dimension(nchemspec) :: ireaci=0
+!
+!  Indices
+!
+  integer :: i_N2=0, i_CO2=0, i_CO=0
+  integer :: ichem_O2=0, ichem_N2=0, ichem_CO2=0, ichem_CO=0
+  logical :: lO2=.false., lN2=.false.
+  logical :: lCO2=.false., lCO=.false.
 !
   contains
 !
@@ -185,7 +194,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  chemistry initialization on the ogrid
 !  called from initialize_solid_cells in solid_cells_ogrid
 !
-      use SharedVariables, only: get_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_og
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_og
@@ -236,7 +245,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       if (reinitialize_chemistry) then
           call fatal_error('initialize_chemistry_og', &
-              'Reinitialize chemistry - not implemented on th ogrid!')
+              'Reinitialize chemistry - not implemented on the ogrid!')
       endif
 !
       call getmu_array_ogrid(f_og,mu1_full_og)
@@ -309,12 +318,19 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
         call get_shared_variable('lmech_simple',lmech_simple)
         call get_shared_variable('linterp_pressure',linterp_pressure)
 !
-!      if (lew_exist) then 
-!        Lewis_coef1 = 1./Lewis_coef
-!      else
-!        print*,'Lewis numbers need to be read from start.in, no option to read from file'
-!        print*,'Set all Le = 1'
-!      endif
+        if (lreac_heter) then
+          if (lmech_simple) then
+            call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
+            call find_species_index('CO',i_CO,ichem_CO,lCO)
+            call find_species_index('N2',i_N2,ichem_N2,lN2)
+            call find_species_index('O2',i_O2,ichem_O2,lO2)
+            allocate(heter_reaction_rate(my_ogrid,mz_ogrid,nchemspec+1))
+            heter_reaction_rate(:,:,:)=0
+          else
+            call fatal_error('initialize_chemistry_og', &
+               'Heterogeneous chemistry works only with simplified mechanism (lmech_simple=T)')
+          endif
+        endif
 !
 !  write array dimension to chemistry diagnostics file
 !
@@ -451,7 +467,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 ! D_th is computed twice in calc_penc in eos and here
 !
-        D_th = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)/Pr_number
+        D_th = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)*Pr_number1
         do k = 1,nchemspec
           p_ogrid%Diff_penc_add(:,k) = D_th*Lewis_coef1(k)
         enddo
@@ -462,8 +478,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       else
         p_ogrid%DYDt_diff = 0.
       endif
-!
-      RHS_Y_full_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,:) = p_ogrid%DYDt_reac+p_ogrid%DYDt_diff
 !
     endsubroutine calc_pencils_chemistry_ogrid
 !***********************************************************************
@@ -561,7 +575,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 ! Calculate thermal conductivity & diffusivity
 !
-      D_th = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)/Pr_number
+      D_th = f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iviscosity)*Pr_number1
       if (lpencil_ogrid(i_og_lambda)) p_ogrid%lambda = p_ogrid%cp*p_ogrid%rho*D_th
       if (lpencil_ogrid(i_og_glambda)) then         
         call grad_ogrid(f_og,icp,p_ogrid%glncp)
@@ -702,7 +716,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
 ! Find cp and cv for the mixture for the full domain
 !
-!                     f_og(:,j2,j3,icp) = f_og(:,j2,j3,icp)+cp_R_spec_ogrid*Rgas/species_constants(k,imass)*f_og(:,j2,j3,ichemspec(k))
                       f_og(:,j2,j3,icp) = f_og(:,j2,j3,icp)+cp_R_spec_ogrid(:,j2,j3,k) &
                                         * Rgas/species_constants(k,imass)*f_og(:,j2,j3,ichemspec(k))
                     endif
@@ -730,7 +743,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine calc_for_chem_mixture_ogrid
 !***********************************************************************
-    subroutine dYk_dt_ogrid(f_og,df)
+    subroutine dYk_dt_ogrid(f_og,df,dt_ogrid)
 !
 !  species transport equation
 !  calculate dYk/dt = - u.gradYk - div(rho*Yk*Vk)/rho + R/rho
@@ -746,6 +759,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
       real, dimension(nx_ogrid) :: RHS_T_full!, diffus_chem
 
       integer :: j,k,i
+      real :: dt_ogrid
 
       intent(inout) :: df, f_og
 !
@@ -753,7 +767,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
       call timing('dchemistry_dt','entered',mnloop=.true.)
       if (headtt .or. ldebug) print*,'dchemistry_dt: SOLVE dchemistry_dt'
-
         do k=1,nchemspec
 !
 !  Advection 
@@ -776,7 +789,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !  Reaction
 !
           if (lreactions) then
-            df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) = &
+              df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) = &
                 df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ichemspec(k)) + p_ogrid%DYDt_reac(:,k)
           endif
 !
@@ -786,12 +799,16 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
           if (lfilter .and. .not. lfilter_strict) then
             do i = 1,mx_ogrid
               if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) < -1e-25 ) then
-                df(i,m_ogrid,n_ogrid,ichemspec(k)) = -1e-25*dt
+ !                + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) < -1e-25 ) then
+ !               df(i,m_ogrid,n_ogrid,ichemspec(k)) = -1e-25*dt
+                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt_ogrid) < -1e-25 ) then
+                df(i,m_ogrid,n_ogrid,ichemspec(k)) = -1e-25*dt_ogrid
               endif
               if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) > 1. ) then
-                df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt
+      !           + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) > 1. ) then
+      !          df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt
+                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt_ogrid) > 1. ) then
+                df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt_ogrid
               endif
             enddo
           endif
@@ -1490,6 +1507,63 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine calc_reaction_term_ogr
 !***********************************************************************
+    subroutine calc_heter_reaction_term(f_og)
+!
+!  Calculation of the heterogeneous reaction term
+!
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(inout) :: f_og
+      real, dimension(2) :: vreact_p,kf,prod
+      real, dimension(nchemspec) :: mdot = 0.
+      real :: rho1,T_loc1,rho_cgs
+      integer :: k,i
+      real, dimension(2) :: B_n_het, E_an_het, alpha
+      real :: Rcal1, Rcal, u_stefan
+!
+      rho_cgs = f_og(l1_ogrid,m_ogrid,n_ogrid,irho)
+      rho1 = 1./rho_cgs
+      T_loc1 = 1./f_og(l1_ogrid,m_ogrid,n_ogrid,iTT)
+
+      Rcal  = Rgas_unit_sys/4.14*1e-7
+      Rcal1 = 1./(Rcal)
+!
+      ! B & A checked in the paper that was cited - all ok
+      B_n_het=(/1.97e9,1.291e7/)        ! cm/s
+      E_an_het=(/47301.701,45635.267/)  ! cal/mol
+!
+!  Chemkin data case
+!
+      prod(1) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)*rho_cgs
+      prod(2) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)*rho_cgs
+    !  if (prod(1) .lt. 0.0) prod(1)=0.0
+    !  if (prod(2) .lt. 0.0) prod(2)=0.0
+      do i=1,2
+        kf(i)=log(B_n_het(i))-E_an_het(i)*Rcal1*T_loc1
+        vreact_p(i)=prod(i)*exp(kf(i))
+      enddo
+!
+!print*,'f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)',f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2),m_ogrid,n_ogrid
+!print*,'f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)',f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2),m_ogrid,n_ogrid
+      mdot(ichem_O2)=-vreact_p(1)
+      mdot(ichem_CO)=2.0*(species_constants(ichem_CO,imass)/species_constants(ichem_O2,imass)*vreact_p(1)&
+                        +species_constants(ichem_CO,imass)/species_constants(ichem_CO2,imass)*vreact_p(2))
+      mdot(ichem_CO2)=-vreact_p(2)
+!
+      mdot=mdot*unit_time
+!
+      u_stefan = 0.
+      do k = 1,nchemspec
+        heter_reaction_rate(m_ogrid,n_ogrid,k)= mdot(k)
+        u_stefan = u_stefan + mdot(k)
+      enddo
+      heter_reaction_rate(m_ogrid,n_ogrid,nchemspec+1) = -u_stefan
+      ! the above = (2.*M_C/species_constants(ichem_O2,imass)*mdot(ichem_O2) &
+      !             + M_C/species_constants(ichem_CO2,imass)*mdot(ichem_CO2))
+      u_stefan = u_stefan/rho_cgs
+   !   p_ogrid%DYDt_reac(1,:) = 0
+      f_og(l1_ogrid,m_ogrid,n_ogrid,iux) = u_stefan
+!
+    endsubroutine calc_heter_reaction_term
+!***********************************************************************
 ! TODO: do I need that for the ogrid?
 !
 !    subroutine  write_net_reaction
@@ -1528,7 +1602,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !    2) Constant Lewis number (= 1 by default or read from start.in) and given Pr
 !
               do i = 1,3
-                gDiff_full_add_ogrid(:,i,k) = p_ogrid%gradnu(:,i)/Pr_number*Lewis_coef1(k)
+                gDiff_full_add_ogrid(:,i,k) = p_ogrid%gradnu(:,i)*Pr_number1*Lewis_coef1(k)
               enddo
 !
 !  Calculate the terms needed by the diffusion fluxes for the case:
@@ -1597,14 +1671,14 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
 !
     endsubroutine calc_heatcond_chemistry_ogrid
 !***********************************************************************
-    subroutine get_RHS_Y_full_ogrid(RHS_Y_ogrid)
+!    subroutine get_RHS_Y_full_ogrid(RHS_Y_ogrid)
 !
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: RHS_Y_ogrid
-      intent(out) :: RHS_Y_ogrid
+!      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,nchemspec) :: RHS_Y_ogrid
+!      intent(out) :: RHS_Y_ogrid
 !
-      RHS_Y_ogrid = RHS_Y_full_ogrid
+!      RHS_Y_ogrid = RHS_Y_full_ogrid
 !
-    endsubroutine get_RHS_Y_full_ogrid
+!    endsubroutine get_RHS_Y_full_ogrid
 !***********************************************************************
 !    subroutine get_cs2_full_ogr(cs2_full)
 !
@@ -1950,12 +2024,12 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid
     subroutine chemspec_normalization_N2_og(f_og)
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f_og
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: sum_Y !, sum_Y2
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid) :: sum_Y
       integer :: k ,isN2, ichemsN2
       logical :: lsN2
 !
       call find_species_index('N2', isN2, ichemsN2, lsN2 )
-      sum_Y=0.0 !; sum_Y2=0.0
+      sum_Y=0.0
       do k=1,nchemspec
         if (k/=ichemsN2) then
           sum_Y=sum_Y+f_og(:,:,:,ichemspec(k))

@@ -1203,10 +1203,11 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  07-nov-18/Jonas: Added treatment for cases with temperature gradient
 !  jan-19/Eva: added BC for chemistry
 !
+      use SharedVariables, only: get_shared_variable
       integer :: k, j
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
-      real, dimension (my_ogrid, mz_ogrid) :: df_surf, grad_lnR, dR !,dM1
-!      real, dimension (l1_ogrid+8,my_ogrid, mz_ogrid) :: mu1_bond_og=0
+      real, dimension (my_ogrid, mz_ogrid) :: df_surf, grad_lnR, dR, diff_coeff, mdot_c
+      real, dimension(:), pointer :: Lewis_coef1
 !
       k=l1_ogrid
 !
@@ -1221,11 +1222,9 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
               D1_SBP(1,8)*f_og   (k+7,:,:,irho) + &
               D1_SBP(1,9)*f_og   (k+8,:,:,irho) )/D1_SBP(1,1)
       else if (iTT>0) then
-         call der_ogrid_SBP_surf(f_og,df_surf)
+         call der_ogrid_SBP_surf(f_og,df_surf,iTT)
          if (lchemistry) then
- !          call der_ogrid_SBP_R(f_og,dM1,mu1_bond_og)
- !          grad_lnR = dM1/mu1_bond_og(k,:,:)
-           call der_ogrid_SBP_R(f_og,dR)
+           call der_ogrid_SBP_surf(f_og,dR,iRR)
            grad_lnR = dR/f_og(k,:,:,iRR)
          else
            grad_lnR = 0   
@@ -1244,7 +1243,9 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
       endif
     endif
 !
-    if (lchemistry) then
+! grad(Y_k) = 0 when homogeneous reactions only
+!
+    if (lchemistry .and. (.not. lreac_heter)) then
       do j = 1,nchemspec
          f_og   (k,:,:,ichemspec(j)) = -(D1_SBP(1,2)*f_og   (k+1,:,:,ichemspec(j)) + &
                 D1_SBP(1,3)*f_og   (k+2,:,:,ichemspec(j)) + &
@@ -1254,7 +1255,26 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
                 D1_SBP(1,7)*f_og   (k+6,:,:,ichemspec(j)) + &
                 D1_SBP(1,8)*f_og   (k+7,:,:,ichemspec(j)) + &
                 D1_SBP(1,9)*f_og   (k+8,:,:,ichemspec(j)) )/D1_SBP(1,1)
-      enddo  
+      enddo
+!
+! if heterogeneous reactions grad(Y_k) = (-mdot_c*Y_k-m_k)/(rho*D_k) 
+!
+    elseif (lchemistry) then
+      call get_shared_variable('Lewis_coef1',Lewis_coef1)
+      mdot_c = heter_reaction_rate(:,:,nchemspec+1)
+      do j = 1,nchemspec
+         diff_coeff = f_og(l1_ogrid,:,:,iviscosity)*Pr_number1*Lewis_coef1(k)
+         f_og   (k,:,:,ichemspec(j)) = (-(D1_SBP(1,2)*f_og(k+1,:,:,ichemspec(j)) + &
+                D1_SBP(1,3)*f_og   (k+2,:,:,ichemspec(j)) + &
+                D1_SBP(1,4)*f_og   (k+3,:,:,ichemspec(j)) + &
+                D1_SBP(1,5)*f_og   (k+4,:,:,ichemspec(j)) + &
+                D1_SBP(1,6)*f_og   (k+5,:,:,ichemspec(j)) + &
+                D1_SBP(1,7)*f_og   (k+6,:,:,ichemspec(j)) + &
+                D1_SBP(1,8)*f_og   (k+7,:,:,ichemspec(j)) + &
+                D1_SBP(1,9)*f_og   (k+8,:,:,ichemspec(j)))*dx_1_ogrid(l1_ogrid)* &
+                diff_coeff*f_og(k,:,:,irho) - heter_reaction_rate(:,:,j))/ &
+                (D1_SBP(1,1)*diff_coeff*f_og(k,:,:,irho)*dx_1_ogrid(l1_ogrid) + mdot_c)
+      enddo
     endif
 !
     endsubroutine bval_from_neumann_SBP
@@ -1301,7 +1321,7 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 
     endsubroutine der_ogrid_SBP
 !***********************************************************************
-    subroutine der_ogrid_SBP_surf(f,df_surf)
+    subroutine der_ogrid_SBP_surf(f,df_surf,ii)
 ! 
 !  Summation by parts boundary condition for first derivative.
 !  Only implemented in radial direction.
@@ -1311,80 +1331,20 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(my_ogrid,mz_ogrid), intent(out) :: df_surf
-      integer :: k
+      integer :: k, ii
 	  
       k = l1_ogrid
-      df_surf(:,:) = D1_SBP(1,1)*f(k,:,:,iTT) + &
-           D1_SBP(1,2)*f(k+1,:,:,iTT) + &
-           D1_SBP(1,3)*f(k+2,:,:,iTT) + &
-           D1_SBP(1,4)*f(k+3,:,:,iTT) + &
-           D1_SBP(1,5)*f(k+4,:,:,iTT) + &
-           D1_SBP(1,6)*f(k+5,:,:,iTT) + &
-           D1_SBP(1,7)*f(k+6,:,:,iTT) + &
-           D1_SBP(1,8)*f(k+7,:,:,iTT) + &
-           D1_SBP(1,9)*f(k+8,:,:,iTT)
+      df_surf(:,:) = D1_SBP(1,1)*f(k,:,:,ii) + &
+           D1_SBP(1,2)*f(k+1,:,:,ii) + &
+           D1_SBP(1,3)*f(k+2,:,:,ii) + &
+           D1_SBP(1,4)*f(k+3,:,:,ii) + &
+           D1_SBP(1,5)*f(k+4,:,:,ii) + &
+           D1_SBP(1,6)*f(k+5,:,:,ii) + &
+           D1_SBP(1,7)*f(k+6,:,:,ii) + &
+           D1_SBP(1,8)*f(k+7,:,:,ii) + &
+           D1_SBP(1,9)*f(k+8,:,:,ii)
       
     endsubroutine der_ogrid_SBP_surf
-!***********************************************************************
-    subroutine der_ogrid_SBP_R(f,dR)
-!    subroutine der_ogrid_SBP_R(f,dM1,mu1_bond_og)
-! 
-!  Summation by parts boundary condition for first derivative.
-!  Only implemented in radial direction.
-!
-!  21-mar-17/Jorgen: Coded
-!  06-nov-18/jonas: adapted
-!
-    !  use SharedVariables, only: get_shared_variable
-
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
-   !   real, dimension(my_ogrid,mz_ogrid), intent(out) :: dM1
-      real, dimension(my_ogrid,mz_ogrid), intent(out) :: dR
-   !   real, dimension (l1_ogrid+8,my_ogrid,mz_ogrid), intent(out) :: mu1_bond_og
-      integer :: k!, j2, j3
-   !   real, pointer, dimension(:,:) :: species_constants
-   !   integer, pointer :: imass
-!
-!      call get_shared_variable('species_constants',species_constants)
-!      call get_shared_variable('imass',imass)
-!
-!  Mean molecular weight
-!
-!      mu1_bond_og=0.
-!      do k=1,nchemspec
-!        if (species_constants(k,imass)>0.) then
-!          do j2=mm1_ogrid,mm2_ogrid
-!            do j3=nn1_ogrid,nn2_ogrid
-!              mu1_bond_og(l1_ogrid:,j2,j3)= &
-!                  mu1_bond_og(l1_ogrid:,j2,j3)+f(l1_ogrid:l1_ogrid+8,j2,j3,ichemspec(k))/species_constants(k,imass)
-!            enddo
-!          enddo
-!        endif
-!      enddo
-!
-!      k = l1_ogrid
-!      dM1(:,:) = D1_SBP(1,1)*mu1_bond_og(k,:,:) + &
-!           D1_SBP(1,2)*mu1_bond_og(k+1,:,:) + &
-!           D1_SBP(1,3)*mu1_bond_og(k+2,:,:) + &
-!           D1_SBP(1,4)*mu1_bond_og(k+3,:,:) + &
-!           D1_SBP(1,5)*mu1_bond_og(k+4,:,:) + &
-!           D1_SBP(1,6)*mu1_bond_og(k+5,:,:) + &
-!           D1_SBP(1,7)*mu1_bond_og(k+6,:,:) + &
-!           D1_SBP(1,8)*mu1_bond_og(k+7,:,:) + &
-!           D1_SBP(1,9)*mu1_bond_og(k+8,:,:)
-!
-      k = l1_ogrid
-      dR(:,:) = D1_SBP(1,1)*f(k,:,:,iRR) + &
-           D1_SBP(1,2)*f(k+1,:,:,iRR) + &
-           D1_SBP(1,3)*f(k+2,:,:,iRR) + &
-           D1_SBP(1,4)*f(k+3,:,:,iRR) + &
-           D1_SBP(1,5)*f(k+4,:,:,iRR) + &
-           D1_SBP(1,6)*f(k+5,:,:,iRR) + &
-           D1_SBP(1,7)*f(k+6,:,:,iRR) + &
-           D1_SBP(1,8)*f(k+7,:,:,iRR) + &
-           D1_SBP(1,9)*f(k+8,:,:,iRR)
-      
-    endsubroutine der_ogrid_SBP_R
 !***********************************************************************
     subroutine der_ogrid_bdry5(f,df)
 ! 

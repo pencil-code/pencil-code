@@ -38,12 +38,13 @@ implicit none
 !
     endsubroutine calc_for_chem_mixture_ogrid
 !***********************************************************************
-    subroutine dYk_dt_ogrid(f,df)
+    subroutine dYk_dt_ogrid(f,df,dt_ogrid)
 !
 !   dummy routine
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) ::  f
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
+      real :: dt_ogrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)

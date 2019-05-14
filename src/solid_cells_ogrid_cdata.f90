@@ -48,7 +48,8 @@ module solid_cells_ogrid_cdata
 !  Interpolation method
   integer :: interpolation_method=1  ! Set in start.in
   integer :: inter_len=2             ! Length of interpolation stencil
-  integer :: interpol_filter=0       ! Distance between interpolation r_int_outer and r_ogrid
+  integer :: interp_shift=0       ! Distance between interpolation r_int_outer and r_ogrid
+  integer :: interpol_filter=0       ! Shift by x cells in filtering
   integer :: interpol_order_poly=5   ! Interpolation order for polynomial interpolation
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
@@ -335,6 +336,10 @@ module solid_cells_ogrid_cdata
   integer :: ll1_ogrid,ll2_ogrid,mm1_ogrid,mm2_ogrid,nn1_ogrid,nn2_ogrid
   logical, pointer :: lheatc_chemistry, lflame_front_2D
   real, dimension(nchemspec) :: chemspec0
+  logical :: lreac_heter=.false.
+! Reaction rate array needed for BC
+  real, dimension (:,:,:), allocatable :: heter_reaction_rate
+  real :: Pr_number1
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
