@@ -5201,15 +5201,12 @@ nameloop: do
 !
 !  Possibility of elongated blob in the x direction
 !
-print*,'AXEL1: '
         if (present(radius_x)) then
           fact_x=1./radius_x**2
-print*,'AXEL2: ',radius_x
         else
           fact_x=fact
         endif
 !
-print*,'AXEL3: ',fact,fact_x
         f(:,:,:,i)=f(:,:,:,i)+ampl*( &
            spread(spread(exp(-fact_x*(x-x01)**2),2,my),3,mz) &
           *spread(spread(exp(-fact  *(y-y01)**2),1,mx),3,mz) &
