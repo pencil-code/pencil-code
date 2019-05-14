@@ -188,7 +188,7 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap(a, nv1, nv2, file, mode, ltruncate, label)
+    subroutine output_snap(a, nv, file, mode, ltruncate, label)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
@@ -197,21 +197,18 @@ module Io
 !  28-Oct-2016/PABourdin: redesigned
 !
       use File_io, only: parallel_file_exists
-      use General, only: ioptest
 !
-      integer, intent(in), optional :: nv1,nv2
+      integer, intent(in) :: nv
       real, dimension (:,:,:,:), intent(in) :: a
       character (len=*), optional, intent(in) :: file
       integer, optional, intent(in) :: mode
       logical, optional, intent(in) :: ltruncate
       character (len=*), optional, intent(in) :: label
 !
-      integer :: pos, nv, ne
+      integer :: pos
       logical :: ltrunc, lexists, lwrite_add
       character (len=fnlen) :: filename, dataset
 !
-      nv=ioptest(nv2,mvar_io)
-
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
       dataset = 'f'
       if (present (label)) dataset = label
