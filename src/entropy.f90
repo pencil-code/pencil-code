@@ -1554,7 +1554,7 @@ module Energy
         pretend_lnTT=.true.
         do m=1,my; do n=1,mz
           ss_mx=f(:,m,n,iss)
-L         call eosperturb(f,mx,ss=ss_mx)
+          call eosperturb(f,mx,ss=ss_mx)
         enddo; enddo
       endif
 
