@@ -485,6 +485,7 @@ module Solid_Cells
         call get_shared_variable('lflame_front_2D',lflame_front_2D)
         call get_shared_variable('linterp_pressure',linterp_pressure)
         call initialize_chemistry_og(f_ogrid)
+        call get_shared_variable('Lewis_coef1',Lewis_coef1)
       endif
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage

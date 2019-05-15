@@ -64,7 +64,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
   integer, pointer :: nreactions
 !  real, dimension(:,:), pointer :: species_constants ! available already from eos_simple
 !  real, pointer ::cp_const ! available already from eos_simple
-  real, dimension(:), pointer :: Lewis_coef1
+!  real, dimension(:), pointer :: Lewis_coef1
   integer, dimension(:), pointer :: iaa1, iaa2
 !  character(len=30), pointer, dimension(:) :: reaction_name
   real, dimension(:), pointer :: alpha_n, E_an, B_n
@@ -1541,8 +1541,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         vreact_p(i)=prod(i)*exp(kf(i))
       enddo
 !
-!print*,'f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)',f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2),m_ogrid,n_ogrid
-!print*,'f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)',f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2),m_ogrid,n_ogrid
       mdot(ichem_O2)=-vreact_p(1)
       mdot(ichem_CO)=2.0*(species_constants(ichem_CO,imass)/species_constants(ichem_O2,imass)*vreact_p(1)&
                         +species_constants(ichem_CO,imass)/species_constants(ichem_CO2,imass)*vreact_p(2))

@@ -340,6 +340,7 @@ module solid_cells_ogrid_cdata
 ! Reaction rate array needed for BC
   real, dimension (:,:,:), allocatable :: heter_reaction_rate
   real :: Pr_number1
+  real, dimension(:), pointer :: Lewis_coef1
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0

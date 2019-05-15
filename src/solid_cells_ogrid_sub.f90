@@ -1203,11 +1203,9 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 !  07-nov-18/Jonas: Added treatment for cases with temperature gradient
 !  jan-19/Eva: added BC for chemistry
 !
-      use SharedVariables, only: get_shared_variable
       integer :: k, j
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       real, dimension (my_ogrid, mz_ogrid) :: df_surf, grad_lnR, dR, diff_coeff, mdot_c
-      real, dimension(:), pointer :: Lewis_coef1
 !
       k=l1_ogrid
 !
@@ -1260,7 +1258,6 @@ public :: der_ogrid_SBP_experimental, der2_ogrid_SBP_experimental
 ! if heterogeneous reactions grad(Y_k) = (-mdot_c*Y_k-m_k)/(rho*D_k) 
 !
     elseif (lchemistry) then
-      call get_shared_variable('Lewis_coef1',Lewis_coef1)
       mdot_c = heter_reaction_rate(:,:,nchemspec+1)
       do j = 1,nchemspec
          diff_coeff = f_og(l1_ogrid,:,:,iviscosity)*Pr_number1*Lewis_coef1(k)
