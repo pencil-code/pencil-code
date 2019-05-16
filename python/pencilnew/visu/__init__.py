@@ -15,3 +15,4 @@ from .lic import *
 
 ## general plotting and exporting
 from . import internal
+from . import rvid_box
