@@ -70,8 +70,7 @@ qoutclean:
 
 # Clean up files produced by running MPI
 mpiclean:
-	rm -f copy-snapshots.log copy-snapshots2.log lamhosts remote-top.log
-	rm -f run_command.log lamboot.log
+	rm -f copy-snapshots.log copy-snapshots2.log lamhosts lamboot.log remote-top.log
 
 # Divine our configuration
 semiauto-conf:
