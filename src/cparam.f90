@@ -6,6 +6,10 @@ module Cparam
 !
   implicit none
 !
+  integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
+  integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
+  integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
+!
   include 'cparam.local'
 !
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
@@ -22,7 +26,8 @@ module Cparam
   include 'cparam.inc'
 !
   integer, parameter :: penc_name_len=16
-  include 'cparam_pencils.inc'
+!
+  include '../src/cparam_pencils.inc'
 !
 !  Derived and fixed parameters.
 !
@@ -32,9 +37,6 @@ module Cparam
   integer, parameter :: mpcom=mpvar+mpaux
   integer, parameter :: mqarray=mqvar+mqaux
 !
-  integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
-  integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
-  integer, parameter :: rkind4=selected_real_kind(6)  ! 4-byte real kind
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz
 !
 !!!  integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
