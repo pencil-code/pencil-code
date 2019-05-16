@@ -38,10 +38,11 @@ module Special
 !
   ! run parameters
   real :: kp=.0, km=.0, kC=.9, kX=.1
+  real :: fidelity=1., betaD=.0, betaL=.0
+  real :: fidelity_factor1, fidelity_factor2
   real, dimension (nx) :: Ntot
-  logical :: lcompute_kC=.false.
   namelist /special_run_pars/ &
-    kp, km, kC, kX, lcompute_kC
+    kp, km, kC, kX, fidelity, betaD, betaL
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -109,6 +110,11 @@ module Special
 !  Cannot have kp+km+kX > 1.
 !
       if ((kp+km+kC+kX)>1.) call fatal_error('initialize_special','kp+km+kC+kX > 1')
+!
+!  Compute fidelity factors.
+!
+      fidelity_factor1=.5*(1.+fidelity)
+      fidelity_factor2=.5*(1.-fidelity)
 !
 !  Compute total number of molecules of all populations.
 !
@@ -235,18 +241,14 @@ module Special
       qD=f(l1:l2,m,n,2)
       qL=f(l1:l2,m,n,3)
 !
-!  Recompute kC
-!
-      !if (lcompute_kC.and.(Dm+Lm)/=0.) kC=(1.-(kp+km+kX))*nx/(Dm+Lm)
-!
 !  Determine boundary points
 !
       d1=kp*.5
       d2=kp*.5
       d3=km*.5
       d4=km*.5
-      d5=kC*qD/Ntot
-      d6=kC*qL/Ntot
+      d5=kC*(fidelity_factor1*qD+fidelity_factor2*qL+betaD*qA)/Ntot
+      d6=kC*(fidelity_factor1*qL+fidelity_factor2*qD+betaL*qA)/Ntot
       d7=kX
 !
       r0=0.
