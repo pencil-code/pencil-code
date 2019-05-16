@@ -294,7 +294,7 @@ sub comment_out_all_lines {
         }
         close $in;
     } else {
-        # r--r--r-- is 0666, but umask may disallow some of those bits
+        # rw-rw-rw- is 0666, but umask may disallow some of those bits
         $permissions = 0666 & ~umask();
         (my $header = <<'HERE') =~ s/^\s{8}//gm;
         # This file is automatically updated each time you run pc_build.
