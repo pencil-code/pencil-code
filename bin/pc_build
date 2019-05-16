@@ -187,7 +187,7 @@ if ($debug_config) {
     exit 0;
 }
 
-my $log_file = '.pc_build_history';
+my $log_file = 'pc_commands.log';
 my $new_log_file;
 if ($prev_flags) {
     exec('sh', $log_file);
@@ -301,7 +301,7 @@ sub comment_out_all_lines {
         # Use
         #   pc_build --previous-flags
         # or
-        #   sh .pc_build_history
+        #   sh pc_commands.log
         # to compile with the same flags as you used the previous time.
 HERE
         print $out $header;

@@ -179,7 +179,10 @@ pencil_code_start()
   # Run start.x timestamping and timing appropriately
   date
   echo "$mpirun $mpirunops $npops $start_x $x_ops"
-  echo "$mpirun $mpirunops $npops $start_x $x_ops" > run_command.log
+  date
+  echo "#" >> pc_commands.log
+  date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
+  echo "# $mpirun $mpirunops $npops $start_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $start_x $x_ops
   start_status=$?               # save for exit
   date
@@ -190,7 +193,10 @@ pencil_code_run()
   # Run run.x timestamping and timing appropriately
   date
   echo "$mpirun $mpirunops $npops $run_x $x_ops"
-  echo "$mpirun $mpirunops $npops $run_x $x_ops" > run_command.log
+  date
+  echo "#" >> pc_commands.log
+  date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
+  echo "# $mpirun $mpirunops $npops $run_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $run_x $x_ops
   run_status=$?         # save for exit
   date

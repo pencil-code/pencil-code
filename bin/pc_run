@@ -608,7 +608,8 @@ sub time_system_cmd {
 # Run a system command through '/usr/bin/time -p'
     my @cmd_line = @_;
 
-    write_to_file('run_command.log', "@cmd_line");
+    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
+    append_to_file('pc_commands.log', "#\n# ".$timestamp."\n# @cmd_line");
 
     if (-X '/usr/bin/time') {
         run_system_cmd(('/usr/bin/time', '-p'), @cmd_line);
