@@ -297,12 +297,9 @@ sub comment_out_all_lines {
         # rw-rw-rw- is 0666, but umask may disallow some of those bits
         $permissions = 0666 & ~umask();
         (my $header = <<'HERE') =~ s/^\s{8}//gm;
-        # This file is automatically updated each time you run pc_build.
-        # Use
-        #   pc_build --previous-flags
-        # or
-        #   sh pc_commands.log
-        # to compile with the same flags as you used the previous time.
+        # Log file of Pencil Code commands.
+        # This compiles with the same parameters as last time in this directory:
+        # pc_build -p
 HERE
         print $out $header;
     }
