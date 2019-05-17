@@ -4,7 +4,7 @@ set everything up properly.
 '''
 
 # Load sub-modules.
-#from . import io           # input und output functions, like save data or call IDL scripts
+from . import io           # input und output functions, like save data or call IDL scripts
 from . import diag         # diagnostic scripts and functions
 from . import visu         # visualization routines
 from . import calc         # math functions and further calculations
