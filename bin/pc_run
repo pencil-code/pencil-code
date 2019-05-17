@@ -609,7 +609,7 @@ sub time_system_cmd {
     my @cmd_line = @_;
 
     my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
-    append_to_file('pc_commands.log', "#\n# ".$timestamp."\n# @cmd_line");
+    append_to_file('pc_commands.log', "\n# ".$timestamp."\n@cmd_line");
 
     if (-X '/usr/bin/time') {
         run_system_cmd(('/usr/bin/time', '-p'), @cmd_line);
@@ -1552,6 +1552,7 @@ END {
     clear_lock() if ($locked);
     unlink 'resubmit.log';
     unlink 'rs';
+    exec 'rm -rf "'.$runtime_dir.'"';
 
     system('env | sort') if ($debug);
 

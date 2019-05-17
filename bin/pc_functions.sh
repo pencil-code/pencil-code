@@ -180,9 +180,9 @@ pencil_code_start()
   date
   echo "$mpirun $mpirunops $npops $start_x $x_ops"
   date
-  echo "#" >> pc_commands.log
+  echo "" >> pc_commands.log
   date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
-  echo "# $mpirun $mpirunops $npops $start_x $x_ops" >> pc_commands.log
+  echo "$mpirun $mpirunops $npops $start_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $start_x $x_ops
   start_status=$?               # save for exit
   date
@@ -194,9 +194,9 @@ pencil_code_run()
   date
   echo "$mpirun $mpirunops $npops $run_x $x_ops"
   date
-  echo "#" >> pc_commands.log
+  echo "" >> pc_commands.log
   date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
-  echo "# $mpirun $mpirunops $npops $run_x $x_ops" >> pc_commands.log
+  echo "$mpirun $mpirunops $npops $run_x $x_ops" >> pc_commands.log
   time $mpirun $mpirunops $npops $run_x $x_ops
   run_status=$?         # save for exit
   date

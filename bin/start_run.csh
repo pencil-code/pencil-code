@@ -202,9 +202,9 @@ rm -f ERROR COMPLETED
 ${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
-echo "#" >> pc_commands.log
+echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
-echo "# $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
+echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
 set start_status=$status        # save for exit
 echo ""
@@ -295,9 +295,9 @@ rm -f ERROR COMPLETED
 date
 ${PENCIL_HOME}/utils/pc_print_revision_file $run_x
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
-echo "#" >> pc_commands.log
+echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
-echo "# $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
+echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops" >> pc_commands.log
 time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
 set run_status=$status          # save for exit
 date
