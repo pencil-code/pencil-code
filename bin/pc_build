@@ -188,12 +188,13 @@ if ($debug_config) {
 }
 
 my $log_file = 'pc_commands.log';
-my $new_log_file;
 if ($prev_flags) {
-    exec('sh', $log_file);
-} else {
-    $new_log_file = log_command_line($cmd_name, \@all_arguments);
+    my $cmd = `grep -w pc_build pc_commands.log | tail -1`;
+    exec $cmd;
+    exit 0;
 }
+
+log_command_line($cmd_name, \@all_arguments);
 
 if ($fast) {
     push @ARGV, 'FFLAGS+=-O0';
@@ -256,15 +257,13 @@ sub log_command_line {
     my ($cmd, $args_ref) = @_;
     my @args = quote_spaces(@$args_ref);
 
-    my ($out, $tmp_file) = comment_out_all_lines($log_file);
-
-    print $out "#\n";
     my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
-    print $out "# ", $timestamp, "\n";
+    my $out;
+    open($out, '>> '.$log_file)
+      or return warn_politely("Cannot write to $log_file");
+    print $out "\n# ", $timestamp, "\n";
     print $out "$cmd @args", "\n";
     close $out;
-
-    return $tmp_file
 }
 # ---------------------------------------------------------------------- #
 sub comment_out_all_lines {
@@ -374,11 +373,6 @@ sub version {
 }
 # ---------------------------------------------------------------------- #
 END {
-    if (defined $new_log_file) {
-        rename $new_log_file, $log_file
-          or warn "Cannot rename $new_log_file to $log_file\n";
-    }
-
     Pencil::Util::notify('building') if $notify;
 }
 # ---------------------------------------------------------------------- #
