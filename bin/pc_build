@@ -287,8 +287,8 @@ sub comment_out_all_lines {
         open(my $in, '<', $log_file)
           or return warn_politely("Cannot read from $log_file");
         while (defined(my $line = <$in>)) {
-            if ($line =~ /^\s*[^#\s]/) {
-                $line = "# $line";
+            if ($line !~ /^\s*#/) {
+                $line = "# ".$line;
             }
             print $out $line;
         }
