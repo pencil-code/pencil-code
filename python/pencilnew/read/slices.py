@@ -15,7 +15,7 @@ def slices(*args, **kwargs):
     call signature:
 
     read(self. field='uu1', extension='xz', datadir='data', proc=-1,
-         old_file=False, precision='f', verbose=False)
+         old_file=False, precision='f', quiet=False)
 
     Keyword arguments:
 
@@ -37,8 +37,8 @@ def slices(*args, **kwargs):
     *precision*:
       Precision of the data. Either float 'f' or double 'd'.
 
-    *verbose*:
-      Print progress
+    *quiet*:
+      Print progress if False
     """
 
     slices_tmp = SliceSeries()
@@ -62,14 +62,14 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', verbose=False):
+             old_file=False, precision='f', quiet=False):
         """
         Read Pencil Code slice data.
 
         call signature:
 
         read(self. field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', verbose=False)
+             old_file=False, precision='f', quiet=False)
 
         Keyword arguments:
 
@@ -91,7 +91,7 @@ class SliceSeries(object):
         *precision*:
           Precision of the data. Either float 'f' or double 'd'.
 
-        *verbose*:
+        *quiet*:
           Print progress
         """
 
@@ -148,13 +148,13 @@ class SliceSeries(object):
             pass
 
         for extension in extension_list:
-            if verbose:
+            if not quiet:
                 print('Extension: ' + str(extension))
             # This one will store the data.
             ext_object = Foo()
 
             for field in field_list:
-                if verbose:
+                if not quiet:
                     print('  -> Field: ' + str(field))
                 # Compose the file name according to field and extension.
                 datadir = os.path.expanduser(datadir)
@@ -191,10 +191,10 @@ class SliceSeries(object):
                 self.t = [0]
                 slice_series = [0]
 
+                if not quiet:
+                    print('  -> Reading... ')
                 while True:
                     try:
-                        if verbose:
-                            print('  -> Reading... ')
                         raw_data = infile.read_record(dtype=precision)
                     except ValueError:
                         break
@@ -208,11 +208,11 @@ class SliceSeries(object):
                         self.t.append(list(raw_data[-2:-1]))
                         slice_series.extend(list(raw_data[:-2]))
                     islice += 1
-                    if verbose:
-                        print('  -> Done')
+                if not quiet:
+                    print('  -> Done')
 
                 # Reshape and remove first entry.
-                if verbose:
+                if not quiet:
                     print('Reshaping array')
                 self.t = np.array(self.t[1:], dtype=precision)[:, 0]
                 slice_series = np.array(slice_series, dtype=precision)
