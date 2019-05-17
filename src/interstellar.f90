@@ -1836,7 +1836,7 @@ module Interstellar
               SN_list(1,i)=0.
               if (i==nlist-1) then
                 call touch_file('ENDTIME')
-                nt=it+1
+                tmax=t
               endif
               t_next_SNI=SN_list(1,i+1)
               if (lroot) print*,'check_SN: t_next_SNI on list =',t_next_SNI
@@ -1844,7 +1844,7 @@ module Interstellar
             endif
           enddo
           call check_SNI(f,l_SNI)
-          if (nt==it+1) then
+          if (t>=tmax) then
             if (lroot) print*, 'check_SN: sn_series.in list needs',&
                              ' extending or set lSN_list=F to continue'
           endif
