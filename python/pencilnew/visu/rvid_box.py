@@ -2,7 +2,7 @@
 #
 # Generate 3D visualisation from 4x 2D video slices.
 #
-# Author: S. Long (shiting.long@aalto.fi).
+# Author: S. Long (shiting.long@aalto.fi) and F. Gent (fred.gent.ncl@gmail.com)
 """
 This script contains three functions, whereas plot_box is the only function
 that needs to be called by the user.
@@ -26,7 +26,7 @@ proc --- an integer giving the processor to read a slice from.
 scale --- a string variable, the scale of the colorbar; default is regular scale,
     can be changed to logarithmic by setting it 'log' (the base number is 10).
 
-verbose --- a boolean variable, print debug information.
+quiet --- a boolean variable, print debug information.
 
 slice --- the sequential integer number of a slice in given period (starting from 0), default is the first slice (slice 0),
     can be set to '-1' to generate all slices in given period.
@@ -60,7 +60,7 @@ import plotly.io as pio
 def plot(
          #field (or multiple todo) and 4 surfaces (extra todo) 
          slice_obj, fields, xyzplane,
-         itt, it, verbose=False,  
+         itt, it, quiet=True,  
          #yz[i], xy[i], xz[i], xy2[i], 
          #save output
          figdir='./images/', imageformat='.png',
@@ -70,12 +70,13 @@ def plot(
          color_range=None,
          #locate the box and axes
          viewpoint=(-1.35, -2.1, 0.5), offset=5., margin=(20,20,30,0),
+         autosize=False, image_dim=(800,500),
          #handle axes properties
-         visxyz=visxyz, xyz=None, axestitle=('x','y','z'),
+         visxyz=[True,True,True], axestitle=('x','y','z'), xyz=None,
          #color bar properties
          cbar_label='', cbar_loc=1., cbar_label_pos='right', 
          #add text for time stamp
-         time=0, unit='', isd=3,     fontsize=25,
+         time=0, textxy=(0,0), unit='', isd=3, fontsize=25,
         ):
 
     """
@@ -118,20 +119,21 @@ def plot(
     """
 
 
-    if verbose:
+    if not quiet:
         print('Printing t={:.2g} box plot'.format(time))
     for field in fields:
-        cmax=-1e38
+        cmin,cmax=1e38,-1e38
         #set color limits based on time series or single snapshot
         if color_levels=='common':
-            for key in slice_obj.__dict__.keys():
+            for key in xyzplane:
                 globals()[key+'slice']=slice_obj.__getattribute__(key).__getattribute__(field)
                 cmax = max(cmax,globals()[key+'slice'][it].max())
-                cmin = max(cmax,globals()[key+'slice'][it].max())
+                cmin = min(cmin,globals()[key+'slice'][it].min())
         else:
-            for key in slice_obj.__dict__.keys():
+            for key in xyzplane:
+                globals()[key+'slice']=slice_obj.__getattribute__(key).__getattribute__(field)
                 cmax = max(cmax,globals()[key+'slice'][itt].max())
-                cmin = max(cmax,globals()[key+'slice'][itt].max())
+                cmin = min(cmin,globals()[key+'slice'][itt].min())
 
         height= globals()['xzslice'][itt].shape[0]
         width = globals()['xyslice'][itt].shape[1]
@@ -158,6 +160,8 @@ def plot(
                 y1 = np.log10(globals()['xzslice' ][itt])
                 x1 = np.log10(globals()['yzslice' ][itt])
                 z2 = np.log10(globals()['xy2slice'][itt])
+                cmax=np.log10(cmax)
+                cmin=np.log10(cmin)
         elif norm == 'linear': 
             z1 = globals()['xyslice' ][itt]
             y1 = globals()['xzslice' ][itt]
@@ -195,10 +199,10 @@ def plot(
         colorsurfz2 = proj_z(x_z, z_z, z2.tolist())
 
         # for projection slice xz
-        colorsurfy1 = proj_z(x_x, y_y, y1.tolist())
+        colorsurfy1 = proj_z(x_y, y_y, y1.tolist())
 
         # for projection slice yz
-        colorsurfx1 = proj_z(x_x, y_y, x1.tolist())
+        colorsurfx1 = proj_z(x_y, y_y, x1.tolist())
 
         # plot slices to surfaces
         trace_y1 = go.Surface(z=list(z_z),
@@ -214,8 +218,8 @@ def plot(
                                   x=cbar_loc,
                               )
                               )
-        trace_y1.colorbar,title.side=cbar_label_pos
-        trace_y1.colorbar,title.font.size=fontsize
+        trace_y1.colorbar.title.side=cbar_label_pos
+        trace_y1.colorbar.title.font.size=fontsize
  
         trace_x1 = go.Surface(z=list(z_z),
                               x=list(x1_offset),
@@ -230,8 +234,8 @@ def plot(
                                   x=cbar_loc,
                               )
                               )
-        trace_z1 = go.Surface(z=list(z_offset),
-                              x=list(x_x),
+        trace_z1 = go.Surface(z=list(z1_offset),
+                              x=list(x_y),
                               y=list(y_y),
                               showscale=False,
                               surfacecolor=colorsurfz1,
@@ -244,7 +248,7 @@ def plot(
                               )
                               )
         trace_z2 = go.Surface(z=list(z2_offset),
-                              x=list(x_x),
+                              x=list(x_y),
                               y=list(y_y),
                               showscale=False,
                               surfacecolor=colorsurfz2,
@@ -260,12 +264,15 @@ def plot(
         data = [trace_y1, trace_x1, trace_z1, trace_z2]
 
         layout = go.Layout(
-                annotoations=[
-                    dict(text='$t$='+str(round(time,isd))+unit,
-                         x=txtpos[0],
-                         y=txtpos[1],
+                annotations=[
+                    dict(text=r'$t='+str(round(time,isd))+r'{\,\rm'+unit+r'}$',
+                         x=textxy[0],
+                         y=textxy[1],
                          showarrow=False
-                        )]
+                        )],
+                autosize=autosize,
+                width=image_dim[0],
+                height=image_dim[1],
                 scene=dict(
                     camera=dict(
                         eye=dict(
@@ -311,7 +318,7 @@ def plot(
 def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #acquire the slice objects
              fields=['uu1',], datadir='./data/', proc=-1, xyzplane=[],
-             verbose=False, oldfile=False, 
+             quiet=True, oldfile=False, 
              #select data to plot
              tstart=0., tend=1e38, islice=-1,
              #set image properties
@@ -321,8 +328,9 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              color_range=None, color_levels=None,
              #locate the box and axes
              viewpoint=(-1.35, -2.1, 0.5), offset=5., margin=(20,20,30,0),
+             autosize=False, image_dim=(800,500),
              #handle axes properties
-             visxyz=[True,True,True], axestitle=('x', 'y', 'z'),
+             visxyz=[True,True,True], axestitle=('x', 'y', 'z'), xyz=None,
              #color bar properties
              cbar_label = '$u_x$ [km s$^{-1}$', cbar_loc=1.,
              cbar_label_pos='right',
@@ -330,14 +338,14 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              timestamp=False, textxy=(0,0), unit='', isd=2,  fontsize=25,
              ):
 
-    gd = pcn.read.grid(trim=True, quiet=True, datadir=datadir)
-    ttmp=slice_obj.t[np.where(slice_obj.t<tend)[0]]
-    it=np.where(ttmp>tstart)[0]
+    #gd = pcn.read.grid(trim=True, quiet=True, datadir=datadir)
+    ttmp=slice_obj.t[np.where(slice_obj.t<=tend)[0]]
+    it=np.where(ttmp>=tstart)[0]
     if len(xyzplane)==0:
         for key in slice_obj.__dict__.keys():
-            if key is not 't':
+            if key!='t':
                 xyzplane.append(key)
-    if len(xyzplane<4):
+    if len(xyzplane)<4:
         raise ValueError("xyzplane: rvid_box requires at least 4 surfaces.")
         
     if islice == -1:
@@ -345,7 +353,7 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
             plot(
                  #field (or multiple todo) and 4 surfaces (extra todo) 
                  slice_obj, fields, xyzplane,
-                 itt, it, verbose=verbose,  
+                 itt, it, quiet=quiet,  
                  #yz[i], xy[i], xz[i], xy2[i], 
                  #save output
                  figdir=figdir, imageformat=imageformat,
@@ -355,19 +363,21 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
                  color_range=color_range,
                  #locate the box and axes
                  viewpoint=viewpoint, offset=offset, margin=margin,
+                 autosize=autosize, image_dim=image_dim,
                  #handle axes properties
-                 visxyz=visxyz, xyz=(gd.x, gd.y, gd.z), axestitle=axestitle,
+                 visxyz=visxyz, axestitle=axestitle, xyz=xyz,
                  #color bar properties
                  cbar_label=cbar_label, cbar_loc=cbar_loc,
                  cbar_label_pos=cbar_label_pos,
                  #add text for time stamp                               
-                 time=slice_obj.t[itt], unit=unit, isd=isd, fontsize=25,  
+                 time=slice_obj.t[itt], textxy=textxy, unit=unit,
+                 isd=isd, fontsize=25,  
                 )
     else:
         plot(
              #field (or multiple todo) and 4 surfaces (extra todo) 
              slice_obj, fields, xyzplane,
-             islice, [islice,], verbose=verbose,  
+             islice, [islice,], quiet=quiet,  
              #yz[i], xy[i], xz[i], xy2[i], 
              #save output
              figdir=figdir, imageformat=imageformat,
@@ -377,11 +387,13 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              color_range=color_range,
              #locate the box and axes
              viewpoint=viewpoint, offset=offset, margin=margin,
+             autosize=autosize, image_dim=image_dim,
              #handle axes properties
              visxyz=visxyz, xyz=(gd.x, gd.y, gd.z), axestitle=axestitle,
              #color bar properties
              cbar_label=cbar_label, cbar_loc=cbar_loc,
              cbar_label_pos=cbar_label_pos,
              #add text for time stamp
-             time=slice_obj.t[itt], unit=unit, isd=isd, fontsize=25,  
+             time=slice_obj.t[itt], textxy=textxy, unit=unit,
+             isd=isd, fontsize=25,  
             )
