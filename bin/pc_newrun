@@ -146,7 +146,7 @@ cp *.in $targetdir
 [ -f alpha_in.dat ] && cp alpha_in.dat $targetdir
 [ -f *.py ] && cp *.py $targetdir
 [ -f FAKE_PARALLEL_IO ] && touch  $targetdir/FAKE_PARALLEL_IO
-[ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "#\n# Copied from $olddir on `date +'# %Y-%m-%d %H:%M:%S'`" >>  $targetdir/pc_commands.log
+[ -f pc_commands.log ] && cp pc_commands.log $targetdir && echo -e "\n# `date +'%Y-%m-%d %H:%M:%S'`\n# copied from '$olddir'" >>  $targetdir/pc_commands.log
 #
 
 #
