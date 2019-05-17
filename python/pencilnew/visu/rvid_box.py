@@ -265,7 +265,7 @@ def plot(
 
         layout = go.Layout(
                 annotations=[
-                    dict(text=r'$t='+str(round(time,isd))+r'{\,\rm'+unit+r'}$',
+                    dict(text=r'$t='+str(round(time,isd))+unit+r'$',
                          x=textxy[0],
                          y=textxy[1],
                          showarrow=False
@@ -332,8 +332,8 @@ def plot_box(slice_obj,#slice_obj=pcn.read.slices()
              #handle axes properties
              visxyz=[True,True,True], axestitle=('x', 'y', 'z'), xyz=None,
              #color bar properties
-             cbar_label = '$u_x$ [km s$^{-1}$', cbar_loc=1.,
-             cbar_label_pos='right',
+             cbar_label = r'$u_x\,[{\rm km s}^{-1}]$', cbar_loc=1.,
+             cbar_label_pos='top',
              #add text for time stamp                                     
              timestamp=False, textxy=(0,0), unit='', isd=2,  fontsize=25,
              ):
