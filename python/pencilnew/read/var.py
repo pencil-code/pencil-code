@@ -66,9 +66,11 @@ def var(*args, **kwargs):
         #else:
         #    print('!! ERROR: No simulation of path specified..')
 
-    if not started and kwargs['ivar'] != 0:
-        print('ERROR: Simulation has not jet started. There are no var files.')
-        return False
+    if not started:
+        if 'ivar' in kwargs:
+            if kwargs['ivar'] != 0:
+                print('ERROR: Simulation has not jet started. There are no var files.')
+                return False
 
     var_tmp = DataCube()
     var_tmp.read(*args, **kwargs)
@@ -318,7 +320,7 @@ class DataCube(object):
                 # Compute the vorticity field before doing trimall.
                 uu = f[index.ux-1:index.uz, ...]
                 # TODO: Specify coordinate system.
-                # WL: The curl subroutine should take care of it. 
+                # WL: The curl subroutine should take care of it.
                 self.vort = curl(uu, dx, dy, dz, run2D=run2D)
                 if trimall:
                     if run2D:
