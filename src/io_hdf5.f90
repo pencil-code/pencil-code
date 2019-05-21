@@ -1137,28 +1137,33 @@ module Io
 !
       real, dimension(2*nname), intent(in) :: data, data_im
 !
-      integer :: pos
-      character (len=fmtlen) label, iteration
-      character (len=fnlen) :: filename, dataset
+      integer :: pos, iteration
+      character (len=fmtlen) label
+      character (len=fnlen) :: filename
       logical :: lexists
-
-      iteration = itoa(it-1)
+      integer, save :: offset = -1
+!
       filename = trim(datadir)//'/time_series.h5'
       lexists = file_exists (filename)
       call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+      if (offset == -1) then
+        offset = 0
+        if (lexists .and. exists_in_hdf5 ('last')) call input_hdf5 ('last', offset)
+      endif
+      iteration = offset + it-1
       do pos = 1, nname
         label = cname(pos)
         label = label(1:min(index(label,' '), index(label,'('))-1)
         if (label == 'it') cycle
         call create_group_hdf5 (label)
-        call output_hdf5 (trim(label)//'/'//iteration, data(pos))
+        call output_hdf5 (trim (label)//'/'//itoa (iteration), data(pos))
         if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
           label = trim(label)//'/imaginary_part'
           call create_group_hdf5 (label)
-          call output_hdf5 (trim(label)//'/'//iteration, data_im(pos))
+          call output_hdf5 (trim (label)//'/'//itoa (iteration), data_im(pos))
         endif
       enddo
-      call output_hdf5 ('last', it-1)
+      call output_hdf5 ('last', iteration)
       call output_hdf5 ('step', it1)
       call file_close_hdf5
 !
