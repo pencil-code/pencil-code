@@ -298,6 +298,7 @@ module Magnetic
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
   logical :: lboris_correction=.false.
+  logical :: lnoinduction=.false.
   logical :: lkeplerian_gauge=.false.
   logical :: lremove_volume_average=.false.
   logical :: lrhs_max=.false.
@@ -355,7 +356,8 @@ module Magnetic
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
-      no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max
+      no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
+      lnoinduction
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4464,6 +4466,13 @@ module Magnetic
             !print*,'this, right?'
             dAdt = dAdt+ p%uxb+fres
           endif
+!
+!NS: added lnoinduction switch to suppress uxb term when needed
+!
+           if (lnoinduction) then
+             !print*,'no induction'
+              dAdt = dAdt - p%uxb
+           endif
         endif
       else
 !
