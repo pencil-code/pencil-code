@@ -109,32 +109,23 @@ if keyword_set(noplot) then iplot=0 else iplot=1
 ;!p.multi=[0,1,1]
 ;!p.charsize=2
 
-mx=0L & my=0L & mz=0L & nvar=0L
-prec=''
-nghostx=0L & nghosty=0L & nghostz=0L
-;
 ;  Reading number of grid points from 'data/dim.dat'
 ;  Need both mx and nghostx to work out nx.
 ;  Assume nx=ny=nz
 ;
-close,1
-openr,1,datatopdir+'/'+'dim.dat'
-readf,1,mx,my,mz,nvar
-readf,1,prec
-readf,1,nghostx,nghosty,nghostz
-close,1
-size=2*!pi
+pc_read_dim, obj=dim, datadir=datatopdir, /quiet
 ;
 ;  Calculating some variables
 ;
 first='true'
-nx=mx-nghostx*2
+nx=dim.mx-dim.nghostx*2
+size=2*!pi
 if  keyword_set(v1) then begin
   if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
        OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
        OR (v1 EQ "_phib") OR (v1 EQ "_phi_mag") ) then begin
-     nx=mz-nghostz*2
-     pc_read_grid,o=grid,/quiet,datadir=datatopdir
+     nx=dim.mz-dim.nghostz*2
+     pc_read_grid,o=grid,dim=dim,/quiet,datadir=datatopdir
      size=grid.Lz
   end
 end
