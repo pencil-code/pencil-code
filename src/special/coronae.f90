@@ -34,13 +34,13 @@ module Special
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.
-  logical :: lmag_time_bound=.false.
+  logical :: lmag_time_bound=.false., lgran_top=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
   real :: Bz_flux=0.,quench=0.,quench0=0.,quench_width=1., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: init_time2=0., density_min=0.
   real :: limiter_tensordiff=3
-  real :: u_amplifier=1.
+  real :: u_amplifier=1., gran_top_ux_fact=1., gran_top_uy_fact=1.
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
@@ -80,7 +80,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,quench0,quench_width,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,irefz,maxvA, b_tau,&
+      heat_par_b2,irefz,maxvA, b_tau, lgran_top, gran_top_ux_fact, gran_top_uy_fact, &
       mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,R_hyper3, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
@@ -294,7 +294,7 @@ module Special
         print*,'Loaded loop length data for heattype: ',iheattype
       endif
 !
-      if (lrun .and. lgranulation .and. (ipz == 0)) then
+      if (lrun .and. lgranulation .and. ((ipz == 0) .or. (lgran_top .and. ipz == nprocz-1))) then
         if (lhydro) then
           call set_driver_params()
         else
@@ -702,6 +702,9 @@ module Special
         if ((lcompute_gran.and.(Bavoid>0.0 .or. quench>0.0)) &
              .or.Bz_flux /= 0.) call set_B2(f)
 !
+! No quenching implemented for lgran_top=T
+!
+!
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
 !
@@ -741,8 +744,8 @@ module Special
 !
 !  Compute photospheric granulation.
 !
-      if (lgranulation .and. (ipz == 0) .and. &
-          (.not.lpencil_check_at_work)) then
+      if (lgranulation .and. .not.lpencil_check_at_work .and. &
+         ((ipz == 0) .or. (lgran_top .and. ipz == nprocz-1))) then
         if (itsub == 1) then
           call granulation_driver(f)
         endif
@@ -2917,7 +2920,11 @@ module Special
 !         quench = 0.03 : factor by which the granular velocity
 !                         is reduced at low beta
 !
+! lgran_top uses granulations at the top boundary for simplified loop setup
+!
+!
 !  11-may-10/bing: coded
+!  21-may-19/joern: add lgran_top
 !
       use File_io, only: file_exists
       use General, only: random_seed_wrapper
@@ -2929,6 +2936,7 @@ module Special
       logical :: lstop=.false.
       integer :: level
 !
+
       if (.not.lequidist(1).or..not.lequidist(2)) &
           call fatal_error('granulation_driver', &
           'not yet implemented for non-equidistant grids')
@@ -2943,8 +2951,10 @@ module Special
         Uy=0.0
         call multi_drive3()
 !
-        if (increase_vorticity /= 0.) call enhance_vorticity()
-        if (quench /= 0.) call footpoint_quenching(f)
+          if (increase_vorticity /= 0.) call enhance_vorticity()
+        if (.not. lgran_top) then
+          if (quench /= 0.) call footpoint_quenching(f)
+        endif
 !
 ! restore global seed and save seed list of the granulation
 !
@@ -2952,24 +2962,31 @@ module Special
         call random_seed_wrapper(PUT=global_rstate)
       endif
 !
-      f(l1:l2,m1:m2,n1,iux) = Ux*u_amplifier
-      f(l1:l2,m1:m2,n1,iuy) = Uy*u_amplifier
-      f(l1:l2,m1:m2,n1,iuz) = 0.
+      if (lgran_top .and. ipz==nprocz-1) then
+        f(l1:l2,m1:m2,n2,iux) = Ux*u_amplifier*gran_top_ux_fact
+        f(l1:l2,m1:m2,n2,iuy) = Uy*u_amplifier*gran_top_uy_fact
+        f(l1:l2,m1:m2,n2,iuz) = 0.
+      else
+        f(l1:l2,m1:m2,n1,iux) = Ux*u_amplifier
+        f(l1:l2,m1:m2,n1,iuy) = Uy*u_amplifier
+        f(l1:l2,m1:m2,n1,iuz) = 0.
+
 !
-      if (t >= tsnap_uu) then
-        do level=1,n_gran_level
-          call write_points(level,isnap)
-        enddo
-        tsnap_uu = tsnap_uu + dsnap
-        isnap  = isnap + 1
-      endif
+        if (t >= tsnap_uu) then
+          do level=1,n_gran_level
+            call write_points(level,isnap)
+          enddo
+          tsnap_uu = tsnap_uu + dsnap
+          isnap  = isnap + 1
+        endif
 !
-      if (itsub == 3) lstop = file_exists('STOP')
-      if (lstop.or.t >= tmax .or. it >= nt.or. &
-          mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) then
-        do level=1,n_gran_level
-          call write_points(level)
-        enddo
+        if (itsub == 3) lstop = file_exists('STOP')
+        if (lstop.or.t >= tmax .or. it >= nt.or. &
+            mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) then
+          do level=1,n_gran_level
+            call write_points(level)
+          enddo
+        endif
       endif
 !
     endsubroutine granulation_driver
@@ -3109,7 +3126,7 @@ module Special
 !
       do while (lwait_for_points)
         do i=0,nprocxy-1
-          if (iproc == i) then
+          if (iproc == nprocxy*ipz+i) then
 !
 ! First check if iproc needs a point
 !
@@ -3142,12 +3159,12 @@ module Special
               tmppoint(:)=0.
             endif
             do j=0,nprocxy-1
-              if (j /= iproc) then
-                call mpisend_real(tmppoint,6,j,j+10*i)
+              if (j /= i) then
+                call mpisend_real(tmppoint,6,j+nprocxy*ipz,j+10*i+nprocxy*ipz)
               endif
             enddo
           else
-            call mpirecv_real(tmppoint_recv,6,i,iproc+10*i)
+            call mpirecv_real(tmppoint_recv,6,i+nprocy*ipz,iproc+10*i)
 !  Check if point received from send_proc is filled
             if (sum(tmppoint_recv) /= 0.) then
               if (current%number == 0.) then
@@ -3284,30 +3301,30 @@ module Special
         lnew_point=.false.
       endif
 !
-      if (iproc == 0) then
+      if (iproc == nprocxy*ipz) then
         new_points=lnew_point
         do i=0,nprocx-1; do j=0,nprocy-1
-          ipt = i+nprocx*j
-          if (ipt /= 0) then
+          ipt = i+nprocx*j + nprocxy*ipz
+          if (ipt /= nprocxy*ipz) then
             call mpirecv_logical(ltmp,ipt,ipt+222)
             if (ltmp) new_points=.true.
           endif
         enddo; enddo
       else
-        call mpisend_logical(lnew_point,0,iproc+222)
+        call mpisend_logical(lnew_point,nprocxy*ipz,iproc+222)
       endif
 !
 !  root sends
 !
-      if (iproc == 0) then
+      if (iproc == nprocxy*ipz) then
         do i=0,nprocx-1; do j=0,nprocy-1
-          ipt = i+nprocx*j
-          if (ipt /= 0) then
+          ipt = i+nprocx*j + nprocxy*ipz
+          if (ipt /= nprocxy*ipz) then
             call mpisend_logical(new_points,ipt,ipt+222)
           endif
         enddo; enddo
       else
-        call mpirecv_logical(new_points,0,iproc+222)
+        call mpirecv_logical(new_points,nprocxy*ipz,iproc+222)
       endif
 !
     endfunction new_points
@@ -4104,7 +4121,7 @@ module Special
           close (unit)
 !  send the data to the other procs in the ipz=0 plane
           do i=0,nprocx-1; do j=0,nprocy-1
-            ipt = i+nprocx*J
+            ipt = i+nprocx*j
             if (ipt /= 0) then
               call mpisend_real(tl,ipt,tag_left)
               call mpisend_real(tr,ipt,tag_right)
@@ -4170,7 +4187,7 @@ module Special
 !
 !  send the data to the other procs in the ipz=0 plane
           do i=0,nprocx-1; do j=0,nprocy-1
-            ipt = i+nprocx*J
+            ipt = i+nprocx*j
             if (ipt /= 0) then
               call mpisend_real(global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
                   (/mx,my,3,8/),ipt,tag_left)
