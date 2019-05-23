@@ -377,6 +377,8 @@ module Testfield_general
 !
       call farray_register_pde('aatest',iaatest,array=3*njtest)
       call farray_index_append('ntestfield',3*njtest)
+print*,'AXEL: ntestfield',ntestfield
+ntestfield=3*njtest
 !
 !  Set first and last index of test field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
