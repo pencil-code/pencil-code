@@ -53,8 +53,7 @@ module Special
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
-  real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0,&
-          lnTT_hotplate_tau=1.0
+  real :: lnrho_min=-max_real, lnrho_min_tau=1.0,uu_tau1_quench=0.0, lnTT_hotplate_tau=1.0
   real, dimension(2) :: nwave,w_ff,z_ff
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
@@ -243,12 +242,12 @@ module Special
           call fatal_error('solar_corona/calc_heatcond_grad', &
               "Heat conduction 'K_iso' is currently not implemented for entropy.", .true.)
 !
-      bfield: if (lbfield) then
+      if (lbfield) then
         if (luse_mag_field) call fatal_error("solar_corona", "luse_mag_field not implemented with bfield")
         if (lset_boundary_emf) call fatal_error("solar_corona", "lset_boundary_emf not implemented with bfield")
         if (lflux_emerg_bottom) call fatal_error("solar_corona", "lflux_emerg_bottom not implemented with bfield")
         if (swamp_eta > 0.0) call fatal_error("solar_corona", "not implemented with bfield. ")
-      endif bfield
+      endif
 !
       if ((.not. lreloading) .and. lrun) nano_seed = 0
 !
@@ -1183,13 +1182,11 @@ module Special
       endif
 !
       ! External magnetic field driver
-      use_mag_field: if (luse_mag_field) then
-        if (lfirst_proc_z) then
-          call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
-              A_init, time_mag_l, time_mag_r)
-          call mag_driver (A_init, Bz_total_flux, f)
-        endif
-      endif use_mag_field
+      if (luse_mag_field .and. lfirst_proc_z) then
+        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
+            A_init, time_mag_l, time_mag_r)
+        call mag_driver (A_init, Bz_total_flux, f)
+      endif
 !
       ! External horizontal velocity driver
       if (luse_vel_field .and. lfirst_proc_z) then
@@ -1266,10 +1263,11 @@ module Special
       use SharedVariables, only: get_shared_variable
       use Sub, only: cross,gij,curl_mn,step
 !
-      logical, intent(in) :: llast
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension(mx,my,mz):: rho_tmp
+      logical, intent(in) :: llast
+!
+!      real, dimension(mx,my,mz):: rho_tmp
       real, intent(in) :: dt_
       real, dimension(nx,3) :: uu,bb,uxb
       real, dimension(nx) :: va
@@ -1309,7 +1307,7 @@ module Special
           endif     
         enddo; enddo
       endif
-
+!
       if (lfirst_proc_z.and.lcartesian_coords) then
         if (lflux_emerg_bottom) then
           select case (flux_type)
@@ -1328,9 +1326,7 @@ module Special
                 uu(:,1)=uu_emerg(1)*sin(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
                 uu(:,2)=uu_emerg(2)*cos(nwave(1)*x(l1:l2)/Lxyz(1)-w_ff(1)*t)
                 if (lemerg_profx) then
-!
-! Hard coding the emerging velocity x-profile for testing
-!
+                  ! Hard coding the emerging velocity x-profile for testing
                   uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
                           tanh((x(l1:l2)+4+0.5)/0.4))* &
                           (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
@@ -1342,9 +1338,6 @@ module Special
                 f(l1:l2,m,n1-ig,iux) = uu(:,1)
                 f(l1:l2,m,n1-ig,iuy) = uu(:,2)
                 f(l1:l2,m,n1-ig,iuz) = uu(:,3)
-!
-!
-!
                 call cross(uu,bb,uxb)
                 f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
                 f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
@@ -1756,6 +1749,7 @@ module Special
         call distribute_xy (Uy)
       endif
 !
+      ! velocity field is in [m/s] in the driver file, convert to PC units
       Ux = Ux / unit_velocity
       Uy = Uy / unit_velocity
 !
@@ -2802,7 +2796,7 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: delta_lnrho, tmp
+      real, dimension(nx) :: delta_lnrho
 !
 !     add to density
 !
@@ -4069,11 +4063,11 @@ module Special
         if (alloc_err > 0) call fatal_error ('set_BB2', &
             'Could not allocate memory for fac and bbx/bby/bbz', .true.)
 !
-        bfield: if (lbfield) then
+        if (lbfield) then
           bbx = f(l1:l2,m1:m2,irefz,ibx)
           bby = f(l1:l2,m1:m2,irefz,iby)
           bbz = f(l1:l2,m1:m2,irefz,ibz)
-        else bfield
+        else
 !
 ! compute B = curl(A) for irefz layer
 !
@@ -4081,7 +4075,7 @@ module Special
           bby = 0
           bbz = 0
 !
-          xdir: if (nxgrid /= 1) then
+          if (nxgrid /= 1) then
             fac = (1./60)*spread(dx_1(l1:l2),2,ny)
             bby = bby - fac * &
                 ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
@@ -4091,11 +4085,11 @@ module Special
                 ( 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
                 -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
                 +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)) )
-          else xdir
+          else
             if (ip <= 5) print*, 'set_BB2: Degenerate case in x-direction'
-          endif xdir
+          endif
 !
-          ydir: if (nygrid /= 1) then
+          if (nygrid /= 1) then
             fac = (1./60)*spread(dy_1(m1:m2),1,nx)
             bbx = bbx + fac * &
                 ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
@@ -4105,11 +4099,11 @@ module Special
                 ( 45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
                 -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
                 +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)) )
-          else ydir
+          else
             if (ip <= 5) print*, 'set_BB2: Degenerate case in y-direction'
-          endif ydir
+          endif
 !
-          zdir: if (nzgrid /= 1) then
+          if (nzgrid /= 1) then
             fac = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
             bbx = bbx - fac * &
                 ( 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
@@ -4119,10 +4113,10 @@ module Special
                 ( 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
                 -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
                 +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)) )
-          else zdir
+          else
             if (ip <= 5) print*, 'set_BB2: Degenerate case in z-direction'
-          endif zdir
-        endif bfield
+          endif
+        endif
 !
 ! Compute |B| and collect as global BB2 on root processor.
 !
@@ -4368,7 +4362,7 @@ module Special
       real, dimension (nx) :: fim1,fip1,rfac,q1
       real :: alpha=1.25
       type (pencil_case), intent(in) :: p
-      integer :: i,j,k
+      integer :: j,k
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
@@ -4595,11 +4589,10 @@ module Special
       real, dimension (0:nx) :: b1_xtmp,b2_xtmp,b3_xtmp,rho_xtmp
       type (pencil_case), intent(in) :: p
       integer :: k
-      integer :: i,ix
 !
       select case (k)
-! x-component
         case(1)
+          ! x-component
           b1_xtmp=0.5*(f(l1-1:l2,m,n,ibx)+f(l1:l2+1,m,n,ibx))
           b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
           b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
@@ -4610,8 +4603,8 @@ module Special
           endif
           cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
           cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)
-! y-component
         case(2)
+          ! y-component
           b1_tmp=0.5*(f(l1:l2,m-1,n,ibx)+f(l1:l2,m,n,ibx))
           b2_tmp=0.5*(f(l1:l2,m-1,n,iby)+f(l1:l2,m,n,iby))
           b3_tmp=0.5*(f(l1:l2,m-1,n,ibz)+f(l1:l2,m,n,ibz))
@@ -4630,8 +4623,8 @@ module Special
             rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m+1,n,ilnrho)))
           endif
           cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
-! z-component
         case(3)
+          ! z-component
           b1_tmp=0.5*(f(l1:l2,m,n-1,ibx)+f(l1:l2,m,n,ibx))
           b2_tmp=0.5*(f(l1:l2,m,n-1,iby)+f(l1:l2,m,n,iby))
           b3_tmp=0.5*(f(l1:l2,m,n-1,ibz)+f(l1:l2,m,n,ibz))
