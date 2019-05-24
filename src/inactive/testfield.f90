@@ -102,8 +102,9 @@ module Testfield
 !
 !  Register test field.
 !
-      call farray_register_pde('aatest',iaatest,array=3*njtest)
-      call farray_index_append('ntestfield',3*njtest)
+      ntestfield = 3*njtest
+      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      call farray_index_append('ntestfield',ntestfield)
 !
 !  Identify version number.
 !

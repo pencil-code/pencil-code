@@ -139,8 +139,9 @@ module Testfield
 !
 !  Register test field.
 !
-      call farray_register_pde('aatest',iaatest,array=3*njtest)
-      call farray_index_append('ntestfield',3*njtest)
+      ntestfield = 3*njtest
+      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      call farray_index_append('ntestfield',ntestfield)
 !
 !  Set first and last index of text field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.

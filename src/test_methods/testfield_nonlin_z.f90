@@ -229,10 +229,12 @@ module Testfield
 !
 !  Register test field.
 !
-      call farray_register_pde('aatest',iaatest,array=3*njtest)
-      call farray_index_append('ntestfield',3*njtest)
-      call farray_register_pde('uutest',iuutest,array=3*njtest)
-      call farray_index_append('ntestflow',3*njtest)
+      ntestfield = 3*njtest
+      ntestflow = 3*njtest
+      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      call farray_index_append('ntestfield',ntestfield)
+      call farray_register_pde('uutest',iuutest,array=ntestflow)
+      call farray_index_append('ntestflow',ntestflow)
 !
 !  Set first and last index of test field
 !  Note: iaxtest, iaytest, and iaztest are initialized to the first test field.
@@ -241,11 +243,11 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaztestpq=iaatest+3*njtest-1
+      iaztestpq=iaatest+ntestfield-1
       iuxtest=iuutest
       iuytest=iuutest+1
       iuztest=iuutest+2
-      iuztestpq=iuutest+3*njtest-1
+      iuztestpq=iuutest+ntestflow-1
 !
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you

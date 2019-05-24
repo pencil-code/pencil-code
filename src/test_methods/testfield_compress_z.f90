@@ -243,18 +243,20 @@ module Testfield
 !
 !  Register test field.
 !
-      call farray_register_pde('aatest',iaatest,array=3*njtest)
-      call farray_index_append('ntestfield',3*njtest)
-      call farray_register_pde('uutest',iuutest,array=3*njtest)
-      call farray_index_append('ntestflow',3*njtest)
+      ntestfield = 3*njtest
+      ntestflow = 3*njtest
+      call farray_register_pde('aatest',iaatest,array=ntestfield)
+      call farray_index_append('ntestfield',ntestfield)
+      call farray_register_pde('uutest',iuutest,array=ntestflow)
+      call farray_index_append('ntestflow',ntestflow)
       call farray_register_pde('lnrhotest',ihhtest,array=njtest)
       call farray_index_append('ntestlnrho',njtest)
 !
 !  Set first and last index of text field
 !  These values are used in this form in start, but later overwritten.
 !
-      iaztestpq=iaatest+3*njtest-1
-      iuztestpq=iuutest+3*njtest-1
+      iaztestpq=iaatest+ntestfield-1
+      iuztestpq=iuutest+ntestflow-1
       ihhtestpq=ihhtest+njtest-1
 !
 !  Identify version number.
