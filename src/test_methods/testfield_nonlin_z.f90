@@ -69,7 +69,6 @@ module Testfield
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
-  integer, parameter :: mtestfield=6*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
