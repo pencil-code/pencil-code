@@ -256,9 +256,17 @@ sub log_command_line {
 # compile with exactly the same parameters.
     my ($cmd, $args_ref) = @_;
     my @args = quote_spaces(@$args_ref);
+    my $out;
+
+    if (!-e $log_file) {
+        open($out, '> '.$log_file);
+        print $out "# Log file of Pencil Code commands.\n";
+        print $out "# This compiles with the same parameters as last time in this directory:\n";
+        print $out "# pc_build -p\n";
+        close $out;
+    }
 
     my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
-    my $out;
     open($out, '>> '.$log_file)
       or return warn_politely("Cannot write to $log_file");
     print $out "\n# ", $timestamp, "\n";
