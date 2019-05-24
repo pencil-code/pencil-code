@@ -37,7 +37,6 @@ module Special
   ! input parameters
   real :: cphi=1.,ampl=1e-3,kx=1.,ky=0.,kz=0.
   real :: ktestfield=1., ktestfield1=1.
-  integer, parameter :: ntestfield=3*njtest
   character(len=50) :: init='zero'
   logical :: ldebug_meanfield=.false.
   namelist /special_init_pars/ &
