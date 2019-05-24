@@ -60,7 +60,6 @@ module Testfield
   real, dimension(ny) :: ytf,csec
 !  real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
 !  real :: delta_testfield_next=0., delta_testfield_time=0.
-  integer, parameter :: mtestfield=3*njtest
   integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
@@ -153,7 +152,7 @@ module Testfield
 !
 !  arrays for azimuthally averaged uxb and jxb
 !
-  real, dimension (mx,my,3,mtestfield/3) :: uxbtestm,jxbtestm
+  real, dimension (mx,my,3,njtest) :: uxbtestm,jxbtestm
 
   contains
 

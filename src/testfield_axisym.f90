@@ -59,7 +59,6 @@ module Testfield
   real :: ztestfield_offset=0.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
   real :: delta_testfield_next=0., delta_testfield_time=0.
-  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
@@ -120,7 +119,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (nz,3,mtestfield/3) :: uxbtestm,jxbtestm
+  real, dimension (nz,3,njtest) :: uxbtestm,jxbtestm
 
   contains
 
@@ -150,7 +149,7 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaztestpq=iaatest+3*njtest-1
+      iaztestpq=iaatest+ntestfield-1
 !
 !  Identify version number.
 !

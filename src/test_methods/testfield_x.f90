@@ -56,7 +56,6 @@ module Testfield
   logical :: lignore_uxbtestm=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1., ktestfield1=1.
-  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
   real :: bamp=1.
   namelist /testfield_init_pars/ &
@@ -163,7 +162,7 @@ module Testfield
 !
 !  arrays for horizontally averaged uxb and jxb
 !
-  real, dimension (nx,3,mtestfield/3) :: uxbtestm,jxbtestm
+  real, dimension (nx,3,njtest) :: uxbtestm,jxbtestm
 
   contains
 
@@ -194,7 +193,7 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaztestpq=iaatest+3*njtest-1
+      iaztestpq=iaatest+ntestfield-1
 !
 !  identify version number
 !

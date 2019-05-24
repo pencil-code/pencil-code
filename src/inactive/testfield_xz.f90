@@ -44,7 +44,7 @@ module Testfield
   logical :: linit_aatest=.false.
   character (len=labellen) :: itestfield='B11-B21'
   real :: ktestfield=1.
-  integer, parameter :: njtest=2,mtestfield=3*njtest
+  integer, parameter :: njtest=2
   integer :: naainit
 
   namelist /testfield_init_pars/ &
@@ -71,7 +71,7 @@ module Testfield
   integer :: idiag_b11rms=0     ! DIAG_DOC: $\left<b_{11}^2\right>$
   integer :: idiag_b21rms=0     ! DIAG_DOC: $\left<b_{21}^2\right>$
 
-  real, dimension (mz,3,mtestfield/3) :: uxbtestm
+  real, dimension (mz,3,njtest) :: uxbtestm
 
   contains
 
