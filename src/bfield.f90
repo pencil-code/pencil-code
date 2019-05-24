@@ -22,6 +22,7 @@
 ! PENCILS PROVIDED bij(3,3); jj(3); j2; divb
 ! PENCILS PROVIDED curle(3); jxbr(3)
 ! PENCILS PROVIDED beta; va2
+! PENCILS PROVIDED bunit(3)
 !
 ! PENCILS PROVIDED aa(3); ss12
 !
@@ -315,6 +316,7 @@ module Magnetic
 !  PDE related
 !
       lpenc_requested(i_curle) = .true.
+      lpenc_requested(i_bunit) = .true.
 !
       ohmic: if (lenergy .and. lresistivity .and. lohmic_heat) then
         lpenc_requested(i_j2) = .true.
@@ -393,6 +395,11 @@ module Magnetic
       logical, dimension(npencils), intent(inout) :: lpencil_in
 !
       if (lpencil_in(i_b2)) lpencil_in(i_bb) = .true.
+!
+      if (lpencil_in(i_bunit)) then
+        lpencil_in(i_bb)=.true.
+        lpencil_in(i_b2)=.true.
+      endif
 !
       divb: if (lpencil_in(i_divb)) then
         lpencil_in(i_bij) = .true.
@@ -561,6 +568,7 @@ module Magnetic
         else
           p%bb = f(l1:l2,m,n,ibx:ibz)
         endif
+        p%bunit = p%bb
       endif bb
 !
       if (lpenc_loc(i_bbb)) p%bbb = f(l1:l2,m,n,ibx:ibz)
