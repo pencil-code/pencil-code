@@ -2936,7 +2936,6 @@ module Special
       logical :: lstop=.false.
       integer :: level
 !
-
       if (.not.lequidist(1).or..not.lequidist(2)) &
           call fatal_error('granulation_driver', &
           'not yet implemented for non-equidistant grids')
@@ -2951,7 +2950,8 @@ module Special
         Uy=0.0
         call multi_drive3()
 !
-          if (increase_vorticity /= 0.) call enhance_vorticity()
+        if (increase_vorticity /= 0.) call enhance_vorticity()
+!
         if (.not. lgran_top) then
           if (quench /= 0.) call footpoint_quenching(f)
         endif
@@ -2970,19 +2970,22 @@ module Special
         f(l1:l2,m1:m2,n1,iux) = Ux*u_amplifier
         f(l1:l2,m1:m2,n1,iuy) = Uy*u_amplifier
         f(l1:l2,m1:m2,n1,iuz) = 0.
-
+      endif
 !
-        if (t >= tsnap_uu) then
+      if (t >= tsnap_uu) then
+        if (ipz == 0) then
           do level=1,n_gran_level
             call write_points(level,isnap)
           enddo
-          tsnap_uu = tsnap_uu + dsnap
-          isnap  = isnap + 1
         endif
+        tsnap_uu = tsnap_uu + dsnap
+        isnap  = isnap + 1
+      endif
 !
-        if (itsub == 3) lstop = file_exists('STOP')
-        if (lstop.or.t >= tmax .or. it >= nt.or. &
-            mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) then
+      if (itsub == 3) lstop = file_exists('STOP')
+      if (lstop.or.t >= tmax .or. it >= nt.or. &
+          mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) then
+        if (ipz == 0) then
           do level=1,n_gran_level
             call write_points(level)
           enddo
@@ -3164,7 +3167,7 @@ module Special
               endif
             enddo
           else
-            call mpirecv_real(tmppoint_recv,6,i+nprocy*ipz,iproc+10*i)
+            call mpirecv_real(tmppoint_recv,6,i+nprocxy*ipz,iproc+10*i)
 !  Check if point received from send_proc is filled
             if (sum(tmppoint_recv) /= 0.) then
               if (current%number == 0.) then
@@ -4121,7 +4124,7 @@ module Special
           close (unit)
 !  send the data to the other procs in the ipz=0 plane
           do i=0,nprocx-1; do j=0,nprocy-1
-            ipt = i+nprocx*j
+            ipt = i+nprocx*J
             if (ipt /= 0) then
               call mpisend_real(tl,ipt,tag_left)
               call mpisend_real(tr,ipt,tag_right)
@@ -4187,7 +4190,7 @@ module Special
 !
 !  send the data to the other procs in the ipz=0 plane
           do i=0,nprocx-1; do j=0,nprocy-1
-            ipt = i+nprocx*j
+            ipt = i+nprocx*J
             if (ipt /= 0) then
               call mpisend_real(global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
                   (/mx,my,3,8/),ipt,tag_left)
