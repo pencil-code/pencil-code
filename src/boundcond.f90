@@ -961,8 +961,8 @@ module Boundcond
                 ! BCZ_DOC: hydrostatic equilibrium
                 if (.not. lgrav) call fatal_error('boundconds_z', &
                   'hs boundary condition requires gravity')
-                if (gravz_profile /= 'const') call fatal_error('boundconds_z', &
-                  'hs boundary condition requires a constant gravity profile')
+                if ((.not. ltemperature .or. ltemperature_nolog) .and. (gravz_profile /= 'const')) &
+                  call fatal_error('boundconds_z', 'hs boundary condition requires a constant gravity profile')
                 if (.not. lequidist(3)) call fatal_error('boundconds_z', &
                   'hs boundary condition requires symmetric grid distances on the z boundary')
                 if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
@@ -982,9 +982,13 @@ module Boundcond
                     "'hse' requires an eos module")
                 if ((ilnrho == 0) .or. (ilnTT == 0)) &
                     call fatal_error ('boundconds_z', "'hse' requires lnrho and lnTT")
-                if (j /= ilnTT) call fatal_error ('boundconds_z', &
-                    "'hse' works only in lnTT")
-                call bcz_hydrostatic_temp(f,topbot)
+                if (j == ilnTT) then
+                  call bcz_hydrostatic_temp(f,topbot)
+                elseif (j == ilnrho) then
+                  call bcz_hydrostatic_rho(f,topbot)
+                else
+                  call fatal_error ('boundconds_z', "'hse' works only in lnrho or lnTT")
+                endif
               case ('cp')
                 ! BCZ_DOC: constant pressure
                 ! BCZ_DOC:
@@ -7148,6 +7152,52 @@ module Boundcond
       endselect
 !
     endsubroutine bcz_hydrostatic_temp
+!***********************************************************************
+    subroutine bcz_hydrostatic_rho(f,topbot)
+!
+!  The logarithmic temperature in the ghost cells is used to calculate the
+!  logarithmic density under the assumption of a hydrostatic equilibrium.
+!
+!  24-May-2019/PABourdin: adapted from bcz_hydrostatic_temp
+!
+      use EquationOfState, only: gamma, gamma_m1, get_cp1
+      use SharedVariables, only: get_shared_variable
+!
+      real, dimension (:,:,:,:), intent (inout) :: f
+      character (len=bclen), intent (in) :: topbot
+!
+      integer :: i
+      real, dimension (size(f,1),size(f,2)) :: T_inv
+      real :: g_ref, delta_z, inv_cp_cv, cp_inv
+      real, dimension (:), pointer :: gravz_zpencil
+!
+!
+      call get_shared_variable ('gravz_zpencil', gravz_zpencil, caller='bcz_hydrostatic_rho')
+      call get_cp1 (cp_inv)
+      inv_cp_cv = gamma / gamma_m1 * cp_inv
+!
+      select case (topbot)
+      case ('bot')
+        ! bottom (left end of the domain)
+        do i = 1, nghost
+          delta_z = z(n1-i) - z(n1-i+1)
+          g_ref = 0.5 * (gravz_zpencil(n1-i) + gravz_zpencil(n1-i+1))
+          T_inv = exp (-0.5 * (f(:,:,n1-i,ilnTT) + f(:,:,n1-i+1,ilnTT)))
+          f(:,:,n1-i,ilnrho) = f(:,:,n1-i+1,ilnrho) + g_ref*delta_z*inv_cp_cv*T_inv
+        enddo
+      case ('top')
+        ! top (right end of the domain)
+        do i = 1, nghost
+          delta_z = z(n2+i) - z(n2+i-1)
+          g_ref = 0.5 * (gravz_zpencil(n2+i) + gravz_zpencil(n2+i-1))
+          T_inv = exp (-0.5 * (f(:,:,n2+i,ilnTT) + f(:,:,n2+i-1,ilnTT)))
+          f(:,:,n2+i,ilnrho) = f(:,:,n2+i-1,ilnrho) + g_ref*delta_z*inv_cp_cv*T_inv
+        enddo
+      case default
+        call fatal_error ('bcz_hydrostatic_rho', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+    endsubroutine bcz_hydrostatic_rho
 !***********************************************************************
     subroutine finalize_boundcond(f)
 !
