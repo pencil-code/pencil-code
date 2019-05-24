@@ -161,7 +161,7 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaztestpq=iaatest+3*njtest-1
+      iaztestpq=iaatest+ntestfield-1
 !
 !  Identify version number.
 !
