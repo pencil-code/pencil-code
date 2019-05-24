@@ -275,7 +275,7 @@ module EquationOfState
       call put_shared_variable('cv',cv)
       call put_shared_variable('isothmid',isothmid)
       call put_shared_variable('fac_cs',fac_cs)
-
+!
       if (.not.ldensity) then
         call put_shared_variable('rho0',rho0)
         call put_shared_variable('lnrho0',lnrho0)
@@ -474,8 +474,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-
-      if (lwrite_slices) then 
+      if (lwrite_slices) then
         where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
       endif
 !
@@ -804,12 +803,11 @@ module EquationOfState
         else
           if (lreference_state) &
             call get_shared_variable('reference_state',reference_state,caller='calc_pencils_eos')
-
+!
           if (lpenc_loc(i_ss)) then
             p%ss=f(l1:l2,m,n,ieosvar2)
             if (lreference_state) p%ss=p%ss+reference_state(:,iref_s)
           endif
-
           if (lpenc_loc(i_gss)) then
             call grad(f,ieosvar2,p%gss)
             if (lreference_state) p%gss(:,1)=p%gss(:,1)+reference_state(:,iref_gs)
@@ -1368,7 +1366,7 @@ module EquationOfState
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='eosperturb')
-
+!
       if (psize==nx) then
         call getlnrho(f(:,m,n,ilnrho),lnrho_)
         if (present(ee)) then
@@ -1462,7 +1460,7 @@ module EquationOfState
       case (ilnrho_ss,irho_ss)
         if (lreference_state) &
           call get_shared_variable('reference_state',reference_state,caller='eoscalc_farray')
-
+!
         select case (psize)
         case (nx)
           if (lstratz) then
@@ -1670,7 +1668,7 @@ module EquationOfState
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
-!   Reference state not yet considered here 
+!   Reference state not yet considered here
 !
       integer, intent(in) :: ivars
       integer, intent(in), optional :: iz
@@ -1831,7 +1829,7 @@ module EquationOfState
 !                   is just fine.
 !   22-jun-06/axel: reinstated cp,cp1,cv,cv1 in hopefully all the places.
 !
-!   Reference state not yet considered here 
+!   Reference state not yet considered here
 !
       integer, intent(in) :: ivars
       integer, intent(in), optional :: iz
@@ -2034,7 +2032,7 @@ module EquationOfState
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='isothermal_entropy')
-      if (T0 == 0) call fatal_error('isothermal_entropy','T0 cannot be 0') 
+      if (T0 == 0) call fatal_error('isothermal_entropy','T0 cannot be 0')
 !
       do n=n1,n2
       do m=m1,m2
@@ -2042,7 +2040,7 @@ module EquationOfState
         lnTT=log(T0)
           !+ other terms for sound speed not equal to cs_0
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-        if (lreference_state) then 
+        if (lreference_state) then
           f(l1:l2,m,n,iss) = ss - reference_state(:,iref_s)
         else
           f(l1:l2,m,n,iss) = ss
@@ -2329,7 +2327,7 @@ module EquationOfState
           cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = entropy
           if (lreference_state) &
             cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
-
+!
           if (ldensity_nolog) then
             cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
@@ -2379,7 +2377,7 @@ module EquationOfState
 !
 !   04-may-2009/axel: adapted from bc_ss_flux
 !   31-may-2010/pete: replaced sigmaSB by a `turbulent' sigmaSBt
-!    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary; 
+!    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary;
 !                   added branches for Kramers heat conductivity (using sigmaSBt!)
 !
       logical, pointer :: lheatc_kramers
@@ -2443,14 +2441,14 @@ module EquationOfState
         if (lreference_state) &
           cs2_xy(l1:l2,:)=cs2_xy(l1:l2,:)+cv1*spread(reference_state(:,iref_s),2,my)
         cs2_xy=cs20*exp(cs2_xy)
-
+!
         call getrho(f(:,:,n1,ilnrho),rho_xy)
         TT_xy=cs2_xy/(gamma_m1*cp)
 !
         dlnrhodz_xy= coeffs_1_z(1,1)*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
                     +coeffs_1_z(2,1)*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
                     +coeffs_1_z(3,1)*(f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho))
- 
+!
         if (lheatc_kramers) then
           dsdz_xy= cv*( (sigmaSBt/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
                        +gamma_m1*dlnrhodz_xy)      ! no turbulent diffusivity considered here!
@@ -2488,7 +2486,7 @@ module EquationOfState
         dlnrhodz_xy= coeffs_1_z(1,2)*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                     +coeffs_1_z(2,2)*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                     +coeffs_1_z(3,2)*(f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho))
-
+!
         if (ldensity_nolog) dlnrhodz_xy=dlnrhodz_xy/rho_xy   ! (not used)
 !
 !  Set chi_xy=chi, which sets also the ghost zones.
@@ -2593,7 +2591,7 @@ module EquationOfState
 !
         if (pretend_lnTT) then
           do i=1,nghost
-            f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &     ! MR: corrected, plus sign correct? 
+            f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + &     ! MR: corrected, plus sign correct?
                 dx2_bound(-i)*sigmaSBt*exp(f(l1,:,:,iss))**3/hcondxbot
           enddo
         else
@@ -2602,7 +2600,7 @@ module EquationOfState
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
           call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
-
+!
           if (ldensity_nolog) then
             cs2_yz=f(l1,:,:,iss)                    ! here cs2_yz = entropy
             if (lreference_state) cs2_yz = cs2_yz+reference_state(BOT,iref_s)
@@ -2618,7 +2616,7 @@ module EquationOfState
           dlnrhodx_yz= coeffs_1_x(1,1)*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
                       +coeffs_1_x(2,1)*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
                       +coeffs_1_x(3,1)*(f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho))
-
+!
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density and divide by total density
@@ -2669,7 +2667,7 @@ module EquationOfState
 !  - chi_t rho T dsdx_yz - hcond gTT = sigmaSBt*TT^4
 !
           call getrho(f(l2,:,:,ilnrho),TOP,rho_yz)
-
+!
           if (ldensity_nolog) then
             cs2_yz=f(l2,:,:,iss)                         ! here cs2_yz = entropy
             if (lreference_state) &
@@ -2678,7 +2676,7 @@ module EquationOfState
           else
             cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+cv1*f(l2,:,:,iss))
           endif
-!            
+!
           TT_yz=cs2_yz/(gamma_m1*cp)
 !
 !  Calculate d rho/d x  or  d ln(rho) / d x
@@ -2697,7 +2695,7 @@ module EquationOfState
             else
               dlnrhodx_yz=dlnrhodx_yz/rho_yz
             endif
-
+!
           endif
 !
 !  Compute total heat conductivity
@@ -2791,7 +2789,7 @@ module EquationOfState
 !  Set ghost zones such that -chi_t*rho*T*grads -hcond*gTT = Fbot
 !
           call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
-
+!
           if (ldensity_nolog) then
             TT_yz=f(l1,:,:,iss)                                      ! TT_yz here entropy
             if (lreference_state) &
@@ -2807,7 +2805,7 @@ module EquationOfState
           dlnrhodx_yz= coeffs_1_x(1,1)*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
                       +coeffs_1_x(2,1)*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
                       +coeffs_1_x(3,1)*(f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho))
-
+!
           if (ldensity_nolog) then
 !
 !  Add gradient of reference density and divide by total density (but not used later!).
@@ -3077,7 +3075,7 @@ module EquationOfState
             call getdlnrho_z(f(:,:,:,ilnrho),n1,i,TT_xy)             ! here TT_xy = d_z ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + cp*(rho_xy*TT_xy+dz2_bound(-i)*dsdz_xy)
           enddo
-
+!
         endif
 !
 !  top boundary
@@ -3136,11 +3134,11 @@ module EquationOfState
 !
         call getlnrho(f(:,:,n1,ilnrho),tmp_xy)             ! here tmp_xy = log(rho)
         tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2bot/cs20)) / gamma
-
+!
         if (lreference_state) &
           tmp_xy(l1:l2,:) = tmp_xy(l1:l2,:) - spread(reference_state(:,iref_s),2,my)
-        f(:,:,n1,iss) = tmp_xy 
-
+        f(:,:,n1,iss) = tmp_xy
+!
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)     ! reference_state?
         enddo
@@ -3157,7 +3155,7 @@ module EquationOfState
   !          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 4.')
         call getlnrho(f(:,:,n2,ilnrho),tmp_xy)
         tmp_xy = (-gamma_m1*(tmp_xy-lnrho0) + log(cs2top/cs20)) / gamma
-
+!
         if (lreference_state) &
           tmp_xy(l1:l2,:) = tmp_xy(l1:l2,:) - spread(reference_state(:,iref_s),2,my)
         f(:,:,n2,iss) = tmp_xy
@@ -3215,8 +3213,8 @@ module EquationOfState
 !
           if (lreference_state) &
             f(l1,:,:,iss) = f(l1,:,:,iss) - reference_state(BOT,iref_s)
-        
-          if (ldensity_nolog) then 
+!
+          if (ldensity_nolog) then
             do i=1,nghost
               if (lreference_state) then
 !
@@ -3252,7 +3250,7 @@ module EquationOfState
         if (cs2top<=0.) print*, 'bc_ss_temp_x: cannot have cs2top<=0'
 !
         if (lentropy .and. .not. pretend_lnTT) then
-
+!
           tmp = 2*cv*log(cs2top/cs20)
           call getlnrho(f(l2,:,:,ilnrho),TOP,lnrho_yz)
           f(l2,:,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_yz - lnrho0)
@@ -3333,11 +3331,11 @@ module EquationOfState
 !
         tmp = 2*cv*log(cs2bot/cs20)
         call getlnrho(f(:,m1,:,ilnrho),lnrho_xz)
-
+!
         f(:,m1,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_xz-lnrho0)
         if (lreference_state) &
           f(l1:l2,m1,:,iss) = f(l1:l2,m1,:,iss) - spread(reference_state(:,iref_s),2,mz)
-
+!
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
@@ -3361,14 +3359,14 @@ module EquationOfState
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, 'bc_ss_temp_y: cannot have cs2top<=0'
-
+!
         tmp = 2*cv*log(cs2top/cs20)
         call getlnrho(f(:,m2,:,ilnrho),lnrho_xz)
-
+!
         f(:,m2,:,iss) = 0.5*tmp - (cp-cv)*(lnrho_xz-lnrho0)
         if (lreference_state) &
           f(l1:l2,m2,:,iss) = f(l1:l2,m2,:,iss) - spread(reference_state(:,iref_s),2,mz)
-
+!
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
@@ -3402,11 +3400,11 @@ module EquationOfState
 !
       use General, only: loptest
       use Deriv, only: set_ghosts_for_onesided_ders
-
+!
       real, dimension (:,:,:,:) :: f
       character (len=3) :: topbot
       logical, optional :: lone_sided
-
+!
       real :: tmp
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
@@ -3434,11 +3432,11 @@ module EquationOfState
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
-
+!
           tmp = 2*cv*log(cs2bot/cs20)
           call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
           f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
-
+!
           if (lreference_state) &
             f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 !
@@ -3448,7 +3446,7 @@ module EquationOfState
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
             if (ldensity_nolog) then
-
+!
               do i=1,nghost
                 f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
 !                   - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
@@ -3464,7 +3462,7 @@ module EquationOfState
               enddo
             endif
           endif
-
+!
         elseif (lentropy .and. pretend_lnTT) then
           f(:,:,n1,iss) = log(cs2bot/gamma_m1)
           if (loptest(lone_sided)) then
@@ -3496,14 +3494,14 @@ module EquationOfState
 !AB: This was implemented in revision: 17029 dhruba.mitra, but it works!
         if (lread_oldsnap) &
           cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
-
+!
         if (lentropy .and. .not. pretend_lnTT) then
           tmp = 2*cv*log(cs2top/cs20)
           call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
           f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
           if (lreference_state) &
             f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
-
+!
           if (loptest(lone_sided)) then
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
@@ -3595,7 +3593,7 @@ module EquationOfState
         f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
         if (lreference_state) &
           f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
-
+!
         do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2bot
@@ -3604,7 +3602,7 @@ module EquationOfState
         tmp=-gravz/cs2bot
         do i=1,nghost
           f(:,:,n1-i,ilnrho)=  f(:,:,n1+i,ilnrho)  &
-                             + cp1*(f(:,:,n1+i,iss)-f(:,:,n1-i,iss))+dz2_bound(-i)*tmp 
+                             + cp1*(f(:,:,n1+i,iss)-f(:,:,n1-i,iss))+dz2_bound(-i)*tmp
         enddo
 !
 !  top boundary
@@ -3622,7 +3620,7 @@ module EquationOfState
         f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
         if (lreference_state) &
           f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
-
+!
         do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2top
@@ -3631,7 +3629,7 @@ module EquationOfState
         tmp=gravz/cs2top
         do i=1,nghost
           f(:,:,n2+i,ilnrho)=  f(:,:,n2-i,ilnrho) &
-                             + cp1*(f(:,:,n2-i,iss)-f(:,:,n2+i,iss))+dz2_bound(i)*tmp 
+                             + cp1*(f(:,:,n2-i,iss)-f(:,:,n2+i,iss))+dz2_bound(i)*tmp
         enddo
 !
       case default
@@ -3689,7 +3687,7 @@ module EquationOfState
           f(:,:,n2,iss)=ss_top
           if (lreference_state) &
             f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
-         
+!
           do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
 !  set density value such that pressure is constant at the bottom
@@ -3728,7 +3726,7 @@ module EquationOfState
           f(:,:,n1,iss)=ss_bot
           if (lreference_state) &
             f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
-
+!
           do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
 !  set density value such that pressure is constant at the bottom
@@ -3761,7 +3759,7 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
-
+!
       real :: tmp
       real, dimension(mx,my) :: lnrho_xy
       integer :: i
@@ -3822,7 +3820,7 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
-
+!
       real :: tmp,dcs2bot
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
@@ -3858,7 +3856,7 @@ module EquationOfState
         dcs2bot=gamma*gravz/(mpoly+1.)
         if (ldebug) print*, 'bc_ss_temp3_z: set cs2bot,dcs2bot=',cs2bot,dcs2bot
         if (cs2bot<=0.) print*, 'bc_ss_temp3_z: cannot have cs2bot<=0'
-
+!
         do i=0,nghost
           call getlnrho(f(:,:,n1-i,ilnrho),lnrho_xy)
           f(:,:,n1-i,iss) =  cv*log((cs2bot-0.5*dz2_bound(-i)*dcs2bot)/cs20) &
@@ -3870,7 +3868,7 @@ module EquationOfState
       case ('top')
         if (ldebug) print*, 'bc_ss_temp3_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp3_z: cannot have cs2top<=0'
-
+!
         tmp = cv*log(cs2top/cs20)
         do i=0,nghost
           call getlnrho(f(:,:,n2+i,ilnrho),lnrho_xy)
@@ -3891,7 +3889,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       use DensityMethods, only: getdlnrho_x
-
+!
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: i
@@ -3917,16 +3915,16 @@ module EquationOfState
 !
       case ('bot')
         if (cs2bot<=0.) print*, 'bc_ss_stemp_x: cannot have cs2bot<=0'
-
+!
         if (lreference_state) call getrho(f(l1,:,:,ilnrho),BOT,rho_yz)
-
+!
         do i=1,nghost
           if (ldensity_nolog) then
-
+!
             if (lreference_state) then
               call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
               f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(BOT,iref_gs) &
-                               + (cp-cv)*dlnrho 
+                               + (cp-cv)*dlnrho
             else
               f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) &
                                + (cp-cv)*(log(f(l1+i,:,:,irho)/f(l1-i,:,:,irho)))
@@ -3941,9 +3939,9 @@ module EquationOfState
 !
       case ('top')
         if (cs2top<=0.) print*, 'bc_ss_stemp_x: cannot have cs2top<=0'
-
+!
         if (lreference_state) call getrho(f(l2,:,:,ilnrho),TOP,rho_yz)
-
+!
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
@@ -3984,7 +3982,7 @@ module EquationOfState
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='bc_ss_stemp_y')
-
+!
       if (ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
@@ -4342,9 +4340,9 @@ module EquationOfState
 !  Bottom boundary
 !
       case ('bot')
-        
+!
         if (ldensity_nolog) call getrho(f(l1,:,:,irho),BOT,rho)
-
+!
         do i=1,nghost
 !
           cs2 = cs20
@@ -4376,9 +4374,9 @@ module EquationOfState
 !  Top boundary
 !
       case ('top')
-
+!
         if (ldensity_nolog) call getrho(f(l2,:,:,irho),TOP,rho)
-
+!
         do i=1,nghost
 !
           cs2 = cs20
@@ -4393,7 +4391,7 @@ module EquationOfState
 !
           centterm= uphi**2 * step/(rad*cs2)
           if (ldensity_nolog) then
-
+!
             f(l2+i,:,:,irho) = f(l2-i,:,:,irho) + rho*(gravterm + centterm)
             if (lreference_state) &
               f(l2+i,:,:,irho)=  f(l2+i,:,:,irho) &
@@ -4476,7 +4474,7 @@ module EquationOfState
 !
             dlnrhodz = gamma *gravz/cs2_point
             if (ldensity_nolog) dlnrhodz=dlnrhodz*rho    ! now dlnrhodz = d rho/d z
-
+!
             dssdz = -gamma_m1*gravz/cs2_point
 !
             do i=1,nghost
@@ -4574,7 +4572,7 @@ module EquationOfState
         if (lentropy) then
 !
           if (ldensity) then
-
+!
             if (bcz12(iss,2)/='hs') then
               call fatal_error("bc_lnrho_hds_z_iso", &
                   "This boundary condition for density is "//&
@@ -4585,7 +4583,7 @@ module EquationOfState
                 "To avoid a double computation, this boundary condition "// &
                 "should be used only with bcz2(ilnrho)='nil' for density.")
             endif
-
+!
             rho=getrho_s(f(l2,m2,n2,ilnrho),l2)
             ss=f(l2,m2,n2,iss)
             if (lreference_state) ss=ss+reference_state(TOP,iref_s)
@@ -4902,23 +4900,23 @@ module EquationOfState
     endsubroutine set_stratz
 !***********************************************************************
     subroutine pushdiags2c(p_diag)
-
+!
     integer, parameter :: n_diags=0
     integer(KIND=ikind8), dimension(:) :: p_diag
-
+!
     call keep_compiler_quiet(p_diag)
-
+!
     endsubroutine pushdiags2c
 !***********************************************************************
     subroutine pushpars2c(p_par)
-
+!
     integer, parameter :: n_pars=3
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
+!
     call copy_addr_c(cs20,p_par(1))
     call copy_addr_c(gamma,p_par(2))
     call copy_addr_c(cv1,p_par(3))
-
+!
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule EquationOfState
