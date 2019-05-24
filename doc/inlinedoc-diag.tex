@@ -42,8 +42,6 @@
 %%   particles_surfspec.f90
 %%   particles_tetrad.f90
 %%   polymer.f90
-%%   r75612.f90
-%%   r75759.f90
 %%   reaction_0D.f90
 %%   shear.f90
 %%   shock.f90
@@ -231,6 +229,7 @@
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
+  \var{EEK}       & $\left<\varrho\uv^2\right>/2$ \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
@@ -1243,74 +1242,17 @@
 \midrule
   \multicolumn{2}{c}{Module \file{particles_tetrad.f90}} \\
 \midrule
-  \var{TVolm}     & Mean signed volume of the tetrads \\
+  \var{TVolm}     & Mean absolute volume of the tetrads \\
   \var{TVolpm}    & Mean of positive volume of the tetrads \\
   \var{TVolnm}    & Mean of negative volume of the tetrads \\
+  \var{VelVolm}   & Mean absolute volume of the tetrads in velocity space \\
+  \var{VelVolpm}  & Mean of positive volume of the tetrads in velocity space \\
+  \var{VelVolnm}  & Mean of negative volume of the tetrads in velocity space. \\
 \midrule
   \multicolumn{2}{c}{Module \file{polymer.f90}} \\
 \midrule
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
   \var{frmax}     & $\max(f(r))$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{r75612.f90}} \\
-\midrule
-  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
-  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
-  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
-  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
-  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
-  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
-  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
-  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
-  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
-  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
-  \var{hhT2m}     & $\bra{h_T^2}$ \\
-  \var{hhX2m}     & $\bra{h_X^2}$ \\
-  \var{hhTXm}     & $\bra{h_T h_X}$ \\
-  \var{ggT2m}     & $\bra{g_T^2}$ \\
-  \var{ggX2m}     & $\bra{g_X^2}$ \\
-  \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{ggTm}      & $\bra{g_T}$ \\
-  \var{ggXm}      & $\bra{g_X}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{r75759.f90}} \\
-\midrule
-  \var{h22rms}    & $h_{22}^{\rm rms}$ \\
-  \var{h33rms}    & $h_{33}^{\rm rms}$ \\
-  \var{h23rms}    & $h_{23}^{\rm rms}$ \\
-  \var{g11pt}     & $g_{11}(x_1,y_1,z_1,t)$ \\
-  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
-  \var{g33pt}     & $g_{33}(x_1,y_1,z_1,t)$ \\
-  \var{g12pt}     & $g_{12}(x_1,y_1,z_1,t)$ \\
-  \var{g23pt}     & $g_{23}(x_1,y_1,z_1,t)$ \\
-  \var{g31pt}     & $g_{31}(x_1,y_1,z_1,t)$ \\
-  \var{hhTpt}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXpt}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTpt}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXpt}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hhTp2}     & $h_{T}(x_1,y_1,z_1,t)$ \\
-  \var{hhXp2}     & $h_{X}(x_1,y_1,z_1,t)$ \\
-  \var{ggTp2}     & $\dot{h}_{T}(x_1,y_1,z_1,t)$ \\
-  \var{ggXp2}     & $\dot{h}_{X}(x_1,y_1,z_1,t)$ \\
-  \var{hrms}      & $\bra{h_T^2+h_X^2}^{1/2}$ \\
-  \var{gg2m}      & $\bra{g_T^2+g_X^2}$ \\
-  \var{hhT2m}     & $\bra{h_T^2}$ \\
-  \var{hhX2m}     & $\bra{h_X^2}$ \\
-  \var{hhTXm}     & $\bra{h_T h_X}$ \\
-  \var{ggT2m}     & $\bra{g_T^2}$ \\
-  \var{ggX2m}     & $\bra{g_X^2}$ \\
-  \var{ggTXm}     & $\bra{g_T g_X}$ \\
-  \var{ggTm}      & $\bra{g_T}$ \\
-  \var{ggXm}      & $\bra{g_X}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{reaction_0D.f90}} \\
 \midrule
@@ -1437,9 +1379,6 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
-  \var{Emzmask}   & $\left< n^2 \exp{-(\log{T}-\log{T_0})
-                    ^2/(\delta \log{T})^2}\right>$
-                    the emiss_zaver_range \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_ionization.f90}} \\
 \midrule
