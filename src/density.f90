@@ -2169,7 +2169,7 @@ module Density
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
 ! lnrho
-      if (lpenc_loc(i_lnrho))p%lnrho=log(p%rho)
+      if (lpenc_loc(i_lnrho)) p%lnrho=log(p%rho)
 ! glnrho and grho
       if (lpenc_loc(i_glnrho).or.lpenc_loc(i_grho)) then
 !
