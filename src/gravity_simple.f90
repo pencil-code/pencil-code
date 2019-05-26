@@ -503,6 +503,13 @@ module Gravity
         gravz_zpencil = -gravz*sin(kz_gg*z)
         potz_zpencil = -gravz/kz_gg*cos(kz_gg*z) + potz_const
 !
+      case ('loop')
+        if (lroot) print*,'initialize_gravity: loop, gravz=',gravz
+        gravz_zpencil=cos(z / (2*xyz0(3)+Lxyz(3)) * pi)
+        gravz_zpencil=-1.*gravz * gravz_zpencil
+        potz_zpencil =sin(z / (2*xyz0(3)+Lxyz(3)) * pi)
+        potz_zpencil =-1*gravz*(2*xyz0(3)+Lxyz(3))/pi * potz_zpencil + potz_const
+!
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
         gravz_zpencil = -gravz/z**2
