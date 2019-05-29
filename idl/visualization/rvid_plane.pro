@@ -349,6 +349,7 @@ if (keyword_set(shell)) then begin
   iz=mz/2
   if (extension eq 'xy') then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
   if (extension eq 'xy2') then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
+  if (extension eq 'xy3') then rrxy3=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
   if (extension eq 'xz') then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
   if (extension eq 'yz') then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
 ;
@@ -359,6 +360,7 @@ islice=0
 ;
 if (extension eq 'xy') then plane=fltarr(nx,ny)*one
 if (extension eq 'xy2') then plane=fltarr(nx,ny)*one
+if (extension eq 'xy3') then plane=fltarr(nx,ny)*one
 if (extension eq 'xz') then plane=fltarr(nx,nz)*one
 if (extension eq 'yz') then plane=fltarr(ny,nz)*one
 size_plane=size(plane)
@@ -574,6 +576,11 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
       zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
       indxy2=where(zrr2 lt r_int or zrr2 gt r_ext, num)
       if (num gt 0) then plane2[indxy2]=white
+    endif
+    if (extension eq 'xy3') then begin
+      zrr3 = rebinbox(reform(rrxy3,nx,ny),zoom)
+      indxy3=where(zrr3 lt r_int or zrr3 gt r_ext, num)
+      if (num gt 0) then plane3[indxy3]=white
     endif
     if (extension eq 'xz') then begin
       yrr = rebinbox(reform(rrxz,nx,nz),zoom,/zdir)
