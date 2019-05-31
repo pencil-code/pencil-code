@@ -52,7 +52,7 @@ module Messages
   logical :: ltermcap_color=.false.
 !
   character(LEN=2*labellen) :: scaller=''
-
+  character(LEN=linelen) :: message_stored=''
   contains
 !***********************************************************************
     subroutine initialize_messages
@@ -181,34 +181,65 @@ module Messages
       if (present(location)) scaller=location
 !
       if (.not.llife_support) then
+
         fatal_errors=fatal_errors+1
 !
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_fatal_error()
           write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
           call terminal_defaultcolor()
-          write (*,*) trim(scaller) // ": " // trim(message)
+          write (*,*) trim(scaller)//": "//trim(message)
         endif
 !
       endif
+      
+      message_stored=trim(scaller)//": "//trim(message)
 !
     endsubroutine fatal_error_local
 !***********************************************************************
-    subroutine fatal_error_local_collect()
+    subroutine fatal_error_local_collect
 !
 !  Collect fatal errors from processors and die if there are any.
 !
 !  17-may-2006/anders: coded
 !
+      use General, only: itoa
+      use Mpicomm, only: mpigather_scl_str
+
+      character(LEN=linelen), dimension(ncpus) :: messages
+      character(LEN=linelen) :: preceding
+      integer :: i, istart, iend
+
       if (.not.llife_support) then
+
         call mpireduce_sum_int(fatal_errors,fatal_errors_total,MPI_COMM_WORLD)
         call mpibcast_int(fatal_errors_total,comm=MPI_COMM_WORLD)
 !
         if (fatal_errors_total/=0) then
+          call mpigather_scl_str(message_stored,messages)
           if (lroot) then
             print*, 'DYING - there were', fatal_errors_total, 'errors.'
             print*, 'This is probably due to one or more fatal errors that'
             print*, 'have occurred only on a single processor.'
+            print*, 'Messages:'
+            preceding=''; istart=0; iend=0
+            do i=1,ncpus
+              if (trim(messages(i))/='') then
+                if (trim(messages(i))/=preceding) then
+                  if (istart>0) then
+                    if (iend>istart) then
+                      print*, ' - '//trim(itoa(iend-1))//': '//trim(messages(iend))
+                    else
+                      print*, ': '//trim(messages(iend))
+                    endif
+                  endif
+                  print'(a$)', 'processor '//trim(itoa(i-1))
+                  istart=i
+                  preceding=messages(i)
+                endif
+                iend=i
+              endif
+            enddo
           endif
           if (ldie_onfatalerror) call die_gracefully
         endif
