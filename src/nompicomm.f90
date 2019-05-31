@@ -2873,6 +2873,15 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
+    subroutine mpigather_scl_str(string,string_arr)
+
+      character(LEN=*) :: string
+      character(LEN=*), dimension(:) :: string_arr
+
+      string_arr(1)=string
+
+    endsubroutine mpigather_scl_str
+!***********************************************************************
     subroutine mpigather_xy( sendbuf, recvbuf, lpz )
 !
 !  21-dec-10/MR: coded
