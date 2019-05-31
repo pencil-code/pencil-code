@@ -233,7 +233,7 @@ module Messages
                       print*, ': '//trim(messages(iend))
                     endif
                   endif
-                  print'(a$)', 'processor '//trim(itoa(i-1))
+                  print'(a,$)', 'processor '//trim(itoa(i-1))
                   istart=i
                   preceding=messages(i)
                 endif
