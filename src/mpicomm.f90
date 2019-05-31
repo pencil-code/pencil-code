@@ -4791,8 +4791,8 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      mpiwtime = MPI_WTIME()
-      !mpiwtime = 0
+      !mpiwtime = MPI_WTIME()
+      mpiwtime = 0
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
@@ -4802,8 +4802,8 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      mpiwtick = MPI_WTICK()
-      !mpiwtick = 0
+      !mpiwtick = MPI_WTICK()
+      mpiwtick = 0
 !
     endfunction mpiwtick
 !***********************************************************************
@@ -8920,6 +8920,16 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       enddo
 !
     endsubroutine mpigather
+!***********************************************************************
+    subroutine mpigather_scl_str(string,string_arr)
+
+      character(LEN=*) :: string
+      character(LEN=*), dimension(:) :: string_arr
+
+      call MPI_GATHER(string, len(string), MPI_CHAR, string_arr, len(string), &
+                      MPI_CHAR, root, MPI_COMM_GRID, mpierr)
+
+    endsubroutine mpigather_scl_str
 !***********************************************************************
     logical function get_limits(range, k1g, k2g, ia, ie, is )
 
