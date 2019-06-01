@@ -8926,8 +8926,8 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       character(LEN=*) :: string
       character(LEN=*), dimension(:) :: string_arr
 
-      call MPI_GATHER(string, len(string), MPI_CHAR, string_arr, len(string), &
-                      MPI_CHAR, root, MPI_COMM_GRID, mpierr)
+      call MPI_GATHER(string, len(string), MPI_CHARACTER, string_arr, len(string), &
+                      MPI_CHARACTER, root, MPI_COMM_GRID, mpierr)
 
     endsubroutine mpigather_scl_str
 !***********************************************************************
