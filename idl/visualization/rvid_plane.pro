@@ -93,6 +93,7 @@ sample = ~keyword_set(interp)
 ;
 if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
 ;
+; *** WORK HERE, please avoid 'execute', the same is possible with a simple if-statement
 cmd='if not s.'+strtrim(extension,2)+'read then begin print, "Slice '+extension+' missing!!!" & return & endif'
 ret=execute(cmd)
 ;
