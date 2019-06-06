@@ -108,6 +108,9 @@ module Special
    real :: cdtchiral=1.
    real, dimension (nx) :: dt1_lambda5, dt1_D5, dt1_gammaf5
    real, dimension (nx) :: dt1_CMW, dt1_Dmu, dt1_vmu, dt1_special
+!JEN:
+   real, dimension (nx) :: dt1_CVE1, dt1_CVE2 
+!JEN.
    real, dimension (nx) :: uxbj
    integer :: imu5, imuS
    logical :: lmuS=.false., lCVE=.false.
@@ -167,6 +170,7 @@ module Special
            "$Id$")
 !
       call farray_register_pde('mu5',imu5)
+      ispecialvar=imu5
 !
       if (lmuS) then
         call farray_register_pde('muS',imuS)
@@ -365,7 +369,7 @@ module Special
 !
 !  Compute E.B
 !
-      EB=eta*(p%jb-p%mu5*p%b2)
+        EB=eta*(p%jb-p%mu5*p%b2)
 !
 !  Evolution of mu5
 !
@@ -382,6 +386,7 @@ module Special
 !
 !  Contributions to timestep from mu5 equation
       dt1_lambda5 = lambda5*eta*p%b2
+      dt1_CVE2 = p%muS*lambda5*eta*p%b2
       dt1_D5 = diffmu5*dxyz_2
 !      if (lmuS) then
 !        dt1_mu5_3 = p%muS*coef_mu5*sqrt(p%b2)
@@ -404,7 +409,7 @@ module Special
         if (lCVE) then   
           call dot(p%oo,p%bb,oobb)
           call dot(p%oo,p%gmuS,oogmuS)
-          call dot(p%oo,p%gmu5,oogmu5)
+!          call dot(p%oo,p%gmu5,oogmu5)
           df(l1:l2,m,n,imu5) = df(l1:l2,m,n,imu5) - lambda5*eta*muSmu5*oobb &
             -2.*Cw*p%muS*oogmuS
         endif
@@ -425,6 +430,7 @@ module Special
       endif
 !  Contributions to timestep from bb equation
       dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
+      dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
 !
 !  Additions to the test-field equations
 !
@@ -442,6 +448,7 @@ module Special
         if (lmuS) then
           dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
                           dt1_gammaf5, dt1_vmu, &
+                          dt1_CVE1, dt1_CVE2, &
                           dt1_CMW, dt1_Dmu) 
         else
           dt1_special = cdtchiral*max(dt1_lambda5, dt1_D5, &
@@ -450,7 +457,7 @@ module Special
         dt1_max=max(dt1_max,dt1_special)  
       endif
 !
-!  diagnostics
+!  Diagnostics
 !
       if (ldiagnos) then
         if (idiag_muSm/=0) call sum_mn_name(p%muS,idiag_muSm)
