@@ -93,9 +93,10 @@ sample = ~keyword_set(interp)
 ;
 if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
 ;
-; *** WORK HERE, please avoid 'execute', the same is possible with a simple if-statement
-cmd='if not s.'+strtrim(extension,2)+'read then begin print, "Slice '+extension+' missing!!!" & return & endif'
-ret=execute(cmd)
+if (not any (tag_names (s) eq strupcase (strtrim (extension,2)+'read'))) then begin
+  print, "rvid_plane: ERROR: slice '"+extension+"' is missing!"
+  return
+endif
 ;
 tini=1e-30 ; a small number
 ;
