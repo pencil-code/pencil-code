@@ -134,11 +134,11 @@ Makefile_inc:
 	    '# run for compilation.' \
 	    '' > src/Makefile.inc
 	@case "$(REAL_PRECISION)" in \
-	''|default|single|4) \
+	single|4) \
 	    desired_precision='single'; \
 	    echo '# Setting: single precision' >> src/Makefile.inc; \
 	    ;; \
-	double|8) \
+	''|default|double|8) \
 	    desired_precision='double'; \
 	    echo 'FFLAGS_GENERAL=$$(FFLAGS_DOUBLE)' >> src/Makefile.inc; \
 	    echo 'CFLAGS_GENERAL=$$(CFLAGS_DOUBLE)' >> src/Makefile.inc; \
