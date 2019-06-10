@@ -40,13 +40,18 @@ module HDF5_IO
     module procedure output_hdf5_4D
   endinterface
 !
+  interface output_hdf5_double
+    module procedure output_hdf5_double_0D
+    module procedure output_hdf5_double_1D
+  endinterface
+!
   include 'hdf5_io.h'
   include 'mpif.h'
 !
   private
 !
   integer :: h5_err
-  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype, h5_group
+  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype, h5_dptype, h5_group
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_start
@@ -125,10 +130,11 @@ module HDF5_IO
       ! initialize parallel HDF5 Fortran libaray
       call h5open_f (h5_err)
       call check_error (h5_err, 'initialize parallel HDF5 library', caller='initialize_hdf5')
+      h5_dptype = H5T_NATIVE_DOUBLE
       if (mpi_precision == MPI_REAL) then
         h5_ntype = H5T_NATIVE_REAL
       else
-        h5_ntype = H5T_NATIVE_DOUBLE
+        h5_ntype = h5_dptype
       endif
 !
     endsubroutine initialize_hdf5
@@ -1519,6 +1525,73 @@ module HDF5_IO
       call check_error (h5_err, 'close parameter list', name)
 !
     endsubroutine output_hdf5_4D
+!***********************************************************************
+    subroutine output_hdf5_double_0D(name, data)
+!
+      character (len=*), intent(in) :: name
+      double precision, intent(in) :: data
+!
+      call output_hdf5_double_1D (name, (/ data /), 1)
+!
+    endsubroutine output_hdf5_double_0D
+!***********************************************************************
+    subroutine output_hdf5_double_1D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      double precision, dimension (nv), intent(in) :: data
+!
+      call output_local_hdf5_double_1D (name, data, nv)
+!
+    endsubroutine output_hdf5_double_1D
+!***********************************************************************
+    subroutine output_local_hdf5_double_1D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      double precision, dimension (nv), intent(in) :: data
+!
+      integer(kind=8), dimension(1) :: size
+!
+      if (lcollective) call check_error (1, 'local output requires local file', caller='output_local_hdf5_double_1D')
+      if (.not. lwrite) return
+!
+      size = (/ 1 /)
+!
+      ! create data space
+      if (nv <= 1) then
+        call h5screate_f (H5S_SCALAR_F, h5_dspace, h5_err)
+        call check_error (h5_err, 'create scalar data space', name, caller='output_local_hdf5_double_1D')
+        call h5sset_extent_simple_f (h5_dspace, 0, size(1), size(1), h5_err)
+      else
+        call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
+        call check_error (h5_err, 'create simple data space', name, caller='output_local_hdf5_double_1D')
+        call h5sset_extent_simple_f (h5_dspace, 1, size, size, h5_err)
+      endif
+      call check_error (h5_err, 'set data space extent', name)
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'open dataset', name)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), h5_dptype, h5_dspace, h5_dset, h5_err)
+        call check_error (h5_err, 'create dataset', name)
+      endif
+      ! write dataset
+      if (nv <= 1) then
+        call h5dwrite_f (h5_dset, h5_dptype, data(1), size, h5_err)
+      else
+        call h5dwrite_f (h5_dset, h5_dptype, data, size, h5_err)
+      endif
+      call check_error (h5_err, 'write data', name)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'close dataset', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'close data space', name)
+!
+    endsubroutine output_local_hdf5_double_1D
 !***********************************************************************
     subroutine output_dim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
 !
