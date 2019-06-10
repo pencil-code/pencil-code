@@ -13,3 +13,4 @@ DENSITY =   density
 IO      =   io_dist
 EOS     =   eos_idealgas
 
+REAL_PRECISION = single

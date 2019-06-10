@@ -56,4 +56,4 @@ FOURIER               =   fourier_fftpack
 POWER                 =   power_spectrum
 STRUCT_FUNC           =   struct_func
 
-
+REAL_PRECISION = single
