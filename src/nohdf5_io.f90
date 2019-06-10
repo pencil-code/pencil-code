@@ -38,6 +38,11 @@ module HDF5_IO
     module procedure output_hdf5_4D
   endinterface
 !
+  interface output_hdf5_double
+    module procedure output_hdf5_double_0D
+    module procedure output_hdf5_double_1D
+  endinterface
+!
   include 'hdf5_io.h'
 !
   private
@@ -372,6 +377,30 @@ module HDF5_IO
       call keep_compiler_quiet(data)
 !
     endsubroutine output_hdf5_4D
+!***********************************************************************
+    subroutine output_hdf5_double_0D(name, data)
+!
+      character (len=*), intent(in) :: name
+      double precision, intent(in) :: data
+!
+      call fatal_error ('output_hdf5_double_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+!
+    endsubroutine output_hdf5_double_0D
+!***********************************************************************
+    subroutine output_hdf5_double_1D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      double precision, dimension (nv), intent(in) :: data
+!
+      call fatal_error ('output_hdf5_double_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(nv)
+!
+    endsubroutine output_hdf5_double_1D
 !***********************************************************************
     subroutine output_dim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
 !
