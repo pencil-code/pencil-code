@@ -385,7 +385,6 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
-      call keep_compiler_quiet(data)
 !
     endsubroutine output_hdf5_double_0D
 !***********************************************************************
@@ -397,7 +396,6 @@ module HDF5_IO
 !
       call fatal_error ('output_hdf5_double_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
-      call keep_compiler_quiet(data)
       call keep_compiler_quiet(nv)
 !
     endsubroutine output_hdf5_double_1D
