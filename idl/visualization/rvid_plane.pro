@@ -489,7 +489,7 @@ endif
 print, 'Reading "'+file_slice+'".'
 openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
 ;
-;  Read auxiliary date for Yin-Yang grid: number of points in merged (irregular) grid ngrid and merged grid itself.
+;  Read auxiliary data for Yin-Yang grid: number of points in merged (irregular) grid ngrid and merged grid itself.
 ;
 if yinyang and extension eq 'yz' then begin
   ngrid=0L
