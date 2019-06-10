@@ -91,6 +91,27 @@ default,maptype,'orthographic'
 ;
 sample = ~keyword_set(interp)
 ;
+; Load HDF5 slice if requested or available.
+;
+  if (file_test (datadir+'/slices', /directory)) then begin
+    rvid_plane_hdf5,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
+        tmax=tmax,max=amax,swap_endian=swap_endian,quiet=quiet, $
+        min=amin,extension=extension,nrepeat=nrepeat,wait=wait, $
+        stride=stride,datadir=datadir,oldfile=oldfile,debug=debug, $
+        proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir, $
+        global_scaling=global_scaling,automatic_scaling=automatic_scaling, $
+        shell=shell,r_int=r_int, $
+        r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
+        contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
+        nsmooth=nsmooth, cubic=cubic, textsize=textsize, _extra=_extra, $
+        polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
+        spherical_surface=spherical_surface, nlevels=nlevels, $
+        doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
+        interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
+        Beq=Beq,taud=taud,grid=gridplot,maptype=maptype
+    return
+  end
+;
 if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
 ;
 if (not any (tag_names (s) eq strupcase (strtrim (extension,2)+'read'))) then begin
