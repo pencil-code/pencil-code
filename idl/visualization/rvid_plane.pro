@@ -119,7 +119,7 @@ if (not any (tag_names (s) eq strupcase (strtrim (extension,2)+'read'))) then be
   return
 endif
 ;
-tini=1e-30 ; a small number
+tiny=1e-30 ; a small number
 ;
 ;  Set up a window for double buffering.
 ;
@@ -439,7 +439,8 @@ endif
 istride=stride ;(make sure the first one is written)
 ;
 if (keyword_set(global_scaling)) then begin
-  first=1L
+  amax = !Values.F_NaN
+  amin = !Values.F_NaN
   print, 'Reading "'+file_slice+'".'
   openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
   if yinyang and extension eq 'yz' then begin
@@ -456,50 +457,20 @@ if (keyword_set(global_scaling)) then begin
       readu, lun, plane, t, slice_z2pos
     endelse
     if (keyword_set(exponential)) then begin
-      if (first) then begin
-        amax=exp(max(plane))
-        amin=exp(min(plane))
-        first=0L
-      endif else begin
-        amax=max([amax,exp(max(plane))])
-        amin=min([amin,exp(min(plane))])
-      endelse
+      amax=max([amax,exp(max(plane))], /NaN)
+      amin=min([amin,exp(min(plane))], /NaN)
     endif else if (keyword_set(log)) then begin
-      if (first) then begin
-        amax=alog10(max(plane))
-        amin=alog10(min(plane)+tini)
-        first=0L
-      endif else begin
-        amax=max([amax,alog10(max(plane))])
-        amin=min([amin,alog10(min(plane)+tini)])
-      endelse
+      amax=max([amax,alog10(max(plane))], /NaN)
+      amin=min([amin,alog10(min(plane)>tiny)], /NaN)
     endif else if (keyword_set(nsmooth)) then begin
-      if (first) then begin
-        amax=max(smooth(plane,nsmooth))
-        amin=min(smooth(plane,nsmooth))
-        first=0L
-      endif else begin
-        amax=max([amax,max(smooth(plane,nsmooth))])
-        amin=min([amin,min(smooth(plane,nsmooth))])
-      endelse
+      amax=max([amax,max(smooth(plane,nsmooth))], /NaN)
+      amin=min([amin,min(smooth(plane,nsmooth))], /NaN)
     endif else if (keyword_set(sqroot)) then begin
-      if (first) then begin
-        amax=sqrt(max(plane))
-        amin=sqrt(min(plane))
-        first=0L
-      endif else begin
-        amax=max([amax,sqrt(max(plane))])
-        amin=min([amin,sqrt(min(plane))])
-      endelse
+      amax=max([amax,sqrt(max(plane))], /NaN)
+      amin=min([amin,sqrt(min(plane))], /NaN)
     endif else begin
-      if (first) then begin
-        amax=max(plane)
-        amin=min(plane)
-        first=0L
-      endif else begin
-        amax=max([amax,max(plane)])
-        amin=min([amin,min(plane)])
-      endelse
+      amax=max([amax,max(plane)], /NaN)
+      amin=min([amin,min(plane)], /NaN)
     endelse
   end
   close, lun
@@ -524,7 +495,6 @@ endif
 
 if (not quiet) then print, 'Array size: ', size_plane[1:size_plane[0]], yinyang ? '(Yin-Yang grid)':''
 
-first=1
 while (not eof(lun)) do begin
 
   if (keyword_set(oldfile)) then begin ; For files without position
@@ -577,7 +547,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(sqroot)) then begin
     plane2=rebin(sqrt(plane),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(log)) then begin
-     plane2=rebin(alog10(plane+tini),zoom*nx_plane,zoom*ny_plane,sample=sample)
+     plane2=rebin(alog10(plane>tiny),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(cubic)) then begin
      if (cubic gt 0.0) then cubic = -0.5
      plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,cubic=cubic,interp=interp)
