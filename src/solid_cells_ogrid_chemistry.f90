@@ -73,6 +73,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
   logical, pointer :: lfilter_strict, lfilter, ladvection,lt_const
   real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
   real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
+  real, pointer, dimension(:,:) :: orders_p, orders_m
   logical, pointer, dimension(:) :: photochem_case, Mplus_case, back
 !
 !  character(len=30), allocatable, dimension(:) :: reaction_name
@@ -248,8 +249,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
               'Reinitialize chemistry - not implemented on the ogrid!')
       endif
 !
-      call getmu_array_ogrid(f_og,mu1_full_og)
-      f_og(:,:,:,iRR) = mu1_full_og*Rgas
+!      call getmu_array_ogrid(f_og,mu1_full_og)
+!      f_og(:,:,:,iRR) = mu1_full_og*Rgas
 !
 !  allocate memory for net_reaction diagnostics
 !
@@ -330,6 +331,10 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
             call fatal_error('initialize_chemistry_og', &
                'Heterogeneous chemistry works only with simplified mechanism (lmech_simple=T)')
           endif
+        endif
+        if (lmech_simple) then
+          call get_shared_variable('orders_p',orders_p)
+          call get_shared_variable('orders_m',orders_m)
         endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -1237,7 +1242,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
       real, dimension(nx_ogrid) :: kf_0, Pr, sum_sp
       real, dimension(nx_ogrid) :: Fcent, ccc, nnn, lnPr, FF, tmpF
       real, dimension(nx_ogrid) :: TT1_loc
-      real, dimension(5,nreactions) :: orders_m, orders_p
 !
 !  Check which reactions rate method we will use
 !
@@ -1256,11 +1260,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         rho_cgs = p_ogrid%rho*unit_mass/unit_length**3
         lnp_atm = log(1e6*unit_length**3/unit_energy)
         p_atm = 1e6*(unit_length**3)/unit_energy
-!
-        if (lmech_simple) then
-          orders_p(:,1) = (/ 0.0, 1.0, 0.0, 0.25, 0.5 /)
-          orders_m(:,1) = (/ 1.0, 0.0, 0.0, 0.0, 0.0 /)
-        endif
 !
 !  calculation of the reaction rate
 !
@@ -1474,6 +1473,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         enddo
       enddo
       p_ogrid%DYDt_reac = xdot*unit_time
+      if (t < solid_reactions_intro_time) p_ogrid%DYDt_reac = p_ogrid%DYDt_reac*t/solid_reactions_intro_time
 !
 !  For diagnostics
 !
@@ -1534,8 +1534,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
       prod(1) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_O2)*rho_cgs
       prod(2) = f_og(l1_ogrid,m_ogrid,n_ogrid,i_CO2)*rho_cgs
-    !  if (prod(1) .lt. 0.0) prod(1)=0.0
-    !  if (prod(2) .lt. 0.0) prod(2)=0.0
+      if (prod(1) .lt. 0.0) prod(1)=0.0
+      if (prod(2) .lt. 0.0) prod(2)=0.0
       do i=1,2
         kf(i)=log(B_n_het(i))-E_an_het(i)*Rcal1*T_loc1
         vreact_p(i)=prod(i)*exp(kf(i))
@@ -1557,6 +1557,12 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
       ! the above = (2.*M_C/species_constants(ichem_O2,imass)*mdot(ichem_O2) &
       !             + M_C/species_constants(ichem_CO2,imass)*mdot(ichem_CO2))
       u_stefan = u_stefan/rho_cgs
+ 
+      if (t < solid_reactions_intro_time) then
+        heter_reaction_rate(m_ogrid,n_ogrid,:) = heter_reaction_rate(m_ogrid,n_ogrid,:)*t/solid_reactions_intro_time
+        u_stefan = u_stefan*t/solid_reactions_intro_time
+      endif
+!
    !   p_ogrid%DYDt_reac(1,:) = 0
       f_og(l1_ogrid,m_ogrid,n_ogrid,iux) = u_stefan
 !

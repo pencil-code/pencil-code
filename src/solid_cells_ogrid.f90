@@ -50,7 +50,7 @@ module Solid_Cells
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
       lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, &
-      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter
+      TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -58,7 +58,7 @@ module Solid_Cells
       SBP, BDRY5, lrk_tvd, SBP_optimized, lexpl_rho, &
       particle_interpolate, lparticle_uradonly, lfilter_solution, lock_dt, af, &
       lspecial_rad_int, lfilter_rhoonly, lspecial_rad_int_mom, &
-      ivar1_part,ivar2_part, &
+      ivar1_part,ivar2_part, solid_reactions_intro_time, &
       lstore_ogTT, filter_frequency
     
   interface dot2_ogrid
@@ -486,6 +486,7 @@ module Solid_Cells
         call get_shared_variable('linterp_pressure',linterp_pressure)
         call initialize_chemistry_og(f_ogrid)
         call get_shared_variable('Lewis_coef1',Lewis_coef1)
+        call get_shared_variable('p_init',p_init)
       endif
 !
 !  If TVD Runge-Kutta method is used, temoporary array is needed for storage
@@ -528,8 +529,11 @@ module Solid_Cells
       use Initcond, only: gaunoise
       use IO,       only: wdim
       use Sub,      only: control_file_exists
+      use EquationOfState, only: imass, species_constants
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz) :: mu1_full=0
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid) :: mu1_full_ogr=0
       real :: a2, rr2, rr2_low, rr2_high 
       real :: wall_smoothing,wall_smoothing_temp
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
@@ -539,6 +543,7 @@ module Solid_Cells
       logical :: lnoerase=.false.
       real :: coef1, coef2, coef0, r_gradT
       real :: lambda_Suth = 1.5e-5, Suth_const = 200.
+      real :: Rgas_unit_sys, Rgas
 !
 !  Cartesian array f:
 !
@@ -583,6 +588,10 @@ module Solid_Cells
          coef1 = -2*coef2*r_gradT
          coef0 = f(l2,m2,n2,ilnTT) + coef2*r_gradT**2
       endif
+      if (unit_system == 'cgs' .and. lchemistry) then
+        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas = Rgas_unit_sys/unit_energy
+      endif
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
@@ -605,13 +614,18 @@ module Solid_Cells
                     f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
                       +cylinder_temp*(1-wall_smoothing_temp)
                   endif
-                  f(i,j,:,irho) = f(l2,m2,n2,irho) &
-                                * f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
+                  if (.not. lchemistry) then
+                    f(i,j,:,irho) = f(l2,m2,n2,irho) &
+                                  * f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
+                  endif
                 endif
                 if (lchemistry .and. .not. lflame_front_2D) then
                     do k = 1,nchemspec
                       f(i,j,:,ichemspec(k)) = chemspec0(k)
+                      mu1_full(i,j,:)=mu1_full(i,j,:)+f(i,j,:,ichemspec(k))/species_constants(k,imass)
                     enddo
+                    f(i,j,:,iRR) = mu1_full(i,j,:)*Rgas
+                    f(i,j,:,irho) = p_init/f(i,j,:,iRR)/f(i,j,:,ilnTT)
                 endif
               else
                 shift_orth = cyl*Lorth
@@ -703,6 +717,8 @@ module Solid_Cells
                 f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
                 f_ogrid(i,j,:,ichemspec(2)) = 1.-f_ogrid(i,j,:,ichemspec(5))-f_ogrid(i,j,:,ichemspec(4))&
                                                 -f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(3))
+                ! Set dp/dr = 0 at the cylinder surface when heter. reactions
+                lexpl_rho = .true.
               endif
             endif
           endif
@@ -727,16 +743,21 @@ module Solid_Cells
       enddo
 !
       if (lchemistry .and. lflame_front_2D) then
+!
         f_ogrid(:,:,:,irho) = f(l2,m2,n2,irho)
         f_ogrid(:,:,:,iTT) = f(l2,m2,n2,iTT)
         do k = 1,nchemspec
           f_ogrid(:,:,:,ichemspec(k)) = f(l2,m2,n2,ichemspec(k))
         enddo
-      endif
 !
-      if (lchemistry) then
+      elseif (lchemistry) then
 !
-!  Viscosity of a mixture
+        do k = 1,nchemspec
+          mu1_full_ogr(:,:,:) = mu1_full_ogr(:,:,:)+f_ogrid(:,:,:,ichemspec(k))/species_constants(k,imass)
+        enddo
+!
+        f_ogrid(:,:,:,iRR)  = mu1_full_ogr(:,:,:)*Rgas
+        f_ogrid(:,:,:,irho) = p_init/f_ogrid(:,:,:,iRR)/f_ogrid(:,:,:,ilnTT)
 !
         do j3 = 1,mz_ogrid
           do j2 = 1,my_ogrid
@@ -824,8 +845,6 @@ module Solid_Cells
       p_ogrid%cp1=penc0
       p_ogrid%glnTT=penc0
       p_ogrid%del2lnTT=penc0
-!      p_ogrid%gmu1=penc0
-!      p_ogrid%mu1=penc0
       p_ogrid%glnRR=penc0
       p_ogrid%RR=penc0
       p_ogrid%rho1gpp=penc0
@@ -861,8 +880,6 @@ module Solid_Cells
         lpencil_ogrid(i_og_cp1)=.false.
         lpencil_ogrid(i_og_glnTT)=.false.
         lpencil_ogrid(i_og_del2lnTT)=.false.
-!        lpencil_ogrid(i_og_gmu1)=.false.
-!        lpencil_ogrid(i_og_mu1)=.false.
         lpencil_ogrid(i_og_glnRR)=.false.
         lpencil_ogrid(i_og_RR)=.false.
         lpencil_ogrid(i_og_rho1gpp)=.false.

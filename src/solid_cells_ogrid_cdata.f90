@@ -341,6 +341,8 @@ module solid_cells_ogrid_cdata
   real, dimension (:,:,:), allocatable :: heter_reaction_rate
   real :: Pr_number1
   real, dimension(:), pointer :: Lewis_coef1
+  real :: solid_reactions_intro_time=0.0
+  real, pointer :: p_init
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0

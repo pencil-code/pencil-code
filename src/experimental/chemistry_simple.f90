@@ -114,7 +114,10 @@ module Chemistry
   real, allocatable, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   logical, allocatable, dimension(:) :: Mplus_case
   logical, allocatable, dimension(:) :: photochem_case
+  real, allocatable, dimension(:,:) :: orders_m, orders_p
   real :: lamb_low, lamb_up, Pr_turb=0.7
+  real :: intro_time=0
+  real :: p_init=1013000 ! cgs !
 !
 !   Lewis coefficients
 !
@@ -140,7 +143,7 @@ module Chemistry
       str_thick,lT_tanh,lT_const,lheatc_chemistry, &
       prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
-      linit_density, init_rho2, &
+      linit_density, init_rho2, intro_time, p_init, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef, lmech_simple !ldamp_zone_for_NSCBC,
 !
@@ -152,7 +155,7 @@ module Chemistry
       lmobility,mobility, lfilter,lT_tanh, &
       lThCond_simple,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
-      linit_density, &
+      linit_density, intro_time, &
       ldiff_corr, lreac_as_aux, reac_rate_method,global_phi
 !
 ! diagnostic variables (need to be consistent with reset list below)
@@ -567,6 +570,11 @@ module Chemistry
       call put_shared_variable('species_constants',species_constants)
       call put_shared_variable('imass',imass)
       call put_shared_variable('lflame_front_2D',lflame_front_2D)
+      call put_shared_variable('p_init',p_init)
+      if (lmech_simple) then
+        call put_shared_variable('orders_p',orders_p)
+        call put_shared_variable('orders_m',orders_m)
+      endif
 !
    endif 
 !
@@ -2084,6 +2092,13 @@ module Chemistry
         allocate(photochem_case (nreactions),STAT=stat)
         photochem_case = .false.
         if (stat > 0) call stop_it("Couldn't allocate memory for photochem_case")
+        if (lmech_simple) then
+          allocate(orders_p(5,nreactions),STAT=stat)
+          allocate(orders_m(5,nreactions),STAT=stat)
+          orders_p = 0.
+          orders_m = 0.
+          if (stat > 0) call stop_it("Couldn't allocate memory for orders_p/m")
+        endif
       endif
 !
 !  Initialize data
@@ -2261,6 +2276,13 @@ module Chemistry
         allocate(photochem_case (nreactions),STAT=stat)
         photochem_case = .false.
         if (stat > 0) call stop_it("Couldn't allocate memory for photochem_case")
+        if (lmech_simple) then
+          allocate(orders_p(5,nreactions),STAT=stat)
+          allocate(orders_m(5,nreactions),STAT=stat)
+          orders_p = 0.
+          orders_m = 0.
+          if (stat > 0) call stop_it("Couldn't allocate memory for orders_p/m")
+        endif
       endif
 !
 !  Initialize data
@@ -2301,6 +2323,9 @@ module Chemistry
       high_coeff(:,:) = 0.0
 !
       a_k4(:,:) = 3.9084999999999999E+037
+!
+      orders_p(:,1) = (/ 0.0, 1.0, 0.0, 0.25, 0.5 /)
+      orders_m(:,1) = (/ 1.0, 0.0, 0.0, 0.0, 0.0 /)
 !
     else
 !
@@ -4116,7 +4141,6 @@ module Chemistry
       real, dimension(nx) :: kf_0, Pr, sum_sp
       real, dimension(nx) :: Fcent, ccc, nnn, lnPr, FF, tmpF
       real, dimension(nx) :: TT1_loc
-      real, dimension(5,nreactions) :: orders_m, orders_p
 !
 !  Check which reactions rate method we will use
 !
@@ -4135,11 +4159,6 @@ module Chemistry
         rho_cgs = p%rho*unit_mass/unit_length**3
         lnp_atm = log(1e6*unit_length**3/unit_energy)
         p_atm = 1e6*(unit_length**3)/unit_energy
-
-        if (lmech_simple) then
-          orders_p(:,1) = (/ 0.0, 1.0, 0.0, 0.25, 0.5 /)
-          orders_m(:,1) = (/ 1.0, 0.0, 0.0, 0.0, 0.0 /)
-        endif
 !
 !  calculation of the reaction rate
 !
@@ -4356,6 +4375,7 @@ module Chemistry
         enddo
       enddo
       p%DYDt_reac = xdot*unit_time
+      if (t < intro_time) p%DYDt_reac = p%DYDt_reac*t/intro_time
 !
 !  For diagnostics
 !
