@@ -12,6 +12,7 @@
 ;       filename [string]: name of the file to read. Default: last opened file
 ;       datadir [string]: path to the data directory. Default: 'data/'
 ;       trimall [boolean]: do not read ghost zones. Default: false
+;       ghostless [boolean]: file has no ghost zones. Default: false
 ;       processor [integer]: number of processor subdomain to read. Default: all
 ;       dim [structure]: dimension structure. Default: load if needed
 ;       start [integer]: start reading at this grid position (includes ghost cells)
@@ -29,7 +30,7 @@
 ;       $Id$
 ;       07-Apr-2019/PABourdin: coded
 ;
-function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count, close=close
+function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, ghostless=ghostless, processor=processor, dim=dim, start=start, count=count, close=close
 
 	COMPILE_OPT IDL2,HIDDEN
 
@@ -107,7 +108,8 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, pr
                         nz = dim.nzgrid / dim.nprocz
                         ghost = [ dim.nghostx, dim.nghosty, dim.nghostz ]
 			start = [ ipx*nx, ipy*ny, ipz*nz ]
-			count = [ nx, ny, nz ] + ghost * 2
+			count = [ nx, ny, nz ]
+			if (not keyword_set (ghostless)) then count += ghost * 2
 		end
 	end
 
