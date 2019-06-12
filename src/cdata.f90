@@ -174,7 +174,7 @@ module Cdata
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
-  logical :: lwrite_dim_again=.false.
+  logical :: lwrite_dim_again=.true.
   logical :: lseparate_persist=.false., ldistribute_persist=.false., lpersist=.true.
   logical :: lomit_add_data=.false.
   logical :: save_lastsnap=.true.
@@ -579,6 +579,11 @@ module Cdata
   logical, dimension(mcom) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
   logical, dimension(mcom) :: lfreeze_varsquare=.false.
   logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
+!
+! Parameters for reading data for BCs.
+!
+  character(LEN=fnlen) :: bc_slc_dir
+  integer :: ix_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,iz3_bc,iz4_bc
 !
 !  A buffer in which to construct an error message.
 !
