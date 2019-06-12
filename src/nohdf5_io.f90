@@ -596,7 +596,7 @@ module HDF5_IO
 
       character (len=*),   intent(in) :: file
       real,                intent(out):: pos
-      type(scattered_array), pointer, intent(inout):: data
+      type(scattered_array), pointer  :: data   !intent(inout)
       integer,             intent(in) :: ivar
       integer,             intent(out):: nt
 !
