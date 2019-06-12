@@ -11,6 +11,7 @@ module Boundcond
   use Messages
   use Mpicomm
   use Deriv, only: set_ghosts_for_onesided_ders, bval_from_neumann, bval_from_3rd
+  use General
 !
   implicit none
 !
@@ -25,15 +26,16 @@ module Boundcond
   public :: copy_BCs
   public :: set_periodic_boundcond_on_aux
   public :: jet_x
+  public :: initialize_boundcond
 !
   interface update_ghosts
-     module procedure update_ghosts_all
-     module procedure update_ghosts_range
+    module procedure update_ghosts_all
+    module procedure update_ghosts_range
   endinterface
 !
   interface zero_ghosts
-     module procedure zero_ghosts_all
-     module procedure zero_ghosts_range
+    module procedure zero_ghosts_all
+    module procedure zero_ghosts_range
   endinterface
 !
   interface bc_pencil
@@ -44,6 +46,13 @@ module Boundcond
   integer, parameter :: BOT=1, TOP=2
   logical :: is_vec=.false.
   integer :: jdone=0
+
+  !real, allocatable, dimension(:,:,:) :: slc_dat_xy, slc_dat_xy2, slc_dat_xz, slc_dat_xz2, &
+  !                                       slc_dat_yz, slc_dat_yz2
+  type(scattered_array), pointer :: slc_dat_xy, slc_dat_xy2, slc_dat_xz, slc_dat_xz2, &
+                                    slc_dat_yz, slc_dat_yz2
+  integer :: nt_slices=0
+  integer, parameter :: sz_slc_chunk=20
 !
   contains
 !***********************************************************************
@@ -64,7 +73,6 @@ module Boundcond
         updated_var_ranges(:,ighosts_updated)=(/1,min(mcom,size(f,4))/)
       endif
 !
-!if (lroot)print*, 'update_ghosts_all'
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
       call finalize_isendrcv_bdry(f)
@@ -163,6 +171,343 @@ module Boundcond
       endif zdir
 !
     endsubroutine zero_ghosts_range
+!***********************************************************************
+    subroutine initialize_boundcond
+!
+!  Initialization for reading boundary values from slices:
+!  bc_slc_dir - working directory where these reside.
+!
+      use Sub, only: position
+      use File_io, only: file_exists
+      use Syscalls, only: directory_exists
+      use IO, only: IO_strategy
+      use HDF5_IO, only: input_dim
+
+      integer :: ix_bc,ix2_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,idum
+      logical :: lread_slice_yz,lread_slice_yz2,lread_slice_xz,lread_slice_xz2, &
+                 lread_slice_xy,lread_slice_xy2
+      integer ::  mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
+                  nghost_in, nprocx_in, nprocy_in, nprocz_in, nprocz_in_
+      logical :: lbcxslc,lbcyslc,lbczslc
+      character(LEN=fnlen) :: dir
+      character :: prec_in
+      character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
+
+      lbcxslc=any(bcx12=='slc'); lbcyslc=any(bcy12=='slc'); lbczslc=any(bcz12=='slc')
+      if (lbcxslc.and..not.lactive_dimension(1)) return
+      if (lbcyslc.and..not.lactive_dimension(2)) return
+      if (lbczslc.and..not.lactive_dimension(3)) return
+
+      lread_slice_xy=.false.; lread_slice_xy2=.false.
+      lread_slice_xz=.false.; lread_slice_xz2=.false.
+      lread_slice_yz=.false.; lread_slice_yz2=.false.
+
+      if (lbcxslc.or.lbcyslc.or.lbczslc) then
+
+        if (lroot) then
+
+          if (.not.directory_exists(trim(bc_slc_dir)//'/data')) &
+            call fatal_error('initialize_boundconds', 'working directory '//trim(bc_slc_dir)//' for slices not found')
+
+          call input_dim(bc_slc_dir, mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
+                         prec_in, nghost_in, nprocx_in, nprocy_in, nprocz_in)
+          call input_dim(bc_slc_dir, mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
+                         prec_in, nghost_in, nprocx_in, nprocy_in, nprocz_in_, local=.true.)
+          if (mx/=mx_in.or.my/=my_in) &
+            call fatal_error('initialize_boundconds', &
+                 'data in working directory '//trim(bc_slc_dir)//'have incompatible x or y dimensions')
+        endif
+
+        call mpibarrier
+        call mpibcast_int(nprocz_in)
+
+        if (lbcxslc) then
+
+          if (any(bcx12(:,1)=='slc')) then
+            idum=1
+            call position(idum,ipx,nx,ix_bc,lread_slice_yz)
+          endif
+
+          if (any(bcx12(:,2)=='slc')) then
+            idum=nxgrid
+            call position(idum,ipx,nx,ix2_bc,lread_slice_yz2)
+            if (lread_slice_yz) then
+              suff_yz2='yz2'
+            else
+              suff_yz2='yz'
+            endif
+          endif
+
+        endif
+
+        if (lbcyslc) then
+
+          if (any(bcy12(:,1)=='slc')) then
+            idum=1
+            call position(idum,ipy,ny,iy_bc,lread_slice_xz)
+          endif
+
+          if (any(bcy12(:,2)=='slc')) then
+            idum=nygrid
+            call position(idum,ipy,ny,iy2_bc,lread_slice_xz2)
+            if (lread_slice_xz) then
+              suff_xz2='xz2'
+            else
+              suff_xz2='xz'
+            endif
+          endif
+
+        endif
+
+        if (lbczslc) then
+
+          if (any(bcz12(:,1)=='slc')) then
+            idum=1
+            call position(idum,ipz,nz,iz_bc,lread_slice_xy)
+          endif
+
+          if (any(bcz12(:,2)=='slc')) then
+            idum=nzgrid
+            call position(idum,ipz,nz,iz2_bc,lread_slice_xy2)
+            if (lread_slice_xy) then
+              suff_xy2='xy2'
+            else 
+              suff_xy2='xy'
+            endif
+          endif
+
+        endif
+!
+!  Restricted to slice position 'm'!
+!
+        if (IO_strategy/='HDF5') then
+        if (lread_slice_xy ) then
+          call init_scattered_array(slc_dat_xy,nx,ny,mvar,sz_slc_chunk,lreloading)
+          call get_slice_data(z(n1),find_proc(ipx,ipy,nprocz_in/2-1),'xy',slc_dat_xy,nt_slices)
+        endif
+        if (lread_slice_xy2) then 
+          call init_scattered_array(slc_dat_xy2,nx,ny,mvar,sz_slc_chunk,lreloading)
+          call get_slice_data(z(n2),find_proc(ipx,ipy,nprocz_in/2-1),suff_xy2,slc_dat_xy2,nt_slices)
+        endif
+        if (lread_slice_xz ) then 
+          call init_scattered_array(slc_dat_xz ,nx,nz,mvar,sz_slc_chunk,lreloading)
+          call get_slice_data(y(m1),find_proc(ipx,nprocy_in/2-1,ipz),'xz',slc_dat_xz,nt_slices)
+        endif
+        if (lread_slice_xz2) then 
+          call init_scattered_array(slc_dat_xz2,nx,nz,mvar,sz_slc_chunk,lreloading)
+          call get_slice_data(y(m2),find_proc(ipx,nprocy_in/2-1,ipz),suff_xz2,slc_dat_xz2,nt_slices)
+        endif
+        if (lread_slice_yz ) then 
+          call init_scattered_array(slc_dat_yz ,ny,nz,mvar,sz_slc_chunk,lreloading)
+          call get_slice_data(x(l1),find_proc(nprocx_in/2-1,ipy,ipz),'yz',slc_dat_yz,nt_slices)
+        endif
+        if (lread_slice_yz2) then 
+          call init_scattered_array(slc_dat_yz2,ny,nz,mvar,sz_slc_chunk,lreloading)
+          call get_slice_data(x(l2),find_proc(nprocx_in/2-1,ipy,ipz),suff_yz2,slc_dat_yz2,nt_slices)
+        endif
+
+        call mpibarrier
+      else
+        call fatal_error('initialize_boundcond','BC set from slice data not implemented for IO_strategy="HDF5"')
+      endif      
+      endif      
+
+    endsubroutine initialize_boundcond
+!***********************************************************************
+    subroutine get_slice_data(pos,iproc_slc,label,slcdat,nt)
+!
+      use General, only: itoa
+      use File_io, only: file_exists
+      use HDF5_IO, only: input_slice
+
+      real, intent(IN) :: pos
+      integer, intent(IN) :: iproc_slc
+      character(LEN=*) :: label
+      type(scattered_array), pointer :: slcdat
+      integer :: nt
+
+      character(LEN=fnlen) :: slicedir, file
+      real :: pos_slc
+     
+      slicedir=trim(bc_slc_dir)//'/data/proc'//trim(itoa(iproc_slc))
+
+      if (lhydro) then
+        file=trim(slicedir)//'/slice_uu1.'//trim(label)
+        call input_slice(file,pos_slc,slcdat,iux,nt)
+!print*, 'iproc, ux:', minval(slcdat(:,:,iux)), maxval(slcdat(:,:,iux))
+        if (abs(pos-pos_slc)>dz) &
+          call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
+                                 ' at wrong position')
+        file=trim(slicedir)//'/slice_uu2.'//trim(label)
+        call input_slice(file,pos_slc,slcdat,iuy,nt)
+!print*, 'iproc, uy:', minval(slcdat(:,:,iuy)), maxval(slcdat(:,:,iuy))
+        file=trim(slicedir)//'/slice_uu3.'//trim(label)
+        call input_slice(file,pos_slc,slcdat,iuz,nt)
+!print*, 'iproc, uz:', minval(slcdat(:,:,iuz)), maxval(slcdat(:,:,iuz))
+      endif
+
+      if (ldensity) then
+        file=trim(slicedir)//'/slice_lnrho.'//trim(label)
+        call input_slice(file,pos_slc,slcdat,ilnrho,nt)
+        if (abs(pos-pos_slc)>dz) &
+          call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
+                                 ' at wrong position')
+      endif
+
+      if (lentropy) then
+        file=trim(slicedir)//'/slice_ss.'//trim(label)
+        call input_slice(file,pos_slc,slcdat,iss,nt)
+!print*, 'iproc, ss:', minval(slcdat(:,:,iss)), maxval(slcdat(:,:,iss))
+        if (abs(pos-pos_slc)>dz) &
+          call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
+                                 ' at wrong position')
+      endif
+
+      if (lmagnetic) then
+        file=trim(slicedir)//'/slice_aa.'//trim(label)
+        call input_slice(file,pos_slc,slcdat,iaa,nt)
+        if (abs(pos-pos_slc)>dz) &
+          call fatal_error_local('get_slice_data', 'slices in '//trim(file)// &
+                                 ' at wrong position')
+      endif
+ 
+    endsubroutine get_slice_data
+!***********************************************************************
+    subroutine set_from_slice_x(f,topbot,j)
+
+      use General, only: get_scattered_array
+
+      real, dimension (:,:,:,:) :: f
+      character (len=bclen) :: topbot
+      integer :: j
+
+      integer, save :: ilayer=-1
+      real, save :: last_gettime, timediff
+      real, dimension(ny,nz,mvar), save :: ahead_data
+
+      if (lfirst) then
+        if (ilayer==-1) then
+          last_gettime=t
+          ilayer=0
+        elseif (t-last_gettime>=timediff) then
+          ilayer=mod(ilayer+1,nt_slices)
+          last_gettime=t
+        endif
+      endif
+
+      if (topbot=='bot') then
+        call get_scattered_array(j,ilayer,slc_dat_yz,f(l1,m1:m2,n1:n2,j),timediff,ahead_data(:,:,j))
+      else
+        call get_scattered_array(j,ilayer,slc_dat_yz2,f(l2,m1:m2,n1:n2,j),timediff,ahead_data(:,:,j))
+      endif
+
+    endsubroutine set_from_slice_x
+!***********************************************************************
+    subroutine set_from_slice_y(f,topbot,j)
+
+      use General, only: get_scattered_array
+
+      real, dimension (:,:,:,:) :: f
+      character (len=bclen) :: topbot
+      integer :: j
+    
+      integer, save :: ilayer=-1
+      real, save :: last_gettime, timediff
+      real, dimension(nx,nz,mvar), save :: ahead_data
+
+      if (lfirst) then
+        if (ilayer==-1) then
+          last_gettime=t
+          ilayer=0
+        elseif (t-last_gettime>=timediff) then
+          ilayer=mod(ilayer+1,nt_slices)
+          last_gettime=t
+        endif
+      endif
+
+      if (topbot=='bot') then
+        call get_scattered_array(j,ilayer,slc_dat_xz,f(l1:l2,m1,n1:n2,j),timediff,ahead_data(:,:,j))
+      else
+        call get_scattered_array(j,ilayer,slc_dat_xz2,f(l1:l2,m2,n1:n2,j),timediff,ahead_data(:,:,j))
+      endif
+
+    endsubroutine set_from_slice_y
+!***********************************************************************
+    subroutine set_from_slice_z(f,topbot,j)
+
+      use General, only: get_scattered_array
+
+      real, dimension (:,:,:,:) :: f
+      character (len=bclen) :: topbot
+      integer :: j
+
+      logical :: lget,lboth
+      integer, dimension(mvar), save :: ilayer=0
+      real, dimension(mvar), save :: last_gettime
+      real, save :: timediff
+      real, dimension(nx,ny,mvar), save :: ahead_data
+      real :: w
+
+      lget=.false.
+      if (itsub==0.or.lfirst) then   
+!
+! update only in first substep of integration or before integration has started
+!
+        if (ilayer(j)==0) then
+          last_gettime=t
+          ilayer(j)=1
+          lget=.true.
+        elseif (t-last_gettime(j)>=timediff) then
+          if (ilayer(j)==nt_slices) then
+            ilayer(j)=1
+          else
+            ilayer(j)=ilayer(j)+1   !mod(ilayer(j)+1,nt_slices)
+          endif
+          last_gettime(j)=t
+          lget=.true.
+        endif
+      endif
+
+      lboth = ilayer(j)==1 .or. nt_slices==1
+      if (.not.lget) w = (t-last_gettime(j))/timediff
+
+      if (topbot=='bot') then
+        if (lget) then
+          if (lboth) then
+            call get_scattered_array(j,ilayer(j),slc_dat_xy,f(l1:l2,m1:m2,n1,j),timediff,ahead_data(:,:,j))
+          else
+            f(l1:l2,m1:m2,n1,j)=ahead_data(:,:,j)
+            call get_scattered_array(j,ilayer(j)+1,slc_dat_xy,ahead_data(:,:,j),timediff)
+          endif
+          if (nt_slices>1) f(l1:l2,m1:m2,1,j)=f(l1:l2,m1:m2,n1,j)    ! store obtained slice in unused ghost layer
+        else
+          if (nt_slices>1) then
+            f(l1:l2,m1:m2,n1,j)=(1.-w)*f(l1:l2,m1:m2,1,j)+w*ahead_data(:,:,j)
+          else
+            f(l1:l2,m1:m2,n1,j)=f(l1:l2,m1:m2,1,j)
+          endif
+        endif
+      else
+        if (lget) then
+!if (iproc==120) write(103,*) it,itsub,j,ilayer(j)+1,lboth
+          if (lboth) then
+            call get_scattered_array(j,ilayer(j),slc_dat_xy2,f(l1:l2,m1:m2,n2,j),timediff,ahead_data(:,:,j))
+          else
+            f(l1:l2,m1:m2,n2,j)=ahead_data(:,:,j)
+            call get_scattered_array(j,ilayer(j)+1,slc_dat_xy2,ahead_data(:,:,j),timediff)
+          endif
+          if (nt_slices>1) f(l1:l2,m1:m2,mz,j)=f(l1:l2,m1:m2,n2,j)    ! store obtained slice in unused ghost layer
+        else
+!if (iproc==120) write(102,*) it,itsub,j,w
+          if (nt_slices>1) then
+            f(l1:l2,m1:m2,n2,j)=(1.-w)*f(l1:l2,m1:m2,mz,j)+w*ahead_data(:,:,j)
+          else
+            f(l1:l2,m1:m2,n2,j)=f(l1:l2,m1:m2,mz,j)
+          endif
+        endif
+      endif
+
+    endsubroutine set_from_slice_z
 !***********************************************************************
     subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !
@@ -508,6 +853,9 @@ module Boundcond
                   call tayler_expansion(f,topbot,j)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
+                case ('slc')
+                  call set_from_slice_x(f,topbot,j)
+                  call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
                 case default
                   bc%bcname=bcx12(j,k)
                   bc%ivar=j
@@ -758,6 +1106,9 @@ module Boundcond
                 call bc_stratified_y(f,topbot,j)
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
+              case ('slc')
+                call set_from_slice_y(f,topbot,j)
+                call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
               case default
                 bc%bcname=bcy12(j,k)
                 bc%ivar=j
@@ -1146,7 +1497,7 @@ module Boundcond
                 ! BCZ_DOC: forces massflux given as
                 ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
                 if (j==ilnrho) then
-                   call bc_wind_z(f,topbot,fbcz(j,k))   !
+                   call bc_wind_z(f,topbot,fbcz(j,k))
                    call bc_sym_z(f,+1,topbot,j)           !  's'
                    call bc_sym_z(f,+1,topbot,iuz)         !  's'
                 endif
@@ -1155,6 +1506,9 @@ module Boundcond
                 call bc_copy_z(f,topbot,j)
               case ('nil')
                 ! BCZ_DOC: do nothing; assume that everything is set
+              case ('slc')
+                call set_from_slice_z(f,topbot,j)
+                call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
               case default
                 bc%bcname=bcz12(j,k)
                 bc%ivar=j
@@ -1379,8 +1733,6 @@ module Boundcond
         if (topbot=='bot') then
           call transform_cart_spher(f,1,nghost,1,mz,j)    ! in-place!
         else
-!if (iproc_world==5) print*, 'vor:j=', j,llast_proc_y
-!if (iproc_world==5) print'(3(e13.6,1x))', f(31,m2+1:my,1:mz,j+2)
           call transform_cart_spher(f,m2+1,my,1,mz,j)     !  ~
         endif
 !
@@ -3839,21 +4191,8 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j
 !
-      real, dimension (:,:), allocatable :: cpoly0,cpoly1,cpoly2
-      integer :: i,stat,iszx,iszz
-!
-!  Allocate memory for large arrays.
-!
-      iszx=size(f,1); iszz=size(f,3)
-      allocate(cpoly0(iszx,iszz),stat=stat)
-      if (stat>0) call fatal_error('bc_van3rd_y', &
-          'Could not allocate memory for cpoly0')
-      allocate(cpoly1(iszx,iszz),stat=stat)
-      if (stat>0) call fatal_error('bc_van3rd_y', &
-          'Could not allocate memory for cpoly1')
-      allocate(cpoly2(iszx,iszz),stat=stat)
-      if (stat>0) call fatal_error('bc_van3rd_y', &
-          'Could not allocate memory for cpoly2')
+      real, dimension (size(f,1),size(f,3)) :: cpoly0,cpoly1,cpoly2
+      integer :: i
 !
       select case (topbot)
 !
@@ -3875,12 +4214,6 @@ module Boundcond
 !
       endselect
 !
-!  Deallocate arrays.
-!
-      if (allocated(cpoly0)) deallocate(cpoly0)
-      if (allocated(cpoly1)) deallocate(cpoly1)
-      if (allocated(cpoly2)) deallocate(cpoly2)
-!
     endsubroutine bc_van3rd_y
 !***********************************************************************
     subroutine bc_van3rd_z(f,topbot,j)
@@ -3894,47 +4227,28 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j
 !
-      real, dimension (:,:), allocatable :: cpoly0,cpoly1,cpoly2
-      integer :: i,stat,iszx,iszy
-!
-!  Allocate memory for large arrays.
-!
-      iszx=size(f,1); iszy=size(f,2)
-      allocate(cpoly0(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_van3rd_z', &
-          'Could not allocate memory for cpoly0')
-      allocate(cpoly1(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_van3rd_z', &
-          'Could not allocate memory for cpoly1')
-      allocate(cpoly2(iszx,iszy),stat=stat)
-      if (stat>0) call fatal_error('bc_van3rd_z', &
-          'Could not allocate memory for cpoly2')
+      real, dimension (size(f,1),size(f,2)) :: cpoly0,cpoly1,cpoly2
+      integer :: i
 !
       select case (topbot)
 !
       case ('bot')
-        cpoly0(:,:)=f(:,:,n1,j)
-        cpoly1(:,:)=-(3*f(:,:,n1,j)-4*f(:,:,n1+1,j)+f(:,:,n1+2,j))/(2*dz)
-        cpoly2(:,:)=-(-f(:,:,n1,j)+2*f(:,:,n1+1,j)-f(:,:,n1+2,j)) /(2*dz**2)
+        cpoly0=f(:,:,n1,j)
+        cpoly1=-(3*f(:,:,n1,j)-4*f(:,:,n1+1,j)+f(:,:,n1+2,j))/(2*dz)
+        cpoly2=-(-f(:,:,n1,j)+2*f(:,:,n1+1,j)-f(:,:,n1+2,j)) /(2*dz**2)
         do i=1,nghost
-          f(:,:,n1-i,j) = cpoly0(:,:) - cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
+          f(:,:,n1-i,j) = cpoly0 - cpoly1*i*dz + cpoly2*(i*dz)**2
         enddo
 !
       case ('top')
-        cpoly0(:,:)=f(:,:,n2,j)
-        cpoly1(:,:)=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
-        cpoly2(:,:)=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
+        cpoly0=f(:,:,n2,j)
+        cpoly1=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
+        cpoly2=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
         do i=1,nghost
-          f(:,:,n2+i,j) = cpoly0(:,:) + cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
+          f(:,:,n2+i,j) = cpoly0 + cpoly1*i*dz + cpoly2*(i*dz)**2
         enddo
 !
       endselect
-!
-!  Deallocate arrays.
-!
-      if (allocated(cpoly0)) deallocate(cpoly0)
-      if (allocated(cpoly1)) deallocate(cpoly1)
-      if (allocated(cpoly2)) deallocate(cpoly2)
 !
     endsubroutine bc_van3rd_z
 !***********************************************************************
@@ -4711,14 +5025,8 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j
 !
-      real, dimension (:,:), allocatable :: fder
-      integer :: i, stat
-!
-!  Allocate memory for large array.
-!
-      allocate(fder(size(f,1),size(f,2)),stat=stat)
-      if (stat>0) call fatal_error('bc_db_z', &
-          'Could not allocate memory for fder')
+      real, dimension (size(f,1),size(f,2)) :: fder
+      integer :: i
 !
       select case (topbot)
 !
@@ -4740,10 +5048,6 @@ module Boundcond
         print*,"bc_db_z: invalid argument for 'bc_db_z'"
       endselect
 !
-!  Deallocate array.
-!
-      if (allocated(fder)) deallocate(fder)
-!
     endsubroutine bc_db_z
 !***********************************************************************
     subroutine bc_db_x(f,topbot,j)
@@ -4764,14 +5068,8 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j
 !
-      real, dimension (:,:), allocatable :: fder
-      integer :: i,stat
-!
-!  Allocate memory for large array.
-!
-      allocate(fder(size(f,2),size(f,3)),stat=stat)
-      if (stat>0) call fatal_error('bc_db_x', &
-          'Could not allocate memory for fder')
+      real, dimension (size(f,2),size(f,3)) :: fder
+      integer :: i
 !
       select case (topbot)
 !
@@ -4792,11 +5090,6 @@ module Boundcond
       case default
         print*,"bc_db_x: invalid argument for 'bc_db_x'"
       endselect
-!
-!  Deallocate array.
-!
-      if (allocated(fder)) deallocate(fder)
-!
 !
     endsubroutine bc_db_x
 !***********************************************************************
@@ -5146,24 +5439,23 @@ module Boundcond
        use File_io, only : file_exists
        use Mpicomm, only : mpisend_real, mpirecv_real
 !
-       real, dimension (:,:,:,:) :: f
+       real, dimension (:,:,:,:), intent (inout) :: f
+       logical, optional :: quenching
 !
-       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
-       real, dimension (:,:), allocatable :: uxd,uyd,quen,pp,betaq,fac
-       real, dimension (:,:), allocatable :: bbx,bby,bbz,bb2,tmp
+       real, dimension (nx,ny), save :: uxl,uxr,uyl,uyr
+       real, dimension (:,:), allocatable :: tmp
+       real, dimension (nx,ny) :: uxd,uyd,quen,pp,betaq,fac,bbx,bby,bbz,bb2
+
        integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
        integer :: tag_tl=345,tag_tr=346,tag_dt=347
        integer :: lend=0,ierr,frame=0,stat,pos,iref,px,py
        real, save :: tl=0.,tr=0.,delta_t=0.
        real  :: zmin
-       logical, optional :: quenching
        logical :: quench
 !
        character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
        character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
        integer :: unit=1
-!
-       intent (inout) :: f
 !
        if (ldownsampling) then
          call warning('uu_driver','Not available for downsampling')
@@ -5174,30 +5466,6 @@ module Boundcond
            call fatal_error_local('uu_driver','Could not find file "'//trim(vel_times_dat)//'"')
        if (lroot .and. .not. file_exists(vel_field_dat)) &
            call fatal_error_local('uu_driver', 'Could not find file "'//trim(vel_field_dat)//'"')
-!
-       ierr = 0
-       stat = 0
-       if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=ierr)
-       if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
-       ierr = max(stat,ierr)
-       if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
-       ierr = max(stat,ierr)
-       if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
-       ierr = max(stat,ierr)
-       allocate(uxd(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(uyd(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(quen(nx,ny),stat=stat);        ierr = max(stat,ierr)
-       allocate(pp(nx,ny),stat=stat);          ierr = max(stat,ierr)
-       allocate(betaq(nx,ny),stat=stat);       ierr = max(stat,ierr)
-       allocate(fac(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(bbx(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(bby(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(bbz(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(bb2(nx,ny),stat=stat);         ierr = max(stat,ierr)
-       allocate(tmp(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-!
-       if (ierr>0) call fatal_error('uu_driver', &
-           'Could not allocate memory for all variable, please check', .true.)
 !
        if (present(quenching)) then
          quench = quenching
@@ -5251,6 +5519,12 @@ module Boundcond
 ! Read velocity field
 !
          if (lroot) then
+
+           allocate(tmp(nxgrid,nygrid),stat=ierr)
+!
+           if (ierr>0) call fatal_error('uu_driver', &
+              'Could not allocate memory for array please check', .true.)
+
            open (unit,file=vel_field_dat,form='unformatted',status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
            read (unit,rec=2*frame-1) tmp
@@ -5299,6 +5573,7 @@ module Boundcond
            uyr = tmp(1:nx,1:ny)
 !
            close (unit)
+           deallocate(tmp)
          else
            call mpirecv_real (uxl, (/ nx, ny /), 0, tag_xl)
            call mpirecv_real (uyl, (/ nx, ny /), 0, tag_yl)
@@ -5418,18 +5693,6 @@ module Boundcond
        f(l1:l2,m1:m2,iref,iux)=uxd*quen
        f(l1:l2,m1:m2,iref,iuy)=uyd*quen
        if (iref/=n1) f(l1:l2,m1:m2,n1,iux:iuz)=0.
-!
-       if (allocated(uxd)) deallocate(uxd)
-       if (allocated(uyd)) deallocate(uyd)
-       if (allocated(quen)) deallocate(quen)
-       if (allocated(pp)) deallocate(pp)
-       if (allocated(betaq)) deallocate(betaq)
-       if (allocated(fac)) deallocate(fac)
-       if (allocated(bbx)) deallocate(bbx)
-       if (allocated(bby)) deallocate(bby)
-       if (allocated(bbz)) deallocate(bbz)
-       if (allocated(bb2)) deallocate(bb2)
-       if (allocated(tmp)) deallocate(tmp)
 !
      endsubroutine uu_driver
 !***********************************************************************
@@ -5716,14 +5979,8 @@ module Boundcond
       character (len=bclen) :: topbot
 !
       real, pointer :: hcond0, hcond1, Fbot
-      real, dimension (:,:), allocatable :: tmp_yz
-      integer :: i,stat
-!
-!  Allocate memory for large array.
-!
-      allocate(tmp_yz(size(f,2),size(f,3)),stat=stat)
-      if (stat>0) call fatal_error('bc_lnTT_flux_x', &
-          'Could not allocate memory for tmp_yz')
+      real, dimension (size(f,2),size(f,3)) :: tmp_yz
+      integer :: i
 !
 !  Do the 'c1' boundary condition (constant heat flux) for lnTT.
 !  check whether we want to do top or bottom (this is processor dependent)
@@ -5753,10 +6010,6 @@ module Boundcond
 !
       endselect
 !
-!  Deallocate large array.
-!
-      if (allocated(tmp_yz)) deallocate(tmp_yz)
-!
     endsubroutine bc_lnTT_flux_x
 !***********************************************************************
     subroutine bc_lnTT_flux_z(f,topbot)
@@ -5771,15 +6024,9 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
 !
-      real, dimension (:,:), allocatable :: tmp_xy
+      real, dimension (size(f,1),size(f,2)) :: tmp_xy
       real, pointer :: hcond0, Fbot
-      integer :: i,stat
-!
-!  Allocate memory for large array.
-!
-      allocate(tmp_xy(size(f,1),size(f,2)),stat=stat)
-      if (stat>0) call fatal_error('bc_lnTT_flux_x', &
-          'Could not allocate memory for tmp_xy')
+      integer :: i
 !
 !  Do the 'c1' boundary condition (constant heat flux) for lnTT or TT (if
 !  ltemperature_nolog=.true.) at the bottom _only_.
@@ -5806,10 +6053,6 @@ module Boundcond
         call fatal_error('bc_lnTT_flux_z','invalid argument')
 !
       endselect
-!
-!  Deallocate large array.
-!
-      if (allocated(tmp_xy)) deallocate(tmp_xy)
 !
     endsubroutine bc_lnTT_flux_z
 !***********************************************************************
@@ -6056,30 +6299,12 @@ module Boundcond
       character (len=bclen), intent (in) :: topbot
       integer, intent (in) :: j
 !
-      real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact,tmp_re,tmp_im
-      integer :: i,stat,nxl,nyl
+      real, dimension (l2-l1+1,m2-m1+1) :: kx,ky,kappa,exp_fact,tmp_re,tmp_im
+      integer :: i,nxl,nyl
 !
 !  Allocate memory for large arrays.
 !
       nxl=l2-l1+1; nyl=m2-m1+1
-      allocate(kx(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_del2zero', &
-          'Could not allocate memory for kx')
-      allocate(ky(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_del2zero', &
-          'Could not allocate memory for ky')
-      allocate(kappa(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_del2zero', &
-          'Could not allocate memory for kappa')
-      allocate(exp_fact(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_del2zero', &
-          'Could not allocate memory for exp_fact')
-      allocate(tmp_re(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_del2zero', &
-          'Could not allocate memory for tmp_re')
-      allocate(tmp_im(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_del2zero', &
-          'Could not allocate memory for tmp_im')
 !
 !  Get local wave numbers
 !
@@ -6153,15 +6378,6 @@ module Boundcond
         if (lroot) print*,"bc_del2zero: invalid argument"
 !
       endselect
-!
-!  Deallocate large arrays.
-!
-      if (allocated(kx)) deallocate(kx)
-      if (allocated(ky)) deallocate(ky)
-      if (allocated(kappa)) deallocate(kappa)
-      if (allocated(exp_fact)) deallocate(exp_fact)
-      if (allocated(tmp_re)) deallocate(tmp_re)
-      if (allocated(tmp_im)) deallocate(tmp_im)
 !
     endsubroutine bc_del2zero
 !***********************************************************************
@@ -7035,9 +7251,9 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      real :: value
       integer :: j
 !
+      real :: value
       integer :: i,l
 !
       select case (topbot)
@@ -7321,39 +7537,10 @@ module Boundcond
       real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
 !
-      real, dimension (:,:,:), allocatable :: aa_re,aa_im
-      real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact
-      real, dimension (:,:), allocatable :: tmp_re,tmp_im
+      real, dimension (l2-l1+1,m2-m1+1,iax:iaz) :: aa_re,aa_im
+      real, dimension (l2-l1+1,m2-m1+1) :: kx,ky,kappa,exp_fact,tmp_re,tmp_im
       real    :: delta_z
-      integer :: i,j,stat, nxl,nyl
-!
-!  Allocate memory for large arrays.
-!
-      nxl=l2-l1+1; nyl=m2-m1+1
-      allocate(aa_re(nxl,nyl,iax:iaz),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for aa_re',.true.)
-      allocate(aa_im(nxl,nyl,iax:iaz),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for aa_im',.true.)
-      allocate(kx(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for kx',.true.)
-      allocate(ky(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for ky',.true.)
-      allocate(kappa(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for kappa',.true.)
-      allocate(exp_fact(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for exp_fact',.true.)
-      allocate(tmp_re(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for tmp_re',.true.)
-      allocate(tmp_im(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot3', &
-          'Could not allocate memory for tmp_im',.true.)
+      integer :: i,j,nxl,nyl
 !
 !  Get local wave numbers
 !
@@ -7430,17 +7617,6 @@ module Boundcond
 !
       call communicate_vect_field_ghosts(f,topbot)
 !
-!  Deallocate large arrays.
-!
-      if (allocated(aa_re)) deallocate(aa_re)
-      if (allocated(aa_im)) deallocate(aa_im)
-      if (allocated(kx)) deallocate(kx)
-      if (allocated(ky)) deallocate(ky)
-      if (allocated(kappa)) deallocate(kappa)
-      if (allocated(exp_fact)) deallocate(exp_fact)
-      if (allocated(tmp_re)) deallocate(tmp_re)
-      if (allocated(tmp_im)) deallocate(tmp_im)
-!
     endsubroutine bc_aa_pot3
 !***********************************************************************
     subroutine bc_aa_pot2(f,topbot)
@@ -7454,38 +7630,12 @@ module Boundcond
       real, dimension (:,:,:,:), intent (inout) :: f
       character (len=bclen), intent (in) :: topbot
 !
-      real, dimension (:,:,:), allocatable :: aa_re,aa_im
-      real, dimension (:,:), allocatable :: kx,ky,kappa
-      real, dimension (:,:), allocatable :: tmp_re,tmp_im,fac
-      integer :: i,j,stat,nxl,nyl
-!
-!  Allocate memory for large arrays.
+      real, dimension (l2-l1+1,m2-m1+1,iax:iaz) :: aa_re,aa_im
+      real, dimension (l2-l1+1,m2-m1+1) :: kx,ky,kappa
+      real, dimension (l2-l1+1,m2-m1+1) :: tmp_re,tmp_im,fac
+      integer :: i,j,nxl,nyl
 !
       nxl=l2-l1+1; nyl=m2-m1+1
-      allocate(aa_re(nxl,nyl,iax:iaz),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for aa_re',.true.)
-      allocate(aa_im(nxl,nyl,iax:iaz),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for aa_im',.true.)
-      allocate(kx(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for kx',.true.)
-      allocate(ky(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for ky',.true.)
-      allocate(kappa(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for kappa',.true.)
-      allocate(tmp_re(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for tmp_re',.true.)
-      allocate(tmp_im(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for tmp_im',.true.)
-      allocate(fac(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot2', &
-          'Could not allocate memory for fac',.true.)
 !
 !  Get local wave numbers
 !
@@ -7571,17 +7721,6 @@ module Boundcond
 !
         call communicate_vect_field_ghosts(f,topbot)
 !
-!  Deallocate large arrays.
-!
-      if (allocated(aa_re)) deallocate(aa_re)
-      if (allocated(aa_im)) deallocate(aa_im)
-      if (allocated(kx)) deallocate(kx)
-      if (allocated(ky)) deallocate(ky)
-      if (allocated(kappa)) deallocate(kappa)
-      if (allocated(tmp_re)) deallocate(tmp_re)
-      if (allocated(tmp_im)) deallocate(tmp_im)
-      if (allocated(fac)) deallocate(fac)
-!
     endsubroutine bc_aa_pot2
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
@@ -7595,22 +7734,9 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       character (len=bclen) :: topbot
 !
-      real, dimension (:,:), allocatable :: f2,f3
-      real, dimension (:,:,:), allocatable :: fz
-      integer :: j, stat,nxl,nyl
-!
-!  Allocate memory for large arrays.
-!
-      nxl=l2-l1+1; nyl=m2-m1+1
-      allocate(f2(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot', &
-          'Could not allocate memory for f2',.true.)
-      allocate(f3(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot', &
-          'Could not allocate memory for f3',.true.)
-      allocate(fz(nxl,nyl,nghost+1),stat=stat)
-      if (stat>0) call fatal_error('bc_aa_pot', &
-          'Could not allocate memory for fz',.true.)
+      real, dimension (l2-l1+1,m2-m1+1) :: f2,f3
+      real, dimension (l2-l1+1,m2-m1+1,nghost+1) :: fz
+      integer :: j
 !
 !  potential field condition
 !  check whether we want to do top or bottom (this is processor dependent)
@@ -7660,12 +7786,6 @@ module Boundcond
 !
       call communicate_vect_field_ghosts(f,topbot)
 !
-!  Deallocate large arrays.
-!
-      if (allocated(f2)) deallocate(f2)
-      if (allocated(f3)) deallocate(f3)
-      if (allocated(fz)) deallocate(fz)
-!
       endsubroutine bc_aa_pot
 !***********************************************************************
       subroutine potential_field(fz,f2,f3,irev)
@@ -7684,44 +7804,11 @@ module Boundcond
       real, dimension (:,:) :: f2,f3
       integer :: irev
 !
-      real, dimension (:,:), allocatable :: fac,kk,f1r,f1i,g1r,g1i
-      real, dimension (:,:), allocatable :: f2r,f2i,f3r,f3i
+      real, dimension(l2-l1+1,m2-m1+1) :: fac,kk,f1r,f1i,g1r,g1i,f2r,f2i,f3r,f3i
       real :: delz
-      integer :: i,stat,nxl,nyl
-!
-!  Allocate memory for large arrays.
+      integer :: i,nxl,nyl
 !
       nxl=l2-l1+1; nyl=m2-m1+1
-      allocate(fac(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for fac',.true.)
-      allocate(kk(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for kk',.true.)
-      allocate(f1r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f1r',.true.)
-      allocate(f1i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f1i',.true.)
-      allocate(g1r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for g1r',.true.)
-      allocate(g1i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for g1i',.true.)
-      allocate(f2r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f2r',.true.)
-      allocate(f2i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f2i',.true.)
-      allocate(f3r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f3r',.true.)
-      allocate(f3i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potential_field', &
-          'Could not allocate memory for f3i',.true.)
 !
 !  initialize workspace
 !
@@ -7762,18 +7849,6 @@ module Boundcond
         if (irev==-1) fz(:,:,nghost-i+1) = g1r
       enddo
 !
-!  Deallocate large arrays.
-!
-      if (allocated(fac)) deallocate(fac)
-      if (allocated(kk)) deallocate(kk)
-      if (allocated(f1r)) deallocate(f1r)
-      if (allocated(f1i)) deallocate(f1i)
-      if (allocated(g1r)) deallocate(g1i)
-      if (allocated(f2r)) deallocate(f2r)
-      if (allocated(f2i)) deallocate(f2i)
-      if (allocated(f3r)) deallocate(f3r)
-      if (allocated(f3i)) deallocate(f3i)
-!
     endsubroutine potential_field
 !***********************************************************************
     subroutine potentdiv(fz,f2,f3,irev)
@@ -7793,61 +7868,19 @@ module Boundcond
       real, dimension (:,:) :: f2,f3
       integer :: irev
 !
-      real, dimension (:,:), allocatable :: fac,kk,kkkx,kkky
-      real, dimension (:,:), allocatable :: f1r,f1i,g1r,g1i,f2r,f2i,f3r,f3i
-      real, dimension (:), allocatable :: ky
+      real, dimension (l2-l1+1,m2-m1+1) :: fac,kk,kkkx,kkky, &
+                                           f1r,f1i,g1r,g1i,f2r,f2i,f3r,f3i
+      real, dimension (nygrid) :: ky
       real, dimension (nx) :: kx
       real :: delz
-      integer :: i,stat,nxl,nyl
+      integer :: i, nxl, nyl
 !
       if (ldownsampling) then
         call warning('bc_force_aa_time','Not available for downsampling')      
         return
       endif
 !
-!  Allocate memory for large arrays.
-!
       nxl=l2-l1+1; nyl=m2-m1+1
-      allocate(fac(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for fac',.true.)
-      allocate(kk(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for kk',.true.)
-      allocate(kkkx(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for kkkx',.true.)
-      allocate(kkky(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for kkky',.true.)
-      allocate(f1r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f1r',.true.)
-      allocate(f1i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f1i',.true.)
-      allocate(g1r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for g1r',.true.)
-      allocate(g1i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for g1i',.true.)
-      allocate(f2r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f2r',.true.)
-      allocate(f2i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f2i',.true.)
-      allocate(f3r(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f3r',.true.)
-      allocate(f3i(nxl,nyl),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for f3i',.true.)
-      allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('potentdiv', &
-          'Could not allocate memory for ky',.true.)
-!
       f2r=f2; f2i=0
       f3r=f3; f3i=0
 !
@@ -7894,21 +7927,6 @@ module Boundcond
         if (irev==+1) fz(:,:,       i+1) = -g1r
         if (irev==-1) fz(:,:,nghost-i+1) = +g1r
       enddo
-!
-!  Deallocate large arrays.
-!
-      if (allocated(fac)) deallocate(fac)
-      if (allocated(kk)) deallocate(kk)
-      if (allocated(kkkx)) deallocate(kkkx)
-      if (allocated(kkky)) deallocate(kkky)
-      if (allocated(f1r)) deallocate(f1r)
-      if (allocated(f1i)) deallocate(f1i)
-      if (allocated(g1r)) deallocate(g1i)
-      if (allocated(f2r)) deallocate(f2r)
-      if (allocated(f2i)) deallocate(f2i)
-      if (allocated(f3r)) deallocate(f3r)
-      if (allocated(f3i)) deallocate(f3i)
-      if (allocated(ky)) deallocate(ky)
 !
     endsubroutine potentdiv
 !***********************************************************************

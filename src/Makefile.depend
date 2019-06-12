@@ -17,7 +17,7 @@ gsl_wrapper.o: gsl_wrapper.c Makefile.src Makefile.local
 #
 nogsl.o: nogsl.c Makefile.src Makefile.local
 #
-$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o $(CPARAM_OBJ) $(GENERAL_OBJ) Makefile.src Makefile.local
+$(SYSCALLS_OBJ): $(SYSCALLS_SRC) syscalls_ansi.o Makefile.src Makefile.local
 #
 syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
 #
@@ -29,7 +29,7 @@ $(CDATA_OBJ): $(CDATA_SRC) $(CPARAM_OBJ)
 #
 $(GRID_OBJ): $(GRID_SRC) $(CDATA_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ)
 #
-$(GENERAL_OBJ): $(GENERAL_SRC) $(CPARAM_OBJ) $(CDATA_OBJ)
+$(GENERAL_OBJ): $(GENERAL_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(SYSCALLS_OBJ)
 #
 shock.o: shock.h shock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(BOUNDCOND_OBJ) $(FARRAY_OBJ) $(INTERSTELLAR_OBJ) $(MAGNETIC_OBJ)
 #
@@ -39,7 +39,7 @@ noshock.o: shock.h noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) $(FARRAY_OB
 #
 nodebug.o: nodebug.f90 $(SUB_OBJ)
 #
-$(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(FILE_IO_OBJ) $(IO_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(YINYANG_MPI_OBJ)
+$(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(FILE_IO_OBJ) $(IO_OBJ) $(HDF5_IO_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(YINYANG_MPI_OBJ)
 #
 $(FILE_IO_OBJ): file_io.h file_io_common.inc $(FILE_IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o Makefile.src Makefile.local
 #
@@ -67,7 +67,7 @@ $(SLICES_OBJ): $(SLICES_SRC) $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN
 #
 $(SLICES_METHODS_OBJ): $(SLICES_METHODS_SRC) $(CDATA_OBJ) $(GENERAL_OBJ)
 #
-$(SUB_OBJ): $(SUB_SRC) $(CDATA_OBJ) $(DERIV_OBJ) $(FARRAY_OBJ) $(GENERAL_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(YINYANG_MPI_OBJ)
+$(SUB_OBJ): $(SUB_SRC) $(CDATA_OBJ) $(DERIV_OBJ) $(FARRAY_OBJ) $(GENERAL_OBJ) $(HDF5_IO_OBJ) $(FILE_IO_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(YINYANG_MPI_OBJ)
 #
 $(PARAM_IO_OBJ): $(PARAM_IO_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(IO_OBJ) $(PARTICLES_MAIN_OBJ) $(TESTPERTURB_OBJ) $(SIGNAL_HANDLING_OBJ)
 #
@@ -191,9 +191,13 @@ fourier_fftpack.o: $(FOURIER_SRC) fourier.h fftpack.o $(GENERAL_OBJ) $(SUB_OBJ) 
 #
 $(DEBUG_IO_OBJ): io.h $(DEBUG_IO_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ)
 #
-$(HDF5_IO_OBJ): hdf5_io.h $(HDF5_IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ)
+$(HDF5_IO_OBJ): hdf5_io.h $(HDF5_IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(FILE_IO_OBJ) $(GENERAL_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ)
 #
 $(IO_OBJ): io.h $(IO_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(HDF5_IO_OBJ) $(FILE_IO_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SYSCALLS_OBJ)
+#
+$(IO_ALT_OBJ): io.h $(IO_ALT_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(GENERAL_OBJ) $(HDF5_IO_OBJ) $(FILE_IO_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SYSCALLS_OBJ)
+#
+$(IO_WRAPPER_OBJ): $(IO_WRAPPER_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(IO_OBJ) $(MESSAGES_OBJ)
 #
 $(TIMEAVG_OBJ): timeavg.h $(TIMEAVG_SRC) $(COMMON_DEPS) $(DEBUG_IO_OBJ) $(IO_OBJ)
 #
@@ -201,7 +205,15 @@ $(POWER_OBJ): power_spectrum.h $(POWER_SRC) $(COMMON_DEPS) $(GENERAL_OBJ) $(FOUR
 #
 $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OBJ)
 #
-ifeq ($(SPECIAL_OBJ),nospecial.o)
+ifeq ($(SPECIAL),special/NS_polecap)
+  physics += special/potekhin_cond.o
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) special/potekhin_cond.o
+else ifeq ($(SPECIAL),special/meanfield_e_tensor)
+  #polynomialroots.o: polynomialroots.f90
+  technical +=  polynomialroots.o
+  technical_nompi +=  polynomialroots.o
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ) $(PARTICLES_CDATA_OBJ) $(SLICES_METHODS_OBJ) polynomialroots.o
+else ifeq ($(SPECIAL),nospecial)
   $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
 else ifeq ($(filter-out pressure_bump,$(SPECIAL_OBJ)),)
   $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) $(COMMON_DEPS) $(EOS_OBJ) $(DENSITY_OBJ) $(FILE_IO_OBJ) $(SLICES_METHODS_OBJ)

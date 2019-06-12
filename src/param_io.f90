@@ -95,7 +95,7 @@ module Param_IO
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
-      fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
+      fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, bc_slc_dir, &
       xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, &
       lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, &
@@ -134,7 +134,7 @@ module Param_IO
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
-      lread_oldsnap_rho2lnrho, lwrite_dim_again, &
+      lread_oldsnap_rho2lnrho, lwrite_dim_again, luse_alt_io, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
       bcx, bcy, bcz, r_int, r_ext, r_int_border, &
@@ -168,7 +168,7 @@ module Param_IO
       lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
-      lread_from_other_prec, downsampl, lfullvar_in_slices, &
+      lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit1, ivar_omit2, &
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
@@ -429,6 +429,7 @@ module Param_IO
 !
       logical, optional, intent(in) :: logging
       character(len=fnlen) :: file = 'run.in'
+      integer :: idum
 !
       tstart=impossible
 !
@@ -542,6 +543,16 @@ module Param_IO
 !  Ensure that right precision information is written in dim.dat.
 !
       lwrite_dim_again = lwrite_dim_again .or. lread_from_other_prec
+!
+!  ivar_omit[12] define a range of variables which are omitted when reading the snapshot.
+!
+      if (ivar_omit1>0) then
+        if (ivar_omit2<=0) then
+          ivar_omit2=ivar_omit1 
+        elseif (ivar_omit2<ivar_omit1) then
+          idum=ivar_omit1; ivar_omit1=ivar_omit2; ivar_omit2=idum
+        endif
+      endif
 !
     endsubroutine read_all_run_pars
 !***********************************************************************
@@ -804,8 +815,13 @@ module Param_IO
 !  31-may-02/wolf: renamed from 'cprint' to 'print_runpars'
 !   4-oct-02/wolf: added log file stuff
 !  19-aug-15/PABourdin: renamed from 'print_runpars' to 'write_all_run_pars'
+!  11-jun-19/MR: full list of runpars only output into param2.nml, otherwise
+!                (in particular when outout in params.log) only the difference
+!                to the runpars of the preceding run.
 !
       use Particles_main, only: write_all_particles_run_pars
+      use Syscalls, only: system_cmd
+      use File_io, only: file_exists,delete_file
 !
       character (len=*), optional :: file
 !
@@ -814,8 +830,9 @@ module Param_IO
       character (len=datelen) :: date
       logical :: lidl_output
 !
-      lidl_output = .false.
       if (lroot) then
+
+        lidl_output = .false.
         if (lreloading) then
           ! get first line from file RELOAD
           line = read_line_from_file('RELOAD')
@@ -828,6 +845,13 @@ module Param_IO
           if (file == 'stdout') then
             unit = 6
           elseif (file == 'IDL') then
+       
+!
+!  Save old param2.nml for later comparison.
+! 
+            if (file_exists('data/param2.nml')) &
+              call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml > data/param2.nml.sv")
+
             open(unit,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
             lidl_output = .true.
           else
@@ -837,60 +861,68 @@ module Param_IO
           open(unit,FILE=trim(datadir)//'/params.log',position='append')
         endif
 !
-        if (.not. lidl_output) then
+        if (lidl_output) then 
+!
+          write(unit,NML=run_pars)
+!
+          call write_streamlines_run_pars(unit)
+          call write_eos_run_pars(unit)
+          call write_hydro_run_pars(unit)
+          call write_density_run_pars(unit)
+          call write_forcing_run_pars(unit)
+          call write_gravity_run_pars(unit)
+          call write_selfgravity_run_pars(unit)
+          call write_poisson_run_pars(unit)
+          call write_energy_run_pars(unit)
+          call write_opacity_run_pars(unit)
+!         call write_conductivity_run_pars(unit)
+          call write_detonate_run_pars(unit)
+          call write_magnetic_run_pars(unit)
+          call write_lorenz_gauge_run_pars(unit)
+          call write_testscalar_run_pars(unit)
+          call write_testfield_run_pars(unit)
+          call write_testflow_run_pars(unit)
+          call write_radiation_run_pars(unit)
+          call write_pscalar_run_pars(unit)
+          call write_ascalar_run_pars(unit)
+          call write_chiral_run_pars(unit)
+          call write_chemistry_run_pars(unit)
+          call write_dustvelocity_run_pars(unit)
+          call write_dustdensity_run_pars(unit)
+          call write_neutralvelocity_run_pars(unit)
+          call write_neutraldensity_run_pars(unit)
+          call write_cosmicray_run_pars(unit)
+          call write_cosmicrayflux_run_pars(unit)
+          call write_heatflux_run_pars(unit)
+          call write_interstellar_run_pars(unit)
+          call write_shear_run_pars(unit)
+          call write_testperturb_run_pars(unit)
+          call write_viscosity_run_pars(unit)
+          call write_special_run_pars(unit)
+          call write_shock_run_pars(unit)
+          call write_solid_cells_run_pars(unit)
+          call write_NSCBC_run_pars(unit)
+          call write_power_spectrum_run_pars(unit)
+          call write_polymer_run_pars(unit)
+          call write_pointmasses_run_pars(unit)
+          call write_implicit_diff_run_pars(unit)
+!
+          call write_all_particles_run_pars(unit)
+        else                                    ! output in params.log, stdout or other file
           ! Add separator, comment, and time.
           call date_time_string(date)
           write(unit,*) '! -------------------------------------------------------------'
           write(unit,'(A,A)') ' ! ', trim(line)
           write(unit,'(A,A)') ' ! Date: ', trim(date)
           write(unit,*) '! t=', t
+!
+!  Diff to old param2.nml.
+!
+          if (file_exists('data/param2.nml.sv')) then
+            call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml | diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")  
+            call delete_file('data/param2.nml.sv')
+          endif
         endif
-!
-        write(unit,NML=run_pars)
-!
-        call write_streamlines_run_pars(unit)
-        call write_eos_run_pars(unit)
-        call write_hydro_run_pars(unit)
-        call write_density_run_pars(unit)
-        call write_forcing_run_pars(unit)
-        call write_gravity_run_pars(unit)
-        call write_selfgravity_run_pars(unit)
-        call write_poisson_run_pars(unit)
-        call write_energy_run_pars(unit)
-        call write_opacity_run_pars(unit)
-!       call write_conductivity_run_pars(unit)
-        call write_detonate_run_pars(unit)
-        call write_magnetic_run_pars(unit)
-        call write_lorenz_gauge_run_pars(unit)
-        call write_testscalar_run_pars(unit)
-        call write_testfield_run_pars(unit)
-        call write_testflow_run_pars(unit)
-        call write_radiation_run_pars(unit)
-        call write_pscalar_run_pars(unit)
-        call write_ascalar_run_pars(unit)
-        call write_chiral_run_pars(unit)
-        call write_chemistry_run_pars(unit)
-        call write_dustvelocity_run_pars(unit)
-        call write_dustdensity_run_pars(unit)
-        call write_neutralvelocity_run_pars(unit)
-        call write_neutraldensity_run_pars(unit)
-        call write_cosmicray_run_pars(unit)
-        call write_cosmicrayflux_run_pars(unit)
-        call write_heatflux_run_pars(unit)
-        call write_interstellar_run_pars(unit)
-        call write_shear_run_pars(unit)
-        call write_testperturb_run_pars(unit)
-        call write_viscosity_run_pars(unit)
-        call write_special_run_pars(unit)
-        call write_shock_run_pars(unit)
-        call write_solid_cells_run_pars(unit)
-        call write_NSCBC_run_pars(unit)
-        call write_power_spectrum_run_pars(unit)
-        call write_polymer_run_pars(unit)
-        call write_pointmasses_run_pars(unit)
-        call write_implicit_diff_run_pars(unit)
-!
-        call write_all_particles_run_pars(unit)
 !
         if (unit /= 6) close(unit)
 !

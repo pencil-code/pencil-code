@@ -60,6 +60,7 @@ module General
   public :: linear_interpolate_2d
   public :: chk_time
   public :: get_species_nr
+  public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,convert_nml
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -160,8 +161,10 @@ module General
 !
   integer, save, dimension(mseed) :: rstate=0
   character (len=labellen) :: random_gen='min_std'
+
+  include 'general.h'
+  !include 'general_f2003.h'
 !
-  contains
 !***********************************************************************
     pure integer function find_proc(ipx, ipy, ipz)
 !
@@ -4521,8 +4524,8 @@ module General
             itp = i-ith1+1; jtp = j-iph1+1
           endif
 
-          thphprime(1,itp,jtp) = atan2(sprime,zprime)
-          thphprime(2,itp,jtp) = atan2(yprime,xprime)
+          thphprime(1,itp,jtp) = datan2(dble(sprime),dble(zprime))
+          thphprime(2,itp,jtp) = datan2(dble(yprime),dble(xprime))
           if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + twopi
 !
           !thphprime(1,itp,jtp) = ii   !!!
@@ -5362,5 +5365,144 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
     endif
 
     endfunction get_species_nr
+!***********************************************************************
+    subroutine convert_nml(str,lvec)
+!
+!  Converts a string of the form *<integer number>[TtFf] into a vector of
+!  logicals.
+!   
+!  12-jun-19/MR: coded
+
+      character(LEN=*) :: str
+      logical, dimension(:) :: lvec
+
+      character :: ch
+      integer :: i,j,datapos,mult
+
+      j=0; i=1
+      do
+        ch=str(i:i)
+        if (ch=='*') then
+          datapos=scan(str(i+1:),'TtFf')
+          read(str(i+1:i+datapos-1),*) mult
+          lvec(j+1:j+mult) = str(datapos:datapos)=='T' .or. str(datapos:datapos)=='t'
+          j=j+mult
+          i=datapos
+        elseif (ch=='T'.or.ch=='t') then
+          j=j+1
+          lvec(j)=.true.
+        elseif (ch=='F'.or.ch=='f') then
+          j=j+1
+          lvec(j)=.false.
+        else !invalid
+        endif
+        i=i+1
+        if (i>len(str)) exit 
+      enddo
+
+    endsubroutine convert_nml
+!***********************************************************************
+    subroutine extract_from_nml(name,nml,lvec)
+!
+! Extracts (greps) data item with name "name" from a namelist file (default: data/param2.nml)
+! and stores result in file "tmp"
+! 
+! 12-jun-19/MR: coded
+!
+      use Syscalls, only: system_cmd
+
+      character(LEN=*)           :: name
+      character(LEN=*), optional :: nml
+      logical,          optional :: lvec
+
+      character(LEN=256) :: cmd
+
+      cmd="grep '"//trim(name)//" *=' "//trim(coptest(nml,'data/param2.nml'))//" | sed -e's/^.*= *//'"
+      if (loptest(lvec)) cmd=trim(cmd)//" -e's/\([1-9][0-9]*\)\*/*\1/g'"
+      cmd=trim(cmd)//" > tmp"
+      call system_cmd(cmd)
+
+    endsubroutine extract_from_nml
+!***********************************************************************
+    function get_from_nml_str(name,lfound,nml,lvec) result (res)
+!
+! Returns the value of a string variable with name "name", previously extracted from a namelist file
+! and stored in file "tmp"
+! 
+! 12-jun-19/MR: coded
+!
+      character(LEN=*)           :: name
+      logical                    :: lfound
+      character(LEN=*), optional :: nml
+      logical,          optional :: lvec
+      character(LEN=128) :: res
+      
+      call extract_from_nml(name,nml,lvec)
+ 
+      res=''
+      inquire(file='tmp',exist=lfound)
+      if (lfound) then
+        open(1,file='tmp')
+        read(1,*,err=1,end=1) res
+        goto 2
+1       lfound=.false.
+2       close(1,status='delete')
+      endif
+
+    endfunction get_from_nml_str
+!***********************************************************************
+    function get_from_nml_log(name,lfound,nml,lvec) result (res)
+!
+! Returns the value of a logical variable with name "name", previously extracted from a namelist file
+! and stored in file "tmp"
+! 
+! 12-jun-19/MR: coded
+!
+      character(LEN=*)           :: name
+      logical                    :: lfound
+      character(LEN=*), optional :: nml
+      logical,          optional :: lvec
+      logical :: res
+
+      call extract_from_nml(name,nml,lvec)
+
+      res=.false.
+      inquire(file='tmp',exist=lfound)
+      if (lfound) then
+        open(1,file='tmp')
+        read(1,*,err=1,end=1) res
+        goto 2
+1       lfound=.false.
+2       close(1,status='delete')
+      endif
+
+    endfunction get_from_nml_log
+!***********************************************************************
+    function get_from_nml_real(name,lfound,nml,lvec) result (res)
+!
+! Returns the value of a real variable with name "name", previously extracted from a namelist file
+! and stored in file "tmp"
+! 
+! 12-jun-19/MR: coded
+!
+      character(LEN=*)           :: name
+      logical                    :: lfound
+      character(LEN=*), optional :: nml
+      logical,          optional :: lvec
+      real :: res
+
+      call extract_from_nml(name,nml,lvec)
+
+      res=0.
+      inquire(file='tmp',exist=lfound)
+      if (lfound) then
+        open(1,file='tmp')
+        read(1,*,err=1,end=1) res
+        goto 2
+1       lfound=.false.
+2       close(1,status='delete')
+      endif
+
+    endfunction get_from_nml_real
 !***********************************************************************
   endmodule General

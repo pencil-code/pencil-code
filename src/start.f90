@@ -46,7 +46,7 @@
 program start
 !
   use General
-  use Boundcond,        only: update_ghosts
+  use Boundcond,        only: update_ghosts, initialize_boundcond
   use Cdata
   use Chemistry,        only: init_chemistry
   use Chiral,           only: init_chiral
@@ -70,7 +70,8 @@ program start
   use Initcond
   use InitialCondition, only: initial_condition_all, initial_condition_clean_up
   use Interstellar,     only: init_interstellar
-  use IO,               only: wgrid, wdim, directory_names, wproc_bounds, output_globals
+  use IO,               only: wgrid, directory_names, wproc_bounds, output_globals
+  use HDF5_IO,          only: wdim
   use Lorenz_gauge,     only: init_lorenz_gauge
   use Magnetic,         only: init_aa
   use Messages
@@ -417,6 +418,7 @@ program start
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
 !
+  call initialize_boundcond
   call initialize_modules(f)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc).

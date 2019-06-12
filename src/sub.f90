@@ -62,7 +62,7 @@ module Sub
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
-  public :: dyadic2
+  public :: dyadic2, dyadic2_other
   public :: cross, cross_mn, cross_mixed
   public :: sum_mn, max_mn
   public :: multsv, multsv_add, multsv_mn, multsv_mn_add
@@ -940,7 +940,7 @@ module Sub
 !***********************************************************************
     subroutine dyadic2(a,b)
 !
-!  Dyadic product with itself.
+!  Dyadic product of a penciled vector with itself.
 !
 !  24-jan-09/axel: coded
 !
@@ -969,6 +969,37 @@ module Sub
       b(:,3,2)=b(:,2,3)
 !
     endsubroutine dyadic2
+!***********************************************************************
+    function dyadic2_other(a) result(b)
+!
+!  Dyadic product of a vector with itself for non-pencil data.
+!
+!  26-may-19/MR: aped from dyadic2
+!
+      real, dimension (3) :: a
+      real, dimension (3,3) :: b
+!
+      intent(in) :: a
+!
+!  diagonal components
+!
+      b(1,1)=a(1)**2
+      b(2,2)=a(2)**2
+      b(3,3)=a(3)**2
+!
+!  upper off-diagonal components
+!
+      b(1,2)=a(1)*a(2)
+      b(1,3)=a(1)*a(3)
+      b(2,3)=a(2)*a(3)
+!
+!  lower off-diagonal components
+!
+      b(2,1)=b(1,2)
+      b(3,1)=b(1,3)
+      b(3,2)=b(2,3)
+!
+    endfunction dyadic2_other
 !***********************************************************************
     subroutine trace_mn(a,b)
 !
@@ -5108,7 +5139,7 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      use IO, only: output_profile
+      use HDF5_IO, only: output_profile
 !
       real, dimension(:), intent(in) :: a
       character (len=*), intent(in) :: fname
@@ -5127,7 +5158,7 @@ nameloop: do
 !
 !  10-jul-05/axel: coded
 !
-      use IO, only: output_profile
+      use HDF5_IO, only: output_profile
 !
       real, dimension(:), intent(in) :: a
       character (len=*), intent(in) :: fname

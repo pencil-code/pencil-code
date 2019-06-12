@@ -643,7 +643,7 @@ module Entropy
 !
       use Diagnostics
       use EquationOfState, only: gamma
-      use IO, only: output_profile
+      use HDF5IO, only: output_profile
       use Sub
 
       real, dimension(mx,my,mz,mvar) :: df

@@ -2324,6 +2324,7 @@ module Energy
       use Diagnostics
       use Gravity
       use IO
+      use HDF5IO, only: output_profile
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df

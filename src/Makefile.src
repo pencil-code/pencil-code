@@ -26,6 +26,8 @@ INITIAL_CONDITION  = noinitial_condition
 DEBUG_IO           =   debug_io_dist
 HDF5_IO            = nohdf5_io
 IO                 =   io_dist
+IO_WRAPPER         =   io_wrapper
+IO_ALT             = 
 MPICOMM            = nompicomm
 NSCBC              = noNSCBC
 POWER              = nopower_spectrum
@@ -380,7 +382,7 @@ ifeq ($(YINYANG),yinyang)
 else
   YINYANG_MPI = noyinyang_mpi
 endif
-
+#
 SPECIAL_DEPS =
 SPECIAL_MULT =
 ifeq ($(SPECIAL),nospecial)
@@ -392,12 +394,23 @@ special_message:
 	@echo ";;;    SPECIAL must not been set to special, but to individual module(s) in directory special."
 	exit 1
   else
-    ifneq ($(SPECIAL),special/meanfield_e_tensor)
+    ifeq ($(SPECIAL),special/meanfield_e_tensor)
+      ifeq ($(MPICOMM),mpicomm)
+        HDF5_HOME=$(HDF5_HOME_PARALLEL)
+      else
+        HDF5_HOME=$(HDF5_HOME_SERIAL)
+      endif
+      HDF5_INC ?= $(HDF5_HOME)/include
+      HDF5_LIB ?= $(HDF5_HOME)/lib
+      HDF5_BIN ?= $(HDF5_HOME)/bin
+      #FFLAGS += -I$(HDF5_INC)
+      #LDFLAGS_MAIN += -L$(HDF5_LIB)
+    else
       SPECIAL_MODULES := $(SPECIAL)
       SPECIAL_DEPS = special_preps
       ifneq ($(strip $(shell echo $(SPECIAL) | wc -w)),1)
         LDFLAGS_MAIN += -dynamic
-        SPECIAL_DEPS += special.dll
+        SPECIAL_DEPS += special.so
         SPECIAL = special
         SPECIAL_MULT = 1
       endif
@@ -418,6 +431,10 @@ ifeq ($(GPU),gpu_astaroth)
   endif
 else
   GPU_INTERFACE=
+endif
+#
+ifeq ($(IO),io_hdf5)
+  HDF5_IO=hdf5_io_parallel
 endif
 #ifdef ENTROPY
 #entropy_message:
@@ -615,6 +632,12 @@ HDF5_IO_SRC=$(HDF5_IO).f90
 #
 IO_OBJ=$(IO).o
 IO_SRC=$(IO).f90
+#
+IO_ALT_OBJ=$(IO_ALT).o
+IO_ALT_SRC=$(IO_ALT).f90
+#
+IO_WRAPPER_OBJ=$(IO_WRAPPER).o
+IO_WRAPPER_SRC=$(IO_WRAPPER).f90
 #
 LORENZ_GAUGE_OBJ=$(LORENZ_GAUGE).o
 LORENZ_GAUGE_SRC=$(LORENZ_GAUGE).f90
@@ -2390,7 +2413,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 # TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
 # LD?=$(FC)
 LD=$(FC)
-
+#
+ifneq ($(IO_ALT),)
+  IO_ALT_DEPS = io_alt.so
+  LDFLAGS_MAIN += -dynamic
+  FFLAGS += $(DLL_FFLAGS)
+else
+  IO_ALT_DEPS =
+endif
+#
 ifneq ($(HDF5_IO),nohdf5_io)
 	# set HDF5 Fortran compiler and Fortran linker
 	export HDF5_FC:=$(FC)
@@ -2399,12 +2430,11 @@ ifneq ($(HDF5_IO),nohdf5_io)
 	LD := $(shell which h5pfc || which h5fc)
 	ifeq ($(LD),)
 		# try our best guess (parallel version)
-		LD = h5pfc
+                LD = $(FC)
 	endif
 	# set HDF5 compiler and linker
 	FC_HDF5 := $(LD)
 endif
-
 #
 #  RULES SECTION
 #
@@ -2425,7 +2455,12 @@ ifeq ($(SPECIAL_MULT),1)
 else
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
 endif
-
+#
+ifneq ($(IO_ALT),)
+$(IO_ALT).o : $(IO_ALT).f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o $*.o -c $*.f90
+endif
+#
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
 #
@@ -2471,7 +2506,7 @@ start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 #
 run.o: $(run) Makefile.local
-run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS)
+run.x: run.o | $(SPECIAL_DEPS) $(GPU_DEPS) $(IO_ALT_DEPS)
 	$(LD) $(run) run.o $(LDFLAGS) $(LDFLAGS_MAIN) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) $(LIBGPU) -o run.x
 #
 special_preps:
@@ -2485,8 +2520,11 @@ else
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
 					 < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ; done
 endif
-special.dll: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
-	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.dll
+special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
+	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
+#
+io_alt.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(IO_ALT_OBJ) 
+	$(LD) $(IO_ALT_OBJ) $(DLL_LDFLAGS) -o io_alt.so
 #
 # writes moduleflags in cuda/src_new/common/PC_moduleflags.h, list of needed physics module source files in cuda/src_new/PC_modulesources
 # 
@@ -2515,9 +2553,9 @@ endif
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
-basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) syscalls_ansi.o $(NOMPICOMM_OBJ)
+basics=cparam.o cdata.o $(FILE_IO_OBJ) general.o messages.o $(SYSCALLS_OBJ) syscalls_ansi.o nompicomm.o
 #
-combine_videofiles.o: $(basics)
+combine_videofiles.o: $(basics) 
 combine_videofiles.x: combine_videofiles.o
 	$(LD) combine_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o combine_videofiles.x
 #
@@ -2525,7 +2563,7 @@ read_videofiles.o: $(basics)
 read_videofiles.x: read_videofiles.o
 	$(LD) read_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o read_videofiles.x
 #
-read_all_videofiles.o: $(basics)
+read_all_videofiles.o: $(basics) 
 read_all_videofiles.x: read_all_videofiles.o
 	$(LD) read_all_videofiles.o $(basics) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) -o read_all_videofiles.x
 #
@@ -2535,43 +2573,60 @@ read_vectorfiles.x: read_vectorfiles.o
 #
 technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) nogpu.o $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(HDF5_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(FIXED_POINT_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SLICES_METHODS_OBJ) $(solid_cells_objects) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
+ifneq ($(MPICOMM),nompicomm)
+  restore_mpicomm = 
+#[ -f mpicomm.mod.sv ] && mv -f mpicomm.mod.sv mpicomm.mod
+else
+  restore_mpicomm = 
+endif
+#
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
 	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
 	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
 	$(LD) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute_z.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
 	$(LD) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_configtest.o: pre_and_post_processing/pc_configtest.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_configtest.x: pre_and_post_processing/pc_configtest.o
 	$(LD) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
 	$(LD) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
 	$(LD) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x
+	$(restore_mpicomm)
 #
 pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_solid.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
 	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LDFLAGS) $(LDFLAGS_HELPER) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x
+	$(restore_mpicomm)
 #
-io_hdf5.o: io_hdf5.f90 io.h Makefile.local
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c io_hdf5.f90 -o io_hdf5.o
-#
+nompicomm.o: nompicomm.f90 
+ifneq ($(MPICOMM),nompicomm)
+#mv mpicomm.mod mpicomm.mod.sv
+endif
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -o nompicomm.o -c nompicomm.f90
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
-	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c hdf5_io_parallel.f90 -o hdf5_io_parallel.o
+	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -o hdf5_io_parallel.o -c hdf5_io_parallel.f90 
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
@@ -2710,7 +2765,7 @@ HELPER_EXECUTABLES= \
 	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x \
 	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
 ALL_EXECUTABLES=$(MAIN_EXECUTABLES) $(HELPER_EXECUTABLES)
-EXECUTABLES=$(ALL_EXECUTABLES)
+EXECUTABLES=$(MAIN_EXECUTABLES)
 #
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise

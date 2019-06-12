@@ -51,7 +51,7 @@ program run
 ! 10-feb-14/MR: initialize_mpicomm now called before read_all_run_pars
 ! 13-feb-13/MR: call of wsnap_down added
 !
-  use Boundcond,       only: update_ghosts
+  use Boundcond,       only: update_ghosts, initialize_boundcond
   use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
   use Density,         only: boussinesq
@@ -71,7 +71,8 @@ program run
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid, wdim
+  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid
+  use HDF5_IO,         only: wdim
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -477,6 +478,7 @@ program run
 !  (must be done before need_XXXX can be used, for example)
 !
   call initialize_timestep
+  call initialize_boundcond
   call initialize_modules(f)
 !
   if (it1d==impossible_int) then
@@ -900,7 +902,7 @@ program run
 !
   if (lroot) then
     print*
-    print*, 'Writing final snapshot at time t =', t
+    write(*,*) 'Writing final snapshot at time t =', t
   endif
 !
   if (.not.lnowrite) then

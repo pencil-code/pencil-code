@@ -1234,18 +1234,6 @@ module Io
 !
     endfunction read_persist_real_1D
 !***********************************************************************
-    subroutine output_timeseries(data, data_im)
-!
-!  Append diagnostic data to a binary file.
-!
-!  01-Apr-2019/PABourdin: coded
-!
-      real, dimension(2*nname), intent(in) :: data, data_im
-!
-      ! dummy routine
-!
-    endsubroutine output_timeseries
-!***********************************************************************
     subroutine output_globals(file, a, nv, label)
 !
 !  Write snapshot file of globals, ignoring mesh.
@@ -1655,46 +1643,6 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
-    subroutine wdim_default_grid(file)
-!
-!  Write dimension to file.
-!
-!  02-Nov-2018/PABourdin: redesigned
-!
-      character (len=*), intent(in) :: file
-!
-      call output_dim (file, mx, my, mz, mxgrid, mygrid, mzgrid, mvar, maux, mglobal)
-!
-    endsubroutine wdim_default_grid
-!***********************************************************************
-    subroutine wdim_default(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
-!
-!  Write dimension to file.
-!
-!  02-Nov-2018/PABourdin: redesigned
-!
-      character (len=*), intent(in) :: file
-      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
-!
-      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar, maux, mglobal)
-!
-    endsubroutine wdim_default
-!***********************************************************************
-    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
-!
-!  Write dimension to file.
-!
-!   8-sep-01/axel: adapted to take my_out,mz_out
-!   4-oct-16/MR: added optional parameters mvar_out,maux_out
-!  02-Nov-2018/PABourdin: redesigned, moved to IO modules
-!
-      character (len=*), intent(in) :: file
-      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
-!
-      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
-!
-    endsubroutine wdim
-!***********************************************************************
     subroutine output_profile(fname, coord, a, type, lsave_name, lhas_ghost)
 !
 !  Writes a profile to a file.
@@ -1820,29 +1768,6 @@ module Io
 !
     endsubroutine output_average_1D
 !***********************************************************************
-    subroutine output_average_1D_chunked(path, label, nc, name, data, full, time, lbinary, lwrite, header)
-!
-!   Output 1D chunked average to a file.
-!
-!   16-Nov-2018/PABourdin: coded
-!
-      character (len=*), intent(in) :: path, label
-      integer, intent(in) :: nc
-      character (len=fmtlen), dimension(nc), intent(in) :: name
-      real, dimension(:,:,:), intent(in) :: data
-      integer, intent(in) :: full
-      real, intent(in) :: time
-      logical, intent(in) :: lbinary, lwrite
-      real, dimension(:), optional, intent(in) :: header
-!
-      if (present (header)) then
-        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
-      else
-        call output_average_2D(path, label, nc, name, data, time, lbinary, lwrite)
-      endif
-!
-    endsubroutine output_average_1D_chunked
-!***********************************************************************
     subroutine output_average_2D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
 !   Output average to a file.
@@ -1964,75 +1889,6 @@ module Io
       close (lun_output)
 !
     endsubroutine output_average_phi
-!***********************************************************************
-    subroutine trim_average(path, plane, ngrid, nname)
-!
-!  Trim a 1D-average file for times past the current time.
-!
-!  25-apr-16/ccyang: coded
-!  23-Nov-2018/PABourdin: moved to IO module
-!
-      character (len=*), intent(in) :: path, plane
-      integer, intent(in) :: ngrid, nname
-!
-      real, dimension(:), allocatable :: tmp
-      character(len=fnlen) :: filename
-      integer :: pos, num_rec, ioerr, alloc_err
-      integer :: lun_input = 84
-      real :: time
-!
-      if (.not. lroot) return
-      if ((ngrid <= 0) .or. (nname <= 0)) return
-      filename = trim(path) // '/' // trim(plane) // 'averages.dat'
-      if (.not. file_exists (filename)) return
-!
-      allocate (tmp(ngrid * nname), stat = alloc_err)
-      if (alloc_err > 0) call fatal_error('trim_average', 'Could not allocate memory for averages')
-!
-      if (lwrite_avg1d_binary) then
-        open(lun_input, file=filename, form='unformatted', action='readwrite')
-      else
-        open(lun_input, file=filename, action='readwrite')
-      endif
-!
-      ! count number of records
-      num_rec = 0
-      ioerr = 0
-      time = 0.0
-      do while ((t > time) .and. (ioerr >= 0))
-        num_rec = num_rec + 1
-        if (lwrite_avg1d_binary) then
-          read(lun_input, iostat=ioerr) time
-          read(lun_input, iostat=ioerr) tmp
-        else
-          read(lun_input, *, iostat=ioerr) time
-          read(lun_input, *, iostat=ioerr) tmp
-        endif
-      enddo
-      if (time == t) num_rec = num_rec - 1
-!
-      if ((time >= t) .and. (ioerr >= 0)) then
-        ! trim excess data at the end of the average file
-        rewind(lun_input)
-        if (num_rec > 0) then
-          do pos = 1, num_rec
-            if (lwrite_avg1d_binary) then
-              read(lun_input, iostat=ioerr) time
-              read(lun_input, iostat=ioerr) tmp
-            else
-              read(lun_input, *, iostat=ioerr) time
-              read(lun_input, *, iostat=ioerr) tmp
-            endif
-          enddo
-        endif
-        endfile (lun_input)
-        if (ip <= 10) print *, 'trim_average: trimmed '//trim(plane)//'-averages for t >= ', t
-      endif
-!
-      close (lun_input)
-      deallocate (tmp)
-!
-    endsubroutine trim_average
 !***********************************************************************
     subroutine wproc_bounds(file)
 !

@@ -12,7 +12,7 @@
 !
 !  Shared variable should always be avoided for portability
 !  and generality reasons.  This module allows for the possibility
-!  when needs must but trys to protect agains screw ups that
+!  when needs must but tries to protect agains screw ups that
 !  can derive from shared quantities.
 !
 !  When used modules should call the get and put routines

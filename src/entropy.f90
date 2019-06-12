@@ -458,7 +458,7 @@ module Energy
       use FArrayManager
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
-      use IO, only: input_profile
+      use HDF5_IO, only: input_profile
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: blob
@@ -5720,7 +5720,7 @@ module Energy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use IO, only: output_profile
+      use HDF5_IO, only: output_profile
       use Sub, only: step, cubic_step
 !
       type (pencil_case) :: p

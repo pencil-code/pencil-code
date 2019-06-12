@@ -989,7 +989,7 @@ module Diagnostics
 !   7-aug-03/wolf: coded
 !  24-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: output_average
+      use HDF5_IO, only: output_average
 !
       logical, save :: lfirst_call = .true.
 !
@@ -1046,7 +1046,7 @@ module Diagnostics
 !   7-aug-03/wolf: adapted from wsnap
 !  24-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: output_average
+      use HDF5_IO, only: output_average
 !
       if (lwrite_yaverages) &
           call output_average (directory_dist, 'y', nnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
@@ -1077,7 +1077,7 @@ module Diagnostics
 !  25-apr-16/ccyang: coded
 !  23-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: trim_average
+      use HDF5_IO, only: trim_average
 !
       call trim_average(datadir, 'xy', nzgrid, nnamez)
       call trim_average(datadir, 'xz', nygrid, nnamey)

@@ -20,7 +20,7 @@ module BorderProfiles
   include 'border_profiles.h'
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
-!  length as f() (in the given dimension) gives somehow more natural code.
+!  length as f (in the given dimension) gives somehow more natural code.
 !
   real, dimension(mx) :: border_prof_x=1.0
   real, dimension(my) :: border_prof_y=1.0
@@ -41,7 +41,7 @@ module BorderProfiles
 !
   contains
 !***********************************************************************
-    subroutine initialize_border_profiles()
+    subroutine initialize_border_profiles
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
@@ -53,7 +53,7 @@ module BorderProfiles
 !                  because r_int and r_ext are not set until after all
 !                  calls to initialize are done in Register.
 !
-      use IO, only: output_profile
+      use HDF5_IO, only: output_profile
       use SharedVariables, only: get_shared_variable
       use Messages, only: fatal_error
 !
@@ -173,9 +173,7 @@ module BorderProfiles
         tborder1=1./tborder
       else
         if (lgravr) then 
-          call get_shared_variable('gsum',gsum,ierr)
-          if (ierr/=0) call fatal_error("initialize_border_profiles",&
-               "there was an error getting gsum")
+          call get_shared_variable('gsum',gsum,caller='initialize_border_profiles')
           !the inverse period is the inverse of 2pi/Omega =>  1/2pi * sqrt(r^3/gsum)
           if (gsum/=0) then
             fac_sqrt_gsum1 = 1/(2*pi) * 1/sqrt(gsum)
@@ -226,7 +224,7 @@ module BorderProfiles
 !
     endsubroutine request_border_driving
 !***********************************************************************
-    subroutine pencil_criteria_borderprofiles()
+    subroutine pencil_criteria_borderprofiles
 !
 !  All pencils that this module depends on are specified here.
 !
