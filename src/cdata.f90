@@ -583,7 +583,6 @@ module Cdata
 ! Parameters for reading data for BCs.
 !
   character(LEN=fnlen) :: bc_slc_dir
-  integer :: ix_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,iz3_bc,iz4_bc
 !
 !  A buffer in which to construct an error message.
 !
