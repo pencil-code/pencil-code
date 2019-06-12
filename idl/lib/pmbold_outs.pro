@@ -23,7 +23,7 @@
         ncoors=convert_coord(x,y,/data,/to_normal)
 
     xyouts, ncoors[0], ncoors[1], nstr1+bstr, /norm, _extra=extra
-    ncoors(0)+=w1+.0011*relshift
+    ncoors(0)+=w1+.0017*relshift
     xyouts, ncoors[0], ncoors[1], bstr+nstr2, /norm, _extra=extra
 
   end
