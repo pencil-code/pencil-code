@@ -190,7 +190,8 @@ module Diagnostics
 !
       use General, only: safe_character_append, compress
       use Cparam, only: max_col_width
-      use IO, only: output_timeseries, IO_strategy
+      use IO, only: IO_strategy
+      use HDF5_IO, only: output_timeseries
       use Sub, only: insert
 !
       character (len=1000) :: fform,legend,line
@@ -306,7 +307,7 @@ module Diagnostics
       character(len=*),                intent(IN) :: file
 
       integer :: ind, i
-      character(LEN=256) :: text
+      character(LEN=512) :: text
 
       text='WARNING:'; ind=-1
       do i=1,len
@@ -960,7 +961,7 @@ module Diagnostics
 !   7-aug-03/wolf: coded
 !  24-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: output_average
+      use HDF5_IO, only: output_average
 !
       logical, save :: lfirst_call = .true.
 !
@@ -1050,7 +1051,8 @@ module Diagnostics
 !  25-apr-16/ccyang: coded
 !  23-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: trim_average, IO_strategy
+      use IO, only: IO_strategy
+      use HDF5_IO, only: trim_average
 !
       call trim_average(datadir, 'xy', nzgrid, nnamez)
       call trim_average(datadir, 'xz', nygrid, nnamey)
