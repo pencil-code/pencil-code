@@ -2626,7 +2626,7 @@ ifneq ($(MPICOMM),nompicomm)
 endif
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -o nompicomm.o -c nompicomm.f90
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
-	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -o hdf5_io_parallel.o -c hdf5_io_parallel.f90 
+	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS)   -c hdf5_io_parallel.f90 -o hdf5_io_parallel.o
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
