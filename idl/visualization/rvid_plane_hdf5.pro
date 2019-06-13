@@ -49,7 +49,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
 ;
 ;  default extension
 ;
-  if keyword_set(spherical_surface) then begin
+  if (keyword_set (spherical_surface)) then begin
     default, extension, 'yz'
   end else begin
     default, extension, 'xz'
@@ -125,6 +125,9 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   x = grid.x(dim.l1:dim.l2)
   y = grid.y(dim.m1:dim.m2)
   z = grid.z(dim.n1:dim.n2)
+print, 'X', x
+print, 'Y', y
+print, 'Z', z
 ;
   ; adjust extension for 2D runs
   if ((nx ne 1) and (ny ne 1) and (nz eq 1)) then extension = 'xy'
@@ -177,12 +180,12 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
 ;
   yinyang = par.lyinyang
 ;
-  file_slice=field+'_'+extension+'.h5'
+  file_slice = field+'_'+extension+'.h5'
 ;
   if (not file_test (datadir+'/slices/'+file_slice)) then begin
     print, 'Slice file "'+datadir+'/slices/'+file_slice+'" does not exist!!!'
     pos = strpos (file_slice, '_'+extension)
-    compfile = strmid (file_slice, 0,pos)+'1_'+extension+'.h5'
+    compfile = strmid (file_slice, 0, pos)+'1_'+extension+'.h5'
     if (file_test (datadir+'/slices/'+compfile)) then print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
     return
   end
@@ -224,35 +227,24 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   end
 ;
   if (keyword_set (shell)) then begin
-;
-;  To mask the outside shell we need the full grid.
-;
-    if (size (proc, /type) ne 0) then begin
-      pc_read_grid, obj=global_grid, dim=global_dim, datadir=datadir, /quiet
-      x = global_grid.x
-      y = global_grid.y
-      z = global_grid.z
+    ; mask the outside shell
+    xx = spread (x, [1,2], [ny,nz])
+    yy = spread (y, [0,2], [nx,nz])
+    zz = spread (z, [0,1], [nx,ny])
+    ; assume slices are all central for now - perhaps generalize later.
+    ix = nx / 2
+    iy = ny / 2
+    iz = nz / 2
+    ; nb: need pass these into boxbotex_scl for use after scaling of image; otherwise pixelisation can be severe...
+    ; nb: at present using the same z-value for both horizontal slices; hardwired into boxbotex_scl, also.
+    if (extension eq 'xz') then begin
+      rr = reform (sqrt (xx[*,iy,*]^2 + yy[*,iy,*]^2 + zz[*,iy,*]^2), nx, nz)
+    end else if (extension eq 'yz') then begin
+      rr = reform (sqrt (xx[ix,*,*]^2 + yy[ix,*,*]^2 + zz[ix,*,*]^2), ny, nz)
+    end else begin
+      rr = reform (sqrt (xx[*,*,iz]^2 + yy[*,*,iz]^2 + zz[*,*,iz]^2), nx, ny)
     end
-    xx = spread (x, [1,2], [my,mz])
-    yy = spread (y, [0,2], [mx,mz])
-    zz = spread (z, [0,1], [mx,my])
-    rr = sqrt (xx^2 + yy^2 + zz^2)
-;
-;  Assume slices are all central for now -- perhaps generalize later.
-;  nb: need pass these into boxbotex_scl for use after scaling of image;
-;      otherwise pixelisation can be severe...
-;  nb: at present using the same z-value for both horizontal slices;
-;      hardwired into boxbotex_scl, also.
-;
-    ix = mx / 2
-    iy = my / 2
-    iz = mz / 2
-    if (extension eq 'xy') then rrxy = rr[nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz]
-    if (extension eq 'xy2') then rrxy2 = rr[nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz]
-    if (extension eq 'xy3') then rrxy3 = rr[nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz]
-    if (extension eq 'xz') then rrxz = rr[nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1]
-    if (extension eq 'yz') then rryz = rr[ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1]
-;
+    dist = rebinbox (rr, zoom)
   end
 ;
   size_plane = [ nx, ny ]
@@ -260,18 +252,13 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   if (extension eq 'yz') then size_plane = [ ny, nz ]
   if (yinyang) then size_plane = [ 2, nz, nz ]
 ;
-  slice_xpos = 0.0 * one
-  slice_ypos = 0.0 * one
-  slice_zpos = 0.0 * one
-  slice_z2pos = 0.0 * one
-;
   dev = 'x'
   if (keyword_set (png)) then begin
     Nwx = zoom * size_plane[0]
     Nwy = zoom * size_plane[1]
     Nwy = (Nwx * 15) / 20
     resolution = [ Nwx, Nwy ]
-    if (not quiet) then print, 'z-buffer resolution (in pixels, set with zoom=', strtrim (zoom, 2), ') =', strtrim (resolution, 2)
+    if (not quiet) then print, 'z-buffer resolution (in pixels, set with zoom='+str (zoom)+') = '+str (resolution[0])+' * '+str (resolution[1])
     ; switch to Z buffer
     set_plot, 'z'
     ; set window size
@@ -282,7 +269,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     Nwx = zoom * size_plane[0]
     Nwy = zoom * size_plane[1]
     resolution = [ Nwx, Nwy ]
-    if (not quiet) then print, 'z-buffer resolution (in pixels) =', resolution
+    if (not quiet) then print, 'z-buffer resolution (in pixels) = '+str (resolution[0])+' * '+str (resolution[1])
     ; switch to Z buffer
     set_plot, 'z'
     ; set window size
@@ -305,11 +292,6 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     end
     window, xsize=700, ysize=700, title=title
   end
-
-  islice = 0
-
-  ; allow for skipping "stride" time slices, but make sure the first one is written
-  istride = stride
 
   ; read auxiliary data for Yin-Yang grid: number of points in merged (irregular) grid ngrid and merged grid itself
   if (yinyang and (extension eq 'yz')) then begin
@@ -341,7 +323,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     amax = !Values.F_NaN
     amin = !Values.F_NaN
     for pos = 1, last, stride+1 do begin
-      plane = pc_read (strtrim (pos, 2)+'/data', start=start, count=count)
+      plane = pc_read (str (pos)+'/data', start=start, count=count)
       if (keyword_set (exponential)) then begin
         amax = max ([ amax, exp (max (plane)) ], /NaN)
         amin = min ([ amin, exp (min (plane)) ], /NaN)
@@ -363,8 +345,8 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   end
 
   for pos = 1, last, stride+1 do begin
-    frame = strtrim (pos, 2)
-    index = (pos - 1) / stride
+    frame = str (pos)
+    index = (pos - 1) / (stride + 1)
     plane = pc_read (frame+'/data', start=start, count=count)
     t = pc_read (frame+'/time')
 ;
@@ -424,185 +406,141 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
     end
 ;
     if (keyword_set (shell)) then begin
-      ; do masking, if shell set.
+      ; do masking
       white = 255
-      if (extension eq 'xy') then begin
-        zrr = rebinbox (reform (rrxy,nx,ny), zoom)
-        indxy = where ((zrr lt r_int) or (zrr gt r_ext), num)
-        if (num gt 0) then plane2[indxy] = white
-      end
-      if (extension eq 'xy2') then begin
-        zrr2 = rebinbox (reform (rrxy2,nx,ny), zoom)
-        indxy2 = where ((zrr2 lt r_int) or (zrr2 gt r_ext), num)
-        if (num gt 0) then plane2[indxy2] = white
-      end
-      if (extension eq 'xy3') then begin
-        zrr3 = rebinbox (reform (rrxy3,nx,ny), zoom)
-        indxy3 = where ((zrr3 lt r_int) or (zrr3 gt r_ext), num)
-        if (num gt 0) then plane3[indxy3] = white
-      end
-      if (extension eq 'xz') then begin
-        yrr = rebinbox (reform (rrxz,nx,nz), zoom, /zdir)
-        indxz = where((yrr lt r_int) or (yrr gt r_ext), num)
-        if (num gt 0) then plane2[indxz] = white
-      end
-      if (extension eq 'yz') then begin
-        xrr = rebinbox (reform (rryz,ny,nz), zoom, /zdir)
-        indyz = where ((xrr lt r_int) or (xrr gt r_ext), num)
-        if (num gt 0) then plane2[indyz] = white
-      end
+      indices = where ((dist lt r_int) or (dist gt r_ext), num)
+      if (num gt 0) then plane2[indices] = white
     end
 ;
     if (keyword_set (debug)) then begin
       print, t, min ([ plane2, xy, xz, yz ]), max ([ plane2, xy, xz, yz ])
     end else begin
       if ((t ge tmin) and (t le tmax)) then begin
-        if (istride eq stride) then begin
-          if (keyword_set (automatic_scaling)) then begin
-            amax = max (plane2)
-            amin = min (plane2)
-          end
-;
-          ; show image scaled between amin and amax and filling whole screen
-          if (keyword_set (doublebuffer)) then begin
-            ; paint into buffer
-            window, xsize=wsx, ysize=wsy, /pixmap, /free
-            pixID = !D.Window
-          end
-;
-          if (keyword_set (contourplot)) then begin
-            lev = grange (amin, amax, 60)
-            xmargin = !x.margin - [ 4, -6 ]
-            title = '!8t!6 = '+strtrim (string (t/tunit, fo="(f7.1)"), 2)
-            if (keyword_set (spherical_surface)) then begin
-              xtitle = '!7u!6'
-              ytitle = '!7h!6'
-              if (yinyang) then begin
-                contourfill, plane2, y2, x2, lev=lev, _extra=_extra, tri=triangles, title=title, $
-                    xtitle=xtitle, ytitle=ytitle, xmar=xmargin, grid=gridplot
-              end else begin
-                contourfill, transpose(plane2), y2, x2, lev=lev, _extra=_extra, tri=triangles, $
-                    xtitle=xtitle, ytitle=ytitle, title=title, xmar=xmargin, grid=gridplot 
-              end
-            end else begin
-              xtitle = '!8y!6'
-              ytitle = '!8z!6'
-              contourfill, plane2, x2, y2, lev=lev, title=title, _extra=_extra, tri=triangles, $
-                  xtitle=xtitle, ytitle=ytitle, xmar=xmargin, grid=gridplot
-            end
-            colorbar_co,range=[min(lev),max(lev)],pos=[0.975,0.18,0.99,0.93],/vert, $
-                yticks=4, yminor=1, $  ;format='(f6.4)', $;ytickv=[min(lev),0.,max(lev)], $
-                char=1.5, col=0, xtit=quan, xchars=1.
-;
-          end else if (keyword_set (polar)) then begin
-            if (style_polar eq 'fill') then begin
-              contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-                  tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra, grid=gridplot
-            end else if (style_polar eq 'lines') then begin
-              contour, plane2, x2, y2, nlevels=nlevels, $
-                  tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
-              if (keyword_set (gridplot)) then oplot, x2, y2, psym=3
-            end
-;
-          end else if (keyword_set (spherical_surface)) then begin
-            ; spherical surface plot in a good projection still need to check whether /rotate is correct (see below)
-            theta2 = x2 / !dtor
-            phi = y2 / !dtor
-            if (keyword_set (phi_shift)) then phi -= phi_shift
-            !p.background = 255
-            map_set, 15, 60, /noborder, /isotropic, latdel=15, londel=15, $
-                limit=[-80,-30,90,160], xmargin=[0.5,7], ymargin=1.5, color=0, name=maptype
-;
-            lev = grange (.8*amin, amax, nlevels)
-            if (yinyang) then begin
-              tmp = plane2
-            end else begin
-              if (keyword_set (rotate)) then tmp = rotate (plane2,3) else tmp = transpose (plane2)
-            end
-            if (keyword_set (Beq)) then tmp = tmp / Beq
-            if (keyword_set (taud)) then t = t / taud
-;
-            mima = minmax (lev)
-            contour, (tmp > mima(0)) < mima(1), phi, 90.-theta2, lev=lev, /fill, /overplot, $
-                col=0, _extra=_extra, tri=triangles
-            if (keyword_set (gridplot)) then begin
-              oplot, phi, 90.-theta2, psym=3
-            end else begin
-              map_grid, latdel=15, londel=15
-            end
-            ;colorbar_co, range=[min(lev),max(lev)], pos=[0.07,0.3,0.10,0.65], /vert, $
-            colorbar_co, range=[min(lev),max(lev)], pos=[0.97,0.15,0.99,0.85], /vert, $
-                format='(F6.3)', yticks=4, yminor=1, $ ;ytickv=[min(lev),0.,max(lev)], $
-                charsize=1.5, col=0, xtit=quan, xchars=1.5
-            xyouts, 0.06, 0.06, '!8t!6 = '+str(t, fo='(f5.1)')+'', col=0, /normal, charsize=2
-            wait, wait
-          end else begin
-            ;plotimage, plane2, range=[amin,amax]
-            tv, bytscl (plane2, min=amin, max=amax), iplane
-          end
-          if (keyword_set (doublebuffer)) then begin
-            wset, windex
-            device, copy=[ 0, 0, !D.X_Size, !D.Y_Size, 0, 0, pixID ]
-            wdelete, pixID
-          end
-          if (keyword_set (savefile)) then begin
-            if (size (slices, /type) eq 0) then begin
-              slices = plane
-              times = t
-            end else begin
-              slices = [ [[slices]], [[plane]] ]
-              times = [ times, t ]
-            end
-          end
-          ;xyouts, 0.05, 0.9, /normal, $
-          ;    '!8t!6='+string(t/tunit, fo="(f6.1)"), color=color, size=textsize
-          if (keyword_set (png)) then begin
-            istr2 = strtrim (string (itpng, '(I20.4)'), 2) ; show maximum 9999 frames
-            image = tvrd()
-            ; make background white, and write png file
-            ;bad = where (image eq 0)
-            ;if (num gt 0) then image[bad] = 255
-            tvlct, red, green, blue, /get
-            imgname = imgdir+'/img_'+istr2+'.png'
-            write_png, imgname, image, red, green, blue
-            if (keyword_set (png_truecolor)) then spawn, 'mogrify -type TrueColor ' + imgname
-            itpng += 1
-          end else if (keyword_set (mpeg)) then begin
-            ; write MPEG file directly
-            ; for IDL v5.5+ this requires a MPEG license
-            image = tvrd (true=1)
-            if (keyword_set (colmpeg)) then begin
-              ; ngrs seem to need to work explictly with 24-bit color to generate color MPEGs
-              image24 = bytarr (3, Nwx, Nwy)
-              tvlct, red, green, blue, /get
-            end
-            for irepeat = 0, nrepeat do begin
-              if (keyword_set (colmpeg)) then begin
-                image24[0,*,*] = red (image[0,*,*])
-                image24[1,*,*] = green (image[0,*,*])
-                image24[2,*,*] = blue (image[0,*,*])
-                mpeg_put, mpegID, image=image24, frame=itmpeg, /order
-              end else begin
-                mpeg_put, mpegID, window=2, frame=itmpeg, /order
-              end
-              itmpeg += 1
-            end
-            if (not quiet) then print, islice, itmpeg, t, min([plane2]), max([plane2])
-          end else begin
-            ; default: output on the screen
-            if ((islice eq 0) and not quiet) then $
-                print, '----islice--------t----------min------------max--------'
-            if (not quiet) then print, islice, t, min ([plane2]), max ([plane2])
-          end
-          istride = 0
-          wait, wait
-          ; check whether file has been written
-          if (keyword_set (png)) then spawn, 'ls -l '+imgname
-        end else begin
-          istride += 1
+        if (keyword_set (automatic_scaling)) then begin
+          amax = max (plane2)
+          amin = min (plane2)
         end
+;
+        ; show image scaled between amin and amax and filling whole screen
+        if (keyword_set (doublebuffer)) then begin
+          ; paint into buffer
+          window, xsize=wsx, ysize=wsy, /pixmap, /free
+          pixID = !D.Window
+        end
+;
+        if (keyword_set (contourplot)) then begin
+          lev = grange (amin, amax, 60)
+          xmargin = !x.margin - [ 4, -6 ]
+          title = '!8t!6 = '+strtrim (string (t/tunit, fo="(f7.1)"), 2)
+          if (keyword_set (spherical_surface)) then begin
+            xtitle = '!7u!6'
+            ytitle = '!7h!6'
+            if (yinyang) then begin
+              contourfill, plane2, y2, x2, lev=lev, _extra=_extra, tri=triangles, title=title, xtitle=xtitle, ytitle=ytitle, xmar=xmargin, grid=gridplot
+            end else begin
+              contourfill, transpose(plane2), y2, x2, lev=lev, _extra=_extra, tri=triangles, xtitle=xtitle, ytitle=ytitle, title=title, xmar=xmargin, grid=gridplot 
+            end
+          end else begin
+            xtitle = '!8y!6'
+            ytitle = '!8z!6'
+            contourfill, plane2, x2, y2, lev=lev, title=title, _extra=_extra, tri=triangles, xtitle=xtitle, ytitle=ytitle, xmar=xmargin, grid=gridplot
+          end
+          colorbar_co,range=[min(lev),max(lev)],pos=[0.975,0.18,0.99,0.93],/vert, yticks=4, yminor=1, char=1.5, col=0, xtit=quan, xchars=1. ;, format='(f6.4)', $;ytickv=[min(lev),0.,max(lev)]
+;         end else if (keyword_set (polar)) then begin
+          if (style_polar eq 'fill') then begin
+            contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
+                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra, grid=gridplot
+          end else if (style_polar eq 'lines') then begin
+            contour, plane2, x2, y2, nlevels=nlevels, $
+                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
+            if (keyword_set (gridplot)) then oplot, x2, y2, psym=3
+          end
+;
+        end else if (keyword_set (spherical_surface)) then begin
+          ; spherical surface plot in a good projection still need to check whether /rotate is correct (see below)
+          theta2 = x2 / !dtor
+          phi = y2 / !dtor
+          if (keyword_set (phi_shift)) then phi -= phi_shift
+          !p.background = 255
+          map_set, 15, 60, /noborder, /isotropic, latdel=15, londel=15, limit=[-80,-30,90,160], xmargin=[0.5,7], ymargin=1.5, color=0, name=maptype
+;
+          lev = grange (.8*amin, amax, nlevels)
+          if (yinyang) then begin
+            tmp = plane2
+          end else begin
+            if (keyword_set (rotate)) then tmp = rotate (plane2,3) else tmp = transpose (plane2)
+          end
+          if (keyword_set (Beq)) then tmp = tmp / Beq
+          if (keyword_set (taud)) then t = t / taud
+;
+          mima = minmax (lev)
+          contour, (tmp > mima(0)) < mima(1), phi, 90.-theta2, lev=lev, /fill, /overplot, col=0, _extra=_extra, tri=triangles
+          if (keyword_set (gridplot)) then begin
+            oplot, phi, 90.-theta2, psym=3
+          end else begin
+            map_grid, latdel=15, londel=15
+          end
+          colorbar_co, range=[min(lev),max(lev)], pos=[0.97,0.15,0.99,0.85], /vert, format='(F6.3)', yticks=4, yminor=1, charsize=1.5, col=0, xtit=quan, xchars=1.5 ;, ytickv=[min(lev),0.,max(lev)]
+          xyouts, 0.06, 0.06, '!8t!6 = '+str(t, fo='(f5.1)')+'', col=0, /normal, charsize=2
+          wait, wait
+        end else begin
+          tv, bytscl (plane2, min=amin, max=amax), iplane
+        end
+        if (keyword_set (doublebuffer)) then begin
+          wset, windex
+          device, copy=[ 0, 0, !D.X_Size, !D.Y_Size, 0, 0, pixID ]
+          wdelete, pixID
+        end
+        if (keyword_set (savefile)) then begin
+          if (size (slices, /type) eq 0) then begin
+            slices = plane
+            times = t
+          end else begin
+            slices = [ [[slices]], [[plane]] ]
+            times = [ times, t ]
+          end
+        end
+        if (keyword_set (png)) then begin
+          istr2 = strtrim (string (itpng, '(I20.4)'), 2) ; show maximum 9999 frames
+          image = tvrd ()
+          ; make background white, and write png file
+          tvlct, red, green, blue, /get
+          imgname = imgdir+'/img_'+istr2+'.png'
+          write_png, imgname, image, red, green, blue
+          if (keyword_set (png_truecolor)) then spawn, 'mogrify -type TrueColor ' + imgname
+          itpng += 1
+        end else if (keyword_set (mpeg)) then begin
+          ; write MPEG file directly
+          ; for IDL v5.5+ this requires a MPEG license
+          image = tvrd (true=1)
+          if (keyword_set (colmpeg)) then begin
+            ; ngrs seem to need to work explictly with 24-bit color to generate color MPEGs
+            image24 = bytarr (3, Nwx, Nwy)
+            tvlct, red, green, blue, /get
+          end
+          for irepeat = 0, nrepeat do begin
+            if (keyword_set (colmpeg)) then begin
+              image24[0,*,*] = red (image[0,*,*])
+              image24[1,*,*] = green (image[0,*,*])
+              image24[2,*,*] = blue (image[0,*,*])
+              mpeg_put, mpegID, image=image24, frame=itmpeg, /order
+            end else begin
+              mpeg_put, mpegID, window=2, frame=itmpeg, /order
+            end
+            itmpeg += 1
+          end
+          if (not quiet) then print, pos, itmpeg, t, min([plane2]), max([plane2])
+        end else begin
+          ; default: output on the screen
+          if (not quiet) then begin
+            if (index eq 0) then print, '------it----------t----------min------------max--------'
+            print, pos, t, min ([plane2]), max ([plane2])
+          end
+        end
+        wait, wait
+        ; check whether file has been written
+        if (keyword_set (png)) then spawn, 'ls -l '+imgname
       end
-      islice += 1
     end
   end
   h5_close_file
@@ -616,7 +554,7 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   end
   if (keyword_set (png)) then set_plot, 'X'
   if (keyword_set (savefile)) then begin
-    num_slices = islice
+    num_slices = 1 + (last - first) / (stride + 1)
     save, file=savefile, slices, num_slices, times, x, y, z
   end
 ;
