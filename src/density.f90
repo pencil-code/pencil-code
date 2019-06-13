@@ -2016,7 +2016,7 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
            idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
-           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
+           idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or.&
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0 .or. idiag_rhomzmask/=0) &
            lpenc_diagnos(i_rho)=.true.
@@ -2270,7 +2270,7 @@ module Density
           !print*, 'it,m,n=', it,m,n
           print*, "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
           !print*, f(4,4,1:6,ilnrho)
-          call fatal_error_local('calc_pencils_density','NaNs in p%glnrho)')
+          call fatal_error_local('calc_pencils_density','NaNs in p%glnrho')
         endif
         if (lpenc_loc(i_grho)) then
           do i=1,3
@@ -2729,6 +2729,7 @@ module Density
         if (idiag_lnrhomin/=0) call max_mn_name(-p%lnrho,idiag_lnrhomin,lneg=.true.)
         if (idiag_lnrhomax/=0) call max_mn_name(p%lnrho,idiag_lnrhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
+        if (idiag_rhorms/=0)   call sum_mn_name(p%rho**2,idiag_rhorms,lsqrt=.true.)
         if (idiag_lnrho2m/=0)  call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_drho2m/=0)   call sum_mn_name((p%rho-rho0)**2,idiag_drho2m)
         if (idiag_drhom/=0)    call sum_mn_name(p%rho-rho0,idiag_drhom)
@@ -3262,7 +3263,7 @@ module Density
 !
       if (lreset) then
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
-        idiag_drho2m=0; idiag_drhom=0
+        idiag_drho2m=0; idiag_drhom=0; idiag_rhorms=0
         idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomin=0; idiag_lnrhomax=0;
@@ -3283,6 +3284,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomxmask',idiag_rhomxmask)
         call parse_name(iname,cname(iname),cform(iname),'rhomzmask',idiag_rhomzmask)
         call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
+        call parse_name(iname,cname(iname),cform(iname),'rhorms',idiag_rhorms)
         call parse_name(iname,cname(iname),cform(iname),'drho2m',idiag_drho2m)
         call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
         call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
