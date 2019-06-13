@@ -259,8 +259,12 @@ if (keyword_set(ogrid)) then logrid=1
 
     if (param.lyinyang) then yinyang=1
     if yinyang then begin
-      if (param.lcutoff_corners) then cutoff_corners=1
-      nycut=param.nycut & nzcut=param.nzcut
+      if tag_exists(param,'LCUTOFF_CORNERS') then begin
+        if (param.lcutoff_corners) then cutoff_corners=1
+        nycut=param.nycut & nzcut=param.nzcut
+      endif else begin
+        cutoff_corners=0 & nycut=0 & nzcut=0
+      endelse
     endif
 
   endif
