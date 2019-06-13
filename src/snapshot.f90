@@ -38,7 +38,8 @@ module Snapshot
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use General, only: safe_character_assign
-      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid, wdim
+      use IO, only: output_snap, log_filename_to_file, lun_output, wgrid
+      use HDF5_IO, only: wdim
       use Sub, only: read_snaptime, update_snaptime
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
