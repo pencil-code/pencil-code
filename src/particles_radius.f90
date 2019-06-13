@@ -266,16 +266,19 @@ module Particles_radius
             fp(k,iap) = 10**(alog10(ap0(j))+(ipar(k)-0.5)* &
                 (alog10(ap1)-alog10(ap0(j)))/npar)
           enddo
-          if (lparticles_density) then
-            do k=npar_low,npar_high
-              aplow =10**(alog10(fp(k,iap))-(alog10(ap1)-alog10(ap0(j)))/npar/2)
-              aphigh=10**(alog10(fp(k,iap))+(alog10(ap1)-alog10(ap0(j)))/npar/2)
-              if (qplaw /= 4) &
-                  fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) / &
-                                     (ap1**(4-qplaw) - ap0(j)**(4-qplaw)) * rhop_swarm * real(npar)
-            enddo
-            if (qplaw == 4) fp(npar_low:npar_high,irhopswarm) = rhop_swarm
-          endif
+!
+          lspd: if (lparticles_density) then
+            lsqp: if (qplaw /= 4) then
+              lsk: do k = npar_low, npar_high
+                aplow  = 10**(alog10(fp(k,iap)) - 0.5 * (alog10(ap1) - alog10(ap0(j))) / npar)
+                aphigh = 10**(alog10(fp(k,iap)) + 0.5 * (alog10(ap1) - alog10(ap0(j))) / npar)
+                fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) /
+                                   (ap1**(4-qplaw) - ap0(j)**(4-qplaw)) * rhop_swarm * real(npar)
+              enddo lsk
+            else lsqp
+              fp(npar_low:npar_high,irhopswarm) = rhop_swarm
+            endif lsqp
+          endif lspd
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution.
 !  Initialize particle radii by a direct probabilistic calculation using
