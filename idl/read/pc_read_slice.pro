@@ -10,24 +10,31 @@
 ;  04-Apr-2019/PABourdin: coded for Zafira
 ;
 ;
-function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=pos, datadir=datadir
+function pc_read_slice, quantity, plane, time=time, coordinate=coord, position=pos, datadir=datadir, first=first, last=last, skip=skip
 
   if (size (datadir, /type) eq 0) then datadir = pc_get_datadir (datadir)
 
   ; load one HDF5 slice, if datadir ends with '/slices'
-  last = pc_read ('last', filename=quantity+'_'+plane+'.h5', datadir=datadir+'/slices')
-  data = reform (dblarr ([ h5_get_size ('1/data'), last ]))
-  time = reform (dblarr (last))
-  coord = reform (dblarr (last))
-  pos = reform (lonarr (last))
+  last_slice = pc_read ('last', filename=quantity+'_'+plane+'.h5', datadir=datadir+'/slices')
+
+  default, first, 1
+  default, last, last_slice
+  default, skip, 0
+  num = 1 + (last - first) / (skip + 1)
+
+  data = reform (dblarr ([ h5_get_size ('1/data'), num ]))
+  time = reform (dblarr (num))
+  coord = reform (dblarr (num))
+  pos = reform (lonarr (num))
 
   ; iterate over slices
-  for slice = 1, last do begin
+  for slice = first, last, skip do begin
+    index = (slice - first) / (skip + 1)
     group = strtrim (slice, 2)
-    data[*,*,slice-1] = pc_read (group+'/data')
-    time[slice-1] = pc_read (group+'/time')
-    coord[slice-1] = pc_read (group+'/coordinate')
-    pos[slice-1] = pc_read (group+'/position')
+    data[*,*,index] = pc_read (group+'/data')
+    time[index] = pc_read (group+'/time')
+    coord[index] = pc_read (group+'/coordinate')
+    pos[index] = pc_read (group+'/position')
   end
   h5_close_file
 
