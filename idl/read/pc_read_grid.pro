@@ -54,26 +54,30 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
   if (file_test (datadir+'/grid.h5')) then begin
     ; HDF5
-    t = 0.0d0
-    x = h5_read ('grid/x', file=datadir+'/grid.h5')
-    y = h5_read ('grid/y')
-    z = h5_read ('grid/z')
-    dx = h5_read ('grid/dx')
-    dy = h5_read ('grid/dy')
-    dz = h5_read ('grid/dz')
-    Lx = h5_read ('grid/Lx')
-    Ly = h5_read ('grid/Ly')
-    Lz = h5_read ('grid/Lz')
-    dx_1 = h5_read ('grid/dx_1')
-    dy_1 = h5_read ('grid/dy_1')
-    dz_1 = h5_read ('grid/dz_1')
-    dx_tilde = h5_read ('grid/dx_tilde')
-    dy_tilde = h5_read ('grid/dy_tilde')
-    dz_tilde = h5_read ('grid/dz_tilde', /close)
-    found_Lxyz=1
-    found_grid_der=1
-
     if (size (dim, /type) eq 0) then pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, QUIET=QUIET, down=down
+    start = [ 0, 0, 0 ]
+    count = [ dim.mx, dim.my, dim.mz ]
+    if (size (proc, /type) ne 0) then start = [ dim.ipx*dim.nx, dim.ipy*dim.ny, dim.ipz*dim.nz ]
+
+    t = !Values.D_NaN
+    Lx = pc_read ('grid/Lx', file='grid.h5', datadir=datadir)
+    Ly = pc_read ('grid/Ly')
+    Lz = pc_read ('grid/Lz')
+    x = pc_read ('grid/x', start=start[0], count=count[0])
+    y = pc_read ('grid/y', start=start[1], count=count[1])
+    z = pc_read ('grid/z', start=start[2], count=count[2])
+    dx_1 = pc_read ('grid/dx_1', start=start[0], count=count[0])
+    dy_1 = pc_read ('grid/dy_1', start=start[1], count=count[1])
+    dz_1 = pc_read ('grid/dz_1', start=start[2], count=count[2])
+    dx_tilde = pc_read ('grid/dx_tilde', start=start[0], count=count[0])
+    dy_tilde = pc_read ('grid/dy_tilde', start=start[1], count=count[1])
+    dz_tilde = pc_read ('grid/dz_tilde', start=start[2], count=count[2])
+    dx = pc_read ('grid/dx')
+    dy = pc_read ('grid/dy')
+    dz = pc_read ('grid/dz', /close)
+    found_Lxyz = 1
+    found_grid_der = 1
+
     nx = dim.nx
     ny = dim.ny
     nz = dim.nz
