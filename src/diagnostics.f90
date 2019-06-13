@@ -1020,7 +1020,7 @@ module Diagnostics
 !   7-aug-03/wolf: adapted from wsnap
 !  24-Nov-2018/PABourdin: redesigned
 !
-      use IO, only: output_average
+      use HDF5_IO, only: output_average
 !
       if (lwrite_yaverages) &
           call output_average (directory_dist, 'y', nnamexz, cnamexz, fnamexz, t2davgfirst, .true., lfirst_proc_y)
