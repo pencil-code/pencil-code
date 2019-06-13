@@ -272,7 +272,7 @@ module Particles_radius
               lsk: do k = npar_low, npar_high
                 aplow  = 10**(alog10(fp(k,iap)) - 0.5 * (alog10(ap1) - alog10(ap0(j))) / npar)
                 aphigh = 10**(alog10(fp(k,iap)) + 0.5 * (alog10(ap1) - alog10(ap0(j))) / npar)
-                fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) /
+                fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) / &
                                    (ap1**(4-qplaw) - ap0(j)**(4-qplaw)) * rhop_swarm * real(npar)
               enddo lsk
             else lsqp
