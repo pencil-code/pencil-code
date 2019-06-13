@@ -919,7 +919,8 @@ module Param_IO
 !  Diff to old param2.nml.
 !
           if (file_exists('data/param2.nml.sv')) then
-            call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml | diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")  
+            call system_cmd("sed -e's/[eE]+*000*//g' -e's/ *, *$//' < data/param2.nml |"// &
+                            " diff -w data/param2.nml.sv - | grep '^[><]' >> data/params.log")  
             call delete_file('data/param2.nml.sv')
           endif
         endif
