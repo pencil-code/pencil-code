@@ -1,0 +1,3 @@
+[submodule "src/astaroth"]
+	path = src/astaroth
+	url = https://jpekkila@bitbucket.org/jpekkila/astaroth.git
