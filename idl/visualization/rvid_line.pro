@@ -5,10 +5,10 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   squared=squared, exsquared=exsquared, against_time=against_time,func=func, $
   findmax=findmax, csection=csection,xrange=xrange, $
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
-  log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
+  log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,psym=psym, $
   xstyle=xstyle,ystyle=ystyle,fluct=fluct,newwindow=newwindow, xsize=xsize, $
   ysize=ysize,png_truecolor=png_truecolor, noexp=noexp, $
-  xaxisscale=xaxisscale, normalize=normalize
+  xaxisscale=xaxisscale, normalize=normalize, quiet=quiet, _extra=_extra
 ;
 ; $Id$
 ;
@@ -19,18 +19,14 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
 ;  tmin is the time after which data are written
 ;  nrepeat is the number of repeated images (to slow down movie)
 ;
-;  Note:
-;    proc=0 no longer works. Use datadir='data/proc0' instead.
-;
 ;  Typical calling sequence
 ;  rvid_box,'bz',tmin=190,tmax=200,min=-.35,max=.35,/mpeg
-;  rvid_line,'by',datadir='data/proc0',/xgrid
-;  rvid_line,'XX_chiral',datadir='data/proc0',/xgrid,min=0,max=1
+;  rvid_line,'by',proc=0,/xgrid
+;  rvid_line,'XX_chiral',proc=1,/xgrid,min=0,max=1
 ;
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
-default,proc,-1
 default,field,'lnrho'
 default,datadir,'data'
 default,imgdir,'.'
@@ -53,6 +49,23 @@ default,amin,-amax
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
+; Load HDF5 slice if requested or available.
+;
+  if (file_test (datadir+'/slices', /directory)) then begin
+    rvid_line_hdf5, field, mpeg=mpeg, tmin=tmin, tmax=tmax, max=amax, min=amin,$
+        nrepeat=nrepeat, wait=wait, stride=stride, datadir=datadir, OLDFILE=OLDFILE,$
+        test=test, proc=proc, exponential=exponential, map=map, tt=tt, noplot=noplot,$
+        extension=extension, sqroot=sqroot, nocontour=nocontour, imgdir=imgdir, $
+        squared=squared, exsquared=exsquared, against_time=against_time, func=func, $
+        findmax=findmax, csection=csection, xrange=xrange, $
+        transp=transp, global_scaling=global_scaling, nsmooth=nsmooth, $
+        log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid, psym=psym, $
+        xstyle=xstyle, ystyle=ystyle, fluct=fluct, newwindow=newwindow, xsize=xsize, $
+        ysize=ysize, png_truecolor=png_truecolor, noexp=noexp, $
+        xaxisscale=xaxisscale, normalize=normalize, quiet=quiet, _extra=_extra
+    return
+  end
+;
 ; if png's are requested don't open a window
 ;
 if (not keyword_set(png)) then begin
@@ -61,14 +74,15 @@ if (not keyword_set(png)) then begin
   endif
 endif
 ;
-if not check_slices_par(field, proc ge 0 ? datadir+'/proc'+str(proc) : datadir, s) then return
+if (not check_slices_par(field, (size (proc, /type) ne 0) ? datadir+'/proc'+str(proc) : datadir, s)) then return
 ;
-cmd='if not s.'+strtrim(extension,2)+'read then begin print, "Slice '+extension+' missing!!!" & return & endif'
-ret=execute(cmd)
+if (not any (tag_names (s) eq strupcase (strtrim (extension,2)+'read'))) then begin
+  print, "rvid_line: ERROR: slice '"+extension+"' is missing!"
+  return
+endif
 ;
-if (proc ge 0) then begin
-  procstr=str(proc)
-  file_slice=datadir+'/proc'+procstr+'/slice_'+field+'.'+extension
+if (size (proc, /type) ne 0) then begin
+  file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
 endelse
@@ -81,20 +95,17 @@ if not file_test(file_slice) then begin
     print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
   return
 endif
-;;
-;;  Read the dimensions and precision (single or double) from dim.dat
-;;
-pc_read_dim, obj=dim, datadir=datadir, /quiet
+;
+;  Read the dimensions and precision (single or double) from dim.dat
+;
+pc_read_dim, obj=dim, proc=proc, datadir=datadir, /quiet
 nx=dim.nx
 ny=dim.ny
 nz=dim.nz
 ;
 t=0.*one
 islice=0
-axz=fltarr(nx*ny)*one
-slice_xpos=0.*one
-slice_ypos=0.*one
-slice_zpos=0.*one
+plane=fltarr(nx*ny)*one
 slice_z2pos=0.*one
 ;
 if (extension eq 'xy') then begin
@@ -105,8 +116,9 @@ endif else if (extension eq 'yz') then begin
   plane=fltarr(ny,nz)*one
 endif
 if (keyword_set(global_scaling)) then begin
-  first=1L
-  print, 'Reading "'+file_slice+'".'
+  amax=!Values.F_NaN
+  amin=!Values.F_NaN
+  if (not keyword_set (quiet)) then print, 'Reading "'+file_slice+'".'
   openr, lun, file_slice, /f77, /get_lun
   while (not eof(lun)) do begin
     if (keyword_set(OLDFILE)) then begin ; For files without position
@@ -115,50 +127,25 @@ if (keyword_set(global_scaling)) then begin
       readu, lun, plane, t, slice_z2pos
     endelse
     if (keyword_set(exponential)) then begin
-      if (first) then begin
-        amax=exp(max(plane))
-        amin=exp(min(plane))
-        first=0L
-      endif else begin
-        amax=max([amax,exp(max(plane))])
-        amin=min([amin,exp(min(plane))])
-      endelse
+      amax=max([amax,exp(max(plane))], /NaN)
+      amin=min([amin,exp(min(plane))], /NaN)
     endif else if (keyword_set(sqroot)) then begin
-      if (first) then begin
-        amax=sqrt(max(plane))
-        amin=sqrt(min(plane))
-        first=0L
-      endif else begin
-        amax=max([amax,sqrt(max(plane))])
-        amin=min([amin,sqrt(min(plane))])
-      endelse
+      amax=max([amax,sqrt(max(plane))], /NaN)
+      amin=min([amin,sqrt(min(plane))], /NaN)
     endif else if (keyword_set(log)) then begin
-      if (first) then begin
-        amax=alog(max(plane))
-        amin=alog(min(plane))
-        first=0L
-      endif else begin
-        amax=max([amax,alog(max(plane))])
-        amin=min([amin,alog(min(plane))])
-      endelse
+      amax=max([amax,alog(max(plane))], /NaN)
+      amin=min([amin,alog(min(plane))], /NaN)
     endif else begin
-      if (first) then begin
-        amax=max(plane)
-        amin=min(plane)
-        first=0L
-      endif else begin
-        amax=max([amax,max(plane)])
-        amin=min([amin,min(plane)])
-      endelse
+      amax=max([amax,max(plane)], /NaN)
+      amin=min([amin,min(plane)], /NaN)
     endelse
   end
   close, lun
   free_lun, lun
-  print,'Scale using global min, max: ', amin, amax
+  if (not keyword_set (quiet)) then print, 'Scale using global min, max: ', amin, amax
 endif
 ;
-;
-pc_read_grid, object=grid, dim=dim, datadir=datadir, /trim
+pc_read_grid, object=grid, proc=proc, dim=dim, datadir=datadir, /trim, quiet=quiet
 ;
 if (xgrid) then begin
   xaxisscale=grid.x
@@ -185,7 +172,7 @@ endif else if (keyword_set(mpeg)) then begin
   Nwy=!d.y_size
   if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
   mpeg_name = 'movie.mpg'
-  print,'write mpeg movie: ',mpeg_name
+  if (not keyword_set (quiet)) then print,'write mpeg movie: ',mpeg_name
   mpegID = mpeg_open([Nwx,Nwy],FILENAME=mpeg_name)
   itmpeg=0 ;(image counter)
 endif
@@ -196,73 +183,69 @@ endif
 istride=stride ;(make sure the first one is written)
 ;
 it=0
-print, 'Reading "'+file_slice+'".'
+if (not keyword_set (quiet)) then print, 'Reading "'+file_slice+'".'
 openr, lun, file_slice, /f77, /get_lun
+plane_read = plane
 while (not eof(lun)) do begin
-  if (extension eq 'xy') then begin
-    axz=fltarr(nx,ny)*one
-  endif else if (extension eq 'xz') then begin
-    axz=fltarr(nx,nz)*one
-  endif else if (extension eq 'yz') then begin
-    axz=fltarr(ny,nz)*one
-  endif
-;
   if (keyword_set(OLDFILE)) then begin ; For files without position
-    readu, lun, axz, t
+    readu, lun, plane_read, t
   endif else begin
-    readu, lun, axz, t, slice_z2pos
+    readu, lun, plane_read, t, slice_z2pos
   endelse
+  plane = plane_read
 ;
-  if (keyword_set(transp)) then axz=transpose(axz)
-  default,csection,((size(axz))[2]+1)/2
-  axz=reform(axz)
-  if ((size(axz))[0] gt 1) then begin
-    axz=reform(axz[*,csection])
+  if (keyword_set(transp)) then plane=transpose(plane)
+  default,csection,((size(plane))[2]+1)/2
+  plane=reform(plane)
+  if ((size(plane))[0] gt 1) then begin
+    plane=reform(plane[*,csection])
   endif
-  if (keyword_set(sqroot)) then axz=sqrt(axz)
-  if (keyword_set(log)) then axz=alog(axz)
-  if (keyword_set(squared)) then axz=axz^2
-  if (keyword_set(exsquared)) then axz=exp(axz)^2
-  if (keyword_set(nsmooth)) then axz=smooth(axz,nsmooth)
-  if (keyword_set(fluct)) then axz=axz-mean(axz)
-  if (keyword_set(normalize)) then axz=axz/sqrt(mean(axz^2))
+  if (keyword_set(sqroot)) then plane=sqrt(plane)
+  if (keyword_set(log)) then plane=alog(plane)
+  if (keyword_set(squared)) then plane=plane^2
+  if (keyword_set(exsquared)) then plane=exp(plane)^2
+  if (keyword_set(nsmooth)) then plane=smooth(plane,nsmooth)
+  if (keyword_set(fluct)) then plane=plane-mean(plane)
+  if (keyword_set(normalize)) then plane=plane/sqrt(mean(plane^2))
   if (keyword_set(func)) then begin
-    value=axz
-    res=execute('axz='+func,1)
+    value=plane
+    res=execute('plane='+func,1)
   endif
 ;
   if (keyword_set(findmax)) then begin
-    findshock,axz,xaxisscale,leftpnt=leftpnt,rightpnt=rightpnt
-    if (it eq 0) then begin
-      max_left=leftpnt
-      max_right=rightpnt
-    endif else begin
-      max_left=[max_left, leftpnt]
-      max_right=[max_right, rightpnt]
-    endelse
+    ; [PABourdin]: the parameter 'findmax' has no function in the rest of the code, yet!
+    ; [PABourdin]: the 'findshock' procedure does not exist in the PC! Therfore commented:
+    ;findshock,plane,xaxisscale,leftpnt=leftpnt,rightpnt=rightpnt
+    ;if (it eq 0) then begin
+    ;  max_left=leftpnt
+    ;  max_right=rightpnt
+    ;endif else begin
+    ;  max_left=[max_left, leftpnt]
+    ;  max_right=[max_right, rightpnt]
+    ;endelse
   endif
 ;
   if (it eq 0) then tt=t else tt=[tt,t]
-  if (it eq 0) then map=axz else map=[map,axz]
+  if (it eq 0) then map=plane else map=[map,plane]
   it=it+1L
 ;
   if (keyword_set(test)) then begin
-    if (not keyword_set(noplot)) then $
-        print,t,min([axz,xy,xz,yz]),max([axz,xy,xz,yz])
+    if (not keyword_set(noplot) and not keyword_set (quiet)) then $
+        print,t,min([plane,xy,xz,yz]),max([plane,xy,xz,yz])
   endif else begin
     if (t ge tmin and t le tmax) then begin
       if (istride eq stride) then begin
         if (not keyword_set(noplot)) then begin
           if (keyword_set(exponential)) then begin
-            plot, xaxisscale, exp(axz), psym=psym, yrange=[amin,amax], $
+            plot, xaxisscale, exp(plane), psym=psym, yrange=[amin,amax], $
                 xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endif else begin
-            plot, xaxisscale, axz, psym=psym, yrange=[amin,amax], _extra=_extra, $
+            plot, xaxisscale, plane, psym=psym, yrange=[amin,amax], _extra=_extra, $
                 xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endelse
         endif
         if (keyword_set(png)) then begin
-          istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
+          istr2 = string(itpng,'(I4.4)') ; maximum 9999 frames
           image = tvrd()
 ;
 ;  make background white, and write png file
@@ -284,12 +267,12 @@ while (not eof(lun)) do begin
             mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
             itmpeg=itmpeg+1 ;(counter)
           end
-          print,islice,itmpeg,t,min([axz]),max([axz])
+          if (not keyword_set (quiet)) then print,islice,itmpeg,t,min([plane]),max([plane])
         endif else begin
 ;
 ; default: output on the screen
 ;
-          if (not keyword_set(noplot)) then print,islice,t,min([axz]),max([axz])
+          if (not keyword_set(noplot) and not keyword_set (quiet)) then print,islice,t,min([plane]),max([plane])
         endelse
         istride=0
         wait,wait
@@ -311,14 +294,14 @@ free_lun, lun
 ;  write & close mpeg file
 ;
 if (keyword_set(mpeg)) then begin
-  print,'Writing MPEG file..'
+  if (not keyword_set (quiet)) then print,'Writing MPEG file..'
   mpeg_save, mpegID, FILENAME=mpeg_name
   mpeg_close, mpegID
 endif
 ;
 ;  reform map appropriately
 ;
-nxz=n_elements(axz)
+nxz=n_elements(plane)
 nt=it
 map=reform(map,nxz,nt)
 ;
