@@ -1015,6 +1015,7 @@ module Magnetic
       endif
 !
       call put_shared_variable('rhoref', rhoref)
+      call put_shared_variable('eta', eta)
 !
 !  Shear of B_ext,x is not implemented.
 !
@@ -1941,7 +1942,7 @@ module Magnetic
         case ('coswave-Az-kz'); call coswave(amplaa(j),f,iaz,kz=kz_aa(j))
         case ('sinwave-Ay-kz'); call sinwave_phase(f,iay,amplaa(j),kx_aa(j),ky_aa(j),kz_aa(j),phasez_aa(j))
         case ('dipole'); call dipole(f,iax,amplaa(j))
-        case ('dipole_tor'); call dipole_tor(f,iax,amplaa(j))
+        case ('dipole_tor'); call dipole_tor(f,iax,amplaa(j))    !,ladd=.true.)
         case ('linear-zx')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=-0.5*amplaa(j)*z(n)**2/Lxyz(3)
@@ -2990,9 +2991,9 @@ module Magnetic
             call dot2_mn(bb,b2)
             tmp= b2*mu01*rho1
             if (lcheck_positive_va2 .and. minval(tmp)<0.0) then
-              print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
-              print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc_world
-              print*, 'calc_pencils_magnetic: m, y(m), n, z(n)=', m, y(m), n, z(n)
+              print*, 'magnetic_before_boundary: Alfven speed is imaginary!'
+              print*, 'magnetic_before_boundary: it, itsub, iproc=', it, itsub, iproc_world
+              print*, 'magnetic_before_boundary: m, y(m), n, z(n)=', m, y(m), n, z(n)
               tmp=abs(tmp)
             endif
             f(l1:l2,m,n,ialfven)= tmp
@@ -8131,11 +8132,18 @@ module Magnetic
 !
 !  default to spread gradient over ~5 grid cells.
 !
+           if (eta_xwidth == 0.) eta_xwidth = Lxyz(1)
            eta_x = eta*(1.+(x-xyz1(1))/eta_xwidth)
 !
 ! its gradient:
 !
            geta_x = eta/eta_xwidth
+!
+        case ('quadratic')
+
+           eta_x = eta*((2.*x-(xyz0(1)+xyz1(1)))/Lxyz(1))**2+eta_min
+
+           geta_x = (4./Lxyz(1))*eta*((2.*x-(xyz0(1)+xyz1(1)))/Lxyz(1))
 !
 !  Single step function
 !  Note that eta_x increases with increasing x when eta_xwidth is negative (!)
