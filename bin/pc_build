@@ -45,7 +45,8 @@
 #                   Build with the same flags as the previous time.
 #   -q, --quiet     Be quiet.
 #   -t, --target=<target>
-#                   Choose a target, default: "default-to-be" (=full code)
+#                   Choose a target, default: "default-to-be" (=EXECUTABLES).
+#                   Target "ALL": all helpers in subdirectory "src".
 #   -v, --version   Print version number.
 # Examples:
 #   pc_build
