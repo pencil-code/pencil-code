@@ -152,7 +152,7 @@ CONVERSION_RELAXED =
 # Defaults for external libraries.
 #
 CFLAGS_FFTW3  =
-xFFLAGS_FFTW3 =
+FFLAGS_FFTW3  =
 LD_FFTW3      =
 CFLAGS_FFTW2  =
 FFLAGS_FFTW2  =
@@ -2800,7 +2800,7 @@ code: Makefile.inc Makefile-standard.inc cparam.inc
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 #
-FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
+FASTEXECS=start.x run.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \

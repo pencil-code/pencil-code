@@ -110,6 +110,21 @@ pc_meanfield_collect:
 pc_h5collect:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ experimental/pc_h5collect.x )
+read_all_videofiles:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ read_all_videofiles.x )
+read_videofiles:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ read_videofiles.x )
+combine_videofiles:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ combine_videofiles.x )
+read_vectorfiles:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ read_vectorfiles.x )
+fast:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ fast )
 
 # This should be triggered automatically, only if "pencil-code/src/Makefile.src" has changed, but is currently inactive:
 setupsrc_inc: $(PENCIL_HOME)/src/Makefile.src

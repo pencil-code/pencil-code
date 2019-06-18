@@ -9,6 +9,7 @@
 # Name:   pc_build
 # Author: wd (wdobler [at] gmail [dot] com)
 # Date:   23-Jun-2009
+# Modified: 18-jun-2019/MR: added option --target=<targetname> (-t=<targetname>) for choosing a target
 # SVN: $Id$
 # Description:
 #   Compile the Pencil Code, using settings from the 'Makefile' section in
@@ -41,8 +42,10 @@
 #       --notify    Tell us (audibly and visually) when compilation is done.
 #       --fast      Shortcut for the option FFLAGS+='-O0'.
 #   -p, --previous-flags
-#                   Build with the same flags as the prvious time.
+#                   Build with the same flags as the previous time.
 #   -q, --quiet     Be quiet.
+#   -t, --target=<target>
+#                   Choose a target, default: "default-to-be" (=full code)
 #   -v, --version   Print version number.
 # Examples:
 #   pc_build
@@ -121,6 +124,7 @@ GetOptions(\%opts,
                     --fast
                -p   --previous-flags
                -q   --quiet
+               -t=s --target=s
                -v   --version )
           ) or die "Aborting.\n";
 
@@ -144,6 +148,14 @@ my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
+my $target       = ($opts{'t'} || $opts{'target'}         || undef);
+
+if (!defined $target){
+    $target = 'default_to_be';
+}
+else{
+    $target = (split("=",$target))[-1];
+}
 
 if ($show_system_host_id) {
     my $id = Pencil::ConfigFinder::get_host_id_system_info();
@@ -229,11 +241,14 @@ push @make_args, @extra_make_args;
 # pencil-test's -Wa or gcc's -Wl options
 map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 
-print STDERR "Running make '", join("' '", @make_args, 'default_to_be'), "'\n"
+print STDERR "Running make '", join("' '", @make_args, $target), "'\n"
   unless ($quiet);
-
-make(@make_args, 'default_to_be');
-
+if ($target eq "ALL"){
+  make(@make_args, 'fast');
+}
+else{
+  make(@make_args, $target);
+}
 
 # ---------------------------------------------------------------------- #
 sub make {
