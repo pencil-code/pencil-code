@@ -132,7 +132,9 @@ sub find_config_file_for_os {
 
     if (($os eq "Darwin") || ($os eq "GNU_Linux") || ($os eq "Solaris")) {
         my $compiler = 'GNU-GCC';
-        if (`which mpif90`) { $compiler .= '_MPI'; }
+        if (`egrep -c '^[        ]*MPICOMM[      ]*=[    ]*mpicomm' src/Makefile.local` > 0) {
+          if (`which mpif90`) { $compiler .= '_MPI'; }
+        }
         return find_config_file_for($compiler, 'compilers');
     }
     return find_config_file_for($os, 'os');
