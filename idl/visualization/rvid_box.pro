@@ -37,7 +37,7 @@
 pro rvid_box, field, $
   mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, tmax=tmax, $
   max=amax,min=amin, noborder=noborder, imgprefix=imgprefix, imgdir=imgdir, $
-  dev=dev, nrepeat=nrepeat, wait=wait, stride=stride, datadir=datatopdir, $
+  dev=dev, nrepeat=nrepeat, wait=wait, stride=stride, datadir=datadir, $
   noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
   title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
   exponential=exponential, sqroot=sqroot, logarithmic=logarithmic, $
@@ -59,6 +59,7 @@ pro rvid_box, field, $
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
+datadir = pc_get_datadir(datadir)
 default,amax,0.05
 default,amin,-amax
 default,field,'lnrho'
@@ -106,8 +107,33 @@ default,norm,1.0
 default,swap_endian,0
 default,quiet_skip,1
 default,yinyang,0
-slice_names=['xy','xy2','xy3','xy4','xz','xz2','yz']
-
+;
+; Load HDF5 slice if requested or available.
+;
+  if (file_test (datadir+'/slices', /directory)) then begin
+    rvid_box_hdf5, field, $
+        mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, tmax=tmax, $
+        max=amax, min=amin, noborder=noborder, imgprefix=imgprefix, imgdir=imgdir, $
+        dev=dev, nrepeat=nrepeat, wait=wait, stride=stride, datadir=datadir, $
+        noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
+        title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
+        exponential=exponential, sqroot=sqroot, logarithmic=logarithmic, $
+        shell=shell, centred=centred, r_int=r_int, r_ext=r_ext, colmpeg=colmpeg, $
+        z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
+        z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
+        magnify=magnify, ymagnify=ymagnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, $
+        xmax=xmax, ymax=ymax, sample=sample, $
+        xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
+        size_label=size_label, $
+        monotonous_scaling=monotonous_scaling, symmetric_scaling=symmetric_scaling, $
+        automatic_scaling=automatic_scaling, roundup=roundup, $
+        nobottom=nobottom, oversaturate=oversaturate, cylinder=cylinder, $
+        tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
+        divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
+        bnorm=bnorm, newwindow=newwindow, axes=axes, ct=ct, neg=neg, scale=scale, $
+        colorbarpos=colorbarpos, quiet=quiet_skip
+    return
+  end
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
@@ -121,21 +147,7 @@ endif
 ;
 first_print = 1
 ;
-; Construct location of slice_var.plane files
-;
-datatopdir = pc_get_datadir(datatopdir)
-datadir=datatopdir
-;
-;  by default, look in data/, assuming we have run read_videofiles.x before:
-;
-if (n_elements(proc) le 0) then begin
-  pc_read_dim, obj=dim, datadir=datatopdir,/quiet
-  if (dim.nprocx*dim.nprocy*dim.nprocz eq 1) then datadir=datatopdir+'/proc0'
-endif else begin
-  datadir=datatopdir+'/'+proc
-endelse
-;
-if not check_slices_par(field, datadir, s) then return
+if not check_slices_par(field, arg_present(proc) ? datadir+'/proc'+str(proc) : datadir, s) then return
 ;
 if not (s.xyread and s.xy2read and s.xzread and s.yzread) then begin
   if not s.xyread then print, 'Slice xy missing!!!' 
@@ -183,7 +195,7 @@ ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 ;
 ;  Consider non-equidistant grid
 ;
-pc_read_param, obj=par, dim=dim, datadir=datatodir, /quiet
+pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet
 if not all(par.lequidist) then begin
   massage = 1
   pc_read_grid, obj=grid, dim=dim, datadir=datadir, /trim, /quiet
