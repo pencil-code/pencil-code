@@ -31,12 +31,12 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     shell=shell,r_int=r_int, $
     r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
     contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
-    nsmooth=nsmooth, cubic=cubic, textsize=textsize, _extra=_extra, $
+    nsmooth=nsmooth, cubic=cubic, textsize=textsize, $
     polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
     interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
-    Beq=Beq,taud=taud,grid=gridplot,maptype=maptype
+    Beq=Beq,taud=taud,grid=gridplot,maptype=maptype, _extra=_extra
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -103,12 +103,12 @@ sample = ~keyword_set(interp)
         shell=shell,r_int=r_int, $
         r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
         contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit, $
-        nsmooth=nsmooth, cubic=cubic, textsize=textsize, _extra=_extra, $
+        nsmooth=nsmooth, cubic=cubic, textsize=textsize, $
         polar=polar, anglecoord=anglecoord, style_polar=style_polar, $
         spherical_surface=spherical_surface, nlevels=nlevels, $
         doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
         interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
-        Beq=Beq,taud=taud,grid=gridplot,maptype=maptype
+        Beq=Beq,taud=taud,grid=gridplot,maptype=maptype, _extra=_extra
     return
   end
 ;
@@ -164,7 +164,7 @@ if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then extension='yz'
 ;
 ;  Consider non-equidistant grid
 ;
-pc_read_param, obj=par, dim=dim, datadir=datatodir, /quiet
+pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet
 if not all(par.lequidist) then begin
   massage = 1
 ;
