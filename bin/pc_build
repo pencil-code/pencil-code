@@ -46,7 +46,7 @@
 #   -q, --quiet     Be quiet.
 #   -t, --target=<target>
 #                   Choose a target, default: "default-to-be" (=EXECUTABLES).
-#                   Target "ALL": all helpers in subdirectory "src".
+#                   Target "ALL": all executables in subdirectory "src".
 #   -v, --version   Print version number.
 # Examples:
 #   pc_build
