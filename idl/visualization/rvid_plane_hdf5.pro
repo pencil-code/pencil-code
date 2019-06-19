@@ -125,45 +125,42 @@ pro rvid_plane_hdf5, field, mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin
   x = grid.x(dim.l1:dim.l2)
   y = grid.y(dim.m1:dim.m2)
   z = grid.z(dim.n1:dim.n2)
-print, 'X', x
-print, 'Y', y
-print, 'Z', z
 ;
   ; adjust extension for 2D runs
   if ((nx ne 1) and (ny ne 1) and (nz eq 1)) then extension = 'xy'
   if ((nx ne 1) and (ny eq 1) and (nz ne 1)) then extension = 'xz'
   if ((nx eq 1) and (ny ne 1) and (nz ne 1)) then extension = 'yz'
 ;
-  ; consider non-equidistant grid
-  pc_read_param, obj=par, dim=dim, datadir=datatodir, /quiet
+  pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet
   if (not all (par.lequidist)) then begin
+    ; consider non-equidistant grid
     destretch = 1
 ;
     if ((nx gt 1) and not par.lequidist[0]) then begin
       x0 = 0.5 * (grid.x[dim.l1-1] + grid.x[dim.l1])
       x1 = 0.5 * (grid.x[dim.l2] + grid.x[dim.l2+1])
       dx = (x1 - x0) / nx
-      iix = spline(grid.x, findgen(mx) - nghostx, x0 + (findgen(nx) + 0.5) * dx)
+      iix = spline (grid.x, findgen(mx) - nghostx, x0 + (findgen(nx) + 0.5) * dx)
     end else begin
-      iix = findgen(nx)
+      iix = findgen (nx)
     end
 ;
     if ((ny gt 1) and not par.lequidist[1]) then begin
       y0 = 0.5 * (grid.y[dim.m1-1] + grid.y[dim.m1])
       y1 = 0.5 * (grid.y[dim.m2] + grid.y[dim.m2+1])
       dy = (y1 - y0) / ny
-      iiy = spline(grid.y, findgen(my) - nghosty, y0 + (findgen(ny) + 0.5) * dy)
+      iiy = spline (grid.y, findgen(my) - nghosty, y0 + (findgen(ny) + 0.5) * dy)
     end else begin
-      iiy = findgen(ny)
+      iiy = findgen (ny)
     end
 ;
     if ((nz gt 1) and not par.lequidist[2]) then begin
       z0 = 0.5 * (grid.z[dim.n1-1] + grid.z[dim.n1])
       z1 = 0.5 * (grid.z[dim.n2] + grid.z[dim.n2+1])
       dz = (z1 - z0) / nz
-      iiz = spline(grid.z, findgen(mz) - nghostz, z0 + (findgen(nz) + 0.5) * dz)
+      iiz = spline (grid.z, findgen(mz) - nghostz, z0 + (findgen(nz) + 0.5) * dz)
     end else begin
-      iiz = findgen(nz)
+      iiz = findgen (nz)
     end
 ;
     if (extension eq 'xy') then begin
@@ -183,10 +180,10 @@ print, 'Z', z
   file_slice = field+'_'+extension+'.h5'
 ;
   if (not file_test (datadir+'/slices/'+file_slice)) then begin
-    print, 'Slice file "'+datadir+'/slices/'+file_slice+'" does not exist!!!'
+    print, 'Slice file "'+datadir+'/slices/'+file_slice+'" does not exist!'
     pos = strpos (file_slice, '_'+extension)
     compfile = strmid (file_slice, 0, pos)+'1_'+extension+'.h5'
-    if (file_test (datadir+'/slices/'+compfile)) then print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
+    if (file_test (datadir+'/slices/'+compfile)) then print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!'
     return
   end
 ;
@@ -318,28 +315,26 @@ print, 'Z', z
 
   if (not quiet) then print, 'Array size: ', size_plane, yinyang ? '(Yin-Yang grid)' : ''
 
-  tiny = 1e-30
   if (keyword_set (global_scaling)) then begin
     amax = !Values.F_NaN
     amin = !Values.F_NaN
     for pos = 1, last, stride+1 do begin
-      plane = pc_read (str (pos)+'/data', start=start, count=count)
-      if (keyword_set (exponential)) then begin
-        amax = max ([ amax, exp (max (plane)) ], /NaN)
-        amin = min ([ amin, exp (min (plane)) ], /NaN)
-      end else if (keyword_set (log)) then begin
-        amax = max ([ amax, alog10 (max (plane)) ], /NaN)
-        amin = min ([ amin, alog10 (min (plane) > tiny) ], /NaN)
-      end else if (keyword_set (nsmooth)) then begin
-        amax = max([ amax, max (smooth (plane, nsmooth)) ], /NaN)
-        amin = min([ amin, min (smooth (plane, nsmooth)) ], /NaN)
-      end else if (keyword_set (sqroot)) then begin
-        amax = max ([ amax, sqrt (max (plane)) ], /NaN)
-        amin = min ([ amin, sqrt (min (plane)) ], /NaN)
-      end else begin
-        amax = max ([ amax, max (plane) ], /NaN)
-        amin = min ([ amin, min (plane) ], /NaN)
-      end
+      frame = str (pos)
+      plane = pc_read (frame+'/data', start=start, count=count)
+      if (keyword_set (nsmooth)) then plane = smooth (plane, nsmooth)
+      amax = max ([ amax, max (plane) ], /NaN)
+      amin = min ([ amin, min (plane) ], /NaN)
+    end
+    if (keyword_set (exponential)) then begin
+      amax = exp (amax)
+      amin = exp (amin)
+    end else if (keyword_set (log)) then begin
+      tiny = 1e-30
+      amax = alog10 (amax)
+      amin = alog10 (amin > tiny)
+    end else if (keyword_set (sqroot)) then begin
+      amax = sqrt (amax)
+      amin = sqrt (amin)
     end
     if (not quiet) then print, 'Scale using global min, max: ', amin, amax
   end
@@ -501,7 +496,7 @@ print, 'Z', z
           end
         end
         if (keyword_set (png)) then begin
-          istr2 = strtrim (string (itpng, '(I20.4)'), 2) ; show maximum 9999 frames
+          istr2 = string (itpng, '(I4.4)') ; show maximum 9999 frames
           image = tvrd ()
           ; make background white, and write png file
           tvlct, red, green, blue, /get
