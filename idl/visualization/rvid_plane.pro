@@ -264,117 +264,23 @@ if (keyword_set(shell)) then begin
 ;
 ;  To mask outside shell, need full grid; read from varfiles.
 ;
-  datalocdir=datadir+'/proc0'
-  mxloc=0L
-  myloc=0L
-  mzloc=0L
-;
-  openr, lun, datalocdir+'/'+dimfile, /get_lun
-  readf, lun, mxloc,myloc,mzloc
-  close, lun
-  free_lun, lun
-;
-  nxloc=mxloc-2*nghostx
-  nyloc=myloc-2*nghosty
-  nzloc=mzloc-2*nghostz
-;
-  x=fltarr(mx)*one
-  y=fltarr(my)*one
-  z=fltarr(mz)*one
-  xloc=fltarr(mxloc)*one
-  yloc=fltarr(myloc)*one
-  zloc=fltarr(mzloc)*one
-  readstring=''
-;
-  for i=0,ncpus-1 do begin        ; read data from individual files
-    if (size(proc, /type) ne 0) then begin
-      datalocdir=datadir+'/proc'+str(proc)
-    endif else begin
-      datalocdir=datadir+'/proc'+strtrim(i,2)
-    endelse
-;  Read processor position.
-    dummy=''
-    ipx=0L
-    ipy=0L
-    ipz=0L
-    openr, lun, datalocdir+'/'+dimfile
-    readf, lun, dummy
-    readf, lun, dummy
-    readf, lun, dummy
-    readf, lun, ipx,ipy,ipz
-    close, lun
-    free_lun, lun
-    openr, lun, datalocdir+'/'+varfile, /F77, swap_endian=swap_endian
-    if (execute('readu, lun'+readstring) ne 1) then $
-        message, 'Error reading: ' + 'readu, lun'+readstring
-    readu, lun, t, xloc, yloc, zloc
-    close, lun
-    free_lun, lun
-;
-;  Don't overwrite ghost zones of processor to the left (and accordingly in
-;  y and z direction makes a difference on the diagonals).
-;
-    if (ipx eq 0) then begin
-      i0x=ipx*nxloc
-      i1x=i0x+mxloc-1
-      i0xloc=0
-      i1xloc=mxloc-1
-    endif else begin
-      i0x=ipx*nxloc+nghostx
-      i1x=i0x+mxloc-1-nghostx
-      i0xloc=nghostx
-      i1xloc=mxloc-1
-    endelse
-;
-    if (ipy eq 0) then begin
-      i0y=ipy*nyloc
-      i1y=i0y+myloc-1
-      i0yloc=0
-      i1yloc=myloc-1
-    endif else begin
-      i0y=ipy*nyloc+nghosty
-      i1y=i0y+myloc-1-nghosty
-      i0yloc=nghosty
-      i1yloc=myloc-1
-    endelse
-;
-    if (ipz eq 0) then begin
-      i0z=ipz*nzloc
-      i1z=i0z+mzloc-1
-      i0zloc=0
-      i1zloc=mzloc-1
-    endif else begin
-      i0z=ipz*nzloc+nghostz
-      i1z=i0z+mzloc-1-nghostz
-      i0zloc=nghostz
-      i1zloc=mzloc-1
-    endelse
-;
-    x[i0x:i1x] = xloc[i0xloc:i1xloc]
-    y[i0y:i1y] = yloc[i0yloc:i1yloc]
-    z[i0z:i1z] = zloc[i0zloc:i1zloc]
-;
-  endfor
-;
-  xx = spread(x, [1,2], [my,mz])
-  yy = spread(y, [0,2], [mx,mz])
-  zz = spread(z, [0,1], [mx,my])
+  xx = spread(grid.x, [1,2], [my,mz])
+  yy = spread(grid.y, [0,2], [mx,mz])
+  zz = spread(grid.z, [0,1], [mx,my])
   rr = sqrt(xx^2+yy^2+zz^2)
 ;
-;  Assume slices are all central for now -- perhaps generalize later.
-;  nb: need pass these into boxbotex_scl for use after scaling of image;
-;      otherwise pixelisation can be severe...
-;  nb: at present using the same z-value for both horizontal slices;
-;      hardwired into boxbotex_scl, also.
+;  Assume slices are all central for now - perhaps generalize later.
+;  nb: need pass these into boxbotex_scl for use after scaling of image; otherwise pixelisation can be severe...
+;  nb: at present using the same z-value for both horizontal slices; hardwired into boxbotex_scl, also.
 ;
-  ix=mx/2
-  iy=my/2
-  iz=mz/2
-  if (extension eq 'xy') then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  if (extension eq 'xy2') then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  if (extension eq 'xy3') then rrxy3=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  if (extension eq 'xz') then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
-  if (extension eq 'yz') then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
+  ix = nx / 2
+  iy = ny / 2
+  iz = nz / 2
+  if (extension eq 'xy') then rrxy =rr[nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz]
+  if (extension eq 'xy2') then rrxy2=rr[nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz]
+  if (extension eq 'xy3') then rrxy3=rr[nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz]
+  if (extension eq 'xz') then rrxz =rr[nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1]
+  if (extension eq 'yz') then rryz =rr[ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1]
 ;
 endif
 ;
