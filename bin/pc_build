@@ -182,7 +182,7 @@ if (defined $config_files) {
     if (defined $host_id) {
         $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
     } else {
-        $config_file = Pencil::ConfigFinder::find_config_file()
+        $config_file = Pencil::ConfigFinder::find_config_file();
     }
     die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
     push @config_files, $config_file;
