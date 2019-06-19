@@ -213,11 +213,17 @@
     ipx = proc mod dim.nprocx
     ipy = (proc / dim.nprocx) mod dim.nprocy
     ipz = proc / (dim.nprocx * dim.nprocy)
-    indices = [ 0, 1 ]
-    if (extension eq 'xz') then indices = [ 0, 2 ]
-    if (extension eq 'yz') then indices = [ 1, 2 ]
-    start = ([ ipx*nx, ipy*ny, ipz*nz ])[indices]
-    count = ([ nx, ny, nz ])[indices]
+    indices_xy = [ 0, 1 ]
+    indices_xz = [ 0, 2 ]
+    indices_yz = [ 1, 2 ]
+    start = [ ipx*nx, ipy*ny, ipz*nz ]
+    count = [ nx, ny, nz ]
+    start_xy = start[indices_xy]
+    count_xy = count[indices_xy]
+    start_xz = start[indices_xz]
+    count_xz = count[indices_xz]
+    start_yz = start[indices_yz]
+    count_yz = count[indices_yz]
   end
 
   if (keyword_set (global_scaling)) then begin
@@ -226,10 +232,10 @@
     amin = !Values.F_NaN
     for pos = 1, last, stride+1 do begin
       frame = str (pos)
-      xy2 = pc_read (frame+'/data', start=start, count=count, filename=file_slice1, datadir=datadir+'/slices', /close)
-      xy = pc_read (frame+'/data', start=start, count=count, filename=file_slice2, datadir=datadir+'/slices', /close)
-      xz = pc_read (frame+'/data', start=start, count=count, filename=file_slice3, datadir=datadir+'/slices', /close)
-      yz = pc_read (frame+'/data', start=start, count=count, filename=file_slice4, datadir=datadir+'/slices', /close)
+      xy2 = pc_read (frame+'/data', start=start_xy, count=count_xy, filename=file_slice1, datadir=datadir+'/slices', /close)
+      xy = pc_read (frame+'/data', start=start_xy, count=count_xy, filename=file_slice2, datadir=datadir+'/slices', /close)
+      xz = pc_read (frame+'/data', start=start_xz, count=count_xz, filename=file_slice3, datadir=datadir+'/slices', /close)
+      yz = pc_read (frame+'/data', start=start_yz, count=count_yz, filename=file_slice4, datadir=datadir+'/slices', /close)
       amax = max ([ amax, max(xy2), max(xy), max(xz), max(yz) ], /NaN)
       amin = min ([ amin, min(xy2), min(xy), min(xz), min(yz) ], /NaN)
     end
@@ -255,10 +261,10 @@
     if (t lt tmin) then continue
     if (t gt tmax) then break
 
-    xy = pc_read (frame+'/data', start=start, count=count, filename=file_slice2, datadir=datadir+'/slices', /close)
-    xy2 = pc_read (frame+'/data', start=start, count=count, filename=file_slice1, datadir=datadir+'/slices', /close)
-    xz = pc_read (frame+'/data', start=start, count=count, filename=file_slice3, datadir=datadir+'/slices', /close)
-    yz = pc_read (frame+'/data', start=start, count=count, filename=file_slice4, datadir=datadir+'/slices', /close)
+    xy2 = pc_read (frame+'/data', start=start_xy, count=count_xy, filename=file_slice1, datadir=datadir+'/slices', /close)
+    xy = pc_read (frame+'/data', start=start_xy, count=count_xy, filename=file_slice2, datadir=datadir+'/slices', /close)
+    xz = pc_read (frame+'/data', start=start_xz, count=count_xz, filename=file_slice3, datadir=datadir+'/slices', /close)
+    yz = pc_read (frame+'/data', start=start_yz, count=count_yz, filename=file_slice4, datadir=datadir+'/slices', /close)
 
     if (keyword_set (neg)) then begin
       xy2 = -xy2
