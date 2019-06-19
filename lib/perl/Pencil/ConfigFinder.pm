@@ -119,7 +119,7 @@ sub find_config_file_for_host {
 #
     my ($host_id) = @_;
 
-    find_config_file_for($host_id, 'hosts', 1);
+    return find_config_file_for($host_id, 'hosts', 1);
 }
 
 # ---------------------------------------------------------------------- #
@@ -130,7 +130,12 @@ sub find_config_file_for_os {
 #
     my ($os) = @_;
 
-    find_config_file_for($os, 'os');
+    if (($os eq "Darwin") || ($os eq "GNU_Linux") || ($os eq "Solaris")) {
+        my $compiler = 'GNU-GCC';
+        if (`which mpif90`) { $compiler .= '_MPI'; }
+        return find_config_file_for($compiler, 'compilers');
+    }
+    return find_config_file_for($os, 'os');
 }
 
 # ---------------------------------------------------------------------- #
