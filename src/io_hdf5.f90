@@ -713,7 +713,7 @@ module Io
         call file_close_hdf5
       endif
 !
-      if (mv > 0) call mpibcast_real(fq,(/nqpar,mqarray/))
+      if (mv > 0) call mpibcast_real (fq, (/ nqpar, mqarray /))
 !
     endsubroutine input_pointmass
 !***********************************************************************
@@ -1178,12 +1178,12 @@ module Io
       call file_close_hdf5
       deallocate (gx, gy, gz)
 !
-      call mpibcast_real (dx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dy,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dz,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dx, comm=MPI_COMM_WORLD)
+      call mpibcast_real (dy, comm=MPI_COMM_WORLD)
+      call mpibcast_real (dz, comm=MPI_COMM_WORLD)
+      call mpibcast_real (Lx, comm=MPI_COMM_WORLD)
+      call mpibcast_real (Ly, comm=MPI_COMM_WORLD)
+      call mpibcast_real (Lz, comm=MPI_COMM_WORLD)
 !
       if (lroot.and.ip <= 4) then
         print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz
