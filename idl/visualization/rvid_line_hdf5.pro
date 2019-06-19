@@ -75,10 +75,10 @@ pro rvid_line_hdf5, field, mpeg=mpeg, tmin=tmin, tmax=tmax, max=amax, min=amin, 
   file_slice = field+'_'+extension+'.h5'
 
   if (not file_test (datadir+'/slices/'+file_slice)) then begin
-    print, 'Slice file "'+datadir+'/slices/'+file_slice+'" does not exist!!!'
+    print, 'Slice file "'+datadir+'/slices/'+file_slice+'" does not exist!'
     pos = strpos (file_slice, '_'+extension)
     compfile = strmid (file_slice, 0, pos)+'1_'+extension+'.h5'
-    if (file_test (datadir+'/slices/'+compfile)) then print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!!!'
+    if (file_test (datadir+'/slices/'+compfile)) then print, 'Field name "'+field+'" refers to a vectorial quantity -> select component!'
     return
   end
 
@@ -103,21 +103,22 @@ pro rvid_line_hdf5, field, mpeg=mpeg, tmin=tmin, tmax=tmax, max=amax, min=amin, 
     for pos = 1, last, stride+1 do begin
       frame = str (pos)
       plane = pc_read (frame+'/data', start=start, count=count)
-      if (keyword_set (exponential)) then begin
-        amax = max ([ amax, exp (max (plane)) ], /NaN)
-        amin = min ([ amin, exp (min (plane)) ], /NaN)
-      end else if (keyword_set (sqroot)) then begin
-        amax = max ([ amax, sqrt (max (plane)) ], /NaN)
-        amin = min ([ amin, sqrt (min (plane)) ], /NaN)
-      end else if (keyword_set (log)) then begin
-        amax = max ([ amax, alog (max (plane)) ], /NaN)
-        amin = min ([ amin, alog (min (plane)) ], /NaN)
-      end else begin
-        amax = max ([ amax, max (plane) ], /NaN)
-        amin = min ([ amin, min (plane) ], /NaN)
-      end
+      if (keyword_set (nsmooth)) then plane = smooth (plane, nsmooth)
+      amax = max ([ amax, max (plane) ], /NaN)
+      amin = min ([ amin, min (plane) ], /NaN)
     end
-    print,'Scale using global min, max: ', amin, amax
+    if (keyword_set (exponential)) then begin
+      amax = exp (amax)
+      amin = exp (amin)
+    end else if (keyword_set (log)) then begin
+      tiny = 1e-30
+      amax = alog10 (amax)
+      amin = alog10 (amin > tiny)
+    end else if (keyword_set (sqroot)) then begin
+      amax = sqrt (amax)
+      amin = sqrt (amin)
+    end
+    if (not keyword_set (quiet)) then print, 'Scale using global min, max: ', amin, amax
   end
 
   if (xgrid) then begin
