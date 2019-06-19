@@ -344,8 +344,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dx:'A', $
 		dB_dy:'A', $
 		dB_dz:'A', $
-		grad_B:'B_abs', $
-		grad_B_abs:'B_abs', $
+		grad_B:'A', $
+		grad_B_abs:'grad_B', $
 		E:['u','A'], $
 		E_abs:'E', $
 		EMF:['u','A'], $
