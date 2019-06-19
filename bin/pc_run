@@ -544,7 +544,8 @@ sub distribute_var_files {
                     scp_local_files($dir, $node);
                 }
             }
-        } else {         # one local disc per MPI process (e.g. Horseshoe)
+        } else {
+            # one local disc per MPI process (e.g. Horseshoe)
             my $i_node = -1;
             foreach my $node (split ':', $ENV{NODELIST}) {
                 $i_node++;
