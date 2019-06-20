@@ -167,6 +167,9 @@ module Special
   integer :: idiag_emfcoefymax=0
   integer :: idiag_emfcoefzmax=0
   integer :: idiag_emfdiffmax=0
+  integer :: idiag_emfxdiffmax=0
+  integer :: idiag_emfydiffmax=0
+  integer :: idiag_emfzdiffmax=0
 ! RMS diagnostics
   integer :: idiag_alpharms=0
   integer :: idiag_betarms=0
@@ -179,6 +182,12 @@ module Special
   integer :: idiag_emfrms=0
   integer :: idiag_emfcoefrms=0
   integer :: idiag_emfdiffrms=0
+!
+!  2D diagnostics
+!
+  integer :: idiag_emfxmxy=0, idiag_emfymxy=0, idiag_emfzmxy=0
+  integer :: idiag_emfcoefxmxy=0, idiag_emfcoefymxy=0, idiag_emfcoefzmxy=0
+!
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len=1, tensor_times_len=-1, iload=0
@@ -191,6 +200,13 @@ module Special
   logical :: lsymmetrize=.false.
   integer :: nsmooth_rbound=0, nsmooth_thbound=0
   integer :: field_symmetry=0
+!
+! regularize beta
+!
+  logical :: lregularize_beta=.false., &
+             lreconstruct_tensors=.false., &
+             lalt_decomp=.false.
+  real :: rel_eta=.01    ! should be > 0
 
   ! Input dataset name
   ! Input namelist
@@ -217,9 +233,7 @@ module Special
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
       interpname, defaultname, lusecoefs, lloop, lsymmetrize, field_symmetry, &
-      nsmooth_rbound, nsmooth_thbound
-
-! loadDataset interface
+      nsmooth_rbound, nsmooth_thbound, lregularize_beta, lreconstruct_tensors, lalt_decomp
 
   interface loadDataset
     module procedure loadDataset_rank1
@@ -271,9 +285,10 @@ module Special
         if (lmpicomm) &     !MR: doesn't work for nompicomm
           call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
-        if (lroot) print *, 'register_special: opening emftensors.h5 and loading relevant fields into memory...'
-
         hdf_emftensors_filename = trim(datadir_snap)//'/'//trim(emftensors_file)
+
+        if (lroot) print *, 'register_special: opening datafile '//trim(hdf_emftensors_filename)// &
+                            ' and loading relevant fields into memory...'
 
         inquire(file=hdf_emftensors_filename, exist=hdf_exists)
 
@@ -475,6 +490,10 @@ module Special
           call closeDataset(bcoef_id)
         endif
 
+        if (.not.lusecoefs) then
+          idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
+        endif
+        
         if (lroot) then
           if (lalpha) then
             write (*,*) 'Alpha scale:   ', alpha_scale
@@ -757,11 +776,23 @@ module Special
 !  others may be calculated directly from the f array
 !
 !  06-jul-06/tony: coded
+!  20-may-19/MR: added beta regularization, reconstruction of alpha and gamma from acoef and bcoef,
+!                alternative decomposition of tensors
 !
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: mpireduce_sum_int, mpiallreduce_sum_int, mpibarrier, mpireduce_min
+      use PolynomialRoots, only: cubicroots
+      use Sub, only: dyadic2_other
+
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      real :: delt
-      integer :: i,j,k
+      real :: delt,minbeta,minbeta_,thmin,thmax,rmin,rmax,trmin,det,oldtrace,newtrace
+      integer :: i,j,k,numzeros,numcomplex,numzeros_,mm,ll,iv,iv0,ik
+      real, pointer :: eta
+      integer, dimension(:,:,:,:), allocatable :: beta_mask
+      real, dimension(4) :: polcoeffs
+      complex, dimension(3) :: eigenvals
+      real, dimension(3,3) :: ev
 
       call keep_compiler_quiet(f)
 
@@ -785,11 +816,8 @@ module Special
               call fatal_error('special_before_boundary', 'no more data to load') 
             endif
           endif
-if (lread_time_series) then
-print *, 'loading: t,iload=',tensor_times(iload),iload 
-else
-print *, 'loading: iload=',iload 
-endif
+!if (lread_time_series) &
+!print *, 'loading: t,iload=',tensor_times(iload),iload 
           ! Load datasets
           if (lalpha) call loadDataset(alpha_data, lalpha_arr, alpha_id, iload-1,'Alpha')
           if (lbeta)  call loadDataset(beta_data,  lbeta_arr,  beta_id,  iload-1,'Beta')
@@ -800,6 +828,103 @@ endif
           if (lacoef) call loadDataset(acoef_data, lacoef_arr, acoef_id, iload-1,'Acoef')
           if (lbcoef) call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, iload-1,'Bcoef')
           lread_datasets=.false.
+
+          if (lreconstruct_tensors.and.lacoef.and.lbcoef) then                 ! beta, delta, kappa supposed to be correct
+            if (lroot) print*, 'Reconstruct alpha and gamma from raw tensors.'
+            do mm=1,ny
+              alpha_data(1,:,mm,1,1,1)=     acoef_data(1,:,mm,1,1,1)+bcoef_data(1,:,mm,1,1,2,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,2)=0.5*(acoef_data(1,:,mm,1,1,2)-bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
+                                           +acoef_data(1,:,mm,1,2,1)+bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
+              alpha_data(1,:,mm,1,2,2)=     acoef_data(1,:,mm,1,2,2)-bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,3)=0.5*(acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) & 
+                                           +bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
+              alpha_data(1,:,mm,1,2,3)=0.5*(acoef_data(1,:,mm,1,2,3)+acoef_data(1,:,mm,1,3,2) &
+                                           -bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
+            
+              gamma_data(1,:,mm,1,1)=0.5*(acoef_data(1,:,mm,1,3,2)-acoef_data(1,:,mm,1,2,3) &
+                                         -bcoef_data(1,:,mm,1,3,1,2)/x(l1:l2))
+              gamma_data(1,:,mm,1,2)=0.5*(acoef_data(1,:,mm,1,1,3)-acoef_data(1,:,mm,1,3,1) &
+                                         -bcoef_data(1,:,mm,1,3,2,2)/x(l1:l2))
+              gamma_data(1,:,mm,1,3)=0.5*(acoef_data(1,:,mm,1,2,1)-acoef_data(1,:,mm,1,1,2) &
+                                         +bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)+bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
+            enddo
+            
+            alpha_data(:,:,:,:,2,1)=alpha_data(:,:,:,:,1,2)
+            alpha_data(:,:,:,:,3,2)=alpha_data(:,:,:,:,2,3)
+            alpha_data(:,:,:,:,3,1)=alpha_data(:,:,:,:,1,3)
+            alpha_data=alpha_data*alpha_scale
+            gamma_data=gamma_data*gamma_scale
+
+          endif
+
+          if (lalt_decomp.and.lacoef.and.lbcoef) then                    ! kappa supposed to be correct.
+            if (lroot) print*, 'Construct alternative decomposition from raw tensors.'
+            do mm=1,ny
+
+              alpha_data(1,:,mm,1,1,1)=      acoef_data(1,:,mm,1,1,1)+bcoef_data(1,:,mm,1,1,2,2)/x(l1:l2)
+              alpha_data(1,:,mm,1,1,2)=0.5*( acoef_data(1,:,mm,1,1,2)-bcoef_data(1,:,mm,1,1,1,2)/x(l1:l2)  &
+                                            +acoef_data(1,:,mm,1,2,1)+bcoef_data(1,:,mm,1,2,2,2)/x(l1:l2))
+              alpha_data(1,:,mm,1,2,2)=      acoef_data(1,:,mm,1,2,2)-bcoef_data(1,:,mm,1,2,1,2)/x(l1:l2)
+
+              alpha_data(1,:,mm,1,1,3)=0.5*( acoef_data(1,:,mm,1,1,3)+acoef_data(1,:,mm,1,3,1) & 
+                                            +(                  bcoef_data(1,:,mm,1,3,2,2) &
+                                              +                 bcoef_data(1,:,mm,1,1,3,1) &
+                                              +cotth(mm+nghost)*bcoef_data(1,:,mm,1,1,3,2))/x(l1:l2))
+
+              alpha_data(1,:,mm,1,2,3)=0.5*( acoef_data(1,:,mm,1,2,3)+acoef_data(1,:,mm,1,3,2) &
+                                            +(                  bcoef_data(1,:,mm,1,2,3,1) &  
+                                              -                 bcoef_data(1,:,mm,1,3,1,2) &
+                                              +cotth(mm+nghost)*bcoef_data(1,:,mm,1,2,3,2))/x(l1:l2))
+
+              alpha_data(1,:,mm,1,3,3)= acoef_data(1,:,mm,1,3,3) + (                  bcoef_data(1,:,mm,1,3,3,1) &
+                                                                    +cotth(mm+nghost)*bcoef_data(1,:,mm,1,3,3,2))/x(l1:l2)
+
+              gamma_data(1,:,mm,1,1)=0.5*( acoef_data(1,:,mm,1,3,2)-acoef_data(1,:,mm,1,2,3) &
+                                          -(                  bcoef_data(1,:,mm,1,2,3,1) &
+                                            +                 bcoef_data(1,:,mm,1,3,1,2) &
+                                            +cotth(mm+nghost)*bcoef_data(1,:,mm,1,2,3,2))/x(l1:l2))
+
+              gamma_data(1,:,mm,1,2)=0.5*( acoef_data(1,:,mm,1,1,3)-acoef_data(1,:,mm,1,3,1) &
+                                          +(                  bcoef_data(1,:,mm,1,1,3,1) &
+                                            -                 bcoef_data(1,:,mm,1,3,2,2) &
+                                            +cotth(mm+nghost)*bcoef_data(1,:,mm,1,1,3,2))/x(l1:l2))
+
+              gamma_data(1,:,mm,1,3)=0.5*( acoef_data(1,:,mm,1,2,1)-acoef_data(1,:,mm,1,1,2) &
+                                         +(bcoef_data(1,:,mm,1,1,1,2)+bcoef_data(1,:,mm,1,2,2,2))/x(l1:l2))
+
+              delta_data(1,:,mm,1,1)=0.25*(bcoef_data(1,:,mm,1,2,1,2)-bcoef_data(1,:,mm,1,2,2,1)-2.*bcoef_data(1,:,mm,1,3,3,1))
+                            
+              delta_data(1,:,mm,1,2)=0.25*(bcoef_data(1,:,mm,1,1,2,1)-bcoef_data(1,:,mm,1,1,1,2)-2.*bcoef_data(1,:,mm,1,3,3,2))
+                            
+              delta_data(1,:,mm,1,3)=0.5*(bcoef_data(1,:,mm,1,1,3,1)+bcoef_data(1,:,mm,1,2,3,2))
+
+              beta_data(1,:,mm,1,1,1)= bcoef_data(1,:,mm,1,1,3,2)
+              beta_data(1,:,mm,1,2,2)=-bcoef_data(1,:,mm,1,2,3,1)
+              beta_data(1,:,mm,1,3,3)=0.5*(bcoef_data(1,:,mm,1,3,2,1)-bcoef_data(1,:,mm,1,3,1,2))
+
+              beta_data(1,:,mm,1,1,2)=0.5*(bcoef_data(1,:,mm,1,2,3,2)-bcoef_data(1,:,mm,1,1,3,1))
+              beta_data(1,:,mm,1,1,3)=0.25*( 2.*bcoef_data(1,:,mm,1,3,3,2)-bcoef_data(1,:,mm,1,1,1,2)+bcoef_data(1,:,mm,1,1,2,1))
+              beta_data(1,:,mm,1,2,3)=0.25*(-2.*bcoef_data(1,:,mm,1,3,3,1)-bcoef_data(1,:,mm,1,2,1,2)+bcoef_data(1,:,mm,1,2,2,1))
+ 
+              do ik=1,3
+                kappa_data(1,:,mm,1,ik,:,3)=0.; kappa_data(1,:,mm,1,ik,3,:)=0.
+              enddo
+            enddo
+            
+            alpha_data(:,:,:,:,2,1)=alpha_data(:,:,:,:,1,2)
+            alpha_data(:,:,:,:,3,1)=alpha_data(:,:,:,:,1,3)
+            alpha_data(:,:,:,:,3,2)=alpha_data(:,:,:,:,2,3)
+
+            beta_data(:,:,:,:,2,1)=beta_data(:,:,:,:,1,2)
+            beta_data(:,:,:,:,3,1)=beta_data(:,:,:,:,1,3)
+            beta_data(:,:,:,:,3,2)=beta_data(:,:,:,:,2,3)
+
+            alpha_data=alpha_data*alpha_scale
+            gamma_data=gamma_data*gamma_scale
+            delta_data=delta_data*delta_scale
+            beta_data =beta_data*beta_scale
+
+          endif
 
           if (nsmooth_rbound/=0) then
             do i=1,3
@@ -819,10 +944,6 @@ endif
           endif
 
           if (nsmooth_thbound/=0) then
-      !beta_data(:,:,1,:,:,:)=0.
-      !beta_data(:,:,ny,:,:,:)=0.
-      !if (lfirst_proc_y) kappa_data(:,:,1,:,:,:,:)=0.
-      !if (llast_proc_y) kappa_data(:,:,ny,:,:,:,:)=0.
             do i=1,3
               if (lgamma) call smooth_thbound(gamma_data(:,:,:,:,i),nsmooth_thbound)
               if (ldelta) call smooth_thbound(delta_data(:,:,:,:,i),nsmooth_thbound)
@@ -837,6 +958,110 @@ endif
                 enddo
               enddo
             enddo
+          endif
+
+          if (lbeta.and.lregularize_beta) then
+
+            allocate(beta_mask(dataload_len,nx,ny,nz))
+            if (iload==1) call get_shared_variable('eta', eta)
+            do i=1,3
+!
+!  Look for vanishing diagonal elements of beta.
+!
+              beta_mask=0
+              where(beta_data(:,:,:,:,i,i)+eta<=0.) beta_mask=1
+              minbeta=minval(beta_data(:,:,:,:,i,i),beta_mask==1)
+              !where(beta_mask==1) beta_data(:,:,:,:,i,i)=(-1.+rel_eta)*eta 
+
+              numzeros=sum(beta_mask)
+              call mpireduce_sum_int(numzeros,numzeros_)
+              call mpibarrier
+              if (numzeros>0) call mpireduce_min(minbeta,minbeta_)
+              if (lroot) then
+                print'(a,i1,a,i1,a,i15,a$)', 'beta(',i,',',i,')+eta<=0 at ', numzeros_, ' positions'
+                if (numzeros>0) then 
+                  print'(a,i1,a,i1,a,e12.5)', ', min(beta(',i,',',i,')) = ', minbeta_
+                else
+                  print'(a/)', '.'
+                endif
+              endif
+            enddo
+            deallocate(beta_mask)
+!
+!  Look for locations of negative definite beta.
+!
+            numzeros=0; numcomplex=0; rmin=x(l2); rmax=x(l1); thmin=y(m2); thmax=y(m1); trmin=impossible
+            do mm=1,ny; do ll=1,nx
+              polcoeffs=(/2.*beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3)*beta_data(1,ll,mm,1,2,3) &
+                           - beta_data(1,ll,mm,1,1,2)**2*beta_data(1,ll,mm,1,3,3) &
+                           - beta_data(1,ll,mm,1,1,3)**2*beta_data(1,ll,mm,1,2,2) &
+                           - beta_data(1,ll,mm,1,2,3)**2*beta_data(1,ll,mm,1,1,1) &
+                           + beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,2,2)*beta_data(1,ll,mm,1,3,3), &
+!
+                             beta_data(1,ll,mm,1,1,2)**2+beta_data(1,ll,mm,1,1,3)**2+beta_data(1,ll,mm,1,2,3)**2 &
+                           - beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,2,2) &
+                           - beta_data(1,ll,mm,1,1,1)*beta_data(1,ll,mm,1,3,3) &
+                           - beta_data(1,ll,mm,1,2,2)*beta_data(1,ll,mm,1,3,3), &
+!
+                             beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3), &
+                           -1. /)
+              call cubicroots(polcoeffs, eigenvals)
+              if (any(abs(imag(eigenvals))>0.e-9*abs(real(eigenvals)))) numcomplex=numcomplex+1
+
+              if (any(real(eigenvals)<-eta)) then
+!
+!  If there are negatove eigenvalues of beta,
+!
+!write(100,*) iproc, ll,mm,real(eigenvals)  !, &
+!sum(polcoeffs*(/1.d0,real(eigenvals(1)),real(eigenvals(1))**2,real(eigenvals(1))**3/)), &
+!sum(polcoeffs*(/1.d0,real(eigenvals(2)),real(eigenvals(2))**2,real(eigenvals(2))**3/)), &
+!sum(polcoeffs*(/1.d0,real(eigenvals(3)),real(eigenvals(3))**2,real(eigenvals(3))**3/))
+                numzeros=numzeros+1
+                trmin=min(trmin,sum(real(eigenvals)))
+                rmin=min(rmin,x(ll+nghost)); rmax=max(rmax,x(ll+nghost))
+                thmin=min(thmin,y(mm+nghost)); thmax=max(thmax,y(mm+nghost))
+!
+!  calculate eigenvectors (v1,v2,-1) for all three eigenvalues.
+!
+                ev(:,3)=-1.
+                do iv=1,3
+                  det = (beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(1))) &
+                        -beta_data(1,ll,mm,1,1,2)**2
+                  ev(iv,1)= (beta_data(1,ll,mm,1,1,3)*(beta_data(1,ll,mm,1,2,2)-real(eigenvals(iv))) &
+                            -beta_data(1,ll,mm,1,2,3)*beta_data(1,ll,mm,1,1,2))/det
+                  ev(iv,2)=((beta_data(1,ll,mm,1,1,1)-real(eigenvals(iv)))*beta_data(1,ll,mm,1,2,3) &
+                            -beta_data(1,ll,mm,1,1,2)*beta_data(1,ll,mm,1,1,3))/det
+                  ev(iv,:)=ev(iv,:)/sqrt(sum(ev(iv,:)**2))    ! normalization
+!
+! Eigenvalues < -eta are set to (-1.+rel_eta)*eta with rel_eta>0.
+!
+                  if (real(eigenvals(iv))<-eta) eigenvals(iv)=cmplx((-1.+rel_eta)*eta,0.)
+                enddo
+
+                beta_data(1,ll,mm,1,:,:)=0.
+!
+!  Transform back with non-negative eigenvalues.
+!
+                oldtrace=0.
+                do iv=1,3
+                  beta_data(1,ll,mm,1,:,:)=beta_data(1,ll,mm,1,:,:)+real(eigenvals(iv))*dyadic2_other(ev(iv,:))
+                  oldtrace=oldtrace+real(eigenvals(iv))
+                enddo
+                newtrace=beta_data(1,ll,mm,1,1,1)+beta_data(1,ll,mm,1,2,2)+beta_data(1,ll,mm,1,3,3)
+                if (abs(oldtrace-newtrace)>1.e-9) print*, 'll,mm,oldtrace-newtrace=', ll,mm,abs(oldtrace-newtrace)
+              endif
+
+            enddo; enddo
+            call mpiallreduce_sum_int(numzeros,numzeros_)
+            if (numzeros_>0) then
+              if (lroot) print'(a,i15,a)', 'beta is negative definite at', numzeros_,' positions.'
+              print'(4(a,f6.3),a,i4)', &
+                   'in r-theta region (',rmin,',',rmax,')x(',thmin,',',thmax,') of proc ',iproc,'.'
+              call mpireduce_min(trmin,minbeta_)
+              if (lroot) print'(a,e12.5)', 'minimal trace = ', minbeta_
+            endif
+            call mpireduce_sum_int(numcomplex,numzeros_)
+            if (lroot.and.numzeros_>0) print'(a,i15,a)', 'beta has complex eigenvalues at', numzeros_,' positions.'
           endif
 
           if (lsymmetrize) then
@@ -906,6 +1131,38 @@ endif
 !
       p%emf = 0
 !
+      if (lacoef) then
+        ! Calculate acoef B
+        do j=1,3; do i=1,3
+          if (lacoef_arr(i,j)) then
+            p%acoef_coefs(:,i,j)=emf_interpolate(acoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
+          else
+            p%acoef_coefs(:,i,j)=0
+          end if
+        end do; end do
+        call dot_mn_vm(p%bb,p%acoef_coefs,p%acoef_emf)
+      end if
+!
+      if (lbcoef) then
+        ! Calculate bcoef (grad B)
+        do k=1,3; do j=1,3; do i=1,3
+          if (lbcoef_arr(i,j,k)) then
+            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
+          else
+            p%bcoef_coefs(:,i,j,k)=0
+          end if
+        end do; end do; end do
+        p%bcoef_emf = 0
+! 
+!  Use partial (non-covariant) derivatives of B in the form \partial B_{r,theta,phi}/\partial r, 
+!  \partial B_{r,theta,phi}/(r \partial theta).
+!
+        do k=1,2; do j=1,3; do i=1,3
+          if (lbcoef_arr(i,j,k)) &
+            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bijtilde(:,j,k)
+        end do; end do; end do
+      end if
+!
       if (lalpha) then
         ! Calculate alpha B
         do j=1,3; do i=1,3
@@ -915,6 +1172,7 @@ endif
             p%alpha_coefs(:,i,j)=0
           end if
         end do; end do
+
         call dot_mn_vm(p%bb,p%alpha_coefs,p%alpha_emf)
         p%emf = p%emf + p%alpha_emf
       end if
@@ -941,6 +1199,7 @@ endif
             p%gamma_coefs(:,i)=0
           end if
         end do
+
         call cross_mn(p%gamma_coefs,p%bb,p%gamma_emf)
         p%emf = p%emf + p%gamma_emf
       end if
@@ -958,13 +1217,6 @@ endif
         p%emf = p%emf - p%delta_emf
       end if
 
-if (.false.) then
-!if (any(sum(sum(p%bij_symm**2,3),2)/sum(p%jj**2,2)>1e5 .and. sum(p%jj**2,2)>1e-4)) then
-  print*, 'big b_ij, m=',m 
-  ind=maxloc(sum(sum(p%bij_symm**2,3),2)/sum(p%jj**2,2))
-  print*, 'maxind=', ind, maxval(sum(sum(p%bij_symm**2,3),2)), sum(p%jj(ind,:)**2)
-  print*, 'bij=', p%bij_symm(ind,:,:)
-endif
       if (lkappa) then
         ! Calculate kappa (grad B)_symm
         do j=1,3; do i=1,3
@@ -976,7 +1228,6 @@ endif
           if (lkappa_arr(i,j,k)) then
             p%kappa_coefs(:,i,j,k)=emf_interpolate(kappa_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
           else
-!if (lfirst.and.lroot.and.n==n1.and.m==m1) print*, 'kappa: ijk=', i,j,k
             p%kappa_coefs(:,i,j,k)=0
           endif
         end do; end do; end do
@@ -1002,38 +1253,11 @@ endif
         p%emf = p%emf + p%utensor_emf
       end if
 !
-      if (lacoef) then
-        ! Calculate acoef B
-        do j=1,3; do i=1,3
-          if (lacoef_arr(i,j)) then
-            p%acoef_coefs(:,i,j)=emf_interpolate(acoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j))
-          else
-            p%acoef_coefs(:,i,j)=0
-          end if
-        end do; end do
-        call dot_mn_vm(p%bb,p%acoef_coefs,p%acoef_emf)
-      end if
-!
-      if (lbcoef) then
-        ! Calculate bcoef (grad B)
-        do k=1,3; do j=1,3; do i=1,3
-          if (lbcoef_arr(i,j,k)) then
-            p%bcoef_coefs(:,i,j,k)=emf_interpolate(bcoef_data(1:dataload_len,:,m-nghost,n-nghost,i,j,k))
-          else
-            p%bcoef_coefs(:,i,j,k)=0
-          end if
-        end do; end do; end do
-
-        p%bcoef_emf = 0
-! 
-!  Use partial (non-covariant) derivatives of B in the form \partial B_{r,theta,phi}/\partial r, 
-!  \partial B_{r,theta,phi}/(r \partial theta).
-!
-        do k=1,2; do j=1,3; do i=1,3
-          if (lbcoef_arr(i,j,k)) &
-            p%bcoef_emf(:,i)=p%bcoef_emf(:,i)+p%bcoef_coefs(:,i,j,k)*p%bijtilde(:,j,k)
-        end do; end do; end do
-      end if
+if (.false.) then
+if (maxval(abs(p%bcoef_coefs(:,2,2,1)-p%bcoef_coefs(:,2,1,2)-2.*(p%beta_coefs(:,2,3)-p%delta_coefs(:,1))))>1.e-9) print*, '2,3,m,n=', m,n
+if (maxval(abs(p%bijtilde(:,2,1)-p%bijtilde(:,1,2)+p%bb(:,2)/x(l1:l2)-p%jj(:,3)))>1.e-10) print*, 'jphi,m=', m, &
+maxval(abs(p%jj(:,3))), maxval(abs(p%bijtilde(:,2,1)-p%bijtilde(:,1,2)+p%bb(:,2)/x(l1:l2)))
+endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -1114,6 +1338,12 @@ endif
           call dot2_mn(tmppencil,tmpline)
           call max_mn_name(tmpline,idiag_emfdiffmax,lsqrt=.true.)
         end if
+        if (idiag_emfxdiffmax/=0) &
+          call max_mn_name(abs(tmppencil(:,1)),idiag_emfxdiffmax)
+        if (idiag_emfydiffmax/=0) &
+          call max_mn_name(abs(tmppencil(:,2)),idiag_emfydiffmax)
+        if (idiag_emfzdiffmax/=0) &
+          call max_mn_name(abs(tmppencil(:,3)),idiag_emfzdiffmax)
         if (idiag_alpharms/=0) then
           call dot2_mn(p%alpha_emf,tmpline)
           call sum_mn_name(tmpline,idiag_alpharms,lsqrt=.true.)
@@ -1159,7 +1389,16 @@ endif
           call sum_mn_name(tmpline,idiag_emfdiffrms,lsqrt=.true.)
         end if
       end if 
-    
+!
+      if (l2davgfirst) then
+        call zsum_mn_name_xy(p%emf(:,1),idiag_emfxmxy)
+        call zsum_mn_name_xy(p%emf(:,2),idiag_emfymxy)
+        call zsum_mn_name_xy(p%emf(:,3),idiag_emfzmxy)
+        call zsum_mn_name_xy(emftmp(:,1),idiag_emfcoefxmxy)
+        call zsum_mn_name_xy(emftmp(:,2),idiag_emfcoefymxy)
+        call zsum_mn_name_xy(emftmp(:,3),idiag_emfcoefzmxy)
+      endif
+
       call keep_compiler_quiet(f,df)
 !
     endsubroutine dspecial_dt
@@ -1192,10 +1431,10 @@ endif
       iostat = 0
       
       call setParameterDefaults
-      write (*,*) 'read_special_run_pars parameters read...'
+      if (lroot) write (*,*) 'read_special_run_pars parameters read...'
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
       call parseParameters
-      write (*,*) 'read_special_run_pars parameters parsed...'
+      if (lroot) write (*,*) 'read_special_run_pars parameters parsed...'
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -1258,6 +1497,9 @@ endif
         idiag_emfcoefymax=0
         idiag_emfcoefzmax=0
         idiag_emfdiffmax=0
+        idiag_emfxdiffmax=0
+        idiag_emfydiffmax=0
+        idiag_emfzdiffmax=0
         ! RMS diagnostics
         idiag_alpharms=0
         idiag_betarms=0
@@ -1270,18 +1512,10 @@ endif
         idiag_emfrms=0
         idiag_emfcoefrms=0
         idiag_emfdiffrms=0
+        idiag_emfxmxy=0; idiag_emfymxy=0; idiag_emfzmxy=0
+        idiag_emfcoefxmxy=0; idiag_emfcoefymxy=0; idiag_emfcoefzmxy=0
       endif
-!!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),&
-!!            'NAMEOFSPECIALDIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
-!!      enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        call farray_index_append('idiag_SPECIAL_DIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
-!!      endif
-!!
+!
       do iname=1,nname
         ! Maximum values of emf terms
         call parse_name(iname,cname(iname),cform(iname),'alphaxmax',idiag_alphaxmax)
@@ -1315,6 +1549,9 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'emfcoefymax',idiag_emfcoefymax)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefzmax',idiag_emfcoefzmax)
         call parse_name(iname,cname(iname),cform(iname),'emfdiffmax',idiag_emfdiffmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfxdiffmax',idiag_emfxdiffmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfydiffmax',idiag_emfydiffmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfzdiffmax',idiag_emfzdiffmax)
         ! RMS values of emf terms
         call parse_name(iname,cname(iname),cform(iname),'alpharms',idiag_alpharms)
         call parse_name(iname,cname(iname),cform(iname),'betarms',idiag_betarms)
@@ -1328,7 +1565,16 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'emfcoefrms',idiag_emfcoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfdiffrms',idiag_emfdiffrms)
       enddo
-      
+
+      do iname=1,nnamexy
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFxmxy',idiag_emfxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFymxy',idiag_emfymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFzmxy',idiag_emfzmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFcoefxmxy',idiag_emfcoefxmxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFcoefymxy',idiag_emfcoefymxy)
+        call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFcoefzmxy',idiag_emfcoefzmxy)
+      enddo
+ 
     endsubroutine rprint_special
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -1465,7 +1711,7 @@ endif
                                        dimsizes(1:ndims), &
                                        maxdimsizes(1:ndims), &
                                        hdferr)                 !MR: hdferr/=0!
-print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
+!print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
       call H5Sget_simple_extent_npoints_F(tensor_id_S(tensor_id),num,hdferr) ! This is to mask the error of the preceding call.
       tensor_dims(tensor_id,1:ndims)=dimsizes(1:ndims)
       if (tensor_times_len==-1) then
@@ -1626,12 +1872,10 @@ print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
-          if (hdferr /= 0) then
-            call fatal_error('loadDataset_rank1','Error creating reading dataset '// &
-                           'for /grid/'//name)
-          end if
-
-      sum = 0. ; rms = 0.
+      if (hdferr /= 0) &
+        call fatal_error('loadDataset_rank1','Error creating reading dataset '// &
+                         'for /grid/'//name)
+      sum = 0.; rms = 0.
       do i=1,3
         tensor_maxvals(tensor_id) = maxval(dataarray(:,:,:,:,i))
         tensor_minvals(tensor_id) = minval(dataarray(:,:,:,:,i))
@@ -1682,7 +1926,7 @@ print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
           tensor_memoffsets(tensor_id,ndims)   = mask_j-1
 
           ! Hyperslab for data
-          if (mask_i==1.and.mask_j==1) print '(a,i2,a,6(1x,i3))', 'iproc, tensor offset',iproc,name,tensor_offsets(tensor_id,1:ndims-2)
+          !if (mask_i==1.and.mask_j==1) print '(a,i2,a,6(1x,i3))', 'iproc, tensor offset',iproc,name,tensor_offsets(tensor_id,1:ndims-2)
 !          print '(a,i2,a,6(1x,i3))', 'iproc, tensor memoffset',iproc,name,tensor_memoffsets(tensor_id,1:ndims)
 !          print '(a,a,6(1x,i3))', 'tensor counts',name,tensor_counts(tensor_id,:ndims)
 !          print '(a,a,6(1x,i3))', 'tensor memcounts',name,tensor_memcounts(tensor_id,:ndims)
@@ -1692,10 +1936,9 @@ print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
                                      tensor_offsets(tensor_id,1:ndims),       &
                                      tensor_counts(tensor_id,1:ndims),        &
                                      hdferr)
-           if (hdferr /= 0) then
-             call fatal_error('loadDataset_rank2','Error creating File mapping '// &
-                           'for /grid/'//name)
-           end if
+          if (hdferr /= 0) &
+            call fatal_error('loadDataset_rank2','Error creating File mapping '// &
+                             'for /grid/'//name)
           ! Hyperslab for memory
 !print*, 'before H5Sselect_hyperslab_F for memory'
           call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
@@ -1716,11 +1959,9 @@ print*, 'from H5Sget_simple_extent_dims_F, line 1330: hdferr=', hdferr
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
-           if (hdferr /= 0) then
-             call fatal_error('loadDataset_rank1','Error reading dataset '// &
-                           'for /grid/'//name)
-           end if
-
+      if (hdferr /= 0) &
+        call fatal_error('loadDataset_rank1','Error reading dataset '// &
+                         'for /grid/'//name)
       sum = 0.; rms = 0.
       do i=1,3 ; do j=1,3 
         tensor_maxvals(tensor_id) = maxval(dataarray(:,:,:,:,i,j))
