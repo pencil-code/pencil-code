@@ -57,7 +57,7 @@ function parse_labels, line
   return, labels[good]
 end
 ; ---------------------------------------------------------------------- ;
-function pc_read_phiavg, file, $
+function pc_read_phiavg, file, datadir=datadir, $
                       VARS=vars, TONLY=t_only, $
                       DEBUG=debug, HELP=help
 
@@ -65,6 +65,35 @@ function pc_read_phiavg, file, $
 
   default, debug, 0
   default, t_only, 0
+  datadir = pc_get_datadir (datadir)
+
+  ; load HDF5 averages, if available
+  pos = long (stregex (file, '([0-9]+)$', /extract)) - 1
+  h5_file = datadir + '/averages/phi.h5'
+  if ((pos ge 0) and file_test (h5_file)) then begin
+    last = pc_read ('last', filename='phi.h5', datadir=datadir+'/averages/')
+    if (pos gt last) then message, 'pc_read_phiavg: ERROR: "'+h5_file+'" ends after '+str (last+1)+' snapshots!'
+    group = str (pos) + '/'
+    time = pc_read (group+'time')
+    if (keyword_set (t_only)) then begin
+      h5_close_file
+      return, time
+    end
+    message, "pc_read_phiavg: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (vars, /type) ne 7) then vars = h5_content (group)
+    found = where (strlowcase (vars) ne 'time', num)
+    if (num le 0) then message, 'pc_read_phiavg: ERROR: "'+h5_file+'" contains no known averages!'
+    vars = vars[found]
+    pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
+    r = pc_read ('r', filename='phi.h5', datadir=datadir+'/averages/')
+    dr = pc_read ('dr')
+    struct = { t:time, last:last, pos:pos, rcyl:r, dr:dr, z:grid.z[dim.n1:dim.n2], nvars:num, labels:vars }
+    for pos = 0, num-1 do begin
+      struct = create_struct (struct, vars[pos], pc_read (group+vars[pos]))
+    end
+    h5_close_file
+    return, struct
+  end
 
   if (n_elements(vars) gt 0) then begin
     message, /INFO, $
