@@ -108,10 +108,10 @@ function tavg_phiavg, range, $
     file = avgdir+'/'+phiavgfile
 
     if (any(file_test(file))) then begin
-      t = read_phiavg(file,/TONLY)
+      t = pc_read_phiavg(file,/TONLY)
       if ((t ge trange[0]) and (t le trange[1])) then begin
         ;; t in trange -> read data
-        avg_i = read_phiavg(file)
+        avg_i = pc_read_phiavg(file)
         if (not quiet) then begin
           if (need_newline) then print
           print, phiavgfile, ': t='+strtrim(avg_i.t,2)

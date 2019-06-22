@@ -51,7 +51,7 @@ pro pphiavg, arg, QUIET=quiet, PMULTI=pmulti, CHARSIZE=charsize, $
     ;; Get data from file:
     if (not quiet) then print, 'Reading '+file
 
-    avg = read_phiavg(file)
+    avg = pc_read_phiavg(file)
 
     ;
     ; increase !p.multi if necessary

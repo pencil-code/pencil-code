@@ -133,7 +133,7 @@ pro pvv_phiavg, arg, $
     ;; Get data from file:
     if (not quiet) then print, 'Reading '+file
 
-    avg = read_phiavg(file)
+    avg = pc_read_phiavg(file)
 
   endif else begin
 

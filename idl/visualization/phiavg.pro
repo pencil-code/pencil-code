@@ -14,7 +14,7 @@ default, avgdir, datatopdir+'/averages'
 default, phiavgfile, 'PHIAVG1'
 default, vname, 'b2mphi'
 
-az = read_phiavg(avgdir+'/'+phiavgfile)
+az = pc_read_phiavg(avgdir+'/'+phiavgfile)
 
 pos = aspect_pos((max(az.z)-min(az.z))/(max(az.rcyl)-min(az.rcyl)), $
              MARGIN=0.1)
