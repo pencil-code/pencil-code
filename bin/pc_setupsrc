@@ -418,14 +418,52 @@ make_cuda_dir()
   adddir $src/cuda/src_new/gpu/cuda/generic
 }
 #
+make_astaroth_dir()
+{
+## cuda subdirectory
+  [ -h $src/astaroth ] && rm $src/astaroth
+  adddir $src/astaroth
+## cuda/src_new subdirectory
+  [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
+  adddir $src/astaroth/submodule
+## subdirectories of submodule
+  adddir $src/astaroth/submodule/include
+  adddir $src/astaroth/submodule/src
+  adddir $src/astaroth/submodule/src/core
+  adddir $src/astaroth/submodule/src/core/kernels
+}
+#
 adddir()
 {
   if [ ! -d $1 ]; then
-    echo "No ${1##*/} directory found: creating new one (`pwd`/$1)."
+    echo "No ${1##*/} directory found: creating new one ($1)."
     mkdir $1
   fi
 }
 #
+link_astaroth_files()
+{
+#
+#  LINK all sources headers and Makefiles to local src/astaroth directory
+#
+  echo "Linking files in '$src/astaroth'."
+  old_dir="`pwd`"
+  cd $src/astaroth
+  to_link=
+#  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
+  for file in $srcdir/astaroth/*.c* $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/submodule/include/*.*h $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu $srcdir/astaroth/submodule/src/core/kernels/*.cuh $srcdir/astaroth/submodule/src/standalone/config_loader.cc
+  do
+    file_for_link $file
+  done
+
+  for file in $to_link
+  do
+#    ln -s $file ${file:$len}
+    ln -s $file `echo $file | sed -r 's/^.*astaroth\///'`
+  done
+
+  cd $old_dir
+}
 link_cuda_files()
 {
 #
@@ -478,7 +516,7 @@ file_for_link()
 {
     if [ -f $1 ] || [ -d $1 ]; then
 #      relname=${1:$len}
-      relname=`echo $file | sed -r 's/^.*src_new\///'`
+      relname=`echo $file | sed -r 's/^.*\/src_new\///' | sed -r 's/^.*\/astaroth\///'`
       if [ -h $relname ]; then
         rm -f $relname
         to_link="$to_link $1"
@@ -643,7 +681,9 @@ link_initial_condition_files
 if [ -f "$src/Makefile.local" ]; then
   if [ "`grep '^[^#]*= *gpu' $src/Makefile.local`" != "" ]; then 
     make_cuda_dir
+    make_astaroth_dir
     link_cuda_files
+    link_astaroth_files
   fi
 fi
 create_Makefile_inc
