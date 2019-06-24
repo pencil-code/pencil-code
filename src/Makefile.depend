@@ -7,7 +7,7 @@
 #
 #  Non-F90 / undetectable dependencies.
 #
-$(DEBUG_OBJ): debug_c.c Makefile.src Makefile.local
+$(DEBUG_OBJ): debug_c.c $(HDF5_IO_OBJ) $(FILE_IO_OBJ) Makefile.src Makefile.local
 #
 nodebug.o: nodebug.f90 $(CDATA_OBJ) $(SUB_OBJ) Makefile.src Makefile.local
 #
