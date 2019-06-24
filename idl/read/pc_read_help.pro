@@ -17,7 +17,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     print, "  ------ UNIVERSAL READ ROUTINES ------                                    "
     print, "pc_read(quantity, file=file)                                               "
-    print, "    Reads data from a snapshot (like 'var.dat').                           "
+    print, "    Reads data from a HDF5 snapshot (like 'var.h5').                       "
     print, ""
     print, "  ------ 'BIG-DATA'-COMPATIBLE READ ROUTINES ------                        "
     print, "pc_read_var_raw                                                            "
