@@ -2160,7 +2160,6 @@ module HDF5_IO
           call file_open_hdf5 (filename, global=.false., read_only=.true.,write=.false.)
           if (exists_in_hdf5 ('last')) then
             call input_hdf5 ('last', nt)
-!print*, 'nt=', nt
           else
             call fatal_error('input_slice_arr','no "last" group in HDF5 file '//trim(filename))
           endif
