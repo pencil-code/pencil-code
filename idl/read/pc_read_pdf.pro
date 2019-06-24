@@ -1,9 +1,9 @@
 ;
 ; $Id$
 ;
-;  preliminary version for reading pdf files
+;  preliminary version for reading point distribution function (pdf) files
 ;  (at the time of check-in on horseshoe I don't remember details
-;  of when this routine is really used, but in since horseshoe will
+;  of when this routine is really used, but since horseshoe will
 ;  shut down I better check this in as it is...)
 ;
 pc_read_dim,nprocx=nprocx,nprocy=nprocy,nprocz=nprocz,/quiet
