@@ -66,7 +66,7 @@ module Cparam
   integer, parameter :: n1i=n1+nghost-1
   integer :: n2i=mz-2*nghost+1
 !
-  integer, parameter :: nrcyl=nx/2
+  integer, parameter :: nrcyl=nxgrid/2
   integer, parameter :: nrcylrun=max(nx/20,1)
 !
 !  Array dimension for reduce operation (maxima and sums).
