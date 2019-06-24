@@ -33,6 +33,7 @@ module HDF5_IO
     module procedure output_hdf5_int_1D
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
+    module procedure output_hdf5_pencil_1D
     module procedure output_hdf5_part_2D
     module procedure output_hdf5_profile_1D
     module procedure output_local_hdf5_2D
@@ -1158,6 +1159,89 @@ module HDF5_IO
       call check_error (h5_err, 'close parameter list', name)
 !
     endsubroutine output_hdf5_1D
+!***********************************************************************
+    subroutine output_hdf5_pencil_1D(name, data, py, pz)
+!
+!  Write HDF5 dataset from penciled data.
+!
+!  24-Jun-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      real, dimension (nx), intent(in) :: data
+      integer, intent(in) :: py, pz
+!
+      integer(kind=8), dimension (3) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+!
+      if (.not. lcollective) &
+        call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
+!
+      loc_dim(1) = nx
+      loc_dim(2) = ny
+      loc_dim(3) = nz
+      glob_dim(1) = nxgrid
+      glob_dim(2) = nygrid
+      glob_dim(3) = nzgrid
+      loc_start(1) = 0
+      loc_start(2) = 0
+      loc_start(3) = 0
+      glob_start(1) = ipx * nx
+      glob_start(2) = ipy * ny
+      glob_start(3) = ipz * nz
+!
+      ! define 'file-space' to indicate the data portion in the global file
+      call h5screate_simple_f (1, glob_dim, h5_fspace, h5_err)
+      call check_error (h5_err, 'create global file space', name, caller='output_hdf5_pencil_1D')
+!
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_simple_f (1, loc_dim, h5_mspace, h5_err)
+      call check_error (h5_err, 'create local memory space', name)
+!
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'open dataset', name)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
+        call check_error (h5_err, 'create dataset', name)
+      endif
+      call h5sclose_f (h5_fspace, h5_err)
+      call check_error (h5_err, 'close global file space', name)
+!
+      ! define local 'hyper-slab' in the global file
+      h5_stride(:) = 1
+      h5_count(:) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      call check_error (h5_err, 'get dataset for file space', name)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glob_start, h5_count, h5_err, h5_stride, loc_dim)
+      call check_error (h5_err, 'select hyperslab within file', name)
+!
+      ! define local 'hyper-slab' portion in memory
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, loc_start, h5_count, h5_err, h5_stride, loc_dim)
+      call check_error (h5_err, 'select hyperslab within memory', name)
+!
+      ! prepare data transfer
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
+      call check_error (h5_err, 'set data transfer properties', name)
+      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call check_error (h5_err, 'select collective IO', name)
+!
+      ! collectively write the data
+      call h5dwrite_f (h5_dset, h5_ntype, data, &
+          glob_dim, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      call check_error (h5_err, 'write dataset', name)
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      call check_error (h5_err, 'close file space', name)
+      call h5sclose_f (h5_mspace, h5_err)
+      call check_error (h5_err, 'close memory space', name)
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'close dataset', name)
+      call h5pclose_f (h5_plist, h5_err)
+      call check_error (h5_err, 'close parameter list', name)
+!
+    endsubroutine output_hdf5_pencil_1D
 !***********************************************************************
     subroutine output_hdf5_part_2D(name, data, mv, nc, nv)
 !
