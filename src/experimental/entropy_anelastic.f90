@@ -2206,8 +2206,8 @@ module Energy
       call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
       if (lfirst .and. ip == 13) then
-         call output_pencil(trim(directory)//'/spitzer.dat',thdiff,1)
-         call output_pencil(trim(directory)//'/viscous.dat',p%visc_heat*exp(p%lnrho),1)
+         call output_pencil('spitzer.dat',thdiff,1)
+         call output_pencil('viscous.dat',p%visc_heat*exp(p%lnrho),1)
       endif
 !
       thdiff = thdiff*exp(-p%lnrho-p%lnTT)
@@ -2403,7 +2403,7 @@ module Energy
         endif
         heat = luminosity*prof
         if (headt .and. lfirst .and. ip<=9) &
-          call output_pencil(trim(directory)//'/heat.dat',heat,1)
+          call output_pencil('heat.dat',heat,1)
 !
 !  surface cooling: entropy or temperature
 !  cooling profile; maximum = 1
@@ -2469,7 +2469,7 @@ module Energy
         endif
         heat = luminosity*prof
         if (headt .and. lfirst .and. ip<=9) &
-          call output_pencil(trim(directory)//'/heat.dat',heat,1)
+          call output_pencil('heat.dat',heat,1)
 !
 !  surface cooling: entropy or temperature
 !  cooling profile; maximum = 1
@@ -2629,7 +2629,7 @@ module Energy
 !     add to entropy equation
 !
       if (lfirst .and. ip == 13) &
-           call output_pencil(trim(directory)//'/rtv.dat',rtv_cool*exp(p%lnrho+p%lnTT),1)
+           call output_pencil('rtv.dat',rtv_cool*exp(p%lnrho+p%lnTT),1)
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
 !
@@ -3113,7 +3113,7 @@ module Energy
 !  Add newton cooling term to entropy
 !
          if (lfirst .and. ip == 13) &
-              call output_pencil(trim(directory)//'/newton.dat',newton*exp(p%lnrho+p%lnTT),1)
+              call output_pencil('newton.dat',newton*exp(p%lnrho+p%lnTT),1)
 !
          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
 !

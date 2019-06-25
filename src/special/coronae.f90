@@ -4381,7 +4381,7 @@ module Special
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
 !      if (itsub == 3 .and. ip == 118) &
-!          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
+!          call output_pencil('tensor2.dat',rhs,1)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2

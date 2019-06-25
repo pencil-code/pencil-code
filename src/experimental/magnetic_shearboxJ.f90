@@ -4665,13 +4665,13 @@ module Magnetic
 !  Debug output.
 !
       if (headtt .and. lfirst .and. ip<=4) then
-        call output_pencil(trim(directory)//'/aa.dat',p%aa,3)
-        call output_pencil(trim(directory)//'/bb.dat',p%bb,3)
-        call output_pencil(trim(directory)//'/jj.dat',p%jj,3)
-        call output_pencil(trim(directory)//'/del2A.dat',p%del2a,3)
-        call output_pencil(trim(directory)//'/JxBr.dat',p%jxbr,3)
-        call output_pencil(trim(directory)//'/JxB.dat',p%jxb,3)
-        call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
+        call output_pencil('aa.dat',p%aa,3)
+        call output_pencil('bb.dat',p%bb,3)
+        call output_pencil('jj.dat',p%jj,3)
+        call output_pencil('del2A.dat',p%del2a,3)
+        call output_pencil('JxBr.dat',p%jxbr,3)
+        call output_pencil('JxB.dat',p%jxb,3)
+        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
       endif
 !
 !  Write B-slices for output in wvid in run.f90.

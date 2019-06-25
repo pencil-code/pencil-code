@@ -90,14 +90,16 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       integer :: iostat
+      character (len=fnlen) :: filename
 !
       t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
+      filename = trim (datadir_snap)//'/'//trim (file)
 !
       if (lserial_io) call start_serialize()
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) then
+      open(lun_output,FILE=filename,FORM='unformatted',IOSTAT=iostat)
+      if (outlog(iostat,'open',filename)) then
         if (lserial_io) call end_serialize()
         return
       endif
@@ -145,15 +147,17 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       integer :: iostat
+      character (len=fnlen) :: filename
 !
       t_sp = t
       if ((ip<=8) .and. lroot) print*,'output_scal'
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
+      filename = trim (datadir_snap)//'/'//trim (file)
 !
       if (lserial_io) call start_serialize()
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) then
+      open(lun_output,FILE=filename,FORM='unformatted',IOSTAT=iostat)
+      if (outlog(iostat,'open',filename)) then
         if (lserial_io) call end_serialize()
         return
       endif
@@ -192,22 +196,25 @@ contains
 !
 !  15-feb-02/wolf: coded
 !
-      integer :: ndim
-      real, dimension (nx,ndim) :: a
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: ndim
+      real, dimension (nx,ndim), intent(in) :: a
+!
       real :: t_sp   ! t in single precision for backwards compatibility
+      character (len=fnlen) :: filename
 !
       t_sp = t
       if (ip<9.and.lroot.and.imn==1) &
-           print*,'output_pencil_vect('//file//'): ndim=',ndim
+           print*,'output_pencil_vect('//filename//'): ndim=',ndim
+      filename = trim (datadir_snap)//'/'//trim (filename)
 !
       if (headt .and. (imn==1)) write(*,'(A)') &
-           'output_pencil: Writing to ' // trim(file) // &
+           'output_pencil: Writing to ' // trim(filename) // &
            ' for debugging -- this may slow things down'
 !
-       call output_penciled_vect_c(file, a, ndim, &
+       call output_penciled_vect_c(filename, a, ndim, &
                                    imn, mm(imn), nn(imn), t_sp, &
-                                   nx, ny, nz, nghost, len(file))
+                                   nx, ny, nz, nghost, len(filename))
 !
     endsubroutine output_pencil_vect
 !***********************************************************************
@@ -220,25 +227,28 @@ contains
 !
       use Mpicomm, only: stop_it
 !
-      integer :: ndim
-      real, dimension (nx) :: a
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: ndim
+      real, dimension (nx), intent(in) :: a
+!
       real :: t_sp   ! t in single precision for backwards compatibility
+      character (len=fnlen) :: filename
 !
       t_sp = t
       if ((ip<=8) .and. lroot .and. imn==1) &
-           print*,'output_pencil_scal('//file//')'
+           print*,'output_pencil_scal('//filename//')'
+      filename = trim (datadir_snap)//'/'//trim (filename)
 !
       if (ndim /= 1) &
            call stop_it("output_pencil_scal: called with scalar field, but ndim/=1")
 !
       if (headt .and. (imn==1)) print*, &
-           'output_pencil_scal: Writing to ', trim(file), &
+           'output_pencil_scal: Writing to ', trim(filename), &
            ' for debugging -- this may slow things down'
 !
-      call output_penciled_scal_c(file, a, ndim, &
+      call output_penciled_scal_c(filename, a, ndim, &
                                   imn, mm(imn), nn(imn), t_sp, &
-                                  nx, ny, nz, nghost, len(file))
+                                  nx, ny, nz, nghost, len(filename))
 !
     endsubroutine output_pencil_scal
 !***********************************************************************

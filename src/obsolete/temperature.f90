@@ -456,9 +456,9 @@ endif
       endif
 
       if (headt .and. lfirst .and. ip<=9) then
-        call output_pencil(trim(directory)//'/chi.dat',chix,1)
-        call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
-        call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
+        call output_pencil('chi.dat',chix,1)
+        call output_pencil('hcond.dat',hcond,1)
+        call output_pencil('glhc.dat',glhc,3)
       endif
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !

@@ -493,13 +493,13 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  debug output
 !
       if (headtt .and. lfirst .and. ip<=4) then
-        call output_pencil(trim(directory)//'/aa.dat',aa,3)
-        call output_pencil(trim(directory)//'/bb.dat',bb,3)
-        call output_pencil(trim(directory)//'/jj.dat',jj,3)
-        call output_pencil(trim(directory)//'/del2A.dat',del2A,3)
-        call output_pencil(trim(directory)//'/JxBr.dat',JxBr,3)
-        call output_pencil(trim(directory)//'/JxB.dat',JxB,3)
-        call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
+        call output_pencil('aa.dat',aa,3)
+        call output_pencil('bb.dat',bb,3)
+        call output_pencil('jj.dat',jj,3)
+        call output_pencil('del2A.dat',del2A,3)
+        call output_pencil('JxBr.dat',JxBr,3)
+        call output_pencil('JxB.dat',JxB,3)
+        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
       endif
 !
 if (ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB

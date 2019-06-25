@@ -58,11 +58,11 @@ contains
 !  called with the same value of nv as the previous time, do nothing.
 !  20-sep-02/wolf: coded
 !
+      integer, intent(in) :: nv
+!
       integer, dimension(4) :: globalsize_v,localsize_v,memsize_v
       integer, dimension(4) :: start_index_v,mem_start_index_v
       integer,save :: lastnv=-1 ! value of nv at previous call
-      integer :: nv
-!
 !
       if (nv /= lastnv) then
         if (lastnv > 0) then
@@ -109,7 +109,8 @@ contains
 !  called with the same value of nv as the previous time, do nothing.
 !  20-sep-02/wolf: coded
 !
-      integer :: nr,nv
+      integer, intent(in) :: nr,nv
+!
       integer, dimension(2) :: globalsize_v,localsize_v,memsize_v
       integer, dimension(2) :: start_index_v,mem_start_index_v
       integer,save :: lastnv=-1 ! value of nv at previous call
@@ -160,19 +161,22 @@ contains
 !
       use Mpicomm, only: stop_it
 !
-      integer :: nv
-      real, dimension (mx,my,mz,nv) :: a
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv
+      real, dimension (mx,my,mz,nv), intent(in) :: a
+!
+      character (len=fnlen) :: filename
 !
       if ((ip<=8) .and. lroot) print*,'output_vect: nv =', nv
       if (.not. io_initialized) &
            call stop_it("output_vect: Need to call register_io first")
+      filename = trim (datadir_snap)//'/'//trim (file)
 !
       call commit_io_type_vect(nv) ! will free old type if new one is needed
       !
       !  open file and set view (specify which file positions we can access)
       !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
@@ -186,7 +190,7 @@ contains
       !  write meta data (to make var.dat as identical as possible to
       !  what a single-processor job would write with io_dist.f90)
       !
-      call write_record_info(file, nv)
+      call write_record_info(filename, nv)
 !
     endsubroutine output_vect
 !***********************************************************************
@@ -198,18 +202,21 @@ contains
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz) :: a
-      integer :: nv
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      real, dimension (mx,my,mz), intent(in) :: a
+      integer, intent(in) :: nv
+!
+      character (len=fnlen) :: filename
 !
       if ((ip<=8) .and. lroot) print*,'output_scal: ENTER'
       if (.not. io_initialized) &
            call stop_it("output_scal: Need to call register_io first")
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
+      filename = trim (datadir_snap)//'/'//trim (file)
       !
       !  open file and set view (specify which file positions we can access)
       !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, filename, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype, &
@@ -223,7 +230,7 @@ contains
       !  write meta data (to make var.dat as identical as possible to
       !  what a single-processor job would write with io_dist.f90)
       !
-      call write_record_info(file, 1)
+      call write_record_info(filename, 1)
 !
     endsubroutine output_scal
 !***********************************************************************
@@ -234,22 +241,25 @@ contains
 !
 !  15-feb-02/wolf: coded
 !
-      integer :: ndim
-      real, dimension (nx,ndim) :: a
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: ndim
+      real, dimension (nx,ndim), intent(in) :: a
+!
       real :: t_sp   ! t in single precision for backwards compatibility
+      character (len=fnlen) :: filename
 !
       t_sp = t
       if (ip<9.and.lroot.and.imn==1) &
            print*,'output_pencil_vect('//file//'): ndim=',ndim
+      filename = trim (datadir_snap)//'/'//trim (file)
 !
       if (headt .and. (imn==1)) write(*,'(A)') &
-           'output_pencil_vect: Writing to ' // trim(file) // &
+           'output_pencil_vect: Writing to ' // trim(filename) // &
            ' for debugging -- this may slow things down'
 !
-       call output_penciled_vect_c(file, a, ndim, &
+       call output_penciled_vect_c(filename, a, ndim, &
                                    imn, mm(imn), nn(imn), t_sp, &
-                                   nx, ny, nz, nghost, len(file))
+                                   nx, ny, nz, nghost, len(filename))
 !
     endsubroutine output_pencil_vect
 !***********************************************************************
@@ -263,25 +273,28 @@ contains
       use Mpicomm, only: stop_it
 !
 !
-      integer :: ndim
-      real, dimension (nx) :: a
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: ndim
+      real, dimension (nx), intent(in) :: a
+!
       real :: t_sp   ! t in single precision for backwards compatibility
+      character (len=fnlen) :: filename
 !
       t_sp = t
       if ((ip<=8) .and. lroot .and. imn==1) &
            print*,'output_pencil_scal('//file//')'
+      filename = trim (datadir_snap)//'/'//trim (file)
 !
       if (ndim /= 1) &
            call stop_it("OUTPUT called with scalar field, but ndim/=1")
 !
       if (headt .and. (imn==1)) print*, &
-           'output_pencil_scal: Writing to ', trim(file), &
+           'output_pencil_scal: Writing to ', trim(filename), &
            ' for debugging -- this may slow things down'
 !
-      call output_penciled_scal_c(file, a, ndim, &
+      call output_penciled_scal_c(filename, a, ndim, &
                                   imn, mm(imn), nn(imn), t_sp, &
-                                  nx, ny, nz, nghost, len(file))
+                                  nx, ny, nz, nghost, len(filename))
 !
     endsubroutine output_pencil_scal
 !***********************************************************************
@@ -292,9 +305,11 @@ contains
 !  don't handle writing the grid, but that does not seem to be used
 !  anyway.
 !
-      integer :: nv,reclen
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv
+!
+      integer :: reclen
       integer(kind=MPI_OFFSET_KIND) :: fpos
-      character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
       integer, parameter :: test_int = 0
       real, parameter :: test_float = 0
