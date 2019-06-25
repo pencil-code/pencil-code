@@ -25,9 +25,7 @@ nr=round(dim.nx/2.)
 ;;
 ;;  Read variables from phizaver.in
 ;;
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-print, datatopdir
-spawn, 'cat '+datatopdir+'/phizaver.in', varnames
+spawn, 'cat '+datadir+'/../phizaver.in', varnames
 if (not quiet) then print, 'Preparing to read phiz-averages ', $
     arraytostring(varnames,quote="'",/noleader)
 nvar=n_elements(varnames)
