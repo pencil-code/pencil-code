@@ -10,6 +10,9 @@ function h5_content, group, number=num
 		return, !Values.D_NaN
 	end
 
+	object = h5g_get_objinfo (file_id, group)
+	if (strupcase (object.type) ne 'GROUP') then return, ''
+
 	num = h5g_get_nmembers (file_id, group)
 	list = strarr (num)
 	for pos = 0, num-1 do begin
