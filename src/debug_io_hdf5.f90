@@ -110,15 +110,15 @@ contains
       filename = trim (datadir_snap)//'/'//trim (file)//'.h5'
       call file_open_hdf5 (filename, truncate=(imn == 1))
       if (nv == 1) then
-        call output_hdf5 ('data', a(:,1), mm(imn), nn(imn))
+        call output_hdf5 ('data', a(:,1), mm(imn)-m1, nn(imn)-n1)
       elseif (nv == 3) then
-        call output_hdf5 ('data_x', a(:,1), mm(imn), nn(imn))
-        call output_hdf5 ('data_y', a(:,2), mm(imn), nn(imn))
-        call output_hdf5 ('data_z', a(:,3), mm(imn), nn(imn))
+        call output_hdf5 ('data_x', a(:,1), mm(imn)-m1, nn(imn)-n1)
+        call output_hdf5 ('data_y', a(:,2), mm(imn)-m1, nn(imn)-n1)
+        call output_hdf5 ('data_z', a(:,3), mm(imn)-m1, nn(imn)-n1)
       else
         do pos = 1, nv
           dataset = 'data_'//trim (itoa (pos))
-          call output_hdf5 (dataset, a(:,pos), mm(imn), nn(imn))
+          call output_hdf5 (dataset, a(:,pos), mm(imn)-m1, nn(imn)-n1)
         enddo
       endif
       call file_close_hdf5
