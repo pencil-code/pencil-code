@@ -5364,7 +5364,6 @@ module Energy
 !  02-jul-02/wolf: coded
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
-      use Debug_IO, only: output_pencil
       use EquationOfState, only: cs0, get_cp1, lnrho0, &
                                  gamma,gamma_m1
 !
