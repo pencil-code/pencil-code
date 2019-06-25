@@ -241,6 +241,9 @@ module Special
       if ((K_iso /= 0.0) .and. lentropy) &
           call fatal_error('solar_corona/calc_heatcond_grad', &
               "Heat conduction 'K_iso' is currently not implemented for entropy.", .true.)
+      if (((nc_tau > 0.0) .or. (nc_alt /= 0.0) .or. (nc_lnrho_num_magn /= 0.0)) .and. lentropy) &
+          call fatal_error('solar_corona/calc_heat_cool_newton', &
+              "Newton cooling is currently not implemented for entropy (see 'nc_tau', 'nc_alt', 'nc_lnrho_num_magn').", .true.)
 !
       if (lbfield) then
         if (luse_mag_field) call fatal_error("solar_corona", "luse_mag_field not implemented with bfield")
