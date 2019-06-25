@@ -6,17 +6,17 @@ if [[ $3 == '' ]]; then
 else
   modname=$3
 fi
-modheader=../../$modname'_'$1's_c.h'
+modheader=../$modname'_'$1's_c.h'
 if [[ $1 == par ]]; then
   ptype=void
-  headerdir=common
+  headerdir=./
   modinit=$modheader
-  modecs=../../$modname'_par_decs_c.h'
+  modecs=../$modname'_par_decs_c.h'
   rm -f $modecs
 else
   ptype=int
   headerdir=diagnostics
-  modinit=../../$modname'_diags_init_c.h'
+  modinit=../$modname'_diags_init_c.h'
   modecs=/dev/null
   rm -f $modinit
 fi

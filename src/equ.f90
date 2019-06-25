@@ -334,7 +334,7 @@ module Equ
       call timing('pde','after calc_for_chem_mixture')
 !
       if (lgpu) then
-        call rhs_gpu(f,ioptest(itsub,0))
+        call rhs_gpu(f,ioptest(itsub,0),early_finalize)
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif

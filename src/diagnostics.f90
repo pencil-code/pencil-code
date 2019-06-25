@@ -122,10 +122,10 @@ module Diagnostics
 !
       if (nrcyl/=0) then
         drcyl=xyz1(1)/nrcyl
+        rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
       else
         drcyl=0.0
       endif
-      rcyl=(/ ((i-0.5)*drcyl, i=1,nrcyl) /)
 !
 !  Calculate the three surface elements. Take care of degenerate dimensions.
 !

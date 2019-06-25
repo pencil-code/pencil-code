@@ -1906,10 +1906,19 @@ module EquationOfState
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=6
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
+    real, save :: cv, cp, lnT0
+
+    cv=0.; cp=0.; lnT0=0.
+
     call copy_addr_c(cs20,p_par(1))
+    call copy_addr_c(cv,p_par(2))
+    call copy_addr_c(cp,p_par(3))
+    call copy_addr_c(gamma,p_par(4))
+    call copy_addr_c(lnrho0,p_par(5))
+    call copy_addr_c(lnT0,p_par(6))
 
     endsubroutine pushpars2c
 !***********************************************************************

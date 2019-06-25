@@ -1,7 +1,7 @@
 AC_INCLUDE=submodule/include
-AC_HEADERS=$(AC_INCLUDE)/astaroth.h 
 AC_STANDALONE=submodule/src/standalone
 AC_CORE=submodule/src/core
+AC_HEADERS=$(AC_INCLUDE)/astaroth.h $(AC_CORE)/math_utils.h
 
 # c headers in src 
 CHEADERS = ../cparam_c.h ../cdata_c.h ../sub_c.h ../headers_c.h ../forcing_c.h

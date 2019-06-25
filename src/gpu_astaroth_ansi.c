@@ -26,29 +26,36 @@ void initGPU();
 void registerGPU(REAL*);
 void initializeGPU();
 void finalizeGPU();
-void substepGPU(int isubstep, int full);
+void substepGPU(int isubstep, int full, int early_finalize);
 void copyFarray();
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
-//extern REAL __cdata_MOD_y[14];
+extern REAL __cdata_MOD_y[14];
+extern REAL __cdata_MOD_dx, __cdata_MOD_dy, __cdata_MOD_dz;
+extern FINT __cdata_MOD_llast_proc_x;
+extern FINT __hydro_MOD_idiag_umax;
 // ----------------------------------------------------------------------
 void FTNIZE(initialize_gpu_c)()
 /* Initializes GPU.
 */
 {
   /*
+  printf("nx = %d\n", *nx);
+  printf("ny = %d\n", *ny);
+  printf("nz = %d\n", *nz);
   printf("omega = %e\n", cdata_mp_omega_);
-  printf("nx = %d\n", *nx_);
-  printf("ny = %d\n", *ny_);
-  printf("nz = %d\n", *nz_);
   printf("__hydro_MOD_idiag_umax = %d\n", __hydro_MOD_idiag_umax);
   */
   //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
 
   //printf("ymin = %f\n", __cdata_MOD_y[0]);
+  //printf("dx = %f\n", __cdata_MOD_dx);
+  //printf("dy = %f\n", __cdata_MOD_dy);
+  //printf("dz = %f\n", __cdata_MOD_dz);
   //printf("llast_proc_x = %d\n", __cdata_MOD_llast_proc_x);
   //printf("ldiagnos = %d\n", ldiagnos);
+
   initializeGPU();
 
 /*
@@ -65,7 +72,6 @@ void FTNIZE(init_gpu_c)()
 {
 
 // Initializes GPU use.
-
   initGPU();
 }
 /* ---------------------------------------------------------------------- */
@@ -86,7 +92,7 @@ void FTNIZE(finalize_gpu_c)()
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
-     (FINT *isubstep, FINT *full)
+     (FINT *isubstep, FINT *full, FINT *early_finalize)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -123,7 +129,7 @@ void FTNIZE(rhs_gpu_c)
 {
   // copies data back and forth and peforms integration substep isubstep
 
-  substepGPU(*isubstep, *full);
+  substepGPU(*isubstep, *full, *early_finalize);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho)

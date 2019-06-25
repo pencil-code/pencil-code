@@ -2471,30 +2471,38 @@ special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPEC
 io_alt.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(IO_ALT_OBJ) 
 	$(LD) $(IO_ALT_OBJ) $(DLL_LDFLAGS) -o io_alt.so
 #
-# writes moduleflags in cuda/src_new/common/PC_moduleflags.h, list of needed physics module source files in cuda/src_new/PC_modulesources
+# writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources
 # 
-gpu_preps: cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources
+CUDA_MAKEDIR=cuda/src_new
+CUDA_INCDIR=$(CUDA_MAKEDIR)/common
+CUDA_RELPATH=../..
+CUDA_MAKEDIR=astaroth
+CUDA_INCDIR=$(CUDA_MAKEDIR)
+CUDA_RELPATH=..
+
+gpu_preps: $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources
 #
-cuda/src_new/common/PC_moduleflags.h cuda/src_new/PC_modulesources: .sentinel
+$(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/PC_modulesources: .sentinel
 #
 .sentinel: Makefile.local
 	@touch .sentinel
-	@rm -f cuda/src_new/common/PC_moduleflags.h
-	@echo '#pragma once' > cuda/src_new/common/PC_moduleflags.h
-	@sed -f gpu.sed < Makefile.local >> cuda/src_new/common/PC_moduleflags.h
+	@rm -f $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#pragma once' > $(CUDA_INCDIR)/PC_moduleflags.h
+	@sed -i -e's/CUDA_RELPATH/'$(CUDA_RELPATH)'/' -e's/CUDA_MAKEDIR/'$(CUDA_MAKEDIR)'/' gpu.sed
+	@sed -f gpu.sed < Makefile.local >> $(CUDA_INCDIR)/PC_moduleflags.h
 ifeq ($(VISCOSITY),viscosity)
-	@echo '#define VISCOSITY // ../../viscosity.f90' >> cuda/src_new/common/PC_moduleflags.h
-	@echo '../../viscosity.f90 \' >> cuda/src_new/PC_modulesources
+	@echo '#define LVISCOSITY // '$(CUDA_RELPATH)'/viscosity.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/viscosity.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources
 endif
 ifeq ($(TIMESTEP),timestep)
-	@echo '../../timestep.f90 \' >> cuda/src_new/PC_modulesources
+	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources
 endif
 ifeq ($(EOS),noeos)
-	@echo '../../noeos.f90' >> cuda/src_new/PC_modulesources
+	@echo $(CUDA_RELPATH)'/noeos.f90' >> $(CUDA_MAKEDIR)/PC_modulesources
 else
-	@echo '' >> cuda/src_new/PC_modulesources
+	@echo '' >> $(CUDA_MAKEDIR)/PC_modulesources
 endif
-#	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < cuda/src_new/common/PC_moduleflags.h >> cuda/src_new/PC_modulesources
+#	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -2796,7 +2804,7 @@ clean:  slender
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
-	rm -f .sentinel cuda/src_new/PC_modulesources cuda/src_new/common/PC_moduleflags.h  # for GPU
+	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #

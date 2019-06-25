@@ -50,9 +50,10 @@ b end
 : cont1
 /IO[_ ]/ b end
 #s/^.*= *\([A-Za-z0-9_][A-Za-z0-9_]*\)/#define \U\1/ 
-s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define \1 \/\/ ..\/..\/\2.f90/ 
+#s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define \1 \/\/ ..\/..\/\2.f90/ 
+s/^ *\([A-Z0-9_][A-Z0-9_]*\) *= *\([a-z0-9_][a-z0-9_]*\) *$/#define L\1 \/\/ CUDA_RELPATH\/\2.f90/ 
 p
-s/.*\/\/ *\(\.\.\/\.\.\/[a-z0-9_][a-z0-9_]*\.f90\) *$/\1 \\/
+s/.*\/\/ *\(\.\.[\/\.]*\/[a-z0-9_][a-z0-9_]*\.f90\) *$/\1 \\/
 H
 : end
 $! d
@@ -64,6 +65,6 @@ g
                    }
 s/^\(.*\)$/MODULESOURCES= \\\1/
 : out
-w cuda/src_new/PC_modulesources
+w CUDA_MAKEDIR/PC_modulesources
 d
 }

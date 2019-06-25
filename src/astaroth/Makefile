@@ -1,9 +1,9 @@
-CUSOURCES = $(wildcard submodule/core/*.cu)  
-CCSOURCES = submodule/standalone/config_loader.cc
+CUSOURCES = $(wildcard submodule/src/core/*.cu)  
+CCSOURCES = submodule/src/standalone/config_loader.cc
 MAIN_SRC = gpu_astaroth.cc
 MAIN_OBJ = gpu_astaroth.o
 
-OBJECTS = $(CUSOURCES:.cu=.o) $(CUSOURCES:.cc=.o)
+OBJECTS = $(CUSOURCES:.cu=.o) $(CCSOURCES:.cc=.o) 
 
 # Settings for taito-gpu
 CUFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 
@@ -12,7 +12,7 @@ OPTFLAGS = -O1
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
 #  Original
-CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -g -G -lm
+CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule/src/core -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 
 # MV's adaptation for TIARA cluster. Compiles with: 
 #  1) cuda/9.0   3) openmpi/2.0.1_ic16.0            5) hdf5/1.8.16_openmpi_2.0.1_ic16.0 7) gcc/5.3.0
@@ -24,22 +24,25 @@ CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -g -G -lm
 #CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
 
 #Importing environ variables into preprocessor
-ENVIRON = -D MODPRE=${MODULE_PREFIX} -D MODIN=${MODULE_INFIX} -D MODSUF=${MODULE_SUFFIX} -DGPU_ASTAROTH
+ENVIRON = -D MODPRE=${MODULE_PREFIX} -D MODIN=${MODULE_INFIX} -D MODSUF=${MODULE_SUFFIX} -DPENCIL_ASTAROTH
 
-DOUBLE_PRECISION=
+PRECISION =
 include PC_modulesources
-ifeq ($(DOUBLE_PRECISION),DOUBLE_PRECISION)
+ifeq ($(PRECISION),DOUBLE)
   ENVIRON += -DDOUBLE_PRECISION
   PREC=dbl
-else
+else ifeq ($(PRECISION),SINGLE)
   PREC=sgl
 #  OPTFLAGS += -fsingle-PRECision-constant
+else
+  ENVIRON += -DDOUBLE_PRECISION
+  PREC=dbl
 endif
 
 PCHEADER_DIR=.
 astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS)
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ)
-	cp -f astaroth_$(PREC).so ../..
+	cp -f astaroth_$(PREC).so ..
 
 include Makefile.depend
 
@@ -52,7 +55,7 @@ include Makefile.depend
 $(PC_HEADERS): .sentinel
 
 .sentinel: ../scripts/phys_modules2c PC_modulesources $(MODULESOURCES)
-	@rm -f $(PCHEADER_DIR)/PC_modulepars.h common/PC_modulepardecs.h diagnostics/PC_modulediags.h
+	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_modulepardecs.h diagnostics/PC_modulediags.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepardecs.h
 	@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h

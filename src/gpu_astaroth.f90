@@ -98,10 +98,11 @@ contains
 !
     endsubroutine finalize_GPU
 !**************************************************************************
-    subroutine rhs_GPU(f,isubstep)
+    subroutine rhs_GPU(f,isubstep,early_finalize)
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
+      logical,                            intent(IN)    :: early_finalize
 !
       integer :: ll, mm, nn
       real :: val
