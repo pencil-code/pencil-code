@@ -427,6 +427,7 @@ make_astaroth_dir()
   [ -h $src/astaroth/submodule ] && rm $src/astaroth/submodule
   adddir $src/astaroth/submodule
 ## subdirectories of submodule
+  adddir $src/astaroth/submodule/3rdparty
   adddir $src/astaroth/submodule/include
   adddir $src/astaroth/submodule/src
   adddir $src/astaroth/submodule/src/core
@@ -451,7 +452,7 @@ link_astaroth_files()
   cd $src/astaroth
   to_link=
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
-  for file in $srcdir/astaroth/*.c* $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/submodule/include/*.*h $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu $srcdir/astaroth/submodule/src/core/kernels/*.cuh $srcdir/astaroth/submodule/src/standalone/config_loader.cc
+  for file in $srcdir/astaroth/*.c* $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/submodule/include/*.*h $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu $srcdir/astaroth/submodule/src/core/kernels/*.cuh $srcdir/astaroth/submodule/src/standalone/config_loader.cc $srcdir/astaroth/submodule/3rdparty/*.sh
   do
     file_for_link $file
   done
