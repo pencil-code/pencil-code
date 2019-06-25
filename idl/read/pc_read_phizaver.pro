@@ -20,7 +20,7 @@ default, quiet, 0
   if (file_test (h5_file)) then begin
     last = pc_read ('last', filename='phi_z.h5', datadir=datadir+'/averages/')
     groups = str (lindgen (last + 1))
-    times = reform (pc_read (groups+'/time'))
+    times = pc_read (groups+'/time')
     message, "pc_read_phizaver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
     if (size (vars, /type) ne 7) then vars = h5_content (groups[0])
     found = where (strlowcase (vars) ne 'time', num)

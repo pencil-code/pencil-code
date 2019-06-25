@@ -47,7 +47,7 @@ function pc_read, quantity, filename=filename, datadir=datadir, trimall=trim, gh
 		; read multiple quantities in one large array
 		data = pc_read (quantity[0], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
 		sizes = size (data, /dimensions) > 1
-		dimensions = size (data, /n_dimensions)
+		dimensions = size (data, /n_dimensions) > 1
 		for pos = 1, num_quantities-1 do begin
 			tmp = pc_read (quantity[pos], filename=filename, datadir=datadir, trimall=trim, processor=processor, dim=dim, start=start, count=count)
 			if (dimensions eq 1) then begin
