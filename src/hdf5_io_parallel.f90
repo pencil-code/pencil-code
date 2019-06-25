@@ -1170,7 +1170,8 @@ module HDF5_IO
       real, dimension (nx), intent(in) :: data
       integer, intent(in) :: py, pz
 !
-      integer(kind=8), dimension (3) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+      integer, parameter :: n = 3
+      integer(kind=8), dimension (n) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
       if (.not. lcollective) &
         call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
@@ -1182,18 +1183,18 @@ module HDF5_IO
       glob_dim(2) = nygrid
       glob_dim(3) = nzgrid
       loc_start(1) = 0
-      loc_start(2) = py - 1
-      loc_start(3) = pz - 1
+      loc_start(2) = 0
+      loc_start(3) = 0
       glob_start(1) = ipx * nx
-      glob_start(2) = ipy * ny
-      glob_start(3) = ipz * nz
+      glob_start(2) = ipy * ny + py
+      glob_start(3) = ipz * nz + pz
 !
       ! define 'file-space' to indicate the data portion in the global file
-      call h5screate_simple_f (3, glob_dim, h5_fspace, h5_err)
+      call h5screate_simple_f (n, glob_dim, h5_fspace, h5_err)
       call check_error (h5_err, 'create global file space', name, caller='output_hdf5_pencil_1D')
 !
       ! define 'memory-space' to indicate the local data portion in memory
-      call h5screate_simple_f (3, loc_dim, h5_mspace, h5_err)
+      call h5screate_simple_f (n, loc_dim, h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name)
 !
       if (exists_in_hdf5 (name)) then
