@@ -7097,7 +7097,7 @@ module Energy
 !  15-dec-2004/bing: coded
 !  25-sep-2006/bing: updated, using external data
 !
-      use Debug_IO, only:  output_pencil
+      use Debug_IO, only: output_pencil
       use EquationOfState, only: lnrho0, gamma
       use Mpicomm, only: mpibcast_real
 !
