@@ -4,7 +4,7 @@ AC_CORE=submodule/src/core
 AC_HEADERS=$(AC_INCLUDE)/astaroth.h $(AC_CORE)/math_utils.h
 
 # c headers in src 
-CHEADERS = ../cparam_c.h ../cdata_c.h ../sub_c.h ../headers_c.h ../forcing_c.h
+CHEADERS = ../cparam_c.h ../cdata_c.h ../sub_c.h ../headers_c.h ../forcing_c.h ../boundcond_c.h
 
 PC_HEADERS = $(PCHEADER_DIR)/PC_module_parfuncs.h $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_modulepardecs.h $(PCHEADER_DIR)/PC_module_diagfuncs.h $(PCHEADER_DIR)/PC_modulediags.h $(PCHEADER_DIR)/PC_modulediags_init.h
 
@@ -37,4 +37,6 @@ gpu/cuda/core/cuda_core.o: gpu/cuda/core/cuda_core.cu gpu/cuda/core/cuda_core.cu
 	@cd ..; forcing2c
 ../sub_c.h: ../sub.f90 ../scripts/sub2c
 	@cd ..; sub2c
+../boundcond_c.h: ../boundcond.f90 ../scripts/boundcond2c
+	@cd ..; boundcond2c
 

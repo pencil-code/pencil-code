@@ -12,7 +12,7 @@ OPTFLAGS = -O1
 #-funroll-loops -march=native 
 # -gencode arch=compute_60,code=sm_60
 #  Original
-CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule/src/core -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
+CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 
 # MV's adaptation for TIARA cluster. Compiles with: 
 #  1) cuda/9.0   3) openmpi/2.0.1_ic16.0            5) hdf5/1.8.16_openmpi_2.0.1_ic16.0 7) gcc/5.3.0

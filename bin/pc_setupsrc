@@ -430,8 +430,14 @@ make_astaroth_dir()
   adddir $src/astaroth/submodule/3rdparty
   adddir $src/astaroth/submodule/include
   adddir $src/astaroth/submodule/src
+  adddir $src/astaroth/submodule/src/standalone
+  adddir $src/astaroth/submodule/src/standalone/model
   adddir $src/astaroth/submodule/src/core
   adddir $src/astaroth/submodule/src/core/kernels
+  adddir $src/astaroth/submodule/scripts
+  adddir $src/astaroth/submodule/acc
+  adddir $src/astaroth/submodule/acc/src
+  adddir $src/astaroth/submodule/acc/mhd_solver
 }
 #
 adddir()
@@ -452,7 +458,12 @@ link_astaroth_files()
   cd $src/astaroth
   to_link=
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
-  for file in $srcdir/astaroth/*.c* $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/submodule/include/*.*h $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu $srcdir/astaroth/submodule/src/core/kernels/*.cuh $srcdir/astaroth/submodule/src/standalone/config_loader.cc $srcdir/astaroth/submodule/3rdparty/*.sh
+  for file in $srcdir/astaroth/*.c* $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/*.cuh \
+$srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
+$srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
+$srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
+$srcdir/astaroth/submodule/3rdparty/*.sh $srcdir/astaroth/submodule/scripts/*.sh \
+$srcdir/astaroth/submodule/acc/* $srcdir/astaroth/submodule/acc/src/* $srcdir/astaroth/submodule/acc/mhd_solver/*
   do
     file_for_link $file
   done

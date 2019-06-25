@@ -19,6 +19,7 @@
 #include "../cparam_c.h"
 #include "../cdata_c.h"
 #include "../sub_c.h"                   // provides set_dt
+#include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 //#include "diagnostics/diagnostics.h"
 #define EXTERN 
 #include "PC_module_parfuncs.h"
@@ -77,39 +78,43 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     //NOTE: In Astaroth, isubstep is {0,1,2}, in PC it is {1,2,3}
 
     if (early_finalize) {
+    // MPI communication has already finished, hence the full domain can be advanced.
       if (!full)
       {
           //!!!GPULoadOuterHalos(&mesh,halo_buffer);
           acLoad(mesh);
       }
-      int3 start=(int3){l1,m1,n1}, end=(int3){l2,m2,n2};
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStep(isubstep-1, dt);
 
     } else {
+    // MPI communication has not yet finished, hence only the inner domain can be advanced.
 
       int3 start=(int3){l1i,m1i,n1i}, end=(int3){l2i,m2i,n2i};
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       acSynchronize();
+
+      finalize_isendrcv_bdry((AcReal*)mesh.vertex_buffer[0]);
+
   // TODO: call for update of ghosts!
       //!!!GPULoadOuterHalos(&mesh,halo_buffer);
       start=(int3){l1,m1,n1}; end=(int3){l2,m2,n1i-1};     // front plate
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       start=(int3){l1,m1,n2i+1}; end=(int3){l2,m2,n2};     // back plate
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       start=(int3){l1,m1,n1i}; end=(int3){l2,m1i-1,n2i};   // bottom plate
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       start=(int3){l1,m2i+1,n1i}; end=(int3){l2,m2,n2i};   // top plate
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       start=(int3){l1,m1i,n1i}; end=(int3){l1i-1,m2i,n2i};   // left plate
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       start=(int3){l2i+1,m1i,n1i}; end=(int3){l2,m2i,n2i};   // right plate
-      acIntegrateStepBlocked(isubstep-1, dt,start,end);
+      acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       acSynchronize();
     }
