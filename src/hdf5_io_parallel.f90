@@ -1189,11 +1189,11 @@ module HDF5_IO
       glob_start(3) = ipz * nz
 !
       ! define 'file-space' to indicate the data portion in the global file
-      call h5screate_simple_f (1, glob_dim, h5_fspace, h5_err)
+      call h5screate_simple_f (3, glob_dim, h5_fspace, h5_err)
       call check_error (h5_err, 'create global file space', name, caller='output_hdf5_pencil_1D')
 !
       ! define 'memory-space' to indicate the local data portion in memory
-      call h5screate_simple_f (1, loc_dim, h5_mspace, h5_err)
+      call h5screate_simple_f (3, loc_dim, h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name)
 !
       if (exists_in_hdf5 (name)) then
