@@ -161,9 +161,6 @@ Makefile_inc:
 	    mpicomm) \
 	        echo 'MPICOMM=mpicomm_double' >> src/Makefile.inc; \
 	        ;; \
-	    mpicomm_) \
-	        echo 'MPICOMM=mpicomm_double_' >> src/Makefile.inc; \
-	        ;; \
 	    esac; \
 	    ;; \
 	*) \

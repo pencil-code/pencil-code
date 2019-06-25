@@ -16,7 +16,7 @@ dollar='$'
 #
 #    s/\bSELFGRAVITY\b/\$(SELFGRAVITY)\$(PC_META_TYPE).o/i;
 #    s/\bMESSAGES\b/messages\$(PC_META_TYPE).o/i;
-#    s/\bMPICOMM\b/\$(MPICOMM_FIX)\$(PC_META_TYPE).o/i;
+#    s/\bMPICOMM\b/\$(MPICOMM)\$(PC_META_TYPE).o/i;
 #    s/\bGLOBAL\b/\$(GLOBAL)\$(PC_META_TYPE).o/i;
 #    s/\bIO\b/\$(IO)\$(PC_META_TYPE).o/i;
 #    s/\bPOWER_SPECTRUM\b/\$(POWER)\$(PC_META_TYPE).o/i;
@@ -106,7 +106,7 @@ script='
     s/\bIO\b/\$(IO_OBJ)/i;
     s/\bMAGNETIC\b/\$(MAGNETIC_OBJ)/i;
     s/\bMESSAGES\b/messages.o/i;
-    s/\bMPICOMM\b/\$(MPICOMM_FIX_OBJ)/i;
+    s/\bMPICOMM\b/\$(MPICOMM_OBJ)/i;
     s/\bNEUTRALDENSITY\b/\$(NEUTRALDENSITY_OBJ)/i;
     s/\bNEUTRALVELOCITY\b/\$(NEUTRALVELOCITY_OBJ)/i;
     s/\bPOWER_SPECTRUM\b/\$(POWER_OBJ)/i;

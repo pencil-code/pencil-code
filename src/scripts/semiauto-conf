@@ -261,20 +261,14 @@ sub suggest_flags {
                                             # makes sense if we have MPI
                                             # at all
             if      ($n_usc_f90==1 && $n_usc_mpi==2) {
-                $new_flags{'LIBMPISUFFIX'} = '';
                 $new_flags{'FFLAGS'} = '(-fsecond-underscore|-us)';
                 $new_n_usc_f90 = 2;
             } elsif ($n_usc_f90==2 && $n_usc_mpi==1) {
-                $new_flags{'LIBMPISUFFIX'} = '';
                 $new_flags{'FFLAGS'} = '(-fno-second-underscore|-nus)';
                 $new_n_usc_f90 = 1;
             } elsif ($n_usc_f90==2 && $n_usc_mpi==0) {
-                $new_flags{'LIBMPISUFFIX'} = '';
                 $new_flags{'FFLAGS'} = '(-fno-second-underscore|-nus)';
                 $new_n_usc_f90 = 1;
-            } elsif ($n_usc_f90==$n_usc_mpi
-                     && $new_flags{'LIBMPISUFFIX'} ne '') {
-                $new_flags{'LIBMPISUFFIX'} = '';
             } else {
                 $stumped++;
             }
@@ -581,7 +575,7 @@ iodist_debug_c.x: minimal_iodist.o minimal_debug_c.o
 	    $(LD_MPI) \
 	    -o iodist_debug_c.x
 
-MPICOMM=minimal_mpi$(LIBMPISUFFIX)
+MPICOMM=minimal_mpi
 minimal_mpi_.f90: minimal_mpi.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' \
 	    minimal_mpi.f90 > minimal_mpi_.f90
@@ -632,8 +626,6 @@ variables:
 	  '$$(LD_MPI)         = <$(LD_MPI)>' \
 	  '$$(LD_FOURIER)     = <$(LD_FOURIER)>' \
 	  '$$(LDFLAGS)        = <$(LDFLAGS)>' \
-	  '' \
-	  '$$(LIBMPISUFFIX)   = <$(LIBMPISUFFIX)>' \
 	  '' \
 	  > make_variables.txt
 

@@ -185,7 +185,7 @@ nofourier.o: $(FOURIER_SRC) fourier.h $(GENERAL_OBJ) $(SUB_OBJ) $(MPICOMM_OBJ) $
 #
 fourier_fft.o: $(FOURIER_SRC) fourier.h fft.o $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
 #
-fourier_fftpack.o: $(FOURIER_SRC) fourier.h fftpack.o $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM_FIX).o $(CPARAM_OBJ) $(CDATA_OBJ)
+fourier_fftpack.o: $(FOURIER_SRC) fourier.h fftpack.o $(GENERAL_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ) $(MPICOMM).o $(CPARAM_OBJ) $(CDATA_OBJ)
 #
 $(DEBUG_IO_OBJ): io.h $(DEBUG_IO_SRC) $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ)
 #
