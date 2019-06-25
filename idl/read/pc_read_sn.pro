@@ -1,25 +1,18 @@
 ;
 ; $Id$
 ;
-;  Read time_series.dat and sort data into structure or variables
+;  Read supernovae series 'sn_series.dat' and sort data into structure or variables
 ;
-;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2007-08-03 09:53:26 $
-;  $Revision: 1.4 $
-;
-;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
 ;
 ;  Requires: input_table.pro
 ;
 ;  Usage:
-;    pc_read_ts, OBJECT=ts1           ; Read all into a structure (recommended)
-;    plot, ts1.t, ts1.urms
-;    help, ts1, /STRUCTURE
+;    pc_read_sn, OBJECT=sn1           ; Read all into a structure (recommended)
+;    plot, sn1.t, sn1.urms
+;    help, sn1, /STRUCTURE
 ;
-;    pc_read_ts, T=time, DT=timestep  ; Name variables (limited to those coded)
-;
-;    pc_read_ts, /HELP
+;    pc_read_sn, /HELP
 ;
 ;
 function parse_tsheader, hline
@@ -64,8 +57,8 @@ COMPILE_OPT IDL2,HIDDEN
   return, (list_idx(label,list)+1) ne 0
 end
 ; ---------------------------------------------------------------------- ;
-pro pc_read_sn,n=n, object=object, filename=filename, $ 
-                 datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+pro pc_read_sn, n=n, object=object, filename=filename, $ 
+    datadir=datadir, PRINT=PRINT, QUIET=QUIET, HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
 
 ; If no meaningful parameters are given show some help!
