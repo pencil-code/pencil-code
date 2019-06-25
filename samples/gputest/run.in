@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id$',
-  ip=13,
+  ip=14,
   nt=200, it1=10, isave=500, itorder=3, 
   nt=20, it1=4, isave=500, itorder=3, 
   !nt=2, it1=1, isave=500, itorder=3, 
@@ -15,6 +15,7 @@
   lpencil_check=F
   lpencil_check_small=F
   lbidiagonal_derij=F  !(uses the slightly more accurate formulation for derij)
+  luse_oldgrid=F
 /
 &hydro_run_pars
   theta=0.,

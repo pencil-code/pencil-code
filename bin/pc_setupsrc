@@ -464,6 +464,7 @@ link_astaroth_files()
 
   cd $old_dir
 }
+#
 link_cuda_files()
 {
 #

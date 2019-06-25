@@ -15,3 +15,5 @@ EOS       = noeos
 
 FORCING   = noforcing
 SHEAR     = noshear
+
+REAL_PRECISION = single
