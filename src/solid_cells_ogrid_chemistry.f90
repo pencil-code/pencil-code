@@ -62,24 +62,19 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !  parameters related to chemical reactions, diffusion and advection
 !
   integer, pointer :: nreactions
-!  real, dimension(:,:), pointer :: species_constants ! available already from eos_simple
-!  real, pointer ::cp_const ! available already from eos_simple
-!  real, dimension(:), pointer :: Lewis_coef1
   integer, dimension(:), pointer :: iaa1, iaa2
-!  character(len=30), pointer, dimension(:) :: reaction_name
   real, dimension(:), pointer :: alpha_n, E_an, B_n
   logical, pointer ::  lcheminp,ldiffusion,ldiff_corr, lmech_simple
-  logical, pointer ::  tran_exist, lThCond_simple !,lheatc_chemistry,
+  logical, pointer ::  tran_exist, lThCond_simple
   logical, pointer :: lfilter_strict, lfilter, ladvection,lt_const
   real, pointer, dimension(:,:) :: tran_data, Sijm, Sijp, stoichio
   real, pointer, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   real, pointer, dimension(:,:) :: orders_p, orders_m
   logical, pointer, dimension(:) :: photochem_case, Mplus_case, back
+  real, pointer :: Y_H2O, m_H2O
 !
-!  character(len=30), allocatable, dimension(:) :: reaction_name
   logical :: lT_tanh=.false.
   logical :: linit_temperature=.false., linit_density=.false.
-  logical :: lreac_as_aux=.false.
 !
   logical :: lflame_front=.false.
 !
@@ -129,15 +124,10 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
   integer :: idiag_lambdam=0
   integer :: idiag_num=0
 !
-!  Auxiliaries.
-!
-  integer :: ireac=0
-  integer, dimension(nchemspec) :: ireaci=0
-!
 !  Indices
 !
-  integer :: i_N2=0, i_CO2=0, i_CO=0
-  integer :: ichem_O2=0, ichem_N2=0, ichem_CO2=0, ichem_CO=0
+  integer :: i_CO2=0, i_CO=0
+  integer :: ichem_O2=0, ichem_CO2=0, ichem_CO=0
   logical :: lO2=.false., lN2=.false.
   logical :: lCO2=.false., lCO=.false.
 !
@@ -267,26 +257,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !        net_react_m = 0.
 !      endif
 !
-!  Define the chemical reaction rates as auxiliary variables for output
-!
-!      if (lreac_as_aux) then
-!        if (ireac == 0) then
-!          call farray_register_auxiliary('reac',ireac,vector=nchemspec)
-!          do i = 0, nchemspec-1
-!            ireaci(i+1) = ireac+i
-!          enddo
-!        endif
-!        if (ireac /= 0 .and. lroot) then
-!          print*, 'initialize_reaction_rates: ireac = ', ireac
-!          open (3,file=trim(datadir)//'/index.pro', POSITION='append')
-!          write (3,*) 'ireac=',ireac
-!          do i = 1, nchemspec
-!            write (car2,'(i2)') i
-!            write (3,*) 'ireac'//trim(adjustl(car2))//'=', ireaci(i)
-!          enddo
-!          close (3)
-!        endif
-!      endif
 !
         call get_shared_variable('ldiffusion',ldiffusion)
         call get_shared_variable('ldiff_corr',ldiff_corr)
@@ -318,12 +288,13 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         call get_shared_variable('iaa2',iaa2)
         call get_shared_variable('lmech_simple',lmech_simple)
         call get_shared_variable('linterp_pressure',linterp_pressure)
+        call get_shared_variable('ireac',ireac)
+        call get_shared_variable('lreac_as_aux',lreac_as_aux)
 !
         if (lreac_heter) then
           if (lmech_simple) then
             call find_species_index('CO2',i_CO2,ichem_CO2,lCO2)
             call find_species_index('CO',i_CO,ichem_CO,lCO)
-            call find_species_index('N2',i_N2,ichem_N2,lN2)
             call find_species_index('O2',i_O2,ichem_O2,lO2)
             allocate(heter_reaction_rate(my_ogrid,mz_ogrid,nchemspec+1))
             heter_reaction_rate(:,:,:)=0
@@ -335,6 +306,8 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         if (lmech_simple) then
           call get_shared_variable('orders_p',orders_p)
           call get_shared_variable('orders_m',orders_m)
+          call get_shared_variable('Y_H2O',Y_H2O)
+          call get_shared_variable('m_H2O',m_H2O)
         endif
 !
 !  write array dimension to chemistry diagnostics file
@@ -799,7 +772,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
           endif
 !
 !  Add filter for negative concentrations
-! TODO: dt or dt_ogrid or it doesn't matter? 
 !
           if (lfilter .and. .not. lfilter_strict) then
             do i = 1,mx_ogrid
@@ -823,13 +795,13 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
           if (lfilter_strict) then
             do i = 1,mx_ogrid
               if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) < 0.0 ) then
+                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt_ogrid) < 0.0 ) then
                 if (df(i,m_ogrid,n_ogrid,ichemspec(k)) < 0.)&
                    df(i,m_ogrid,n_ogrid,ichemspec(k)) = 0.
               endif
               if ((f_og(i,m_ogrid,n_ogrid,ichemspec(k))&
-                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt) > 1. ) then
-                df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt
+                 + df(i,m_ogrid,n_ogrid,ichemspec(k))*dt_ogrid) > 1. ) then
+                df(i,m_ogrid,n_ogrid,ichemspec(k)) = 1.*dt_ogrid
               endif
             enddo
           endif
@@ -893,9 +865,9 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
       endif
 !
-!      if (lreactions .and. ireac /= 0 .and. ((.not. llsode))) then
-!        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f_og,p_ogrid)
-!      endif
+      if (lreac_as_aux) then
+        if (llast) call get_reac_rate_ogr(f_og,p_ogrid)
+      endif
 !
 !
 ! The part below is commented because ldt = false all the time and it's
@@ -1281,6 +1253,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
                   /species_constants(k,imass))**orders_m(k,reac)
             endif
           enddo
+          if (nchemspec==4) prod1=prod1*(Y_H2O*rho_cgs(:)/m_H2O)**orders_p(5,reac)
         else
           prod1 = 1.
           prod2 = 1.
@@ -1438,7 +1411,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
       use Diagnostics, only: sum_mn_name, max_mn_name
 !
-      real :: alpha, eps
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f_og
       real, dimension(nx_ogrid,nreactions) :: vreactions, vreactions_p, vreactions_m 
       real, dimension(nx_ogrid,nchemspec) :: xdot
@@ -1446,8 +1418,6 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
       real, dimension(nx_ogrid,nchemspec) :: molm
       type (pencil_case_ogrid) :: p_ogrid
       integer :: k,j,ii
-!
-      eps = sqrt(epsilon(alpha))
 !
       p_ogrid%DYDt_reac = 0.
       rho1 = 1./p_ogrid%rho
@@ -1516,7 +1486,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
       real, dimension(nchemspec) :: mdot = 0.
       real :: rho1,T_loc1,rho_cgs
       integer :: k,i
-      real, dimension(2) :: B_n_het, E_an_het, alpha
+      real, dimension(2) :: B_n_het, E_an_het
       real :: Rcal1, Rcal, u_stefan
 !
       rho_cgs = f_og(l1_ogrid,m_ogrid,n_ogrid,irho)
@@ -1563,7 +1533,7 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
         u_stefan = u_stefan*t/solid_reactions_intro_time
       endif
 !
-   !   p_ogrid%DYDt_reac(1,:) = 0
+      p_ogrid%DYDt_reac(1,:) = 0
       f_og(l1_ogrid,m_ogrid,n_ogrid,iux) = u_stefan
 !
     endsubroutine calc_heter_reaction_term
@@ -1938,21 +1908,14 @@ public :: calc_pencils_chemistry_ogrid, dYk_dt_ogrid, calc_heter_reaction_term
 !
 !    endsubroutine get_mu1_slice
 !***********************************************************************
-!    subroutine get_reac_rate(wt,f_og,p_ogrid)
+    subroutine get_reac_rate_ogr(f_og,p_ogrid)
 !
-!      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
-!      real, dimension(nx_ogrid) :: wt
-!      real, dimension(nx_ogrid,nchemspec) :: ydot
-!      type (pencil_case_ogrid) :: p_ogrid
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) ::  f_og
+      type (pencil_case_ogrid) :: p_ogrid
 !
-!      ydot = p_ogrid%DYDt_reac
-!      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireaci(1):ireaci(nchemspec)) = ydot
-!         f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
+      f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireac) = p_ogrid%DYDt_reac(:,ichem_CO)
 !
-!      if (maux == nchemspec+1) f_og(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ireaci(nchemspec)+1) = wt
-!         f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
-!
-!    endsubroutine get_reac_rate
+    endsubroutine get_reac_rate_ogr
 !***********************************************************************
 !    subroutine chemistry_clean_up()
 !

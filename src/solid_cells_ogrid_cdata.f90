@@ -334,7 +334,7 @@ module solid_cells_ogrid_cdata
 ! Eos_chemistry + chemistry parameters
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1_ogrid,ll2_ogrid,mm1_ogrid,mm2_ogrid,nn1_ogrid,nn2_ogrid
-  logical, pointer :: lheatc_chemistry, lflame_front_2D
+  logical, pointer :: lheatc_chemistry, lflame_front_2D, lreac_as_aux
   real, dimension(nchemspec) :: chemspec0
   logical :: lreac_heter=.false.
 ! Reaction rate array needed for BC
@@ -343,11 +343,14 @@ module solid_cells_ogrid_cdata
   real, dimension(:), pointer :: Lewis_coef1
   real :: solid_reactions_intro_time=0.0
   real, pointer :: p_init
+  logical :: ldist_CO2, ldist_CO
+  integer, pointer :: ireac
 
 !  Diagnostics for output
   integer :: idiag_c_dragx=0
   integer :: idiag_c_dragy=0
   integer :: idiag_Nusselt=0
+  integer :: idiag_mdot_C =0
 
   ! Index for auxiliary gradient of temperature on ogrid, as
   ! well as additional variables for thermophoresis cases

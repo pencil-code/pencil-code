@@ -49,7 +49,7 @@ module Solid_Cells
       particle_interpolate, lparticle_uradonly, &
       interpol_order_poly, lfilter_solution, af, lspecial_rad_int, &
       lfilter_rhoonly, lspecial_rad_int_mom, ivar1_part,ivar2_part, &
-      lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, &
+      lstore_ogTT, init_rho_cyl, lfilter_TT, r_int_inner_vid, ldist_CO2, ldist_CO, &
       TT_square_fit, Tgrad_stretch, filter_frequency, lreac_heter, solid_reactions_intro_time
 
 !  Read run.in file
@@ -529,7 +529,7 @@ module Solid_Cells
       use Initcond, only: gaunoise
       use IO,       only: wdim
       use Sub,      only: control_file_exists
-      use EquationOfState, only: imass, species_constants
+      use EquationOfState, only: imass, species_constants, lpres_grad
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz) :: mu1_full=0
@@ -702,24 +702,29 @@ module Solid_Cells
 !      this comment) as it causes my simulations to crash
 !      *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
 !
-! TODO: Set initial conditions for chemistry on the ogrid
             if (lchemistry) then  
               do k = 1,nchemspec
-      !          if (ichemspec(k) == 7) then
-      !            f_ogrid(i,j,:,ichemspec(k)) = (1-wall_smoothing)
-      !          else
-      !            f_ogrid(i,j,:,ichemspec(k)) = (1-f_ogrid(i,j,:,7))*chemspec0(k)
-      !          endif
                 f_ogrid(i,j,:,ichemspec(k)) = chemspec0(k)
               enddo
-              if (lreac_heter) then
+          !    if (lreac_heter) then
                 ! Heterogeneous reactions only work with simplified mechanism
-                f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
-                f_ogrid(i,j,:,ichemspec(2)) = 1.-f_ogrid(i,j,:,ichemspec(5))-f_ogrid(i,j,:,ichemspec(4))&
-                                                -f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(3))
-                ! Set dp/dr = 0 at the cylinder surface when heter. reactions
-                lexpl_rho = .true.
-              endif
+                if (ldist_CO2) then
+                ! distribute CO2 exponentially close to the cylinder - this slowly introduces reactions
+                  f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
+                  f_ogrid(i,j,:,ichemspec(1)) = 1.-f_ogrid(i,j,:,ichemspec(4))&
+                                                  -f_ogrid(i,j,:,ichemspec(2))-f_ogrid(i,j,:,ichemspec(3))
+                elseif (ldist_CO) then
+                ! otherwise CO is distributed exponentially close to the cylinder 
+                  f_ogrid(i,j,:,ichemspec(4)) = f_ogrid(i,j,:,ichemspec(4))*wall_smoothing
+                  f_ogrid(i,j,:,ichemspec(2)) = 1.-f_ogrid(i,j,:,ichemspec(4))&
+                                                  -f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(3))
+                endif
+                if (nchemspec==5) then
+                  f_ogrid(i,j,:,ichemspec(1))=f_ogrid(i,j,:,ichemspec(1))-f_ogrid(i,j,:,ichemspec(5))
+                endif
+                ! Do not set dp/dr = 0 at the cylinder surface when heter. reactions
+                if (lreac_heter) lexpl_rho = .false.
+           !   endif
             endif
           endif
 !  Compute contribution to flow from cylinders above and below, due to periodic boundary conditions
@@ -766,6 +771,13 @@ module Solid_Cells
           enddo
         enddo
       endif
+!
+      if (lpres_grad) then
+        f_ogrid(:,:,:,igpx) = 0.
+        f_ogrid(:,:,:,igpy) = 0.
+        f(:,:,:,igpx) = 0.
+        f(:,:,:,igpy) = 0.
+      endif 
 !
 !  Write initial condition to disk.
 !
@@ -1596,6 +1608,33 @@ module Solid_Cells
 !
     endsubroutine Nusselt_coeffs
 !***********************************************************************
+    subroutine mdot_C_pencils(mdot_C)
+!
+!  Compute the mean heterogeneous reaction rate
+!
+      real, intent(inout) :: mdot_C
+!
+      mdot_C = mdot_C + heter_reaction_rate(m_ogrid,n_ogrid,nchemspec+1) 
+!
+    endsubroutine mdot_C_pencils
+!***********************************************************************
+    subroutine mdot_C_coeffs(mdot_C)
+!
+!  Sum up the computed char consumption rates
+!
+      use Mpicomm, only: mpireduce_sum
+      real, intent(inout) :: mdot_C
+      real :: mdot_C_all
+!
+      call mpireduce_sum(mdot_C,mdot_C_all)
+!
+      if(lroot) then
+        mdot_C=mdot_C_all/(nzgrid_ogrid*ny_ogrid)
+        if (idiag_mdot_C /= 0) fname(idiag_mdot_C)=mdot_C
+      endif
+!
+    endsubroutine mdot_C_coeffs
+!***********************************************************************
     subroutine dsolid_dt(f,df,p)
 !
 !  Dummy routine
@@ -1639,6 +1678,7 @@ module Solid_Cells
         idiag_c_dragx = 0
         idiag_c_dragy = 0
         idiag_Nusselt = 0
+        idiag_mdot_C  = 0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1647,6 +1687,7 @@ module Solid_Cells
         call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
         call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
         call parse_name(iname,cname(iname),cform(iname),'Nusselt',idiag_Nusselt)
+        call parse_name(iname,cname(iname),cform(iname),'mdot_C',idiag_mdot_C)
       enddo
 !
     endsubroutine rprint_solid_cells
@@ -4022,10 +4063,11 @@ module Solid_Cells
       integer :: nyz_ogrid
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og
       intent(out)    :: df
-      real :: c_dragx,c_dragy, Nusselt, dt_ogrid
+      real :: c_dragx,c_dragy, Nusselt, dt_ogrid, mdot_C
       c_dragx=0.
       c_dragy=0.
       Nusselt=0.
+      mdot_C =0.
 !
 !  Initiate communication and do boundary conditions.
 !
@@ -4090,6 +4132,9 @@ module Solid_Cells
           if (idiag_Nusselt/=0) then
             call Nusselt_pencils(Nusselt)
           endif
+          if (idiag_mdot_C/=0) then
+            call mdot_C_pencils(mdot_C)
+          endif
         endif
 !
 !  End of loops over m and n.
@@ -4100,11 +4145,13 @@ module Solid_Cells
         if ((idiag_c_dragx/=0).or.(idiag_c_dragy/=0)) then
           call drag_coeffs(c_dragx,c_dragy)
         endif
-        if ((idiag_Nusselt/=0)) then
+        if (idiag_Nusselt/=0) then
           call Nusselt_coeffs(Nusselt)
         endif
+        if (idiag_mdot_C/=0) then
+          call mdot_C_coeffs(mdot_C)
+        endif
       endif
-
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -4121,7 +4168,8 @@ module Solid_Cells
           m_ogrid=mm_ogrid(imn_ogrid)
           df(l1_ogrid,m_ogrid,n_ogrid,iux:iuz) = 0.
           if (lexpl_rho) df(l1_ogrid,m_ogrid,n_ogrid,irho) = 0.
-          if (lchemistry .and. lreac_heter) &
+  !        if (lchemistry .and. lreac_heter) &
+          if (lchemistry) &
              df(l1_ogrid,m_ogrid,n_ogrid,ichemspec(1):ichemspec(nchemspec)) = 0.
         enddo
         if (iTT .gt. 0) df(l1_ogrid,:,:,iTT) = 0.
@@ -4479,7 +4527,7 @@ module Solid_Cells
 !  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids
 !  06-apr-17/Jorgen: Cleanup and working with SBP property
 !
-!  Only set cyinder boundary here, not processor boundaries
+!  Only set cylinder boundary here, not processor boundaries
 !
       use density, only:lupw_lnrho
       real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), intent(inout) ::  f_og

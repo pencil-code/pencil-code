@@ -118,6 +118,12 @@ module Chemistry
   real :: lamb_low, lamb_up, Pr_turb=0.7
   real :: intro_time=0
   real :: p_init=1013000 ! cgs !
+  integer :: i_CO, ichem_CO
+  logical :: lCO
+  ! const mass fraction of H2O for lmech_simple when only 4 species are used
+  real :: Y_H2O=0.0008
+  real :: m_H2O = 2.*1.00794+15.9994
+  logical :: lback=.true.
 !
 !   Lewis coefficients
 !
@@ -141,11 +147,11 @@ module Chemistry
       init_TT2,init_rho,&
       init_ux,init_uy,init_uz,init_pressure, &
       str_thick,lT_tanh,lT_const,lheatc_chemistry, &
-      prerun_directory, &
+      prerun_directory, lback, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
-      linit_density, init_rho2, intro_time, p_init, &
+      linit_density, init_rho2, intro_time, p_init, Y_H2O, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef, lmech_simple !ldamp_zone_for_NSCBC,
+      reac_rate_method,global_phi, Pr_turb, lew_exist, Lewis_coef, lmech_simple 
 !
 !
 ! run parameters
@@ -253,8 +259,11 @@ module Chemistry
       if (lcheminp) then
         call read_species(input_file)
       else
-        if (lmech_simple) then
+!        if (lmech_simple) then
+        if (lmech_simple .and. nchemspec==5) then
           varname(ichemspec(1):ichemspec(nchemspec))= (/ 'CO2       ','CO        ','N2        ','O2        ','H2O       '/)
+        elseif (lmech_simple) then
+          varname(ichemspec(1):ichemspec(nchemspec))= (/ 'CO2       ','CO        ','N2        ','O2        '/)
         else
           varname(ichemspec(1):ichemspec(nchemspec))= (/ 'H2        ','O2        ','H2O       ','H         ','O         ',&
              'OH        ','HO2       ','H2O2      ','AR        ','N2        ','HE        ','CO        ','CO2       '/)
@@ -319,16 +328,19 @@ module Chemistry
                                                -0.01669033E-12,-0.04896696E+06,-0.09553959E+01, 0.02275725E+02, &
                                                 0.09922072E-01,-0.01040911E-03, 0.06866687E-07,-0.02117280E-10, &
                                                -0.04837314E+06, 0.01018849E+03 /)
-      !H2O
-      species_constants(5,iaa1(1):iaa2(7)) = (/ 2.67214561E+00, 3.05629289E-03,-8.73026011E-07, 1.20099639E-10, &
-                                               -6.39161787E-15,-2.98992090E+04, 6.86281681E+00, 3.38684249E+00, &
-                                                3.47498246E-03,-6.35469633E-06, 6.96858127E-09,-2.50658847E-12, &
-                                               -3.02081133E+04, 2.59023285E+00 /)
-      species_constants(1:5,imass) = (/12.0107+2.*15.9994, 12.0107+15.9994, 2.*14.00674, 2.*15.9994, 2.*1.00794+15.9994/)
-!
-      species_constants(1:5,iTemp1) = 300.0
-      species_constants(1:5,iTemp3) = 5000.0
-      species_constants(1:5,iTemp2) = 1000.00
+      if (nchemspec == 5) then
+        !H2O
+        species_constants(5,iaa1(1):iaa2(7)) = (/ 2.67214561E+00, 3.05629289E-03,-8.73026011E-07, 1.20099639E-10, &
+                                                 -6.39161787E-15,-2.98992090E+04, 6.86281681E+00, 3.38684249E+00, &
+                                                  3.47498246E-03,-6.35469633E-06, 6.96858127E-09,-2.50658847E-12, &
+                                                 -3.02081133E+04, 2.59023285E+00 /)
+        species_constants(1:5,imass) = (/12.0107+2.*15.9994, 12.0107+15.9994, 2.*14.00674, 2.*15.9994, 2.*1.00794+15.9994/)
+      else
+        species_constants(1:4,imass) = (/12.0107+2.*15.9994, 12.0107+15.9994, 2.*14.00674, 2.*15.9994/)
+      endif
+      species_constants(:,iTemp1) = 300.0
+      species_constants(:,iTemp3) = 5000.0
+      species_constants(:,iTemp2) = 1000.00
 !
     else
 !
@@ -511,10 +523,8 @@ module Chemistry
 !
       if (lreac_as_aux) then
         if (ireac == 0) then
-          call farray_register_auxiliary('reac',ireac,vector=nchemspec)
-          do i = 0, nchemspec-1
-            ireaci(i+1) = ireac+i
-          enddo
+          call find_species_index('CO',i_CO,ichem_CO,lCO)
+          call farray_register_auxiliary('reac',ireac)
         else
           if (lroot) print*, 'initialize_chemistry: ireac = ', ireac
           call farray_index_append('ireac',ireac)
@@ -571,9 +581,13 @@ module Chemistry
       call put_shared_variable('imass',imass)
       call put_shared_variable('lflame_front_2D',lflame_front_2D)
       call put_shared_variable('p_init',p_init)
+      call put_shared_variable('ireac',ireac)
+      call put_shared_variable('lreac_as_aux',lreac_as_aux)
       if (lmech_simple) then
         call put_shared_variable('orders_p',orders_p)
         call put_shared_variable('orders_m',orders_m)
+        call put_shared_variable('Y_H2O',Y_H2O)
+        call put_shared_variable('m_H2O',m_H2O)
       endif
 !
    endif 
@@ -1585,8 +1599,8 @@ module Chemistry
         if (lheatc_chemistry) call calc_heatcond_chemistry(f,df,p)
       endif
 !
-      if (lreactions .and. ireac /= 0 .and. ((.not. llsode))) then
-        if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)
+      if (lreac_as_aux) then
+        if (llast) call get_reac_rate(f,p)
       endif
 !
 ! The part below is commented because ldt = false all the time and it's
@@ -2173,10 +2187,12 @@ module Chemistry
         tran_data(1,1:7) = (/ 1.0000000000000000        ,244.00000000000000        ,3.7629999999999999        ,&
                                0.0000000000000000E+000   ,2.6499999999999999        ,2.1000000000000001       ,&
                                0.0000000000000000E+000 /)
-        ! H2O
-        tran_data(5,1:7) = (/ 2.0000000000000000        ,572.39999999999998        ,2.6050000000000000        ,&
-                              1.8440000000000001        ,0.0000000000000000E+000   ,4.0000000000000000        ,&
-                              0.0000000000000000E+000 /)
+        if (nchemspec==5) then
+          ! H2O
+          tran_data(5,1:7) = (/ 2.0000000000000000        ,572.39999999999998        ,2.6050000000000000        ,&
+                                1.8440000000000001        ,0.0000000000000000E+000   ,4.0000000000000000        ,&
+                                0.0000000000000000E+000 /)
+        endif
 !
 !  Find number of ractions
 !
@@ -2295,26 +2311,29 @@ module Chemistry
 !
 ! CO2 CO N2 O2 H2O 
 !
-      Sijp(:,1) = (/ &
+      Sijp(1:4,1) = (/ &
         0.0000000000000000      ,&
         1.0000000000000000      ,&
         0.0000000000000000E+000 ,&
-        0.5000000000000000E+000 ,&
-        0.0000000000000000      /)
+        0.5000000000000000E+000 /)
 !
-      Sijm(:,1) = (/ &
+      Sijm(1:4,1) = (/ &
         1.0000000000000000      ,&
         0.0000000000000000E+000 ,&
         0.0000000000000000E+000 ,&
-        0.0000000000000000E+000 ,&
         0.0000000000000000E+000 /)
+!
+      if (nchemspec==5) then
+        Sijp(5,1) = 0.0
+        Sijm(nchemspec,1) = 0.0
+      endif
 !
       B_n = 33.6174731212
       alpha_n = 0.0
       !! E_an in CAL !!
       E_an = 40700 
 !
-      back(:) = .true.
+      back(:) = lback
       Mplus_case(:) = .false.
       photochem_case(:) = .false.
 !
@@ -4180,6 +4199,7 @@ module Chemistry
                   /species_constants(k,imass))**orders_m(k,reac)
             endif
           enddo
+          if (nchemspec==4) prod1=prod1*(Y_H2O*rho_cgs(:)/m_H2O)**orders_p(5,reac)
         else
           prod1 = 1.
           prod2 = 1.
@@ -4338,7 +4358,6 @@ module Chemistry
 !
       use Diagnostics, only: sum_mn_name, max_mn_name
 !
-      real :: alpha, eps
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,mreactions) :: vreactions, vreactions_p, vreactions_m
       real, dimension(nx,nchemspec) :: xdot
@@ -4348,8 +4367,6 @@ module Chemistry
       integer :: k,j,ii
       integer :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
       integer :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
-!
-      eps = sqrt(epsilon(alpha))
 !
       p%DYDt_reac = 0.
       rho1 = 1./p%rho
@@ -5085,19 +5102,12 @@ module Chemistry
 !
     endsubroutine get_mu1_slice
 !***********************************************************************
-    subroutine get_reac_rate(wt,f,p)
+    subroutine get_reac_rate(f,p)
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: wt
-      real, dimension(nx,nchemspec) :: ydot
       type (pencil_case) :: p
 !
-      ydot = p%DYDt_reac
-      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) = ydot
-!         f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
-!
-      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) = wt
-!         f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
+      f(l1:l2,m,n,ireac) = p%DYDt_reac(:,ichem_CO)
 !
     endsubroutine get_reac_rate
 !***********************************************************************
