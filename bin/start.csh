@@ -128,6 +128,7 @@ endif
 rm -f ERROR COMPLETED
 ${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
+touch pc_commands.log
 echo "" >> pc_commands.log
 date +'# %Y-%m-%d %H:%M:%S' >> pc_commands.log
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
