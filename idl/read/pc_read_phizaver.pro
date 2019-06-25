@@ -14,6 +14,27 @@ datadir = pc_get_datadir(datadir)
 default, varfile, 'phizaverages.dat'
 default, monotone, 0
 default, quiet, 0
+
+  ; load HDF5 averages, if available
+  h5_file = datadir + '/averages/phi_z.h5'
+  if (file_test (h5_file)) then begin
+    last = pc_read ('last', filename='phi_z.h5', datadir=datadir+'/averages/')
+    groups = str (lindgen (last + 1))
+    times = reform (pc_read (groups+'/time'))
+    message, "pc_read_phizaver: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    if (size (vars, /type) ne 7) then vars = h5_content (groups[0])
+    found = where (strlowcase (vars) ne 'time', num)
+    if (num le 0) then message, 'pc_read_phizaver: ERROR: "'+h5_file+'" contains no known averages!'
+    vars = vars[found]
+    r = pc_read ('r')
+    object = { t:times, last:last, pos:long (groups), rcyl:r, nvars:num, labels:vars }
+    for pos = 0, num-1 do begin
+      object = create_struct (object, vars[pos], pc_read (groups+'/'+vars[pos]))
+    end
+    h5_close_file
+    return
+  end
+
 ;;
 ;;  Get necessary dimensions.
 ;;
