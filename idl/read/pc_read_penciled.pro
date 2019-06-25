@@ -40,6 +40,22 @@ IF (keyword_set(HELP)) THEN BEGIN
 ENDIF
 datadir = pc_get_datadir(datadir)
 ;
+; Load HDF5 varfile if requested or available.
+;
+  if (strmid (datafile, strlen(datafile)-3) eq '.h5') then begin
+    message, "pc_read_penciled: WARNING: please use 'pc_read' to load HDF5 data efficiently!", /info
+    t = pc_read ('time', file=datafile, datadir=datadir+'/allprocs')
+    quantities = h5_content ('/', number=num_quantities)
+    found = where (strmid (quantities, 0, 4) eq 'data', num_quantities)
+    if (num_quantities eq 0) then message, "pc_read_penciled: ERROR: no valid quantities found!"
+    quantities = quantities[found]
+help, quantities
+print, quantities
+    field = pc_read (quantities)
+    h5_close_file
+    return
+  end
+;
 ; - assume by default that we want to read a scalar
 if (n_elements(vec) eq 0)   then vec=0
 if (datafile eq 'glhc.dat') then vec=1
