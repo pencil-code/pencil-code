@@ -1176,14 +1176,14 @@ module HDF5_IO
         call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
 !
       loc_dim(1) = nx
-      loc_dim(2) = ny
-      loc_dim(3) = nz
+      loc_dim(2) = 1
+      loc_dim(3) = 1
       glob_dim(1) = nxgrid
       glob_dim(2) = nygrid
       glob_dim(3) = nzgrid
       loc_start(1) = 0
-      loc_start(2) = 0
-      loc_start(3) = 0
+      loc_start(2) = py - 1
+      loc_start(3) = pz - 1
       glob_start(1) = ipx * nx
       glob_start(2) = ipy * ny
       glob_start(3) = ipz * nz
