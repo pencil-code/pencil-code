@@ -37,8 +37,8 @@ nlines=long(nlines[0])
 nlin_per_time=1L+ceil(nvar*nr/8.)
 nlin_rcyl = ceil(nr/8.)
 nit=(nlines-nlin_rcyl)/nlin_per_time
-if nlines-nlin_rcyl mod nlin_per_time ne 0 then $
-  print, 'Warning: File "'+strtrim(datadir+'/'+varfile,2)+'" corrupted!'
+if ((nlines-nlin_rcyl) mod nlin_per_time ne 0) then $
+    print, 'Warning: File "'+strtrim(datadir+'/'+varfile,2)+'" corrupted!'
 
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 
