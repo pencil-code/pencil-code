@@ -145,7 +145,6 @@ F77          = f90
 F77FLAGS     =
 CFLAGS       =
 FCCLEANER    =
-LIBMPISUFFIX =
 MAKEOPTS     =
 CONVERSION_RELAXED =
 #
@@ -186,12 +185,6 @@ include Makefile.inc
 # Fortran 2003 standard compilation settings.
 #
 include Makefile-standard.inc
-#
-# Can someone explain this?
-# Bourdin.KIS: In some cases, an underscore is added to the library name.
-#     I think that this is not needed with a correct compiler configuration.
-#
-MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 #
 # Compile files with particle programming structure if particles are chosen.
 #
@@ -654,8 +647,8 @@ MAGNETIC_MEANFIELD_SRC=$(MAGNETIC_MEANFIELD).f90
 MAGNETIC_MEANFIELD_DEMFDT_OBJ=$(MAGNETIC_MEANFIELD_DEMFDT).o
 MAGNETIC_MEANFIELD_DEMFDT_SRC=$(MAGNETIC_MEANFIELD_DEMFDT).f90
 #
-MPICOMM_OBJ=$(MPICOMM_FIX).o
-MPICOMM_SRC=$(MPICOMM_FIX).f90
+MPICOMM_OBJ=$(MPICOMM).o
+MPICOMM_SRC=$(MPICOMM).f90
 #
 NOMPICOMM_OBJ=nompicomm.o
 NOMPICOMM_SRC=nompicomm.f90
@@ -986,7 +979,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O3 -I/usr/lib/openmpi/include #(taspd209a)
 #LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(taspd209a)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(taspd209a)
-#LIBMPISUFFIX=#(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
@@ -1059,7 +1051,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
 #LD_MPI=-I/usr/include -pthread -L/usr/lib64 -llammpio -llamf77mpi -lmpi -llam -laio -laio -lutil #(Kepler)
 #FC=g95 -fsecond-underscore #(Kolmogorov|Kepler)
-#LIBMPISUFFIX=_#(Kolmogorov)
 #FC=g95 -fsecond-underscore #(Pencil|Einy)
 #FFLAGS=-I/usr/include/lam -pthread -O3 #(Pencil|Einy)
 #CFLAGS=-O3 -DFUNDERSC=2 #(Pencil|Einy)
@@ -1142,7 +1133,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI=-L/usr/lib/openmpi -lmpi -lmpi_f77 #(mithra)
 #LD_MPI=-L/usr/lib/openmpi/1.2.4-gcc -lmpi -lmpi_f77 #(pcgastine)
 #LD_MPI=-pthread -L/home/dintrans/LIB/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(efigi)
-#LIBMPISUFFIX=_#(efigi)
 ##
 ## Axel on Lucidor, h05n35 (ifc 8.1)
 ##
@@ -1177,7 +1167,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=icc #(fe[0-9])
 #CFLAGS=-O3 -DFUNDERSC=1 #(fe[0-9])
 #LD_MPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
-#LIBMPISUFFIX=_#(fe[0-4])
 ##
 ## Axel on Monolith (ifc 7.1)
 ##
@@ -1188,7 +1177,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(login-1.monolith.nsc.liu.se)
 #LD_MPI=-Nscampi #(login-1.monolith.nsc.liu.se)
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(login-1.monolith.nsc.liu.se)
-##LIBMPISUFFIX=_#(login-1.monolith.nsc.liu.se)
 ##
 ## Axel on Neolith (ifc 7.1)
 ##
@@ -1199,7 +1187,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 -DFUNDERSC=1 -I/home/x_axebr/library/include -L/home/x_axebr/library/lib #(neolith)
 #LD_MPI=-Nscampi #(neolith)
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(neolith)
-##LIBMPISUFFIX=_#(neolith)
 ##
 ## Axel on Triolith (ifc 7.1)
 ##
@@ -1209,7 +1196,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(triolith)
 #CFLAGS=-O2 -DFUNDERSC=1 #(triolith)
 #LD_MPI= #(triolith)
-##LIBMPISUFFIX= #(triolith)
 ##
 ## Axel on Hexagon (ftn using pgf90)
 ##
@@ -1228,7 +1214,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 #(m191.hpc2n.umu.se)
 #LD_MPI= #(m191.hpc2n.umu.se)
 #FFLAGS_DOUBLE=-autodouble #(m191.hpc2n.umu.se)
-#LIBMPISUFFIX=#(m191.hpc2n.umu.se)
 ##
 ## Axel on Akka
 ##
@@ -1238,7 +1223,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(p-bc9901.hpc2n.umu.se)
 #LD_MPI= #(p-bc9901.hpc2n.umu.se)
 #FFLAGS_DOUBLE=-r8 #(p-bc9901.hpc2n.umu.se)
-#LIBMPISUFFIX=#(p-bc9901.hpc2n.umu.se)
 ##
 ## Axel on Abisko
 ##
@@ -1248,7 +1232,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(t-mn01.hpc2n.umu.se)
 #LD_MPI= #(t-mn01.hpc2n.umu.se)
 #FFLAGS_DOUBLE=-r8 #(t-mn01.hpc2n.umu.se)
-#LIBMPISUFFIX=#(t-mn01.hpc2n.umu.se)
 ##
 ## Xiangyu on Hebbe
 ##
@@ -1262,7 +1245,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(hebbe)
 ##FFLAGS_DOUBLE=-fdefault-real-8 #(hebbe)
 #FFLAGS_DOUBLE=-r8 #(hebbe)
-#LIBMPISUFFIX=#(hebbe)
 ## Axel on Gardar
 ##
 #FC=mpif90 #(gardar*)
@@ -1272,7 +1254,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(gardar*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(gardar)
 #FFLAGS_DOUBLE=-r8 #(gardar*)
-#LIBMPISUFFIX=#(gardar*)
 ##
 ## Axel on LCD
 ##
@@ -1283,7 +1264,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(ekhi*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(ekhi)
 #FFLAGS_DOUBLE=-r8 #(ekhi*)
-#LIBMPISUFFIX=#(ekhi*)
 ##
 ## Axel on LCD
 ##
@@ -1294,7 +1274,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(scylla*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(scylla)
 #FFLAGS_DOUBLE=-r8 #(scylla*)
-#LIBMPISUFFIX=#(scylla*)
 ##
 ## Axel on LCD
 ##
@@ -1305,7 +1284,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(charybdis*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(charybdis)
 #FFLAGS_DOUBLE=-r8 #(charybdis*)
-#LIBMPISUFFIX=#(charybdis*)
 ##
 ## Piyali on Hydra
 ##
@@ -1315,7 +1293,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O2 -DFUNDERSC=1 #(hydra)
 #LD_MPI= #(hydra)
 #FFLAGS_DOUBLE=-r8 #(hydra)
-#LIBMPISUFFIX=#(hydra)
 ##
 ## Piyali on Nova
 ##
@@ -1326,7 +1303,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #LD_MPI= #(nova)
 ##FFLAGS_DOUBLE=-fdefault-real-8 #(nova)
 #FFLAGS_DOUBLE=-r8 #(nova)
-#LIBMPISUFFIX=#(nova
 ##
 #####Sahel on CRAY ####################
 #FC=ftn #(elogin*)
@@ -1344,7 +1320,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O1 -DFUNDERSC=1 #(hydra2*)
 #LD_MPI= #(hydra2*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(hydra2)
-#LIBMPISUFFIX=#(hydra2*)
 ##
 ## Axel on Sanssouci (ifc 9.1)
 ##
@@ -1353,7 +1328,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(sanssouci|belvedere|octopus)
 #CFLAGS=-O3 -DFUNDERSC=1 #(sanssouci|belvedere|octopus)
 #LD_MPI= #(sanssouci|belvedere|octopus)
-#LIBMPISUFFIX=#(sanssouci|belvedere|octopus)
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
@@ -1374,7 +1348,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS= #(nl6)
 #CFLAGS=-DFUNDERSC=1 #(nl6)
 #LD_MPI= #(nl6)
-#LIBMPISUFFIX= #(nl6)
 ##
 ##  Axel's laptop (nl6, 2.0 GHz)
 ##  the -CB options checks for out of bounds arrays
@@ -1401,7 +1374,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=gcc #(giuseppe-desktop)
 #CFLAGS=-O3 -DFUNDERSC=1 #(giuseppe-desktop)
 #LD_MPI= #(giuseppe-desktop)
-#LIBMPISUFFIX= #(giuseppe-desktop)
 ##
 ## lap-xiangyu
 ##
@@ -1412,7 +1384,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(xyli*)
 #CFLAGS=-O3 #(xyli*)
 #LD_MPI= #(xyli*)
-#LIBMPISUFFIX= #(xyli*)
 ##
 ## Axel on warp.hpc1.cs.cmu.edu (gfortran)
 ##
@@ -1421,7 +1392,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(warp.hpc1.cs.cmu.edu*)
 #CFLAGS=-O3 #(warp.hpc1.cs.cmu.edu*)
 #LD_MPI= #(warp.hpc1.cs.cmu.edu*)
-#LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
 ##
 ## Axel on warp.hpc1.cs.cmu.edu (gfortran)
 ##FC=ifort #(warp.hpc1.cs.cmu.edu*)
@@ -1429,7 +1399,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##CC=gcc #(warp.hpc1.cs.cmu.edu*)
 ##CFLAGS=-O3 #(warp.hpc1.cs.cmu.edu*)
 ##LD_MPI= #(warp.hpc1.cs.cmu.edu*)
-##LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
 ##
 ## Axel on norlx51 (gfortran)
 ##
@@ -1439,7 +1408,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
 #LDFLAGS+= -L/usr/share/doc/libhdf5-openmpi-1.8.4 #(norlx51)
-#LIBMPISUFFIX= #(norlx51)
 ##
 ## Axel on norlx55 (gfortran)
 ##
@@ -1448,7 +1416,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(norlx55)
 #CFLAGS=-O3 #(norlx55)
 #LD_MPI= #(norlx55)
-#LIBMPISUFFIX= #(norlx55)
 ##
 ## Axel on fe03 (ifc 8.1)
 ##
@@ -1457,21 +1424,18 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(fe03*)
 #CFLAGS=-O3 #(fe03*)
 #LD_MPI= #(fe03*)
-#LIBMPISUFFIX= #(fe03*)
 #
 #FC=ifort #(fe03*)
 #CC=gcc #(fe03*)
 #FFLAGS=-O3 #(fe03*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(fe03*)
 #LD_MPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(fe03*)
-#LIBMPISUFFIX=_#(fe03*)
 #
 #FC=ifort #(fe03*)
 #CC=gcc #(fe03*)
 #FFLAGS=-O3 #(fe03*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(fe03*)
 #LD_MPI=-Wl,-rpath -Wl,/usr/lib -Wl,-rpath -Wl,/opt/shared/intel_fc_81/lib -L/usr/lib farg.o -lmpichfarg -lmpich -lpthread -lrt  #(fe03*)
-#LIBMPISUFFIX=_#(fe03*)
 ##
 ##  norlx01 Nordita computer
 ##
@@ -1500,7 +1464,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(caps.iafe.uba.ar)
 #CFLAGS=-O3 -DFUNDERSC=1 #(caps.iafe.uba.ar)
 #LD_MPI= #(caps.iafe.uba.ar)
-#LIBMPISUFFIX=#(caps.iafe.uba.ar)
 ##
 ##  Piyali's laptop
 ##
@@ -1586,7 +1549,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##LD_MPI=-L/usr/lib/lam/lib -pthread -llammpio -llamf77mpi -lmpi -llam -llammpi++ #(rockall)
 #LD_MPI=-L/usr/lib/openmpi/lib -pthread -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx -lopen-rte -lopen-pal -lmca_common_sm #(rockall)
 ##F77FLAGS=-w90 #(rockall)
-#LIBMPISUFFIX=_#(rockall)
 ##
 ## valdivia (grsarson's desktop)
 ##
@@ -1595,7 +1557,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE= #(valdivia)
 #LD_MPI=-L/usr/lib/openmpi/lib -pthread -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx -lopen-rte -lopen-pal -lmca_common_sm #(valdivia)
 #F77FLAGS=-w90 #(valdivia)
-#LIBMPISUFFIX=_#(valdivia)
 ##
 ## renton & morvern (ngrs's older desktop & laptop)
 ##
@@ -1603,7 +1564,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS=-O3 -I/usr/lib/lam/include #(renton|morvern)
 #LD_MPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(renton|morvern)
 #F77FLAGS=-w90 #(renton|morvern)
-#LIBMPISUFFIX=_#(renton|morvern)
 ##
 ## barilko Apichat Neamvonk's desktop
 ##
@@ -1624,7 +1584,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FC=ifort #(wormhole)
 ##FC=gfortran-4.1.1 -I/usr/include #(wormhole)
 #LD_MPI= #(wormhole)
-#LIBMPISUFFIX=_#(wormhole)
 ##LD_MPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 ##LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
 #LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
@@ -1645,7 +1604,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 #FC=ifort -static -I/usr/local/lib/idl/lam/include #(starlink)
 #LD_MpI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
-#LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
 ##
 ##   Triton - Wlad's laptop
@@ -2167,7 +2125,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-DFUNDERSC=1 -I/usr/include/mpich #(fred-asus)
 #FFLAGS_DOUBLE= -fdefault-real-8 #(fred-asus)
 #CFLAGS_DOUBLE= -DDOUBLE_PRECISION #(fred-asus)
-#LIBMPISUFFIX= #(fred-asus)
 ##
 ##
 ## vm-think-aschreiber (Andreases Laptop)
@@ -2180,7 +2137,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-DFUNDERSC=1 -I/usr/lib64/mpi/gcc/openmpi/include/ #(vm-think-aschreiber)
 #FFLAGS_DOUBLE= -fdefault-real-8 #(vm-think-aschreiber)
 #CFLAGS_DOUBLE= -DDOUBLE_PRECISION #(vm-think-aschreiber)
-#LIBMPISUFFIX= #(vm-think-aschreiber)
 ##
 
 ##AB: keep the empty line above!!
@@ -2682,8 +2638,7 @@ semiauto-conf:
 	    LD="$(LD)" \
 	    LD_MPI="$(LD_MPI)" \
 	    LD_FLAGS="$(LD_FLAGS)" \
-	    LD_FOURIER="$(LD_FOURIER)" \
-	    LIBMPISUFFIX="$(LIBMPISUFFIX)"
+	    LD_FOURIER="$(LD_FOURIER)"
 
 #
 #  Generate files for automated debugging and testing etc.
@@ -2835,8 +2790,8 @@ mpicomm_.f90: mpicomm.f90
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
-$(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+$(MPICOMM).o: mpicomm.h $(MPICOMM).f90 cdata.o
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(CONVERSION_RELAXED) -o $(MPICOMM).o -c $(MPICOMM).f90
 #
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC) $(PARTICLES_OBJ)
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
