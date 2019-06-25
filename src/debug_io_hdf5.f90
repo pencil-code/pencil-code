@@ -49,7 +49,7 @@ contains
       character (len=fnlen) :: filename, dataset
       integer :: pos
 !
-      filename = trim (datadir_snap)//'/'//trim (file)//'.h5'
+      filename = trim (directory_snap)//'/allprocs/'//trim (file)//'.h5'
       call file_open_hdf5 (filename, truncate=(imn == 1))
       if (nv == 1) then
         call output_hdf5 ('data', a(:,:,:,1))
@@ -107,7 +107,7 @@ contains
       if (lroot .and. headt .and. (imn == 1)) &
           print *, 'output_pencil: Writing to ' // trim(file) // ' for debugging -- this may slow things down'
 !
-      filename = trim (datadir_snap)//'/'//trim (file)//'.h5'
+      filename = trim (directory_snap)//'/'//trim (file)//'.h5'
       call file_open_hdf5 (filename, truncate=(imn == 1))
       if (nv == 1) then
         call output_hdf5 ('data', a(:,1), mm(imn)-m1, nn(imn)-n1)
