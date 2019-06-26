@@ -68,7 +68,9 @@ program run
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, construct_serial_arrays
   use Gpu,             only: gpu_init, register_gpu
   use HDF5_IO,         only: initialize_hdf5
-  use Hydro,           only: hydro_clean_up,kinematic_random_phase
+  use Hydro,           only: hydro_clean_up, kinematic_random_phase, &
+                                             kinematic_random_ampl, &
+                                             kinematic_random_wavenumber
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
   use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid
@@ -710,7 +712,11 @@ program run
 !
 !  A random phase for the hydro_kinematic module
 !
-    if (lhydro_kinematic) call kinematic_random_phase
+    if (lhydro_kinematic) then
+      call kinematic_random_phase
+      call kinematic_random_ampl
+      call kinematic_random_wavenumber
+    endif
 !
 !  Decide here whether or not we will need a power spectrum.
 !  At least for the graviational wave spectra, this requires
