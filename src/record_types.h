@@ -44,8 +44,8 @@ integer, parameter :: id_record_HYDRO_PHASE1     = 281
 integer, parameter :: id_record_HYDRO_PHASE2     = 282
 integer, parameter :: id_record_HYDRO_TSFORCE    = 284
 integer, parameter :: id_record_HYDRO_LOCATION   = 285
-integer, parameter :: id_record_HYDRO_TSFORCE_AMPL= 286
-integer, parameter :: id_record_HYDRO_TSFORCE_WAVENUMBER= 287
+integer, parameter :: id_record_HYDRO_AMPL       = 286
+integer, parameter :: id_record_HYDRO_WAVENUMBER = 287
 
 ! Magnetic
 integer, parameter :: id_record_MAGNETIC_PHASE   = 311
