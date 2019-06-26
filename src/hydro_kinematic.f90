@@ -2682,11 +2682,11 @@ module Hydro
       elseif (id == id_record_HYDRO_TSFORCE) then
         if (read_persist ('HYDRO_TSFORCE', tsforce)) return
         done = .true.
-      elseif (id == id_record_HYDRO_TSFORCE_AMPL) then
-        if (read_persist ('HYDRO_TSFORCE_AMPL', tsforce_ampl)) return
+      elseif (id == id_record_HYDRO_AMPL) then
+        if (read_persist ('HYDRO_AMPL', tsforce_ampl)) return
         done = .true.
-      elseif (id == id_record_HYDRO_TSFORCE_WAVENUMBER) then
-        if (read_persist ('HYDRO_TSFORCE_WAVENUMBER', tsforce_wavenumber)) return
+      elseif (id == id_record_HYDRO_WAVENUMBER) then
+        if (read_persist ('HYDRO_WAVENUMBER', tsforce_wavenumber)) return
         done = .true.
       endif
 !
@@ -2717,8 +2717,8 @@ module Hydro
       if (write_persist ('HYDRO_PHASE2', id_record_HYDRO_PHASE2, phase2)) return
       if (write_persist ('HYDRO_LOCATION', id_record_HYDRO_LOCATION, location)) return
       if (write_persist ('HYDRO_TSFORCE', id_record_HYDRO_TSFORCE, tsforce)) return
-      if (write_persist ('HYDRO_TSFORCE_AMPL', id_record_HYDRO_TSFORCE_AMPL, tsforce_ampl)) return
-      if (write_persist ('HYDRO_TSFORCE_WAVENUMBER', id_record_HYDRO_TSFORCE_WAVENUMBER, tsforce_wavenumber)) return
+      if (write_persist ('HYDRO_AMPL', id_record_HYDRO_AMPL, tsforce_ampl)) return
+      if (write_persist ('HYDRO_WAVENUMBER', id_record_HYDRO_WAVENUMBER, tsforce_wavenumber)) return
 !
       output_persistent_hydro = .false.
 !
