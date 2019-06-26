@@ -2718,6 +2718,7 @@ module Hydro
       if (write_persist ('HYDRO_LOCATION', id_record_HYDRO_LOCATION, location)) return
       if (write_persist ('HYDRO_TSFORCE', id_record_HYDRO_TSFORCE, tsforce)) return
       if (write_persist ('HYDRO_TSFORCE_AMPL', id_record_HYDRO_TSFORCE_AMPL, tsforce_ampl)) return
+      if (write_persist ('HYDRO_TSFORCE_WAVENUMBER', id_record_HYDRO_TSFORCE_WAVENUMBER, tsforce_wavenumber)) return
 !
       output_persistent_hydro = .false.
 !
