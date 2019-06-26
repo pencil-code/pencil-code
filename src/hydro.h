@@ -15,7 +15,8 @@
   public :: impose_velocity_ceiling
   public :: hydro_clean_up
   public :: coriolis_cartesian
-  public :: kinematic_random_phase
+  public :: kinematic_random_phase, kinematic_random_ampl
+  public :: kinematic_random_wavenumber
   public :: hydro_before_boundary
   public :: expand_shands_hydro
   public :: calc_means_hydro
