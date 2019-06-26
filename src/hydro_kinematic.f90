@@ -44,7 +44,8 @@ module Hydro
 !
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1., phase1=0., phase2=0., tsforce=0.
-  real ::  dtforce=impossible
+  real :: tsforce_ampl=0., tsforce_wavenumber=0.
+  real ::  dtforce=impossible, ampl_random
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   logical :: lupw_uu=.false., lkinflow_as_uudat=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.
@@ -54,8 +55,10 @@ module Hydro
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber?
   integer :: KS_modes = 25
   real, allocatable, dimension (:) :: Zl,dZldr,Pl,dPldtheta
-  real :: ampl_fcont_uu=1.
-  logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
+  real :: ampl_fcont_uu=1., random_ampl, random_wavenumber
+  logical :: lforcing_cont_uu=.false., lrandom_location=.false.
+  logical :: lwrite_random_location=.false., lwrite_random_wavenumber=.false.
+  logical :: lrandom_wavenumber=.false., lwrite_random_ampl=.false.
   real, dimension(nx) :: ck_r,ck_rsqr
   integer :: ll_sh=0, mm_sh=0, n_xprof=-1
   integer :: pushpars2c, pushdiags2c  ! should be procedure pointer (F2003)
@@ -83,6 +86,7 @@ module Hydro
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
   logical :: lkinflow_as_comaux=.false.
+  logical :: lrandom_ampl=.false.
 !
   namelist /hydro_run_pars/ &
       kinematic_flow,wind_amp,wind_profile,wind_rmin,wind_step_width, &
@@ -91,13 +95,16 @@ module Hydro
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
       phasex_uukin, phasey_uukin, phasez_uukin, &
-      lrandom_location,lwrite_random_location,location_fixed,dtforce, &
-      lkinflow_as_comaux, lkinflow_as_uudat, &
+      lrandom_location, lwrite_random_location, &
+      lrandom_wavenumber, lwrite_random_wavenumber, &
+      location_fixed, dtforce, &
+      lwrite_random_ampl, lkinflow_as_comaux, lkinflow_as_uudat, &
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
-      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, ll_sh, mm_sh, n_xprof
+      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, &
+      ll_sh, mm_sh, n_xprof, lrandom_ampl
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -489,6 +496,7 @@ module Hydro
       real, dimension(nx) :: rone, argx, pom2
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real, dimension(nx) :: random_r, random_p, random_tmp
+!      real :: random_r_pt, random_p_pt
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
@@ -689,12 +697,13 @@ module Hydro
       case ('poshel-roberts')
         if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
         fac=ampl_kinflow
+        fac2=ampl_kinflow*relhel_uukin
         eps1=1.-eps_kinflow
 ! uu
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
-          p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
+          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1381,28 +1390,32 @@ module Hydro
 !
 !  Potential flow, u=gradphi, with phi=coskx*X cosky*Y coskz*Z,
 !  and X=x-ct, Y=y-ct, Z=z-ct.
+!  Possibility of gaussian distributed random amplitudes if lrandom_ampl.
 !
       case ('potential')
+!
+!  Allow for harmonic phase changes.
+!
         if (headtt) print*,'potential; ampl_kinflow=', ampl_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
-        fac=ampl_kinflow*cos(omega_kinflow*t)
+        random_tmp=random_ampl*ampl_kinflow*cos(omega_kinflow*t)
         cxt=cx_uukin*t
         cyt=cy_uukin*t
         czt=cz_uukin*t
 ! uu
         if (lpenc_loc(i_uu)) then
-          p%uu(:,1)=-fac*kx_uukin*&
+          p%uu(:,1)=-random_tmp*kx_uukin*&
               sin(kx_uukin*(x(l1:l2)-cxt))*cos(ky_uukin*(y(m)-cyt))*&
               cos(kz_uukin*(z(n)-czt-phasez_uukin))
-          p%uu(:,2)=-fac*ky_uukin*&
+          p%uu(:,2)=-random_tmp*ky_uukin*&
               cos(kx_uukin*(x(l1:l2)-cxt))*sin(ky_uukin*(y(m)-cyt))*&
               cos(kz_uukin*(z(n)-czt-phasez_uukin))
-          p%uu(:,3)=-fac*kz_uukin*&
+          p%uu(:,3)=-random_tmp*kz_uukin*&
               cos(kx_uukin*(x(l1:l2)-cxt))*cos(ky_uukin*(y(m)-cyt))*&
               sin(kz_uukin*(z(n)-czt-phasez_uukin))
           lupdate_aux=.true.
         endif
-        if (lpenc_loc(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
+        if (lpenc_loc(i_divu)) p%divu=-random_tmp*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
             *cos(kx_uukin*x(l1:l2)-cxt)*cos(ky_uukin*y(m)-cyt)*cos(kz_uukin*z(n)-czt)
 !
 !  2nd Potential flow, u=gradphi, with phi=cos(kx*X+ky*Y+kz*Z),
@@ -1471,10 +1484,32 @@ module Hydro
       case ('potential_random')
         if (headtt) print*,'potential_random; kx_uukin,ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'potential_random; kx_uukin=',kx_uukin,ky_uukin,kz_uukin
-        fac=ampl_kinflow
-        argx=kx_uukin*(x(l1:l2)-location(1))
-        argy=ky_uukin*(y(m)-location(2))
-        argz=kz_uukin*(z(n)-location(3))
+        fac=random_ampl*ampl_kinflow
+        argx=random_wavenumber*kx_uukin*(x(l1:l2)-location(1))
+        argy=random_wavenumber*ky_uukin*(y(m)-location(2))
+        argz=random_wavenumber*kz_uukin*(z(n)-location(3))
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=-fac*kx_uukin*sin(argx)*cos(argy)*cos(argz)
+          p%uu(:,2)=-fac*ky_uukin*cos(argx)*sin(argy)*cos(argz)
+          p%uu(:,3)=-fac*kz_uukin*cos(argx)*cos(argy)*sin(argz)
+          lupdate_aux=.true.
+        endif
+        if (lpenc_loc(i_divu)) p%divu=fac
+!
+!  Potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz;
+!  assume kx_uukin=ky_uukin=kz_uukin.
+!
+      case ('potential_ampl_random')
+        if (headtt) print*,'potential_random; kx_uukin,ampl_kinflow=',ampl_kinflow
+        if (headtt) print*,'potential_random; kx_uukin=',kx_uukin,ky_uukin,kz_uukin
+        fac=ampl_kinflow*ampl_random
+        !argx=kx_uukin*(x(l1:l2)-location(1))
+        !argy=ky_uukin*(y(m)-location(2))
+        !argz=kz_uukin*(z(n)-location(3))
+        argx=kx_uukin*x(l1:l2)
+        argy=ky_uukin*y(m)
+        argz=kz_uukin*z(n)
 ! uu
         if (lpenc_loc(i_uu)) then
           p%uu(:,1)=-fac*kx_uukin*sin(argx)*cos(argy)*cos(argz)
@@ -2647,6 +2682,12 @@ module Hydro
       elseif (id == id_record_HYDRO_TSFORCE) then
         if (read_persist ('HYDRO_TSFORCE', tsforce)) return
         done = .true.
+      elseif (id == id_record_HYDRO_TSFORCE_AMPL) then
+        if (read_persist ('HYDRO_TSFORCE_AMPL', tsforce_ampl)) return
+        done = .true.
+      elseif (id == id_record_HYDRO_TSFORCE_WAVENUMBER) then
+        if (read_persist ('HYDRO_TSFORCE_WAVENUMBER', tsforce_wavenumber)) return
+        done = .true.
       endif
 !
       if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
@@ -2676,6 +2717,7 @@ module Hydro
       if (write_persist ('HYDRO_PHASE2', id_record_HYDRO_PHASE2, phase2)) return
       if (write_persist ('HYDRO_LOCATION', id_record_HYDRO_LOCATION, location)) return
       if (write_persist ('HYDRO_TSFORCE', id_record_HYDRO_TSFORCE, tsforce)) return
+      if (write_persist ('HYDRO_TSFORCE_AMPL', id_record_HYDRO_TSFORCE_AMPL, tsforce_ampl)) return
 !
       output_persistent_hydro = .false.
 !
@@ -2966,6 +3008,80 @@ module Hydro
       endif
 !
     endsubroutine kinematic_random_phase
+!***********************************************************************
+    subroutine kinematic_random_ampl
+!
+!  Get a random amplitude to be used for the whole kinematic velocity field.
+!
+!  21-jun-2019/axel: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension(2) :: fran
+      real :: random_r, random_p
+!
+!  Generate random numbers.
+!
+      if (t>=tsforce_ampl) then
+        if (lrandom_ampl) then
+          call random_number_wrapper(random_r)
+          call random_number_wrapper(random_p)
+          random_ampl=sqrt(-2*log(random_r))*sin(2*pi*random_p)
+        else
+          random_ampl=1.
+        endif
+!
+!  Writing down the location.
+!
+        if (lroot .and. lwrite_random_ampl) then
+          open(1,file=trim(datadir)//'/random_ampl.dat',status='unknown',position='append')
+          write(1,'(4f14.7)') t, random_ampl
+          close (1)
+        endif
+!
+!  Update next tsforce_ampl.
+!
+        tsforce_ampl=t+dtforce
+        if (ip<=6) print*,'kinematic_random_phase: location=',location
+      endif
+!
+    endsubroutine kinematic_random_ampl
+!***********************************************************************
+    subroutine kinematic_random_wavenumber
+!
+!  Get a random wavenumber to be used for the whole kinematic velocity field.
+!
+!  21-jun-2019/axel: coded
+!
+      use General, only: random_number_wrapper
+!
+      real :: fran
+!
+!  Generate random numbers.
+!
+      if (t>=tsforce_wavenumber) then
+        if (lrandom_wavenumber) then
+          call random_number_wrapper(fran)
+          random_wavenumber=nint(fran*.5*twopi/Lxyz(1)*nxgrid)+1.
+        else
+          random_wavenumber=1.
+        endif
+!
+!  Writing down the location.
+!
+        if (lroot .and. lwrite_random_wavenumber) then
+          open(1,file=trim(datadir)//'/random_wavenumber.dat',status='unknown',position='append')
+          write(1,'(4f14.7)') t, random_wavenumber
+          close (1)
+        endif
+!
+!  Update next tsforce_wavenumber.
+!
+        tsforce_wavenumber=t+dtforce
+        if (ip<=6) print*,'kinematic_random_phase: location=',location
+      endif
+!
+    endsubroutine kinematic_random_wavenumber
 !***********************************************************************
     subroutine expand_shands_hydro
 !
