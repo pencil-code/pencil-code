@@ -6652,6 +6652,28 @@ module Hydro
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************
+    subroutine kinematic_random_ampl
+!
+!  This is a dummy routine.
+!
+!  26-jun-2019/axel: coded
+!
+      call fatal_error('kinematic_random_ampl', &
+          'Use HYDRO=hydro_kinematic in Makefile.local instead')
+!
+    endsubroutine kinematic_random_ampl
+!***********************************************************************
+    subroutine kinematic_random_wavenumber
+!
+!  This is a dummy routine.
+!
+!  26-jun-2019/axel: coded
+!
+      call fatal_error('kinematic_random_wavenumber', &
+          'Use HYDRO=hydro_kinematic in Makefile.local instead')
+!
+    endsubroutine kinematic_random_wavenumber
+!***********************************************************************
     subroutine expand_shands_hydro
 !
 !  Expands shorthand labels of hydro diagnostics.
