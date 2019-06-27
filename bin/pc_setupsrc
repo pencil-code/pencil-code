@@ -458,7 +458,10 @@ link_astaroth_files()
   cd $src/astaroth
   to_link=
 #  len=`expr match "$srcdir/cuda/astaroth/" '.*astaroth/'`
-  for file in $srcdir/astaroth/*.c* $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* $srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h $srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu $srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/*.cuh \
+  for file in $srcdir/astaroth/*.cc $srcdir/astaroth/*.*h $srcdir/astaroth/Makefile* \
+$srcdir/astaroth/submodule/CMakeLists.txt $srcdir/astaroth/submodule/include/*.*h \
+$srcdir/astaroth/submodule/src/core/*.*h $srcdir/astaroth/submodule/src/core/*.cu \
+$srcdir/astaroth/submodule/src/core/CMakeLists.txt $srcdir/astaroth/submodule/src/core/kernels/*.cuh \
 $srcdir/astaroth/submodule/src/standalone/*.h $srcdir/astaroth/submodule/src/standalone/*.cc \
 $srcdir/astaroth/submodule/src/standalone/CMakeLists.txt \
 $srcdir/astaroth/submodule/src/standalone/model/*.cc $srcdir/astaroth/submodule/src/standalone/model/*.h \
