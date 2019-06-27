@@ -92,7 +92,7 @@ class Dim(object):
         import os
         if os.path.exists(datadir+'/grid.h5'):
             import h5py
-            with h5py(datadir+'/grid.h5','r') as tmp:
+            with h5py.File(datadir+'/grid.h5','r') as tmp:
                 self.mx        = tmp['settings']['mx'       ]
                 self.my        = tmp['settings']['my'       ]
                 self.mz        = tmp['settings']['mz'       ]
