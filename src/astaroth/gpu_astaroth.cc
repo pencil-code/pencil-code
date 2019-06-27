@@ -55,8 +55,8 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
 #ifdef LFORCING
     //Update forcing params
     if (isubstep == itorder) { 
-        forcing_params.Update();    	                // calculate on CPU
-        GPUUpdateForcingCoefs(&forcing_params);		// load into GPU
+        // forcing_params.Update();    	                // calculate on CPU // %JP: TODO not available in astaroth.h yet
+        // GPUUpdateForcingCoefs(&forcing_params);		// load into GPU    // %JP: TODO not available in astaroth.h yet
     }
 #endif  
     if (lfirst && ldt) {
@@ -138,7 +138,7 @@ extern "C" void registerGPU(AcMesh& mesh, AcReal* farray)
 extern "C" void initGPU()
 {
     //Initialize GPUs in the node
-    AcResult res=acGetDevice();
+    AcResult res = acCheckDeviceAvailability();
 }
 void SetupConfig(AcMeshInfo & config){
 #include "../cdata_c.h"
@@ -185,7 +185,7 @@ extern "C" void initializeGPU()
     //Setup configurations used for initializing and running the GPU code
 
     	SetupConfig(mesh.info);
-        AcResult res=acInitialize(mesh.info);         //Allocs memory on the GPU and loads device constants
+        AcResult res=acInit(mesh.info);         //Allocs memory on the GPU and loads device constants
 
     // initialize diagnostics
        //init_diagnostics();
