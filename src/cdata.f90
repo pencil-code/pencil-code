@@ -689,5 +689,6 @@ module Cdata
 !  Background stratification.
 !
   logical :: lstratz = .false.
+  logical :: lnoghost_strati = .false.
 !***********************************************************************
 endmodule Cdata

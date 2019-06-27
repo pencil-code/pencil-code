@@ -2178,6 +2178,13 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-DFUNDERSC=1 #(grove.uio.no)
 #FFLAGS_DOUBLE=-r8  #(grove.uio.no)
 ##
+## Nishant's work laptop at MPS(DELL)
+##
+#FC=mpif90 #(Singh-TLM7)
+#FFLAGS= -O3 #(Singh-TLM7)
+#CFLAGS=-DFUNDERSC=1 #(Singh-TLM7)
+#FFLAGS_DOUBLE=-r8  #(Singh-TLM7)
+##
 ## Gustavo's laptop
 #FC=mpif90 #(Plato)
 #FFLAGS= -O0 #(Plato)

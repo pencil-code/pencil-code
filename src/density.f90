@@ -131,6 +131,7 @@ module Density
   real :: h_slope_limited=0., chi_sld_thresh=0.
   character (len=labellen) :: islope_limiter=''
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
+  !logical :: lnoghost=.false.
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -150,7 +151,8 @@ module Density
       lreduced_sound_speed, lrelativistic_eos, &
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, &
-      lconserve_total_mass, total_mass, ireference_state
+      lconserve_total_mass, total_mass, ireference_state !, &
+      !lnoghost
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &

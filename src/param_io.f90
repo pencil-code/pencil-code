@@ -108,7 +108,8 @@ module Param_IO
       ldirect_access, ltolerate_namelist_errors, &
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
       lcutoff_corners, nycut, nzcut, rel_dang, &
-      sigmaSB_set, c_light_set, k_B_set, m_u_set
+      sigmaSB_set, c_light_set, k_B_set, m_u_set, &
+      lnoghost_strati
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
