@@ -4755,6 +4755,37 @@ FFLAGS += -integer-size 64
 to promote all the integers to 64 Bit. This will break the Fortran-C interface.
 One should also make sure that \code{npar_mig<=npar/ncpus}. It is also beneficial
 to set \code{mpar_loc=2*npar/ncpus}.
+Sometimes one may encounter the following error,
+``additional relocation overflows omitted from the output''
+due to the 2G memory limit (caused by large static array).
+It is \code{mpar_loc} that determines the usage of memory
+instead of \code{npar}. There are two ways to resolve this issue:
+\begin{itemize}
+\item Use a specific memory model to generate code and store data
+    by setting the following for Intel compiler in your configuration file,
+  \begin{verbatim}
+   FFLAGS += -shared-intel -mcmodel=medium
+  \end{verbatim}
+This will, however, affect the performance of the code \cite{mcmodel}
+This method can handle at least the following setup, 
+    \begin{verbatim}
+    integer, parameter :: ncpus=256,nprocx=4,nprocy=8,nprocz=ncpus/(nprocx*nprocy)
+    integer, parameter :: nxgrid=1024,nygrid=nxgrid,nzgrid=nxgrid
+    integer(kind=ikind8), parameter :: npar=124999680
+    integer, parameter :: npar_stalk=100000, npar_mig=npar/10
+    integer, parameter :: mpar_loc=npar/5
+  \end{verbatim}
+\item Increase \code{ncpu} and decrease \code{mpar_loc}. For \code{npar=124999680},
+\code{ncpu=1024} is needed.
+  \begin{verbatim}
+  integer, parameter :: ncpus=1024,nprocx=8,nprocy=8,nprocz=ncpus/(nprocx*nprocy)
+  integer, parameter :: nxgrid=1024,nygrid=nxgrid,nzgrid=nxgrid
+  integer(kind=ikind8), parameter :: npar=124999680
+  integer, parameter :: mpar_loc=5*npar/ncpus
+  integer, parameter :: npar_stalk=100000, npar_mig=npar/ncpus
+  \end{verbatim}
+\end{itemize}
+
 
 \subsubsection{Random number generator}
 
@@ -14086,6 +14117,8 @@ Cambridge University Press (2008)
 \bibitem{2Nstorage} Williamson, J. H.,
   \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
   ``Low-storage Runge--Kutta schemes''
+
+\bibitem{mcmodel} Intel \url{https://software.intel.com/en-us/fortran-compiler-developer-guide-and-reference-mcmodel}
 
 \end{thebibliography}
 
