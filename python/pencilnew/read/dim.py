@@ -93,8 +93,8 @@ class Dim(object):
         if os.path.exists(datadir+'/grid.h5'):
             import h5py
             with h5py.File(datadir+'/grid.h5','r') as tmp:
-                self.mx        = tmp['settings']['mx'       ]
-                self.my        = tmp['settings']['my'       ]
+                self.mx        = tmp['settings']['mx'       ][0]
+                self.my        = tmp['settings']['my'       ][0]
                 self.mz        = tmp['settings']['mz'       ][0]
                 self.mvar      = tmp['settings']['mvar'     ][0]
                 self.maux      = tmp['settings']['maux'     ][0]
@@ -115,16 +115,15 @@ class Dim(object):
                 self.m2        = tmp['settings']['m2'       ][0]
                 self.n1        = tmp['settings']['n1'       ][0]
                 self.n2        = tmp['settings']['n2'       ][0]
-
-            self.iprocz_slowest = 0
-            self.ipx = self.ipy = self.ipz = 0
-            self.nxgrid    = self.nx
-            self.nygrid    = self.ny
-            self.nzgrid    = self.nz
-            self.mxgrid    = self.mx
-            self.mygrid    = self.my
-            self.mzgrid    = self.mz
-            self.mw = self.mx * self.my * self.mz
+                self.iprocz_slowest = 0
+                self.ipx = self.ipy = self.ipz = 0
+                self.nxgrid    = tmp['settings']['nx'][0]
+                self.nygrid    = tmp['settings']['ny'][0]
+                self.nzgrid    = tmp['settings']['nz'][0]
+                self.mxgrid    = tmp['settings']['mx'][0]
+                self.mygrid    = tmp['settings']['my'][0]
+                self.mzgrid    = tmp['settings']['mz'][0]
+                self.mw = self.mx * self.my * self.mz
         else:
             if not ogrid:
                 file_name = 'dim.dat'
