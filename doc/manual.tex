@@ -6062,6 +6062,32 @@ filing a bug report to us:
 
 \subsection{Compilation}
 
+\subsubsection{Error: `relocation truncated to fit'}
+
+If you get errors while compiling and linking that are similar to:
+\begin{Verbatim}
+density.f90:(.text+0x5e0): relocation truncated to fit: R_X86_64_PC32
+against symbol `cdata_mp_m_' defined in COMMON section in cdata.o
+density.f90:(.text+0x644): additional relocation overflows omitted from the
+output
+make[2]: *** [start.x] Error 1
+\end{Verbatim}
+
+\medskip
+
+{\bf A}: Your setup is probably too large to fit a `normal' memory model.
+Please choose a `medium' or `large' memory model by adding one of these
+compiler options to your configuration: \option{-mcmodel=medium} or \option{-mcmodel=large}.
+See Sect.~\ref{S-configuration} for configuration details. Alternatively,
+if you use \name{pc_build}, you may simply add the respective extension:
+\begin{Verbatim}
+pc_build -f GNU-GCC_MPI,GNU-GCC_medium
+\end{Verbatim}
+or for the \name{Intel} compiler and a `large' memory model you would use:
+\begin{Verbatim}
+pc_build -f Intel_MPI,Intel_large
+\end{Verbatim}
+
 \subsubsection[Problems compiling syscalls]
               {Linker can't find the syscalls functions:}
 
