@@ -582,7 +582,7 @@ module Cdata
 !
 ! Parameters for reading data for BCs.
 !
-  character(LEN=fnlen) :: bc_slc_dir
+  character(LEN=fnlen) :: bc_slc_dir=''
 !
 !  A buffer in which to construct an error message.
 !
