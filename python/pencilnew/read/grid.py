@@ -102,22 +102,22 @@ class Grid(object):
         if os.path.exists(datadir+'/grid.h5'):
             import h5py
             with h5py.File(datadir+'/grid.h5','r') as tmp:
-                self.x        = var['grid']['x'       ]
-                self.y        = var['grid']['y'       ]
-                self.z        = var['grid']['z'       ]
-                self.dx_1     = var['grid']['dx_1'    ]
-                self.dy_1     = var['grid']['dy_1'    ]
-                self.dz_1     = var['grid']['dz_1'    ]
-                self.dx_tilde = var['grid']['dx_tilde']
-                self.dy_tilde = var['grid']['dy_tilde']
-                self.dz_tilde = var['grid']['dz_tilde']
-                self.t        = var['grid']['t'       ]
-                self.dx       = var['grid']['dx'      ]
-                self.dy       = var['grid']['dy'      ]
-                self.dz       = var['grid']['dz'      ]
-                self.Lx       = var['grid']['Lx'      ]
-                self.Ly       = var['grid']['Ly'      ]
-                self.Lz       = var['grid']['Lz'      ]
+                self.x        = tmp['grid']['x'       ]
+                self.y        = tmp['grid']['y'       ]
+                self.z        = tmp['grid']['z'       ]
+                self.dx_1     = tmp['grid']['dx_1'    ]
+                self.dy_1     = tmp['grid']['dy_1'    ]
+                self.dz_1     = tmp['grid']['dz_1'    ]
+                self.dx_tilde = tmp['grid']['dx_tilde']
+                self.dy_tilde = tmp['grid']['dy_tilde']
+                self.dz_tilde = tmp['grid']['dz_tilde']
+                self.dx       = tmp['grid']['dx'      ]
+                self.dy       = tmp['grid']['dy'      ]
+                self.dz       = tmp['grid']['dz'      ]
+                self.Lx       = tmp['grid']['Lx'      ]
+                self.Ly       = tmp['grid']['Ly'      ]
+                self.Lz       = tmp['grid']['Lz'      ]
+                self.t        = 0.0
         else:
             datadir = os.path.expanduser(datadir)
             dim = read.dim(datadir, proc)
