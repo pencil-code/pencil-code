@@ -100,24 +100,25 @@ class Grid(object):
         import pencilnew.read as read
 
         if os.path.exists(datadir+'/grid.h5'):
+            dim = read.dim(datadir, proc)
             import h5py
             with h5py.File(datadir+'/grid.h5','r') as tmp:
-                self.x        = tmp['grid']['x'       ]
-                self.y        = tmp['grid']['y'       ]
-                self.z        = tmp['grid']['z'       ]
-                self.dx_1     = tmp['grid']['dx_1'    ]
-                self.dy_1     = tmp['grid']['dy_1'    ]
-                self.dz_1     = tmp['grid']['dz_1'    ]
-                self.dx_tilde = tmp['grid']['dx_tilde']
-                self.dy_tilde = tmp['grid']['dy_tilde']
-                self.dz_tilde = tmp['grid']['dz_tilde']
-                self.dx       = tmp['grid']['dx'      ]
-                self.dy       = tmp['grid']['dy'      ]
-                self.dz       = tmp['grid']['dz'      ]
-                self.Lx       = tmp['grid']['Lx'      ]
-                self.Ly       = tmp['grid']['Ly'      ]
-                self.Lz       = tmp['grid']['Lz'      ]
-                self.t        = 0.0
+                x        = tmp['grid']['x'       ][()]
+                y        = tmp['grid']['y'       ][()]
+                z        = tmp['grid']['z'       ][()]
+                dx_1     = tmp['grid']['dx_1'    ][()]
+                dy_1     = tmp['grid']['dy_1'    ][()]
+                dz_1     = tmp['grid']['dz_1'    ][()]
+                dx_tilde = tmp['grid']['dx_tilde'][()]
+                dy_tilde = tmp['grid']['dy_tilde'][()]
+                dz_tilde = tmp['grid']['dz_tilde'][()]
+                dx       = tmp['grid']['dx'      ][()]
+                dy       = tmp['grid']['dy'      ][()]
+                dz       = tmp['grid']['dz'      ][()]
+                Lx       = tmp['grid']['Lx'      ][()]
+                Ly       = tmp['grid']['Ly'      ][()]
+                Lz       = tmp['grid']['Lz'      ][()]
+                t        = 0.0
         else:
             datadir = os.path.expanduser(datadir)
             dim = read.dim(datadir, proc)
@@ -231,31 +232,31 @@ class Grid(object):
                     dy_tilde = dy_tilde_loc
                     dz_tilde = dz_tilde_loc
 
-            if trim:
-                self.x = x[dim.l1:dim.l2+1]
-                self.y = y[dim.m1:dim.m2+1]
-                self.z = z[dim.n1:dim.n2+1]
-                self.dx_1 = dx_1[dim.l1:dim.l2+1]
-                self.dy_1 = dy_1[dim.m1:dim.m2+1]
-                self.dz_1 = dz_1[dim.n1:dim.n2+1]
-                self.dx_tilde = dx_tilde[dim.l1:dim.l2+1]
-                self.dy_tilde = dy_tilde[dim.m1:dim.m2+1]
-                self.dz_tilde = dz_tilde[dim.n1:dim.n2+1]
-            else:
-                self.x = x
-                self.y = y
-                self.z = z
-                self.dx_1 = dx_1
-                self.dy_1 = dy_1
-                self.dz_1 = dz_1
-                self.dx_tilde = dx_tilde
-                self.dy_tilde = dy_tilde
-                self.dz_tilde = dz_tilde
+        if trim:
+            self.x = x[dim.l1:dim.l2+1]
+            self.y = y[dim.m1:dim.m2+1]
+            self.z = z[dim.n1:dim.n2+1]
+            self.dx_1 = dx_1[dim.l1:dim.l2+1]
+            self.dy_1 = dy_1[dim.m1:dim.m2+1]
+            self.dz_1 = dz_1[dim.n1:dim.n2+1]
+            self.dx_tilde = dx_tilde[dim.l1:dim.l2+1]
+            self.dy_tilde = dy_tilde[dim.m1:dim.m2+1]
+            self.dz_tilde = dz_tilde[dim.n1:dim.n2+1]
+        else:
+            self.x = x
+            self.y = y
+            self.z = z
+            self.dx_1 = dx_1
+            self.dy_1 = dy_1
+            self.dz_1 = dz_1
+            self.dx_tilde = dx_tilde
+            self.dy_tilde = dy_tilde
+            self.dz_tilde = dz_tilde
 
-            self.t = t
-            self.dx = dx
-            self.dy = dy
-            self.dz = dz
-            self.Lx = Lx
-            self.Ly = Ly
-            self.Lz = Lz
+        self.t = t
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        self.Lx = Lx
+        self.Ly = Ly
+        self.Lz = Lz
