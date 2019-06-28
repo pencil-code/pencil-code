@@ -152,152 +152,197 @@ class DataCube(object):
             if index is None:
                 index = read.index(datadir=datadir)
 
-        run2D = param.lwrite_2d
-
-        if dim.precision == 'D':
-            precision = 'd'
-        else:
-            precision = 'f'
-
         if param.lwrite_aux:
             total_vars = dim.mvar + dim.maux
         else:
             total_vars = dim.mvar
 
-        if not var_file:
-            if ivar < 0:
-                var_file = 'var.dat'
+        if os.path.exists(datadir+'/allprocs/var.h5'):
+            import h5py
+            run2D = param.lwrite_2d
+
+            if dim.precision == 'D':
+                precision = 'd'
             else:
-                var_file = 'VAR' + str(ivar)
+                precision = 'f'
 
-        if proc < 0:
-            proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
-                                                   os.listdir(datadir)))
-        else:
-            proc_dirs = ['proc' + str(proc)]
-
-        # Set up the global array.
-        if not run2D:
-            f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
-                         dtype=precision)
-        else:
-            if dim.ny == 1:
-                f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
-            else:
-                f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
-
-        x = np.zeros(dim.mx, dtype=precision)
-        y = np.zeros(dim.my, dtype=precision)
-        z = np.zeros(dim.mz, dtype=precision)
-
-        for directory in proc_dirs:
-            proc = int(directory[4:])
-            if var_file[0:2].lower() == 'og':
-                procdim = read.ogdim(datadir, proc)
-            else:
-                procdim = read.dim(datadir, proc)
-            if not quiet:
-                print("Reading data from processor {0} of {1} ...".format( \
-                      proc, len(proc_dirs)))
-
-            mxloc = procdim.mx
-            myloc = procdim.my
-            mzloc = procdim.mz
-
-            # Read the data.
-            file_name = os.path.join(datadir, directory, var_file)
-            infile = FortranFile(file_name)
+            # Set up the global array.
             if not run2D:
-                f_loc = infile.read_record(dtype=precision)
-                f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
+                f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
+                             dtype=precision)
             else:
                 if dim.ny == 1:
-                    f_loc = infile.read_record(dtype=precision)
-                    f_loc = f_loc.reshape((-1, mzloc, mxloc))
+                    f = np.zeros((total_vars, dim.mz, dim.mx),
+                                   dtype=precision)
                 else:
-                    f_loc = infile.read_record(dtype=precision)
-                    f_loc = f_loc.reshape((-1, myloc, mxloc))
-            raw_etc = infile.read_record(precision)
-            infile.close()
+                    f = np.zeros((total_vars, dim.my, dim.mx),
+                                   dtype=precision)
 
-            t = raw_etc[0]
-            x_loc = raw_etc[1:mxloc+1]
-            y_loc = raw_etc[mxloc+1:mxloc+myloc+1]
-            z_loc = raw_etc[mxloc+myloc+1:mxloc+myloc+mzloc+1]
-            if param.lshear:
-                shear_offset = 1
-                deltay = raw_etc[-1]
+            if not var_file:
+                if ivar < 0:
+                    var_file = 'var.h5'
+                else:
+                    var_file = 'VAR' + str(ivar) + '.h5'
+
+            file_name = os.path.join(datadir, 'allprocs', var_file)
+            with h5py.File(file_name,'r') as tmp:
+                for key in tmp['data'].keys():
+                    f[index.__getattribute__(key)-1,:]=tmp['data/'+key][:]
+                t=tmp['time'][()]
+                x=tmp['grid/x'][()]
+                y=tmp['grid/y'][()]
+                z=tmp['grid/z'][()]
+                dx=tmp['grid/dx'][()]
+                dy=tmp['grid/dy'][()]
+                dz=tmp['grid/dz'][()]
+                if param.lshear:
+                    deltay = tmp['deltay'][()]
+        else:
+            run2D = param.lwrite_2d
+
+            if dim.precision == 'D':
+                precision = 'd'
             else:
-                shear_offset = 0
+                precision = 'f'
 
-            dx = raw_etc[-3-shear_offset]
-            dy = raw_etc[-2-shear_offset]
-            dz = raw_etc[-1-shear_offset]
-
-            if len(proc_dirs) > 1:
-                # Calculate where the local processor will go in
-                # the global array.
-                #
-                # Don't overwrite ghost zones of processor to the left (and
-                # accordingly in y and z direction -- makes a difference on the
-                # diagonals)
-                #
-                # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
-                # ie, x[0:4] will slice all of a 4-digit array, not produce
-                # an error like in idl.
-
-                if procdim.ipx == 0:
-                    i0x = 0
-                    i1x = i0x + procdim.mx
-                    i0xloc = 0
-                    i1xloc = procdim.mx
+            if not var_file:
+                if ivar < 0:
+                    var_file = 'var.dat'
                 else:
-                    i0x = procdim.ipx*procdim.nx + procdim.nghostx
-                    i1x = i0x + procdim.mx - procdim.nghostx
-                    i0xloc = procdim.nghostx
-                    i1xloc = procdim.mx
+                    var_file = 'VAR' + str(ivar)
 
-                if procdim.ipy == 0:
-                    i0y = 0
-                    i1y = i0y + procdim.my
-                    i0yloc = 0
-                    i1yloc = procdim.my
+            if proc < 0:
+                proc_dirs = self.__natural_sort(
+                            filter(lambda s: s.startswith('proc'),
+                            os.listdir(datadir)))
+            else:
+                proc_dirs = ['proc' + str(proc)]
+
+            # Set up the global array.
+            if not run2D:
+                f = np.zeros((total_vars, dim.mz, dim.my, dim.mx),
+                             dtype=precision)
+            else:
+                if dim.ny == 1:
+                    f = np.zeros((total_vars, dim.mz, dim.mx),
+                                  dtype=precision)
                 else:
-                    i0y = procdim.ipy*procdim.ny + procdim.nghosty
-                    i1y = i0y + procdim.my - procdim.nghosty
-                    i0yloc = procdim.nghosty
-                    i1yloc = procdim.my
+                    f = np.zeros((total_vars, dim.my, dim.mx),
+                                  dtype=precision)
 
-                if procdim.ipz == 0:
-                    i0z = 0
-                    i1z = i0z+procdim.mz
-                    i0zloc = 0
-                    i1zloc = procdim.mz
+            x = np.zeros(dim.mx, dtype=precision)
+            y = np.zeros(dim.my, dtype=precision)
+            z = np.zeros(dim.mz, dtype=precision)
+
+            for directory in proc_dirs:
+                proc = int(directory[4:])
+                if var_file[0:2].lower() == 'og':
+                    procdim = read.ogdim(datadir, proc)
                 else:
-                    i0z = procdim.ipz*procdim.nz + procdim.nghostz
-                    i1z = i0z + procdim.mz - procdim.nghostz
-                    i0zloc = procdim.nghostz
-                    i1zloc = procdim.mz
+                    procdim = read.dim(datadir, proc)
+                if not quiet:
+                    print("Reading data from processor"+
+                          " {0} of {1} ...".format(proc, len(proc_dirs)))
 
-                x[i0x:i1x] = x_loc[i0xloc:i1xloc]
-                y[i0y:i1y] = y_loc[i0yloc:i1yloc]
-                z[i0z:i1z] = z_loc[i0zloc:i1zloc]
+                mxloc = procdim.mx
+                myloc = procdim.my
+                mzloc = procdim.mz
 
+                # Read the data.
+                file_name = os.path.join(datadir, directory, var_file)
+                infile = FortranFile(file_name)
                 if not run2D:
-                    f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
-                        f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                    f_loc = infile.read_record(dtype=precision)
+                    f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
                 else:
                     if dim.ny == 1:
-                        f[:, i0z:i1z, i0x:i1x] = \
-                            f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                        f_loc = infile.read_record(dtype=precision)
+                        f_loc = f_loc.reshape((-1, mzloc, mxloc))
                     else:
-                        f[:, i0y:i1y, i0x:i1x] = \
-                            f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
-            else:
-                f = f_loc
-                x = x_loc
-                y = y_loc
-                z = z_loc
+                        f_loc = infile.read_record(dtype=precision)
+                        f_loc = f_loc.reshape((-1, myloc, mxloc))
+                raw_etc = infile.read_record(precision)
+                infile.close()
+
+                t = raw_etc[0]
+                x_loc = raw_etc[1:mxloc+1]
+                y_loc = raw_etc[mxloc+1:mxloc+myloc+1]
+                z_loc = raw_etc[mxloc+myloc+1:mxloc+myloc+mzloc+1]
+                if param.lshear:
+                    shear_offset = 1
+                    deltay = raw_etc[-1]
+                else:
+                    shear_offset = 0
+
+                dx = raw_etc[-3-shear_offset]
+                dy = raw_etc[-2-shear_offset]
+                dz = raw_etc[-1-shear_offset]
+
+                if len(proc_dirs) > 1:
+                    # Calculate where the local processor will go in
+                    # the global array.
+                    #
+                    # Don't overwrite ghost zones of processor to the
+                    # left (and accordingly in y and z direction -- makes
+                    # a difference on the diagonals)
+                    #
+                    # Recall that in NumPy, slicing is NON-INCLUSIVE on
+                    # the right end, ie, x[0:4] will slice all of a
+                    # 4-digit array, not produce an error like in idl.
+
+                    if procdim.ipx == 0:
+                        i0x = 0
+                        i1x = i0x + procdim.mx
+                        i0xloc = 0
+                        i1xloc = procdim.mx
+                    else:
+                        i0x = procdim.ipx*procdim.nx + procdim.nghostx
+                        i1x = i0x + procdim.mx - procdim.nghostx
+                        i0xloc = procdim.nghostx
+                        i1xloc = procdim.mx
+
+                    if procdim.ipy == 0:
+                        i0y = 0
+                        i1y = i0y + procdim.my
+                        i0yloc = 0
+                        i1yloc = procdim.my
+                    else:
+                        i0y = procdim.ipy*procdim.ny + procdim.nghosty
+                        i1y = i0y + procdim.my - procdim.nghosty
+                        i0yloc = procdim.nghosty
+                        i1yloc = procdim.my
+
+                    if procdim.ipz == 0:
+                        i0z = 0
+                        i1z = i0z+procdim.mz
+                        i0zloc = 0
+                        i1zloc = procdim.mz
+                    else:
+                        i0z = procdim.ipz*procdim.nz + procdim.nghostz
+                        i1z = i0z + procdim.mz - procdim.nghostz
+                        i0zloc = procdim.nghostz
+                        i1zloc = procdim.mz
+
+                    x[i0x:i1x] = x_loc[i0xloc:i1xloc]
+                    y[i0y:i1y] = y_loc[i0yloc:i1yloc]
+                    z[i0z:i1z] = z_loc[i0zloc:i1zloc]
+
+                    if not run2D:
+                        f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
+                            f_loc[:, i0zloc:i1zloc,
+                                     i0yloc:i1yloc, i0xloc:i1xloc]
+                    else:
+                        if dim.ny == 1:
+                            f[:, i0z:i1z, i0x:i1x] = \
+                                f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                        else:
+                            f[:, i0y:i1y, i0x:i1x] = \
+                                f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
+                else:
+                    f = f_loc
+                    x = x_loc
+                    y = y_loc
+                    z = z_loc
 
         if magic is not None:
             if 'bb' in magic:
@@ -341,7 +386,8 @@ class DataCube(object):
             self.y = y[dim.m1:dim.m2+1]
             self.z = z[dim.n1:dim.n2+1]
             if not run2D:
-                self.f = f[:, dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                self.f = f[:, dim.n1:dim.n2+1,
+                              dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             else:
                 if dim.ny == 1:
                     self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1]
@@ -378,7 +424,7 @@ class DataCube(object):
         if param.lshear:
             self.deltay = deltay
 
-        # Do the rest of magic after the trimall (i.e. no additional curl...).
+        # Do the rest of magic after the trimall (i.e. no additional curl.)
         self.magic = magic
         if self.magic is not None:
             self.magic_attributes(param)
@@ -422,7 +468,8 @@ class DataCube(object):
                         elif hasattr(self, 'rho'):
                             lnrho = np.log(self.rho)
                         else:
-                            sys.exit("pb in magic: missing rho or lnrho variable")
+                            sys.exit("pb in magic: missing rho or"+
+                                     " lnrho variable")
                         cp = param.cp
                         gamma = param.gamma
                         cs20 = param.cs0**2

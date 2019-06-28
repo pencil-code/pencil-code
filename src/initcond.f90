@@ -2504,9 +2504,12 @@ module Initcond
 !   8-apr-03/axel: coded
 !  23-may-04/anders: made structure for other input variables
 !  30-apr-16/axel: adapted for polytropic eos
+!  28-jun-19/nishant: added an option to use stratification file without
+!                     the ghost cells; use lnoghost_strati=T in init_pars
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
       use Sub, only: write_zprof
+      use Cdata, only: lnoghost_strati
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,acc0
@@ -2536,16 +2539,34 @@ module Initcond
       select case (strati_type)
 !
       case ('lnrho_ss')
-        do n=1,mzgrid
-          read(19,*,iostat=stat) tmp,var1,var2
-          if (stat==0) then
-            if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
-            if (ldensity) lnrho0(n)=var1
-            if (lentropy) ss0(n)=var2
-          else
-            call fatal_error('stratification','file invalid or too short - ghost cells may be missing')
-          endif
-        enddo
+!
+!NS: added this switch for avoiding ghost cells from stratification file
+!
+       if (lnoghost_strati) then
+          print*,'ghost cells are not needed in stratification.dat'
+          do n=1,nzgrid
+            read(19,*,iostat=stat) tmp,var1,var2
+            if (stat==0) then
+             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
+             if (ldensity) lnrho0(n)=var1
+             if (lentropy) ss0(n)=var2
+            else
+             call fatal_error('stratification','file invalid or too big - ghost cells may have been included')
+            endif
+          enddo
+       else
+          print*,'ghost cells are needed in stratification.dat'
+          do n=1,mzgrid
+            read(19,*,iostat=stat) tmp,var1,var2
+            if (stat==0) then
+             if (ip<5) print*, 'stratification: z, var1, var2=', tmp, var1, var2
+             if (ldensity) lnrho0(n)=var1
+             if (lentropy) ss0(n)=var2
+            else
+             call fatal_error('stratification','file invalid or too short; ghost cells may be missing')
+            endif
+          enddo
+       endif
 !
       case ('lnrho_lnTT')
         do n=1,mzgrid
@@ -2581,6 +2602,7 @@ module Initcond
         enddo
 !
       case ('lnrho')
+         print*,'NS1:'   !do n=1,nzgrid
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1
           if (stat==0) then
