@@ -1,5 +1,5 @@
-CUSOURCES = $(wildcard submodule/src/core/*.cu)  
-CCSOURCES = submodule/src/standalone/config_loader.cc
+CUSOURCES = #$(wildcard submodule/src/core/*.cu)  
+CCSOURCES = #submodule/src/standalone/config_loader.cc
 MAIN_SRC = gpu_astaroth.cc
 MAIN_OBJ = gpu_astaroth.o
 
@@ -41,6 +41,7 @@ endif
 
 PCHEADER_DIR=.
 astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS)
+	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -DDOUBLE_PRECISION=ON -DBUILD_STANDALONE=OFF .. && make -j VERBOSE=1 # Build the core Astaroth library
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ)
 	cp -f astaroth_$(PREC).so ..
 
@@ -69,6 +70,7 @@ $(PC_HEADERS): .sentinel
 clean:
 	@rm -f $(OBJECTS) $(MAIN_OBJ)
 	@rm -f *.so .sentinel
+	rm -rI submodule/build # Removes the files generated with cmake for the Astaroth code
 #	@rm -f $(CHEADERS)
 
 # Deep cleaning, e.g. necessary with compiler change
