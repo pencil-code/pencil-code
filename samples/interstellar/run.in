@@ -5,11 +5,11 @@
 &run_pars
   cvsid='$Id$',
   nt=15, it1=2, isave=50, itorder=3
-  cdt=0.1, cdtv=0.1, dtmin=1e-9, cdts=0.1
-  cdtv2=0.005, cdtv3=0.005, cdtc=0.005, cdtr=0.005
+  cdt=0.2, cdtv=0.2, dtmin=1e-9, cdts=0.2
   dsnap=2., dvid=2., 
-  ip=20
-  lpencil_check=T
+  ip=1963
+  lpencil_check=F
+  lpencil_check_small=F
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -17,32 +17,27 @@
 &hydro_run_pars
 /
 &density_run_pars
-  diffrho=0.2
-  diffrho_shock=1.0
+  diffrho_shock=2.0
   lmassdiff_fix=T
-  idiff='normal','shock'
+  idiff='shock'
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-cspeed','shock'
-  chi=0.2,chi_shock=1.0
+  iheatcond='shock'
+  chi_shock=2.0
 /
 &magnetic_run_pars
 !  llorentzforce=F
-  iresistivity='eta-const','eta-shock'
-  eta=0.000196,eta_shock=1.0
+  iresistivity='eta-const'
+  eta=0.000196
 /
 &interstellar_run_pars
   width_SN=0.032
-  eps_mass=1e37
   lSNII=T
   lSNI=T
   t_next_SNII=0.0
   t_next_SNI=0.0
-  TT_SN_min=0.0
-  TT_SN_max=1.0e8
-  frac_kin=0.5
   mass_SN=2.531673204e-7 !4 solar masses
   heatcool_shock_cutoff_rate=0.01
   cooling_select='RBNr'
@@ -53,7 +48,7 @@
 /
 &viscosity_run_pars
   ivisc='nu-cspeed','nu-shock'
-  nu=0.2,nu_shock=10.0
+  nu=0.2,nu_shock=5.0
 /
 &shock_run_pars
   lshock_first=T
