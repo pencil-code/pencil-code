@@ -196,7 +196,7 @@ class DataCube(object):
                 dy=tmp['grid/dy'][()]
                 dz=tmp['grid/dz'][()]
                 if param.lshear:
-                    deltay = tmp['deltay'][()]
+                    deltay = tmp['persist/shear_delta_y'][(0)]
         else:
             run2D = param.lwrite_2d
 
