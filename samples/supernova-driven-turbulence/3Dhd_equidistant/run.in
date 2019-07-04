@@ -6,13 +6,14 @@
   cvsid='$Id$',
 !  nt=645000, it1=250, isave=1000, it1d=5000, itorder=3, tmax=0.5
   nt=10, it1=1, isave=1000, it1d=5000, itorder=3, tmax=0.5
-  cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.1
+  cdt=0.2, cdtv=0.2, dtmin=1e-10, cdts=0.2
   dsnap=.0005, dvid=.00025, slice_position='m' 
   !for magnetic take at least 20 snapshots up to first Myr fluctuation dynamo? 
   !dsnap=2., dvid=2., slice_position='m' 
   bcz = 's','s','ubs','ism','ism','cop','cop'
-  ip=30
-  lpencil_check=T
+  ip=1963
+  lpencil_check=F
+  lpencil_check_small=F
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -26,12 +27,12 @@
 /
 &viscosity_run_pars
   ivisc='nu-shock', 'nu-const'
-  nu_shock=4.0, nu=1e-5
+  nu_shock=5.0, nu=4e-3
 /
 &density_run_pars
   lupw_rho=T
   idiff='shock'
-  diffrho_shock=1.0
+  diffrho_shock=2.0
   lmassdiff_fix=T
 /
 &grav_run_pars
@@ -39,21 +40,13 @@
 &entropy_run_pars
   lupw_ss=T
   iheatcond='shock'
-  chi_shock=4.0
+  chi_shock=2.0
   lthdiff_Hmax=T
 /
 &interstellar_run_pars
-  laverage_SN_heating=T
   lSN_scale_rad=T
-  N_mass=25.0
-  !rfactor should set minimum radius to 18pc
-  rfactor_SN=4.5
-  frac_kin=0.0
-  frac_ecr=0.0
-  mass_width_ratio=1.75
-  mass_profile='gaussian3'
-  energy_width_ratio=1.0
-  thermal_profile='gaussian2'
+  N_mass=100.0
+  rfactor_SN=5.0
 !  lSNII=T, l_persist_overwrite_lSNII=T
 !  lSNI=T, l_persist_overwrite_lSNI=T 
 !  t_next_SNI=9e-4, l_persist_overwrite_tSNI=T
@@ -61,8 +54,6 @@
 !  seed_reset=1245
 !! vary rate of SN with loss/gain of mass through boundary
   lscale_SN_interval=T
-  iSNdx=1.65
-  eps_mass=0.05
   SN_interval_rhom=6.66e-2
   laverage_SNII_heating=F
   laverage_SNI_heating=T
