@@ -186,7 +186,7 @@ module Interstellar
   real :: SNII_mass_rate, SNI_mass_rate
   real :: SN_interval_rhom=impossible, SN_interval_rhom_cgs=2.8e-25
   logical :: lSN_mass_rate=.false., lscale_SN_interval=.false.
-  real :: iSNdx=2.
+  real :: iSNdx=4.
 !
 !  Some useful constants
 !
@@ -3071,9 +3071,9 @@ module Interstellar
       real :: radius2, SNvol
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
-      real, dimension(nx,3) :: deltauu, deltafcr=0.
+      real, dimension(nx,3) :: deltauu=0., deltafcr=0.
       real, dimension(3) :: dmpi2, dmpi2_tmp
-      real, dimension(nx) ::  lnrho, yH, lnTT, rho_old, ee_old, site_rho
+      real, dimension(nx) ::  lnrho, yH, maskedlnTT, lnTT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu, fcr=0.
       real :: maxlnTT, site_mass, maxTT, mmpi, mpi_tmp, etmp, ktmp
       real :: t_interval_SN, SNrate, ESNres_frac, frackin, RPDS
@@ -3339,21 +3339,31 @@ module Interstellar
         if (lSN_eth) then
           call eoscalc(ilnrho_ee,lnrho,real( &
               (ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho)), lnTT=lnTT)
-          maxTT=maxval(exp(lnTT))
-          if (maxTT>SN_TT_ratio*TT_SN_max) then
-            if (present(ierr)) then
-              ierr=iEXPLOSION_TOO_HOT
-              if (.not.lSN_list) exit
-            endif
-          endif
-          where (dr2_SN > 2.5*radius2) lnTT=-10.0
-          maxTT=maxval(exp(lnTT))
-          if (SNR%feat%radius<=1.2*rfactor_SN*SNR%feat%dr) then
+          maskedlnTT=lnTT
+!
+!  Check max temperature in dense remant does not exceed TT_SN_max
+!
+          if (SNR%feat%radius<=1.1*rfactor_SN*SNR%feat%dr) then
+            where (dr2_SN > 1.21*radius2) maskedlnTT=-10.0
+            maxTT=maxval(exp(maskedlnTT))
             if (maxTT>TT_SN_max) then
               if (present(ierr)) then
                 ierr=iEXPLOSION_TOO_HOT
                 if (.not.lSN_list) exit
               endif
+            endif
+          endif
+!
+!  Check max temperature within 3 sigma of any remant does
+!  not exceed TT_SN_max*SN_TT_ratio
+!
+          maskedlnTT=lnTT
+          where (dr2_SN > 9*radius2) maskedlnTT=-10.0
+          maxTT=maxval(exp(maskedlnTT))
+          if (maxTT>SN_TT_ratio*TT_SN_max) then
+            if (present(ierr)) then
+              ierr=iEXPLOSION_TOO_HOT
+              if (.not.lSN_list) exit
             endif
           endif
           maxlnTT=max(log(maxTT),maxlnTT)
@@ -3813,20 +3823,26 @@ module Interstellar
 !
       dx_SN=x(l1:l2)-SNR%feat%x
       if (lperi(1)) then
-        where (dx_SN > xyz1(1)) dx_SN=dx_SN-Lx
-        where (dx_SN < xyz0(1)) dx_SN=dx_SN+Lx
+        !where (dx_SN > xyz1(1)) dx_SN=dx_SN-Lx
+        !where (dx_SN < xyz0(1)) dx_SN=dx_SN+Lx
+        where (dx_SN >  Lxyz(1)/2) dx_SN=dx_SN-Lx
+        where (dx_SN < -Lxyz(1)/2) dx_SN=dx_SN+Lx
       endif
 !
       dy_SN=y(m)-SNR%feat%y
       if (lperi(2)) then
-        if (dy_SN > xyz1(2)) dy_SN=dy_SN-Ly
-        if (dy_SN < xyz0(2)) dy_SN=dy_SN+Ly
+        !if (dy_SN > xyz1(2)) dy_SN=dy_SN-Ly
+        !if (dy_SN < xyz0(2)) dy_SN=dy_SN+Ly
+        if (dy_SN >  Lxyz(2)/2) dy_SN=dy_SN-Ly
+        if (dy_SN < -Lxyz(2)/2) dy_SN=dy_SN+Ly
       endif
 !
       dz_SN=z(n)-SNR%feat%z
       if (lperi(3)) then
-        if (dz_SN > xyz1(3)) dz_SN=dz_SN-Lz
-        if (dz_SN < xyz0(3)) dz_SN=dz_SN+Lz
+        !if (dz_SN > xyz1(3)) dz_SN=dz_SN-Lz
+        !if (dz_SN < xyz0(3)) dz_SN=dz_SN+Lz
+        if (dz_SN >  Lxyz(3)/2) dz_SN=dz_SN-Lz
+        if (dz_SN < -Lxyz(3)/2) dz_SN=dz_SN+Lz
       endif
 !
       dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
@@ -3934,7 +3950,7 @@ module Interstellar
 !
       do j=1,3
         deltauu(1:nx,j)=cvelocity_SN*profile_SN(1:nx)* &
-            outward_normal_SN(1:nx,j) ! spatial mass density
+            outward_normal_SN(1:nx,j) ! spatial outflow
       enddo
 !
     endsubroutine injectvelocity_SN
@@ -3966,7 +3982,7 @@ module Interstellar
 !
       do j=1,3
         deltafcr(1:nx,j)=cfcr_SN*profile_SN(1:nx)* &
-            kperp * outward_normal_SN(1:nx,j) ! spatial mass density
+            kperp * outward_normal_SN(1:nx,j) ! spatial CR flux
       enddo
 !
     endsubroutine injectfcr_SN
