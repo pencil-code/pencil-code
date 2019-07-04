@@ -6,7 +6,6 @@
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6737236e-24
-  unit_magnetic=1e-6
   xyz0=-0.032,-0.032,-2.0
   xyz1=+0.032,+0.032,+2.0
   lperi=T,T,F
@@ -42,19 +41,13 @@
 /
 &interstellar_init_pars
   initinterstellar='multiple'
-  initial_SNI = 25
+  initial_SNI = 1
   lSNII=T
   lSNI=T
   lSN_scale_rad=T
-  N_mass=25.0
+  N_mass=100.0
   !rfactor should set minimum radius to 18pc
-  rfactor_SN=4.5
-  frac_kin=0.0
-  frac_ecr=0.0
-  mass_width_ratio=1.75
-  mass_profile='gaussian3'
-  energy_width_ratio=1.0
-  thermal_profile='gaussian2'
+  rfactor_SN=5.0
 /
 &shear_init_pars
   Sshear=-25.0
