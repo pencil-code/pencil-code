@@ -4791,8 +4791,8 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       double precision :: mpiwtime
       double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
-      !mpiwtime = MPI_WTIME()
-      mpiwtime = 0
+      mpiwtime = MPI_WTIME()
+!      mpiwtime = 0
       !print*, 'MPI_WTIME=', MPI_WTIME()
 !
     endfunction mpiwtime
@@ -4802,8 +4802,8 @@ if (notanumber(ubufzi(:,my+1:,:,j))) print*, 'ubufzi(my+1:): iproc,j=', iproc, i
       double precision :: mpiwtick
       double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
-      !mpiwtick = MPI_WTICK()
-      mpiwtick = 0
+      mpiwtick = MPI_WTICK()
+!      mpiwtick = 0
 !
     endfunction mpiwtick
 !***********************************************************************
