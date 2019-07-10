@@ -25,9 +25,9 @@ module PointMasses
   include 'pointmasses.h'
 !
   character (len=labellen), dimension(mqarray) :: qvarname
-  real, dimension(nqpar,mqarray) :: fq
-  real, dimension(nqpar,mqvar) :: dfq
-  real, dimension(nqpar,3) :: dfq_cart
+  real, dimension(nqpar,mqarray) :: fq=0.0
+  real, dimension(nqpar,mqvar) :: dfq=0.0
+  real, dimension(nqpar,3) :: dfq_cart=0.0
   real, dimension(nqpar) :: xq0=0.0, yq0=0.0, zq0=0.0
   real, dimension(nqpar) :: vxq0=0.0, vyq0=0.0, vzq0=0.0
   real, dimension(nqpar) :: pmass=0.0, r_smooth=impossible, pmass1
