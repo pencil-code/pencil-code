@@ -2145,6 +2145,12 @@ module Hydro
      if (lpencil(i_uu).and.lkinflow_as_aux.and.(lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.
 !
+!  Put content of p%uu into f array if lkinflow_as_aux is invoked.
+!
+      if (lkinflow_as_aux) then
+        f(l1:l2,m,n,iux:iuz)=p%uu
+      endif
+!
 !  Calculate maxima and rms values for diagnostic purposes.
 !
       if (ldiagnos) then
