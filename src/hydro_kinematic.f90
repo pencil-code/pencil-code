@@ -169,8 +169,6 @@ module Hydro
       real, dimension (:,:), allocatable :: yz
       integer :: iyz
 !
-      lupdate_aux=.false.
-!
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
 !
@@ -510,6 +508,8 @@ module Hydro
 !  Choose from a list of different flow profiles.
 !  Begin with a
 !
+      lupdate_aux=.true.
+!
       select case (kinematic_flow)
 !
 !constant flow in the x direction.
@@ -520,7 +520,6 @@ module Hydro
           p%uu(:,1)=ampl_kinflow*cos(omega_kinflow*t)*exp(eps_kinflow*t)
           p%uu(:,2)=0.
           p%uu(:,3)=0.
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_ugu)) p%ugu=0.
         if (lpenc_loc(i_divu)) p%divu=0.
@@ -535,16 +534,17 @@ module Hydro
           p%uu(:,1)=ampl_kinflow_x*cos(omega_kinflow*t)*exp(eps_kinflow*t)
           p%uu(:,2)=ampl_kinflow_y*cos(omega_kinflow*t)*exp(eps_kinflow*t)
           p%uu(:,3)=ampl_kinflow_z*cos(omega_kinflow*t)*exp(eps_kinflow*t)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
 ! gradient flow, u_x = -lambda x ; u_y = lambda y
 !
       case ('grad_xy')
-        p%uu(:,1)=-ampl_kinflow*lambda_kinflow*x(l1:l2)
-        p%uu(:,2)=ampl_kinflow*lambda_kinflow*y(m)
-        p%uu(:,3)=0. 
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=-ampl_kinflow*lambda_kinflow*x(l1:l2)
+          p%uu(:,2)= ampl_kinflow*lambda_kinflow*y(m)
+          p%uu(:,3)=0. 
+        endif
 !
 !  ABC-flow
 !
@@ -885,7 +885,6 @@ module Hydro
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -901,7 +900,6 @@ module Hydro
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)*eps1
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -921,7 +919,6 @@ module Hydro
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -941,7 +938,6 @@ module Hydro
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)*eps1
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -976,7 +972,6 @@ module Hydro
           p%uu(:,1)=-fac*sin(ky_uukin*y(m))
           p%uu(:,2)=eps1*sin(kx_uukin*x(l1:l2))
           p%uu(:,3)=+fac*cos(ky_uukin*y(m))+eps1*cos(kx_uukin*x(l1:l2))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1158,7 +1153,6 @@ module Hydro
           p%uu(:,1)=-fac*sin(ky_uukin*y(m)    +esint)
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+ecost)
           p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+cos(ky_uukin*y(m)+esint))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
@@ -1179,7 +1173,6 @@ module Hydro
           p%uu(:,1)=+fac*cos(ky_uukin*y(m)    +esint)
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+ecost)
           p%uu(:,3)=-fac2*(sin(kx_uukin*x(l1:l2)+ecost)*cos(ky_uukin*y(m)+esint))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
@@ -1197,7 +1190,6 @@ module Hydro
           p%uu(:,1)=fac*sin2t*sin(ky_uukin*y(m))
           p%uu(:,2)=fac*cos2t*sin(kx_uukin*x(l1:l2))
           p%uu(:,3)=fac*(cos2t*cos(kx_uukin*x(l1:l2))-sin2t*cos(ky_uukin*y(m)))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=p%uu
@@ -1215,7 +1207,6 @@ module Hydro
           p%uu(:,1)=-fac* sin(ky_uukin*y(m)         )
           p%uu(:,2)=+fac* sin(kx_uukin*(x(l1:l2)+epst))
           p%uu(:,3)=-fac*(cos(kx_uukin*(x(l1:l2)+epst))+cos(ky_uukin*y(m)))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
@@ -1238,7 +1229,6 @@ module Hydro
           p%uu(:,1)=+fac*sqrt2*sin(kx_uukin*(x(l1:l2)-epst))*cos(ky_uukin*y(m))
           p%uu(:,2)=-fac*sqrt2*cos(kx_uukin*(x(l1:l2)-epst))*sin(ky_uukin*y(m))
           p%uu(:,3)=+fac*2.*WW*sin(kx_uukin*(x(l1:l2)-epst))*sin(ky_uukin*y(m))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
@@ -1348,7 +1338,6 @@ module Hydro
           p%uu(:,1)=-fac*sin(ky_uukin*y(m)    +esint)
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+ecost)
           p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+cos(ky_uukin*y(m)+esint))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1368,7 +1357,6 @@ module Hydro
           p%uu(:,1)=-fac*sin(ky_uukin*y(m)    +phase1)*ky_uukin
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+phase2)*kx_uukin
           p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+phase2)+cos(ky_uukin*y(m)+phase1))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1384,7 +1372,6 @@ module Hydro
           p%uu(:,1)=+fac*cos(ky_uukin*y(m)    +esint)*ky_uukin
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2)+ecost)*kx_uukin
           p%uu(:,3)=-fac*(cos(kx_uukin*x(l1:l2)+ecost)+sin(ky_uukin*y(m)+esint))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1413,7 +1400,6 @@ module Hydro
           p%uu(:,3)=-random_tmp*kz_uukin*&
               cos(kx_uukin*(x(l1:l2)-cxt))*cos(ky_uukin*(y(m)-cyt))*&
               sin(kz_uukin*(z(n)-czt-phasez_uukin))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=-random_tmp*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
             *cos(kx_uukin*x(l1:l2)-cxt)*cos(ky_uukin*y(m)-cyt)*cos(kz_uukin*z(n)-czt)
@@ -1436,7 +1422,6 @@ module Hydro
               sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
           p%uu(:,3)=-fac*kz_uukin*&
             sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
             *cos(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
@@ -1473,7 +1458,6 @@ module Hydro
               sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
           p%uu(:,3)=-fac*kz_uukin*&
               sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
             *cos(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
@@ -1493,7 +1477,6 @@ module Hydro
           p%uu(:,1)=-fac*kx_uukin*sin(argx)*cos(argy)*cos(argz)
           p%uu(:,2)=-fac*ky_uukin*cos(argx)*sin(argy)*cos(argz)
           p%uu(:,3)=-fac*kz_uukin*cos(argx)*cos(argy)*sin(argz)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=fac
 !
@@ -1534,7 +1517,6 @@ module Hydro
             endif
             p%uu(:,ii)=one_over_sqrt3*ampl_kinflow*random_tmp
           enddo
-          lupdate_aux=.true.
         endif
 !
 !  Random flow that is delta correlated in space, but unchanged in time.
@@ -1554,7 +1536,6 @@ module Hydro
             endif
             p%uu(:,ii)=one_over_sqrt3*ampl_kinflow*random_tmp
           enddo
-          lupdate_aux=.true.
         endif
 !
 !  Convection rolls
@@ -1625,7 +1606,6 @@ module Hydro
           p%uu(:,1)=-ky_uukin*k21*cos(kx_uukin*x(l1:l2)+ky_uukin*y(m))
           p%uu(:,2)=+kx_uukin*k21*cos(kx_uukin*x(l1:l2)+ky_uukin*y(m))
           p%uu(:,3)=eps_kinflow*cos(kx_uukin*x(l1:l2)+ky_uukin*y(m))
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1643,7 +1623,6 @@ module Hydro
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
-          lupdate_aux=.true.
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -1818,10 +1797,12 @@ module Hydro
           p%uu(:,2)=0.
           p%uu(:,3)=0.
         endif
-        p%divu=wind_amp*div_uprof
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_divu)) p%divu=wind_amp*div_uprof
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
 !  meridional circulation; psi=.5*(x-x0)*(x-x1)*(y-y0)*(y-y1), so
 !  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
@@ -1834,10 +1815,12 @@ module Hydro
           p%uu(:,2)=-circ_amp*x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
           p%uu(:,3)=0.
         endif
-        p%divu=0.
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
       case ('circ_cartesian_rho1')
         if (headtt) print*,'circulation with 1/rho dependency'
@@ -1847,10 +1830,12 @@ module Hydro
           p%uu(:,2)=-circ_amp*x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))/rho_prof
           p%uu(:,3)=0.
         endif
-        p%divu=0.
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
 !  meridional circulation; psi=.5*(x-x0)*(x-x1)*(y-y0)*(y-y1), so
 !  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
@@ -1863,10 +1848,12 @@ module Hydro
           p%uu(:,2)=-0.
           p%uu(:,3)=+x(l1:l2)*(z(n)-xyz0(3))*(z(n)-xyz1(3))
         endif
-        p%divu=0.
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
 !  meridional circulation
 !
@@ -1877,10 +1864,12 @@ module Hydro
           p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
           p%uu(:,3)=0.
         endif
-        p%divu=0.
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
       case ('mer_flow_dg11')
         if (headtt) print*,'meridional flow as in Dikpati & Gilman 2011 (spherical)'
@@ -1901,10 +1890,12 @@ module Hydro
                -2.*(x(l1:l2)-ro)*psi1*psi2*psi3*psi4/gamma_dg11**2)/(sin(y(m))*x(l1:l2)*rho_prof)
           p%uu(:,3)=0.
         endif
-        p%divu=0.
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_divu)) p%divu=0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
 ! Radial wind+circulation
 !
@@ -1937,14 +1928,16 @@ module Hydro
               (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
           p%uu(:,3)=0.
         endif
-        p%divu=div_uprof*wind_amp + &
+        if (lpenc_loc(i_divu)) p%divu=div_uprof*wind_amp + &
             div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
             (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
 !  Radial shear + radial wind + circulation.
 !
@@ -1981,14 +1974,16 @@ module Hydro
               (x(l1:l2)-rone)*(3*x(l1:l2)-rone-2.)
           p%uu(:,3)=x(l1:l2)*sinth(m)*tanh(10.*(x(l1:l2)-x(l1)))
         endif
-        p%divu=div_uprof*wind_amp + &
+        if (lpenc_loc(i_divu)) p%divu=div_uprof*wind_amp + &
             div_vel_prof*(r1_mn**2)*(sin1th(m))*(&
             2*sin(theta-theta1)*cos(theta-theta1)*cos(theta)&
             -sin(theta)*sin(theta-theta1)**2)*&
             (x(l1:l2)-1.)*(x(l1:l2)-rone)**2
-        p%der6u(:,1)=wind_amp*der6_uprof
-        p%der6u(:,2)= 0.
-        p%der6u(:,3)= 0.
+        if (lpenc_loc(i_der6u)) then
+          p%der6u(:,1)=wind_amp*der6_uprof
+          p%der6u(:,2)= 0.
+          p%der6u(:,3)= 0.
+        endif
 !
 !  KS-flow
 !
@@ -2001,7 +1996,6 @@ module Hydro
             p%uu(:,1) = p%uu(:,1) + cos_kdotxwt*KS_A(1,modeN) + sin_kdotxwt*KS_B(1,modeN)
             p%uu(:,2) = p%uu(:,2) + cos_kdotxwt*KS_A(2,modeN) + sin_kdotxwt*KS_B(2,modeN)
             p%uu(:,3) = p%uu(:,3) + cos_kdotxwt*KS_A(3,modeN) + sin_kdotxwt*KS_B(3,modeN)
-            lupdate_aux=.true.
           endif
         enddo
         if (lpenc_loc(i_divu))  p%divu = 0.
@@ -2016,12 +2010,16 @@ module Hydro
         else
           call inevitably_fatal_error('hydro_kinematic', '"from-snap" requires lkinflow_as_aux=T')
         endif
+        lupdate_aux=.false.
+!
       case ('Jouve-2008-benchmark-noav')
-        p%uu(:,1)=0.
-        p%uu(:,2)=0.
-        p%uu(:,3)=ampl_kinflow*x(l1:l2)*sin(y(m))*( &
-          -0.011125 + 0.5*(1.0 + erfunc((x(l1:l2)-0.7)/0.02)) &
-          *(1.0-0.92-0.2*(cos(y(m)))**2))
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=ampl_kinflow*x(l1:l2)*sin(y(m))*( &
+            -0.011125 + 0.5*(1.0 + erfunc((x(l1:l2)-0.7)/0.02)) &
+            *(1.0-0.92-0.2*(cos(y(m)))**2))
+        endif
 !
 ! no kinematic flow.
 !
@@ -2032,9 +2030,11 @@ module Hydro
         if (lpenc_loc(i_divu)) p%divu=0.
       case('spher-harm-poloidal')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+        lupdate_aux=.false.
       case('spher-harm-poloidal-per')
         if (lpenc_loc(i_uu)) &
           p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
+        lupdate_aux=.false.
       case default
         call inevitably_fatal_error('hydro_kinematic', 'kinflow not found')
       end select
@@ -2108,7 +2108,6 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: uu
       real, dimension (nx) :: advec_uu
       logical, save :: lfirst_aux=.true.
 !
@@ -2119,37 +2118,30 @@ module Hydro
 !
       if (kinflow/='') then
         if (lfirst.and.ldt) then
-          uu=p%uu
           if (lspherical_coords) then
-            advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                     abs(uu(:,2))*dy_1(  m  )*r1_mn+ &
-                     abs(uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                     abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+                     abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
           elseif (lcylindrical_coords) then
-            advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                     abs(uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                     abs(uu(:,3))*dz_1(  n  )
+            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                     abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+                     abs(p%uu(:,3))*dz_1(  n  )
           else
-            advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                     abs(uu(:,2))*dy_1(  m  )+ &
-                     abs(uu(:,3))*dz_1(  n  )
+            advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                     abs(p%uu(:,2))*dy_1(  m  )+ &
+                     abs(p%uu(:,3))*dz_1(  n  )
           endif
           maxadvec=maxadvec+advec_uu
           if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
         endif
       endif
 !
-!  Store uu in auxiliary variable if requested.
+!  Store uu as auxiliary variable in f-array if requested by lkinflow_as_aux.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
      if (lpencil(i_uu).and.lkinflow_as_aux.and.(lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.
-!
-!  Put content of p%uu into f array if lkinflow_as_aux is invoked.
-!
-      if (lkinflow_as_aux) then
-        f(l1:l2,m,n,iux:iuz)=p%uu
-      endif
 !
 !  Calculate maxima and rms values for diagnostic purposes.
 !
