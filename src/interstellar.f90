@@ -2293,7 +2293,7 @@ module Interstellar
 !
         do n=n1,n2
         do m=m1,m2
-          if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+          if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
           if (ldensity_nolog) then
             rho(1:nx)=f(l1:l2,m,n,irho)
             call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss)&
@@ -2474,6 +2474,7 @@ module Interstellar
     use General, only: random_number_wrapper, random_seed_wrapper
     use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
                        mpiallreduce_sum, mpibcast_real
+    use Grid, only: get_grid_mn
 !
     real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) :: h_SN
@@ -2506,9 +2507,15 @@ module Interstellar
     if (lfirst_zdisk) then
       rhosum=0.0
       if (ldensity_nolog) then
-        rhosum=sum(f(l1:l2,m1:m2,n1:n2,irho))
+        do n=n1,n2; do m=m1,m2
+          if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
+          rhosum=rhosum+sum(f(l1:l2,m,n,irho)*dVol)
+        enddo; enddo
       else
-        rhosum=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+        do n=n1,n2; do m=m1,m2
+          if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
+          rhosum=rhosum+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+        enddo; enddo
       endif
 !
       do icpu=1,ncpus
@@ -2524,33 +2531,42 @@ module Interstellar
       itmp=-1
       icpu=-1**it
       rhomax=maxval(tmpz)
-      do i=1,nprocz
-        if (tmpz(i)==rhomax.and.itmp==-1) itmp=(i-1)*nprocx*nprocy
-        if (tmpz(i)==rhomax.and.icpu==-1) itmp=(i-1)*nprocx*nprocy
-      enddo
+      if (icpu==-1) then
+        do i=1,nprocz
+          if (tmpz(i)==rhomax.and.itmp==-1) itmp=(i-1)*nprocx*nprocy
+        enddo
+      else
+        do i=nprocz,1,-1
+          if (tmpz(i)==rhomax.and.itmp==-1) itmp=(i-1)*nprocx*nprocy
+        enddo
+      endif
 !
       do i=1,nprocx*nprocy
         xyproc(i)=i+itmp-1
       enddo
       rhomax=0.
       rhotmp=0.
-      do i=n1,n2
+      do n=n1,n2
         if (ANY(xyproc==iproc)) then
-          if (ldensity_nolog) then
-            rhotmp(i-nghost)=sum(f(l1:l2,m1:m2,i,irho))
-          else
-            rhotmp(i-nghost)=sum(exp(f(l1:l2,m1:m2,i,ilnrho)))
-          endif
+          do m=m1,m2
+            if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
+            if (ldensity_nolog) then
+              rhotmp(n-nghost)=rhotmp(n-nghost)+sum(f(l1:l2,m,n,irho)*dVol)
+            else
+              rhotmp(n-nghost)=rhotmp(n-nghost)+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+            endif
+          enddo
         endif
-        call mpiallreduce_sum(rhotmp(i-nghost),mpirho)
-        rhotmp(i-nghost)=mpirho
-        maxrho=max(rhomax,rhotmp(i-nghost))
+        call mpiallreduce_sum(rhotmp(n-nghost),mpirho)
+        rhotmp(n-nghost)=mpirho
+        maxrho=max(rhomax,rhotmp(n-nghost))
         rhomax=maxrho
-        if (rhotmp(i-nghost) == rhomax) zdisk = z(i)
+        if (rhotmp(n-nghost)==rhomax) zdisk=z(n)
+        if (zdisk<0) exit
       enddo
       mpiz=zdisk
       call mpibcast_real(mpiz,xyproc(1))
-      zdisk = mpiz
+      zdisk=mpiz
     endif
     if (lroot.and.ip==1963) print*,'position_SN_gaussianz: zdisk =',zdisk
 !
@@ -3297,7 +3313,7 @@ module Interstellar
       maxlnTT=-10.0
       do n=n1,n2
       do m=m1,m2
-        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
         SNR%indx%state=SNstate_waiting
 !
 !  Calculate the distances to the SN origin for all points in the current
@@ -3407,7 +3423,7 @@ module Interstellar
       !EE_SN2=0.
       do n=n1,n2
       do m=m1,m2
-        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
 !
 !  Calculate the distances to the SN origin for all points in the current
 !  pencil and store in the dr2_SN global array.
@@ -3611,7 +3627,7 @@ module Interstellar
 !
       do n=n1,n2
       do m=m1,m2
-        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
         call proximity_SN(remnant)
 !
 !  get rho from existing ambient density everywhere
@@ -3715,7 +3731,7 @@ module Interstellar
 !
       do n=n1,n2
       do m=m1,m2
-        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
+        if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
         call proximity_SN(remnant)
 !
 !  get rho from existing ambient density everywhere
