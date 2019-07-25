@@ -32,6 +32,7 @@ module Energy
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
   real :: chi=0.0,heat_uniform=0.0,chi_hyper3=0.0
+  real :: chi_shock=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: zheat_uniform_range=0.
@@ -46,6 +47,7 @@ module Energy
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lcalc_TTmean=.false.
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
+  logical :: lheatc_shock=.false.
   integer, parameter :: nheatc_max=3
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -63,7 +65,7 @@ module Energy
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond, zheat_uniform_range, heat_source_offset, &
       heat_source_sigma, heat_source, lheat_source, &
-      pthresh, pbackground
+      pthresh, pbackground,chi_shock
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -215,6 +217,9 @@ module Energy
         case ('chi-hyper3')
           lheatc_hyper3=.true.
           if (lroot) call information('initialize_energy','hyper conductivity')
+        case ('chi-shock')
+          lheatc_shock=.true.
+          if (lroot) call information('initialize_energy','shock conductivity')
         case ('nothing')
           if (lroot) print*,'heat conduction: nothing'
         case default
@@ -232,6 +237,9 @@ module Energy
       if (lheatc_hyper3 .and. chi_hyper3==0.0) then
         call warning('initialize_energy', &
             'Conductivity coefficient chi_hyper3 is zero!')
+      endif
+      if (lheatc_shock .and. chi_shock==0.0) then
+        call warning('initialize_energy','chi_shock is zero!')
       endif
 !
 !  Check if reduced sound speed is used
@@ -442,6 +450,16 @@ module Energy
       endif
 !
       if (lheatc_hyper3) lpenc_requested(i_del6lnTT)=.true.
+!
+      if (lheatc_shock) then
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_gamma)=.true.
+      endif
 !
       if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
 !
@@ -680,6 +698,7 @@ module Energy
       diffus_chi=0.; diffus_chi3=0.
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_hyper3) call calc_heatcond_hyper3(df,p)
+      if (lheatc_shock)  call calc_heatcond_shock(df,p)
 !
 ! Natalia: thermal conduction for the chemistry case: lheatc_chemistry=true
 !
@@ -869,6 +888,62 @@ module Energy
       endif
 !
     endsubroutine calc_heatcond_hyper3
+!***********************************************************************
+    subroutine calc_heatcond_shock(df,p)
+!
+!  Adds in shock entropy diffusion. There is potential for
+!  recycling some quantities from previous calculations.
+!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
+!  flux = chi_shock*rho*T*grads
+!  (in comments we say chi_shock, but in the code this is "chi_shock*shock")
+!  This routine should be ok with ionization.
+!
+!  20-jul-03/axel: adapted from calc_heatcond_constchi
+!  07-jun-19/joern: copied from entropy.f90
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: thdiff,g2,gshockglnTT
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+!  Check that chi is ok.
+!
+      if (headtt) print*,'calc_heatcond_shock: chi_shock=',chi_shock
+!
+!  Calculate terms for shock diffusion:
+!  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]
+!
+      call dot(p%gshock,p%glnTT,gshockglnTT)
+      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+!  Shock entropy diffusivity.
+!  Write: chi_shock = chi_shock0*shock, and gshock=grad(shock), so
+!  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
+!
+      if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
+      if (lheatc_shock) then
+          thdiff=p%gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+      endif
+!
+!  Add heat conduction to entropy equation.
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
+      if (headtt) print*,'calc_heatcond_shock: added thdiff'
+!
+!  Check maximum diffusion from thermal diffusion.
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chi*del2ss.
+!
+      if (lfirst.and.ldt) then
+          diffus_chi=diffus_chi+(p%gamma*chi_shock*p%shock)*dxyz_2
+      endif
+!
+    endsubroutine calc_heatcond_shock
 !***********************************************************************
     subroutine calc_heat_cool(df,p)
 !
