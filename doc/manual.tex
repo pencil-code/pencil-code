@@ -10279,6 +10279,140 @@ using pc_copyvar.
 \index{Remeshing}
 \index{Regridding}
 \label{S-remesh}
+Currently (29.07.19) two options are available for taking an existing run with
+a given resolution and processor layout and continuing with a changed
+resolution or different layout of processors.
+These apply for the original fortran binary data format used by the Pencil Code.
+The original version is described in section\,\ref{original-remesh}, while
+a recent more versatile option employing Python to perform the task is described
+in section\,\ref{python-remesh}.
+
+The parallel hdf5 format for storing Pencil Code data has now been implemented
+to replace the less portable fortran unformatted data.
+As the hdf5 data is stored in a single file, the processor layout can be
+revised at any time during a run, without the need to change the data files at
+all.
+Changing resolution or grid dimensions is also more convenient, using
+appropriate interpolation tools.
+When scripts to automatically resize the grid and physical data for the full
+f-array become available, instructions on their use 
+shall be included in section\,\ref{h5-remesh}.
+
+\subsubsection{Remeshing hdf5-formatted data}
+\label{h5-remesh}
+Instructions shall follow shortly \ldots
+
+\subsubsection{Remeshing unformatted fortran binary data using Python}
+\label{python-remesh}
+
+Ensure that \texttt{\$PENCIL\_HOME/python} has been added to your
+\texttt{\$PYTHON\_PATH}.
+Let us assume you have an existing run and you would like to continue an 
+experiment from a mature state, but with 
+\begin{itemize}
+\item
+  higher (or lower) resolution,
+\item
+  changes to the size of the numerical domain,
+\item
+  change to the processor layout to improve efficiency and/or speed of the
+  calculation,
+\item
+  added/reduced variables included in the model,
+\end{itemize}
+or any combination involving at least one of the first three options in the
+list.
+The following procedure can be used to handle the first three options.
+The remeshed model with the \file{var.dat}
+files obtained from an existing run can 
+then also be used to advance with additional physics, following
+section\,\ref{RestartingFromLessPhysics}.
+As part of the remeshing procedure reduced physics could be obtained by
+omitting unwanted variables (not yet implemented).
+\begin{enumerate}
+\item
+  First set up the new run.
+  One option will be to navigate to the path of the existing 
+  run \$path-to-old-run and apply the command
+  \begin{alltt}
+    \prompt{\$path-to-old-run> }pc_newrun \$path-to-new-run
+  \end{alltt}
+  \$path-to-new-run
+  is the full path of the new run or its relative path assuming it will be 
+  prefixed by {\file{../}}.
+  Then navigate to \$path-to-new-run.
+  Revise as required the files \file{start.in}, \file{src/cparam.local} and
+  \file{src/Makefile.local} to match the parameters for the remeshed run.
+  Note, any changes involving domain size will need to ensure continuity across
+  any periodic boundaries.
+  Then compile and start the new run
+  \begin{alltt}
+    \prompt{\$path-to-new-run> }pc_build
+    \prompt{\$path-to-new-run> }pc_run start
+  \end{alltt}
+  or otherwise submit a batch script containing the call to \file{start.csh}.
+  
+\item
+  Once the new run has been started successfully, create in the new run
+  directory a python script
+  called \file{local\_remesh.py} or similar, as described in the notes at the
+  end of \file{\$PENCIL\_HOME/python/pencil/files/remesh.py}.
+  Add \texttt{import pencil as pc} at the start of the file.
+
+\item
+  To read the old data and then interpolate this onto the new grid as a
+  complete f-array object \texttt{fnew},
+  add to the \file{local\_remesh.py} the lines
+  \begin{alltt}
+    \prompt{} fnew=pc.interp_var(
+    \prompt{}                    source_path=\$path-to-old-run,
+    \prompt{}                    target_path=\$path-to-new-run,
+    \prompt{}                    arrs=[`uu',`rho',`lnrho',`ss',`aa',
+    \prompt{}                          `shock',`netheat',`cooling'],
+    \prompt{}                   )
+  \end{alltt}
+  By default this will read in the data from the old run \file{var.dat} files.
+  If another source file is required add the line \file{oldvar=\$VAR,}
+  between the brackets, where \texttt{\$VAR} is one of the snapshots with
+  suffix \file{VAR}.
+  Replace the default list of variables \texttt{arrs} with the variables used
+  in the old run listed in f-array index order.
+  For other options inspect \file{\$PENCIL\_HOME/python/pencil/files/remesh.py}.
+  Handling particles is not yet implemented, but should be possible with minor
+  edits.
+
+\item
+  To write \texttt{fnew} to the new run \file{var.dat} files add to
+  \file{local\_remesh.py} the lines
+  \begin{alltt}
+    \prompt{} pc.distribute_fort(
+    \prompt{}                    fnew,
+    \prompt{}                    \$path-to-new-run,
+    \prompt{}                   )
+  \end{alltt}
+
+\item 
+  To execute the script run
+  \begin{alltt}
+    \prompt{\$path-to-new-run>} python local_remesh.py
+  \end{alltt}
+  To preserve long term the remeshed data
+  \begin{alltt}
+    \prompt{\$path-to-new-run>} pc_copyvar v 0 -e
+  \end{alltt}
+\item
+  Once the remeshing is completed edit as required \file{run.in} and execute
+  \begin{alltt}
+    \prompt{\$path-to-new-run> }pc_run run
+  \end{alltt}
+  or submit batch script as appropriate.
+  
+\end{enumerate}
+
+
+
+\subsubsection{Remeshing unformatted fortran binary - original method}
+\label{original-remesh}
 [This should be written up in a better way and put somewhere else.
 But currently, remeshing is only available for the Pencil developers
 anyway.]
