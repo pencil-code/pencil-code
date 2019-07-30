@@ -143,30 +143,52 @@ module Diagnostics
         dVol_rel1=1./box_volume
       elseif (lspherical_coords) then
 !
-        intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
-        intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
-        intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
 !
 !  Prevent zeros from less than 3-dimensional runs
 !  (maybe this should be 2pi, but maybe not).
 !
-        if (nx==1) intdr_rel=1.0
-        if (ny==1) intdtheta_rel=1.0
-        if (nz==1) intdphi_rel=1.0
+        if (nxgrid/=1) then
+          intdr_rel     =      (xyz1(1)**3-    xyz0(1)**3)/(3.*dx)
+        else
+          intdr_rel     =  1.0
+        endif
+!
+        if (nygrid/=1) then
+          intdtheta_rel = -(cos(xyz1(2))  -cos(xyz0(2)))/dy
+        else
+          intdtheta_rel=   1.0
+        endif
+!
+        if (nzgrid/=1.0) then
+          intdphi_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+        else
+          intdphi_rel   =  1.0
+        endif
 !
         dVol_rel1=1./(intdr_rel*intdtheta_rel*intdphi_rel)
 !
       elseif (lcylindrical_coords) then
 !
-        intdr_rel   =      (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
-        intdphi_rel =      (xyz1(2)   -    xyz0(2)) /dy
-        intdz_rel   =      (xyz1(3)   -    xyz0(3)) /dz
+!  Prevent zeros from less than 3-dimensional runs
 !
-!  Prevent zeros from less than 3-dimensional runs.
+        if (nxgrid/=1) then
+          intdr_rel     =  (xyz1(1)**2-    xyz0(1)**2)/(2.*dx)
+        else
+          intdr_rel     =  1.0
+        endif
 !
-        if (nx==1) intdr_rel=1.0
-        if (ny==1) intdphi_rel=1.0
-        if (nz==1) intdz_rel=1.0
+        if (nygrid/=1) then
+          intdtheta_rel =  (xyz1(2)   -    xyz0(2)) /dy
+        else
+          intdtheta_rel=   1.0
+        endif
+!
+        if (nzgrid/=1.0) then
+          intdphi_rel   =  (xyz1(3)   -    xyz0(3)) /dz
+
+        else
+          intdphi_rel   =  1.0
+        endif
 !
         dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
 !

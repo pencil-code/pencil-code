@@ -1170,9 +1170,13 @@ module Grid
           Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)
           Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
         else
-          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)   !???
-          Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)    !???
-          Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
+!          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)   !???
+!          Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)    !???
+!          Area_xz=Area_xz*1./2.*(xyz1(1)**2-xyz0(1)**2)
+          dVol_x=1./3.
+          Area_xy=Area_xy*1./2.
+          Area_xz=Area_xz*1./2.
+
         endif
 !
 !  Theta extent (if non-radially symmetric)
@@ -1209,6 +1213,8 @@ module Grid
           do itheta=1,nygrid
             sinth_weight_across_proc(itheta)=sin(xyz0(2)+dy*itheta)
           enddo
+        else
+          sinth_weight_across_proc=1.
         endif
 !
 !  Calculate the volume of the box, for spherical coordinates.
@@ -1246,7 +1252,8 @@ module Grid
           Area_xy=Area_xy*1./2.*(xyz1(1)**2-xyz0(1)**2)
           Area_xz=Area_xz*Lxyz(1)
         else
-          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)   !???
+!          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)   !???
+          dVol_x=1./2.
           Area_xy=Area_xy*dVol_x(1)
           Area_xz=Area_xz*Lxyz(1)
         endif

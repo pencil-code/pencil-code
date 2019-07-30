@@ -250,7 +250,7 @@ program start
       endif
     endif
   enddo
-
+!
   if (lyinyang) then
     if (lroot) &
       print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
