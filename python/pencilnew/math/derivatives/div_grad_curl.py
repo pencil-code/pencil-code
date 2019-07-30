@@ -1,6 +1,10 @@
 # div_grad_curl.py
 #
 # Contains the vector calculus derivatives.
+#
+# Authors: Wladimir Lyra (wlyra@caltech.edu)
+#          Simon Candelaresi (iomsn1@gmail.com)
+#          Callum Reid (apollocreid@gmail.com)
 """
 Compute the divergence, gradient and curl.
 """
@@ -148,6 +152,7 @@ def curl(f, dx, dy, dz, x=None, y=None, run2D=False, coordinate_system='cartesia
         raise ValueError
 
     curl_value = np.empty_like(f)
+
     if (dy != 0. and dz != 0.):
         # 3-D case
         if coordinate_system == 'cartesian':
@@ -196,7 +201,7 @@ def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
 
     *coordinate_system*:
       Coordinate system under which to take the divergence.
-      Takes 'cartesian' and 'cylindrical'.
+      Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
 
     import numpy as np
@@ -205,9 +210,6 @@ def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     if (f.ndim != 4 or f.shape[0] != 3):
         print("curl2: must have vector 4-D array f[3, mz, my, mx] for curl2.")
         raise ValueError
-
-    if coordinate_system == 'spherical':
-        print('ERROR: curl2 currently not implemented for spherical coordinates.')
 
     curl2_value = np.empty(f.shape)
 
@@ -231,18 +233,110 @@ def curl2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
                          - yder(f[0], dy)/x**2
         curl2_value[2] = zder(f[0], dz)/x + xder(zder(f[0], dz), dx) - zder(f[2], dx)/x \
                          - xder2(f[2], dx) - yder2(f[2], dy)/x**2 + yder(zder(f[1], dz), dy)/x
-
+    if coordinate_system == 'spherical':
+        if x is None or y is None:
+            print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates.')
+            raise ValueError
+        # Make sure x and y have compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
+        curl2_value[0] = (yder(np.sin(y)*(xder(x*f[1], dx) - yder(f[0], dy))/x, dy) -
+                          zder((zder(f[0], dz)/np.sin(y) - xder(x*f[2], dx))/x, dz))/(x*np.sin(y))
+        curl2_value[1] = (zder((yder(np.sin(y)*f[2], dy) - zder(f[1], dz))/(x*np.sin(y)), dz)/np.sin(y) -
+                          xder((xder(x*f[1], dx) - yder(f[0], dy)), dx))/x
+        curl2_value[2] = (xder((zder(f[0], dz)/np.sin(y) - xder(x*f[2], dx)), dx) -
+                          yder((yder(np.sin(y)*f[2], dy) - zder(f[1], dz))/(x*np.sin(y)), dy))/x
     return curl2_value
 
 
-def del2(f, dx, dy, dz):
+def del2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
-    Calculate del2.
+    Calculate del2, the Laplacian of a scalar field f.
+
+    *x, y*:
+      Radial (x) and polar (y) coordinates, 1d arrays.
+
+    *run2D*:
+      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+      !Only for Cartesian grids at the moment!
+
+    *coordinate_system*:
+      Coordinate system under which to take the divergence.
+      Takes 'cartesian', 'cylindrical' and 'spherical'.
     """
 
-    from .der import xder2, yder2, zder2
+    import numpy as np
+    from .der import xder2, yder2, zder2, xder, yder
 
-    return xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
+    if coordinate_system == 'cartesian':
+        return xder2(f, dx) + yder2(f, dy) + zder2(f, dz)
+    if coordinate_system == 'cylindrical':
+        if x is None:
+            print('ERROR: need to specify x (radius)')
+            raise ValueError
+        x = x[np.newaxis, np.newaxis, :]
+        return xder(f, dx)/x + xder2(f, dx) + yder2(f, dy)/(x**2) + zder2(f, dz)
+    if coordinate_system == 'spherical':
+        if x is None or y is None:
+            print('ERROR: need to specify x (radius) and y (polar angle)')
+            raise ValueError
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
+        return 2*xder(f, dx)/x + xder2(f, dx) + np.cos(y)*yder(f, dy)/((x**2)*np.sin(y)) + \
+               yder2(f, dy)/(x**2) + zder2(f, dz)/((x*np.sin(y))**2)
+
+
+def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
+    """
+    Calculate del2, the Laplacian of a vector field f.
+
+    *x, y*:
+      Radial (x) and polar (y) coordinates, 1d arrays.
+
+    *run2D*:
+      Deals with pure 2-D snapshots (solved the (x,z)-plane pb).
+      !Only for Cartesian grids at the moment!
+
+    *coordinate_system*:
+      Coordinate system under which to take the divergence.
+      Takes 'cartesian', 'cylindrical' and 'spherical'.
+    """
+
+    if f.shape[0] != 3:
+        print("Vector Laplacian: must have a vector 4D array f(3, mz, my, mx) for Vector Laplacian")
+        raise ValueError
+
+    import numpy as np
+    from .der import xder2, yder2, zder2, yder, zder
+
+    del2v_value = np.empty(f.shape)
+
+    if coordinate_system == 'cartesian':
+        del2v_value[0] = xder2(f[0], dx) + yder2(f[0], dy) + zder2(f[0], dz)
+        del2v_value[1] = xder2(f[1], dx) + yder2(f[1], dy) + zder2(f[1], dz)
+        del2v_value[2] = xder2(f[2], dx) + yder2(f[2], dy) + zder2(f[2], dz)
+    if coordinate_system == 'cylindrical':
+        if x is None:
+            print('Error: need to specify x (radius)')
+            raise ValueError
+        x = x[np.newaxis, np.newaxis, :]
+        del2v_value[0] = del2(f[0], dx, dy, dz, x=x, y=y, coordinate_system='cylindrical') \
+                        - f[0]/(x**2) - 2*yder(f[2], dy)/x**2
+        del2v_value[1] = del2(f[1], dx, dy, dz, x=x, y=y, coordinate_system='cylindrical') \
+                         - f[1]/(x**2) + 2*yder(f[0], dy)/x**2
+        del2v_value[2] = del2(f[2], dx, dy, dz, x=x, y=y, coordinate_system='cylindrical')
+    if coordinate_system == 'spherical':
+        if x is None or y is None:
+            print('ERROR: need to specify x (radius) and y (polar angle)')
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
+        del2v_value[0] = del2(f[0], dx, dy, dz, x=x, y=y, coordinate_system='spherical') \
+                         - 2*f[0]/x**2 - 2*yder(f[1], dy)/x**2 - 2*np.cos(y)*f[1]/(x**2*np.sin(y)) - 2*zder(f[2], dz)/(x**2 * np.sin(y))
+        del2v_value[1] = del2(f[1], dx, dy, dz, x=x, y=y, coordinate_system='spherical') \
+                         - f[1]/(x*np.sin(y))**2 + 2*yder(f[0], dy)/(x**2) - (2*np.cos(y))*zder(f[2], dz)/(x*np.sin(y))**2
+        del2v_value[2] = del2(f[2], dx, dy, dz, x=x, y=y, coordinate_system='spherical') \
+                         - f[2]/(x*np.sin(y))**2 + 2*zder(f[0], dz)/(np.sin(y)*x**2) - (2*np.cos(y))*zder(f[1], dz)/(x*np.sin(y))**2
+    return del2v_value
 
 
 def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
@@ -268,19 +362,15 @@ def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         print("curl3: must have vector 4-D array f[3, mz, my, mx] for curl3.")
         raise ValueError
 
-    if coordinate_system == 'spherical':
-        print('ERROR: curl3 currently not implemented for spherical coordinates.')
-
     curl3_value = np.empty(f.shape)
 
     if coordinate_system == 'cartesian':
-        print('ERROR: curl3 currently not implemented for cartesian coordinates.')
-#        curl3_value[0] = xder(yder(f[1], dy) + zder(f[2], dz), dx) \
-#                              -yder2(f[0], dy) - zder2(f[0], dz)
-#        curl3_value[1] = yder(xder(f[0], dx) + zder(f[2], dz), dy) \
-#                              -xder2(f[1], dx) - zder2(f[1], dz)
-#        curl3_value[2] = zder(xder(f[0], dx) + yder(f[1], dy), dz) \
-#                              -xder2(f[2], dx) - yder2(f[2], dy)
+        curl3_value[0] = zder(xder2(f[1], dx) + yder2(f[1], dy), dz) + zder3(f[1], dz) - \
+                         yder(xder2(f[2], dx) + zder2(f[2], dz), dy) - yder3(f[2], dy)
+        curl3_value[1] = xder3(f[2], dx) + xder(yder2(f[2], dy) + zder2(f[2], dz), dx) - \
+                         zder(xder2(f[0], dx) + yder2(f[0], dy), dz) - zder3(f[0], dz)
+        curl3_value[2] = yder(xder2(f[0], dx) + zder2(f[0], dz), dy) + yder3(f[0], dy) - \
+                         xder3(f[1], dx) - xder(yder2(f[1], dy) + zder2(f[1], dz), dx)
     if coordinate_system == 'cylindrical':
         if x is None:
             print('ERROR: need to specify x (radius) for cylindrical coordinates.')
@@ -305,6 +395,38 @@ def curl3(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
                          - yder2(f[1], dy)/x**3 - xder(yder2(f[1], dy), dx)/x**2 \
                          + yder3(f[0], dy)/x**3 + yder(zder2(f[0], dz), dy)/x \
                          -2*xder2(f[1], dx)/x
+    if coordinate_system == 'spherical':
+        if x is None or y is None:
+            print('ERROR: need to specify x (radius) and y (polar angle) for spherical coordinates')
+            raise ValueError
+        # Make sure x and y have compatible dimensions.
+        x = x[np.newaxis, np.newaxis, :]
+        y = y[np.newaxis, :, np.newaxis]
+        # TODO: This one needs some fixing.
+        curl3_value[0] = (-1/x**3) * (np.sin(y)*((np.cos(y)**2 - 1)*(yder2(zder(f[1], dz), dy)) + \
+                         (-np.cos(y)**2 * np.sin(y) + np.sin(y))*(yder3(f[2], dy)) \
+                         -x**2 *(xder2(zder(f[1], dz), dx)) - zder3(f[1], dz) + \
+                         np.sin(y)*(xder2(yder(f[2], dy), dx))*x**2 + (yder(zder2(f[2], dz), dy))*np.sin(y) \
+                         +(-6*np.cos(y)**3 + 6* np.cos(y))*(yder2(f[2], dy))- 2*x*(xder(zder(f[1], dz), dx)) \
+                         -3*np.sin(y)*np.cos(y)*(yder(zder(f[1], dz), dy)) + np.cos(y)*(xder2(f[2], dx))*x**2 + \
+                         2*np.sin(y)*(xder(yder(f[2], dy), dx))*x + (zder2(f[2], dz))*np.cos(y) + \
+                         (-2*np.cos(y)**2 + 1)*(zder(f[1], dz)) + (11*np.cos(y)**2 * np.sin(y) - 4*np.sin(y))*(yder(f[2], dy)) \
+                         + 2*np.cos(y)*(xder(f[2], dx))*x + (6*np.cos(y)**3 - 5*np.cos(y))*f[2]))
+        curl3_value[1] = 1/(x**3*np.sin(y)) * ((np.cos(y)**2 - 1)*(yder2(zder(f[0], dz), dy)) + \
+                         (-x * np.cos(y)**2 + x)*np.sin(y)*(xder(yder2(f[2], dy), dx)) \
+                         - (xder2(zder(f[0], dz), dx))*x**2 - zder3(f[0], dz) + x**3*(xder3(f[2], dx))*np.sin(y) + \
+                         x*(xder(zder2(f[2], dz), dx))*np.sin(y) + (-2*np.cos(y)**2 + 2)*(yder(zder(f[1], dz), dy)) + \
+                         3*x**2*xder2(f[2], dx)*np.sin(y) + zder2(f[2], dz)*np.sin(y) + (2*x*np.cos(y)**2 - x)*np.sin(y)*(xder(f[2], dx)) \
+                         + (3*np.cos(y)**3 - 3*np.cos(y))*(yder(f[2], dy)) + 2*np.sin(y)*np.cos(y)*(zder(f[1], dz)) + \
+                         (-2*np.cos(y)**2 + 1)*np.sin(y)*f[2])
+        curl3_value[2] = 1/x**3 * ((yder3(f[0], dy))*(1-np.cos(y)**2) + (x*np.cos(y)**2 - x)*(xder(yder2(f[1], dy), dx)) + \
+                         (xder2(yder(f[1], dy), dx))*x**2 + yder(zder2(f[0], dz), dy) - (xder3(f[1], dx))*x**3 - \
+                         (xder(zder2(f[1], dz), dx))*x + (np.cos(y)**2 - 1)*(yder2(f[1], dy)) \
+                         + 3*(yder2(f[1], dy))*np.sin(y)*np.cos(y) - 3*(xder2(f[1], dx))*x**2 - \
+                         3*(xder(yder(f[1], dy), dx))*np.sin(y)*np.cos(y)*x + zder2(f[1], dz) - \
+                         2*(yder(zder(f[2], dz), dy))*np.sin(y) + (2*np.cos(y)**2 - 1)*(yder(f[1], dy)) + \
+                         (-2*np.cos(y)**2 + x)*(xder(f[1], dx)) - 3*(yder(f[1], dy))*np.sin(y)*np.cos(y) - \
+                         2*(zder(f[2], dz))*np.cos(y) + (-2*np.cos(y)**2 +1)*f[1])
     return curl3_value
 
 
