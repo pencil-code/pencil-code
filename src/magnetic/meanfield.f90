@@ -863,7 +863,7 @@ module Magnetic_meanfield
 !
 !  compute alpha profile (alpha_tmp)
 !
-        kx=2*pi/Lx
+        if (nxgrid/=1) kx=2*pi/Lx
         select case (alpha_profile)
         case ('const'); alpha_tmp=1.
         case ('siny'); alpha_tmp=sin(y(m))
