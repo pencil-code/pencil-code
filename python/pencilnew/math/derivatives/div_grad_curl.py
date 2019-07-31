@@ -63,7 +63,7 @@ def div(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
 
 def grad(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
     """
-    Take the curl of a pencil code scalar array f in various coordinate systems.
+    Take the gradient of a pencil code scalar array f in various coordinate systems.
 
     Keyword arguments:
 
@@ -274,12 +274,14 @@ def del2(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         if x is None:
             print('ERROR: need to specify x (radius)')
             raise ValueError
+        # Make sure x has compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
         return xder(f, dx)/x + xder2(f, dx) + yder2(f, dy)/(x**2) + zder2(f, dz)
     if coordinate_system == 'spherical':
         if x is None or y is None:
             print('ERROR: need to specify x (radius) and y (polar angle)')
             raise ValueError
+        # Make sure x and y have compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
         y = y[np.newaxis, :, np.newaxis]
         return 2*xder(f, dx)/x + xder2(f, dx) + np.cos(y)*yder(f, dy)/((x**2)*np.sin(y)) + \
@@ -319,19 +321,21 @@ def del2v(f, dx, dy, dz, x=None, y=None, coordinate_system='cartesian'):
         if x is None:
             print('Error: need to specify x (radius)')
             raise ValueError
+        # Make sure x has compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
         del2v_value[0] = del2(f[0], dx, dy, dz, x=x, y=y, coordinate_system='cylindrical') \
-                        - f[0]/(x**2) - 2*yder(f[2], dy)/x**2
+                        - f[0]/(x**2) - 2*yder(f[1], dy)/x**2
         del2v_value[1] = del2(f[1], dx, dy, dz, x=x, y=y, coordinate_system='cylindrical') \
                          - f[1]/(x**2) + 2*yder(f[0], dy)/x**2
         del2v_value[2] = del2(f[2], dx, dy, dz, x=x, y=y, coordinate_system='cylindrical')
     if coordinate_system == 'spherical':
         if x is None or y is None:
             print('ERROR: need to specify x (radius) and y (polar angle)')
+        # Make sure x and y have compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
         y = y[np.newaxis, :, np.newaxis]
         del2v_value[0] = del2(f[0], dx, dy, dz, x=x, y=y, coordinate_system='spherical') \
-                         - 2*f[0]/x**2 - 2*yder(f[1], dy)/x**2 - 2*np.cos(y)*f[1]/(x**2*np.sin(y)) - 2*zder(f[2], dz)/(x**2 * np.sin(y))
+                         - 2*f[0]/x**2 - 2*yder(f[1], dy)/x**2 - 2*np.cos(y)*f[1]/(x**2*np.sin(y)) - 2*zder(f[2], dz)/(x**2*np.sin(y))
         del2v_value[1] = del2(f[1], dx, dy, dz, x=x, y=y, coordinate_system='spherical') \
                          - f[1]/(x*np.sin(y))**2 + 2*yder(f[0], dy)/(x**2) - (2*np.cos(y))*zder(f[2], dz)/(x*np.sin(y))**2
         del2v_value[2] = del2(f[2], dx, dy, dz, x=x, y=y, coordinate_system='spherical') \
