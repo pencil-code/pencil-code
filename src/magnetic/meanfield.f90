@@ -936,6 +936,8 @@ module Magnetic_meanfield
         case ('cos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)
         case ('sincos(z/2)_with_halo'); delta_tmp=max(cos(.5*z(n)),0.)*sin(.5*z(n))
         case ('cos(theta)'); delta_tmp=cos(y(m))
+        case ('sin(theta)'); delta_tmp=sin(y(m))
+        case ('cosy*sin4y'); delta_tmp=cos(y(m))*sin(y(m))**4
         case default;
           call inevitably_fatal_error('calc_pencils_magnetic', &
             'delta_profile no such delta profile')
