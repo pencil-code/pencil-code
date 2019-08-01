@@ -2488,7 +2488,7 @@ module Interstellar
     real :: rhomax, maxrho, rhosum
     real :: mpirho, mpiz
     real, dimension(ncpus):: tmpxyz
-    integer :: itmp, icpu, lm_range
+    integer :: itmp, icpu, lm_range, ii1, ii2, ii3
     integer :: previous_SNl, previous_SNm, previous_SNn
 !
 !  parameters for random location of SN - about zdisk
@@ -2500,7 +2500,7 @@ module Interstellar
     if (headtt.and.ip==1963) print*,'position_SN_gaussianz: ENTER'
 !
 !  The disk oscillates. to keep the random dist centred at the disk find
-!  zmode where the peak mean density(z) resides and shift gaussian up/down
+!  zdisk where the peak mean density(z) resides and shift gaussian up/down
 !
     rhomax=0.0
 !
@@ -2528,25 +2528,31 @@ module Interstellar
         tmpz(i)=sum(tmpxyz((i-1)*nprocx*nprocy+1:i*nprocx*nprocy))
       enddo
 !
+      rhomax=maxval(tmpz)
       itmp=-1
       icpu=-1**it
-      rhomax=maxval(tmpz)
       if (icpu==-1) then
-        do i=1,nprocz
-          if (tmpz(i)==rhomax.and.itmp==-1) itmp=(i-1)*nprocx*nprocy
-        enddo
+        ii1=1;ii2=nprocz;ii3=1
       else
-        do i=nprocz,1,-1
-          if (tmpz(i)==rhomax.and.itmp==-1) itmp=(i-1)*nprocx*nprocy
-        enddo
+        ii1=nprocz;ii2=1;ii3=-1
       endif
+      do i=ii1,ii2,ii3
+        if (tmpz(i)==rhomax.and.itmp==-1) itmp=(i-1)*nprocx*nprocy
+      enddo
+      else
 !
       do i=1,nprocx*nprocy
         xyproc(i)=i+itmp-1
       enddo
       rhomax=0.
       rhotmp=0.
-      do n=n1,n2
+      icpu=-1**it
+      if (icpu==-1) then
+        ii1=n1;ii2=n2;ii3=1
+      else
+        ii1=n2;ii2=n1;ii3=-1
+      endif
+      do n=ii1,ii2,ii3
         if (ANY(xyproc==iproc)) then
           do m=m1,m2
             if (.not.lcartesian_coords.or..not.all(lequidist)) call get_grid_mn
@@ -2562,7 +2568,6 @@ module Interstellar
         maxrho=max(rhomax,rhotmp(n-nghost))
         rhomax=maxrho
         if (rhotmp(n-nghost)==rhomax) zdisk=z(n)
-        if (zdisk<0) exit
       enddo
       mpiz=zdisk
       call mpibcast_real(mpiz,xyproc(1))
