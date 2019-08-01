@@ -628,8 +628,8 @@ module Interstellar
 !
       if (SN_interval_rhom==impossible) &
           SN_interval_rhom=SN_interval_rhom_cgs/unit_density
-      t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lxyz(1) * Lxyz(2))
-      t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lxyz(1) * Lxyz(2))
+      t_interval_SNI  = 1./( SNI_factor *  SNI_area_rate * Lx * Ly)
+      t_interval_SNII = 1./(SNII_factor * SNII_area_rate * Lx * Ly)
       if (average_SNI_heating == impossible) average_SNI_heating = &
           r_SNI *ampl_SN/(sqrt(2*pi)*h_SNI*SN_interval_rhom)
       if (average_SNII_heating == impossible) average_SNII_heating = &
@@ -2593,10 +2593,10 @@ module Interstellar
     if (lOB_cluster .and. h_SN==h_SNII) then
 !  If OB clustering for SNII, while within time span of current cluster
       if (t < t_cluster) then ! still using current cluster coords
-        previous_SNl = int(( x_cluster - xyz0(1) )/Lxyz(1))*nxgrid +1
-        previous_SNm = int(( y_cluster - xyz0(2) )/Lxyz(2))*nygrid +1
-        previous_SNn = int(( z_cluster - xyz0(3) )/Lxyz(3))*nzgrid +1
-        lm_range = 2*SN_clustering_radius*nxgrid/Lxyz(1)
+        previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
+        previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
+        previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
+        lm_range = 2*SN_clustering_radius*nxgrid/Lx
         if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
           i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
           SNR%indx%ipx=(i-1)/nx  ! uses integer division
@@ -2703,8 +2703,8 @@ module Interstellar
         enddo
         SNR%indx%iproc=&
                 SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
-        x_cluster = (SNR%indx%l-1) * Lxyz(1)/nxgrid + xyz0(1)
-        y_cluster = (SNR%indx%m-1) * Lxyz(2)/nxgrid + xyz0(2)
+        x_cluster = (SNR%indx%l-1) * Lx/nxgrid + xyz0(1)
+        y_cluster = (SNR%indx%m-1) * Ly/nygrid + xyz0(2)
         z_cluster = zdisk
       endif
     else ! clustering not used
@@ -3846,24 +3846,24 @@ module Interstellar
       if (lperi(1)) then
         !where (dx_SN > xyz1(1)) dx_SN=dx_SN-Lx
         !where (dx_SN < xyz0(1)) dx_SN=dx_SN+Lx
-        where (dx_SN >  Lxyz(1)/2) dx_SN=dx_SN-Lx
-        where (dx_SN < -Lxyz(1)/2) dx_SN=dx_SN+Lx
+        where (dx_SN >  Lx/2) dx_SN=dx_SN-Lx
+        where (dx_SN < -Lx/2) dx_SN=dx_SN+Lx
       endif
 !
       dy_SN=y(m)-SNR%feat%y
       if (lperi(2)) then
         !if (dy_SN > xyz1(2)) dy_SN=dy_SN-Ly
         !if (dy_SN < xyz0(2)) dy_SN=dy_SN+Ly
-        if (dy_SN >  Lxyz(2)/2) dy_SN=dy_SN-Ly
-        if (dy_SN < -Lxyz(2)/2) dy_SN=dy_SN+Ly
+        if (dy_SN >  Ly/2) dy_SN=dy_SN-Ly
+        if (dy_SN < -Ly/2) dy_SN=dy_SN+Ly
       endif
 !
       dz_SN=z(n)-SNR%feat%z
       if (lperi(3)) then
         !if (dz_SN > xyz1(3)) dz_SN=dz_SN-Lz
         !if (dz_SN < xyz0(3)) dz_SN=dz_SN+Lz
-        if (dz_SN >  Lxyz(3)/2) dz_SN=dz_SN-Lz
-        if (dz_SN < -Lxyz(3)/2) dz_SN=dz_SN+Lz
+        if (dz_SN >  Lz/2) dz_SN=dz_SN-Lz
+        if (dz_SN < -Lz/2) dz_SN=dz_SN+Lz
       endif
 !
       dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
