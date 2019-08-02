@@ -1553,7 +1553,7 @@ END {
     clear_lock() if ($locked);
     unlink 'resubmit.log';
     unlink 'rs';
-    exec 'rm -rf "'.$runtime_dir.'"';
+    system('rm -rf "'.$runtime_dir.'"');
 
     system('env | sort') if ($debug);
 
