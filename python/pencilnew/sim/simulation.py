@@ -532,7 +532,7 @@ class __Simulation__(object):
         return True
 
     def get_T_last(self):
-        """ Returnes ts.t[-1] WITHOUTH reading the whole time series!
+        """ Returns ts.t[-1] WITHOUTH reading the whole time series!
         """
 
         if self.started() != True: return 0
@@ -552,7 +552,7 @@ class __Simulation__(object):
         return float(dict(zip(header, values))['t'])
 
     def get_extent(self, dimensions='xy'):
-        """ Returnes extent as [xmin, xmax, ymin, ymax], as needed by e.g. imshow.
+        """ Returns extent as [xmin, xmax, ymin, ymax], as needed by e.g. imshow.
 
         Arguments:
             dimensions: specify here if you want x, y or z dimensions.

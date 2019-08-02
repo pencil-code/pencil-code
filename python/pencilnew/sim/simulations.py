@@ -16,7 +16,7 @@ def simulations(*args, **kwargs):
     Generate simulations object, which is a container for simulation objects.
 
     Ways to use the Constructor:
-        - no args:          create empty onject, simulation objects can be added
+        - no args:          create empty object, simulation objects can be added
                             with add()
         - list, tuple:      provide a list of simulation objects or paths or names
                             if one of the latter is provide, pencilnew.get_sim()
