@@ -614,7 +614,7 @@ sub time_system_cmd {
 
     if (-X '/usr/bin/time') {
         run_system_cmd(('/usr/bin/time', '-p'), @cmd_line);
-    } elsif (`time echo 1 2>/dev/null`) {
+    } elsif (`which time`) {
         run_system_cmd('time', @cmd_line);
     } else {
         run_system_cmd(@cmd_line);
