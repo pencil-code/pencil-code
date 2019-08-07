@@ -25,18 +25,3 @@ gpu/cuda/core/copyHalosConcur.o: gpu/cuda/core/copyHalosConcur.cu gpu/cuda/core/
 #
 gpu/cuda/core/cuda_core.o: gpu/cuda/core/cuda_core.cu gpu/cuda/core/cuda_core.cuh gpu/cuda/cuda_generic.cuh $(PCHEADER_DIR)/datatypes.h $(PCHEADER_DIR)/errorhandler.h gpu/cuda/core/dconsts_core.cuh gpu/cuda/core/errorhandler_cuda.cuh gpu/cuda/core/copyHalosConcur.cuh $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_modulepardecs.h $(PCHEADER_DIR)/config.h $(PCHEADER_DIR)/grid.h $(PCHEADER_DIR)/slice.h $(PCHEADER_DIR)/forcing.h $(PCHEADER_DIR)/PC_moduleflags.h $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module_parfuncs.h
 #********************
-../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam.local ../scripts/cparam2c ../scripts/cparam.sed
-	@cd ..; cparam2c
-../cdata_c.h: ../defines_cdata.h ../cdata.f90 ../scripts/cdata2c ../scripts/cdata.sed
-	@cd ..; cdata2c
-../defines_cdata.h: ../cdata.f90 ../scripts/cdata2c ../scripts/cdata.sed
-	@cd ..; cdata2c
-../diagnostics_c.h: ../diagnostics.f90 ../scripts/diagnostics2c
-	@cd ..; diagnostics2c
-../forcing_c.h: ../forcing.f90 ../scripts/forcing2c
-	@cd ..; forcing2c
-../sub_c.h: ../sub.f90 ../scripts/sub2c
-	@cd ..; sub2c
-../boundcond_c.h: ../boundcond.f90 ../scripts/boundcond2c
-	@cd ..; boundcond2c
-
