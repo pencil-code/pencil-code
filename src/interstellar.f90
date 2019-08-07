@@ -45,15 +45,39 @@ module Interstellar
   endtype
 !
   type SNRemnant
-    type (RemnantFeature) :: feat 
+    type (RemnantFeature) :: feat
     type (RemnantIndex) :: indx
     type (ExplosionSite) :: site
+  endtype
+!
+!  Add cluster type
+!
+  type ClusterFeature
+    real :: x, y, z, t ! Location and end time
+    real :: radius     ! OB radius
+    real :: rhom0      ! Mean density at OB initiation
+    real :: rhom       ! Mean density in OB currently
+    real :: tnextOB    ! Sedov time shell formation time
+  endtype
+!
+  type ClusterIndex
+    integer :: l,m,n             ! Grid position
+    integer :: iproc,ipx,ipy,ipz ! Processor location
+    integer :: SN_number, iSN_remain ! Total SN in OB and SN remaining
+    integer :: iOB               ! OB identifier
+    integer :: state
+  endtype
+!
+  type SNCluster
+    type (ClusterFeature) :: feat 
+    type (ClusterIndex) :: indx
   endtype
 !
 !  required for *put_persistant_interstellar, update integer value to match
 !  any changes to number of above types 
 !
   integer :: nSITE = 7, nFEAT = 12, nINDX = 9
+  integer :: oFEAT = 8, oINDX = 11
 !
 !  Enumeration of Supernovae types.
 !
@@ -73,6 +97,13 @@ module Interstellar
   integer, parameter :: iEXPLOSION_TOO_RARIFIED = 2
   integer, parameter :: iEXPLOSION_TOO_UNEVEN   = 3
 !
+!  Enumeration of OB cluster states.
+!
+  integer, parameter :: OBstate_invalid   = 0
+  integer, parameter :: OBstate_waiting   = 1
+  integer, parameter :: OBstate_active    = 2
+  integer, parameter :: OBstate_finished  = 3
+!
 !  04-sep-09/fred: amended xsi_sedov
 !  ref Dyson & Williams Ch7 value = (25/3/pi)**(1/5)=1.215440704 for gamma=5/3
 !  2nd ref Ostriker & McKee 1988 Rev.Mod.Phys 60,1 1.15166956^5=2.206
@@ -84,24 +115,27 @@ module Interstellar
 !
 !  'Current' SN Explosion site parameters
 !
-  integer, parameter :: mSNR = 100
-  integer :: nSNR = 0
+  integer, parameter :: mSNR = 100, mOB = 20
+  integer :: nSNR = 0, nOB = 0
   type (SNRemnant), dimension(mSNR) :: SNRs
+  type (SNCluster), dimension(mOB) :: OBs
   integer, dimension(mSNR) :: SNR_index
+  integer, dimension(mOB) :: OB_index
   integer, parameter :: npreSN = 5
   integer, dimension(4,npreSN) :: preSN
 !
 !  Squared distance to the SNe site along the current pencil
 !  Outward normal vector from SNe site along the current pencil
 !
-  real, dimension(nx) :: dr2_SN
-  real, dimension(nx,3) :: outward_normal_SN
+  real, dimension(nx) :: dr2_SN, dr2_OB
+  real, dimension(nx,3) :: outward_normal_SN, outward_normal_OB
 !
 !  Allocate time of next SNI/II and intervals until next
 !
   real :: t_next_SNI=0.0, t_next_SNII=0.0, t_next_mass=0.0
   real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
   real :: t_interval_SNI=impossible, t_interval_SNII=impossible
+  real :: t_interval_OB=impossible
   real :: zdisk !varying location of centre of mass of the disk
   logical :: lfirst_zdisk
 !
@@ -173,7 +207,9 @@ module Interstellar
 !  SNI per (x,y)-area explosion rate
 !
   double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
+  double precision, parameter :: OB_area_rate_cgs=1.576417151D-57
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
+  real :: OB_area_rate=impossible
   real :: SNI_factor=1.0, SNII_factor=1.0
 !
 !  SNII rate=5.E-12 mass(H1+HII)/solar_mass
@@ -510,6 +546,8 @@ module Interstellar
         if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
         if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
         if (TT_SN_min==impossible) TT_SN_min=TT_SN_min_cgs / unit_temperature
+        if (OB_area_rate==impossible) &
+            OB_area_rate=OB_area_rate_cgs * unit_length**2 * unit_time
         if (SNI_area_rate==impossible) &
             SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
         if (SNII_area_rate==impossible) &
@@ -595,6 +633,7 @@ module Interstellar
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
             SN_clustering_time=SN_clustering_time_cgs / unit_time
+        t_interval_OB   = 1./(OB_area_rate * Lx * Ly)
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -2082,12 +2121,11 @@ module Interstellar
       !endif
       call random_number_wrapper(franSN)
 !
-!  Vary the time interval with a uniform random distribution between
-!  \pm0.375 times the average interval required.
+!  Time interval follows Poisson process with rate 1/interval_SNI
 !
-      t_next_SNI=t + (1.0 + 0.75*(franSN(1)-0.5)) * t_interval_SNI
+      scaled_interval=-log(franSN(1))*t_interval_SNI
 !
-      scaled_interval=t_next_SNI - t
+      t_next_SNI=t+scaled_interval
       if (lroot) print*, &
           'set_next_SNI: Next SNI at time = ' ,t_next_SNI
 !
@@ -2101,7 +2139,7 @@ module Interstellar
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(1) :: franSN
-      real :: rhom, scaled_interval, mpirho
+      real :: rhom, scaled_interval, mpirho, tmp_interval
 !
       intent(in) :: f
       intent(out) :: scaled_interval
@@ -2151,11 +2189,11 @@ module Interstellar
         !if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
         !  scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)
         !else
-          scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
+          tmp_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
         !endif
         old_rhom=rhom
       else
-        scaled_interval=t_interval_SNII
+        tmp_interval=t_interval_SNII
       endif
       !Fred: plan to time and locate SN via stellar mass, add variable
       !      stellar mass, routine to accrete stellar mass function of
@@ -2164,14 +2202,14 @@ module Interstellar
       !  call set_interval(f,t_interval_SNII,l_SNI)
       !endif
 !
-!  Vary the time interval with a uniform random distribution between
-!  \pm0.375 times the average interval required.
+!  Time interval follows Poisson process with rate 1/interval_SNII
 !
-      t_next_SNII=t + (1.0 + 0.75*(franSN(1)-0.5)) * scaled_interval
+      scaled_interval=-log(franSN(1))*tmp_interval
+!
+      t_next_SNII=t+scaled_interval
       if (lroot) print*, &
           'check_SNII: Next SNII at time = ' ,t_next_SNII
 !
-      scaled_interval=t_next_SNII - t
     endsubroutine set_next_SNII
 !*****************************************************************************
     subroutine set_interval(f,t_interval,l_SNI)
@@ -2618,11 +2656,14 @@ module Interstellar
     if (lOB_cluster .and. h_SN==h_SNII) then
 !  If OB clustering for SNII, while within time span of current cluster
       if (t < t_cluster) then ! still using current cluster coords
+        if (lroot.and.ip==1963) print*,'position_SN_gaussianz: cluster lifetime until',t_cluster
         previous_SNl = int(( x_cluster - xyz0(1) )/Lx)*nxgrid +1
         previous_SNm = int(( y_cluster - xyz0(2) )/Ly)*nygrid +1
         previous_SNn = int(( z_cluster - xyz0(3) )/Lz)*nzgrid +1
         lm_range = 2*SN_clustering_radius*nxgrid/Lx
         if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
+          if (lroot.and.ip==1963) print*,'position_SN_gaussianz: in cluster x,y,z=',&
+                                         x_cluster,y_cluster,z_cluster
           i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
           SNR%indx%ipx=(i-1)/nx  ! uses integer division
           SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
@@ -2683,7 +2724,8 @@ module Interstellar
         endif
       else
 !  If OB clustering for SNII, time to set new cluster location and duration
-        t_cluster = t + SN_clustering_time
+        call set_next_OB(t_interval_OB)
+!        t_cluster = t + SN_clustering_time
 !
         i=int(fran3(1)*nxgrid)+1
         SNR%indx%ipx=(i-1)/nx  ! uses integer division
@@ -3522,6 +3564,14 @@ module Interstellar
           call set_next_SNII(f,t_interval_SN)
           SNrate = t_interval_SNII
         endif
+      else
+        if (SNR%indx%SN_type==1) then
+          t_interval_SN=t_interval_SNI
+          SNrate = t_interval_SNI
+        else
+          t_interval_SN=t_interval_SNII
+          SNrate = t_interval_SNII
+        endif
       endif
 !
       if (lOB_cluster) then
@@ -3825,6 +3875,56 @@ module Interstellar
 !
     endsubroutine get_lowest_rho
 !*****************************************************************************
+    subroutine proximity_OB(OB)
+!
+!  Calculate pencil of distance to OB cluster origin.
+!
+!  06-aug-19/fred: cloned from proximity_SN
+!
+      type (SNCluster), intent(inout) :: OB
+!
+      real,dimension(nx) :: dx_OB, dr_OB
+      real :: dy_OB
+      real :: dz_OB
+!
+!  Obtain distance to OB cluster origin
+!
+      dx_OB=x(l1:l2)-OB%feat%x
+      if (lperi(1)) then
+        where (dx_OB >  Lx/2) dx_OB=dx_OB-Lx
+        where (dx_OB < -Lx/2) dx_OB=dx_OB+Lx
+      endif
+!
+      dy_OB=y(m)-OB%feat%y
+      if (lperi(2)) then
+        if (dy_OB >  Ly/2) dy_OB=dy_OB-Ly
+        if (dy_OB < -Ly/2) dy_OB=dy_OB+Ly
+      endif
+!
+      dz_OB=z(n)-OB%feat%z
+      if (lperi(3)) then
+        if (dz_OB >  Lz/2) dz_OB=dz_OB-Lz
+        if (dz_OB < -Lz/2) dz_OB=dz_OB+Lz
+      endif
+!
+      dr2_OB=dx_OB**2 + dy_OB**2 + dz_OB**2
+!
+      if (lSN_velocity) then
+        dr_OB=sqrt(dr2_OB)
+        dr_OB=max(dr_OB(1:nx),tiny(0.0))
+!
+!  Avoid dr_SN = 0 above to avoid div by zero below.
+!
+        outward_normal_OB(:,1)=dx_OB/dr_OB
+        where (dr2_OB(1:nx) == 0.) outward_normal_OB(:,1)=0.0
+        outward_normal_OB(:,2)=dy_OB/dr_OB
+        where (dr2_OB(1:nx) == 0.) outward_normal_OB(:,2)=0.0
+        outward_normal_OB(:,3)=dz_OB/dr_OB
+        where (dr2_OB(1:nx) == 0.) outward_normal_OB(:,3)=0.0
+      endif
+!
+    endsubroutine proximity_OB
+!*****************************************************************************
     subroutine proximity_SN(SNR)
 !
 !  Calculate pencil of distance to SN explosion site.
@@ -3837,6 +3937,7 @@ module Interstellar
       real,dimension(nx) :: dx_SN, dr_SN
       real :: dy_SN
       real :: dz_SN
+      integer :: l
 !
 !  Obtain distance to SN
 !
@@ -3864,7 +3965,31 @@ module Interstellar
         if (dz_SN < -Lz/2) dz_SN=dz_SN+Lz
       endif
 !
-      dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
+      if (lshear) then
+        do l=l1,l2
+          if (x(l)-SNR%feat%x> Lx/2) then
+            if (y(m)-SNR%feat%y >  Ly/2) then
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay-Ly)**2 + dz_SN**2
+            elseif (y(m)-SNR%feat%y < -Ly/2) then
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay+Ly)**2 + dz_SN**2
+            else
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (dy_SN+deltay)**2 + dz_SN**2
+            endif
+          elseif (x(l)-SNR%feat%x< -Lx/2) then
+            if (y(m)-SNR%feat%y >  Ly/2) then
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay-Ly)**2 + dz_SN**2
+            elseif (y(m)-SNR%feat%y < -Ly/2) then
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay+Ly)**2 + dz_SN**2
+            else
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (dy_SN-deltay)**2 + dz_SN**2
+            endif
+          else
+            dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + dy_SN**2 + dz_SN**2
+          endif
+        enddo
+      else
+        dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
+      endif
 !
       if (lSN_velocity) then
         dr_SN=sqrt(dr2_SN)
@@ -3874,8 +3999,44 @@ module Interstellar
 !
         outward_normal_SN(:,1)=dx_SN/dr_SN
         where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,1)=0.0
-        outward_normal_SN(:,2)=dy_SN/dr_SN
-        where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
+        if (lshear) then
+          do l=l1,l2
+            if (x(l)-SNR%feat%x> Lx/2) then
+              if (y(m)-SNR%feat%y >  Ly/2) then
+                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y+deltay-Ly)/&
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay-Ly)**2 + dz_SN**2)
+              elseif (y(m)-SNR%feat%y < -Ly/2) then
+                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y+deltay+Ly)/&
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay+Ly)**2 + dz_SN**2)
+              else
+                if (dr2_SN(l-nghost)==0) then
+                  outward_normal_SN(l-nghost,2)=0.0
+                else
+                   outward_normal_SN(l-nghost,2)=dy_SN/dr_SN(l-nghost)
+                endif
+              endif
+            elseif (x(l)-SNR%feat%x< -Lx/2) then
+              if (y(m)-SNR%feat%y >  Ly/2) then
+                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y-deltay-Ly)/&
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay-Ly)**2 + dz_SN**2)
+              elseif (y(m)-SNR%feat%y < -Ly/2) then
+                outward_normal_SN(l-nghost,2)=(y(m)-SNR%feat%y-deltay+Ly)/&
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay+Ly)**2 + dz_SN**2)
+              else
+                if (dr2_SN(l-nghost)==0) then
+                  outward_normal_SN(l-nghost,2)=0.0
+                else
+                   outward_normal_SN(l-nghost,2)=dy_SN/dr_SN(l-nghost)
+                endif
+              endif
+            else
+              dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + dy_SN**2 + dz_SN**2
+            endif
+          enddo
+        else
+          outward_normal_SN(:,2)=dy_SN/dr_SN
+          where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,2)=0.0
+        endif
         outward_normal_SN(:,3)=dz_SN/dr_SN
         where (dr2_SN(1:nx) == 0.) outward_normal_SN(:,3)=0.0
       endif
@@ -4063,6 +4224,88 @@ module Interstellar
       enddo
 !
     endsubroutine tidy_SNRs
+!*****************************************************************************
+    function get_free_OB()
+!
+      integer :: get_free_OB
+      integer :: i,iOB
+!
+      if (nOB>=mOB) then
+        call fatal_error("get_free_OB", &
+            "Run out of OB slots... Increase mOB.")
+      endif
+!
+      iOB=-1
+      do i=1,mOB
+        if (OBs(i)%indx%state==OBstate_invalid) then
+          iOB=i
+          exit
+        endif
+      enddo
+!
+      if (iOB<0) then
+        call fatal_error("get_free_OB", &
+          "Could not find an empty OB slot. Slots were not properly freed.")
+      endif
+!
+      nOB=nOB+1
+      OBs(iOB)%indx%state=OBstate_waiting
+      OB_index(nOB)=iOB
+      get_free_OB=iOB
+!
+    endfunction get_free_OB
+!*****************************************************************************
+    subroutine free_OB(iOB)
+!
+      integer :: i,iOB
+!
+      if (OBs(iOB)%indx%state==OBstate_invalid) then
+        if (lroot) print*,"Tried to free an already invalid OB"
+        return
+      endif
+!
+      nOB=nOB-1
+      OBs(iOB)%indx%state=OBstate_invalid
+!
+      do i=iOB,nOB
+        OB_index(i)=OB_index(i+1)
+      enddo
+!
+    endsubroutine free_OB
+!*****************************************************************************
+    subroutine tidy_OBs
+!
+      integer :: i
+!
+      do i=1,mOB
+        if (OBs(i)%indx%state==OBstate_finished) call free_OB(i)
+      enddo
+!
+    endsubroutine tidy_OBs
+!***********************************************************************
+    subroutine set_next_OB(t_interval_OB)
+!
+      use General, only:  random_seed_wrapper, random_number_wrapper
+!
+      real, dimension(1) :: franSN
+      real :: t_interval_OB
+!
+      intent(in) :: t_interval_OB
+!
+!  Pre-determine time for next OB.
+!
+      if (lroot) print*, &
+          "set_next_OB: Old t_next_OB=", t_cluster
+      call random_number_wrapper(franSN)
+!
+!  Time interval follows Poisson process with rate 1/t_interval_OB
+!
+      t_cluster=t-log(franSN(1))*t_interval_OB
+!
+      if (lroot) print*, &
+          'set_next_OB: Next OB at time = ' ,t_cluster
+!
+    endsubroutine set_next_OB
 !*****************************************************************************
     subroutine addmassflux(f)
 !
