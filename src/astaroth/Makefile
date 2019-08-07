@@ -1,5 +1,5 @@
 CUSOURCES = #$(wildcard submodule/src/core/*.cu)  
-CCSOURCES = #submodule/src/standalone/config_loader.cc
+CCSOURCES = loadStore.cc #submodule/src/standalone/config_loader.cc
 MAIN_SRC = gpu_astaroth.cc
 MAIN_OBJ = gpu_astaroth.o
 
@@ -36,6 +36,7 @@ else
   ENVIRON += -DDOUBLE_PRECISION
   CMAKE_PREC = 'DOUBLE_PRECISION=ON'
   PREC=dbl
+  CMAKE_PREC = 'DOUBLE_PRECISION=ON'
 endif
 
 PCHEADER_DIR=.
@@ -45,6 +46,7 @@ astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_module
 	cp -f astaroth_$(PREC).so ..
 
 include Makefile.depend
+include Makefile.extern
 
 %.o: %.cc
 	nvcc $(CCFLAGS) $(ENVIRON) -dc $< -o $@
