@@ -21,10 +21,10 @@
 #include "../sub_c.h"                   // provides set_dt
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 //#include "diagnostics/diagnostics.h"
+#include "loadStore.h"
 #define EXTERN 
 #include "PC_module_parfuncs.h"
 
-static AcReal* halo_buffer;
 static AcMesh mesh;
 //static ForcingParams forcing_params;
 
@@ -38,10 +38,10 @@ AcReal max_advec()
 AcReal max_diffus()
 {
         AcReal maxdiffus_=0.;
-#ifdef LVISCOSITY
+#if LVISCOSITY
         maxdiffus_=nu*dxyz_2[nghost];
 #endif
-#ifdef LMAGNETIC
+#if LMAGNETIC
         maxdiffus_=max(maxdiffus_,eta*dxyz_2[nghost]);
 #endif
         return maxdiffus_;
@@ -52,7 +52,7 @@ AcReal max_diffus()
 //
 extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=false)
 {
-#ifdef LFORCING
+#if LFORCING
     //Update forcing params
     if (isubstep == itorder) { 
         // forcing_params.Update();    	                // calculate on CPU // %JP: TODO not available in astaroth.h yet
@@ -81,7 +81,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
     // MPI communication has already finished, hence the full domain can be advanced.
       if (!full)
       {
-          //!!!GPULoadOuterHalos(&mesh,halo_buffer);
+          //loadOuterHalos(mesh);
           acLoad(mesh);
       }
       acIntegrateStep(isubstep-1, dt);
@@ -97,29 +97,34 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
       finalize_isendrcv_bdry((AcReal*)mesh.vertex_buffer[0]);
 
   // TODO: call for update of ghosts!
-      //!!!GPULoadOuterHalos(&mesh,halo_buffer);
+      loadOuterFront(mesh);
       start=(int3){l1,m1,n1}; end=(int3){l2,m2,n1i-1};     // front plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
+      loadOuterBack(mesh);
       start=(int3){l1,m1,n2i+1}; end=(int3){l2,m2,n2};     // back plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
+      loadOuterBottom(mesh);
       start=(int3){l1,m1,n1i}; end=(int3){l2,m1i-1,n2i};   // bottom plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
+      loadOuterTop(mesh);
       start=(int3){l1,m2i+1,n1i}; end=(int3){l2,m2,n2i};   // top plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
+      loadOuterLeft(mesh);
       start=(int3){l1,m1i,n1i}; end=(int3){l1i-1,m2i,n2i};   // left plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
+      loadOuterRight(mesh);
       start=(int3){l2i+1,m1i,n1i}; end=(int3){l2,m2i,n2i};   // right plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
       acSynchronize();
     }
 
-    //!!!GPUStoreInternalHalos(&h_grid,halo_buffer);
+    //storeInnerHalos(mesh);
     acStore(&mesh);
 }
 /* ---------------------------------------------------------------------- */
@@ -138,7 +143,7 @@ extern "C" void registerGPU(AcMesh& mesh, AcReal* farray)
 extern "C" void initGPU()
 {
     //Initialize GPUs in the node
-    AcResult res = acCheckDeviceAvailability();
+    AcResult res=acCheckDeviceAvailability();
 }
 void SetupConfig(AcMeshInfo & config){
 #include "../cdata_c.h"
@@ -161,13 +166,13 @@ void SetupConfig(AcMeshInfo & config){
      config.real_params[AC_unit_velocity]=unit_velocity;
      config.real_params[AC_unit_length]=unit_length;
 //printf("units etc. %f %f %f \n", unit_density, unit_velocity, unit_length);
-#ifdef LVISCOSITY
+#if LVISCOSITY
 #include "../viscosity_pars_c.h"
      config.real_params[AC_nu_visc]=nu;
      config.real_params[AC_zeta]=zeta;
 //printf("nu etc. %f %f \n", nu, zeta);
 #endif
-#ifdef LMAGNETIC
+#if LMAGNETIC
      config.real_params[AC_eta]=eta;
 #endif
      config.real_params[AC_mu0]=mu0;
@@ -187,6 +192,7 @@ extern "C" void initializeGPU()
     	SetupConfig(mesh.info);
         AcResult res=acInit(mesh.info);         //Allocs memory on the GPU and loads device constants
 
+        initLoadStore();
     // initialize diagnostics
        //init_diagnostics();
 }
@@ -199,6 +205,7 @@ extern "C" void copyFarray()
 //Destroy the GPUs in the node (not literally hehe)
 extern "C" void finalizeGPU()
 {
+       finalLoadStore();
     //Deallocate everything on the GPUs and reset
        AcResult res=acQuit();
 }
