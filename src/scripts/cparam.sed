@@ -26,6 +26,7 @@ s/double  *precision *, *parameter *::/const double /
 /,kind=ikind8/ d
 s/\.true\./true/g
 s/\.false\./false/g
-s/\([^&">]\) *$/\1;/
+s/\(^[^#].*[^&">]\) *$/\1;/
+s/const  *FINT  *nghost *= *\([0-9]*\) *;/const FINT nghost=\1;\n#define NGHOST \1/
 s/& *$//
 
