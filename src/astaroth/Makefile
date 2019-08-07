@@ -28,20 +28,19 @@ ENVIRON = -D MODPRE=${MODULE_PREFIX} -D MODIN=${MODULE_INFIX} -D MODSUF=${MODULE
 
 PRECISION =
 include PC_modulesources
-ifeq ($(PRECISION),DOUBLE)
-  ENVIRON += -DDOUBLE_PRECISION
-  PREC=dbl
-else ifeq ($(PRECISION),SINGLE)
+ifeq ($(PRECISION),SINGLE)
   PREC=sgl
 #  OPTFLAGS += -fsingle-PRECision-constant
+  CMAKE_PREC = 'DOUBLE_PRECISION=OFF'
 else
   ENVIRON += -DDOUBLE_PRECISION
+  CMAKE_PREC = 'DOUBLE_PRECISION=ON'
   PREC=dbl
 endif
 
 PCHEADER_DIR=.
 astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS)
-	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -DDOUBLE_PRECISION=ON -DBUILD_STANDALONE=OFF .. && make -j VERBOSE=1 # Build the core Astaroth library
+	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF .. && make -j VERBOSE=1 # Build the core Astaroth library
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ)
 	cp -f astaroth_$(PREC).so ..
 
