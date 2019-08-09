@@ -181,7 +181,7 @@ void setupConfig(AcMeshInfo & config){
      config.real_params[AC_gamma]=gamma;
      config.real_params[AC_cv_sound]=cv;
      config.real_params[AC_cp_sound]=cp;
-     config.real_params[AC_lnT0]=lnt0;
+     config.real_params[AC_lnT0]=lntt0;
      config.real_params[AC_lnrho0]=lnrho0;
 //printf("eos etc. %f %f %f %f %f %f \n",sqrt(cs20),gamma,cv,cp,lnt0,lnrho0);
 }
