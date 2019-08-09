@@ -149,11 +149,14 @@ COMPILE_OPT IDL2,HIDDEN
     for pos = 0L, num_quantities-1 do begin
       label = quantities[pos]
       if (any (label eq [ '', 'it', 'last', 'step' ])) then continue
-      data = pc_read (label+'/0')
-      if (last ge step) then begin
-        for it = step, last, step do begin
-          data = [ data, pc_read (label+'/'+strtrim (it, 2)) ]
-        end
+      elements = h5_content (label, maximum=1)
+      idl_type = h5_get_type (label+'/'+elements[0])
+      empty = round (!Values.F_NaN)
+      if (idl_type eq 4) then empty = !Values.F_NaN
+      if (idl_type eq 5) then empty = !Values.D_NaN
+      data = replicate (empty, 1 + (last / step))
+      for it = 0, last, step do begin
+        if (h5_contains (label)) then data[it] = pc_read (label+'/'+strtrim (it, 2))
       end
       object = create_struct (object, label, data)
     end
