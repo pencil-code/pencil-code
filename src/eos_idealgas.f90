@@ -4910,7 +4910,7 @@ module EquationOfState
 !***********************************************************************
     subroutine pushpars2c(p_par)
 !
-    integer, parameter :: n_pars=5
+    integer, parameter :: n_pars=6
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
     call copy_addr_c(cs20,p_par(1))
@@ -4918,6 +4918,7 @@ module EquationOfState
     call copy_addr_c(cv,p_par(3))
     call copy_addr_c(cp,p_par(4))
     call copy_addr_c(lnrho0,p_par(5))
+    call copy_addr_c(lnTT0,p_par(6))
 !
     endsubroutine pushpars2c
 !***********************************************************************
