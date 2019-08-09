@@ -154,9 +154,11 @@ COMPILE_OPT IDL2,HIDDEN
       empty = round (!Values.F_NaN)
       if (idl_type eq 4) then empty = !Values.F_NaN
       if (idl_type eq 5) then empty = !Values.D_NaN
-      data = replicate (empty, 1 + (last / step))
-      for it = 0, last, step do begin
-        if (h5_contains (label)) then data[it] = pc_read (label+'/'+strtrim (it, 2))
+      maximum = last / step
+      data = replicate (empty, maximum+1)
+      for num = 0L, maximum do begin
+        dataset = label + '/' + strtrim (num * step, 2)
+        if (h5_contains (dataset)) then data[num] = pc_read (dataset)
       end
       object = create_struct (object, label, data)
     end
