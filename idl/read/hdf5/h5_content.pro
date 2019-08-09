@@ -1,4 +1,4 @@
-function h5_content, group, number=num
+function h5_content, group, number=number, maximum=maximum
 
 	common h5_file_info, file_id, file_name
 
@@ -14,6 +14,8 @@ function h5_content, group, number=num
 	if (strupcase (object.type) ne 'GROUP') then return, ''
 
 	num = h5g_get_nmembers (file_id, group)
+	number = num
+	if (keyword_set (maximum)) then num = num < (maximum > 1)
 	list = strarr (num)
 	for pos = 0, num-1 do begin
 		list[pos] = h5g_get_member_name (file_id, group, pos)
