@@ -41,7 +41,7 @@ endif
 
 PCHEADER_DIR=.
 astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS)
-	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF .. && make -j VERBOSE=1 # Build the core Astaroth library
+	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF .. && make -I../../.. -j VERBOSE=1 # Build the core Astaroth library
 	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ)
 	cp -f astaroth_$(PREC).so ..
 

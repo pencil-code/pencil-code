@@ -101,9 +101,9 @@ module Cparam
 !  Predefine maximum possible numbers.
 !
   integer, parameter :: max_int=huge(0)
-  real, parameter :: huge_real=huge(0.0)
-  double precision, parameter :: huge_double=huge(0.0d0)
-  real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
+  real, parameter :: huge_real=huge(0.)
+  double precision, parameter :: huge_double=huge(0.d0)
+  real, parameter :: max_real=huge_real/10.    ! division necessary as INTEL compiler considers
                                                ! huge(0.) illegal when reading it from a namelist
 !
 !  Tiny and huge numbers.

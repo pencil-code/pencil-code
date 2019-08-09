@@ -10,11 +10,14 @@
 //C libraries
 #include <stdio.h>
 #include <stdlib.h>
+#include <cmath>
+#include <algorithm>
+using namespace std;
 
 #include "astaroth.h"
-#include "submodule/src/core/math_utils.h"
-#include "../cparam_c.h"
-#include "../cdata_c.h"
+//#include "submodule/src/core/math_utils.h"
+//#include "../cparam_c.h"
+//#include "../cdata_c.h"
 
 const int mxy=mx*my;
 static int halo_yz_size=0;

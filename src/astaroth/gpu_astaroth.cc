@@ -9,15 +9,15 @@
 */
 
 //General
+#include <cmath>
+#include <algorithm>
+#include <limits>
+using namespace std;
 #include "submodule/include/astaroth.h"
-#include "submodule/src/core/math_utils.h"
 
 //PC interface
 #define real AcReal
 #define CUDA_ERRCHK(ans) {}             // suppress calls not needed at the moment
-#include "PC_moduleflags.h"
-#include "../cparam_c.h"
-#include "../cdata_c.h"
 #include "../sub_c.h"                   // provides set_dt
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
 //#include "diagnostics/diagnostics.h"
@@ -26,6 +26,7 @@
 #include "PC_module_parfuncs.h"
 
 static AcMesh mesh;
+static Node *node_handle;
 //static ForcingParams forcing_params;
 
 /***********************************************************************************************/
@@ -145,8 +146,7 @@ extern "C" void initGPU()
     //Initialize GPUs in the node
     AcResult res=acCheckDeviceAvailability();
 }
-void SetupConfig(AcMeshInfo & config){
-#include "../cdata_c.h"
+void setupConfig(AcMeshInfo & config){
      config.int_params[AC_nx]=nx;
      config.int_params[AC_ny]=ny;
      config.int_params[AC_nz]=nz;
@@ -189,9 +189,9 @@ extern "C" void initializeGPU()
 {
     //Setup configurations used for initializing and running the GPU code
 
-    	SetupConfig(mesh.info);
+    	setupConfig(mesh.info);
         AcResult res=acInit(mesh.info);         //Allocs memory on the GPU and loads device constants
-
+        res=acNodeCreate(iproc, mesh.info, node_handle);
         initLoadStore();
     // initialize diagnostics
        //init_diagnostics();
