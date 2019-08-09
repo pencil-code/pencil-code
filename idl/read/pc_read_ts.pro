@@ -148,10 +148,7 @@ COMPILE_OPT IDL2,HIDDEN
     num_quantities = n_elements (quantities)
     for pos = 0L, num_quantities-1 do begin
       label = quantities[pos]
-      if (label eq '') then continue
-      if (label eq 'it') then continue
-      if (label eq 'last') then continue
-      if (label eq 'step') then continue
+      if (any (label eq [ '', 'it', 'last', 'step' ])) then continue
       data = pc_read (label+'/0')
       if (last ge step) then begin
         for it = step, last, step do begin
