@@ -135,19 +135,20 @@ COMPILE_OPT IDL2,HIDDEN
 ; Load HDF5 varfile if requested or available.
 ;
   if (strmid (filename, strlen(filename)-3) eq '.h5') then begin
+    last = pc_read ('last', file=filename, datadir=datadir)
+    step = pc_read ('step')
     if (file_test ('print.in')) then begin
       lines = read_binary ('print.in')
-      quantities = strtrim (strsplit (string (lines), '[ '+string([10B,13B])+']+', /regex, /extract), 2)
-      quantities = stregex (quantities, '^([^()]+)', /extract)
+      quantities = strtrim (strsplit (string (lines), '['+string([10B,13B])+']+', /regex, /extract), 2)
+      quantities = stregex (quantities, '^([^()!#]+)', /extract)
     end else begin
       quantities = h5_content ('/')
     end
-    last = pc_read ('last', file=filename, datadir=datadir)
-    step = pc_read ('step')
     object = { it:lindgen(last/step+1)*step }
     num_quantities = n_elements (quantities)
     for pos = 0L, num_quantities-1 do begin
       label = quantities[pos]
+      if (label eq '') then continue
       if (label eq 'it') then continue
       if (label eq 'last') then continue
       if (label eq 'step') then continue
