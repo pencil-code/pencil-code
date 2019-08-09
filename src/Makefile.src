@@ -403,7 +403,8 @@ endif
 LIBGPU =
 GPU_DEPS =
 ifeq ($(GPU),gpu_astaroth)
-  LDFLAGS_MAIN += -dynamic
+  FFLAGS_GENERAL += -mcmodel=medium
+  LDFLAGS_MAIN += -dynamic  -L astaroth/submodule/build/src/core -lastaroth_core
   GPU_INTERFACE = gpu_astaroth_ansi.o
   GPU_DEPS = gpu_preps
   ifeq ($(REAL_PRECISION),double)
@@ -2490,9 +2491,6 @@ io_alt.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(IO_ALT_OBJ)
 #
 # writes moduleflags in $(CUDA_INCDIR)/PC_moduleflags.h, list of needed physics module source files in $(CUDA_MAKEDIR)/PC_modulesources
 # 
-CUDA_MAKEDIR=cuda/src_new
-CUDA_INCDIR=$(CUDA_MAKEDIR)/common
-CUDA_RELPATH=../..
 CUDA_MAKEDIR=astaroth
 CUDA_INCDIR=$(CUDA_MAKEDIR)
 CUDA_RELPATH=..

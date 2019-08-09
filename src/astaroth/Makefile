@@ -13,6 +13,7 @@ OPTFLAGS = -O1
 # -gencode arch=compute_60,code=sm_60
 #  Original
 CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
+#CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
 
 # MV's adaptation for TIARA cluster. Compiles with: 
 #  1) cuda/9.0   3) openmpi/2.0.1_ic16.0            5) hdf5/1.8.16_openmpi_2.0.1_ic16.0 7) gcc/5.3.0
@@ -24,25 +25,27 @@ CCFLAGS = -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. -Isubmodu
 #CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
 
 #Importing environ variables into preprocessor
-ENVIRON = -D MODPRE=${MODULE_PREFIX} -D MODIN=${MODULE_INFIX} -D MODSUF=${MODULE_SUFFIX} -DPENCIL_ASTAROTH
+ENVIRON = -DMODPRE=${MODULE_PREFIX} -DMODIN=${MODULE_INFIX} -DMODSUF=${MODULE_SUFFIX} -DPENCIL_ASTAROTH
 
 PRECISION =
 include PC_modulesources
 ifeq ($(PRECISION),SINGLE)
+  ENVIRON += -DAC_DOUBLE_PRECISION=0
   PREC=sgl
 #  OPTFLAGS += -fsingle-PRECision-constant
   CMAKE_PREC = 'DOUBLE_PRECISION=OFF'
 else
-  ENVIRON += -DDOUBLE_PRECISION
-  CMAKE_PREC = 'DOUBLE_PRECISION=ON'
+  ENVIRON += -DAC_DOUBLE_PRECISION=1
   PREC=dbl
   CMAKE_PREC = 'DOUBLE_PRECISION=ON'
 endif
 
 PCHEADER_DIR=.
+export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
+
 astaroth_$(PREC).so: PC_modulesources $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) $(MAIN_OBJ) $(OBJECTS)
-	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF .. && make -I../../.. -j VERBOSE=1 # Build the core Astaroth library
-	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ)
+	mkdir -p submodule/build && cd submodule/build && cmake -DMULTIGPU_ENABLED=ON -DSHARED=ON -D$(CMAKE_PREC) -DBUILD_STANDALONE=OFF .. && make -I../../.. -j VERBOSE=1 # Build the core Astaroth library
+	nvcc $(CCFLAGS) $(CUFLAGS) -o astaroth_$(PREC).so $(OBJECTS) $(MAIN_OBJ) -L submodule/build/src/core -lastaroth_core
 	cp -f astaroth_$(PREC).so ..
 
 include Makefile.depend

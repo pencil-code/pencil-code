@@ -84,7 +84,7 @@ void loadOuterBack(AcMesh& mesh)
         //!!!cudaHostRegister(mesh, size, cudaHostRegisterDefault);    // time-critical!
 }
  
-void loadOuterBottom(AcMesh& mesh)
+void loadOuterBot(AcMesh& mesh)
 {
         int3 src={0,0,halo_widths_z[BOT]};
         int num_vertices=mx*halo_widths_y[BOT];

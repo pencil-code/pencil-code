@@ -20,6 +20,7 @@ using namespace std;
 #define CUDA_ERRCHK(ans) {}             // suppress calls not needed at the moment
 #include "../sub_c.h"                   // provides set_dt
 #include "../boundcond_c.h"             // provides boundconds[xyz] etc.
+#include "../mpicomm_c.h"               // provides finalize_sendrecv_bdry
 //#include "diagnostics/diagnostics.h"
 #include "loadStore.h"
 #define EXTERN 
@@ -98,6 +99,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
       finalize_isendrcv_bdry((AcReal*)mesh.vertex_buffer[0]);
 
   // TODO: call for update of ghosts!
+
       loadOuterFront(mesh);
       start=(int3){l1,m1,n1}; end=(int3){l2,m2,n1i-1};     // front plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
@@ -106,7 +108,7 @@ extern "C" void substepGPU(int isubstep, bool full=false, bool early_finalize=fa
       start=(int3){l1,m1,n2i+1}; end=(int3){l2,m2,n2};     // back plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
-      loadOuterBottom(mesh);
+      loadOuterBot(mesh);
       start=(int3){l1,m1,n1i}; end=(int3){l2,m1i-1,n2i};   // bottom plate
       acIntegrateStepWithOffset(isubstep-1, dt,start,end);
   
@@ -193,6 +195,7 @@ extern "C" void initializeGPU()
         AcResult res=acInit(mesh.info);         //Allocs memory on the GPU and loads device constants
         res=acNodeCreate(iproc, mesh.info, node_handle);
         initLoadStore();
+
     // initialize diagnostics
        //init_diagnostics();
 }
