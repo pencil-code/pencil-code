@@ -10,6 +10,7 @@
 %%   bfield.f90
 %%   density_stratified.f90
 %%   gravity_simple.f90
+%%   hydro_potential.f90
 %%   magnetic_shearboxJ.f90
 %%   meanfield.f90
 %%   shock_highorder.f90
@@ -251,6 +252,88 @@
   \var{epotuzmz}  & $\left<\varrho \Phi_{\rm grav}
                     u_z \right>_{xy}$
                     \quad(potential energy flux) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_potential.f90}} \\
+\midrule
+  \var{u2mz}      & $\left< \uv^2 \right>_{xy}$ \\
+  \var{o2mz}      & $\left< \Wv^2 \right>_{xy}$ \\
+  \var{divu2mz}   & $\left<(\nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{curlru2mz} & $\left<(\nabla\times\varrho\Uv)^2 \right>_{xy}$ \\
+  \var{divru2mz}  & $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$ \\
+  \var{fmasszmz}  & $\left< \varrho u_z \right>_{xy}$ \\
+  \var{fkinzmz}   & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
+  \var{uxmz}      & $\left< u_x \right>_{xy}$
+                    \quad(horiz. averaged $x$
+                    velocity) \\
+  \var{uymz}      & $\left< u_y \right>_{xy}$ \\
+  \var{uzmz}      & $\left< u_z \right>_{xy}$ \\
+  \var{uzupmz}    & $\left< u_{z\uparrow} \right>_{xy}$ \\
+  \var{uzdownmz}  & $\left< u_{z\downarrow} \right>_{xy}$ \\
+  \var{ruzupmz}   & $\left< \varrho u_{z\uparrow} \right>_{xy}$ \\
+  \var{ruzdownmz} & $\left< \varrho u_{z\downarrow} \right>_{xy}$ \\
+  \var{divumz}    & $\left< {\rm div}\uv \right>_{xy}$ \\
+  \var{uzdivumz}  & $\left< u_z{\rm div}\uv \right>_{xy}$ \\
+  \var{oxmz}      & $\left< \omega_x \right>_{xy}$ \\
+  \var{oymz}      & $\left< \omega_y \right>_{xy}$ \\
+  \var{ozmz}      & $\left< \omega_z \right>_{xy}$ \\
+  \var{ux2mz}     & $\left<u_x^2\right>_{xy}$ \\
+  \var{uy2mz}     & $\left<u_y^2\right>_{xy}$ \\
+  \var{uz2mz}     & $\left<u_z^2\right>_{xy}$ \\
+  \var{ox2mz}     & $\left< \omega_x^2 \right>_{xy}$ \\
+  \var{oy2mz}     & $\left< \omega_y^2 \right>_{xy}$ \\
+  \var{oz2mz}     & $\left< \omega_z^2 \right>_{xy}$ \\
+  \var{ruxmz}     & $\left<\varrho u_x \right>_{xy}$ \\
+  \var{ruymz}     & $\left<\varrho u_y \right>_{xy}$ \\
+  \var{ruzmz}     & $\left<\varrho u_z \right>_{xy}$ \\
+  \var{rux2mz}    & $\left<\varrho u_x^2\right>_{xy}$ \\
+  \var{ruy2mz}    & $\left<\varrho u_y^2\right>_{xy}$ \\
+  \var{ruz2mz}    & $\left<\varrho u_z^2\right>_{xy}$ \\
+  \var{uxuymz}    & $\left<u_x u_y\right>_{xy}$ \\
+  \var{uxuzmz}    & $\left<u_x u_z\right>_{xy}$ \\
+  \var{uyuzmz}    & $\left<u_y u_z\right>_{xy}$ \\
+  \var{ruxuymz}   & $\langle\rho u_x u_y\rangle_{xy}$ \\
+  \var{ruxuzmz}   & $\langle\rho u_x u_z\rangle_{xy}$ \\
+  \var{ruyuzmz}   & $\langle\rho u_y u_z\rangle_{xy}$ \\
+  \var{ruxuy2mz}  & $\langle\rho u_x u_y\rangle_{xy}$ \\
+  \var{ruxuz2mz}  & $\langle\rho u_x u_z\rangle_{xy}$ \\
+  \var{ruyuz2mz}  & $\langle\rho u_y u_z\rangle_{xy}$ \\
+  \var{oxuxxmz}   & $\left<\omega_x u_{x,x}\right>_{xy}$ \\
+  \var{oyuxymz}   & $\left<\omega_y u_{x,y}\right>_{xy}$ \\
+  \var{oxuyxmz}   & $\left<\omega_x u_{y,x}\right>_{xy}$ \\
+  \var{oyuyymz}   & $\left<\omega_y u_{y,y}\right>_{xy}$ \\
+  \var{oxuzxmz}   & $\left<\omega_x u_{z,x}\right>_{xy}$ \\
+  \var{oyuzymz}   & $\left<\omega_y u_{z,y}\right>_{xy}$ \\
+  \var{uyxuzxmz}  & $\left<u_{y,x} u_{z,x}\right>_{xy}$ \\
+  \var{uyyuzymz}  & $\left<u_{y,y} u_{z,y}\right>_{xy}$ \\
+  \var{uyzuzzmz}  & $\left<u_{y,z} u_{z,z}\right>_{xy}$ \\
+  \var{ekinmz}    & $\left<{1\over2}\varrho\uv^2\right>_{xy}$ \\
+  \var{oumz}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{xy}$ \\
+  \var{Remz}      & $\langle\frac{|\uv\cdot\uv|}{\left|
+                    \frac{\partial}{\partial x_j}
+                    (\nu{\sf S}_{ij})\right|}\rangle_{xy}$ \\
+  \var{oguxmz}    & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_x\right>_{xy}$ \\
+  \var{oguymz}    & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_y\right>_{xy}$ \\
+  \var{oguzmz}    & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_z\right>_{xy}$ \\
+  \var{ogux2mz}   & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_x^2\right>_{xy}$ \\
+  \var{oguy2mz}   & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_y^2\right>_{xy}$ \\
+  \var{oguz2mz}   & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_z^2\right>_{xy}$ \\
+  \var{oxdivumz}  & $\left<\omega_x\nabla\cdot\uv\right>_{xy}$ \\
+  \var{oydivumz}  & $\left<\omega_y\nabla\cdot\uv\right>_{xy}$ \\
+  \var{ozdivumz}  & $\left<\omega_z\nabla\cdot\uv\right>_{xy}$ \\
+  \var{oxdivu2mz} & $\left<(\omega_x nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{oydivu2mz} & $\left<(\omega_y\nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{ozdivu2mz} & $\left<(\omega_z\nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{accpowzmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy}$ \\
+  \var{accpowzupmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy+}$ \\
+  \var{accpowzdownmz} & $\left<(u_z Du_z/Dt)^2\right>_{xy-}$ \\
+  \var{fkinxmx}   & $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
 \midrule

@@ -8,6 +8,7 @@
 %%   entropy.f90
 %%   magnetic.f90
 %%   density_stratified.f90
+%%   hydro_potential.f90
 %%   magnetic_shearboxJ.f90
 %%   meanfield.f90
 %%   temperature_idealgas.f90
@@ -73,6 +74,20 @@
 \midrule
   \var{drhomxz}   & $\langle\Delta\rho/\rho_0\rangle_y$ \\
   \var{drho2mxz}  & $\langle\left(\Delta\rho/\rho_0\right)^2\rangle_y$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_potential.f90}} \\
+\midrule
+  \var{uxmxz}     & $\left< u_x \right>_{y}$ \\
+  \var{uymxz}     & $\left< u_y \right>_{y}$ \\
+  \var{uzmxz}     & $\left< u_z \right>_{y}$ \\
+  \var{ux2mxz}    & $\left< u_x^2 \right>_{y}$ \\
+  \var{uy2mxz}    & $\left< u_y^2 \right>_{y}$ \\
+  \var{uz2mxz}    & $\left< u_z^2 \right>_{y}$ \\
+  \var{uxuymxz}   & $\left< u_x u_y \right>_{y}$ \\
+  \var{uxuzmxz}   & $\left< u_x u_z \right>_{y}$ \\
+  \var{uyuzmxz}   & $\left< u_y u_z \right>_{y}$ \\
+  \var{oumxz}     & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{y}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
 \midrule

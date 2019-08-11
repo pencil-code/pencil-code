@@ -10,6 +10,7 @@
 %%   magnetic.f90
 %%   anelastic.f90
 %%   entropy_anelastic.f90
+%%   hydro_potential.f90
 %%   magnetic_shearboxJ.f90
 
 % ---------------------------------------------------------------- %
@@ -86,6 +87,23 @@
 \midrule
   \var{ssmphi}    & $\left<s\right>_\varphi$ \\
   \var{cs2mphi}   & $\left<c^2_s\right>_\varphi$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro_potential.f90}} \\
+\midrule
+  \var{urmphi}    & $\left<u_\varpi\right>_\varphi$
+                    [cyl.\ polar coords
+                    $(\varpi,\varphi,z)$] \\
+  \var{upmphi}    & $\left<u_\varphi\right>_\varphi$ \\
+  \var{uzmphi}    & $\left<u_z\right>_\varphi$ \\
+  \var{ursphmphi} & $\left<u_r\right>_\varphi$ \\
+  \var{uthmphi}   & $\left<u_\vartheta\right>_\varphi$ \\
+  \var{uumphi}    & shorthand for \var{urmphi},
+                    \var{upmphi} and \var{uzmphi}
+                    together \\
+  \var{uusphmphi} & shorthand for \var{ursphmphi},
+                    \var{uthmphi} and \var{upmphi}
+                    together \\
+  \var{u2mphi}    & $\left<\uv^2\right>_\varphi$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
 \midrule

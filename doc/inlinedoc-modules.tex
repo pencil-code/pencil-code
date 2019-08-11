@@ -6,6 +6,7 @@
 %%   hydro.f90
 %%   chemistry.f90
 %%   gpu_astaroth.f90
+%%   hydro_potential.f90
 %%   noentropy.f90
 %%   nogpu.f90
 %%   nohydro.f90
@@ -35,6 +36,9 @@
   \var{}          & The units used in the chem.in files are cm3,mole,sec,kcal and K \\
 \midrule
   \var{gpu_astaroth.f90} & This module contains GPU related types and functions to be used with the ASTAROTH nucleus. \\
+\midrule
+  \var{hydro_potential.f90} & This module takes care of most of the things related to velocity. \\
+  \var{}          & Pressure, for example, is added in the energy (entropy) module. \\
 \midrule
   \var{noentropy.f90} & Calculates pressure gradient term for \\
   \var{}          & polytropic equation of state $p=\text{const}\rho^{\Gamma}$. \\
