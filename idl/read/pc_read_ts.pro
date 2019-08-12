@@ -132,7 +132,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, movingaverage,0
   default, sepminus, 1
 ;
-; Load HDF5 varfile if requested or available.
+; Load HDF5 timeseries if requested or available.
 ;
   if (strmid (filename, strlen(filename)-3) eq '.h5') then begin
     last = pc_read ('last', file=filename, datadir=datadir)
