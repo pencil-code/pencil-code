@@ -5,10 +5,7 @@ pro h5_open_file, filename, write=write, truncate=truncate
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN
 
-	if (not finite (file_id, /NaN)) then begin
-		H5F_CLOSE, file_id
-		file_id = !Values.D_NaN
-	end
+	if (not finite (file_id, /NaN)) then h5_close_file
 
 	if (file_test (filename, /regular) and keyword_set (truncate)) then begin
 		file_delete, filename
