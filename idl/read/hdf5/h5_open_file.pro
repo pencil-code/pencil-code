@@ -1,6 +1,6 @@
 pro h5_open_file, filename, write=write, truncate=truncate
 
-	common h5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name, group_name, group_content
 	common pc_read_common, file
 
 	if (size (file_id, /type) eq 0) then file_id = !Values.D_NaN

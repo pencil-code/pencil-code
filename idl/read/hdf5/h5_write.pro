@@ -1,6 +1,6 @@
 pro h5_write, label, data, transpose=transpose, filename=filename, close=close, close=close
 
-	common h5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name, group_name, group_content
 
 	if (size (filename, /type) eq 7) then h5_open_file, filename, /write
 

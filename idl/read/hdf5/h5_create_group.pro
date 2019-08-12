@@ -1,6 +1,6 @@
 pro h5_create_group, group
 
-	common h5_file_info, file_id, file_name
+	common h5_file_info, file_id, file_name, group_name, group_content
 
 	exists = h5_contains (group, group=parent, name=child)
 	if (exists) then return
