@@ -12,6 +12,7 @@ function h5_get_type, label, exists=exists
 
 	if (not keyword_set (exists)) then begin
 		if (not h5_contains (label)) then return, 0
+		exists = 1
 	end
 
 	num = h5_get_size (label)
