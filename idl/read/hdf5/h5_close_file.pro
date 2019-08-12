@@ -15,4 +15,5 @@ pro h5_close_file
 	file_name = ''
 	file = ''
 	group_name = ''
+	group_content = [ '' ]
 end

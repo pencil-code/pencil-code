@@ -9,6 +9,7 @@ pro h5_open_file, filename, write=write, truncate=truncate
 		H5F_CLOSE, file_id
 		file_id = !Values.D_NaN
 		group_name = ''
+		group_content = [ '' ]
 	end
 
 	if (file_test (filename, /regular) and keyword_set (truncate)) then begin
