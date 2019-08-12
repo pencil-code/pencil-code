@@ -17,7 +17,7 @@ function h5_content, group, number=number, maximum=maximum
 	number = num
 	if (keyword_set (maximum)) then num = num < (maximum > 1)
 	list = strarr (num)
-	for pos = 0, num-1 do begin
+	for pos = 0L, num-1L do begin
 		list[pos] = h5g_get_member_name (file_id, group, pos)
 	end
 
