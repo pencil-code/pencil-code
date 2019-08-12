@@ -24,8 +24,10 @@ function h5_content, group, number=number, maximum=maximum
 		list[pos] = h5g_get_member_name (file_id, group, pos)
 	end
 
-	group_name = group
-	group_content = list
+	if (not keyword_set (maximum)) then begin
+		group_name = group
+		group_content = list
+	end
 
 	return, list
 end
