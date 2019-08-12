@@ -25,9 +25,9 @@ pro h5_open_file, filename, write=write, truncate=truncate
 			stop
 			return
 		end
-
-		file_name = filename
 		file_id = H5F_OPEN (filename, write=write)
-		file = filename
 	end
+
+	file_name = filename
+	file = filename
 end
