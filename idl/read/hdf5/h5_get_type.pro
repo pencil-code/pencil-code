@@ -11,9 +11,10 @@ function h5_get_type, label, exists=exists
 	end
 
 	if (not keyword_set (exists)) then begin
+		exists = 0
 		if (not h5_contains (label)) then return, 0
-		exists = 1
 	end
+	exists = 1
 
 	num = h5_get_size (label)
 	dims = n_elements (num)
