@@ -1467,6 +1467,8 @@ module Diagnostics
       integer :: a, iname
       logical, optional :: lneg
 !
+      if (iname==0) return
+
       if (present(lneg)) then
         if (lneg) then
           if (a<fname(iname)) fname(iname)=a
@@ -1497,6 +1499,8 @@ module Diagnostics
       integer, intent(in) :: iname
       logical, intent(in), optional :: lneg, l_dt
 !
+      if (iname==0) return
+
       if (present(lneg)) then
         if (lneg) then
           if (a<fname(iname)) fname(iname)=a
@@ -1530,6 +1534,8 @@ module Diagnostics
       real, intent(in) :: a
       integer, intent(in) :: iname
 !
+      if (iname==0) return
+
       fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
@@ -1551,6 +1557,8 @@ module Diagnostics
       integer, intent(in) :: a
       integer, intent(in) :: iname
 !
+      if (iname==0) return
+
       fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
@@ -1609,6 +1617,8 @@ module Diagnostics
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
       logical, optional,    intent(IN) :: lsqrt, llog10, lint
+
+      if (iname==0) return
 
       if (size(a,1)==1) then
         call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart)
